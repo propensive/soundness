@@ -1,0 +1,16 @@
+orthant 1 language
+
+- `FilesystemBackend` collects stat, open, read, write, list, link and delete; everything
+- in the [filesystem](/doc/soundness/modules/filesystem.md) API is defined in terms of them. The
+- `java.nio` implementation, the WASI implementation over `wasi:filesystem`, and any
+- future one are interchangeable, and the user-facing API mentions no platform at all. The
+- same shape gives [sockets](/doc/soundness/modules/sockets.md) a `SocketBackend`,
+- [compression](/doc/soundness/modules/compression.md) its per-platform DEFLATE engines, and
+- [images](/doc/soundness/modules/images.md) their codecs.
++ `FilesystemBackend` reúne stat, open, read, write, list, link e delete; tudo na API de
++ [sistema de arquivos](/doc/soundness/modules/filesystem.md) é definido em termos delas. A implementação
++ `java.nio`, a implementação WASI sobre `wasi:filesystem` e qualquer outra futura são
++ intercambiáveis, e a API voltada ao usuário não menciona plataforma nenhuma. A mesma forma dá
++ aos [sockets](/doc/soundness/modules/sockets.md) um `SocketBackend`, à
++ [compressão](/doc/soundness/modules/compression.md) seus motores DEFLATE por plataforma, e às
++ [imagens](/doc/soundness/modules/images.md) seus codecs.

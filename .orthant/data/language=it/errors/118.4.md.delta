@@ -1,0 +1,61 @@
+orthant 1 language
+
+- # `↯/s.118.4` — `Varint.Error`
++ # `↯/s.118.4` — `Varint.Error`
+
+- Raised when a variable-length integer in BinTEL is malformed.
++ Sollevato quando un intero a lunghezza variabile in BinTEL è malformato.
+
+- ## Cause
++ ## Causa
+
+- BinTEL encodes integers as varints, seven bits per byte with a continuation flag. This error
+- covers a varint that runs past the end of the input, one wider than the 64 bits the format
+- permits, and one that is not minimal — an overlong encoding such as `80 00` for zero, which
+- §4 of the BinTEL specification rejects so that every integer has exactly one encoding.
++ BinTEL codifica gli interi come varint, sette bit per byte con una flag di continuazione. Questo
++ errore copre un varint che va oltre la fine dell'input, uno più largo dei 64 bit che il formato
++ consente, e uno non minimale — una codifica sovrabbondante come `80 00` per lo zero, che il §4
++ della specifica BinTEL rifiuta perché ogni intero abbia esattamente una codifica.
+
+- ## Variants
++ ## Varianti
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+- row  `↯/s.118.4.1`  `Truncated`  `[↯/s.118.4.1] the varint is truncated — a continuation byte was expected`
++ row  `↯/s.118.4.1`  `Truncated`  `[↯/s.118.4.1] the varint is truncated — a continuation byte was expected`
+
+- row  `↯/s.118.4.2`  `Overflow`  `[↯/s.118.4.2] the varint encodes a value that does not fit in 64 bits`
++ row  `↯/s.118.4.2`  `Overflow`  `[↯/s.118.4.2] the varint encodes a value that does not fit in 64 bits`
+
+- row  `↯/s.118.4.3`  `Overlong`  `[↯/s.118.4.3] the varint is not minimal — its last byte carries no payload bits`
++ row  `↯/s.118.4.3`  `Overlong`  `[↯/s.118.4.3] the varint is not minimal — its last byte carries no payload bits`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- The stream is truncated or corrupt. A varint longer than the target type permits usually
+- means reader and writer disagree about the field's type. An overlong varint comes from an
+- encoder that pads, which no conforming BinTEL encoder does.
++ Lo stream è troncato o corrotto. Un varint più lungo di quanto consenta il tipo di destinazione di
++ solito significa che chi legge e chi scrive non concordano sul tipo del campo. Un varint
++ sovrabbondante proviene da un codificatore che aggiunge riempimento, cosa che nessun codificatore
++ BinTEL conforme fa.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/stratiform/src/core/stratiform.Varint.scala`
++ - Sorgente: `lib/stratiform/src/core/stratiform.Varint.scala`

@@ -1,0 +1,1666 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- # The words Soundness's documentation uses with a precise meaning. A term in brackets in prose —
++ # The words Soundness's documentation uses with a precise meaning. A term in brackets in prose —
+
+- # `[tactic]`, or `[tactics][tactic]` for an inflected form — shows its definition when pointed
++ # `[tactic]`, or `[tactics][tactic]` for an inflected form — shows its definition when pointed
+
+- # at, and leads to the page named by its `link`. doc/standards/style.md says when to add one.
++ # at, and leads to the page named by its `link`. doc/standards/style.md says when to add one.
+
+- define accruing
++ define accruing
+
+-   link  /doc/soundness/modules/errors.md#accumulating-failures
++   term cumulativo
+
+=   link  /doc/soundness/modules/errors.md#accumulating-failures
+-   definition
++   definition
+
+-       Describes a [strategy], such as `validate`, which records each error and lets the work
+-       continue, then gathers every recorded error into one, instead of stopping at the first.
++       Descrive una [strategia], come `validate`, che registra ogni errore e lascia proseguire il
++       lavoro, poi raccoglie tutti gli errori registrati in uno solo, invece di fermarsi al primo.
+
+- define armored
++ define armored
+
+-   link  /doc/soundness/modules/cryptography.md#pem
++   term  con armatura ASCII
+
+=   link  /doc/soundness/modules/cryptography.md#pem
+-   definition
++   definition
+
+-       Describes binary data, such as a key, a certificate or a signature, written as ASCII text,
+-       in Base64 between `-----BEGIN …-----` and `-----END …-----` lines, as PEM does, so that it
+-       can be copied as text.
++       Descrive dati binari, come una chiave, un certificato o una firma, scritti come testo
++       ASCII, in Base64 tra le righe `-----BEGIN …-----` e `-----END …-----`, come fa PEM, così
++       che possano essere copiati come testo.
+
+- define boxing
++ define boxing
+
+= define boxing
++   term boxing
+
+= define boxing
+-   definition
++   definition
+
+-       Wrapping a primitive value, such as an `Int` or a `Double`, in an object on the heap, so
+-       that it can be used where an object is expected, at the cost of an allocation. An unboxed
+-       value is stored as the primitive itself.
++       Incapsulare un valore primitivo, come un `Int` o un `Double`, in un oggetto sullo heap,
++       così che possa essere usato dove è atteso un oggetto, al costo di un'allocazione. Un valore
++       non sottoposto a boxing è memorizzato come il primitivo stesso.
+
+- define brand
++ define brand
+
+= define brand
++   term marchio
+
+= define brand
+-   definition
++   definition
+
+-       A marker in a value's type which records where the value came from, or a fact about it, as
+-       in `Ratel.Row of brand`, so that a row can be read only through the reader which it came
+-       from.
++       Un contrassegno nel tipo di un valore che registra da dove il valore proviene, o un fatto
++       che lo riguarda, come in `Ratel.Row of brand`, così che una riga possa essere letta solo
++       attraverso il lettore da cui proviene.
+
+- define capability
++ define capability
+
+= define capability
+-   link  /doc/philosophy/capture-checking.md
++   term capability
+
+= define capability
+=   link  /doc/philosophy/capture-checking.md
+-   definition
++   definition
+
+-       A value which must be in scope for an operation to be allowed, such as `Online` for a
+-       network request. A method that needs one says so in its signature, so what a method may
+-       do is visible in its type.
++       Un valore che deve essere nell'ambito perché un'operazione sia permessa, come `Online` per
++       una richiesta di rete. Un metodo che ne ha bisogno lo dichiara nella sua firma, così ciò
++       che un metodo può fare è visibile nel suo tipo.
+
+- define  capture checking
++ define  capture checking
+
+= define  capture checking
+-   link  /doc/philosophy/capture-checking.md
++   term  capture checking
+
+= define  capture checking
+=   link  /doc/philosophy/capture-checking.md
+-   definition
++   definition
+
+-       An experimental check of the Scala 3 compiler which tracks the [capabilities][capability]
+-       each value captures, so that one lent to a scope cannot escape it, for example by being
+-       stored or returned.
++       Un controllo sperimentale del compilatore di Scala 3 che traccia le [capability] catturate
++       da ciascun valore, così che una capability prestata a un ambito non possa uscirne, per
++       esempio venendo memorizzata o restituita.
+
+- define carrier
++ define carrier
+
+-   link  /doc/soundness/modules/openapi.md#media-types-and-their-carriers
++   term portatore
+
+=   link  /doc/soundness/modules/openapi.md#media-types-and-their-carriers
+-   definition
++   definition
+
+-       Something which carries what another thing describes: the Scala type which holds a body of
+-       a given media type, such as `Json` for `application/json`; or a thread which runs, in
+-       turn, the tasks handed to it, as in a pool.
++       Qualcosa che porta ciò che un'altra cosa descrive: il tipo Scala che contiene un corpo di
++       un dato tipo di media, come `Json` per `application/json`; oppure un thread che esegue, a
++       turno, i task che gli vengono affidati, come in un pool.
+
+- define  choice package
++ define  choice package
+
+-   link  /doc/philosophy/declarative-context.md
+-   keyword  policy import
++   term  package di scelta
++   keyword  import di policy
+
+=   keyword  policy import
+-   definition
++   definition
+
+-       A package of alternative [givens][given] for one decision, such as `strategies`,
+-       `alphabets` or `httpBackends`. Importing one member by name makes that choice for
+-       everything in scope.
++       Un package di [given] alternativi per una stessa decisione, come `strategies`, `alphabets`
++       o `httpBackends`. Importarne un membro per nome compie quella scelta per tutto ciò che è
++       nell'ambito.
+
+- define chunk
++ define chunk
+
+= define chunk
++   term chunk
+
+= define chunk
+-   definition
++   definition
+
+-       One of the pieces in which a stream delivers its data, such as a block of bytes. Code
+-       which reads a stream must allow for a boundary, such as the end of a line, falling between
+-       two chunks.
++       Uno dei pezzi in cui uno stream consegna i suoi dati, come un blocco di byte. Il codice che
++       legge uno stream deve prevedere che un confine, come la fine di una riga, cada tra due
++       chunk.
+
+- define cipher
++ define cipher
+
+-   link  /doc/soundness/modules/cryptography.md
++   term cifrario
+
+=   link  /doc/soundness/modules/cryptography.md
+-   definition
++   definition
+
+-       An algorithm which encrypts and decrypts data with a key, such as AES or RSA. The type of
+-       a key names its cipher, so a key cannot be used with another.
++       Un algoritmo che cifra e decifra dati con una chiave, come AES o RSA. Il tipo di una chiave
++       nomina il suo cifrario, così una chiave non può essere usata con un altro.
+
+- define classloader
++ define classloader
+
+-   link  /doc/soundness/modules/classpath.md#choosing-a-classloader
++   term classloader
+
+=   link  /doc/soundness/modules/classpath.md#choosing-a-classloader
+-   definition
++   definition
+
+-       The JVM object which finds and loads compiled classes and resources, from a classpath or
+-       elsewhere. Resources and services are looked up through the `Classloader` in scope.
++       L'oggetto della JVM che trova e carica le classi compilate e le risorse, da un classpath o
++       da altrove. Le risorse e i servizi vengono cercati attraverso il `Classloader` nell'ambito.
+
+- define  clock tick
++ define  clock tick
+
+= define  clock tick
++   term tick
+
+= define  clock tick
+-   definition
++   definition
+
+-       One step of a clock which drives repeated work, such as a frame of an animation or an event
+-       reporting progress. It is a different thing from a [tick] on the axis of a chart.
++       Un passo di un orologio che scandisce un lavoro ripetuto, come un fotogramma di
++       un'animazione o un evento che segnala l'avanzamento. È una cosa diversa da una [tacca]
++       sull'asse di un grafico.
+
+- define  command-line flag
++ define  command-line flag
+
+-   link  /doc/soundness/modules/cli.md#flags
++   term  opzione da riga di comando
+
+=   link  /doc/soundness/modules/cli.md#flags
+-   definition
++   definition
+
+-       A named argument to a command-line program, written with a leading `--`, such as
+-       `--verbose` or `--log-level`, which may take a value.
++       Un argomento con nome di un programma da riga di comando, scritto con `--` iniziale, come
++       `--verbose` o `--log-level`, che può prendere un valore.
+
+- define compiletime
++ define compiletime
+
+= define compiletime
++   term  tempo di compilazione
++   keyword  compile time
+
+= define compiletime
+-   definition
++   definition
+
+-       While the program is being compiled. A check made at compiletime rejects wrong code
+-       before it can run; a compiletime error is reported by the compiler.
++       Mentre il programma viene compilato. Un controllo fatto a tempo di compilazione rifiuta il
++       codice sbagliato prima che possa essere eseguito; un errore a tempo di compilazione è
++       segnalato dal compilatore.
+
+- define  contextual value
++ define  contextual value
+
+-   link  /doc/philosophy/declarative-context.md
+-   keyword implicit
++   term  valore contestuale
++   keyword implicito
+
+=   keyword implicit
+-   definition
++   definition
+
+-       A value the compiler finds in scope and passes to a method without it being written as
+-       an argument. One is declared with `given` and requested with `using`.
++       Un valore che il compilatore trova nell'ambito e passa a un metodo senza che sia scritto
++       come argomento. Si dichiara con `given` e si richiede con `using`.
+
+- define  cooked mode
++ define  cooked mode
+
+-   link  /doc/soundness/modules/daemons.md#asking-for-a-cooked-terminal
++   term  modalità canonica
+
+=   link  /doc/soundness/modules/daemons.md#asking-for-a-cooked-terminal
+-   definition
++   definition
+
+-       The ordinary mode of a terminal, in which input is delivered a line at a time, with echo
+-       and with line editing, such as Backspace, handled by the terminal driver. Its opposite,
+-       raw mode, delivers each keypress as it is typed.
++       La modalità ordinaria di un terminale, in cui l'input è consegnato una riga alla volta, con
++       l'eco e con la modifica della riga, come Backspace, gestiti dal driver del terminale. Il
++       suo opposto, la modalità raw, consegna ogni pressione di tasto man mano che viene digitata.
+
+- define daemon
++ define daemon
+
+-   link  /doc/soundness/modules/daemons.md
++   term demone
+
+=   link  /doc/soundness/modules/daemons.md
+-   definition
++   definition
+
+-       A program which keeps running in the background and serves each invocation of a command,
+-       received from a small launcher, so that the command starts at once. In concurrency, a
+-       `daemon` is a task which is started and left to run until its scope ends.
++       Un programma che resta in esecuzione in background e serve ogni invocazione di un comando,
++       ricevuta da un piccolo launcher, così che il comando parta subito. Nella concorrenza, un
++       `daemon` è un task che viene avviato e lasciato in esecuzione finché il suo ambito non
++       termina.
+
+- define demangle
++ define demangle
+
+-   link  /doc/soundness/modules/stack-traces.md#demangling
++   term demangling
+
+=   link  /doc/soundness/modules/stack-traces.md#demangling
+-   definition
++   definition
+
+-       To turn a name as the JVM sees it, encoded by the Scala compiler, such as `Foo$` or
+-       `$anonfun$1`, back into the name which was written in the source.
++       Riportare un nome come lo vede la JVM, codificato dal compilatore Scala, come `Foo$` o
++       `$anonfun$1`, al nome che era scritto nel sorgente.
+
+- define derivation
++ define derivation
+
+-   link  /doc/soundness/modules/derivation.md
++   term derivazione
+
+=   link  /doc/soundness/modules/derivation.md
+-   definition
++   definition
+
+-       Having the compiler construct a [typeclass] instance for a case class or enumeration
+-       from the instances for its fields or cases, instead of writing it by hand.
++       Far costruire al compilatore un'istanza di una [typeclass] per una case class o
++       un'enumerazione a partire dalle istanze per i suoi campi o i suoi casi, invece di scriverla
++       a mano.
+
+- define digest
++ define digest
+
+-   link  /doc/soundness/modules/hashing.md
++   term digest
+
+=   link  /doc/soundness/modules/hashing.md
+-   definition
++   definition
+
+-       The fixed-length value which a hash algorithm, such as SHA-256, computes from any data or
+-       any value. Its type names the algorithm, and equal inputs always give equal digests.
++       Il valore di lunghezza fissa che un algoritmo di hash, come SHA-256, calcola a partire da
++       qualsiasi dato o qualsiasi valore. Il suo tipo nomina l'algoritmo, e input uguali danno
++       sempre digest uguali.
+
+- define  direct style
++ define  direct style
+
+-   link  /doc/philosophy/direct-style.md
++   term  stile diretto
+
+=   link  /doc/philosophy/direct-style.md
+-   definition
++   definition
+
+-       Code written as ordinary statements and expressions whose values are used directly,
+-       without wrapping results in a monad such as `Either`, `Try` or `Future`.
++       Codice scritto come istruzioni ed espressioni ordinarie i cui valori sono usati
++       direttamente, senza incapsulare i risultati in una monade come `Either`, `Try` o `Future`.
+
+- define endpoint
++ define endpoint
+
+= define endpoint
++   term endpoint
+
+= define endpoint
+-   definition
++   definition
+
+-       The address at which a service is reached, and which a client connects to, such as a host
+-       and a port, a URL, or a command to start.
++       L'indirizzo a cui un servizio è raggiungibile, e a cui un client si connette, come un host
++       e una porta, un URL, o un comando da avviare.
+
+- define enumeration
++ define enumeration
+
+= define enumeration
++   term enumerazione
++   keyword enum
+
+= define enumeration
+-   definition
++   definition
+
+-       A type declared with `enum` whose cases are a fixed list of values, known to the
+-       compiler, each with an ordinal giving its position in the declaration.
++       Un tipo dichiarato con `enum` i cui casi sono un elenco fisso di valori, noto al
++       compilatore, ciascuno con un ordinale che ne dà la posizione nella dichiarazione.
+
+- define evidence
++ define evidence
+
+= define evidence
++   term prova
+
+= define evidence
+-   definition
++   definition
+
+-       A [contextual value] whose presence proves something which the compiler cannot otherwise
+-       know, such as that one type is a subtype of another, or that a tool is available, and
+-       which a method demands before it can be called.
++       Un [valore contestuale] la cui presenza dimostra qualcosa che il compilatore non può sapere
++       altrimenti, per esempio che un tipo è sottotipo di un altro, o che uno strumento è
++       disponibile, e che un metodo esige prima di poter essere chiamato.
+
+- define face
++ define face
+
+= define face
+-   link  /doc/soundness/modules/fonts.md#typefaces-and-faces
++   term  stile tipografico
+
+= define face
+=   link  /doc/soundness/modules/fonts.md#typefaces-and-faces
+-   definition
++   definition
+
+-       One style of a [typeface], a `Face`, chosen by its weight, slant and features, such as
+-       Inter in bold italic.
++       Uno stile di un [carattere tipografico], un `Face`, scelto per peso, inclinazione e
++       caratteristiche, come Inter in grassetto corsivo.
+
+- define fan-out
++ define fan-out
+
+= define fan-out
++   term fan-out
+
+= define fan-out
+-   definition
++   definition
+
+-       Distributing work or data from one source to many recipients, such as a batch of small
+-       tasks spread across threads, or one stream delivered to several consumers.
++       Distribuire lavoro o dati da un'unica sorgente a molti destinatari, come un lotto di
++       piccoli task ripartito tra più thread, o uno stream consegnato a più consumatori.
+
+- define fingerprint
++ define fingerprint
+
+= define fingerprint
++   term impronta
+
+= define fingerprint
+-   definition
++   definition
+
+-       A short value computed from some content, such as a schema or a key, which identifies it:
+-       comparing fingerprints confirms that two parties hold the same content without comparing
+-       the content itself.
++       Un valore breve calcolato a partire da un contenuto, come uno schema o una chiave, che lo
++       identifica: confrontare le impronte conferma che due parti possiedono lo stesso contenuto
++       senza confrontare il contenuto stesso.
+
+- define fire-and-forget
++ define fire-and-forget
+
+= define fire-and-forget
++   term fire-and-forget
+
+= define fire-and-forget
+-   definition
++   definition
+
+-       Describes work which is started without waiting for it to finish or for any response, such
+-       as a notification in RPC, a datagram, or a task spawned with `daemon`.
++       Descrive un lavoro che viene avviato senza attendere che finisca né alcuna risposta, come
++       una notifica in RPC, un datagramma, o un task generato con `daemon`.
+
+- define flag
++ define flag
+
+-   link  /doc/soundness/modules/flags.md
++   term flag
+
+=   link  /doc/soundness/modules/flags.md
+-   definition
++   definition
+
+-       A named yes-or-no setting, often stored as one bit of an integer, as in the flags field of
+-       a binary header. A set of flags is typed by an [enumeration], so a flag from another set
+-       is rejected.
++       Un'impostazione sì-o-no con nome, spesso memorizzata come un bit di un intero, come nel
++       campo dei flag di un'intestazione binaria. Un insieme di flag è tipizzato da
++       un'[enumerazione], così un flag di un altro insieme viene rifiutato.
+
+- define focus
++ define focus
+
+-   link  /doc/soundness/modules/errors.md#saying-where-a-failure-was
++   term focus
+
+=   link  /doc/soundness/modules/errors.md#saying-where-a-failure-was
+-   definition
++   definition
+
+-       The position within a structure which code is currently working on, such as a JSON
+-       pointer, maintained by `track` as a traversal descends. An error recorded under `validate`
+-       is paired with the focus where it was raised.
++       La posizione all'interno di una struttura su cui il codice sta lavorando in quel momento,
++       come un puntatore JSON, mantenuta da `track` mentre un attraversamento scende. Un errore
++       registrato sotto `validate` è abbinato al focus in cui è stato sollevato.
+
+- define forwarder
++ define forwarder
+
+= define forwarder
++   term forwarder
+
+= define forwarder
+-   definition
++   definition
+
+-       A method which does nothing but call another definition with the same arguments, such as
+-       one the compiler generates for an `export` clause, so that a member can be reached from
+-       somewhere else.
++       Un metodo che non fa altro che chiamare un'altra definizione con gli stessi argomenti, come
++       quello che il compilatore genera per una clausola `export`, così che un membro possa essere
++       raggiunto da un altro punto.
+
+- define frame
++ define frame
+
+= define frame
++   term frame
+
+= define frame
+-   definition
++   definition
+
+-       One self-contained unit of a sequence: a message carved from a stream by [framing], a
+-       BinTEL document which travels on its own, or one image of an animation. An entry of a call
+-       stack is a [stack frame].
++       Un'unità autonoma di una sequenza: un messaggio ritagliato da uno stream mediante il
++       [framing], un documento BinTEL che viaggia da solo, o un'immagine di un'animazione. Una
++       voce di uno stack di chiamate è uno [stack frame].
+
+- define framing
++ define framing
+
+-   link  /doc/soundness/modules/rpc.md#framing
++   term framing
+
+=   link  /doc/soundness/modules/rpc.md#framing
+-   definition
++   definition
+
+-       Carving a continuous stream of bytes or text into separate messages, by a length prefix, a
+-       `Content-Length` header or a line ending, so that each message can be read whole.
++       Ritagliare un flusso continuo di byte o di testo in messaggi separati, mediante un prefisso
++       di lunghezza, un'intestazione `Content-Length` o un fine riga, così che ogni messaggio
++       possa essere letto per intero.
+
+- define frozen
++ define frozen
+
+= define frozen
++   term congelato
+
+= define frozen
+-   definition
++   definition
+
+-       Made [immutable] once it has been built: a structure which is filled in by mutation and
+-       then frozen, such as a Bloom filter or a `Topology`, can be shared and queried, but no
+-       longer changed.
++       Reso [immutabile] una volta costruito: una struttura che viene riempita per mutazione e poi
++       congelata, come un filtro di Bloom o una `Topology`, può essere condivisa e interrogata, ma
++       non più modificata.
+
+- define getter
++ define getter
+
+= define getter
+-   link  /doc/soundness/modules/optics.md#lenses-as-values
++   term getter
+
+= define getter
+=   link  /doc/soundness/modules/optics.md#lenses-as-values
+-   definition
++   definition
+
+-       A function or method which reads one part of a value, such as a field. Paired with a
+-       [setter], it makes a lens.
++       Una funzione o un metodo che legge una parte di un valore, come un campo. Abbinato a un
++       [setter], forma una lente.
+
+- define given
++ define given
+
+= define given
+-   link  /doc/philosophy/declarative-context.md
++   term given
+
+=   link  /doc/philosophy/declarative-context.md
+-   definition
++   definition
+
+-       A definition marked `given`, which makes a [contextual value] available to any code
+-       that has it in scope.
++       Una definizione marcata `given`, che rende disponibile un [valore contestuale] a qualsiasi
++       codice che la abbia nell'ambito.
+
+- define grant
++ define grant
+
+-   link  /doc/soundness/modules/filesystem.md#reading-and-writing
++   term permesso
+
+=   link  /doc/soundness/modules/filesystem.md#reading-and-writing
+-   definition
++   definition
+
+-       One of the kinds of access a [handle] is opened with, such as `Read`, `Write` or
+-       `Exclusive`. Grants are carried in the handle's type, so an operation which was not
+-       granted does not compile.
++       Uno dei tipi di accesso con cui un [handle] viene aperto, come `Read`, `Write` o
++       `Exclusive`. I permessi sono portati nel tipo dello handle, così un'operazione che non è
++       stata concessa non compila.
+
+- define  grapheme cluster
++ define  grapheme cluster
+
+-   link  /doc/soundness/modules/characters.md#grapheme-clusters
++   term  cluster di grafemi
+
+=   link  /doc/soundness/modules/characters.md#grapheme-clusters
+-   definition
++   definition
+
+-       A sequence of one or more Unicode characters which a reader perceives as a single
+-       character, such as a letter with combining accents, or an emoji built from several code
+-       points.
++       Una sequenza di uno o più caratteri Unicode che un lettore percepisce come un unico
++       carattere, come una lettera con accenti combinanti, o un'emoji costruita da più code point.
+
+- define handle
++ define handle
+
+-   link  /doc/soundness/modules/filesystem.md#the-opening-pattern-generally
++   term handle
+
+=   link  /doc/soundness/modules/filesystem.md#the-opening-pattern-generally
+-   definition
++   definition
+
+-       A value which gives access to an open resource, such as a file, a canvas or a repository,
+-       for the duration of a scope. Its type says which operations it was opened for, and the
+-       resource is closed when the scope ends.
++       Un valore che dà accesso a una risorsa aperta, come un file, un canvas o un repository, per
++       la durata di un ambito. Il suo tipo dice per quali operazioni è stato aperto, e la risorsa
++       viene chiusa quando l'ambito termina.
+
+- define handler
++ define handler
+
+= define handler
++   term handler
+
+= define handler
+-   definition
++   definition
+
+-       A function supplied to be run when something arrives or happens, such as a request
+-       reaching a server or a message from a peer. It decides what is done with it and, for a
+-       request, what response is returned.
++       Una funzione fornita perché sia eseguita quando qualcosa arriva o accade, come una
++       richiesta che raggiunge un server o un messaggio da un peer. Decide che cosa farne e, per
++       una richiesta, quale risposta viene restituita.
+
+- define harness
++ define harness
+
+= define harness
++   term harness
+
+= define harness
+-   definition
++   definition
+
+-       The code which runs other code under controlled conditions and observes it, such as the
+-       `Harness` which runs a test and records what it captures, or a benchmark harness.
++       Il codice che esegue altro codice in condizioni controllate e lo osserva, come lo `Harness`
++       che esegue un test e registra ciò che cattura, o uno harness di benchmark.
+
+- define  honest signature
++ define  honest signature
+
+-   link  /doc/philosophy/honest-signatures.md
++   term  firma onesta
+
+=   link  /doc/philosophy/honest-signatures.md
+-   definition
++   definition
+
+-       A method signature that states everything the method needs and every way it can fail,
+-       so that nothing about calling it is left to documentation.
++       Una firma di metodo che dichiara tutto ciò di cui il metodo ha bisogno e ogni modo in cui
++       può fallire, così che nulla di ciò che riguarda la sua chiamata sia lasciato alla
++       documentazione.
+
+- define immutable
++ define immutable
+
+-   link  /doc/philosophy/immutability.md
++   term immutabile
+
+=   link  /doc/philosophy/immutability.md
+-   definition
++   definition
+
+-       Never changing after construction. An operation that appears to alter an immutable
+-       value returns a new value and leaves the original as it was.
++       Che non cambia mai dopo la costruzione. Un'operazione che sembra alterare un valore
++       immutabile restituisce un nuovo valore e lascia l'originale com'era.
+
+- define  impossible state
++ define  impossible state
+
+-   link  /doc/philosophy/impossible-states.md
++   term  stato impossibile
+
+=   link  /doc/philosophy/impossible-states.md
+-   definition
++   definition
+
+-       A value that would be meaningless or invalid, and which the types are designed to make
+-       unrepresentable, so that no code needs to check for it.
++       Un valore che sarebbe privo di significato o non valido, e che i tipi sono progettati per
++       rendere non rappresentabile, così che nessun codice debba controllarlo.
+
+- define interning
++ define interning
+
+-   link  /doc/soundness/modules/database.md#interning
++   term interning
+
+=   link  /doc/soundness/modules/database.md#interning
+-   definition
++   definition
+
+-       Storing each distinct value only once, so that storing or creating an equal value again
+-       gives the same instance or reference, and equal values can be compared by identity.
++       Memorizzare ogni valore distinto una sola volta, così che memorizzare o creare di nuovo un
++       valore uguale dia la stessa istanza o lo stesso riferimento, e valori uguali possano essere
++       confrontati per identità.
+
+- define interpolator
++ define interpolator
+
+-   link  /doc/soundness/modules/interpolation.md
++   term interpolatore
+
+=   link  /doc/soundness/modules/interpolation.md
+-   definition
++   definition
+
+-       A prefix on a string literal, such as `t"…"`, `url"…"` or `media"…"`, which checks the
+-       literal's content at [compiletime] and gives a value of a precise type.
++       Un prefisso su un letterale stringa, come `t"…"`, `url"…"` o `media"…"`, che controlla il
++       contenuto del letterale a [tempo di compilazione] e dà un valore di un tipo preciso.
+
+- define keypress
++ define keypress
+
+-   link  /doc/soundness/modules/terminal.md#keyboard-input
++   term  pressione di tasto
+
+=   link  /doc/soundness/modules/terminal.md#keyboard-input
+-   definition
++   definition
+
+-       One key, or combination of keys, pressed at a terminal, which is received as a `Keypress`
+-       value, such as a character, Enter or an arrow key.
++       Un tasto, o una combinazione di tasti, premuto su un terminale, che viene ricevuto come
++       valore `Keypress`, come un carattere, Invio o un tasto freccia.
+
+- define label
++ define label
+
+-   link  /doc/soundness/modules/label-placement.md
++   term etichetta
+
+=   link  /doc/soundness/modules/label-placement.md
+-   definition
++   definition
+
+-       A piece of text placed beside the thing it names, such as a point on a chart or a town on
+-       a map; more generally, the short name a value is shown by, such as the label of a PEM
+-       block.
++       Un pezzo di testo posto accanto alla cosa che nomina, come un punto su un grafico o una
++       città su una mappa; più in generale, il nome breve con cui un valore viene mostrato, come
++       l'etichetta di un blocco PEM.
+
+- define layout
++ define layout
+
+= define layout
++   term layout
+
+= define layout
+-   definition
++   definition
+
+-       The arrangement of parts in space or in memory: how a table, a terminal interface or a
+-       chart places its parts, or how the bits of a pixel are allocated among its channels.
++       La disposizione delle parti nello spazio o in memoria: come una tabella, un'interfaccia a
++       terminale o un grafico collocano le loro parti, o come i bit di un pixel sono ripartiti tra
++       i suoi canali.
+
+- define lenient
++ define lenient
+
+-   link  /doc/soundness/modules/decoding.md#policies-for-optional-fields
++   term permissivo
+
+=   link  /doc/soundness/modules/decoding.md#policies-for-optional-fields
+-   definition
++   definition
+
+-       Describes a decoding policy which reads a missing or malformed optional value as `Unset`
+-       and reports nothing, instead of raising an error as a strict policy does.
++       Descrive una politica di decodifica che legge un valore opzionale mancante o malformato
++       come `Unset` e non segnala nulla, invece di sollevare un errore come fa una politica
++       rigorosa.
+
+- define lift
++ define lift
+
+= define lift
++   term sollevare
+
+= define lift
+-   definition
++   definition
+
+-       To carry a value into a richer setting which represents it, such as a value into a
+-       container, a constant into a quoted expression for a macro, or a fact about a value into
+-       its type.
++       Portare un valore in un contesto più ricco che lo rappresenta, come un valore in un
++       contenitore, una costante in un'espressione quotata per una macro, o un fatto che riguarda
++       un valore nel suo tipo.
+
+- define listener
++ define listener
+
+= define listener
++   term listener
+
+= define listener
+-   definition
++   definition
+
+-       A value or task which waits for events or connections and acts on each as it arrives, such
+-       as the `Lsp.Listener` which receives what a language server sends unbidden, or a server
+-       waiting for connections on a socket.
++       Un valore o un task che attende eventi o connessioni e agisce su ciascuno al suo arrivo,
++       come il `Lsp.Listener` che riceve ciò che un language server invia senza che gli sia
++       chiesto, o un server in attesa di connessioni su un socket.
+
+- define logger
++ define logger
+
+-   link  /doc/soundness/modules/logging.md
++   term logger
+
+=   link  /doc/soundness/modules/logging.md
+-   definition
++   definition
+
+-       The [contextual value] which receives the typed events that a method logs, and writes them
+-       somewhere, such as a terminal, a file or the system log. With no logger in scope, logging
+-       is silent and costs nothing.
++       Il [valore contestuale] che riceve gli eventi tipizzati che un metodo registra nel log, e
++       li scrive da qualche parte, come un terminale, un file o il log di sistema. Senza un logger
++       nell'ambito, il logging è silenzioso e non costa nulla.
+
+- define  media type
++ define  media type
+
+-   link  /doc/soundness/modules/media-types.md
++   term  tipo di media
+
+=   link  /doc/soundness/modules/media-types.md
+-   definition
++   definition
+
+-       The standard name for the format of some data, such as `text/html` or `application/json`,
+-       which accompanies it in an HTTP header or an email, so that the receiver knows how to read
+-       it.
++       Il nome standard del formato di alcuni dati, come `text/html` o `application/json`, che li
++       accompagna in un'intestazione HTTP o in un'email, così che il destinatario sappia come
++       leggerli.
+
+- define one-shot
++ define one-shot
+
+= define one-shot
++   term one-shot
+
+= define one-shot
+-   definition
++   definition
+
+-       Usable, or done, only once: a one-shot iterator can be traversed only once, and a one-shot
+-       operation, such as `gzip` on `Data`, processes a whole value in one call rather than
+-       incrementally.
++       Utilizzabile, o eseguito, una sola volta: un iteratore one-shot può essere attraversato una
++       sola volta, e un'operazione one-shot, come `gzip` su `Data`, elabora un valore intero in
++       una sola chiamata anziché in modo incrementale.
+
+- define  opaque type
++ define  opaque type
+
+= define  opaque type
++   term  tipo opaco
+
+= define  opaque type
+-   definition
++   definition
+
+-       A type that is represented at runtime by another type, such as a `Long`, but which the
+-       compiler treats as distinct from it, so only the operations defined for it are allowed.
++       Un tipo che a runtime è rappresentato da un altro tipo, come un `Long`, ma che il
++       compilatore tratta come distinto da esso, così sono permesse solo le operazioni definite
++       per esso.
+
+- define optional
++ define optional
+
+-   link  /doc/soundness/modules/optional-values.md
++   term opzionale
+
+=   link  /doc/soundness/modules/optional-values.md
+-   definition
++   definition
+
+-       Typed `Optional[T]`: either a value of type `T`, or `Unset`. A present value is not
+-       wrapped, so it costs nothing more than the value itself.
++       Di tipo `Optional[T]`: o un valore di tipo `T`, o `Unset`. Un valore presente non è
++       incapsulato, così non costa nulla più del valore stesso.
+
+- define padding
++ define padding
+
+= define padding
++   term padding
+
+= define padding
+-   definition
++   definition
+
+-       Characters or bytes added to a value to bring it to a required length: the spaces which
+-       fill text out to the width of a column, or the bytes which a block cipher appends to fill
+-       its last block.
++       Caratteri o byte aggiunti a un valore per portarlo a una lunghezza richiesta: gli spazi che
++       riempiono il testo fino alla larghezza di una colonna, o i byte che un cifrario a blocchi
++       accoda per riempire il suo ultimo blocco.
+
+- define pane
++ define pane
+
+-   link  /doc/soundness/modules/terminal.md#layout
++   term riquadro
+
+=   link  /doc/soundness/modules/terminal.md#layout
+-   definition
++   definition
+
+-       A rectangular region of a terminal interface which shows one piece of content. Panes are
+-       nested into a tree, which is solved against the size of the terminal.
++       Una regione rettangolare di un'interfaccia a terminale che mostra un singolo contenuto. I
++       riquadri sono annidati in un albero, che viene risolto rispetto alle dimensioni del
++       terminale.
+
+- define park
++ define park
+
+= define park
++   term parcheggiare
+
+= define park
+-   definition
++   definition
+
+-       To suspend a thread or [strand], without consuming processor time, until another unparks
+-       it, as a writer does when its reader falls behind.
++       Sospendere un thread o un [trefolo], senza consumare tempo di processore, finché un altro
++       non lo risveglia, come fa uno scrittore quando il suo lettore resta indietro.
+
+- define  pattern match
++ define  pattern match
+
+= define  pattern match
++   term  pattern matching
+
+= define  pattern match
+-   definition
++   definition
+
+-       Testing a value, in a `match` expression or a pattern elsewhere, against the shape of each
+-       case in turn, and extracting parts of the first one which fits.
++       Confrontare un valore, in un'espressione `match` o in un pattern altrove, con la forma di
++       ciascun caso a turno, ed estrarre parti del primo che corrisponde.
+
+- define payload
++ define payload
+
+= define payload
++   term payload
+
+= define payload
+-   definition
++   definition
+
+-       The data which a message or request carries, as distinct from the envelope around it, such
+-       as its method name, its identifier or its headers.
++       I dati che un messaggio o una richiesta trasporta, distinti dall'involucro che li circonda,
++       come il nome del metodo, l'identificatore o le intestazioni.
+
+- define permit
++ define permit
+
+-   link  /doc/soundness/modules/cryptography.md#weak-algorithms
++   term autorizzazione
+
+=   link  /doc/soundness/modules/cryptography.md#weak-algorithms
+-   definition
++   definition
+
+-       A [contextual value] which must be imported before a weak or deprecated algorithm, such as
+-       SHA-1, can be used, so that a codebase's acceptance of it is one import, which can be
+-       searched for.
++       Un [valore contestuale] che deve essere importato prima che un algoritmo debole o
++       deprecato, come SHA-1, possa essere usato, così che l'accettazione di esso da parte di una
++       codebase sia un solo import, che può essere cercato.
+
+- define probate
++ define probate
+
+-   link  /doc/soundness/modules/concurrency.md#cancellation-in-both-directions
++   term successione
+
+=   link  /doc/soundness/modules/concurrency.md#cancellation-in-both-directions
+-   definition
++   definition
+
+-       The [contextual value] which decides what happens to a child task that is still running
+-       when the body of its parent completes: whether it is canceled, waited for, or treated as
+-       an error.
++       Il [valore contestuale] che decide che cosa accade a un task figlio ancora in esecuzione
++       quando il corpo del suo genitore termina: se viene annullato, atteso, o trattato come un
++       errore.
+
+- define provision
++ define provision
+
+-   link  /doc/soundness/modules/fonts.md#providing-a-typeface
++   term fornitura
+
+=   link  /doc/soundness/modules/fonts.md#providing-a-typeface
+-   definition
++   definition
+
+-       A [given] instance of `Typesettable` for a [typeface] in a medium, which says how that
+-       medium obtains the font and which faces it can then set. A font of the typeface exists
+-       only where its provision is in scope.
++       Un'istanza [given] di `Typesettable` per un [carattere tipografico] in un mezzo, che dice
++       come quel mezzo ottiene il font e quali stili tipografici può poi comporre. Un font del
++       carattere tipografico esiste solo dove la sua fornitura è nell'ambito.
+
+- define raises
++ define raises
+
+= define raises
+-   link  /doc/soundness/modules/errors.md#declaring-that-code-can-fail
++   term raises
+
+= define raises
+=   link  /doc/soundness/modules/errors.md#declaring-that-code-can-fail
+-   definition
++   definition
+
+-       The infix type in a return type, as in `Text raises ParseError`, which declares that a
+-       method can fail with that error. It requires a [tactic] for the error from the caller.
++       Il tipo infisso in un tipo di ritorno, come in `Text raises ParseError`, che dichiara che
++       un metodo può fallire con quell'errore. Richiede al chiamante una [tattica] per l'errore.
+
+- define reason
++ define reason
+
+-   link  /doc/soundness/modules/errors.md#defining-an-error
++   term motivo
+
+=   link  /doc/soundness/modules/errors.md#defining-an-error
+-   definition
++   definition
+
+-       The part of an error which says why it happened, usually a case of an [enumeration], such
+-       as `Json.Error.Reason.Absent`, so that code can tell one cause from another without
+-       reading a message.
++       La parte di un errore che dice perché è avvenuto, di solito un caso di un'[enumerazione],
++       come `Json.Error.Reason.Absent`, così che il codice possa distinguere una causa da un'altra
++       senza leggere un messaggio.
+
+- define receiver
++ define receiver
+
+= define receiver
++   term ricevente
+
+= define receiver
+-   definition
++   definition
+
+-       The value on which a method is called, such as `x` in `x.f(y)`; also, in a protocol, the
+-       party which receives a message.
++       Il valore su cui un metodo è chiamato, come `x` in `x.f(y)`; inoltre, in un protocollo, la
++       parte che riceve un messaggio.
+
+- define remote
++ define remote
+
+-   link  /doc/soundness/modules/git.md#remotes-configuration-notes-and-the-reflog
++   term remote
+
+=   link  /doc/soundness/modules/git.md#remotes-configuration-notes-and-the-reflog
+-   definition
++   definition
+
+-       Another copy of a Git repository, named in the local one, such as `origin`, which commits
+-       are fetched from and pushed to.
++       Un'altra copia di un repository Git, nominata in quello locale, come `origin`, da cui si
++       scaricano i commit e verso cui li si invia.
+
+- define runner
++ define runner
+
+= define runner
++   term runner
+
+= define runner
+-   definition
++   definition
+
+-       A program or value which runs code supplied by another, such as a test runner which runs
+-       the tests of a suite, or the launcher which runs as the client of a daemon.
++       Un programma o un valore che esegue codice fornito da un altro, come un test runner che
++       esegue i test di una suite, o il launcher che gira come client di un demone.
+
+- define runtime
++ define runtime
+
+= define runtime
++   term runtime
++   keyword  tempo di esecuzione
+
+= define runtime
+-   definition
++   definition
+
+-       While the program is running. A runtime error is one that the compiler could not rule
+-       out, and which is reported through a [tactic] when it happens.
++       Mentre il programma è in esecuzione. Un errore a runtime è un errore che il compilatore non
++       ha potuto escludere, e che viene segnalato attraverso una [tattica] quando avviene.
+
+- define scratch
++ define scratch
+
+-   link  /doc/soundness/modules/filesystem.md#creating-as-a-scope
++   term temporaneo
+
+=   link  /doc/soundness/modules/filesystem.md#creating-as-a-scope
+-   definition
++   definition
+
+-       Describes a file or directory which is created for the duration of a scope, and removed
+-       when the scope ends, whether it succeeds or fails, as for a throwaway index or a test
+-       fixture.
++       Descrive un file o una directory che viene creato per la durata di un ambito, e rimosso
++       quando l'ambito termina, che abbia successo o fallisca, come per un indice usa e getta o
++       una fixture di test.
+
+- define scrutinee
++ define scrutinee
+
+= define scrutinee
++   term  valore esaminato
+
+= define scrutinee
+-   definition
++   definition
+
+-       The value being examined by a `match` expression or an extractor, which the pattern of
+-       each case is tested against.
++       Il valore esaminato da un'espressione `match` o da un estrattore, con cui viene confrontato
++       il pattern di ciascun caso.
+
+- define seam
++ define seam
+
+-   link  /doc/philosophy/decoupling.md
++   term giuntura
+
+=   link  /doc/philosophy/decoupling.md
+-   definition
++   definition
+
+-       The narrow point where one part of a system meets another which can be replaced, such as
+-       the few primitive operations through which a library reaches the platform beneath it. A
+-       different platform is supported by implementing the seam alone.
++       Il punto stretto in cui una parte di un sistema ne incontra un'altra che può essere
++       sostituita, come le poche operazioni primitive attraverso cui una libreria raggiunge la
++       piattaforma sottostante. Una piattaforma diversa si supporta implementando la sola
++       giuntura.
+
+- define session
++ define session
+
+= define session
++   term sessione
+
+= define session
+-   definition
++   definition
+
+-       A scope which opens a resource, such as a connection, lends it to the code inside the
+-       scope, and closes it when the scope ends.
++       Un ambito che apre una risorsa, come una connessione, la presta al codice all'interno
++       dell'ambito, e la chiude quando l'ambito termina.
+
+- define setter
++ define setter
+
+= define setter
+-   link  /doc/soundness/modules/optics.md#lenses-as-values
++   term setter
+
+= define setter
+=   link  /doc/soundness/modules/optics.md#lenses-as-values
+-   definition
++   definition
+
+-       A function or method which replaces one part of a value, such as a field. For an
+-       [immutable] value it returns a new value with that part replaced. Paired with a [getter],
+-       it makes a lens.
++       Una funzione o un metodo che sostituisce una parte di un valore, come un campo. Per un
++       valore [immutabile] restituisce un nuovo valore con quella parte sostituita. Abbinato a un
++       [getter], forma una lente.
+
+- define  singleton type
++ define  singleton type
+
+= define  singleton type
++   term  tipo singleton
+
+= define  singleton type
+-   definition
++   definition
+
+-       The type of exactly one value, such as the type of a particular [enumeration] case. A
+-       parameter of singleton type must be given a value the compiler can identify, not one
+-       computed at [runtime].
++       Il tipo di esattamente un valore, come il tipo di un particolare caso di un'[enumerazione].
++       A un parametro di tipo singleton va dato un valore che il compilatore può identificare, non
++       uno calcolato a [runtime].
+
+- define sink
++ define sink
+
+-   link  /doc/soundness/modules/streams.md#writing-to-a-sink
++   term sink
+
+=   link  /doc/soundness/modules/streams.md#writing-to-a-sink
+-   definition
++   definition
+
+-       A destination which a stream of data is written to, such as a file, a socket or the input
+-       of a process; the counterpart of a source. A log sink is where a logger writes its events.
++       Una destinazione su cui viene scritto uno stream di dati, come un file, un socket o l'input
++       di un processo; la controparte di una sorgente. Un sink di log è dove un logger scrive i
++       suoi eventi.
+
+- define span
++ define span
+
+= define span
++   term tratto
+
+= define span
+-   definition
++   definition
+
+-       A contiguous stretch of something, given by where it starts and where it ends: a fragment
+-       of inline code in Markdown, a cell extending over several columns, or a range of a
+-       sequence.
++       Una porzione contigua di qualcosa, data da dove inizia e dove finisce: un frammento di
++       codice in linea in Markdown, una cella che si estende su più colonne, o un intervallo di
++       una sequenza.
+
+- define  stack frame
++ define  stack frame
+
+-   link  /doc/soundness/modules/stack-traces.md#resolving-frames-to-their-source
++   term  stack frame
+
+=   link  /doc/soundness/modules/stack-traces.md#resolving-frames-to-their-source
+-   definition
++   definition
+
+-       One entry of a [stack trace]: a method which was executing, with its class, and the file
+-       and line it had reached.
++       Una voce di uno [stack trace]: un metodo che era in esecuzione, con la sua classe, e il
++       file e la riga che aveva raggiunto.
+
+- define  stack trace
++ define  stack trace
+
+-   link  /doc/soundness/modules/stack-traces.md
++   term  stack trace
+
+=   link  /doc/soundness/modules/stack-traces.md
+-   definition
++   definition
+
+-       The list of method calls which were in progress at one moment, innermost first, as
+-       recorded when an exception or error is created. Each entry is a [stack frame].
++       L'elenco delle chiamate di metodo che erano in corso in un dato momento, dalla più interna,
++       come viene registrato quando un'eccezione o un errore viene creato. Ogni voce è uno [stack
++       frame].
+
+- define staging
++ define staging
+
+-   link  /doc/soundness/modules/staging.md
++   term staging
+
+=   link  /doc/soundness/modules/staging.md
+-   definition
++   definition
+
+-       Running a program in stages, where code quoted as `'{…}` in one stage is compiled and run
+-       in a later one. Soundness generalizes it, so that quoted code can run in another
+-       environment, such as a fresh JVM, and return its result.
++       Eseguire un programma per stadi, dove il codice quotato come `'{…}` in uno stadio viene
++       compilato ed eseguito in uno successivo. Soundness lo generalizza, così che il codice
++       quotato possa essere eseguito in un altro ambiente, come una JVM nuova, e restituire il suo
++       risultato.
+
+- define strand
++ define strand
+
+-   link  /doc/soundness/modules/concurrency.md#suspension-as-an-effect
++   term trefolo
+
+=   link  /doc/soundness/modules/concurrency.md#suspension-as-an-effect
+-   definition
++   definition
+
+-       The unit of execution beneath a task: an abstraction of a thread with the four operations
+-       which suspension needs, which are interrupt, join, park and unpark. A supervisor supplies
+-       strands, so a scheduler which is not built on threads can be plugged in.
++       L'unità di esecuzione sotto un task: un'astrazione di un thread con le quattro operazioni
++       di cui la sospensione ha bisogno, che sono interrupt, join, park e unpark. Un supervisore
++       fornisce i trefoli, così uno scheduler che non è costruito sui thread può essere innestato.
+
+- define strategy
++ define strategy
+
+-   link  /doc/soundness/modules/errors.md#choosing-a-strategy
+-   keyword  error handling
++   term strategia
++   keyword  gestione degli errori
+
+=   keyword  error handling
+-   definition
++   definition
+
+-       A choice, in scope, of what happens when an operation fails: `throwUnsafely` throws an
+-       exception, `safely` gives `Unset`, `capture` returns the error. A strategy supplies the
+-       [tactic] a fallible method asks for.
++       Una scelta, nell'ambito, di che cosa accade quando un'operazione fallisce: `throwUnsafely`
++       lancia un'eccezione, `safely` dà `Unset`, `capture` restituisce l'errore. Una strategia
++       fornisce la [tattica] che un metodo fallibile richiede.
+
+- define summon
++ define summon
+
+= define summon
++   term evocare
+
+= define summon
+-   definition
++   definition
+
+-       To ask the compiler for the [contextual value] of a type which is in scope, by writing
+-       `summon[T]`, instead of receiving it as a parameter.
++       Chiedere al compilatore il [valore contestuale] di un tipo che è nell'ambito, scrivendo
++       `summon[T]`, invece di riceverlo come parametro.
+
+- define swatch
++ define swatch
+
+= define swatch
++   term  campione di colore
+
+= define swatch
+-   definition
++   definition
+
+-       A small sample of a color, such as the square beside the name of a series in the legend of
+-       a chart.
++       Un piccolo campione di un colore, come il quadrato accanto al nome di una serie nella
++       legenda di un grafico.
+
+- define tactic
++ define tactic
+
+= define tactic
+-   link  /doc/soundness/modules/errors.md#declaring-that-code-can-fail
++   term tattica
+
+= define tactic
+=   link  /doc/soundness/modules/errors.md#declaring-that-code-can-fail
+-   definition
++   definition
+
+-       A [contextual value] of type `Tactic[E]` which a method needs in order to report an
+-       error of type `E`. Whoever provides the tactic decides how the failure is handled.
++       Un [valore contestuale] di tipo `Tactic[E]` di cui un metodo ha bisogno per segnalare un
++       errore di tipo `E`. Chi fornisce la tattica decide come viene gestito il fallimento.
+
+- define tag
++ define tag
+
+= define tag
++   term tag
+
+= define tag
+-   definition
++   definition
+
+-       A short marker attached to a value to say what kind of value it is or what it is called,
+-       such as the name of an HTML element, the type of a YAML node or of an ASN.1 value, or the
+-       name given to a Git commit.
++       Un breve contrassegno attaccato a un valore per dire che tipo di valore è o come si chiama,
++       come il nome di un elemento HTML, il tipo di un nodo YAML o di un valore ASN.1, o il nome
++       dato a un commit Git.
+
+- define  tagged union
++ define  tagged union
+
+= define  tagged union
++   term  unione etichettata
+
+= define  tagged union
+-   definition
++   definition
+
+-       A type whose values are each one of several cases, with a [tag] saying which case it is,
+-       such as a sealed trait or an enumeration, or a JSON object with a field naming its case.
++       Un tipo i cui valori sono ciascuno uno fra più casi, con un [tag] che dice di quale caso si
++       tratta, come un sealed trait o un'enumerazione, o un oggetto JSON con un campo che nomina
++       il suo caso.
+
+- define  text wrapping
++ define  text wrapping
+
+= define  text wrapping
++   term  ritorno a capo automatico
+
+= define  text wrapping
+-   definition
++   definition
+
+-       Breaking text into lines which fit a given width, at spaces or at permitted hyphenation
+-       points, as when text is set in a terminal or a table.
++       Spezzare il testo in righe che rientrano in una data larghezza, in corrispondenza degli
++       spazi o dei punti di sillabazione consentiti, come quando il testo è composto in un
++       terminale o in una tabella.
+
+- define tick
++ define tick
+
+-   link  /doc/soundness/modules/charts.md#style
++   term tacca
+
+=   link  /doc/soundness/modules/charts.md#style
+-   definition
++   definition
+
+-       A short mark on the axis of a chart at a regular value, usually with a label which gives
+-       that value.
++       Un breve segno sull'asse di un grafico in corrispondenza di un valore regolare, di solito
++       con un'etichetta che dà quel valore.
+
+- define timeline
++ define timeline
+
+-   link  /doc/soundness/modules/time.md
++   term  scala temporale
+
+=   link  /doc/soundness/modules/time.md
+-   definition
++   definition
+
+-       A physical scale of time, such as Unix time or TAI, on which an instant is placed. The
+-       type of an instant names its timeline, as in `Instant over Unix`.
++       Una scala fisica del tempo, come il tempo Unix o il TAI, su cui è collocato un istante. Il
++       tipo di un istante nomina la sua scala temporale, come in `Instant over Unix`.
+
+- define timespan
++ define timespan
+
+-   link  /doc/soundness/modules/time.md#durations-and-timespans
++   term  durata di calendario
+
+=   link  /doc/soundness/modules/time.md#durations-and-timespans
+-   definition
++   definition
+
+-       A quantity of calendar time, in years, months, weeks, days, hours and minutes, whose
+-       length in seconds depends on when it is applied. A `Duration`, by contrast, is a fixed
+-       number of seconds.
++       Una quantità di tempo di calendario, in anni, mesi, settimane, giorni, ore e minuti, la cui
++       lunghezza in secondi dipende da quando viene applicata. Una `Duration`, invece, è un numero
++       fisso di secondi.
+
+- define tokenizer
++ define tokenizer
+
+= define tokenizer
++   term tokenizer
+
+= define tokenizer
+-   definition
++   definition
+
+-       The first stage of parsing, which splits source text into tokens, such as keywords,
+-       identifiers, literals and punctuation, before their structure is analyzed.
++       Il primo stadio del parsing, che divide il testo sorgente in token, come parole chiave,
++       identificatori, letterali e punteggiatura, prima che la loro struttura venga analizzata.
+
+- define toolchain
++ define toolchain
+
+-   link  /doc/soundness/modules/compiler.md
++   term toolchain
+
+=   link  /doc/soundness/modules/compiler.md
+-   definition
++   definition
+
+-       The set of tools which together turn source code into something which can run, such as a
+-       compiler, a linker and a packager, with the versions and settings they are run with.
++       L'insieme degli strumenti che insieme trasformano il codice sorgente in qualcosa che può
++       essere eseguito, come un compilatore, un linker e un packager, con le versioni e le
++       impostazioni con cui vengono eseguiti.
+
+- define trailer
++ define trailer
+
+= define trailer
++   term trailer
+
+= define trailer
+-   definition
++   definition
+
+-       Data which comes after the main content of a message or file, rather than before it, such
+-       as the HTTP trailers sent after the body of a response, or the structure at the end of a
+-       ZIP archive or a PDF file.
++       Dati che vengono dopo il contenuto principale di un messaggio o di un file, anziché prima,
++       come i trailer HTTP inviati dopo il corpo di una risposta, o la struttura alla fine di un
++       archivio ZIP o di un file PDF.
+
+- define typeclass
++ define typeclass
+
+-   link  /doc/soundness/modules/derivation.md#products-sums-and-typeclasses
++   term typeclass
++   keyword  classe di tipi
+
+=   link  /doc/soundness/modules/derivation.md#products-sums-and-typeclasses
+-   definition
++   definition
+
+-       A trait describing an ability a type may have, such as being shown, encoded or
+-       compared, with an instance for each type that has it. An instance is found as a
+-       [contextual value], so a type gains an ability without being modified. `Color is
+-       Showable` is the instance making `Color` showable.
++       Un trait che descrive una capacità che un tipo può avere, come essere mostrato, codificato
++       o confrontato, con un'istanza per ogni tipo che la possiede. Un'istanza viene trovata come
++       [valore contestuale], così un tipo acquisisce una capacità senza essere modificato. `Color
++       is Showable` è l'istanza che rende `Color` mostrabile.
+
+- define typeface
++ define typeface
+
+= define typeface
+-   link  /doc/soundness/modules/fonts.md#typefaces-and-faces
++   term  carattere tipografico
+
+= define typeface
+=   link  /doc/soundness/modules/fonts.md#typefaces-and-faces
+-   definition
++   definition
+
+-       A font family, such as Inter, named by a `Typeface`, independently of any weight, slant or
+-       file. A [face] chooses one style from it.
++       Una famiglia di font, come Inter, nominata da un `Typeface`, indipendentemente da qualsiasi
++       peso, inclinazione o file. Uno [stile tipografico] ne sceglie uno stile.
+
+- define variant
++ define variant
+
+= define variant
++   term variante
+
+= define variant
+-   definition
++   definition
+
+-       One of several alternative forms of the same thing, such as the URL-safe alphabet of
+-       Base64, a dialect of delimited text, or one alternative of a TEL select.
++       Una fra più forme alternative della stessa cosa, come l'alfabeto URL-safe di Base64, un
++       dialetto di testo delimitato, o un'alternativa di un select TEL.
+
+- define viewport
++ define viewport
+
+= define viewport
++   term viewport
+
+= define viewport
+-   definition
++   definition
+
+-       The rectangle in which something is shown, such as the visible area of a browser window,
+-       which CSS units like `Vw` are fractions of, or the area an SVG image is drawn in.
++       Il rettangolo in cui qualcosa viene mostrato, come l'area visibile di una finestra del
++       browser, di cui le unità CSS come `Vw` sono frazioni, o l'area in cui viene disegnata
++       un'immagine SVG.
+
+- define  wire form
++ define  wire form
+
+= define  wire form
++   term  forma di trasmissione
+
+= define  wire form
+-   definition
++   definition
+
+-       The form a value takes when it is sent between programs, in a protocol or a serialized
+-       format, as distinct from its form in Scala: the name a field is sent under, the code an
+-       error is sent as, or the bytes of its encoding.
++       La forma che un valore assume quando viene inviato tra programmi, in un protocollo o in un
++       formato serializzato, distinta dalla sua forma in Scala: il nome con cui un campo viene
++       inviato, il codice con cui un errore viene inviato, o i byte della sua codifica.

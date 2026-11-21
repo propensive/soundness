@@ -1,0 +1,80 @@
+orthant 1 language
+
+- # Syntax and Formatting
++ # Sintaxis y formato
+
+- This standard has moved. The syntactic and whitespace conventions Soundness
+- follows are now **Consequent Style**, maintained in its own repository
+- together with the compiler plugin that checks them:
++ Esta norma se ha trasladado. Las convenciones sintácticas y de espaciado que sigue Soundness son
++ ahora el **Consequent Style**, mantenido en su propio repositorio junto con el plugin del
++ compilador que las comprueba:
+
+- - [The standard](https://github.com/propensive/consequent/blob/main/doc/consequent-style.md)
+- - [Rule reference](https://github.com/propensive/consequent/tree/main/doc/rules)
++ - [La norma](https://github.com/propensive/consequent/blob/main/doc/consequent-style.md)
++ - [Referencia de reglas](https://github.com/propensive/consequent/tree/main/doc/rules)
+
+- Nothing about the conventions changed in the move; the document was
+- generalised so that it governs any project that adopts it, rather than
+- Soundness specifically. A project fixes two parameters — the exact text of
+- its licence header (and hence its length in lines) and, optionally, the name
+- of its umbrella re-export package — and every other convention applies
+- unchanged. Both are supplied to the checker as options; see the
+- [Consequent README](https://github.com/propensive/consequent#options).
++ Con el traslado no cambió nada de las convenciones; el documento se generalizó para que rija
++ cualquier proyecto que lo adopte, y no Soundness en particular. Un proyecto fija dos parámetros
++ —el texto exacto de su cabecera de licencia (y, por tanto, su longitud en líneas) y, de forma
++ opcional, el nombre de su paquete paraguas de reexportación— y todas las demás convenciones se
++ aplican sin cambios. Ambos se pasan al comprobador como opciones; véase el
++ [README de Consequent](https://github.com/propensive/consequent#options).
+
+- ## Rule identifiers
++ ## Identificadores de reglas
+
+- Rules were renumbered at the same time. Where this project's docs and history
+- refer to a rule as `SN-nnn`, the equivalent Consequent rule has an identifier
+- of the form `<principle><number>` — the letter naming the principle it derives
+- from, then its number within that principle:
++ Las reglas se renumeraron al mismo tiempo. Donde la documentación y el historial de este proyecto
++ se refieren a una regla como `SN-nnn`, la regla equivalente de Consequent tiene un identificador
++ de la forma `<principle><number>`: la letra que nombra el principio del que deriva y después su
++ número dentro de ese principio:
+
+- ```tabular
++ ```tabular
+
+- column  Was
+- column  Now
+- row  `SN-799`  `F1` — licence-header block comment
+- row  `SN-230`  `F4` — line length
+- row  `SN-302`  `L1` — top-level import rules
+- row  `SN-742`  `L4` — umbrella re-exports
++ column  Antes
++ column  Ahora
++ row  `SN-799`  `F1` — comentario de bloque de la cabecera de licencia
++ row  `SN-230`  `F4` — longitud de línea
++ row  `SN-302`  `L1` — reglas de importación de nivel superior
++ row  `SN-742`  `L4` — reexportaciones del paraguas
+
+- ```
++ ```
+
+- The full table is in the
+- [rule reference](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers).
+- Each retired `SN-nnn` page under [`doc/errors/`](../errors/) also names its
+- replacement, so an older reference still resolves.
++ La tabla completa está en la
++ [referencia de reglas](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers).
++ Cada página retirada `SN-nnn` en [`doc/errors/`](../errors/) nombra también su sustituta, así que
++ una referencia antigua sigue resolviéndose.
+
+- ## The checker
++ ## El comprobador
+
+- The plugin that enforces this standard was `lib/decorum` in this repository.
+- It is now published separately as `dev.propensive:consequent_<scala-version>`
+- and applied through `consequentToolchain` in `build.mill`.
++ El plugin que hace cumplir esta norma era `lib/decorum` en este repositorio. Ahora se publica por
++ separado como `dev.propensive:consequent_<scala-version>` y se aplica mediante
++ `consequentToolchain` en `build.mill`.

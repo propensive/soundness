@@ -1,0 +1,844 @@
+orthant 1 language
+
+- ## Annotations
++ ## Аннотации
+
+- ### About
++ ### Обзор
+
+- Scala's
+- [static annotations](https://docs.scala-lang.org/scala3/reference/other-new-features/annotations.html)
+- attach metadata to types and fields. The language offers no ordinary way to read them back, and
+- doing so normally means writing a macro.
++ [Статические аннотации](https://docs.scala-lang.org/scala3/reference/other-new-features/annotations.html)
++ Scala прикрепляют метаданные к типам и полям. Язык не даёт обычного способа прочитать их
++ обратно, и для этого, как правило, приходится писать макрос.
+
+- Here they are read through a [typeclass]. Summoning `Annotated` for a type gives the annotations
+- on it, on its fields, or on the variants of a sealed hierarchy. The answer is resolved at
+- [compiletime], with no reflection at [runtime], and the consumer writes no macro.
++ Здесь они читаются через [класс типов]. Призыв `Annotated` для типа даёт аннотации на нём, на
++ его полях или на вариантах запечатанной иерархии. Ответ вычисляется во
++ [время компиляции][время компиляции], без рефлексии во [время выполнения][время выполнения], и
++ потребитель не пишет никакого макроса.
+
+- The `@name` annotation, which renames fields in every serialization format, is defined here and
+- read by this means.
++ Аннотация `@name`, которая переименовывает поля во всех форматах сериализации, определена здесь
++ и читается этим способом.
+
+- ### On annotations
++ ### Об аннотациях
+
+- An annotation is where some metadata belongs. A wire name sits on the field it renames, and a
+- marker on the case it distinguishes. The annotation is beside the thing it describes, and
+- travels with it.
++ Аннотация — это место, где находятся некоторые метаданные. Имя для передачи стоит на поле,
++ которое оно переименовывает, а маркер — на кейсе, который он выделяет. Аннотация находится рядом
++ с тем, что она описывает, и перемещается вместе с ним.
+
+- Annotations are underused in Scala because they are hard to read. Runtime reflection is slow and
+- untyped, and access at compiletime needs expertise with quotes and splices.
++ Аннотации в Scala используются недостаточно, потому что их трудно читать. Рефлексия во время
++ выполнения медленна и нетипизирована, а доступ во время компиляции требует опыта работы с
++ цитатами и сплайсами.
+
+- The `Annotated` typeclass hides that machinery. A request says what is wanted: which type of
+- annotation, on which field, of which type. The compiler supplies the answer as a value. A
+- misspelled field name or a wrong type is a compile error, which is
+- [safety by construction](../../philosophy/safety-by-construction.md).
++ Класс типов `Annotated` скрывает этот механизм. Запрос говорит, что нужно: какой тип аннотации,
++ на каком поле, какого типа. Компилятор предоставляет ответ в виде значения. Опечатка в имени поля
++ или неверный тип — ошибка компиляции, и это
++ [безопасность по построению](../../philosophy/safety-by-construction.md).
+
+- Everything comes from the `soundness` package, and the second import lets the samples print
+- their results:
++ Всё берётся из пакета `soundness`, а второй импорт позволяет примерам печатать свои результаты:
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Reading annotations
++ ### Чтение аннотаций
+
+- An annotation is an ordinary case class which extends `StaticAnnotation`. The samples use three
+- of them, and some definitions which carry them:
++ Аннотация — это обычный case-класс, расширяющий `StaticAnnotation`. В примерах используются три
++ таких аннотации и несколько определений, которые их несут:
+
+= of them, and some definitions which carry them:
+=
+- ```scala
++ ```scala
+
+- final case class ident() extends StaticAnnotation
++ final case class ident() extends StaticAnnotation
+
+- final case class primary() extends StaticAnnotation
++ final case class primary() extends StaticAnnotation
+
+- final case class number(number: Int) extends StaticAnnotation
++ final case class number(number: Int) extends StaticAnnotation
+
+- case class Person(name: Text, @ident email: Text)
++ case class Person(name: Text, @ident email: Text)
+
+- case class Speech(speaker: Person, @ident @primary line: Long)
++ case class Speech(speaker: Person, @ident @primary line: Long)
+
+- @number(10)
++ @number(10)
+
+- case class Play(title: Text)
++ case class Play(title: Text)
+
+= case class Play(title: Text)
+- ```
++ ```
+
+- The annotations of a field are summoned by naming the type and the field:
++ Аннотации поля призываются указанием типа и поля:
+
+= The annotations of a field are summoned by naming the type and the field:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The annotations of a field are summoned by naming the type and the field:
+=
+= ```scala fuel
+- run
++ run
+
+= The annotations of a field are summoned by naming the type and the field:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Speech is Annotated on "line"]().inspect)
++ Out.println(summon[Speech is Annotated on "line"]().inspect)
+
+= Out.println(summon[Speech is Annotated on "line"]().inspect)
+- ```
++ ```
+
+- `by` narrows the query to one type of annotation:
++ `by` сужает запрос до одного типа аннотаций:
+
+= `by` narrows the query to one type of annotation:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `by` narrows the query to one type of annotation:
+=
+= ```scala fuel
+- run
++ run
+
+= `by` narrows the query to one type of annotation:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Speech is Annotated by ident on "line"]().inspect)
++ Out.println(summon[Speech is Annotated by ident on "line"]().inspect)
+
+= Out.println(summon[Speech is Annotated by ident on "line"]().inspect)
+- ```
++ ```
+
+- The plain form gives the annotations on the type itself:
++ Простая форма даёт аннотации на самом типе:
+
+= The plain form gives the annotations on the type itself:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The plain form gives the annotations on the type itself:
+=
+= ```scala fuel
+- run
++ run
+
+= The plain form gives the annotations on the type itself:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Play is Annotated]().inspect)
++ Out.println(summon[Play is Annotated]().inspect)
+
+= Out.println(summon[Play is Annotated]().inspect)
+- ```
++ ```
+
+- `fields` gives every annotated field at once. A field with no annotation of the requested type
+- is absent from the map:
++ `fields` даёт сразу все аннотированные поля. Поле без аннотации запрошенного типа в отображении
++ отсутствует:
+
+= is absent from the map:
+=
+- ```scala fuel
++ ```scala fuel
+
+= is absent from the map:
+=
+= ```scala fuel
+- run
++ run
+
+= is absent from the map:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Speech is Annotated by ident].fields.inspect)
++ Out.println(summon[Speech is Annotated by ident].fields.inspect)
+
+= Out.println(summon[Speech is Annotated by ident].fields.inspect)
+- ```
++ ```
+
+- The answer is computed as the code compiles, and is a constant in the compiled program. A field
+- with no annotations has an empty set, and so does a name which is not a field at all:
++ Ответ вычисляется при компиляции кода и является константой в скомпилированной программе. У поля
++ без аннотаций пустое множество, как и у имени, которое вообще не является полем:
+
+= with no annotations has an empty set, and so does a name which is not a field at all:
+=
+- ```scala fuel
++ ```scala fuel
+
+= with no annotations has an empty set, and so does a name which is not a field at all:
+=
+= ```scala fuel
+- run
++ run
+
+= with no annotations has an empty set, and so does a name which is not a field at all:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Speech is Annotated on "speaker"]().inspect)
++ Out.println(summon[Speech is Annotated on "speaker"]().inspect)
+
+- Out.println(summon[Speech is Annotated on "scene"]().inspect)
++ Out.println(summon[Speech is Annotated on "scene"]().inspect)
+
+= Out.println(summon[Speech is Annotated on "scene"]().inspect)
+- ```
++ ```
+
+- ### Finding the annotated field
++ ### Поиск аннотированного поля
+
+- Often the question runs the other way: *which* field carries the annotation? When exactly one
+- field does, the summoned instance knows its name:
++ Часто вопрос ставится наоборот: *какое* поле несёт аннотацию? Когда такое поле ровно одно,
++ призванный экземпляр знает его имя:
+
+= field does, the summoned instance knows its name:
+=
+- ```scala fuel
++ ```scala fuel
+
+= field does, the summoned instance knows its name:
+=
+= ```scala fuel
+- run
++ run
+
+= field does, the summoned instance knows its name:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Speech is Annotated by primary].field)
++ Out.println(summon[Speech is Annotated by primary].field)
+
+= Out.println(summon[Speech is Annotated by primary].field)
+- ```
++ ```
+
+- Finding the field is usually the first step towards reading or writing it, so the instance also
+- offers a [lens](optics.md#lenses-as-values) onto it:
++ Поиск поля обычно — первый шаг к его чтению или записи, поэтому экземпляр предлагает также
++ [линзу](optics.md#lenses-as-values) на него:
+
+= offers a [lens](optics.md#lenses-as-values) onto it:
+=
+- ```scala
++ ```scala
+
+- val person = Person(t"Romeo", t"romeo@example.com")
++ val person = Person(t"Romeo", t"romeo@example.com")
+
+= val person = Person(t"Romeo", t"romeo@example.com")
+- ```
++ ```
+
+= val person = Person(t"Romeo", t"romeo@example.com")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val person = Person(t"Romeo", t"romeo@example.com")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val person = Person(t"Romeo", t"romeo@example.com")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val identity = summon[Person is Annotated by ident]
++ val identity = summon[Person is Annotated by ident]
+
+- Out.println(identity.lens(person))
++ Out.println(identity.lens(person))
+
+- Out.println(identity.lens.update(person, t"juliet@example.com").inspect)
++ Out.println(identity.lens.update(person, t"juliet@example.com").inspect)
+
+= Out.println(identity.lens.update(person, t"juliet@example.com").inspect)
+- ```
++ ```
+
+- This is how a serialization library finds "the field marked as the identifier" without being
+- told its name. If more than one field carries the annotation, `field` is not available, because
+- the type of the instance records whether the match was unique.
++ Так библиотека сериализации находит «поле, помеченное как идентификатор», без того чтобы ей
++ сообщали его имя. Если аннотацию несут несколько полей, `field` недоступен, потому что тип
++ экземпляра фиксирует, было ли совпадение единственным.
+
+- ### Variants of a sealed type
++ ### Варианты запечатанного типа
+
+- The cases of an [enumeration] or a sealed trait are queried with `under`. The result maps the
+- name of each variant to its annotations:
++ Кейсы [перечисления][перечисление] или запечатанного трейта запрашиваются с помощью `under`.
++ Результат отображает имя каждого варианта в его аннотации:
+
+= name of each variant to its annotations:
+=
+- ```scala
++ ```scala
+
+- sealed trait Colored
++ sealed trait Colored
+
+- @number(3)
++ @number(3)
+
+- case class Hsv(hue: Double, saturation: Double, @ident value: Double) extends Colored
++ case class Hsv(hue: Double, saturation: Double, @ident value: Double) extends Colored
+
+- @primary()
++ @primary()
+
+- case class Rgb(red: Int, green: Int, blue: Int) extends Colored
++ case class Rgb(red: Int, green: Int, blue: Int) extends Colored
+
+= case class Rgb(red: Int, green: Int, blue: Int) extends Colored
+- ```
++ ```
+
+= case class Rgb(red: Int, green: Int, blue: Int) extends Colored
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Rgb(red: Int, green: Int, blue: Int) extends Colored
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Rgb(red: Int, green: Int, blue: Int) extends Colored
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Annotated under Colored].subtypes.inspect)
++ Out.println(summon[Annotated under Colored].subtypes.inspect)
+
+= Out.println(summon[Annotated under Colored].subtypes.inspect)
+- ```
++ ```
+
+- These are the forms of query, and what each gives:
++ Вот формы запросов и то, что даёт каждая:
+
+= These are the forms of query, and what each gives:
+=
+- ```tabular
++ ```tabular
+
+- column  Query form
+- column  Member
+- column  Returns
+- row  `T is Annotated`  `apply()`  the annotations on the type `T`
+- row  `T is Annotated on "f"`  `apply()`  the annotations on the field `f`
+- row  `T is Annotated by A on "f"`  `apply()`  the annotations of type `A` on the field `f`
+- row  `T is Annotated by A`  `fields`  each field to its annotations of type `A`
+- row  `T is Annotated by A`, one field matching  `field`, `lens`  the field's name, and a lens onto it
+- row  `Annotated under T`  `subtypes`  each variant of `T` to its annotations
++ column  Форма запроса
++ column  Член
++ column  Возвращает
++ row  `T is Annotated`  `apply()`  аннотации на типе `T`
++ row  `T is Annotated on "f"`  `apply()`  аннотации на поле `f`
++ row  `T is Annotated by A on "f"`  `apply()`  аннотации типа `A` на поле `f`
++ row  `T is Annotated by A`  `fields`  каждое поле с его аннотациями типа `A`
++ row  `T is Annotated by A`, совпадает одно поле  `field`, `lens`  имя поля и линзу на него
++ row  `Annotated under T`  `subtypes`  каждый вариант `T` с его аннотациями
+
+= row  `Annotated under T`  `subtypes`  each variant of `T` to its annotations
+- ```
++ ```
+
+- ### Parameterized annotations
++ ### Параметризованные аннотации
+
+- An annotation may take a type argument, and a query can filter by it:
++ Аннотация может принимать аргумент типа, и запрос может фильтровать по нему:
+
+= An annotation may take a type argument, and a query can filter by it:
+=
+- ```scala
++ ```scala
+
+- final case class marker[topic](id: Int) extends StaticAnnotation
++ final case class marker[topic](id: Int) extends StaticAnnotation
+
+- case class Marked(@marker[Person](1) @marker[Play](2) one: Int, @marker[Play](3) two: Int)
++ case class Marked(@marker[Person](1) @marker[Play](2) one: Int, @marker[Play](3) two: Int)
+
+= case class Marked(@marker[Person](1) @marker[Play](2) one: Int, @marker[Play](3) two: Int)
+- ```
++ ```
+
+= case class Marked(@marker[Person](1) @marker[Play](2) one: Int, @marker[Play](3) two: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Marked(@marker[Person](1) @marker[Play](2) one: Int, @marker[Play](3) two: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Marked(@marker[Person](1) @marker[Play](2) one: Int, @marker[Play](3) two: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Marked is Annotated by marker[Person]].fields.inspect)
++ Out.println(summon[Marked is Annotated by marker[Person]].fields.inspect)
+
+- Out.println(summon[Marked is Annotated by marker[Play]].fields.inspect)
++ Out.println(summon[Marked is Annotated by marker[Play]].fields.inspect)
+
+= Out.println(summon[Marked is Annotated by marker[Play]].fields.inspect)
+- ```
++ ```
+
+- The field `two` carries a marker, but none for `Person`, so the first query gives it an empty
+- set.
++ Поле `two` несёт маркер, но не для `Person`, поэтому первый запрос даёт ему пустое множество.
+
+- A bare `@marker(1)` is inferred as `marker[Any]`. A query for `marker[Any]` sees it, and a query
+- for `marker[Person]` does not.
++ Голый `@marker(1)` выводится как `marker[Any]`. Запрос `marker[Any]` его видит, а запрос
++ `marker[Person]` — нет.
+
+- ### The `@name` annotation
++ ### Аннотация `@name`
+
+- The `@name` annotation is defined here, and honored by every serialization format. It renames a
+- field or a variant on the wire. Bare, it applies to all formats. With a type argument, it
+- applies to one:
++ Аннотация `@name` определена здесь, и её соблюдает каждый формат сериализации. Она
++ переименовывает поле или вариант при передаче. Без аргументов она применяется ко всем форматам.
++ С аргументом типа — к одному:
+
+= applies to one:
+=
+- ```scala
++ ```scala
+
+- case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
++ case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+
+= case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+- ```
++ ```
+
+- The [derivation] of a format reads these through `relabelling`. It maps each renamed field to
+- its serialized name, and a rename for one format overrides the bare default:
++ [Деривация][деривация] формата читает их через `relabelling`. Она отображает каждое
++ переименованное поле в его сериализованное имя, а переименование для одного формата
++ переопределяет общее значение по умолчанию:
+
+= its serialized name, and a rename for one format overrides the bare default:
+=
+- ```scala fuel
++ ```scala fuel
+
+= its serialized name, and a rename for one format overrides the bare default:
+=
+= ```scala fuel
+- run
++ run
+
+= its serialized name, and a rename for one format overrides the bare default:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(relabelling[Record, Json].inspect)
++ Out.println(relabelling[Record, Json].inspect)
+
+- Out.println(relabelling[Record, Xml].inspect)
++ Out.println(relabelling[Record, Xml].inspect)
+
+= Out.println(relabelling[Record, Xml].inspect)
+- ```
++ ```
+
+- That is why one annotation serves [JSON](json.md#renaming-fields), [XML](xml.md),
+- [YAML](yaml.md) and the rest alike.
++ Вот почему одна аннотация одинаково служит [JSON](json.md#renaming-fields), [XML](xml.md),
++ [YAML](yaml.md) и остальным.
+
+- Four functions read annotations for a derivation. In each, the map holds only the fields or
+- variants which carry the annotation in question:
++ Четыре функции читают аннотации для деривации. В каждой отображение содержит только те поля или
++ варианты, которые несут соответствующую аннотацию:
+
+= variants which carry the annotation in question:
+=
+- ```tabular
++ ```tabular
+
+- column  Function
+- column  Reads
+- column  Returns
+- row  `relabelling[T, F]`  `@name` on the fields of `T`  each renamed field to its name in `F`
+- row  `variantRelabelling[T, F]`  `@name` on the variants of `T`  each renamed variant to its name in `F`
+- row  `fieldAnnotations[T, A]`  annotations of type `A` on fields  each field to its set of `A`
+- row  `subtypeAnnotations[T, A]`  annotations of type `A` on variants  each variant to its set of `A`
++ column  Функция
++ column  Читает
++ column  Возвращает
++ row  `relabelling[T, F]`  `@name` на полях `T`  каждое переименованное поле с его именем в `F`
++ row  `variantRelabelling[T, F]`  `@name` на вариантах `T`  каждый переименованный вариант с его именем в `F`
++ row  `fieldAnnotations[T, A]`  аннотации типа `A` на полях  каждое поле с его множеством `A`
++ row  `subtypeAnnotations[T, A]`  аннотации типа `A` на вариантах  каждый вариант с его множеством `A`
+
+= row  `subtypeAnnotations[T, A]`  annotations of type `A` on variants  each variant to its set of `A`
+- ```
++ ```
+
+- The last two are the general forms behind the first two.
++ Последние две — общие формы, стоящие за первыми двумя.
+
+- ### Reaching fields by name
++ ### Доступ к полям по имени
+
+- The fields of a case class can also be reached by name at runtime. The mapping is generated as
+- the code compiles, and not by reflection.
++ К полям case-класса можно также обращаться по имени во время выполнения. Отображение
++ генерируется при компиляции кода, а не рефлексией.
+
+- A `Dereferenceable` gives the names of the fields, the value of one field by name, and the whole
+- record as a map. The instance is parameterized by the type which the fields yield. A record
+- whose fields are all `Int` dereferences to `Int`. Any record dereferences to `Any`, which covers
+- every field.
++ `Dereferenceable` даёт имена полей, значение одного поля по имени и всю запись в виде
++ отображения. Экземпляр параметризуется типом, который выдают поля. Запись, все поля которой
++ `Int`, разыменовывается в `Int`. Любая запись разыменовывается в `Any`, который покрывает каждое
++ поле.
+
+= every field.
+=
+- ```scala
++ ```scala
+
+- case class Letters(alpha: Int, beta: Int, gamma: Int)
++ case class Letters(alpha: Int, beta: Int, gamma: Int)
+
+- val letters = Letters(1, 2, 3)
++ val letters = Letters(1, 2, 3)
+
+- val fields = summon[Letters is Dereferenceable to Int]
++ val fields = summon[Letters is Dereferenceable to Int]
+
+= val fields = summon[Letters is Dereferenceable to Int]
+- ```
++ ```
+
+= val fields = summon[Letters is Dereferenceable to Int]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val fields = summon[Letters is Dereferenceable to Int]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val fields = summon[Letters is Dereferenceable to Int]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(fields.names(letters).inspect)
++ Out.println(fields.names(letters).inspect)
+
+- Out.println(fields.select(letters, t"beta").inspect)
++ Out.println(fields.select(letters, t"beta").inspect)
+
+- Out.println(fields.members(letters).inspect)
++ Out.println(fields.members(letters).inspect)
+
+= Out.println(fields.members(letters).inspect)
+- ```
++ ```
+
+- The names and members come from a map, and are not in the order of declaration.
++ Имена и члены берутся из отображения и идут не в порядке объявления.
+
+- `membersOfType` picks the values of one type out of any record. A generic renderer or a template
+- engine can use it to read the fields of a value without casting:
++ `membersOfType` выбирает значения одного типа из любой записи. Обобщённый отрисовщик или
++ шаблонизатор может использовать его, чтобы читать поля значения без приведения типов:
+
+= engine can use it to read the fields of a value without casting:
+=
+- ```scala fuel
++ ```scala fuel
+
+= engine can use it to read the fields of a value without casting:
+=
+= ```scala fuel
+- run
++ run
+
+= engine can use it to read the fields of a value without casting:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(letters.membersOfType[Int].inspect)
++ Out.println(letters.membersOfType[Int].inspect)
+
+= Out.println(letters.membersOfType[Int].inspect)
+- ```
++ ```
+
+- Each accessor is a [lens](optics.md), so a field found by name can be written as well as read.
+- `update` replaces the named field, and `modify` applies a function to it. Each gives a new
+- record, or `Unset` where the name is not a constructor parameter:
++ Каждый метод доступа — это [линза](optics.md), так что поле, найденное по имени, можно и
++ читать, и записывать. `update` заменяет названное поле, а `modify` применяет к нему функцию.
++ Каждый даёт новую запись или `Unset`, если имя не является параметром конструктора:
+
+= record, or `Unset` where the name is not a constructor parameter:
+=
+- ```scala fuel
++ ```scala fuel
+
+= record, or `Unset` where the name is not a constructor parameter:
+=
+= ```scala fuel
+- run
++ run
+
+= record, or `Unset` where the name is not a constructor parameter:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(fields.update(letters, t"beta", 20).inspect)
++ Out.println(fields.update(letters, t"beta", 20).inspect)
+
+- Out.println(fields.modify(letters, t"gamma")(_*10).inspect)
++ Out.println(fields.modify(letters, t"gamma")(_*10).inspect)
+
+- Out.println(fields.update(letters, t"epsilon", 5).inspect)
++ Out.println(fields.update(letters, t"epsilon", 5).inspect)
+
+= Out.println(fields.update(letters, t"epsilon", 5).inspect)
+- ```
++ ```
+
+- A field is writable only where its type accepts every value which the instance yields. The
+- fields of a record dereferenced `to Any` can be read, but not written, since an `Any` cannot be
+- put into a `Long`:
++ Поле доступно для записи, только если его тип принимает каждое значение, которое выдаёт
++ экземпляр. Поля записи, разыменованной `to Any`, можно читать, но не записывать, поскольку `Any`
++ нельзя поместить в `Long`:
+
+= put into a `Long`:
+=
+- ```scala
++ ```scala
+
+- val anything = summon[Speech is Dereferenceable to Any]
++ val anything = summon[Speech is Dereferenceable to Any]
+
+= val anything = summon[Speech is Dereferenceable to Any]
+- ```
++ ```
+
+= val anything = summon[Speech is Dereferenceable to Any]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val anything = summon[Speech is Dereferenceable to Any]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val anything = summon[Speech is Dereferenceable to Any]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(anything.select(Speech(person, 7L), t"line").toString.tt)
++ Out.println(anything.select(Speech(person, 7L), t"line").toString.tt)
+
+- Out.println(anything.lens(t"line").absent.inspect)
++ Out.println(anything.lens(t"line").absent.inspect)
+
+= Out.println(anything.lens(t"line").absent.inspect)
+- ```
++ ```
+
+- These are the members of a `Dereferenceable`, for a record of type `T` dereferenced `to R`:
++ Вот члены `Dereferenceable` для записи типа `T`, разыменованной `to R`:
+
+= These are the members of a `Dereferenceable`, for a record of type `T` dereferenced `to R`:
+=
+- ```tabular
++ ```tabular
+
+- column  Member
+- column  Returns
+- row  `names(record)`  the field names
+- row  `select(record, name)`  the named field's value, as an `R`
+- row  `members(record)`  each field name to its value
+- row  `lens(name)`  a lens onto the named field, or `Unset`
+- row  `update(record, name, value)`  a new `T` with the field replaced, or `Unset`
+- row  `modify(record, name)(lambda)`  a new `T` with the function applied to the field, or `Unset`
++ column  Член
++ column  Возвращает
++ row  `names(record)`  имена полей
++ row  `select(record, name)`  значение названного поля как `R`
++ row  `members(record)`  каждое имя поля с его значением
++ row  `lens(name)`  линзу на названное поле или `Unset`
++ row  `update(record, name, value)`  новый `T` с заменённым полем или `Unset`
++ row  `modify(record, name)(lambda)`  новый `T` с функцией, применённой к полю, или `Unset`
+
+= row  `modify(record, name)(lambda)`  a new `T` with the function applied to the field, or `Unset`
+- ```
++ ```
+
+- The mapping is a compiled table of accessors. Reaching a field costs a method call, and a name
+- which the type does not have is discovered where the table is built, not by a reflective lookup
+- which fails at runtime.
++ Отображение — это скомпилированная таблица методов доступа. Обращение к полю стоит одного вызова
++ метода, а имя, которого у типа нет, обнаруживается там, где строится таблица, а не рефлексивным
++ поиском, который завершается неудачей во время выполнения.
+
+- ### Related
++ ### Связанное
+
+- - [JSON](json.md#renaming-fields), [XML](xml.md), [YAML](yaml.md) and the other formats honor
++ - [JSON](json.md#renaming-fields), [XML](xml.md), [YAML](yaml.md) и другие форматы соблюдают
+
+-   `@name`.
++   `@name`.
+
+- - [Optics](optics.md) describes the lenses which the annotated field and the named fields are
+-   reached through.
+- - [Derivation](derivation.md) describes the generated typeclass instances which consult
+-   annotations.
+- - [Metaprogramming](metaprogramming.md) describes the macros which this typeclass makes
+-   unnecessary.
+- - [CBOR](cbor.md), [Protobuf](protobuf.md), [databases](database.md) and [MCP](mcp.md) read annotations on fields and methods.
++ - [Оптика](optics.md) описывает линзы, через которые достигаются аннотированное поле и поля по
++   имени.
++ - [Деривация](derivation.md) описывает сгенерированные экземпляры классов типов, которые
++   обращаются к аннотациям.
++ - [Метапрограммирование](metaprogramming.md) описывает макросы, которые этот класс типов делает
++   ненужными.
++ - [CBOR](cbor.md), [Protobuf](protobuf.md), [базы данных](database.md) и [MCP](mcp.md) читают
++   аннотации на полях и методах.

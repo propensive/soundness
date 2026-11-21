@@ -1,0 +1,803 @@
+orthant 1 language
+
+- ## Mathematics
++ ## 数学
+
+- ### About
++ ### 概要
+
+- Beyond ordinary [numbers](numbers.md), there are the structured values of mathematics:
++ 普通の[数](numbers.md)の先には、数学の構造を持った値がある。
+
+- - [complex numbers](https://en.wikipedia.org/wiki/Complex_number), whose real and imaginary
+-   parts may be of any suitably numeric type;
+- - [vectors](https://en.wikipedia.org/wiki/Euclidean_vector) and
+-   [matrices](https://en.wikipedia.org/wiki/Matrix_(mathematics)), whose dimensions are part of
+-   their types, so that a mismatch of dimensions does not compile;
+- - [permutations](https://en.wikipedia.org/wiki/Permutation), which are reversible
+-   rearrangements stored in a compact canonical form.
++ - [複素数](https://en.wikipedia.org/wiki/Complex_number)。実部と虚部は、適切な数値型であればどの型でもよい。
++ - [ベクトル](https://en.wikipedia.org/wiki/Euclidean_vector)と[行列](https://en.wikipedia.org/wiki/Matrix_(mathematics))。次元が型の一部なので、次元の不一致はコンパイルされない。
++ - [置換](https://en.wikipedia.org/wiki/Permutation)。可逆な並べ替えで、コンパクトな標準形で格納される。
+
+- All three compose with the rest of the arithmetic. A vector of lengths dotted with a vector of
+- lengths gives an area, and a complex number of [quantities](quantities.md) keeps its units,
+- because the operations are defined through the same
+- [arithmetic typeclasses](numbers.md#overloading-the-operators) everywhere.
++ この三つはいずれも、算術の他の部分と組み合わさる。
++ 長さのベクトルと長さのベクトルの内積は面積になり、[量](quantities.md)の複素数は単位を保つ。
++ 演算がどこでも同じ[算術の型クラス](numbers.md#overloading-the-operators)を通して定義されているからである。
+
+- ### On mathematical structure
++ ### 数学の構造について
+
+- A vector is not a list. A list of three numbers and a list of four concatenate happily. Vectors
+- of different dimensions cannot even be added, and a matrix product is defined only when the
+- inner dimensions agree. A library which models these as arrays defers every such rule to
+- [runtime], where a mismatch of shapes becomes an exception, or, worse, silent nonsense, long
+- after the mistake.
++ ベクトルはリストではない。
++ 三つの数のリストと四つの数のリストは、難なく連結できる。
++ 次元の異なるベクトルは足すことさえできず、行列の積は内側の次元が一致するときにしか定義されない。
++ これらを配列としてモデル化するライブラリは、そうした規則をすべて[実行時]に先送りする。
++ そこでは形の不一致が例外になるか、さらに悪いことに、誤りからずっと後になって黙って無意味な結果になる。
+
+- Here the dimensions are in the types. A `Vector[Int, 3]` and a `Vector[Int, 2]` are different
+- types. A `Matrix[…, 2, 3]` multiplies a `Matrix[…, 3, 2]`, and nothing else. A mismatched
+- multiplication is an [impossible state](../../philosophy/impossible-states.md) of linear algebra.
+- The element type is generic over anything with the right arithmetic, which is how units flow
+- through a calculation.
++ ここでは次元は型の中にある。
++ `Vector[Int, 3]` と `Vector[Int, 2]` は異なる型である。
++ `Matrix[…, 2, 3]` は `Matrix[…, 3, 2]` と掛け合わせられ、それ以外とは掛け合わせられない。
++ 不一致な乗算は、線形代数の[不可能な状態](../../philosophy/impossible-states.md)である。
++ 要素の型は、適切な算術を持つ任意の型について汎用的であり、それによって単位が計算の中を流れていく。
+
+- Everything comes from the `soundness` package. Arithmetic between plain numbers and these types
+- relies on the compiler's *into* conversions, so that language feature is enabled too, and the
+- last import lets the samples print their results:
++ すべては `soundness` パッケージから来る。
++ 普通の数とこれらの型の間の算術はコンパイラの *into* 変換に頼るので、その言語機能も有効にする。
++ 最後のインポートは、サンプルが結果を出力できるようにする：
+
+= last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import scala.language.experimental.into
++ import scala.language.experimental.into
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Complex numbers
++ ### 複素数
+
+- A `Complex` pairs a real component with an imaginary one, and supports the usual arithmetic:
++ `Complex` は実成分と虚成分を組にしたもので、通常の算術をサポートする：
+
+= A `Complex` pairs a real component with an imaginary one, and supports the usual arithmetic:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A `Complex` pairs a real component with an imaginary one, and supports the usual arithmetic:
+=
+= ```scala fuel
+- run
++ run
+
+= A `Complex` pairs a real component with an imaginary one, and supports the usual arithmetic:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Complex(1, 3).show)
++ Out.println(Complex(1, 3).show)
+
+- Out.println((Complex(1, 3)*Complex(2, 4)).show)
++ Out.println((Complex(1, 3)*Complex(2, 4)).show)
+
+- Out.println((-Complex(10, 7)).show)
++ Out.println((-Complex(10, 7)).show)
+
+= Out.println((-Complex(10, 7)).show)
+- ```
++ ```
+
+- A complex number can also be written by adding to a multiple of `i`, the imaginary unit, or
+- given in polar form, as a modulus and an `Angle`:
++ 複素数は、虚数単位 `i` の倍数に足して書くこともでき、極形式で、絶対値と `Angle` として与えることもできる：
+
+= given in polar form, as a modulus and an `Angle`:
+=
+- ```scala
++ ```scala
+
+- val sum = Complex(0.8, 0.0) + i*1.8
++ val sum = Complex(0.8, 0.0) + i*1.8
+
+- val polar = Complex(12*Kilo(Gram), 0.3845.rad)
++ val polar = Complex(12*Kilo(Gram), 0.3845.rad)
+
+= val polar = Complex(12*Kilo(Gram), 0.3845.rad)
+- ```
++ ```
+
+- `modulus` and `argument` give the polar form back, with the argument as a typed angle. The
+- prefix operator `~` gives the complex conjugate.
++ `modulus` と `argument` は極形式を返し、偏角は型付きの角度になる。
++ 前置演算子 `~` は複素共役を与える。
+
+- The components may be of any type which has the arithmetic an operation needs. That includes
+- quantities, so a complex impedance keeps its units. A quantity is written out through a
+- `Decimalizer`, which says how many significant figures to show:
++ 成分は、演算が必要とする算術を持つ任意の型でよい。
++ これには量も含まれるので、複素インピーダンスは単位を保つ。
++ 量は `Decimalizer` を通して書き出され、`Decimalizer` は表示する有効数字の桁数を決める：
+
+= `Decimalizer`, which says how many significant figures to show:
+=
+- ```scala
++ ```scala
+
+- given decimalizer: Decimalizer = Decimalizer(3)
++ given decimalizer: Decimalizer = Decimalizer(3)
+
+- val real = 1.0*Metre/Second
++ val real = 1.0*Metre/Second
+
+- val imaginary = 9.0*Metre/Second
++ val imaginary = 9.0*Metre/Second
+
+= val imaginary = 9.0*Metre/Second
+- ```
++ ```
+
+= val imaginary = 9.0*Metre/Second
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val imaginary = 9.0*Metre/Second
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val imaginary = 9.0*Metre/Second
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Complex(real, imaginary).show)
++ Out.println(Complex(real, imaginary).show)
+
+= Out.println(Complex(real, imaginary).show)
+- ```
++ ```
+
+- ### Vectors
++ ### ベクトル
+
+- A `Vector` is a fixed number of components, with the dimension in its type. It is in effect a
+- hybrid of a `Tuple`, whose size is known statically, and a collection, whose elements share a
+- type. That is what a Euclidean vector is, and it is why neither of the two ordinary choices
+- quite fits it.
++ `Vector` は固定個数の成分であり、次元はその型の中にある。
++ 実質的には、サイズが静的に分かる `Tuple` と、要素が型を共有するコレクションとの混成である。
++ それこそがユークリッドベクトルであり、普通の二つの選択肢のどちらもぴったりとは合わない理由でもある。
+
+- Constructing a vector infers both the element type and the size:
++ ベクトルを構築すると、要素の型とサイズの両方が推論される：
+
+= Constructing a vector infers both the element type and the size:
+=
+- ```scala
++ ```scala
+
+- val v: Vector[Int, 3] = Vector(1, 2, 3)
++ val v: Vector[Int, 3] = Vector(1, 2, 3)
+
+= val v: Vector[Int, 3] = Vector(1, 2, 3)
+- ```
++ ```
+
+- A value of the wrong size does not compile:
++ サイズの誤った値はコンパイルされない：
+
+= A value of the wrong size does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A value of the wrong size does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= A value of the wrong size does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= A value of the wrong size does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- val w: Vector[Int, 2] = Vector(1, 3, 4)
++ val w: Vector[Int, 2] = Vector(1, 3, 4)
+
+= val w: Vector[Int, 2] = Vector(1, 3, 4)
+- ```
++ ```
+
+- Vectors of one dimension add and subtract. A vector negates, and multiplies and divides
+- component by component, either by a scalar or by another vector of the same dimension,
+- whenever its components do:
++ 同じ次元のベクトルは足し引きできる。
++ ベクトルは符号を反転でき、成分が乗除できるときはいつでも、スカラーか同じ次元の別のベクトルで成分ごとに乗除できる：
+
+= whenever its components do:
+=
+- ```scala fuel
++ ```scala fuel
+
+= whenever its components do:
+=
+= ```scala fuel
+- run
++ run
+
+= whenever its components do:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Vector(1, 2, 3) + Vector(3, 4, 5)).inspect)
++ Out.println((Vector(1, 2, 3) + Vector(3, 4, 5)).inspect)
+
+- Out.println((-Vector(1, -2, 3)).inspect)
++ Out.println((-Vector(1, -2, 3)).inspect)
+
+- Out.println((Vector(1, 2, 3)*2).inspect)
++ Out.println((Vector(1, 2, 3)*2).inspect)
+
+- Out.println((Vector(1, 2, 3)*Vector(4, 5, 6)).inspect)
++ Out.println((Vector(1, 2, 3)*Vector(4, 5, 6)).inspect)
+
+= Out.println((Vector(1, 2, 3)*Vector(4, 5, 6)).inspect)
+- ```
++ ```
+
+- Adding vectors of different dimensions does not compile:
++ 次元の異なるベクトルを足すとコンパイルされない：
+
+= Adding vectors of different dimensions does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Adding vectors of different dimensions does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Adding vectors of different dimensions does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Adding vectors of different dimensions does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Vector(1, 2, 3) + Vector(1, 2)
++ Vector(1, 2, 3) + Vector(1, 2)
+
+= Vector(1, 2, 3) + Vector(1, 2)
+- ```
++ ```
+
+- `dot` computes the scalar product and, in three dimensions, `cross` computes the vector
+- product:
++ `dot` はスカラー積を計算し、三次元では `cross` がベクトル積を計算する：
+
+= product:
+=
+- ```scala fuel
++ ```scala fuel
+
+= product:
+=
+= ```scala fuel
+- run
++ run
+
+= product:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Vector(1, 2, 3).dot(Vector(4, 3, 7)).inspect)
++ Out.println(Vector(1, 2, 3).dot(Vector(4, 3, 7)).inspect)
+
+- Out.println(Vector(1, 2, 3).cross(Vector(4, 3, 7)).inspect)
++ Out.println(Vector(1, 2, 3).cross(Vector(4, 3, 7)).inspect)
+
+= Out.println(Vector(1, 2, 3).cross(Vector(4, 3, 7)).inspect)
+- ```
++ ```
+
+- ### Matrices
++ ### 行列
+
+- A `Matrix` has its numbers of rows and columns in its type. They are written as type
+- arguments, and the matrix is filled row by row:
++ `Matrix` は行数と列数を型の中に持つ。
++ それらは型引数として書かれ、行列は行ごとに埋められる：
+
+= arguments, and the matrix is filled row by row:
+=
+- ```scala
++ ```scala
+
+- val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
++ val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+
+- val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
++ val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
+
+= val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
+- ```
++ ```
+
+- A matrix multiplies another matrix, a vector or a scalar, and negates:
++ 行列は別の行列、ベクトル、スカラーと掛け合わせられ、符号を反転できる：
+
+= A matrix multiplies another matrix, a vector or a scalar, and negates:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A matrix multiplies another matrix, a vector or a scalar, and negates:
+=
+= ```scala fuel
+- run
++ run
+
+= A matrix multiplies another matrix, a vector or a scalar, and negates:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((m1*m2).inspect)
++ Out.println((m1*m2).inspect)
+
+- Out.println((m1*Vector(7, 8, 9)).inspect)
++ Out.println((m1*Vector(7, 8, 9)).inspect)
+
+- Out.println((m1*10).inspect)
++ Out.println((m1*10).inspect)
+
+- Out.println((-m1).inspect)
++ Out.println((-m1).inspect)
+
+= Out.println((-m1).inspect)
+- ```
++ ```
+
+- A product whose dimensions do not agree is a compile error, not a check of shapes at runtime:
++ 次元の一致しない積はコンパイルエラーであり、実行時の形の検査ではない：
+
+= A product whose dimensions do not agree is a compile error, not a check of shapes at runtime:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A product whose dimensions do not agree is a compile error, not a check of shapes at runtime:
+=
+= ```scala fuel
+- compile
++ compile
+
+= A product whose dimensions do not agree is a compile error, not a check of shapes at runtime:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= A product whose dimensions do not agree is a compile error, not a check of shapes at runtime:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- m1*m1
++ m1*m1
+
+= m1*m1
+- ```
++ ```
+
+- Beyond its arithmetic, a matrix has these operations. Those of a square matrix exist only for
+- a square matrix:
++ 算術のほかに、行列には次の演算がある。
++ 正方行列の演算は、正方行列にしか存在しない：
+
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Of
+- column  Gives
+- row  `transpose`  any matrix  the transpose
+- row  `rank`  any matrix  the rank
+- row  `frobeniusNorm`  any matrix  the square root of the sum of the squares of its entries
+- row  `determinant`  a square matrix  the determinant
+- row  `trace`  a square matrix  the sum of the diagonal
+- row  `inverse`  a square matrix  the inverse, or `Unset` for a singular matrix
+- row  `solve`  a square matrix  the solution of a linear system, as an `Optional` vector
+- row  `adjugate`  a square matrix  the transpose of the cofactor matrix
+- row  `eigenvalues`  a square matrix of `Double`s  the eigenvalues, as an `Optional` vector
+- row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
++ column  メソッド
++ column  対象
++ column  結果
++ row  `transpose`  任意の行列  転置行列
++ row  `rank`  任意の行列  階数
++ row  `frobeniusNorm`  任意の行列  成分の二乗の和の平方根
++ row  `determinant`  正方行列  行列式
++ row  `trace`  正方行列  対角成分の和
++ row  `inverse`  正方行列  逆行列。特異行列では `Unset`
++ row  `solve`  正方行列  連立一次方程式の解。`Optional` なベクトルとして
++ row  `adjugate`  正方行列  余因子行列の転置
++ row  `eigenvalues`  `Double` の正方行列  固有値。`Optional` なベクトルとして
++ row  `eigenvectors`  `Double` の正方行列  固有ベクトル。`Optional` な行列として
+
+= row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
+- ```
++ ```
+
+= row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5)).determinant.inspect)
++ Out.println(Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5)).determinant.inspect)
+
+- Out.println(Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse.let(_.inspect).or(t"singular"))
++ Out.println(Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse.let(_.inspect).or(t"singular"))
+
+- Out.println(Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse.let(_.inspect).or(t"singular"))
++ Out.println(Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse.let(_.inspect).or(t"singular"))
+
+= Out.println(Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse.let(_.inspect).or(t"singular"))
+- ```
++ ```
+
+- `inverse` gives an [optional](optional-values.md) matrix, since a singular matrix has none.
++ 特異行列には逆行列がないので、`inverse` は[オプショナル](optional-values.md)な行列を返す。
+
+- The `adjugate` is available in its own right. It is defined over any ring, and not only where
+- division is possible, so a matrix of integers has an adjugate where it has no inverse:
++ `adjugate` はそれ自体として利用できる。
++ これは除算が可能な場合に限らず任意の環の上で定義されるので、整数の行列には、逆行列がなくても余因子行列はある：
+
+= division is possible, so a matrix of integers has an adjugate where it has no inverse:
+=
+- ```scala fuel
++ ```scala fuel
+
+= division is possible, so a matrix of integers has an adjugate where it has no inverse:
+=
+= ```scala fuel
+- run
++ run
+
+= division is possible, so a matrix of integers has an adjugate where it has no inverse:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Matrix[2, 2]((1, 2), (3, 4)).adjugate.inspect)
++ Out.println(Matrix[2, 2]((1, 2), (3, 4)).adjugate.inspect)
+
+= Out.println(Matrix[2, 2]((1, 2), (3, 4)).adjugate.inspect)
+- ```
++ ```
+
+- `frobeniusNorm` gives a matrix's magnitude. `eigenvalues` gives the values for which it has an
+- eigenvector, as an `Optional`, since not every matrix has real eigenvalues:
++ `frobeniusNorm` は行列の大きさを与える。
++ `eigenvalues` は、行列が固有ベクトルを持つ値を `Optional` として与える。
++ すべての行列が実固有値を持つわけではないからである：
+
+= eigenvector, as an `Optional`, since not every matrix has real eigenvalues:
+=
+- ```scala fuel
++ ```scala fuel
+
+= eigenvector, as an `Optional`, since not every matrix has real eigenvalues:
+=
+= ```scala fuel
+- run
++ run
+
+= eigenvector, as an `Optional`, since not every matrix has real eigenvalues:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm.inspect)
++ Out.println(Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm.inspect)
+
+- Out.println(Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.inspect).or(t"none"))
++ Out.println(Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.inspect).or(t"none"))
+
+= Out.println(Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.inspect).or(t"none"))
+- ```
++ ```
+
+- ### Elements that are not numbers
++ ### 数でない要素
+
+- Nothing above requires the entries to be `Double`s. Vectors and matrices are generic in their
+- element type, and their operations are found through the arithmetic typeclasses, so anything
+- with the right structure works. That includes typed [quantities](quantities.md), whose
+- dimensions compose as the arithmetic does:
++ ここまでのどれも、成分が `Double` であることを要求しない。
++ ベクトルと行列は要素の型について汎用的であり、その演算は算術の型クラスを通して見つけられるので、適切な構造を持つものなら何でも使える。
++ これには型付きの[量](quantities.md)も含まれ、その次元は算術と同じように組み合わさる：
+
+= dimensions compose as the arithmetic does:
+=
+- ```scala
++ ```scala
+
+- val v1 = Vector(5*Inch, 2*Inch, Inch)
++ val v1 = Vector(5*Inch, 2*Inch, Inch)
+
+- val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
++ val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+
+= val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+- ```
++ ```
+
+= val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(v1.dot(v2).inspect)
++ Out.println(v1.dot(v2).inspect)
+
+= Out.println(v1.dot(v2).inspect)
+- ```
++ ```
+
+- A dot product of lengths is an area, and the type says so. The same holds for complex entries,
+- for exact rationals, and for any other element type with the operations a computation needs.
++ 長さの内積は面積であり、型がそう示す。
++ 同じことが、複素数の成分、正確な有理数、そして計算が必要とする演算を持つ他のどんな要素の型にも成り立つ。
+
+- ### Permutations
++ ### 置換
+
+- A `Permutation` is a reversible rearrangement. It is built from the reordered indexes, and is
+- applied to any list of at least that length:
++ `Permutation` は可逆な並べ替えである。
++ 並べ替えた添字から構築され、少なくともその長さを持つ任意のリストに適用される：
+
+= applied to any list of at least that length:
+=
+- ```scala
++ ```scala
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- val shuffle = Permutation(Sequence(3, 1, 4, 2, 0, 5))
++ val shuffle = Permutation(Sequence(3, 1, 4, 2, 0, 5))
+
+- val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
++ val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+
+= val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+- ```
++ ```
+
+= val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(shuffle(items).inspect)
++ Out.println(shuffle(items).inspect)
+
+- Out.println((shuffle.inverse(shuffle(items)) == items).inspect)
++ Out.println((shuffle.inverse(shuffle(items)) == items).inspect)
+
+= Out.println((shuffle.inverse(shuffle(items)) == items).inspect)
+- ```
++ ```
+
+- A sequence of indexes which is not a permutation, because it has a duplicate or a gap, is a
+- typed error:
++ 重複や欠落があるために置換でない添字の列は、型付きのエラーになる：
+
+= typed error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= typed error:
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- Permutation(Sequence(3, 1, 1))
++ Permutation(Sequence(3, 1, 1))
+
+= Permutation(Sequence(3, 1, 1))
+- ```
++ ```
+
+- Internally, a permutation is stored as its
+- [Lehmer code](https://en.wikipedia.org/wiki/Lehmer_code) in factorial-base form, which is a
+- single integer that uniquely identifies it. That makes permutations compact to store and to
+- enumerate: `Permutation.bySize(n)` gives all `n!` of them, as a lazy
+- [chain](collections.md#lazy-chains). A permutation of *n* elements occupies
+- O(*n* log *n*) space, which is the least possible, since there are *n*! of them to tell apart.
++ 内部では、置換は階乗進法の形式の [Lehmer 符号](https://en.wikipedia.org/wiki/Lehmer_code)として格納される。これは置換を一意に識別する単一の整数である。
++ そのため置換は、格納するのにも列挙するのにもコンパクトである。`Permutation.bySize(n)` はその `n!` 個すべてを遅延[チェーン](collections.md#lazy-chains)として与える。
++ *n* 個の要素の置換は O(*n* log *n*) の領域を占め、これは可能な最小である。区別すべき置換が *n*! 個あるからである。
+
+- The number *is* the permutation, so it can be given directly, and both representations can be
+- read back:
++ この数こそが置換そのものなので、直接与えることができ、どちらの表現も読み戻せる：
+
+= read back:
+=
+- ```scala fuel
++ ```scala fuel
+
+= read back:
+=
+= ```scala fuel
+- run
++ run
+
+= read back:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Permutation(Factoradic(45)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
++ Out.println((Permutation(Factoradic(45)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
+
+- Out.println(shuffle.lehmer.inspect)
++ Out.println(shuffle.lehmer.inspect)
+
+- Out.println(shuffle.expansion.inspect)
++ Out.println(shuffle.expansion.inspect)
+
+= Out.println(shuffle.expansion.inspect)
+- ```
++ ```
+
+- A permutation leaves alone every position outside its own range. Applying one to a longer
+- sequence is therefore not an error: it rearranges the positions it covers, and leaves the rest
+- where they were.
++ 置換は、自身の範囲の外にあるすべての位置をそのままにする。
++ したがって、置換をより長い列に適用するのは誤りではない。置換は自身が覆う位置を並べ替え、残りは元の場所に残す。
+
+- ### Related
++ ### 関連
+
+- - [Mathematical markup](mathematical-markup.md) typesets what is computed here, and [randomness](randomness.md) samples its distributions.
++ - [数式マークアップ](mathematical-markup.md)はここで計算されたものを組版し、[乱数](randomness.md)はその分布から標本を取る。

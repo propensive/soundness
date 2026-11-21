@@ -1,0 +1,13 @@
+orthant 1 language
+
+- `Linux`, `Posix`, `MacOs` and `Windows` are the platforms of particular systems. `Local` is the
+- platform of whichever machine the program runs on: a platform of its own, whose root is `%` or
+- a `Drive`, whose separator is the running system's, and whose rules for a name are the
+- strictest of them all, so that a `Path on Local` is valid wherever the program runs. Code
+- which should work on any system types its paths `on Local`. [Names](names.md) describes how
+- each platform's rules for an element are stated and checked.
++ `Linux`、`Posix`、`MacOs`、`Windows` は特定のシステムのプラットフォームである。
++ `Local` は、プログラムが実行されているマシンのプラットフォームである。
++ これは独自のプラットフォームであり、そのルートは `%` または `Drive`、区切り文字は実行中のシステムのものであり、名前に関する規則はすべての中で最も厳しいので、`Path on Local` はプログラムがどこで実行されても妥当である。
++ どのシステムでも動くべきコードは、そのパスを `on Local` と型付けする。
++ [名前](names.md)は、各プラットフォームの要素に関する規則がどのように述べられ、検査されるかを説明する。

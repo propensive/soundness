@@ -1,0 +1,835 @@
+orthant 1 language
+
+- # Changes since 0.75.0
++ # 0.75.0 からの変更
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.75.0 to the next release. Each entry states precisely what changed; see `AGENTS.md` for the
+- format. Entries are grouped by module, most-recently-added last within a module.
++ このファイルは、Soundness のライブラリを利用するコードを 0.75.0 から次のリリースへアップグレードする LLM エージェントが読むものである。
++ 各エントリーは何が変わったかを正確に述べる。形式については `AGENTS.md` を参照。
++ エントリーはモジュールごとにまとめられ、モジュール内では最も新しく追加されたものが最後にある。
+
+- ## caesura
++ ## caesura
+
+- - `caesura.dsvRedesignations.lowerDottedRedesignation` now joins the lower-cased words of a field
+-   name with `.` (`targetPerson` → `target.person`), and
+-   `caesura.dsvRedesignations.lowerSlashedRedesignation` with `/` (`targetPerson` →
+-   `target/person`); both previously joined them with a space, as `lowerWordsRedesignation` does.
+-   A file read or written under either given must use the dotted or slashed headers. (#2439)
++ - `caesura.dsvRedesignations.lowerDottedRedesignation` はフィールド名の小文字化した単語を `.` で連結するようになり（`targetPerson` → `target.person`）、`caesura.dsvRedesignations.lowerSlashedRedesignation` は `/` で連結するようになった（`targetPerson` → `target/person`）。以前はどちらも、`lowerWordsRedesignation` と同じく空白で連結していた。どちらかの given のもとで読み書きするファイルは、ドット区切りまたはスラッシュ区切りのヘッダーを使わなければならない。(#2439)
+
+=   A file read or written under either given must use the dotted or slashed headers. (#2439)
+=
+- ## perihelion
++ ## perihelion
+
+- - `perihelion.Websocket.Error.Reason.Truncated` now renders as "the connection closed before the
+-   frame was complete"; its `Communicable` instance previously had no case for it, so describing
+-   such an error threw a `MatchError`. (#2439)
++ - `perihelion.Websocket.Error.Reason.Truncated` は "the connection closed before the frame was complete" と描画されるようになった。以前はその `Communicable` インスタンスにこのケースがなく、そのようなエラーを説明すると `MatchError` が投げられた。(#2439)
+
+- ## contingency
++ ## contingency
+
+- - `contingency.survive` on a `scala.collection.Iterable[element]` receiver
+-   (`extension [element](sequence: Iterable[element]) transparent inline def survive[result](using
+-   erased Void)[error <: Hazard](lambda): Iterable[result]`) removed. The remaining
+-   `contingency.survive` on any `self is murmuration.Traversable by element` (which includes every
+-   stdlib `Iterable`) applies, returning `proscenium.List[result]` instead of `Iterable[result]`.
+-   (#2442)
++ - `scala.collection.Iterable[element]` をレシーバとする `contingency.survive`（`extension [element](sequence: Iterable[element]) transparent inline def survive[result](using erased Void)[error <: Hazard](lambda): Iterable[result]`）は削除された。任意の `self is murmuration.Traversable by element`（stdlib のすべての `Iterable` を含む）に対する残りの `contingency.survive` が適用され、`Iterable[result]` の代わりに `proscenium.List[result]` を返す。(#2442)
+
+- ## mercator
++ ## mercator
+
+- - `mercator.sequence` changed from `extension [monad[_], collection[element] <: Iterable[element],
+-   element](elems: collection[monad[element]])(using Monad[monad]) def sequence(using
+-   BuildFrom[scala.collection.immutable.List[element], element, collection[element]]):
+-   monad[collection[element]]` to `extension [self](self: self)(using traversable: self is
+-   murmuration.Traversable) def sequence[monad[_], element, result](using traversable.Operand <:<
+-   monad[element], Monad[monad], self is murmuration.Reshapable by element to result):
+-   monad[result]`. It now applies to `proscenium.List`, `Set`, `Sequence`, `Chain`, frozen `Array`
+-   and every other `Traversable` with a `Reshapable` instance, rebuilding the same shape; it no
+-   longer applies to stdlib collections (`scala.collection.immutable.List`, `Seq`, `Set`, …),
+-   which have no `Reshapable`, except `scala.collection.immutable.IndexedSeq`: convert them with
+-   `proscenium.List.from(…)` first. (#2442)
+- - `mercator.traverse` changed in the same way: from `extension [collection[element] <:
+-   Iterable[element], element](elems: collection[element]) def traverse[element2,
+-   monad[_]](lambda: element => monad[element2])(using Monad[monad],
+-   BuildFrom[scala.collection.immutable.List[element2], element2, collection[element2]]):
+-   monad[collection[element2]]` to `extension [self](self: self)(using traversable: self is
+-   murmuration.Traversable) def traverse[element2, monad[_], result](lambda: traversable.Operand
+-   => monad[element2])(using Monad[monad], self is murmuration.Reshapable by element2 to result):
+-   monad[result]`. Same receivers as `sequence`; stdlib collections other than
+-   `scala.collection.immutable.IndexedSeq` no longer apply. (#2442)
++ - `mercator.sequence` は `extension [monad[_], collection[element] <: Iterable[element], element](elems: collection[monad[element]])(using Monad[monad]) def sequence(using BuildFrom[scala.collection.immutable.List[element], element, collection[element]]): monad[collection[element]]` から `extension [self](self: self)(using traversable: self is murmuration.Traversable) def sequence[monad[_], element, result](using traversable.Operand <:< monad[element], Monad[monad], self is murmuration.Reshapable by element to result): monad[result]` に変わった。`proscenium.List`、`Set`、`Sequence`、`Chain`、凍結済みの `Array`、その他 `Reshapable` インスタンスを持つすべての `Traversable` に適用され、同じ形を再構築するようになった。`Reshapable` を持たない stdlib のコレクション（`scala.collection.immutable.List`、`Seq`、`Set`、…）には、`scala.collection.immutable.IndexedSeq` を除いて適用されなくなった。先に `proscenium.List.from(…)` で変換すること。(#2442)
++ - `mercator.traverse` も同じように、`extension [collection[element] <: Iterable[element], element](elems: collection[element]) def traverse[element2, monad[_]](lambda: element => monad[element2])(using Monad[monad], BuildFrom[scala.collection.immutable.List[element2], element2, collection[element2]]): monad[collection[element2]]` から `extension [self](self: self)(using traversable: self is murmuration.Traversable) def traverse[element2, monad[_], result](lambda: traversable.Operand => monad[element2])(using Monad[monad], self is murmuration.Reshapable by element2 to result): monad[result]` に変わった。レシーバは `sequence` と同じであり、`scala.collection.immutable.IndexedSeq` 以外の stdlib のコレクションには適用されなくなった。(#2442)
+
+- ## polysyllabic
++ ## polysyllabic
+
+- - `polysyllabic.Hyphenation#extending(patterns: Iterable[Text] = Iterable(), exceptions:
+-   Iterable[Text] = Iterable(), leftMin: Optional[Int] = Unset, rightMin: Optional[Int] = Unset)`
+-   now takes `patterns: proscenium.List[Text] = List()` and `exceptions: proscenium.List[Text] =
+-   List()`. Behaviour unchanged. (#2442)
++ - `polysyllabic.Hyphenation#extending(patterns: Iterable[Text] = Iterable(), exceptions: Iterable[Text] = Iterable(), leftMin: Optional[Int] = Unset, rightMin: Optional[Int] = Unset)` は `patterns: proscenium.List[Text] = List()` と `exceptions: proscenium.List[Text] = List()` を取るようになった。動作は変わらない。(#2442)
+
+- ## vacuous
++ ## vacuous
+
+- - `vacuous.compact` on `Iterable[Optional[value]]` (`transparent inline def compact:
+-   Iterable[value]`) replaced by `extension [self](self: self)(using traversable: self is
+-   murmuration.Traversable) def compact[value, result](using traversable.Operand <:<
+-   Optional[value], self is murmuration.Reshapable by value to result): result`. It now applies to
+-   `proscenium.List`, `Set`, `Sequence`, `Chain`, frozen `Array` and other `Traversable`s with a
+-   `Reshapable`, returning the same shape (`List[Optional[Text]]` → `List[Text]`), and no longer
+-   applies to stdlib collections other than `scala.collection.immutable.IndexedSeq`, including
+-   varargs `Seq`s: convert them with `.to(proscenium.List)` (or `proscenium.List.from(…)`) first. Code calling `.stdlib.compact` should drop the `.stdlib`. The
+-   `compact` on `murmuration.Iterator[Optional[value]]^` is unchanged. (#2442)
+- - `vacuous.entire` on `Iterable[Optional[value]]` (`def entire: Optional[proscenium.List[value]]`)
+-   replaced by `extension [self](self: self)(using traversable: self is murmuration.Traversable)
+-   def entire[value, result](using traversable.Operand <:< Optional[value], self is
+-   murmuration.Reshapable by value to result): Optional[result]`: the result has the receiver's
+-   shape rather than always being a `List`: a `scala.collection.immutable.IndexedSeq` receiver
+-   (such as `(0 until n).map(…)`) now yields `Optional[IndexedSeq[value]]`, and other stdlib
+-   collections no longer apply. (#2442)
++ - `Iterable[Optional[value]]` に対する `vacuous.compact`（`transparent inline def compact: Iterable[value]`）は `extension [self](self: self)(using traversable: self is murmuration.Traversable) def compact[value, result](using traversable.Operand <:< Optional[value], self is murmuration.Reshapable by value to result): result` に置き換えられた。`proscenium.List`、`Set`、`Sequence`、`Chain`、凍結済みの `Array`、その他 `Reshapable` を持つ `Traversable` に適用され、同じ形を返す（`List[Optional[Text]]` → `List[Text]`）。可変長引数の `Seq` を含め、`scala.collection.immutable.IndexedSeq` 以外の stdlib のコレクションには適用されなくなった。先に `.to(proscenium.List)`（または `proscenium.List.from(…)`）で変換すること。`.stdlib.compact` を呼び出すコードは `.stdlib` を取り除くこと。`murmuration.Iterator[Optional[value]]^` に対する `compact` は変わらない。(#2442)
++ - `Iterable[Optional[value]]` に対する `vacuous.entire`（`def entire: Optional[proscenium.List[value]]`）は `extension [self](self: self)(using traversable: self is murmuration.Traversable) def entire[value, result](using traversable.Operand <:< Optional[value], self is murmuration.Reshapable by value to result): Optional[result]` に置き換えられた。結果は常に `List` になるのではなく、レシーバの形を持つ。`scala.collection.immutable.IndexedSeq` のレシーバ（`(0 until n).map(…)` など）は `Optional[IndexedSeq[value]]` を生じるようになり、その他の stdlib のコレクションには適用されなくなった。(#2442)
+
+- ## digression
++ ## digression
+
+- - `digression.StackTrace.legend: Map[Text, Text]` is now keyed by the bare glyph (`λ`, `ⲛ`, `δ`,
+-   `⁅⁆`) rather than the glyph padded to two characters (`λₙ`, `ⲛ `, `δ `); it is derived from the
+-   new `digression.StackTrace.Marker.all`. `ⲛ` is described as "constructor" (previously "class
+-   initializer"); `Σ` is listed as before, `ζ` is no longer produced, and `Ξ`, `Λ`, `ι`, `ℓ`,
+-   `⇢`, `≔`, `∂`, `⊡` and `⊙` are listed. (#2442)
+- - `digression.StackTrace.rewrite(name: String, method: Boolean = false): Text` changes its output
+-   for these inputs: `$adapted` marks the preceding `λ` as `Λ` (`lam$$anonfun$1$adapted` →
+-   `lam.Λ₁()`, previously `lam.λ₁.adapted()`); `<clinit>` and `$init$` → `ι` (previously
+-   unchanged and `.init.`); `$lzyINIT`, `$lzy` and `$lzyHandle` → `ℓ` (previously `#ℓ`, `#lzy`,
+-   `#lzyHandle`); `protected$`, `inline$` and `$accessor` → `⇢`; `$_setter_$` → `≔`;
+-   `$retainedBody` → `⊡`; `$outer` → `⊙`; `$$Lambda` → `#λ`/`.λ`; `$uXXXX` → the character;
+-   `$mc…$sp` consumes the tags, so `apply$mcII$sp` → `applyΣ(Int -> Int)()` (previously
+-   `applyΣ(Int -> Int)IIζ()`) and the parameters of a specialized method of arity above one are
+-   now in order with the result last (`apply$mcJII$sp` → `applyΣ((Int, Int) -> Long)()`, likewise
+-   `scala.runtime.java8.JFunction2$mcJII$sp` → `((Int, Int) => Long)`); a bare `$sp` is no longer
+-   `ζ`; `Play$$cue` (an expanded private name) → `Play.cue()` with one separator (previously
+-   `Play..cue()`), though `$$` followed by an operator encoding still decodes as the operator;
+-   `initial$` and `$_avoid_name_clash_$`, which the compiler no longer emits, are no longer
+-   rewritten to `ι` and `′`. Numbers after `$`, operators, `$anonfun`, `$anon`, `<init>`,
+-   `super$`, `$extension`, `$direct`, `$default`, `$package` and module classes are unchanged.
+-   (#2442)
+- - `digression.StackTrace.Marker` added: `case class Marker(jvm: Text, glyph: Text, meaning: Text,
+-   kind: Optional[StackTrace.Frame.Kind] = Unset)`, with `Marker.all: List[Marker]` and
+-   `Marker.operators: List[(Text, Char)]`. (#2442)
++ - `digression.StackTrace.legend: Map[Text, Text]` は、二文字にパディングしたグリフ（`λₙ`、`ⲛ `、`δ `）ではなく、裸のグリフ（`λ`、`ⲛ`、`δ`、`⁅⁆`）をキーとするようになった。これは新しい `digression.StackTrace.Marker.all` から導出される。`ⲛ` は "constructor" と説明される（以前は "class initializer"）。`Σ` は以前と同じく載り、`ζ` は生成されなくなり、`Ξ`、`Λ`、`ι`、`ℓ`、`⇢`、`≔`、`∂`、`⊡`、`⊙` が載るようになった。(#2442)
++ - `digression.StackTrace.rewrite(name: String, method: Boolean = false): Text` は、次の入力に対する出力が変わる。`$adapted` は直前の `λ` を `Λ` にする（`lam$$anonfun$1$adapted` → `lam.Λ₁()`、以前は `lam.λ₁.adapted()`）。`<clinit>` と `$init$` → `ι`（以前はそれぞれ変換なしと `.init.`）。`$lzyINIT`、`$lzy`、`$lzyHandle` → `ℓ`（以前は `#ℓ`、`#lzy`、`#lzyHandle`）。`protected$`、`inline$`、`$accessor` → `⇢`。`$_setter_$` → `≔`。`$retainedBody` → `⊡`。`$outer` → `⊙`。`$$Lambda` → `#λ`/`.λ`。`$uXXXX` → その文字。`$mc…$sp` はタグを消費するので、`apply$mcII$sp` → `applyΣ(Int -> Int)()`（以前は `applyΣ(Int -> Int)IIζ()`）となり、引数の数が二つ以上の特殊化されたメソッドのパラメーターは、結果を最後にした順序になった（`apply$mcJII$sp` → `applyΣ((Int, Int) -> Long)()`、同様に `scala.runtime.java8.JFunction2$mcJII$sp` → `((Int, Int) => Long)`）。裸の `$sp` は `ζ` にならなくなった。`Play$$cue`（展開された private な名前）→ 区切りが一つの `Play.cue()`（以前は `Play..cue()`）。ただし、演算子のエンコーディングが続く `$$` は引き続き演算子として復号される。コンパイラがもう出力しない `initial$` と `$_avoid_name_clash_$` は、`ι` と `′` に書き換えられなくなった。`$` の後の数字、演算子、`$anonfun`、`$anon`、`<init>`、`super$`、`$extension`、`$direct`、`$default`、`$package`、モジュールクラスは変わらない。(#2442)
++ - `digression.StackTrace.Marker` が追加された。`case class Marker(jvm: Text, glyph: Text, meaning: Text, kind: Optional[StackTrace.Frame.Kind] = Unset)` であり、`Marker.all: List[Marker]` と `Marker.operators: List[(Text, Char)]` を持つ。(#2442)
+
+- ## hyperbole
++ ## hyperbole
+
+- - `hyperbole.StackResolver.hint(method: Text): Optional[StackTrace.Frame.Kind]` now reads
+-   `digression.StackTrace.Marker.all`: a name containing `$adapted` is `Bridge` even when it also
+-   contains `$anonfun` (previously `Lambda`); `super$`, `protected$`, `inline$` and `$accessor`
+-   give `Forwarder` and `$_setter_$` and `$retainedBody` give `Synthetic` (previously `Unset`);
+-   `$lzy` without `INIT` no longer gives `Initializer`. (#2442)
++ - `hyperbole.StackResolver.hint(method: Text): Optional[StackTrace.Frame.Kind]` は `digression.StackTrace.Marker.all` を読むようになった。`$adapted` を含む名前は、`$anonfun` も含む場合でも `Bridge` になる（以前は `Lambda`）。`super$`、`protected$`、`inline$`、`$accessor` は `Forwarder` に、`$_setter_$` と `$retainedBody` は `Synthetic` になる（以前は `Unset`）。`INIT` のない `$lzy` は `Initializer` にならなくなった。(#2442)
+
+- ## jacinta
++ ## jacinta
+
+- - `jacinta.JsonSchema.requiredLabels(labels: proscenium.Array[Optional[Text]]^{}):
+-   proscenium.List[Text]` added: the present labels of a derived schema's fields, which
+-   `jacinta.JsonSchema.conjunction` calls. Nothing existing changes. (#2442)
++ - `jacinta.JsonSchema.requiredLabels(labels: proscenium.Array[Optional[Text]]^{}): proscenium.List[Text]` が追加された。導出されたスキーマのフィールドのうち存在するラベルを返すもので、`jacinta.JsonSchema.conjunction` がこれを呼び出す。既存のものは何も変わらない。(#2442)
+
+- ## build
++ ## build
+
+- - The pinned compiler is Proscala `1.1.4` (`3.10.0-pro-1.1.4`, was `3.10.0-pro-1.0.7`). Soundness's
+-   published artifacts are compiled with it, so a consumer compiling against them pins the same
+-   build. (#2443, #2489, #2505)
+- - Every Soundness module above `proscenium` is compiled with Proscala's `-Zgatherable-varargs`:
+-   inside a method, a repeated parameter (`parts: Text*`) is a `proscenium.List[Text]` rather than
+-   a `scala.collection.immutable.Seq[Text]`. No signature changes, and no call site is affected:
+-   callers pass and splice arguments exactly as before. A consumer who wants the same in their own
+-   code adds `-Zgatherable-varargs` and `-experimental` to their compiler options and brings
+-   `proscenium.listGatherable` into scope (`-Yimports:java.lang,proscenium`, or
+-   `import proscenium.listGatherable`); without the flag nothing changes for them. (#2443)
++ - 固定されたコンパイラは Proscala `1.1.4`（`3.10.0-pro-1.1.4`、以前は `3.10.0-pro-1.0.7`）である。Soundness の公開されたアーティファクトはこれでコンパイルされているので、それに対してコンパイルする利用者は同じビルドに固定する。(#2443, #2489, #2505)
++ - `proscenium` より上のすべての Soundness モジュールは Proscala の `-Zgatherable-varargs` でコンパイルされる。メソッドの中では、可変長パラメーター（`parts: Text*`）は `scala.collection.immutable.Seq[Text]` ではなく `proscenium.List[Text]` である。シグネチャは変わらず、呼び出し側にも影響はない。呼び出し側は以前とまったく同じように引数を渡し、展開する。自分のコードでも同じようにしたい利用者は、コンパイラオプションに `-Zgatherable-varargs` と `-experimental` を加え、`proscenium.listGatherable` をスコープに入れる（`-Yimports:java.lang,proscenium` または `import proscenium.listGatherable`）。このフラグがなければ何も変わらない。(#2443)
+
+- ## proscenium
++ ## proscenium
+
+- - `proscenium.listGatherable` added: `given listGatherable: [element] => (scala.Gatherable[element]
+-   { type Out = proscenium.List[element] })`, the instance `-Zgatherable-varargs` receives repeated
+-   parameters through. (#2443)
++ - `proscenium.listGatherable` が追加された。`given listGatherable: [element] => (scala.Gatherable[element] { type Out = proscenium.List[element] })` であり、`-Zgatherable-varargs` が可変長パラメーターを受け取る際に使うインスタンスである。(#2443)
+
+- ## adversaria
++ ## adversaria
+
+- - `adversaria.relabelling[self, format]: Map[Text, Text]` and
+-   `adversaria.variantRelabelling[self, format]: Map[Text, Text]` are now macros resolved when the
+-   calling derivation expands, with the same signatures and results: a `@name` argument written as
+-   a literal (`@name(t"…")`, `@name("…")`) is a string constant in the generated code, and any other
+-   is rebuilt and read once at the expansion site rather than every time the derived instance runs.
+-   No caller changes. (#2475)
+- - `adversaria.annotatedFields[self, annotation <: StaticAnnotation]: Set[Text]` added: the names
+-   of the fields of `self` carrying an `annotation`, as a literal `Set`. Use it instead of
+-   `fieldAnnotations[self, annotation].defines(label)` when only the *presence* of an annotation on
+-   a field matters; `fieldAnnotations` is unchanged. (#2475)
+- - `adversaria.typeAnnotation[self, annotation <: StaticAnnotation]: Optional[annotation]` added:
+-   the `annotation` on the type `self` itself (the last declared), or `Unset`. Use it instead of
+-   `summonInline[self is Annotated by annotation]` followed by `.annotations.head`. (#2475)
+- - Annotations are now spliced into the expansion as written, where they were previously
+-   reconstructed node by node and silently omitted if their tree was not a constructor application
+-   over identifiers, selections, literals, named arguments and nested applications of those. An
+-   annotation whose arguments have any other form (a lambda, a block, a type ascription, an `if`,
+-   a string interpolation that is not a constant) is therefore now present where it was absent, in
+-   `Annotated#annotations`, `Annotated#fields`, `Annotated#subtypes`, `adversaria.relabelling`,
+-   `adversaria.variantRelabelling`, `adversaria.typeAnnotation`, `fieldAnnotations` and
+-   `subtypeAnnotations`. Code that relied on such an annotation being skipped must now filter it.
+-   The compiler-added `scala.annotation.experimental` is never reported by `Annotated`, as before.
+-   (#2487)
++ - `adversaria.relabelling[self, format]: Map[Text, Text]` と `adversaria.variantRelabelling[self, format]: Map[Text, Text]` は、呼び出す側の導出が展開されるときに解決されるマクロになった。シグネチャと結果は同じである。リテラルとして書かれた `@name` の引数（`@name(t"…")`、`@name("…")`）は生成されるコードの中で文字列定数になり、それ以外の引数は、導出されたインスタンスが実行されるたびにではなく、展開の場所で一度だけ再構築されて読まれる。呼び出し側の変更は必要ない。(#2475)
++ - `adversaria.annotatedFields[self, annotation <: StaticAnnotation]: Set[Text]` が追加された。`self` のフィールドのうち `annotation` を持つものの名前を、リテラルの `Set` として返す。フィールドにアノテーションが*あるかどうか*だけが重要な場合は、`fieldAnnotations[self, annotation].defines(label)` の代わりにこれを使うこと。`fieldAnnotations` は変わらない。(#2475)
++ - `adversaria.typeAnnotation[self, annotation <: StaticAnnotation]: Optional[annotation]` が追加された。型 `self` 自体に付いた `annotation`（最後に宣言されたもの）、または `Unset` を返す。`summonInline[self is Annotated by annotation]` の後に `.annotations.head` と続ける代わりにこれを使うこと。(#2475)
++ - アノテーションは書かれたとおりに展開へスプライスされるようになった。以前はノードごとに再構築され、その木が識別子、選択、リテラル、名前付き引数、およびそれらの入れ子の適用からなるコンストラクターの適用でなければ、黙って省かれていた。したがって、引数がそれ以外の形（ラムダ、ブロック、型の帰属、`if`、定数でない文字列補間）を持つアノテーションは、`Annotated#annotations`、`Annotated#fields`、`Annotated#subtypes`、`adversaria.relabelling`、`adversaria.variantRelabelling`、`adversaria.typeAnnotation`、`fieldAnnotations`、`subtypeAnnotations` において、以前はなかったところに現れるようになった。そのようなアノテーションが飛ばされることに依存していたコードは、それを除外しなければならない。コンパイラが付け加える `scala.annotation.experimental` は、以前と同じく `Annotated` が報告することはない。(#2487)
+
+- ## xylophone
++ ## xylophone
+
+- - `Xml.DecodableDerivation` and `Xml.EncodableDerivation` read a type's `@attribute`,
+-   `@unqualified`, `@xmlns` and `@name[Xml]` annotations through `adversaria.annotatedFields`,
+-   `adversaria.typeAnnotation` and the macro `adversaria.relabelling`; wire names and the attribute
+-   and namespace decisions are unchanged. (#2475)
++ - `Xml.DecodableDerivation` と `Xml.EncodableDerivation` は、型の `@attribute`、`@unqualified`、`@xmlns`、`@name[Xml]` アノテーションを、`adversaria.annotatedFields`、`adversaria.typeAnnotation`、マクロ `adversaria.relabelling` を通じて読むようになった。ワイヤ上の名前と、属性および名前空間についての判断は変わらない。(#2475)
+
+- ## probably
++ ## probably
+
+- - `soundness.Arithmetic` and `soundness.Geometric` no longer refer to probably's
+-   `Baseline.Mode` cases, and `probably.Arithmetic`/`probably.Geometric` are removed: write
+-   `Baseline.Mode.Arithmetic` and `Baseline.Mode.Geometric`. `soundness.Arithmetic` is now
+-   unambiguously hypotenuse's `Arithmetic` (holding `Arithmetic.Error`).
+- - `Value`, a coordinate on a test axis, is renamed `Axis.Value`: `Value.Discrete(label)` becomes
+-   `Axis.Value.Discrete(label)`.
+- - `probably.Autopsy` (trait, with `type Analyse <: Boolean`), its companion given
+-   `probably.Autopsy.contrastByDefault`, and the package `probably.autopsies` with its givens
+-   `contrastAutopsy` and `noAutopsy` (also exported as `soundness.Autopsy` and
+-   `soundness.autopsies.{contrastAutopsy, noAutopsy}`) removed. Delete any import of them: an
+-   assertion no longer resolves a `Contrastable` or `Decomposable` at compile time. A failed
+-   assertion is diagnosed at run time instead, when the suite is invoked with the selection
+-   term `--diagnose=<presentations>` (a comma-separated list of `inspect`, `show`, `contrast`,
+-   `dissect`) and a `probably.Diagnostician` is installed.
+- - New component `probably-diagnosis` (JVM only; depends on `scala3-compiler` and
+-   `scala3-staging`) with `probably.Dissector`, a `probably.Diagnostician`. A test classpath
+-   must include it for failures to be diagnosed; `probably.Streamer.stream` installs it when it
+-   is present. Without it, a diagnosed failure records `TestEvent.DetailMessage` with the
+-   value's `toString`.
+- - New in `probably-core`: `probably.Diagnosis` (`Presentation`, `Request`, `Site`),
+-   `probably.Diagnostician` (`install`, `apply`, `#diagnose`), `probably.Runner#diagnosis`
+-   (abstract: a custom `Runner` must define it), `probably.Selection#diagnosis` (a new last
+-   constructor parameter, default `Diagnosis.Request.none`),
+-   `probably.Verdict.Detail.Dissection(source, rows, reproducible)`,
+-   `probably.TestEvent.DissectRow(depth, code, start, end, value, kind)`,
+-   `probably.TestEvent.DetailDissection(test, source, rows, reproducible)` and
+-   `probably.Streamer.diagnostic`.
+- - The `TestEvent` wire schema gained the `DetailDissection` case, so
+-   `probably.Streamer.fingerprint` changed: a host built against 0.75.0 reports suites built
+-   against this release as incompatible. Rebuild the host against this release.
+- - `probably.internal.assertion` changed from `[test, test2 <: test, report, result](runner,
+-   test, predicate, result, expectation, inc, inc2, decomposable, coordinates, discard,
+-   verified)` to `[test, report, result](runner, test, predicate, result, inc, inc2,
+-   coordinates, discard, verified, owner, start, end, source, names, captures)`. It is called
+-   only by the `assert`/`check` macros and `Spread`; recompile.
++ - `soundness.Arithmetic` と `soundness.Geometric` は probably の `Baseline.Mode` のケースを指さなくなり、`probably.Arithmetic`/`probably.Geometric` は削除された。`Baseline.Mode.Arithmetic` と `Baseline.Mode.Geometric` と書くこと。`soundness.Arithmetic` は曖昧さなく hypotenuse の `Arithmetic`（`Arithmetic.Error` を持つ）になった。
++ - テストの軸の上の座標である `Value` は `Axis.Value` に名前が変わった。`Value.Discrete(label)` は `Axis.Value.Discrete(label)` になる。
++ - `probably.Autopsy`（`type Analyse <: Boolean` を持つトレイト）、そのコンパニオンの given `probably.Autopsy.contrastByDefault`、パッケージ `probably.autopsies` とその given `contrastAutopsy` と `noAutopsy`（`soundness.Autopsy` と `soundness.autopsies.{contrastAutopsy, noAutopsy}` としてもエクスポートされていた）は削除された。それらの import はすべて削除すること。アサーションはコンパイル時に `Contrastable` や `Decomposable` を解決しなくなった。失敗したアサーションは代わりに実行時に診断される。スイートが選択の項 `--diagnose=<presentations>`（`inspect`、`show`、`contrast`、`dissect` のカンマ区切りのリスト）付きで起動され、`probably.Diagnostician` がインストールされているときである。
++ - 新しいコンポーネント `probably-diagnosis`（JVM のみ。`scala3-compiler` と `scala3-staging` に依存する）が追加され、`probably.Diagnostician` である `probably.Dissector` を持つ。失敗を診断するには、テストのクラスパスにこれを含めなければならない。これが存在すれば `probably.Streamer.stream` がインストールする。これがなければ、診断された失敗は値の `toString` を伴う `TestEvent.DetailMessage` を記録する。
++ - `probably-core` に新しく追加されたもの：`probably.Diagnosis`（`Presentation`、`Request`、`Site`）、`probably.Diagnostician`（`install`、`apply`、`#diagnose`）、`probably.Runner#diagnosis`（抽象メンバーであり、独自の `Runner` はこれを定義しなければならない）、`probably.Selection#diagnosis`（コンストラクターの新しい最後のパラメーターで、デフォルトは `Diagnosis.Request.none`）、`probably.Verdict.Detail.Dissection(source, rows, reproducible)`、`probably.TestEvent.DissectRow(depth, code, start, end, value, kind)`、`probably.TestEvent.DetailDissection(test, source, rows, reproducible)`、`probably.Streamer.diagnostic`。
++ - `TestEvent` のワイヤ上のスキーマに `DetailDissection` のケースが加わったので、`probably.Streamer.fingerprint` が変わった。0.75.0 に対してビルドされたホストは、このリリースに対してビルドされたスイートを互換性がないと報告する。ホストをこのリリースに対して再ビルドすること。
++ - `probably.internal.assertion` は `[test, test2 <: test, report, result](runner, test, predicate, result, expectation, inc, inc2, decomposable, coordinates, discard, verified)` から `[test, report, result](runner, test, predicate, result, inc, inc2, coordinates, discard, verified, owner, start, end, source, names, captures)` に変わった。これを呼び出すのは `assert`/`check` マクロと `Spread` だけである。再コンパイルすること。
+
+- ## ultimatum
++ ## ultimatum
+
+- - ultimatum's layout types are nested in a new `object Tui`, and are no longer exported
+-   individually: `Pane`, `Panes`, `Frame`, `Placement`, `Sizing`, `Limits`, `Arrangement` and
+-   `Occupancy` become `Tui.Pane`, `Tui.Panes`, `Tui.Frame`, `Tui.Placement`,
+-   `Tui.Sizing`, `Tui.Limits`, `Tui.Arrangement` and `Tui.Occupancy`; write the
+-   qualified name, or `import ultimatum.Tui.{Pane, Sizing}` (naming only what is used).
+-   For example, `conduct(Occupancy.Inline)(…)` becomes `conduct(Tui.Occupancy.Inline)(…)`
+-   and `val body: Pane = …` becomes `val body: Tui.Pane = …`.
+- - `ultimatum.Rect` is renamed `Tui.Region`, and every member named `rect` is renamed
+-   `region`: `Tui.Placement#region`, `Extent#region`, `FlowExtent#region` and
+-   `Form.Entry#region`. `Rect(left, top, width, height)` becomes
+-   `Tui.Region(left, top, width, height)`.
+- - The root boards are nested in `Tui`: `InlineRoot`, the board for inline mode, becomes
+-   `Tui.Block`, and `ScreenRoot`, the board for fullscreen mode, becomes `Tui.Screen`. The inline
+-   rendering policies are nested in the block: `InlineAnchoring`, `InlineGrowth` and
+-   `InlineShrink` become `Tui.Block.Anchoring`, `Tui.Block.Growth` and `Tui.Block.Shrink`. The
+-   `inlineAnchoring`, `inlineGrowth` and `inlineShrink` givens are unchanged.
+- - The `ultimatum.gauges` component is merged into `ultimatum.core`, which now depends on
+-   `aviation` and `quantitative`; a build depending on `ultimatum.gauges` should depend on
+-   `ultimatum.core`.
+- - The gauge types are nested in `Tui`: `Bar`, `Dial`, `Meter`, `Spinner`, `Sparkline`,
+-   `Checklist`, `Stopwatch`, `Facet`, `Gradient`, `Inlay`, `Magnitude`, `CaptionLayout`,
+-   `Captioned`, `Reading`, `Reckoning`, `Standing`, `Step`, `Transfer`, `Tick`, `Fraction` and
+-   `Countdown` become `Tui.Bar` and so on. `gauge`, `gaugeLine`, `gaugeRows`, `whilst`,
+-   `Gaugeable`, `Gauging` and `GaugePalette` are unchanged. Code using several can import them:
+-   `import ultimatum.Tui.{Fraction, Reading}`.
++ - ultimatum のレイアウトの型は新しい `object Tui` の中に入れ子になり、個別にはエクスポートされなくなった。`Pane`、`Panes`、`Frame`、`Placement`、`Sizing`、`Limits`、`Arrangement`、`Occupancy` は `Tui.Pane`、`Tui.Panes`、`Tui.Frame`、`Tui.Placement`、`Tui.Sizing`、`Tui.Limits`、`Tui.Arrangement`、`Tui.Occupancy` になる。修飾名を書くか、`import ultimatum.Tui.{Pane, Sizing}`（使うものだけを挙げる）とすること。たとえば、`conduct(Occupancy.Inline)(…)` は `conduct(Tui.Occupancy.Inline)(…)` に、`val body: Pane = …` は `val body: Tui.Pane = …` になる。
++ - `ultimatum.Rect` は `Tui.Region` に名前が変わり、`rect` という名前のメンバーはすべて `region` に名前が変わった：`Tui.Placement#region`、`Extent#region`、`FlowExtent#region`、`Form.Entry#region`。`Rect(left, top, width, height)` は `Tui.Region(left, top, width, height)` になる。
++ - ルートのボードは `Tui` の中に入れ子になった。インラインモードのボードである `InlineRoot` は `Tui.Block` に、フルスクリーンモードのボードである `ScreenRoot` は `Tui.Screen` になる。インラインの描画のポリシーはブロックの中に入れ子になった。`InlineAnchoring`、`InlineGrowth`、`InlineShrink` は `Tui.Block.Anchoring`、`Tui.Block.Growth`、`Tui.Block.Shrink` になる。given の `inlineAnchoring`、`inlineGrowth`、`inlineShrink` は変わらない。
++ - `ultimatum.gauges` コンポーネントは `ultimatum.core` に統合され、`ultimatum.core` は `aviation` と `quantitative` に依存するようになった。`ultimatum.gauges` に依存するビルドは `ultimatum.core` に依存すること。
++ - ゲージの型は `Tui` の中に入れ子になった。`Bar`、`Dial`、`Meter`、`Spinner`、`Sparkline`、`Checklist`、`Stopwatch`、`Facet`、`Gradient`、`Inlay`、`Magnitude`、`CaptionLayout`、`Captioned`、`Reading`、`Reckoning`、`Standing`、`Step`、`Transfer`、`Tick`、`Fraction`、`Countdown` は `Tui.Bar` などになる。`gauge`、`gaugeLine`、`gaugeRows`、`whilst`、`Gaugeable`、`Gauging`、`GaugePalette` は変わらない。いくつかを使うコードはそれらを import できる：`import ultimatum.Tui.{Fraction, Reading}`。
+
+- ## octogenarian
++ ## octogenarian
+
+- - `soundness.Commandline` and `soundness.Native` no longer refer to octogenarian's git
+-   backends: the names are exoskeleton's parsed command line and xenophile's C interface. Select
+-   a backend with `gitBackends.commandlineGit` or `gitBackends.soundnessGit` as before, or write
+-   the classes qualified: `octogenarian.Native(List(SmartHttp(), SshCommand()))`,
+-   `octogenarian.Commandline.Event`.
+- - The patch and remote types are nested in `Git`: `Remote`, `Patch` and `Hunk` become
+-   `Git.Remote`, `Git.Patch` and `Git.Hunk`; `Patch.parse(text)` becomes `Git.Patch.parse(text)`.
+-   `FileDiff`, one file's part of a diff, is renamed `Git.Delta` (libgit2's term), and its
+-   `ChangeKind` is `Git.Delta.Status`, with the same cases; the field `changeKind` is `status`.
++ - `soundness.Commandline` と `soundness.Native` は octogenarian の git バックエンドを指さなくなった。これらの名前は exoskeleton のパースされたコマンドラインと xenophile の C インターフェースである。以前と同じく `gitBackends.commandlineGit` または `gitBackends.soundnessGit` でバックエンドを選ぶか、クラスを修飾して書くこと：`octogenarian.Native(List(SmartHttp(), SshCommand()))`、`octogenarian.Commandline.Event`。
++ - パッチとリモートの型は `Git` の中に入れ子になった。`Remote`、`Patch`、`Hunk` は `Git.Remote`、`Git.Patch`、`Git.Hunk` になり、`Patch.parse(text)` は `Git.Patch.parse(text)` になる。差分のうち一つのファイルの部分である `FileDiff` は `Git.Delta`（libgit2 の用語）に名前が変わり、その `ChangeKind` は同じケースを持つ `Git.Delta.Status` になった。フィールド `changeKind` は `status` になった。
+
+- ## embarcadero
++ ## embarcadero
+
+- - The containerd protobuf records are nested in `object Containerd` and no longer exported
+-   individually: `Container`, `Mount`, `Namespace`, `Runtime`, `Empty`, `AnyMessage`,
+-   `ContentDescriptor`, `ImageRecord`, `ProcessStatus`, `Timestamp`, and every service request
+-   and response (`ListContainersRequest`, `CreateTaskResponse`, `WaitResponse`, …) become
+-   `Containerd.Container`, `Containerd.Mount` and so on. `embarcadero.Timestamp` becomes
+-   `Containerd.Timestamp`. Write the qualified name, or import the members used, e.g.
+-   `import embarcadero.Containerd.{Container, Mount}`.
+- - `DockerEvent` is renamed `Containerd.Event`; a `DockerEvent is Loggable` given becomes
+-   `Containerd.Event is Loggable`. Its cases are unchanged.
+- - The OCI document types are nested in `Oci` and no longer exported individually: `Image`,
+-   `Index`, `Layer`, `Descriptor`, `History`, `RootFs`, `ContainerConfig`, `WasmConfig` and
+-   `WasmComponent` become `Oci.Image`, `Oci.Index` and so on; `path.open[Image]()` becomes
+-   `path.open[Oci.Image]()` and `Image.wasm(…)` becomes `Oci.Image.wasm(…)`.
++ - containerd の protobuf レコードは `object Containerd` の中に入れ子になり、個別にはエクスポートされなくなった。`Container`、`Mount`、`Namespace`、`Runtime`、`Empty`、`AnyMessage`、`ContentDescriptor`、`ImageRecord`、`ProcessStatus`、`Timestamp`、そしてすべてのサービスのリクエストとレスポンス（`ListContainersRequest`、`CreateTaskResponse`、`WaitResponse`、…）は `Containerd.Container`、`Containerd.Mount` などになる。`embarcadero.Timestamp` は `Containerd.Timestamp` になる。修飾名を書くか、使うメンバーを import すること。例：`import embarcadero.Containerd.{Container, Mount}`。
++ - `DockerEvent` は `Containerd.Event` に名前が変わった。given の `DockerEvent is Loggable` は `Containerd.Event is Loggable` になる。そのケースは変わらない。
++ - OCI のドキュメントの型は `Oci` の中に入れ子になり、個別にはエクスポートされなくなった。`Image`、`Index`、`Layer`、`Descriptor`、`History`、`RootFs`、`ContainerConfig`、`WasmConfig`、`WasmComponent` は `Oci.Image`、`Oci.Index` などになる。`path.open[Image]()` は `path.open[Oci.Image]()` に、`Image.wasm(…)` は `Oci.Image.wasm(…)` になる。
+
+- ## coaxial
++ ## coaxial
+
+- - `coaxial.DomainSocket` is renamed `Uds` (a UNIX domain socket), and `DomainSocket.Endpoint`
+-   becomes `Uds.Endpoint`: `DomainSocket(% / "var" / "run" / "docker.sock")` becomes
+-   `Uds(% / "var" / "run" / "docker.sock")`. The companion givens `Bindable.domainSocket`,
+-   `Connectable.domainSocket` and `Serviceable.domainSocket` are renamed `uds`.
++ - `coaxial.DomainSocket` は `Uds`（UNIX ドメインソケット）に名前が変わり、`DomainSocket.Endpoint` は `Uds.Endpoint` になった。`DomainSocket(% / "var" / "run" / "docker.sock")` は `Uds(% / "var" / "run" / "docker.sock")` になる。コンパニオンの given `Bindable.domainSocket`、`Connectable.domainSocket`、`Serviceable.domainSocket` は `uds` に名前が変わった。
+
+- ## telekinesis
++ ## telekinesis
+
+- - `telekinesis.domainSocketFetchable` and `telekinesis.domainSocketHttpClient` are renamed
+-   `udsFetchable` and `udsHttpClient`; update any by-name import of them
+-   (`import soundness.{udsFetchable, udsHttpClient}`).
++ - `telekinesis.domainSocketFetchable` と `telekinesis.domainSocketHttpClient` は `udsFetchable` と `udsHttpClient` に名前が変わった。それらを名前で import している箇所を更新すること（`import soundness.{udsFetchable, udsHttpClient}`）。
+
+- ## rudiments
++ ## rudiments
+
+- - `rudiments.Bytes`, the opaque byte count made by `4.b`, `8.kib`, `data.bytes` and so on, is
+-   renamed `Memory`: `Bytes(1024L)` becomes `Memory(1024L)`, and a `Bytes` type ascription
+-   becomes `Memory`. Its operations are unchanged. The givens named after it are renamed
+-   `memory`: `hypotenuse.Commensurable.memory` (`Memory is Orderable`),
+-   `spectacular.Showable.memory`, `spectacular.Inspectable.memory`, jacinta's `Json.memory` and
+-   ypsiloid's `Yaml.memory` decoders.
++ - `4.b`、`8.kib`、`data.bytes` などで作られる不透明なバイト数である `rudiments.Bytes` は `Memory` に名前が変わった。`Bytes(1024L)` は `Memory(1024L)` になり、型の帰属の `Bytes` は `Memory` になる。その演算は変わらない。この型にちなんで名付けられた given は `memory` に名前が変わった：`hypotenuse.Commensurable.memory`（`Memory is Orderable`）、`spectacular.Showable.memory`、`spectacular.Inspectable.memory`、jacinta の `Json.memory` と ypsiloid の `Yaml.memory` のデコーダー。
+
+- ## quantitative
++ ## quantitative
+
+- - The `Information` dimension, its unit `Bytes[power]`, the `MetricUnit` `Byte`, and the
+-   `B` designation (`Designation.bytes`) now belong to quantitative. They were ultimatum's
+-   (`ultimatum.Information`, `ultimatum.Bytes`, `ultimatum.Byte`, `ultimatum.informationDesignation`),
+-   which are removed; code using `soundness.*` needs no change, but a by-name
+-   `import soundness.informationDesignation` should be deleted, since the designation is now
+-   found in `Designation`'s companion. A local re-declaration of `Information`, `Bytes` and
+-   `Byte` may be deleted in favour of these.
++ - 次元 `Information`、その単位 `Bytes[power]`、`MetricUnit` の `Byte`、そして `B` という呼称（`Designation.bytes`）は quantitative に属するようになった。これらは ultimatum のもの（`ultimatum.Information`、`ultimatum.Bytes`、`ultimatum.Byte`、`ultimatum.informationDesignation`）であったが、それらは削除された。`soundness.*` を使うコードは変更不要だが、名前による `import soundness.informationDesignation` は削除すること。呼称は今では `Designation` のコンパニオンで見つかるからである。`Information`、`Bytes`、`Byte` をローカルで再宣言している場合は、それを削除してこれらを使ってよい。
+
+- ## espionage
++ ## espionage
+
+- - `Acp.Agent`, the enum saying where an agent is, is renamed `Acp.Endpoint`:
+-   `Acp.connect(Acp.Agent(sh"…"))` becomes `Acp.connect(Acp.Endpoint(sh"…"))`,
+-   `Acp.Agent.streams(input, output)` becomes `Acp.Endpoint.streams(input, output)`, and the
+-   cases are `Acp.Endpoint.Process` and `Acp.Endpoint.Streams`.
+- - The `@rpc` wire traits are nested in `Acp` and no longer exported individually: `AcpAgent`
+-   becomes `Acp.Agent`, `AcpAgentLifecycle` and `AcpAgentSession` become `Acp.Agent.Lifecycle`
+-   and `Acp.Agent.Session`, `AcpClient` becomes `Acp.Client`, and `AcpClientSession`,
+-   `AcpClientFs` and `AcpClientTerminal` become `Acp.Client.Session`, `Acp.Client.Fs` and
+-   `Acp.Client.Terminal`.
++ - エージェントの所在を表す列挙型 `Acp.Agent` は `Acp.Endpoint` に名前が変わった。`Acp.connect(Acp.Agent(sh"…"))` は `Acp.connect(Acp.Endpoint(sh"…"))` に、`Acp.Agent.streams(input, output)` は `Acp.Endpoint.streams(input, output)` になり、ケースは `Acp.Endpoint.Process` と `Acp.Endpoint.Streams` である。
++ - `@rpc` のワイヤ上のトレイトは `Acp` の中に入れ子になり、個別にはエクスポートされなくなった。`AcpAgent` は `Acp.Agent` に、`AcpAgentLifecycle` と `AcpAgentSession` は `Acp.Agent.Lifecycle` と `Acp.Agent.Session` に、`AcpClient` は `Acp.Client` に、`AcpClientSession`、`AcpClientFs`、`AcpClientTerminal` は `Acp.Client.Session`、`Acp.Client.Fs`、`Acp.Client.Terminal` になる。
+
+- ## enigmatic
++ ## enigmatic
+
+- - The block-cipher modes and paddings are nested in `BlockCipher` and no longer exported
+-   individually: `Cbc`, `Ecb`, `Ctr`, `Cfb`, `Ofb`, `Pkcs7`, `Iso10126` and `NoPadding` become
+-   `BlockCipher.Cbc` and so on, and the typeclasses `BlockCipherMode` and `BlockCipherPadding`
+-   become `BlockCipher.Mode` and `BlockCipher.Padding`. `Aes[256] over Cbc against Pkcs7`
+-   becomes `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`, or import the members:
+-   `import enigmatic.BlockCipher.{Cbc, Pkcs7}`. The `blockCipherModes` and
+-   `blockCipherPaddings` givens are unchanged.
++ - ブロック暗号のモードとパディングは `BlockCipher` の中に入れ子になり、個別にはエクスポートされなくなった。`Cbc`、`Ecb`、`Ctr`、`Cfb`、`Ofb`、`Pkcs7`、`Iso10126`、`NoPadding` は `BlockCipher.Cbc` などになり、型クラス `BlockCipherMode` と `BlockCipherPadding` は `BlockCipher.Mode` と `BlockCipher.Padding` になる。`Aes[256] over Cbc against Pkcs7` は `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7` になる。またはメンバーを import すること：`import enigmatic.BlockCipher.{Cbc, Pkcs7}`。given の `blockCipherModes` と `blockCipherPaddings` は変わらない。
+
+- ## anthology
++ ## anthology
+
+- - The compilation types are nested in `Compiler` and no longer exported individually:
+-   `CompileProcess`, `CompileResult`, `CompileEvent` and `CompileProgress` become
+-   `Compiler.Process`, `Compiler.Result`, `Compiler.Event` and `Compiler.Progress`, and
+-   `CompileEvents.relay` becomes `Compiler.Event.relay`. A `given (CompileEvent is Loggable)`
+-   becomes `given (Compiler.Event is Loggable)`.
+- - `Notice` is renamed `Compiler.Notice`, and `Universe`, `Tool` and `Triple` are nested in
+-   `Toolchain`: `Scalac[3.8, Universe.Classfile]` becomes
+-   `Scalac[3.8, Toolchain.Universe.Classfile]`, `extends Tool` becomes `extends Toolchain.Tool`,
+-   and `Triple.X64Linux` becomes `Toolchain.Triple.X64Linux`. Or import the members:
+-   `import anthology.Toolchain.{Tool, Universe}`.
++ - コンパイルの型は `Compiler` の中に入れ子になり、個別にはエクスポートされなくなった。`CompileProcess`、`CompileResult`、`CompileEvent`、`CompileProgress` は `Compiler.Process`、`Compiler.Result`、`Compiler.Event`、`Compiler.Progress` になり、`CompileEvents.relay` は `Compiler.Event.relay` になる。`given (CompileEvent is Loggable)` は `given (Compiler.Event is Loggable)` になる。
++ - `Notice` は `Compiler.Notice` に名前が変わり、`Universe`、`Tool`、`Triple` は `Toolchain` の中に入れ子になった。`Scalac[3.8, Universe.Classfile]` は `Scalac[3.8, Toolchain.Universe.Classfile]` に、`extends Tool` は `extends Toolchain.Tool` に、`Triple.X64Linux` は `Toolchain.Triple.X64Linux` になる。またはメンバーを import すること：`import anthology.Toolchain.{Tool, Universe}`。
+
+- ## escritoire
++ ## escritoire
+
+- - The table types are nested in `Table` and no longer exported individually: `TableCell`,
+-   `TableRow`, `TableSection`, `TableStyle` and `TableRelabelling` become `Table.Cell`,
+-   `Table.Row`, `Table.Section`, `Table.Style` and `Table.Relabelling`. A
+-   `given TableRelabelling[Codebase]` becomes `given Table.Relabelling[Codebase]`; the
+-   `tableStyles` givens are unchanged.
++ - 表の型は `Table` の中に入れ子になり、個別にはエクスポートされなくなった。`TableCell`、`TableRow`、`TableSection`、`TableStyle`、`TableRelabelling` は `Table.Cell`、`Table.Row`、`Table.Section`、`Table.Style`、`Table.Relabelling` になる。`given TableRelabelling[Codebase]` は `given Table.Relabelling[Codebase]` になる。given の `tableStyles` は変わらない。
+
+- ## dendrology
++ ## dendrology
+
+- - The diagram tiles and styles are nested in their diagrams and no longer exported
+-   individually: `TreeTile`, `TreeStyle` and `TextualTreeStyle` become `TreeDiagram.Tile`,
+-   `TreeDiagram.Style` and `TreeDiagram.TextualStyle`; `DagTile`, `DagStyle` and
+-   `TextualDagStyle` become `DagDiagram.Tile`, `DagDiagram.Style` and
+-   `DagDiagram.TextualStyle`; `LaneDagStyle` and `TextualLaneDagStyle` become
+-   `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`. The `treeStyles`, `dagStyles` and
+-   `laneDagStyles` givens are unchanged.
++ - 図のタイルとスタイルはそれぞれの図の中に入れ子になり、個別にはエクスポートされなくなった。`TreeTile`、`TreeStyle`、`TextualTreeStyle` は `TreeDiagram.Tile`、`TreeDiagram.Style`、`TreeDiagram.TextualStyle` に、`DagTile`、`DagStyle`、`TextualDagStyle` は `DagDiagram.Tile`、`DagDiagram.Style`、`DagDiagram.TextualStyle` に、`LaneDagStyle` と `TextualLaneDagStyle` は `LaneDagDiagram.Style` と `LaneDagDiagram.TextualStyle` になる。given の `treeStyles`、`dagStyles`、`laneDagStyles` は変わらない。
+
+- ## exoskeleton
++ ## exoskeleton
+
+- - `MissingFlagError` and `InvalidFlagError` are merged into `Flag.Error(flag, reason)`, whose
+-   `reason` is `Flag.Error.Reason.Missing` or `Flag.Error.Reason.Invalid(detail)` (the former
+-   `InvalidFlagError#reason` is now `detail`). `catch case error: MissingFlagError =>` becomes
+-   `catch case error: Flag.Error =>`, testing `error.reason` if the distinction matters; a
+-   `Tactic[MissingFlagError]` or `Tactic[InvalidFlagError]` becomes `Tactic[Flag.Error]`.
++ - `MissingFlagError` と `InvalidFlagError` は `Flag.Error(flag, reason)` に統合された。その `reason` は `Flag.Error.Reason.Missing` または `Flag.Error.Reason.Invalid(detail)` である（以前の `InvalidFlagError#reason` は `detail` になった）。`catch case error: MissingFlagError =>` は `catch case error: Flag.Error =>` になり、区別が重要なら `error.reason` を調べる。`Tactic[MissingFlagError]` や `Tactic[InvalidFlagError]` は `Tactic[Flag.Error]` になる。
+
+- ## kaleidoscope
++ ## kaleidoscope
+
+- - `RegexBackend` is renamed `Regex.Backend`: a `RegexBackend[Re2]` type becomes
+-   `Regex.Backend[Re2]`. The `regexBackends` givens are unchanged.
++ - `RegexBackend` は `Regex.Backend` に名前が変わった。型 `RegexBackend[Re2]` は `Regex.Backend[Re2]` になる。given の `regexBackends` は変わらない。
+
+- ## parasite
++ ## parasite
+
+- - `SharedProbate` is renamed `Probate.Shared`: a `using SharedProbate` parameter becomes
+-   `using Probate.Shared`. It is the same alias, `Probate^{caps.any.only[Durable]}`.
++ - `SharedProbate` は `Probate.Shared` に名前が変わった。パラメーター `using SharedProbate` は `using Probate.Shared` になる。同じエイリアス `Probate^{caps.any.only[Durable]}` である。
+
+- ## aviation
++ ## aviation
+
+- - `RecurrenceLiteral`, the type of a `rec"…"` literal, is renamed `Recurrence.Literal`.
++ - `rec"…"` リテラルの型である `RecurrenceLiteral` は `Recurrence.Literal` に名前が変わった。
+
+- ## cataclysm
++ ## cataclysm
+
+- - `SyntaxMatcher` is renamed `Css.Syntax.Matcher`: `SyntaxMatcher.check(grammar, value)`
+-   becomes `Css.Syntax.Matcher.check(grammar, value)`.
+- - The selector grammar is nested in `Selector`: `Compound`, `Simple`, `Combinator`,
+-   `AttributeTest`, `AttributeMatcher`, `Prefix` and `PseudoArgument` become `Selector.Compound`,
+-   `Selector.Simple` and so on.
+- - `Outcome`, the result of `Css.Syntax.Matcher.check`, is renamed `Css.Outcome`:
+-   `Outcome.Valid` becomes `Css.Outcome.Valid`.
++ - `SyntaxMatcher` は `Css.Syntax.Matcher` に名前が変わった。`SyntaxMatcher.check(grammar, value)` は `Css.Syntax.Matcher.check(grammar, value)` になる。
++ - セレクターの文法は `Selector` の中に入れ子になった。`Compound`、`Simple`、`Combinator`、`AttributeTest`、`AttributeMatcher`、`Prefix`、`PseudoArgument` は `Selector.Compound`、`Selector.Simple` などになる。
++ - `Css.Syntax.Matcher.check` の結果である `Outcome` は `Css.Outcome` に名前が変わった。`Outcome.Valid` は `Css.Outcome.Valid` になる。
+
+=   `Outcome.Valid` becomes `Css.Outcome.Valid`.
+=
+- ## fulminate
++ ## fulminate
+
+- - `UncheckedError`, the `Error` that wraps a JDK exception, is renamed `Error.Unchecked`; it is
+-   still made by `Error(throwable)`. A `case error: UncheckedError` pattern becomes
+-   `case error: Error.Unchecked`.
++ - JDK の例外を包む `Error` である `UncheckedError` は `Error.Unchecked` に名前が変わった。引き続き `Error(throwable)` で作られる。パターン `case error: UncheckedError` は `case error: Error.Unchecked` になる。
+
+- ## degustation
++ ## degustation
+
+- - `degustation.Universe` is now exported as `soundness.Universe` (anthology's compiler
+-   universe is `Toolchain.Universe`), and `ClassSource` and `ClassInfo` are nested in it:
+-   `ClassSource` becomes `Universe.Source` and `ClassInfo` becomes `Universe.ClassInfo`.
++ - `degustation.Universe` は `soundness.Universe` としてエクスポートされるようになり（anthology のコンパイラのユニバースは `Toolchain.Universe`）、`ClassSource` と `ClassInfo` はその中に入れ子になった。`ClassSource` は `Universe.Source` に、`ClassInfo` は `Universe.ClassInfo` になる。
+
+=   `ClassSource` becomes `Universe.Source` and `ClassInfo` becomes `Universe.ClassInfo`.
+=
+- ## dissonance
++ ## dissonance
+
+- - The edit taxonomy is nested in `Diff` and no longer exported individually: `Change`, `Edit`,
+-   `Ins`, `Del`, `Par`, `Sub` and `Chunk` become `Diff.Change`, `Diff.Edit`, `Diff.Ins`,
+-   `Diff.Del`, `Diff.Par`, `Diff.Sub` and `Diff.Chunk`. Code that matches on edits can import
+-   them: `import dissonance.Diff.{Del, Ins, Par}`.
++ - 編集の分類は `Diff` の中に入れ子になり、個別にはエクスポートされなくなった。`Change`、`Edit`、`Ins`、`Del`、`Par`、`Sub`、`Chunk` は `Diff.Change`、`Diff.Edit`、`Diff.Ins`、`Diff.Del`、`Diff.Par`、`Diff.Sub`、`Diff.Chunk` になる。編集に対してマッチするコードはそれらを import できる：`import dissonance.Diff.{Del, Ins, Par}`。
+
+=   them: `import dissonance.Diff.{Del, Ins, Par}`.
+=
+- ## gesticulate
++ ## gesticulate
+
+- - `Part`, one part of a multipart body, is renamed `Multipart.Part`.
++ - マルチパートの本文の一つの部分である `Part` は `Multipart.Part` に名前が変わった。
+
+= - `Part`, one part of a multipart body, is renamed `Multipart.Part`.
+=
+- ## perihelion
++ ## perihelion
+
+- - `Masking`, the WebSocket frame-masking policy, is renamed `Websocket.Masking`.
++ - WebSocket のフレームのマスキングのポリシーである `Masking` は `Websocket.Masking` に名前が変わった。
+
+- ## orthodoxy
++ ## orthodoxy
+
+- - `Scope`, an OAuth scope, is renamed `OAuth.Scope`.
++ - OAuth のスコープである `Scope` は `OAuth.Scope` に名前が変わった。
+
+- ## facsimile
++ ## facsimile
+
+- - `Destination`, a PDF link target, is renamed `Pdf.Destination`.
++ - PDF のリンク先である `Destination` は `Pdf.Destination` に名前が変わった。
+
+= - `Destination`, a PDF link target, is renamed `Pdf.Destination`.
+=
+- ## stratiform
++ ## stratiform
+
+- - `Mutation` and `Revision`, the §22.2 edit operations and the composable log of them, are
+-   renamed `Tel.Mutation` and `Tel.Revision`; `Mutation.Error` becomes `Tel.Mutation.Error`.
++ - §22.2 の編集操作とそれを合成できるログである `Mutation` と `Revision` は `Tel.Mutation` と `Tel.Revision` に名前が変わった。`Mutation.Error` は `Tel.Mutation.Error` になる。
+
+- ## praxinoscope
++ ## praxinoscope
+
+- - `Program` and `Ranges`, a compiled regex program and its character ranges, are renamed
+-   `Motif.Program` and `Motif.Ranges`.
++ - コンパイルされた正規表現のプログラムとその文字の範囲である `Program` と `Ranges` は `Motif.Program` と `Motif.Ranges` に名前が変わった。
+
+- ## tasseomancy
++ ## tasseomancy
+
+- - `Category` and `Estimate` are renamed `Chart.Category` and `Chart.Estimate`.
++ - `Category` と `Estimate` は `Chart.Category` と `Chart.Estimate` に名前が変わった。
+
+- ## cacophony
++ ## cacophony
+
+- - The device types are nested in `Audio`: `Feed`, `Outlet`, `Device` and `Configuration` become
+-   `Audio.Feed`, `Audio.Outlet`, `Audio.Device` and `Audio.Configuration`; `Feed.list` becomes
+-   `Audio.Feed.list`, and `Feed.Error` and `Outlet.Error` become `Audio.Feed.Error` and
+-   `Audio.Outlet.Error`.
++ - デバイスの型は `Audio` の中に入れ子になった。`Feed`、`Outlet`、`Device`、`Configuration` は `Audio.Feed`、`Audio.Outlet`、`Audio.Device`、`Audio.Configuration` になり、`Feed.list` は `Audio.Feed.list` に、`Feed.Error` と `Outlet.Error` は `Audio.Feed.Error` と `Audio.Outlet.Error` になる。
+
+- ## archimedes
++ ## archimedes
+
+- - `Display` and `Cell` are renamed `Mathml.Display` and `Mathml.Cell`.
++ - `Display` と `Cell` は `Mathml.Display` と `Mathml.Cell` に名前が変わった。
+
+= - `Display` and `Cell` are renamed `Mathml.Display` and `Mathml.Cell`.
+=
+- ## polyvinyl
++ ## polyvinyl
+
+- - `Member` and `Multiplicity`, a specification's field description and cardinality, are renamed
+-   `Specification.Member` and `Specification.Multiplicity`; a provider implementation can import
+-   them: `import polyvinyl.Specification.{Member, Multiplicity}`.
++ - 仕様のフィールドの記述と多重度である `Member` と `Multiplicity` は `Specification.Member` と `Specification.Multiplicity` に名前が変わった。プロバイダーの実装はそれらを import できる：`import polyvinyl.Specification.{Member, Multiplicity}`。
+
+- ## harlequin
++ ## harlequin
+
+- - `Token`, one token of highlighted source, is renamed `SourceCode.Token`, and `Role` (whether
+-   a token binds a name or refers to one) is renamed `SourceCode.Token.Role`.
++ - ハイライトされたソースの一つのトークンである `Token` は `SourceCode.Token` に名前が変わり、`Role`（トークンが名前を束縛するか、名前を参照するか）は `SourceCode.Token.Role` に名前が変わった。
+
+- ## synesthesia
++ ## synesthesia
+
+- - `Human` and `Agent`, the two kinds of `Discourse`, are renamed `Discourse.Human` and
+-   `Discourse.Agent`.
++ - `Discourse` の二つの種類である `Human` と `Agent` は `Discourse.Human` と `Discourse.Agent` に名前が変わった。
+
+=   `Discourse.Agent`.
+=
+- ## savagery
++ ## savagery
+
+- - The unit directions `Up`, `Down`, `Left` and `Right` are moved into `Delta`: `7*Up + 3*Right`
+-   becomes `7*Delta.Up + 3*Delta.Right`. Bare `Left` and `Right` no longer shadow the
+-   constructors of `Either`.
+- - The drawable shapes are nested in `Svg`: `Figure`, `Rectangle`, `Outline`, `Ellipse`, `Group`,
+-   `Polyline` and `Lettering` become `Svg.Figure`, `Svg.Rectangle` and so on. Drawing code can
+-   import them: `import savagery.Svg.{Group, Rectangle}`.
++ - 単位方向の `Up`、`Down`、`Left`、`Right` は `Delta` の中に移った。`7*Up + 3*Right` は `7*Delta.Up + 3*Delta.Right` になる。裸の `Left` と `Right` が `Either` のコンストラクターを覆い隠すことはなくなった。
++ - 描画できる図形は `Svg` の中に入れ子になった。`Figure`、`Rectangle`、`Outline`、`Ellipse`、`Group`、`Polyline`、`Lettering` は `Svg.Figure`、`Svg.Rectangle` などになる。描画のコードはそれらを import できる：`import savagery.Svg.{Group, Rectangle}`。
+
+- ## anticipation
++ ## anticipation
+
+- - `Level`, the severity of a log event, is renamed `Log.Level`: `Logger(out, level = Level.Warn)`
+-   becomes `Logger(out, level = Log.Level.Warn)`, and a `Loggable` implementation's
+-   `def log(level: Level, …)` becomes `def log(level: Log.Level, …)`.
+- - The pixel channels are nested in `Channel`, which is now exported: `Red`, `Green`, `Blue`,
+-   `Alpha`, `Cyan`, `Magenta`, `Yellow`, `Key` and `Grey` become `Channel.Red` and so on.
+-   `type Rgb565 = (Red[5], Green[6], Blue[5])` needs `import Channel.{Blue, Green, Red}`, or the
+-   qualified names.
++ - ログイベントの重大度である `Level` は `Log.Level` に名前が変わった。`Logger(out, level = Level.Warn)` は `Logger(out, level = Log.Level.Warn)` になり、`Loggable` の実装の `def log(level: Level, …)` は `def log(level: Log.Level, …)` になる。
++ - ピクセルのチャンネルは `Channel` の中に入れ子になり、`Channel` はエクスポートされるようになった。`Red`、`Green`、`Blue`、`Alpha`、`Cyan`、`Magenta`、`Yellow`、`Key`、`Grey` は `Channel.Red` などになる。`type Rgb565 = (Red[5], Green[6], Blue[5])` には `import Channel.{Blue, Green, Red}` か修飾名が必要である。
+
+=   qualified names.
+=
+- ## perihelion
++ ## perihelion
+
+- - perihelion's `Message`, `Channel` and `Reader`, which were not exported to `soundness`, are
+-   nested in `Websocket`: `perihelion.Message` becomes `perihelion.Websocket.Message`.
++ - `soundness` にエクスポートされていなかった perihelion の `Message`、`Channel`、`Reader` は `Websocket` の中に入れ子になった。`perihelion.Message` は `perihelion.Websocket.Message` になる。
+
+- ## galilei
++ ## galilei
+
+- - `galilei.FilesystemBackend` gained the abstract member `def mapping(path: Path on
+-   Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^`, which maps a file read-only into
+-   memory. A class which implements `FilesystemBackend` must define it; one with no memory
+-   mapping defines it as `abort(Io.Error(path, Io.Error.Operation.Open,
+-   Io.Error.Reason.Unsupported))`. (#2474)
+- - `path.open[galilei.Ram](…)` and `path.create[galilei.Ram](RamFlag.Size(n))` no longer raise
+-   `Io.Error` with `Reason.Unsupported` for a file or size above `Int.MaxValue` bytes; the file is
+-   mapped whatever its size. The mapping is now released when the block ends, and no longer
+-   when the garbage collector reclaims it, so a `ram.expanse` kept beyond the block fails with an
+-   `IllegalStateException` when it is read, where it previously went on working. (#2474)
++ - `galilei.FilesystemBackend` に抽象メンバー `def mapping(path: Path on Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^` が加わった。これはファイルを読み取り専用でメモリーにマップする。`FilesystemBackend` を実装するクラスはこれを定義しなければならない。メモリーマッピングを持たないクラスは、これを `abort(Io.Error(path, Io.Error.Operation.Open, Io.Error.Reason.Unsupported))` と定義する。(#2474)
++ - `path.open[galilei.Ram](…)` と `path.create[galilei.Ram](RamFlag.Size(n))` は、`Int.MaxValue` バイトを超えるファイルや大きさに対して `Reason.Unsupported` の `Io.Error` を発生させなくなった。ファイルは大きさにかかわらずマップされる。マッピングは、ガベージコレクターが回収したときではなく、ブロックが終わったときに解放されるようになった。したがって、ブロックの外まで保持された `ram.expanse` は、以前は動き続けていたが、読まれると `IllegalStateException` で失敗する。(#2474)
+
+=   `IllegalStateException` when it is read, where it previously went on working. (#2474)
+=
+- ## stratiform
++ ## stratiform
+
+- - `stratiform.Tels.Field` gained an eighth parameter, `indexes: List[Tels.Index] = Nil`, and
+-   `stratiform.Tels.Scalar` a fourth and fifth, `width: Optional[Int] = Unset` and `intern:
+-   Boolean = false`. Construction is unaffected; a positional pattern needs the added
+-   wildcards: `case Tels.Field(_, _, keyword, _, _, _, _)` becomes `case Tels.Field(_, _,
+-   keyword, _, _, _, _, _)`, and `case Tels.Scalar(_, encoding, _)` becomes `case Tels.Scalar(_,
+-   encoding, _, _, _)`. `stratiform.Tels.ScalarDefinition` gained `width` and `intern` likewise,
+-   after `patterns`. (#2477)
+- - `stratiform.Tel.Pragma.Reference.tels` is now `specification.tel/tels:2.1.0` (was
+-   `tels:2.0.0`), and `stratiform.SchemaResolver.telsSignature` the signature of that revision.
+-   The earlier values are `Tel.Pragma.Reference.telsEarlier` and
+-   `SchemaResolver.telsEarlierSignature`; a document which pins either is still resolved to the
+-   built-in schema. The value hash of `Tels.Axiom.tels` changed with it; the signature of
+-   `Tels.Axiom.acceptance`, and of every existing schema document, did not. (#2477)
+- - `stratiform.Tel.Error.Reason` gained seven cases, numbered 225 to 231: `WidthNotDecimal`,
+-   `WidthConflict`, `WidthWithoutEncoding`, `IndexNotApplicable`, `IndexPathInvalid`,
+-   `IndexPathUnresolved` and `WidthWithIntern`. An exhaustive match on `Reason` needs them. (#2477)
++ - `stratiform.Tels.Field` に八番目のパラメーター `indexes: List[Tels.Index] = Nil` が、`stratiform.Tels.Scalar` に四番目と五番目のパラメーター `width: Optional[Int] = Unset` と `intern: Boolean = false` が加わった。構築には影響しない。位置によるパターンには、追加されたワイルドカードが必要である：`case Tels.Field(_, _, keyword, _, _, _, _)` は `case Tels.Field(_, _, keyword, _, _, _, _, _)` に、`case Tels.Scalar(_, encoding, _)` は `case Tels.Scalar(_, encoding, _, _, _)` になる。`stratiform.Tels.ScalarDefinition` にも同様に、`patterns` の後に `width` と `intern` が加わった。(#2477)
++ - `stratiform.Tel.Pragma.Reference.tels` は `specification.tel/tels:2.1.0`（以前は `tels:2.0.0`）になり、`stratiform.SchemaResolver.telsSignature` はその版の署名になった。以前の値は `Tel.Pragma.Reference.telsEarlier` と `SchemaResolver.telsEarlierSignature` である。どちらかに固定したドキュメントも、引き続き組み込みのスキーマに解決される。それに伴って `Tels.Axiom.tels` の値のハッシュが変わった。`Tels.Axiom.acceptance` の署名と、既存のすべてのスキーマのドキュメントの署名は変わっていない。(#2477)
++ - `stratiform.Tel.Error.Reason` に、225 から 231 の番号を持つ七つのケースが加わった：`WidthNotDecimal`、`WidthConflict`、`WidthWithoutEncoding`、`IndexNotApplicable`、`IndexPathInvalid`、`IndexPathUnresolved`、`WidthWithIntern`。`Reason` に対する網羅的なマッチにはこれらが必要である。(#2477)
+
+- ## zephyrine
++ ## zephyrine
+
+- - An `Expanse` is now lent as a tracked capability: the lambda of `path.expanse { … }`, and of
+-   `FilesystemBackend#expanse`, takes a `zephyrine.Expanse^` where it took a `zephyrine.Expanse`.
+-   In a capture-checked module, a method which is passed that expanse declares its parameter as
+-   `Expanse^`, and a value which holds it cannot be returned from the block. A capture-checked
+-   class which implements `FilesystemBackend` changes the type of `expanse`'s `lambda` parameter
+-   to match. Code compiled without capture checking is unaffected. (#2489)
++ - `Expanse` は追跡されるケイパビリティとして貸し出されるようになった。`path.expanse { … }` と `FilesystemBackend#expanse` のラムダは、`zephyrine.Expanse` を取っていたところで `zephyrine.Expanse^` を取る。キャプチャ検査されるモジュールでは、その expanse を渡されるメソッドはパラメーターを `Expanse^` と宣言し、それを保持する値はブロックから返せない。`FilesystemBackend` を実装するキャプチャ検査されたクラスは、それに合わせて `expanse` の `lambda` パラメーターの型を変える。キャプチャ検査なしでコンパイルされるコードには影響しない。(#2489)
+
+=   to match. Code compiled without capture checking is unaffected. (#2489)
+=
+- ## dissonance
++ ## dissonance
+
+- - `Diff#chunks` (and so `Diff#serialize`) now gives the correct right-hand position for a chunk
+-   which directly follows another chunk with no `Par` between them; it was previously computed
+-   from the left-hand position, so such a chunk's `a`/`d`/`c` command could name the wrong
+-   right-hand line. (#2401)
++ - `Diff#chunks`（したがって `Diff#serialize`）は、間に `Par` を挟まずに別のチャンクの直後に続くチャンクについて、正しい右側の位置を返すようになった。以前は左側の位置から計算されていたので、そのようなチャンクの `a`/`d`/`c` コマンドが誤った右側の行を指すことがあった。(#2401)
+
+- ## turbulence
++ ## turbulence
+
+- - `lineSeparation.strictLinefeedsLineSeparation` now ends a line at a bare LF and keeps a CR as
+-   text, the mirror image of `strictCarriageReturnLineSeparation`. It previously had that
+-   policy's table, so it ended lines at CR and kept LF. Code which imported it for the old
+-   behaviour should import `lineSeparation.strictCarriageReturnLineSeparation`, which differs
+-   only in writing CR. (#2408)
++ - `lineSeparation.strictLinefeedsLineSeparation` は、裸の LF で行を終え、CR をテキストとして残すようになった。`strictCarriageReturnLineSeparation` の鏡像である。以前はそのポリシーの表を持っていたので、CR で行を終え、LF を残していた。以前の動作のためにこれを import していたコードは `lineSeparation.strictCarriageReturnLineSeparation` を import すること。違いは CR を書き出すことだけである。(#2408)
+
+- ## imperial
++ ## imperial
+
+- - `imperial.Base.Root`'s type-level path label is now `"root"` (was the misspelt `"roto"`),
+-   matching the directory it names. Only code which names the layout's `Topic` type explicitly
+-   is affected. (#2411)
++ - `imperial.Base.Root` の型レベルのパスのラベルは、名前の付いたディレクトリに合わせて `"root"`（以前は綴りを誤った `"roto"`）になった。影響を受けるのは、レイアウトの `Topic` 型を明示的に名指しするコードだけである。(#2411)
+
+=   is affected. (#2411)
+=
+- ## monotonous
++ ## monotonous
+
+- - `alphabets.base32ExtendedHexUpperCase` now also accepts the lower-case extended-hex digits
+-   when decoding, and `alphabets.base32ExtendedHexLowerCase` the upper-case ones, each with the
+-   value of the same letter in its own case. They previously tolerated the *standard* Base32
+-   alphabet of the other case instead, so `a` decoded as 0 rather than 10, and `w`–`z` (or
+-   `W`–`Z`) were accepted; those four letters now raise `Serialization.Error`. (#2434)
+- - `alphabets.base32Crockford` now decodes a lower-case `l` as 1, as it already did `L`, `i` and
+-   `I`; it previously raised `Serialization.Error`. (#2434)
++ - `alphabets.base32ExtendedHexUpperCase` は復号の際に小文字の拡張 16 進の数字も受け付けるようになり、`alphabets.base32ExtendedHexLowerCase` は大文字のものを受け付けるようになった。それぞれ、自身の大文字小文字での同じ文字の値を持つ。以前は代わりに、もう一方の大文字小文字の*標準*の Base32 アルファベットを許容していたので、`a` は 10 ではなく 0 として復号され、`w`–`z`（または `W`–`Z`）が受け付けられていた。それら四文字は今では `Serialization.Error` を発生させる。(#2434)
++ - `alphabets.base32Crockford` は、すでに `L`、`i`、`I` をそうしていたように、小文字の `l` を 1 として復号するようになった。以前は `Serialization.Error` を発生させていた。(#2434)
+
+=   `I`; it previously raised `Serialization.Error`. (#2434)
+=
+- ## monotonous
++ ## monotonous
+
+- - `alphabets.base64Uuencoding` now has the 64 characters of uuencoding, from `` ` `` (zero)
+-   through `!` to `_`. It previously had 63, each one place too low, so serializing a whole
+-   value with it threw `StringIndexOutOfBoundsException` and a stream was encoded five bits to
+-   a character; text written by the old alphabet does not decode to the same bytes. (#2412)
+- - `alphabets.octalStandard` no longer accepts `=` when decoding; it was read as a ninth digit,
+-   and now raises `Serialization.Error` as any other foreign character does. (#2412)
++ - `alphabets.base64Uuencoding` は、`` ` ``（ゼロ）から `!` を経て `_` までの、uuencoding の 64 文字を持つようになった。以前は 63 文字で、それぞれが一つずつ低い位置にあったので、値全体をこれで直列化すると `StringIndexOutOfBoundsException` が投げられ、ストリームは一文字あたり五ビットで符号化されていた。古いアルファベットで書かれたテキストは同じバイトに復号されない。(#2412)
++ - `alphabets.octalStandard` は復号の際に `=` を受け付けなくなった。以前は九番目の数字として読まれていたが、今では他の異質な文字と同じく `Serialization.Error` を発生させる。(#2412)
+
+=   and now raises `Serialization.Error` as any other foreign character does. (#2412)
+=
+- ## gesticulate
++ ## gesticulate
+
+- - `Media.Suffix.FastInfoset` is now written `fastinfoset`, the spelling IANA registers (RFC
+-   6839), by `Suffix#name`, its `Showable` and a shown or encoded `MediaType`; it was
+-   `fast-infoset`. `MediaType.parse` (and so `Text#as[MediaType]` and `media"…"`) now accepts
+-   `+fastinfoset`, which previously raised `MediaType.Error` with `InvalidSuffix`; the
+-   hyphenated `+fast-infoset` is still read. (#2437)
++ - `Media.Suffix.FastInfoset` は、`Suffix#name`、その `Showable`、表示またはエンコードされた `MediaType` において、IANA が登録している綴り（RFC 6839）である `fastinfoset` と書かれるようになった。以前は `fast-infoset` であった。`MediaType.parse`（したがって `Text#as[MediaType]` と `media"…"`）は、以前は `InvalidSuffix` の `MediaType.Error` を発生させていた `+fastinfoset` を受け付けるようになった。ハイフン付きの `+fast-infoset` も引き続き読まれる。(#2437)
+
+=   hyphenated `+fast-infoset` is still read. (#2437)
+=
+- ## savagery
++ ## savagery
+
+- - `Svg.Outline`'s directional steps now move in the direction they name, in SVG's axes (`y`
+-   grows downwards): `lineUp(n)` is `Draw(Delta(0, -n))`, `lineDown(n)` `Draw(Delta(0, n))`,
+-   `lineLeft(n)` `Draw(Delta(-n, 0))` and `lineRight(n)` `Draw(Delta(n, 0))`, and
+-   `moveUp`/`moveDown`/`moveLeft`/`moveRight` likewise with `Move`. They were rotated a quarter
+-   turn: `lineUp(n)` drew `Delta(n, 0)`, `lineDown(n)` `Delta(-n, 0)`, `lineLeft(n)`
+-   `Delta(0, -n)` and `lineRight(n)` `Delta(0, n)`. To keep a path's existing shape, replace
+-   `lineUp` with `lineRight`, `lineDown` with `lineLeft`, `lineLeft` with `lineUp` and
+-   `lineRight` with `lineDown` (and the `move…` methods the same way). (#2449)
++ - `Svg.Outline` の方向付きのステップは、SVG の軸（`y` は下向きに増える）において、名前の示す方向に動くようになった：`lineUp(n)` は `Draw(Delta(0, -n))`、`lineDown(n)` は `Draw(Delta(0, n))`、`lineLeft(n)` は `Draw(Delta(-n, 0))`、`lineRight(n)` は `Draw(Delta(n, 0))` であり、`moveUp`/`moveDown`/`moveLeft`/`moveRight` も同様に `Move` を使う。以前は四分の一回転していた：`lineUp(n)` は `Delta(n, 0)`、`lineDown(n)` は `Delta(-n, 0)`、`lineLeft(n)` は `Delta(0, -n)`、`lineRight(n)` は `Delta(0, n)` を描いていた。パスの既存の形を保つには、`lineUp` を `lineRight` に、`lineDown` を `lineLeft` に、`lineLeft` を `lineUp` に、`lineRight` を `lineDown` に置き換える（`move…` メソッドも同じように置き換える）。(#2449)
+
+- ## inimitable
++ ## inimitable
+
+- - `Uuid.parse`, `Uuid.extract`, the `Uuid` extractor, decoding a `Uuid` from `Text` and the
+-   `uuid"…"` literal now accept only the canonical form, five groups of 8, 4, 4, 4 and 12
+-   hexadecimal digits. A text with a shorter group, such as a 31-digit UUID, was previously
+-   read as if the group were zero-padded; it now raises `Uuid.Error` (or is `Unset`, or a
+-   compile error for a literal). (#2462)
++ - `Uuid.parse`、`Uuid.extract`、`Uuid` の抽出子、`Text` からの `Uuid` の復号、`uuid"…"` リテラルは、正準形（8、4、4、4、12 桁の 16 進数の五つのグループ）だけを受け付けるようになった。31 桁の UUID のように短いグループを持つテキストは、以前はそのグループがゼロでパディングされているかのように読まれていた。今では `Uuid.Error` を発生させる（または `Unset` になり、リテラルではコンパイルエラーになる）。(#2462)
+
+=   compile error for a literal). (#2462)
+=
+- ## polyvinyl
++ ## polyvinyl
+
+- - `polyvinyl.Specification.Multiplicity` gained a case, `Series`: a member read as a collection
+-   of the specification's own. A match on `Multiplicity` which is to be exhaustive needs a case
+-   for it; an existing specification never produces it. (#2491)
++ - `polyvinyl.Specification.Multiplicity` にケース `Series` が加わった。仕様自身のもののコレクションとして読まれるメンバーである。`Multiplicity` に対するマッチを網羅的にするには、これに対するケースが必要である。既存の仕様がこれを生じることはない。(#2491)
+
+=   for it; an existing specification never produces it. (#2491)
+=
+- ## fulminate
++ ## fulminate
+
+- - `fulminate.Error`'s primary constructor changed from `Error(val d: Int, val e: Int)(val message:
+-   Message, private val cause: Throwable | Null)(using val diagnostics: Diagnostics)` to
+-   `Error(val module: Int, val number: Int, val variant: Int)(val message: Message, private val
+-   cause: Throwable | Null)(using val diagnostics: Diagnostics)`, and its secondary constructor
+-   from `this(d: Int, e: Int)(message: Message)(using Diagnostics)` to `this(module: Int, number:
+-   Int, variant: Int)(message: Message)(using Diagnostics)`. `this(message: Message, cause:
+-   Throwable | Null = null)(using Diagnostics)` is unchanged. The members `d` and `e` are removed;
+-   `e` is now `variant`, and `d` has no equivalent: an error is identified by `module` (the number
+-   of its library) and `number` (its number within the library). A subclass written `extends
+-   Error(d, e)(…)` must be given a module number and a number within it, or be written `extends
+-   Error(…)` with no numbers. (#2493)
+- - Every numbered error's code changed from `SN-ddd` or `SN-ddd.e` to a bolt code, `↯/s.m.n` or
+-   `↯/s.m.n.e`, with `m` the number of the error's library and `n` the error's number within it;
+-   `e` is unchanged. `doc/errors/sn.md` gives the new code of every former `SN-` code. This changes
+-   the result of `fulminate.Error#errorCode` (`t"SN-077.3"` → `t"↯/s.100.2.3"`),
+-   `fulminate.Error#colourCode`, `fulminate.Error#labelled` and `fulminate.Error#getMessage`
+-   (`"[↯SN-077.3] …"` → `"[↯/s.100.2.3] …"`), and the prefix of every compile error a Soundness
+-   macro reports with a number. Text which matches an error's message with its prefix must be
+-   updated. The new member `fulminate.Error#bolt`, a `fulminate.Bolt`, gives the code as a value.
+-   (#2493)
+- - `fulminate.halt` and `fulminate.warn`: the overloads taking an error number changed from
+-   `(d: Int, message: Message)`, `(d: Int, message: Message, position: Matchable)`, `(d: Int,
+-   reason: Clarification, message: Message)` and `(d: Int, reason: Clarification, message: Message,
+-   position: Matchable)` to the same with `d: Int` replaced by `module: Int, number: Int`. The
+-   overload `(message: Message, position: quotes.reflect.Position | Null = null)` is unchanged.
+-   (#2493)
++ - `fulminate.Error` のプライマリコンストラクターは `Error(val d: Int, val e: Int)(val message: Message, private val cause: Throwable | Null)(using val diagnostics: Diagnostics)` から `Error(val module: Int, val number: Int, val variant: Int)(val message: Message, private val cause: Throwable | Null)(using val diagnostics: Diagnostics)` に、セカンダリコンストラクターは `this(d: Int, e: Int)(message: Message)(using Diagnostics)` から `this(module: Int, number: Int, variant: Int)(message: Message)(using Diagnostics)` に変わった。`this(message: Message, cause: Throwable | Null = null)(using Diagnostics)` は変わらない。メンバー `d` と `e` は削除された。`e` は `variant` になり、`d` に相当するものはない。エラーは `module`（そのライブラリの番号）と `number`（ライブラリ内でのそのエラーの番号）で識別される。`extends Error(d, e)(…)` と書かれたサブクラスには、モジュール番号とその中での番号を与えるか、番号なしの `extends Error(…)` と書かなければならない。(#2493)
++ - 番号の付いたすべてのエラーのコードは、`SN-ddd` または `SN-ddd.e` から、ボルトコード `↯/s.m.n` または `↯/s.m.n.e` に変わった。`m` はエラーのライブラリの番号、`n` はライブラリ内でのエラーの番号であり、`e` は変わらない。`doc/errors/sn.md` に、以前のすべての `SN-` コードの新しいコードが載っている。これにより、`fulminate.Error#errorCode`（`t"SN-077.3"` → `t"↯/s.100.2.3"`）、`fulminate.Error#colourCode`、`fulminate.Error#labelled`、`fulminate.Error#getMessage`（`"[↯SN-077.3] …"` → `"[↯/s.100.2.3] …"`）の結果と、Soundness のマクロが番号付きで報告するすべてのコンパイルエラーの接頭辞が変わる。エラーのメッセージを接頭辞付きで照合するテキストは更新しなければならない。新しいメンバー `fulminate.Error#bolt`（`fulminate.Bolt`）は、コードを値として与える。(#2493)
++ - `fulminate.halt` と `fulminate.warn`：エラー番号を取るオーバーロード `(d: Int, message: Message)`、`(d: Int, message: Message, position: Matchable)`、`(d: Int, reason: Clarification, message: Message)`、`(d: Int, reason: Clarification, message: Message, position: Matchable)` は、`d: Int` を `module: Int, number: Int` に置き換えた同じものに変わった。オーバーロード `(message: Message, position: quotes.reflect.Position | Null = null)` は変わらない。(#2493)
+
+=   (#2493)
+=
+- ## stratiform
++ ## stratiform
+
+- - The codes of `stratiform.Tel.Error`, `stratiform.Bintel.Error` and `stratiform.Ratel.Error` for
+-   a reason the TEL, BinTEL or RaTEL Specification numbers are compound bolt codes carrying the
+-   specification's own code: `SN-605.107` → `↯/s.118.1/t.1.7`, `SN-609.5` (BinTEL) →
+-   `↯/s.118.5/t.4.5`, and `SN-615.12` (RaTEL) → `↯/s.118.11/t.5.12`. A reason which is the
+-   implementation's own is a variant, as before: `SN-605.402` → `↯/s.118.1.402`. The reasons'
+-   own numbers are unchanged. (#2493)
++ - TEL、BinTEL、RaTEL の仕様が番号を付けている理由に対する `stratiform.Tel.Error`、`stratiform.Bintel.Error`、`stratiform.Ratel.Error` のコードは、仕様自身のコードを含む複合ボルトコードになった：`SN-605.107` → `↯/s.118.1/t.1.7`、`SN-609.5`（BinTEL）→ `↯/s.118.5/t.4.5`、`SN-615.12`（RaTEL）→ `↯/s.118.11/t.5.12`。実装自身の理由は、以前と同じくバリアントである：`SN-605.402` → `↯/s.118.1.402`。理由自身の番号は変わらない。(#2493)

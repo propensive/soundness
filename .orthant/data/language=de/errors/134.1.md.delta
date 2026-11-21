@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.134.1` — `Yaml.Error`
++ # `↯/s.134.1` — `Yaml.Error`
+
+- Raised when a YAML document cannot be parsed, or cannot be read as the type asked for.
++ Wird ausgelöst, wenn ein YAML-Dokument nicht geparst oder nicht als der angeforderte Typ gelesen
++ werden kann.
+
+- ## Cause
++ ## Ursache
+
+- Ypsiloid reports both parse failures and conversion failures through this error. A parse
+- failure means the text is not well-formed YAML; a conversion failure means the document is
+- valid but does not have the shape the target type requires.
++ Ypsiloid meldet über diesen Fehler sowohl Parse- als auch Konvertierungsfehler. Ein Parsefehler
++ bedeutet, dass der Text kein wohlgeformtes YAML ist; ein Konvertierungsfehler bedeutet, dass das
++ Dokument gültig ist, aber nicht die Gestalt hat, die der Zieltyp verlangt.
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Message
++ column  Grund
++ column  Meldung
+
+- row  `↯/s.134.1.1`  `NotType`  `[↯/s.134.1.1] the YAML value had type <found> instead of <expected>`
++ row  `↯/s.134.1.1`  `NotType`  `[↯/s.134.1.1] the YAML value had type <found> instead of <expected>`
+
+- row  `↯/s.134.1.2`  `Absent`  `[↯/s.134.1.2] the YAML value was not present`
++ row  `↯/s.134.1.2`  `Absent`  `[↯/s.134.1.2] the YAML value was not present`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- For a parse failure, check the document against the YAML specification — indentation and
+- block-scalar indicators are the usual culprits. For a conversion failure, compare the
+- document's shape with the type's fields; under an accruing strategy every mismatch is
+- reported at once, each with a path to the offending node.
++ Prüfen Sie bei einem Parsefehler das Dokument gegen die YAML-Spezifikation — Einrückung und
++ Indikatoren für Blockskalare sind die üblichen Verursacher. Vergleichen Sie bei einem
++ Konvertierungsfehler die Gestalt des Dokuments mit den Feldern des Typs; unter einer sammelnden
++ Strategie wird jede Abweichung auf einmal gemeldet, jede mit einem Pfad zum betreffenden Knoten.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/ypsiloid/src/core/ypsiloid.Yaml.scala`
++ - Quelle: `lib/ypsiloid/src/core/ypsiloid.Yaml.scala`

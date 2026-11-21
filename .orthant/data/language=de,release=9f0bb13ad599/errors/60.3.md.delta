@@ -1,0 +1,49 @@
+orthant 1 language
+
+- # `↯/s.60.3` — `Structural.Error`
++ # `↯/s.60.3` — `Structural.Error`
+
+- Raised when a record of fixed layout is read from fewer bytes than its layout needs.
++ Wird ausgelöst, wenn ein Datensatz mit festem Layout aus weniger Bytes gelesen wird, als sein
++ Layout braucht.
+
+- ## Cause
++ ## Ursache
+
+- `unpack` checks the whole record against the bytes it is reading before it loads any field.
+- The error is raised when `width` bytes are not there at `offset`: the offset is negative, or
+- the record (or the repeated section of records) would run past the `size` of the data or
+- expanse.
++ `unpack` prüft den ganzen Datensatz gegen die Bytes, die es liest, bevor es irgendein Feld
++ lädt. Der Fehler wird ausgelöst, wenn an `offset` keine `width` Bytes vorhanden sind: Der
++ Offset ist negativ, oder der Datensatz (oder der wiederholte Abschnitt von Datensätzen) würde
++ über die `size` der Daten oder des Expanse hinausreichen.
+
+- ## Example message
++ ## Beispielmeldung
+
+=
+- ```
++ ```
+
+- [↯/s.60.3] a record of 12 bytes cannot be read at offset 4 of 12 bytes
++ [↯/s.60.3] a record of 12 bytes cannot be read at offset 4 of 12 bytes
+
+= [↯/s.60.3] a record of 12 bytes cannot be read at offset 4 of 12 bytes
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Check the offset against the format's specification, and that the input is complete. A file
+- which is shorter than its own headers claim is truncated or is not in the format expected.
++ Prüfen Sie den Offset anhand der Spezifikation des Formats und ob die Eingabe vollständig ist.
++ Eine Datei, die kürzer ist, als ihre eigenen Header angeben, ist abgeschnitten oder nicht im
++ erwarteten Format.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/zephyrine/src/layout/zephyrine.Structural.scala`
++ - Quelle: `lib/zephyrine/src/layout/zephyrine.Structural.scala`

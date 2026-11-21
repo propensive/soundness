@@ -1,0 +1,175 @@
+orthant 1 language
+
+- # Soundness error codes
++ # Soundness のエラーコード
+
+- Every error Soundness numbers carries a stable identifier, its
+- [bolt code](https://github.com/propensive/bolt), of the form `↯/s.m.n` or
+- `↯/s.m.n.v`, where:
++ Soundness が番号を付けるすべてのエラーは、安定した識別子である[ボルトコード](https://github.com/propensive/bolt)を持ち、その形は `↯/s.m.n` または `↯/s.m.n.v` である。それぞれの意味は次のとおりである。
+
+- - `s` is the letter by which bolt codes name Soundness;
+- - `m` is the number of the module the error is in, as [the list of
+-   modules](modules.md) and the `bolt` registry's `s.tel` give it: modules are
+-   numbered in an order in which each comes after those it depends on, as
+-   they stood when each was numbered, and a new module takes the next number;
+- - `n` is the number of the error within its module, the next free one when
+-   the error is written;
+- - `v`, when present, identifies a specific variant of the error (typically
+-   the case of a `Reason` enum).
++ - `s` は、ボルトコードが Soundness を名指すのに使う文字である。
++ - `m` は、エラーがあるモジュールの番号で、[モジュールの一覧](modules.md)と `bolt` レジストリの `s.tel` が与えるものである。モジュールは、それぞれが番号付けされた時点で、依存するモジュールの後に来る順序で番号付けされ、新しいモジュールは次の番号を取る。
++ - `n` は、モジュール内でのエラーの番号で、エラーが書かれたときに空いている次の番号である。
++ - `v` は、存在する場合、エラーの特定のバリアント（典型的には `Reason` 列挙型のケース）を識別する。
+
+- An error which is reported on account of another project's carries that
+- error's code after its own: Stratiform's `Tel.Error` for a document the TEL
+- Specification rejects with `↯/t.1.7` is `↯/s.118.1/t.1.7`.
++ 別のプロジェクトのエラーを理由として報告されるエラーは、自らのコードの後にそのエラーのコードを持つ。
++ TEL 仕様が `↯/t.1.7` で拒否するドキュメントに対する Stratiform の `Tel.Error` は `↯/s.118.1/t.1.7` である。
+
+- The rendered prefix appears in compile output as `[↯/s.m.n.v]`, coloured if
+- the compiler's `-color` setting is on. In the source, the numbers are the
+- first arguments of `fulminate.Error` and of `halt`: `Error(118, 1,
+- reason.number)`.
++ 描画された接頭辞は、コンパイルの出力に `[↯/s.m.n.v]` として現れ、コンパイラの `-color` 設定が有効なら色が付く。
++ ソースでは、番号は `fulminate.Error` と `halt` の最初の引数である。`Error(118, 1, reason.number)`。
+
+- Each error is documented in a markdown file at `<m>.<n>.md`. When an
+- error has variants, every `↯/s.m.n.v` is documented in the same file,
+- under `## Variants`: as a row of a `tabular` table, with the
+- columns `Code`, `Reason`, and whichever of `Meaning`, `Message` (an
+- example), `Resolution` and `Wire code` its variants have; or, when
+- there are five or fewer and each needs an explanation and a resolution
+- of its own, as a `### ↯/s.m.n.v` sub-section, with `**Example.**` and
+- `**Resolution.**` paragraphs. A variant described only by its example
+- message is always a row.
++ 各エラーは `<m>.<n>.md` にある Markdown ファイルで文書化される。
++ エラーにバリアントがある場合、すべての `↯/s.m.n.v` は同じファイルの `## Variants` の下で文書化される。`tabular` 表の行として、`Code`、`Reason` の列と、`Meaning`、`Message`（例）、`Resolution`、`Wire code` のうちそのバリアントが持つものの列で書くか、バリアントが五つ以下でそれぞれが独自の説明と解決方法を必要とする場合は、`**Example.**` と `**Resolution.**` の段落を持つ `### ↯/s.m.n.v` の小節として書く。
++ 例のメッセージだけで説明されるバリアントは、常に行として書く。
+
+- A code is never reused. When an error is removed, its page stays, marked
+- `(retired)`, saying what became of it, and its number is marked retired in
+- `s.tel`: a reference to the code from an older release still resolves, and
+- the number cannot be allocated again by accident. A retired page says what
+- replaced the code in a `Was` and `Now` table, with a row for the code and
+- for each of its variants that has a successor, even when there is only one.
++ コードは決して再利用されない。
++ エラーが取り除かれても、そのページは `(retired)` と印を付けて残り、それがどうなったかを述べ、その番号は `s.tel` で廃止済みと印が付けられる。古いリリースからのコードへの参照はなお解決され、番号が誤って再び割り当てられることはない。
++ 廃止されたページは、何がコードを置き換えたかを`Was` と `Now` の表で述べ、コードと、後継を持つそのバリアントのそれぞれについて、一つしかない場合でも行を設ける。
+
+- Every page names the source file its error is raised from. It does not
+- give a line number, since a line number is invalidated by any edit above
+- it and nothing checks that it is still right.
++ すべてのページは、そのエラーが発生させられるソースファイルを名指す。
++ 行番号は示さない。行番号はそれより上のどんな編集によっても無効になり、それがまだ正しいことを何も検査しないからである。
+
+- ## The `SN-` codes
++ ## `SN-` コード
+
+- Until Soundness adopted bolt codes, an error was `SN-ddd`, a three-digit
+- number unique across every module. [`sn.md`](sn.md) gives the bolt code of
+- each `SN-` code which was live then. The pages named with three digits
+- (`013.md`) are those of the `SN-` codes retired before then, which never
+- had a bolt code; they are kept so that a reference from an older release
+- still resolves.
++ Soundness がボルトコードを採用するまで、エラーは `SN-ddd` であり、すべてのモジュールを通じて一意な三桁の番号だった。
++ [`sn.md`](sn.md) は、その時点で有効だった各 `SN-` コードのボルトコードを示す。
++ 三桁で名付けられたページ（`013.md`）は、それ以前に廃止された `SN-` コードのページであり、ボルトコードを持ったことはない。古いリリースからの参照がなお解決されるように残してある。
+
+- ## Families
++ ## 系列
+
+- Some errors are raised by one check against different limits, so each
+- has a page of its own, but they are easiest to compare together.
++ いくつかのエラーは、一つの検査が異なる限界に対して発生させるものである。そのためそれぞれが独自のページを持つが、まとめて比べるのが最も分かりやすい。
+
+- The integer literals of Hypotenuse are checked against the range of
+- their type:
++ Hypotenuse の整数リテラルは、その型の範囲に照らして検査される。
+
+= their type:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Least
+- column  Greatest
+- column  Below the range
+- column  Above the range
++ column  型
++ column  最小
++ column  最大
++ column  範囲より下
++ column  範囲より上
+
+- row  `S8`  -128  127  [`↯/s.27.6`](27.6.md)  [`↯/s.27.13`](27.13.md)
++ row  `S8`  -128  127  [`↯/s.27.6`](27.6.md)  [`↯/s.27.13`](27.13.md)
+
+- row  `S16`  -32768  32767  [`↯/s.27.1`](27.1.md)  [`↯/s.27.7`](27.7.md)
++ row  `S16`  -32768  32767  [`↯/s.27.1`](27.1.md)  [`↯/s.27.7`](27.7.md)
+
+- row  `U8`  0  255  [`↯/s.27.8`](27.8.md)  [`↯/s.27.9`](27.9.md)
++ row  `U8`  0  255  [`↯/s.27.8`](27.8.md)  [`↯/s.27.9`](27.9.md)
+
+- row  `U16`  0  65535  [`↯/s.27.12`](27.12.md)  [`↯/s.27.14`](27.14.md)
++ row  `U16`  0  65535  [`↯/s.27.12`](27.12.md)  [`↯/s.27.14`](27.14.md)
+
+= row  `U16`  0  65535  [`↯/s.27.12`](27.12.md)  [`↯/s.27.14`](27.14.md)
+- ```
++ ```
+
+- The binary and hexadecimal literals of Hypotenuse:
++ Hypotenuse の二進リテラルと十六進リテラル：
+
+= The binary and hexadecimal literals of Hypotenuse:
+=
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Literal
+- column  Rejects
+- row  [`↯/s.27.2`](27.2.md)  `bin"…"`  a character other than `0` or `1`
+- row  [`↯/s.27.5`](27.5.md)  `bin"…"`  a width other than 8, 16, 32 or 64 bits
+- row  [`↯/s.27.3`](27.3.md)  `hex"…"`  an odd number of digits
+- row  [`↯/s.27.4`](27.4.md)  `hex"…"`  a character that is not a hexadecimal digit
++ column  コード
++ column  リテラル
++ column  拒否するもの
++ row  [`↯/s.27.2`](27.2.md)  `bin"…"`  `0` と `1` 以外の文字
++ row  [`↯/s.27.5`](27.5.md)  `bin"…"`  8、16、32、64 ビット以外の幅
++ row  [`↯/s.27.3`](27.3.md)  `hex"…"`  奇数個の桁
++ row  [`↯/s.27.4`](27.4.md)  `hex"…"`  十六進数の桁でない文字
+
+= row  [`↯/s.27.4`](27.4.md)  `hex"…"`  a character that is not a hexadecimal digit
+- ```
++ ```
+
+- The time literals checked by Aviation's `validTime` macro:
++ Aviation の `validTime` マクロが検査する時刻のリテラル：
+
+= The time literals checked by Aviation's `validTime` macro:
+=
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Rejects
+- row  [`↯/s.73.8`](73.8.md)  an argument which is not a literal `Double`
+- row  [`↯/s.73.11`](73.11.md)  a negative time
+- row  [`↯/s.73.1`](73.1.md)  an hour above 12
+- row  [`↯/s.73.2`](73.2.md)  a minute value above 59
+- row  [`↯/s.73.7`](73.7.md)  minutes not written as exactly two digits
++ column  コード
++ column  拒否するもの
++ row  [`↯/s.73.8`](73.8.md)  リテラルの `Double` でない引数
++ row  [`↯/s.73.11`](73.11.md)  負の時刻
++ row  [`↯/s.73.1`](73.1.md)  12 を超える時
++ row  [`↯/s.73.2`](73.2.md)  59 を超える分の値
++ row  [`↯/s.73.7`](73.7.md)  ちょうど二桁で書かれていない分
+
+= row  [`↯/s.73.7`](73.7.md)  minutes not written as exactly two digits
+- ```
++ ```

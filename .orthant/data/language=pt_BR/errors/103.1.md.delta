@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.103.1` — `Http.Response.Error`
++ # `↯/s.103.1` — `Http.Response.Error`
+
+- Raised when Telekinesis cannot parse an HTTP response.
++ Lançado quando o Telekinesis não consegue analisar uma resposta HTTP.
+
+- ## Cause
++ ## Causa
+
+- After a connection is established, the response is read and parsed.
+- This error reports a malformed response. The message is `could not
++ Depois que uma conexão é estabelecida, a resposta é lida e analisada.
++ Este erro relata uma resposta malformada. A mensagem é `could not
+
+- parse HTTP response because $reason`.
++ parse HTTP response because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.103.1.1` — `Expectation`
++ ### `↯/s.103.1.1` — `Expectation`
+
+- A specific character was expected at the parser's current position
+- but a different one was encountered.
++ Um caractere específico era esperado na posição atual do parser,
++ mas outro foi encontrado.
+
+- **Example.** `[↯/s.103.1.1] could not parse HTTP response because X was found when : was expected`
++ **Exemplo.** `[↯/s.103.1.1] could not parse HTTP response because X was found when : was expected`
+
+- **Resolution.** Confirm the server is producing valid HTTP; if the
+- peer is non-standard, point Telekinesis at a compliant implementation.
++ **Resolução.** Confirme que o servidor produz HTTP válido; se o par
++ não segue o padrão, aponte o Telekinesis para uma implementação conforme.
+
+- ### `↯/s.103.1.2` — `Status`
++ ### `↯/s.103.1.2` — `Status`
+
+- The HTTP status code on the response line was not three digits or
+- otherwise unparseable.
++ O código de status HTTP na linha de resposta não tinha três dígitos ou
++ não pôde ser analisado por outro motivo.
+
+- **Example.** `[↯/s.103.1.2] could not parse HTTP response because the HTTP status code 12 was invalid`
++ **Exemplo.** `[↯/s.103.1.2] could not parse HTTP response because the HTTP status code 12 was invalid`
+
+- **Resolution.** The peer is producing a non-conformant status line;
+- fix the server or use a different one.
++ **Resolução.** O par está produzindo uma linha de status não conforme;
++ corrija o servidor ou use outro.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/telekinesis/src/core/telekinesis.Http.scala`
++ - Código-fonte: `lib/telekinesis/src/core/telekinesis.Http.scala`

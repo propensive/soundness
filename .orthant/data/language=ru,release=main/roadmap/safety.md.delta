@@ -1,0 +1,47 @@
+orthant 1 language
+
+- The flare plugin (pinned in `etc/tools`, configured by `.pyrocosm/flare/config.tel`, enabled
+- on every checked component by the `-P:flare:` options in `flareToolchain`) provides the
+- census: every rule in the configuration counted over the sources — the declared escapes
+- (`unsafely`, the `caps.unsafe` family, every `unsafe`-prefixed name, every method gated by the
+- token), the compiler-trust bypasses (`asInstanceOf`, `.nn`, `@unchecked`, `???`, catch-all
+- clauses), the partial reads, and the imperative constructs the streaming kernel is meant to
+- confine. `make unsafety` runs `flare metrics --dry-run` and prints it; `flare metrics` records
+- it in git notes, commit by commit, so the trend lives in git rather than in a roadmap
+- paragraph. One rule already gates: `S1.1`, a method taking `(using Unsafe)` must be named
+- `unsafe…`, fails the build; its converse `S1.2` is advisory, with the eight definitions that
+- break it listed in `doc/work/standards/naming.md`.
++ Плагин flare (закреплённый в `etc/tools`, настроенный через `.pyrocosm/flare/config.tel` и
++ включённый на каждом проверяемом компоненте опциями `-P:flare:` в `flareToolchain`) даёт
++ перепись: каждое правило конфигурации, подсчитанное по исходникам, — объявленные лазейки
++ (`unsafely`, семейство `caps.unsafe`, каждое имя с префиксом `unsafe`, каждый метод, закрытый
++ токеном), обходы доверия компилятору (`asInstanceOf`, `.nn`, `@unchecked`, `???`, всеобъемлющие
++ ветви), частичные чтения и императивные конструкции, которые должно ограничить потоковое ядро.
++ `make unsafety` запускает `flare metrics --dry-run` и печатает её; `flare metrics` записывает её
++ в заметки git, коммит за коммитом, так что тренд живёт в git, а не в абзаце дорожной карты. Одно
++ правило уже служит барьером: `S1.1` — метод, принимающий `(using Unsafe)`, должен называться
++ `unsafe…` — проваливает сборку; обратное ему `S1.2` носит рекомендательный характер, а восемь
++ нарушающих его определений перечислены в `doc/work/standards/naming.md`.
+
+- The recipes that make capture and separation checking workable — when a type is Exclusive,
+- Shared, Unscoped, Mutable or Pure and the lattice traps between them; the honest-given playbook
+- (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, explicit capturing evidence instead of context
+- bounds); where a fresh result may and may not be minted; the `consume` and loan seams; what a
+- test may and may not do — exist only as entries in `rep/DECISIONS.md`, a 2400-line log. They
+- belong in `doc/work/standards/capabilities.md`, with the tag vocabulary `safety-2` relies on and the
+- one sanctioned hatch form for each tag, and a pointer from `doc/work/philosophy/capture-checking.md`.
++ Рецепты, которые делают проверку захвата и разделения работоспособной, — когда тип является
++ Exclusive, Shared, Unscoped, Mutable или Pure и какие ловушки решётки лежат между ними; набор
++ приёмов для честных given (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, явное
++ захватывающее свидетельство вместо ограничений контекста); где свежий результат можно и где
++ нельзя создавать; швы `consume` и одалживания; что тест может и чего не может делать, —
++ существуют лишь как записи в `rep/DECISIONS.md`, журнале на 2400 строк. Их место — в
++ `doc/work/standards/capabilities.md`, вместе со словарём тегов, на который опирается `safety-2`, и
++ единственной санкционированной формой лазейки для каждого тега, а также ссылкой из
++ `doc/work/philosophy/capture-checking.md`.
+
+- Done when: `doc/work/standards/capabilities.md` exists, defines every tag the census recognises, and
+- `rep/DECISIONS.md`'s recipe sections link to it rather than restating.
++ Готово, когда: `doc/work/standards/capabilities.md` существует, определяет каждый тег, который
++ распознаёт перепись, а разделы рецептов в `rep/DECISIONS.md` ссылаются на него, а не
++ пересказывают.

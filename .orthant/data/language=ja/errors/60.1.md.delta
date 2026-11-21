@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.60.1` — `Truncation.Error`
++ # `↯/s.60.1` — `Truncation.Error`
+
+- Raised when Turbulence's stream is cut short before the expected
+- number of bytes have been read.
++ 期待された数のバイトを読む前に、Turbulence のストリームが途中で切れたときに発生する。
+
+- ## Cause
++ ## 原因
+
+- The error is thrown when an upstream source closes mid-stream (or
+- hits EOF earlier than expected). The constructor records the
+- `total` byte count read so far.
++ このエラーは、上流のソースがストリームの途中で閉じた（あるいは期待より早く EOF に達した）ときに投げられる。
++ コンストラクターは、それまでに読んだバイトの `total` の数を記録する。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.60.1] the stream was cut prematurely after 1024
++ [↯/s.60.1] the stream was cut prematurely after 1024
+
+= [↯/s.60.1] the stream was cut prematurely after 1024
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Investigate why the source ended early — typical causes are
+- network errors, truncated files, or cancelled producers.
++ ソースが早く終わった理由を調べる。典型的な原因は、ネットワークのエラー、途中で切れたファイル、キャンセルされた生産者である。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/turbulence/src/core/turbulence.Truncation.scala`
++ - ソース：`lib/turbulence/src/core/turbulence.Truncation.scala`

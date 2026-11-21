@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.103.1` — `Http.Response.Error`
++ # `↯/s.103.1` — `Http.Response.Error`
+
+- Raised when Telekinesis cannot parse an HTTP response.
++ Levée lorsque Telekinesis ne parvient pas à analyser une réponse HTTP.
+
+- ## Cause
++ ## Cause
+
+- After a connection is established, the response is read and parsed.
+- This error reports a malformed response. The message is `could not
++ Une fois la connexion établie, la réponse est lue et analysée. Cette erreur signale une réponse
++ malformée. Le message est `could not
+
+- parse HTTP response because $reason`.
++ parse HTTP response because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.103.1.1` — `Expectation`
++ ### `↯/s.103.1.1` — `Expectation`
+
+- A specific character was expected at the parser's current position
+- but a different one was encountered.
++ Un caractère précis était attendu à la position courante de l'analyseur, mais un autre a été
++ rencontré.
+
+- **Example.** `[↯/s.103.1.1] could not parse HTTP response because X was found when : was expected`
++ **Exemple.** `[↯/s.103.1.1] could not parse HTTP response because X was found when : was expected`
+
+- **Resolution.** Confirm the server is producing valid HTTP; if the
+- peer is non-standard, point Telekinesis at a compliant implementation.
++ **Résolution.** Vérifiez que le serveur produit du HTTP valide ; si le pair n'est pas standard,
++ dirigez Telekinesis vers une implémentation conforme.
+
+- ### `↯/s.103.1.2` — `Status`
++ ### `↯/s.103.1.2` — `Status`
+
+- The HTTP status code on the response line was not three digits or
+- otherwise unparseable.
++ Le code de statut HTTP de la ligne de réponse n'avait pas trois chiffres, ou ne pouvait pas être
++ analysé pour une autre raison.
+
+- **Example.** `[↯/s.103.1.2] could not parse HTTP response because the HTTP status code 12 was invalid`
++ **Exemple.** `[↯/s.103.1.2] could not parse HTTP response because the HTTP status code 12 was invalid`
+
+- **Resolution.** The peer is producing a non-conformant status line;
+- fix the server or use a different one.
++ **Résolution.** Le pair produit une ligne de statut non conforme ; corrigez le serveur ou
++ utilisez-en un autre.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/telekinesis/src/core/telekinesis.Http.scala`
++ - Source : `lib/telekinesis/src/core/telekinesis.Http.scala`

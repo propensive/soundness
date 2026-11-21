@@ -1,0 +1,9 @@
+orthant 1 language
+
+- Nesting is deterministic too, but a nested scope does not continue the sequence of the scope
+- enclosing it. Each scope starts afresh from the `Randomization` in scope, so under the same seed
+- an inner scope repeats the first draws of the outer one.
++ Auch Verschachtelung ist deterministisch, aber ein verschachtelter Geltungsbereich setzt die
++ Folge des umschließenden Geltungsbereichs nicht fort. Jeder Geltungsbereich beginnt neu bei der
++ `Randomization` im Geltungsbereich, sodass unter demselben Seed ein innerer Geltungsbereich die
++ ersten Ziehungen des äußeren wiederholt.

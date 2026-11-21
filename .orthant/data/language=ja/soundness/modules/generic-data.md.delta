@@ -1,0 +1,250 @@
+orthant 1 language
+
+- ## Generic Data
++ ## 汎用データ
+
+- ### About
++ ### 概要
+
+- A value sometimes has to leave the world where its class is known, and arrive intact: in
+- another classloader, in another process, or across a staging boundary. The `Pojo`
+- representation carries any Scala value using only the types which every JVM context shares.
+- Those are boxed primitives, strings, and arrays of objects.
++ 値は、そのクラスが知られている世界を離れ、無傷のまま到着しなければならないことがある。別のクラスローダーへ、別のプロセスへ、あるいはステージングの境界を越えてである。
++ `Pojo` 表現は、あらゆる JVM のコンテキストが共有する型だけを使って、任意の Scala の値を運ぶ。
++ それらの型とは、ボックス化されたプリミティブ、文字列、そしてオブジェクトの配列である。
+
+- A case class or an enumeration converts to a `Pojo` and back with [derived][derivation] codecs,
+- so the value survives the crossing without its class traveling with it.
++ ケースクラスや列挙型は、[導出された][導出]コーデックによって `Pojo` に変換され、また戻されるので、値はそのクラスを伴わずに境界を越えて生き残る。
+
+- ### On classloader-neutral data
++ ### クラスローダーに中立なデータについて
+
+- A Scala object is welded to its class, and its class to the classloader which defined it. Hand
+- the object to code which was loaded elsewhere, such as an isolated plugin or a computation
+- staged on another machine, and the receiving side cannot cast it back. The "same" class from
+- another loader is a different class.
++ Scala のオブジェクトはそのクラスに結び付けられ、そのクラスはそれを定義したクラスローダーに結び付けられている。
++ 隔離されたプラグインや、別のマシンでステージングされた計算のように、別の場所でロードされたコードにそのオブジェクトを渡すと、受け取る側はそれをキャストし直せない。
++ 別のローダーから来た「同じ」クラスは、別のクラスである。
+
+- Full serialization solves this with heavy machinery. Passing strings solves it by giving up
+- structure.
++ 完全な直列化は、大がかりな仕組みでこれを解決する。
++ 文字列を渡すことは、構造を諦めることでこれを解決する。
+
+- A `Pojo` keeps the structure and drops the class. A product becomes an array of its fields, a
+- variant becomes a labeled pair, and a primitive becomes its boxed self. All of these are types
+- defined by the JDK, and mean the same on both sides of any boundary. This is the transport
+- beneath [staged](staging.md) remote execution, and working on a generic representation in this
+- way is what [composability](../../philosophy/composability.md) between formats rests on.
++ `Pojo` は構造を保ち、クラスを落とす。
++ 直積はそのフィールドの配列になり、バリアントはラベル付きの組になり、プリミティブはボックス化されたそれ自身になる。
++ これらはすべて JDK が定義する型であり、どんな境界の両側でも同じ意味を持つ。
++ これは[ステージング](staging.md)されたリモート実行の下にある転送手段であり、このように汎用表現の上で作業することが、形式の間の[合成可能性](../../philosophy/composability.md)の基盤である。
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception, and
+- the last import lets them print their results:
++ すべては `soundness` パッケージから来る。
++ サンプルはあらゆるエラーを例外として投げ、最後のインポートはサンプルが結果を出力できるようにする：
+
+= the last import lets them print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Encoding and decoding
++ ### エンコードとデコード
+
+- `pojo` encodes a value. The result holds only arrays, strings and boxed primitives:
++ `pojo` は値をエンコードする。
++ 結果は配列、文字列、ボックス化されたプリミティブだけを保持する：
+
+= `pojo` encodes a value. The result holds only arrays, strings and boxed primitives:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- case class Troupe(players: List[Person], size: Int)
++ case class Troupe(players: List[Person], size: Int)
+
+- val troupe = Troupe(List(Person(t"Quince", 40), Person(t"Bottom", 35)), 2)
++ val troupe = Troupe(List(Person(t"Quince", 40), Person(t"Bottom", 35)), 2)
+
+- val transportable = troupe.pojo
++ val transportable = troupe.pojo
+
+= val transportable = troupe.pojo
+- ```
++ ```
+
+- `as` decodes it. The receiving side must state the type it expects, and the data may not match
+- that type, so decoding can fail, and needs a [strategy]:
++ `as` はそれをデコードする。
++ 受け取る側は期待する型を述べなければならず、データはその型に合わないかもしれないので、デコードは失敗することがあり、[戦略]を必要とする：
+
+= that type, so decoding can fail, and needs a [strategy]:
+=
+- ```scala fuel
++ ```scala fuel
+
+= that type, so decoding can fail, and needs a [strategy]:
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- ##
++ ##
+
+- Out.println(transportable.as[Troupe].inspect)
++ Out.println(transportable.as[Troupe].inspect)
+
+= Out.println(transportable.as[Troupe].inspect)
+- ```
++ ```
+
+- Data which is not shaped like the expected type raises a `Pojo.Error`. A string, for
+- instance, is not a `Person`:
++ 期待する型の形をしていないデータは `Pojo.Error` を発生させる。
++ たとえば、文字列は `Person` ではない：
+
+= instance, is not a `Person`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= instance, is not a `Person`:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- t"Bottom".pojo.as[Person]
++ t"Bottom".pojo.as[Person]
+
+= t"Bottom".pojo.as[Person]
+- ```
++ ```
+
+- Nested case classes, collections and enumerations all derive their conversions, so any value
+- which is shaped like data crosses without preparation.
++ 入れ子になったケースクラス、コレクション、列挙型はどれも変換を導出するので、データの形をした値はどれも準備なしで境界を越える。
+
+- ### The representation
++ ### 表現
+
+- The encoding is deliberately transparent:
++ エンコーディングは意図的に透明である：
+
+- ```tabular
++ ```tabular
+
+- column  Scala value
+- column  Pojo form
+- row  `Text` or `String`  a `String`
+- row  `Int`, `Long`, `Float`, `Double`, `Char`, `Boolean` or `Byte`  its boxed `java.lang` form
+- row  a collection: `List`, `Set`, `Sequence` or other `Iterable`  an `Array[Object]` of its elements
+- row  a case class  an `Array[Object]` of its fields in declaration order
+- row  an enumeration case  an `Array[Object]` pair of its name and its payload
++ column  Scala の値
++ column  Pojo の形
++ row  `Text` または `String`  `String`
++ row  `Int`、`Long`、`Float`、`Double`、`Char`、`Boolean`、`Byte`  ボックス化された `java.lang` の形
++ row  コレクション：`List`、`Set`、`Sequence`、またはほかの `Iterable`  その要素の `Array[Object]`
++ row  ケースクラス  宣言順のフィールドの `Array[Object]`
++ row  列挙型のケース  その名前とペイロードからなる `Array[Object]` の組
+
+= row  an enumeration case  an `Array[Object]` pair of its name and its payload
+- ```
++ ```
+
+- So `Person(t"Bottom", 35).pojo` is an array of the string `"Bottom"` and the boxed integer
+- `35`, and the `Green` case of an enumeration is an array of the string `"Green"` and an empty
+- array:
++ したがって、`Person(t"Bottom", 35).pojo` は文字列 `"Bottom"` とボックス化された整数 `35` の配列であり、列挙型の `Green` のケースは文字列 `"Green"` と空の配列からなる配列である：
+
+= array:
+=
+- ```scala
++ ```scala
+
+- enum Light:
++ enum Light:
+
+-   case Red, Amber, Green
++   case Red, Amber, Green
+
+- val person = Person(t"Bottom", 35).pojo
++ val person = Person(t"Bottom", 35).pojo
+
+- val light = (Light.Green: Light).pojo
++ val light = (Light.Green: Light).pojo
+
+= val light = (Light.Green: Light).pojo
+- ```
++ ```
+
+- Both sides derive the codec from the same type definition, so the encoding needs no schema on
+- the wire. It does mean that both sides must agree on that definition.
++ 両側が同じ型定義からコーデックを導出するので、エンコーディングはワイヤ上にスキーマを必要としない。
++ ただし、両側がその定義について合意していなければならない。
+
+- `Pojo` is an [opaque type] over the JDK types it permits. A `Pojo` cannot be confused with an
+- arbitrary `Object`, and the only way to produce one is through an encoder.
++ `Pojo` は、それが許す JDK の型の上の[不透明型]である。
++ `Pojo` は任意の `Object` と取り違えられることがなく、それを生む唯一の方法はエンコーダーを通じることである。
+
+- ### Where it is used
++ ### 使われる場所
+
+- The obvious case is a boundary between classloaders. Code which is loaded in an isolated
+- loader, such as a plugin, a compiled fragment or a sandboxed extension, shares the JDK's
+- classes with its host, and nothing else. The JDK's classes are therefore exactly the vocabulary
+- the two can speak. [Classpath](classpath.md) describes classloaders.
++ 明らかな場合は、クラスローダーの間の境界である。
++ プラグイン、コンパイルされた断片、サンドボックス化された拡張のように、隔離されたローダーでロードされたコードは、ホストと JDK のクラスを共有し、それ以外は何も共有しない。
++ したがって、JDK のクラスこそが、両者が話せる語彙である。
++ [クラスパス](classpath.md)はクラスローダーを説明する。
+
+- The same reasoning applies across a boundary between processes, which is what
+- [staged](staging.md) remote execution uses. The arguments to a staged computation are encoded
+- on one side, sent, and decoded on the far side against the type which the staged code expects.
++ 同じ理屈はプロセスの間の境界にも当てはまり、[ステージング](staging.md)されたリモート実行が使うのはこれである。
++ ステージングされた計算への引数は、一方の側でエンコードされ、送られ、遠い側でステージングされたコードが期待する型に照らしてデコードされる。
+
+- Nothing about the representation is specific to either use. Any boundary which can carry boxed
+- primitives, strings and arrays of objects can carry a Scala value.
++ 表現のどこにも、どちらかの用途に固有のものはない。
++ ボックス化されたプリミティブ、文字列、オブジェクトの配列を運べる境界なら、どれでも Scala の値を運べる。
+
+- ### Related
++ ### 関連
+
+- - [Derivation](derivation.md) explains the engine which generates the codecs.
++ - [導出](derivation.md)は、コーデックを生成するエンジンを説明する。

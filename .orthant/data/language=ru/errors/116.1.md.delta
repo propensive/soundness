@@ -1,0 +1,52 @@
+orthant 1 language
+
+- # `↯/s.116.1` — `Httpd.Error`
++ # `↯/s.116.1` — `Httpd.Error`
+
+- Raised when Scintillate cannot start an HTTP server on the
+- requested port.
++ Порождается, когда Scintillate не может запустить HTTP-сервер на запрошенном порту.
+
+- ## Cause
++ ## Причина
+
+- The OS refused to bind the listener — typically because the port is
+- already in use, or it is privileged and the process lacks
+- permission.
++ ОС отказалась привязать слушатель — обычно потому, что порт уже занят или он
++ привилегированный, а у процесса нет разрешения.
+
+- This is **not** an HTTP 5xx response. That is
+- `Http.Status.Category.ServerError` in telekinesis, and it describes a
+- response the server sent; this describes a server that never started.
+- The error was called `ServerError` until the two were told apart.
++ Это **не** ответ HTTP 5xx. Такой ответ — `Http.Status.Category.ServerError` в telekinesis, и он
++ описывает ответ, который сервер отправил; эта же ошибка описывает сервер, который так и не
++ запустился. Ошибка называлась `ServerError`, пока их не стали различать.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.116.1] could not start an HTTP server on port 80
++ [↯/s.116.1] could not start an HTTP server on port 80
+
+= [↯/s.116.1] could not start an HTTP server on port 80
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Choose a different port, free the conflicting one, or run with
+- sufficient privilege.
++ Выберите другой порт, освободите конфликтующий или запустите процесс с достаточными правами.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/scintillate/src/server/scintillate.Httpd.scala`
++ - Исходный код: `lib/scintillate/src/server/scintillate.Httpd.scala`

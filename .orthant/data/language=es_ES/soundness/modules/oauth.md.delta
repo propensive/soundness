@@ -1,0 +1,316 @@
+orthant 1 language
+
+- ## OAuth 2
++ ## OAuth 2
+
+- ### About
++ ### Descripción
+
+- [OAuth 2](https://www.rfc-editor.org/rfc/rfc6749) is how a client is authorized to call an
+- API, on a user's behalf or on its own. The client obtains an access token from the API's
+- authorization server, and presents it with each request.
++ [OAuth 2](https://www.rfc-editor.org/rfc/rfc6749) es la manera en que se autoriza a un cliente a
++ llamar a una API, en nombre de un usuario o en el suyo propio. El cliente obtiene un token de acceso
++ del servidor de autorización de la API, y lo presenta con cada petición.
+
+- The client's side of that is provided here: the grants which obtain a token, PKCE for the
+- authorization-code flow, and the `Credential` by which a scheme's token or key reaches a typed
+- client. For a web application, the authorization-code flow is also provided as middleware for
+- an [HTTP server](http-server.md).
++ Aquí se proporciona el lado del cliente: las concesiones que obtienen un token, PKCE para el flujo
++ de código de autorización, y la `Credential` mediante la que el token o la clave de un esquema
++ llega a un cliente tipado. Para una aplicación web, el flujo de código de autorización también se
++ proporciona como middleware para un [servidor HTTP](http-server.md).
+
+- ### On tokens
++ ### Sobre los tokens
+
+- A token is more than a string. It grants particular scopes, it expires, and it may come with
+- a refresh token. An `Authorization` holds all four, so that what a token can do is known, and
+- a `Scope` can be checked against it.
++ Un token es más que una cadena. Concede ámbitos concretos, caduca y puede venir con un token de
++ refresco. Un `Authorization` contiene los cuatro, de modo que se sabe lo que puede hacer un token,
++ y un `Scope` puede comprobarse contra él.
+
+- Everything comes from the `soundness` package. Obtaining a token means making
+- [HTTP requests](http-client.md#what-a-request-needs-in-scope), so the imports which those
+- need are in scope:
++ Todo procede del paquete `soundness`. Obtener un token supone hacer
++ [peticiones HTTP](http-client.md#what-a-request-needs-in-scope), así que las importaciones que
++ estas necesitan están en el ámbito:
+
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+= import logging.silentLogging
+- ```
++ ```
+
+- The samples on this page contact an authorization server, so they are compiled but not run.
++ Los ejemplos de esta página contactan con un servidor de autorización, así que se compilan pero no
++ se ejecutan.
+
+- ### Obtaining a token
++ ### Obtener un token
+
+- An `Issuer` is an authorization server, as one client sees it. It has the server's token
+- endpoint, and the client's identity and secret. For the authorization-code flow, it also has
+- the server's authorization endpoint, and the client's redirect URI.
++ Un `Issuer` es un servidor de autorización, tal como lo ve un cliente. Tiene el endpoint de tokens
++ del servidor, y la identidad y el secreto del cliente. Para el flujo de código de autorización,
++ también tiene el endpoint de autorización del servidor y la URI de redirección del cliente.
+
+- Each grant posts to the token endpoint, and reads the `Authorization` which comes back. A
+- refusal raises an `OAuth.Error`.
++ Cada concesión hace un POST al endpoint de tokens, y lee el `Authorization` que se recibe de vuelta.
++ Una denegación lanza un `OAuth.Error`.
+
+= refusal raises an `OAuth.Error`.
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Grant
+- column  Gives
+- row  `clientCredentials`  client credentials (RFC 6749 §4.4)  the client's own authorization, for the scopes named
+- row  `refresh`  refresh (RFC 6749 §6)  a new authorization, from a refresh token or an `Authorization` carrying one
+- row  `authorizationUrl`  authorization code, first step (RFC 6749 §4.1.1)  the URL a user is sent to
+- row  `exchangeCode`  authorization code, second step (RFC 6749 §4.1.3)  the authorization, for the code the user brings back
++ column  Método
++ column  Concesión
++ column  Da
++ row  `clientCredentials`  credenciales de cliente (RFC 6749 §4.4)  la autorización propia del cliente, para los ámbitos nombrados
++ row  `refresh`  refresco (RFC 6749 §6)  una nueva autorización, a partir de un token de refresco o de un `Authorization` que lleve uno
++ row  `authorizationUrl`  código de autorización, primer paso (RFC 6749 §4.1.1)  la URL a la que se envía a un usuario
++ row  `exchangeCode`  código de autorización, segundo paso (RFC 6749 §4.1.3)  la autorización, para el código que trae de vuelta el usuario
+
+= row  `exchangeCode`  authorization code, second step (RFC 6749 §4.1.3)  the authorization, for the code the user brings back
+- ```
++ ```
+
+- A service which acts for itself uses the client-credentials grant:
++ Un servicio que actúa por sí mismo usa la concesión de credenciales de cliente:
+
+= A service which acts for itself uses the client-credentials grant:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A service which acts for itself uses the client-credentials grant:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A service which acts for itself uses the client-credentials grant:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
++ val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+- val token: Authorization = issuer.clientCredentials(t"read", t"write")
++ val token: Authorization = issuer.clientCredentials(t"read", t"write")
+
+- val accessToken = token.key
++ val accessToken = token.key
+
+- val mayRead: Boolean = token.grants(List(t"read"))
++ val mayRead: Boolean = token.grants(List(t"read"))
+
+- val fresh: Authorization = issuer.refresh(token)
++ val fresh: Authorization = issuer.refresh(token)
+
+= val fresh: Authorization = issuer.refresh(token)
+- ```
++ ```
+
+- `key` is the access token itself. `grants` says whether the token covers the scopes named, and
+- `refresh` obtains a new authorization through the token's refresh token.
++ `key` es el propio token de acceso. `grants` dice si el token cubre los ámbitos nombrados, y
++ `refresh` obtiene una nueva autorización mediante el token de refresco del token.
+
+- An application which acts for a user uses the authorization-code flow, which has two steps.
+- `authorizationUrl` builds the URL which the user is sent to. It has the scopes, a `state` to
+- check on return and, with a `Pkce`, the S256 challenge. `exchangeCode` then exchanges the code
+- which the user brings back:
++ Una aplicación que actúa en nombre de un usuario usa el flujo de código de autorización, que tiene
++ dos pasos. `authorizationUrl` construye la URL a la que se envía al usuario. Lleva los ámbitos, un
++ `state` que comprobar a la vuelta y, con un `Pkce`, el desafío S256. `exchangeCode` intercambia
++ después el código que trae de vuelta el usuario:
+
+= which the user brings back:
+=
+- ```scala fuel
++ ```scala fuel
+
+= which the user brings back:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= which the user brings back:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val flow = Issuer(url"https://issuer.example/token", t"client-1", Unset,
++ val flow = Issuer(url"https://issuer.example/token", t"client-1", Unset,
+
+-                   url"https://issuer.example/authorize", url"https://app.example/callback")
++                   url"https://issuer.example/authorize", url"https://app.example/callback")
+
+- val pkce = Pkce()
++ val pkce = Pkce()
+
+- val state = t"a7f3c9"
++ val state = t"a7f3c9"
+
+- val destination = flow.authorizationUrl(List(t"read"), state, pkce)
++ val destination = flow.authorizationUrl(List(t"read"), state, pkce)
+
+- def callback(code: Text): Authorization =
++ def callback(code: Text): Authorization =
+
+-   flow.exchangeCode(code, pkce)
++   flow.exchangeCode(code, pkce)
+
+=   flow.exchangeCode(code, pkce)
+- ```
++ ```
+
+- The secret is `Unset` here, since a client which uses PKCE need not hold one.
++ Aquí el secreto es `Unset`, ya que un cliente que usa PKCE no necesita tener uno.
+
+- ### Credentials for a typed client
++ ### Credenciales para un cliente tipado
+
+- A `Credential` names a security scheme, as an API's specification names it, and holds the
+- value which the scheme calls for:
++ Una `Credential` nombra un esquema de seguridad, tal como lo nombra la especificación de una API, y
++ contiene el valor que requiere el esquema:
+
+= value which the scheme calls for:
+=
+- ```tabular
++ ```tabular
+
+- column  Scheme
+- column  Value
+- row  an API key  `Text`
+- row  HTTP authentication  `Auth`
++ column  Esquema
++ column  Valor
++ row  una clave de API  `Text`
++ row  autenticación HTTP  `Auth`
+
+- row  OAuth 2  `Authorization`
++ row  OAuth 2  `Authorization`
+
+= row  OAuth 2  `Authorization`
+- ```
++ ```
+
+- The [OpenAPI client](openapi.md) finds the credential for each scheme which an operation
+- requires, by its name, and presents it as the scheme dictates:
++ El [cliente OpenAPI](openapi.md) encuentra, por su nombre, la credencial de cada esquema que
++ requiere una operación, y la presenta como dicta el esquema:
+
+= requires, by its name, and presents it as the scheme dictates:
+=
+- ```scala fuel
++ ```scala fuel
+
+= requires, by its name, and presents it as the scheme dictates:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= requires, by its name, and presents it as the scheme dictates:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- given key: ("api_key" is Credential to Text) = Credential(t"…")
++ given key: ("api_key" is Credential to Text) = Credential(t"…")
+
+- given token: ("petstore_auth" is Credential to Authorization) =
++ given token: ("petstore_auth" is Credential to Authorization) =
+
+-   Credential(issuer.clientCredentials())
++   Credential(issuer.clientCredentials())
+
+=   Credential(issuer.clientCredentials())
+- ```
++ ```
+
+- The scheme's name is part of the credential's type, so a credential cannot be presented for a
+- scheme other than its own.
++ El nombre del esquema forma parte del tipo de la credencial, así que una credencial no puede
++ presentarse para un esquema distinto del suyo.
+
+- ### In a web application
++ ### En una aplicación web
+
+- For an application which acts for its users, the `orthodoxy.server` module wraps a request
+- handler in the authorization-code flow:
++ Para una aplicación que actúa en nombre de sus usuarios, el módulo `orthodoxy.server` envuelve un
++ manejador de peticiones en el flujo de código de autorización:
+
+= handler in the authorization-code flow:
+=
+- ```tabular
++ ```tabular
+
+- column  Wrapper
+- column  Does
+- row  `issuer.oauth { … }`  handles the redirect back from the issuer, exchanging the code, or refreshing an expired token
+- row  `issuer.require(scope) { … }`  sends a user who has not yet authorized the application to the issuer, and otherwise runs the handler with an `Authorization of scope` in scope
++ column  Envoltorio
++ column  Qué hace
++ row  `issuer.oauth { … }`  trata la redirección de vuelta desde el emisor, intercambiando el código o refrescando un token caducado
++ row  `issuer.require(scope) { … }`  envía al emisor a un usuario que aún no ha autorizado la aplicación, y en otro caso ejecuta el manejador con un `Authorization of scope` en el ámbito
+
+= row  `issuer.require(scope) { … }`  sends a user who has not yet authorized the application to the issuer, and otherwise runs the handler with an `Authorization of scope` in scope
+- ```
++ ```
+
+- An `Authorizations` holds the state of each session.
++ Un `Authorizations` contiene el estado de cada sesión.
+
+- ### Related
++ ### Relacionado
+
+- - [HTTP client](http-client.md) makes the requests which a token authorizes.
+- - [OpenAPI](openapi.md) generates a typed client which presents credentials for itself.
+- - [Cryptography](cryptography.md) covers the keys and signatures beneath other schemes of
+-   authentication.
++ - [Cliente HTTP](http-client.md) hace las peticiones que autoriza un token.
++ - [OpenAPI](openapi.md) genera un cliente tipado que presenta credenciales por sí mismo.
++ - [Criptografía](cryptography.md) trata las claves y firmas que hay bajo otros esquemas de
++   autenticación.

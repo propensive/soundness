@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.88.1` — Unsupported lambda
++ # `↯/s.88.1` — Неподдерживаемая лямбда
+
+- Raised at compile time by Mandible's `disassemble` macro when the
+- lambda expression's AST shape is not recognised.
++ Порождается во время компиляции макросом `disassemble` из Mandible, когда форма AST
++ лямбда-выражения не распознана.
+
+- ## Cause
++ ## Причина
+
+- The macro pattern-matches on lambda expressions to extract their
+- underlying classfile entry. Some lambda forms — typically those
+- using anonymous inner classes or unusual desugarings — are not
+- recognised.
++ Макрос сопоставляет лямбда-выражения с образцами, чтобы извлечь соответствующую им запись в
++ classfile. Некоторые формы лямбд — обычно использующие анонимные внутренние классы или
++ необычное рассахаривание — не распознаются.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.88.1] this type of lambda is not supported
++ [↯/s.88.1] this type of lambda is not supported
+
+= [↯/s.88.1] this type of lambda is not supported
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Rewrite the lambda in a simpler form (e.g. `(x: Int) => x + 1`).
++ Перепишите лямбду в более простой форме (например, `(x: Int) => x + 1`).
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/mandible/src/core/mandible.internal.scala`
++ - Исходный код: `lib/mandible/src/core/mandible.internal.scala`

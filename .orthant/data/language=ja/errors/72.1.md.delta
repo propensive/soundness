@@ -1,0 +1,52 @@
+orthant 1 language
+
+- # `↯/s.72.1` — `Dag.Error`
++ # `↯/s.72.1` — `Dag.Error`
+
+- Raised when a graph operation requires an acyclic graph and the graph has a cycle.
++ グラフの操作が非巡回グラフを必要とするのに、グラフが閉路を持つときに発生する。
+
+- ## Cause
++ ## 原因
+
+- A topological sort, a reachability query and a transitive reduction are all undefined on a
+- cyclic graph. Rather than looping or returning a partial answer, the operation reports the
+- cycle.
++ トポロジカルソート、到達可能性の問い合わせ、推移簡約は、どれも巡回グラフでは定義されない。
++ 操作はループしたり部分的な答えを返したりする代わりに、閉路を報告する。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.72.1.1`  `NodeMissing`  `[↯/s.72.1.1] the node <node> is not present in the graph`
++ row  `↯/s.72.1.1`  `NodeMissing`  `[↯/s.72.1.1] the node <node> is not present in the graph`
+
+- row  `↯/s.72.1.2`  `Cyclic`  `[↯/s.72.1.2] the graph contains a cycle`
++ row  `↯/s.72.1.2`  `Cyclic`  `[↯/s.72.1.2] the graph contains a cycle`
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Break the cycle, or ask a question that is defined on cyclic graphs. `hasCycle` tests for
+- one without raising, for code that would rather check than handle.
++ 閉路を断ち切るか、巡回グラフで定義される問いを立てる。
++ `hasCycle` は、エラーを処理するより検査するほうを好むコードのために、エラーを発生させずに閉路の有無を調べる。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/acyclicity/src/core/acyclicity.Dag.scala`
++ - ソース：`lib/acyclicity/src/core/acyclicity.Dag.scala`

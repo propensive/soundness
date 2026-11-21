@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.24.13` — Wildcard in pattern type extraction
++ # `↯/s.24.13` — Подстановочный образец при извлечении типа образца
+
+- Raised by Contingency's pattern-type extractor when a wildcard
+- pattern is encountered where a concrete type was needed.
++ Порождается извлекателем типов образцов из Contingency, когда подстановочный образец встречается
++ там, где нужен конкретный тип.
+
+- ## Cause
++ ## Причина
+
+- A wildcard `_` pattern carries no type information that the
+- extractor can use to register a recovered case.
++ Подстановочный образец `_` не несёт информации о типе, которую извлекатель мог бы использовать,
++ чтобы зарегистрировать восстанавливаемый кейс.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.24.13] wildcard
++ [↯/s.24.13] wildcard
+
+= [↯/s.24.13] wildcard
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Replace the wildcard with a typed pattern (e.g. `error: SomeError`).
++ Замените подстановочный образец типизированным (например, `error: SomeError`).
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Исходный код: `lib/contingency/src/core/contingency.internal.scala`

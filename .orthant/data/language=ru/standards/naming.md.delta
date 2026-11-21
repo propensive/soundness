@@ -1,0 +1,262 @@
+orthant 1 language
+
+- # Method Naming Conventions
++ # Соглашения об именовании методов
+
+- This document defines the canonical meanings of named factory and initialisation
+- methods used consistently across the codebase. For *why* names are chosen as they
+- are — phrase-forming methods, word-length type parameters, and uniqueness across the
+- whole namespace — see [naming](../philosophy/naming.md) and
+- [elegant prose](../philosophy/elegant-prose.md).
++ Этот документ определяет канонические значения именованных фабричных методов и методов
++ инициализации, которые единообразно используются во всей кодовой базе. О том, *почему* имена
++ выбраны так, как выбраны, — методы, образующие фразы, параметры типов длиной в слово и
++ уникальность во всём пространстве имён, — см. [именование](../philosophy/naming.md) и
++ [изящную прозу](../philosophy/elegant-prose.md).
+
+- ## Standard names
++ ## Стандартные имена
+
+- Each name has one meaning; the sections below give each in full:
++ У каждого имени одно значение; в разделах ниже каждое дано полностью:
+
+= Each name has one meaning; the sections below give each in full:
+=
+- ```tabular
++ ```tabular
+
+- column  Name
+- column  Standing
+- column  Meaning
+- column  Examples
+- row  `apply`  standard  the default factory, used whenever possible
+- row  `build`  standard  assembly driven by a caller-provided callback  `Data.build`, `Text.build`, `Specification.build`
+- row  `create`  standard  brings a resource into existence in an external system  directories, files, sockets, FIFOs
+- row  `make`  standard  construction from dynamically-named inputs, beside an existing `apply`
+- row  `initialize`  standard  a fresh context for one run of a repeatable operation  `Hash.initialize`, `Aes.initialize`
+- row  `init`  non-standard  `Git.init` only, after the `git init` command  `Git.init`
+- row  `construct`  non-standard  `wisteria.ProductDerivation.construct` only  `ProductDerivation.construct`
+- row  `of`  non-standard  a private cast narrowing a type to `X of Y`
++ column  Имя
++ column  Статус
++ column  Значение
++ column  Примеры
++ row  `apply`  стандартное  фабрика по умолчанию, используется везде, где возможно
++ row  `build`  стандартное  сборка, управляемая обратным вызовом, который передаёт вызывающий  `Data.build`, `Text.build`, `Specification.build`
++ row  `create`  стандартное  создаёт ресурс во внешней системе  каталоги, файлы, сокеты, FIFO
++ row  `make`  стандартное  построение из входных данных с динамическими именами рядом с существующим `apply`
++ row  `initialize`  стандартное  свежий контекст для одного запуска повторяемой операции  `Hash.initialize`, `Aes.initialize`
++ row  `init`  нестандартное  только `Git.init`, по команде `git init`  `Git.init`
++ row  `construct`  нестандартное  только `wisteria.ProductDerivation.construct`  `ProductDerivation.construct`
++ row  `of`  нестандартное  приватное приведение, сужающее тип до `X of Y`
+
+= row  `of`  non-standard  a private cast narrowing a type to `X of Y`
+- ```
++ ```
+
+- ### `apply`
++ ### `apply`
+
+- The standard Scala factory method. Used whenever possible. All other names in
+- this document exist because `apply` cannot be used — typically due to overload
+- resolution conflicts with an existing `apply`.
++ Стандартный фабричный метод Scala. Используется везде, где возможно. Все остальные имена в этом
++ документе существуют потому, что `apply` использовать нельзя, — обычно из-за конфликтов
++ разрешения перегрузки с уже существующим `apply`.
+
+- ### `build`
++ ### `build`
+
+- Assembles an instance via a caller-provided callback that drives construction.
+- The two concrete forms are:
++ Собирает экземпляр через обратный вызов, который передаёт вызывающий и который управляет
++ построением. Есть две конкретные формы:
+
+- - **Allocate → mutate → freeze**: a mutable intermediate structure is allocated,
+-   passed to the caller's lambda for population, then frozen into an immutable
+-   result. Examples: `Data.build`, `Array.scribe`, `Text.build`.
+- - **Callback-driven assembly from source data**: the caller supplies a function
+-   that specifies how to extract or transform fields from an origin value.
+-   Examples: `Specification.build`, `Addressable.build`.
++ - **Выделить → изменить → заморозить**: выделяется изменяемая промежуточная структура, она
++   передаётся лямбде вызывающего для заполнения, а затем замораживается в неизменяемый
++   результат. Примеры: `Data.build`, `Array.scribe`, `Text.build`.
++ - **Сборка из исходных данных, управляемая обратным вызовом**: вызывающий передаёт функцию,
++   которая задаёт, как извлекать или преобразовывать поля из исходного значения.
++   Примеры: `Specification.build`, `Addressable.build`.
+
+- In both forms the caller controls the assembly process through the function
+- argument rather than supplying the finished value directly.
++ В обеих формах вызывающий управляет процессом сборки через аргумент-функцию, а не передаёт
++ готовое значение напрямую.
+
+- ### `create`
++ ### `create`
+
+- Brings a resource into existence in an external system, and always has
+- side-effects. Used for filesystem resources (directories, files,
+- sockets, FIFOs). The counterpart to `apply`/`build` for operations that are not
+- pure.
++ Создаёт ресурс во внешней системе и всегда имеет побочные эффекты. Используется для ресурсов
++ файловой системы (каталогов, файлов, сокетов, FIFO). Аналог `apply`/`build` для операций,
++ которые не являются чистыми.
+
+- ### `make`
++ ### `make`
+
+- Constructs a value from dynamically-named inputs, and corresponds to an
+- implementation of `applyDynamicNamed`. While other factory may use parameters
+- with dynamic names, `make` is used where another non-dynamic `apply` method
+- already exists.
++ Строит значение из входных данных с динамическими именами и соответствует реализации
++ `applyDynamicNamed`. Хотя другие фабрики тоже могут использовать параметры с динамическими
++ именами, `make` используется там, где уже существует другой, нединамический метод `apply`.
+
+- ### `initialize`
++ ### `initialize`
+
+- Returns a fresh operational context for a repeatable operation. Examples
+- include a new hash-digest run (`Hash.initialize`), a cipher instance
+- (`Aes.initialize`), an open file transport (`Openable.initialize`), or a new
+- session (`McpServer.initialize`). The operation may be pure or involve resource
+- acquisition; what unifies these cases is that the result represents the
+- beginning of a single use of an operation that can be started again from
+- scratch.
++ Возвращает свежий рабочий контекст для повторяемой операции. Примеры — новый запуск вычисления
++ хеш-дайджеста (`Hash.initialize`), экземпляр шифра (`Aes.initialize`), открытый файловый
++ транспорт (`Openable.initialize`) или новая сессия (`McpServer.initialize`). Операция может
++ быть чистой или включать захват ресурсов; эти случаи объединяет то, что результат представляет
++ начало одного использования операции, которую можно начать заново с нуля.
+
+- ## Non-standard names
++ ## Нестандартные имена
+
+- ### `init`
++ ### `init`
+
+- Used only for `Git.init`, which follows the naming of the `git init` CLI
+- command. Everywhere else, `initialize` is preferred.
++ Используется только для `Git.init`, который следует имени команды CLI `git init`. Везде в
++ остальных местах предпочтительно `initialize`.
+
+- ### `construct`
++ ### `construct`
+
+- Reserved exclusively for `wisteria.ProductDerivation.construct`. This is a
+- deliberate special case used in compile-time typeclass derivation and does not
+- follow the general factory naming scheme.
++ Зарезервировано исключительно для `wisteria.ProductDerivation.construct`. Это намеренный
++ особый случай, используемый в деривации классов типов во время компиляции, и он не следует
++ общей схеме именования фабрик.
+
+- ### `of`
++ ### `of`
+
+- Used only as an instance method that narrows a type to a phantom-parameterised
+- form `X of Y`. The body is always a cast (`asInstanceOf`), and the return type
+- is literally `this.type of topic`. These methods are private to their
+- respective packages.
++ Используется только как метод экземпляра, который сужает тип до фантомно параметризованной
++ формы `X of Y`. Тело — всегда приведение (`asInstanceOf`), а возвращаемый тип — буквально
++ `this.type of topic`. Эти методы приватны для своих пакетов.
+
+- ## The `unsafe` prefix
++ ## Префикс `unsafe`
+
+- A method that takes `vacuous.Unsafe` as a `using` parameter is gated: its caller
+- must hold the token, which in practice means writing `(using Unsafe)` or sitting
+- inside an `unsafely` block. Every such method is named with an `unsafe` prefix
+- followed by a capital letter — `unsafeBuffer`, `unsafeAttested`, `unsafeChild` —
+- so that the boundary is visible at the call site and not only in the signature.
++ Метод, который принимает `vacuous.Unsafe` как параметр `using`, закрыт шлюзом: вызывающий
++ должен держать токен, что на практике означает запись `(using Unsafe)` или нахождение внутри
++ блока `unsafely`. Каждый такой метод называется с префиксом `unsafe`, за которым следует
++ заглавная буква, — `unsafeBuffer`, `unsafeAttested`, `unsafeChild`, — чтобы граница была видна
++ в месте вызова, а не только в сигнатуре.
+
+- This is checked. The Consequent rule `S1.1` is `strict` for every component, so a
+- gated method with an ordinary name fails the build. Where the name cannot take a
+- prefix, the method is renamed rather than exempted: `Regex.apply(parts)(using
+- Unsafe)` became `Regex.unsafeFrom(parts)`.
++ Это проверяется. Правило Consequent `S1.1` — `strict` для каждого компонента, поэтому метод за
++ шлюзом с обычным именем ломает сборку. Там, где к имени нельзя добавить префикс, метод
++ переименовывается, а не освобождается от правила: `Regex.apply(parts)(using
++ Unsafe)` стал `Regex.unsafeFrom(parts)`.
+
+- Two definitions are outside the rule because neither has a name to prefix: a
+- constructor, and a `given`, which is summoned by type. Both are still gated, and
+- the argument for why the gate is sound belongs in a comment beside them.
++ Два вида определений находятся вне правила, потому что ни у одного из них нет имени, к которому
++ можно добавить префикс: конструктор и `given`, который призывается по типу. Оба всё равно
++ закрыты шлюзом, а довод о том, почему шлюз надёжен, должен находиться в комментарии рядом с
++ ними.
+
+- The converse — an `unsafe`-prefixed method must be gated — is `S1.2`, and is
+- advisory rather than strict for now. Eight definitions break it:
++ Обратное правило — метод с префиксом `unsafe` должен быть закрыт шлюзом — это `S1.2`, и пока
++ оно рекомендательное, а не строгое. Его нарушают восемь определений:
+
+= advisory rather than strict for now. Eight definitions break it:
+=
+- ```tabular
++ ```tabular
+
+- column  Component
+- column  Definitions
++ column  Компонент
++ column  Определения
+
+- row  proscenium  `Array.unsafeFrozen`, `Array.unsafeJvm`
++ row  proscenium  `Array.unsafeFrozen`, `Array.unsafeJvm`
+
+- row  vacuous  `Optional.unsafeGet` (private to the extension group)
++ row  vacuous  `Optional.unsafeGet` (приватный для группы расширений)
+
+- row  urticose  `Port.unsafe`
++ row  urticose  `Port.unsafe`
+
+- row  octogenarian  `Git.Revision.unsafe`, `Git.Tag.unsafe`, `Git.Branch.unsafe`, `Git.Hash.unsafe`
++ row  octogenarian  `Git.Revision.unsafe`, `Git.Tag.unsafe`, `Git.Branch.unsafe`, `Git.Hash.unsafe`
+
+= row  octogenarian  `Git.Revision.unsafe`, `Git.Tag.unsafe`, `Git.Branch.unsafe`, `Git.Hash.unsafe`
+- ```
++ ```
+
+- (`archimedes.Ergo.unsafeInterpolate` is gated since the ambient-strategy drain.)
++ (`archimedes.Ergo.unsafeInterpolate` закрыт шлюзом со времени устранения окружающих стратегий.)
+
+- Gating them is wanted and is tracked as a follow-up, not declined: a trial found
+- the change reaches hundreds of call sites, a good share of which are colon-block
+- calls (`Array.unsafeFrozen:` over an indented argument) that cannot take a
+- further argument list without being restructured. `Optional.unsafeGet` needs its
+- own change first: it sits in an extension group carrying a `using
+- Optionality[optional.type]` clause, and an explicit `(using Unsafe)` binds to
+- that leading clause instead, so the method has to leave the group before it can
+- be gated.
++ Закрыть их шлюзом желательно, и это отслеживается как последующая задача, а не отклонено:
++ пробная попытка показала, что изменение затрагивает сотни мест вызова, значительная часть
++ которых — вызовы с блоком после двоеточия (`Array.unsafeFrozen:` над аргументом с отступом),
++ которые не могут принять ещё один список аргументов без перестройки. `Optional.unsafeGet`
++ сначала нужно отдельное изменение: он находится в группе расширений с предложением `using
++ Optionality[optional.type]`, и явный `(using Unsafe)` привязывается вместо этого к этому
++ начальному предложению, поэтому метод должен покинуть группу, прежде чем его можно будет закрыть
++ шлюзом.
+
+- Until then the census counts them as `unsafe-ungated`, which is the reliable
+- record: a `S1.2` warning is dropped whenever the compiler has already reported
+- something at an enclosing position in the same file.
++ До тех пор перепись считает их как `unsafe-ungated`, и это надёжная запись: предупреждение
++ `S1.2` отбрасывается всякий раз, когда компилятор уже сообщил о чём-то в объемлющей позиции в
++ том же файле.
+
+- The prefix is a marker, not a licence. It says a guarantee stops here, which is
+- the beginning of an argument for why that is sound, not the end of one.
++ Префикс — это маркер, а не лицензия. Он говорит, что здесь заканчивается гарантия, и это начало
++ довода о том, почему это надёжно, а не его конец.
+
+- `unsafely` itself is not covered: the prefix must be a whole word — `unsafe`
+- alone, or `unsafe` then a capital — so the block that supplies the token is
+- exempt by construction, while a method named plainly `unsafe` is not.
++ Сам `unsafely` не охватывается: префикс должен быть целым словом — одно `unsafe` или `unsafe`,
++ за которым следует заглавная буква, — поэтому блок, который поставляет токен, освобождён по
++ построению, а метод с именем просто `unsafe` — нет.

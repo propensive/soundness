@@ -1,0 +1,13 @@
+orthant 1 language
+
+- Some results depend on the length of a sample string: a rendered table's column widths, padded
+- or aligned text, a byte offset, an encoded length, a benchmark's payload size. A test will say
+- when such a result has gone wrong; an `// result` comment in `doc/work/soundness/api/*.tel` will not, since
+- nothing checks it. So where a length is load-bearing, choose a name of the length required, and
+- where a shown result does change, evaluate the sample again rather than edit the result by hand.
++ Некоторые результаты зависят от длины строки в примере: ширина столбцов отображаемой таблицы,
++ дополненный или выровненный текст, смещение в байтах, длина в закодированном виде, размер
++ полезной нагрузки бенчмарка. Тест сообщит, когда такой результат стал неверным; комментарий
++ `// result` в `doc/work/soundness/api/*.tel` — нет, поскольку его ничто не проверяет. Поэтому там, где длина
++ несёт нагрузку, выбирайте имя нужной длины, а там, где показанный результат действительно
++ меняется, вычисляйте пример заново, а не правьте результат вручную.

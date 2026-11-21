@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.8` — `U8` value below 0
++ # `↯/s.27.8` — Valor `U8` abaixo de 0
+
+- Raised at compile time by Hypotenuse's `u8` macro when the value is
+- less than 0.
++ Lançado em tempo de compilação pela macro `u8` do Hypotenuse quando o valor é
++ menor que 0.
+
+- ## Cause
++ ## Causa
+
+- A `U8` (unsigned 8-bit) cannot be negative.
++ Um `U8` (8 bits sem sinal) não pode ser negativo.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.27.8] a U8 may not be less than 0
++ [↯/s.27.8] a U8 may not be less than 0
+
+= [↯/s.27.8] a U8 may not be less than 0
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Provide a value in the range 0-255.
++ Forneça um valor no intervalo 0-255.
+
+- ## See also
++ ## Veja também
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Os outros erros de literais inteiros: [Famílias](README.md#families)
++ - Código-fonte: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

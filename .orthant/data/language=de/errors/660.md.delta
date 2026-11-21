@@ -1,0 +1,20 @@
+orthant 1 language
+
+- # `SN-660` — Interpolator extension method must be `inline` (retired)
++ # `SN-660` — Erweiterungsmethode eines Interpolators muss `inline` sein (ausgemustert)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Diesen Fehler gibt es nicht mehr. Die Seite bleibt erhalten, damit der Code nicht wiederverwendet
++ wird und damit ein Verweis darauf aus einem älteren Release weiterhin aufgelöst werden kann.
+
+- ## What became of it
++ ## Was daraus wurde
+
+- This check belonged to Contextual's `Interpolator` API, which was replaced by the
+- `Interpolable` typeclass. A prefix method is now declared `transparent inline` as part of
+- the pattern, and the requirement is enforced by the signature rather than by a check.
++ Diese Prüfung gehörte zur `Interpolator`-API von Contextual, die durch die Typklasse
++ `Interpolable` ersetzt wurde. Eine Präfixmethode wird jetzt als Teil des Musters als
++ `transparent inline` deklariert, und die Anforderung wird durch die Signatur durchgesetzt statt
++ durch eine Prüfung.

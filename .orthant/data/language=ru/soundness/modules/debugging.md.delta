@@ -1,0 +1,502 @@
+orthant 1 language
+
+- ## Debugging
++ ## Отладка
+
+- ### About
++ ### Обзор
+
+- A JVM can be debugged from another JVM over the
++ JVM можно отлаживать из другой JVM по
+
+- [Java Debug Wire Protocol](https://docs.oracle.com/en/java/javase/21/docs/specs/jdwp/jdwp-spec.html),
++ [Java Debug Wire Protocol](https://docs.oracle.com/en/java/javase/21/docs/specs/jdwp/jdwp-spec.html),
+
+- and these types speak it directly over a socket. A debuggee is launched under the debug agent,
+- or attached to where it already runs. The [session] which results sets breakpoints, steps
+- threads, reads frames and variables, evaluates expressions in the stopped program, and receives
+- the events of the VM as typed values. Nothing depends on `com.sun.jdi`.
++ и эти типы говорят на нём напрямую через сокет. Отлаживаемая программа запускается под
++ отладочным агентом, или к ней подключаются там, где она уже работает. Получившаяся [сессия]
++ устанавливает точки останова, выполняет потоки выполнения по шагам, читает кадры и переменные,
++ вычисляет выражения в остановленной программе и получает события VM как типизированные значения.
++ Ничто не зависит от `com.sun.jdi`.
+
+- The same session serves an editor over the
++ Та же сессия обслуживает редактор по
+
+- [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/).
++ [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/).
+
+- ### On debugging from the outside
++ ### Об отладке снаружи
+
+- The JVM's own debugging interface is a Java API which wraps a wire protocol, and it shows. The
+- types are mutable, the errors are unchecked, and the shape of a session, which is to connect,
+- suspend, request, resume and disconnect, is left to the caller to get right. Anything built on
+- it inherits all this, which is why debuggers are large programs and not small ones.
++ Собственный отладочный интерфейс JVM — это Java API, обёрнутый вокруг протокола передачи, и это
++ заметно. Типы изменяемы, ошибки непроверяемы, а правильный порядок сессии — подключиться,
++ приостановить, запросить, возобновить и отключиться — оставлен на совести вызывающего кода. Всё,
++ что построено поверх него, наследует это, поэтому отладчики — большие программы, а не маленькие.
+
+- The protocol underneath is simple: length-prefixed packets, big-endian, with the widths of
+- identifiers negotiated once at the start of the connection. Modeling it directly gives typed
+- identifiers which cannot be confused with each other, a session confined to a scope by
+- [capture checking](../../philosophy/capture-checking.md), and events as a stream to consume and
+- not callbacks to register.
++ Протокол под ним прост: пакеты с префиксом длины, в порядке big-endian, с шириной
++ идентификаторов, согласуемой один раз в начале соединения. Если моделировать его напрямую,
++ получаются типизированные идентификаторы, которые невозможно спутать друг с другом, сессия,
++ ограниченная областью видимости благодаря
++ [проверке захвата](../../philosophy/capture-checking.md), и события в виде потока данных, который
++ нужно потреблять, а не обратных вызовов, которые нужно регистрировать.
+
+- Everything comes from the `soundness` package. A session runs its reader as a task, so it needs
+- a [thread model](concurrency.md) in scope and lives inside `supervise`:
++ Всё берётся из пакета `soundness`. Сессия запускает своего читателя как задачу, поэтому ей нужна
++ [модель потоков выполнения](concurrency.md) в области видимости, и она живёт внутри `supervise`:
+
+- ```scala fuel
++ ```scala fuel
+
+- feature experimental.captureChecking
++ feature experimental.captureChecking
+
+- ##
++ ##
+
+- import soundness.*
++ import soundness.*
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import socketBackends.javaBaseSockets
++ import socketBackends.javaBaseSockets
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.basicTermcap
++ import termcapDefinitions.basicTermcap
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import workingDirectories.javaBaseWorkingDirectory
++ import workingDirectories.javaBaseWorkingDirectory
+
+= import workingDirectories.javaBaseWorkingDirectory
+- ```
++ ```
+
+- The samples on this page launch and connect to other processes, so they are compiled but not
+- run.
++ Примеры на этой странице запускают другие процессы и подключаются к ним, поэтому они
++ компилируются, но не выполняются.
+
+- ### Opening a session
++ ### Открытие сессии
+
+- A `Debuggee` describes a program to run under the debug agent: a command, the port to listen on,
+- and whether the VM should suspend before running `main`, which a breakpoint in initialization
+- needs. Its `session` method lends a `Debug` [capability] to a block, which is reached through
++ `Debuggee` описывает программу, запускаемую под отладочным агентом: команду, порт для
++ прослушивания и то, должна ли VM приостановиться до запуска `main`, что нужно для точки останова
++ в коде инициализации. Его метод `session` одалживает блоку [возможность] `Debug`, доступную через
+
+- `debug`:
++ `debug`:
+
+= `debug`:
+=
+- ```scala
++ ```scala
+
+- def inspect(classpath: Text): List[Text] = supervise:
++ def inspect(classpath: Text): List[Text] = supervise:
+
+-   val target: Debuggee = Debuggee(sh"java -cp $classpath com.example.Main", port = 5005)
++   val target: Debuggee = Debuggee(sh"java -cp $classpath com.example.Main", port = 5005)
+
+-   target.session:
++   target.session:
+
+-     debug.threads().map(debug.name(_))
++     debug.threads().map(debug.name(_))
+
+=     debug.threads().map(debug.name(_))
+- ```
++ ```
+
+- The command is launched with the agent option inserted, and the connection waits for the VM to
+- begin listening. When the block ends, whether it returns or fails, everything is torn down: the
+- socket is closed and the process is stopped.
++ Команда запускается со вставленной опцией агента, а соединение ждёт, пока VM начнёт слушать
++ порт. Когда блок завершается — возвратом или сбоем, — всё сворачивается: сокет закрывается, а
++ процесс останавливается.
+
+- A `Debugger` opens the same kind of session against an endpoint where a suspended VM is already
+- listening, for attaching to something which is already running.
++ `Debugger` открывает такую же сессию с конечной точкой, где уже слушает приостановленная VM, —
++ для подключения к тому, что уже работает.
+
+- The session handle is a capability confined to its block. It cannot escape, and so cannot be used
+- after the debuggee has gone.
++ Дескриптор сессии — это возможность, ограниченная своим блоком. Он не может ускользнуть из него и
++ потому не может быть использован после того, как отлаживаемая программа завершилась.
+
+- ### Threads and frames
++ ### Потоки выполнения и кадры
+
+- The threads of the VM are listed, named, suspended and resumed, individually or together. The
+- call stack of a suspended thread reads as frames paired with their locations:
++ Потоки выполнения VM можно перечислить, назвать по имени, приостановить и возобновить — по
++ отдельности или все вместе. Стек вызовов приостановленного потока выполнения читается как кадры
++ в паре с их позициями:
+
+= call stack of a suspended thread reads as frames paired with their locations:
+=
+- ```scala
++ ```scala
+
+- def stacks()(using Debug): Unit =
++ def stacks()(using Debug): Unit =
+
+-   debug.suspend()
++   debug.suspend()
+
+-   debug.threads().each: thread =>
++   debug.threads().each: thread =>
+
+-     debug.frames(thread).each: (frame, location) =>
++     debug.frames(thread).each: (frame, location) =>
+
+-       Out.println(t"${debug.name(thread)}: ${location.index}")
++       Out.println(t"${debug.name(thread)}: ${location.index}")
+
+-   debug.resume()
++   debug.resume()
+
+=   debug.resume()
+- ```
++ ```
+
+- ### Breakpoints
++ ### Точки останова
+
+- A breakpoint is set on a source file and line, or on a class and method. It takes a *handler*,
+- which runs whenever a thread stops there.
++ Точка останова устанавливается на исходный файл и строку или на класс и метод. Она принимает
++ *обработчик*, который выполняется всякий раз, когда поток выполнения там останавливается.
+
+- The handler is lent a `Halt`: a view of the stopped thread, with its `frames()`, its
+- `variables()`, and the exception in flight if that is why it stopped. A `Halt` cannot outlive
+- the stop, since once the thread resumes, every identifier it handed out may be stale. A handler
+- which wants the thread left suspended says so with `remain()`. Otherwise the thread resumes when
+- the handler returns:
++ Обработчику одалживается `Halt`: представление остановленного потока выполнения с его
++ `frames()`, его `variables()` и исключением в полёте, если остановка произошла из-за него.
++ `Halt` не может пережить остановку, поскольку после возобновления потока выполнения каждый
++ выданный им идентификатор может устареть. Обработчик, который хочет оставить поток выполнения
++ приостановленным, сообщает об этом через `remain()`. Иначе поток выполнения возобновляется, когда
++ обработчик возвращает управление:
+
+= the handler returns:
+=
+- ```scala
++ ```scala
+
+- def watch()(using Debug): Unit =
++ def watch()(using Debug): Unit =
+
+-   debug.breakpoint(t"Main.scala", Ordinal.uniary(42)): stop ?=>
++   debug.breakpoint(t"Main.scala", Ordinal.uniary(42)): stop ?=>
+
+-     stop.variables().each: variable =>
++     stop.variables().each: variable =>
+
+-       Out.println(t"${variable.name}: ${variable.erased}")
++       Out.println(t"${variable.name}: ${variable.erased}")
+
+-   debug.breakpoint(t"com.example.Ledger", t"deposit"): stop ?=>
++   debug.breakpoint(t"com.example.Ledger", t"deposit"): stop ?=>
+
+-     stop.remain()
++     stop.remain()
+
+=     stop.remain()
+- ```
++ ```
+
+- Breakpoints on inlined code work by position. The file and line are where the code was written,
+- not where the compiler placed it, recovered from the source maps which the compiler records.
++ Точки останова во встроенном коде работают по позиции. Файл и строка — это то место, где код был
++ написан, а не то, куда его поместил компилятор; они восстанавливаются по картам исходников,
++ которые записывает компилятор.
+
+- Each kind of request runs its handler on a different event:
++ Каждый вид запроса запускает свой обработчик по своему событию:
+
+= Each kind of request runs its handler on a different event:
+=
+- ```tabular
++ ```tabular
+
+- column  Request
+- column  Runs when
+- column  Event kind
+- row  `breakpoint`  a thread reaches a source line, a method's entry or a location  `Breakpoint`
+- row  `logpoint`  a thread reaches a location, printing a message and resuming at once  `Breakpoint`
+- row  `watch`  a field is written, or with `access = true` read  `FieldModified`, `FieldAccess`
+- row  `exceptions`  an exception is thrown  `Exception`
+- row  `step`  a stepping thread lands  `SingleStep`
++ column  Запрос
++ column  Выполняется, когда
++ column  Вид события
++ row  `breakpoint`  поток выполнения достигает строки исходника, входа в метод или позиции  `Breakpoint`
++ row  `logpoint`  поток выполнения достигает позиции, печатает сообщение и сразу продолжает  `Breakpoint`
++ row  `watch`  поле записывается, а с `access = true` — читается  `FieldModified`, `FieldAccess`
++ row  `exceptions`  выбрасывается исключение  `Exception`
++ row  `step`  поток выполнения, идущий по шагам, приходит на место  `SingleStep`
+
+= row  `step`  a stepping thread lands  `SingleStep`
+- ```
++ ```
+
+- A breakpoint returns the identifier of its request, which is what later clears it. The *suspend
+- policy* decides how much of the VM stops when the breakpoint is hit:
++ Точка останова возвращает идентификатор своего запроса, по которому её потом снимают. *Политика
++ приостановки* определяет, какая часть VM останавливается при срабатывании точки останова:
+
+= policy* decides how much of the VM stops when the breakpoint is hit:
+=
+- ```tabular
++ ```tabular
+
+- column  Suspend policy
+- column  Stops
+- row  `Jdwp.SuspendPolicy.All`  the whole VM
+- row  `Jdwp.SuspendPolicy.EventThread`  only the thread that hit it
+- row  `Jdwp.SuspendPolicy.None`  nothing at all
++ column  Политика приостановки
++ column  Останавливает
++ row  `Jdwp.SuspendPolicy.All`  всю VM
++ row  `Jdwp.SuspendPolicy.EventThread`  только поток выполнения, который на неё наткнулся
++ row  `Jdwp.SuspendPolicy.None`  ничего
+
+= row  `Jdwp.SuspendPolicy.None`  nothing at all
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- def once(location: Jdwp.Location)(using Debug): Unit =
++ def once(location: Jdwp.Location)(using Debug): Unit =
+
+-   val request = debug.breakpoint(location, Jdwp.SuspendPolicy.EventThread)
++   val request = debug.breakpoint(location, Jdwp.SuspendPolicy.EventThread)
+
+-   debug.clear(Jdwp.EventKind.Breakpoint, request)
++   debug.clear(Jdwp.EventKind.Breakpoint, request)
+
+=   debug.clear(Jdwp.EventKind.Breakpoint, request)
+- ```
++ ```
+
+- ### Stepping
++ ### Пошаговое выполнение
+
+- Stepping is a request against a suspended thread, with a handler for where it lands. The *depth*
+- says whether to step into a call (`Jdwp.StepDepth.Into`), over it (`Over`), or out of the
+- current frame (`Out`). An inlined call steps as the source reads, into the inlined body line by
+- line, and not as the bytecode was laid out:
++ Шаг — это запрос к приостановленному потоку выполнения с обработчиком для места, куда он придёт.
++ *Глубина* указывает, войти ли в вызов (`Jdwp.StepDepth.Into`), перешагнуть через него (`Over`)
++ или выйти из текущего кадра (`Out`). Встроенный вызов проходится по шагам так, как читается
++ исходник, — во встроенное тело строка за строкой, — а не так, как был разложен байт-код:
+
+= line, and not as the bytecode was laid out:
+=
+- ```scala
++ ```scala
+
+- def stepOver(thread: ThreadId)(using Debug): Unit =
++ def stepOver(thread: ThreadId)(using Debug): Unit =
+
+-   debug.step(thread, Jdwp.StepDepth.Over): stop ?=>
++   debug.step(thread, Jdwp.StepDepth.Over): stop ?=>
+
+-     stop.frames().head.let: (frame, location) =>
++     stop.frames().head.let: (frame, location) =>
+
+-       Out.println(stop.describe(location)(0))
++       Out.println(stop.describe(location)(0))
+
+=       Out.println(stop.describe(location)(0))
+- ```
++ ```
+
+- ### Evaluating expressions
++ ### Вычисление выражений
+
+- With the `Evaluator` in scope, an expression is compiled against the locals of the stopped frame
+- and injected into the running debuggee. So `total + 1` in a handler means what it would mean at
+- that line of the source. A debugger's console and hover use this, and it is also how an editor
+- shows the type which the compiler inferred for a name.
++ Когда `Evaluator` находится в области видимости, выражение компилируется относительно локальных
++ переменных остановленного кадра и внедряется в работающую отлаживаемую программу. Поэтому
++ `total + 1` в обработчике означает то же, что означало бы в этой строке исходника. Этим
++ пользуются консоль отладчика и всплывающие подсказки, и так же редактор показывает тип, который
++ компилятор вывел для имени.
+
+- ### Events
++ ### События
+
+- Underneath the handlers, the VM reports what happened as composite events. `events` is the
+- [stream](streams.md) of them, so the main loop of a debugger can be an ordinary traversal:
++ Под обработчиками VM сообщает о произошедшем композитными событиями. `events` — это
++ [поток данных](streams.md) таких событий, поэтому главный цикл отладчика может быть обычным
++ обходом:
+
+= [stream](streams.md) of them, so the main loop of a debugger can be an ordinary traversal:
+=
+- ```scala
++ ```scala
+
+- def trace()(using Debug): Unit =
++ def trace()(using Debug): Unit =
+
+-   debug.events.each: composite =>
++   debug.events.each: composite =>
+
+-     composite.events.each:
++     composite.events.each:
+
+-       case Jdwp.Event.Breakpoint(request, thread, location) => Out.println(t"stopped at ${location.index}")
++       case Jdwp.Event.Breakpoint(request, thread, location) => Out.println(t"stopped at ${location.index}")
+
+-       case Jdwp.Event.SingleStep(request, thread, location) => Out.println(t"stepped to ${location.index}")
++       case Jdwp.Event.SingleStep(request, thread, location) => Out.println(t"stepped to ${location.index}")
+
+-       case other                                            => ()
++       case other                                            => ()
+
+=       case other                                            => ()
+- ```
++ ```
+
+- Requests and replies are correlated asynchronously. Many commands may be in flight at once, and
+- an event which arrives during one does not disturb it.
++ Запросы и ответы сопоставляются асинхронно. Одновременно в полёте может быть много команд, и
++ событие, пришедшее во время одной из них, ей не мешает.
+
+- ### Serving an editor
++ ### Обслуживание редактора
+
+- `Dap.listen` serves the session over the Debug Adapter Protocol on a TCP port. Any editor which
+- speaks it, which is VS Code and most others, can launch, stop, step, inspect variables and
+- evaluate through this implementation. Completions, hover types and inline-aware stepping all
+- pass through to the editor.
++ `Dap.listen` обслуживает сессию по Debug Adapter Protocol на TCP-порту. Любой редактор, который
++ говорит на этом протоколе, — VS Code и большинство других, — может через эту реализацию
++ запускать, останавливать, выполнять по шагам, просматривать переменные и вычислять выражения.
++ Автодополнение, типы во всплывающих подсказках и пошаговое выполнение с учётом встраивания —
++ всё это доходит до редактора.
+
+- ### The protocol vocabulary
++ ### Словарь протокола
+
+- `Jdwp` holds the model of the protocol itself, for work below the level which the session
+- exposes. The identifier types are tagged views of one [opaque type]. They cost nothing
+- at [runtime], and cannot be interchanged at [compiletime]:
++ `Jdwp` содержит модель самого протокола для работы ниже уровня, который открывает сессия. Типы
++ идентификаторов — это помеченные представления одного [непрозрачного типа][непрозрачный тип].
++ Во [время выполнения][время выполнения] они ничего не стоят, а во
++ [время компиляции][время компиляции] их нельзя подменить друг другом:
+
+= at [runtime], and cannot be interchanged at [compiletime]:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Identifies
+- row  `ObjectId`  an object
+- row  `ThreadId`  a thread
+- row  `ThreadGroupId`  a thread group
+- row  `StringId`  a string object
+- row  `ClassLoaderId`  a class loader
+- row  `ReferenceTypeId`  a class, interface or array type
+- row  `MethodId`  a method
+- row  `FieldId`  a field
+- row  `FrameId`  a stack frame
++ column  Тип
++ column  Идентифицирует
++ row  `ObjectId`  объект
++ row  `ThreadId`  поток выполнения
++ row  `ThreadGroupId`  группу потоков выполнения
++ row  `StringId`  строковый объект
++ row  `ClassLoaderId`  загрузчик классов
++ row  `ReferenceTypeId`  класс, интерфейс или тип массива
++ row  `MethodId`  метод
++ row  `FieldId`  поле
++ row  `FrameId`  кадр стека
+
+= row  `FrameId`  a stack frame
+- ```
++ ```
+
+- Beside them sit `Jdwp.Location`, the tagged `Jdwp.Value`s, the `Jdwp.Modifier`s which constrain
+- an event request, and the `Jdwp.Event`s which a suspended VM sends back.
++ Рядом с ними находятся `Jdwp.Location`, помеченные `Jdwp.Value`, модификаторы `Jdwp.Modifier`,
++ которые ограничивают запрос события, и события `Jdwp.Event`, которые присылает приостановленная VM.
+
+- `Jdwp.Reader` and `Jdwp.Writer` are the hand-written big-endian codecs. They know the sizes of
+- identifiers negotiated with the VM when the session opened, which is why they are constructed
+- with those sizes rather than assuming them.
++ `Jdwp.Reader` и `Jdwp.Writer` — написанные вручную кодеки big-endian. Они знают размеры
++ идентификаторов, согласованные с VM при открытии сессии, поэтому создаются с этими размерами, а
++ не предполагают их.
+
+- ### Related
++ ### Связанное
+
+- - [Processes](processes.md) describes the `sh"…"` commands which a debuggee is launched with.
+- - [Concurrency](concurrency.md) describes `supervise` and the thread models a session runs
+-   under.
+- - [Sockets](sockets.md) describes the TCP connections which the protocols travel over.
+- - [LSP](lsp.md) serves an editor over the sibling Language Server Protocol.
+- - [Stack traces](stack-traces.md) describes the frames of a stopped program as values.
+- - [Capture checking](../../philosophy/capture-checking.md) explains how a session handle is
+-   confined to its block.
+- - [Filesystem](filesystem.md) describes the handles whose shape a debugging session shares.
++ - [Процессы](processes.md) описывает команды `sh"…"`, которыми запускается отлаживаемая программа.
++ - [Конкурентность](concurrency.md) описывает `supervise` и модели потоков выполнения, под
++   которыми работает сессия.
++ - [Сокеты](sockets.md) описывает TCP-соединения, по которым идут протоколы.
++ - [LSP](lsp.md) обслуживает редактор по родственному Language Server Protocol.
++ - [Трассировки стека](stack-traces.md) описывает кадры остановленной программы как значения.
++ - [Проверка захвата](../../philosophy/capture-checking.md) объясняет, как дескриптор сессии
++   ограничивается своим блоком.
++ - [Файловая система](filesystem.md) описывает дескрипторы, форму которых разделяет отладочная
++   сессия.

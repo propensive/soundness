@@ -1,0 +1,85 @@
+orthant 1 language
+
+- # `↯/s.105.9` — `Certificate.Path.Error`
++ # `↯/s.105.9` — `Certificate.Path.Error`
+
+- Raised when a chain of certificates does not lead to a trusted one.
++ Ausgelöst, wenn eine Kette von Zertifikaten nicht zu einem vertrauenswürdigen führt.
+
+- ## Cause
++ ## Ursache
+
+- `Certificate.validate` takes a chain — the certificate being relied on, then the certificate
+- of each authority that issued the one before — and a set of trusted anchors. Each certificate
+- must be within its validity period, name the next as its issuer and be signed by it; every
+- issuer must be a certificate authority; and the last must be an anchor, or be issued by one.
++ `Certificate.validate` nimmt eine Kette — das Zertifikat, auf das man sich verlässt, dann das
++ Zertifikat jeder Stelle, die das vorige ausgestellt hat — und eine Menge vertrauenswürdiger
++ Anker. Jedes Zertifikat muss innerhalb seines Gültigkeitszeitraums liegen, das nächste als seinen
++ Aussteller nennen und von ihm signiert sein; jeder Aussteller muss eine Zertifizierungsstelle
++ sein; und das letzte muss ein Anker sein oder von einem ausgestellt worden sein.
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Message
++ column  Grund
++ column  Meldung
+
+- row  `↯/s.105.9.1`  `Empty`  it holds no certificate
++ row  `↯/s.105.9.1`  `Empty`  it holds no certificate
+
+- row  `↯/s.105.9.2`  `Malformed`  a certificate in it is not well-formed
++ row  `↯/s.105.9.2`  `Malformed`  a certificate in it is not well-formed
+
+- row  `↯/s.105.9.3`  `Expired`  a certificate in it is outside its validity period
++ row  `↯/s.105.9.3`  `Expired`  a certificate in it is outside its validity period
+
+- row  `↯/s.105.9.4`  `BadSignature`  a certificate in it was not signed by the next
++ row  `↯/s.105.9.4`  `BadSignature`  a certificate in it was not signed by the next
+
+- row  `↯/s.105.9.5`  `Unlinked`  a certificate in it was not issued by the next
++ row  `↯/s.105.9.5`  `Unlinked`  a certificate in it was not issued by the next
+
+- row  `↯/s.105.9.6`  `NotAuthority`  a certificate in it was issued by one that is not an authority
++ row  `↯/s.105.9.6`  `NotAuthority`  a certificate in it was issued by one that is not an authority
+
+- row  `↯/s.105.9.7`  `Untrusted`  it does not lead to a trusted certificate
++ row  `↯/s.105.9.7`  `Untrusted`  it does not lead to a trusted certificate
+
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- `Untrusted` means the chain is sound as far as it goes but ends somewhere that is not among
+- the anchors: an intermediate certificate is missing from the chain, or the right root is
+- missing from the anchors. `Unlinked` usually means the chain is in the wrong order; it runs
+- from the leaf towards the root. `Expired` is judged by the `Clock` in scope.
++ `Untrusted` bedeutet, dass die Kette, so weit sie reicht, stimmig ist, aber an einer Stelle endet,
++ die nicht unter den Ankern ist: Ein Zwischenzertifikat fehlt in der Kette, oder die richtige
++ Wurzel fehlt unter den Ankern. `Unlinked` bedeutet meist, dass die Kette in der falschen
++ Reihenfolge ist; sie verläuft vom Blattzertifikat zur Wurzel. Über `Expired` entscheidet die
++ `Clock` im Geltungsbereich.
+
+- Revocation, name constraints, policies and path-length limits are not examined, so this
+- validation suits a closed set of anchors chosen for one purpose, not the public web's.
++ Widerruf, Namenseinschränkungen, Richtlinien und Pfadlängenbegrenzungen werden nicht geprüft,
++ daher eignet sich diese Validierung für eine geschlossene Menge von Ankern, die für einen Zweck
++ gewählt wurden, nicht für die des öffentlichen Webs.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/enigmatic/src/x509/enigmatic.Certificate.scala`
+- - `↯/s.105.5` — `Certificate.Error`, raised when a certificate cannot be built
++ - Quelle: `lib/enigmatic/src/x509/enigmatic.Certificate.scala`
++ - `↯/s.105.5` — `Certificate.Error`, ausgelöst, wenn ein Zertifikat nicht gebaut werden kann

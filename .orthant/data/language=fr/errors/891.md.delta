@@ -1,0 +1,17 @@
+orthant 1 language
+
+- # `SN-891` — `Break` (retired)
++ # `SN-891` — `Break` (retirée)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Cette erreur n'existe plus. La page est conservée pour que le code ne soit pas réutilisé, et
++ pour qu'une référence à celui-ci depuis une version plus ancienne puisse toujours être résolue.
+
+- ## What became of it
++ ## Ce qu'il est devenu
+
+- Contingency no longer uses an exception to escape a nested computation, so this error
+- no longer exists.
++ Contingency n'utilise plus d'exception pour sortir d'un calcul imbriqué, si bien que cette erreur
++ n'existe plus.

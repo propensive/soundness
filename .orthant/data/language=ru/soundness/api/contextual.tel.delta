@@ -1,0 +1,977 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base contextual
++ base contextual
+
+- import soundness
++ import soundness
+
+- info   the machinery of checked string interpolators: literals parsed as the code compiles, holes typed by typeclass
++ info   механизм проверяемых строковых интерполяторов: литералы разбираются при компиляции кода, дырки типизируются классами типов
+
+- detail
++ detail
+
+-     _Contextual_ is the one piece of machinery behind every checked literal in Soundness — `url"…"`,
+-     `sh"…"`, `json"…"`, `t"…"`, `media"…"` — and the way to define new ones. An interpolator
+-     defined with it validates its literal parts as the code compiles, reports a fault at the
+-     exact character which caused it, and accepts substitutions only of the types it declares,
+-     each checked for the hole it fills. No hand-written macro is needed for the plumbing:
+-     capturing the literal parts and their positions in the source file is done once, by the
+-     `interpolation` macro, and an interpolator's author writes typeclass instances.
++     _Contextual_ — это единый механизм, стоящий за каждым проверяемым литералом в Soundness, —
++     `url"…"`, `sh"…"`, `json"…"`, `t"…"`, `media"…"`, — и способ определять новые. Интерполятор,
++     определённый с его помощью, проверяет литеральные части при компиляции кода, сообщает об
++     ошибке в точности у того символа, который её вызвал, и принимает подстановки только тех типов,
++     которые он объявляет, проверяя каждую для той дырки, которую она заполняет. Для обвязки не
++     нужен написанный вручную макрос: захват литеральных частей и их позиций в исходном файле
++     выполняется один раз макросом `interpolation`, а автор интерполятора пишет экземпляры классов
++     типов.
+
+-     Three pieces make an interpolator: a prefix method on `StringContext` which calls
+-     `interpolation[Target](context)` and returns its `Interpolation`; an `Interpolable` instance
+-     for the target type, which builds the value from the parts and the substituted values; and
+-     `Insertion` or `Substitution` instances, which say which types may fill a hole and how
+-     each enters. An `Extrapolable` instance makes the same literal usable as a pattern.
++     Интерполятор складывается из трёх частей: префиксного метода на `StringContext`, который
++     вызывает `interpolation[Target](context)` и возвращает его `Interpolation`; экземпляра
++     `Interpolable` для целевого типа, который строит значение из частей и подставленных значений;
++     и экземпляров `Insertion` или `Substitution`, которые говорят, какие типы могут заполнять
++     дырку и как каждый из них входит в неё. Экземпляр `Extrapolable` позволяет использовать тот же
++     литерал как образец.
+
+=     each enters. An `Extrapolable` instance makes the same literal usable as a pattern.
+=
+-     ```scala
++     ```scala
+
+=     each enters. An `Extrapolable` instance makes the same literal usable as a pattern.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import scala.compiletime
++     import scala.compiletime
+
+-     case class Slug(text: Text)
++     case class Slug(text: Text)
+
+-     object Slug:
++     object Slug:
+
+-       given interpolable: Slug is Interpolable:
++       given interpolable: Slug is Interpolable:
+
+-         transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
++         transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+
+-           ( inline insertions: Any* )
++           ( inline insertions: Any* )
+
+-         :   Slug =
++         :   Slug =
+
+-           Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
++           Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
+
+=           Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
+=
+-     extension (inline context: StringContext)
++     extension (inline context: StringContext)
+
+-       transparent inline def slug: Interpolation = interpolation[Slug](context)
++       transparent inline def slug: Interpolation = interpolation[Slug](context)
+
+-     slug"hello"   // Slug(t"hello")
++     slug"hello"   // Slug(t"hello")
+
+=     slug"hello"   // Slug(t"hello")
+-     ```
++     ```
+
+-     The literal's parts reach `Interpolable#interpolate` as the type parameter `parts`, a tuple
+-     of string-literal types, and their source positions as `origins`, so a macro behind the
+-     instance can parse them and `halt` at `Interpolation.sourcePosition`. Because the prefix
+-     method is `transparent inline`, an interpolator may return a type more precise than its
+-     target: a path on a particular platform, a name proved valid, a document typed by its
+-     schema. The convention throughout Soundness is to pair every interpolator with a runtime
+-     parser running the same code (`url"…"` beside `as[Url]`), so a literal and dynamic text
+-     cannot drift apart.
++     Части литерала попадают в `Interpolable#interpolate` как параметр типа `parts`, кортеж
++     строково-литеральных типов, а их позиции в исходном коде — как `origins`, так что макрос за
++     экземпляром может разобрать их и выполнить `halt` в `Interpolation.sourcePosition`. Поскольку
++     префиксный метод — `transparent inline`, интерполятор может возвращать тип точнее своего
++     целевого: путь на определённой платформе, имя, доказанно допустимое, документ, типизированный
++     своей схемой. Соглашение во всём Soundness — сопоставлять каждому интерполятору парсер времени
++     выполнения, исполняющий тот же код (`url"…"` рядом с `as[Url]`), так что литерал и
++     динамический текст не могут разойтись.
+
+-     The library has a single source set, `contextual.core`, compiling for every platform, and
+-     everything is exported to the `soundness` umbrella. It has no choice package: its givens
+-     live in companions and resolve through implicit scope.
++     У библиотеки единственный набор исходников, `contextual.core`, компилируемый для каждой
++     платформы, и всё экспортируется в зонтичный модуль `soundness`. Пакета выбора у неё нет: её
++     given-экземпляры находятся в компаньонах и разрешаются через неявную область видимости.
+
+- refer contextual.Interpolation
++ refer contextual.Interpolation
+
+- refer contextual.interpolation
++ refer contextual.interpolation
+
+- refer contextual.Interpolable
++ refer contextual.Interpolable
+
+- refer contextual.Extrapolable
++ refer contextual.Extrapolable
+
+- refer contextual.Insertion
++ refer contextual.Insertion
+
+- refer contextual.Substitution
++ refer contextual.Substitution
+
+- entry .interpolation   the macro behind every interpolator's prefix method: captures a literal's parts and positions
+-     `interpolation[Target](context)` takes the `StringContext` of an interpolated literal, which
+-     must be a literal known to the compiler, and returns an `Interpolation` whose `Topic` is
+-     `Target` and whose `Transport` and `Origins` type members encode the literal's parts and
+-     their source positions. A prefix method is written as a `transparent inline` extension on an
+-     `inline` `StringContext`, so that the literal survives to the macro:
++ entry .interpolation   макрос за префиксным методом каждого интерполятора: захватывает части и позиции литерала
++     `interpolation[Target](context)` принимает `StringContext` интерполированного литерала,
++     который должен быть литералом, известным компилятору, и возвращает `Interpolation`, у
++     которого `Topic` — это `Target`, а члены-типы `Transport` и `Origins` кодируют части литерала
++     и их позиции в исходном коде. Префиксный метод записывается как расширение
++     `transparent inline` над `inline` `StringContext`, чтобы литерал дожил до макроса:
+
+=     `inline` `StringContext`, so that the literal survives to the macro:
+=
+-     ```scala
++     ```scala
+
+=     `inline` `StringContext`, so that the literal survives to the macro:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     import soundness.*
+=
+-     extension (inline context: StringContext)
++     extension (inline context: StringContext)
+
+-       transparent inline def media: Interpolation = interpolation[MediaType](context)
++       transparent inline def media: Interpolation = interpolation[MediaType](context)
+
+=       transparent inline def media: Interpolation = interpolation[MediaType](context)
+-     ```
++     ```
+
+-     `media"text/plain"` then calls `Interpolation#apply`, which hands the encoded parts to the
+-     `MediaType is Interpolable` instance; `case media"text/plain" =>` calls
+-     `Interpolation#unapply`, which hands them to the `MediaType is Extrapolable` instance.
++     `media"text/plain"` затем вызывает `Interpolation#apply`, который передаёт закодированные
++     части экземпляру `MediaType is Interpolable`; `case media"text/plain" =>` вызывает
++     `Interpolation#unapply`, который передаёт их экземпляру `MediaType is Extrapolable`.
+
+- entry .Interpolation   one interpolated literal, with its target, its parts and their positions as types
++ entry .Interpolation   один интерполированный литерал с его целью, частями и их позициями в виде типов
+
+= entry .Interpolation   one interpolated literal, with its target, its parts and their positions as types
+-   detail
++   detail
+
+-       An `Interpolation` is what a prefix method returns: a pure value carrying, as type members,
+-       the interpolator's target (`#Topic`), the literal parts (`#Transport`) and their source
+-       positions (`#Origins`). Calling it (`#apply`) constructs a value of the target type; using
+-       it as a pattern (`#unapply`) deconstructs one. Values are made only by the `interpolation`
+-       macro.
++       `Interpolation` — это то, что возвращает префиксный метод: чистое значение, несущее в виде
++       членов-типов цель интерполятора (`#Topic`), литеральные части (`#Transport`) и их позиции в
++       исходном коде (`#Origins`). Его вызов (`#apply`) конструирует значение целевого типа; его
++       использование как образца (`#unapply`) деконструирует такое значение. Значения создаются
++       только макросом `interpolation`.
+
+-       Both type tuples are built innermost-first, so they hold the parts **in reverse**: for
+-       `slug"a${x}b${y}c"`, `constValueTuple[parts].toList` is `List("c", "b", "a")`. Every part
+-       is present, including empty ones, so a literal with `n` holes always has `n + 1` parts:
+-       `slug"$x"` has two empty parts.
++       Оба кортежа типов строятся изнутри наружу, поэтому хранят части **в обратном порядке**: для
++       `slug"a${x}b${y}c"` значение `constValueTuple[parts].toList` равно `List("c", "b", "a")`.
++       Присутствует каждая часть, включая пустые, так что у литерала с `n` дырками всегда `n + 1`
++       частей: у `slug"$x"` две пустые части.
+
+-       The companion holds the helpers an interpolator's own macro uses to turn the type-level
+-       parts and origins back into values and to report a fault at the right character.
++       Компаньон содержит вспомогательные функции, которыми собственный макрос интерполятора
++       превращает части и источники уровня типов обратно в значения и сообщает об ошибке у нужного
++       символа.
+
+=       parts and origins back into values and to report a fault at the right character.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       parts and origins back into values and to report a fault at the right character.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       parts and origins back into values and to report a fault at the right character.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       import scala.quoted.*
++       import scala.quoted.*
+
+-       def check[parts <: Tuple: Type, origins <: Tuple: Type](using Quotes): Expr[Unit] =
++       def check[parts <: Tuple: Type, origins <: Tuple: Type](using Quotes): Expr[Unit] =
+
+-         val parts: List[String] = Interpolation.decodeParts[parts]
++         val parts: List[String] = Interpolation.decodeParts[parts]
+
+-         val origins: List[(Int, Int)] = Interpolation.decodeOrigins[origins]
++         val origins: List[(Int, Int)] = Interpolation.decodeOrigins[origins]
+
+-         if parts.exists(_.contains("!"))
++         if parts.exists(_.contains("!"))
+
+-         then halt(m"`!` is not allowed", Interpolation.sourcePosition(parts, origins, 0, 0))
++         then halt(m"`!` is not allowed", Interpolation.sourcePosition(parts, origins, 0, 0))
+
+-         else '{()}
++         else '{()}
+
+=         else '{()}
+-       ```
++       ```
+
+-   refer contextual.interpolation
++   refer contextual.interpolation
+
+=   refer contextual.interpolation
+-   refer contextual.Interpolable
++   refer contextual.Interpolable
+
+-   entry .apply   the macro implementation of `interpolation`: builds the `Interpolation` for a literal
+-       Not called directly: `interpolation[topic](context)` splices it. It reads the parts of the
+-       `StringContext`, finds each part's start and end in the source file, and encodes both as
+-       tuple types on a new `Interpolation`.
+-   entry .decodeParts   the literal parts a `Transport` type encodes, in source order, inside a macro
+-       `Interpolation.decodeParts[parts]` needs a `Quotes` and a `Type[parts]`, and reverses the
+-       type-level tuple back into source order. A tuple element which is not a string-literal
+-       type aborts the expansion.
+-   entry .decodeOrigins   the source `(start, end)` of each literal part an `Origins` type encodes, inside a macro
+-       `Interpolation.decodeOrigins[origins]` returns the pairs in source order; an element it
+-       cannot read decodes as `(0, 0)`, the marker for an unknown origin.
+-   entry .literalOrigins   the source `(start, end)` of each string literal in a `StringContext` tree
+-       Walks the `StringContext.apply(…)` tree through `Inlined`, `Typed`, `Block` and `Apply`
+-       wrappers, collecting every string literal's position. If the number found differs from the
+-       expected count, every part is `(0, 0)`, so that errors land on the whole expression rather
+-       than at a wrong character.
+-   entry .sourcePosition   the source-file position of a parser offset into a literal's assembled text
+-       `Interpolation.sourcePosition(parts, origins, substitutionWidth, offset, length)` takes the
+-       offset an interpolator's parser reports into the "assembled" input — the parts joined with
+-       `substitutionWidth` characters standing in for each hole — and returns the `Position` in the
+-       source file of the character at fault, at least one character long, for `halt` to report
+-       against. Escapes which are longer in the source than in the value (`$$` and `\uHHHH`) are
+-       compensated for. An offset which falls in a hole, or in a part whose origin is unknown,
+-       gives the position of the whole expression.
+-   entry .buildMapping   maps each character index of a literal part's value to its index in the source text
+-       `Interpolation.buildMapping(source, value)` accounts for `$$` (two source characters for
+-       one `$`) and `\uHHHH` (six for one); an index below zero maps to `0` and one beyond the end
+-       to the last position.
++   entry .apply   макросная реализация `interpolation`: строит `Interpolation` для литерала
++       Не вызывается напрямую: его вставляет сплайсом `interpolation[topic](context)`. Он читает
++       части `StringContext`, находит начало и конец каждой части в исходном файле и кодирует и то
++       и другое как типы-кортежи на новом `Interpolation`.
++   entry .decodeParts   литеральные части, которые кодирует тип `Transport`, в порядке исходного кода, внутри макроса
++       `Interpolation.decodeParts[parts]` нужны `Quotes` и `Type[parts]`, и он разворачивает
++       кортеж уровня типов обратно в порядок исходного кода. Элемент кортежа, не являющийся
++       строково-литеральным типом, прерывает раскрытие.
++   entry .decodeOrigins   исходные `(start, end)` каждой литеральной части, которые кодирует тип `Origins`, внутри макроса
++       `Interpolation.decodeOrigins[origins]` возвращает пары в порядке исходного кода; элемент,
++       который он не может прочитать, декодируется как `(0, 0)` — маркер неизвестного
++       происхождения.
++   entry .literalOrigins   исходные `(start, end)` каждого строкового литерала в дереве `StringContext`
++       Обходит дерево `StringContext.apply(…)` сквозь обёртки `Inlined`, `Typed`, `Block` и
++       `Apply`, собирая позицию каждого строкового литерала. Если найденное количество отличается
++       от ожидаемого, каждая часть получает `(0, 0)`, чтобы ошибки указывали на всё выражение, а не
++       на неверный символ.
++   entry .sourcePosition   позиция в исходном файле для смещения парсера в собранном тексте литерала
++       `Interpolation.sourcePosition(parts, origins, substitutionWidth, offset, length)` принимает
++       смещение, которое парсер интерполятора сообщает в «собранных» входных данных — частях,
++       соединённых `substitutionWidth` символами, заменяющими каждую дырку, — и возвращает
++       `Position` в исходном файле того символа, в котором ошибка, длиной не менее одного символа,
++       чтобы `halt` мог сообщить о ней. Экранирования, которые в исходном коде длиннее, чем в
++       значении (`$$` и `\uHHHH`), компенсируются. Смещение, попадающее в дырку или в часть с
++       неизвестным происхождением, даёт позицию всего выражения.
++   entry .buildMapping   отображает каждый индекс символа в значении литеральной части в его индекс в исходном тексте
++       `Interpolation.buildMapping(source, value)` учитывает `$$` (два исходных символа на один
++       `$`) и `\uHHHH` (шесть на один); индекс меньше нуля отображается в `0`, а индекс за концом —
++       в последнюю позицию.
+
+=       to the last position.
+=
+-       ```scala
++       ```scala
+
+=       to the last position.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val mapping = Interpolation.buildMapping("a$$b", "a$b")
++       val mapping = Interpolation.buildMapping("a$$b", "a$b")
+
+-       List(0, 1, 2, 3).map(mapping)   // List(0, 1, 3, 4)
++       List(0, 1, 2, 3).map(mapping)   // List(0, 1, 3, 4)
+
+=       List(0, 1, 2, 3).map(mapping)   // List(0, 1, 3, 4)
+-       ```
++       ```
+
+-   entry #Topic   the interpolator's target type, the type an `Interpolable` instance is sought for
+-   entry #Transport   the literal parts, as a tuple of string-literal types in reverse source order
+-   entry #Origins   each literal part's source `(start, end)`, as a tuple of integer-literal pairs in reverse order
+-   entry #apply   constructs the target value from the literal and its substituted values
+-       Called by an interpolated literal such as `slug"hello $name"`, with the substituted values
+-       as `insertions`. It needs a `Topic is Interpolable` in scope (normally in the target's
+-       companion) and returns whatever that instance's `interpolate` returns; being `transparent
+-       inline`, it keeps the precise type.
+-   entry #unapply   deconstructs a value against the literal, when the literal is used as a pattern
+-       Called by a pattern such as `case slug"hello" =>`. It needs a `Topic is Extrapolable` in
+-       scope, and returns the instance's `Extrapolation`.
++   entry #Topic   целевой тип интерполятора, тип, для которого ищется экземпляр `Interpolable`
++   entry #Transport   литеральные части в виде кортежа строково-литеральных типов в обратном порядке исходного кода
++   entry #Origins   исходные `(start, end)` каждой литеральной части в виде кортежа пар целочисленных литералов в обратном порядке
++   entry #apply   конструирует целевое значение из литерала и его подставленных значений
++       Вызывается интерполированным литералом, таким как `slug"hello $name"`, с подставленными
++       значениями в качестве `insertions`. Ему нужен `Topic is Interpolable` в области видимости
++       (обычно в компаньоне целевого типа), и он возвращает то, что возвращает `interpolate` этого
++       экземпляра; будучи `transparent inline`, он сохраняет точный тип.
++   entry #unapply   деконструирует значение по литералу, когда литерал используется как образец
++       Вызывается образцом, таким как `case slug"hello" =>`. Ему нужен `Topic is Extrapolable` в
++       области видимости, и он возвращает `Extrapolation` экземпляра.
+
+- entry .Interpolable   a typeclass building a value of its type from an interpolated literal's parts and holes
++ entry .Interpolable   класс типов, строящий значение своего типа из частей и дырок интерполированного литерала
+
+= entry .Interpolable   a typeclass building a value of its type from an interpolated literal's parts and holes
+-   detail
++   detail
+
+-       `T is Interpolable` is what `Interpolation#apply` looks for. Its one method, `#interpolate`,
+-       is `inline`, and receives the literal's parts and origins as the type parameters `parts`
+-       and `origins` and the substituted values as `insertions`. A simple instance reads the parts
+-       with `compiletime.constValueTuple`; a checking one splices a macro which decodes them with
+-       `Interpolation.decodeParts`, parses them, and halts at `Interpolation.sourcePosition` on a
+-       fault, so a malformed literal never compiles.
++       `T is Interpolable` — это то, что ищет `Interpolation#apply`. Его единственный метод,
++       `#interpolate`, — `inline` и получает части и источники литерала как параметры типа `parts`
++       и `origins`, а подставленные значения — как `insertions`. Простой экземпляр читает части с
++       помощью `compiletime.constValueTuple`; проверяющий вставляет сплайсом макрос, который
++       декодирует их с помощью `Interpolation.decodeParts`, разбирает их и при ошибке
++       останавливается через `halt` в `Interpolation.sourcePosition`, так что некорректный литерал
++       никогда не компилируется.
+
+=       fault, so a malformed literal never compiles.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A target type
++         label Целевой тип
+
+=         label A target type
+-         code
++         code
+
+=         label A target type
+=         code
+-             import soundness.*
++             import soundness.*
+
+=             import soundness.*
+=
+-             case class Slug(text: Text)
++             case class Slug(text: Text)
+
+=             case class Slug(text: Text)
+-       frame
++       frame
+
+-         label An `Interpolable` instance in its companion: the parts arrive reversed
++         label Экземпляр `Interpolable` в компаньоне: части приходят в обратном порядке
+
+=         label An `Interpolable` instance in its companion: the parts arrive reversed
+-         code
++         code
+
+=         label An `Interpolable` instance in its companion: the parts arrive reversed
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label An `Interpolable` instance in its companion: the parts arrive reversed
+=         code
+=             import soundness.*
+-             import scala.compiletime
++             import scala.compiletime
+
+=         label An `Interpolable` instance in its companion: the parts arrive reversed
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+-             case class Slug(text: Text)
++             case class Slug(text: Text)
+
+=         label An `Interpolable` instance in its companion: the parts arrive reversed
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+-             object Slug:
++             object Slug:
+
+=         label An `Interpolable` instance in its companion: the parts arrive reversed
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+=             object Slug:
+-               given interpolable: Slug is Interpolable:
++               given interpolable: Slug is Interpolable:
+
+=         label An `Interpolable` instance in its companion: the parts arrive reversed
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+=             object Slug:
+=               given interpolable: Slug is Interpolable:
+-                 transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
++                 transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+
+=         label An `Interpolable` instance in its companion: the parts arrive reversed
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+=             object Slug:
+=               given interpolable: Slug is Interpolable:
+=                 transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+-                   ( inline insertions: Any* )
++                   ( inline insertions: Any* )
+
+=         label An `Interpolable` instance in its companion: the parts arrive reversed
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+=             object Slug:
+=               given interpolable: Slug is Interpolable:
+=                 transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+=                   ( inline insertions: Any* )
+-                 :   Slug =
++                 :   Slug =
+
+=         label An `Interpolable` instance in its companion: the parts arrive reversed
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+=             object Slug:
+=               given interpolable: Slug is Interpolable:
+=                 transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+=                   ( inline insertions: Any* )
+=                 :   Slug =
+-                   Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
++                   Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
+
+=                   Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
+-       frame
++       frame
+
+-         label A prefix method, and the interpolator is ready
++         label Префиксный метод — и интерполятор готов
+
+=         label A prefix method, and the interpolator is ready
+-         code
++         code
+
+=         label A prefix method, and the interpolator is ready
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A prefix method, and the interpolator is ready
+=         code
+=             import soundness.*
+-             import scala.compiletime
++             import scala.compiletime
+
+=         label A prefix method, and the interpolator is ready
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+-             case class Slug(text: Text)
++             case class Slug(text: Text)
+
+=         label A prefix method, and the interpolator is ready
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+-             object Slug:
++             object Slug:
+
+=         label A prefix method, and the interpolator is ready
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+=             object Slug:
+-               given interpolable: Slug is Interpolable:
++               given interpolable: Slug is Interpolable:
+
+=         label A prefix method, and the interpolator is ready
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+=             object Slug:
+=               given interpolable: Slug is Interpolable:
+-                 transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
++                 transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+
+=         label A prefix method, and the interpolator is ready
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+=             object Slug:
+=               given interpolable: Slug is Interpolable:
+=                 transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+-                   ( inline insertions: Any* )
++                   ( inline insertions: Any* )
+
+=         label A prefix method, and the interpolator is ready
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+=             object Slug:
+=               given interpolable: Slug is Interpolable:
+=                 transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+=                   ( inline insertions: Any* )
+-                 :   Slug =
++                 :   Slug =
+
+=         label A prefix method, and the interpolator is ready
+=         code
+=             import soundness.*
+=             import scala.compiletime
+=
+=             case class Slug(text: Text)
+=
+=             object Slug:
+=               given interpolable: Slug is Interpolable:
+=                 transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+=                   ( inline insertions: Any* )
+=                 :   Slug =
+-                   Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
++                   Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
+
+-             extension (inline context: StringContext)
++             extension (inline context: StringContext)
+
+-               transparent inline def slug: Interpolation = interpolation[Slug](context)
++               transparent inline def slug: Interpolation = interpolation[Slug](context)
+
+-             slug"hello"   // Slug(t"hello")
++             slug"hello"   // Slug(t"hello")
+
+=             slug"hello"   // Slug(t"hello")
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       A production interpolator puts the parsing in a macro, so the same parser serves the
+-       literal at compile time and dynamic text at runtime:
++       Промышленный интерполятор помещает разбор в макрос, так что один и тот же парсер
++       обслуживает литерал во время компиляции и динамический текст во время выполнения:
+
+=       literal at compile time and dynamic text at runtime:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       literal at compile time and dynamic text at runtime:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       literal at compile time and dynamic text at runtime:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       inline given interpolable: MediaType is Interpolable:
++       inline given interpolable: MediaType is Interpolable:
+
+-         transparent inline def interpolate[parts <: Tuple, origins <: Tuple](inline insertions: Any*)
++         transparent inline def interpolate[parts <: Tuple, origins <: Tuple](inline insertions: Any*)
+
+-         :   MediaType =
++         :   MediaType =
+
+-           ${internal.mediaInterpolator[parts]('insertions)}
++           ${internal.mediaInterpolator[parts]('insertions)}
+
+=           ${internal.mediaInterpolator[parts]('insertions)}
+-       ```
++       ```
+
+-   refer contextual.Interpolation
++   refer contextual.Interpolation
+
+=   refer contextual.Interpolation
+-   refer contextual.Insertion
++   refer contextual.Insertion
+
+-   entry #Self   the interpolator's target type
+-   entry #interpolate   builds the target value from the literal's parts (type-level, reversed) and its substituted values
+-       `parts` is a tuple of string-literal types holding the literal's parts in reverse source
+-       order, `origins` their source positions likewise, and `insertions` the substituted values,
+-       in source order. Being `inline`, with `insertions` passed `inline`, a macro behind it sees
+-       each substituted expression and its type, and may resolve an `Insertion` or `Substitution`
+-       for each.
++   entry #Self   целевой тип интерполятора
++   entry #interpolate   строит целевое значение из частей литерала (уровня типов, в обратном порядке) и его подставленных значений
++       `parts` — кортеж строково-литеральных типов, хранящий части литерала в обратном порядке
++       исходного кода, `origins` — так же их позиции в исходном коде, а `insertions` —
++       подставленные значения в порядке исходного кода. Будучи `inline`, с `insertions`,
++       передаваемыми как `inline`, он позволяет макросу за ним видеть каждое подставленное
++       выражение и его тип и разрешать для каждого `Insertion` или `Substitution`.
+
+- entry .Extrapolable   a typeclass matching a value of its type against an interpolated literal, as a pattern
++ entry .Extrapolable   класс типов, сопоставляющий значение своего типа с интерполированным литералом как с образцом
+
+= entry .Extrapolable   a typeclass matching a value of its type against an interpolated literal, as a pattern
+-   detail
++   detail
+
+-       `T is Extrapolable` is what `Interpolation#unapply` looks for, so an interpolated literal
+-       can be a `case` pattern; it is how `json"…"` and `html"…"` patterns work. One prefix method
+-       serves both construction and matching.
++       `T is Extrapolable` — это то, что ищет `Interpolation#unapply`, так что интерполированный
++       литерал может быть образцом в `case`; так работают образцы `json"…"` и `html"…"`. Один
++       префиксный метод обслуживает и конструирование, и сопоставление.
+
+=       serves both construction and matching.
+=
+-       ```scala
++       ```scala
+
+=       serves both construction and matching.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import scala.compiletime
++       import scala.compiletime
+
+=       import scala.compiletime
+=
+-       case class Slug(text: Text)
++       case class Slug(text: Text)
+
+-       object Slug:
++       object Slug:
+
+-         given extrapolable: Slug is Extrapolable:
++         given extrapolable: Slug is Extrapolable:
+
+-           transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Slug)
++           transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Slug)
+
+-           :   Extrapolation[Slug] =
++           :   Extrapolation[Slug] =
+
+-             scrutinee.text == compiletime.constValueTuple[parts].toList.reverse.mkString.tt
++             scrutinee.text == compiletime.constValueTuple[parts].toList.reverse.mkString.tt
+
+-       extension (inline context: StringContext)
++       extension (inline context: StringContext)
+
+-         transparent inline def slug: Interpolation = interpolation[Slug](context)
++         transparent inline def slug: Interpolation = interpolation[Slug](context)
+
+-       Slug(t"hello") match
++       Slug(t"hello") match
+
+-         case slug"hello" => t"matched"
++         case slug"hello" => t"matched"
+
+-         case _           => t"unmatched"
++         case _           => t"unmatched"
+
+=         case _           => t"unmatched"
+-       ```
++       ```
+
+-   refer contextual.Extrapolation
++   refer contextual.Extrapolation
+
+=   refer contextual.Extrapolation
+-   refer contextual.Interpolable
++   refer contextual.Interpolable
+
+-   entry #Self   the type a pattern deconstructs
+-   entry #extrapolate   matches a scrutinee against the literal's parts, giving an `Extrapolation`
+-       Receives the parts and origins as type parameters, exactly as `Interpolable#interpolate`
+-       does, and the value being matched. It returns a `Boolean` for a pattern with no holes, and
+-       an `Option` of the bound value (or of a tuple of them) for one with holes.
++   entry #Self   тип, который деконструирует образец
++   entry #extrapolate   сопоставляет сопоставляемое значение с частями литерала, давая `Extrapolation`
++       Получает части и источники как параметры типа, в точности как `Interpolable#interpolate`, и
++       сопоставляемое значение. Возвращает `Boolean` для образца без дырок и `Option` связанного
++       значения (или их кортежа) для образца с дырками.
+
+- entry .Extrapolation   what an `Extrapolable` match returns: a `Boolean`, or an `Option` of the bound values
+-     `Extrapolation[result]` is `Boolean | Option[Tuple | result]`, the three shapes Scala's
+-     pattern matching accepts from an `unapply`: a `Boolean` for a pattern which binds nothing, an
+-     `Option[result]` for one hole, and an `Option` of a tuple for several.
++ entry .Extrapolation   то, что возвращает сопоставление `Extrapolable`: `Boolean` или `Option` связанных значений
++     `Extrapolation[result]` — это `Boolean | Option[Tuple | result]`, три формы, которые
++     сопоставление с образцом в Scala принимает от `unapply`: `Boolean` для образца, который ничего
++     не связывает, `Option[result]` для одной дырки и `Option` кортежа для нескольких.
+
+- entry .Insertion   a typeclass: how a substituted value of one type enters an interpolator's input type
++ entry .Insertion   класс типов: как подставленное значение одного типа входит во входной тип интерполятора
+
+= entry .Insertion   a typeclass: how a substituted value of one type enters an interpolator's input type
+-   detail
++   detail
+
+-       `Insertion[input, value]` turns a `value` substituted into a hole into the interpolator's
+-       own `input` type, so the interpolator, not `toString`, decides how foreign values enter.
+-       A type with no instance cannot be substituted at all, which is how an interpolator forbids
+-       what it cannot make safe; a new type becomes substitutable with one instance, without
+-       touching the interpolator.
++       `Insertion[input, value]` превращает `value`, подставленное в дырку, в собственный входной
++       тип интерполятора `input`, так что то, как входят чужие значения, решает интерполятор, а не
++       `toString`. Тип без экземпляра вообще нельзя подставить — так интерполятор запрещает то, что
++       он не может сделать безопасным; новый тип становится подставляемым с одним экземпляром, не
++       затрагивая интерполятор.
+
+=       touching the interpolator.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       touching the interpolator.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       touching the interpolator.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       given Insertion[Sh.Parameters, Text] = value => Sh.Parameters(value)
++       given Insertion[Sh.Parameters, Text] = value => Sh.Parameters(value)
+
+-       given Insertion[Sh.Parameters, List[Text]] = values => Sh.Parameters(values*)
++       given Insertion[Sh.Parameters, List[Text]] = values => Sh.Parameters(values*)
+
+=       given Insertion[Sh.Parameters, List[Text]] = values => Sh.Parameters(values*)
+-       ```
++       ```
+
+-       `value` is contravariant, so an instance for a supertype serves its subtypes. A
+-       `Substitution` is an insertion which also tells the parser what the hole stands for.
++       `value` контравариантен, так что экземпляр для супертипа обслуживает его подтипы.
++       `Substitution` — это вставка, которая также говорит парсеру, что обозначает дырка.
+
+-   refer contextual.Substitution
++   refer contextual.Substitution
+
+-   refer contextual.Embeddable
++   refer contextual.Embeddable
+
+-   entry .embeddable   a `Substitution` for any `Embeddable` type, labelled `"x"`, in implicit scope
+-       For a `value` which is `Embeddable`, this gives `Substitution[value.Operand, value, "x"]`,
+-       embedding through `Embeddable#embed`, so an interpolator which asks for substitutions finds
+-       one for every embeddable type without an instance of its own.
+-   entry #embed   converts a substituted value into the interpolator's input type
++   entry .embeddable   `Substitution` для любого типа `Embeddable` с меткой `"x"`, в неявной области видимости
++       Для `value`, являющегося `Embeddable`, даёт `Substitution[value.Operand, value, "x"]`,
++       встраивая через `Embeddable#embed`, так что интерполятор, запрашивающий подстановки, находит
++       её для каждого встраиваемого типа без собственного экземпляра.
++   entry #embed   преобразует подставленное значение во входной тип интерполятора
+
+- entry .Substitution   an `Insertion` which also gives the parser a label standing in for the hole
+-     `Substitution[input, value, label]` behaves at runtime exactly as `Insertion[input, value]`
+-     does. At compile time the singleton `Label` tells the interpolator's parser what the hole
+-     contained, so the parser can proceed as though a representative token of the substituted
+-     type were written there — `"0"` for a number, `""""` for a string — and check the *shape*
+-     of a literal with holes rather than give up at the first one. Where different holes accept
+-     different things (a URL's port takes a number, its path text), the label is what
+-     distinguishes them.
++ entry .Substitution   `Insertion`, который также даёт парсеру метку, заменяющую дырку
++     `Substitution[input, value, label]` во время выполнения ведёт себя в точности как
++     `Insertion[input, value]`. Во время компиляции синглтон `Label` говорит парсеру интерполятора,
++     что содержала дырка, так что парсер может продолжать так, как будто там записан
++     представительный токен подставляемого типа — `"0"` для числа, `""""` для строки, — и
++     проверять *форму* литерала с дырками, а не сдаваться на первой. Там, где разные дырки
++     принимают разное (порт URL принимает число, его путь — текст), их различает именно метка.
+
+=     distinguishes them.
+=
+-     ```scala
++     ```scala
+
+=     distinguishes them.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     enum SqlInput:
++     enum SqlInput:
+
+-       case IntInput(value: Int)
++       case IntInput(value: Int)
+
+-       case StrInput(value: Text)
++       case StrInput(value: Text)
+
+-     given Substitution[SqlInput, Int, "0"] = SqlInput.IntInput(_)
++     given Substitution[SqlInput, Int, "0"] = SqlInput.IntInput(_)
+
+-     given Substitution[SqlInput, Text, "\"\""] = SqlInput.StrInput(_)
++     given Substitution[SqlInput, Text, "\"\""] = SqlInput.StrInput(_)
+
+=     given Substitution[SqlInput, Text, "\"\""] = SqlInput.StrInput(_)
+-     ```
++     ```
+
+- entry .Embeddable   a typeclass embedding a value as the `Operand` of an interpolator whose target is `Form`
++ entry .Embeddable   класс типов, встраивающий значение как `Operand` интерполятора, целью которого является `Form`
+
+= entry .Embeddable   a typeclass embedding a value as the `Operand` of an interpolator whose target is `Form`
+-   detail
++   detail
+
+-       `T is Embeddable by Operand in Form` says that a `T` may be substituted into an
+-       interpolator targeting `Form`, entering as an `Operand`. It is the typeclass-style form of
+-       `Insertion`: one instance in the substituted type's companion, and `Insertion.embeddable`
+-       derives the corresponding `Substitution` from it.
++       `T is Embeddable by Operand in Form` говорит, что `T` можно подставить в интерполятор с
++       целью `Form`, и он входит как `Operand`. Это форма `Insertion` в стиле класса типов: один
++       экземпляр в компаньоне подставляемого типа, а `Insertion.embeddable` выводит из него
++       соответствующий `Substitution`.
+
+=       derives the corresponding `Substitution` from it.
+=
+-       ```scala
++       ```scala
+
+=       derives the corresponding `Substitution` from it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       case class Slug(text: Text)
++       case class Slug(text: Text)
+
+-       case class Tag(name: Text)
++       case class Tag(name: Text)
+
+-       object Tag:
++       object Tag:
+
+-         given embeddable: Tag is Embeddable by Text in Slug = _.name
++         given embeddable: Tag is Embeddable by Text in Slug = _.name
+
+-       Tag.embeddable.embed(Tag(t"widget"))   // t"widget"
++       Tag.embeddable.embed(Tag(t"widget"))   // t"widget"
+
+-       summon[Substitution[Text, Tag, "x"]].embed(Tag(t"widget"))   // t"widget"
++       summon[Substitution[Text, Tag, "x"]].embed(Tag(t"widget"))   // t"widget"
+
+=       summon[Substitution[Text, Tag, "x"]].embed(Tag(t"widget"))   // t"widget"
+-       ```
++       ```
+
+=       ```
+-   refer contextual.Insertion
++   refer contextual.Insertion
+
+-   entry #embed   converts a value into the interpolator's operand type
+-   entry #contramap   an embedding for another type, through a function into this one
+-       `embeddable.contramap[Int](count => Tag(count.show))` is an `Int is Embeddable by Text in
+-       Slug`, which embeds an `Int` by first making a `Tag` of it. The result captures both this
+-       instance and the function.
++   entry #embed   преобразует значение в тип операнда интерполятора
++   entry #contramap   встраивание для другого типа через функцию в этот тип
++       `embeddable.contramap[Int](count => Tag(count.show))` — это `Int is Embeddable by Text in
++       Slug`, который встраивает `Int`, сначала делая из него `Tag`. Результат захватывает и этот
++       экземпляр, и функцию.

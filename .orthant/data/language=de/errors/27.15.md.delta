@@ -1,0 +1,70 @@
+orthant 1 language
+
+- # `↯/s.27.15` — `Arithmetic.Error`
++ # `↯/s.27.15` — `Arithmetic.Error`
+
+- Raised when an arithmetic operation cannot produce a representable result.
++ Wird ausgelöst, wenn eine arithmetische Operation kein darstellbares Ergebnis liefern kann.
+
+- This is distinct from a *value* that cannot be represented, which is
+- `Decimal.Error` or `Rational.Error` depending on the type.
++ Das ist etwas anderes als ein nicht darstellbarer *Wert*, der je nach Typ `Decimal.Error` oder
++ `Rational.Error` ist.
+
+- ## Cause
++ ## Ursache
+
+- Hypotenuse's checked division raises this error for cases such as
+- integer division by zero or `MinValue / -1` (which overflows the
+- positive range).
++ Die geprüfte Division von Hypotenuse löst diesen Fehler etwa bei ganzzahliger Division durch null
++ oder bei `MinValue / -1` aus (was den positiven Bereich überschreitet).
+
+- ## Example message
++ ## Beispielmeldung
+
+=
+- ```
++ ```
+
+- [↯/s.27.15] the result is unrepresentable
++ [↯/s.27.15] the result is unrepresentable
+
+= [↯/s.27.15] the result is unrepresentable
+- ```
++ ```
+
+- ## Variants
++ ## Varianten
+
+- ### `↯/s.27.15.1` — `DivisionByZero`
++ ### `↯/s.27.15.1` — `DivisionByZero`
+
+- The divisor was zero. Raised only under `import arithmeticOptions.checkedDivision`;
+- the unchecked default lets the platform's own division semantics apply.
++ Der Divisor war null. Wird nur unter `import arithmeticOptions.checkedDivision` ausgelöst; die
++ ungeprüfte Vorgabe lässt die Divisionssemantik der Plattform gelten.
+
+- ### `↯/s.27.15.2` — `Overflow`
++ ### `↯/s.27.15.2` — `Overflow`
+
+- The result exceeded the range of its type. Raised only under
+- `import arithmeticOptions.checkedOverflow`. This was `SN-331` (`OverflowError`)
+- until the two were unified.
++ Das Ergebnis überschritt den Bereich seines Typs. Wird nur unter
++ `import arithmeticOptions.checkedOverflow` ausgelöst. Dies war `SN-331` (`OverflowError`), bis die
++ beiden vereinheitlicht wurden.
+
+- ## Resolution
++ ## Behebung
+
+- Guard against zero divisors; for the `MinValue / -1` case, widen
+- the dividend before dividing.
++ Schützen Sie sich vor Divisoren gleich null; erweitern Sie im Fall `MinValue / -1` den Dividenden
++ vor der Division.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/hypotenuse/src/core/hypotenuse.Arithmetic.scala`
++ - Quelle: `lib/hypotenuse/src/core/hypotenuse.Arithmetic.scala`

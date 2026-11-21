@@ -1,0 +1,35 @@
+orthant 1 language
+
+=       label A directory, archived
+=       code
+=           import soundness.*
+=           import filesystemBackends.javaBaseFilesystem
+-           import filesystemOptions.createParents
++           import filesystemOptions.createParents
+
+=       label Compressed and written to disk
+=       code
+=           import soundness.*
+=           import filesystemBackends.javaBaseFilesystem
+-           import filesystemOptions.createParents
++           import filesystemOptions.createParents
+
+=       label Unpacked somewhere else
+=       code
+=           import soundness.*
+=           import filesystemBackends.javaBaseFilesystem
+-           import filesystemOptions.createParents
++           import filesystemOptions.createParents
+
+-     It needs `CreateParents` and `OverwritePreexisting` policies for the plane
+-     (imported from `filesystemOptions` by name), a `Tactic[Io.Error]` and a
+-     `Tactic[Tar.Error]`. Modes are set through the `unix:mode` attribute, and silently left
+-     as the filesystem's default where that is unsupported. To extract an archive too large
+-     to hold as a `Tarfile`, iterate `Tarfile.read` or an `open[Tar]` block and build a
+-     `Tarfile` of one entry at a time.
++     Ha bisogno delle politiche `CreateParents` e `OverwritePreexisting` per il piano
++     (importate per nome da `filesystemOptions`), di una `Tactic[Io.Error]` e di una
++     `Tactic[Tar.Error]`. Le modalità vengono impostate attraverso l'attributo `unix:mode`, e
++     lasciate silenziosamente al valore predefinito del filesystem dove questo non è supportato.
++     Per estrarre un archivio troppo grande per essere tenuto come `Tarfile`, si itera
++     `Tarfile.read` o un blocco `open[Tar]` e si costruisce un `Tarfile` di una voce alla volta.

@@ -1,0 +1,409 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base abscission
++ base abscission
+
+- import soundness
++ import soundness
+
+- info   Shrinking a classpath to the closed world its entry points reach, by recompiling it from its TASTy
++ info   Einen Klassenpfad auf die geschlossene Welt verkleinern, die seine Einstiegspunkte erreichen, indem er aus seinem TASTy neu kompiliert wird
+
+- detail
++ detail
+
+-     _Abscission_ takes a classpath and a set of entry points and writes the closed world they
+-     reach: the classes which can run, and no others. It is the job a bytecode shrinker does,
+-     done earlier. The classes which this compiler compiled are recompiled from the TASTy the
+-     classpath holds for them, and the members nothing reaches are taken out after inlining and
+-     before the phases which generate a trait's forwarders, a bridge or the fields behind a lazy
+-     value, so none of those is generated for a member which is not kept, and none needs a rule
+-     to keep it. Units are read as the analysis finds it needs them, so a unit nothing reaches
+-     is never read and its macros never run.
++     _Abscission_ nimmt einen Klassenpfad und eine Menge von Einstiegspunkten und schreibt die
++     geschlossene Welt, die sie erreichen: die Klassen, die laufen können, und keine anderen. Es
++     ist die Aufgabe eines Bytecode-Shrinkers, nur früher erledigt. Die Klassen, die dieser
++     Compiler kompiliert hat, werden aus dem TASTy neu kompiliert, das der Klassenpfad für sie
++     enthält, und die Member, die nichts erreicht, werden nach dem Inlining entfernt und vor den
++     Phasen, die die Weiterleitungsmethoden eines Traits, eine Bridge oder die Felder hinter
++     einem Lazy-Wert erzeugen; so wird nichts davon für ein Member erzeugt, das nicht behalten
++     wird, und nichts davon braucht eine Regel, um es zu behalten. Einheiten werden gelesen,
++     sobald die Analyse feststellt, dass sie sie braucht; eine Einheit, die nichts erreicht, wird
++     also nie gelesen, und ihre Makros laufen nie.
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     def shrink(classpath: LocalClasspath, destination: Path on Linux): Shrink.Report =
++     def shrink(classpath: LocalClasspath, destination: Path on Linux): Shrink.Report =
+
+-       Shrink(keep = List(t"com.example.plugins.**"))
++       Shrink(keep = List(t"com.example.plugins.**"))
+
+-         ( classpath, List(fqcn"com.example.Main"), destination )
++         ( classpath, List(fqcn"com.example.Main"), destination )
+
+-     ```
++     ```
+
+-     Three kinds of class make up the closed world. A class this compiler compiled, and which
+-     is reached, is recompiled with only the members which are reached. A class this compiler
+-     compiled which is named only as a type, in a signature, a cast or a test, is written as a
+-     shell: its name, its flags and its parents. Any other class, of Java, Kotlin or the
+-     standard library, is copied as it is if bytecode which is kept refers to it.
++     Drei Arten von Klassen bilden die geschlossene Welt. Eine Klasse, die dieser Compiler
++     kompiliert hat und die erreicht wird, wird nur mit den Membern neu kompiliert, die erreicht
++     werden. Eine Klasse, die dieser Compiler kompiliert hat und die nur als Typ genannt wird, in
++     einer Signatur, einem Cast oder einem Test, wird als Hülse geschrieben: ihr Name, ihre Flags
++     und ihre Eltern. Jede andere Klasse, aus Java, Kotlin oder der Standardbibliothek, wird
++     unverändert kopiert, wenn behaltener Bytecode auf sie verweist.
+
+-     The library has three source sets. `abscission.engine` is `Shaker` and `Shrinker`,
+-     written against the compiler and the JDK alone and taking plain types, as
+-     `probably.Instrumenter` is. `abscission.core` is `Shrink`, the same with Soundness's types.
+-     `abscission.linker` makes shrinking a step of an Anthology `Toolchain`: `shrinkEdges`,
+-     `shrinkOptions` and the nodes `Shrunk` and `Shrunk.Jar`. All three are JVM-only, and need
+-     the compiler on the classpath of whatever runs them.
++     Die Bibliothek hat drei Source-Sets. `abscission.engine` ist `Shaker` und `Shrinker`,
++     geschrieben allein gegen den Compiler und das JDK und mit schlichten Typen, wie
++     `probably.Instrumenter`. `abscission.core` ist `Shrink`, dasselbe mit den Typen von
++     Soundness. `abscission.linker` macht das Verkleinern zu einem Schritt einer
++     Anthology-`Toolchain`: `shrinkEdges`, `shrinkOptions` und die Knoten `Shrunk` und
++     `Shrunk.Jar`. Alle drei sind nur für die JVM und brauchen den Compiler im Klassenpfad
++     dessen, was sie ausführt.
+
+-     What only reflection reaches has to be said, with `keep` and `pin`. The closed world is
+-     checked before it is written, on the compiler's trees and again on the bytecode, and a
+-     reference from anything kept to something removed raises `Shrink.Error`.
++     Was nur Reflection erreicht, muss angegeben werden, mit `keep` und `pin`. Die geschlossene
++     Welt wird geprüft, bevor sie geschrieben wird, auf den Bäumen des Compilers und erneut auf
++     dem Bytecode, und ein Verweis von irgendetwas Behaltenem auf etwas Entferntes löst
++     `Shrink.Error` aus.
+
+- refer abscission.Shrink
++ refer abscission.Shrink
+
+- refer abscission.shrinkEdges
++ refer abscission.shrinkEdges
+
+- refer abscission.Shrunk
++ refer abscission.Shrunk
+
+- refer abscission.Shrinker
++ refer abscission.Shrinker
+
+- entry .Shrink   how a classpath is shrunk: the options, and the patterns of classes to keep and to pin
++ entry .Shrink   wie ein Klassenpfad verkleinert wird: die Optionen und die Patterns der Klassen, die behalten und gepinnt werden
+
+= entry .Shrink   how a classpath is shrunk: the options, and the patterns of classes to keep and to pin
+-   detail
++   detail
+
+-       A `Shrink` is a configuration, and applying it does the work:
+-       `Shrink(…)(classpath, entryPoints, out)` writes the closed world of `classpath` which
+-       `entryPoints` reach to the directory `out`, and gives a `Shrink.Report`.
++       Ein `Shrink` ist eine Konfiguration, und ihre Anwendung erledigt die Arbeit:
++       `Shrink(…)(classpath, entryPoints, out)` schreibt die geschlossene Welt von `classpath`,
++       die `entryPoints` erreichen, in das Verzeichnis `out` und liefert einen `Shrink.Report`.
+
+=       `entryPoints` reach to the directory `out`, and gives a `Shrink.Report`.
+=
+-       ```scala
++       ```scala
+
+=       `entryPoints` reach to the directory `out`, and gives a `Shrink.Report`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       def shrink(classpath: LocalClasspath, destination: Path on Linux): Shrink.Report =
++       def shrink(classpath: LocalClasspath, destination: Path on Linux): Shrink.Report =
+
+-         Shrink(pin = List(t"com.example.legacy.*"), services = false)
++         Shrink(pin = List(t"com.example.legacy.*"), services = false)
+
+-           ( classpath, List(fqcn"com.example.Main"), destination )
++           ( classpath, List(fqcn"com.example.Main"), destination )
+
+=           ( classpath, List(fqcn"com.example.Main"), destination )
+-       ```
++       ```
+
+-       In a pattern, `*` stands for part of a name and `**` for any number of packages, so
+-       `com.example.plugins.**` matches every class beneath that package and
+-       `com.example.*Codec` every class of `com.example` whose name ends in `Codec`. A pattern
+-       is matched against a class's binary name, written with dots: a nested class is
+-       `com.example.Outer$Inner`, and an object's class ends in `$`.
++       In einem Pattern steht `*` für einen Teil eines Namens und `**` für beliebig viele
++       Pakete; `com.example.plugins.**` passt also auf jede Klasse unterhalb dieses Pakets und
++       `com.example.*Codec` auf jede Klasse von `com.example`, deren Name auf `Codec` endet. Ein
++       Pattern wird gegen den binären Namen einer Klasse abgeglichen, mit Punkten geschrieben:
++       Eine verschachtelte Klasse ist `com.example.Outer$Inner`, und die Klasse eines Objekts
++       endet auf `$`.
+
+-       The entry points are classes with a `main` method. Each implementation which a
+-       `META-INF/services` file names is an entry point too, unless `services` is `false`.
++       Die Einstiegspunkte sind Klassen mit einer `main`-Methode. Jede Implementierung, die eine
++       `META-INF/services`-Datei nennt, ist ebenfalls ein Einstiegspunkt, sofern `services`
++       nicht `false` ist.
+
+-   refer abscission.Shrinker
++   refer abscission.Shrinker
+
+-   refer abscission.shrinkEdges
++   refer abscission.shrinkEdges
+
+-   entry #options   the compiler options the classes were compiled with, beyond Soundness's own
+-       The recompilation runs with one set of options for the whole classpath: the options
+-       Soundness itself is compiled with, which are built in, followed by these. Whether a unit
+-       was capture-checked is read from its TASTy, and need not be said.
+-   entry #keep   patterns of classes to keep whole, which reflection reaches
+-       A class which matches is treated as instantiated, and every member of it is kept, with
+-       all that those members reach. It is what a class found by name at run time needs: one
+-       loaded with a `Class.forName` whose argument is not a literal, or read as a resource.
+-   entry #pin   patterns of top-level classes whose units are copied as they are
+-       A unit which matches is not recompiled. Its classes are copied whole, and everything
+-       their bytecode names in the classes which are recompiled is kept. It is the way round a
+-       unit the analysis gets wrong, and it is what the shrinker does of its own accord with a
+-       unit which cannot be recompiled.
+-   entry #services   whether every implementation which a `META-INF/services` file names is an entry point
+-       `true` unless it is changed. The files are merged across the classpath and written with
+-       the implementations which were kept; with `false`, an implementation is kept only if
+-       something else reaches it.
+-   entry #fine   whether a library with no TASTy is taken a class at a time
+-       A library of Scala is always taken a class at a time. One with no TASTy, of Java or
+-       Kotlin, is taken whole as soon as one class of it is reached, since such a library may
+-       load its own classes by name; with `fine`, it is taken a class at a time too.
+-   entry #apply   writes the closed world of a classpath to a directory, and reports what was done
+-       Raises `Shrink.Error` with reason `Unsound` if anything kept refers to something
+-       removed, or if a unit can be neither recompiled nor pinned, and with reason `Failed` if
+-       the shrinker itself fails. An entry point which is not a class of the classpath is a
+-       problem, not an empty result.
+-   entry .Report   what shrinking a classpath did, in numbers
++   entry #options   die Compileroptionen, mit denen die Klassen kompiliert wurden, über die von Soundness selbst hinaus
++       Die Neukompilierung läuft mit einem einzigen Satz Optionen für den ganzen Klassenpfad:
++       den Optionen, mit denen Soundness selbst kompiliert wird und die eingebaut sind, gefolgt
++       von diesen. Ob eine Einheit dem Capture-Checking unterzogen wurde, wird aus ihrem TASTy
++       gelesen und muss nicht angegeben werden.
++   entry #keep   Patterns von Klassen, die ganz behalten werden, weil Reflection sie erreicht
++       Eine passende Klasse wird als instanziiert behandelt, und jedes ihrer Member wird
++       behalten, mit allem, was diese Member erreichen. Das braucht eine Klasse, die zur Laufzeit
++       über ihren Namen gefunden wird: eine, die mit einem `Class.forName` geladen wird, dessen
++       Argument kein Literal ist, oder als Ressource gelesen wird.
++   entry #pin   Patterns von Klassen der obersten Ebene, deren Einheiten unverändert kopiert werden
++       Eine passende Einheit wird nicht neu kompiliert. Ihre Klassen werden ganz kopiert, und
++       alles, was ihr Bytecode in den neu kompilierten Klassen nennt, wird behalten. Es ist der
++       Ausweg bei einer Einheit, bei der sich die Analyse irrt, und es ist das, was der Shrinker
++       von sich aus mit einer Einheit tut, die nicht neu kompiliert werden kann.
++   entry #services   ob jede Implementierung, die eine `META-INF/services`-Datei nennt, ein Einstiegspunkt ist
++       `true`, sofern nicht geändert. Die Dateien werden über den Klassenpfad hinweg
++       zusammengeführt und mit den behaltenen Implementierungen geschrieben; bei `false` wird
++       eine Implementierung nur behalten, wenn etwas anderes sie erreicht.
++   entry #fine   ob eine Bibliothek ohne TASTy klassenweise übernommen wird
++       Eine Scala-Bibliothek wird stets klassenweise übernommen. Eine ohne TASTy, aus Java oder
++       Kotlin, wird ganz übernommen, sobald eine ihrer Klassen erreicht wird, da eine solche
++       Bibliothek ihre eigenen Klassen über den Namen laden kann; mit `fine` wird auch sie
++       klassenweise übernommen.
++   entry #apply   schreibt die geschlossene Welt eines Klassenpfads in ein Verzeichnis und berichtet, was getan wurde
++       Löst `Shrink.Error` mit dem Grund `Unsound` aus, wenn etwas Behaltenes auf etwas
++       Entferntes verweist oder wenn eine Einheit weder neu kompiliert noch gepinnt werden kann,
++       und mit dem Grund `Failed`, wenn der Shrinker selbst scheitert. Ein Einstiegspunkt, der
++       keine Klasse des Klassenpfads ist, ist ein Problem, kein leeres Ergebnis.
++   entry .Report   was das Verkleinern eines Klassenpfads getan hat, in Zahlen
+
+-     detail
++     detail
+
+-         `units` are the units which could be recompiled from their TASTy and `read` those
+-         which were, because something reached them. `classes` and `size` are the classpath's,
+-         and `kept` and `written` the closed world's. Of the classes kept, `recompiled` came
+-         from TASTy, `shells` are only a name and its parents, and `copied` are as they were.
+-         `members` and `removed` count the methods and fields of the recompiled classes.
+-         `pinned` are the units which were not recompiled, whether by request or because they
+-         could not be, and `notes` say why of the latter. `packages` are the packages of the
+-         classpath, in the order of their names.
+-     entry #why   the chain of classes which led to a class being kept
+-         Each class of the chain refers to the one before it; the last is one which was
+-         recompiled, or was an entry point. A class which was not kept is a chain of itself.
+-   entry .Package   a package of the classpath, with its classes there and in the closed world
+-   entry .Error   raised when a classpath cannot be shrunk: error `↯/s.146.1`, _the classpath could not be shrunk because `reason`_
+-     entry .Reason   why: the closed world would not be sound, or the shrinker failed
++         `units` sind die Einheiten, die aus ihrem TASTy neu kompiliert werden konnten, und
++         `read` diejenigen, bei denen das geschah, weil etwas sie erreichte. `classes` und
++         `size` gehören zum Klassenpfad, `kept` und `written` zur geschlossenen Welt. Von den
++         behaltenen Klassen stammen `recompiled` aus TASTy, `shells` sind nur ein Name und seine
++         Eltern, und `copied` sind unverändert. `members` und `removed` zählen die Methoden und
++         Felder der neu kompilierten Klassen. `pinned` sind die Einheiten, die nicht neu
++         kompiliert wurden, ob auf Anforderung oder weil es nicht ging, und `notes` sagen bei
++         letzteren, warum. `packages` sind die Pakete des Klassenpfads, in der Reihenfolge ihrer
++         Namen.
++     entry #why   die Kette von Klassen, die dazu führte, dass eine Klasse behalten wurde
++         Jede Klasse der Kette verweist auf die vorige; die letzte ist eine, die neu kompiliert
++         wurde oder ein Einstiegspunkt war. Eine Klasse, die nicht behalten wurde, ist eine Kette
++         aus sich selbst.
++   entry .Package   ein Paket des Klassenpfads, mit seinen Klassen dort und in der geschlossenen Welt
++   entry .Error   ausgelöst, wenn ein Klassenpfad nicht verkleinert werden kann: Fehler `↯/s.146.1`, _the classpath could not be shrunk because `reason`_
++     entry .Reason   warum: Die geschlossene Welt wäre nicht korrekt, oder der Shrinker ist gescheitert
+
+-       detail
++       detail
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
++           column  Fall
+
+-           column  Code
++           column  Code
+
+-           column  Message
+-           row  `Unsound(problems)`  1  _a problem was found: `problem`_, or _`n` problems were found, of which the first was: `problem`_
++           column  Meldung
++           row  `Unsound(problems)`  1  _a problem was found: `problem`_, oder _`n` problems were found, of which the first was: `problem`_
+
+-           row  `Failed(trace)`  2  _the shrinker terminated abnormally_
++           row  `Failed(trace)`  2  _the shrinker terminated abnormally_
+
+-           ```
++           ```
+
+- entry .Shrunk   a closed world of classfiles: the toolchain node reached from `Classfile` through `shrinkEdges`
++ entry .Shrunk   eine geschlossene Welt aus Classfiles: der Toolchain-Knoten, der von `Classfile` über `shrinkEdges` erreicht wird
+
+= entry .Shrunk   a closed world of classfiles: the toolchain node reached from `Classfile` through `shrinkEdges`
+-   detail
++   detail
+
+-       An `Artifact.Ir` with id `shrunk`: a directory which is a classpath of its own, holding
+-       the classes the entry points reach, the resources of the libraries which gave them, and
+-       no TASTy.
+-   entry .Jar   an executable JAR of a closed world: the application node reached from `Shrunk`
+-       An `Artifact.Application` with id `shrunk-jar`. It is a node of its own, and not
+-       `Artifact.Jar`, so that a toolchain which has both `jarEdges` and `shrinkEdges` has one
+-       path to each.
++       Ein `Artifact.Ir` mit der Id `shrunk`: ein Verzeichnis, das selbst ein Klassenpfad ist und
++       die Klassen enthält, die die Einstiegspunkte erreichen, die Ressourcen der Bibliotheken,
++       aus denen sie stammen, und kein TASTy.
++   entry .Jar   ein ausführbares JAR einer geschlossenen Welt: der Anwendungsknoten, der von `Shrunk` aus erreicht wird
++       Ein `Artifact.Application` mit der Id `shrunk-jar`. Es ist ein eigener Knoten und nicht
++       `Artifact.Jar`, damit eine Toolchain, die sowohl `jarEdges` als auch `shrinkEdges` hat,
++       zu jedem genau einen Pfad hat.
+
+- entry .shrinkEdges   the edges which make shrinking a step of a toolchain
++ entry .shrinkEdges   die Kanten, die das Verkleinern zu einem Schritt einer Toolchain machen
+
+= entry .shrinkEdges   the edges which make shrinking a step of a toolchain
+-   detail
++   detail
+
+-       `shrinkEdges(scalac)` registers two edges: from `Toolchain.Universe.Classfile` to
+-       `Shrunk`, and from `Shrunk` to `Shrunk.Jar`. The first carries the options of the
+-       `Scalac` which compiled the classes, since it compiles them again, and takes the
+-       toolchain's entry points as the roots of what is kept. The second packages the closed
+-       world as `jarEdges` packages a classpath, with at most one entry point as its
++       `shrinkEdges(scalac)` registriert zwei Kanten: von `Toolchain.Universe.Classfile` zu
++       `Shrunk` und von `Shrunk` zu `Shrunk.Jar`. Die erste trägt die Optionen des `Scalac`, der
++       die Klassen kompiliert hat, da sie sie erneut kompiliert, und nimmt die Einstiegspunkte
++       der Toolchain als Wurzeln dessen, was behalten wird. Die zweite verpackt die geschlossene
++       Welt so, wie `jarEdges` einen Klassenpfad verpackt, mit höchstens einem Einstiegspunkt als
+
+-       `Main-Class`.
++       `Main-Class`.
+
+=       `Main-Class`.
+=
+-       ```scala
++       ```scala
+
+=       `Main-Class`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val steps = Toolchain(shrinkEdges(Scalac[3.9](Nil))).path(Toolchain.Universe.Classfile, Shrunk.Jar).map(_.target.id)
++       val steps = Toolchain(shrinkEdges(Scalac[3.9](Nil))).path(Toolchain.Universe.Classfile, Shrunk.Jar).map(_.target.id)
+
+=       val steps = Toolchain(shrinkEdges(Scalac[3.9](Nil))).path(Toolchain.Universe.Classfile, Shrunk.Jar).map(_.target.id)
+-       ```
++       ```
+
+-       Here `steps` is `List(t"shrunk", t"shrunk-jar")`. A `Shrink.Error` is raised to the
+-       toolchain as a `Link.Error`, with reason `Packaging` for a closed world which would not
+-       be sound and `Failed` for a shrinker which failed.
++       Hier ist `steps` gleich `List(t"shrunk", t"shrunk-jar")`. Ein `Shrink.Error` wird an die
++       Toolchain als `Link.Error` weitergegeben, mit dem Grund `Packaging` für eine geschlossene
++       Welt, die nicht korrekt wäre, und `Failed` für einen gescheiterten Shrinker.
+
+- entry .shrinkOptions   settings for the shrinking edges
+-   entry .keep   a pattern of the classes to keep whole, for the `Shrunk` node
+-   entry .pin   a pattern of the top-level classes whose units are copied as they are, for the `Shrunk` node
+-   entry .services   whether every implementation a `META-INF/services` file names is an entry point
+-   entry .fine   whether a library with no TASTy is taken a class at a time
+-   entry .name   the JAR's filename within the output directory, for the `Shrunk.Jar` node
+-       The default is `main.jar`.
++ entry .shrinkOptions   Einstellungen für die Verkleinerungskanten
++   entry .keep   ein Pattern der Klassen, die ganz behalten werden, für den Knoten `Shrunk`
++   entry .pin   ein Pattern der Klassen der obersten Ebene, deren Einheiten unverändert kopiert werden, für den Knoten `Shrunk`
++   entry .services   ob jede Implementierung, die eine `META-INF/services`-Datei nennt, ein Einstiegspunkt ist
++   entry .fine   ob eine Bibliothek ohne TASTy klassenweise übernommen wird
++   entry .name   der Dateiname des JARs im Ausgabeverzeichnis, für den Knoten `Shrunk.Jar`
++       Die Vorgabe ist `main.jar`.
+
+- entry .Shrinker   the engine: shrinks a classpath, taking and returning plain types
++ entry .Shrinker   die Engine: verkleinert einen Klassenpfad, nimmt und liefert schlichte Typen
+
+= entry .Shrinker   the engine: shrinks a classpath, taking and returning plain types
+-   detail
++   detail
+
+-       What `Shrink` calls, for a host which has paths and names and wants numbers back, and
+-       would not have Soundness's types on its own classpath. A `Shrinker.Request` is the
+-       classpath's entries, the output directory, the options, the entry points and the
+-       patterns; `Shrinker.shrink` gives a `Shrinker.Report`, whose `problems` are empty if the
+-       closed world was written.
+-   entry .shrink   shrinks a classpath, telling `progress` what is being done as it is begun
+-   entry .classpath   the entries a classloader loads from, as absolute paths
+-       A `URLClassLoader`'s own URLs, or the JVM's `java.class.path` for any other loader.
++       Was `Shrink` aufruft, für einen Host, der Pfade und Namen hat und Zahlen zurückhaben will
++       und die Typen von Soundness nicht in seinem eigenen Klassenpfad hätte. Ein
++       `Shrinker.Request` besteht aus den Einträgen des Klassenpfads, dem Ausgabeverzeichnis, den
++       Optionen, den Einstiegspunkten und den Patterns; `Shrinker.shrink` liefert einen
++       `Shrinker.Report`, dessen `problems` leer sind, wenn die geschlossene Welt geschrieben
++       wurde.
++   entry .shrink   verkleinert einen Klassenpfad und teilt `progress` jeweils zu Beginn mit, was getan wird
++   entry .classpath   die Einträge, aus denen ein Classloader lädt, als absolute Pfade
++       Die eigenen URLs eines `URLClassLoader`, oder `java.class.path` der JVM für jeden anderen
++       Loader.
+
+- entry .Shaker   the compiler's part: recompiles units from TASTy without what nothing reaches
++ entry .Shaker   der Teil des Compilers: kompiliert Einheiten aus TASTy neu, ohne das, was nichts erreicht
+
+= entry .Shaker   the compiler's part: recompiles units from TASTy without what nothing reaches
+-   detail
++   detail
+
+-       `Shaker.shake` recompiles what a set of `Shaker.Root`s reach, of the units it is told
+-       it may read, into a directory; `Shaker.recompile` recompiles every unit it is given and
+-       removes nothing. Both leave out the TASTy of what they write. `Shrinker` is what
+-       decides the roots and what becomes of the result.
+-   entry .compiler   the compiler this is, as a TASTy file records the one which wrote it
++       `Shaker.shake` kompiliert, was eine Menge von `Shaker.Root`s erreicht, aus den Einheiten,
++       die er lesen darf, neu in ein Verzeichnis; `Shaker.recompile` kompiliert jede Einheit, die
++       er erhält, neu und entfernt nichts. Beide lassen das TASTy dessen, was sie schreiben, weg.
++       `Shrinker` entscheidet über die Wurzeln und darüber, was aus dem Ergebnis wird.
++   entry .compiler   der Compiler, der dieser ist, so wie eine TASTy-Datei den festhält, der sie geschrieben hat

@@ -1,0 +1,1191 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base capricious
++ base capricious
+
+- import soundness
++ import soundness
+
+- info   random values of any type, from an explicitly chosen source and an explicitly chosen distribution
++ info   valores aleatorios de cualquier tipo, de una fuente elegida explícitamente y con una distribución elegida explícitamente
+
+- detail
++ detail
+
+-     _Capricious_ generates random values of any type — not just numbers — through the
+-     `Randomizable` typeclass, which is derived for case classes, enums and sealed hierarchies
+-     from their structure, so a whole tree of test data is one call. The *source* of randomness
+-     and the *shape* of the numbers are separate, explicit choices: the source is a
+-     `Randomization` imported by name from the `randomization` package — seeded and
+-     reproducible, unseeded, or cryptographically secure — and the shape of a `Double` is a
+-     `Distribution` in scope.
++     _Capricious_ genera valores aleatorios de cualquier tipo —no solo números— mediante la
++     clase de tipos `Randomizable`, que se deriva para las case classes, los enums y las
++     jerarquías selladas a partir de su estructura, de modo que todo un árbol de datos de
++     prueba es una sola llamada. La *fuente* de aleatoriedad y la *forma* de los números son
++     elecciones separadas y explícitas: la fuente es una `Randomization` que se importa por
++     nombre del paquete `randomization` —con semilla y reproducible, sin semilla, o
++     criptográficamente segura—, y la forma de un `Double` es una `Distribution` en el ámbito.
+
+-     A `Random` is a capability: drawing from a generator advances its state, so code which
+-     consumes randomness takes a `Random` as a contextual value, and `stochastic` opens a scope
+-     with one.
++     Un `Random` es una capacidad: extraer valores de un generador hace avanzar su estado, así
++     que el código que consume aleatoriedad toma un `Random` como valor contextual, y
++     `stochastic` abre un ámbito con uno.
+
+=     with one.
+=
+-     ```scala
++     ```scala
+
+=     with one.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     with one.
+=
+=     ```scala
+=     import soundness.*
+-     import randomization.seededRandomization
++     import randomization.seededRandomization
+
+-     import randomSizes.uniformSizeUpto100
++     import randomSizes.uniformSizeUpto100
+
+-     case class Point(x: Int, y: Int)
++     case class Point(x: Int, y: Int)
+
+-     given Seed = Seed(1L)
++     given Seed = Seed(1L)
+
+=     given Seed = Seed(1L)
+=
+-     stochastic:
++     stochastic:
+
+-       given Distribution = Gaussian(0.0, 2.0)
++       given Distribution = Gaussian(0.0, 2.0)
+
+-       (arbitrary[Int](), arbitrary[Point](), arbitrary[Double](), arbitrary[List[Int]]())
++       (arbitrary[Int](), arbitrary[Point](), arbitrary[Double](), arbitrary[List[Int]]())
+
+=       (arbitrary[Int](), arbitrary[Point](), arbitrary[Double](), arbitrary[List[Int]]())
+-     ```
++     ```
+
+-     Four choice packages hold givens which are imported by name, since `import soundness.*`
+-     does not import givens: `randomization` (the source), `randomDistributions` (the shape of a
+-     `Double`), `randomSizes` (the size of a random collection) and `randomTexts` (a source of
+-     awkward strings). The choice is always written at the import, so a simulation and a token
+-     generator cannot be confused.
++     Cuatro paquetes de elección contienen givens que se importan por nombre, ya que
++     `import soundness.*` no importa givens: `randomization` (la fuente),
++     `randomDistributions` (la forma de un `Double`), `randomSizes` (el tamaño de una
++     colección aleatoria) y `randomTexts` (una fuente de cadenas incómodas). La elección
++     siempre se escribe en la importación, así que una simulación y un generador de tokens no
++     pueden confundirse.
+
+-     The library has two source sets:
++     La biblioteca tiene dos conjuntos de fuentes:
+
+-     - `capricious.core` — everything but WASI's entropy source. Compiles for the JVM, Scala.js
+-       and Scala Native, over `java.util.Random` and `java.security.SecureRandom`.
+-     - `capricious.wasi` — `randomization.wasiRandomization`, which draws from the
+-       `wasi:random/random` interface of a WebAssembly component, with `WasiRandom` and the
+-       `wasiApis.wasiRandomApi` binding it needs.
++     - `capricious.core`: todo salvo la fuente de entropía de WASI. Compila para la JVM,
++       Scala.js y Scala Native, sobre `java.util.Random` y `java.security.SecureRandom`.
++     - `capricious.wasi`: `randomization.wasiRandomization`, que extrae valores de la interfaz
++       `wasi:random/random` de un componente WebAssembly, con `WasiRandom` y el enlace
++       `wasiApis.wasiRandomApi` que necesita.
+
+-     Everything is exported to the `soundness` umbrella, and each choice package merges with the
+-     umbrella's own.
++     Todo se exporta al paraguas `soundness`, y cada paquete de elección se fusiona con el del
++     propio paraguas.
+
+- refer capricious.Random
++ refer capricious.Random
+
+- refer capricious.Randomizable
++ refer capricious.Randomizable
+
+- refer capricious.stochastic
++ refer capricious.stochastic
+
+- refer capricious.arbitrary
++ refer capricious.arbitrary
+
+- refer capricious.randomization
++ refer capricious.randomization
+
+- refer capricious.Distribution
++ refer capricious.Distribution
+
+- entry .stochastic   runs a block with a fresh `Random`, from the `Randomization` in scope
+-     `stochastic(block)` initializes a new generator from the `Randomization` given — which must
+-     be imported by name from the `randomization` package — and runs `block` with it as its
+-     contextual `Random`. Under `seededRandomization`, with a `Seed` in scope, the whole block is
+-     a function of the seed, so a failing randomized test can be replayed by supplying the same
+-     seed again; `Seed#stochastic` is the same with its seed supplied.
++ entry .stochastic   ejecuta un bloque con un `Random` nuevo, a partir de la `Randomization` en el ámbito
++     `stochastic(block)` inicializa un generador nuevo a partir del given `Randomization`
++     —que debe importarse por nombre del paquete `randomization`— y ejecuta `block` con él
++     como su `Random` contextual. Con `seededRandomization` y un `Seed` en el ámbito, todo el
++     bloque es función de la semilla, así que una prueba aleatoria que falla puede
++     reproducirse proporcionando de nuevo la misma semilla; `Seed#stochastic` es lo mismo, con
++     la semilla ya proporcionada.
+
+=     seed again; `Seed#stochastic` is the same with its seed supplied.
+=
+-     ```scala
++     ```scala
+
+=     seed again; `Seed#stochastic` is the same with its seed supplied.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     seed again; `Seed#stochastic` is the same with its seed supplied.
+=
+=     ```scala
+=     import soundness.*
+-     import randomization.seededRandomization
++     import randomization.seededRandomization
+
+-     given Seed = Seed(42L)
++     given Seed = Seed(42L)
+
+-     stochastic(List.fill(16)(arbitrary[Long]())) == stochastic(List.fill(16)(arbitrary[Long]()))
++     stochastic(List.fill(16)(arbitrary[Long]())) == stochastic(List.fill(16)(arbitrary[Long]()))
+
+=     stochastic(List.fill(16)(arbitrary[Long]())) == stochastic(List.fill(16)(arbitrary[Long]()))
+-     ```
++     ```
+
+-     Each `stochastic` block starts a new generator, so two blocks under the same seed draw the
+-     same sequence; successive draws *within* one block differ. The determinism is of the order
+-     of draws: concurrent strands drawing from one block interleave differently on each run, so a
+-     concurrent computation which must be reproducible needs a block, and a seed, per strand.
++     Cada bloque `stochastic` arranca un generador nuevo, así que dos bloques con la misma
++     semilla extraen la misma secuencia; las extracciones sucesivas *dentro* de un bloque son
++     distintas. El determinismo lo es del orden de las extracciones: hebras concurrentes que
++     extraen de un mismo bloque se intercalan de forma distinta en cada ejecución, así que un
++     cálculo concurrente que deba ser reproducible necesita un bloque, y una semilla, por
++     hebra.
+
+- entry .arbitrary   a random value of any `Randomizable` type, from the `Random` in scope
+-     `arbitrary[T]()` is `Randomizable.apply` for `T`, drawing from the contextual `Random`,
+-     such as the one `stochastic` provides. A `Double` needs a `Distribution` in scope, and a
+-     collection a `Random.Size`.
++ entry .arbitrary   un valor aleatorio de cualquier tipo `Randomizable`, a partir del `Random` en el ámbito
++     `arbitrary[T]()` es `Randomizable.apply` para `T`, extrayendo del `Random` contextual,
++     como el que proporciona `stochastic`. Un `Double` necesita una `Distribution` en el
++     ámbito, y una colección, un `Random.Size`.
+
+=     collection a `Random.Size`.
+=
+-     ```scala
++     ```scala
+
+=     collection a `Random.Size`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     collection a `Random.Size`.
+=
+=     ```scala
+=     import soundness.*
+-     import randomization.unseededRandomization
++     import randomization.unseededRandomization
+
+-     enum Colour:
++     enum Colour:
+
+-       case Red, Green, Blue
++       case Red, Green, Blue
+
+=       case Red, Green, Blue
+=
+-     stochastic:
++     stochastic:
+
+-       (arbitrary[Int](), arbitrary[Boolean](), arbitrary[Colour]())
++       (arbitrary[Int](), arbitrary[Boolean](), arbitrary[Colour]())
+
+=       (arbitrary[Int](), arbitrary[Boolean](), arbitrary[Colour]())
+-     ```
++     ```
+
+- entry .random   a random value of any `Randomizable` type, from the shared global generator
+-     `random[T]()` draws from `Random.global`, needing no `Random`, `Randomization` or `Seed` in
+-     scope. It is for scripts and one-off values: the global generator is unseeded and shared,
+-     so nothing drawn from it can be reproduced. Code which should be testable takes a `Random`
+-     and uses `arbitrary`.
++ entry .random   un valor aleatorio de cualquier tipo `Randomizable`, a partir del generador global compartido
++     `random[T]()` extrae de `Random.global` y no necesita ningún `Random`, `Randomization`
++     ni `Seed` en el ámbito. Es para scripts y valores puntuales: el generador global no
++     tiene semilla y es compartido, así que nada de lo que se extrae de él puede
++     reproducirse. El código que deba poder probarse toma un `Random` y usa `arbitrary`.
+
+=     and uses `arbitrary`.
+=
+-     ```scala
++     ```scala
+
+=     and uses `arbitrary`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     random[Long]()
++     random[Long]()
+
+=     random[Long]()
+-     ```
++     ```
+
+- entry .toss   a fair coin-toss: `true` or `false`, evenly
+-     `toss()` needs a `Random` in scope, as a mark that the code is stochastic, but draws from
+-     `scala.math.random`, the JDK's shared generator, rather than from that `Random`: a toss is
+-     therefore not reproducible from a `Seed`. For a reproducible coin, use `arbitrary[Boolean]()`.
++ entry .toss   un lanzamiento de moneda equilibrado: `true` o `false`, por igual
++     `toss()` necesita un `Random` en el ámbito, como señal de que el código es estocástico,
++     pero extrae de `scala.math.random`, el generador compartido del JDK, y no de ese
++     `Random`: por tanto, un lanzamiento no es reproducible a partir de un `Seed`. Para una
++     moneda reproducible, usa `arbitrary[Boolean]()`.
+
+=     therefore not reproducible from a `Seed`. For a reproducible coin, use `arbitrary[Boolean]()`.
+=
+-     ```scala
++     ```scala
+
+=     therefore not reproducible from a `Seed`. For a reproducible coin, use `arbitrary[Boolean]()`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     therefore not reproducible from a `Seed`. For a reproducible coin, use `arbitrary[Boolean]()`.
+=
+=     ```scala
+=     import soundness.*
+-     import randomization.unseededRandomization
++     import randomization.unseededRandomization
+
+=     import randomization.unseededRandomization
+=
+-     stochastic:
++     stochastic:
+
+-       toss()
++       toss()
+
+=       toss()
+-     ```
++     ```
+
+- entry .Random   a pseudorandom generator, as a capability whose state advances with each draw
++ entry .Random   un generador pseudoaleatorio, como capacidad cuyo estado avanza con cada extracción
+
+= entry .Random   a pseudorandom generator, as a capability whose state advances with each draw
+-   detail
++   detail
+
+-       A `Random` wraps a `scala.util.Random`. It is a capability (`caps.Unscoped`), so code
+-       which draws from it carries it in its capture set, and is a `Findable`, so it is reached
+-       as a contextual value. It is made by `stochastic` or `Seed#stochastic` from the
+-       `Randomization` in scope, or reached directly as `Random.global`.
++       Un `Random` envuelve un `scala.util.Random`. Es una capacidad (`caps.Unscoped`), así que
++       el código que extrae de él lo lleva en su conjunto de capturas, y es un `Findable`, así
++       que se alcanza como valor contextual. Lo crean `stochastic` o `Seed#stochastic` a partir
++       de la `Randomization` en el ámbito, o se alcanza directamente como `Random.global`.
+
+=       `Randomization` in scope, or reached directly as `Random.global`.
+=
+-       ```scala
++       ```scala
+
+=       `Randomization` in scope, or reached directly as `Random.global`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Randomization` in scope, or reached directly as `Random.global`.
+=
+=       ```scala
+=       import soundness.*
+-       import randomization.seededRandomization
++       import randomization.seededRandomization
+
+-       Seed(3L).stochastic:
++       Seed(3L).stochastic:
+
+-         val random = summon[Random]
++         val random = summon[Random]
+
+-         (random.long(), random.unitInterval(), random.gaussian(), random[Int]())
++         (random.long(), random.unitInterval(), random.gaussian(), random[Int]())
+
+=         (random.long(), random.unitInterval(), random.gaussian(), random[Int]())
+-       ```
++       ```
+
+=       ```
+-   refer capricious.stochastic
++   refer capricious.stochastic
+
+-   refer capricious.Randomization
++   refer capricious.Randomization
+
+-   refer capricious.Randomizable
++   refer capricious.Randomizable
+
+-   entry .global   a `Random` over one shared, unseeded generator, for use with no scope
+-       Each call wraps the same process-wide generator, made lazily by
+-       `randomization.unseededRandomization`, so draws from it are never reproducible. `random`
+-       uses it.
+-   entry .apply   a new `Random` from the `Randomization` in scope
+-       `Random(seed)` initializes a generator from the contextual `Randomization`. The `seed`
+-       argument is not passed to it: a seeded generator takes its seed from the `Seed` given
+-       which `seededRandomization` itself requires, so `Seed#stochastic` is the reliable way to
+-       seed a scope.
+-   entry .Size   how many elements a random collection has, as a contextual value
++   entry .global   un `Random` sobre un único generador compartido y sin semilla, para usarlo sin ámbito
++       Cada llamada envuelve el mismo generador de todo el proceso, que crea de forma perezosa
++       `randomization.unseededRandomization`, así que lo que se extrae de él nunca es
++       reproducible. `random` lo usa.
++   entry .apply   un `Random` nuevo a partir de la `Randomization` en el ámbito
++       `Random(seed)` inicializa un generador a partir de la `Randomization` contextual. El
++       argumento `seed` no se le pasa: un generador con semilla toma su semilla del given
++       `Seed` que el propio `seededRandomization` exige, así que `Seed#stochastic` es la forma
++       fiable de dar semilla a un ámbito.
++   entry .Size   cuántos elementos tiene una colección aleatoria, como valor contextual
+
+-     detail
++     detail
+
+-         A single-method trait: `generate(random)` draws a size. `Randomizable.list`,
+-         `Randomizable.set` and `Randomizable.frozenArray` need one, and the `randomSizes`
+-         package holds uniform sizes up to 10, 100, 1000, 10000 and 100000, imported by name.
++         Un trait de un solo método: `generate(random)` extrae un tamaño. `Randomizable.list`,
++         `Randomizable.set` y `Randomizable.frozenArray` necesitan uno, y el paquete
++         `randomSizes` contiene tamaños uniformes hasta 10, 100, 1000, 10000 y 100000, que se
++         importan por nombre.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         import randomization.seededRandomization
++         import randomization.seededRandomization
+
+-         given Random.Size = _ => 5
++         given Random.Size = _ => 5
+
+-         Seed(1L).stochastic(arbitrary[List[Int]]())
++         Seed(1L).stochastic(arbitrary[List[Int]]())
+
+-         ```
++         ```
+
+-     entry #generate   draws a size from a `Random`
+-   entry #long   draws a uniformly random `Long`
+-   entry #gaussian   draws a `Double` from the standard normal distribution: mean 0, deviation 1
+-   entry #unitInterval   draws a `Double` uniformly from `0.0` inclusive to `1.0` exclusive
+-   entry #apply   draws a value of any `Randomizable` type: `random[Point]()`
+-   entry #shuffle   a `List` with its elements in a random order, drawn from this generator
+-       Reproducible under a seed: the same seed shuffles the same list the same way.
++     entry #generate   extrae un tamaño de un `Random`
++   entry #long   extrae un `Long` uniformemente aleatorio
++   entry #gaussian   extrae un `Double` de la distribución normal estándar: media 0, desviación 1
++   entry #unitInterval   extrae un `Double` uniformemente entre `0.0`, incluido, y `1.0`, excluido
++   entry #apply   extrae un valor de cualquier tipo `Randomizable`: `random[Point]()`
++   entry #shuffle   una `List` con sus elementos en un orden aleatorio, extraído de este generador
++       Reproducible con una semilla: la misma semilla baraja la misma lista de la misma forma.
+
+=       Reproducible under a seed: the same seed shuffles the same list the same way.
+=
+-       ```scala
++       ```scala
+
+=       Reproducible under a seed: the same seed shuffles the same list the same way.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       Reproducible under a seed: the same seed shuffles the same list the same way.
+=
+=       ```scala
+=       import soundness.*
+-       import randomization.unseededRandomization
++       import randomization.unseededRandomization
+
+=       Reproducible under a seed: the same seed shuffles the same list the same way.
+=
+=       ```scala
+=       import soundness.*
+=       import randomization.unseededRandomization
+=
+-       stochastic:
++       stochastic:
+
+-         summon[Random].shuffle(List(1, 2, 3, 4, 5))
++         summon[Random].shuffle(List(1, 2, 3, 4, 5))
+
+=         summon[Random].shuffle(List(1, 2, 3, 4, 5))
+-       ```
++       ```
+
+- entry .Randomizable   the typeclass of types whose values can be drawn at random, as `T is Randomizable`
++ entry .Randomizable   la clase de tipos de los tipos cuyos valores pueden extraerse al azar, como `T is Randomizable`
+
+= entry .Randomizable   the typeclass of types whose values can be drawn at random, as `T is Randomizable`
+-   detail
++   detail
+
+-       A single-method typeclass: `#randomize` takes a `Random` and draws a value. The
+-       companion has instances for `Long`, `Int`, `Short`, `Byte` and `Char` (each the low bits
+-       of a random `Long`), `Boolean` (the sign of one), `Seed`, `Double` (shaped by the
+-       `Distribution` in scope), `List`, `Set` and frozen arrays (sized by the `Random.Size` in
+-       scope), and a derivation: a case class of randomizable fields draws each field, and an
+-       enum or sealed hierarchy picks one of its variants uniformly and draws it. A type whose
+-       values need more care defines an instance, often by `#map`ping an existing one.
++       Una clase de tipos de un solo método: `#randomize` toma un `Random` y extrae un valor. El
++       objeto compañero tiene instancias para `Long`, `Int`, `Short`, `Byte` y `Char` (cada
++       una, los bits bajos de un `Long` aleatorio), `Boolean` (el signo de uno), `Seed`,
++       `Double` (con la forma de la `Distribution` en el ámbito), `List`, `Set` y los arrays
++       congelados (con el tamaño del `Random.Size` en el ámbito), y una derivación: una case
++       class de campos aleatorizables extrae cada campo, y un enum o una jerarquía sellada
++       elige una de sus variantes de manera uniforme y la extrae. Un tipo cuyos valores
++       requieran más cuidado define una instancia, a menudo aplicando `#map` a una existente.
+
+=       values need more care defines an instance, often by `#map`ping an existing one.
+=
+-       ```scala
++       ```scala
+
+=       values need more care defines an instance, often by `#map`ping an existing one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import randomDistributions.uniformUnitIntervalDistribution
++       import randomDistributions.uniformUnitIntervalDistribution
+
+-       case class Latitude(degrees: Double)
++       case class Latitude(degrees: Double)
+
+-       given Latitude is Randomizable =
++       given Latitude is Randomizable =
+
+-         summon[Double is Randomizable].map(unit => Latitude(unit*180 - 90))
++         summon[Double is Randomizable].map(unit => Latitude(unit*180 - 90))
+
+=         summon[Double is Randomizable].map(unit => Latitude(unit*180 - 90))
+-       ```
++       ```
+
+-       A derived instance draws its fields not from the `Random` it is given but from a new
+-       generator, initialized from the `Randomization` found where the instance is expanded.
+-       Under `seededRandomization` that generator restarts from the seed, so successive derived
+-       values in one `stochastic` block may come out alike.
++       Una instancia derivada no extrae sus campos del `Random` que recibe, sino de un
++       generador nuevo, inicializado a partir de la `Randomization` que se encuentra donde se
++       expande la instancia. Con `seededRandomization`, ese generador vuelve a empezar desde la
++       semilla, así que valores derivados sucesivos dentro de un mismo bloque `stochastic`
++       pueden salir iguales.
+
+-   refer capricious.arbitrary
++   refer capricious.arbitrary
+
+-   refer capricious.Random
++   refer capricious.Random
+
+-   refer capricious.Distribution
++   refer capricious.Distribution
+
+-   entry #randomize   draws a value from a `Random`
+-   entry #apply   draws a value from the contextual `Random`: `summon[Int is Randomizable]()`
+-   entry #map   an instance for another type, transforming each drawn value
+-       `randomizable.map(lambda)` draws through this instance and applies the lambda; the
+-       result captures both.
+-   entry .long   draws a uniformly random `Long`
+-   entry .byte   draws a `Byte`, the low eight bits of a random `Long`
+-   entry .short   draws a `Short`, the low sixteen bits of a random `Long`
+-   entry .int   draws an `Int`, the low thirty-two bits of a random `Long`
+-   entry .char   draws a `Char`, the low sixteen bits of a random `Long`
+-       Any UTF-16 code unit, including unpaired surrogates and control characters.
+-   entry .seed   draws a `Seed` of sixty-four bits, from a random `Long`
+-   entry .boolean   draws a `Boolean`: `true` when a random `Long` is negative
+-   entry .list   draws a `List` whose size comes from the `Random.Size` in scope
+-   entry .set   draws a `Set` of up to the `Random.Size` in scope, duplicates collapsing
+-   entry .frozenArray   draws a frozen `Array[element]^{}` sized by the `Random.Size` in scope
+-       Needs a `ClassTag` for the element type as well as a `Random.Size`.
+-   entry .double   draws a `Double` through the `Distribution` in scope
+-       There is no default distribution: a `Double` cannot be drawn until the code says what
+-       kind of `Double` it means, which prevents treating a uniform draw as if it were normal.
+-       Import one from `randomDistributions` or declare a `Gaussian`, `PolarGaussian`,
+-       `UniformDistribution` or `Gamma` as a given.
+-   entry .conjunction   the derived instance of a product: each field drawn in turn
+-   entry .disjunction   the derived instance of a sum: a variant chosen uniformly, then drawn
++   entry #randomize   extrae un valor de un `Random`
++   entry #apply   extrae un valor del `Random` contextual: `summon[Int is Randomizable]()`
++   entry #map   una instancia para otro tipo, que transforma cada valor extraído
++       `randomizable.map(lambda)` extrae mediante esta instancia y aplica la lambda; el
++       resultado captura ambas.
++   entry .long   extrae un `Long` uniformemente aleatorio
++   entry .byte   extrae un `Byte`, los ocho bits bajos de un `Long` aleatorio
++   entry .short   extrae un `Short`, los dieciséis bits bajos de un `Long` aleatorio
++   entry .int   extrae un `Int`, los treinta y dos bits bajos de un `Long` aleatorio
++   entry .char   extrae un `Char`, los dieciséis bits bajos de un `Long` aleatorio
++       Cualquier unidad de código UTF-16, incluidos los sustitutos desemparejados y los
++       caracteres de control.
++   entry .seed   extrae un `Seed` de sesenta y cuatro bits, a partir de un `Long` aleatorio
++   entry .boolean   extrae un `Boolean`: `true` cuando un `Long` aleatorio es negativo
++   entry .list   extrae una `List` cuyo tamaño procede del `Random.Size` en el ámbito
++   entry .set   extrae un `Set` de hasta el `Random.Size` en el ámbito, con los duplicados fundidos
++   entry .frozenArray   extrae un `Array[element]^{}` congelado, con el tamaño del `Random.Size` en el ámbito
++       Necesita un `ClassTag` para el tipo de los elementos además de un `Random.Size`.
++   entry .double   extrae un `Double` mediante la `Distribution` en el ámbito
++       No hay distribución por defecto: no puede extraerse un `Double` hasta que el código diga
++       qué clase de `Double` quiere decir, lo que impide tratar una extracción uniforme como si
++       fuera normal. Importa una de `randomDistributions` o declara como given una `Gaussian`,
++       una `PolarGaussian`, una `UniformDistribution` o una `Gamma`.
++   entry .conjunction   la instancia derivada de un producto: cada campo extraído por turno
++   entry .disjunction   la instancia derivada de una suma: una variante elegida de manera uniforme, y luego extraída
+
+- entry .Randomization   a source of pseudorandom generators: seeded, unseeded or secure, chosen by import
++ entry .Randomization   una fuente de generadores pseudoaleatorios: con semilla, sin semilla o segura, elegida por importación
+
+= entry .Randomization   a source of pseudorandom generators: seeded, unseeded or secure, chosen by import
+-   detail
++   detail
+
+-       A single-method trait: `#initialize` makes a new `scala.util.Random`. `stochastic` needs
+-       one in scope, and the `randomization` package's givens are the standard choices, each
+-       imported by name. A `Findable`, so it is reached as a contextual value.
++       Un trait de un solo método: `#initialize` crea un `scala.util.Random` nuevo. `stochastic`
++       necesita uno en el ámbito, y los givens del paquete `randomization` son las elecciones
++       estándar, cada una importada por nombre. Es un `Findable`, así que se alcanza como valor
++       contextual.
+
+-   refer capricious.randomization
++   refer capricious.randomization
+
+=   refer capricious.randomization
+-   refer capricious.stochastic
++   refer capricious.stochastic
+
+-   entry #initialize   makes a new generator
++   entry #initialize   crea un generador nuevo
+
+- entry .Seed   the seed of a reproducible generator: some bytes, usually from a `Long`
++ entry .Seed   la semilla de un generador reproducible: unos bytes, normalmente de un `Long`
+
+= entry .Seed   the seed of a reproducible generator: some bytes, usually from a `Long`
+-   detail
++   detail
+
+-       A case class of the seed's bytes as `Data`. `Seed(42L)` makes one from a `Long`'s eight
+-       bytes. A `Seed` in scope is what `randomization.seededRandomization` and
+-       `randomization.secureSeededRandomization` initialize their generators from.
++       Una case class con los bytes de la semilla como `Data`. `Seed(42L)` crea una a partir de
++       los ocho bytes de un `Long`. Un `Seed` en el ámbito es aquello a partir de lo cual
++       `randomization.seededRandomization` y `randomization.secureSeededRandomization`
++       inicializan sus generadores.
+
+=       `randomization.secureSeededRandomization` initialize their generators from.
+=
+-       ```scala
++       ```scala
+
+=       `randomization.secureSeededRandomization` initialize their generators from.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `randomization.secureSeededRandomization` initialize their generators from.
+=
+=       ```scala
+=       import soundness.*
+-       import randomization.seededRandomization
++       import randomization.seededRandomization
+
+-       Seed(42L).stochastic(arbitrary[Long]()) == Seed(42L).stochastic(arbitrary[Long]())
++       Seed(42L).stochastic(arbitrary[Long]()) == Seed(42L).stochastic(arbitrary[Long]())
+
+=       Seed(42L).stochastic(arbitrary[Long]()) == Seed(42L).stochastic(arbitrary[Long]())
+-       ```
++       ```
+
+-       Two seeds from the same `Long` are not `==`, since `Data` is an array; compare them by
+-       `#long`.
++       Dos semillas creadas a partir del mismo `Long` no son `==`, ya que `Data` es un array;
++       se comparan por `#long`.
+
+-   refer capricious.randomization.seededRandomization
++   refer capricious.randomization.seededRandomization
+
+-   entry .apply   a seed of the eight bytes of a `Long`
+-   entry #value   the seed's bytes
+-   entry #entropy   the seed's size in bits: eight per byte
+-   entry #long   the seed's first eight bytes as a `Long`, recovering the `Long` it was made from
+-   entry #stochastic   runs a block with a `Random` seeded from this seed
+-       As `stochastic`, with this seed as the contextual `Seed`; a seeded `Randomization` must
+-       still be in scope, such as `randomization.seededRandomization`.
++   entry .apply   una semilla con los ocho bytes de un `Long`
++   entry #value   los bytes de la semilla
++   entry #entropy   el tamaño de la semilla en bits: ocho por byte
++   entry #long   los ocho primeros bytes de la semilla como un `Long`, que recupera el `Long` del que se creó
++   entry #stochastic   ejecuta un bloque con un `Random` con semilla a partir de esta semilla
++       Como `stochastic`, con esta semilla como `Seed` contextual; debe seguir habiendo en el
++       ámbito una `Randomization` con semilla, como `randomization.seededRandomization`.
+
+- entry .Distribution   the shape a random `Double` is drawn from: Gaussian, uniform, gamma, …
++ entry .Distribution   la forma de la que se extrae un `Double` aleatorio: gaussiana, uniforme, gamma, …
+
+= entry .Distribution   the shape a random `Double` is drawn from: Gaussian, uniform, gamma, …
+-   detail
++   detail
+
+-       A single-method trait: `#transform` draws a `Double` from a `Random`. A random `Double`
+-       needs one in scope (`Randomizable.double`). `Gaussian`, `PolarGaussian`,
+-       `UniformDistribution` and `Gamma` are the built-in shapes, and `randomDistributions` has
+-       four ready-made givens.
++       Un trait de un solo método: `#transform` extrae un `Double` de un `Random`. Un `Double`
++       aleatorio necesita una en el ámbito (`Randomizable.double`). `Gaussian`,
++       `PolarGaussian`, `UniformDistribution` y `Gamma` son las formas integradas, y
++       `randomDistributions` tiene cuatro givens ya hechos.
+
+=       four ready-made givens.
+=
+-       ```scala
++       ```scala
+
+=       four ready-made givens.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       four ready-made givens.
+=
+=       ```scala
+=       import soundness.*
+-       import randomization.unseededRandomization
++       import randomization.unseededRandomization
+
+=       four ready-made givens.
+=
+=       ```scala
+=       import soundness.*
+=       import randomization.unseededRandomization
+=
+-       stochastic:
++       stochastic:
+
+-         given Distribution = UniformDistribution(4.0, 6.0)
++         given Distribution = UniformDistribution(4.0, 6.0)
+
+-         List.fill(100)(arbitrary[Double]())
++         List.fill(100)(arbitrary[Double]())
+
+=         List.fill(100)(arbitrary[Double]())
+-       ```
++       ```
+
+-   refer capricious.randomDistributions
++   refer capricious.randomDistributions
+
+-   entry #transform   draws a `Double` from a `Random`, in this distribution's shape
++   entry #transform   extrae un `Double` de un `Random`, con la forma de esta distribución
+
+- entry .Gaussian   the normal distribution of a mean and a standard deviation, by the Box–Muller transform
++ entry .Gaussian   la distribución normal de una media y una desviación típica, mediante la transformación de Box–Muller
+
+= entry .Gaussian   the normal distribution of a mean and a standard deviation, by the Box–Muller transform
+-   detail
++   detail
+
+-       A case class of `mean` (default 0) and `std` (default 1), drawing two uniform values from
+-       the unit interval for each sample. `PolarGaussian` is the same distribution by the polar
+-       method.
++       Una case class de `mean` (por defecto 0) y `std` (por defecto 1), que extrae dos valores
++       uniformes del intervalo unidad por cada muestra. `PolarGaussian` es la misma
++       distribución mediante el método polar.
+
+=       method.
+=
+-       ```scala
++       ```scala
+
+=       method.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       method.
+=
+=       ```scala
+=       import soundness.*
+-       import randomization.seededRandomization
++       import randomization.seededRandomization
+
+=       method.
+=
+=       ```scala
+=       import soundness.*
+=       import randomization.seededRandomization
+=
+-       Seed(1L).stochastic:
++       Seed(1L).stochastic:
+
+-         given Distribution = Gaussian(0.0, 2.0)
++         given Distribution = Gaussian(0.0, 2.0)
+
+=         given Distribution = Gaussian(0.0, 2.0)
+-         arbitrary[Double]()
++         arbitrary[Double]()
+
+=         given Distribution = Gaussian(0.0, 2.0)
+=         arbitrary[Double]()
+-       ```
++       ```
+
+=       ```
+-   entry #mean   the distribution's mean
+-   entry #std   the distribution's standard deviation
++   entry #mean   la media de la distribución
++   entry #std   la desviación típica de la distribución
+
+- entry .PolarGaussian   the normal distribution of a mean and a standard deviation, by the polar method
++ entry .PolarGaussian   la distribución normal de una media y una desviación típica, mediante el método polar
+
+= entry .PolarGaussian   the normal distribution of a mean and a standard deviation, by the polar method
+-   detail
++   detail
+
+-       A case class of `mean` (default 0) and `std` (default 1). The Marsaglia polar method draws
+-       pairs of values from the symmetric unit interval, rejecting those outside the unit circle,
+-       and so avoids the trigonometry of `Gaussian`'s Box–Muller transform.
+-   entry #mean   the distribution's mean
+-   entry #std   the distribution's standard deviation
++       Una case class de `mean` (por defecto 0) y `std` (por defecto 1). El método polar de
++       Marsaglia extrae pares de valores del intervalo unidad simétrico, rechaza los que caen
++       fuera del círculo unidad y evita así la trigonometría de la transformación de
++       Box–Muller de `Gaussian`.
++   entry #mean   la media de la distribución
++   entry #std   la desviación típica de la distribución
+
+- entry .UniformDistribution   the flat distribution between a start and an end
++ entry .UniformDistribution   la distribución plana entre un inicio y un final
+
+= entry .UniformDistribution   the flat distribution between a start and an end
+-   detail
++   detail
+
+-       A case class of `start` and `end`: every value in the range is equally likely.
+-       `randomDistributions.uniformUnitIntervalDistribution` is the range 0 to 1 and
+-       `uniformSymmetricUnitIntervalDistribution` the range −1 to 1.
+-   entry #start   the lower end of the range
+-   entry #end   the upper end of the range
++       Una case class de `start` y `end`: todos los valores del rango son igual de probables.
++       `randomDistributions.uniformUnitIntervalDistribution` es el rango de 0 a 1, y
++       `uniformSymmetricUnitIntervalDistribution`, el rango de −1 a 1.
++   entry #start   el extremo inferior del rango
++   entry #end   el extremo superior del rango
+
+- entry .Gamma   the gamma distribution of a shape and a scale, by the Marsaglia–Tsang method
++ entry .Gamma   la distribución gamma de una forma y una escala, mediante el método de Marsaglia–Tsang
+
+= entry .Gamma   the gamma distribution of a shape and a scale, by the Marsaglia–Tsang method
+-   detail
++   detail
+
+-       A case class of `#shape` (k) and `#scale` (θ). `Gamma.approximate(mean, std)` finds the
+-       shape and scale with a given mean and standard deviation, which suits a positive,
+-       right-skewed quantity such as a duration or a size.
++       Una case class de `#shape` (k) y `#scale` (θ). `Gamma.approximate(mean, std)` encuentra
++       la forma y la escala con una media y una desviación típica dadas, lo que conviene a una
++       magnitud positiva y con asimetría a la derecha, como una duración o un tamaño.
+
+=       right-skewed quantity such as a duration or a size.
+=
+-       ```scala
++       ```scala
+
+=       right-skewed quantity such as a duration or a size.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       right-skewed quantity such as a duration or a size.
+=
+=       ```scala
+=       import soundness.*
+-       import randomization.seededRandomization
++       import randomization.seededRandomization
+
+=       right-skewed quantity such as a duration or a size.
+=
+=       ```scala
+=       import soundness.*
+=       import randomization.seededRandomization
+=
+-       Seed(1L).stochastic:
++       Seed(1L).stochastic:
+
+-         given distribution: Gamma = Gamma.approximate(100, 10)
++         given distribution: Gamma = Gamma.approximate(100, 10)
+
+=         given distribution: Gamma = Gamma.approximate(100, 10)
+-         arbitrary[Double]()
++         arbitrary[Double]()
+
+=         given distribution: Gamma = Gamma.approximate(100, 10)
+=         arbitrary[Double]()
+-       ```
++       ```
+
+-   entry .approximate   the gamma distribution with a given mean and standard deviation
+-       The shape is mean² ÷ variance and the scale variance ÷ mean.
+-   entry #shape   the shape parameter, k
+-   entry #scale   the scale parameter, θ
+-   entry #mean   the distribution's mean, shape × scale, as an `F64`
+-   entry #variance   the distribution's variance, shape × scale², as an `F64`
+-   entry #variationCoefficient   the coefficient of variation, 1 ÷ √shape, as an `F64`
+-   entry #skewness   the distribution's skewness, 2 ÷ √shape, as an `F64`
++   entry .approximate   la distribución gamma con una media y una desviación típica dadas
++       La forma es media² ÷ varianza, y la escala, varianza ÷ media.
++   entry #shape   el parámetro de forma, k
++   entry #scale   el parámetro de escala, θ
++   entry #mean   la media de la distribución, forma × escala, como un `F64`
++   entry #variance   la varianza de la distribución, forma × escala², como un `F64`
++   entry #variationCoefficient   el coeficiente de variación, 1 ÷ √forma, como un `F64`
++   entry #skewness   la asimetría de la distribución, 2 ÷ √forma, como un `F64`
+
+- entry .randomization   the standard sources of randomness, each a given to import by name
++ entry .randomization   las fuentes estándar de aleatoriedad, cada una un given que se importa por nombre
+
+= entry .randomization   the standard sources of randomness, each a given to import by name
+-   detail
++   detail
+
+-       `stochastic` needs a `Randomization` in scope, and none is there by default: the choice
+-       between a reproducible generator and an unpredictable one is always written at the
+-       import. `import soundness.*` does not import givens, so each is imported by name.
++       `stochastic` necesita una `Randomization` en el ámbito, y por defecto no hay ninguna: la
++       elección entre un generador reproducible y uno impredecible siempre se escribe en la
++       importación. `import soundness.*` no importa givens, así que cada uno se importa por
++       nombre.
+
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Seeded
++       alternative Seeded
+
+=       alternative Seeded
+-         code
++         code
+
+=       alternative Seeded
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import randomization.seededRandomization
++             import randomization.seededRandomization
+
+-             given Seed = Seed(42L)
++             given Seed = Seed(42L)
+
+-             stochastic(arbitrary[Long]())   // the same Long on every run
++             stochastic(arbitrary[Long]())   // the same Long on every run
+
+-       alternative Unseeded
++       alternative Unseeded
+
+=       alternative Unseeded
+-         code
++         code
+
+=       alternative Unseeded
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import randomization.unseededRandomization
++             import randomization.unseededRandomization
+
+-             stochastic(arbitrary[Long]())   // a different Long on every run
++             stochastic(arbitrary[Long]())   // a different Long on every run
+
+-       alternative Secure
++       alternative Secure
+
+=       alternative Secure
+-         code
++         code
+
+=       alternative Secure
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import randomization.secureUnseededRandomization
++             import randomization.secureUnseededRandomization
+
+-             stochastic(arbitrary[Long]())   // from the operating system's secure source
++             stochastic(arbitrary[Long]())   // from the operating system's secure source
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-   entry .unseededRandomization   a fresh `java.util.Random` each time: fast, varying from run to run
+-   entry .secureUnseededRandomization   a `SecureRandom`, seeded by the platform, for values which must not be predicted
+-   entry .stronglySecureRandomization   `SecureRandom.getInstanceStrong`: the platform's strongest source, which may block
+-       Suited to long-lived keys; the strong source can block while the system gathers
+-       entropy, so it is not for bulk generation.
+-   entry .seededRandomization   a `java.util.Random` seeded from the `Seed` in scope: fully reproducible
+-       Needs a `Seed` given. Every generator it initializes starts from the same seed, so two
+-       `stochastic` blocks under it draw the same sequence.
+-   entry .secureSeededRandomization   a `SecureRandom` seeded from the `Seed` in scope
+-       Needs a `Seed` given. A `SecureRandom` may mix the seed with its own entropy, so on most
+-       platforms the sequence is not reproducible; use it to supplement a secure source, not to
+-       replay one.
+-   entry .wasiRandomization   draws from the WASI `wasi:random/random` interface of a Wasm component
+-       In `capricious.wasi`. An inline given, expanded where it is summoned, which calls
+-       `get-random-u64` through a `WasiRandom`; it needs `wasiApis.wasiRandomApi` in scope and
+-       works only in code compiled for a Wasm target.
++   entry .unseededRandomization   un `java.util.Random` nuevo cada vez: rápido, y distinto de una ejecución a otra
++   entry .secureUnseededRandomization   un `SecureRandom`, con semilla de la plataforma, para valores que no deben poder predecirse
++   entry .stronglySecureRandomization   `SecureRandom.getInstanceStrong`: la fuente más fuerte de la plataforma, que puede bloquearse
++       Adecuada para claves de larga vida; la fuente fuerte puede bloquearse mientras el
++       sistema reúne entropía, así que no es para la generación masiva.
++   entry .seededRandomization   un `java.util.Random` con semilla a partir del `Seed` en el ámbito: totalmente reproducible
++       Necesita un given `Seed`. Cada generador que inicializa parte de la misma semilla, así
++       que dos bloques `stochastic` bajo ella extraen la misma secuencia.
++   entry .secureSeededRandomization   un `SecureRandom` con semilla a partir del `Seed` en el ámbito
++       Necesita un given `Seed`. Un `SecureRandom` puede mezclar la semilla con su propia
++       entropía, así que en la mayoría de las plataformas la secuencia no es reproducible;
++       úsalo para complementar una fuente segura, no para reproducirla.
++   entry .wasiRandomization   extrae de la interfaz WASI `wasi:random/random` de un componente Wasm
++       En `capricious.wasi`. Un given inline, expandido donde se convoca, que llama a
++       `get-random-u64` mediante un `WasiRandom`; necesita `wasiApis.wasiRandomApi` en el
++       ámbito y solo funciona en código compilado para un destino Wasm.
+
+- entry .randomDistributions   ready-made distributions for random `Double`s, each a given to import by name
++ entry .randomDistributions   distribuciones ya hechas para `Double`s aleatorios, cada una un given que se importa por nombre
+
+= entry .randomDistributions   ready-made distributions for random `Double`s, each a given to import by name
+-   detail
++   detail
+
+-       A random `Double` needs a `Distribution` in scope. These cover the common cases; any
+-       `Gaussian`, `PolarGaussian`, `UniformDistribution` or `Gamma` can be declared as a given
+-       instead. `import soundness.*` does not import givens, so each is imported by name.
++       Un `Double` aleatorio necesita una `Distribution` en el ámbito. Estas cubren los casos
++       habituales; en su lugar puede declararse como given cualquier `Gaussian`,
++       `PolarGaussian`, `UniformDistribution` o `Gamma`. `import soundness.*` no importa
++       givens, así que cada una se importa por nombre.
+
+=       instead. `import soundness.*` does not import givens, so each is imported by name.
+=
+-       ```scala
++       ```scala
+
+=       instead. `import soundness.*` does not import givens, so each is imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       instead. `import soundness.*` does not import givens, so each is imported by name.
+=
+=       ```scala
+=       import soundness.*
+-       import randomization.unseededRandomization
++       import randomization.unseededRandomization
+
+-       import randomDistributions.gaussianDistribution
++       import randomDistributions.gaussianDistribution
+
+-       stochastic(arbitrary[Double]())
++       stochastic(arbitrary[Double]())
+
+=       stochastic(arbitrary[Double]())
+-       ```
++       ```
+
+-   entry .gaussianDistribution   the standard normal distribution: mean 0, standard deviation 1
+-   entry .uniformUnitIntervalDistribution   uniform between 0 and 1
+-   entry .uniformSymmetricUnitIntervalDistribution   uniform between −1 and 1
+-   entry .binaryDistribution   a `Double` made from sixty-four random bits, of any magnitude
++   entry .gaussianDistribution   la distribución normal estándar: media 0, desviación típica 1
++   entry .uniformUnitIntervalDistribution   uniforme entre 0 y 1
++   entry .uniformSymmetricUnitIntervalDistribution   uniforme entre −1 y 1
++   entry .binaryDistribution   un `Double` hecho de sesenta y cuatro bits aleatorios, de cualquier magnitud
+
+- entry .randomSizes   uniform sizes for random collections, each a given to import by name
++ entry .randomSizes   tamaños uniformes para colecciones aleatorias, cada uno un given que se importa por nombre
+
+= entry .randomSizes   uniform sizes for random collections, each a given to import by name
+-   detail
++   detail
+
+-       A random `List`, `Set` or frozen array needs a `Random.Size` in scope. Each of these
+-       draws a size uniformly from zero up to, but not including, its bound. `import
+-       soundness.*` does not import givens, so each is imported by name.
++       Una `List`, un `Set` o un array congelado aleatorios necesitan un `Random.Size` en el
++       ámbito. Cada uno de estos extrae un tamaño de manera uniforme desde cero hasta su cota,
++       sin incluirla. `import soundness.*` no importa givens, así que cada uno se importa
++       por nombre.
+
+=       soundness.*` does not import givens, so each is imported by name.
+=
+-       ```scala
++       ```scala
+
+=       soundness.*` does not import givens, so each is imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       soundness.*` does not import givens, so each is imported by name.
+=
+=       ```scala
+=       import soundness.*
+-       import randomization.seededRandomization
++       import randomization.seededRandomization
+
+-       import randomSizes.uniformSizeUpto100
++       import randomSizes.uniformSizeUpto100
+
+-       Seed(42L).stochastic(arbitrary[List[Int]]())
++       Seed(42L).stochastic(arbitrary[List[Int]]())
+
+=       Seed(42L).stochastic(arbitrary[List[Int]]())
+-       ```
++       ```
+
+-   entry .uniformSizeUpto10   a size from 0 to 9
+-   entry .uniformSizeUpto100   a size from 0 to 99
+-   entry .uniformSizeUpto1000   a size from 0 to 999
+-   entry .uniformSizeUpto10000   a size from 0 to 9999
+-   entry .uniformSizeUpto100000   a size from 0 to 99999
++   entry .uniformSizeUpto10   un tamaño de 0 a 9
++   entry .uniformSizeUpto100   un tamaño de 0 a 99
++   entry .uniformSizeUpto1000   un tamaño de 0 a 999
++   entry .uniformSizeUpto10000   un tamaño de 0 a 9999
++   entry .uniformSizeUpto100000   un tamaño de 0 a 99999
+
+- entry .randomTexts   random `Text`s for testing, each a given to import by name
++ entry .randomTexts   `Text`s aleatorios para pruebas, cada uno un given que se importa por nombre
+
+= entry .randomTexts   random `Text`s for testing, each a given to import by name
+-   detail
++   detail
+
+-       There is no default `Text is Randomizable`, since no one distribution of strings suits
+-       every test. `import soundness.*` does not import givens, so this is imported by name.
+-   entry .naughtyStringsText   draws from the Big List of Naughty Strings: text which often breaks parsers
+-       Each draw picks one line of the bundled Big List of Naughty Strings — reserved words,
+-       Unicode edge cases, injection attempts, unusual whitespace — read from the classpath
+-       resource `/capricious/blns.txt` when the given is first used.
++       No hay un `Text is Randomizable` por defecto, ya que ninguna distribución de cadenas
++       sirve para todas las pruebas. `import soundness.*` no importa givens, así que este se
++       importa por nombre.
++   entry .naughtyStringsText   extrae de la Big List of Naughty Strings: texto que a menudo rompe los analizadores
++       Cada extracción elige una línea de la Big List of Naughty Strings incluida: palabras
++       reservadas, casos límite de Unicode, intentos de inyección, espacios en blanco
++       inusuales; se lee del recurso del classpath `/capricious/blns.txt` cuando el given se
++       usa por primera vez.
+
+=       resource `/capricious/blns.txt` when the given is first used.
+=
+-       ```scala
++       ```scala
+
+=       resource `/capricious/blns.txt` when the given is first used.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       resource `/capricious/blns.txt` when the given is first used.
+=
+=       ```scala
+=       import soundness.*
+-       import randomization.unseededRandomization
++       import randomization.unseededRandomization
+
+-       import randomTexts.naughtyStringsText
++       import randomTexts.naughtyStringsText
+
+-       stochastic(arbitrary[Text]())
++       stochastic(arbitrary[Text]())
+
+=       stochastic(arbitrary[Text]())
+-       ```
++       ```
+
+- entry .WasiRandom   a `java.util.Random` driven by an external 64-bit entropy source, such as WASI's
+-     In `capricious.wasi`. `WasiRandom(entropy)` adapts a function returning random `Long`s to
+-     `java.util.Random`'s `next` contract, taking the top bits of each, so it can back a
+-     `scala.util.Random` and hence a `Randomization`. Its inherited seed is never used.
+-     `randomization.wasiRandomization` is built on it.
++ entry .WasiRandom   un `java.util.Random` impulsado por una fuente externa de entropía de 64 bits, como la de WASI
++     En `capricious.wasi`. `WasiRandom(entropy)` adapta una función que devuelve `Long`s
++     aleatorios al contrato `next` de `java.util.Random`, tomando los bits altos de cada uno,
++     de modo que puede respaldar un `scala.util.Random` y, por tanto, una `Randomization`. La
++     semilla que hereda nunca se usa. `randomization.wasiRandomization` se construye sobre él.
+
+- entry .WasiRandomApi   the type of the WIT interface `wasi:random/random`, as capricious binds it
+-     In `capricious.wasi`: an `Interface in Wit` typed by the WIT definitions bundled at
+-     `/capricious/random.wit`, which `randomization.wasiRandomization` calls through. The given
+-     is `wasiApis.wasiRandomApi`.
++ entry .WasiRandomApi   el tipo de la interfaz WIT `wasi:random/random`, tal como la enlaza capricious
++     En `capricious.wasi`: una `Interface in Wit` tipada por las definiciones WIT incluidas en
++     `/capricious/random.wit`, a través de la cual llama `randomization.wasiRandomization`.
++     El given es `wasiApis.wasiRandomApi`.
+
+- entry .wasiApis   the WIT interface bindings capricious needs on WASI, each a given to import by name
++ entry .wasiApis   los enlaces de interfaces WIT que capricious necesita en WASI, cada uno un given que se importa por nombre
+
+= entry .wasiApis   the WIT interface bindings capricious needs on WASI, each a given to import by name
+-   detail
++   detail
+
+-       In `capricious.wasi`. `randomization.wasiRandomization` is expanded where it is summoned,
+-       and needs this binding visible there. `import soundness.*` does not import givens, so it
+-       is imported by name.
+-   entry .wasiRandomApi   the `wasi:random/random` interface, read from `/capricious/random.wit`
++       En `capricious.wasi`. `randomization.wasiRandomization` se expande donde se convoca y
++       necesita este enlace visible allí. `import soundness.*` no importa givens, así que se
++       importa por nombre.
++   entry .wasiRandomApi   la interfaz `wasi:random/random`, leída de `/capricious/random.wit`

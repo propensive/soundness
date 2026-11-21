@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.46.1` — `Geolocation.Error`
++ # `↯/s.46.1` — `Geolocation.Error`
+
+- Raised when Geodesy cannot parse a value as a `geo:` URI.
++ Geodesy が値を `geo:` URI としてパースできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Geodesy parses RFC 5870 geo URIs of the form
+- `geo:<lat>,<lon>[,<alt>][;<param>=<value>]…`. If any part of the URI
+- fails to satisfy the syntax, this error is thrown with the variant
+- identifying which part. The message is `the geo URI is not in the
+- correct format because $reason`.
++ Geodesy は、`geo:<lat>,<lon>[,<alt>][;<param>=<value>]…` という形の RFC 5870 の geo URI をパースする。
++ URI のいずれかの部分が構文を満たさなければ、このエラーが、どの部分かを示すバリアントとともに投げられる。
++ メッセージは `the geo URI is not in the correct format because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.46.1.1`  `MissingEquals`  A parameter component had no `=` to separate name from value.  `` [↯/s.46.1.1] the geo URI is not in the correct format because the parameter does not contain an `=` ``  Write parameters as `name=value`.
+- row  `↯/s.46.1.2`  `MultipleEquals`  A single parameter contained more than one `=`.  `` [↯/s.46.1.2] the geo URI is not in the correct format because the parameter contains more than one `=` ``  Percent-encode `=` characters that should appear in the value.
+- row  `↯/s.46.1.3`  `BadScheme`  The URI did not start with `geo:`.  `` [↯/s.46.1.3] the geo URI is not in the correct format because the value does not begin with the `geo:` URI scheme ``  Prefix the URI with `geo:`.
+- row  `↯/s.46.1.4`  `ExpectedSemicolon`  After the altitude value, a `;` was expected but not found.  `` [↯/s.46.1.4] the geo URI is not in the correct format because a `;` was expected after the altitude value ``  Separate altitude from any subsequent parameters with `;`.
+- row  `↯/s.46.1.5`  `UnexpectedSuffix`  Content followed the coordinates that began with neither `,` nor `;`.  `` [↯/s.46.1.5] the geo URI is not in the correct format because a `,` or `;` was expected ``  Use `,` to introduce altitude and `;` to introduce parameters.
+- row  `↯/s.46.1.6`  `ExpectedCoordinates`  Latitude and longitude were missing or could not be parsed as numbers.  `[↯/s.46.1.6] the geo URI is not in the correct format because latitude and longitude coordinates were expected`  Provide two comma-separated decimal numbers immediately after `geo:`.
+- row  `↯/s.46.1.7`  `BadUncertainty`  The value of a `u=` (uncertainty) parameter was not a valid number.  `` [↯/s.46.1.7] the geo URI is not in the correct format because the `uncertainty` parameter vas not a valid number ``  Provide a non-negative decimal value for `u=`.
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.46.1.1`  `MissingEquals`  パラメーターの部分に、名前と値を区切る `=` がなかった。  `` [↯/s.46.1.1] the geo URI is not in the correct format because the parameter does not contain an `=` ``  パラメーターを `name=value` の形で書く。
++ row  `↯/s.46.1.2`  `MultipleEquals`  一つのパラメーターに `=` が二つ以上含まれていた。  `` [↯/s.46.1.2] the geo URI is not in the correct format because the parameter contains more than one `=` ``  値の中に現れるべき `=` の文字をパーセントエンコードする。
++ row  `↯/s.46.1.3`  `BadScheme`  URI が `geo:` で始まっていなかった。  `` [↯/s.46.1.3] the geo URI is not in the correct format because the value does not begin with the `geo:` URI scheme ``  URI の前に `geo:` を付ける。
++ row  `↯/s.46.1.4`  `ExpectedSemicolon`  高度の値の後に `;` が期待されたが、見つからなかった。  `` [↯/s.46.1.4] the geo URI is not in the correct format because a `;` was expected after the altitude value ``  高度とその後のパラメーターを `;` で区切る。
++ row  `↯/s.46.1.5`  `UnexpectedSuffix`  座標の後に、`,` でも `;` でも始まらない内容が続いていた。  `` [↯/s.46.1.5] the geo URI is not in the correct format because a `,` or `;` was expected ``  高度の前には `,` を、パラメーターの前には `;` を使う。
++ row  `↯/s.46.1.6`  `ExpectedCoordinates`  緯度と経度が欠けていたか、数としてパースできなかった。  `[↯/s.46.1.6] the geo URI is not in the correct format because latitude and longitude coordinates were expected`  `geo:` の直後に、コンマで区切った二つの十進数を与える。
++ row  `↯/s.46.1.7`  `BadUncertainty`  `u=`（不確かさ）パラメーターの値が有効な数ではなかった。  `` [↯/s.46.1.7] the geo URI is not in the correct format because the `uncertainty` parameter vas not a valid number ``  `u=` に負でない十進数の値を与える。
+
+- ```
++ ```
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/geodesy/src/core/geodesy.Geolocation.scala`
++ - ソース：`lib/geodesy/src/core/geodesy.Geolocation.scala`

@@ -1,0 +1,692 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base polaris
++ base polaris
+
+- import soundness
++ import soundness
+
+- info   fixed-width binary layouts as case classes, read from bytes by a derived typeclass
++ info   disposiciones binarias de anchura fija como case classes, leídas de bytes mediante una clase de tipos derivada
+
+- detail
++ detail
+
+-     _Polaris_ reads structured binary data — the fixed-width records of file headers, network
+-     packets and device protocols — by mapping bytes onto Scala types. A case class whose fields
+-     are sized numeric types (`B32`, `U16`, `S64`, …) *is* a binary layout: each field's type
+-     states its width and its interpretation, and derivation composes them in declaration order,
+-     computing every offset, so there is no index arithmetic to keep in step with a
+-     specification.
++     _Polaris_ lee datos binarios estructurados —los registros de anchura fija de las cabeceras de
++     ficheros, de los paquetes de red y de los protocolos de dispositivos— haciendo corresponder
++     los bytes con tipos de Scala. Una case class cuyos campos son tipos numéricos con tamaño
++     (`B32`, `U16`, `S64`, …) *es* una disposición binaria: el tipo de cada campo indica su anchura
++     y su interpretación, y la derivación los compone en el orden de declaración, calculando cada
++     desplazamiento, así que no hay ninguna aritmética de índices que mantener al día con una
++     especificación.
+
+=     specification.
+=
+-     ```scala
++     ```scala
+
+=     specification.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     specification.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Header(magic: B32, version: U16, flags: B16, length: U32)
++     case class Header(magic: B32, version: U16, flags: B16, length: U32)
+
+=     specification.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Header(magic: B32, version: U16, flags: B16, length: U32)
+=
+-     object Header:
++     object Header:
+
+=     specification.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Header(magic: B32, version: U16, flags: B16, length: U32)
+=
+=     object Header:
+-       given Header is Debufferable = Debufferable.derived
++       given Header is Debufferable = Debufferable.derived
+
+-     val data = hex"cafebabe0001000000000010"
++     val data = hex"cafebabe0001000000000010"
+
+-     byteWidth[Header]                          // 12
++     byteWidth[Header]                          // 12
+
+-     data.unpackFrom[Header](0).length          // 16
++     data.unpackFrom[Header](0).length          // 16
+
+-     data.sextant:
++     data.sextant:
+
+-       val magic = unpack[B32]
++       val magic = unpack[B32]
+
+-       unpack[U16]                              // 1
++       unpack[U16]                              // 1
+
+=       unpack[U16]                              // 1
+-     ```
++     ```
+
+-     `Debufferable` is the reading typeclass, with instances for the sixteen sized and plain
+-     numeric types and derivation for products; `Unpackable` sits above it and is what `unpack`
+-     and `unpackFrom` resolve, covering a single value and a count-prefixed array of them. A
+-     `Sextant` is the read position, a mutable capability introduced by the `sextant { … }`
+-     block, so that successive `unpack`s advance through the bytes. `Bufferable` is the writing
+-     typeclass, deriving over products in the same way.
++     `Debufferable` es la clase de tipos de lectura, con instancias para los dieciséis tipos
++     numéricos con tamaño y simples, y derivación para los productos; `Unpackable` está por encima
++     de ella y es lo que resuelven `unpack` y `unpackFrom`, y abarca un único valor y un array de
++     ellos precedido de su recuento. Un `Sextant` es la posición de lectura, una capacidad mutable
++     que introduce el bloque `sextant { … }`, de modo que los sucesivos `unpack` avanzan por los
++     bytes. `Bufferable` es la clase de tipos de escritura, que se deriva sobre los productos del
++     mismo modo.
+
+-     All multi-byte numbers are read big-endian. Reads are not bounds-checked against a layout:
+-     reading past the end of the bytes throws the platform's `ArrayIndexOutOfBoundsException`, so
+-     check the length of untrusted input against `byteWidth` first.
++     Todos los números de varios bytes se leen en big-endian. Las lecturas no comprueban los
++     límites contra una disposición: leer más allá del final de los bytes lanza la
++     `ArrayIndexOutOfBoundsException` de la plataforma, así que conviene comprobar primero la
++     longitud de una entrada que no es de confianza contra `byteWidth`.
+
+-     The library has one source set, `polaris.core`, which compiles for every platform.
+-     Everything is exported to the `soundness` umbrella.
++     La biblioteca tiene un único conjunto de fuentes, `polaris.core`, que compila para todas las
++     plataformas. Todo se exporta al paraguas `soundness`.
+
+- refer polaris.Debufferable
++ refer polaris.Debufferable
+
+- refer polaris.Unpackable
++ refer polaris.Unpackable
+
+- refer polaris.Sextant
++ refer polaris.Sextant
+
+- refer polaris.unpackFrom
++ refer polaris.unpackFrom
+
+- entry .Sextant   a read position in a byte array: the mutable capability successive `unpack`s advance
++ entry .Sextant   una posición de lectura en un array de bytes: la capacidad mutable que hacen avanzar los sucesivos `unpack`
+
+= entry .Sextant   a read position in a byte array: the mutable capability successive `unpack`s advance
+-   detail
++   detail
+
+-       A `Sextant` is a cursor over `Data`, named for the navigator's instrument that reads a
+-       position. It is a *capability*: it holds a mutable offset, so unpacking through it is an
+-       effect, and it is `caps.Mutable`, so only an exclusive reference (`Sextant^`) may advance
+-       it. Two readers sharing one position would each consume bytes the other expected, and the
+-       capture checker prevents a sextant from being aliased or from escaping the block which
+-       introduced it.
++       Un `Sextant` es un cursor sobre `Data`, que debe su nombre al instrumento de navegación que
++       lee una posición. Es una *capacidad*: contiene un desplazamiento mutable, así que
++       desempaquetar a través de él es un efecto, y es `caps.Mutable`, así que solo una referencia
++       exclusiva (`Sextant^`) puede hacerlo avanzar. Dos lectores que compartieran una misma
++       posición consumirían cada uno bytes que el otro esperaba, y el comprobador de capturas
++       impide que un sextante tenga alias o escape del bloque que lo introdujo.
+
+-       The usual way to get one is the `sextant { … }` extension on `Data`, which makes a sextant
+-       at offset 0 and passes it as a contextual value to the block, where `unpack` finds it:
++       La manera habitual de obtener uno es la extensión `sextant { … }` sobre `Data`, que crea un
++       sextante en el desplazamiento 0 y lo pasa como valor contextual al bloque, donde lo
++       encuentra `unpack`:
+
+=       at offset 0 and passes it as a contextual value to the block, where `unpack` finds it:
+=
+-       ```scala
++       ```scala
+
+=       at offset 0 and passes it as a contextual value to the block, where `unpack` finds it:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val data = hex"cafebabe00010000"
++       val data = hex"cafebabe00010000"
+
+=       val data = hex"cafebabe00010000"
+=
+-       data.sextant:
++       data.sextant:
+
+-         summon[Sextant].advance(4)      // skip the magic number
++         summon[Sextant].advance(4)      // skip the magic number
+
+-         val version = unpack[U16]
++         val version = unpack[U16]
+
+-         summon[Sextant].offset          // 6
++         summon[Sextant].offset          // 6
+
+=         summon[Sextant].offset          // 6
+-       ```
++       ```
+
+-       `Sextant(bytes, initialPosition)` constructs one directly, starting at `initialPosition`
+-       (default 0). It is `Findable`, so compile-time searches for capabilities in scope can see
+-       it.
++       `Sextant(bytes, initialPosition)` construye uno directamente, empezando en
++       `initialPosition` (0 por defecto). Es `Findable`, así que las búsquedas de capacidades en el
++       ámbito en tiempo de compilación pueden verlo.
+
+-   refer polaris.sextant
++   refer polaris.sextant
+
+=   refer polaris.sextant
+-   refer polaris.unpack
++   refer polaris.unpack
+
+-   entry #offset   the current read position, as a byte index from the start of the data
+-       Each `unpack` advances it by the width of the value read, so it says where the next read
+-       will begin, for a format which records where a section starts.
+-   entry #advance   moves the read position forward by a number of bytes, without reading them
+-       An `update` method, so it needs an exclusive reference to the sextant: it skips padding,
+-       or a field this reader does not need. The count is not checked against the length of the
+-       data; a later read beyond the end throws.
++   entry #offset   la posición de lectura actual, como índice de byte desde el principio de los datos
++       Cada `unpack` la hace avanzar en la anchura del valor leído, así que dice dónde empezará la
++       siguiente lectura, para un formato que registra dónde empieza una sección.
++   entry #advance   adelanta la posición de lectura un número de bytes, sin leerlos
++       Un método `update`, así que necesita una referencia exclusiva al sextante: se salta un
++       relleno, o un campo que este lector no necesita. El recuento no se comprueba contra la
++       longitud de los datos; una lectura posterior más allá del final lanza una excepción.
+
+- entry .sextant   runs a block with a `Sextant` over these bytes, starting at offset 0
+-     An extension on `Data`: `data.sextant { … }` makes a `Sextant` at the start of the bytes and
+-     passes it to the block as a contextual `Sextant^`, so each `unpack` inside reads the next
+-     value and advances past it. The block's result is returned; the sextant does not escape it.
++ entry .sextant   ejecuta un bloque con un `Sextant` sobre estos bytes, empezando en el desplazamiento 0
++     Una extensión sobre `Data`: `data.sextant { … }` crea un `Sextant` al principio de los bytes
++     y lo pasa al bloque como un `Sextant^` contextual, de modo que cada `unpack` de dentro lee el
++     siguiente valor y avanza más allá de él. Se devuelve el resultado del bloque; el sextante no
++     escapa de él.
+
+=     value and advances past it. The block's result is returned; the sextant does not escape it.
+=
+-     ```scala
++     ```scala
+
+=     value and advances past it. The block's result is returned; the sextant does not escape it.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     hex"00010002".sextant:
++     hex"00010002".sextant:
+
+-       (unpack[Short], unpack[Short])   // (1, 2)
++       (unpack[Short], unpack[Short])   // (1, 2)
+
+=       (unpack[Short], unpack[Short])   // (1, 2)
+-     ```
++     ```
+
+- entry .unpack   reads the next value of a type from the `Sextant` in scope, and advances past it
+-     `unpack[T]` resolves `T is Unpackable` and reads through the contextual `Sextant^`. For a
+-     `Debufferable` type the result is the value, and the sextant moves on by its width; for a
+-     frozen array `Array[T]^{}` the result is a function from a count to the array, which is read
+-     when the count is known and does not move the caller's sextant.
++ entry .unpack   lee el siguiente valor de un tipo del `Sextant` que está en el ámbito, y avanza más allá de él
++     `unpack[T]` resuelve `T is Unpackable` y lee a través del `Sextant^` contextual. Para un tipo
++     `Debufferable`, el resultado es el valor, y el sextante avanza en su anchura; para un array
++     congelado `Array[T]^{}`, el resultado es una función de un recuento al array, que se lee
++     cuando se conoce el recuento y no mueve el sextante del llamante.
+
+=     when the count is known and does not move the caller's sextant.
+=
+-     ```scala
++     ```scala
+
+=     when the count is known and does not move the caller's sextant.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     case class Pair(left: U16, right: U16)
++     case class Pair(left: U16, right: U16)
+
+-     object Pair:
++     object Pair:
+
+-       given Pair is Debufferable = Debufferable.derived
++       given Pair is Debufferable = Debufferable.derived
+
+-     hex"00010002000300040005000600070008".sextant:
++     hex"00010002000300040005000600070008".sextant:
+
+-       val pairs = unpack[Array[Pair]^{}](4)
++       val pairs = unpack[Array[Pair]^{}](4)
+
+-       pairs.length   // 4
++       pairs.length   // 4
+
+=       pairs.length   // 4
+-     ```
++     ```
+
+-     Reading past the end of the data throws `ArrayIndexOutOfBoundsException`.
++     Leer más allá del final de los datos lanza `ArrayIndexOutOfBoundsException`.
+
+- entry .unpackFrom   reads a value of a chosen type from bytes at an offset
+-     An extension on `Data`: `bytes.unpackFrom[T](offset)` makes a `Sextant` at `offset` and
+-     unpacks one `T` through it, for a single read where a `sextant { … }` block would be
+-     ceremony. As with `unpack`, an array type gives a function from a count to the array.
++ entry .unpackFrom   lee un valor de un tipo elegido a partir de bytes en un desplazamiento
++     Una extensión sobre `Data`: `bytes.unpackFrom[T](offset)` crea un `Sextant` en `offset` y
++     desempaqueta un `T` a través de él, para una lectura única en la que un bloque
++     `sextant { … }` sería pura ceremonia. Como con `unpack`, un tipo de array da una función de
++     un recuento al array.
+
+=     ceremony. As with `unpack`, an array type gives a function from a count to the array.
+=
+-     ```scala
++     ```scala
+
+=     ceremony. As with `unpack`, an array type gives a function from a count to the array.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     hex"090900000100".unpackFrom[Int](2)                         // 256
++     hex"090900000100".unpackFrom[Int](2)                         // 256
+
+-     hex"000000010000000200000003".unpackFrom[Array[Int]^{}](4)(2)    // the array 2, 3
++     hex"000000010000000200000003".unpackFrom[Array[Int]^{}](4)(2)    // the array 2, 3
+
+=     hex"000000010000000200000003".unpackFrom[Array[Int]^{}](4)(2)    // the array 2, 3
+-     ```
++     ```
+
+-     Numbers are read big-endian; reading past the end of the bytes throws
++     Los números se leen en big-endian; leer más allá del final de los bytes lanza
+
+-     `ArrayIndexOutOfBoundsException`.
++     `ArrayIndexOutOfBoundsException`.
+
+- entry .byteWidth   the number of bytes a `Debufferable` type occupies, without a value in hand
+-     `byteWidth[T]` is `T`'s `Debufferable#width`: 1, 2, 4 or 8 for the numeric types, and the sum
+-     of its fields' widths for a derived product, nested records included.
++ entry .byteWidth   el número de bytes que ocupa un tipo `Debufferable`, sin tener ningún valor a mano
++     `byteWidth[T]` es el `Debufferable#width` de `T`: 1, 2, 4 u 8 para los tipos numéricos, y la
++     suma de las anchuras de sus campos para un producto derivado, incluidos los registros
++     anidados.
+
+=     of its fields' widths for a derived product, nested records included.
+=
+-     ```scala
++     ```scala
+
+=     of its fields' widths for a derived product, nested records included.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     of its fields' widths for a derived product, nested records included.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Header(magic: B32, version: U16, flags: B16, length: U32)
++     case class Header(magic: B32, version: U16, flags: B16, length: U32)
+
+=     of its fields' widths for a derived product, nested records included.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Header(magic: B32, version: U16, flags: B16, length: U32)
+=
+-     object Header:
++     object Header:
+
+=     of its fields' widths for a derived product, nested records included.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Header(magic: B32, version: U16, flags: B16, length: U32)
+=
+=     object Header:
+-       given Header is Debufferable = Debufferable.derived
++       given Header is Debufferable = Debufferable.derived
+
+-     byteWidth[Header]   // 12
++     byteWidth[Header]   // 12
+
+-     byteWidth[U16]      // 2
++     byteWidth[U16]      // 2
+
+=     byteWidth[U16]      // 2
+-     ```
++     ```
+
+- entry .Debufferable   a typeclass for a fixed-width type which can be read from bytes
++ entry .Debufferable   una clase de tipos para un tipo de anchura fija que puede leerse de bytes
+
+= entry .Debufferable   a typeclass for a fixed-width type which can be read from bytes
+-   detail
++   detail
+
+-       `T is Debufferable` states two things: `#width`, the number of bytes a `T` occupies, and
+-       `#debuffer`, which reads one from a `Sextant` and advances it by that width. The companion
+-       has instances for the sized bit types (`B8`–`B64`), the signed and unsigned integers
+-       (`S8`–`S64`, `U8`–`U64`) and Scala's `Byte`, `Short`, `Int` and `Long`, all big-endian.
++       `T is Debufferable` indica dos cosas: `#width`, el número de bytes que ocupa un `T`, y
++       `#debuffer`, que lee uno de un `Sextant` y lo hace avanzar en esa anchura. El objeto
++       compañero tiene instancias para los tipos de bits con tamaño (`B8`–`B64`), los enteros con
++       y sin signo (`S8`–`S64`, `U8`–`U64`) y los `Byte`, `Short`, `Int` y `Long` de Scala, todos
++       en big-endian.
+
+-       A case class derives its instance from its fields', which are read in declaration order;
+-       a field whose type is itself a derived record contributes its whole width, so layouts
+-       compose:
++       Una case class deriva su instancia de las de sus campos, que se leen en el orden de
++       declaración; un campo cuyo tipo es a su vez un registro derivado aporta toda su anchura, así
++       que las disposiciones se componen:
+
+=       compose:
+=
+-       ```scala
++       ```scala
+
+=       compose:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Header(magic: Int, version: Short, flags: Byte)
++       case class Header(magic: Int, version: Short, flags: Byte)
+
+-       object Header:
++       object Header:
+
+-         given debufferable: Header is Debufferable = Debufferable.derived
++         given debufferable: Header is Debufferable = Debufferable.derived
+
+-       Array[Byte](0, 0, 1, 0, 0, 3, 7).unpackFrom[Header](0)   // Header(256, 3, 7)
++       Array[Byte](0, 0, 1, 0, 0, 3, 7).unpackFrom[Header](0)   // Header(256, 3, 7)
+
+=       Array[Byte](0, 0, 1, 0, 0, 3, 7).unpackFrom[Header](0)   // Header(256, 3, 7)
+-       ```
++       ```
+
+-       A layout which is not a product of fixed-width fields — a packed colour, say, or a type
+-       with its own interpretation of some bytes — defines an instance with `.apply`. Only
+-       products derive: there is no derivation for sum types, since a binary layout has no
+-       standard tag.
++       Una disposición que no es un producto de campos de anchura fija —un color empaquetado, por
++       ejemplo, o un tipo con su propia interpretación de algunos bytes— define una instancia con
++       `.apply`. Solo se derivan los productos: no hay derivación para los tipos suma, ya que una
++       disposición binaria no tiene ninguna etiqueta estándar.
+
+-   refer polaris.Unpackable
++   refer polaris.Unpackable
+
+-   refer polaris.byteWidth
++   refer polaris.byteWidth
+
+-   entry .apply   makes an instance from a byte width and a function of the bytes and an offset
+-       `Debufferable(width)((bytes, offset) => …)` reads a value starting at `offset` in `bytes`,
+-       and the instance advances the sextant by `width` afterwards. This is how the primitive
+-       instances are written.
++   entry .apply   crea una instancia a partir de una anchura en bytes y de una función de los bytes y un desplazamiento
++       `Debufferable(width)((bytes, offset) => …)` lee un valor que empieza en `offset` en
++       `bytes`, y la instancia hace avanzar después el sextante en `width`. Así es como se
++       escriben las instancias primitivas.
+
+=       instances are written.
+=
+-       ```scala
++       ```scala
+
+=       instances are written.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Rgb(red: Byte, green: Byte, blue: Byte)
++       case class Rgb(red: Byte, green: Byte, blue: Byte)
+
+-       object Rgb:
++       object Rgb:
+
+-         given Rgb is Debufferable =
++         given Rgb is Debufferable =
+
+-           Debufferable(3): (bytes, offset) =>
++           Debufferable(3): (bytes, offset) =>
+
+-             Rgb(bytes.readUnchecked(offset), bytes.readUnchecked(offset + 1), bytes.readUnchecked(offset + 2))
++             Rgb(bytes.readUnchecked(offset), bytes.readUnchecked(offset + 1), bytes.readUnchecked(offset + 2))
+
+=             Rgb(bytes.readUnchecked(offset), bytes.readUnchecked(offset + 1), bytes.readUnchecked(offset + 2))
+-       ```
++       ```
+
+-   entry .b8   reads one byte as a `B8`
+-   entry .b16   reads two bytes, big-endian, as a `B16`
+-   entry .b32   reads four bytes, big-endian, as a `B32`
+-   entry .b64   reads eight bytes, big-endian, as a `B64`
+-   entry .s8   reads one byte as a signed `S8`
+-   entry .s16   reads two bytes, big-endian, as a signed `S16`
+-   entry .s32   reads four bytes, big-endian, as a signed `S32`
+-   entry .s64   reads eight bytes, big-endian, as a signed `S64`
+-   entry .u8   reads one byte as an unsigned `U8`
+-   entry .u16   reads two bytes, big-endian, as an unsigned `U16`
+-   entry .u32   reads four bytes, big-endian, as an unsigned `U32`
+-   entry .u64   reads eight bytes, big-endian, as an unsigned `U64`
+-   entry .byte   reads one byte as a `Byte`
+-   entry .short   reads two bytes, big-endian and signed, as a `Short`
+-   entry .int   reads four bytes, big-endian and signed, as an `Int`
+-   entry .long   reads eight bytes, big-endian and signed, as a `Long`
+-   entry .Join   the instance derivation builds for a product: a total width and a reader
++   entry .b8   lee un byte como un `B8`
++   entry .b16   lee dos bytes, en big-endian, como un `B16`
++   entry .b32   lee cuatro bytes, en big-endian, como un `B32`
++   entry .b64   lee ocho bytes, en big-endian, como un `B64`
++   entry .s8   lee un byte como un `S8` con signo
++   entry .s16   lee dos bytes, en big-endian, como un `S16` con signo
++   entry .s32   lee cuatro bytes, en big-endian, como un `S32` con signo
++   entry .s64   lee ocho bytes, en big-endian, como un `S64` con signo
++   entry .u8   lee un byte como un `U8` sin signo
++   entry .u16   lee dos bytes, en big-endian, como un `U16` sin signo
++   entry .u32   lee cuatro bytes, en big-endian, como un `U32` sin signo
++   entry .u64   lee ocho bytes, en big-endian, como un `U64` sin signo
++   entry .byte   lee un byte como un `Byte`
++   entry .short   lee dos bytes, en big-endian y con signo, como un `Short`
++   entry .int   lee cuatro bytes, en big-endian y con signo, como un `Int`
++   entry .long   lee ocho bytes, en big-endian y con signo, como un `Long`
++   entry .Join   la instancia que construye la derivación para un producto: una anchura total y un lector
+
+=   entry .Join   the instance derivation builds for a product: a total width and a reader
+-     detail
++     detail
+
+-         Built by `.conjunction`, which `Debufferable.derived` calls for a case class: its width
+-         is the sum of the fields' widths, and its reader reads each field in turn through the
+-         same sextant and constructs the product. Not usually named by user code.
+-     entry #width   the product's total width in bytes
+-   entry .conjunction   derives an instance for a product from its fields' instances
+-       The product half of the `ProductDerivable` derivation, which `Debufferable.derived` invokes;
+-       user code writes `Debufferable.derived` rather than calling this.
+-   entry #width   the number of bytes a value of this type occupies
+-   entry #debuffer   reads one value from a `Sextant` and advances it by `#width`
+-       Takes an exclusive `Sextant^`, since reading moves its position. A hand-written instance
+-       must declare its parameter as `Sextant^`.
++         La construye `.conjunction`, a la que llama `Debufferable.derived` para una case class:
++         su anchura es la suma de las anchuras de los campos, y su lector lee cada campo por turno
++         a través del mismo sextante y construye el producto. Normalmente el código de usuario no
++         la nombra.
++     entry #width   la anchura total del producto en bytes
++   entry .conjunction   deriva una instancia para un producto a partir de las instancias de sus campos
++       La mitad de producto de la derivación `ProductDerivable`, que invoca
++       `Debufferable.derived`; el código de usuario escribe `Debufferable.derived` en lugar de
++       llamar a esto.
++   entry #width   el número de bytes que ocupa un valor de este tipo
++   entry #debuffer   lee un valor de un `Sextant` y lo hace avanzar en `#width`
++       Toma un `Sextant^` exclusivo, ya que leer mueve su posición. Una instancia escrita a mano
++       debe declarar su parámetro como `Sextant^`.
+
+- entry .Unpackable   a typeclass for what `unpack` can read: a single value, or an array by count
++ entry .Unpackable   una clase de tipos para lo que `unpack` puede leer: un único valor, o un array por recuento
+
+= entry .Unpackable   a typeclass for what `unpack` can read: a single value, or an array by count
+-   detail
++   detail
+
+-       `unpack` and `unpackFrom` resolve `T is Unpackable`, whose `#Wrap` type says the shape of
+-       the result: for any `Debufferable` type the result is the value itself (`.debufferable`),
+-       and for a frozen array `Array[T]^{}` it is `Int -> Array[T]^{}`, a function from a count
+-       to the array (`.frozenArray`). The second is how a count-prefixed section reads as one
+-       call, with the count supplied once it is known:
++       `unpack` y `unpackFrom` resuelven `T is Unpackable`, cuyo tipo `#Wrap` dice la forma del
++       resultado: para cualquier tipo `Debufferable`, el resultado es el propio valor
++       (`.debufferable`), y para un array congelado `Array[T]^{}` es `Int -> Array[T]^{}`, una
++       función de un recuento al array (`.frozenArray`). La segunda es la manera en que una
++       sección precedida de su recuento se lee con una sola llamada, suministrando el recuento en
++       cuanto se conoce:
+
+=       call, with the count supplied once it is known:
+=
+-       ```scala
++       ```scala
+
+=       call, with the count supplied once it is known:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val data = Array[Byte](0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)
++       val data = Array[Byte](0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)
+
+=       val data = Array[Byte](0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)
+=
+-       data.sextant:
++       data.sextant:
+
+-         val read = unpack[Array[Int]^{}]
++         val read = unpack[Array[Int]^{}]
+
+-         (read(1), read(2))   // the arrays 1 and 1, 2
++         (read(1), read(2))   // the arrays 1 and 1, 2
+
+=         (read(1), read(2))   // the arrays 1 and 1, 2
+-       ```
++       ```
+
+=       ```
+-   refer polaris.Debufferable
++   refer polaris.Debufferable
+
+=   refer polaris.Debufferable
+-   refer polaris.unpack
++   refer polaris.unpack
+
+-   entry .frozenArray   reads a frozen array of `Debufferable` elements, as a function from a count
+-       Provides `Array[T]^{} is Unpackable` for any `T` with a `Debufferable` and a `ClassTag`.
+-       Its result records the data and the start offset and makes a fresh sextant each time it is
+-       applied, so the function is pure, may be applied more than once, and never advances the
+-       caller's sextant: a reader which continues after the array must `advance` past it.
+-   entry .debufferable   reads a single value of any `Debufferable` type
+-       Provides `T is Unpackable` for every `T is Debufferable`, with the value itself as the
+-       result, advancing the sextant by the type's width.
+-   entry #Wrap   the shape of the result: the value itself, or a function from a count
+-   entry #Result   the result type `unpack` gives: `Wrap[Self]`
+-   entry #unpack   reads from a `Sextant`, giving a `Wrap[Self]`
++   entry .frozenArray   lee un array congelado de elementos `Debufferable`, como función de un recuento
++       Proporciona `Array[T]^{} is Unpackable` para cualquier `T` con un `Debufferable` y un
++       `ClassTag`. Su resultado registra los datos y el desplazamiento inicial, y crea un sextante
++       nuevo cada vez que se aplica, así que la función es pura, puede aplicarse más de una vez y
++       nunca hace avanzar el sextante del llamante: un lector que continúa después del array debe
++       hacer `advance` para saltarlo.
++   entry .debufferable   lee un único valor de cualquier tipo `Debufferable`
++       Proporciona `T is Unpackable` para todo `T is Debufferable`, con el propio valor como
++       resultado, haciendo avanzar el sextante en la anchura del tipo.
++   entry #Wrap   la forma del resultado: el propio valor, o una función de un recuento
++   entry #Result   el tipo de resultado que da `unpack`: `Wrap[Self]`
++   entry #unpack   lee de un `Sextant`, dando un `Wrap[Self]`
+
+- entry .Bufferable   a typeclass for a fixed-width type which can be written to bytes
++ entry .Bufferable   una clase de tipos para un tipo de anchura fija que puede escribirse en bytes
+
+= entry .Bufferable   a typeclass for a fixed-width type which can be written to bytes
+-   detail
++   detail
+
+-       The writing counterpart to `Debufferable`: `T is Bufferable` states the `#width` a `T`
+-       occupies and `#sextant`, which writes one through a `Sextant`. Products derive their
+-       instances from their fields' with `Bufferable.derived`, as `Debufferable` does, so a
+-       layout is declared once for both directions.
++       La contrapartida de escritura de `Debufferable`: `T is Bufferable` indica el `#width` que
++       ocupa un `T` y `#sextant`, que escribe uno a través de un `Sextant`. Los productos derivan
++       sus instancias de las de sus campos con `Bufferable.derived`, como hace `Debufferable`, así
++       que una disposición se declara una sola vez para ambas direcciones.
+
+-       The companion currently declares no instances for the numeric types, so a derived product
+-       has no field instances to compose until they are supplied.
++       El objeto compañero no declara por ahora ninguna instancia para los tipos numéricos, así
++       que un producto derivado no tiene instancias de campos que componer hasta que se
++       suministren.
+
+=       has no field instances to compose until they are supplied.
+-   refer polaris.Debufferable
++   refer polaris.Debufferable
+
+-   entry .Join   the instance derivation builds for a product: a total width and a writer
++   entry .Join   la instancia que construye la derivación para un producto: una anchura total y un escritor
+
+=   entry .Join   the instance derivation builds for a product: a total width and a writer
+-     detail
++     detail
+
+-         Built by `.conjunction`, which `Bufferable.derived` calls for a case class: its width is
+-         the sum of the fields' widths, and its writer writes each field in turn through the same
+-         sextant. Not usually named by user code.
+-     entry #width   the product's total width in bytes
+-   entry .conjunction   derives an instance for a product from its fields' instances
+-       The product half of the `ProductDerivable` derivation, which `Bufferable.derived` invokes.
+-   entry #width   the number of bytes a value of this type occupies
+-   entry #sextant   writes a value through a `Sextant`
+-       Takes an exclusive `Sextant^`; a hand-written instance must declare its parameter so.
++         La construye `.conjunction`, a la que llama `Bufferable.derived` para una case class: su
++         anchura es la suma de las anchuras de los campos, y su escritor escribe cada campo por
++         turno a través del mismo sextante. Normalmente el código de usuario no la nombra.
++     entry #width   la anchura total del producto en bytes
++   entry .conjunction   deriva una instancia para un producto a partir de las instancias de sus campos
++       La mitad de producto de la derivación `ProductDerivable`, que invoca `Bufferable.derived`.
++   entry #width   el número de bytes que ocupa un valor de este tipo
++   entry #sextant   escribe un valor a través de un `Sextant`
++       Toma un `Sextant^` exclusivo; una instancia escrita a mano debe declarar así su parámetro.

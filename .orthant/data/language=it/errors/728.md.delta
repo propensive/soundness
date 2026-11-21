@@ -1,0 +1,17 @@
+orthant 1 language
+
+- # `SN-728` — Missing `Tactic[JsonRpcError]` (retired)
++ # `SN-728` — `Tactic[JsonRpcError]` mancante (ritirato)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Questo errore non esiste più. La pagina viene conservata affinché il codice non venga riutilizzato,
++ e affinché un riferimento a esso da una release precedente possa ancora essere risolto.
+
+- ## What became of it
++ ## Che fine ha fatto
+
+- Obligatory's `rpc` macro no longer raises this error: nothing in the source reported it when Soundness
+- adopted bolt codes, so it was given none.
++ La macro `rpc` di Obligatory non solleva più questo errore: nulla nel sorgente lo riportava quando
++ Soundness ha adottato i codici bolt, quindi non gliene è stato assegnato alcuno.

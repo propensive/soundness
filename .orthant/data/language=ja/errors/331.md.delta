@@ -1,0 +1,48 @@
+orthant 1 language
+
+- # `SN-331` — `OverflowError` (retired)
++ # `SN-331` — `OverflowError`（廃止）
+
+- **This code is no longer raised.** `OverflowError` and `DivisionError` were two
+- names for one concept — an arithmetic operation with no representable result — and
+- are now `Arithmetic.Error`, whose `Overflow` reason is `↯/s.27.15.2`.
++ **このコードは現在は発生しない。** `OverflowError` と `DivisionError` は一つの概念、つまり表現可能な結果を持たない算術演算を指す二つの名前であり、今では `Arithmetic.Error` であって、その `Overflow` の理由は `↯/s.27.15.2` である。
+
+- It was raised when a numeric operation would exceed the representable
+- range of its result type.
++ これは、数値演算がその結果の型の表現可能な範囲を超えるときに発生していた。
+
+- ## Cause
++ ## 原因
+
+- Hypotenuse's checked arithmetic raises this error rather than
+- silently wrapping when an addition, subtraction, multiplication,
+- or shift would overflow.
++ Hypotenuse の検査付きの算術は、加算、減算、乗算、シフトがオーバーフローするとき、黙って値を巻き戻すのではなく、このエラーを発生させる。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯SN-331] an overflow error occurred
++ [↯SN-331] an overflow error occurred
+
+= [↯SN-331] an overflow error occurred
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Use a wider numeric type for the result, or restructure the
+- computation to avoid intermediate overflow.
++ 結果により広い数値型を使うか、途中でのオーバーフローを避けるように計算を組み直す。
+
+- ## See also
++ ## 関連項目
+
+- - Superseded by: `↯/s.27.15.2` (`Arithmetic.Error`, `Overflow`)
++ - 後継：`↯/s.27.15.2`（`Arithmetic.Error`、`Overflow`）

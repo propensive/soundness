@@ -1,0 +1,55 @@
+orthant 1 language
+
+- # `↯/s.128.3` — `Xsd.Error`
++ # `↯/s.128.3` — `Xsd.Error`
+
+- Raised when an XML document cannot be read as an XML Schema.
++ Se lanza cuando un documento XML no se puede leer como un XML Schema.
+
+- ## Cause
++ ## Causa
+
+- `Xsd.parse` reads a schema document into the `Xsd` model, and reports the first construct it
+- cannot accept. The message is `the XML Schema could not be read because $reason`.
++ `Xsd.parse` lee un documento de esquema en el modelo `Xsd`, e informa de la primera construcción
++ que no puede aceptar. El mensaje es `the XML Schema could not be read because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.128.3.1`  `NotSchema`  The document element is not `schema` in the XML Schema namespace.  `[↯/s.128.3.1] the XML Schema could not be read because the document element is root, not an XML Schema`  Pass the schema document itself, with its `xs:`, `xsd:` or default prefix bound to `http://www.w3.org/2001/XMLSchema`.
+- row  `↯/s.128.3.2`  `Unexpected`  An element appears where the schema grammar does not allow it.  `[↯/s.128.3.2] the XML Schema could not be read because {http://www.w3.org/2001/XMLSchema}oops may not appear in schema`  Correct the schema, or report the construct if it is one the model does not yet read.
+- row  `↯/s.128.3.3`  `MissingAttribute`  A declaration lacks an attribute it must have, such as a global element's `name`.  `[↯/s.128.3.3] the XML Schema could not be read because the element has no name attribute`  Add the attribute.
+- row  `↯/s.128.3.4`  `BadOccurs`  A `minOccurs` or `maxOccurs` is neither a number nor `unbounded`.  `[↯/s.128.3.4] the XML Schema could not be read because lots is not a valid number of occurrences`  Use a non-negative integer, or `unbounded` for `maxOccurs`.
+- row  `↯/s.128.3.5`  `UnknownPrefix`  A `type`, `ref`, `base`, `itemType`, `memberTypes` or `substitutionGroup` uses a prefix the document does not bind.  `[↯/s.128.3.5] the XML Schema could not be read because the prefix zz is not bound to a namespace`  Declare the prefix with `xmlns:zz="…"` on the schema element or an ancestor.
+- row  `↯/s.128.3.6`  `BadFacet`  A facet's value is not of the kind the facet takes, such as a non-numeric `length`.  `[↯/s.128.3.6] the XML Schema could not be read because many is not a valid value for the maxLength facet`  Give the facet a value of the right kind.
+- row  `↯/s.128.3.7`  `Duplicate`  A global element, type, attribute or group is declared twice under one name.  `[↯/s.128.3.7] the XML Schema could not be read because the element a is declared more than once`  Remove or rename one of the declarations.
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Mensaje
++ column  Solución
++ row  `↯/s.128.3.1`  `NotSchema`  El elemento raíz del documento no es `schema` en el espacio de nombres de XML Schema.  `[↯/s.128.3.1] the XML Schema could not be read because the document element is root, not an XML Schema`  Pasa el propio documento de esquema, con su prefijo `xs:`, `xsd:` o predeterminado ligado a `http://www.w3.org/2001/XMLSchema`.
++ row  `↯/s.128.3.2`  `Unexpected`  Un elemento aparece donde la gramática del esquema no lo permite.  `[↯/s.128.3.2] the XML Schema could not be read because {http://www.w3.org/2001/XMLSchema}oops may not appear in schema`  Corrige el esquema, o informa de la construcción si es una que el modelo aún no lee.
++ row  `↯/s.128.3.3`  `MissingAttribute`  A una declaración le falta un atributo que debe tener, como el `name` de un elemento global.  `[↯/s.128.3.3] the XML Schema could not be read because the element has no name attribute`  Añade el atributo.
++ row  `↯/s.128.3.4`  `BadOccurs`  Un `minOccurs` o `maxOccurs` no es ni un número ni `unbounded`.  `[↯/s.128.3.4] the XML Schema could not be read because lots is not a valid number of occurrences`  Usa un entero no negativo, o `unbounded` para `maxOccurs`.
++ row  `↯/s.128.3.5`  `UnknownPrefix`  Un `type`, `ref`, `base`, `itemType`, `memberTypes` o `substitutionGroup` usa un prefijo que el documento no liga.  `[↯/s.128.3.5] the XML Schema could not be read because the prefix zz is not bound to a namespace`  Declara el prefijo con `xmlns:zz="…"` en el elemento del esquema o en un antecesor.
++ row  `↯/s.128.3.6`  `BadFacet`  El valor de una faceta no es de la clase que admite la faceta, como un `length` no numérico.  `[↯/s.128.3.6] the XML Schema could not be read because many is not a valid value for the maxLength facet`  Da a la faceta un valor de la clase correcta.
++ row  `↯/s.128.3.7`  `Duplicate`  Un elemento, tipo, atributo o grupo global se declara dos veces con el mismo nombre.  `[↯/s.128.3.7] the XML Schema could not be read because the element a is declared more than once`  Elimina o cambia el nombre de una de las declaraciones.
+
+- ```
++ ```
+
+- ## See also
++ ## Véase también
+
+- - [`↯/s.128.4` — `Xml.Provider.Error`](128.4.md)
++ - [`↯/s.128.4` — `Xml.Provider.Error`](128.4.md)

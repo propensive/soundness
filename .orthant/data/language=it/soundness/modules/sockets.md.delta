@@ -1,0 +1,766 @@
+orthant 1 language
+
+- ## Sockets
++ ## Socket
+
+- ### About
++ ### Panoramica
+
+- Network communication below HTTP is handled through one set of operations, which is generic
+- over the transport: raw [TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol),
+- [UDP](https://en.wikipedia.org/wiki/User_Datagram_Protocol) and
+- [Unix domain sockets](https://en.wikipedia.org/wiki/Unix_domain_socket).
++ La comunicazione di rete al di sotto di HTTP si gestisce tramite un unico insieme di operazioni,
++ generico rispetto al trasporto: [TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol)
++ grezzo, [UDP](https://en.wikipedia.org/wiki/User_Datagram_Protocol) e
++ [socket di dominio Unix](https://en.wikipedia.org/wiki/Unix_domain_socket).
+
+- A server *listens* on a socket, with a handler for each connection. A client *transmits* a
+- message and reads the reply, holds a stateful *exchange*, or opens a *duplex* connection for
+- traffic in both directions. Which transport carries the bytes is decided by the type of the
+- socket value, not by a different API.
++ Un server *ascolta* su un socket, con un handler per ogni connessione. Un client *trasmette* un
++ messaggio e legge la risposta, mantiene uno *scambio* con stato, oppure apre una connessione
++ *duplex* per il traffico in entrambe le direzioni. Quale trasporto porti i byte è deciso dal tipo
++ del valore socket, non da un'API diversa.
+
+- ### On sockets
++ ### Sui socket
+
+- Programming with sockets has a shape which is the same for every transport: bind and accept
+- on one side, connect and converse on the other. But each transport's API differs in its
+- incidentals. TCP has connections where UDP has packets, and domain sockets have paths where
+- ports have numbers. Code written against one rarely moves to another, and all of them expose
+- blocking streams whose lifetime the caller must manage precisely.
++ La programmazione con i socket ha una forma che è la stessa per ogni trasporto: bind e accept da
++ un lato, connessione e conversazione dall'altro. Ma l'API di ogni trasporto differisce nei
++ dettagli accessori. TCP ha connessioni dove UDP ha pacchetti, e i socket di dominio hanno
++ percorsi dove le porte hanno numeri. Il codice scritto per uno raramente si sposta su un altro, e
++ tutti espongono stream bloccanti la cui durata il chiamante deve gestire con precisione.
+
+- Here the shape is abstracted into [typeclasses][typeclass]. A value which is *bindable* can
+- serve, and one which is *connectable* can hold a conversation. The transports differ only in
+- which instances exist, so a protocol written over one type of socket runs over another, where
+- that makes sense.
++ Qui la forma è astratta in [typeclass]. Un valore che è *bindable* può servire, e uno che è
++ *connectable* può sostenere una conversazione. I trasporti differiscono solo per le istanze che
++ esistono, quindi un protocollo scritto su un tipo di socket funziona su un altro, dove ciò ha
++ senso.
+
+- Everything comes from the `soundness` package. [Concurrency](concurrency.md) is in scope, for
+- the handlers of connections:
++ Tutto proviene dal package `soundness`. La [concorrenza](concurrency.md) è nell'ambito, per gli
++ handler delle connessioni:
+
+= the handlers of connections:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import threads.platformThreads
++ import threads.platformThreads
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- import socketBackends.javaBaseSockets
++ import socketBackends.javaBaseSockets
+
+= import socketBackends.javaBaseSockets
+- ```
++ ```
+
+- The samples on this page open connections, so they are compiled but not run.
++ Gli esempi di questa pagina aprono connessioni, quindi sono compilati ma non eseguiti.
+
+- The operations, each covered below:
++ Le operazioni, ciascuna trattata più avanti:
+
+= The operations, each covered below:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Side
+- column  Does
+- row  `listen`  server  runs a handler for each connection or packet, for the duration of a block
+- row  `subscribe`  server  joins a multicast group and runs a handler for each datagram
+- row  `transmit`  client  sends a message and returns the reply stream
+- row  `react`  client  holds a conversation as a state machine
+- row  `duplex`  client  opens a persistent bidirectional connection
+- row  `session`  client  lends a connection to a block and closes it when the block ends
++ column  Operazione
++ column  Lato
++ column  Effetto
++ row  `listen`  server  esegue un handler per ogni connessione o pacchetto, per la durata di un blocco
++ row  `subscribe`  server  si unisce a un gruppo multicast ed esegue un handler per ogni datagramma
++ row  `transmit`  client  invia un messaggio e restituisce lo stream della risposta
++ row  `react`  client  sostiene una conversazione come macchina a stati
++ row  `duplex`  client  apre una connessione bidirezionale persistente
++ row  `session`  client  presta una connessione a un blocco e la chiude quando il blocco termina
+
+= row  `session`  client  lends a connection to a block and closes it when the block ends
+- ```
++ ```
+
+- ### Serving
++ ### Servire
+
+- `listen` binds a socket, and runs a handler for each arrival: a connection for TCP and domain
+- sockets, and a packet for UDP. Each handler runs on a task of its own. The listener runs for
+- the duration of the block which it is given, and stops when the block ends:
++ `listen` fa il bind di un socket, ed esegue un handler per ogni arrivo: una connessione per TCP e
++ per i socket di dominio, e un pacchetto per UDP. Ogni handler viene eseguito su un proprio task.
++ Il listener resta attivo per la durata del blocco che riceve, e si ferma quando il blocco termina:
+
+= the duration of the block which it is given, and stops when the block ends:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the duration of the block which it is given, and stops when the block ends:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= the duration of the block which it is given, and stops when the block ends:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- def response(request: Data): Data = request
++ def response(request: Data): Data = request
+
+= def response(request: Data): Data = request
+=
+- supervise:
++ supervise:
+
+-   val port = Port[Tcp]()
++   val port = Port[Tcp]()
+
+-   port.listen[Data](connection => response(connection.source.memoize)):
++   port.listen[Data](connection => response(connection.source.memoize)):
+
+=   port.listen[Data](connection => response(connection.source.memoize)):
+-     ()
++     ()
+
+=   port.listen[Data](connection => response(connection.source.memoize)):
+=     ()
+- ```
++ ```
+
+- `Port[Tcp]()` asks the operating system for a
+- [port which is not in use](network-addresses.md#ports).
++ `Port[Tcp]()` chiede al sistema operativo una
++ [porta che non è in uso](network-addresses.md#ports).
+
+- The endpoint decides the shape of the handler, on both sides. A stateful endpoint hands the
+- handler something which it can hold a conversation through. A stateless one hands it a
+- payload, and takes an answer back. So the same `listen` reads correctly for a TCP connection
+- and for a UDP datagram, without the handler having to state which it is dealing with.
++ L'endpoint decide la forma dell'handler, su entrambi i lati. Un endpoint con stato consegna
++ all'handler qualcosa attraverso cui sostenere una conversazione. Uno senza stato gli consegna un
++ payload, e riceve indietro una risposta. Così lo stesso `listen` si legge correttamente per una
++ connessione TCP e per un datagramma UDP, senza che l'handler debba dichiarare con quale dei due
++ ha a che fare.
+
+- A UDP handler receives a `Packet`, which is the datagram with its sender. It answers with a
+- reply, or with silence:
++ Un handler UDP riceve un `Packet`, cioè il datagramma con il suo mittente. Risponde con una
++ replica, o con il silenzio:
+
+= reply, or with silence:
+=
+- ```scala fuel
++ ```scala fuel
+
+= reply, or with silence:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= reply, or with silence:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= ##
+- supervise:
++ supervise:
+
+-   Port[Udp]().listen[Data](packet => UdpResponse.Reply(packet.data)):
++   Port[Udp]().listen[Data](packet => UdpResponse.Reply(packet.data)):
+
+=   Port[Udp]().listen[Data](packet => UdpResponse.Reply(packet.data)):
+-     ()
++     ()
+
+=   Port[Udp]().listen[Data](packet => UdpResponse.Reply(packet.data)):
+=     ()
+- ```
++ ```
+
+- So each transport is chosen by the socket value:
++ Così ogni trasporto è scelto dal valore socket:
+
+= So each transport is chosen by the socket value:
+=
+- ```tabular
++ ```tabular
+
+- column  Transport
+- column  Socket value
+- column  A handler receives
+- row  TCP  a `Port[Tcp]`, or an `Endpoint` of one to connect to  a connection
+- row  UDP  a `Port[Udp]`, or an `Endpoint` of one to send to  a `Packet`
+- row  Unix domain  a `Uds` path  a connection
++ column  Trasporto
++ column  Valore socket
++ column  Un handler riceve
++ row  TCP  un `Port[Tcp]`, o un suo `Endpoint` a cui connettersi  una connessione
++ row  UDP  un `Port[Udp]`, o un suo `Endpoint` a cui inviare  un `Packet`
++ row  Dominio Unix  un percorso `Uds`  una connessione
+
+= row  Unix domain  a `Uds` path  a connection
+- ```
++ ```
+
+- ### Clients
++ ### Client
+
+- A client which makes a request, and expects a response, sends a message and reads the stream
+- of the reply with `transmit`. A message is anything *transmissible*: bytes, text, or any value
+- which encodes to text.
++ Un client che fa una richiesta, e si aspetta una risposta, invia un messaggio e legge lo stream
++ della replica con `transmit`. Un messaggio è qualsiasi cosa sia *trasmissibile*: byte, testo, o
++ qualsiasi valore che si codifica in testo.
+
+= which encodes to text.
+=
+- ```scala fuel
++ ```scala fuel
+
+= which encodes to text.
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= which encodes to text.
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val reply: Stream[Data] over Credit = Uds(t"/run/service.sock").transmit(t"request")
++ val reply: Stream[Data] over Credit = Uds(t"/run/service.sock").transmit(t"request")
+
+= val reply: Stream[Data] over Credit = Uds(t"/run/service.sock").transmit(t"request")
+- ```
++ ```
+
+- `duplex` opens a persistent connection in both directions, sending and receiving
+- independently. It is the transport beneath [HTTP/2](http-server.md#http2):
++ `duplex` apre una connessione persistente in entrambe le direzioni, che invia e riceve in modo
++ indipendente. È il trasporto sottostante a [HTTP/2](http-server.md#http2):
+
+= independently. It is the transport beneath [HTTP/2](http-server.md#http2):
+=
+- ```scala fuel
++ ```scala fuel
+
+= independently. It is the transport beneath [HTTP/2](http-server.md#http2):
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= independently. It is the transport beneath [HTTP/2](http-server.md#http2):
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- Uds(t"/run/service.sock").duplex: duplex =>
++ Uds(t"/run/service.sock").duplex: duplex =>
+
+-   duplex.send(Stream(t"request".in[Data]))
++   duplex.send(Stream(t"request".in[Data]))
+
+-   duplex.source
++   duplex.source
+
+=   duplex.source
+- ```
++ ```
+
+- `duplex.source` is the read side, a [`Stream[Data]`](streams.md).
++ `duplex.source` è il lato di lettura, uno [`Stream[Data]`](streams.md).
+
+- ### Sessions
++ ### Sessioni
+
+- A [session] is the same idea, stated as a scope. `session` opens a connection to the target,
+- lends it to the block, and closes it when the block ends. A value which still borrows the live
+- connection cannot escape the block, while a value which has been read into memory can:
++ Una [sessione] è la stessa idea, espressa come ambito. `session` apre una connessione verso il
++ bersaglio, la presta al blocco, e la chiude quando il blocco termina. Un valore che prende ancora
++ in prestito la connessione attiva non può uscire dal blocco, mentre un valore che è stato letto in
++ memoria può farlo:
+
+= connection cannot escape the block, while a value which has been read into memory can:
+=
+- ```scala fuel
++ ```scala fuel
+
+= connection cannot escape the block, while a value which has been read into memory can:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= connection cannot escape the block, while a value which has been read into memory can:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import internetAccess.online
++ import internetAccess.online
+
+- val endpoint = ip"127.0.0.1" on Port[Tcp](8080)
++ val endpoint = ip"127.0.0.1" on Port[Tcp](8080)
+
+- val greeting: Data = endpoint.session: connection ?=>
++ val greeting: Data = endpoint.session: connection ?=>
+
+-   connection.send(Stream(t"hello".in[Data]))
++   connection.send(Stream(t"hello".in[Data]))
+
+-   connection.source.memoize
++   connection.source.memoize
+
+=   connection.source.memoize
+- ```
++ ```
+
+- An [HTTP session](http-client.md#sessions) is built on this. It is how concurrent requests
+- share one HTTP/2 connection, without a thread parked to manage it: the loan and the scope
+- coincide.
++ Una [sessione HTTP](http-client.md#sessions) è costruita su questo. È così che richieste
++ concorrenti condividono una sola connessione HTTP/2, senza un thread parcheggiato a gestirla: il
++ prestito e l'ambito coincidono.
+
+- ### Conversations as state machines
++ ### Conversazioni come macchine a stati
+
+- `react` holds a conversation on the client's side, as a state machine. Each message which is
+- received gives a `Control`, which says what happens next. `Continue` carries the new state, or
+- none, to leave it unchanged. `Terminate` ends the conversation:
++ `react` sostiene una conversazione dal lato del client, come macchina a stati. Ogni messaggio
++ ricevuto produce un `Control`, che dice cosa succede dopo. `Continue` porta il nuovo stato,
++ oppure nessuno, per lasciarlo invariato. `Terminate` conclude la conversazione:
+
+= none, to leave it unchanged. `Terminate` ends the conversation:
+=
+- ```scala fuel
++ ```scala fuel
+
+= none, to leave it unchanged. `Terminate` ends the conversation:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= none, to leave it unchanged. `Terminate` ends the conversation:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val received: Int = endpoint.react(0)[Text]: state ?=> message =>
++ val received: Int = endpoint.react(0)[Text]: state ?=> message =>
+
+-   if message == t"bye" then Control.Terminate else Control.Continue(state + 1)
++   if message == t"bye" then Control.Terminate else Control.Continue(state + 1)
+
+=   if message == t"bye" then Control.Terminate else Control.Continue(state + 1)
+- ```
++ ```
+
+- Writing a protocol in this way keeps its states explicit. They are not implied by where
+- control happens to be, in a sequence of interleaved reads and writes.
++ Scrivere un protocollo in questo modo mantiene espliciti i suoi stati. Non sono impliciti nel
++ punto in cui il controllo si trova, in una sequenza di letture e scritture intercalate.
+
+- ### Messages and their conversions
++ ### Messaggi e loro conversioni
+
+- What a socket sends and receives is not bytes, but values. `Transmissible` says how a value
+- becomes bytes on the way out. `Ingressive` says how bytes become a value on the way in. A
+- protocol is therefore written in its own vocabulary:
++ Ciò che un socket invia e riceve non sono byte, ma valori. `Transmissible` dice come un valore
++ diventa byte in uscita. `Ingressive` dice come i byte diventano un valore in entrata. Un
++ protocollo si scrive quindi nel suo stesso vocabolario:
+
+= protocol is therefore written in its own vocabulary:
+=
+- ```tabular
++ ```tabular
+
+- column  Instance
+- column  A message is received as
+- row  `Ingressive.bytes`  raw `Data`
+- row  `Ingressive.text`  text, decoded through the character encoding in scope
+- row  `Ingressive.decoder[Port]`  any type with a [`Decodable`](decoding.md) instance, here a `Port`
++ column  Istanza
++ column  Un messaggio viene ricevuto come
++ row  `Ingressive.bytes`  `Data` grezzi
++ row  `Ingressive.text`  testo, decodificato tramite la codifica dei caratteri nell'ambito
++ row  `Ingressive.decoder[Port]`  qualsiasi tipo con un'istanza [`Decodable`](decoding.md), qui un `Port`
+
+= row  `Ingressive.decoder[Port]`  any type with a [`Decodable`](decoding.md) instance, here a `Port`
+- ```
++ ```
+
+- A `Port` which is received over the wire is therefore a `Port`, validated on arrival, and not
+- text to be checked later.
++ Un `Port` ricevuto sulla connessione è quindi un `Port`, convalidato all'arrivo, e non un testo da
++ verificare in seguito.
+
+- ### Multicast
++ ### Multicast
+
+- A multicast group is subscribed to, not listened on. `subscribe` joins the group on every
+- interface which is up and capable of multicast, and runs the handler for each datagram which
+- the group delivers. It lends a `Multicast.Subscription`, which can also send to the group
+- unprompted. That is the shape of a service announcing itself, as mDNS does. A handler answers
+- to the group, to the one sender, or not at all:
++ A un gruppo multicast ci si iscrive, non ci si mette in ascolto. `subscribe` si unisce al gruppo
++ su ogni interfaccia attiva e capace di multicast, ed esegue l'handler per ogni datagramma che il
++ gruppo consegna. Presta una `Multicast.Subscription`, che può anche inviare al gruppo senza
++ sollecitazione. È la forma di un servizio che annuncia sé stesso, come fa mDNS. Un handler
++ risponde al gruppo, al solo mittente, o per niente:
+
+= to the group, to the one sender, or not at all:
+=
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+= parse
+- ##
++ ##
+
+- import socketOptions.multicastLoopSocketOption
++ import socketOptions.multicastLoopSocketOption
+
+= import socketOptions.multicastLoopSocketOption
+=
+- supervise:
++ supervise:
+
+-   val group: Multicast = Multicast(ip"224.0.0.251", udp"mdns")
++   val group: Multicast = Multicast(ip"224.0.0.251", udp"mdns")
+
+-   group.subscribe(packet => Multicast.Reply.Group(packet.data)):
++   group.subscribe(packet => Multicast.Reply.Group(packet.data)):
+
+-     summon[Multicast.Subscription].send(t"hello, group".in[Data])
++     summon[Multicast.Subscription].send(t"hello, group".in[Data])
+
+=     summon[Multicast.Subscription].send(t"hello, group".in[Data])
+- ```
++ ```
+
+- The option `multicastLoopSocketOption` lets the program see its own announcements too.
++ L'opzione `multicastLoopSocketOption` permette al programma di vedere anche i propri annunci.
+
+- The group's port is bound with reuse of the address and the port, so several programs on one
+- host can subscribe side by side, such as this one and the system's own mDNS responder. A
+- group is one address, so a protocol which is spoken over both IPv4 and IPv6 multicast
+- subscribes to two. [Service discovery](service-discovery.md) is built on this.
++ La porta del gruppo è legata con il riuso dell'indirizzo e della porta, così più programmi su un
++ host possono iscriversi l'uno accanto all'altro, come questo e il responder mDNS del sistema
++ stesso. Un gruppo è un solo indirizzo, quindi un protocollo parlato sia su multicast IPv4 sia su
++ IPv6 si iscrive a due gruppi. La [scoperta dei servizi](service-discovery.md) è costruita su
++ questo.
+
+- ### Datagram exchanges
++ ### Scambi di datagrammi
+
+- Some protocols over UDP send one datagram out, and get one back: a DNS query, or an NTP
+- request. The backend's `exchangeUdp` does exactly that, from an ephemeral port, bounded by a
+- `Socket.Option.Timeout` in scope. `coaxial.dns` builds a typed DNS client on it.
++ Alcuni protocolli su UDP inviano un datagramma e ne ricevono uno in risposta: una query DNS, o una
++ richiesta NTP. L'`exchangeUdp` del backend fa esattamente questo, da una porta effimera, entro un
++ `Socket.Option.Timeout` nell'ambito. `coaxial.dns` costruisce su di esso un client DNS tipizzato.
+
+- A nameserver is an `Endpoint` of a UDP port. `query` sends a
+- [`Dns.Message`](network-addresses.md#dns-names-and-messages), and returns the reply which
+- answers it. Given a name and a type of record, which is `A` by default, it asks the common
+- question directly, and returns the records which answer it:
++ Un nameserver è un `Endpoint` di una porta UDP. `query` invia un
++ [`Dns.Message`](network-addresses.md#dns-names-and-messages), e restituisce la replica che gli
++ risponde. Dati un nome e un tipo di record, che per impostazione predefinita è `A`, pone
++ direttamente la domanda comune, e restituisce i record che le rispondono:
+
+= question directly, and returns the records which answer it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= question directly, and returns the records which answer it:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= question directly, and returns the records which answer it:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import coaxial.query
++ import coaxial.query
+
+- val resolver = ip"9.9.9.9" on udp"domain"
++ val resolver = ip"9.9.9.9" on udp"domain"
+
+- val addresses = resolver.query(dns"example.com").map(_.rdata)
++ val addresses = resolver.query(dns"example.com").map(_.rdata)
+
+= val addresses = resolver.query(dns"example.com").map(_.rdata)
+- ```
++ ```
+
+- A reply whose ID or question differs from the query's is a stray datagram, and is a
+- `Dns.Error(Mismatch)`. A reply which never comes is a `Dns.Error(Timeout)`.
++ Una replica il cui ID o la cui domanda differisce da quella della query è un datagramma vagante,
++ ed è un `Dns.Error(Mismatch)`. Una replica che non arriva mai è un `Dns.Error(Timeout)`.
+
+- ### TLS
++ ### TLS
+
+- A TLS connection is made through a secure endpoint, and the trust policy is a
+- [contextual value]. The handshake may offer
+- [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) protocols, in
+- order of preference, and the protocol which the peer selected is reported back on the
+- connection. That is what an HTTP client uses to choose between an HTTP/2 driver and an
+- HTTP/1.1 driver over one socket. Offering nothing preserves the plain TLS handshake which
+- `wss` peers expect. [Cryptography](cryptography.md#certificates) generates the certificates
+- which a server presents.
++ Una connessione TLS si stabilisce tramite un endpoint sicuro, e la politica di fiducia è un
++ [valore contestuale]. L'handshake può offrire protocolli
++ [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation), in ordine di
++ preferenza, e il protocollo che il peer ha selezionato viene riportato sulla connessione. È ciò
++ che un client HTTP usa per scegliere tra un driver HTTP/2 e un driver HTTP/1.1 su un unico socket.
++ Non offrire niente preserva il semplice handshake TLS che i peer `wss` si aspettano. La
++ [crittografia](cryptography.md#certificates) genera i certificati che un server presenta.
+
+- ### Socket options
++ ### Opzioni dei socket
+
+- The socket options of the underlying platform, such as `SO_REUSEADDR`, keep-alive, the sizes
+- of buffers and timeouts, are typed values, collected from scope. Each is valid only for the
+- transports which support it, so an option for TCP alone cannot be applied to a UDP socket. A
+- flag is a given, imported by name:
++ Le opzioni dei socket della piattaforma sottostante, come `SO_REUSEADDR`, il keep-alive, le
++ dimensioni dei buffer e i timeout, sono valori tipizzati, raccolti dall'ambito. Ognuna è valida
++ solo per i trasporti che la supportano, quindi un'opzione solo per TCP non può essere applicata a
++ un socket UDP. Una flag è un given, importato per nome:
+
+= flag is a given, imported by name:
+=
+- ```scala
++ ```scala
+
+- import socketOptions.reuseAddressSocketOption
++ import socketOptions.reuseAddressSocketOption
+
+- import socketOptions.keepAliveSocketOption
++ import socketOptions.keepAliveSocketOption
+
+- import socketOptions.broadcastSocketOption
++ import socketOptions.broadcastSocketOption
+
+= import socketOptions.broadcastSocketOption
+- ```
++ ```
+
+- An option which carries a value is made by a method of the same package, and given at its own
+- type, as in `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)`:
++ Un'opzione che porta un valore si crea con un metodo dello stesso package, e si fornisce al suo
++ tipo, come in `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)`:
+
+= type, as in `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)`:
+=
+- ```tabular
++ ```tabular
+
+- column  Option
+- column  In scope with
+- column  Transports
+- column  For
+- row  `SO_REUSEADDR`  `reuseAddressSocketOption`  TCP, UDP, domain  a server that must restart without waiting out `TIME_WAIT`
+- row  `SO_REUSEPORT`  `reusePortSocketOption`  TCP, UDP  several sockets on one port (OS-dependent)
+- row  `TCP_NODELAY`  `noDelaySocketOption`  TCP  a protocol that must not wait for Nagle's algorithm
+- row  `SO_KEEPALIVE`  `keepAliveSocketOption`  TCP  keep-alive probes on an idle connection
+- row  `SO_BROADCAST`  `broadcastSocketOption`  UDP  sending to a broadcast address
+- row  `IP_MULTICAST_LOOP`  `multicastLoopSocketOption`  UDP  receiving our own multicast datagrams
+- row  `SO_RCVBUF`  `receiveBuffer(bytes)`  TCP, UDP, domain  the receive buffer's size
+- row  `SO_SNDBUF`  `sendBuffer(bytes)`  TCP, UDP, domain  the send buffer's size
+- row  `SO_TIMEOUT`  `timeout(milliseconds)`  TCP, UDP, domain  bounding a blocking wait
+- row  `SO_LINGER`  `linger(seconds)`  TCP, domain  how long a close waits for unsent data
+- row  `IP_TOS`  `trafficClass(value)`  TCP, UDP  the traffic class
+- row  `IP_MULTICAST_TTL`  `multicastHops(count)`  UDP  how many hops a multicast datagram travels
++ column  Opzione
++ column  Nell'ambito con
++ column  Trasporti
++ column  Per
++ row  `SO_REUSEADDR`  `reuseAddressSocketOption`  TCP, UDP, dominio  un server che deve ripartire senza attendere la fine di `TIME_WAIT`
++ row  `SO_REUSEPORT`  `reusePortSocketOption`  TCP, UDP  più socket su una porta (dipende dal sistema operativo)
++ row  `TCP_NODELAY`  `noDelaySocketOption`  TCP  un protocollo che non deve attendere l'algoritmo di Nagle
++ row  `SO_KEEPALIVE`  `keepAliveSocketOption`  TCP  sonde di keep-alive su una connessione inattiva
++ row  `SO_BROADCAST`  `broadcastSocketOption`  UDP  inviare a un indirizzo di broadcast
++ row  `IP_MULTICAST_LOOP`  `multicastLoopSocketOption`  UDP  ricevere i propri datagrammi multicast
++ row  `SO_RCVBUF`  `receiveBuffer(bytes)`  TCP, UDP, dominio  la dimensione del buffer di ricezione
++ row  `SO_SNDBUF`  `sendBuffer(bytes)`  TCP, UDP, dominio  la dimensione del buffer di invio
++ row  `SO_TIMEOUT`  `timeout(milliseconds)`  TCP, UDP, dominio  limitare un'attesa bloccante
++ row  `SO_LINGER`  `linger(seconds)`  TCP, dominio  quanto una chiusura attende i dati non inviati
++ row  `IP_TOS`  `trafficClass(value)`  TCP, UDP  la classe di traffico
++ row  `IP_MULTICAST_TTL`  `multicastHops(count)`  UDP  quanti hop percorre un datagramma multicast
+
+- row
++ row
+
+-   cell
++   cell
+
+-   cell  `datagramSize(bytes)`
++   cell  `datagramSize(bytes)`
+
+-   cell  UDP
++   cell  UDP
+
+-   cell  the largest datagram received whole: 1472 bytes unless set
++   cell  il datagramma più grande ricevuto per intero: 1472 byte se non impostato
+
+=   cell  the largest datagram received whole: 1472 bytes unless set
+- ```
++ ```
+
+- Options are collected from scope as a set, and are not passed at each call, so a program's
+- policy for its sockets is stated once. A backend silently skips an option which its platform
+- does not support, and does not fail.
++ Le opzioni si raccolgono dall'ambito come insieme, e non si passano a ogni chiamata, quindi la
++ politica di un programma per i suoi socket si dichiara una volta sola. Un backend salta in
++ silenzio un'opzione che la sua piattaforma non supporta, e non fallisce.
+
+- ### Errors
++ ### Errori
+
+- Binding can fail, because the port is in use, or permission is denied. That is a
+- `Bind.Error`. An established connection can fail while it is accepted, during transmission,
+- or as it is closed. That is a `Socket.Error`. Each names its reason, and is handled like any
+- other [error](errors.md).
++ Il bind può fallire, perché la porta è in uso o perché il permesso è negato. Questo è un
++ `Bind.Error`. Una connessione stabilita può fallire mentre viene accettata, durante la
++ trasmissione, o mentre viene chiusa. Questo è un `Socket.Error`. Ognuno indica il suo motivo, e
++ si gestisce come qualsiasi altro [errore](errors.md).
+
+- ### Choosing a backend
++ ### Scegliere un backend
+
+- Nothing above names a platform's API. The primitive operations which each role needs are
+- gathered into a `Socket.Backend`: bind and accept, connect and converse, receive and reply,
+- and dispatch a datagram. The loops which compose them stay neutral between platforms. Three
+- backends supply the same operations, so the same protocol code runs on the JVM, inside a
+- WebAssembly component, and in a native binary:
++ Niente di quanto sopra nomina l'API di una piattaforma. Le operazioni primitive di cui ogni ruolo
++ ha bisogno sono raccolte in un `Socket.Backend`: bind e accept, connessione e conversazione,
++ ricezione e risposta, e invio di un datagramma. I cicli che le compongono restano neutrali tra le
++ piattaforme. Tre backend forniscono le stesse operazioni, quindi lo stesso codice di protocollo
++ funziona sulla JVM, dentro un componente WebAssembly e in un binario nativo:
+
+= WebAssembly component, and in a native binary:
+=
+- ```tabular
++ ```tabular
+
+- column  Backend
++ column  Backend
+
+- column  Platform
+- column  Over
+- column  Unsupported
+- row  `socketBackends.javaBaseSockets`  JVM  `java.nio.channels`  nothing
+- row  `socketBackends.wasiSockets`  WebAssembly  `wasi:sockets`  Unix-domain sockets, UDP, multicast, TLS
+- row  `socketBackends.scalaNativeSockets`  Scala Native  Scala Native's sockets  Unix-domain sockets
++ column  Piattaforma
++ column  Sopra
++ column  Non supportati
++ row  `socketBackends.javaBaseSockets`  JVM  `java.nio.channels`  niente
++ row  `socketBackends.wasiSockets`  WebAssembly  `wasi:sockets`  socket di dominio Unix, UDP, multicast, TLS
++ row  `socketBackends.scalaNativeSockets`  Scala Native  i socket di Scala Native  socket di dominio Unix
+
+= row  `socketBackends.scalaNativeSockets`  Scala Native  Scala Native's sockets  Unix-domain sockets
+- ```
++ ```
+
+- An operation which a backend cannot support raises the appropriate error. It is never
+- approximated. Narrowing the platform's surface to a seam this small is
+- [decoupling](../../philosophy/decoupling.md) applied within one library.
++ Un'operazione che un backend non può supportare solleva l'errore appropriato. Non viene mai
++ approssimata. Restringere la superficie della piattaforma a una giuntura così piccola è il
++ [disaccoppiamento](../../philosophy/decoupling.md) applicato all'interno di una sola libreria.
+
+- ### Related
++ ### Correlati
+
+- - [HTTP client](http-client.md) and [HTTP server](http-server.md) are built on these sockets.
+- - [Network addresses](network-addresses.md) describes the ports, IP addresses and DNS names
+-   used here.
+- - [Streams](streams.md) describes the streams which a connection reads and writes.
+- - [RPC](rpc.md) builds typed remote calls over a connection.
++ - Il [client HTTP](http-client.md) e il [server HTTP](http-server.md) sono costruiti su questi
++   socket.
++ - [Indirizzi di rete](network-addresses.md) descrive le porte, gli indirizzi IP e i nomi DNS usati
++   qui.
++ - [Stream](streams.md) descrive gli stream che una connessione legge e scrive.
++ - [RPC](rpc.md) costruisce chiamate remote tipizzate su una connessione.

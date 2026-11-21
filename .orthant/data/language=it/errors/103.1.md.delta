@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.103.1` — `Http.Response.Error`
++ # `↯/s.103.1` — `Http.Response.Error`
+
+- Raised when Telekinesis cannot parse an HTTP response.
++ Sollevato quando Telekinesis non riesce ad analizzare una risposta HTTP.
+
+- ## Cause
++ ## Causa
+
+- After a connection is established, the response is read and parsed.
+- This error reports a malformed response. The message is `could not
++ Una volta stabilita una connessione, la risposta viene letta e analizzata. Questo errore segnala
++ una risposta malformata. Il messaggio è `could not
+
+- parse HTTP response because $reason`.
++ parse HTTP response because $reason`.
+
+- ## Variants
++ ## Varianti
+
+- ### `↯/s.103.1.1` — `Expectation`
++ ### `↯/s.103.1.1` — `Expectation`
+
+- A specific character was expected at the parser's current position
+- but a different one was encountered.
++ Nella posizione corrente del parser era atteso un carattere specifico, ma ne è stato incontrato
++ uno diverso.
+
+- **Example.** `[↯/s.103.1.1] could not parse HTTP response because X was found when : was expected`
++ **Esempio.** `[↯/s.103.1.1] could not parse HTTP response because X was found when : was expected`
+
+- **Resolution.** Confirm the server is producing valid HTTP; if the
+- peer is non-standard, point Telekinesis at a compliant implementation.
++ **Soluzione.** Verificare che il server produca HTTP valido; se il peer non è standard, puntare
++ Telekinesis verso un'implementazione conforme.
+
+- ### `↯/s.103.1.2` — `Status`
++ ### `↯/s.103.1.2` — `Status`
+
+- The HTTP status code on the response line was not three digits or
+- otherwise unparseable.
++ Il codice di stato HTTP nella riga di risposta non era di tre cifre o comunque non era
++ analizzabile.
+
+- **Example.** `[↯/s.103.1.2] could not parse HTTP response because the HTTP status code 12 was invalid`
++ **Esempio.** `[↯/s.103.1.2] could not parse HTTP response because the HTTP status code 12 was invalid`
+
+- **Resolution.** The peer is producing a non-conformant status line;
+- fix the server or use a different one.
++ **Soluzione.** Il peer produce una riga di stato non conforme; correggere il server o usarne un
++ altro.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/telekinesis/src/core/telekinesis.Http.scala`
++ - Sorgente: `lib/telekinesis/src/core/telekinesis.Http.scala`

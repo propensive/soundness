@@ -1,0 +1,64 @@
+orthant 1 language
+
+- # `↯/s.118.2` — `Mutation.Error`
++ # `↯/s.118.2` — `Mutation.Error`
+
+- Raised when an edit to a TEL document cannot be applied.
++ TEL 文書への編集を適用できないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- TEL documents are edited through mutation operations addressed by a pointer, which change
+- exactly what they name and leave the surrounding presentation alone. This error covers a
+- pointer that does not resolve and an operation that does not apply to what it names.
++ TEL 文書は、ポインターで指定される変更操作によって編集される。
++ 変更操作は名指したものだけを正確に変え、周囲の表現には手を付けない。
++ このエラーは、解決できないポインターと、名指したものに適用できない操作を扱う。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.118.2.1`  `PointerNotFound`  `[↯/s.118.2.1] the pointer does not resolve to a compound`
++ row  `↯/s.118.2.1`  `PointerNotFound`  `[↯/s.118.2.1] the pointer does not resolve to a compound`
+
+- row  `↯/s.118.2.2`  `AtomIndexOutOfRange`  `[↯/s.118.2.2] the atom index is out of range for the target compound`
++ row  `↯/s.118.2.2`  `AtomIndexOutOfRange`  `[↯/s.118.2.2] the atom index is out of range for the target compound`
+
+- row  `↯/s.118.2.3`  `RemarkAbsent`  `[↯/s.118.2.3] the target compound has no remark to remove`
++ row  `↯/s.118.2.3`  `RemarkAbsent`  `[↯/s.118.2.3] the target compound has no remark to remove`
+
+- row  `↯/s.118.2.4`  `FlagAlreadySet`  `[↯/s.118.2.4] the flag is already set on the target compound`
++ row  `↯/s.118.2.4`  `FlagAlreadySet`  `[↯/s.118.2.4] the flag is already set on the target compound`
+
+- row  `↯/s.118.2.5`  `FlagNotSet`  `[↯/s.118.2.5] the flag is not set on the target compound`
++ row  `↯/s.118.2.5`  `FlagNotSet`  `[↯/s.118.2.5] the flag is not set on the target compound`
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Check the pointer against the document — a compound removed by an earlier operation in the
+- same sequence is the usual cause. Operations apply in order, so each sees the result of
+- those before it.
++ ポインターを文書と照らし合わせて確認する。
++ よくある原因は、同じ列の中の前の操作によって削除されたコンパウンドである。
++ 操作は順に適用されるので、それぞれがその前の操作の結果を見る。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/stratiform/src/core/stratiform.Mutation.scala`
++ - ソース：`lib/stratiform/src/core/stratiform.Mutation.scala`

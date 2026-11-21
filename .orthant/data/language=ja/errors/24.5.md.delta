@@ -1,0 +1,49 @@
+orthant 1 language
+
+- # `↯/s.24.5` — `Errors`
++ # `↯/s.24.5` — `Errors`
+
+- Raised when several errors must be reported together, keyed by name.
++ 複数のエラーを、名前をキーとしてまとめて報告しなければならないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- `Errors` aggregates multiple `Error` instances into a single
+- exception, each tagged with a `Text` key. It is used in places
+- where validation collects every problem before failing — for
+- example multi-field form validation.
++ `Errors` は複数の `Error` インスタンスを一つの例外に集約し、それぞれに `Text` のキーでタグを付ける。
++ これは、失敗する前に検証がすべての問題を集める場所、たとえば複数フィールドのフォームの検証で使われる。
+
+- ## Example message
++ ## メッセージの例
+
+- The message is composed from the formatted contents of the
+- underlying error map, e.g.:
++ メッセージは、下にあるエラーのマップの内容を整形したものから組み立てられる。
++ たとえば次のとおりである：
+
+=
+- ```
++ ```
+
+- [↯/s.24.5] name: the value was not set; email: the email address is not valid because the at-symbol is missing
++ [↯/s.24.5] name: the value was not set; email: the email address is not valid because the at-symbol is missing
+
+= [↯/s.24.5] name: the value was not set; email: the email address is not valid because the at-symbol is missing
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Inspect the underlying map (`Errors.errorMap`) to handle each error
+- individually.
++ 下にあるマップ（`Errors.errorMap`）を調べて、各エラーを個別に処理する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/contingency/src/core/contingency.Errors.scala`
++ - ソース：`lib/contingency/src/core/contingency.Errors.scala`

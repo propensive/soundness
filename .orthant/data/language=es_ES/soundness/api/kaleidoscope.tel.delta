@@ -1,0 +1,1801 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base kaleidoscope
++ base kaleidoscope
+
+- import soundness
++ import soundness
+
+- info   regular expressions and globs as pattern extractors, checked and typed as the code compiles
++ info   expresiones regulares y globs como extractores de patrones, comprobados y tipados al compilar el código
+
+- detail
++ detail
+
+-     _Kaleidoscope_ writes a regular expression as `r"…"` and a glob as `g"…"`, and makes each
+-     a **pattern**: in a `match`, `case r"hello $name(.*)"` tests the text and binds `name` to
+-     what the group matched. The expression is parsed while the code compiles, so an unbalanced
+-     bracket, a `{2,1}` repetition or a capture nowhere a group follows is a compile error at
+-     the offending character, and each `$name` is typed from the pattern it stands before: a
+-     plain group binds a `Text`, a single character class or shorthand (`[aeiou]`, `\d`, `.`)
+-     binds a `Char`, a repeated group (`+`, `*`, `{n,m}`) binds a `List`, and an optional group
+-     (`?`) binds an `Optional`.
++     _Kaleidoscope_ escribe una expresión regular como `r"…"` y un glob como `g"…"`, y convierte
++     cada uno en un **patrón**: en un `match`, `case r"hello $name(.*)"` comprueba el texto y liga
++     `name` a lo que encontró el grupo. La expresión se analiza mientras se compila el código, de
++     modo que un corchete desequilibrado, una repetición `{2,1}` o una captura sin un grupo detrás
++     son un error de compilación en el carácter culpable, y cada `$name` se tipa a partir del
++     patrón que tiene delante: un grupo simple liga un `Text`, una sola clase de caracteres o una
++     abreviatura (`[aeiou]`, `\d`, `.`) liga un `Char`, un grupo repetido (`+`, `*`, `{n,m}`) liga
++     un `List`, y un grupo opcional (`?`) liga un `Optional`.
+
+=     (`?`) binds an `Optional`.
+=
+-     ```scala
++     ```scala
+
+=     (`?`) binds an `Optional`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"hello world" match
++     t"hello world" match
+
+-       case r"$first(hello) $second(world)" => List(first, second)   // List(t"hello", t"world")
++       case r"$first(hello) $second(world)" => List(first, second)   // List(t"hello", t"world")
+
+-       case _                               => Nil
++       case _                               => Nil
+
+-     t"act123scene" match
++     t"act123scene" match
+
+-       case r"act$digits\d+scene" => digits   // List('1', '2', '3')
++       case r"act$digits\d+scene" => digits   // List('1', '2', '3')
+
+-       case _                     => Nil
++       case _                     => Nil
+
+=       case _                     => Nil
+-     ```
++     ```
+
+-     Outside a pattern the same interpolators are expressions whose value is a `Regex`: its
+-     source `pattern`, the position and nature of every `Regex.Group`, and the matching methods
+-     `matches`, `seek` and `search`. `Regex` is the type Soundness uses wherever a regular
+-     expression is meant, and `Text` is never used for one, so a signature such as gossamer's
+-     `sub(from: Regex, to: Text)` says which of its arguments is a pattern. A `Glob` is the
+-     wildcard syntax of file paths — `*` within a segment, `**` across segments, `?` for one
+-     character, `[a-z]` and `[!a-z]` — translated to a regular expression.
++     Fuera de un patrón, los mismos interpoladores son expresiones cuyo valor es un `Regex`: su
++     `pattern` de origen, la posición y la naturaleza de cada `Regex.Group`, y los métodos de
++     búsqueda `matches`, `seek` y `search`. `Regex` es el tipo que Soundness usa siempre que se
++     trata de una expresión regular, y nunca se usa `Text` para ello, así que una signatura como
++     `sub(from: Regex, to: Text)` de gossamer dice cuál de sus argumentos es un patrón. Un `Glob`
++     es la sintaxis de comodines de las rutas de fichero —`*` dentro de un segmento, `**` a través
++     de segmentos, `?` para un carácter, `[a-z]` y `[!a-z]`— traducida a una expresión regular.
+
+-     A regex is tagged with its **engine** as the `Form` of a `Regex in JavaBaseRegex` or a
+-     `Regex in Re2`, and the `Regex.Engine` typeclass for that form does the matching. The
+-     default is `JavaBaseRegex`, the platform's `java.util.regex`, whose backtracking accepts
+-     every construct of its syntax but can take exponential time on a pathological pattern and
+-     input. `Re2` is praxinoscope's automaton engine, which matches in time linear in the input
+-     and rejects, at compile time for a literal, the constructs an automaton cannot express
+-     (backreferences, lookaround, possessive quantifiers, atomic groups). The engine of a literal
+-     is chosen by importing one `Regex.Backend` given from the `regexBackends` package by name,
+-     since `import soundness.*` imports no givens; a `Regex` built at runtime is retagged with
+-     `Regex#re2`.
++     Una regex lleva la etiqueta de su **motor** como `Form` de un `Regex in JavaBaseRegex` o
++     de un `Regex in Re2`, y la clase de tipos `Regex.Engine` de esa forma realiza la búsqueda. El
++     motor por defecto es `JavaBaseRegex`, el `java.util.regex` de la plataforma, cuyo
++     backtracking acepta todas las construcciones de su sintaxis pero puede tardar un tiempo
++     exponencial con un patrón y una entrada patológicos. `Re2` es el motor de autómatas de
++     praxinoscope, que busca en un tiempo lineal en la entrada y rechaza, en tiempo de compilación
++     si es un literal, las construcciones que un autómata no puede expresar (referencias hacia
++     atrás, lookaround, cuantificadores posesivos, grupos atómicos). El motor de un literal se
++     elige importando por nombre un given `Regex.Backend` del paquete `regexBackends`, puesto que
++     `import soundness.*` no importa givens; un `Regex` construido en tiempo de ejecución se
++     reetiqueta con `Regex#re2`.
+
+=     `Regex#re2`.
+=
+-     ```scala
++     ```scala
+
+=     `Regex#re2`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import regexBackends.re2
++     import regexBackends.re2
+
+-     val greeting: Regex in Re2 = r"hello (.*)"
++     val greeting: Regex in Re2 = r"hello (.*)"
+
+-     greeting.matches(t"hello world")   // true, in time linear in the input
++     greeting.matches(t"hello world")   // true, in time linear in the input
+
+-     r"a*".subsumes(r"aa")              // true: every input `aa` matches, `a*` matches too
++     r"a*".subsumes(r"aa")              // true: every input `aa` matches, `a*` matches too
+
+=     r"a*".subsumes(r"aa")              // true: every input `aa` matches, `a*` matches too
+-     ```
++     ```
+
+-     The library is a single source set, `kaleidoscope.core`, which compiles for the JVM,
+-     Scala.js and Scala Native, taking `java.util.regex` or the platform's emulation of it. A
+-     stateful match — gossamer's `extract`, which walks through successive matches of a text —
+-     drives the extractors through a `Scanner`, a mutable cursor held exclusively. Everything is
+-     exported to the `soundness` umbrella, and `regexBackends` merges with the umbrella's own
+-     package of that name, so a program writes `import soundness.*` and then, if it wants the
+-     linear-time engine, `import regexBackends.re2`.
++     La biblioteca es un único conjunto de fuentes, `kaleidoscope.core`, que compila para la JVM,
++     Scala.js y Scala Native, y usa `java.util.regex` o la emulación que la plataforma haga de él.
++     Una búsqueda con estado —el `extract` de gossamer, que recorre las coincidencias sucesivas de
++     un texto— dirige los extractores a través de un `Scanner`, un cursor mutable que se posee en
++     exclusiva. Todo se exporta al paraguas `soundness`, y `regexBackends` se fusiona con el
++     paquete homónimo del propio paraguas, así que un programa escribe `import soundness.*` y
++     después, si quiere el motor de tiempo lineal, `import regexBackends.re2`.
+
+- refer kaleidoscope.Regex
++ refer kaleidoscope.Regex
+
+- refer kaleidoscope.Glob
++ refer kaleidoscope.Glob
+
+- refer kaleidoscope.r
++ refer kaleidoscope.r
+
+- refer kaleidoscope.g
++ refer kaleidoscope.g
+
+- refer kaleidoscope.regexBackends
++ refer kaleidoscope.regexBackends
+
+- refer praxinoscope.Motif
++ refer praxinoscope.Motif
+
+- entry .r   the `r"…"` interpolator: a regular expression as a pattern, or as a `Regex` value
+-     `r"…"` is a transparent inline extension on `StringContext` which parses the regular
+-     expression as the code compiles. In a `case`, it is an extractor: the pattern must match
+-     the whole text (through the `Scanner` given in scope; see `Scanner`), and each
+-     `$name` binds the capturing group written immediately after it. In expression position it
+-     is a `Regex in JavaBaseRegex`, or a `Regex in Re2` when `regexBackends.re2` is imported.
++ entry .r   el interpolador `r"…"`: una expresión regular como patrón, o como valor `Regex`
++     `r"…"` es una extensión transparent inline sobre `StringContext` que analiza la expresión
++     regular mientras se compila el código. En un `case` es un extractor: el patrón debe
++     coincidir con el texto entero (mediante el `Scanner` given en el ámbito; véase `Scanner`), y
++     cada `$name` liga el grupo de captura escrito inmediatamente después. En posición de
++     expresión es un `Regex in JavaBaseRegex`, o un `Regex in Re2` cuando se importa
++     `regexBackends.re2`.
+
+-     A `$name` must stand directly before a group, a character class, `.` or one of the
+-     shorthands `\d`, `\D`, `\w`, `\W`, `\s`, `\S`; the type of the binding follows from what
+-     it precedes and the quantifier after it.
++     Un `$name` debe ir justo delante de un grupo, una clase de caracteres, `.` o una de las
++     abreviaturas `\d`, `\D`, `\w`, `\W`, `\s`, `\S`; el tipo de la ligadura se deduce de lo que
++     precede y del cuantificador que lo sigue.
+
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     frame
++     frame
+
+-       label A literal pattern, matched or not
++       label Un patrón literal, coincida o no
+
+=       label A literal pattern, matched or not
+-       code
++       code
+
+=       label A literal pattern, matched or not
+=       code
+-           t"act5scene" match
++           t"act5scene" match
+
+-             case r"act\dscene" => true
++             case r"act\dscene" => true
+
+-             case _             => false
++             case _             => false
+
+-           // true
++           // true
+
+=           // true
+-     frame
++     frame
+
+-       label A shorthand bound to `digit`: a `Char`
++       label Una abreviatura ligada a `digit`: un `Char`
+
+=       label A shorthand bound to `digit`: a `Char`
+-       code
++       code
+
+=       label A shorthand bound to `digit`: a `Char`
+=       code
+-           t"act5scene" match
++           t"act5scene" match
+
+-             case r"act$digit\dscene" => digit
++             case r"act$digit\dscene" => digit
+
+-             case _                   => ' '
++             case _                   => ' '
+
+-           // '5'
++           // '5'
+
+=           // '5'
+-     frame
++     frame
+
+-       label Repeated with `+`: a `List[Char]`
++       label Repetido con `+`: un `List[Char]`
+
+=       label Repeated with `+`: a `List[Char]`
+-       code
++       code
+
+=       label Repeated with `+`: a `List[Char]`
+=       code
+-           t"act123scene" match
++           t"act123scene" match
+
+-             case r"act$digits\d+scene" => digits
++             case r"act$digits\d+scene" => digits
+
+-             case _                     => Nil
++             case _                     => Nil
+
+-           // List('1', '2', '3')
++           // List('1', '2', '3')
+
+=           // List('1', '2', '3')
+-     frame
++     frame
+
+-       label Made optional with `?`: an `Optional[Char]`
++       label Hecho opcional con `?`: un `Optional[Char]`
+
+=       label Made optional with `?`: an `Optional[Char]`
+-       code
++       code
+
+-           t"actscene" match
++           t"actscene" match
+
+-             case r"act$digit\d?scene" => digit
++             case r"act$digit\d?scene" => digit
+
+-             case _                    => Unset
++             case _                    => Unset
+
+-           // Unset
++           // Unset
+
+=           // Unset
+-     frame
++     frame
+
+-       label A second group, in parentheses: a `Text`, and the two bind as a pair
++       label Un segundo grupo, entre paréntesis: un `Text`, y los dos se ligan como un par
+
+=       label A second group, in parentheses: a `Text`, and the two bind as a pair
+-       code
++       code
+
+=       label A second group, in parentheses: a `Text`, and the two bind as a pair
+=       code
+-           t"act123scene" match
++           t"act123scene" match
+
+-             case r"act$digits\d+$word(scene)" => (digits, word)
++             case r"act$digits\d+$word(scene)" => (digits, word)
+
+-             case _                            => (Nil, t"")
++             case _                            => (Nil, t"")
+
+-           // (List('1', '2', '3'), t"scene")
++           // (List('1', '2', '3'), t"scene")
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     A group with no `$name` is matched but not bound, so `r"(hello) $second(world)"` requires
+-     the first word and binds only the second. Groups nest, as `r"(($first(hello)) world)"`
+-     does. A capture inside a repeating group is forbidden (`Regex.Error.Reason.Uncapturable`),
+-     since it cannot bind a fixed set of variables. On the left of a `val`, a pattern asserts
+-     that the extraction succeeds and binds all its captures at once:
++     Un grupo sin `$name` se busca pero no se liga, así que `r"(hello) $second(world)"` exige la
++     primera palabra y liga solo la segunda. Los grupos se anidan, como hace
++     `r"(($first(hello)) world)"`. Se prohíbe una captura dentro de un grupo que se repite
++     (`Regex.Error.Reason.Uncapturable`), ya que no puede ligar un conjunto fijo de variables. A la
++     izquierda de un `val`, un patrón afirma que la extracción tiene éxito y liga todas sus
++     capturas a la vez:
+
+=     that the extraction succeeds and binds all its captures at once:
+=
+-     ```scala
++     ```scala
+
+=     that the extraction succeeds and binds all its captures at once:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val r"$prefix([a-z0-9._%+-]+)@$domain([a-z0-9.-]+)\.$tld([a-z]{2,6})" =
++     val r"$prefix([a-z0-9._%+-]+)@$domain([a-z0-9.-]+)\.$tld([a-z]{2,6})" =
+
+-       t"test@example.com": @unchecked
++       t"test@example.com": @unchecked
+
+-     List(prefix, domain, tld)   // List(t"test", t"example", t"com")
++     List(prefix, domain, tld)   // List(t"test", t"example", t"com")
+
+=     List(prefix, domain, tld)   // List(t"test", t"example", t"com")
+-     ```
++     ```
+
+-     Inside `r"…"` a backslash is a backslash — only the regular expression's own escaping
+-     applies, so a literal parenthesis is `r"\("` — and `$` is written `$$` to mean itself. A
+-     pattern which does not parse is a compile error naming the reason and pointing at the
+-     offending character, _[↯/s.34.1.1] the regular expression could not be parsed because a
+-     capturing group was not closed at 11_; a `$name` with no group after it is
+-     _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_. Under
+-     `regexBackends.re2` the pattern is also checked against the RE2 subset, so a
+-     backreference or a lookaround is rejected at compile time rather than at its first use.
++     Dentro de `r"…"` una barra invertida es una barra invertida —solo se aplica el escape propio
++     de la expresión regular, así que un paréntesis literal es `r"\("`— y `$` se escribe `$$` para
++     significarse a sí mismo. Un patrón que no se puede analizar es un error de compilación que
++     nombra el motivo y señala el carácter culpable, _[↯/s.34.1.1] the regular expression could
++     not be parsed because a capturing group was not closed at 11_; un `$name` sin grupo detrás es
++     _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_. Con
++     `regexBackends.re2`, el patrón se comprueba además frente al subconjunto de RE2, así que una
++     referencia hacia atrás o un lookaround se rechazan en tiempo de compilación y no en su primer
++     uso.
+
+=     backreference or a lookaround is rejected at compile time rather than at its first use.
+=
+-     ```scala
++     ```scala
+
+=     backreference or a lookaround is rejected at compile time rather than at its first use.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"" match { case r"hello(world" => () }   // does not compile
++     t"" match { case r"hello(world" => () }   // does not compile
+
+=     t"" match { case r"hello(world" => () }   // does not compile
+-     ```
++     ```
+
+-     A `Regex` value used in a pattern (`case ipAddress() =>`) matches as a whole and binds no
+-     groups; captures are available only where the pattern is written literally, since that is
+-     where the compiler can see them.
++     Un valor `Regex` usado en un patrón (`case ipAddress() =>`) coincide como un todo y no liga
++     grupos; las capturas solo están disponibles donde el patrón se escribe literalmente, ya que
++     es ahí donde el compilador puede verlas.
+
+- entry .g   the `g"…"` interpolator: a glob as a pattern, or as a `Regex` value
+-     `g"…"` writes a glob — the wildcard syntax of file paths — and is otherwise `r"…"`: a
+-     pattern in a `case`, a `Regex` in expression position, and compiled under the engine
+-     `regexBackends` selects. `*` matches any run of characters other than `/` and `\`, `**`
+-     matches across segments, `?` matches exactly one character other than a separator, `[a-z]`
+-     is a range and `[!a-z]` its negation, and every other character is itself. A `$name` binds
+-     one path segment (anything up to the next separator), so it needs no group after it.
++ entry .g   el interpolador `g"…"`: un glob como patrón, o como valor `Regex`
++     `g"…"` escribe un glob —la sintaxis de comodines de las rutas de fichero— y por lo demás es
++     `r"…"`: un patrón en un `case`, un `Regex` en posición de expresión, y compilado con el motor
++     que selecciona `regexBackends`. `*` coincide con cualquier serie de caracteres distintos de
++     `/` y `\`, `**` coincide a través de segmentos, `?` coincide exactamente con un carácter que
++     no sea un separador, `[a-z]` es un rango y `[!a-z]` su negación, y cualquier otro carácter es
++     él mismo. Un `$name` liga un segmento de la ruta (todo hasta el siguiente separador), así que
++     no necesita un grupo detrás.
+
+=     one path segment (anything up to the next separator), so it needs no group after it.
+=
+-     ```scala
++     ```scala
+
+=     one path segment (anything up to the next separator), so it needs no group after it.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     import soundness.*
+=
+-     t"/home/work/docs" match
++     t"/home/work/docs" match
+
+-       case g"/$home/$work/docs" => (home, work)   // (t"home", t"work")
++       case g"/$home/$work/docs" => (home, work)   // (t"home", t"work")
+
+-       case _                    => (t"", t"")
++       case _                    => (t"", t"")
+
+=       case _                    => (t"", t"")
+=
+-     t"/home/work/docs" match
++     t"/home/work/docs" match
+
+-       case g"/$home/**" => home   // t"home"
++       case g"/$home/**" => home   // t"home"
+
+-       case _            => t""
++       case _            => t""
+
+-     t"file.txt" match
++     t"file.txt" match
+
+-       case g"*.txt" => true
++       case g"*.txt" => true
+
+-       case _        => false
++       case _        => false
+
+=       case _        => false
+-     ```
++     ```
+
+-     A glob and a regular expression which translate to the same pattern are equal —
+-     `g".local/*" == r"\.local/[^/\\]*"` — and `Glob.parse(text).regex` shows the translation.
+-     A glob is total: every text is a glob, so `g"…"` never fails to compile.
++     Un glob y una expresión regular que se traducen al mismo patrón son iguales
++     —`g".local/*" == r"\.local/[^/\\]*"`— y `Glob.parse(text).regex` muestra la traducción. Un
++     glob es total: todo texto es un glob, así que `g"…"` nunca deja de compilar.
+
+- entry .regexBackends   the two matching engines, each a given to import by name
++ entry .regexBackends   los dos motores de búsqueda, cada uno un given que se importa por nombre
+
+= entry .regexBackends   the two matching engines, each a given to import by name
+-   detail
++   detail
+
+-       Which engine a literal pattern compiles for is decided while the code compiles, by the
+-       `Regex.Backend` given in scope, and `import soundness.*` brings neither in: the default,
+-       with no import, is `java.util.regex`, and the linear-time engine is chosen by name.
++       El motor para el que se compila un patrón literal se decide mientras se compila el código,
++       mediante el given `Regex.Backend` del ámbito, e `import soundness.*` no trae ninguno: el
++       motor por defecto, sin importación, es `java.util.regex`, y el motor de tiempo lineal se
++       elige por nombre.
+
+=       with no import, is `java.util.regex`, and the linear-time engine is chosen by name.
+=
+-       ```scala
++       ```scala
+
+=       with no import, is `java.util.regex`, and the linear-time engine is chosen by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       with no import, is `java.util.regex`, and the linear-time engine is chosen by name.
+=
+=       ```scala
+=       import soundness.*
+-       import regexBackends.re2
++       import regexBackends.re2
+
+-       t"hello world" match
++       t"hello world" match
+
+-         case r"hello $name(.*)" => name   // t"world", in time linear in the input
++         case r"hello $name(.*)" => name   // t"world", in time linear in the input
+
+-         case _                  => t""
++         case _                  => t""
+
+=         case _                  => t""
+-       ```
++       ```
+
+-       The two engines agree on which inputs match, where a match begins and ends, and what
+-       each capture group binds, for every pattern both accept. They differ in what they
+-       accept: `java.util.regex` takes backreferences, lookaround, possessive quantifiers and
+-       atomic groups, and may take exponential time on a pathological pattern; RE2 rejects
+-       those constructs at compile time and is linear in the input, and additionally offers
+-       the `subsumes` and `intersects` analyses on a `Regex in Re2`. The import is scoped like
+-       any other, so one block of a file can use RE2 while the rest keeps the default.
++       Los dos motores coinciden en qué entradas coinciden, dónde empieza y termina una
++       coincidencia y qué liga cada grupo de captura, para todo patrón que ambos acepten. Difieren
++       en lo que aceptan: `java.util.regex` admite referencias hacia atrás, lookaround,
++       cuantificadores posesivos y grupos atómicos, y puede tardar un tiempo exponencial con un
++       patrón patológico; RE2 rechaza esas construcciones en tiempo de compilación y es lineal en
++       la entrada, y además ofrece los análisis `subsumes` e `intersects` sobre un `Regex in Re2`.
++       La importación tiene ámbito como cualquier otra, así que un bloque de un fichero puede usar
++       RE2 mientras el resto conserva el motor por defecto.
+
+-       The same literal gives the same answer under either engine, and has a different type:
++       El mismo literal da la misma respuesta con cualquiera de los dos motores, y tiene un tipo
++       distinto:
+
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative `java.util.regex`
++       alternative `java.util.regex`
+
+=       alternative `java.util.regex`
+-         code
++         code
+
+-             val regex = r"(a|b)*c"
++             val regex = r"(a|b)*c"
+
+-             // regex: Regex in JavaBaseRegex
++             // regex: Regex in JavaBaseRegex
+
+-             regex.matches(t"ababc")   // true
++             regex.matches(t"ababc")   // true
+
+-       alternative RE2
++       alternative RE2
+
+=       alternative RE2
+-         code
++         code
+
+-             locally:
++             locally:
+
+-               import regexBackends.re2
++               import regexBackends.re2
+
+-               val regex = r"(a|b)*c"
++               val regex = r"(a|b)*c"
+
+-               // regex: Regex in Re2
++               // regex: Regex in Re2
+
+-               regex.matches(t"ababc")   // true
++               regex.matches(t"ababc")   // true
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       A construct RE2 cannot express is a compile error, not a runtime surprise:
++       Una construcción que RE2 no puede expresar es un error de compilación, no una sorpresa en
++       tiempo de ejecución:
+
+=       A construct RE2 cannot express is a compile error, not a runtime surprise:
+=
+-       ```scala
++       ```scala
+
+-       locally:
++       locally:
+
+-         import regexBackends.re2
++         import regexBackends.re2
+
+-         r"(a)\1"   // does not compile: backreferences are not part of RE2 syntax
++         r"(a)\1"   // does not compile: backreferences are not part of RE2 syntax
+
+=         r"(a)\1"   // does not compile: backreferences are not part of RE2 syntax
+-       ```
++       ```
+
+-   entry .javaBaseRegex   the platform's `java.util.regex` engine: the default, so the import is rarely needed
+-       `Regex.Backend[JavaBaseRegex]`, the engine a literal compiles for when nothing is imported.
+-       It exists so that the default can be named — in a scope which has imported `re2` and
+-       wants one literal under the backtracking engine, say — and as `Glob#matches`'s default.
+-   entry .re2   praxinoscope's RE2 engine: linear-time matching, the RE2 subset, checked as the code compiles
+-       `Regex.Backend[Re2]`. With it imported, every `r"…"` and `g"…"` in scope is parsed into
+-       its praxinoscope `Motif` while the code compiles, rejected there if it uses a
+-       backreference, lookaround, a possessive quantifier or an atomic group, and staged into
+-       the extractor so that no parsing or compilation happens at runtime. A literal with no
+-       captures is further compiled to a static finite automaton (`Fsa`), an allocation-free
+-       whole-input test, when its state count stays within the generator's budget. A literal in
+-       expression position is a `Regex in Re2`, on which `subsumes` and `intersects` are
+-       available.
++   entry .javaBaseRegex   el motor `java.util.regex` de la plataforma: el de por defecto, así que la importación rara vez hace falta
++       `Regex.Backend[JavaBaseRegex]`, el motor para el que se compila un literal cuando no se
++       importa nada. Existe para que el motor por defecto pueda nombrarse —en un ámbito que ha
++       importado `re2` y quiere un literal con el motor de backtracking, por ejemplo— y como valor
++       por defecto de `Glob#matches`.
++   entry .re2   el motor RE2 de praxinoscope: búsqueda en tiempo lineal, el subconjunto de RE2, comprobado al compilar el código
++       `Regex.Backend[Re2]`. Con él importado, cada `r"…"` y `g"…"` del ámbito se analiza para
++       obtener su `Motif` de praxinoscope mientras se compila el código, se rechaza ahí si usa una
++       referencia hacia atrás, lookaround, un cuantificador posesivo o un grupo atómico, y se
++       incorpora por etapas al extractor, de modo que en tiempo de ejecución no se analiza ni se
++       compila nada. Un literal sin capturas se compila además a un autómata finito estático
++       (`Fsa`), una comprobación de la entrada entera sin asignaciones de memoria, cuando su número
++       de estados no supera el presupuesto del generador. Un literal en posición de expresión es un
++       `Regex in Re2`, sobre el que están disponibles `subsumes` e `intersects`.
+
+- entry .Regex   a parsed regular expression: its pattern, its groups, and matching through its engine
++ entry .Regex   una expresión regular analizada: su patrón, sus grupos y la búsqueda mediante su motor
+
+= entry .Regex   a parsed regular expression: its pattern, its groups, and matching through its engine
+-   detail
++   detail
+
+-       A `Regex` is the source `#pattern` as `Text` and the tree of its `#groups`, each a
+-       `Regex.Group` recording the offsets of a parenthesised group, a character class or a
+-       single-character token, its quantifier and greed, and whether it is captured by a
+-       `$name`. It is the value of an `r"…"` or `g"…"` in expression position, and is built at
+-       runtime from text with `.apply` or `.parse`, which raise `Regex.Error` at the position
+-       and for the reason a pattern cannot be parsed.
++       Un `Regex` es el `#pattern` de origen como `Text` y el árbol de sus `#groups`, cada uno un
++       `Regex.Group` que registra los desplazamientos de un grupo entre paréntesis, una clase de
++       caracteres o un token de un solo carácter, su cuantificador y su avidez, y si lo captura un
++       `$name`. Es el valor de un `r"…"` o un `g"…"` en posición de expresión, y se construye en
++       tiempo de ejecución a partir de texto con `.apply` o `.parse`, que lanzan `Regex.Error` en
++       la posición y por el motivo por los que un patrón no se puede analizar.
+
+-       A regex is `Formal`: its `Form` type member names the engine which matches it, and the
+-       operations `#matches`, `#seek` and `#search` take a `Form is Regex.Engine` which resolves
+-       from that tag. A `Regex in JavaBaseRegex` — the type of `.apply`, `.parse` and every
+-       literal compiled without `regexBackends.re2` — dispatches to `java.util.regex`; a
+-       `Regex in Re2` dispatches to praxinoscope, and is made from a literal under
+-       `import regexBackends.re2` or from any regex with `#re2`, which checks the pattern
+-       against the RE2 subset as it retags. A bare `Regex` has no engine and cannot match.
++       Una regex es `Formal`: su miembro de tipo `Form` nombra el motor que la busca, y las
++       operaciones `#matches`, `#seek` y `#search` toman un `Form is Regex.Engine` que se resuelve
++       a partir de esa etiqueta. Un `Regex in JavaBaseRegex` —el tipo de `.apply`, de `.parse` y de
++       todo literal compilado sin `regexBackends.re2`— despacha a `java.util.regex`; un
++       `Regex in Re2` despacha a praxinoscope, y se obtiene de un literal con
++       `import regexBackends.re2` o de cualquier regex con `#re2`, que comprueba el patrón frente
++       al subconjunto de RE2 al reetiquetarlo. Un `Regex` a secas no tiene motor y no puede buscar.
+
+=       against the RE2 subset as it retags. A bare `Regex` has no engine and cannot match.
+=
+-       ```scala
++       ```scala
+
+=       against the RE2 subset as it retags. A bare `Regex` has no engine and cannot match.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       against the RE2 subset as it retags. A bare `Regex` has no engine and cannot match.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val regex: Regex in JavaBaseRegex = Regex(t"[a-z]+@[a-z]+\\.com")
++       val regex: Regex in JavaBaseRegex = Regex(t"[a-z]+@[a-z]+\\.com")
+
+-       regex.matches(t"hamlet@example.com")          // true
++       regex.matches(t"hamlet@example.com")          // true
+
+-       regex.seek(t"mail hamlet@example.com now")    // the interval of the match
++       regex.seek(t"mail hamlet@example.com now")    // the interval of the match
+
+-       regex.search(t"a@b.com, c@d.com")             // a chain of two intervals
++       regex.search(t"a@b.com, c@d.com")             // a chain of two intervals
+
+-       val linear: Regex in Re2 = regex.re2
++       val linear: Regex in Re2 = regex.re2
+
+-       linear.matches(t"hamlet@example.com")         // true, in linear time
++       linear.matches(t"hamlet@example.com")         // true, in linear time
+
+=       linear.matches(t"hamlet@example.com")         // true, in linear time
+-       ```
++       ```
+
+-       The matching operations are methods rather than extensions so that they can never be
+-       shadowed by the generic collection extensions of the same names, `seek` and `search`,
+-       which the `soundness` package also exports. Two regexes are equal when their patterns
+-       and group trees are, so `g".local/*" == r"\.local/[^/\\]*"` holds, but `r"[xy]"` and
+-       `r"[yx]"` are unequal though they match the same inputs.
++       Las operaciones de búsqueda son métodos y no extensiones para que nunca puedan quedar
++       ocultas por las extensiones genéricas de colecciones de los mismos nombres, `seek` y
++       `search`, que el paquete `soundness` también exporta. Dos regex son iguales cuando lo son
++       sus patrones y sus árboles de grupos, así que `g".local/*" == r"\.local/[^/\\]*"` se cumple,
++       pero `r"[xy]"` y `r"[yx]"` son distintas aunque coincidan con las mismas entradas.
+
+-       `Regex` is used throughout Soundness wherever a pattern is meant: gossamer's `sub`,
+-       `cut` and `search` on `Text` take one, and jacinta's JSON blueprints type their `regex`
+-       accessors as `Regex in JavaBaseRegex`.
++       `Regex` se usa en todo Soundness donde se quiere decir un patrón: `sub`, `cut` y `search` de
++       gossamer sobre `Text` toman uno, y los blueprints JSON de jacinta tipan sus accesores `regex`
++       como `Regex in JavaBaseRegex`.
+
+-   refer kaleidoscope.r
++   refer kaleidoscope.r
+
+=   refer kaleidoscope.r
+-   refer kaleidoscope.regexBackends
++   refer kaleidoscope.regexBackends
+
+-   refer kaleidoscope.JavaBaseRegex
++   refer kaleidoscope.JavaBaseRegex
+
+-   refer praxinoscope.Re2
++   refer praxinoscope.Re2
+
+-   refer praxinoscope.Motif
++   refer praxinoscope.Motif
+
+-   entry .apply   parses one text as a regular expression for the `java.util.regex` engine
+-       `Regex(text)` is `Regex.parse(List(text))`: a `Regex in JavaBaseRegex` with no captured
+-       groups, or `Regex.Error` raised through a `Tactic[Regex.Error]` when the text does not
+-       parse. For a pattern known as the code is written, `r"…"` checks it at compile time
+-       instead.
++   entry .apply   analiza un texto como expresión regular para el motor `java.util.regex`
++       `Regex(text)` es `Regex.parse(List(text))`: un `Regex in JavaBaseRegex` sin grupos
++       capturados, o `Regex.Error` lanzado mediante una `Tactic[Regex.Error]` cuando el texto no
++       se puede analizar. Para un patrón conocido al escribir el código, `r"…"` lo comprueba en
++       cambio en tiempo de compilación.
+
+=       instead.
+=
+-       ```scala
++       ```scala
+
+=       instead.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       instead.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Regex(t"ab{3,1}c")   // raises Regex.Error(5, BadRepetition)
++       Regex(t"ab{3,1}c")   // raises Regex.Error(5, BadRepetition)
+
+=       Regex(t"ab{3,1}c")   // raises Regex.Error(5, BadRepetition)
+-       ```
++       ```
+
+-   entry .parse   parses the parts of an interpolated pattern, each boundary marking a captured group
+-       `Regex.parse(parts)` is the parser behind `r"…"`, available at runtime. The parts are the
+-       pieces of the pattern between its `$name` substitutions, so each part after the first
+-       must begin with a group, a character class, `.` or a `\d`-style shorthand
+-       (`Regex.Error.Reason.ExpectedGroup` otherwise), and that element is marked as captured.
+-       The result is a `Regex in JavaBaseRegex` and needs a `Tactic[Regex.Error]`.
++   entry .parse   analiza las partes de un patrón interpolado, cada frontera marcando un grupo capturado
++       `Regex.parse(parts)` es el analizador que hay detrás de `r"…"`, disponible en tiempo de
++       ejecución. Las partes son los trozos del patrón entre sus sustituciones `$name`, así que
++       cada parte después de la primera debe empezar con un grupo, una clase de caracteres, `.` o
++       una abreviatura del estilo de `\d` (`Regex.Error.Reason.ExpectedGroup` en caso contrario),
++       y ese elemento se marca como capturado. El resultado es un `Regex in JavaBaseRegex` y
++       necesita una `Tactic[Regex.Error]`.
+
+=       The result is a `Regex in JavaBaseRegex` and needs a `Tactic[Regex.Error]`.
+=
+-       ```scala
++       ```scala
+
+=       The result is a `Regex in JavaBaseRegex` and needs a `Tactic[Regex.Error]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       The result is a `Regex in JavaBaseRegex` and needs a `Tactic[Regex.Error]`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Regex.parse(List(t"aa", t"(bb)cc"))
++       Regex.parse(List(t"aa", t"(bb)cc"))
+
+-       // Regex(t"aa(bb)cc", List(Regex.Group(3, 5, 6, Nil, Exactly(1), Greedy, true)))
++       // Regex(t"aa(bb)cc", List(Regex.Group(3, 5, 6, Nil, Exactly(1), Greedy, true)))
+
+=       // Regex(t"aa(bb)cc", List(Regex.Group(3, 5, 6, Nil, Exactly(1), Greedy, true)))
+-       ```
++       ```
+
+-       The parser rejects an unclosed group, a stray `)`, an empty character class `[]`, a
+-       malformed `{n,m}` repetition, a maximum below the minimum or equal to zero, and a
+-       captured group inside a repeating group (`Uncapturable`), which cannot bind a fixed set
+-       of variables. It then checks the whole with `java.util.regex.Pattern`, reporting any
+-       further rejection as `InvalidPattern`.
+-   entry .unsafeFrom   builds a regex from parts already known to parse, with no error channel
+-       `Regex.unsafeFrom(parts)(using Unsafe)` is `parse` with its `Regex.Error` discarded, for
+-       parts a macro has already validated: the `r"…"` extractors call it on every match. The
+-       erased `Unsafe` token marks that the caller, not the type system, asserts the parts are
+-       valid; a part which does not parse throws.
+-   entry .makePattern   renders a group tree back to pattern text, naming or plainly parenthesising its groups
+-       The renderer behind `#capturePattern`: walks `todo` (the groups of `pattern` from offset
+-       `last` to `end`), wrapping each in parentheses — named `(?<gN>…)` with `index` counting
+-       up when `named` is true, plain `(…)` when it is false — and a quantified group in a
+-       second inner pair. Returns the next group index and the rendered text. It is public for
+-       the engines' use; a program reads `#capturePattern` instead.
+-   entry .Engine   the typeclass which matches a `Regex` of a given `Form`: `java.util.regex` or RE2
++       El analizador rechaza un grupo sin cerrar, un `)` suelto, una clase de caracteres vacía
++       `[]`, una repetición `{n,m}` mal formada, un máximo menor que el mínimo o igual a cero, y un
++       grupo capturado dentro de un grupo que se repite (`Uncapturable`), que no puede ligar un
++       conjunto fijo de variables. Después comprueba el conjunto con `java.util.regex.Pattern`, e
++       informa de cualquier otro rechazo como `InvalidPattern`.
++   entry .unsafeFrom   construye una regex a partir de partes que ya se sabe que se analizan, sin canal de errores
++       `Regex.unsafeFrom(parts)(using Unsafe)` es `parse` descartando su `Regex.Error`, para partes
++       que una macro ya ha validado: los extractores `r"…"` lo llaman en cada búsqueda. El token
++       borrado `Unsafe` indica que es quien llama, y no el sistema de tipos, quien afirma que las
++       partes son válidas; una parte que no se puede analizar lanza una excepción.
++   entry .makePattern   vuelve a representar un árbol de grupos como texto de patrón, con sus grupos con nombre o entre paréntesis simples
++       El representador que hay detrás de `#capturePattern`: recorre `todo` (los grupos de
++       `pattern` desde el desplazamiento `last` hasta `end`), envolviendo cada uno entre paréntesis
++       —con nombre `(?<gN>…)`, con `index` creciendo, cuando `named` es verdadero, y simples `(…)`
++       cuando es falso— y un grupo cuantificado en un segundo par interior. Devuelve el siguiente
++       índice de grupo y el texto representado. Es público para uso de los motores; un programa lee
++       `#capturePattern` en su lugar.
++   entry .Engine   la clase de tipos que busca un `Regex` de un `Form` dado: `java.util.regex` o RE2
+
+=   entry .Engine   the typeclass which matches a `Regex` of a given `Form`: `java.util.regex` or RE2
+-     detail
++     detail
+
+-         `form is Regex.Engine` is how a `Regex in form` matches. The instance for
+-         `JavaBaseRegex` is `JavaBaseRegex.engine`, in that type's companion; the instance for
+-         `Re2` is `.re2`, in this companion, since praxinoscope's `Re2` sits below this library
+-         and cannot name `Regex`. Both are in implicit scope, so a `Regex in Re2` never falls
+-         back to `java.util.regex` and neither needs an import. Each engine implements whole-
+-         input and scanner-driven `#matches`, leftmost `#seek` and repeated `#search`, and the
+-         capture-group extraction the `r"…"` extractors use.
++         `form is Regex.Engine` es como busca un `Regex in form`. La instancia para
++         `JavaBaseRegex` es `JavaBaseRegex.engine`, en el objeto compañero de ese tipo; la
++         instancia para `Re2` es `.re2`, en este objeto compañero, ya que el `Re2` de
++         praxinoscope está por debajo de esta biblioteca y no puede nombrar `Regex`. Ambas están en
++         el ámbito implícito, así que un `Regex in Re2` nunca recurre a `java.util.regex` y
++         ninguna necesita importarse. Cada motor implementa `#matches` sobre la entrada entera y
++         dirigido por un escáner, `#seek` de la coincidencia más a la izquierda y `#search`
++         repetido, y la extracción de grupos de captura que usan los extractores `r"…"`.
+
+-         An engine is addressed through the methods of `Regex` (`regex.matches(text)`), not
+-         called directly; the trait is public so that `Regex.Engine.re2` and
+-         `JavaBaseRegex.engine` can be named.
+-     entry .re2   the engine instance for `Regex in Re2`, bridging to praxinoscope's `Motif`
+-         `Re2 is Regex.Engine`. It looks up the praxinoscope `Motif` of the regex by its
+-         pattern, re-rendered with a plain parenthesis around every group, in a cache every
+-         `Regex in Re2` was admitted to when it was made — by the `r"…"` expansion under
+-         `regexBackends.re2`, which stages the motif into the extractor, or by `Regex#re2`,
+-         which parses it then. A `Regex in Re2` which was never admitted is a defect and panics
+-         rather than raising. Capture groups are mapped onto praxinoscope's paren-ordered group
+-         numbers; a repeating group's iterations are recovered by rescanning its span with the
+-         group's body. Non-overlapping `search` restarts one past the end of each match, as the
+-         `JavaBaseRegex` engine does, so immediately adjacent matches are skipped alike.
+-     entry #Self   the form this engine matches: `JavaBaseRegex` or `Re2`
+-     entry #matches   whether a regex matches the whole text, or the next match from a `Scanner`'s position
+-         With the `Scanner` given's `nextStart` unset, a whole-input match. With it set to a
+-         position, the next match found at or after it, recording its start plus one in
+-         `nextStart` and its end in `matchEnd`, which is how gossamer's `extract` walks a text.
+-     entry #seek   the interval of the leftmost match at or after `start`, or `Unset`
+-     entry #search   every match from `start` as a lazy `Chain` of intervals, overlapping or not
+-         With `overlap` false, each search resumes one past the previous match's end; with it
+-         true, one past the previous match's start, so matches may share text.
+-   entry .Greed   how a quantified group competes for input: greedy, reluctant or possessive
++         A un motor se accede mediante los métodos de `Regex` (`regex.matches(text)`), no
++         llamándolo directamente; el trait es público para que `Regex.Engine.re2` y
++         `JavaBaseRegex.engine` puedan nombrarse.
++     entry .re2   la instancia de motor para `Regex in Re2`, que hace de puente con el `Motif` de praxinoscope
++         `Re2 is Regex.Engine`. Busca el `Motif` de praxinoscope de la regex por su patrón,
++         vuelto a representar con un paréntesis simple alrededor de cada grupo, en una caché en la
++         que se admitió cada `Regex in Re2` al crearse: por la expansión de `r"…"` con
++         `regexBackends.re2`, que incorpora por etapas el motif al extractor, o por `Regex#re2`,
++         que lo analiza en ese momento. Un `Regex in Re2` que nunca se admitió es un defecto y
++         entra en pánico en lugar de lanzar un error. Los grupos de captura se corresponden con los
++         números de grupo de praxinoscope, ordenados por paréntesis; las iteraciones de un grupo
++         que se repite se recuperan volviendo a escanear su tramo con el cuerpo del grupo. El
++         `search` sin solapamiento se reanuda una posición después del final de cada coincidencia,
++         como hace el motor `JavaBaseRegex`, así que las coincidencias inmediatamente adyacentes se
++         omiten igual.
++     entry #Self   la forma que busca este motor: `JavaBaseRegex` o `Re2`
++     entry #matches   si una regex coincide con el texto entero, o la siguiente coincidencia desde la posición de un `Scanner`
++         Con el `nextStart` del `Scanner` given sin definir, una coincidencia con la entrada
++         entera. Con él fijado en una posición, la siguiente coincidencia encontrada en ella o
++         después, registrando su inicio más uno en `nextStart` y su final en `matchEnd`, que es como
++         el `extract` de gossamer recorre un texto.
++     entry #seek   el intervalo de la coincidencia más a la izquierda en `start` o después, o `Unset`
++     entry #search   todas las coincidencias desde `start` como una `Chain` perezosa de intervalos, solapadas o no
++         Con `overlap` falso, cada búsqueda se reanuda una posición después del final de la
++         coincidencia anterior; con él verdadero, una posición después de su inicio, así que las
++         coincidencias pueden compartir texto.
++   entry .Greed   cómo compite un grupo cuantificado por la entrada: ávido, reacio o posesivo
+
+=   entry .Greed   how a quantified group competes for input: greedy, reluctant or possessive
+-     detail
++     detail
+
+-         The suffix after a quantifier: none for `Greedy` (as much as possible), `?` for
+-         `Reluctant` (as little as possible), `+` for `Possessive` (as much as possible, never
+-         giving any back). `Regex.Group#greed` records it, and `#serialize` renders it. The RE2
+-         engine rejects a possessive quantifier, which an automaton cannot express.
+-     entry #serialize   the suffix: empty, `?` or `+`
+-   entry .Quantifier   how many times a group repeats: exactly, at least, or between two counts
++         El sufijo tras un cuantificador: ninguno para `Greedy` (tanto como sea posible), `?` para
++         `Reluctant` (tan poco como sea posible), `+` para `Possessive` (tanto como sea posible, sin
++         devolver nunca nada). `Regex.Group#greed` lo registra, y `#serialize` lo representa. El
++         motor RE2 rechaza un cuantificador posesivo, que un autómata no puede expresar.
++     entry #serialize   el sufijo: vacío, `?` o `+`
++   entry .Quantifier   cuántas veces se repite un grupo: exactamente, al menos, o entre dos cantidades
+
+=   entry .Quantifier   how many times a group repeats: exactly, at least, or between two counts
+-     detail
++     detail
+
+-         How each quantifier is written, and the type of a capture it quantifies:
++         Cómo se escribe cada cuantificador, y el tipo de una captura que cuantifica:
+
+=         How each quantifier is written, and the type of a capture it quantifies:
+=
+-         ```tabular
++         ```tabular
+
+-         column  Quantifier
+-         column  Written
+-         column  Capture type
+-         row  `Exactly(1)`  nothing: an unquantified group  `Text` or `Char`
++         column  Cuantificador
++         column  Se escribe
++         column  Tipo de la captura
++         row  `Exactly(1)`  nada: un grupo sin cuantificar  `Text` o `Char`
+
+-         row  `Exactly(n)`  `{n}`  `List`
++         row  `Exactly(n)`  `{n}`  `List`
+
+-         row  `AtLeast(0)`  `*`  `List`
++         row  `AtLeast(0)`  `*`  `List`
+
+-         row  `AtLeast(1)`  `+`  `List`
++         row  `AtLeast(1)`  `+`  `List`
+
+-         row  `AtLeast(n)`  `{n,}`  `List`
++         row  `AtLeast(n)`  `{n,}`  `List`
+
+-         row  `Between(0, 1)`  `?`  an `Optional` of `Text` or `Char`
++         row  `Between(0, 1)`  `?`  un `Optional` de `Text` o `Char`
+
+-         row  `Between(n, m)`  `{n,m}`  `List`
++         row  `Between(n, m)`  `{n,m}`  `List`
+
+=         row  `Between(n, m)`  `{n,m}`  `List`
+-         ```
++         ```
+
+-     entry #serialize   the quantifier as written: empty for `Exactly(1)`, `*`, `+`, `?` or a `{…}` form
+-     entry #unitary   whether this is `Exactly(1)`, the quantifier of an unrepeated group
+-   entry .Group   one group of a pattern: its offsets, its quantifier, and whether it is captured
++     entry #serialize   el cuantificador tal como se escribe: vacío para `Exactly(1)`, `*`, `+`, `?` o una forma `{…}`
++     entry #unitary   si es `Exactly(1)`, el cuantificador de un grupo no repetido
++   entry .Group   un grupo de un patrón: sus desplazamientos, su cuantificador y si se captura
+
+=   entry .Group   one group of a pattern: its offsets, its quantifier, and whether it is captured
+-     detail
++     detail
+
+-         A `Group` records a parenthesised group, a character class or — when captured by a
+-         `$name` — a single-character token (`.`, `\d`, `\w`, …) by the offsets of its content
+-         in the pattern: `#start` and `#end` bound the content, `#outerEnd` is the offset after
+-         the closing bracket and any quantifier, and `#outerStart` the offset of the opening
+-         one. Nested groups are `#groups`. The `r"…"` macro reads the tree to type each capture
+-         and the engines read it to rebuild the pattern and to extract groups.
++         Un `Group` registra un grupo entre paréntesis, una clase de caracteres o —cuando lo
++         captura un `$name`— un token de un solo carácter (`.`, `\d`, `\w`, …) mediante los
++         desplazamientos de su contenido en el patrón: `#start` y `#end` delimitan el contenido,
++         `#outerEnd` es el desplazamiento posterior al corchete de cierre y a cualquier
++         cuantificador, y `#outerStart` el desplazamiento del de apertura. Los grupos anidados son
++         `#groups`. La macro `r"…"` lee el árbol para tipar cada captura, y los motores lo leen para
++         reconstruir el patrón y extraer grupos.
+
+=         and the engines read it to rebuild the pattern and to extract groups.
+=
+-         ```scala
++         ```scala
+
+=         and the engines read it to rebuild the pattern and to extract groups.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         Regex.parse(List(t"aa(bb)+?cc")).groups
++         Regex.parse(List(t"aa(bb)+?cc")).groups
+
+-         // List(Regex.Group(3, 5, 8, Nil, AtLeast(1), Reluctant))
++         // List(Regex.Group(3, 5, 8, Nil, AtLeast(1), Reluctant))
+
+=         // List(Regex.Group(3, 5, 8, Nil, AtLeast(1), Reluctant))
+-         ```
++         ```
+
+-     entry #start   the offset of the group's first content character
+-     entry #end   the offset after the group's last content character
+-     entry #outerEnd   the offset after the group's closing bracket and quantifier
+-     entry #outerStart   the offset of the group's opening bracket, or of the token itself for a bare shorthand
+-     entry #groups   the groups nested directly inside this one
+-     entry #quantifier   how often the group repeats, `Exactly(1)` when unquantified
+-     entry #greed   whether the repetition is greedy, reluctant or possessive
+-     entry #capture   whether a `$name` captures this group
+-     entry #charClass   whether this group is a `[…]` character class rather than a parenthesised group
+-     entry #singleChar   whether this group is a single-character token: `.` or a `\d`-style shorthand
+-     entry #charMatcher   whether the group matches one character at a time: a class or a single-character token
+-         A char-matching group binds a `Char` (or a `List[Char]`, or `Optional[Char]`) where a
+-         parenthesised group binds `Text`.
+-     entry #allGroups   every group nested at any depth, in pattern order
+-     entry #captureGroups   every captured group nested at any depth, in pattern order
+-     entry #serialize   renders this group as pattern text, with a named or plain capturing parenthesis
+-         Given the whole pattern, the next capture index and whether to name the group
+-         `(?<gN>…)`, returns the index after this group and its text; a quantified
+-         parenthesised group gains an inner `(…)` so the name wraps the whole repetition. Used
+-         by `Regex.makePattern`.
+-   entry .Error   raised when a pattern cannot be parsed: the position and the reason
++     entry #start   el desplazamiento del primer carácter del contenido del grupo
++     entry #end   el desplazamiento posterior al último carácter del contenido del grupo
++     entry #outerEnd   el desplazamiento posterior al corchete de cierre y al cuantificador del grupo
++     entry #outerStart   el desplazamiento del corchete de apertura del grupo, o del propio token en una abreviatura suelta
++     entry #groups   los grupos anidados directamente dentro de este
++     entry #quantifier   con qué frecuencia se repite el grupo, `Exactly(1)` si no está cuantificado
++     entry #greed   si la repetición es ávida, reacia o posesiva
++     entry #capture   si un `$name` captura este grupo
++     entry #charClass   si este grupo es una clase de caracteres `[…]` en lugar de un grupo entre paréntesis
++     entry #singleChar   si este grupo es un token de un solo carácter: `.` o una abreviatura del estilo de `\d`
++     entry #charMatcher   si el grupo coincide con un carácter cada vez: una clase o un token de un solo carácter
++         Un grupo que coincide con caracteres liga un `Char` (o un `List[Char]`, o un
++         `Optional[Char]`) donde un grupo entre paréntesis liga un `Text`.
++     entry #allGroups   todos los grupos anidados a cualquier profundidad, en el orden del patrón
++     entry #captureGroups   todos los grupos capturados anidados a cualquier profundidad, en el orden del patrón
++     entry #serialize   representa este grupo como texto de patrón, con un paréntesis de captura con nombre o simple
++         Dados el patrón entero, el siguiente índice de captura y si se debe nombrar el grupo
++         `(?<gN>…)`, devuelve el índice posterior a este grupo y su texto; un grupo entre
++         paréntesis cuantificado recibe un `(…)` interior para que el nombre envuelva la
++         repetición entera. Lo usa `Regex.makePattern`.
++   entry .Error   se lanza cuando un patrón no se puede analizar: la posición y el motivo
+
+=   entry .Error   raised when a pattern cannot be parsed: the position and the reason
+-     detail
++     detail
+
+-         Error `↯/s.34.1`: _the regular expression could not be parsed because `reason` at `index`_,
+-         with the reason's number as the error's sub-number, so an unclosed group is
+-         `↯/s.34.1.1`. Raised by `Regex.apply` and `Regex.parse` through a `Tactic[Regex.Error]`,
+-         and reported as a compile error, pointing at the offending character, by `r"…"`. The
+-         index counts characters of the parts joined together, with nothing standing in for
+-         the `$name` substitutions.
++         Error `↯/s.34.1`: _the regular expression could not be parsed because `reason` at
++         `index`_, con el número del motivo como subnúmero del error, así que un grupo sin cerrar
++         es `↯/s.34.1.1`. Lo lanzan `Regex.apply` y `Regex.parse` mediante una
++         `Tactic[Regex.Error]`, y `r"…"` informa de él como error de compilación, señalando el
++         carácter culpable. El índice cuenta los caracteres de las partes unidas, sin nada en lugar
++         de las sustituciones `$name`.
+
+=         the `$name` substitutions.
+=
+-         ```scala
++         ```scala
+
+=         the `$name` substitutions.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         safely(Regex(t"aa(bb){2,1}c"))   // Unset: Regex.Error(9, BadRepetition)
++         safely(Regex(t"aa(bb){2,1}c"))   // Unset: Regex.Error(9, BadRepetition)
+
+=         safely(Regex(t"aa(bb){2,1}c"))   // Unset: Regex.Error(9, BadRepetition)
+-         ```
++         ```
+
+-     entry .Reason   why a pattern was rejected, as one of eleven numbered cases
++     entry .Reason   por qué se rechazó un patrón, como uno de once casos numerados
+
+-       detail
++       detail
+
+-           Each case's `number` is the error's sub-number:
++           El `number` de cada caso es el subnúmero del error:
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
++           column  Caso
++           column  Código
++           column  Mensaje
++           column  Nota
+
+-           row  `UnclosedGroup`  1  _a capturing group was not closed_
++           row  `UnclosedGroup`  1  _a capturing group was not closed_
+
+-           row  `ExpectedGroup`  2  _a capturing group was expected immediately following an extractor_  a `$name` with no group after it
++           row  `ExpectedGroup`  2  _a capturing group was expected immediately following an extractor_  un `$name` sin grupo detrás
+
+-           row  `BadRepetition`  3  _the maximum number of repetitions is less than the minimum_
++           row  `BadRepetition`  3  _the maximum number of repetitions is less than the minimum_
+
+-           row  `Uncapturable`  4  _a capturing group inside a repeating group can not be extracted_
++           row  `Uncapturable`  4  _a capturing group inside a repeating group can not be extracted_
+
+-           row  `UnexpectedChar`  5  _the repetition range contained an unexpected character_
++           row  `UnexpectedChar`  5  _the repetition range contained an unexpected character_
+
+-           row  `NotInGroup`  6  _a closing parenthesis was found without a corresponding opening parenthesis_
++           row  `NotInGroup`  6  _a closing parenthesis was found without a corresponding opening parenthesis_
+
+-           row  `IncompleteRepetition`  7  _the repetition range was not closed_
++           row  `IncompleteRepetition`  7  _the repetition range was not closed_
+
+-           row  `InvalidPattern`  8  _the pattern was invalid_  anything `java.util.regex` rejects that the parser did not
++           row  `InvalidPattern`  8  _the pattern was invalid_  cualquier cosa que `java.util.regex` rechace y el analizador no
+
+-           row  `UnclosedEscape`  9  _nothing followed the escape character `\`_
++           row  `UnclosedEscape`  9  _nothing followed the escape character `\`_
+
+-           row  `EmptyCharClass`  10  _the character class is empty_
++           row  `EmptyCharClass`  10  _the character class is empty_
+
+-           row  `ZeroMaximum`  11  _the maximum number of repetitions must be greater than zero_
++           row  `ZeroMaximum`  11  _the maximum number of repetitions must be greater than zero_
+
+-           ```
++           ```
+
+-       entry .communicable   renders each reason as the message quoted on `Regex.Error.Reason`
+-       entry #number   the reason's number, 1 to 11, which is the sub-number of its `Regex.Error`
+-     entry #index   the offset in the pattern at which the error was found
+-     entry #reason   the `Regex.Error.Reason`
+-   entry #pattern   the pattern as written, with its `$name`s removed
+-   entry #groups   the top-level groups of the pattern, each a `Regex.Group` with its own nested groups
+-   entry #re2   this regex retagged for the RE2 engine, checked now against the RE2 subset
+-       Parses the pattern into its praxinoscope `Motif` (raising `Motif.Error` through a
+-       `Tactic[Motif.Error]` for a backreference, lookaround, possessive quantifier, atomic
+-       group or anything else outside RE2 syntax), admits it to the engine's cache, and
+-       returns the same regex as a `Regex in Re2`. Every `Regex in Re2` is therefore a checked
+-       pattern, and its first match never fails for a syntax reason.
++       entry .communicable   representa cada motivo como el mensaje citado en `Regex.Error.Reason`
++       entry #number   el número del motivo, de 1 a 11, que es el subnúmero de su `Regex.Error`
++     entry #index   el desplazamiento en el patrón en el que se encontró el error
++     entry #reason   el `Regex.Error.Reason`
++   entry #pattern   el patrón tal como se escribió, sin sus `$name`
++   entry #groups   los grupos de nivel superior del patrón, cada uno un `Regex.Group` con sus propios grupos anidados
++   entry #re2   esta regex reetiquetada para el motor RE2, comprobada ahora frente al subconjunto de RE2
++       Analiza el patrón para obtener su `Motif` de praxinoscope (lanzando `Motif.Error` mediante
++       una `Tactic[Motif.Error]` ante una referencia hacia atrás, un lookaround, un cuantificador
++       posesivo, un grupo atómico o cualquier otra cosa fuera de la sintaxis de RE2), lo admite en
++       la caché del motor y devuelve la misma regex como `Regex in Re2`. Todo `Regex in Re2` es,
++       por tanto, un patrón comprobado, y su primera búsqueda nunca falla por un motivo de sintaxis.
+
+=       pattern, and its first match never fails for a syntax reason.
+=
+-       ```scala
++       ```scala
+
+=       pattern, and its first match never fails for a syntax reason.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       pattern, and its first match never fails for a syntax reason.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val linear: Regex in Re2 = Regex(t"(a|b)*c").re2
++       val linear: Regex in Re2 = Regex(t"(a|b)*c").re2
+
+-       linear.matches(t"ababc")   // true
++       linear.matches(t"ababc")   // true
+
+-       Regex(t"(a)\\1").re2       // raises Motif.Error: backreferences are not part of RE2 syntax
++       Regex(t"(a)\\1").re2       // raises Motif.Error: backreferences are not part of RE2 syntax
+
+=       Regex(t"(a)\\1").re2       // raises Motif.Error: backreferences are not part of RE2 syntax
+-       ```
++       ```
+
+-   entry #unapply   a `Regex` value as a pattern: `case regex() =>` matches the whole text
+-       Matches without a scanner, so the whole text must match, and binds nothing: a value's
+-       groups are not visible to the compiler, so only a literal `r"…"` can bind captures.
+-   entry #matches   whether the text matches, wholly or from the `Scanner`'s position
+-       Needs the `Form is Regex.Engine` for this regex's engine (in implicit scope for both
+-       forms) and a `Scanner^`, whose default given is a fresh scanner with no position, so a
+-       plain call is a whole-input match. A scanner with `nextStart` set finds the next match
+-       from that position and records where it was.
++   entry #unapply   un valor `Regex` como patrón: `case regex() =>` coincide con el texto entero
++       Busca sin escáner, así que debe coincidir el texto entero, y no liga nada: los grupos de un
++       valor no son visibles para el compilador, así que solo un `r"…"` literal puede ligar
++       capturas.
++   entry #matches   si el texto coincide, entero o desde la posición del `Scanner`
++       Necesita el `Form is Regex.Engine` del motor de esta regex (en el ámbito implícito para
++       ambas formas) y un `Scanner^`, cuyo given por defecto es un escáner nuevo sin posición, así
++       que una llamada simple es una coincidencia con la entrada entera. Un escáner con
++       `nextStart` fijado encuentra la siguiente coincidencia desde esa posición y registra dónde
++       estaba.
+
+=       from that position and records where it was.
+=
+-       ```scala
++       ```scala
+
+=       from that position and records where it was.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       from that position and records where it was.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Regex(t"ab?c").matches(t"ac")    // true
++       Regex(t"ab?c").matches(t"ac")    // true
+
+-       Regex(t"ab?c").matches(t"xacx")  // false: the whole text must match
++       Regex(t"ab?c").matches(t"xacx")  // false: the whole text must match
+
+=       Regex(t"ab?c").matches(t"xacx")  // false: the whole text must match
+-       ```
++       ```
+
+-   entry #seek   the interval of the leftmost match at or after `start`, or `Unset` if there is none
+-       `start` is an `Ordinal`, `Prim` by default. The `Interval` is zero-based over the
+-       text's UTF-16 units, as gossamer's `segment` takes it.
++   entry #seek   el intervalo de la coincidencia más a la izquierda en `start` o después, o `Unset` si no hay ninguna
++       `start` es un `Ordinal`, `Prim` por defecto. El `Interval` empieza en cero y se cuenta en
++       unidades UTF-16 del texto, tal como lo toma el `segment` de gossamer.
+
+=       text's UTF-16 units, as gossamer's `segment` takes it.
+=
+-       ```scala
++       ```scala
+
+=       text's UTF-16 units, as gossamer's `segment` takes it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       text's UTF-16 units, as gossamer's `segment` takes it.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Regex(t"u").seek(t"puck")   // Interval.zerary(1, 2)
++       Regex(t"u").seek(t"puck")   // Interval.zerary(1, 2)
+
+-       Regex(t"z").seek(t"puck")   // Unset
++       Regex(t"z").seek(t"puck")   // Unset
+
+=       Regex(t"z").seek(t"puck")   // Unset
+-       ```
++       ```
+
+-   entry #search   every match at or after `start`, as a lazily-built `Chain` of intervals
+-       With `overlap` false (the default) the search resumes one past the end of each match;
+-       with it true, one past the start, so a match may begin inside the previous one. The
+-       `Chain` is built as it is read, so a search over a long text costs only what is
+-       consumed. Gossamer's `text.search(regex)` maps the intervals to the matched segments.
++   entry #search   todas las coincidencias en `start` o después, como una `Chain` de intervalos construida de forma perezosa
++       Con `overlap` falso (el valor por defecto), la búsqueda se reanuda una posición después del
++       final de cada coincidencia; con él verdadero, una posición después del inicio, así que una
++       coincidencia puede empezar dentro de la anterior. La `Chain` se construye a medida que se
++       lee, así que una búsqueda en un texto largo solo cuesta lo que se consume. El
++       `text.search(regex)` de gossamer transforma los intervalos en los segmentos encontrados.
+
+=       consumed. Gossamer's `text.search(regex)` maps the intervals to the matched segments.
+=
+-       ```scala
++       ```scala
+
+=       consumed. Gossamer's `text.search(regex)` maps the intervals to the matched segments.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       consumed. Gossamer's `text.search(regex)` maps the intervals to the matched segments.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Regex(t"a").search(t"banana")
++       Regex(t"a").search(t"banana")
+
+-       // Chain(Interval.zerary(1, 2), Interval.zerary(3, 4), Interval.zerary(5, 6))
++       // Chain(Interval.zerary(1, 2), Interval.zerary(3, 4), Interval.zerary(5, 6))
+
+=       // Chain(Interval.zerary(1, 2), Interval.zerary(3, 4), Interval.zerary(5, 6))
+-       ```
++       ```
+
+-   entry #capturePattern   the pattern rendered with every group parenthesised and each capture named `g0`, `g1`, …
+-       The text handed to `java.util.regex`: a captured group becomes `(?<gN>…)`, numbered in
+-       pattern order, and a quantified captured group is wrapped so the name covers the whole
+-       repetition, as `a(?<g0>(bc)*)` for `a$xs(bc)*`.
+-   entry #subsumes   whether this regex matches every input the other does; RE2 forms only
+-       `L(that) ⊆ L(this)`, decided by praxinoscope's `Subsumption` over the two compiled
+-       programs. Both regexes must be `Regex in Re2` — the question is decidable only without
+-       backreferences and lookaround — and the analysis raises `Motif.Error` for a pattern it
+-       cannot verify (one with a word or line boundary, `Unverifiable`) or a pair which
+-       exhausts its state budget (`BudgetExceeded`).
++   entry #capturePattern   el patrón representado con cada grupo entre paréntesis y cada captura con nombre `g0`, `g1`, …
++       El texto que se entrega a `java.util.regex`: un grupo capturado se convierte en `(?<gN>…)`,
++       numerado en el orden del patrón, y un grupo capturado cuantificado se envuelve para que el
++       nombre cubra la repetición entera, como `a(?<g0>(bc)*)` para `a$xs(bc)*`.
++   entry #subsumes   si esta regex coincide con todas las entradas con las que coincide la otra; solo formas RE2
++       `L(that) ⊆ L(this)`, decidido por el `Subsumption` de praxinoscope sobre los dos programas
++       compilados. Ambas regex deben ser `Regex in Re2` —la pregunta solo es decidible sin
++       referencias hacia atrás ni lookaround— y el análisis lanza `Motif.Error` ante un patrón que
++       no puede verificar (uno con un límite de palabra o de línea, `Unverifiable`) o un par que
++       agota su presupuesto de estados (`BudgetExceeded`).
+
+=       exhausts its state budget (`BudgetExceeded`).
+=
+-       ```scala
++       ```scala
+
+=       exhausts its state budget (`BudgetExceeded`).
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       exhausts its state budget (`BudgetExceeded`).
+=
+=       ```scala
+=       import soundness.*
+-       import regexBackends.re2
++       import regexBackends.re2
+
+=       exhausts its state budget (`BudgetExceeded`).
+=
+=       ```scala
+=       import soundness.*
+=       import regexBackends.re2
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       r"a*".subsumes(r"aa")         // true
++       r"a*".subsumes(r"aa")         // true
+
+-       r"aa".subsumes(r"a*")         // false
++       r"aa".subsumes(r"a*")         // false
+
+-       r"[a-z]+".subsumes(r"abc|def") // true
++       r"[a-z]+".subsumes(r"abc|def") // true
+
+=       r"[a-z]+".subsumes(r"abc|def") // true
+-       ```
++       ```
+
+-   entry #intersects   whether some input matches both this regex and the other; RE2 forms only
+-       Reachability, in the product of the two automata, of a point where both accept; a
+-       polynomial question, where `#subsumes` is worst-case exponential. Both regexes must be
+-       `Regex in Re2`, and a word or line boundary in either raises `Motif.Error`.
++   entry #intersects   si alguna entrada coincide a la vez con esta regex y con la otra; solo formas RE2
++       La alcanzabilidad, en el producto de los dos autómatas, de un punto en el que ambos
++       aceptan; una pregunta polinómica, mientras que `#subsumes` es exponencial en el peor caso.
++       Ambas regex deben ser `Regex in Re2`, y un límite de palabra o de línea en cualquiera de las
++       dos lanza `Motif.Error`.
+
+=       `Regex in Re2`, and a word or line boundary in either raises `Motif.Error`.
+=
+-       ```scala
++       ```scala
+
+=       `Regex in Re2`, and a word or line boundary in either raises `Motif.Error`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Regex in Re2`, and a word or line boundary in either raises `Motif.Error`.
+=
+=       ```scala
+=       import soundness.*
+-       import regexBackends.re2
++       import regexBackends.re2
+
+=       `Regex in Re2`, and a word or line boundary in either raises `Motif.Error`.
+=
+=       ```scala
+=       import soundness.*
+=       import regexBackends.re2
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       r"[a-m]+".intersects(r"[k-z]+")   // true
++       r"[a-m]+".intersects(r"[k-z]+")   // true
+
+-       r"[a-m]+".intersects(r"[n-z]+")   // false
++       r"[a-m]+".intersects(r"[n-z]+")   // false
+
+=       r"[a-m]+".intersects(r"[n-z]+")   // false
+-       ```
++       ```
+
+-   entry #allGroups   every group at any depth, in pattern order
+-   entry #captureGroups   every captured group at any depth, in pattern order: the groups `r"…"` binds
++   entry #allGroups   todos los grupos a cualquier profundidad, en el orden del patrón
++   entry #captureGroups   todos los grupos capturados a cualquier profundidad, en el orden del patrón: los grupos que liga `r"…"`
+
+-   entry .Backend   the marker a `regexBackends` given carries, read by `r"…"` and `g"…"` as they expand
+-       `Backend[form]` is a sealed phantom trait with no members. The `r"…"` and `g"…"`
+-       macros summon a `Backend[Re2]` while they expand: when `regexBackends.re2` is
+-       imported the literal is compiled for praxinoscope's engine, checked against the RE2
+-       subset, and tagged `Regex in Re2`; otherwise it is tagged `Regex in JavaBaseRegex`.
+-       `Glob#matches` takes the same given, defaulting to `regexBackends.javaBaseRegex`. Nothing
+-       else reads it, and a program never implements it.
++   entry .Backend   el marcador que lleva un given de `regexBackends`, que `r"…"` y `g"…"` leen al expandirse
++       `Backend[form]` es un trait fantasma sellado sin miembros. Las macros `r"…"` y `g"…"`
++       convocan un `Backend[Re2]` mientras se expanden: cuando se importa `regexBackends.re2`, el
++       literal se compila para el motor de praxinoscope, se comprueba frente al subconjunto de RE2
++       y se etiqueta `Regex in Re2`; si no, se etiqueta `Regex in JavaBaseRegex`. `Glob#matches`
++       toma el mismo given, con `regexBackends.javaBaseRegex` por defecto. Nada más lo lee, y un
++       programa nunca lo implementa.
+
+- entry .JavaBaseRegex   the `java.util.regex` engine's marker: the default `Form` of every `Regex`
++ entry .JavaBaseRegex   el marcador del motor `java.util.regex`: el `Form` por defecto de todo `Regex`
+
+= entry .JavaBaseRegex   the `java.util.regex` engine's marker: the default `Form` of every `Regex`
+-   detail
++   detail
+
+-       A sealed phantom trait with no members, naming the platform's `java.util.regex` (or,
+-       on Scala.js and Scala Native, the platform's emulation of it) as the engine of a
+-       `Regex in JavaBaseRegex`. It is the form of `Regex.apply`, `Regex.parse` and of every
+-       `r"…"` and `g"…"` compiled without `regexBackends.re2`. Its engine instance `.engine`
+-       lives here, in the subject's companion, so no import is needed.
++       Un trait fantasma sellado sin miembros, que nombra el `java.util.regex` de la plataforma
++       (o, en Scala.js y Scala Native, la emulación que la plataforma haga de él) como motor de un
++       `Regex in JavaBaseRegex`. Es la forma de `Regex.apply`, de `Regex.parse` y de todo `r"…"` y
++       `g"…"` compilado sin `regexBackends.re2`. Su instancia de motor `.engine` vive aquí, en el
++       objeto compañero del sujeto, así que no hace falta ninguna importación.
+
+-       The engine compiles each distinct `Regex#capturePattern` once into a cached
+-       `java.util.regex.Pattern`, so matching many texts against one regex costs one
+-       compilation. Its backtracking accepts every construct of the Java syntax, including
+-       backreferences and lookaround, at the cost of exponential time on a pathological
+-       pattern and input; `regexBackends.re2` is the linear-time alternative.
++       El motor compila cada `Regex#capturePattern` distinto una sola vez en un
++       `java.util.regex.Pattern` en caché, así que buscar en muchos textos con una regex cuesta
++       una compilación. Su backtracking acepta todas las construcciones de la sintaxis de Java,
++       incluidas las referencias hacia atrás y el lookaround, a costa de un tiempo exponencial con
++       un patrón y una entrada patológicos; `regexBackends.re2` es la alternativa de tiempo lineal.
+
+=       pattern and input; `regexBackends.re2` is the linear-time alternative.
+-   refer kaleidoscope.Regex
++   refer kaleidoscope.Regex
+
+=   refer kaleidoscope.Regex
+-   refer kaleidoscope.regexBackends
++   refer kaleidoscope.regexBackends
+
+-   entry .engine   the `Regex.Engine` instance which matches a `Regex in JavaBaseRegex`
+-       `JavaBaseRegex is Regex.Engine`, in implicit scope. Whole-input `matches` is
+-       `Matcher#matches`; a scanner-driven match is `Matcher#find(position)`; `seek` and
+-       `search` are `find` from the start position, resuming one past each match's end (or
+-       start, with overlap). A repeating captured group's iterations are recovered by rematching
+-       the group's body over its span.
++   entry .engine   la instancia de `Regex.Engine` que busca un `Regex in JavaBaseRegex`
++       `JavaBaseRegex is Regex.Engine`, en el ámbito implícito. `matches` sobre la entrada entera
++       es `Matcher#matches`; una búsqueda dirigida por un escáner es `Matcher#find(position)`;
++       `seek` y `search` son `find` desde la posición de inicio, reanudándose una posición después
++       del final de cada coincidencia (o del inicio, con solapamiento). Las iteraciones de un grupo
++       capturado que se repite se recuperan volviendo a buscar el cuerpo del grupo sobre su tramo.
+
+- entry .Scanner   a mutable cursor through a text, which a sequence of matches advances
++ entry .Scanner   un cursor mutable a lo largo de un texto, que una secuencia de búsquedas hace avanzar
+
+= entry .Scanner   a mutable cursor through a text, which a sequence of matches advances
+-   detail
++   detail
+
+-       A `Scanner` carries the position at which the next match should begin (`#nextStart`)
+-       and where the last match ended (`#matchEnd`). The `r"…"` and `g"…"` extractors and
+-       `Regex#matches` take one as `(using Scanner^)`: with `nextStart` unset, the match is a
+-       whole-input match, which is what a `case r"…"` in ordinary code does; with it set, the
+-       engine finds the next match at or after that position and advances the scanner to one
+-       past its start, which is how gossamer's `extract` steps through every match in a text.
++       Un `Scanner` lleva la posición en la que debe empezar la siguiente coincidencia
++       (`#nextStart`) y dónde terminó la última (`#matchEnd`). Los extractores `r"…"` y `g"…"` y
++       `Regex#matches` toman uno como `(using Scanner^)`: con `nextStart` sin definir, la búsqueda
++       es una coincidencia con la entrada entera, que es lo que hace un `case r"…"` en código
++       corriente; con él fijado, el motor encuentra la siguiente coincidencia en esa posición o
++       después y hace avanzar el escáner hasta una posición después de su inicio, que es como el
++       `extract` de gossamer recorre cada coincidencia de un texto.
+
+-       The class is `caps.Mutable`, since a match changes its state, so only an exclusive
+-       reference may drive it: a hand-written given is declared `given (Scanner^) =
+-       Scanner(Unset)`, and a bare `given Scanner = …` is read-only and is rejected where a
+-       match needs it. The default given `.default` makes a fresh positionless scanner at every
+-       use.
++       La clase es `caps.Mutable`, ya que una búsqueda cambia su estado, así que solo una
++       referencia exclusiva puede dirigirla: un given escrito a mano se declara
++       `given (Scanner^) = Scanner(Unset)`, y un `given Scanner = …` a secas es de solo lectura y
++       se rechaza donde una búsqueda lo necesita. El given por defecto `.default` crea un escáner
++       nuevo sin posición en cada uso.
+
+=       use.
+-   refer kaleidoscope.Regex
++   refer kaleidoscope.Regex
+
+-   entry .default   a fresh scanner with no position, so an unqualified match is whole-input
+-       Typed `Scanner^` and built anew at each summon (through an erased `DummyImplicit`), so
+-       no two matches share a cursor unless a program binds one deliberately.
+-   entry #nextStart   the position the next match searches from, or `Unset` for a whole-input match
+-       After a scanner-driven match, one past the match's start, so a repeated match finds
+-       the next occurrence; a text with no further match leaves it unchanged.
+-   entry #matchEnd   where the last scanner-driven match ended, or `Unset` before any
++   entry .default   un escáner nuevo sin posición, de modo que una búsqueda sin más es sobre la entrada entera
++       Tipado `Scanner^` y construido de nuevo en cada convocatoria (mediante un `DummyImplicit`
++       borrado), así que dos búsquedas no comparten un cursor salvo que un programa ligue uno
++       deliberadamente.
++   entry #nextStart   la posición desde la que busca la siguiente búsqueda, o `Unset` para una coincidencia con la entrada entera
++       Tras una búsqueda dirigida por un escáner, una posición después del inicio de la
++       coincidencia, para que una búsqueda repetida encuentre la siguiente aparición; un texto sin
++       más coincidencias lo deja sin cambios.
++   entry #matchEnd   dónde terminó la última búsqueda dirigida por un escáner, o `Unset` antes de ninguna
+
+- entry .Glob   a glob — `*`, `**`, `?`, `[a-z]` wildcards — as tokens, translated to a regular expression
++ entry .Glob   un glob —comodines `*`, `**`, `?`, `[a-z]`— como tokens, traducido a una expresión regular
+
+= entry .Glob   a glob — `*`, `**`, `?`, `[a-z]` wildcards — as tokens, translated to a regular expression
+-   detail
++   detail
+
+-       A `Glob` is a sequence of `Glob.Token`s parsed from the wildcard syntax of file paths,
+-       and `#regex` is its translation to a regular expression: `*` becomes `[^/\\]*` (any run
+-       not crossing a separator), `**` becomes `.*`, `?` becomes `[^/\\]`, a range or set
+-       carries across with `!` as negation, and every other character is itself, escaped if the
+-       regular-expression syntax would read it otherwise. The `g"…"` interpolator is the glob as
+-       a pattern; `.parse` reads one from text at runtime, and `.decodable` lets a glob-valued
+-       flag or configuration value be read with `as[Glob]`.
++       Un `Glob` es una secuencia de `Glob.Token` analizada a partir de la sintaxis de comodines de
++       las rutas de fichero, y `#regex` es su traducción a una expresión regular: `*` se convierte
++       en `[^/\\]*` (cualquier serie que no cruce un separador), `**` en `.*`, `?` en `[^/\\]`, un
++       rango o un conjunto se trasladan con `!` como negación, y cualquier otro carácter es él
++       mismo, escapado si la sintaxis de las expresiones regulares lo leyera de otro modo. El
++       interpolador `g"…"` es el glob como patrón; `.parse` lee uno de un texto en tiempo de
++       ejecución, y `.decodable` permite leer con `as[Glob]` una opción o un valor de
++       configuración cuyo valor es un glob.
+
+=       flag or configuration value be read with `as[Glob]`.
+=
+-       ```scala
++       ```scala
+
+=       flag or configuration value be read with `as[Glob]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Glob.parse(t"hello*world").regex        // t"hello[^/\\]*world"
++       Glob.parse(t"hello*world").regex        // t"hello[^/\\]*world"
+
+-       Glob.parse(t"hello[!a-z]world").regex   // t"hello[^a-z]world"
++       Glob.parse(t"hello[!a-z]world").regex   // t"hello[^a-z]world"
+
+-       Glob.parse(t"**/*.jar").matches(t"dir/deeper/globe.jar")   // true
++       Glob.parse(t"**/*.jar").matches(t"dir/deeper/globe.jar")   // true
+
+-       Glob.parse(t"*.jar").matches(t"dir/globe.jar")             // false: `*` does not cross `/`
++       Glob.parse(t"*.jar").matches(t"dir/globe.jar")             // false: `*` does not cross `/`
+
+-       t"h?llo*.jar".as[Glob]                  // Glob(Exact('h'), OneChar, Exact('l'), …)
++       t"h?llo*.jar".as[Glob]                  // Glob(Exact('h'), OneChar, Exact('l'), …)
+
+=       t"h?llo*.jar".as[Glob]                  // Glob(Exact('h'), OneChar, Exact('l'), …)
+-       ```
++       ```
+
+-       Parsing is total: every text is a glob, since any character outside the wildcard
+-       syntax is an `Exact` token.
++       El análisis es total: todo texto es un glob, ya que cualquier carácter fuera de la sintaxis
++       de comodines es un token `Exact`.
+
+-   refer kaleidoscope.g
++   refer kaleidoscope.g
+
+=   refer kaleidoscope.g
+-   refer kaleidoscope.Regex
++   refer kaleidoscope.Regex
+
+-   entry .parse   reads a glob from text; never fails
+-       `*` is `Star`, and a second `*` directly after it makes the pair a `Globstar`; `?` is
+-       `OneChar`; `[…]` is a `Range` for the three-character `a-z` form or a `Specific` set
+-       otherwise, each `inverse` when its content begins with `!`; anything else is `Exact`.
+-   entry .decodable   reads a glob with `as[Glob]`: the `Decodable in Text` given, in implicit scope
+-       `Glob.parse`, as a codec, so a glob arrives from a command-line flag or a
+-       configuration file like any other decodable value, with no error to handle.
+-   entry .Token   one element of a glob: a wildcard, a character class, or a literal character
++   entry .parse   lee un glob de un texto; nunca falla
++       `*` es `Star`, y un segundo `*` justo después hace del par un `Globstar`; `?` es `OneChar`;
++       `[…]` es un `Range` para la forma `a-z` de tres caracteres o un conjunto `Specific` en otro
++       caso, cada uno `inverse` cuando su contenido empieza por `!`; cualquier otra cosa es `Exact`.
++   entry .decodable   lee un glob con `as[Glob]`: el given `Decodable in Text`, en el ámbito implícito
++       `Glob.parse`, como códec, de modo que un glob llega de una opción de línea de comandos o de
++       un fichero de configuración como cualquier otro valor decodificable, sin ningún error que
++       manejar.
++   entry .Token   un elemento de un glob: un comodín, una clase de caracteres o un carácter literal
+
+=   entry .Token   one element of a glob: a wildcard, a character class, or a literal character
+-     detail
++     detail
+
+-         Each token, the glob syntax it comes from, and its regular-expression translation, as
+-         `#regex` gives it:
++         Cada token, la sintaxis de glob de la que procede y su traducción a expresión regular, tal
++         como la da `#regex`:
+
+=         `#regex` gives it:
+=
+-         ```tabular
++         ```tabular
+
+-         column  Token
++         column  Token
+
+-         column  Glob
++         column  Glob
+
+-         column  Matches
++         column  Coincide con
+
+-         column  Regex
++         column  Regex
+
+-         row  `Star`  `*`  any run of characters within a segment  `[^/\\]*`
+-         row  `Globstar`  `**`  any run of characters across segments  `.*`
+-         row  `OneChar`  `?`  one character within a segment  `[^/\\]`
+-         row  `Exact(char)`  any other character  that character  itself, preceded by `\` if it is a regular-expression metacharacter
+-         row  `Range(start, end, inverse)`  `[a-z]` or `[!a-z]`  a character in the range, or not in it  `[a-z]` or `[^a-z]`
+-         row  `Specific(chars, inverse)`  `[aeiou]` or `[!aeiou]`  a character in the set, or not in it  `[aeiou]` or `[^aeiou]`
++         row  `Star`  `*`  cualquier serie de caracteres dentro de un segmento  `[^/\\]*`
++         row  `Globstar`  `**`  cualquier serie de caracteres a través de segmentos  `.*`
++         row  `OneChar`  `?`  un carácter dentro de un segmento  `[^/\\]`
++         row  `Exact(char)`  cualquier otro carácter  ese carácter  él mismo, precedido de `\` si es un metacarácter de las expresiones regulares
++         row  `Range(start, end, inverse)`  `[a-z]` o `[!a-z]`  un carácter del rango, o fuera de él  `[a-z]` o `[^a-z]`
++         row  `Specific(chars, inverse)`  `[aeiou]` o `[!aeiou]`  un carácter del conjunto, o fuera de él  `[aeiou]` o `[^aeiou]`
+
+=         row  `Specific(chars, inverse)`  `[aeiou]` or `[!aeiou]`  a character in the set, or not in it  `[aeiou]` or `[^aeiou]`
+-         ```
++         ```
+
+-     entry #regex   the token as regular-expression text, with a literal escaped where it must be
+-         The translations are tabulated on `Glob.Token`. The ends of a range and the members of a
+-         set are escaped as an `Exact` character is.
+-   entry #tokens   the glob's tokens, in order
+-   entry #regex   the glob translated to a regular expression, as `Text`
+-   entry #matches   whether the whole text matches the glob, on the engine `regexBackends` selects
+-       Takes a `Regex.Backend[form]` (defaulting to `regexBackends.javaBaseRegex`, so an
+-       `import regexBackends.re2` switches it, as it does the interpolators) and that form's
+-       `Regex.Engine`. The engines cache compilation by rendered pattern, so matching many
+-       candidates against one glob compiles it once.
++     entry #regex   el token como texto de expresión regular, con un literal escapado donde sea necesario
++         Las traducciones se tabulan en `Glob.Token`. Los extremos de un rango y los miembros de un
++         conjunto se escapan como se escapa un carácter `Exact`.
++   entry #tokens   los tokens del glob, en orden
++   entry #regex   el glob traducido a una expresión regular, como `Text`
++   entry #matches   si el texto entero coincide con el glob, con el motor que selecciona `regexBackends`
++       Toma un `Regex.Backend[form]` (con `regexBackends.javaBaseRegex` por defecto, de modo que un
++       `import regexBackends.re2` lo cambia, como hace con los interpoladores) y el
++       `Regex.Engine` de esa forma. Los motores guardan en caché la compilación por patrón
++       representado, así que buscar muchos candidatos con un glob lo compila una sola vez.
+
+- entry .internal   the macros behind `r"…"` and `g"…"`, and the extractor classes they expand to
++ entry .internal   las macros que hay detrás de `r"…"` y `g"…"`, y las clases de extractor a las que se expanden
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object houses the interpolators' expansion and the two classes a
+-       pattern expands into. `expandRegexJvm`, `expandRegexRe2`, `expandGlobJvm` and
+-       `expandGlobRe2` are the transparent inline entry points `r` and `g` dispatch to, by
+-       whether a `Regex.Backend[Re2]` is in scope; `regexJvm`, `regexRe2`, `globJvm` and
+-       `globRe2` are their macro implementations. Each parses the parts with `Regex.parse`,
+-       reporting a `Regex.Error` as a compile error positioned at the offending character,
+-       computes the capture types from the groups' quantifiers, and splices a `NoExtraction` or
+-       an `RExtractor`; under RE2 it also parses the pattern into a praxinoscope `Motif`,
+-       rejecting anything outside the RE2 subset, and stages the motif — and for a
+-       captureless pattern a static `Fsa` matcher — into the extractor.
+-   entry .expandRegexJvm   expands `r"…"` for the `java.util.regex` engine
+-   entry .expandRegexRe2   expands `r"…"` for the RE2 engine
+-   entry .expandGlobJvm   expands `g"…"` for the `java.util.regex` engine
+-   entry .expandGlobRe2   expands `g"…"` for the RE2 engine
+-   entry .regexJvm   the macro behind `expandRegexJvm`
+-   entry .regexRe2   the macro behind `expandRegexRe2`
+-   entry .globJvm   the macro behind `expandGlobJvm`: translates each part with `Glob.parse` first
+-   entry .globRe2   the macro behind `expandGlobRe2`
+-   entry .NoExtraction   the extractor a pattern with no captures expands to
++       No es para uso directo: el objeto alberga la expansión de los interpoladores y las dos
++       clases en las que se expande un patrón. `expandRegexJvm`, `expandRegexRe2`, `expandGlobJvm`
++       y `expandGlobRe2` son los puntos de entrada transparent inline a los que despachan `r` y `g`,
++       según haya o no un `Regex.Backend[Re2]` en el ámbito; `regexJvm`, `regexRe2`, `globJvm` y
++       `globRe2` son sus implementaciones como macro. Cada una analiza las partes con
++       `Regex.parse`, informando de un `Regex.Error` como error de compilación situado en el
++       carácter culpable, calcula los tipos de las capturas a partir de los cuantificadores de los
++       grupos, e inserta un `NoExtraction` o un `RExtractor`; con RE2 también analiza el patrón
++       para obtener un `Motif` de praxinoscope, rechazando cualquier cosa fuera del subconjunto de
++       RE2, e incorpora por etapas el motif —y, para un patrón sin capturas, un comparador `Fsa`
++       estático— al extractor.
++   entry .expandRegexJvm   expande `r"…"` para el motor `java.util.regex`
++   entry .expandRegexRe2   expande `r"…"` para el motor RE2
++   entry .expandGlobJvm   expande `g"…"` para el motor `java.util.regex`
++   entry .expandGlobRe2   expande `g"…"` para el motor RE2
++   entry .regexJvm   la macro que hay detrás de `expandRegexJvm`
++   entry .regexRe2   la macro que hay detrás de `expandRegexRe2`
++   entry .globJvm   la macro que hay detrás de `expandGlobJvm`: traduce primero cada parte con `Glob.parse`
++   entry .globRe2   la macro que hay detrás de `expandGlobRe2`
++   entry .NoExtraction   el extractor al que se expande un patrón sin capturas
+
+=   entry .NoExtraction   the extractor a pattern with no captures expands to
+-     detail
++     detail
+
+-         Holds the pattern text, the staged `Motif` (installed into the RE2 engine's cache when
+-         the extractor is constructed) and, when one could be generated, the static `Fsa`
+-         which answers a whole-input match without the engine.
+-     entry #apply   the pattern as a `Regex in form`, for a literal in expression position
+-     entry #unapply   whether the text matches: by the `Fsa` when there is one and no scanner position is set
+-   entry .RExtractor   the extractor a pattern with captures expands to, typed by its captures
++         Guarda el texto del patrón, el `Motif` incorporado por etapas (instalado en la caché del
++         motor RE2 cuando se construye el extractor) y, cuando se pudo generar, el `Fsa` estático
++         que responde a una coincidencia con la entrada entera sin el motor.
++     entry #apply   el patrón como `Regex in form`, para un literal en posición de expresión
++     entry #unapply   si el texto coincide: mediante el `Fsa` cuando lo hay y no hay fijada una posición del escáner
++   entry .RExtractor   el extractor al que se expande un patrón con capturas, tipado por sus capturas
+
+=   entry .RExtractor   the extractor a pattern with captures expands to, typed by its captures
+-     detail
++     detail
+
+-         `RExtractor[result, form]` holds the pattern's parts and the staged `Motif`;
+-         `result` is `Option[T]` for one capture of type `T`, or `Option[(T1, …, Tn)]` for
+-         several.
+-     entry #unapply   the captures of a match as the typed result, or `None`
++         `RExtractor[result, form]` guarda las partes del patrón y el `Motif` incorporado por
++         etapas; `result` es `Option[T]` para una captura de tipo `T`, u `Option[(T1, …, Tn)]` para
++         varias.
++     entry #unapply   las capturas de una coincidencia como resultado tipado, o `None`

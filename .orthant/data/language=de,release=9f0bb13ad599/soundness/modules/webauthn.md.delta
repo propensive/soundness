@@ -1,0 +1,411 @@
+orthant 1 language
+
+- ## WebAuthn: passwordless sign-in
++ ## WebAuthn: Anmeldung ohne Passwort
+
+- ### About
++ ### Überblick
+
+- [Web Authentication](https://www.w3.org/TR/webauthn-2/) lets a user sign in to a site with a
+- key instead of a password. An *authenticator*, which may be a security key, a phone or the
+- secure hardware of a laptop, makes a key pair for the site, keeps the private key, and signs a
+- challenge with it each time the user signs in. A credential of this kind which is synchronized
+- between a user's devices is a *passkey*.
++ [Web Authentication](https://www.w3.org/TR/webauthn-2/) erlaubt es einem Benutzer, sich mit
++ einem Schlüssel statt eines Passworts bei einer Website anzumelden. Ein *Authentifikator*, der
++ ein Sicherheitsschlüssel, ein Telefon oder die sichere Hardware eines Laptops sein kann,
++ erzeugt ein Schlüsselpaar für die Website, behält den privaten Schlüssel und signiert damit bei
++ jeder Anmeldung des Benutzers eine Challenge. Ein Credential dieser Art, das zwischen den
++ Geräten eines Benutzers synchronisiert wird, ist ein *Passkey*.
+
+- The server's side, which the standard calls the *relying party*, is provided here. It makes
+- the options a page passes to the browser, and checks what the browser sends back. The keys
+- and certificates are those of [cryptography](cryptography.md).
++ Die Seite des Servers, die der Standard *Relying Party* nennt, wird hier bereitgestellt. Sie
++ erzeugt die Optionen, die eine Seite an den Browser übergibt, und prüft, was der Browser
++ zurücksendet. Die Schlüssel und Zertifikate sind die aus [Kryptografie](cryptography.md).
+
+- ### On ceremonies
++ ### Über Zeremonien
+
+- There is nothing for a server to remember but a public key, and nothing a user can be
+- tricked into typing. What takes care is the checking. An answer must be to the challenge
+- which was sent, and not an old one. It must come from the site's own origin, and not from a
+- page which resembles it. It must be made for this relying party, with the user present. The
+- signature must be the credential's.
++ Ein Server muss sich nichts merken außer einem öffentlichen Schlüssel, und es gibt nichts, zu
++ dessen Eingabe ein Benutzer verleitet werden könnte. Sorgfalt verlangt die Prüfung. Eine
++ Antwort muss sich auf die gesendete Challenge beziehen, nicht auf eine alte. Sie muss vom
++ eigenen Origin der Website kommen, nicht von einer Seite, die ihr ähnelt. Sie muss für diese
++ Relying Party erstellt sein, bei Anwesenheit des Benutzers. Die Signatur muss die des
++ Credentials sein.
+
+- Each of the two *ceremonies* is one call to make the options and one to check the answer,
+- and the second makes every check the standard requires.
++ Jede der beiden *Zeremonien* besteht aus einem Aufruf, der die Optionen erzeugt, und einem,
++ der die Antwort prüft, und der zweite führt jede Prüfung durch, die der Standard verlangt.
+
+- Everything comes from the `soundness` package. A provider of algorithms is in scope, as it
+- is for any cryptography:
++ Alles stammt aus dem Paket `soundness`. Ein Provider von Algorithmen ist im Geltungsbereich,
++ wie bei jeder Kryptografie:
+
+= is for any cryptography:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import providers.javaBaseProvider
++ import providers.javaBaseProvider
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- A relying party is identified by a domain, and names the origins its pages are served from:
++ Eine Relying Party wird durch eine Domain identifiziert und nennt die Origins, von denen ihre
++ Seiten ausgeliefert werden:
+
+= A relying party is identified by a domain, and names the origins its pages are served from:
+=
+- ```scala
++ ```scala
+
+- val globe = WebAuthn.RelyingParty(t"globe.example", t"The Globe", List(t"https://globe.example"))
++ val globe = WebAuthn.RelyingParty(t"globe.example", t"The Globe", List(t"https://globe.example"))
+
+= val globe = WebAuthn.RelyingParty(t"globe.example", t"The Globe", List(t"https://globe.example"))
+- ```
++ ```
+
+- ### Registration
++ ### Registrierung
+
+- A credential is registered to an account, which is a `WebAuthn.User`. Its `id` is a handle
+- of up to 64 bytes which identifies the account. An authenticator stores it, so it should say
+- nothing about the person:
++ Ein Credential wird für ein Konto registriert, das ein `WebAuthn.User` ist. Seine `id` ist ein
++ Handle von bis zu 64 Bytes, der das Konto identifiziert. Ein Authentifikator speichert ihn,
++ daher sollte er nichts über die Person verraten:
+
+= nothing about the person:
+=
+- ```scala
++ ```scala
+
+- val burbage = WebAuthn.User(t"account-1567".in[Data], t"burbage", t"Richard Burbage")
++ val burbage = WebAuthn.User(t"account-1567".in[Data], t"burbage", t"Richard Burbage")
+
+= val burbage = WebAuthn.User(t"account-1567".in[Data], t"burbage", t"Richard Burbage")
+- ```
++ ```
+
+- A ceremony begins with a fresh `WebAuthn.Challenge`, which the server keeps until the answer
+- arrives. `WebAuthn.registration` makes the options, as the JSON a page passes to
+- `PublicKeyCredential.parseCreationOptionsFromJSON` and then to `navigator.credentials.create`:
++ Eine Zeremonie beginnt mit einer frischen `WebAuthn.Challenge`, die der Server aufbewahrt, bis
++ die Antwort eintrifft. `WebAuthn.registration` erzeugt die Optionen, als das JSON, das eine
++ Seite an `PublicKeyCredential.parseCreationOptionsFromJSON` und dann an
++ `navigator.credentials.create` übergibt:
+
+= `PublicKeyCredential.parseCreationOptionsFromJSON` and then to `navigator.credentials.create`:
+=
+- ```scala
++ ```scala
+
+- val challenge = WebAuthn.Challenge()
++ val challenge = WebAuthn.Challenge()
+
+- val options: Json = WebAuthn.registration(globe, burbage, challenge)
++ val options: Json = WebAuthn.registration(globe, burbage, challenge)
+
+= val options: Json = WebAuthn.registration(globe, burbage, challenge)
+- ```
++ ```
+
+- The page sends back the credential's `toJSON()`, and `WebAuthn.register` checks it. What it
+- returns is the `WebAuthn.Credential` to store for the account:
++ Die Seite sendet das `toJSON()` des Credentials zurück, und `WebAuthn.register` prüft es. Es
++ gibt das `WebAuthn.Credential` zurück, das für das Konto zu speichern ist:
+
+= returns is the `WebAuthn.Credential` to store for the account:
+=
+- ```scala fuel
++ ```scala fuel
+
+= returns is the `WebAuthn.Credential` to store for the account:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= returns is the `WebAuthn.Credential` to store for the account:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- def enrol(answer: Json): WebAuthn.Credential =
++ def enrol(answer: Json): WebAuthn.Credential =
+
+-   WebAuthn.register(answer, challenge, globe)
++   WebAuthn.register(answer, challenge, globe)
+
+=   WebAuthn.register(answer, challenge, globe)
+- ```
++ ```
+
+- A credential has an `id`, by which it is found again, the public `key`, and a signature
+- `counter`. Two things are left to the caller, because only the caller has the data: checking
+- that the `id` is not already registered to another account, and storing the credential.
++ Ein Credential hat eine `id`, über die es wiedergefunden wird, den öffentlichen Schlüssel
++ `key` und einen Signaturzähler `counter`. Zwei Dinge bleiben dem Aufrufer überlassen, weil nur
++ er die Daten hat: zu prüfen, dass die `id` nicht bereits für ein anderes Konto registriert
++ ist, und das Credential zu speichern.
+
+- `registration` takes further parameters, each with a default:
++ `registration` nimmt weitere Parameter, jeder mit einer Vorgabe:
+
+= `registration` takes further parameters, each with a default:
+=
+- ```tabular
++ ```tabular
+
+- column  Parameter
++ column  Parameter
+
+- column  Default
+- column  Meaning
+- row  `existing`  none  the identifiers of credentials the account already has, so that one authenticator is not registered twice
+- row  `algorithms`  `WebAuthn.Algorithms`  the COSE algorithms accepted, in order of preference: ES256, EdDSA and RS256
+- row  `verification`  `false`  whether the user must be verified, by a PIN or a fingerprint, and not merely present
+- row  `attestation`  `none`  the attestation conveyance asked of the authenticator
++ column  Vorgabe
++ column  Bedeutung
++ row  `existing`  keine  die Bezeichner der Credentials, die das Konto bereits hat, damit ein Authentifikator nicht zweimal registriert wird
++ row  `algorithms`  `WebAuthn.Algorithms`  die akzeptierten COSE-Algorithmen, nach Präferenz geordnet: ES256, EdDSA und RS256
++ row  `verification`  `false`  ob der Benutzer verifiziert werden muss, durch eine PIN oder einen Fingerabdruck, und nicht bloß anwesend sein
++ row  `attestation`  `none`  die vom Authentifikator verlangte Übermittlung der Attestierung
+
+= row  `attestation`  `none`  the attestation conveyance asked of the authenticator
+- ```
++ ```
+
+- What is asked for in `verification` and `algorithms` must be given to `register` as well,
+- which is what enforces it.
++ Was in `verification` und `algorithms` verlangt wird, muss auch an `register` übergeben
++ werden, denn dort wird es durchgesetzt.
+
+- ### Authentication
++ ### Authentifizierung
+
+- `WebAuthn.authentication` makes the options for signing in, for
+- `navigator.credentials.get`. The identifiers of the account's credentials are passed where
+- the account is already known, and left out where the authenticator is to offer whichever
+- credentials it holds for the site:
++ `WebAuthn.authentication` erzeugt die Optionen für die Anmeldung, für
++ `navigator.credentials.get`. Die Bezeichner der Credentials des Kontos werden übergeben, wo das
++ Konto bereits bekannt ist, und weggelassen, wo der Authentifikator beliebige Credentials
++ anbieten soll, die er für die Website hält:
+
+= credentials it holds for the site:
+=
+- ```scala
++ ```scala
+
+- val signInChallenge = WebAuthn.Challenge()
++ val signInChallenge = WebAuthn.Challenge()
+
+- val signInOptions: Json = WebAuthn.authentication(globe, signInChallenge)
++ val signInOptions: Json = WebAuthn.authentication(globe, signInChallenge)
+
+= val signInOptions: Json = WebAuthn.authentication(globe, signInChallenge)
+- ```
++ ```
+
+- The answer names the credential it is from. `WebAuthn.identifier` reads that name, so the
+- stored credential can be found, and `WebAuthn.authenticate` checks the answer against it:
++ Die Antwort nennt das Credential, von dem sie stammt. `WebAuthn.identifier` liest diesen
++ Namen, sodass das gespeicherte Credential gefunden werden kann, und `WebAuthn.authenticate`
++ prüft die Antwort dagegen:
+
+= stored credential can be found, and `WebAuthn.authenticate` checks the answer against it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= stored credential can be found, and `WebAuthn.authenticate` checks the answer against it:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= stored credential can be found, and `WebAuthn.authenticate` checks the answer against it:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- def signIn(answer: Json, find: Data => WebAuthn.Credential): WebAuthn.Credential =
++ def signIn(answer: Json, find: Data => WebAuthn.Credential): WebAuthn.Credential =
+
+-   val stored = find(WebAuthn.identifier(answer))
++   val stored = find(WebAuthn.identifier(answer))
+
+-   WebAuthn.authenticate(answer, signInChallenge, globe, stored)
++   WebAuthn.authenticate(answer, signInChallenge, globe, stored)
+
+=   WebAuthn.authenticate(answer, signInChallenge, globe, stored)
+- ```
++ ```
+
+- The credential which is returned has its counter advanced, and is stored in place of the
+- old one. A counter which has *not* advanced means the private key is in two places, so the
+- answer is refused. An authenticator which does not count reports zero every time, which is
+- accepted for as long as the stored counter is zero as well.
++ Beim zurückgegebenen Credential ist der Zähler weitergezählt, und es wird anstelle des alten
++ gespeichert. Ein Zähler, der sich *nicht* erhöht hat, bedeutet, dass der private Schlüssel an
++ zwei Orten liegt, daher wird die Antwort verweigert. Ein Authentifikator, der nicht zählt,
++ meldet jedes Mal null; das wird akzeptiert, solange auch der gespeicherte Zähler null ist.
+
+- Every refusal is a `WebAuthn.Error`, whose reason says which check failed. A challenge is for
+- one ceremony, and is discarded whether the answer is accepted or not.
++ Jede Verweigerung ist ein `WebAuthn.Error`, dessen Grund angibt, welche Prüfung
++ fehlgeschlagen ist. Eine Challenge gilt für eine Zeremonie und wird verworfen, ob die Antwort
++ akzeptiert wird oder nicht.
+
+- ### In a web application
++ ### In einer Webanwendung
+
+- A challenge has to be kept from the request which makes a ceremony's options to the request
+- which brings its answer. `Ceremonies` is a store for that, keyed by the user's `Session`.
+- `begin` makes a session's challenge and remembers it. `conclude` gives it back, once, and
+- forgets it:
++ Eine Challenge muss von dem Request, der die Optionen einer Zeremonie erzeugt, bis zu dem
++ Request aufbewahrt werden, der ihre Antwort bringt. `Ceremonies` ist ein Speicher dafür, mit
++ der `Session` des Benutzers als Schlüssel. `begin` erzeugt die Challenge einer Sitzung und
++ merkt sie sich. `conclude` gibt sie einmal zurück und vergisst sie:
+
+= forgets it:
+=
+- ```scala
++ ```scala
+
+- val ceremonies = Ceremonies()
++ val ceremonies = Ceremonies()
+
+= val ceremonies = Ceremonies()
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= ```
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- def start(session: Session): Json =
++ def start(session: Session): Json =
+
+-   WebAuthn.authentication(globe, ceremonies.begin(session))
++   WebAuthn.authentication(globe, ceremonies.begin(session))
+
+- def finish(session: Session, answer: Json, stored: WebAuthn.Credential): WebAuthn.Credential =
++ def finish(session: Session, answer: Json, stored: WebAuthn.Credential): WebAuthn.Credential =
+
+-   val pending = ceremonies.conclude(session).or(abort(WebAuthn.Error(WebAuthn.Error.Reason.Challenge)))
++   val pending = ceremonies.conclude(session).or(abort(WebAuthn.Error(WebAuthn.Error.Reason.Challenge)))
+
+-   WebAuthn.authenticate(answer, pending, globe, stored)
++   WebAuthn.authenticate(answer, pending, globe, stored)
+
+=   WebAuthn.authenticate(answer, pending, globe, stored)
+- ```
++ ```
+
+- Since `conclude` gives a challenge back only once, an answer which is offered a second time
+- finds no ceremony in progress, and is refused.
++ Da `conclude` eine Challenge nur einmal zurückgibt, findet eine Antwort, die ein zweites Mal
++ angeboten wird, keine laufende Zeremonie und wird verweigert.
+
+- ### Attestation
++ ### Attestierung
+
+- An authenticator may *attest* the credential it makes, which is a statement about the
+- authenticator itself. A credential's `attestation` says what was established:
++ Ein Authentifikator kann das Credential, das er erzeugt, *attestieren*; das ist eine Aussage
++ über den Authentifikator selbst. Die `attestation` eines Credentials sagt, was festgestellt
++ wurde:
+
+= authenticator itself. A credential's `attestation` says what was established:
+=
+- ```tabular
++ ```tabular
+
+- column  Attestation
+- column  Meaning
+- row  `Unattested`  the authenticator made no statement
+- row  `Self`  the statement was signed with the credential's own key, and proves nothing about the authenticator
+- row  `Certified`  the statement was signed with a key which a certificate chain certifies
++ column  Attestierung
++ column  Bedeutung
++ row  `Unattested`  der Authentifikator hat keine Aussage gemacht
++ row  `Self`  die Aussage wurde mit dem eigenen Schlüssel des Credentials signiert und beweist nichts über den Authentifikator
++ row  `Certified`  die Aussage wurde mit einem Schlüssel signiert, den eine Zertifikatskette beglaubigt
+
+= row  `Certified`  the statement was signed with a key which a certificate chain certifies
+- ```
++ ```
+
+- Most relying parties accept any authenticator, and ask for no attestation. One which
+- restricts the models it accepts asks for `direct` conveyance, and gives `register` the roots
+- it trusts as `anchors`. A `Certified` attestation is then accepted only if its chain leads to
+- one of them, and its `trusted` member is `true`. With no anchors, the chain is reported and
+- not validated.
++ Die meisten Relying Parties akzeptieren jeden Authentifikator und verlangen keine
++ Attestierung. Eine, die die akzeptierten Modelle einschränkt, verlangt die Übermittlung
++ `direct` und übergibt `register` die Wurzeln, denen sie vertraut, als `anchors`. Eine
++ `Certified`-Attestierung wird dann nur akzeptiert, wenn ihre Kette zu einer davon führt, und
++ dann ist ihr Member `trusted` gleich `true`. Ohne Anker wird die Kette gemeldet und nicht validiert.
+
+- The `none` and `packed` formats are understood. Any other format raises a `WebAuthn.Error`.
++ Die Formate `none` und `packed` werden verstanden. Jedes andere Format löst einen
++ `WebAuthn.Error` aus.
+
+- ### Related
++ ### Verwandte Themen
+
+- - [Cryptography](cryptography.md) provides the keys and certificates.
+- - [JOSE](jose.md) provides tokens, for the session which follows a sign-in.
+- - [OAuth 2](oauth.md) delegates sign-in to another party.
+- - [HTTP server](http-server.md) serves the pages and receives the answers.
++ - [Kryptografie](cryptography.md) stellt die Schlüssel und Zertifikate bereit.
++ - [JOSE](jose.md) stellt Tokens bereit, für die Sitzung, die auf eine Anmeldung folgt.
++ - [OAuth 2](oauth.md) delegiert die Anmeldung an eine andere Partei.
++ - [HTTP-Server](http-server.md) liefert die Seiten aus und empfängt die Antworten.

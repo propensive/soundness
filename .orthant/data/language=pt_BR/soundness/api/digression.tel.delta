@@ -1,0 +1,1302 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base digression
++ base digression
+
+- import soundness
++ import soundness
+
+- info   stack traces as immutable, demangled values; call-site positions; validated class names
++ info   stack traces como valores imutáveis com demangle; posições de pontos de chamada; nomes de classe validados
+
+- detail
++ detail
+
+-     _Digression_ turns the JVM's view of a failure into values a program can inspect and
+-     render. A `StackTrace` is captured from any `Throwable` with `stackTrace`: its exception
+-     class, its message, a list of `StackTrace.Frame`s and its cause as another `StackTrace`.
+-     Each frame's class and method names are **demangled** from the compiler's encoding toward
+-     the Scala that produced them — `$plus` becomes `+`, `$anonfun$3` becomes `λ₃`, `<init>`
+-     becomes `ⲛ` — and a `StackTrace.Resolver`, when one is imported, maps each frame back to
+-     the source definition it came from.
++     _Digression_ transforma a visão que a JVM tem de uma falha em valores que um programa pode
++     inspecionar e renderizar. Um `StackTrace` é capturado de qualquer `Throwable` com
++     `stackTrace`: sua classe de exceção, sua mensagem, uma lista de `StackTrace.Frame`s e sua
++     causa como outro `StackTrace`. Os nomes de classe e de método de cada frame passam por
++     **demangle**, da codificação do compilador para o Scala que os produziu — `$plus` se torna
++     `+`, `$anonfun$3` se torna `λ₃`, `<init>` se torna `ⲛ` — e um `StackTrace.Resolver`, quando
++     importado, mapeia cada frame de volta para a definição no código-fonte de onde ele veio.
+
+=     the source definition it came from.
+=
+-     ```scala
++     ```scala
+
+=     the source definition it came from.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val trace: StackTrace = Exception("boom").stackTrace
++     val trace: StackTrace = Exception("boom").stackTrace
+
+-     trace.className                              // t"Exception"
++     trace.className                              // t"Exception"
+
+-     trace.frames.head.let(_.displayMethod)       // the topmost method, demangled
++     trace.frames.head.let(_.displayMethod)       // the topmost method, demangled
+
+-     trace.cause                                  // Unset: no cause
++     trace.cause                                  // Unset: no cause
+
+-     trace.show                                   // the whole trace, as aligned text
++     trace.show                                   // the whole trace, as aligned text
+
+=     trace.show                                   // the whole trace, as aligned text
+-     ```
++     ```
+
+-     Alongside it are two small tools which also describe code rather than run it: a
+-     `Codepoint`, the source file and line of a call site, captured as a given wherever a
+-     method asks for one; and an `Fqcn`, a fully-qualified class name validated against the
+-     JVM's rules, written literally with `fqcn"…"`. `Smap` parses the JSR-45 source maps a
+-     classfile carries for inlined code, which is how a frame learns where its inlined lines
+-     were written.
++     Ao lado dele há duas pequenas ferramentas que também descrevem código em vez de executá-lo:
++     um `Codepoint`, o arquivo-fonte e a linha de um ponto de chamada, capturado como given onde
++     quer que um método peça um; e um `Fqcn`, um nome de classe totalmente qualificado validado
++     segundo as regras da JVM, escrito literalmente com `fqcn"…"`. `Smap` analisa os mapas de
++     código-fonte JSR-45 que um classfile carrega para código expandido inline, que é como um
++     frame descobre onde suas linhas expandidas inline foram escritas.
+
+-     The library has two source sets:
++     A biblioteca tem dois source sets:
+
+-     - `digression.core` — `StackTrace`, `Codepoint`, `Fqcn`, `Smap`, `stackTrace`, `fqcn"…"`
+-       and `idempotent`, with plain-text renderings (`Showable` and `Communicable`). It reads no
+-       files, so it compiles for every platform; the default `StackTrace.Resolver` does
+-       nothing, and the resolver which reads TASTy to find each frame's source is
+-       `stackResolutions.tastyStackResolution`, in hyperbole.
+-     - `digression.ansi` — `StackTracePalette` and the `teletypeables` package: coloured,
+-       tabulated terminal renderings of a trace, a frame, a method and an exception.
++     - `digression.core` — `StackTrace`, `Codepoint`, `Fqcn`, `Smap`, `stackTrace`, `fqcn"…"` e
++       `idempotent`, com renderizações em texto puro (`Showable` e `Communicable`). Ele não lê
++       arquivos, então compila para todas as plataformas; o `StackTrace.Resolver` padrão não faz
++       nada, e o resolvedor que lê TASTy para encontrar o código-fonte de cada frame é
++       `stackResolutions.tastyStackResolution`, no hyperbole.
++     - `digression.ansi` — `StackTracePalette` e o pacote `teletypeables`: renderizações
++       coloridas e tabuladas para terminal de um stack trace, um frame, um método e uma exceção.
+
+-     Everything is exported to the `soundness` umbrella, and the `teletypeables` choice
+-     package merges with the umbrella's own. Its givens are imported by name, since `import
+-     teletypeables.*` does not import givens:
++     Tudo é exportado para o guarda-chuva `soundness`, e o pacote de escolhas `teletypeables` se
++     funde com o do próprio guarda-chuva. Seus givens são importados pelo nome, já que `import
++     teletypeables.*` não importa givens:
+
+=     teletypeables.*` does not import givens:
+=
+-     ```scala
++     ```scala
+
+=     teletypeables.*` does not import givens:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import textMetrics.uniformMetric
++     import textMetrics.uniformMetric
+
+-     import teletypeables.stackTraceTeletype
++     import teletypeables.stackTraceTeletype
+
+-     Exception("boom").stackTrace.teletype
++     Exception("boom").stackTrace.teletype
+
+=     Exception("boom").stackTrace.teletype
+-     ```
++     ```
+
+- refer digression.StackTrace
++ refer digression.StackTrace
+
+- refer digression.stackTrace
++ refer digression.stackTrace
+
+- refer digression.Codepoint
++ refer digression.Codepoint
+
+- refer digression.Fqcn
++ refer digression.Fqcn
+
+- refer digression.teletypeables
++ refer digression.teletypeables
+
+- entry .stackTrace   the stack trace of a `Throwable`, as a `StackTrace` value, resolved by the resolver in scope
+-     An extension on `Throwable`: `error.stackTrace` is `StackTrace(error)`, with each frame
+-     passed through the `StackTrace.Resolver` in the *caller's* scope. With none imported, the
+-     companion's `StackTrace.Resolver.none` applies and frames carry their demangled names
+-     alone; importing `stackResolutions.tastyStackResolution` (from hyperbole) makes them carry
+-     their source definitions too. The resolver is taken here, not deeper, because a resolver
+-     summoned inside `StackTrace` would only ever find the default.
++ entry .stackTrace   o stack trace de um `Throwable`, como um valor `StackTrace`, resolvido pelo resolvedor em escopo
++     Uma extensão em `Throwable`: `error.stackTrace` é `StackTrace(error)`, com cada frame passado
++     pelo `StackTrace.Resolver` no escopo *de quem chama*. Sem nenhum importado, aplica-se o
++     `StackTrace.Resolver.none` do companheiro, e os frames carregam apenas seus nomes após o
++     demangle; importar `stackResolutions.tastyStackResolution` (do hyperbole) faz com que também
++     carreguem suas definições no código-fonte. O resolvedor é obtido aqui, e não mais fundo,
++     porque um resolvedor convocado dentro de `StackTrace` só encontraria o padrão.
+
+=     summoned inside `StackTrace` would only ever find the default.
+=
+-     ```scala
++     ```scala
+
+=     summoned inside `StackTrace` would only ever find the default.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val trace = Exception("boom").stackTrace
++     val trace = Exception("boom").stackTrace
+
+-     trace.frames.map(_.source).to[Set]   // Set(Unset): no resolver imported
++     trace.frames.map(_.source).to[Set]   // Set(Unset): no resolver imported
+
+=     trace.frames.map(_.source).to[Set]   // Set(Unset): no resolver imported
+-     ```
++     ```
+
+- entry .fqcn   the `fqcn"…"` interpolator: a fully-qualified class name, validated as the code compiles
+-     `fqcn"com.example.Main"` is an `Fqcn`, checked at compile time by the same rules as
+-     `Fqcn(text)`: each segment non-empty, made of ASCII letters, digits, `_` and `$`, not
+-     beginning with a digit, and not a Java keyword. A name which breaks a rule is a compile
+-     error naming the reason. The literal takes no substitutions.
++ entry .fqcn   o interpolador `fqcn"…"`: um nome de classe totalmente qualificado, validado enquanto o código compila
++     `fqcn"com.example.Main"` é um `Fqcn`, verificado em tempo de compilação pelas mesmas regras
++     de `Fqcn(text)`: cada segmento não vazio, feito de letras ASCII, dígitos, `_` e `$`, sem
++     começar com um dígito, e sem ser uma palavra-chave do Java. Um nome que viola uma regra é um
++     erro de compilação que nomeia o motivo. O literal não aceita substituições.
+
+=     error naming the reason. The literal takes no substitutions.
+=
+-     ```scala
++     ```scala
+
+=     error naming the reason. The literal takes no substitutions.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     fqcn"com.example.Main".className   // t"Main"
++     fqcn"com.example.Main".className   // t"Main"
+
+-     fqcn"com.example.class"            // does not compile
++     fqcn"com.example.class"            // does not compile
+
+=     fqcn"com.example.class"            // does not compile
+-     ```
++     ```
+
+- entry .idempotent   runs a block at most once per call site for the life of the program
+-     `idempotent { … }` takes the `Codepoint` of its call site, captured automatically, and
+-     runs the block the first time execution reaches that site; every later visit does
+-     nothing. It suits a warning to print once, or a one-time initialization written inline.
+-     The record is global and thread-safe, and two calls on different lines are separate
+-     sites.
++ entry .idempotent   executa um bloco no máximo uma vez por ponto de chamada durante a vida do programa
++     `idempotent { … }` recebe o `Codepoint` de seu ponto de chamada, capturado automaticamente, e
++     executa o bloco na primeira vez que a execução chega a esse ponto; toda visita posterior não
++     faz nada. Serve para um aviso que deve ser impresso uma vez, ou para uma inicialização única
++     escrita inline. O registro é global e thread-safe, e duas chamadas em linhas diferentes são
++     pontos distintos.
+
+=     sites.
+=
+-     ```scala
++     ```scala
+
+=     sites.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     def check(): Unit = idempotent(println("checked for the first time"))
++     def check(): Unit = idempotent(println("checked for the first time"))
+
+-     check()
++     check()
+
+-     check()   // prints nothing
++     check()   // prints nothing
+
+=     check()   // prints nothing
+-     ```
++     ```
+
+- entry .Codepoint   the source file and line of a call site, captured automatically as a given
++ entry .Codepoint   o arquivo-fonte e a linha de um ponto de chamada, capturados automaticamente como given
+
+= entry .Codepoint   the source file and line of a call site, captured automatically as a given
+-   detail
++   detail
+
+-       A method which takes `(using Codepoint)` receives the position of the code which called
+-       it, with nothing passed by hand: the companion's inline given `.default` is a macro
+-       which expands, at each call site, to that site's source path and line. This is how
+-       logs, tests and caches know where they were called from.
++       Um método que recebe `(using Codepoint)` recebe a posição do código que o chamou, sem que
++       nada seja passado à mão: o inline given `.default` do companheiro é uma macro que se
++       expande, em cada ponto de chamada, para o caminho do código-fonte e a linha desse ponto. É
++       assim que logs, testes e caches sabem de onde foram chamados.
+
+=       logs, tests and caches know where they were called from.
+=
+-       ```scala
++       ```scala
+
+=       logs, tests and caches know where they were called from.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def note(message: Text)(using codepoint: Codepoint): Text =
++       def note(message: Text)(using codepoint: Codepoint): Text =
+
+-         t"${codepoint.text}: $message"
++         t"${codepoint.text}: $message"
+
+-       note(t"checkpoint")   // e.g. t"app.scala:42: checkpoint"
++       note(t"checkpoint")   // e.g. t"app.scala:42: checkpoint"
+
+=       note(t"checkpoint")   // e.g. t"app.scala:42: checkpoint"
+-       ```
++       ```
+
+-       A `Codepoint` is a case class, so two are equal when they name the same file and line,
+-       which is how `idempotent` recognises a site. It is `Findable`, so it may be summoned as
+-       a contextual value.
+-   entry .default   the position of the call site, as the macro finds it where the given is summoned
+-   entry #source   the full path of the source file, as the compiler saw it
+-   entry #line   the line number, counted from 1
+-   entry #text   the file's last path segment and the line, as `app.scala:42`
++       Um `Codepoint` é uma case class, de modo que dois são iguais quando nomeiam o mesmo arquivo
++       e a mesma linha, que é como `idempotent` reconhece um ponto. Ele é `Findable`, de modo que
++       pode ser convocado como valor contextual.
++   entry .default   a posição do ponto de chamada, como a macro a encontra onde o given é convocado
++   entry #source   o caminho completo do arquivo-fonte, como o compilador o viu
++   entry #line   o número da linha, contado a partir de 1
++   entry #text   o último segmento do caminho do arquivo e a linha, como `app.scala:42`
+
+- entry .Fqcn   a fully-qualified JVM class name: dot-separated segments, each valid, at least one
++ entry .Fqcn   um nome de classe da JVM totalmente qualificado: segmentos separados por pontos, cada um válido, pelo menos um
+
+= entry .Fqcn   a fully-qualified JVM class name: dot-separated segments, each valid, at least one
+-   detail
++   detail
+
+-       An `Fqcn` is a class name which could at least name a class: its `#parts` are each
+-       non-empty, made of ASCII letters, digits, `_` and `$`, not beginning with a digit, and
+-       not a Java keyword, and there is at least one — the type says so, which is what makes
+-       `#className` and `#packageName` total. It is made by `Fqcn(text)`, which raises
+-       `Fqcn.Error`, by `fqcn"…"` at compile time, or decoded from text with `as[Fqcn]`.
++       Um `Fqcn` é um nome de classe que poderia pelo menos nomear uma classe: cada uma de suas
++       `#parts` é não vazia, feita de letras ASCII, dígitos, `_` e `$`, não começa com um dígito
++       e não é uma palavra-chave do Java, e há pelo menos uma — o tipo o diz, e é isso que torna
++       `#className` e `#packageName` totais. Ele é criado por `Fqcn(text)`, que lança
++       `Fqcn.Error`, por `fqcn"…"` em tempo de compilação, ou decodificado a partir de texto com
++       `as[Fqcn]`.
+
+=       `Fqcn.Error`, by `fqcn"…"` at compile time, or decoded from text with `as[Fqcn]`.
+=
+-       ```scala
++       ```scala
+
+=       `Fqcn.Error`, by `fqcn"…"` at compile time, or decoded from text with `as[Fqcn]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val main = Fqcn(t"com.example.Main")
++       val main = Fqcn(t"com.example.Main")
+
+-       main.className       // t"Main"
++       main.className       // t"Main"
+
+-       main.packageName     // t"com.example"
++       main.packageName     // t"com.example"
+
+-       main.encode          // t"com.example.Main"
++       main.encode          // t"com.example.Main"
+
+-       t"org.Main".as[Fqcn].parts
++       t"org.Main".as[Fqcn].parts
+
+=       t"org.Main".as[Fqcn].parts
+-       ```
++       ```
+
+-       Anywhere a class name travels — a manifest's `Main-Class`, a reflective lookup, a
+-       launcher's arguments — an `Fqcn` carries the guarantee that it is well formed.
++       Onde quer que um nome de classe circule — o `Main-Class` de um manifesto, uma busca
++       reflexiva, os argumentos de um launcher — um `Fqcn` carrega a garantia de que ele é bem
++       formado.
+
+-   refer digression.fqcn
++   refer digression.fqcn
+
+-   entry .apply   parses and validates a class name, raising `Fqcn.Error` for the first rule it breaks
+-       Splits the text on `.` and checks every segment, raising through the
+-       `Tactic[Fqcn.Error]` in scope: `EmptyName` for an empty segment (`com..Main`),
+-       `JavaKeyword` for one such as `class`, `InvalidChar` for a character outside the allowed
+-       set, and `InvalidStart` for a leading digit.
+-   entry .unsafeFrom   a class name from text already known to be valid, gated by `Unsafe`
+-       What `fqcn"…"` expands to: the name was validated as the code compiled, so the
+-       re-parse cannot fail, and the erased `Unsafe` token marks that the caller vouches for
+-       it.
+-   entry .valid   whether a character may appear in a segment: an ASCII letter, a digit, `_` or `$`
+-   entry .decodable   decodes text as an `Fqcn`, raising `Fqcn.Error` through the tactic it captures
+-       Needs a `Tactic[Fqcn.Error]` where it is summoned, and retains it; `t"…".as[Fqcn]` is
++   entry .apply   analisa e valida um nome de classe, lançando `Fqcn.Error` para a primeira regra que ele viola
++       Divide o texto em `.` e verifica cada segmento, lançando por meio da `Tactic[Fqcn.Error]`
++       em escopo: `EmptyName` para um segmento vazio (`com..Main`), `JavaKeyword` para um como
++       `class`, `InvalidChar` para um caractere fora do conjunto permitido, e `InvalidStart` para
++       um dígito inicial.
++   entry .unsafeFrom   um nome de classe a partir de texto que já se sabe ser válido, restrito por `Unsafe`
++       Aquilo em que `fqcn"…"` se expande: o nome foi validado enquanto o código compilava, então
++       a nova análise não pode falhar, e o token apagado `Unsafe` marca que quem chama se
++       responsabiliza por ele.
++   entry .valid   se um caractere pode aparecer em um segmento: uma letra ASCII, um dígito, `_` ou `$`
++   entry .decodable   decodifica texto como um `Fqcn`, lançando `Fqcn.Error` por meio da tática que captura
++       Precisa de uma `Tactic[Fqcn.Error]` onde é convocado, e a retém; `t"…".as[Fqcn]` é
+
+-       `Fqcn(text)`.
++       `Fqcn(text)`.
+
+-   entry .encodable   encodes an `Fqcn` as its dotted text
+-   entry .Error   raised when text is not a valid class name: an empty segment, a keyword or a bad character
++   entry .encodable   codifica um `Fqcn` como seu texto com pontos
++   entry .Error   lançado quando o texto não é um nome de classe válido: um segmento vazio, uma palavra-chave ou um caractere inválido
+
+=   entry .Error   raised when text is not a valid class name: an empty segment, a keyword or a bad character
+-     detail
++     detail
+
+-         Error `↯/s.63.1`: _the class name `name` is not valid because `reason`_. Raised by
+-         `Fqcn.apply` and by decoding text `as[Fqcn]`; `fqcn"…"` reports the same reasons as a
+-         compile error.
++         Erro `↯/s.63.1`: _the class name `name` is not valid because `reason`_. Lançado por
++         `Fqcn.apply` e ao decodificar texto `as[Fqcn]`; `fqcn"…"` relata os mesmos motivos como
++         um erro de compilação.
+
+=         compile error.
+=
+-         ```scala
++         ```scala
+
+=         compile error.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         capture[Fqcn.Error](Fqcn(t"com.example.class")).reason
++         capture[Fqcn.Error](Fqcn(t"com.example.class")).reason
+
+-         // Fqcn.Error.Reason.JavaKeyword(t"class")
++         // Fqcn.Error.Reason.JavaKeyword(t"class")
+
+=         // Fqcn.Error.Reason.JavaKeyword(t"class")
+-         ```
++         ```
+
+-     entry .Reason   why a class name is invalid: `InvalidChar`, `InvalidStart`, `EmptyName` or `JavaKeyword`
++     entry .Reason   por que um nome de classe é inválido: `InvalidChar`, `InvalidStart`, `EmptyName` ou `JavaKeyword`
+
+=     entry .Reason   why a class name is invalid: `InvalidChar`, `InvalidStart`, `EmptyName` or `JavaKeyword`
+-       detail
++       detail
+
+-           An enum of four numbered cases:
++           Um enum de quatro casos numerados:
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
++           column  Caso
++           column  Código
++           column  Mensagem
++           column  Nota
+
+-           row  `InvalidChar(char)`  1  _a package name may not contain the character `char`_
++           row  `InvalidChar(char)`  1  _a package name may not contain the character `char`_
+
+-           row  `InvalidStart(char)`  2  _a package name may not start with the character `char`_  a digit
++           row  `InvalidStart(char)`  2  _a package name may not start with the character `char`_  um dígito
+
+-           row  `EmptyName`  3  _a package name cannot be empty_
++           row  `EmptyName`  3  _a package name cannot be empty_
+
+-           row  `JavaKeyword(keyword)`  4  _a package name cannot be the Java keyword, `keyword`_
++           row  `JavaKeyword(keyword)`  4  _a package name cannot be the Java keyword, `keyword`_
+
+-           ```
++           ```
+
+-       entry #number   the reason's number, `1` to `4`
+-     entry .communicable   renders each `Fqcn.Error.Reason` as a message
+-     entry #name   the text which was not a valid class name
+-     entry #reason   why it was not valid
+-   entry #parts   the name's segments, in order, typed as non-empty
+-   entry #text   the name as dotted text: `com.example.Main`
+-   entry #className   the last segment: the simple name of the class
+-   entry #packageName   every segment but the last, dotted: the package, or empty for the default package
++       entry #number   o número do motivo, de `1` a `4`
++     entry .communicable   renderiza cada `Fqcn.Error.Reason` como uma mensagem
++     entry #name   o texto que não era um nome de classe válido
++     entry #reason   por que ele não era válido
++   entry #parts   os segmentos do nome, em ordem, tipados como não vazios
++   entry #text   o nome como texto com pontos: `com.example.Main`
++   entry #className   o último segmento: o nome simples da classe
++   entry #packageName   todos os segmentos exceto o último, com pontos: o pacote, ou vazio para o pacote padrão
+
+- entry .StackTrace   a captured stack trace as a value: exception class, message, frames and cause
++ entry .StackTrace   um stack trace capturado como valor: classe de exceção, mensagem, frames e causa
+
+= entry .StackTrace   a captured stack trace as a value: exception class, message, frames and cause
+-   detail
++   detail
+
+-       A `StackTrace` holds what a `Throwable` says about where it was thrown, demangled and
+-       immutable: its exception's package (`#component`) and simple class name
+-       (`#className`), its `#message`, its `#frames` from the top of the stack down, and its
+-       `#cause` as another `StackTrace`. A Soundness `Error`'s message is kept as the
+-       structured `Message` it was raised with; any other exception's is its text.
++       Um `StackTrace` contém o que um `Throwable` diz sobre onde foi lançado, com demangle e
++       imutável: o pacote de sua exceção (`#component`) e o nome simples da classe
++       (`#className`), sua `#message`, seus `#frames` do topo da pilha para baixo, e sua `#cause`
++       como outro `StackTrace`. A mensagem de um `Error` do Soundness é mantida como a `Message`
++       estruturada com que ele foi lançado; a de qualquer outra exceção é seu texto.
+
+=       structured `Message` it was raised with; any other exception's is its text.
+=
+-       ```scala
++       ```scala
+
+=       structured `Message` it was raised with; any other exception's is its text.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val trace = Exception("boom", Exception("cause")).stackTrace
++       val trace = Exception("boom", Exception("cause")).stackTrace
+
+-       trace.component                      // t"java.lang"
++       trace.component                      // t"java.lang"
+
+-       trace.message                        // m"boom"
++       trace.message                        // m"boom"
+
+-       trace.cause.let(_.message)           // m"cause"
++       trace.cause.let(_.message)           // m"cause"
+
+-       trace.drop(1).frames                 // all but the topmost frame
++       trace.drop(1).frames                 // all but the topmost frame
+
+=       trace.drop(1).frames                 // all but the topmost frame
+-       ```
++       ```
+
+-       Frame names are rewritten by `.rewrite`, whose glyphs `.legend` explains. Each frame
+-       passes through the `StackTrace.Resolver` the caller has in scope, which by default does
+-       nothing; one which reads the compiler's TASTy gives each frame a `Frame.Source`, the
+-       definition it came from.
++       Os nomes dos frames são reescritos por `.rewrite`, cujos glifos `.legend` explica. Cada
++       frame passa pelo `StackTrace.Resolver` que quem chama tem em escopo, o qual por padrão não
++       faz nada; um que lê o TASTy do compilador dá a cada frame um `Frame.Source`, a definição de
++       onde ele veio.
+
+-       A trace renders as aligned plain text with `show` (`.showable`), as a message
+-       (`.communicable`), and, with the `digression.ansi` component, in colour with `teletype`
+-       through `teletypeables.stackTraceTeletype`. Whether Soundness's own errors capture a
+-       trace at all is the `Diagnostics` given in scope.
++       Um stack trace é renderizado como texto puro alinhado com `show` (`.showable`), como uma
++       mensagem (`.communicable`) e, com o componente `digression.ansi`, em cores com `teletype`,
++       por meio de `teletypeables.stackTraceTeletype`. Se os próprios erros do Soundness capturam
++       um stack trace é decidido pelo given `Diagnostics` em escopo.
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Captured, unresolved
++         label Capturado, não resolvido
+
+=         label Captured, unresolved
+-         code
++         code
+
+=         label Captured, unresolved
+=         code
+-             import soundness.*
++             import soundness.*
+
+=             import soundness.*
+=
+-             val frame = Exception("boom").stackTrace.frames.head
++             val frame = Exception("boom").stackTrace.frames.head
+
+-             frame.let(_.displayMethod)   // the demangled JVM name, such as t"run.λ₃()"
++             frame.let(_.displayMethod)   // the demangled JVM name, such as t"run.λ₃()"
+
+-             frame.let(_.source)          // Unset
++             frame.let(_.source)          // Unset
+
+=             frame.let(_.source)          // Unset
+-       frame
++       frame
+
+-         label Resolved through TASTy
++         label Resolvido por meio do TASTy
+
+=         label Resolved through TASTy
+-         code
++         code
+
+=         label Resolved through TASTy
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+-             import workingDirectories.javaBaseWorkingDirectory
++             import workingDirectories.javaBaseWorkingDirectory
+
+-             import stackResolutions.tastyStackResolution
++             import stackResolutions.tastyStackResolution
+
+=             import stackResolutions.tastyStackResolution
+=
+-             val frame = Exception("boom").stackTrace.frames.head
++             val frame = Exception("boom").stackTrace.frames.head
+
+-             frame.let(_.displayMethod)   // the definition's source name, such as t"λ"
++             frame.let(_.displayMethod)   // the definition's source name, such as t"λ"
+
+-             frame.let(_.source)          // a Frame.Source, with its owner, name and Kind.Lambda
++             frame.let(_.source)          // a Frame.Source, with its owner, name and Kind.Lambda
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-   refer digression.stackTrace
++   refer digression.stackTrace
+
+-   refer digression.StackTrace.Frame
++   refer digression.StackTrace.Frame
+
+-   refer digression.StackTrace.Resolver
++   refer digression.StackTrace.Resolver
+
+-   refer digression.teletypeables
++   refer digression.teletypeables
+
+-   entry .apply   captures the stack trace of a `Throwable`, resolving each frame with the given `Resolver`
+-       `StackTrace(exception)` reads the throwable's `StackTraceElement`s, demangles each class
+-       and method name with `.rewrite`, keeps the compiled names as `Frame#jvmClass` and
+-       `Frame#jvmMethod`, and passes every frame through the resolver. A missing file name is
+-       `———` and a missing line `Unset`. The cause is captured in turn. The extension
+-       `stackTrace` is the usual way in.
+-   entry .rewrite   demangles a JVM class or method name toward its Scala form, with compact glyphs for synthetic parts
+-       Operators get their symbols back (`$plus$plus` is `++`), `$uXXXX` escapes become their
+-       characters, and the compiler's synthetic markers, `.Marker.all`, become glyphs, listed in
+-       `.legend`: `λ` a lambda, `Λ` an adapted lambda, `α` an anonymous class, `ⲛ` a
+-       constructor, `ι` an initializer, `ℓ` a lazy value, `↑` a super accessor, `⇢` another
+-       accessor, `≔` a trait setter, `⊢` an extension method, `∂` a direct method, `δ` a default
+-       argument, `⊡` a retained inline body, `⊙` an outer reference, `Σ` a specialized method
+-       with its signature, with any following number in subscript. A module class `globe.Play$`
+-       becomes `globe.ΞPlay` and a package object's class is bracketed with `⁅…⁆`. With
+-       `method = true`, the result ends `()` and `$` separates as `.`.
++   entry .apply   captura o stack trace de um `Throwable`, resolvendo cada frame com o `Resolver` dado
++       `StackTrace(exception)` lê os `StackTraceElement`s do throwable, aplica demangle a cada
++       nome de classe e de método com `.rewrite`, mantém os nomes compilados como
++       `Frame#jvmClass` e `Frame#jvmMethod`, e passa cada frame pelo resolvedor. Um nome de
++       arquivo ausente é `———` e uma linha ausente é `Unset`. A causa é capturada por sua vez. A
++       extensão `stackTrace` é a forma habitual de entrada.
++   entry .rewrite   aplica demangle a um nome de classe ou de método da JVM, em direção à sua forma Scala, com glifos compactos para as partes sintéticas
++       Os operadores recuperam seus símbolos (`$plus$plus` é `++`), os escapes `$uXXXX` se tornam
++       seus caracteres, e os marcadores sintéticos do compilador, `.Marker.all`, se tornam glifos,
++       listados em `.legend`: `λ` uma lambda, `Λ` uma lambda adaptada, `α` uma classe anônima,
++       `ⲛ` um construtor, `ι` um inicializador, `ℓ` um valor lazy, `↑` um acessor super, `⇢`
++       outro acessor, `≔` um setter de trait, `⊢` um método de extensão, `∂` um método direto,
++       `δ` um argumento padrão, `⊡` um corpo inline retido, `⊙` uma referência externa, `Σ` um
++       método especializado com sua assinatura, com qualquer número seguinte em subscrito. Uma
++       module class `globe.Play$` se torna `globe.ΞPlay` e a classe de um package object é
++       delimitada por `⁅…⁆`. Com `method = true`, o resultado termina em `()` e `$` separa como
++       `.`.
+
+=       `method = true`, the result ends `()` and `$` separates as `.`.
+=
+-       ```scala
++       ```scala
+
+=       `method = true`, the result ends `()` and `$` separates as `.`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       StackTrace.rewrite("$plus$plus", method = true)        // t"++()"
++       StackTrace.rewrite("$plus$plus", method = true)        // t"++()"
+
+-       StackTrace.rewrite("Play$$anonfun$3", method = true)   // t"Play.λ₃()"
++       StackTrace.rewrite("Play$$anonfun$3", method = true)   // t"Play.λ₃()"
+
+-       StackTrace.rewrite("apply$mcJII$sp", method = true)    // t"applyΣ((Int, Int) -> Long)()"
++       StackTrace.rewrite("apply$mcJII$sp", method = true)    // t"applyΣ((Int, Int) -> Long)()"
+
+-       StackTrace.rewrite("globe.Play$")                      // t"globe.ΞPlay"
++       StackTrace.rewrite("globe.Play$")                      // t"globe.ΞPlay"
+
+=       StackTrace.rewrite("globe.Play$")                      // t"globe.ΞPlay"
+-       ```
++       ```
+
+-   entry .Marker   a name the compiler mints after a program's own names are fixed, and its glyph
+-       Each `Marker` has the `jvm` text the compiler writes (`$anonfun`, `<init>`, `$lzyINIT`),
+-       the `glyph` it is shown as, its `meaning` for the legend, and the `Frame.Kind` a method
+-       name carrying it is known to be, where the marker settles that. `Marker.all` lists them
+-       in the order `.rewrite` tries them, as the compiler's `NameKinds` and `StdNames` define
+-       them; `Marker.operators` pairs each operator character with its encoding. `.rewrite`
+-       reads the table, `.legend` is derived from it, and hyperbole's `StackResolver.hint`
+-       classifies frames by it, so the three cannot disagree.
+-   entry .legend   what each glyph in a demangled name means, glyph to description, for rendering alongside a trace
+-       A `Map[Text, Text]` from each glyph `.rewrite` produces to a short description, derived
+-       from `.Marker.all`: `λ` is _lambda_, `ⲛ` _constructor_, `δ` _default argument_, `⁅⁆`
+-       _package file_, and so on. A number following a glyph is the compiler's own numbering, in
+-       subscript.
+-   entry .showable   renders a trace as plain text: the exception, then one aligned `at` line per frame, then its causes
+-       Each frame line has the class and method, padded so that they align, then the file and
+-       line; a resolved frame's quoted source line follows it, and each level of inlining a
+-       frame's SMAP recorded is a `↳ inlined from` line beneath it, innermost first. A cause
+-       follows after `caused by:`.
+-   entry .communicable   renders a trace as a message, as `.showable` does, with non-breaking spaces for alignment
+-   entry .Method   a demangled class name and method name, as a frame records them
++   entry .Marker   um nome que o compilador cria depois que os nomes do próprio programa estão fixados, e seu glifo
++       Cada `Marker` tem o texto `jvm` que o compilador escreve (`$anonfun`, `<init>`,
++       `$lzyINIT`), o `glyph` com que é exibido, seu `meaning` para a legenda, e o `Frame.Kind`
++       que se sabe ser um nome de método que o carrega, onde o marcador decide isso. `Marker.all`
++       os lista na ordem em que `.rewrite` os tenta, conforme o `NameKinds` e o `StdNames` do
++       compilador os definem; `Marker.operators` emparelha cada caractere de operador com sua
++       codificação. `.rewrite` lê a tabela, `.legend` é derivado dela, e o `StackResolver.hint` do
++       hyperbole classifica frames por ela, de modo que os três não podem divergir.
++   entry .legend   o que cada glifo de um nome após o demangle significa, de glifo para descrição, para renderizar ao lado de um stack trace
++       Um `Map[Text, Text]` de cada glifo que `.rewrite` produz para uma descrição curta, derivado
++       de `.Marker.all`: `λ` é _lambda_, `ⲛ` _constructor_, `δ` _default argument_, `⁅⁆`
++       _package file_, e assim por diante. Um número após um glifo é a própria numeração do
++       compilador, em subscrito.
++   entry .showable   renderiza um stack trace como texto puro: a exceção, depois uma linha `at` alinhada por frame, depois suas causas
++       Cada linha de frame tem a classe e o método, preenchidos para que se alinhem, depois o
++       arquivo e a linha; a linha do código-fonte citada de um frame resolvido vem depois dela, e
++       cada nível de expansão inline que o SMAP de um frame registrou é uma linha `↳ inlined from`
++       abaixo dela, a mais interna primeiro. Uma causa vem depois de `caused by:`.
++   entry .communicable   renderiza um stack trace como mensagem, como `.showable` faz, com espaços não separáveis para o alinhamento
++   entry .Method   um nome de classe e um nome de método após o demangle, como um frame os registra
+
+=   entry .Method   a demangled class name and method name, as a frame records them
+-     detail
++     detail
+
+-         Both names are already rewritten by `StackTrace.rewrite`: `className` is
+-         `globe.ΞPlay`-style, and `method` ends `()`.
+-     entry #className   the demangled class name, with its package
+-     entry #method   the demangled method name
+-     entry #cls   the class name's last segment
+-     entry #prefix   the class name without its last segment: its package and enclosing classes
+-   entry .Frame   one frame of a trace: its method, file and line, its compiled names, and its source if resolved
++         Ambos os nomes já foram reescritos por `StackTrace.rewrite`: `className` tem o estilo
++         `globe.ΞPlay`, e `method` termina em `()`.
++     entry #className   o nome de classe após o demangle, com seu pacote
++     entry #method   o nome de método após o demangle
++     entry #cls   o último segmento do nome de classe
++     entry #prefix   o nome de classe sem seu último segmento: seu pacote e as classes que o envolvem
++   entry .Frame   um frame de um stack trace: seu método, arquivo e linha, seus nomes compilados, e seu código-fonte se resolvido
+
+=   entry .Frame   one frame of a trace: its method, file and line, its compiled names, and its source if resolved
+-     detail
++     detail
+
+-         A frame records its demangled `#method`, the `#file` and `#line` it reports, whether it
+-         is `#native`, and the compiled `#jvmClass` and `#jvmMethod` names it was built from,
+-         which a resolver needs. A resolver may add the `#source` definition it came from and
+-         the `#inlined` origins of its line.
++         Um frame registra seu `#method` após o demangle, o `#file` e a `#line` que relata, se é
++         `#native`, e os nomes compilados `#jvmClass` e `#jvmMethod` a partir dos quais foi
++         construído, de que um resolvedor precisa. Um resolvedor pode acrescentar a definição
++         `#source` de onde ele veio e as origens `#inlined` de sua linha.
+
+-         `#displayClass` and `#displayMethod` are what a renderer shows: the source names where
+-         the frame is resolved and the demangled ones where it is not, so no renderer needs a
+-         branch of its own.
++         `#displayClass` e `#displayMethod` são o que um renderizador exibe: os nomes do
++         código-fonte onde o frame está resolvido e os nomes após o demangle onde não está, de
++         modo que nenhum renderizador precisa de um desvio próprio.
+
+=         branch of its own.
+=
+-         ```scala
++         ```scala
+
+=         branch of its own.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val source =
++         val source =
+
+-           StackTrace.Frame.Source
++           StackTrace.Frame.Source
+
+-             ( t"/src/Play.scala", t"globe.Play.stage", t"λ", StackTrace.Frame.Kind.Lambda )
++             ( t"/src/Play.scala", t"globe.Play.stage", t"λ", StackTrace.Frame.Kind.Lambda )
+
+-         val frame =
++         val frame =
+
+-           StackTrace.Frame
++           StackTrace.Frame
+
+-             ( StackTrace.Method(t"globe.ΞPlay", t"stage.λ₁()"), t"Play.scala", 12, false,
++             ( StackTrace.Method(t"globe.ΞPlay", t"stage.λ₁()"), t"Play.scala", 12, false,
+
+-               t"globe.Play$$", t"stage$$anonfun$$1", source )
++               t"globe.Play$$", t"stage$$anonfun$$1", source )
+
+-         (frame.displayClass, frame.displayMethod)     // (t"globe.Play.stage", t"λ")
++         (frame.displayClass, frame.displayMethod)     // (t"globe.Play.stage", t"λ")
+
+-         (frame.displayPrefix, frame.displaySegment)   // (t"globe.Play", t"stage")
++         (frame.displayPrefix, frame.displaySegment)   // (t"globe.Play", t"stage")
+
+=         (frame.displayPrefix, frame.displaySegment)   // (t"globe.Play", t"stage")
+-         ```
++         ```
+
+-     entry .Kind   what a frame turned out to be once resolved: a method, a lambda, … or compiler plumbing
++     entry .Kind   o que um frame se revelou ser depois de resolvido: um método, uma lambda, … ou encanamento do compilador
+
+=     entry .Kind   what a frame turned out to be once resolved: a method, a lambda, … or compiler plumbing
+-       detail
++       detail
+
+-           An enum of the kinds of definition a frame can be compiled from: `Method`,
+-           `Lambda`, `Value`, `Class`, `Constructor`, `Extension` and `Default` (a default
+-           argument) are written in source; `Bridge`, `Forwarder`, `Initializer`,
+-           `Specialized` and `Synthetic` are synthesized by the compiler, and `#plumbing` says
+-           so, so a renderer may dim or drop them.
+-       entry #plumbing   whether the kind is one the compiler synthesized: a bridge, forwarder, initializer, …
+-     entry .Source   the source definition a frame was compiled from, as a resolver finds it
++           Um enum dos tipos de definição a partir dos quais um frame pode ser compilado:
++           `Method`, `Lambda`, `Value`, `Class`, `Constructor`, `Extension` e `Default` (um
++           argumento padrão) são escritos no código-fonte; `Bridge`, `Forwarder`, `Initializer`,
++           `Specialized` e `Synthetic` são sintetizados pelo compilador, e `#plumbing` o diz, de
++           modo que um renderizador pode atenuá-los ou omiti-los.
++       entry #plumbing   se o tipo é um que o compilador sintetizou: uma ponte, um encaminhador, um inicializador, …
++     entry .Source   a definição no código-fonte a partir da qual um frame foi compilado, como um resolvedor a encontra
+
+=     entry .Source   the source definition a frame was compiled from, as a resolver finds it
+-       detail
++       detail
+
+-           A resolved frame's definition: the full `#path` of its source file (where a stack
+-           trace records only the last segment), its `#owner`, the chain of enclosing
+-           definitions, its own source `#name`, its `#kind`, and optionally the `#code` of the
+-           line.
+-       entry #path   the full path of the source file
+-       entry #owner   the chain of enclosing definitions, dotted: `globe.Play.stage`
+-       entry #name   the definition's own source name
+-       entry #kind   what kind of definition it is, as a `StackTrace.Frame.Kind`
+-       entry #code   the source line, if the resolver read it, or `Unset`
+-       entry #definition   the owner and the name joined with `.`, or the name alone if there is no owner
+-     entry .Inlined   one level of inlining a frame's line stands for: the file and line it was written at
++           A definição de um frame resolvido: o `#path` completo de seu arquivo-fonte (onde um
++           stack trace registra apenas o último segmento), seu `#owner`, a cadeia de definições
++           que o envolvem, seu próprio `#name` no código-fonte, seu `#kind` e, opcionalmente, o
++           `#code` da linha.
++       entry #path   o caminho completo do arquivo-fonte
++       entry #owner   a cadeia de definições que o envolvem, com pontos: `globe.Play.stage`
++       entry #name   o próprio nome da definição no código-fonte
++       entry #kind   que tipo de definição ela é, como um `StackTrace.Frame.Kind`
++       entry #code   a linha do código-fonte, se o resolvedor a leu, ou `Unset`
++       entry #definition   o proprietário e o nome unidos com `.`, ou apenas o nome se não houver proprietário
++     entry .Inlined   um nível de expansão inline que a linha de um frame representa: o arquivo e a linha em que foi escrito
+
+=     entry .Inlined   one level of inlining a frame's line stands for: the file and line it was written at
+-       detail
++       detail
+
+-           When a classfile's SMAP records that a frame's line was inlined from elsewhere, the
+-           frame has one `Inlined` per level, innermost first: the `#file` name, its full
+-           `#path` and the `#line`, and, where a resolver found it, the `#source` definition
+-           the position falls within — the inline method itself.
+-       entry #file   the source file's name, the last segment of its path
+-       entry #path   the source file's full path
+-       entry #line   the line the inlined code was written at
+-       entry #source   the definition the position falls within, if a resolver found it
+-     entry #method   the frame's demangled class and method names
+-     entry #file   the source file's name, as the classfile records it, or `———` if none
+-     entry #line   the line number, or `Unset` if none is recorded
+-     entry #native   whether the frame is a native method
+-     entry #jvmClass   the class name as compiled, before demangling
+-     entry #jvmMethod   the method name as compiled, before demangling
+-     entry #source   the source definition, if a resolver found it
+-     entry #inlined   the levels of inlining the frame's line stands for, innermost first
+-     entry #displayClass   what to show as the frame's owner: its source owner if resolved, else the demangled class
+-     entry #displayMethod   what to show as the frame's method: its source name if resolved, else the demangled method
+-     entry #displayPrefix   `#displayClass` without its last segment
+-     entry #displaySegment   the last segment of `#displayClass`
+-   entry .Resolver   maps a frame to its source-level definition, chosen by the given in the caller's scope
++           Quando o SMAP de um classfile registra que a linha de um frame foi expandida inline a
++           partir de outro lugar, o frame tem um `Inlined` por nível, o mais interno primeiro: o
++           nome do `#file`, seu `#path` completo e a `#line` e, onde um resolvedor a encontrou, a
++           definição `#source` em que a posição se encontra — o próprio método inline.
++       entry #file   o nome do arquivo-fonte, o último segmento de seu caminho
++       entry #path   o caminho completo do arquivo-fonte
++       entry #line   a linha em que o código expandido inline foi escrito
++       entry #source   a definição em que a posição se encontra, se um resolvedor a encontrou
++     entry #method   os nomes de classe e de método do frame após o demangle
++     entry #file   o nome do arquivo-fonte, como o classfile o registra, ou `———` se não houver
++     entry #line   o número da linha, ou `Unset` se nenhum for registrado
++     entry #native   se o frame é um método nativo
++     entry #jvmClass   o nome da classe como compilado, antes do demangle
++     entry #jvmMethod   o nome do método como compilado, antes do demangle
++     entry #source   a definição no código-fonte, se um resolvedor a encontrou
++     entry #inlined   os níveis de expansão inline que a linha do frame representa, o mais interno primeiro
++     entry #displayClass   o que exibir como proprietário do frame: seu proprietário no código-fonte se resolvido, senão a classe após o demangle
++     entry #displayMethod   o que exibir como método do frame: seu nome no código-fonte se resolvido, senão o método após o demangle
++     entry #displayPrefix   `#displayClass` sem seu último segmento
++     entry #displaySegment   o último segmento de `#displayClass`
++   entry .Resolver   mapeia um frame para sua definição no nível do código-fonte, escolhida pelo given no escopo de quem chama
+
+=   entry .Resolver   maps a frame to its source-level definition, chosen by the given in the caller's scope
+-     detail
++     detail
+
+-         Resolving a frame needs a capability digression does not have — at least a classpath
+-         — so the default, `.none`, returns every frame unchanged, and an implementation is
+-         imported from a module which has one: `stackResolutions.tastyStackResolution`, in
+-         hyperbole, reads each top-level class's TASTy (one file read per class named in the
+-         trace). Keeping the capability out is what lets traces work unchanged in a browser, a
+-         native binary or a WebAssembly component.
++         Resolver um frame exige uma capability que o digression não tem — no mínimo um
++         classpath — então o padrão, `.none`, retorna cada frame inalterado, e uma implementação é
++         importada de um módulo que tem uma: `stackResolutions.tastyStackResolution`, no
++         hyperbole, lê o TASTy de cada classe de nível superior (uma leitura de arquivo por classe
++         nomeada no stack trace). Manter a capability de fora é o que permite que os stack traces
++         funcionem sem mudanças em um navegador, em um binário nativo ou em um componente
++         WebAssembly.
+
+=         native binary or a WebAssembly component.
+=
+-         ```scala
++         ```scala
+
+=         native binary or a WebAssembly component.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given resolver: StackTrace.Resolver = frame => frame.copy(inlined = Nil)   // drops inline detail
++         given resolver: StackTrace.Resolver = frame => frame.copy(inlined = Nil)   // drops inline detail
+
+-         Exception("boom").stackTrace
++         Exception("boom").stackTrace
+
+=         Exception("boom").stackTrace
+-         ```
++         ```
+
+-     entry .none   the default resolver, which leaves every frame as captured
+-     entry #resolve   the frame with whatever its source definition adds: `#source`, `#inlined`
+-   entry #component   the exception class's package: `java.lang`
+-   entry #className   the exception class's simple name, demangled: `Exception`
+-   entry #message   the exception's message, as a `Message`
+-   entry #frames   the frames, from the top of the stack down
+-   entry #cause   the trace of the exception's cause, or `Unset`
+-   entry #crop   this trace without the frames of one method, named by its demangled class and method
+-       `trace.crop(className, method)` removes every frame whose `Method` has that class name
+-       and method name, as demangled — the frames of a test runner's entry point, say — and
+-       keeps the rest in order.
+-   entry #drop   this trace without its topmost `n` frames
+-   entry #dropRight   this trace without its bottommost `n` frames
++     entry .none   o resolvedor padrão, que deixa cada frame como foi capturado
++     entry #resolve   o frame com o que quer que sua definição no código-fonte acrescente: `#source`, `#inlined`
++   entry #component   o pacote da classe de exceção: `java.lang`
++   entry #className   o nome simples da classe de exceção, após o demangle: `Exception`
++   entry #message   a mensagem da exceção, como uma `Message`
++   entry #frames   os frames, do topo da pilha para baixo
++   entry #cause   o stack trace da causa da exceção, ou `Unset`
++   entry #crop   este stack trace sem os frames de um método, nomeado por sua classe e seu método após o demangle
++       `trace.crop(className, method)` remove todo frame cujo `Method` tenha esse nome de classe e
++       esse nome de método, após o demangle — os frames do ponto de entrada de um executor de
++       testes, por exemplo — e mantém o restante em ordem.
++   entry #drop   este stack trace sem seus `n` frames do topo
++   entry #dropRight   este stack trace sem seus `n` frames da base
+
+- entry .Smap   a parsed JSR-45 source map: where a classfile's synthetic line numbers were written
++ entry .Smap   um mapa de código-fonte JSR-45 analisado: onde os números de linha sintéticos de um classfile foram escritos
+
+= entry .Smap   a parsed JSR-45 source map: where a classfile's synthetic line numbers were written
+-   detail
++   detail
+
+-       When the compiler inlines code, the classfile's line table can only name lines of its own
+-       file, so it records synthetic line numbers and a `SourceDebugExtension` attribute — an
+-       SMAP — mapping them back. `Smap.parse` reads one: its `#generated` file name, its
+-       `#default` stratum, and its `#strata` by name. `#expand` turns a synthetic line into the
+-       chain of origins it stands for, innermost first, and the real call-site line it leads
+-       back to; `#sites` is its inverse, the generated ranges a source line went to.
++       Quando o compilador expande código inline, a tabela de linhas do classfile só pode nomear
++       linhas de seu próprio arquivo, então ela registra números de linha sintéticos e um atributo
++       `SourceDebugExtension` — um SMAP — que os mapeia de volta. `Smap.parse` lê um: o nome de
++       seu arquivo `#generated`, seu stratum `#default` e seus `#strata` por nome. `#expand`
++       transforma uma linha sintética na cadeia de origens que ela representa, a mais interna
++       primeiro, e na linha real do ponto de chamada a que ela leva de volta; `#sites` é seu
++       inverso, os intervalos gerados para os quais uma linha do código-fonte foi.
+
+=       back to; `#sites` is its inverse, the generated ranges a source line went to.
+=
+-       ```scala
++       ```scala
+
+=       back to; `#sites` is its inverse, the generated ranges a source line went to.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val lines: List[Text] =
++       val lines: List[Text] =
+
+-         List
++         List
+
+-           ( t"SMAP", t"Main.scala", t"Scala",
++           ( t"SMAP", t"Main.scala", t"Scala",
+
+-             t"*S Scala",
++             t"*S Scala",
+
+-             t"*F", t"+ 1 Main.scala", t"Main.scala", t"+ 2 Util.scala", t"globe/Util.scala",
++             t"*F", t"+ 1 Main.scala", t"Main.scala", t"+ 2 Util.scala", t"globe/Util.scala",
+
+-             t"*L", t"1#1,120:1", t"3#2,2:121",
++             t"*L", t"1#1,120:1", t"3#2,2:121",
+
+-             t"*S ScalaDebug",
++             t"*S ScalaDebug",
+
+-             t"*F", t"+ 1 Main.scala", t"Main.scala",
++             t"*F", t"+ 1 Main.scala", t"Main.scala",
+
+-             t"*L", t"3#1:121", t"3#1:122",
++             t"*L", t"3#1:121", t"3#1:122",
+
+-             t"*E" )
++             t"*E" )
+
+-       val smap = Smap.parse(lines.join(t"\n"))
++       val smap = Smap.parse(lines.join(t"\n"))
+
+-       smap.let(_.expand(121))   // Smap.Expansion(List(Smap.Origin(t"Util.scala", t"globe/Util.scala", 3)), 3)
++       smap.let(_.expand(121))   // Smap.Expansion(List(Smap.Origin(t"Util.scala", t"globe/Util.scala", 3)), 3)
+
+-       smap.let(_.expand(100))   // Unset: a real line
++       smap.let(_.expand(100))   // Unset: a real line
+
+=       smap.let(_.expand(100))   // Unset: a real line
+-       ```
++       ```
+
+-       A `<default>Debug` stratum, as the Scala and Kotlin compilers write, maps a synthetic line
+-       to its inline call site, so `#expand` follows it level by level; a `<default>Class`
+-       stratum names the top-level class each origin lies in.
+-   entry .parse   parses the text of an SMAP, or `Unset` if its header is unreadable
+-       Text which does not begin with `SMAP` and two header lines is `Unset`; within a section,
+-       anything malformed is skipped, since an SMAP is only ever a source of extra detail.
+-   entry .File   one file in a stratum's file table: the name a stack trace records and its full path
+-     entry #name   the file's name, as a stack trace records it
+-     entry #path   the file's full path, or the name again if the SMAP gave none
+-   entry .Entry   one line-mapping entry: a run of input lines in a file, mapped to a run of output lines
++       Um stratum `<default>Debug`, como os compiladores de Scala e de Kotlin escrevem, mapeia uma
++       linha sintética para seu ponto de chamada inline, de modo que `#expand` o segue nível por
++       nível; um stratum `<default>Class` nomeia a classe de nível superior em que cada origem
++       está.
++   entry .parse   analisa o texto de um SMAP, ou `Unset` se seu cabeçalho for ilegível
++       Um texto que não começa com `SMAP` e duas linhas de cabeçalho é `Unset`; dentro de uma
++       seção, qualquer coisa malformada é ignorada, já que um SMAP é sempre apenas uma fonte de
++       detalhes extras.
++   entry .File   um arquivo na tabela de arquivos de um stratum: o nome que um stack trace registra e seu caminho completo
++     entry #name   o nome do arquivo, como um stack trace o registra
++     entry #path   o caminho completo do arquivo, ou o nome novamente se o SMAP não deu nenhum
++   entry .Entry   uma entrada de mapeamento de linhas: uma sequência de linhas de entrada em um arquivo, mapeada para uma sequência de linhas de saída
+
+=   entry .Entry   one line-mapping entry: a run of input lines in a file, mapped to a run of output lines
+-     detail
++     detail
+
+-         `repeat` input lines from `inputLine` of file `fileId` map to output lines from
+-         `outputLine`, each input line covering `increment` output lines.
+-     entry #inputLine   the first input line of the run
+-     entry #fileId   the file the input lines are in, by its id in the file table
+-     entry #repeat   how many input lines the run has
+-     entry #outputLine   the first output line the run maps to
+-     entry #increment   how many output lines each input line covers
+-     entry #apply   the input line an output line falls at, or `Unset` if the entry does not cover it
+-   entry .Stratum   one stratum of an SMAP: its file table and its line entries
+-     entry #files   the file table, by file id
+-     entry #entries   the line-mapping entries, in order
+-     entry #apply   the file id and input line an output line maps to, from the first entry covering it
+-     entry #origin   the file and input line an output line maps to, when the file table knows the file
+-   entry .Origin   where a line of inlined code was written: file, path, line, and the class it lies in
+-     entry #file   the source file's name
+-     entry #path   the source file's full path
+-     entry #line   the line, counted from 1
+-     entry #cls   the binary name of the top-level class whose unit the position is in, if the SMAP says
+-   entry .Expansion   what a synthetic line stands for: its inline origins, innermost first, and the real line
+-     entry #inlined   the origins, innermost first
+-     entry #line   the real line of the frame's own file the chain leads back to, or `Unset` if it ran out
+-   entry #generated   the name of the generated file the SMAP belongs to
+-   entry #default   the name of the default stratum, such as `Scala`
+-   entry #strata   the strata, by name
+-   entry #path   the generated file's full path, if its file table records one
+-   entry #expand   a synthetic line's inline origins and the real call-site line, or `Unset` for a real line
+-   entry #sites   the generated `[start, end)` line ranges a source file's line was inlined at
+-       One range per site, excluding the line's natural occurrence in the generated file
+-       itself; empty for a file foreign to the SMAP. A line inlined at several sites gives
+-       several ranges, as a breakpoint on it belongs at every one.
++         `repeat` linhas de entrada a partir de `inputLine` do arquivo `fileId` são mapeadas para
++         linhas de saída a partir de `outputLine`, cada linha de entrada cobrindo `increment`
++         linhas de saída.
++     entry #inputLine   a primeira linha de entrada da sequência
++     entry #fileId   o arquivo em que as linhas de entrada estão, por seu id na tabela de arquivos
++     entry #repeat   quantas linhas de entrada a sequência tem
++     entry #outputLine   a primeira linha de saída para a qual a sequência é mapeada
++     entry #increment   quantas linhas de saída cada linha de entrada cobre
++     entry #apply   a linha de entrada em que uma linha de saída cai, ou `Unset` se a entrada não a cobre
++   entry .Stratum   um stratum de um SMAP: sua tabela de arquivos e suas entradas de linha
++     entry #files   a tabela de arquivos, por id de arquivo
++     entry #entries   as entradas de mapeamento de linhas, em ordem
++     entry #apply   o id de arquivo e a linha de entrada para os quais uma linha de saída é mapeada, a partir da primeira entrada que a cobre
++     entry #origin   o arquivo e a linha de entrada para os quais uma linha de saída é mapeada, quando a tabela de arquivos conhece o arquivo
++   entry .Origin   onde uma linha de código expandido inline foi escrita: arquivo, caminho, linha e a classe em que está
++     entry #file   o nome do arquivo-fonte
++     entry #path   o caminho completo do arquivo-fonte
++     entry #line   a linha, contada a partir de 1
++     entry #cls   o nome binário da classe de nível superior em cuja unidade a posição está, se o SMAP o disser
++   entry .Expansion   o que uma linha sintética representa: suas origens inline, a mais interna primeiro, e a linha real
++     entry #inlined   as origens, a mais interna primeiro
++     entry #line   a linha real do próprio arquivo do frame à qual a cadeia leva de volta, ou `Unset` se ela se esgotou
++   entry #generated   o nome do arquivo gerado ao qual o SMAP pertence
++   entry #default   o nome do stratum padrão, como `Scala`
++   entry #strata   os strata, por nome
++   entry #path   o caminho completo do arquivo gerado, se sua tabela de arquivos registrar um
++   entry #expand   as origens inline de uma linha sintética e a linha real do ponto de chamada, ou `Unset` para uma linha real
++   entry #sites   os intervalos de linhas `[start, end)` gerados nos quais a linha de um arquivo-fonte foi expandida inline
++       Um intervalo por ponto, excluindo a ocorrência natural da linha no próprio arquivo gerado;
++       vazio para um arquivo estranho ao SMAP. Uma linha expandida inline em vários pontos dá
++       vários intervalos, já que um breakpoint nela pertence a cada um deles.
+
+- entry .StackTracePalette   the colours a terminal stack trace is drawn in: message, file, method, line and accents
++ entry .StackTracePalette   as cores em que um stack trace de terminal é desenhado: mensagem, arquivo, método, linha e acentos
+
+= entry .StackTracePalette   the colours a terminal stack trace is drawn in: message, file, method, line and accents
+-   detail
++   detail
+
+-       An `iridescence.Palette` of sRGB colours for the `teletypeables` renderings, in the
+-       `digression.ansi` component: the `#message`, `#file`, `#method` and `#line` colours, a
+-       `#separator`, and five accents which colour the frames' packages in turn, so frames from
+-       one package share a colour. The companion's `.default` is in implicit scope; a given of
+-       one's own overrides it.
++       Uma `iridescence.Palette` de cores sRGB para as renderizações de `teletypeables`, no
++       componente `digression.ansi`: as cores de `#message`, `#file`, `#method` e `#line`, um
++       `#separator`, e cinco acentos que colorem, um de cada vez, os pacotes dos frames, de modo
++       que frames de um mesmo pacote compartilham uma cor. O `.default` do companheiro está no
++       escopo implícito; um given próprio o sobrepõe.
+
+=       one's own overrides it.
+=
+-       ```scala
++       ```scala
+
+=       one's own overrides it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       one's own overrides it.
+=
+=       ```scala
+=       import soundness.*
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+-       import teletypeables.stackTraceTeletype
++       import teletypeables.stackTraceTeletype
+
+-       given palette: StackTracePalette = StackTracePalette.default
++       given palette: StackTracePalette = StackTracePalette.default
+
+-       Exception("boom").stackTrace.teletype
++       Exception("boom").stackTrace.teletype
+
+=       Exception("boom").stackTrace.teletype
+-       ```
++       ```
+
+-   entry .default   white text on black, with teal files and lines and warm accents
+-   entry #Form   the colour space of the palette, `Srgb`
+-   entry #message   the colour of the exception line and of `caused by:`
+-   entry #file   the colour of file names
+-   entry #method   the colour of method names
+-   entry #line   the colour of line numbers
+-   entry #separator   the colour of separators: `at`, `.`, `:`
+-   entry #accent1   the first package accent
+-   entry #accent2   the second package accent
+-   entry #accent3   the third package accent
+-   entry #accent4   the fourth package accent
+-   entry #accent5   the fifth package accent; a sixth package takes the first again
++   entry .default   texto branco sobre preto, com arquivos e linhas em azul-petróleo e acentos quentes
++   entry #Form   o espaço de cores da paleta, `Srgb`
++   entry #message   a cor da linha da exceção e de `caused by:`
++   entry #file   a cor dos nomes de arquivo
++   entry #method   a cor dos nomes de método
++   entry #line   a cor dos números de linha
++   entry #separator   a cor dos separadores: `at`, `.`, `:`
++   entry #accent1   o primeiro acento de pacote
++   entry #accent2   o segundo acento de pacote
++   entry #accent3   o terceiro acento de pacote
++   entry #accent4   o quarto acento de pacote
++   entry #accent5   o quinto acento de pacote; um sexto pacote volta a receber o primeiro
+
+- entry .teletypeables   the coloured terminal renderings of traces, frames, methods and exceptions, imported by name
++ entry .teletypeables   as renderizações coloridas para terminal de stack traces, frames, métodos e exceções, importadas pelo nome
+
+= entry .teletypeables   the coloured terminal renderings of traces, frames, methods and exceptions, imported by name
+-   detail
++   detail
+
+-       In the `digression.ansi` component. Each given makes its subject `Teletypeable`, so
+-       `teletype` renders it as styled text for a terminal; each needs a `Text is Measurable`
+-       in scope (such as `textMetrics.uniformMetric`) for the column widths, and the renderings
+-       take the `StackTracePalette` in scope. `import teletypeables.*` does not import givens,
+-       so each is imported by name.
++       No componente `digression.ansi`. Cada given torna seu sujeito `Teletypeable`, de modo que
++       `teletype` o renderiza como texto com estilo para um terminal; cada um precisa de um `Text
++       is Measurable` em escopo (como `textMetrics.uniformMetric`) para as larguras das colunas, e
++       as renderizações usam a `StackTracePalette` em escopo. `import teletypeables.*` não importa
++       givens, então cada um é importado pelo nome.
+
+=       so each is imported by name.
+=
+-       ```scala
++       ```scala
+
+=       so each is imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       so each is imported by name.
+=
+=       ```scala
+=       import soundness.*
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+-       import teletypeables.exceptionTeletype
++       import teletypeables.exceptionTeletype
+
+-       Exception("boom").teletype
++       Exception("boom").teletype
+
+=       Exception("boom").teletype
+-       ```
++       ```
+
+-   entry .stackTraceTeletype   a trace as a borderless table: one row per frame, aligned, coloured by package
+-       The exception line, then a row per frame — `at`, the class and method as one aligned
+-       column, the file and line as another, and a resolved frame's quoted source, which is the
+-       first column to go when the terminal is narrow — with a `↳` row beneath for each level of
+-       inlining. A frame of the same class as the one above is subdued, as is compiler
+-       plumbing; causes follow after `caused by:`.
+-   entry .exceptionTeletype   an `Exception` rendered as its stack trace, captured with the resolver in scope
+-       Needs a `Text is Measurable` and a `StackTrace.Resolver`, and renders through
++   entry .stackTraceTeletype   um stack trace como tabela sem bordas: uma linha por frame, alinhada, colorida por pacote
++       A linha da exceção, depois uma linha por frame — `at`, a classe e o método como uma coluna
++       alinhada, o arquivo e a linha como outra, e o código-fonte citado de um frame resolvido,
++       que é a primeira coluna a sair quando o terminal é estreito — com uma linha `↳` abaixo para
++       cada nível de expansão inline. Um frame da mesma classe que o de cima é atenuado, assim
++       como o encanamento do compilador; as causas vêm depois de `caused by:`.
++   entry .exceptionTeletype   uma `Exception` renderizada como seu stack trace, capturado com o resolvedor em escopo
++       Precisa de um `Text is Measurable` e de um `StackTrace.Resolver`, e renderiza por meio de
+
+-       `.stackTraceTeletype`.
++       `.stackTraceTeletype`.
+
+-   entry .frameTeletype   one frame on one line: class and method fitted to forty columns, then file and line
+-   entry .methodTeletype   a `StackTrace.Method` as its class and method, separated by `⌗`
++   entry .frameTeletype   um frame em uma linha: classe e método ajustados a quarenta colunas, depois arquivo e linha
++   entry .methodTeletype   um `StackTrace.Method` como sua classe e seu método, separados por `⌗`
+
+- entry .internal   the macros behind `Codepoint.default` and `fqcn"…"`
++ entry .internal   as macros por trás de `Codepoint.default` e de `fqcn"…"`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the macros have a stable home.
+-   entry .location   the macro behind `Codepoint.default`: the expansion site's source path and line
+-   entry .fqcn   the macro behind `fqcn"…"`: validates the literal and splices `Fqcn.unsafeFrom`
+-   entry .javaKeywords   the Java keywords a class-name segment may not be
++       Não é para uso direto: o objeto existe para que as macros tenham um lar estável.
++   entry .location   a macro por trás de `Codepoint.default`: o caminho do código-fonte e a linha do ponto de expansão
++   entry .fqcn   a macro por trás de `fqcn"…"`: valida o literal e insere `Fqcn.unsafeFrom` por splice
++   entry .javaKeywords   as palavras-chave do Java que um segmento de nome de classe não pode ser

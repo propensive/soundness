@@ -1,0 +1,62 @@
+orthant 1 language
+
+- # `↯/s.103.2` — `Http.Request.Error`
++ # `↯/s.103.2` — `Http.Request.Error`
+
+- Raised when an HTTP request cannot be constructed or sent.
++ Sollevato quando una richiesta HTTP non può essere costruita o inviata.
+
+- ## Cause
++ ## Causa
+
+- This covers faults in the request itself — a URL that cannot be expressed, an invalid
+- header, a body that cannot be framed — as distinct from a failing response, which is an
+- `HttpError`, or a failing connection, which is a `ConnectError`.
++ Copre i difetti della richiesta stessa (un URL che non si può esprimere, un'intestazione non
++ valida, un corpo che non si può incorniciare), a differenza di una risposta fallita, che è un
++ `HttpError`, o di una connessione fallita, che è un `ConnectError`.
+
+- ## Variants
++ ## Varianti
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+- row  `↯/s.103.2.1`  `Expectation`  `[↯/s.103.2.1] <found> was found when <expected> was expected`
++ row  `↯/s.103.2.1`  `Expectation`  `[↯/s.103.2.1] <found> was found when <expected> was expected`
+
+- row  `↯/s.103.2.2`  `Version`  `[↯/s.103.2.2] the HTTP version <value> was invalid`
++ row  `↯/s.103.2.2`  `Version`  `[↯/s.103.2.2] the HTTP version <value> was invalid`
+
+- row  `↯/s.103.2.3`  `Host`  `[↯/s.103.2.3] the host <value> was missing or invalid`
++ row  `↯/s.103.2.3`  `Host`  `[↯/s.103.2.3] the host <value> was missing or invalid`
+
+- row  `↯/s.103.2.4`  `UriTooLong`  `[↯/s.103.2.4] the request line exceeded the maximum length`
++ row  `↯/s.103.2.4`  `UriTooLong`  `[↯/s.103.2.4] the request line exceeded the maximum length`
+
+- row  `↯/s.103.2.5`  `HeadersTooLarge`  `[↯/s.103.2.5] the request headers exceeded the maximum size`
++ row  `↯/s.103.2.5`  `HeadersTooLarge`  `[↯/s.103.2.5] the request headers exceeded the maximum size`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- The reason names the part of the request at fault. A header value containing a line break,
+- or a method the transport does not support, are the common cases.
++ Il motivo nomina la parte della richiesta che è in difetto. Un valore di intestazione che contiene
++ un'interruzione di riga, o un metodo che il trasporto non supporta, sono i casi comuni.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/telekinesis/src/core/telekinesis.Http.scala`
++ - Sorgente: `lib/telekinesis/src/core/telekinesis.Http.scala`

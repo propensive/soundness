@@ -1,0 +1,66 @@
+orthant 1 language
+
+- # `↯/s.24.1` — `recover` argument must be match cases
++ # `↯/s.24.1` — l'argument de `recover` doit être une série de cas
+
+- Raised at compiletime when the argument to `recover` is not written as a literal block of
+- `case` clauses.
++ Levée à la compilation lorsque l'argument de `recover` n'est pas écrit comme un bloc littéral de
++ clauses `case`.
+
+- ## Cause
++ ## Cause
+
+- `recover` inspects the cases as the code compiles, so that it knows which error types are
+- handled. A partial function computed elsewhere, or passed as a value, cannot be inspected.
++ `recover` inspecte les cas pendant la compilation du code, afin de savoir quels types d'erreurs
++ sont gérés. Une fonction partielle calculée ailleurs, ou passée comme valeur, ne peut pas être
++ inspectée.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.24.1] argument to `recover` should be a partial function implemented as match cases
++ [↯/s.24.1] argument to `recover` should be a partial function implemented as match cases
+
+= [↯/s.24.1] argument to `recover` should be a partial function implemented as match cases
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Write the cases inline:
++ Écrivez les cas en ligne :
+
+- ```scala
++ ```scala
+
+- def readConfiguration(): Text raises Io.Error = t"verbose = true"
++ def readConfiguration(): Text raises Io.Error = t"verbose = true"
+
+- val fallback: Text = t""
++ val fallback: Text = t""
+
+- recover:
++ recover:
+
+-   case error: Io.Error => fallback
++   case error: Io.Error => fallback
+
+- . protect(readConfiguration())
++ . protect(readConfiguration())
+
+= . protect(readConfiguration())
+- ```
++ ```
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Source : `lib/contingency/src/core/contingency.internal.scala`

@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.27.16` — Bound expression must use a comparison operator
++ # `↯/s.27.16` — L'espressione del limite deve usare un operatore di confronto
+
+- Raised at compile time by Hypotenuse's `bounded` macro when the
+- bound expression does not use one of the recognised comparison
+- operators.
++ Sollevato in fase di compilazione dalla macro `bounded` di Hypotenuse
++ quando l'espressione del limite non usa uno degli operatori di confronto riconosciuti.
+
+- ## Cause
++ ## Causa
+
+- The macro analyses bound expressions of the shape
+- `x <= n`/`x < n`/`x >= n`/`x > n`. Anything else cannot be turned
+- into a refinement.
++ La macro analizza espressioni di limite della forma `x <= n`/`x < n`/`x >= n`/`x > n`.
++ Qualsiasi altra cosa non può essere trasformata in un raffinamento.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.27.16] <message describing the unsupported bound shape>
++ [↯/s.27.16] <message describing the unsupported bound shape>
+
+= [↯/s.27.16] <message describing the unsupported bound shape>
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Express the bound using `<`, `<=`, `>`, or `>=` against a constant.
++ Esprimere il limite usando `<`, `<=`, `>` o `>=` rispetto a una costante.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Sorgente: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

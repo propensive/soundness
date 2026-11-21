@@ -1,0 +1,66 @@
+orthant 1 language
+
+- # `↯/s.140.1` — `Upgrade.Error`
++ # `↯/s.140.1` — `Upgrade.Error`
+
+- Raised when a daemon cannot stage an upgrade for its launcher.
++ Se lanza cuando un demonio no puede preparar una actualización para su lanzador.
+
+- ## Cause
++ ## Causa
+
+- An Ethereal application can replace its own binary by staging the new one as
+- `<data>/<name>/.pending`, which the launcher verifies and swaps in at the start of its next
+- invocation. This error covers a source that could not be read, an application name that is not
+- available (the daemon was not started by a launcher), and a `<name>/.pending` file that could not be
+- written. A candidate the launcher rejects is not an error here: it is reported afterwards by
+- `Upgrade.outcome`.
++ Una aplicación de Ethereal puede sustituir su propio binario dejando preparado el nuevo como
++ `<data>/<name>/.pending`, que el lanzador verifica e instala al inicio de su siguiente invocación.
++ Este error abarca un origen que no se pudo leer, un nombre de aplicación que no está disponible
++ (el demonio no lo arrancó un lanzador) y un fichero `<name>/.pending` que no se pudo escribir. Un
++ candidato que el lanzador rechaza no es un error aquí: lo notifica después `Upgrade.outcome`.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+- row  `↯/s.140.1.1`  `CannotReadSource`  `[↯/s.140.1.1] the upgrade source could not be read`
++ row  `↯/s.140.1.1`  `CannotReadSource`  `[↯/s.140.1.1] the upgrade source could not be read`
+
+- row  `↯/s.140.1.2`  `CannotWritePending`  `[↯/s.140.1.2] the .pending file could not be written`
++ row  `↯/s.140.1.2`  `CannotWritePending`  `[↯/s.140.1.2] the .pending file could not be written`
+
+- row  `↯/s.140.1.3`  `CannotResolveName`  `[↯/s.140.1.3] the running application's name is not available`
++ row  `↯/s.140.1.3`  `CannotResolveName`  `[↯/s.140.1.3] the running application's name is not available`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Run the application through its XEK launcher, which passes the daemon its name, and make sure
+- the data directory (`$XDG_DATA_HOME`, `~/.local/share` or `%LOCALAPPDATA%`) is writable. Check
+- `Upgrade.enabled` before offering an upgrade: an executable built without a release key and an
+- application id refuses every candidate.
++ Ejecuta la aplicación a través de su lanzador XEK, que pasa su nombre al demonio, y asegúrate de
++ que se puede escribir en el directorio de datos (`$XDG_DATA_HOME`, `~/.local/share` o
++ `%LOCALAPPDATA%`). Comprueba `Upgrade.enabled` antes de ofrecer una actualización: un ejecutable
++ compilado sin una clave de publicación y un identificador de aplicación rechaza a todos los
++ candidatos.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/ethereal/src/core/ethereal.Upgrade.scala`
++ - Fuente: `lib/ethereal/src/core/ethereal.Upgrade.scala`

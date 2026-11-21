@@ -1,0 +1,279 @@
+orthant 1 language
+
+- ## Versioning
++ ## Версионирование
+
+- ### About
++ ### Обзор
+
+- A [semantic version](https://semver.org/) is a structured claim: this major version, this
+- minor, this patch, and perhaps a prerelease. The specification has precise rules for validity
+- and for ordering, and `Semver` implements them exactly. A version literal is checked at
+- [compiletime], versions compare by the specification's rules of precedence, and text is parsed
+- with a typed error.
++ [Семантическая версия](https://semver.org/) — это структурированное утверждение: такая-то
++ мажорная версия, такая-то минорная, такой-то патч и, возможно, пререлиз. У спецификации есть
++ точные правила допустимости и упорядочения, и `Semver` реализует их в точности. Литерал версии
++ проверяется во [время компиляции][время компиляции], версии сравниваются по правилам
++ старшинства из спецификации, а текст разбирается с типизированной ошибкой.
+
+- JAR *manifests* are handled here too. They are read and written as typed values, whose standard
+- attributes have real types: a `Main-Class` is an [Fqcn](stack-traces.md), not a string.
++ Здесь же обрабатываются *манифесты* JAR. Они читаются и записываются как типизированные значения,
++ стандартные атрибуты которых имеют настоящие типы: `Main-Class` — это [Fqcn](stack-traces.md), а
++ не строка.
+
+- ### On version numbers
++ ### О номерах версий
+
+- Version strings invite thinking in strings: split on dots, compare the characters, and
+- `1.10.0` sorts before `1.9.0`. The semantic versioning specification pins down both the grammar
+- and the rules of precedence, including the subtle ones:
++ Строки версий провоцируют мыслить строками: разбить по точкам, сравнить символы — и `1.10.0`
++ окажется перед `1.9.0`. Спецификация семантического версионирования точно фиксирует и грамматику,
++ и правила старшинства, включая тонкие:
+
+- - Leading zeros are illegal, and a prerelease identifier may contain only certain characters.
+- - Numeric identifiers compare numerically.
+- - `1.0.0-alpha` precedes `1.0.0`.
+- - Build metadata never affects ordering.
++ - Ведущие нули запрещены, а идентификатор пререлиза может содержать лишь определённые символы.
++ - Числовые идентификаторы сравниваются как числа.
++ - `1.0.0-alpha` предшествует `1.0.0`.
++ - Метаданные сборки никогда не влияют на порядок.
+
+- Rules that precise belong in a type. A version which cannot be constructed invalid, and which
+- compares as the specification says, is
+- [safety by construction](../../philosophy/safety-by-construction.md).
++ Правилам такой точности место в типе. Версия, которую невозможно сконструировать
++ недопустимой и которая сравнивается так, как говорит спецификация, — это
++ [безопасность по построению](../../philosophy/safety-by-construction.md).
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception, and
+- the last import lets them print their results:
++ Всё берётся из пакета `soundness`. Примеры бросают любую ошибку как исключение, а последний импорт
++ позволяет им печатать результаты:
+
+= the last import lets them print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Versions
++ ### Версии
+
+- The `v"…"` [interpolator] writes a version, and checks it at compiletime:
++ [Интерполятор][интерполятор] `v"…"` записывает версию и проверяет её во время компиляции:
+
+= The `v"…"` [interpolator] writes a version, and checks it at compiletime:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The `v"…"` [interpolator] writes a version, and checks it at compiletime:
+=
+= ```scala fuel
+- compile
++ compile
+
+= compile
+- ##
++ ##
+
+- val version = v"1.4.2"
++ val version = v"1.4.2"
+
+= val version = v"1.4.2"
+- ```
++ ```
+
+- A literal which is not a semantic version does not compile:
++ Литерал, который не является семантической версией, не компилируется:
+
+= A literal which is not a semantic version does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A literal which is not a semantic version does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- v"1.2"
++ v"1.2"
+
+= v"1.2"
+- ```
++ ```
+
+- Text is [decoded](decoding.md#decoding-a-value) to the same type with `as[Semver]`, and a
+- malformed version raises a `Semver.Error`:
++ Текст [декодируется](decoding.md#decoding-a-value) в тот же тип с помощью `as[Semver]`, а
++ некорректная версия порождает `Semver.Error`:
+
+= malformed version raises a `Semver.Error`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= malformed version raises a `Semver.Error`:
+=
+= ```scala fuel
+- run
++ run
+
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"2.0.0-rc.1".as[Semver].show)
++ Out.println(t"2.0.0-rc.1".as[Semver].show)
+
+= Out.println(t"2.0.0-rc.1".as[Semver].show)
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- t"2.0".as[Semver]
++ t"2.0".as[Semver]
+
+= t"2.0".as[Semver]
+- ```
++ ```
+
+- ### Ordering
++ ### Упорядочение
+
+- Ordering follows the specification exactly. A longer prerelease follows a shorter one, numeric
+- identifiers compare as numbers, and a release outranks its own prereleases:
++ Упорядочение в точности следует спецификации. Более длинный пререлиз следует за более коротким,
++ числовые идентификаторы сравниваются как числа, а релиз старше собственных пререлизов:
+
+= identifiers compare as numbers, and a release outranks its own prereleases:
+=
+- ```scala fuel
++ ```scala fuel
+
+= identifiers compare as numbers, and a release outranks its own prereleases:
+=
+= ```scala fuel
+- compile
++ compile
+
+= compile
+- run
++ run
+
+= compile
+= run
+- ##
++ ##
+
+- Out.println((v"1.0.0-alpha" < v"1.0.0-alpha.1").inspect)
++ Out.println((v"1.0.0-alpha" < v"1.0.0-alpha.1").inspect)
+
+- Out.println((v"1.0.0-beta.2" < v"1.0.0-beta.11").inspect)
++ Out.println((v"1.0.0-beta.2" < v"1.0.0-beta.11").inspect)
+
+- Out.println((v"1.0.0-rc.1" < v"1.0.0").inspect)
++ Out.println((v"1.0.0-rc.1" < v"1.0.0").inspect)
+
+- Out.println((v"1.9.0" < v"1.10.0").inspect)
++ Out.println((v"1.9.0" < v"1.10.0").inspect)
+
+= Out.println((v"1.9.0" < v"1.10.0").inspect)
+- ```
++ ```
+
+- A version knows whether it is still in initial `development`, with a major version of zero,
+- when anything may change. `release` strips the prerelease and build parts.
++ Версия знает, находится ли она ещё в начальной разработке (`development`) с мажорной версией,
++ равной нулю, когда может измениться что угодно. `release` отбрасывает части пререлиза и сборки.
+
+- ### Manifests
++ ### Манифесты
+
+- A JAR's `META-INF/MANIFEST.MF` is read and written as a `Manifest` of typed attributes. The
+- standard attributes are named values, and reading one gives a value of its proper type:
++ `META-INF/MANIFEST.MF` из JAR читается и записывается как `Manifest` из типизированных
++ атрибутов. Стандартные атрибуты — это именованные значения, и чтение одного из них даёт значение
++ его собственного типа:
+
+= standard attributes are named values, and reading one gives a value of its proper type:
+=
+- ```scala
++ ```scala
+
+- import manifestAttributes.*
++ import manifestAttributes.*
+
+- val manifest = Manifest
++ val manifest = Manifest
+
+-   ( ManifestVersion(()),
++   ( ManifestVersion(()),
+
+-     MainClass(fqcn"com.example.Main"),
++     MainClass(fqcn"com.example.Main"),
+
+-     CreatedBy(t"Soundness") )
++     CreatedBy(t"Soundness") )
+
+- val main: Optional[Fqcn] = manifest(MainClass)
++ val main: Optional[Fqcn] = manifest(MainClass)
+
+= val main: Optional[Fqcn] = manifest(MainClass)
+- ```
++ ```
+
+- A manifest read from a JAR is parsed through the same type. Tools which inspect or rewrite
+- manifests, as [Packaging](packaging.md) does, therefore work with values, not with the format's
+- fussy rules for wrapping lines. [Archives](archives.md) reads and writes the JAR itself.
++ Манифест, прочитанный из JAR, разбирается через тот же тип. Поэтому инструменты, которые
++ инспектируют или переписывают манифесты, как это делает [Упаковка](packaging.md), работают со
++ значениями, а не с привередливыми правилами формата о переносе строк. [Архивы](archives.md)
++ читают и записывают сам JAR.

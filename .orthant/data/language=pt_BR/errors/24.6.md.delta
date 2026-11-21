@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.24.6` — Pattern with repetition not exhaustive
++ # `↯/s.24.6` — Padrão com repetição não exaustivo
+
+- Raised by Contingency's pattern-analysis macro when a pattern that
+- involves repeated parameters does not cover all cases.
++ Lançado pela macro de análise de padrões do Contingency quando um padrão que
++ envolve parâmetros repetidos não cobre todos os casos.
+
+- ## Cause
++ ## Causa
+
+- The macro determines whether a partial-function pattern handles
+- every possible error type. When the pattern uses repetition (e.g.
+- varargs) and leaves cases unhandled, this halt fires.
++ A macro determina se um padrão de função parcial trata
++ todos os tipos de erro possíveis. Quando o padrão usa repetição (por exemplo,
++ varargs) e deixa casos sem tratamento, esta parada é disparada.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.24.6] the pattern (which involves repeated parameters) is not exhaustive
++ [↯/s.24.6] the pattern (which involves repeated parameters) is not exhaustive
+
+= [↯/s.24.6] the pattern (which involves repeated parameters) is not exhaustive
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Add cases to cover the missing alternatives, or restructure the
+- pattern to avoid repetition.
++ Acrescente casos para cobrir as alternativas que faltam, ou reestruture o
++ padrão para evitar a repetição.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Código-fonte: `lib/contingency/src/core/contingency.internal.scala`

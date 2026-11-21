@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # Soundness Module Layout Standards
++ # Normes de disposition des modules de Soundness
+
+- _(Stub — scope for review; full content to follow.)_
++ _(Stub : portée à revoir ; le contenu complet suivra.)_
+
+- This standard will define how a Soundness module is laid out on disk and how its
+- namespace is structured. It will cover these conventions:
++ Cette norme définira la disposition d'un module Soundness sur le disque et la
++ structure de son espace de noms. Elle couvrira les conventions suivantes :
+
+- ```tabular
++ ```tabular
+
+- column  Place
+- column  Holds
+- row  `src/core`  the library
+- row  `src/test`  tests
+- row  `src/bench`  benchmarks
+- row  `src/<variant>`  optional integrations
+- row  `<module>.<Type>.scala`  one top-level type, named for it
+- row  `<module>_core.scala`  package-level givens and extensions, companion-first
++ column  Emplacement
++ column  Contenu
++ row  `src/core`  la bibliothèque
++ row  `src/test`  les tests
++ row  `src/bench`  les benchmarks
++ row  `src/<variant>`  les intégrations facultatives
++ row  `<module>.<Type>.scala`  un seul type de premier niveau, dont le fichier porte le nom
++ row  `<module>_core.scala`  les givens et extensions au niveau du package, compagnon d'abord
+
+- ```
++ ```
+
+- It will also describe the `soundness_<module>_core.scala` re-export that lifts a
+- module's public surface into the umbrella `soundness` package, and the rules for
+- what is exported versus kept internal. Some of this is already touched on in
+- Consequent Style's Locatability rules (`L1`–`L5`, see [`syntax.md`](syntax.md));
+- this standard will gather the structural conventions in one place.
++ Elle décrira aussi la réexportation `soundness_<module>_core.scala`, qui remonte
++ la surface publique d'un module dans le package umbrella `soundness`, ainsi que les
++ règles qui décident de ce qui est exporté et de ce qui reste interne. Les règles de
++ localisabilité du Consequent Style (`L1`–`L5`, voir [`syntax.md`](syntax.md)) en
++ abordent déjà une partie ; cette norme rassemblera les conventions structurelles en un
++ seul endroit.

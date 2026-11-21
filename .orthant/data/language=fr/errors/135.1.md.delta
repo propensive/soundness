@@ -1,0 +1,66 @@
+orthant 1 language
+
+- # `↯/s.135.1` — `OpenApi.Error`
++ # `↯/s.135.1` — `OpenApi.Error`
+
+- Raised when an OpenAPI document is malformed or cannot be interpreted.
++ Levée lorsqu'un document OpenAPI est malformé ou ne peut pas être interprété.
+
+- ## Cause
++ ## Cause
+
+- Apoplexy reads OpenAPI specifications to derive typed clients. This error covers a document
+- that does not match the OpenAPI schema, a reference that does not resolve, and a construct
+- outside the subset Apoplexy models.
++ Apoplexy lit des spécifications OpenAPI pour en dériver des clients typés. Cette erreur couvre un
++ document qui ne correspond pas au schéma OpenAPI, une référence qui ne se résout pas et une
++ construction hors du sous-ensemble que modélise Apoplexy.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
++ column  Raison
+
+- column  Message
++ column  Message
+
+- row  `↯/s.135.1.1`  `Malformed`  `[↯/s.135.1.1] the OpenAPI document could not be parsed`
++ row  `↯/s.135.1.1`  `Malformed`  `[↯/s.135.1.1] the OpenAPI document could not be parsed`
+
+- row  `↯/s.135.1.2`  `UnsupportedVersion`  `[↯/s.135.1.2] the OpenAPI version <version> is not supported; only 3.x is supported`
++ row  `↯/s.135.1.2`  `UnsupportedVersion`  `[↯/s.135.1.2] the OpenAPI version <version> is not supported; only 3.x is supported`
+
+- row  `↯/s.135.1.3`  `UnresolvableRef`  `[↯/s.135.1.3] the reference <pointer> could not be resolved`
++ row  `↯/s.135.1.3`  `UnresolvableRef`  `[↯/s.135.1.3] the reference <pointer> could not be resolved`
+
+- row  `↯/s.135.1.4`  `UnsupportedRef`  `[↯/s.135.1.4] the reference <pointer> is not supported; only #/components/schemas references work`
++ row  `↯/s.135.1.4`  `UnsupportedRef`  `[↯/s.135.1.4] the reference <pointer> is not supported; only #/components/schemas references work`
+
+- row  `↯/s.135.1.5`  `BadParameterLocation`  `[↯/s.135.1.5] <value> is not a valid parameter location; expected one of path, query, header or cookie`
++ row  `↯/s.135.1.5`  `BadParameterLocation`  `[↯/s.135.1.5] <value> is not a valid parameter location; expected one of path, query, header or cookie`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- An unresolved reference usually means a `$ref` pointing outside the document, which is not
+- followed. Where a construct is unsupported, the specification may still be usable with that
+- operation excluded.
++ Une référence non résolue signifie généralement un `$ref` qui pointe hors du document, ce qui
++ n'est pas suivi. Lorsqu'une construction n'est pas prise en charge, la spécification peut
++ rester utilisable en excluant cette opération.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/apoplexy/src/core/apoplexy.OpenApi.scala`
++ - Source : `lib/apoplexy/src/core/apoplexy.OpenApi.scala`

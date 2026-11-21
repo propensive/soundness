@@ -1,0 +1,323 @@
+orthant 1 language
+
+- # Error Handling
++ # エラー処理
+
+- Soundness handles errors generically, separating code that can fail from the decision
+- of what to do when it does. An operation declares in its type the errors it may raise,
+- and the caller chooses a strategy — throw, recover with a default, accumulate several
+- failures, or treat the failure as a checked outcome — without the operation needing to
+- know which. This makes failure visible in the types, with the discipline of checked
+- exceptions but none of their rigidity, and it lets the same fallible code be used
+- unsafely while prototyping and then made totally safe later, with no rewrite. The
+- errors themselves are [expressive, immutable values](expressive-errors.md).
++ Soundness はエラーを汎用的に扱い、失敗しうるコードと、失敗したときに何をするかの決定とを切り離す。
++ 操作は自分が発生させうるエラーを型の中で宣言し、呼び出し側が戦略を選ぶ。例外を投げる、既定値で回復する、いくつもの失敗を蓄積する、あるいは失敗を検査される結果として扱う、のいずれかであり、操作はどれが選ばれたかを知る必要がない。
++ これにより失敗が型の中に見えるようになる。検査例外の規律を持ちながら、その硬直さは持たない。そして同じ失敗しうるコードを、プロトタイプの間は安全でない形で使い、後で書き直すことなく完全に安全にできる。
++ エラーそのものは[表現力のある不変の値](expressive-errors.md)である。
+
+- ## The separation
++ ## 切り離し
+
+- An operation says what it can fail with, in its return type, and says nothing about what
+- should happen:
++ 操作は、何で失敗しうるかを戻り値の型の中で述べ、何が起こるべきかについては何も述べない。
+
+= should happen:
+=
+- ```scala fuel
++ ```scala fuel
+
+= should happen:
+=
+= ```scala fuel
+- parse
++ parse
+
+= should happen:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def loadConfiguration(path: Path on Linux): Configuration raises Io.Error raises JsonError
++ def loadConfiguration(path: Path on Linux): Configuration raises Io.Error raises JsonError
+
+= def loadConfiguration(path: Path on Linux): Configuration raises Io.Error raises JsonError
+- ```
++ ```
+
+- The caller supplies the response, as a contextual value. The same body serves every
+- response, because the body never mentioned one:
++ 呼び出し側が、対応をコンテキスト値として与える。
++ 本体は一度も対応に言及していないので、同じ本体がどの対応にも使える。
+
+= response, because the body never mentioned one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= response, because the body never mentioned one:
+=
+= ```scala fuel
+- parse
++ parse
+
+- alternative Throw
++ alternative Throw
+
+= alternative Throw
+-   code
++   code
+
+-       import strategies.throwUnsafely       // throw: fine while prototyping
++       import strategies.throwUnsafely       // throw: fine while prototyping
+
+- alternative Fall back
++ alternative Fall back
+
+= alternative Fall back
+-   code
++   code
+
+-       safely(loadConfiguration(path)).or(Configuration.default)   // fall back
++       safely(loadConfiguration(path)).or(Configuration.default)   // fall back
+
+- alternative Handle
++ alternative Handle
+
+= alternative Handle
+-   code
++   code
+
+-       recover:
++       recover:
+
+-         case Io.Error(path, _, _) => Configuration.default
++         case Io.Error(path, _, _) => Configuration.default
+
+-         case error: JsonError    => abort(StartupError(error))
++         case error: JsonError    => abort(StartupError(error))
+
+-       . protect(loadConfiguration(path))                          // handle each case
++       . protect(loadConfiguration(path))                          // handle each case
+
+- alternative Accrue
++ alternative Accrue
+
+= alternative Accrue
+-   code
++   code
+
+-       accrue(Invalid(Nil))((all, error) => all.add(error)):
++       accrue(Invalid(Nil))((all, error) => all.add(error)):
+
+-         case error => ()
++         case error => ()
+
+-       . protect(validateEverything(form))                         // collect them all
++       . protect(validateEverything(form))                         // collect them all
+
+=       . protect(validateEverything(form))                         // collect them all
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- Nothing in `loadConfiguration` changes from one version to another. That is the property the whole
+- design exists for.
++ `loadConfiguration` の中身は、どの版でも何も変わらない。
++ 設計全体はこの性質のために存在する。
+
+- ## Why not the alternatives
++ ## なぜ他の方法ではないのか
+
+- **Unchecked exceptions** are invisible. A signature says nothing about what might be
+- thrown, so a caller learns of a failure when it happens, in production, having written no
+- handler because there was nothing to prompt one.
++ **検査されない例外**は目に見えない。
++ シグネチャは何が投げられうるかについて何も言わないので、呼び出し側は失敗を、それが本番環境で起きたときに知る。何も促すものがなかったので、ハンドラは書かれていない。
+
+- **Java's checked exceptions** are visible and rigid. The error type is welded into every
+- signature along the call chain, so adding a failure mode to a leaf function edits every
+- caller between it and the handler — and because the compiler demands a response at each
+- step, the pressure is toward `catch (Exception e) {}`, which is worse than either.
++ **Java の検査例外**は目に見えるが、硬直している。
++ エラーの型は呼び出しの連鎖に沿ったすべてのシグネチャに溶接されるので、末端の関数に失敗の種類を一つ加えると、それとハンドラの間にあるすべての呼び出し側を書き換えることになる。しかもコンパイラが各段階で対応を要求するので、`catch (Exception e) {}` への圧力がかかり、それはどちらよりも悪い。
+
+- **`Either` and its relatives** are visible and honest, but they change the *shape* of the
+- code: a fallible call cannot sit inside an argument list or an interpolated string, and
+- combining failure with asynchrony means stacking transformers. See
+- [direct style](direct-style.md) for why that matters more than it first appears.
++ **`Either` とその仲間**は目に見え、正直だが、コードの*形*を変えてしまう。失敗しうる呼び出しは引数リストや補間された文字列の中に置けず、失敗と非同期性を組み合わせるには変換子を積み重ねなければならない。
++ それが最初に見えるよりも重要である理由は、[ダイレクトスタイル](direct-style.md)を参照。
+
+- The Soundness arrangement takes visibility from the checked-exception tradition, the
+- ability to choose a response from the functional one, and the shape of ordinary code from
+- neither.
++ Soundness の仕組みは、目に見えることを検査例外の伝統から、対応を選べることを関数型の伝統から取り、普通のコードの形はどちらからも取らない。
+
+- ## Raising, aborting, and the difference
++ ## 発生させること、中断すること、そしてその違い
+
+- Two verbs, and the distinction is what makes accrual possible.
++ 二つの動詞があり、その区別が蓄積を可能にする。
+
+- `abort` stops the computation: there is no value to continue with. `raise` records the
+- error and continues with a supplied fallback — which is what lets a validation pass check
+- every field rather than stopping at the first:
++ `abort` は計算を止める。続けるための値がないからである。
++ `raise` はエラーを記録し、与えられた代替の値で続ける。これにより、検証の処理は最初で止まらずにすべてのフィールドを検査できる。
+
+= every field rather than stopping at the first:
+=
+- ```scala fuel
++ ```scala fuel
+
+= every field rather than stopping at the first:
+=
+= ```scala fuel
+- parse
++ parse
+
+= every field rather than stopping at the first:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def parseAge(text: Text): Int raises NumberError =
++ def parseAge(text: Text): Int raises NumberError =
+
+-   text.as[Int]                       // aborts if it cannot parse
++   text.as[Int]                       // aborts if it cannot parse
+
+- def lenientAge(text: Text): Int raises NumberError =
++ def lenientAge(text: Text): Int raises NumberError =
+
+-   raise(NumberError(text, Unparseable)) yet 0    // records, continues with 0
++   raise(NumberError(text, Unparseable)) yet 0    // records, continues with 0
+
+=   raise(NumberError(text, Unparseable)) yet 0    // records, continues with 0
+- ```
++ ```
+
+- Under an accruing strategy the recorded errors are collected; under a throwing one the
+- first still throws. The operation states which of the two it means, and the strategy
+- decides what becomes of it.
++ 蓄積する戦略のもとでは、記録されたエラーが集められる。例外を投げる戦略のもとでは、最初のものがやはり例外を投げる。
++ 操作は二つのどちらを意図しているかを述べ、戦略がそれをどうするかを決める。
+
+- ## Ventures and guards
++ ## ベンチャーとガード
+
+- A fallback value flows onwards, and downstream code cannot tell it from a real one — a
+- consistency check fed a placeholder raises spurious *cascade* errors. `venture` and
+- `guard` make the dependency structure explicit instead:
++ 代替の値は先へと流れていき、下流のコードはそれを本物の値と区別できない。プレースホルダーを与えられた一貫性の検査は、偽りの*連鎖的な*エラーを発生させる。
++ `venture` と `guard` は、代わりに依存の構造を明示する。
+
+= `guard` make the dependency structure explicit instead:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `guard` make the dependency structure explicit instead:
+=
+= ```scala fuel
+- parse
++ parse
+
+= `guard` make the dependency structure explicit instead:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def decodePerson(json: Json): Person raises Json.Error =
++ def decodePerson(json: Json): Person raises Json.Error =
+
+-   val name: Venture[Text] = venture(json.name.as[Text])
++   val name: Venture[Text] = venture(json.name.as[Text])
+
+-   val age: Venture[Int] = venture(json.age.as[Int])
++   val age: Venture[Int] = venture(json.age.as[Int])
+
+-   venture(checkConsistency(name(), age()))
++   venture(checkConsistency(name(), age()))
+
+-   guard:
++   guard:
+
+-     Person(name(), age())
++     Person(name(), age())
+
+=     Person(name(), age())
+- ```
++ ```
+
+- A `venture` evaluates immediately — its errors accrue like any others — but remembers
+- whether anything went wrong. Forcing a failed venture with `name()` skips the enclosing
+- venture or `guard` block rather than producing a value, so the consistency check above
+- never runs on garbage; and because `age` was evaluated eagerly at its declaration, its
+- errors were collected even if `name` failed first. `guard` runs its block only when no
+- error has been recorded so far. Under a fail-fast strategy both constructs disappear:
+- an error escapes at the venture itself, and `guard` is the identity — the same body
+- serves every strategy, which is the point.
++ `venture` はただちに評価され、そのエラーは他のエラーと同じく蓄積されるが、何かがうまくいかなかったかどうかを覚えている。
++ 失敗したベンチャーを `name()` で強制すると、値を生み出す代わりに、それを囲むベンチャーや `guard` ブロックが飛ばされる。そのため上の一貫性の検査がごみの上で実行されることはない。また `age` は宣言の時点で先行して評価されたので、`name` が先に失敗しても、そのエラーは集められている。
++ `guard` は、それまでにエラーが一つも記録されていない場合にだけブロックを実行する。
++ 即座に失敗する戦略のもとでは、どちらの構文も消える。エラーはベンチャーそのものの場所で逃げ出し、`guard` は恒等関数になる。同じ本体がすべての戦略に使えることが、要点である。
+
+- ## Making the response total
++ ## 対応を全域的にする
+
+- `safely` and `unsafely` are the two escape hatches, and they are deliberately conspicuous.
+- `unsafely` discharges the obligation without handling it — legitimate at a program's
+- boundary, or in a test that has already established the value is fine, and a searchable
+- marker of the places where the guarantee stops.
++ `safely` と `unsafely` は二つの逃げ道であり、意図的に目立つようにしてある。
++ `unsafely` は義務を処理せずに解消する。プログラムの境界や、値に問題がないことをすでに確かめたテストの中では正当であり、保証が途切れる場所を検索できる目印になる。
+
+- The intended progression is that a prototype uses `throwUnsafely` throughout, and the
+- places that matter are converted to real handling as the program is hardened — with no
+- change to the fallible code itself, because it never depended on which was in scope.
++ 意図されている進め方はこうである。プロトタイプでは全体で `throwUnsafely` を使い、プログラムが堅牢にされるにつれて、重要な場所を本当の処理に変えていく。失敗しうるコードそのものは変わらない。それはスコープにどれがあるかに一度も依存していなかったからである。
+
+- ## What it costs
++ ## コスト
+
+- **A capability must be in scope.** A method that calls fallible code must either handle
+- the failure or declare that it too can fail. That propagation is the mechanism working
+- correctly, but it means adding a failure mode to a widely-used function does touch the
+- functions that call it — the same cost checked exceptions have, without the rigidity of
+- being unable to choose the response.
++ **ケイパビリティがスコープ内になければならない。**
++ 失敗しうるコードを呼ぶメソッドは、失敗を処理するか、自分も失敗しうると宣言しなければならない。
++ その伝播は仕組みが正しく働いている証拠だが、広く使われる関数に失敗の種類を加えると、それを呼ぶ関数にも手が入ることになる。検査例外と同じコストだが、対応を選べないという硬直さはない。
+
+- **Inference has more to do.** `raises` clauses compose through type-level machinery, and
+- when the compiler cannot work out which error type is meant, the message is about an
+- implicit search rather than about the error. Importing `explainMissingContext` turns that
+- into a diagnosis naming the strategy imports that would satisfy it.
++ **型推論の仕事が増える。**
++ `raises` 節は型レベルの仕組みを通して合成され、コンパイラがどのエラー型が意図されているかを割り出せないとき、メッセージはエラーについてではなく暗黙の探索についてのものになる。
++ `explainMissingContext` をインポートすると、それを満たすはずの戦略のインポートを名指しする診断に変わる。
+
+- **There is a vocabulary to learn.** `raise`, `abort`, `safely`, `unsafely`, `recover`,
+- `mitigate`, `accrue`, `capture`, `attempt`, `venture`, `guard` — eleven words where
+- `try`/`catch` has two. Each earns its place, but the learning curve is real and
+- front-loaded.
++ **覚えるべき語彙がある。**
++ `raise`、`abort`、`safely`、`unsafely`、`recover`、`mitigate`、`accrue`、`capture`、`attempt`、`venture`、`guard`。`try`/`catch` が二語のところに十一語ある。
++ どれもその場所にふさわしいが、学習曲線は現実のものであり、最初に集中する。
+
+- See [expressive errors](expressive-errors.md) for what an error value carries, and
+- [honest signatures](honest-signatures.md) for the wider principle that a signature states
+- its true requirements.
++ エラーの値が何を運ぶかについては[表現力のあるエラー](expressive-errors.md)を、シグネチャはその本当の要求を述べるというより広い原則については[正直なシグネチャ](honest-signatures.md)を参照。

@@ -1,0 +1,935 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base surveillance
++ base surveillance
+
+- import soundness
++ import soundness
+
+- info   watching directories and files for changes, as a scoped stream of typed events
++ info   observação de diretórios e arquivos em busca de mudanças, como um stream de eventos tipados com escopo
+
+- detail
++ detail
+
+-     _Surveillance_ watches the filesystem. A path, or a collection of paths, is *opened* as
+-     `Watch`, and within the block a `Watch.Handle` yields the changes as they happen — a file
+-     created, modified or deleted, a directory created — as a lazy `Chain` of `Watch.Event`s,
+-     or debounced into `Watch.Batch`es once the tree has been quiet for a while. The
+-     operating-system registration lasts exactly as long as the block, and capture checking
+-     confines the handle and its streams to it.
++     O _Surveillance_ observa o sistema de arquivos. Um caminho, ou uma coleção de caminhos, é
++     *aberto* como `Watch`, e dentro do bloco um `Watch.Handle` entrega as mudanças à medida que
++     acontecem — um arquivo criado, modificado ou removido, um diretório criado — como uma `Chain`
++     preguiçosa de `Watch.Event`s, ou agrupadas em `Watch.Batch`es depois que a árvore fica
++     quieta por um tempo. O registro no sistema operacional dura exatamente o mesmo que o bloco, e
++     a verificação de capturas confina o handle e seus streams a ele.
+
+=     confines the handle and its streams to it.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     confines the handle and its streams to it.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     confines the handle and its streams to it.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     confines the handle and its streams to it.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+=     confines the handle and its streams to it.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+-     import filesystemBackends.javaBaseFilesystem
++     import filesystemBackends.javaBaseFilesystem
+
+-     import stdios.javaLangSystemStdio
++     import stdios.javaLangSystemStdio
+
+=     import stdios.javaLangSystemStdio
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import stdios.javaLangSystemStdio
+=     import strategies.throwUnsafely
+-     import temporaryDirectories.systemTemporaryDirectory
++     import temporaryDirectories.systemTemporaryDirectory
+
+=     import stdios.javaLangSystemStdio
+=     import strategies.throwUnsafely
+=     import temporaryDirectories.systemTemporaryDirectory
+=
+-     val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
++     val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
+
+-     directory.open[Watch](): watcher ?=>
++     directory.open[Watch](): watcher ?=>
+
+-       watcher.stream.each:
++       watcher.stream.each:
+
+-         case NewFile(dir, file) => Out.println(t"created $file")
++         case NewFile(dir, file) => Out.println(t"created $file")
+
+-         case Modify(dir, file)  => Out.println(t"modified $file")
++         case Modify(dir, file)  => Out.println(t"modified $file")
+
+-         case Delete(dir, file)  => Out.println(t"deleted $file")
++         case Delete(dir, file)  => Out.println(t"deleted $file")
+
+-         case _                  => ()
++         case _                  => ()
+
+=         case _                  => ()
+-     ```
++     ```
+
+-     Change detection is delegated to a `Watcher` backend. With no import, `Watcher.default`
+-     applies: `JavaBaseWatcher`, over the operating system's own notification service
+-     (`java.nio.file.WatchService`). Where that is unavailable or unreliable — some network or
+-     container filesystems — a `PollingWatcher`, made by `watchers.polling(interval)`, diffs
+-     snapshots of each directory instead, and is chosen by binding it as a local given.
++     A detecção de mudanças é delegada a um backend `Watcher`. Sem nenhum import, vale
++     `Watcher.default`: `JavaBaseWatcher`, sobre o próprio serviço de notificação do sistema
++     operacional (`java.nio.file.WatchService`). Onde ele não está disponível ou não é confiável —
++     alguns sistemas de arquivos de rede ou de contêiner —, um `PollingWatcher`, criado por
++     `watchers.polling(interval)`, compara retratos de cada diretório em vez disso, e é escolhido
++     vinculando-o como um given local.
+
+-     A watch covers a directory's immediate entries, not its whole subtree; a path naming a
+-     file watches its parent directory, filtered to that one name. Several paths opened
+-     together share one event stream.
++     Uma observação cobre as entradas imediatas de um diretório, não a sua subárvore inteira; um
++     caminho que nomeia um arquivo observa o diretório pai, filtrado para aquele único nome. Vários
++     caminhos abertos juntos compartilham um único stream de eventos.
+
+-     The library has one source set, `surveillance.core`, for the JVM, built on parasite's
+-     supervised tasks and turbulence's `Relay`. Everything is exported to the `soundness`
+-     umbrella, with the `watchers` object mirrored as a package; its `javaBaseWatcher` given is
+-     imported by name, since `import watchers.*` does not import givens.
++     A biblioteca tem um único source set, `surveillance.core`, para a JVM, construído sobre as
++     tarefas supervisionadas do parasite e o `Relay` do turbulence. Tudo é exportado para o
++     guarda-chuva `soundness`, com o objeto `watchers` espelhado como pacote; seu given
++     `javaBaseWatcher` é importado pelo nome, já que `import watchers.*` não importa givens.
+
+- refer surveillance.Watch
++ refer surveillance.Watch
+
+- refer surveillance.Watcher
++ refer surveillance.Watcher
+
+- refer surveillance.watchers
++ refer surveillance.watchers
+
+- refer aperture.open
++ refer aperture.open
+
+- entry .Watch   a registration of watched paths, its events, and the `open[Watch]` form
++ entry .Watch   um registro de caminhos observados, seus eventos e a forma `open[Watch]`
+
+= entry .Watch   a registration of watched paths, its events, and the `open[Watch]` form
+-   detail
++   detail
+
+-       `Watch` is the form a path is opened as to watch it, and the type of a live
+-       registration. The usual way in is `path.open[Watch]() { watcher ?=> … }`, through
+-       `.openable` (or `.allOpenable` for a collection of paths), which registers the paths,
+-       lends a `Watch.Handle` to the block, and unregisters when the block ends however it
+-       ends.
++       `Watch` é a forma como um caminho é aberto para ser observado, e o tipo de um registro
++       ativo. O caminho habitual é `path.open[Watch]() { watcher ?=> … }`, por meio de
++       `.openable` (ou `.allOpenable` para uma coleção de caminhos), que registra os caminhos,
++       empresta um `Watch.Handle` ao bloco e cancela o registro quando o bloco termina, seja
++       como for que termine.
+
+=       ends.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ends.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       ends.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       ends.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       ends.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+-       import stdios.javaLangSystemStdio
++       import stdios.javaLangSystemStdio
+
+=       import stdios.javaLangSystemStdio
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import stdios.javaLangSystemStdio
+=       import strategies.throwUnsafely
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+-       val sources: Path on Local = temporaryDirectory[Path on Local] / "src"
++       val sources: Path on Local = temporaryDirectory[Path on Local] / "src"
+
+-       val tests: Path on Local = temporaryDirectory[Path on Local] / "test"
++       val tests: Path on Local = temporaryDirectory[Path on Local] / "test"
+
+-       List(sources, tests).open[Watch](): watcher ?=>
++       List(sources, tests).open[Watch](): watcher ?=>
+
+-         watcher.stream.take(1).each(event => Out.println(event.path[Path on Local].encode))
++         watcher.stream.take(1).each(event => Out.println(event.path[Path on Local].encode))
+
+=         watcher.stream.take(1).each(event => Out.println(event.path[Path on Local].encode))
+-       ```
++       ```
+
+-       A `Watch` value may also be made directly with `Watch(paths)`, outside any scope; then
+-       `#unregister` must be called to cancel the registration and terminate `#stream`, which
+-       otherwise never ends. Watching is pure observation, so no handle operation is
+-       grant-gated: the mode passed to `open` is irrelevant, and the default, `Read`,
+-       describes it best. There are no flags.
++       Um valor `Watch` também pode ser criado diretamente com `Watch(paths)`, fora de qualquer
++       escopo; nesse caso é preciso chamar `#unregister` para cancelar o registro e encerrar
++       `#stream`, que de outra forma nunca termina. Observar é pura observação, então nenhuma
++       operação do handle é restrita por concessões: o modo passado a `open` é irrelevante, e o
++       padrão, `Read`, é o que melhor o descreve. Não há flags.
+
+-       Registration raises `Watch.Error` when a path does not exist, is not a directory, may
+-       not be watched by this user, or would exceed the operating system's limit on watches.
++       O registro lança `Watch.Error` quando um caminho não existe, não é um diretório, não pode
++       ser observado por este usuário ou excederia o limite de observações do sistema
++       operacional.
+
+-   refer surveillance.Watch.Handle
++   refer surveillance.Watch.Handle
+
+-   refer surveillance.Watch.Event
++   refer surveillance.Watch.Event
+
+-   refer surveillance.Watcher
++   refer surveillance.Watcher
+
+-   entry .apply   registers any collection of paths with the `Watcher` in scope, returning a live `Watch`
+-       `Watch(paths)` takes any `Traversable` collection of path values which are `Abstractable
+-       across Paths to Text` — a Soundness `List(…)` or a stdlib `Iterable` — and needs a
+-       `Watcher` and a `Tactic[Watch.Error]`. Each directory is watched whole; each other path
+-       watches its parent directory, filtered to its own name; and paths in the same directory
+-       share one registration. The result captures the watcher, and must be unregistered
+-       with `Watch#unregister`; `open[Watch]` does that itself.
+-   entry .openable   opens a single path as `Watch`: `path.open[Watch]() { watcher ?=> … }`
+-       The `Openable` given for any path type `Abstractable across Paths to Text`, in the
+-       companion and so in implicit scope. It needs a `Watcher` (the default suffices) and a
+-       `Tactic[Watch.Error]`, and lends the block a `Watch.Handle`, unregistering when the
+-       block ends.
+-   entry .allOpenable   opens a collection of paths as `Watch`, with one event stream for all of them
+-       The `Openable` given for any `Iterable` of paths: `List(a, b).open[Watch]() { … }`. It is
+-       parameterized over the concrete collection type, since an `Openable`'s `Self` is matched
+-       invariantly. Needs a `Watcher` and a `Tactic[Watch.Error]`.
+-   entry .Openable   the `Openable` instance behind `.openable`, as a named class
+-       A `path is Openable in Watch` with no flags (`Operand` is `Nothing`) and a `Watch.Handle`
+-       as its handle. Named rather than anonymous, since an anonymous instance freshens the
+-       handle's capability type in its inferred `Result`.
+-   entry .AllOpenable   the `Openable` instance behind `.allOpenable`, for a collection of paths
+-       As `Watch.Openable`, with a collection of paths as its `Self`.
+-   entry .Handle   the scoped capability an `open[Watch]` block receives, with the watch's streams
++   entry .apply   registra qualquer coleção de caminhos com o `Watcher` no escopo, devolvendo um `Watch` ativo
++       `Watch(paths)` recebe qualquer coleção `Traversable` de valores de caminho que sejam
++       `Abstractable across Paths to Text` — uma `List(…)` do Soundness ou um `Iterable` da
++       stdlib — e precisa de um `Watcher` e de um `Tactic[Watch.Error]`. Cada diretório é
++       observado por inteiro; cada outro caminho observa seu diretório pai, filtrado para o seu
++       próprio nome; e caminhos no mesmo diretório compartilham um único registro. O resultado
++       captura o watcher, e seu registro precisa ser cancelado com `Watch#unregister`;
++       `open[Watch]` faz isso sozinho.
++   entry .openable   abre um único caminho como `Watch`: `path.open[Watch]() { watcher ?=> … }`
++       O given `Openable` para qualquer tipo de caminho `Abstractable across Paths to Text`, no
++       objeto companheiro e, portanto, no escopo implícito. Ele precisa de um `Watcher` (o padrão
++       basta) e de um `Tactic[Watch.Error]`, e empresta ao bloco um `Watch.Handle`, cancelando o
++       registro quando o bloco termina.
++   entry .allOpenable   abre uma coleção de caminhos como `Watch`, com um único stream de eventos para todos eles
++       O given `Openable` para qualquer `Iterable` de caminhos:
++       `List(a, b).open[Watch]() { … }`. Ele é parametrizado sobre o tipo concreto da coleção,
++       já que o `Self` de um `Openable` é casado de forma invariante. Precisa de um `Watcher` e de
++       um `Tactic[Watch.Error]`.
++   entry .Openable   a instância de `Openable` por trás de `.openable`, como uma classe com nome
++       Um `path is Openable in Watch` sem flags (`Operand` é `Nothing`) e com um `Watch.Handle`
++       como seu handle. Tem nome em vez de ser anônima, já que uma instância anônima renova o
++       tipo de capability do handle no seu `Result` inferido.
++   entry .AllOpenable   a instância de `Openable` por trás de `.allOpenable`, para uma coleção de caminhos
++       Como `Watch.Openable`, com uma coleção de caminhos como seu `Self`.
++   entry .Handle   a capability com escopo que um bloco `open[Watch]` recebe, com os streams da observação
+
+=   entry .Handle   the scoped capability an `open[Watch]` block receives, with the watch's streams
+-     detail
++     detail
+
+-         The handle lent by `path.open[Watch]()`. It is an exclusive capability confined to
+-         the block, so neither it nor a stream derived from it can outlive the registration.
+-         Inside the block it is the contextual parameter, and the top-level `watch` gives it
+-         by name.
++         O handle emprestado por `path.open[Watch]()`. É uma capability exclusiva confinada ao
++         bloco, então nem ele nem um stream derivado dele pode sobreviver ao registro. Dentro do
++         bloco, ele é o parâmetro contextual, e o `watch` de nível superior o fornece pelo
++         nome.
+
+-         ```scala fuel
++         ```scala fuel
+
+-         typecheck
++         typecheck
+
+-         ##
++         ##
+
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         ##
+=         import soundness.*
+-         import filesystemBackends.javaBaseFilesystem
++         import filesystemBackends.javaBaseFilesystem
+
+-         import stdios.javaLangSystemStdio
++         import stdios.javaLangSystemStdio
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         import temporaryDirectories.systemTemporaryDirectory
++         import temporaryDirectories.systemTemporaryDirectory
+
+-         val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
++         val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
+
+-         directory.open[Watch]():
++         directory.open[Watch]():
+
+-           watch.batches(0.2*Second).each: batch =>
++           watch.batches(0.2*Second).each: batch =>
+
+-             batch.paths[Path on Local].each(path => Out.println(path.encode))
++             batch.paths[Path on Local].each(path => Out.println(path.encode))
+
+=             batch.paths[Path on Local].each(path => Out.println(path.encode))
+-         ```
++         ```
+
+-     entry #stream   every event, one at a time, as it arrives
+-         A lazy `Chain` of `Watch.Event`s which blocks for the next event and ends when the
+-         registration is cancelled. It is a single-owner drain of the event queue: two
+-         traversals compete for the same events.
+-     entry #batches   events coalesced into one `Watch.Batch` whenever the tree has been quiet for a while
+-         `batches(quiet)` takes any duration value (`0.2*Second`) and yields a `Watch.Batch`
+-         each time no event has arrived for that long, so a burst of saves from an editor is
+-         reported once, after it has settled.
+-   entry .Event   one change to a watched directory: a file created, modified or deleted, or a directory created
++     entry #stream   cada evento, um de cada vez, à medida que chega
++         Uma `Chain` preguiçosa de `Watch.Event`s que bloqueia à espera do próximo evento e
++         termina quando o registro é cancelado. É uma drenagem de proprietário único da fila de
++         eventos: duas travessias competem pelos mesmos eventos.
++     entry #batches   eventos agrupados em um único `Watch.Batch` sempre que a árvore fica quieta por um tempo
++         `batches(quiet)` recebe qualquer valor de duração (`0.2*Second`) e entrega um
++         `Watch.Batch` cada vez que nenhum evento chega durante esse tempo, então uma rajada de
++         salvamentos de um editor é relatada uma única vez, depois de se assentar.
++   entry .Event   uma mudança em um diretório observado: um arquivo criado, modificado ou removido, ou um diretório criado
+
+=   entry .Event   one change to a watched directory: a file created, modified or deleted, or a directory created
+-     detail
++     detail
+
+-         Each event records the watched directory, `#dir`, as text, and the name of the entry
+-         within it that changed; `#path` combines the two as a path type of the caller's
+-         choosing. The four cases are also exported at the package level, so `case
+-         NewFile(dir, file) =>` matches without the `Watch.Event` prefix.
++         Cada evento registra o diretório observado, `#dir`, como texto, e o nome da entrada
++         dentro dele que mudou; `#path` combina os dois como um tipo de caminho à escolha de quem
++         chama. Os quatro casos também são exportados no nível do pacote, então `case
++         NewFile(dir, file) =>` casa sem o prefixo `Watch.Event`.
+
+=         NewFile(dir, file) =>` matches without the `Watch.Event` prefix.
+=
+-         ```scala
++         ```scala
+
+=         NewFile(dir, file) =>` matches without the `Watch.Event` prefix.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val event: Watch.Event = Watch.Event.NewFile(t"/x", t"a.txt")
++         val event: Watch.Event = Watch.Event.NewFile(t"/x", t"a.txt")
+
+-         event match
++         event match
+
+-           case NewFile(dir, file)          => t"created $file in $dir"
++           case NewFile(dir, file)          => t"created $file in $dir"
+
+-           case NewDirectory(dir, name)     => t"created directory $name"
++           case NewDirectory(dir, name)     => t"created directory $name"
+
+-           case Modify(dir, file)           => t"modified $file"
++           case Modify(dir, file)           => t"modified $file"
+
+-           case Delete(dir, file)           => t"deleted $file"
++           case Delete(dir, file)           => t"deleted $file"
+
+=           case Delete(dir, file)           => t"deleted $file"
+-         ```
++         ```
+
+-         The operating-system backend reports a modification however the platform does,
+-         which may be several events for one save; the polling backend reports one
+-         modification per changed size or modification time between scans, and cannot see a
+-         change which leaves both alone. Neither reports a modification of a directory.
+-     entry .NewFile   a file, or anything not a directory, was created in a watched directory
+-       entry #dir    the watched directory, as text
+-       entry #file   the new entry's name within the directory
+-     entry .NewDirectory   a directory was created in a watched directory
+-       entry #dir         the watched directory, as text
+-       entry #directory   the new directory's name within the watched one
+-     entry .Modify   a file in a watched directory was modified
+-       entry #dir    the watched directory, as text
+-       entry #file   the modified file's name within the directory
+-     entry .Delete   an entry was deleted from a watched directory
+-       entry #dir    the watched directory, as text
+-       entry #file   the deleted entry's name within the directory
+-     entry #dir   the watched directory in which the change happened, as text
+-     entry #path   the changed entry's full path, as a path type of the caller's choosing
+-         `event.path[Path on Local]` (or any `Instantiable across Paths from Text`) joins the
+-         directory and the entry's name and normalizes the result.
+-   entry .Batch   the events of one quiet period, oldest first, as `Watch.Handle#batches` yields them
++         O backend do sistema operacional relata uma modificação do jeito que a plataforma o
++         faz, o que pode ser vários eventos para um único salvamento; o backend de polling relata
++         uma modificação por mudança de tamanho ou de horário de modificação entre varreduras, e
++         não consegue ver uma mudança que deixa ambos intactos. Nenhum dos dois relata a
++         modificação de um diretório.
++     entry .NewFile   um arquivo, ou qualquer coisa que não seja um diretório, foi criado em um diretório observado
++       entry #dir    o diretório observado, como texto
++       entry #file   o nome da nova entrada dentro do diretório
++     entry .NewDirectory   um diretório foi criado em um diretório observado
++       entry #dir         o diretório observado, como texto
++       entry #directory   o nome do novo diretório dentro do observado
++     entry .Modify   um arquivo em um diretório observado foi modificado
++       entry #dir    o diretório observado, como texto
++       entry #file   o nome do arquivo modificado dentro do diretório
++     entry .Delete   uma entrada foi removida de um diretório observado
++       entry #dir    o diretório observado, como texto
++       entry #file   o nome da entrada removida dentro do diretório
++     entry #dir   o diretório observado em que a mudança aconteceu, como texto
++     entry #path   o caminho completo da entrada que mudou, como um tipo de caminho à escolha de quem chama
++         `event.path[Path on Local]` (ou qualquer `Instantiable across Paths from Text`) junta o
++         diretório e o nome da entrada e normaliza o resultado.
++   entry .Batch   os eventos de um período de quietude, do mais antigo ao mais recente, tal como `Watch.Handle#batches` os entrega
+
+=   entry .Batch   the events of one quiet period, oldest first, as `Watch.Handle#batches` yields them
+-     detail
++     detail
+
+-         A burst of activity, ended by a period with no events. `#paths` lists the paths
+-         touched, once each, which is what a rebuild-on-change loop usually wants.
++         Uma rajada de atividade, encerrada por um período sem eventos. `#paths` lista os
++         caminhos tocados, uma vez cada, que é o que um laço de recompilação a cada mudança
++         costuma querer.
+
+=         touched, once each, which is what a rebuild-on-change loop usually wants.
+=
+-         ```scala
++         ```scala
+
+=         touched, once each, which is what a rebuild-on-change loop usually wants.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val batch = Watch.Batch(List(NewFile(t"/x", t"a"), Modify(t"/x", t"a"), NewFile(t"/x", t"b")))
++         val batch = Watch.Batch(List(NewFile(t"/x", t"a"), Modify(t"/x", t"a"), NewFile(t"/x", t"b")))
+
+-         batch.paths[Path on Local]   // List(/x/a, /x/b)
++         batch.paths[Path on Local]   // List(/x/a, /x/b)
+
+=         batch.paths[Path on Local]   // List(/x/a, /x/b)
+-         ```
++         ```
+
+-     entry #events   the batch's events, oldest first
+-     entry #paths   every path touched in the batch, once each, in order of first occurrence
+-   entry .Error   raised when a path cannot be watched
++     entry #events   os eventos do lote, do mais antigo ao mais recente
++     entry #paths   cada caminho tocado no lote, uma vez cada, na ordem da primeira ocorrência
++   entry .Error   lançado quando um caminho não pode ser observado
+
+=   entry .Error   raised when a path cannot be watched
+-     detail
++     detail
+
+-         Error `↯/s.98.1`: _the path could not be watched because …_, with one of four reasons:
++         Erro `↯/s.98.1`: _the path could not be watched because …_, com um de quatro motivos:
+
+-         `LimitExceeded` (_the operating system's limit on watched paths has been exceeded_,
++         `LimitExceeded` (_the operating system's limit on watched paths has been exceeded_,
+
+-         such as inotify's `max_user_watches`), `Nonexistent` (_the path does not exist_),
+-         `NotDirectory` (_the path is not a directory_, as when a watched path's parent is a
+-         regular file) and `PermissionDenied` (_the user does not have permission to watch the
+-         path_). Raised by `Watch(paths)` and by `open[Watch]` as the registration is made.
++         como o `max_user_watches` do inotify), `Nonexistent` (_the path does not exist_),
++         `NotDirectory` (_the path is not a directory_, como quando o pai de um caminho observado
++         é um arquivo comum) e `PermissionDenied` (_the user does not have permission to watch
++         the path_). Lançado por `Watch(paths)` e por `open[Watch]` no momento em que o registro
++         é feito.
+
+=         path_). Raised by `Watch(paths)` and by `open[Watch]` as the registration is made.
+=
+-         ```scala
++         ```scala
+
+=         path_). Raised by `Watch(paths)` and by `open[Watch]` as the registration is made.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         ```scala
+=         import soundness.*
+-         import filesystemBackends.javaBaseFilesystem
++         import filesystemBackends.javaBaseFilesystem
+
+-         val target = t"/nonexistent/child".as[Path on Local]
++         val target = t"/nonexistent/child".as[Path on Local]
+
+-         capture[Watch.Error](target.open[Watch]() { () }).reason   // Watch.Error.Reason.Nonexistent
++         capture[Watch.Error](target.open[Watch]() { () }).reason   // Watch.Error.Reason.Nonexistent
+
+=         capture[Watch.Error](target.open[Watch]() { () }).reason   // Watch.Error.Reason.Nonexistent
+-         ```
++         ```
+
+-     entry .Reason   why a path could not be watched: a limit, a missing path, a non-directory or a permission
++     entry .Reason   por que um caminho não pôde ser observado: um limite, um caminho ausente, um não diretório ou uma permissão
+
+-       detail
++       detail
+
+-           Each case's sub-number of error `↯/s.98.1` is its `#number`:
++           O subnúmero de cada caso no erro `↯/s.98.1` é o seu `#number`:
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
++           column  Caso
++           column  Código
++           column  Mensagem
++           column  Nota
+
+-           row  `LimitExceeded`  1  _the operating system's limit on watched paths has been exceeded_
++           row  `LimitExceeded`  1  _the operating system's limit on watched paths has been exceeded_
+
+-           row  `Nonexistent`  2  _the path does not exist_
++           row  `Nonexistent`  2  _the path does not exist_
+
+-           row  `NotDirectory`  3  _the path is not a directory_
++           row  `NotDirectory`  3  _the path is not a directory_
+
+-           row  `PermissionDenied`  4  _the user does not have permission to watch the path_
++           row  `PermissionDenied`  4  _the user does not have permission to watch the path_
+
+-           ```
++           ```
+
+-       entry #number   the reason's sub-number of error `↯/s.98.1`
+-     entry .communicable   renders each reason as the phrase completing _the path could not be watched because …_
+-     entry #reason   why the path could not be watched
+-   entry #stream   every event, one at a time, until the watch is unregistered
+-       A lazy `Chain` of `Watch.Event`s which ends when `#unregister` is called. Traversing it
+-       blocks for each next event.
+-   entry #batches   events coalesced into a `Watch.Batch` after each quiet period of the length given
+-   entry #unregister   cancels the registration and ends the event streams
+-       Stops the backend delivering events for this watch's directories and terminates
+-       `#stream` and `#batches`. `open[Watch]` calls it when its block ends.
++       entry #number   o subnúmero do motivo no erro `↯/s.98.1`
++     entry .communicable   renderiza cada motivo como a frase que completa _the path could not be watched because …_
++     entry #reason   por que o caminho não pôde ser observado
++   entry #stream   cada evento, um de cada vez, até que o registro da observação seja cancelado
++       Uma `Chain` preguiçosa de `Watch.Event`s que termina quando `#unregister` é chamado.
++       Percorrê-la bloqueia à espera de cada próximo evento.
++   entry #batches   eventos agrupados em um `Watch.Batch` após cada período de quietude da duração dada
++   entry #unregister   cancela o registro e encerra os streams de eventos
++       Faz o backend parar de entregar eventos para os diretórios desta observação e encerra
++       `#stream` e `#batches`. `open[Watch]` o chama quando seu bloco termina.
+
+- entry .Watcher   the backend which detects filesystem changes: the operating system's service, or polling
++ entry .Watcher   o backend que detecta mudanças no sistema de arquivos: o serviço do sistema operacional, ou polling
+
+= entry .Watcher   the backend which detects filesystem changes: the operating system's service, or polling
+-   detail
++   detail
+
+-       A `Watcher` turns a set of directories into a `Watcher.Registration` which puts events
+-       into a relay as they happen. It is a capability, since a backend runs supervised tasks
+-       of its own. With no import, `.default` — `JavaBaseWatcher`, the operating system's
+-       notification service — is used; a different backend is a local given:
++       Um `Watcher` transforma um conjunto de diretórios em um `Watcher.Registration` que coloca
++       eventos em um relay à medida que acontecem. É uma capability, já que um backend executa
++       tarefas supervisionadas próprias. Sem nenhum import, usa-se `.default` —
++       `JavaBaseWatcher`, o serviço de notificação do sistema operacional —; um backend diferente
++       é um given local:
+
+=       notification service — is used; a different backend is a local given:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       notification service — is used; a different backend is a local given:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       notification service — is used; a different backend is a local given:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       notification service — is used; a different backend is a local given:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       notification service — is used; a different backend is a local given:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+=       import filesystemBackends.javaBaseFilesystem
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import filesystemBackends.javaBaseFilesystem
+=       import strategies.throwUnsafely
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+-       given Watcher = watchers.polling(0.05*Second)
++       given Watcher = watchers.polling(0.05*Second)
+
+-       val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
++       val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
+
+-       directory.open[Watch](): watcher ?=>
++       directory.open[Watch](): watcher ?=>
+
+-         watcher.stream.head
++         watcher.stream.head
+
+=         watcher.stream.head
+-       ```
++       ```
+
+-       Since the default given is a capability, code which reaches it captures it; a test body
+-       that does so runs inline rather than deferred.
++       Como o given padrão é uma capability, o código que o alcança o captura; um corpo de teste
++       que faz isso é executado inline em vez de adiado.
+
+-   refer surveillance.JavaBaseWatcher
++   refer surveillance.JavaBaseWatcher
+
+-   refer surveillance.PollingWatcher
++   refer surveillance.PollingWatcher
+
+-   refer surveillance.watchers
++   refer surveillance.watchers
+
+-   entry .default   `JavaBaseWatcher`, the backend used when no other `Watcher` is in scope
+-       In the companion, so in implicit scope with no import; a local given or an imported
+-       `watchers.javaBaseWatcher` takes precedence over it.
+-   entry .Registration   one backend registration, which `#cancel` ends
++   entry .default   `JavaBaseWatcher`, o backend usado quando nenhum outro `Watcher` está no escopo
++       No objeto companheiro, portanto no escopo implícito sem nenhum import; um given local ou
++       um `watchers.javaBaseWatcher` importado tem precedência sobre ele.
++   entry .Registration   um registro no backend, que `#cancel` encerra
+
+=   entry .Registration   one backend registration, which `#cancel` ends
+-     detail
++     detail
+
+-         What `Watcher#watch` returns: cancelling it stops delivery of further events for the
+-         directories registered in that call. `Watch#unregister` cancels it.
+-     entry #cancel   stops delivering events for the registered directories
+-   entry #watch   registers directories, each with a filter on entry names, delivering events to a relay
+-       `watch(directories, spool)`: each directory is paired with a pure predicate on the names
+-       of its entries, and events for matching names are put into the `Relay`. Raises
+-       `Watch.Error` if a directory cannot be registered. `Watch(paths)` builds the filters and
+-       calls it; a user rarely calls it directly.
++         O que `Watcher#watch` devolve: cancelá-lo interrompe a entrega de novos eventos para os
++         diretórios registrados naquela chamada. `Watch#unregister` o cancela.
++     entry #cancel   para de entregar eventos para os diretórios registrados
++   entry #watch   registra diretórios, cada um com um filtro sobre nomes de entradas, entregando eventos a um relay
++       `watch(directories, spool)`: cada diretório é pareado com um predicado puro sobre os nomes
++       de suas entradas, e os eventos de nomes que casam são colocados no `Relay`. Lança
++       `Watch.Error` se um diretório não puder ser registrado. `Watch(paths)` constrói os filtros
++       e o chama; um usuário raramente o chama diretamente.
+
+- entry .JavaBaseWatcher   the `Watcher` over the operating system's notification service, the default
+-     Wraps `java.nio.file.WatchService` (inotify on Linux, the platform's equivalent
+-     elsewhere). One service and one polling task are shared by every registration in the
+-     process, and the service is closed once nothing is being watched. A watched directory
+-     which is deleted drops out of the registry. Registration failures map to `Watch.Error`:
+-     a missing path to `Nonexistent`, a file to `NotDirectory`, a refused access to
+-     `PermissionDenied`, and any other I/O failure — in practice, the platform's watch limit —
+-     to `LimitExceeded`. It is `Watcher.default`, and `watchers.javaBaseWatcher` names it.
++ entry .JavaBaseWatcher   o `Watcher` sobre o serviço de notificação do sistema operacional, o padrão
++     Envolve `java.nio.file.WatchService` (inotify no Linux, o equivalente da plataforma em
++     outros lugares). Um único serviço e uma única tarefa de polling são compartilhados por todos
++     os registros do processo, e o serviço é fechado quando nada está sendo observado. Um
++     diretório observado que é removido sai do registro. As falhas de registro correspondem a
++     `Watch.Error`: um caminho ausente a `Nonexistent`, um arquivo a `NotDirectory`, um acesso
++     recusado a `PermissionDenied`, e qualquer outra falha de E/S — na prática, o limite de
++     observações da plataforma — a `LimitExceeded`. É o `Watcher.default`, e
++     `watchers.javaBaseWatcher` o nomeia.
+
+- entry .PollingWatcher   a `Watcher` which diffs snapshots of each directory at a fixed interval
+-     `PollingWatcher(interval)`, usually made through `watchers.polling(interval)`, with any
+-     duration value. Every interval it lists each watched directory, records each entry's kind,
+-     modification time and size, and compares with the previous scan to report creations,
+-     modifications and deletions. It needs no operating-system support, at the cost of latency
+-     bounded by the interval and blindness to a change which leaves size and modification time
+-     as they were. Each registration has its own background task, interrupted when it is
+-     cancelled; registration raises `Watch.Error` with `Nonexistent` or `NotDirectory` when a
+-     path is missing or is not a directory.
++ entry .PollingWatcher   um `Watcher` que compara retratos de cada diretório em um intervalo fixo
++     `PollingWatcher(interval)`, geralmente criado por meio de `watchers.polling(interval)`, com
++     qualquer valor de duração. A cada intervalo, ele lista cada diretório observado, registra a
++     categoria, o horário de modificação e o tamanho de cada entrada, e compara com a varredura
++     anterior para relatar criações, modificações e remoções. Não precisa de suporte do sistema
++     operacional, ao custo de uma latência limitada pelo intervalo e da cegueira a uma mudança
++     que deixa o tamanho e o horário de modificação como estavam. Cada registro tem sua própria
++     tarefa em segundo plano, interrompida quando ele é cancelado; o registro lança `Watch.Error`
++     com `Nonexistent` ou `NotDirectory` quando um caminho está ausente ou não é um diretório.
+
+- entry .watch   the `Watch.Handle` in scope, inside an `open[Watch]` block
+-     `watch` returns the contextual handle with its precise capturing type, so a block may
+-     leave its handle parameter unnamed, in the manner of galilei's `file`:
++ entry .watch   o `Watch.Handle` no escopo, dentro de um bloco `open[Watch]`
++     `watch` devolve o handle contextual com seu tipo de captura preciso, então um bloco pode
++     deixar seu parâmetro de handle sem nome, à maneira do `file` do galilei:
+
+=     leave its handle parameter unnamed, in the manner of galilei's `file`:
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     leave its handle parameter unnamed, in the manner of galilei's `file`:
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     leave its handle parameter unnamed, in the manner of galilei's `file`:
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     leave its handle parameter unnamed, in the manner of galilei's `file`:
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+=     leave its handle parameter unnamed, in the manner of galilei's `file`:
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+-     import filesystemBackends.javaBaseFilesystem
++     import filesystemBackends.javaBaseFilesystem
+
+=     import filesystemBackends.javaBaseFilesystem
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import filesystemBackends.javaBaseFilesystem
+=     import strategies.throwUnsafely
+-     import temporaryDirectories.systemTemporaryDirectory
++     import temporaryDirectories.systemTemporaryDirectory
+
+=     import filesystemBackends.javaBaseFilesystem
+=     import strategies.throwUnsafely
+=     import temporaryDirectories.systemTemporaryDirectory
+=
+-     val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
++     val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
+
+-     directory.open[Watch]():
++     directory.open[Watch]():
+
+-       watch.stream.head
++       watch.stream.head
+
+=       watch.stream.head
+-     ```
++     ```
+
+- entry .NewFile   `Watch.Event.NewFile`, exported for matching: a file was created in a watched directory
+-     The event case, exported to the package so a match may write `case NewFile(dir, file)`.
+-     `dir` is the watched directory and `file` the new entry's name within it.
+- entry .NewDirectory   `Watch.Event.NewDirectory`, exported for matching: a directory was created
+-     The event case, exported to the package so a match may write `case NewDirectory(dir,
+-     name)`.
+- entry .Modify   `Watch.Event.Modify`, exported for matching: a file in a watched directory was modified
+-     The event case, exported to the package so a match may write `case Modify(dir, file)`.
+- entry .Delete   `Watch.Event.Delete`, exported for matching: an entry was deleted from a watched directory
+-     The event case, exported to the package so a match may write `case Delete(dir, file)`.
++ entry .NewFile   `Watch.Event.NewFile`, exportado para casamento: um arquivo foi criado em um diretório observado
++     O caso de evento, exportado para o pacote para que um casamento possa escrever
++     `case NewFile(dir, file)`. `dir` é o diretório observado e `file` o nome da nova entrada
++     dentro dele.
++ entry .NewDirectory   `Watch.Event.NewDirectory`, exportado para casamento: um diretório foi criado
++     O caso de evento, exportado para o pacote para que um casamento possa escrever
++     `case NewDirectory(dir, name)`.
++ entry .Modify   `Watch.Event.Modify`, exportado para casamento: um arquivo em um diretório observado foi modificado
++     O caso de evento, exportado para o pacote para que um casamento possa escrever
++     `case Modify(dir, file)`.
++ entry .Delete   `Watch.Event.Delete`, exportado para casamento: uma entrada foi removida de um diretório observado
++     O caso de evento, exportado para o pacote para que um casamento possa escrever
++     `case Delete(dir, file)`.
+
+- entry .watchers   the `Watcher` backends, as a given to import by name or a value to bind as one
++ entry .watchers   os backends `Watcher`, como um given a importar pelo nome ou um valor a vincular como given
+
+= entry .watchers   the `Watcher` backends, as a given to import by name or a value to bind as one
+-   detail
++   detail
+
+-       Which backend detects changes is decided by the `Watcher` given in scope; with none,
+-       `Watcher.default` applies. This object, mirrored as the `watchers` package in the
+-       umbrella, holds the alternatives: `javaBaseWatcher`, to name the default explicitly,
+-       and `polling`, a method which makes a polling backend for an interval.
++       Qual backend detecta as mudanças é decidido pelo given `Watcher` no escopo; sem nenhum,
++       vale `Watcher.default`. Este objeto, espelhado como o pacote `watchers` no guarda-chuva,
++       contém as alternativas: `javaBaseWatcher`, para nomear o padrão explicitamente, e
++       `polling`, um método que cria um backend de polling para um intervalo.
+
+=       and `polling`, a method which makes a polling backend for an interval.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Default
++       alternative Default
+
+=       alternative Default
+-         code
++         code
+
+=         code
+-             directory.open[Watch]():
++             directory.open[Watch]():
+
+=         code
+=             directory.open[Watch]():
+-               watch.stream.head
++               watch.stream.head
+
+-       alternative Polling
++       alternative Polling
+
+=       alternative Polling
+-         code
++         code
+
+-             given Watcher = watchers.polling(0.5*Second)
++             given Watcher = watchers.polling(0.5*Second)
+
+=
+-             directory.open[Watch]():
++             directory.open[Watch]():
+
+=
+=             directory.open[Watch]():
+-               watch.stream.head
++               watch.stream.head
+
+=               watch.stream.head
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       `javaBaseWatcher` is a given, so it must be imported by name: `import watchers.*` does
+-       not import givens.
+-   entry .javaBaseWatcher   the operating system's notification service, `JavaBaseWatcher`, as a given
+-   entry .polling   makes a `PollingWatcher` which scans at the interval given
+-       `watchers.polling(interval)` takes any duration value and returns a `Watcher`. It is a
+-       method, not a given, so it is bound locally: `given Watcher = watchers.polling(0.05*Second)`.
++       `javaBaseWatcher` é um given, então precisa ser importado pelo nome: `import watchers.*`
++       não importa givens.
++   entry .javaBaseWatcher   o serviço de notificação do sistema operacional, `JavaBaseWatcher`, como um given
++   entry .polling   cria um `PollingWatcher` que faz varreduras no intervalo dado
++       `watchers.polling(interval)` recebe qualquer valor de duração e devolve um `Watcher`. É um
++       método, não um given, então é vinculado localmente:
++       `given Watcher = watchers.polling(0.05*Second)`.

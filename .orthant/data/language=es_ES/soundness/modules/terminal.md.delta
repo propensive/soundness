@@ -1,0 +1,612 @@
+orthant 1 language
+
+- ## Terminal
++ ## Terminal
+
+- ### About
++ ### Descripción
+
+- An interactive program in a terminal needs three things which the raw console does not give:
+- styled output, input from the keyboard as events, and a way to lay out and refresh regions of
+- the screen. All three are provided:
++ Un programa interactivo en un terminal necesita tres cosas que la consola en bruto no da: salida
++ con estilo, entrada del teclado como eventos y una forma de disponer y refrescar regiones de la
++ pantalla. Se proporcionan las tres:
+
+- - The `e"…"` [interpolator] writes text with ANSI styles, as a value.
+- - An `interactive` block puts the terminal in raw mode, and turns keystrokes into a typed
+-   stream of events.
+- - A layout layer composes panels, editors and menus into interfaces, full-screen or inline,
+-   which redraw without flicker.
++ - El [interpolador] `e"…"` escribe texto con estilos ANSI, como un valor.
++ - Un bloque `interactive` pone el terminal en modo crudo y convierte las pulsaciones en un flujo
++   tipado de eventos.
++ - Una capa de disposición compone paneles, editores y menús en interfaces, a pantalla completa o
++   en línea, que se redibujan sin parpadeo.
+
+- ### On terminals
++ ### Sobre los terminales
+
+- The terminal is a protocol in which control travels in the same channel as content. Styling,
+- movement of the cursor and reports from the keyboard all travel as escape sequences, mixed
+- into the text.
++ El terminal es un protocolo en el que el control viaja por el mismo canal que el contenido. Los
++ estilos, el movimiento del cursor y los informes del teclado viajan todos como secuencias de
++ escape, mezcladas con el texto.
+
+- A program which prints escape codes directly ties itself to one terminal's dialect, and
+- corrupts output which ends up in a file. A program which reads its input a byte at a time
+- must decode the sequences of several bytes which keys send. And raw mode which is left
+- enabled after a crash wrecks the user's shell.
++ Un programa que imprime códigos de escape directamente se ata al dialecto de un terminal, y
++ corrompe la salida que acaba en un fichero. Un programa que lee su entrada byte a byte debe
++ decodificar las secuencias de varios bytes que envían las teclas. Y un modo crudo que queda
++ activado tras un fallo destroza la shell del usuario.
+
+- Here the protocol is kept at the edges:
++ Aquí el protocolo se mantiene en los bordes:
+
+- - Styled text is a `Teletype`: a value which carries its styles. It is rendered to the
+-   capabilities of the *actual* terminal when it is output, and to plain text where there is
+-   no terminal.
+- - Input arrives as typed events, decoded from the sequences.
+- - The raw-mode session is a scoped block, which restores the terminal however it exits. That
+-   is [delimited scopes](../../philosophy/delimited-scopes.md), applied to the terminal.
++ - El texto con estilo es un `Teletype`: un valor que lleva sus estilos. Se representa según las
++   prestaciones del terminal *real* cuando se emite, y como texto plano donde no hay terminal.
++ - La entrada llega como eventos tipados, decodificados a partir de las secuencias.
++ - La sesión en modo crudo es un bloque con ámbito, que restaura el terminal salga como salga. Eso
++   son los [ámbitos delimitados](../../philosophy/delimited-scopes.md), aplicados al terminal.
+
+- Everything comes from the `soundness` package:
++ Todo procede del paquete `soundness`:
+
+= Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.xtermTrueColorTermcap
++ import termcapDefinitions.xtermTrueColorTermcap
+
+= import termcapDefinitions.xtermTrueColorTermcap
+- ```
++ ```
+
+- The second import says where output goes, and the third says what the terminal can display:
+- here, full 24-bit color.
++ La segunda importación dice adónde va la salida, y la tercera dice lo que el terminal puede
++ mostrar: aquí, color completo de 24 bits.
+
+- ### Styled text
++ ### Texto con estilo
+
+- The `e"…"` interpolator styles the spans which it marks. The styles are values, and the
+- [colors](colors.md) are colors:
++ El interpolador `e"…"` da estilo a los tramos que marca. Los estilos son valores, y los
++ [colores](colors.md) son colores:
+
+= [colors](colors.md) are colors:
+=
+- ```scala
++ ```scala
+
+- val message = e"$Bold(Warning): ${Fg(WebColors.Red)}(disk full)"
++ val message = e"$Bold(Warning): ${Fg(WebColors.Red)}(disk full)"
+
+= val message = e"$Bold(Warning): ${Fg(WebColors.Red)}(disk full)"
+- ```
++ ```
+
+= val message = e"$Bold(Warning): ${Fg(WebColors.Red)}(disk full)"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val message = e"$Bold(Warning): ${Fg(WebColors.Red)}(disk full)"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val message = e"$Bold(Warning): ${Fg(WebColors.Red)}(disk full)"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(message)
++ Out.println(message)
+
+= Out.println(message)
+- ```
++ ```
+
+- `Bold`, `Italic`, `Underline` and their siblings mark spans, and `Fg` and `Bg` color them.
++ `Bold`, `Italic`, `Underline` y sus hermanos marcan tramos, y `Fg` y `Bg` los colorean.
+
+- Colors nest, which raw ANSI does not allow. An escape code sets a color. It cannot restore
+- the color which was there before, and can only reset to the default, so a colored region
+- inside another colored region ends by clearing both. A `Teletype` tracks the style as a
+- stack instead, so the enclosing color is restored where the inner region ends:
++ Los colores se anidan, cosa que ANSI en bruto no permite. Un código de escape establece un color.
++ No puede restaurar el color que había antes, y solo puede volver al predeterminado, así que una
++ región coloreada dentro de otra región coloreada termina borrando ambas. Un `Teletype`, en cambio,
++ lleva el estilo como una pila, de modo que el color envolvente se restaura donde termina la región
++ interior:
+
+= stack instead, so the enclosing color is restored where the inner region ends:
+=
+- ```scala fuel
++ ```scala fuel
+
+= stack instead, so the enclosing color is restored where the inner region ends:
+=
+= ```scala fuel
+- run
++ run
+
+= stack instead, so the enclosing color is restored where the inner region ends:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- import WebColors.{Gold, Indigo, HotPink, White}
++ import WebColors.{Gold, Indigo, HotPink, White}
+
+- Out.println(e"$Gold(gold, $Indigo(indigo, $HotPink(hot pink), indigo) $White(and) gold)")
++ Out.println(e"$Gold(gold, $Indigo(indigo, $HotPink(hot pink), indigo) $White(and) gold)")
+
+= Out.println(e"$Gold(gold, $Indigo(indigo, $HotPink(hot pink), indigo) $White(and) gold)")
+- ```
++ ```
+
+- Each substitution is a *transformation* of the prevailing style, not an absolute setting,
+- which is what makes that work. It means that a substitution can depend on what it modifies.
+- A type becomes usable as one by being given a `Stylize` instance:
++ Cada sustitución es una *transformación* del estilo vigente, no un ajuste absoluto, y eso es lo
++ que hace que funcione. Significa que una sustitución puede depender de lo que modifica. Un tipo
++ pasa a poder usarse como tal cuando se le da una instancia de `Stylize`:
+
+= A type becomes usable as one by being given a `Stylize` instance:
+=
+- ```scala
++ ```scala
+
+- case object Toggle
++ case object Toggle
+
+- given toggleStylize: Stylize[Toggle.type] = _ => Stylize(style => style.copy(bold = !style.bold))
++ given toggleStylize: Stylize[Toggle.type] = _ => Stylize(style => style.copy(bold = !style.bold))
+
+= given toggleStylize: Stylize[Toggle.type] = _ => Stylize(style => style.copy(bold = !style.bold))
+- ```
++ ```
+
+= given toggleStylize: Stylize[Toggle.type] = _ => Stylize(style => style.copy(bold = !style.bold))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= given toggleStylize: Stylize[Toggle.type] = _ => Stylize(style => style.copy(bold = !style.bold))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= given toggleStylize: Stylize[Toggle.type] = _ => Stylize(style => style.copy(bold = !style.bold))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(e"plain, $Toggle(bold, $Toggle(plain again), bold), plain")
++ Out.println(e"plain, $Toggle(bold, $Toggle(plain again), bold), plain")
+
+= Out.println(e"plain, $Toggle(bold, $Toggle(plain again), bold), plain")
+- ```
++ ```
+
+- `$Toggle(…)` makes plain text bold, and bold text plain. It decides from the style which it
+- finds, and does not impose a fixed one.
++ `$Toggle(…)` pone en negrita el texto normal, y en normal el texto en negrita. Decide a partir del
++ estilo que encuentra, y no impone uno fijo.
+
+- A `Teletype` behaves as [text](text.md#any-textual-type). It is cut, joined and padded, with
+- its styles preserved. It is rendered for each terminal: in full 24-bit color on a capable
+- terminal, in the nearest color of the palette on an older one, and as plain text when the
+- output is not a terminal at all, so that logs never fill with escape codes.
+- [Environment](environment.md#the-machine) describes how the capabilities of the real terminal
+- are detected.
++ Un `Teletype` se comporta como [texto](text.md#any-textual-type). Se corta, se une y se rellena,
++ conservando sus estilos. Se representa para cada terminal: en color completo de 24 bits en un
++ terminal capaz, en el color más cercano de la paleta en uno más antiguo, y como texto plano cuando
++ la salida no es un terminal en absoluto, para que los registros nunca se llenen de códigos de
++ escape. [Entorno](environment.md#the-machine) describe cómo se detectan las prestaciones del
++ terminal real.
+
+- ### Keyboard input
++ ### Entrada del teclado
+
+- `interactive` opens a raw-mode session. Within it, the terminal's events arrive as typed
+- values: keypresses, resizes of the window, changes of focus, and pastes. The session runs
+- under [supervision](concurrency.md), and takes the console and the
+- [environment](environment.md) from context. An application's
+- [`Cli`](cli.md) provides the console:
++ `interactive` abre una sesión en modo crudo. Dentro de ella, los eventos del terminal llegan como
++ valores tipados: pulsaciones de tecla, cambios de tamaño de la ventana, cambios de enfoque y
++ pegados. La sesión se ejecuta bajo [supervisión](concurrency.md), y toma del contexto la consola y
++ el [entorno](environment.md). El [`Cli`](cli.md) de una aplicación proporciona la consola:
+
+= [`Cli`](cli.md) provides the console:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [`Cli`](cli.md) provides the console:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [`Cli`](cli.md) provides the console:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- given console: Console = Console(summon[Stdio])
++ given console: Console = Console(summon[Stdio])
+
+- def handle(char: Char): Unit = ()
++ def handle(char: Char): Unit = ()
+
+- def finish(): Unit = ()
++ def finish(): Unit = ()
+
+- def resize(rows: Int, cols: Int): Unit = ()
++ def resize(rows: Int, cols: Int): Unit = ()
+
+= def resize(rows: Int, cols: Int): Unit = ()
+=
+- supervise:
++ supervise:
+
+= def resize(rows: Int, cols: Int): Unit = ()
+=
+= supervise:
+-   interactive: terminal ?=>
++   interactive: terminal ?=>
+
+-     terminal.eventIterator().each:
++     terminal.eventIterator().each:
+
+-       case Keypress.CharKey(char)  => handle(char)
++       case Keypress.CharKey(char)  => handle(char)
+
+-       case Keypress.Ctrl('C')      => finish()
++       case Keypress.Ctrl('C')      => finish()
+
+-       case Terminal.Info.WindowSize(rows, cols) => resize(rows, cols)
++       case Terminal.Info.WindowSize(rows, cols) => resize(rows, cols)
+
+-       case _                       => ()
++       case _                       => ()
+
+=       case _                       => ()
+- ```
++ ```
+
+- The decoding covers combinations of modifiers, function keys, the kitty keyboard protocol
+- and bracketed paste. `Ctrl(Alt(Left))` is therefore a value to match, not a sequence of bytes
+- to recognize.
++ La decodificación abarca las combinaciones de modificadores, las teclas de función, el protocolo
++ de teclado de kitty y el pegado entre corchetes. Por tanto, `Ctrl(Alt(Left))` es un valor con el
++ que comparar, no una secuencia de bytes que reconocer.
+
+- A `Keypress` is an ordinary `CharKey`, a `FunctionKey`, one of the named editing keys, or an
+- `EscapeSeq` for a sequence with no other name. The named keys are `Tab`, `Enter`,
+- `Backspace`, `Delete`, `Escape`, `Insert`, `Home`, `End`, `PageUp`, `PageDown` and the
+- arrows. Each may be wrapped in the modifiers which were held with it, nesting outwards:
++ Un `Keypress` es un `CharKey` corriente, una `FunctionKey`, una de las teclas de edición con
++ nombre, o un `EscapeSeq` para una secuencia sin otro nombre. Las teclas con nombre son `Tab`,
++ `Enter`, `Backspace`, `Delete`, `Escape`, `Insert`, `Home`, `End`, `PageUp`, `PageDown` y las
++ flechas. Cada una puede envolverse en los modificadores que se mantuvieron pulsados con ella,
++ anidándose hacia fuera:
+
+= arrows. Each may be wrapped in the modifiers which were held with it, nesting outwards:
+=
+- ```scala
++ ```scala
+
+- val selectAll = Keypress.Ctrl('A')
++ val selectAll = Keypress.Ctrl('A')
+
+- val newLine = Keypress.Shift(Keypress.Enter)
++ val newLine = Keypress.Shift(Keypress.Enter)
+
+= val newLine = Keypress.Shift(Keypress.Enter)
+- ```
++ ```
+
+- The wrappers accept only what can meaningfully be modified. `Shift(CharKey('a'))` does not
+- typecheck: a shifted `a` is `CharKey('A')`, and the shift has already been applied.
++ Los envoltorios solo aceptan lo que puede modificarse con sentido. `Shift(CharKey('a'))` no pasa
++ la comprobación de tipos: una `a` con mayúsculas es `CharKey('A')`, y la mayúscula ya se ha
++ aplicado.
+
+- A keypress is displayed with a Unicode symbol in brackets for each special key, joined with
+- `+` to what it modifies, as in `[⇧]+[↵]`, `[⌃]+[C]` or `[⌥]+[→]`:
++ Una pulsación se muestra con un símbolo Unicode entre corchetes por cada tecla especial, unido con
++ `+` a lo que modifica, como en `[⇧]+[↵]`, `[⌃]+[C]` o `[⌥]+[→]`:
+
+= `+` to what it modifies, as in `[⇧]+[↵]`, `[⌃]+[C]` or `[⌥]+[→]`:
+=
+- ```tabular
++ ```tabular
+
+- column  Keypress
+- column  Renders as
++ column  Pulsación
++ column  Se representa como
+
+- row  `CharKey('a')`  `[a]`
++ row  `CharKey('a')`  `[a]`
+
+- row  `CharKey(' ')`  `[␣]`
++ row  `CharKey(' ')`  `[␣]`
+
+- row  `FunctionKey(5)`  `[F5]`
++ row  `FunctionKey(5)`  `[F5]`
+
+- row  `Tab`, `Enter`  `[⇥]`, `[↵]`
++ row  `Tab`, `Enter`  `[⇥]`, `[↵]`
+
+- row  `Backspace`, `Delete`, `Insert`  `[⌫]`, `[⌦]`, `[⎀]`
++ row  `Backspace`, `Delete`, `Insert`  `[⌫]`, `[⌦]`, `[⎀]`
+
+- row  `Escape`  `[⎋]`
++ row  `Escape`  `[⎋]`
+
+- row  `Up`, `Down`, `Left`, `Right`  `[↑]`, `[↓]`, `[←]`, `[→]`
++ row  `Up`, `Down`, `Left`, `Right`  `[↑]`, `[↓]`, `[←]`, `[→]`
+
+- row  `Home`, `End`  `[↖]`, `[↘]`
++ row  `Home`, `End`  `[↖]`, `[↘]`
+
+- row  `PageUp`, `PageDown`  `[⇞]`, `[⇟]`
++ row  `PageUp`, `PageDown`  `[⇞]`, `[⇟]`
+
+- row  `EscapeSeq(id, …)`  `[⎋id]`
++ row  `EscapeSeq(id, …)`  `[⎋id]`
+
+- row  `Shift(…)`, `Ctrl(…)`, `Alt(…)`, `Meta(…)`  `[⇧]+…`, `[⌃]+…`, `[⌥]+…`, `[⌘]+…`
++ row  `Shift(…)`, `Ctrl(…)`, `Alt(…)`, `Meta(…)`  `[⇧]+…`, `[⌃]+…`, `[⌥]+…`, `[⌘]+…`
+
+= row  `Shift(…)`, `Ctrl(…)`, `Alt(…)`, `Meta(…)`  `[⇧]+…`, `[⌃]+…`, `[⌥]+…`, `[⌘]+…`
+- ```
++ ```
+
+- The vocabulary is deliberately separate from anything which produces or consumes it. The
+- terminal decodes escape sequences into these values, and
+- [web automation](web-automation.md) turns them into the actions which a browser understands,
+- without either needing to know about the other.
++ El vocabulario está deliberadamente separado de todo lo que lo produce o lo consume. El terminal
++ decodifica las secuencias de escape en estos valores, y la
++ [automatización web](web-automation.md) los convierte en las acciones que entiende un navegador,
++ sin que ninguno de los dos necesite saber del otro.
+
+- Optional capabilities, such as tracking of the mouse, reporting of focus and the alternate
+- screen, are switched on by importing the corresponding given from `terminalFeatures`, and
+- are switched off again when the session ends.
++ Las prestaciones opcionales, como el seguimiento del ratón, la notificación del enfoque y la
++ pantalla alternativa, se activan importando el given correspondiente de `terminalFeatures`, y se
++ vuelven a desactivar cuando termina la sesión.
+
+- ### Line editing and menus
++ ### Edición de líneas y menús
+
+- A line of input, with movement of the cursor and the editing keys handled, is a
+- `LineEditor`. A choice among options is a `SelectMenu`. Each is a pure state machine, which
+- takes an event and gives a new state, and is asked for its result in one call:
++ Una línea de entrada, con el movimiento del cursor y las teclas de edición gestionados, es un
++ `LineEditor`. Una elección entre opciones es un `SelectMenu`. Cada uno es una máquina de estados
++ pura, que recibe un evento y da un estado nuevo, y a la que se pide su resultado con una sola
++ llamada:
+
+= takes an event and gives a new state, and is asked for its result in one call:
+=
+- ```scala fuel
++ ```scala fuel
+
+= takes an event and gives a new state, and is asked for its result in one call:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= takes an event and gives a new state, and is asked for its result in one call:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= ##
+- supervise:
++ supervise:
+
+= ##
+= supervise:
+-   interactive: terminal ?=>
++   interactive: terminal ?=>
+
+-     LineEditor().ask: text =>
++     LineEditor().ask: text =>
+
+-       Out.println(t"You entered: $text")
++       Out.println(t"You entered: $text")
+
+=       Out.println(t"You entered: $text")
+- ```
++ ```
+
+- ### Layout
++ ### Disposición
+
+- Interfaces which are larger than a line are composed from panes:
++ Las interfaces más grandes que una línea se componen a partir de paneles:
+
+= Interfaces which are larger than a line are composed from panes:
+=
+- ```tabular
++ ```tabular
+
+- column  Combinator
+- column  Makes
+- row  `panel`  a pane of content
+- row  `editor`, `menu`  an interactive widget: a `LineEditor` or a menu of options
+- row  `strip`  panes side by side, as columns
+- row  `stack`  panes one above another, as rows
+- row  `border`  a frame around a pane
++ column  Combinador
++ column  Crea
++ row  `panel`  un panel de contenido
++ row  `editor`, `menu`  un widget interactivo: un `LineEditor` o un menú de opciones
++ row  `strip`  paneles uno al lado de otro, como columnas
++ row  `stack`  paneles uno encima de otro, como filas
++ row  `border`  un borde alrededor de un panel
+
+= row  `border`  a frame around a pane
+- ```
++ ```
+
+- `conduct` runs the arrangement. It runs full-screen, on the alternate buffer, or *inline*, as
+- a live block at the cursor, which leaves the scrollback intact:
++ `conduct` ejecuta la composición. Se ejecuta a pantalla completa, en el búfer alternativo, o *en
++ línea*, como un bloque vivo en el cursor, que deja intacto el historial de desplazamiento:
+
+= a live block at the cursor, which leaves the scrollback intact:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a live block at the cursor, which leaves the scrollback intact:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= a live block at the cursor, which leaves the scrollback intact:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import ultimatum.border
++ import ultimatum.border
+
+= import ultimatum.border
+=
+- supervise:
++ supervise:
+
+= import ultimatum.border
+=
+= supervise:
+-   interactive: terminal ?=>
++   interactive: terminal ?=>
+
+-     val pages = List(t"Home", t"Settings", t"About")
++     val pages = List(t"Home", t"Settings", t"About")
+
+-     val sidebar = border(BorderStyle.rounded)(menu(pages, pages.head.or(t""), maxWidth = 20))
++     val sidebar = border(BorderStyle.rounded)(menu(pages, pages.head.or(t""), maxWidth = 20))
+
+-     val body = border(BorderStyle.heavy)(editor(LineEditor()))
++     val body = border(BorderStyle.heavy)(editor(LineEditor()))
+
+-     conduct(Tui.Occupancy.Inline)(strip(sidebar, body))
++     conduct(Tui.Occupancy.Inline)(strip(sidebar, body))
+
+=     conduct(Tui.Occupancy.Inline)(strip(sidebar, body))
+- ```
++ ```
+
+- Sizes are solved as fractions, with minima and maxima, and focus moves between widgets with
+- Tab. Live status is embedded in the same way: progress bars, spinners, meters and step
+- indicators. [Gauges](gauges.md) describes them.
++ Los tamaños se resuelven como fracciones, con mínimos y máximos, y el enfoque pasa de un widget a
++ otro con el tabulador. El estado en vivo se incrusta de la misma manera: barras de progreso,
++ spinners, niveles e indicadores de pasos. [Medidores](gauges.md) los describe.
+
+- ### Redrawing without flicker
++ ### Redibujar sin parpadeo
+
+- Rendering keeps a model of what is actually on the screen, and each frame is compared with
+- it. A repaint therefore overprints only the runs which changed, and an identical frame emits
+- nothing at all. Full-screen output is buffered, and flushed as one write, not as a stream of
+- small ones. A change of geometry, or a resize, takes the path of a full redraw, because
+- nothing about the previous contents can then be relied upon.
++ La representación mantiene un modelo de lo que hay realmente en la pantalla, y cada trama se
++ compara con él. Por eso un repintado sobrescribe solo las rachas que han cambiado, y una trama
++ idéntica no emite nada en absoluto. La salida a pantalla completa pasa por un búfer y se vuelca
++ como una sola escritura, no como un flujo de escrituras pequeñas. Un cambio de geometría, o de
++ tamaño, toma el camino de un redibujado completo, porque entonces no puede confiarse en nada del
++ contenido anterior.
+
+- An inline block, which leaves the scrollback intact, has a further problem. The terminal may
+- reflow its lines when the window narrows, moving the block out from under the cursor. An
+- inline block therefore works out again where it is after a resize, so that a running
+- interface survives a reflow, and does not scribble over the scrollback above it.
++ Un bloque en línea, que deja intacto el historial de desplazamiento, tiene un problema adicional.
++ El terminal puede recolocar sus líneas cuando la ventana se estrecha, sacando el bloque de debajo
++ del cursor. Por eso un bloque en línea vuelve a calcular dónde está tras un cambio de tamaño, de
++ modo que una interfaz en ejecución sobrevive a una recolocación y no garabatea sobre el historial
++ de desplazamiento que tiene encima.
+
+- ### Related
++ ### Relacionado
+
+- - [Colors](colors.md) describes the colors which `Fg` and `Bg` take.
+- - [Tables](tables.md) and [Gauges](gauges.md) draw structured output in a terminal.
+- - [Command-line interfaces](cli.md) reads a program's arguments and completes them.
+- - [Terminal emulator](terminal-emulator.md) is the other side: it interprets the escape
+-   sequences which a program writes.
+- - [Processes](processes.md#on-a-terminal) runs another program on a pseudo-terminal.
++ - [Colores](colors.md) describe los colores que reciben `Fg` y `Bg`.
++ - [Tablas](tables.md) y [Medidores](gauges.md) dibujan salida estructurada en un terminal.
++ - [Interfaces de línea de comandos](cli.md) lee los argumentos de un programa y los completa.
++ - [Emulador de terminal](terminal-emulator.md) es el otro lado: interpreta las secuencias de
++   escape que escribe un programa.
++ - [Procesos](processes.md#on-a-terminal) ejecuta otro programa en un pseudoterminal.

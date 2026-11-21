@@ -1,0 +1,75 @@
+orthant 1 language
+
+- # `↯/s.105.7` — `PrivateKey.Error`
++ # `↯/s.105.7` — `PrivateKey.Error`
+
+- Raised when a key document cannot be read as a private key of the cipher asked for.
++ Levée lorsqu'un document de clé ne peut pas être lu comme une clé privée du chiffrement demandé.
+
+- ## Cause
++ ## Cause
+
+- A private key is read from a document — PKCS#8, PKCS#1, SEC1 or OpenSSH's own container, bare
+- or in PEM armor — as a key of a named cipher, such as `PrivateKey[Ecdsa[256]]`. This error
+- covers a document that is not a key at all, one that holds a key of another algorithm or
+- size, and one that cannot be used as it stands.
++ Une clé privée est lue à partir d'un document — PKCS#8, PKCS#1, SEC1 ou le conteneur propre à
++ OpenSSH, nu ou sous armure PEM — comme une clé d'un chiffrement nommé, tel que
++ `PrivateKey[Ecdsa[256]]`. Cette erreur couvre un document qui n'est pas du tout une clé, un
++ document qui contient une clé d'un autre algorithme ou d'une autre taille, et un document
++ inutilisable en l'état.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
++ column  Raison
+
+- column  Message
++ column  Message
+
+- row  `↯/s.105.7.1`  `Malformed`  the key document was malformed: <detail>
++ row  `↯/s.105.7.1`  `Malformed`  the key document was malformed: <detail>
+
+- row  `↯/s.105.7.2`  `Mismatch`  a <expected> key was expected but <found> was found
++ row  `↯/s.105.7.2`  `Mismatch`  a <expected> key was expected but <found> was found
+
+- row  `↯/s.105.7.3`  `Encrypted`  the key is protected by a passphrase
++ row  `↯/s.105.7.3`  `Encrypted`  the key is protected by a passphrase
+
+- row  `↯/s.105.7.4`  `Unsupported`  the key uses an unsupported <detail>
++ row  `↯/s.105.7.4`  `Unsupported`  the key uses an unsupported <detail>
+
+- row  `↯/s.105.7.5`  `PublicKeyAbsent`  the key does not carry its public key
++ row  `↯/s.105.7.5`  `PublicKeyAbsent`  the key does not carry its public key
+
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- A `Mismatch` names what the document holds: read the key as that cipher, or supply the key
+- that was intended. A passphrase-protected key must be decrypted before it is read, for
+- example with `ssh-keygen -p` or `openssl pkcs8`. An EC, Ed25519 or ML-DSA key written without
+- its public half cannot answer `public`; rewrite it with a tool that includes the public key,
+- as `openssl pkey` does.
++ Un `Mismatch` nomme ce que contient le document : lire la clé comme ce chiffrement, ou fournir la
++ clé qui était prévue. Une clé protégée par une phrase de passe doit être déchiffrée avant d'être
++ lue, par exemple avec `ssh-keygen -p` ou `openssl pkcs8`. Une clé EC, Ed25519 ou ML-DSA écrite
++ sans sa moitié publique ne peut pas répondre à `public` ; la réécrire avec un outil qui inclut la
++ clé publique, comme le fait `openssl pkey`.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/enigmatic/src/core/enigmatic.PrivateKey.scala`
+- - `↯/s.105.8` — `PublicKey.Error`, the same for a public key
++ - Source : `lib/enigmatic/src/core/enigmatic.PrivateKey.scala`
++ - `↯/s.105.8` — `PublicKey.Error`, la même chose pour une clé publique

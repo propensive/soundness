@@ -1,0 +1,1934 @@
+orthant 1 language
+
+- ## Quantities
++ ## 物理量
+
+- ### About
++ ### 概要
+
+- Physical quantities, such as a distance, a mass or a speed, are values which carry their
+- [units](https://en.wikipedia.org/wiki/Units_of_measurement) in their type:
++ 距離、質量、速度のような物理量は、その[単位](https://en.wikipedia.org/wiki/Units_of_measurement)を型に持つ値である。
+
+- - Adding a distance to a time is a compile error.
+- - Multiplying a distance by a force gives a quantity whose units are worked out
+-   automatically.
+- - A quantity costs nothing at [runtime] beyond the `Double` it wraps.
++ - 距離に時間を加えるのはコンパイルエラーである。
++ - 距離に力を掛けると、単位が自動的に求められた量が得られる。
++ - 量は、それが包む `Double` を超える[実行時]のコストを持たない。
+
+- That last property is a constraint on the design, not an optimization, as
+- [zero cost](../../philosophy/zero-cost.md) explains.
++ 最後の性質は最適化ではなく設計上の制約であり、そのことは[ゼロコスト](../../philosophy/zero-cost.md)で説明されている。
+
+- ### On quantities
++ ### 量について
+
+- A bare number has no units. The figure `5` says nothing about whether it counts meters, feet,
+- seconds or kilograms. Code which loses track of the answer has caused real disasters. The
+- [loss of a Mars orbiter](https://en.wikipedia.org/wiki/Mars_Climate_Orbiter#Cause_of_failure)
+- is one of them: one component worked in newtons, and another in pound-force. The usual
+- defenses are naming conventions, comments, and a wrapper class for each unit. They rely on
+- discipline, and catch nothing automatically.
++ 裸の数には単位がない。
++ `5` という数字は、それがメートル、フィート、秒、キログラムのどれを数えているのかについて何も語らない。
++ その答えを見失ったコードは、現実の大惨事を引き起こしてきた。
++ [火星探査機の喪失](https://en.wikipedia.org/wiki/Mars_Climate_Orbiter#Cause_of_failure)はその一つである。ある構成要素はニュートンで計算し、別の構成要素は重量ポンドで計算していた。
++ 通常の防御策は、命名規則、コメント、そして単位ごとのラッパークラスである。
++ それらは規律に頼っており、何も自動的には捕らえない。
+
+- Here the units of every quantity are recorded in its type, and
+- [dimensional analysis](https://en.wikipedia.org/wiki/Dimensional_analysis) is performed at
+- [compiletime]. A `Quantity` has a type parameter for its units, so a length and a duration are
+- different types, and the compiler refuses to add them. Arithmetic combines units correctly:
+- dividing a length by a duration gives a speed. Quantities of compatible units convert into
+- one another automatically.
++ ここでは、すべての量の単位がその型に記録され、[コンパイル時]に[次元解析](https://en.wikipedia.org/wiki/Dimensional_analysis)が行われる。
++ `Quantity` は単位を表す型パラメーターを持つので、長さと継続時間は異なる型であり、コンパイラはそれらを加えることを拒否する。
++ 演算は単位を正しく組み合わせる。長さを継続時間で割ると速度になる。
++ 互換性のある単位の量は、自動的に互いに変換される。
+
+- None of this exists at runtime. A `Quantity` is an [opaque type] over a `Double`, and its
+- operations are inlined, so the safety is paid for entirely at compiletime.
++ これらはどれも実行時には存在しない。
++ `Quantity` は `Double` の上の[不透明型]であり、その演算はインライン化されるので、安全性の代価はすべてコンパイル時に支払われる。
+
+- The units, the prefixes and the operations on quantities all come from the `soundness`
+- package. Arithmetic between a plain number and a quantity relies on the compiler's *into*
+- conversions, so that language feature is enabled too. A `Decimalizer` in scope fixes how many
+- significant figures a quantity is shown with, and the last import lets the samples print
+- their results:
++ 単位、接頭辞、量に対する演算はすべて `soundness` パッケージから来る。
++ 素の数と量の間の演算はコンパイラの *into* 変換に頼るので、その言語機能も有効にする。
++ スコープ内の `Decimalizer` は量を何桁の有効数字で表示するかを定め、最後のインポートでサンプルが結果を印字できるようになる。
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import scala.language.experimental.into
++ import scala.language.experimental.into
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- given decimalizer: Decimalizer = Decimalizer(3)
++ given decimalizer: Decimalizer = Decimalizer(3)
+
+= given decimalizer: Decimalizer = Decimalizer(3)
+- ```
++ ```
+
+- ### Quantities and units
++ ### 量と単位
+
+- A quantity is a number multiplied by a unit. The SI base units are values: `Metre`, `Second`,
+- `Gram`, `Kelvin`, `Ampere`, `Candela` and `Mole`. So are many other units.
++ 量は、数に単位を掛けたものである。
++ SI 基本単位は値である。`Metre`、`Second`、`Gram`、`Kelvin`、`Ampere`、`Candela`、`Mole` がそうである。
++ 他の多くの単位も値である。
+
+= `Gram`, `Kelvin`, `Ampere`, `Candela` and `Mole`. So are many other units.
+=
+- ```scala
++ ```scala
+
+- val distance = 5*Metre
++ val distance = 5*Metre
+
+- val duration = 2*Second
++ val duration = 2*Second
+
+= val duration = 2*Second
+- ```
++ ```
+
+- `show` writes a quantity with its unit:
++ `show` は量をその単位とともに書き出す。
+
+= `show` writes a quantity with its unit:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `show` writes a quantity with its unit:
+=
+= ```scala fuel
+- run
++ run
+
+= `show` writes a quantity with its unit:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(distance.show)
++ Out.println(distance.show)
+
+- Out.println(duration.show)
++ Out.println(duration.show)
+
+= Out.println(duration.show)
+- ```
++ ```
+
+- The unit lives in the type. `5*Metre` is a `Quantity[Metres[1]]`, in which the `1` is the
+- power to which the unit is raised. An area would be `Metres[2]`, and a frequency
+- `Seconds[-1]`. These types are inferred, so they rarely need to be written, but they are what
+- the compiler checks.
++ 単位は型の中にある。
++ `5*Metre` は `Quantity[Metres[1]]` であり、その `1` は単位を累乗する冪である。
++ 面積なら `Metres[2]`、周波数なら `Seconds[-1]` になる。
++ これらの型は推論されるので書く必要はめったにないが、コンパイラが検査するのはこれらである。
+
+- ### Arithmetic and dimensions
++ ### 演算と次元
+
+- Quantities of the same unit add and subtract. Multiplication and division combine units, and
+- give a quantity whose type records the new dimensions:
++ 同じ単位の量は加算と減算ができる。
++ 乗算と除算は単位を組み合わせ、新しい次元を型に記録した量を与える。
+
+= give a quantity whose type records the new dimensions:
+=
+- ```scala fuel
++ ```scala fuel
+
+= give a quantity whose type records the new dimensions:
+=
+= ```scala fuel
+- run
++ run
+
+= give a quantity whose type records the new dimensions:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Metre + Metre*2.0).show)
++ Out.println((Metre + Metre*2.0).show)
+
+- Out.println((2*Second * 3*Metre).show)
++ Out.println((2*Second * 3*Metre).show)
+
+- Out.println((distance/duration).show)
++ Out.println((distance/duration).show)
+
+- Out.println((2*Metre/Second).invert.show)
++ Out.println((2*Metre/Second).invert.show)
+
+= Out.println((2*Metre/Second).invert.show)
+- ```
++ ```
+
+- Adding quantities whose dimensions disagree is a compile error. The message names the
+- mismatch in plain words, not in terms of types:
++ 次元が一致しない量を加えるのはコンパイルエラーである。
++ メッセージは、その不一致を型の用語ではなく平易な言葉で示す。
+
+= mismatch in plain words, not in terms of types:
+=
+- ```scala fuel
++ ```scala fuel
+
+= mismatch in plain words, not in terms of types:
+=
+= ```scala fuel
+- compile
++ compile
+
+= mismatch in plain words, not in terms of types:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= mismatch in plain words, not in terms of types:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Metre + 2*Second
++ Metre + 2*Second
+
+= Metre + 2*Second
+- ```
++ ```
+
+- The check is by dimension, not merely by unit, so a length cannot be added to an energy:
++ 検査は単なる単位ではなく次元によるので、長さをエネルギーに加えることはできない。
+
+= The check is by dimension, not merely by unit, so a length cannot be added to an energy:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The check is by dimension, not merely by unit, so a length cannot be added to an energy:
+=
+= ```scala fuel
+- compile
++ compile
+
+= The check is by dimension, not merely by unit, so a length cannot be added to an energy:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= The check is by dimension, not merely by unit, so a length cannot be added to an energy:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- 2*Metre + 2*Joule
++ 2*Metre + 2*Joule
+
+= 2*Metre + 2*Joule
+- ```
++ ```
+
+- Even two powers of the same dimension stay apart. A length is not an area:
++ 同じ次元の二つの冪でさえ区別される。
++ 長さは面積ではない。
+
+= Even two powers of the same dimension stay apart. A length is not an area:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Even two powers of the same dimension stay apart. A length is not an area:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Even two powers of the same dimension stay apart. A length is not an area:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Even two powers of the same dimension stay apart. A length is not an area:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- 7*Metre >= 2*Metre*Metre
++ 7*Metre >= 2*Metre*Metre
+
+= 7*Metre >= 2*Metre*Metre
+- ```
++ ```
+
+- ### Mixing units
++ ### 単位の混在
+
+- Different units of the *same* dimension combine freely, and are converted automatically. The
+- result takes the unit of the principal operand, which here is the SI one:
++ *同じ*次元の異なる単位は自由に組み合わさり、自動的に変換される。
++ 結果は主たるオペランドの単位を取り、ここではそれは SI の単位である。
+
+= result takes the unit of the principal operand, which here is the SI one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= result takes the unit of the principal operand, which here is the SI one:
+=
+= ```scala fuel
+- run
++ run
+
+= result takes the unit of the principal operand, which here is the SI one:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((2*Metre + 2*Foot).show)
++ Out.println((2*Metre + 2*Foot).show)
+
+- Out.println((2*Foot + 2*Metre).show)
++ Out.println((2*Foot + 2*Metre).show)
+
+= Out.println((2*Foot + 2*Metre).show)
+- ```
++ ```
+
+- Conversion applies to multiplication and division too. An expression may be written in
+- whatever units are natural, and still give a coherent result:
++ 変換は乗算と除算にも適用される。
++ 式は自然な単位で書くことができ、それでも首尾一貫した結果を与える。
+
+= whatever units are natural, and still give a coherent result:
+=
+- ```scala
++ ```scala
+
+- val width = 2*Metre
++ val width = 2*Metre
+
+- val depth = 3*Foot
++ val depth = 3*Foot
+
+= val depth = 3*Foot
+- ```
++ ```
+
+= val depth = 3*Foot
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val depth = 3*Foot
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val depth = 3*Foot
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((width*depth).show)
++ Out.println((width*depth).show)
+
+= Out.println((width*depth).show)
+- ```
++ ```
+
+- ### Converting
++ ### 変換
+
+- `convert` converts a quantity explicitly to another compatible unit, naming the family of the
+- target unit:
++ `convert` は、変換先の単位の族を指定して、量を互換性のある別の単位へ明示的に変換する。
+
+= target unit:
+=
+- ```scala fuel
++ ```scala fuel
+
+= target unit:
+=
+= ```scala fuel
+- run
++ run
+
+= target unit:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((3*Foot).convert[Metres].show)
++ Out.println((3*Foot).convert[Metres].show)
+
+- Out.println((3*Metre).convert[Feet].show)
++ Out.println((3*Metre).convert[Feet].show)
+
+= Out.println((3*Metre).convert[Feet].show)
+- ```
++ ```
+
+- `normalize` does the same, with the unit type written with its power. An hour is not one of
+- the predefined unit values, but a unit is only a quantity of one, so it is defined in one
+- line:
++ `normalize` も同じことをするが、単位の型をその冪とともに書く。
++ 1 時間（hour）はあらかじめ定義された単位の値ではないが、単位は大きさ 1 の量にすぎないので、一行で定義できる。
+
+= line:
+=
+- ```scala
++ ```scala
+
+- val Hour: Quantity[Hours[1]] = Quantity(1.0)
++ val Hour: Quantity[Hours[1]] = Quantity(1.0)
+
+= val Hour: Quantity[Hours[1]] = Quantity(1.0)
+- ```
++ ```
+
+= val Hour: Quantity[Hours[1]] = Quantity(1.0)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val Hour: Quantity[Hours[1]] = Quantity(1.0)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val Hour: Quantity[Hours[1]] = Quantity(1.0)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((2*Hour).normalize[Seconds[1]].show)
++ Out.println((2*Hour).normalize[Seconds[1]].show)
+
+- Out.println((1*Inch).normalize[Metres[1]].show)
++ Out.println((1*Inch).normalize[Metres[1]].show)
+
+= Out.println((1*Inch).normalize[Metres[1]].show)
+- ```
++ ```
+
+- `normalize` acts only on the dimension of the unit which it names. Components which are
+- measured in that dimension are converted to the target, and components of every other
+- dimension are left exactly as they were. Normalizing a speed to seconds therefore rescales
+- its time, and leaves its distance untouched. It follows that converting to a unit of a
+- dimension which the quantity does not have is not an error. It simply does nothing, because
+- there is no matching component to rescale.
++ `normalize` は、自身が指定する単位の次元にだけ作用する。
++ その次元で測られる成分は変換先に変換され、他のすべての次元の成分はまったくそのまま残される。
++ したがって、速度を秒に正規化するとその時間が再スケールされ、距離はそのまま残る。
++ このことから、量が持たない次元の単位に変換するのはエラーではない。
++ 再スケールすべき対応する成分がないので、単に何もしない。
+
+- ### Metric prefixes
++ ### メートル法の接頭辞
+
+- A [metric prefix](https://en.wikipedia.org/wiki/Metric_prefix) scales a unit. `Kilo`, `Mega`,
+- `Giga`, `Milli`, `Micro`, `Nano` and the rest apply to a unit, to give a larger or a smaller
+- one. The binary prefixes, `Kibi`, `Mebi` and `Gibi`, scale by powers of two instead of ten,
+- for quantities of information:
++ [メートル法の接頭辞](https://en.wikipedia.org/wiki/Metric_prefix)は単位をスケールする。
++ `Kilo`、`Mega`、`Giga`、`Milli`、`Micro`、`Nano` などは単位に適用され、より大きい単位やより小さい単位を与える。
++ 二進接頭辞 `Kibi`、`Mebi`、`Gibi` は、情報量のために十の冪ではなく二の冪でスケールする。
+
+= for quantities of information:
+=
+- ```scala fuel
++ ```scala fuel
+
+= for quantities of information:
+=
+= ```scala fuel
+- run
++ run
+
+= for quantities of information:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((15*Kilo(Metre)).show)
++ Out.println((15*Kilo(Metre)).show)
+
+- Out.println((1.5*Milli(Metre)).show)
++ Out.println((1.5*Milli(Metre)).show)
+
+- Out.println((10*Kibi(Metre)).show)
++ Out.println((10*Kibi(Metre)).show)
+
+= Out.println((10*Kibi(Metre)).show)
+- ```
++ ```
+
+- The full set, decimal and binary:
++ 十進と二進の全一覧：
+
+= The full set, decimal and binary:
+=
+- ```tabular
++ ```tabular
+
+- column  Prefix
+- column  Symbol
+- column  Factor
++ column  接頭辞
++ column  記号
++ column  係数
+
+- row  `Quetta`  Q  10³⁰
++ row  `Quetta`  Q  10³⁰
+
+- row  `Ronna`  R  10²⁷
++ row  `Ronna`  R  10²⁷
+
+- row  `Yotta`  Y  10²⁴
++ row  `Yotta`  Y  10²⁴
+
+- row  `Zetta`  Z  10²¹
++ row  `Zetta`  Z  10²¹
+
+- row  `Exa`  E  10¹⁸
++ row  `Exa`  E  10¹⁸
+
+- row  `Peta`  P  10¹⁵
++ row  `Peta`  P  10¹⁵
+
+- row  `Tera`  T  10¹²
++ row  `Tera`  T  10¹²
+
+- row  `Giga`  G  10⁹
++ row  `Giga`  G  10⁹
+
+- row  `Mega`  M  10⁶
++ row  `Mega`  M  10⁶
+
+- row  `Kilo`  k  10³
++ row  `Kilo`  k  10³
+
+- row  `Hecto`  h  10²
++ row  `Hecto`  h  10²
+
+- row  `Deka`  da  10¹
++ row  `Deka`  da  10¹
+
+- row  `Deci`  d  10⁻¹
++ row  `Deci`  d  10⁻¹
+
+- row  `Centi`  c  10⁻²
++ row  `Centi`  c  10⁻²
+
+- row  `Milli`  m  10⁻³
++ row  `Milli`  m  10⁻³
+
+- row  `Micro`  µ  10⁻⁶
++ row  `Micro`  µ  10⁻⁶
+
+- row  `Nano`  n  10⁻⁹
++ row  `Nano`  n  10⁻⁹
+
+- row  `Pico`  p  10⁻¹²
++ row  `Pico`  p  10⁻¹²
+
+- row  `Femto`  f  10⁻¹⁵
++ row  `Femto`  f  10⁻¹⁵
+
+- row  `Atto`  a  10⁻¹⁸
++ row  `Atto`  a  10⁻¹⁸
+
+- row  `Zepto`  z  10⁻²¹
++ row  `Zepto`  z  10⁻²¹
+
+- row  `Yocto`  y  10⁻²⁴
++ row  `Yocto`  y  10⁻²⁴
+
+- row  `Ronto`  r  10⁻²⁷
++ row  `Ronto`  r  10⁻²⁷
+
+- row  `Quecto`  q  10⁻³⁰
++ row  `Quecto`  q  10⁻³⁰
+
+- row  `Kibi`  Ki  2¹⁰
++ row  `Kibi`  Ki  2¹⁰
+
+- row  `Mebi`  Mi  2²⁰
++ row  `Mebi`  Mi  2²⁰
+
+- row  `Gibi`  Gi  2³⁰
++ row  `Gibi`  Gi  2³⁰
+
+- row  `Tebi`  Ti  2⁴⁰
++ row  `Tebi`  Ti  2⁴⁰
+
+- row  `Pebi`  Pi  2⁵⁰
++ row  `Pebi`  Pi  2⁵⁰
+
+- row  `Exbi`  Ei  2⁶⁰
++ row  `Exbi`  Ei  2⁶⁰
+
+- row  `Zebi`  Zi  2⁷⁰
++ row  `Zebi`  Zi  2⁷⁰
+
+- row  `Yobi`  Yi  2⁸⁰
++ row  `Yobi`  Yi  2⁸⁰
+
+= row  `Yobi`  Yi  2⁸⁰
+- ```
++ ```
+
+- Mass is the one awkward case among the base units, because its SI base unit is itself a
+- prefixed unit: the kilogram, not the gram. The unit is still named `Gram`, for consistency
+- with every other unit, and the base unit is written as the prefixed `Kilo(Gram)`. But the
+- dimension is `Kilograms`, and masses are always normalized and displayed in kilograms. So
+- `Kilo(Gram)` is one whole `kg`, while a bare `Gram` is a thousandth of it:
++ 質量は、基本単位の中で唯一扱いにくい場合である。その SI 基本単位自体が接頭辞付きの単位、つまりグラムではなくキログラムだからである。
++ 単位は他のすべての単位との一貫性のために依然として `Gram` と名付けられ、基本単位は接頭辞付きの `Kilo(Gram)` として書かれる。
++ しかし次元は `Kilograms` であり、質量は常にキログラムに正規化されて表示される。
++ したがって `Kilo(Gram)` はちょうど 1 `kg` であり、裸の `Gram` はその千分の一である。
+
+= `Kilo(Gram)` is one whole `kg`, while a bare `Gram` is a thousandth of it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Kilo(Gram)` is one whole `kg`, while a bare `Gram` is a thousandth of it:
+=
+= ```scala fuel
+- run
++ run
+
+= `Kilo(Gram)` is one whole `kg`, while a bare `Gram` is a thousandth of it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((1*Kilo(Gram)).show)
++ Out.println((1*Kilo(Gram)).show)
+
+- Out.println((1*Gram).show)
++ Out.println((1*Gram).show)
+
+= Out.println((1*Gram).show)
+- ```
++ ```
+
+- ### Comparing
++ ### 比較
+
+- Quantities of compatible units compare with the usual operators, and the comparison converts
+- units as arithmetic does:
++ 互換性のある単位の量は通常の演算子で比較でき、比較は演算と同様に単位を変換する。
+
+= units as arithmetic does:
+=
+- ```scala fuel
++ ```scala fuel
+
+= units as arithmetic does:
+=
+= ```scala fuel
+- run
++ run
+
+= units as arithmetic does:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((6*Foot < 2*Metre).inspect)
++ Out.println((6*Foot < 2*Metre).inspect)
+
+- Out.println((9*Foot*Foot < Metre*Metre).inspect)
++ Out.println((9*Foot*Foot < Metre*Metre).inspect)
+
+= Out.println((9*Foot*Foot < Metre*Metre).inspect)
+- ```
++ ```
+
+- Equality across different units of one dimension uses `===`, which asks whether two
+- quantities measure the same amount:
++ 一つの次元の異なる単位をまたぐ等価性には `===` を使う。これは二つの量が同じ量を測っているかどうかを問う。
+
+= quantities measure the same amount:
+=
+- ```scala fuel
++ ```scala fuel
+
+= quantities measure the same amount:
+=
+= ```scala fuel
+- run
++ run
+
+= quantities measure the same amount:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Mile === 1760*Yard).inspect)
++ Out.println((Mile === 1760*Yard).inspect)
+
+- Out.println((Mile === Inch).inspect)
++ Out.println((Mile === Inch).inspect)
+
+= Out.println((Mile === Inch).inspect)
+- ```
++ ```
+
+- As with arithmetic, comparing incompatible dimensions does not compile.
++ 演算と同様に、互換性のない次元の比較はコンパイルされない。
+
+- Equality is exact, whether through `===` or `==`. Two quantities count as equal only when
+- their underlying values agree to the last bit. A conversion which introduces a
+- [rounding difference](https://en.wikipedia.org/wiki/Floating-point_arithmetic) can therefore
+- leave quantities which are equal on paper comparing as unequal. For converted values, `<` and
+- `>`, or an explicit tolerance, are usually the better test.
++ 等価性は、`===` によるものでも `==` によるものでも厳密である。
++ 二つの量は、その基礎となる値が最後のビットまで一致するときに限り等しいとみなされる。
++ したがって、[丸め誤差](https://en.wikipedia.org/wiki/Floating-point_arithmetic)を持ち込む変換によって、紙の上では等しい量が等しくないと比較されることがある。
++ 変換した値には、通常は `<` と `>`、または明示的な許容誤差のほうがよい判定である。
+
+- Plain `==` is reserved for quantities which already share a unit type, where it compares
+- those underlying values directly. Two quantities of different units have no `==` between
+- them. Under strict equality, with `import language.strictEquality`, such a comparison does
+- not compile, which is exactly the gap that `===` fills.
++ 素の `==` は、すでに単位の型を共有する量のためにあり、そこではその基礎となる値を直接比較する。
++ 異なる単位の二つの量の間には `==` がない。
++ `import language.strictEquality` による厳密な等価性のもとでは、そのような比較はコンパイルされない。その隙間をちょうど埋めるのが `===` である。
+
+- ### Derived units
++ ### 組立単位
+
+- The named SI units, such as `Newton`, `Joule`, `Watt`, `Pascal` and `Volt`, are defined in
+- terms of the base units, so they work together with them. A force in newtons and a length in
+- meters multiply to an energy. Every quantity can also name its own dimension, worked out
+- from its units, and even an unusual combination resolves to its physical name:
++ `Newton`、`Joule`、`Watt`、`Pascal`、`Volt` のような名前付きの SI 単位は基本単位によって定義されているので、基本単位と組み合わせて使える。
++ ニュートンの力とメートルの長さを掛けるとエネルギーになる。
++ どの量も、その単位から求めた自身の次元を名指すことができ、普通でない組み合わせでさえ物理的な名前に解決される。
+
+= from its units, and even an unusual combination resolves to its physical name:
+=
+- ```scala fuel
++ ```scala fuel
+
+= from its units, and even an unusual combination resolves to its physical name:
+=
+= ```scala fuel
+- run
++ run
+
+= from its units, and even an unusual combination resolves to its physical name:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Metre.dimension)
++ Out.println(Metre.dimension)
+
+- Out.println((Metre/Second).dimension)
++ Out.println((Metre/Second).dimension)
+
+- Out.println((Newton*Metre).dimension)
++ Out.println((Newton*Metre).dimension)
+
+- Out.println((Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension)
++ Out.println((Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension)
+
+= Out.println((Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension)
+- ```
++ ```
+
+- ### The SI units
++ ### SI 単位
+
+- Seven base dimensions are defined, each with its type of units, and the value which names
+- one of them:
++ 七つの基本次元が定義されており、それぞれに単位の型と、その一つを名指す値がある。
+
+= one of them:
+=
+- ```tabular
++ ```tabular
+
+- column  Dimension
+- column  Units
+- column  Unit
++ column  次元
++ column  単位の型
++ column  単位
+
+- row  `Distance`  `Metres`  `Metre`
++ row  `Distance`  `Metres`  `Metre`
+
+- row  `Mass`  `Kilograms`  `Gram`
++ row  `Mass`  `Kilograms`  `Gram`
+
+- row  `Time`  `Seconds`  `Second`
++ row  `Time`  `Seconds`  `Second`
+
+- row  `Current`  `Amperes`  `Ampere`
++ row  `Current`  `Amperes`  `Ampere`
+
+- row  `Luminosity`  `Candelas`  `Candela`
++ row  `Luminosity`  `Candelas`  `Candela`
+
+- row  `AmountOfSubstance`  `Moles`  `Mole`
++ row  `AmountOfSubstance`  `Moles`  `Mole`
+
+- row  `Heat`  `Kelvins`  `Kelvin`
++ row  `Heat`  `Kelvins`  `Kelvin`
+
+= row  `Heat`  `Kelvins`  `Kelvin`
+- ```
++ ```
+
+- The named derived units are defined in terms of those, so each has its full dimensions, and
+- is not a distinct kind of thing. The last column is the name which its `dimension` reports:
++ 名前付きの組立単位はそれらによって定義されているので、それぞれが完全な次元を持ち、別種のものではない。
++ 最後の列は、その `dimension` が報告する名前である。
+
+= is not a distinct kind of thing. The last column is the name which its `dimension` reports:
+=
+- ```tabular
++ ```tabular
+
+- column  Unit
+- column  Definition
+- column  Dimension
+- row  `Hertz`  one per second  frequency
+- row  `Newton`  meter-kilogram per second squared  force
+- row  `Pascal`  newton per square meter  pressure
+- row  `Joule`  newton-meter  energy
+- row  `Watt`  joule per second  power
+- row  `Coulomb`  second-ampere  electric charge
+- row  `Volt`  watt per ampere  electric potential
+- row  `Farad`  coulomb per volt  capacitance
+- row  `Ohm`  volt per ampere  impedance
+- row  `Siemens`  ampere per volt  electric conductance
+- row  `Weber`  volt-second  magnetic flux
+- row  `Tesla`  weber per square meter  magnetic flux density
+- row  `Henry`  weber per ampere  inductance
+- row  `Lux`  candela per square meter  illuminance
+- row  `Becquerel`  one per second  frequency
+- row  `Gray`  joule per kilogram  specific energy
+- row  `Sievert`  joule per kilogram  specific energy
+- row  `Katal`  mole per second
++ column  単位
++ column  定義
++ column  次元
++ row  `Hertz`  毎秒  frequency
++ row  `Newton`  メートル・キログラム毎秒毎秒  force
++ row  `Pascal`  ニュートン毎平方メートル  pressure
++ row  `Joule`  ニュートン・メートル  energy
++ row  `Watt`  ジュール毎秒  power
++ row  `Coulomb`  秒・アンペア  electric charge
++ row  `Volt`  ワット毎アンペア  electric potential
++ row  `Farad`  クーロン毎ボルト  capacitance
++ row  `Ohm`  ボルト毎アンペア  impedance
++ row  `Siemens`  アンペア毎ボルト  electric conductance
++ row  `Weber`  ボルト・秒  magnetic flux
++ row  `Tesla`  ウェーバ毎平方メートル  magnetic flux density
++ row  `Henry`  ウェーバ毎アンペア  inductance
++ row  `Lux`  カンデラ毎平方メートル  illuminance
++ row  `Becquerel`  毎秒  frequency
++ row  `Gray`  ジュール毎キログラム  specific energy
++ row  `Sievert`  ジュール毎キログラム  specific energy
++ row  `Katal`  モル毎秒
+
+= row  `Katal`  mole per second
+- ```
++ ```
+
+- The CGS and imperial systems are provided beside them: `Dyne`, `Erg`, `Gauss`, `Poise`,
+- `Foot`, `Furlong`, `Stone` and the rest.
++ それらと並んで CGS 単位系とヤード・ポンド法も提供されている。`Dyne`、`Erg`、`Gauss`、`Poise`、`Foot`、`Furlong`、`Stone` などである。
+
+- ### Displaying
++ ### 表示
+
+- `show` writes a quantity out, and needs a `Decimalizer` in scope to fix the number of
+- significant figures. Compound units are written with a middle dot and superscript powers,
+- and very large or very small values switch to scientific notation:
++ `show` は量を書き出し、有効数字の桁数を定めるためにスコープ内の `Decimalizer` を必要とする。
++ 複合単位は中黒と上付きの冪で書かれ、非常に大きい値や非常に小さい値は科学的記数法に切り替わる。
+
+= and very large or very small values switch to scientific notation:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and very large or very small values switch to scientific notation:
+=
+= ```scala fuel
+- run
++ run
+
+= and very large or very small values switch to scientific notation:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((7.567*Metre).show)
++ Out.println((7.567*Metre).show)
+
+- Out.println((1.4*Metre*Metre).show)
++ Out.println((1.4*Metre*Metre).show)
+
+- Out.println((8.54*Metre/Second).show)
++ Out.println((8.54*Metre/Second).show)
+
+- Out.println((8.54*Kilo(Metre)/Second).show)
++ Out.println((8.54*Kilo(Metre)/Second).show)
+
+- Out.println(constants.SpeedOfLightInVacuum.show)
++ Out.println(constants.SpeedOfLightInVacuum.show)
+
+= Out.println(constants.SpeedOfLightInVacuum.show)
+- ```
++ ```
+
+- `show` is the only correct way to write a quantity out. A `Quantity` is an opaque type over
+- a `Double`, so its `toString` is the `Double`'s: the bare number, with no units at all. A
+- quantity which is substituted into a plain string therefore silently loses the very thing
+- which distinguishes it. [Text](text.md#rendering-numbers) describes the `Decimalizer`.
++ `show` は量を書き出す唯一の正しい方法である。
++ `Quantity` は `Double` の上の不透明型なので、その `toString` は `Double` のもの、つまり単位をまったく持たない裸の数である。
++ したがって、素の文字列に埋め込まれた量は、それを区別するまさにそのものを黙って失う。
++ [テキスト](text.md#rendering-numbers)が `Decimalizer` を説明している。
+
+- Instead of scientific notation, a quantity can scale itself to a metric prefix for display.
+- A `Prefixes` instance lists the prefixes to choose from, and `show` picks the one which keeps
+- the number readable:
++ 科学的記数法の代わりに、量は表示のために自身をメートル法の接頭辞にスケールできる。
++ `Prefixes` インスタンスが選択肢となる接頭辞を列挙し、`show` は数を読みやすく保つものを選ぶ。
+
+= the number readable:
+=
+- ```scala
++ ```scala
+
+- sealed trait Information extends Dimension
++ sealed trait Information extends Dimension
+
+- sealed trait Bits[Power <: Nat] extends Units[Power, Information]
++ sealed trait Bits[Power <: Nat] extends Units[Power, Information]
+
+- val Bit: MetricUnit[Bits[1]] = MetricUnit(1.0)
++ val Bit: MetricUnit[Bits[1]] = MetricUnit(1.0)
+
+- given bitDesignation: Designation[Bits[1]] = () => t"bit"
++ given bitDesignation: Designation[Bits[1]] = () => t"bit"
+
+- given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
++ given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+
+= given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+- ```
++ ```
+
+= given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((5000*Bit).show)
++ Out.println((5000*Bit).show)
+
+- Out.println((5_000_000*Bit).show)
++ Out.println((5_000_000*Bit).show)
+
+= Out.println((5_000_000*Bit).show)
+- ```
++ ```
+
+- That sample also shows how a new dimension and unit are declared: a `Dimension`, a `Units`
+- type indexed by its power, a unit value, and a `Designation` which gives its symbol.
++ このサンプルは、新しい次元と単位の宣言方法も示している。`Dimension`、その冪で添字付けられた `Units` 型、単位の値、そして記号を与える `Designation` である。
+
+- ### Defining a unit of your own
++ ### 独自の単位を定義する
+
+- A unit which measures something for which the SI has no dimension needs both a dimension and
+- a type of units. Take FLOPS, which is a processor's floating-point instructions per second.
+- The definition is built up in four steps:
++ SI に次元のないものを測る単位には、次元と単位の型の両方が必要である。
++ プロセッサーの毎秒の浮動小数点命令数である FLOPS を例に取る。
++ 定義は四つの段階で組み立てられる。
+
+= The definition is built up in four steps:
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```scala fuel
+- frame
++ frame
+
+-   label A bare rate, in inverse seconds
++   label 毎秒を単位とする裸の比率
+
+=   label A bare rate, in inverse seconds
+-   code
++   code
+
+-       val SimpleFlop = 1.0/Second
++       val SimpleFlop = 1.0/Second
+
+=       val SimpleFlop = 1.0/Second
+- frame
++ frame
+
+-   label A metric unit, so that the prefixes apply
++   label 接頭辞が適用されるようにメートル法の単位にする
+
+=   label A metric unit, so that the prefixes apply
+-   code
++   code
+
+-       val PrefixableFlop: MetricUnit[Seconds[-1]] = MetricUnit(1)
++       val PrefixableFlop: MetricUnit[Seconds[-1]] = MetricUnit(1)
+
+-       Mega(PrefixableFlop)
++       Mega(PrefixableFlop)
+
+=       Mega(PrefixableFlop)
+- frame
++ frame
+
+-   label A dimension of its own
++   label 独自の次元
+
+=   label A dimension of its own
+-   code
++   code
+
+=   label A dimension of its own
+=   code
+-       trait CpuPerformance extends Dimension
++       trait CpuPerformance extends Dimension
+
+=   label A dimension of its own
+=   code
+=       trait CpuPerformance extends Dimension
+-       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
++       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+
+=   label A dimension of its own
+=   code
+=       trait CpuPerformance extends Dimension
+=       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+=
+-       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
++       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
+
+=       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
+=
+-       Mega(Flop)*Second
++       Mega(Flop)*Second
+
+=       Mega(Flop)*Second
+- frame
++ frame
+
+-   label With a symbol for display
++   label 表示のための記号を付ける
+
+=   label With a symbol for display
+-   code
++   code
+
+=   label With a symbol for display
+=   code
+-       trait CpuPerformance extends Dimension
++       trait CpuPerformance extends Dimension
+
+=   label With a symbol for display
+=   code
+=       trait CpuPerformance extends Dimension
+-       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
++       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+
+=   label With a symbol for display
+=   code
+=       trait CpuPerformance extends Dimension
+=       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+=
+-       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
++       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
+
+-       given Designation[Flops[1]] = () => t"FLOPS"
++       given Designation[Flops[1]] = () => t"FLOPS"
+
+=       given Designation[Flops[1]] = () => t"FLOPS"
+=
+-       Mega(Flop)*Second
++       Mega(Flop)*Second
+
+=       Mega(Flop)*Second
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- Written as a bare value, `1.0/Second` can be used in arithmetic, but says nothing about what
+- it counts. Wrapping it as a `MetricUnit` at least makes the metric prefixes apply, so
+- `Mega(Flop)` can be written, but the result is still just a number in units of inverse
+- seconds. Giving it a dimension of its own makes it distinct from every frequency. The
+- `power` parameter is required, and is bounded by `Nat`, which is an alias for
+- `Int & Singleton`. `Mega(Flop)*Second` then has the type
+- `Quantity[Flops[1] & Seconds[1]]`, and a `Designation` gives it a symbol for display.
++ 裸の値として書いた `1.0/Second` は演算に使えるが、何を数えるのかについて何も語らない。
++ それを `MetricUnit` として包むと少なくともメートル法の接頭辞が適用され、`Mega(Flop)` と書けるようになるが、結果は依然として毎秒を単位とする単なる数である。
++ 独自の次元を与えると、あらゆる周波数と区別される。
++ `power` パラメーターは必須であり、`Int & Singleton` の別名である `Nat` で上限が定められている。
++ すると `Mega(Flop)*Second` は型 `Quantity[Flops[1] & Seconds[1]]` を持ち、`Designation` が表示のための記号を与える。
+
+- Both traits may be `sealed`, since nothing implements them at runtime.
++ 実行時に何もそれらを実装しないので、二つのトレイトはどちらも `sealed` にしてよい。
+
+- ### Conversion ratios
++ ### 変換比
+
+- Converting between two units needs the ratio between them. That comes from a contextual
+- `Ratio` for the pair, with one unit at the power `1` and the other at the power `-1`, and the
+- rate as a singleton literal `Double`:
++ 二つの単位の間の変換には、それらの間の比が必要である。
++ それは、一方の単位を冪 `1`、もう一方を冪 `-1` とし、比率をシングルトンのリテラル `Double` とした、その組に対するコンテキスト値の `Ratio` から来る。
+
+= rate as a singleton literal `Double`:
+=
+- ```scala
++ ```scala
+
+- inline given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!
++ inline given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!
+
+= inline given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!
+- ```
++ ```
+
+- The rate is a *type*, not a value, and that is what makes a conversion cost nothing. Its
+- value is known at compiletime, so arithmetic on it is done as the code compiles, and the
+- given itself can be erased. A conversion between two units therefore contributes no work at
+- runtime beyond the multiplication which it actually denotes.
++ 比率は値ではなく*型*であり、それが変換のコストをゼロにしている。
++ その値はコンパイル時に分かるので、それに対する演算はコードのコンパイル中に行われ、given 自体は消去できる。
++ したがって、二つの単位の間の変換は、それが実際に表す乗算以外に実行時の仕事を何も加えない。
+
+- ### Mixed and non-decimal bases
++ ### 混合基数と非十進基数
+
+- Not every measurement is a single number in a single unit. Before the metric system,
+- quantities were expressed as a *cascade* of units, in exact multiples which were not powers
+- of ten: feet and inches, or stones, pounds and ounces. Some still are. Hours, minutes and
+- seconds are exactly that, and so is a person's height in most of the English-speaking world.
++ すべての測定が一つの単位の一つの数であるわけではない。
++ メートル法以前、量は十の冪ではない厳密な倍数の単位の*カスケード*として表された。フィートとインチ、あるいはストーンとポンドとオンスである。
++ 今でもそうであるものもある。
++ 時、分、秒はまさにそれであり、英語圏の大部分における人の身長もそうである。
+
+- A `Quanta` represents one such value: a whole number of each unit in a descending cascade,
+- with the carrying done automatically. The type states the cascade, with the smallest unit as
+- the type parameter, and the larger ones after `in`:
++ `Quanta` はそのような値の一つを表す。降順のカスケードの各単位の整数個からなり、繰り上がりは自動的に行われる。
++ 型はカスケードを述べ、最小の単位を型パラメーターとし、より大きい単位を `in` の後に置く。
+
+= the type parameter, and the larger ones after `in`:
+=
+- ```scala
++ ```scala
+
+- type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
++ type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+- type Height = Quanta[Inches[1]] in (Feet[1])
++ type Height = Quanta[Inches[1]] in (Feet[1])
+
+= type Height = Quanta[Inches[1]] in (Feet[1])
+- ```
++ ```
+
+- A value is written with the largest unit first, as it is spoken, and each component is read
+- back by naming its unit. This weight is 1 stone, 3 pounds and 2 ounces:
++ 値は話すときと同じく最大の単位を先にして書き、各成分はその単位を指定して読み戻す。
++ この重さは 1 ストーン 3 ポンド 2 オンスである。
+
+= back by naming its unit. This weight is 1 stone, 3 pounds and 2 ounces:
+=
+- ```scala
++ ```scala
+
+- val weight: Weight = Quanta(1, 3, 2)
++ val weight: Weight = Quanta(1, 3, 2)
+
+= val weight: Weight = Quanta(1, 3, 2)
+- ```
++ ```
+
+= val weight: Weight = Quanta(1, 3, 2)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val weight: Weight = Quanta(1, 3, 2)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val weight: Weight = Quanta(1, 3, 2)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(weight[Stones].show)
++ Out.println(weight[Stones].show)
+
+- Out.println(weight[Pounds].show)
++ Out.println(weight[Pounds].show)
+
+- Out.println(weight[Ounces].show)
++ Out.println(weight[Ounces].show)
+
+= Out.println(weight[Ounces].show)
+- ```
++ ```
+
+- Arithmetic carries between the units as the ratios require. Adding fifteen ounces to 3 pounds
+- 2 ounces gives 4 pounds 1 ounce, not 3 pounds 17 ounces:
++ 演算は比が要求するとおりに単位の間で繰り上がる。
++ 3 ポンド 2 オンスに 15 オンスを加えると、3 ポンド 17 オンスではなく 4 ポンド 1 オンスになる。
+
+= 2 ounces gives 4 pounds 1 ounce, not 3 pounds 17 ounces:
+=
+- ```scala
++ ```scala
+
+- val heavier: Weight = weight + Quanta(15)
++ val heavier: Weight = weight + Quanta(15)
+
+= val heavier: Weight = weight + Quanta(15)
+- ```
++ ```
+
+= val heavier: Weight = weight + Quanta(15)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val heavier: Weight = weight + Quanta(15)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val heavier: Weight = weight + Quanta(15)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(heavier[Pounds].show)
++ Out.println(heavier[Pounds].show)
+
+- Out.println(heavier[Ounces].show)
++ Out.println(heavier[Ounces].show)
+
+= Out.println(heavier[Ounces].show)
+- ```
++ ```
+
+- The cascade is checked as it is written. Every unit in it must have the same dimension, so
+- mixing seconds into a cascade of lengths does not compile, and the base must be a unit, not
+- an arbitrary type. `TimeSeconds` and `TimeMinutes` are provided, for the two cascades which
+- everyone needs.
++ カスケードは書かれたときに検査される。
++ その中のすべての単位は同じ次元を持たねばならないので、長さのカスケードに秒を混ぜるとコンパイルされず、基数は任意の型ではなく単位でなければならない。
++ 誰もが必要とする二つのカスケードのために、`TimeSeconds` と `TimeMinutes` が提供されている。
+
+- The units are real units, so a `Quanta` converts to and from an ordinary `Quantity`, which
+- is how a measurement crosses between the two worlds:
++ 単位は本物の単位なので、`Quanta` は通常の `Quantity` との間で相互に変換でき、測定はそうして二つの世界を行き来する。
+
+= is how a measurement crosses between the two worlds:
+=
+- ```scala
++ ```scala
+
+- val length: Quantity[Metres[1]] = 5.9*Foot + 10.0*Inch
++ val length: Quantity[Metres[1]] = 5.9*Foot + 10.0*Inch
+
+- val height = length.quanta[Height]
++ val height = length.quanta[Height]
+
+= val height = length.quanta[Height]
+- ```
++ ```
+
+= val height = length.quanta[Height]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val height = length.quanta[Height]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val height = length.quanta[Height]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(height[Feet].show)
++ Out.println(height[Feet].show)
+
+- Out.println(height[Inches].show)
++ Out.println(height[Inches].show)
+
+- Out.println(weight.quantity.convert[Pounds].show)
++ Out.println(weight.quantity.convert[Pounds].show)
+
+= Out.println(weight.quantity.convert[Pounds].show)
+- ```
++ ```
+
+- Showing a `Quanta` uses each unit's symbol, as in `1st 3lb 2oz`. A `UnitsNames` given
+- overrides the symbols where a cascade is conventionally written differently, so that a
+- height can be shown as `5' 9"`.
++ `Quanta` の表示には各単位の記号が使われ、`1st 3lb 2oz` のようになる。
++ `UnitsNames` の given は、カスケードが慣習的に異なる書き方をされる場合に記号を上書きするので、身長を `5' 9"` と表示できる。
+
+- ### Temperature
++ ### 温度
+
+- Temperature is measured from an arbitrary zero, not from nothing, so it behaves unlike a
+- length or a mass. Thirty degrees plus thirty degrees is not sixty degrees of anything
+- meaningful. It is modeled as a separate type, `Temperature`, and the scales with an
+- arbitrary zero are kept distinct from the absolute Kelvin quantity which is used for
+- differences.
++ 温度は無からではなく任意のゼロから測られるので、長さや質量とは違う振る舞いをする。
++ 30 度に 30 度を加えても、意味のある何かの 60 度にはならない。
++ 温度は別の型 `Temperature` としてモデル化され、任意のゼロを持つ温度スケールは、差に使われる絶対的なケルビンの量とは区別される。
+
+- Four scales appear, and they fall into two kinds. Kelvin and Rankine measure from absolute
+- zero, so they are ordinary quantities as well as scales. Celsius and Fahrenheit place their
+- zero elsewhere, at the freezing point of water and lower still, so a reading on either is
+- meaningful only as a `Temperature`. Multiplying or adding two such readings directly would
+- be meaningless, and the types do not allow it.
++ 四つの温度スケールが現れ、それらは二種類に分かれる。
++ ケルビンとランキンは絶対零度から測るので、温度スケールであると同時に通常の量でもある。
++ セルシウスとファーレンハイトはゼロを別の場所（水の凝固点と、それよりさらに低い点）に置くので、どちらの読みも `Temperature` としてのみ意味を持つ。
++ そのような二つの読みを直接掛けたり加えたりするのは無意味であり、型はそれを許さない。
+
+- A temperature is created on a named scale, and displayed on whichever scale is in scope:
++ 温度は名前付きの温度スケールで作られ、スコープ内にあるいずれかの温度スケールで表示される。
+
+= A temperature is created on a named scale, and displayed on whichever scale is in scope:
+=
+- ```tabular
++ ```tabular
+
+- column  Scale
+- column  Zero
+- column  Reading
+- column  As a quantity
+- column  Display import
+- row  Kelvin  absolute zero  `Kelvin(…)`  the unit `Kelvin`  `temperatureScales.kelvinScale`
+- row  Rankine  absolute zero  `Rankine(…)`  the units `Rankines`  `temperatureScales.rankineScale`
+- row  Celsius  freezing point of water  `Celsius(…)`  none  `temperatureScales.celsiusScale`
+- row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
++ column  温度スケール
++ column  ゼロ
++ column  読み
++ column  量として
++ column  表示のインポート
++ row  ケルビン  絶対零度  `Kelvin(…)`  単位 `Kelvin`  `temperatureScales.kelvinScale`
++ row  ランキン  絶対零度  `Rankine(…)`  単位の型 `Rankines`  `temperatureScales.rankineScale`
++ row  セルシウス  水の凝固点  `Celsius(…)`  なし  `temperatureScales.celsiusScale`
++ row  ファーレンハイト  凝固点より下  `Fahrenheit(…)`  なし  `temperatureScales.fahrenheitScale`
+
+= row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
+- ```
++ ```
+
+= row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+= ```
+=
+= ```scala fuel
+= run
+= ##
+= locally:
+-   import temperatureScales.celsiusScale
++   import temperatureScales.celsiusScale
+
+=   import temperatureScales.celsiusScale
+-   Out.println(Celsius(30).show)
++   Out.println(Celsius(30).show)
+
+=   import temperatureScales.celsiusScale
+=   Out.println(Celsius(30).show)
+-   Out.println(Fahrenheit(100).show)
++   Out.println(Fahrenheit(100).show)
+
+=
+- locally:
++ locally:
+
+-   import temperatureScales.fahrenheitScale
++   import temperatureScales.fahrenheitScale
+
+=   import temperatureScales.fahrenheitScale
+-   Out.println(Celsius(30).show)
++   Out.println(Celsius(30).show)
+
+=   import temperatureScales.fahrenheitScale
+=   Out.println(Celsius(30).show)
+-   Out.println(Fahrenheit(100).show)
++   Out.println(Fahrenheit(100).show)
+
+=   Out.println(Fahrenheit(100).show)
+- ```
++ ```
+
+- Reading the same temperature on a different scale is thus a matter of importing a different
+- one, with no conversion written by hand.
++ したがって、同じ温度を別の温度スケールで読むことは、別の温度スケールをインポートすることにすぎず、変換を手で書く必要はない。
+
+- A `Temperature` adds and subtracts Kelvin or Rankine *quantities*, to give another
+- temperature. The difference of two temperatures is a quantity, which converts like any
+- other:
++ `Temperature` はケルビンやランキンの*量*を加減して、別の温度を与える。
++ 二つの温度の差は量であり、他の量と同様に変換できる。
+
+= other:
+=
+- ```scala fuel
++ ```scala fuel
+
+= other:
+=
+= ```scala fuel
+- run
++ run
+
+= other:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= other:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+= other:
+=
+= ```scala fuel
+= run
+= ##
+= locally:
+-   import temperatureScales.celsiusScale
++   import temperatureScales.celsiusScale
+
+-   Out.println((zero[Temperature] + 300*Kelvin).show)
++   Out.println((zero[Temperature] + 300*Kelvin).show)
+
+-   Out.println((Fahrenheit(100) - zero[Temperature]).convert[Rankines].show)
++   Out.println((Fahrenheit(100) - zero[Temperature]).convert[Rankines].show)
+
+=   Out.println((Fahrenheit(100) - zero[Temperature]).convert[Rankines].show)
+- ```
++ ```
+
+- ### Aggregating
++ ### 集約
+
+- A collection of quantities which share a unit reduces to a quantity, and each reduction
+- understands units:
++ 単位を共有する量のコレクションは一つの量に縮約され、それぞれの縮約は単位を理解している。
+
+= understands units:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Result
+- column  Of an empty collection
+- row  `total`  the sum, in the same unit  zero
+- row  `mean`  the mean, in the same unit  `Unset`
+- row  `variance`  the variance, in the unit squared  `Unset`
+- row  `std`  the standard deviation, in the same unit  `Unset`
++ column  メソッド
++ column  結果
++ column  空のコレクションの場合
++ row  `total`  合計。同じ単位で  ゼロ
++ row  `mean`  平均。同じ単位で  `Unset`
++ row  `variance`  分散。単位の二乗で  `Unset`
++ row  `std`  標準偏差。同じ単位で  `Unset`
+
+= row  `std`  the standard deviation, in the same unit  `Unset`
+- ```
++ ```
+
+- So the variance of a list of seconds is in seconds squared, and the standard deviation is
+- back in seconds:
++ したがって、秒のリストの分散は秒の二乗であり、標準偏差は秒に戻る。
+
+= back in seconds:
+=
+- ```scala
++ ```scala
+
+- val samples = List(1*Second, 2*Second, 3*Second)
++ val samples = List(1*Second, 2*Second, 3*Second)
+
+= val samples = List(1*Second, 2*Second, 3*Second)
+- ```
++ ```
+
+= val samples = List(1*Second, 2*Second, 3*Second)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val samples = List(1*Second, 2*Second, 3*Second)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val samples = List(1*Second, 2*Second, 3*Second)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(samples.total.let(_.show).or(t"none"))
++ Out.println(samples.total.let(_.show).or(t"none"))
+
+- Out.println(samples.mean.let(_.show).or(t"none"))
++ Out.println(samples.mean.let(_.show).or(t"none"))
+
+- Out.println(samples.std.let(_.show).or(t"none"))
++ Out.println(samples.std.let(_.show).or(t"none"))
+
+= Out.println(samples.std.let(_.show).or(t"none"))
+- ```
++ ```
+
+- [Mathematics](mathematics.md#elements-that-are-not-numbers) builds vectors and matrices of
+- quantities, whose products carry units too.
++ [数学](mathematics.md#elements-that-are-not-numbers)は量のベクトルと行列を構築し、その積も単位を持つ。
+
+- ### Quantifying your own types
++ ### 独自の型を量にする
+
+- A type which stands for a measurement can be taught to give a quantity, through a
+- `Quantifiable` instance. It then takes part in the same dimensional arithmetic. A
+- typographic point, which is one seventy-second of an inch, becomes a real length:
++ 測定を表す型には、`Quantifiable` インスタンスを通じて量を与えることを教えられる。
++ するとその型は同じ次元の演算に参加する。
++ 1 インチの 72 分の 1 である活字のポイントは、本物の長さになる。
+
+= typographic point, which is one seventy-second of an inch, becomes a real length:
+=
+- ```scala
++ ```scala
+
+- case class Pts(value: Double)
++ case class Pts(value: Double)
+
+- given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
++ given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
+
+= given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
+- ```
++ ```
+
+= given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Pts(71).quantify < Inch).inspect)
++ Out.println((Pts(71).quantify < Inch).inspect)
+
+- Out.println((Pts(73).quantify > Inch).inspect)
++ Out.println((Pts(73).quantify > Inch).inspect)
+
+= Out.println((Pts(73).quantify > Inch).inspect)
+- ```
++ ```
+
+- ### Calculations
++ ### 計算
+
+- A formula written in quantities is checked as it is written. Each step must combine its
+- units coherently, and the units of the result are computed from the units of the inputs, so
+- the dimensions of a calculation are verified before it ever runs. The
+- [displacement of a body under constant acceleration](https://en.wikipedia.org/wiki/Equations_of_motion#Constant_translational_acceleration_in_a_straight_line),
+- `s = ut + ½at²`, reads directly:
++ 量で書かれた公式は、書かれたときに検査される。
++ 各段階は単位を首尾一貫して組み合わせねばならず、結果の単位は入力の単位から計算されるので、計算の次元は実行される前に検証される。
++ [一定の加速度のもとでの物体の変位](https://en.wikipedia.org/wiki/Equations_of_motion#Constant_translational_acceleration_in_a_straight_line) `s = ut + ½at²` はそのまま読める。
+
+= `s = ut + ½at²`, reads directly:
+=
+- ```scala
++ ```scala
+
+- def displacement
++ def displacement
+
+-     ( initial: Quantity[Metres[1] & Seconds[-1]],
++     ( initial: Quantity[Metres[1] & Seconds[-1]],
+
+-       time:    Quantity[Seconds[1]],
++       time:    Quantity[Seconds[1]],
+
+-       accel:   Quantity[Metres[1] & Seconds[-2]] )
++       accel:   Quantity[Metres[1] & Seconds[-2]] )
+
+- :   Quantity[Metres[1]] =
++ :   Quantity[Metres[1]] =
+
+-   initial*time + 0.5*accel*time*time
++   initial*time + 0.5*accel*time*time
+
+=   initial*time + 0.5*accel*time*time
+- ```
++ ```
+
+=   initial*time + 0.5*accel*time*time
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   initial*time + 0.5*accel*time*time
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   initial*time + 0.5*accel*time*time
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(displacement(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second)).show)
++ Out.println(displacement(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second)).show)
+
+= Out.println(displacement(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second)).show)
+- ```
++ ```
+
+- Both terms of the sum come out as a distance: a velocity times a time, and an acceleration
+- times a time squared. The addition therefore typechecks, and the result is a distance.
+- Passing an argument in the wrong units is a compile error, not a number which is quietly
+- wrong:
++ 和の二つの項はどちらも距離になる。速度と時間の積、そして加速度と時間の二乗の積である。
++ したがって加算は型検査を通り、結果は距離である。
++ 誤った単位で引数を渡すと、黙って誤った数になるのではなく、コンパイルエラーになる。
+
+= wrong:
+=
+- ```scala fuel
++ ```scala fuel
+
+= wrong:
+=
+= ```scala fuel
+- compile
++ compile
+
+= wrong:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= wrong:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- displacement(3*Metre, 2*Second, 9.8*Metre/(Second*Second))
++ displacement(3*Metre, 2*Second, 9.8*Metre/(Second*Second))
+
+= displacement(3*Metre, 2*Second, 9.8*Metre/(Second*Second))
+- ```
++ ```
+
+- The same calculation can be written once for any consistent choice of units, instead of
+- being fixed to meters and seconds. A `transparent inline def` resolves its units at each
+- call, so its parameters can be left abstract. The relationships which the formula relies on
+- are then stated as constraints: that a velocity times a time, and an acceleration times a
+- time squared, can each be formed, and that the two results can be added.
++ 同じ計算を、メートルと秒に固定するのではなく、任意の一貫した単位の選択に対して一度だけ書くことができる。
++ `transparent inline def` は呼び出しごとに単位を解決するので、そのパラメーターは抽象的なままにしておける。
++ そのうえで、公式が依存する関係を制約として述べる。速度と時間の積、および加速度と時間の二乗の積がそれぞれ作れること、そしてその二つの結果を加えられることである。
+
+= time squared, can each be formed, and that the two results can be added.
+=
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+= parse
+- ##
++ ##
+
+- transparent inline def motion
++ transparent inline def motion
+
+-     [ velocity     <: Measure,
++     [ velocity     <: Measure,
+
+-       time         <: Measure,
++       time         <: Measure,
+
+-       acceleration <: Measure ]
++       acceleration <: Measure ]
+
+-     ( initial: Quantity[velocity],
++     ( initial: Quantity[velocity],
+
+-       elapsed: Quantity[time],
++       elapsed: Quantity[time],
+
+-       rate:    Quantity[acceleration] )
++       rate:    Quantity[acceleration] )
+
+-     ( using vt:  Quantity[velocity] is Multiplicable by Quantity[time],
++     ( using vt:  Quantity[velocity] is Multiplicable by Quantity[time],
+
+-             at:  Quantity[acceleration] is Multiplicable by Quantity[time] )
++             at:  Quantity[acceleration] is Multiplicable by Quantity[time] )
+
+-     ( using att: at.Result is Multiplicable by Quantity[time] )
++     ( using att: at.Result is Multiplicable by Quantity[time] )
+
+-     ( using add: vt.Result is Addable by att.Result )
++     ( using add: vt.Result is Addable by att.Result )
+
+- =   initial*elapsed + 0.5*rate*elapsed*elapsed
++ =   initial*elapsed + 0.5*rate*elapsed*elapsed
+
+- val fallen = motion(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second))
++ val fallen = motion(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second))
+
+= val fallen = motion(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second))
+- ```
++ ```
+
+- Those constraints are nothing more than the statement that the equation's dimensions line
+- up, expressed in types. A call whose units cannot satisfy them does not compile.
+- [Numbers](numbers.md#overloading-the-operators) describes `Multiplicable` and `Addable`.
++ これらの制約は、方程式の次元が揃っているという主張を型で表したものにすぎない。
++ 単位がそれらを満たせない呼び出しはコンパイルされない。
++ [数](numbers.md#overloading-the-operators)が `Multiplicable` と `Addable` を説明している。
+
+- ### What it costs at runtime
++ ### 実行時のコスト
+
+- None of this survives to the bytecode. A `Quantity` is an opaque type over a `Double`, its
+- units exist only in the type, and every operation is `inline`. A dimensional calculation
+- therefore compiles to the same arithmetic instructions as the equivalent arithmetic on bare
+- `Double`s would, with no boxing, no wrapper objects, and no virtual dispatch to a typeclass.
++ これらはどれもバイトコードまで残らない。
++ `Quantity` は `Double` の上の不透明型であり、その単位は型の中にしか存在せず、すべての演算は `inline` である。
++ したがって次元を持つ計算は、裸の `Double` に対する同等の演算と同じ算術命令にコンパイルされ、ボックス化も、ラッパーオブジェクトも、型クラスへの仮想ディスパッチもない。
+
+- That is a property worth checking, not merely asserting, and it is checked. The test suite
+- inspects the compiled bytecode of representative calculations, and fails if a typeclass
+- dispatch appears where inlined arithmetic should be. A guarantee about performance which is
+- only claimed tends to stop being true.
++ これは単に主張するだけでなく検査する価値のある性質であり、実際に検査されている。
++ テストスイートは代表的な計算のコンパイル済みバイトコードを調べ、インライン化された演算があるべき場所に型クラスのディスパッチが現れると失敗する。
++ 主張されるだけの性能の保証は、やがて真でなくなりがちである。
+
+- ### Related
++ ### 関連
+
+- - [Numbers](numbers.md) describes the numeric types and the operators which quantities use.
+- - [Time](time.md#durations-and-timespans) measures a `Duration` as a quantity of seconds.
+- - [Mathematics](mathematics.md) carries units through vectors, matrices and complex numbers.
+- - [Money](money.md) applies the same idea, of a unit in the type, to currencies.
+- - [Geography](geography.md) and [Chemistry](chemistry.md) build on quantities.
++ - [数](numbers.md)は、数値型と、量が使う演算子を説明している。
++ - [時間](time.md#durations-and-timespans)は `Duration` を秒の量として測る。
++ - [数学](mathematics.md)は、ベクトル、行列、複素数を通じて単位を運ぶ。
++ - [お金](money.md)は、型の中の単位という同じ考えを通貨に適用する。
++ - [地理](geography.md)と[化学](chemistry.md)は量の上に構築されている。

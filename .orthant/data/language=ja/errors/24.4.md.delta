@@ -1,0 +1,41 @@
+orthant 1 language
+
+- # `↯/s.24.4` — `accrue` argument must be match cases
++ # `↯/s.24.4` — `accrue` の引数はマッチのケースでなければならない
+
+- Raised at compiletime when the argument to `accrue` is not written as a literal block of
+- `case` clauses.
++ `accrue` の引数が `case` 節のリテラルなブロックとして書かれていないときに、コンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- As with `recover`, the cases are inspected at compiletime to determine which error types are
+- accrued, so the argument must be written inline.
++ `recover` と同様に、どのエラー型が蓄積されるかを決めるためにケースがコンパイル時に検査されるので、引数はインラインで書かなければならない。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.24.4] argument to `accrue` should be a partial function implemented as match cases
++ [↯/s.24.4] argument to `accrue` should be a partial function implemented as match cases
+
+= [↯/s.24.4] argument to `accrue` should be a partial function implemented as match cases
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Write the cases inline rather than passing a partial function computed elsewhere.
++ 別の場所で計算した部分関数を渡すのではなく、ケースをインラインで書く。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - ソース：`lib/contingency/src/core/contingency.internal.scala`

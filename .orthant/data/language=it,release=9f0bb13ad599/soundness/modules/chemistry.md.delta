@@ -1,0 +1,6 @@
+orthant 1 language
+
+- row  `<->`  `Reaction.Resonance`  `↔`
+- row  `===`  `Reaction.Stoichiometric`  `=`
++ row  `<->`  `Reaction.Resonance`  `↔`
++ row  `===`  `Reaction.Stoichiometric`  `=`

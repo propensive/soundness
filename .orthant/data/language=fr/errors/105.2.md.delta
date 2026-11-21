@@ -1,0 +1,109 @@
+orthant 1 language
+
+- # `↯/s.105.2` — `Crypto.Error`
++ # `↯/s.105.2` — `Crypto.Error`
+
+- Raised when Enigmatic cannot decode encrypted data.
++ Levée lorsque Enigmatic ne parvient pas à décoder des données chiffrées.
+
+- ## Cause
++ ## Cause
+
+- The cryptographic primitive (cipher, signature, or MAC) rejected the
+- input. The constructor takes a `reason: Reason` indicating why the
+- operation failed; the rendered message is `could not decode the
+- encrypted data because $reason`.
++ La primitive cryptographique (algorithme de chiffrement, signature ou MAC) a rejeté l'entrée.
++ Le constructeur prend une `reason: Reason` qui indique pourquoi l'opération a échoué ; le
++ message est `could not decode the encrypted data because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.105.2.1` — `BadPadding`
++ ### `↯/s.105.2.1` — `BadPadding`
+
+- The padding bytes did not match the cipher's expectations — typically
+- because the ciphertext was corrupted or the wrong key was supplied
+- (authentication-tag mismatch in AEAD modes).
++ Les octets de remplissage ne correspondaient pas à ce qu'attend l'algorithme de chiffrement,
++ généralement parce que le texte chiffré était corrompu ou que la mauvaise clé a été fournie
++ (discordance de l'étiquette d'authentification dans les modes AEAD).
+
+- **Example.** `[↯/s.105.2.1] could not decode the encrypted data because the ciphertext was corrupted or the key was wrong`
++ **Exemple.** `[↯/s.105.2.1] could not decode the encrypted data because the ciphertext was corrupted or the key was wrong`
+
+- **Resolution.** Confirm the key and IV match those used at encryption
+- time; verify the ciphertext has not been truncated or modified in
+- transit.
++ **Résolution.** Vérifiez que la clé et l'IV sont ceux utilisés lors du chiffrement ; vérifiez
++ que le texte chiffré n'a été ni tronqué ni modifié en transit.
+
+- ### `↯/s.105.2.2` — `IllegalBlockSize`
++ ### `↯/s.105.2.2` — `IllegalBlockSize`
+
+- The input length was not a multiple of the cipher's block size, or
+- otherwise incompatible with the cipher's framing.
++ La longueur de l'entrée n'était pas un multiple de la taille de bloc de l'algorithme de
++ chiffrement, ou était autrement incompatible avec son tramage.
+
+- **Example.** `[↯/s.105.2.2] could not decode the encrypted data because the input length was not valid for the cipher`
++ **Exemple.** `[↯/s.105.2.2] could not decode the encrypted data because the input length was not valid for the cipher`
+
+- **Resolution.** Verify the ciphertext is complete and was produced by
+- the same cipher and mode now being used to decrypt it.
++ **Résolution.** Vérifiez que le texte chiffré est complet et qu'il a été produit par le même
++ algorithme et le même mode que ceux utilisés pour le déchiffrer.
+
+- ### `↯/s.105.2.3` — `InvalidKey`
++ ### `↯/s.105.2.3` — `InvalidKey`
+
+- The key bytes were rejected by the cipher — wrong size, invalid
+- format, or unsupported parameters.
++ L'algorithme de chiffrement a rejeté les octets de la clé : mauvaise taille, format invalide ou
++ paramètres non pris en charge.
+
+- **Example.** `[↯/s.105.2.3] could not decode the encrypted data because the key was not valid for the cipher`
++ **Exemple.** `[↯/s.105.2.3] could not decode the encrypted data because the key was not valid for the cipher`
+
+- **Resolution.** Confirm the key was produced for the same cipher and
+- parameter set.
++ **Résolution.** Vérifiez que la clé a été produite pour le même algorithme de chiffrement et le
++ même jeu de paramètres.
+
+- ### `↯/s.105.2.4` — `InvalidAlgorithm`
++ ### `↯/s.105.2.4` — `InvalidAlgorithm`
+
+- The requested algorithm or mode is not available in the JVM's
+- configured providers.
++ L'algorithme ou le mode demandé n'est pas disponible parmi les fournisseurs configurés de la JVM.
+
+- **Example.** `[↯/s.105.2.4] could not decode the encrypted data because the algorithm was not available`
++ **Exemple.** `[↯/s.105.2.4] could not decode the encrypted data because the algorithm was not available`
+
+- **Resolution.** Install or enable a JCA provider that supports the
+- algorithm; check `java.security` policy.
++ **Résolution.** Installez ou activez un fournisseur JCA qui prend en charge l'algorithme ;
++ vérifiez la politique `java.security`.
+
+- ### `↯/s.105.2.5` — `IoFailure`
++ ### `↯/s.105.2.5` — `IoFailure`
+
+- The cipher implementation could not read or write the data buffers —
+- typically a low-level I/O fault.
++ L'implémentation de l'algorithme de chiffrement n'a pas pu lire ou écrire les tampons de
++ données, généralement à cause d'une défaillance d'E/S de bas niveau.
+
+- **Example.** `[↯/s.105.2.5] could not decode the encrypted data because data could not be read or written`
++ **Exemple.** `[↯/s.105.2.5] could not decode the encrypted data because data could not be read or written`
+
+- **Resolution.** Inspect the cause chain for the underlying I/O error.
++ **Résolution.** Examinez la chaîne des causes pour trouver l'erreur d'E/S sous-jacente.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/enigmatic/src/core/enigmatic.Crypto.scala`
+- - `↯/s.105.1` — `PemError`, raised when PEM-encoded keys cannot be parsed
++ - Source : `lib/enigmatic/src/core/enigmatic.Crypto.scala`
++ - `↯/s.105.1` — `PemError`, levée lorsque des clés encodées en PEM ne peuvent pas être analysées

@@ -1,0 +1,1989 @@
+orthant 1 language
+
+- ## Quantities
++ ## Grandezze
+
+- ### About
++ ### Panoramica
+
+- Physical quantities, such as a distance, a mass or a speed, are values which carry their
+- [units](https://en.wikipedia.org/wiki/Units_of_measurement) in their type:
++ Le grandezze fisiche, come una distanza, una massa o una velocità, sono valori che portano le
++ loro [unità di misura](https://en.wikipedia.org/wiki/Units_of_measurement) nel proprio tipo:
+
+- - Adding a distance to a time is a compile error.
+- - Multiplying a distance by a force gives a quantity whose units are worked out
+-   automatically.
+- - A quantity costs nothing at [runtime] beyond the `Double` it wraps.
++ - Sommare una distanza a un tempo è un errore di compilazione.
++ - Moltiplicare una distanza per una forza dà una grandezza le cui unità vengono calcolate
++   automaticamente.
++ - Una grandezza non costa nulla a [runtime] oltre al `Double` che avvolge.
+
+- That last property is a constraint on the design, not an optimization, as
+- [zero cost](../../philosophy/zero-cost.md) explains.
++ Quest'ultima proprietà è un vincolo del design, non un'ottimizzazione, come spiega
++ [costo zero](../../philosophy/zero-cost.md).
+
+- ### On quantities
++ ### Sulle grandezze
+
+- A bare number has no units. The figure `5` says nothing about whether it counts meters, feet,
+- seconds or kilograms. Code which loses track of the answer has caused real disasters. The
+- [loss of a Mars orbiter](https://en.wikipedia.org/wiki/Mars_Climate_Orbiter#Cause_of_failure)
+- is one of them: one component worked in newtons, and another in pound-force. The usual
+- defenses are naming conventions, comments, and a wrapper class for each unit. They rely on
+- discipline, and catch nothing automatically.
++ Un numero nudo non ha unità. La cifra `5` non dice nulla sul fatto che conti metri, piedi,
++ secondi o chilogrammi. Il codice che perde traccia della risposta ha causato veri disastri. La
++ [perdita di una sonda in orbita attorno a Marte](https://en.wikipedia.org/wiki/Mars_Climate_Orbiter#Cause_of_failure)
++ è uno di questi: un componente lavorava in newton, un altro in libbre-forza. Le difese abituali
++ sono le convenzioni di denominazione, i commenti e una classe wrapper per ogni unità. Si basano
++ sulla disciplina, e non intercettano nulla automaticamente.
+
+- Here the units of every quantity are recorded in its type, and
+- [dimensional analysis](https://en.wikipedia.org/wiki/Dimensional_analysis) is performed at
+- [compiletime]. A `Quantity` has a type parameter for its units, so a length and a duration are
+- different types, and the compiler refuses to add them. Arithmetic combines units correctly:
+- dividing a length by a duration gives a speed. Quantities of compatible units convert into
+- one another automatically.
++ Qui le unità di ogni grandezza sono registrate nel suo tipo, e
++ l'[analisi dimensionale](https://en.wikipedia.org/wiki/Dimensional_analysis) viene eseguita a
++ [tempo di compilazione]. Una `Quantity` ha un parametro di tipo per le sue unità, quindi una lunghezza e una durata sono tipi diversi, e il compilatore si rifiuta di sommarle. L'aritmetica
++ combina correttamente le unità: dividere una lunghezza per una durata dà una velocità. Le
++ grandezze in unità compatibili si convertono automaticamente l'una nell'altra.
+
+- None of this exists at runtime. A `Quantity` is an [opaque type] over a `Double`, and its
+- operations are inlined, so the safety is paid for entirely at compiletime.
++ Nulla di tutto questo esiste a runtime. Una `Quantity` è un [tipo opaco] su un `Double`, e le
++ sue operazioni sono rese inline, quindi la sicurezza si paga interamente a tempo di
++ compilazione.
+
+- The units, the prefixes and the operations on quantities all come from the `soundness`
+- package. Arithmetic between a plain number and a quantity relies on the compiler's *into*
+- conversions, so that language feature is enabled too. A `Decimalizer` in scope fixes how many
+- significant figures a quantity is shown with, and the last import lets the samples print
+- their results:
++ Le unità, i prefissi e le operazioni sulle grandezze provengono tutti dal package `soundness`.
++ L'aritmetica tra un numero semplice e una grandezza si basa sulle conversioni *into* del
++ compilatore, quindi anche quella funzionalità del linguaggio viene abilitata. Un `Decimalizer`
++ nell'ambito fissa con quante cifre significative viene mostrata una grandezza, e l'ultimo import
++ permette agli esempi di stampare i loro risultati:
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import scala.language.experimental.into
++ import scala.language.experimental.into
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- given decimalizer: Decimalizer = Decimalizer(3)
++ given decimalizer: Decimalizer = Decimalizer(3)
+
+= given decimalizer: Decimalizer = Decimalizer(3)
+- ```
++ ```
+
+- ### Quantities and units
++ ### Grandezze e unità
+
+- A quantity is a number multiplied by a unit. The SI base units are values: `Metre`, `Second`,
+- `Gram`, `Kelvin`, `Ampere`, `Candela` and `Mole`. So are many other units.
++ Una grandezza è un numero moltiplicato per un'unità. Le unità di base del SI sono valori:
++ `Metre`, `Second`, `Gram`, `Kelvin`, `Ampere`, `Candela` e `Mole`. Lo sono anche molte altre
++ unità.
+
+= `Gram`, `Kelvin`, `Ampere`, `Candela` and `Mole`. So are many other units.
+=
+- ```scala
++ ```scala
+
+- val distance = 5*Metre
++ val distance = 5*Metre
+
+- val duration = 2*Second
++ val duration = 2*Second
+
+= val duration = 2*Second
+- ```
++ ```
+
+- `show` writes a quantity with its unit:
++ `show` scrive una grandezza con la sua unità:
+
+= `show` writes a quantity with its unit:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `show` writes a quantity with its unit:
+=
+= ```scala fuel
+- run
++ run
+
+= `show` writes a quantity with its unit:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(distance.show)
++ Out.println(distance.show)
+
+- Out.println(duration.show)
++ Out.println(duration.show)
+
+= Out.println(duration.show)
+- ```
++ ```
+
+- The unit lives in the type. `5*Metre` is a `Quantity[Metres[1]]`, in which the `1` is the
+- power to which the unit is raised. An area would be `Metres[2]`, and a frequency
+- `Seconds[-1]`. These types are inferred, so they rarely need to be written, but they are what
+- the compiler checks.
++ L'unità vive nel tipo. `5*Metre` è una `Quantity[Metres[1]]`, in cui `1` è la potenza a cui
++ l'unità è elevata. Un'area sarebbe `Metres[2]`, e una frequenza `Seconds[-1]`. Questi tipi
++ vengono inferiti, quindi raramente occorre scriverli, ma sono ciò che il compilatore verifica.
+
+- ### Arithmetic and dimensions
++ ### Aritmetica e dimensioni
+
+- Quantities of the same unit add and subtract. Multiplication and division combine units, and
+- give a quantity whose type records the new dimensions:
++ Le grandezze della stessa unità si sommano e si sottraggono. La moltiplicazione e la divisione
++ combinano le unità, e danno una grandezza il cui tipo registra le nuove dimensioni:
+
+= give a quantity whose type records the new dimensions:
+=
+- ```scala fuel
++ ```scala fuel
+
+= give a quantity whose type records the new dimensions:
+=
+= ```scala fuel
+- run
++ run
+
+= give a quantity whose type records the new dimensions:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Metre + Metre*2.0).show)
++ Out.println((Metre + Metre*2.0).show)
+
+- Out.println((2*Second * 3*Metre).show)
++ Out.println((2*Second * 3*Metre).show)
+
+- Out.println((distance/duration).show)
++ Out.println((distance/duration).show)
+
+- Out.println((2*Metre/Second).invert.show)
++ Out.println((2*Metre/Second).invert.show)
+
+= Out.println((2*Metre/Second).invert.show)
+- ```
++ ```
+
+- Adding quantities whose dimensions disagree is a compile error. The message names the
+- mismatch in plain words, not in terms of types:
++ Sommare grandezze le cui dimensioni non concordano è un errore di compilazione. Il messaggio
++ descrive la discrepanza a parole semplici, non in termini di tipi:
+
+= mismatch in plain words, not in terms of types:
+=
+- ```scala fuel
++ ```scala fuel
+
+= mismatch in plain words, not in terms of types:
+=
+= ```scala fuel
+- compile
++ compile
+
+= mismatch in plain words, not in terms of types:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= mismatch in plain words, not in terms of types:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Metre + 2*Second
++ Metre + 2*Second
+
+= Metre + 2*Second
+- ```
++ ```
+
+- The check is by dimension, not merely by unit, so a length cannot be added to an energy:
++ Il controllo è per dimensione, non soltanto per unità, quindi una lunghezza non si può sommare a
++ un'energia:
+
+= The check is by dimension, not merely by unit, so a length cannot be added to an energy:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The check is by dimension, not merely by unit, so a length cannot be added to an energy:
+=
+= ```scala fuel
+- compile
++ compile
+
+= The check is by dimension, not merely by unit, so a length cannot be added to an energy:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= The check is by dimension, not merely by unit, so a length cannot be added to an energy:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- 2*Metre + 2*Joule
++ 2*Metre + 2*Joule
+
+= 2*Metre + 2*Joule
+- ```
++ ```
+
+- Even two powers of the same dimension stay apart. A length is not an area:
++ Persino due potenze della stessa dimensione restano separate. Una lunghezza non è un'area:
+
+= Even two powers of the same dimension stay apart. A length is not an area:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Even two powers of the same dimension stay apart. A length is not an area:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Even two powers of the same dimension stay apart. A length is not an area:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Even two powers of the same dimension stay apart. A length is not an area:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- 7*Metre >= 2*Metre*Metre
++ 7*Metre >= 2*Metre*Metre
+
+= 7*Metre >= 2*Metre*Metre
+- ```
++ ```
+
+- ### Mixing units
++ ### Unità miste
+
+- Different units of the *same* dimension combine freely, and are converted automatically. The
+- result takes the unit of the principal operand, which here is the SI one:
++ Unità diverse della *stessa* dimensione si combinano liberamente, e vengono convertite
++ automaticamente. Il risultato prende l'unità dell'operando principale, che qui è quella del SI:
+
+= result takes the unit of the principal operand, which here is the SI one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= result takes the unit of the principal operand, which here is the SI one:
+=
+= ```scala fuel
+- run
++ run
+
+= result takes the unit of the principal operand, which here is the SI one:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((2*Metre + 2*Foot).show)
++ Out.println((2*Metre + 2*Foot).show)
+
+- Out.println((2*Foot + 2*Metre).show)
++ Out.println((2*Foot + 2*Metre).show)
+
+= Out.println((2*Foot + 2*Metre).show)
+- ```
++ ```
+
+- Conversion applies to multiplication and division too. An expression may be written in
+- whatever units are natural, and still give a coherent result:
++ La conversione si applica anche alla moltiplicazione e alla divisione. Un'espressione può essere
++ scritta nelle unità che risultano naturali, e dare comunque un risultato coerente:
+
+= whatever units are natural, and still give a coherent result:
+=
+- ```scala
++ ```scala
+
+- val width = 2*Metre
++ val width = 2*Metre
+
+- val depth = 3*Foot
++ val depth = 3*Foot
+
+= val depth = 3*Foot
+- ```
++ ```
+
+= val depth = 3*Foot
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val depth = 3*Foot
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val depth = 3*Foot
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((width*depth).show)
++ Out.println((width*depth).show)
+
+= Out.println((width*depth).show)
+- ```
++ ```
+
+- ### Converting
++ ### Conversione
+
+- `convert` converts a quantity explicitly to another compatible unit, naming the family of the
+- target unit:
++ `convert` converte esplicitamente una grandezza in un'altra unità compatibile, indicando la
++ famiglia dell'unità di destinazione:
+
+= target unit:
+=
+- ```scala fuel
++ ```scala fuel
+
+= target unit:
+=
+= ```scala fuel
+- run
++ run
+
+= target unit:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((3*Foot).convert[Metres].show)
++ Out.println((3*Foot).convert[Metres].show)
+
+- Out.println((3*Metre).convert[Feet].show)
++ Out.println((3*Metre).convert[Feet].show)
+
+= Out.println((3*Metre).convert[Feet].show)
+- ```
++ ```
+
+- `normalize` does the same, with the unit type written with its power. An hour is not one of
+- the predefined unit values, but a unit is only a quantity of one, so it is defined in one
+- line:
++ `normalize` fa lo stesso, con il tipo dell'unità scritto insieme alla sua potenza. L'ora non è
++ uno dei valori di unità predefiniti, ma un'unità è soltanto una grandezza pari a uno, quindi si
++ definisce in una riga:
+
+= line:
+=
+- ```scala
++ ```scala
+
+- val Hour: Quantity[Hours[1]] = Quantity(1.0)
++ val Hour: Quantity[Hours[1]] = Quantity(1.0)
+
+= val Hour: Quantity[Hours[1]] = Quantity(1.0)
+- ```
++ ```
+
+= val Hour: Quantity[Hours[1]] = Quantity(1.0)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val Hour: Quantity[Hours[1]] = Quantity(1.0)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val Hour: Quantity[Hours[1]] = Quantity(1.0)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((2*Hour).normalize[Seconds[1]].show)
++ Out.println((2*Hour).normalize[Seconds[1]].show)
+
+- Out.println((1*Inch).normalize[Metres[1]].show)
++ Out.println((1*Inch).normalize[Metres[1]].show)
+
+= Out.println((1*Inch).normalize[Metres[1]].show)
+- ```
++ ```
+
+- `normalize` acts only on the dimension of the unit which it names. Components which are
+- measured in that dimension are converted to the target, and components of every other
+- dimension are left exactly as they were. Normalizing a speed to seconds therefore rescales
+- its time, and leaves its distance untouched. It follows that converting to a unit of a
+- dimension which the quantity does not have is not an error. It simply does nothing, because
+- there is no matching component to rescale.
++ `normalize` agisce soltanto sulla dimensione dell'unità che nomina. Le componenti misurate in
++ quella dimensione vengono convertite nella destinazione, e le componenti di ogni altra
++ dimensione restano esattamente com'erano. Normalizzare una velocità ai secondi ne riscala quindi
++ il tempo, e lascia intatta la distanza. Ne segue che convertire in un'unità di una dimensione
++ che la grandezza non possiede non è un errore. Semplicemente non fa nulla, perché non c'è alcuna
++ componente corrispondente da riscalare.
+
+- ### Metric prefixes
++ ### Prefissi metrici
+
+- A [metric prefix](https://en.wikipedia.org/wiki/Metric_prefix) scales a unit. `Kilo`, `Mega`,
+- `Giga`, `Milli`, `Micro`, `Nano` and the rest apply to a unit, to give a larger or a smaller
+- one. The binary prefixes, `Kibi`, `Mebi` and `Gibi`, scale by powers of two instead of ten,
+- for quantities of information:
++ Un [prefisso metrico](https://en.wikipedia.org/wiki/Metric_prefix) scala un'unità. `Kilo`,
++ `Mega`, `Giga`, `Milli`, `Micro`, `Nano` e gli altri si applicano a un'unità, per darne una più
++ grande o più piccola. I prefissi binari, `Kibi`, `Mebi` e `Gibi`, scalano per potenze di due
++ anziché di dieci, per le grandezze di informazione:
+
+= for quantities of information:
+=
+- ```scala fuel
++ ```scala fuel
+
+= for quantities of information:
+=
+= ```scala fuel
+- run
++ run
+
+= for quantities of information:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((15*Kilo(Metre)).show)
++ Out.println((15*Kilo(Metre)).show)
+
+- Out.println((1.5*Milli(Metre)).show)
++ Out.println((1.5*Milli(Metre)).show)
+
+- Out.println((10*Kibi(Metre)).show)
++ Out.println((10*Kibi(Metre)).show)
+
+= Out.println((10*Kibi(Metre)).show)
+- ```
++ ```
+
+- The full set, decimal and binary:
++ L'insieme completo, decimale e binario:
+
+= The full set, decimal and binary:
+=
+- ```tabular
++ ```tabular
+
+- column  Prefix
+- column  Symbol
+- column  Factor
++ column  Prefisso
++ column  Simbolo
++ column  Fattore
+
+- row  `Quetta`  Q  10³⁰
++ row  `Quetta`  Q  10³⁰
+
+- row  `Ronna`  R  10²⁷
++ row  `Ronna`  R  10²⁷
+
+- row  `Yotta`  Y  10²⁴
++ row  `Yotta`  Y  10²⁴
+
+- row  `Zetta`  Z  10²¹
++ row  `Zetta`  Z  10²¹
+
+- row  `Exa`  E  10¹⁸
++ row  `Exa`  E  10¹⁸
+
+- row  `Peta`  P  10¹⁵
++ row  `Peta`  P  10¹⁵
+
+- row  `Tera`  T  10¹²
++ row  `Tera`  T  10¹²
+
+- row  `Giga`  G  10⁹
++ row  `Giga`  G  10⁹
+
+- row  `Mega`  M  10⁶
++ row  `Mega`  M  10⁶
+
+- row  `Kilo`  k  10³
++ row  `Kilo`  k  10³
+
+- row  `Hecto`  h  10²
++ row  `Hecto`  h  10²
+
+- row  `Deka`  da  10¹
++ row  `Deka`  da  10¹
+
+- row  `Deci`  d  10⁻¹
++ row  `Deci`  d  10⁻¹
+
+- row  `Centi`  c  10⁻²
++ row  `Centi`  c  10⁻²
+
+- row  `Milli`  m  10⁻³
++ row  `Milli`  m  10⁻³
+
+- row  `Micro`  µ  10⁻⁶
++ row  `Micro`  µ  10⁻⁶
+
+- row  `Nano`  n  10⁻⁹
++ row  `Nano`  n  10⁻⁹
+
+- row  `Pico`  p  10⁻¹²
++ row  `Pico`  p  10⁻¹²
+
+- row  `Femto`  f  10⁻¹⁵
++ row  `Femto`  f  10⁻¹⁵
+
+- row  `Atto`  a  10⁻¹⁸
++ row  `Atto`  a  10⁻¹⁸
+
+- row  `Zepto`  z  10⁻²¹
++ row  `Zepto`  z  10⁻²¹
+
+- row  `Yocto`  y  10⁻²⁴
++ row  `Yocto`  y  10⁻²⁴
+
+- row  `Ronto`  r  10⁻²⁷
++ row  `Ronto`  r  10⁻²⁷
+
+- row  `Quecto`  q  10⁻³⁰
++ row  `Quecto`  q  10⁻³⁰
+
+- row  `Kibi`  Ki  2¹⁰
++ row  `Kibi`  Ki  2¹⁰
+
+- row  `Mebi`  Mi  2²⁰
++ row  `Mebi`  Mi  2²⁰
+
+- row  `Gibi`  Gi  2³⁰
++ row  `Gibi`  Gi  2³⁰
+
+- row  `Tebi`  Ti  2⁴⁰
++ row  `Tebi`  Ti  2⁴⁰
+
+- row  `Pebi`  Pi  2⁵⁰
++ row  `Pebi`  Pi  2⁵⁰
+
+- row  `Exbi`  Ei  2⁶⁰
++ row  `Exbi`  Ei  2⁶⁰
+
+- row  `Zebi`  Zi  2⁷⁰
++ row  `Zebi`  Zi  2⁷⁰
+
+- row  `Yobi`  Yi  2⁸⁰
++ row  `Yobi`  Yi  2⁸⁰
+
+= row  `Yobi`  Yi  2⁸⁰
+- ```
++ ```
+
+- Mass is the one awkward case among the base units, because its SI base unit is itself a
+- prefixed unit: the kilogram, not the gram. The unit is still named `Gram`, for consistency
+- with every other unit, and the base unit is written as the prefixed `Kilo(Gram)`. But the
+- dimension is `Kilograms`, and masses are always normalized and displayed in kilograms. So
+- `Kilo(Gram)` is one whole `kg`, while a bare `Gram` is a thousandth of it:
++ La massa è l'unico caso scomodo tra le unità di base, perché la sua unità di base del SI è essa
++ stessa un'unità con prefisso: il chilogrammo, non il grammo. L'unità si chiama comunque `Gram`,
++ per coerenza con ogni altra unità, e l'unità di base si scrive con il prefisso, `Kilo(Gram)`. Ma
++ la dimensione è `Kilograms`, e le masse sono sempre normalizzate e mostrate in chilogrammi.
++ Quindi `Kilo(Gram)` è un `kg` intero, mentre un `Gram` nudo ne è un millesimo:
+
+= `Kilo(Gram)` is one whole `kg`, while a bare `Gram` is a thousandth of it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Kilo(Gram)` is one whole `kg`, while a bare `Gram` is a thousandth of it:
+=
+= ```scala fuel
+- run
++ run
+
+= `Kilo(Gram)` is one whole `kg`, while a bare `Gram` is a thousandth of it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((1*Kilo(Gram)).show)
++ Out.println((1*Kilo(Gram)).show)
+
+- Out.println((1*Gram).show)
++ Out.println((1*Gram).show)
+
+= Out.println((1*Gram).show)
+- ```
++ ```
+
+- ### Comparing
++ ### Confronto
+
+- Quantities of compatible units compare with the usual operators, and the comparison converts
+- units as arithmetic does:
++ Le grandezze in unità compatibili si confrontano con gli operatori consueti, e il confronto
++ converte le unità come fa l'aritmetica:
+
+= units as arithmetic does:
+=
+- ```scala fuel
++ ```scala fuel
+
+= units as arithmetic does:
+=
+= ```scala fuel
+- run
++ run
+
+= units as arithmetic does:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((6*Foot < 2*Metre).inspect)
++ Out.println((6*Foot < 2*Metre).inspect)
+
+- Out.println((9*Foot*Foot < Metre*Metre).inspect)
++ Out.println((9*Foot*Foot < Metre*Metre).inspect)
+
+= Out.println((9*Foot*Foot < Metre*Metre).inspect)
+- ```
++ ```
+
+- Equality across different units of one dimension uses `===`, which asks whether two
+- quantities measure the same amount:
++ L'uguaglianza tra unità diverse di una stessa dimensione usa `===`, che chiede se due grandezze
++ misurano la stessa quantità:
+
+= quantities measure the same amount:
+=
+- ```scala fuel
++ ```scala fuel
+
+= quantities measure the same amount:
+=
+= ```scala fuel
+- run
++ run
+
+= quantities measure the same amount:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Mile === 1760*Yard).inspect)
++ Out.println((Mile === 1760*Yard).inspect)
+
+- Out.println((Mile === Inch).inspect)
++ Out.println((Mile === Inch).inspect)
+
+= Out.println((Mile === Inch).inspect)
+- ```
++ ```
+
+- As with arithmetic, comparing incompatible dimensions does not compile.
++ Come per l'aritmetica, confrontare dimensioni incompatibili non compila.
+
+- Equality is exact, whether through `===` or `==`. Two quantities count as equal only when
+- their underlying values agree to the last bit. A conversion which introduces a
+- [rounding difference](https://en.wikipedia.org/wiki/Floating-point_arithmetic) can therefore
+- leave quantities which are equal on paper comparing as unequal. For converted values, `<` and
+- `>`, or an explicit tolerance, are usually the better test.
++ L'uguaglianza è esatta, sia con `===` sia con `==`. Due grandezze contano come uguali soltanto
++ quando i loro valori sottostanti coincidono fino all'ultimo bit. Una conversione che introduce
++ una [differenza di arrotondamento](https://en.wikipedia.org/wiki/Floating-point_arithmetic) può
++ quindi lasciare grandezze uguali sulla carta che risultano diverse al confronto. Per i valori
++ convertiti, `<` e `>`, o una tolleranza esplicita, sono di solito la verifica migliore.
+
+- Plain `==` is reserved for quantities which already share a unit type, where it compares
+- those underlying values directly. Two quantities of different units have no `==` between
+- them. Under strict equality, with `import language.strictEquality`, such a comparison does
+- not compile, which is exactly the gap that `===` fills.
++ Il semplice `==` è riservato alle grandezze che condividono già un tipo di unità, dove confronta
++ direttamente quei valori sottostanti. Tra due grandezze di unità diverse non esiste `==`. Con
++ l'uguaglianza rigorosa, tramite `import language.strictEquality`, un confronto del genere non
++ compila, ed è proprio la lacuna che `===` colma.
+
+- ### Derived units
++ ### Unità derivate
+
+- The named SI units, such as `Newton`, `Joule`, `Watt`, `Pascal` and `Volt`, are defined in
+- terms of the base units, so they work together with them. A force in newtons and a length in
+- meters multiply to an energy. Every quantity can also name its own dimension, worked out
+- from its units, and even an unusual combination resolves to its physical name:
++ Le unità SI con un nome, come `Newton`, `Joule`, `Watt`, `Pascal` e `Volt`, sono definite in
++ termini delle unità di base, quindi funzionano insieme a esse. Una forza in newton e una
++ lunghezza in metri si moltiplicano in un'energia. Ogni grandezza sa anche nominare la propria
++ dimensione, ricavata dalle sue unità, e persino una combinazione insolita si risolve nel suo
++ nome fisico:
+
+= from its units, and even an unusual combination resolves to its physical name:
+=
+- ```scala fuel
++ ```scala fuel
+
+= from its units, and even an unusual combination resolves to its physical name:
+=
+= ```scala fuel
+- run
++ run
+
+= from its units, and even an unusual combination resolves to its physical name:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Metre.dimension)
++ Out.println(Metre.dimension)
+
+- Out.println((Metre/Second).dimension)
++ Out.println((Metre/Second).dimension)
+
+- Out.println((Newton*Metre).dimension)
++ Out.println((Newton*Metre).dimension)
+
+- Out.println((Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension)
++ Out.println((Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension)
+
+= Out.println((Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension)
+- ```
++ ```
+
+- ### The SI units
++ ### Le unità SI
+
+- Seven base dimensions are defined, each with its type of units, and the value which names
+- one of them:
++ Sono definite sette dimensioni di base, ciascuna con il suo tipo di unità e il valore che ne
++ nomina una:
+
+= one of them:
+=
+- ```tabular
++ ```tabular
+
+- column  Dimension
+- column  Units
+- column  Unit
++ column  Dimensione
++ column  Unità
++ column  Unità di misura
+
+- row  `Distance`  `Metres`  `Metre`
++ row  `Distance`  `Metres`  `Metre`
+
+- row  `Mass`  `Kilograms`  `Gram`
++ row  `Mass`  `Kilograms`  `Gram`
+
+- row  `Time`  `Seconds`  `Second`
++ row  `Time`  `Seconds`  `Second`
+
+- row  `Current`  `Amperes`  `Ampere`
++ row  `Current`  `Amperes`  `Ampere`
+
+- row  `Luminosity`  `Candelas`  `Candela`
++ row  `Luminosity`  `Candelas`  `Candela`
+
+- row  `AmountOfSubstance`  `Moles`  `Mole`
++ row  `AmountOfSubstance`  `Moles`  `Mole`
+
+- row  `Heat`  `Kelvins`  `Kelvin`
++ row  `Heat`  `Kelvins`  `Kelvin`
+
+= row  `Heat`  `Kelvins`  `Kelvin`
+- ```
++ ```
+
+- The named derived units are defined in terms of those, so each has its full dimensions, and
+- is not a distinct kind of thing. The last column is the name which its `dimension` reports:
++ Le unità derivate con un nome sono definite in termini di quelle, quindi ciascuna ha le sue
++ dimensioni complete, e non è un genere di cosa distinto. L'ultima colonna è il nome che riporta
++ la sua `dimension`:
+
+= is not a distinct kind of thing. The last column is the name which its `dimension` reports:
+=
+- ```tabular
++ ```tabular
+
+- column  Unit
+- column  Definition
+- column  Dimension
+- row  `Hertz`  one per second  frequency
+- row  `Newton`  meter-kilogram per second squared  force
+- row  `Pascal`  newton per square meter  pressure
+- row  `Joule`  newton-meter  energy
+- row  `Watt`  joule per second  power
+- row  `Coulomb`  second-ampere  electric charge
++ column  Unità
++ column  Definizione
++ column  Dimensione
++ row  `Hertz`  uno al secondo  frequency
++ row  `Newton`  metro-chilogrammo al secondo quadrato  force
++ row  `Pascal`  newton al metro quadrato  pressure
++ row  `Joule`  newton-metro  energy
++ row  `Watt`  joule al secondo  power
++ row  `Coulomb`  secondo-ampere  electric charge
+
+- row  `Volt`  watt per ampere  electric potential
++ row  `Volt`  watt per ampere  electric potential
+
+- row  `Farad`  coulomb per volt  capacitance
++ row  `Farad`  coulomb per volt  capacitance
+
+- row  `Ohm`  volt per ampere  impedance
++ row  `Ohm`  volt per ampere  impedance
+
+- row  `Siemens`  ampere per volt  electric conductance
++ row  `Siemens`  ampere per volt  electric conductance
+
+- row  `Weber`  volt-second  magnetic flux
+- row  `Tesla`  weber per square meter  magnetic flux density
++ row  `Weber`  volt-secondo  magnetic flux
++ row  `Tesla`  weber al metro quadrato  magnetic flux density
+
+- row  `Henry`  weber per ampere  inductance
++ row  `Henry`  weber per ampere  inductance
+
+- row  `Lux`  candela per square meter  illuminance
+- row  `Becquerel`  one per second  frequency
+- row  `Gray`  joule per kilogram  specific energy
+- row  `Sievert`  joule per kilogram  specific energy
+- row  `Katal`  mole per second
++ row  `Lux`  candela al metro quadrato  illuminance
++ row  `Becquerel`  uno al secondo  frequency
++ row  `Gray`  joule al chilogrammo  specific energy
++ row  `Sievert`  joule al chilogrammo  specific energy
++ row  `Katal`  mole al secondo
+
+= row  `Katal`  mole per second
+- ```
++ ```
+
+- The CGS and imperial systems are provided beside them: `Dyne`, `Erg`, `Gauss`, `Poise`,
+- `Foot`, `Furlong`, `Stone` and the rest.
++ Accanto a esse sono forniti i sistemi CGS e imperiale: `Dyne`, `Erg`, `Gauss`, `Poise`,
++ `Foot`, `Furlong`, `Stone` e gli altri.
+
+- ### Displaying
++ ### Visualizzazione
+
+- `show` writes a quantity out, and needs a `Decimalizer` in scope to fix the number of
+- significant figures. Compound units are written with a middle dot and superscript powers,
+- and very large or very small values switch to scientific notation:
++ `show` scrive una grandezza, e richiede un `Decimalizer` nell'ambito per fissare il numero di
++ cifre significative. Le unità composte si scrivono con un punto mediano e potenze in apice, e i
++ valori molto grandi o molto piccoli passano alla notazione scientifica:
+
+= and very large or very small values switch to scientific notation:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and very large or very small values switch to scientific notation:
+=
+= ```scala fuel
+- run
++ run
+
+= and very large or very small values switch to scientific notation:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((7.567*Metre).show)
++ Out.println((7.567*Metre).show)
+
+- Out.println((1.4*Metre*Metre).show)
++ Out.println((1.4*Metre*Metre).show)
+
+- Out.println((8.54*Metre/Second).show)
++ Out.println((8.54*Metre/Second).show)
+
+- Out.println((8.54*Kilo(Metre)/Second).show)
++ Out.println((8.54*Kilo(Metre)/Second).show)
+
+- Out.println(constants.SpeedOfLightInVacuum.show)
++ Out.println(constants.SpeedOfLightInVacuum.show)
+
+= Out.println(constants.SpeedOfLightInVacuum.show)
+- ```
++ ```
+
+- `show` is the only correct way to write a quantity out. A `Quantity` is an opaque type over
+- a `Double`, so its `toString` is the `Double`'s: the bare number, with no units at all. A
+- quantity which is substituted into a plain string therefore silently loses the very thing
+- which distinguishes it. [Text](text.md#rendering-numbers) describes the `Decimalizer`.
++ `show` è l'unico modo corretto di scrivere una grandezza. Una `Quantity` è un tipo opaco su un
++ `Double`, quindi il suo `toString` è quello del `Double`: il numero nudo, senza alcuna unità.
++ Una grandezza inserita in una stringa semplice perde quindi silenziosamente proprio ciò che la
++ distingue. [Testo](text.md#rendering-numbers) descrive il `Decimalizer`.
+
+- Instead of scientific notation, a quantity can scale itself to a metric prefix for display.
+- A `Prefixes` instance lists the prefixes to choose from, and `show` picks the one which keeps
+- the number readable:
++ Al posto della notazione scientifica, una grandezza può scalarsi da sola a un prefisso metrico
++ per la visualizzazione. Un'istanza di `Prefixes` elenca i prefissi tra cui scegliere, e `show`
++ sceglie quello che mantiene il numero leggibile:
+
+= the number readable:
+=
+- ```scala
++ ```scala
+
+- sealed trait Information extends Dimension
++ sealed trait Information extends Dimension
+
+- sealed trait Bits[Power <: Nat] extends Units[Power, Information]
++ sealed trait Bits[Power <: Nat] extends Units[Power, Information]
+
+- val Bit: MetricUnit[Bits[1]] = MetricUnit(1.0)
++ val Bit: MetricUnit[Bits[1]] = MetricUnit(1.0)
+
+- given bitDesignation: Designation[Bits[1]] = () => t"bit"
++ given bitDesignation: Designation[Bits[1]] = () => t"bit"
+
+- given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
++ given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+
+= given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+- ```
++ ```
+
+= given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= given bitPrefixes: (Prefixes on Bits[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((5000*Bit).show)
++ Out.println((5000*Bit).show)
+
+- Out.println((5_000_000*Bit).show)
++ Out.println((5_000_000*Bit).show)
+
+= Out.println((5_000_000*Bit).show)
+- ```
++ ```
+
+- That sample also shows how a new dimension and unit are declared: a `Dimension`, a `Units`
+- type indexed by its power, a unit value, and a `Designation` which gives its symbol.
++ Quell'esempio mostra anche come si dichiarano una nuova dimensione e una nuova unità: una
++ `Dimension`, un tipo `Units` indicizzato dalla sua potenza, un valore di unità e una
++ `Designation` che ne dà il simbolo.
+
+- ### Defining a unit of your own
++ ### Definire un'unità propria
+
+- A unit which measures something for which the SI has no dimension needs both a dimension and
+- a type of units. Take FLOPS, which is a processor's floating-point instructions per second.
+- The definition is built up in four steps:
++ Un'unità che misura qualcosa per cui il SI non ha una dimensione richiede sia una dimensione sia
++ un tipo di unità. Si prendano i FLOPS, cioè le istruzioni in virgola mobile al secondo di un
++ processore. La definizione si costruisce in quattro passi:
+
+= The definition is built up in four steps:
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```scala fuel
+- frame
++ frame
+
+-   label A bare rate, in inverse seconds
++   label Un tasso nudo, in secondi inversi
+
+=   label A bare rate, in inverse seconds
+-   code
++   code
+
+-       val SimpleFlop = 1.0/Second
++       val SimpleFlop = 1.0/Second
+
+=       val SimpleFlop = 1.0/Second
+- frame
++ frame
+
+-   label A metric unit, so that the prefixes apply
++   label Un'unità metrica, perché i prefissi si applichino
+
+=   label A metric unit, so that the prefixes apply
+-   code
++   code
+
+-       val PrefixableFlop: MetricUnit[Seconds[-1]] = MetricUnit(1)
++       val PrefixableFlop: MetricUnit[Seconds[-1]] = MetricUnit(1)
+
+-       Mega(PrefixableFlop)
++       Mega(PrefixableFlop)
+
+=       Mega(PrefixableFlop)
+- frame
++ frame
+
+-   label A dimension of its own
++   label Una dimensione propria
+
+=   label A dimension of its own
+-   code
++   code
+
+=   label A dimension of its own
+=   code
+-       trait CpuPerformance extends Dimension
++       trait CpuPerformance extends Dimension
+
+=   label A dimension of its own
+=   code
+=       trait CpuPerformance extends Dimension
+-       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
++       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+
+=   label A dimension of its own
+=   code
+=       trait CpuPerformance extends Dimension
+=       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+=
+-       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
++       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
+
+=       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
+=
+-       Mega(Flop)*Second
++       Mega(Flop)*Second
+
+=       Mega(Flop)*Second
+- frame
++ frame
+
+-   label With a symbol for display
++   label Con un simbolo per la visualizzazione
+
+=   label With a symbol for display
+-   code
++   code
+
+=   label With a symbol for display
+=   code
+-       trait CpuPerformance extends Dimension
++       trait CpuPerformance extends Dimension
+
+=   label With a symbol for display
+=   code
+=       trait CpuPerformance extends Dimension
+-       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
++       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+
+=   label With a symbol for display
+=   code
+=       trait CpuPerformance extends Dimension
+=       trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+=
+-       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
++       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
+
+-       given Designation[Flops[1]] = () => t"FLOPS"
++       given Designation[Flops[1]] = () => t"FLOPS"
+
+=       given Designation[Flops[1]] = () => t"FLOPS"
+=
+-       Mega(Flop)*Second
++       Mega(Flop)*Second
+
+=       Mega(Flop)*Second
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- Written as a bare value, `1.0/Second` can be used in arithmetic, but says nothing about what
+- it counts. Wrapping it as a `MetricUnit` at least makes the metric prefixes apply, so
+- `Mega(Flop)` can be written, but the result is still just a number in units of inverse
+- seconds. Giving it a dimension of its own makes it distinct from every frequency. The
+- `power` parameter is required, and is bounded by `Nat`, which is an alias for
+- `Int & Singleton`. `Mega(Flop)*Second` then has the type
+- `Quantity[Flops[1] & Seconds[1]]`, and a `Designation` gives it a symbol for display.
++ Scritto come valore nudo, `1.0/Second` si può usare nell'aritmetica, ma non dice nulla su ciò
++ che conta. Avvolgerlo in una `MetricUnit` fa almeno sì che i prefissi metrici si applichino,
++ quindi si può scrivere `Mega(Flop)`, ma il risultato è ancora soltanto un numero in unità di
++ secondi inversi. Dargli una dimensione propria lo rende distinto da ogni frequenza. Il parametro
++ `power` è obbligatorio, ed è limitato da `Nat`, che è un alias di `Int & Singleton`.
++ `Mega(Flop)*Second` ha allora il tipo `Quantity[Flops[1] & Seconds[1]]`, e una `Designation`
++ gli dà un simbolo per la visualizzazione.
+
+- Both traits may be `sealed`, since nothing implements them at runtime.
++ Entrambi i trait possono essere `sealed`, poiché nulla li implementa a runtime.
+
+- ### Conversion ratios
++ ### Rapporti di conversione
+
+- Converting between two units needs the ratio between them. That comes from a contextual
+- `Ratio` for the pair, with one unit at the power `1` and the other at the power `-1`, and the
+- rate as a singleton literal `Double`:
++ Convertire tra due unità richiede il rapporto tra esse. Questo proviene da un `Ratio` contestuale
++ per la coppia, con un'unità alla potenza `1` e l'altra alla potenza `-1`, e il fattore come
++ `Double` letterale singleton:
+
+= rate as a singleton literal `Double`:
+=
+- ```scala
++ ```scala
+
+- inline given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!
++ inline given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!
+
+= inline given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!
+- ```
++ ```
+
+- The rate is a *type*, not a value, and that is what makes a conversion cost nothing. Its
+- value is known at compiletime, so arithmetic on it is done as the code compiles, and the
+- given itself can be erased. A conversion between two units therefore contributes no work at
+- runtime beyond the multiplication which it actually denotes.
++ Il fattore è un *tipo*, non un valore, ed è questo che rende gratuita una conversione. Il suo
++ valore è noto a tempo di compilazione, quindi l'aritmetica su di esso viene svolta mentre il
++ codice compila, e il given stesso può essere cancellato. Una conversione tra due unità non
++ aggiunge quindi alcun lavoro a runtime oltre alla moltiplicazione che effettivamente denota.
+
+- ### Mixed and non-decimal bases
++ ### Basi miste e non decimali
+
+- Not every measurement is a single number in a single unit. Before the metric system,
+- quantities were expressed as a *cascade* of units, in exact multiples which were not powers
+- of ten: feet and inches, or stones, pounds and ounces. Some still are. Hours, minutes and
+- seconds are exactly that, and so is a person's height in most of the English-speaking world.
++ Non ogni misura è un singolo numero in una singola unità. Prima del sistema metrico, le grandezze
++ si esprimevano come una *cascata* di unità, in multipli esatti che non erano potenze di dieci:
++ piedi e pollici, o stone, libbre e once. Alcune lo sono ancora. Ore, minuti e secondi sono
++ esattamente questo, e lo è anche l'altezza di una persona in gran parte del mondo anglofono.
+
+- A `Quanta` represents one such value: a whole number of each unit in a descending cascade,
+- with the carrying done automatically. The type states the cascade, with the smallest unit as
+- the type parameter, and the larger ones after `in`:
++ Una `Quanta` rappresenta uno di questi valori: un numero intero per ciascuna unità di una cascata
++ discendente, con i riporti gestiti automaticamente. Il tipo dichiara la cascata, con l'unità più
++ piccola come parametro di tipo e quelle più grandi dopo `in`:
+
+= the type parameter, and the larger ones after `in`:
+=
+- ```scala
++ ```scala
+
+- type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
++ type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+- type Height = Quanta[Inches[1]] in (Feet[1])
++ type Height = Quanta[Inches[1]] in (Feet[1])
+
+= type Height = Quanta[Inches[1]] in (Feet[1])
+- ```
++ ```
+
+- A value is written with the largest unit first, as it is spoken, and each component is read
+- back by naming its unit. This weight is 1 stone, 3 pounds and 2 ounces:
++ Un valore si scrive con l'unità più grande per prima, come si pronuncia, e ogni componente si
++ rilegge nominandone l'unità. Questo peso è di 1 stone, 3 libbre e 2 once:
+
+= back by naming its unit. This weight is 1 stone, 3 pounds and 2 ounces:
+=
+- ```scala
++ ```scala
+
+- val weight: Weight = Quanta(1, 3, 2)
++ val weight: Weight = Quanta(1, 3, 2)
+
+= val weight: Weight = Quanta(1, 3, 2)
+- ```
++ ```
+
+= val weight: Weight = Quanta(1, 3, 2)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val weight: Weight = Quanta(1, 3, 2)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val weight: Weight = Quanta(1, 3, 2)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(weight[Stones].show)
++ Out.println(weight[Stones].show)
+
+- Out.println(weight[Pounds].show)
++ Out.println(weight[Pounds].show)
+
+- Out.println(weight[Ounces].show)
++ Out.println(weight[Ounces].show)
+
+= Out.println(weight[Ounces].show)
+- ```
++ ```
+
+- Arithmetic carries between the units as the ratios require. Adding fifteen ounces to 3 pounds
+- 2 ounces gives 4 pounds 1 ounce, not 3 pounds 17 ounces:
++ L'aritmetica riporta tra le unità come richiedono i rapporti. Sommare quindici once a 3 libbre e
++ 2 once dà 4 libbre e 1 oncia, non 3 libbre e 17 once:
+
+= 2 ounces gives 4 pounds 1 ounce, not 3 pounds 17 ounces:
+=
+- ```scala
++ ```scala
+
+- val heavier: Weight = weight + Quanta(15)
++ val heavier: Weight = weight + Quanta(15)
+
+= val heavier: Weight = weight + Quanta(15)
+- ```
++ ```
+
+= val heavier: Weight = weight + Quanta(15)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val heavier: Weight = weight + Quanta(15)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val heavier: Weight = weight + Quanta(15)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(heavier[Pounds].show)
++ Out.println(heavier[Pounds].show)
+
+- Out.println(heavier[Ounces].show)
++ Out.println(heavier[Ounces].show)
+
+= Out.println(heavier[Ounces].show)
+- ```
++ ```
+
+- The cascade is checked as it is written. Every unit in it must have the same dimension, so
+- mixing seconds into a cascade of lengths does not compile, and the base must be a unit, not
+- an arbitrary type. `TimeSeconds` and `TimeMinutes` are provided, for the two cascades which
+- everyone needs.
++ La cascata viene verificata mentre la si scrive. Ogni unità al suo interno deve avere la stessa
++ dimensione, quindi mescolare secondi in una cascata di lunghezze non compila, e la base deve
++ essere un'unità, non un tipo arbitrario. Sono forniti `TimeSeconds` e `TimeMinutes`, per le due
++ cascate di cui tutti hanno bisogno.
+
+- The units are real units, so a `Quanta` converts to and from an ordinary `Quantity`, which
+- is how a measurement crosses between the two worlds:
++ Le unità sono unità vere, quindi una `Quanta` si converte da e verso una normale `Quantity`, ed
++ è così che una misura passa da un mondo all'altro:
+
+= is how a measurement crosses between the two worlds:
+=
+- ```scala
++ ```scala
+
+- val length: Quantity[Metres[1]] = 5.9*Foot + 10.0*Inch
++ val length: Quantity[Metres[1]] = 5.9*Foot + 10.0*Inch
+
+- val height = length.quanta[Height]
++ val height = length.quanta[Height]
+
+= val height = length.quanta[Height]
+- ```
++ ```
+
+= val height = length.quanta[Height]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val height = length.quanta[Height]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val height = length.quanta[Height]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(height[Feet].show)
++ Out.println(height[Feet].show)
+
+- Out.println(height[Inches].show)
++ Out.println(height[Inches].show)
+
+- Out.println(weight.quantity.convert[Pounds].show)
++ Out.println(weight.quantity.convert[Pounds].show)
+
+= Out.println(weight.quantity.convert[Pounds].show)
+- ```
++ ```
+
+- Showing a `Quanta` uses each unit's symbol, as in `1st 3lb 2oz`. A `UnitsNames` given
+- overrides the symbols where a cascade is conventionally written differently, so that a
+- height can be shown as `5' 9"`.
++ Mostrare una `Quanta` usa il simbolo di ogni unità, come in `1st 3lb 2oz`. Un given
++ `UnitsNames` sostituisce i simboli dove una cascata si scrive per convenzione in modo diverso,
++ così che un'altezza possa essere mostrata come `5' 9"`.
+
+- ### Temperature
++ ### Temperatura
+
+- Temperature is measured from an arbitrary zero, not from nothing, so it behaves unlike a
+- length or a mass. Thirty degrees plus thirty degrees is not sixty degrees of anything
+- meaningful. It is modeled as a separate type, `Temperature`, and the scales with an
+- arbitrary zero are kept distinct from the absolute Kelvin quantity which is used for
+- differences.
++ La temperatura si misura da uno zero arbitrario, non dal nulla, quindi si comporta diversamente
++ da una lunghezza o da una massa. Trenta gradi più trenta gradi non fanno sessanta gradi di alcunché
++ di significativo. Viene modellata come un tipo separato, `Temperature`, e le scale con uno zero
++ arbitrario sono tenute distinte dalla grandezza assoluta in Kelvin che si usa per le differenze.
+
+- Four scales appear, and they fall into two kinds. Kelvin and Rankine measure from absolute
+- zero, so they are ordinary quantities as well as scales. Celsius and Fahrenheit place their
+- zero elsewhere, at the freezing point of water and lower still, so a reading on either is
+- meaningful only as a `Temperature`. Multiplying or adding two such readings directly would
+- be meaningless, and the types do not allow it.
++ Compaiono quattro scale, che si dividono in due generi. Kelvin e Rankine misurano dallo zero
++ assoluto, quindi sono grandezze ordinarie oltre che scale. Celsius e Fahrenheit pongono il loro
++ zero altrove, al punto di congelamento dell'acqua e ancora più in basso, quindi una lettura su
++ una delle due ha senso soltanto come `Temperature`. Moltiplicare o sommare direttamente due
++ letture del genere non avrebbe senso, e i tipi non lo permettono.
+
+- A temperature is created on a named scale, and displayed on whichever scale is in scope:
++ Una temperatura si crea su una scala con un nome, e si mostra sulla scala presente nell'ambito:
+
+= A temperature is created on a named scale, and displayed on whichever scale is in scope:
+=
+- ```tabular
++ ```tabular
+
+- column  Scale
++ column  Scala
+
+- column  Zero
++ column  Zero
+
+- column  Reading
+- column  As a quantity
+- column  Display import
+- row  Kelvin  absolute zero  `Kelvin(…)`  the unit `Kelvin`  `temperatureScales.kelvinScale`
+- row  Rankine  absolute zero  `Rankine(…)`  the units `Rankines`  `temperatureScales.rankineScale`
+- row  Celsius  freezing point of water  `Celsius(…)`  none  `temperatureScales.celsiusScale`
+- row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
++ column  Lettura
++ column  Come grandezza
++ column  Import per la visualizzazione
++ row  Kelvin  zero assoluto  `Kelvin(…)`  l'unità `Kelvin`  `temperatureScales.kelvinScale`
++ row  Rankine  zero assoluto  `Rankine(…)`  le unità `Rankines`  `temperatureScales.rankineScale`
++ row  Celsius  punto di congelamento dell'acqua  `Celsius(…)`  nessuna  `temperatureScales.celsiusScale`
++ row  Fahrenheit  sotto il congelamento  `Fahrenheit(…)`  nessuna  `temperatureScales.fahrenheitScale`
+
+= row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
+- ```
++ ```
+
+= row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+= ```
+=
+= ```scala fuel
+= run
+= ##
+= locally:
+-   import temperatureScales.celsiusScale
++   import temperatureScales.celsiusScale
+
+=   import temperatureScales.celsiusScale
+-   Out.println(Celsius(30).show)
++   Out.println(Celsius(30).show)
+
+=   import temperatureScales.celsiusScale
+=   Out.println(Celsius(30).show)
+-   Out.println(Fahrenheit(100).show)
++   Out.println(Fahrenheit(100).show)
+
+=
+- locally:
++ locally:
+
+-   import temperatureScales.fahrenheitScale
++   import temperatureScales.fahrenheitScale
+
+=   import temperatureScales.fahrenheitScale
+-   Out.println(Celsius(30).show)
++   Out.println(Celsius(30).show)
+
+=   import temperatureScales.fahrenheitScale
+=   Out.println(Celsius(30).show)
+-   Out.println(Fahrenheit(100).show)
++   Out.println(Fahrenheit(100).show)
+
+=   Out.println(Fahrenheit(100).show)
+- ```
++ ```
+
+- Reading the same temperature on a different scale is thus a matter of importing a different
+- one, with no conversion written by hand.
++ Leggere la stessa temperatura su un'altra scala è quindi questione di importarne una diversa,
++ senza scrivere a mano alcuna conversione.
+
+- A `Temperature` adds and subtracts Kelvin or Rankine *quantities*, to give another
+- temperature. The difference of two temperatures is a quantity, which converts like any
+- other:
++ Una `Temperature` somma e sottrae *grandezze* in Kelvin o Rankine, per dare un'altra
++ temperatura. La differenza di due temperature è una grandezza, che si converte come ogni altra:
+
+= other:
+=
+- ```scala fuel
++ ```scala fuel
+
+= other:
+=
+= ```scala fuel
+- run
++ run
+
+= other:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= other:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+= other:
+=
+= ```scala fuel
+= run
+= ##
+= locally:
+-   import temperatureScales.celsiusScale
++   import temperatureScales.celsiusScale
+
+-   Out.println((zero[Temperature] + 300*Kelvin).show)
++   Out.println((zero[Temperature] + 300*Kelvin).show)
+
+-   Out.println((Fahrenheit(100) - zero[Temperature]).convert[Rankines].show)
++   Out.println((Fahrenheit(100) - zero[Temperature]).convert[Rankines].show)
+
+=   Out.println((Fahrenheit(100) - zero[Temperature]).convert[Rankines].show)
+- ```
++ ```
+
+- ### Aggregating
++ ### Aggregazione
+
+- A collection of quantities which share a unit reduces to a quantity, and each reduction
+- understands units:
++ Una collezione di grandezze che condividono un'unità si riduce a una grandezza, e ogni riduzione
++ tiene conto delle unità:
+
+= understands units:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Result
+- column  Of an empty collection
+- row  `total`  the sum, in the same unit  zero
+- row  `mean`  the mean, in the same unit  `Unset`
+- row  `variance`  the variance, in the unit squared  `Unset`
+- row  `std`  the standard deviation, in the same unit  `Unset`
++ column  Metodo
++ column  Risultato
++ column  Di una collezione vuota
++ row  `total`  la somma, nella stessa unità  zero
++ row  `mean`  la media, nella stessa unità  `Unset`
++ row  `variance`  la varianza, nell'unità al quadrato  `Unset`
++ row  `std`  la deviazione standard, nella stessa unità  `Unset`
+
+= row  `std`  the standard deviation, in the same unit  `Unset`
+- ```
++ ```
+
+- So the variance of a list of seconds is in seconds squared, and the standard deviation is
+- back in seconds:
++ Così la varianza di una lista di secondi è in secondi al quadrato, e la deviazione standard
++ torna in secondi:
+
+= back in seconds:
+=
+- ```scala
++ ```scala
+
+- val samples = List(1*Second, 2*Second, 3*Second)
++ val samples = List(1*Second, 2*Second, 3*Second)
+
+= val samples = List(1*Second, 2*Second, 3*Second)
+- ```
++ ```
+
+= val samples = List(1*Second, 2*Second, 3*Second)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val samples = List(1*Second, 2*Second, 3*Second)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val samples = List(1*Second, 2*Second, 3*Second)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(samples.total.let(_.show).or(t"none"))
++ Out.println(samples.total.let(_.show).or(t"none"))
+
+- Out.println(samples.mean.let(_.show).or(t"none"))
++ Out.println(samples.mean.let(_.show).or(t"none"))
+
+- Out.println(samples.std.let(_.show).or(t"none"))
++ Out.println(samples.std.let(_.show).or(t"none"))
+
+= Out.println(samples.std.let(_.show).or(t"none"))
+- ```
++ ```
+
+- [Mathematics](mathematics.md#elements-that-are-not-numbers) builds vectors and matrices of
+- quantities, whose products carry units too.
++ [Matematica](mathematics.md#elements-that-are-not-numbers) costruisce vettori e matrici di
++ grandezze, i cui prodotti portano anch'essi le unità.
+
+- ### Quantifying your own types
++ ### Quantificare i propri tipi
+
+- A type which stands for a measurement can be taught to give a quantity, through a
+- `Quantifiable` instance. It then takes part in the same dimensional arithmetic. A
+- typographic point, which is one seventy-second of an inch, becomes a real length:
++ A un tipo che rappresenta una misura si può insegnare a dare una grandezza, tramite un'istanza
++ di `Quantifiable`. Partecipa allora alla stessa aritmetica dimensionale. Un punto tipografico,
++ che è un settantaduesimo di pollice, diventa una lunghezza vera:
+
+= typographic point, which is one seventy-second of an inch, becomes a real length:
+=
+- ```scala
++ ```scala
+
+- case class Pts(value: Double)
++ case class Pts(value: Double)
+
+- given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
++ given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
+
+= given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
+- ```
++ ```
+
+= given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= given ptsQuantifiable: Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Pts(71).quantify < Inch).inspect)
++ Out.println((Pts(71).quantify < Inch).inspect)
+
+- Out.println((Pts(73).quantify > Inch).inspect)
++ Out.println((Pts(73).quantify > Inch).inspect)
+
+= Out.println((Pts(73).quantify > Inch).inspect)
+- ```
++ ```
+
+- ### Calculations
++ ### Calcoli
+
+- A formula written in quantities is checked as it is written. Each step must combine its
+- units coherently, and the units of the result are computed from the units of the inputs, so
+- the dimensions of a calculation are verified before it ever runs. The
+- [displacement of a body under constant acceleration](https://en.wikipedia.org/wiki/Equations_of_motion#Constant_translational_acceleration_in_a_straight_line),
+- `s = ut + ½at²`, reads directly:
++ Una formula scritta in grandezze viene verificata mentre la si scrive. Ogni passo deve combinare
++ le sue unità in modo coerente, e le unità del risultato sono calcolate dalle unità degli input,
++ quindi le dimensioni di un calcolo sono verificate prima ancora che venga eseguito. Lo
++ [spostamento di un corpo sotto accelerazione costante](https://en.wikipedia.org/wiki/Equations_of_motion#Constant_translational_acceleration_in_a_straight_line),
++ `s = ut + ½at²`, si legge direttamente:
+
+= `s = ut + ½at²`, reads directly:
+=
+- ```scala
++ ```scala
+
+- def displacement
++ def displacement
+
+-     ( initial: Quantity[Metres[1] & Seconds[-1]],
++     ( initial: Quantity[Metres[1] & Seconds[-1]],
+
+-       time:    Quantity[Seconds[1]],
++       time:    Quantity[Seconds[1]],
+
+-       accel:   Quantity[Metres[1] & Seconds[-2]] )
++       accel:   Quantity[Metres[1] & Seconds[-2]] )
+
+- :   Quantity[Metres[1]] =
++ :   Quantity[Metres[1]] =
+
+-   initial*time + 0.5*accel*time*time
++   initial*time + 0.5*accel*time*time
+
+=   initial*time + 0.5*accel*time*time
+- ```
++ ```
+
+=   initial*time + 0.5*accel*time*time
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   initial*time + 0.5*accel*time*time
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   initial*time + 0.5*accel*time*time
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(displacement(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second)).show)
++ Out.println(displacement(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second)).show)
+
+= Out.println(displacement(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second)).show)
+- ```
++ ```
+
+- Both terms of the sum come out as a distance: a velocity times a time, and an acceleration
+- times a time squared. The addition therefore typechecks, and the result is a distance.
+- Passing an argument in the wrong units is a compile error, not a number which is quietly
+- wrong:
++ Entrambi i termini della somma risultano una distanza: una velocità per un tempo, e
++ un'accelerazione per un tempo al quadrato. L'addizione supera quindi il controllo dei tipi, e il
++ risultato è una distanza. Passare un argomento nelle unità sbagliate è un errore di
++ compilazione, non un numero silenziosamente sbagliato:
+
+= wrong:
+=
+- ```scala fuel
++ ```scala fuel
+
+= wrong:
+=
+= ```scala fuel
+- compile
++ compile
+
+= wrong:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= wrong:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- displacement(3*Metre, 2*Second, 9.8*Metre/(Second*Second))
++ displacement(3*Metre, 2*Second, 9.8*Metre/(Second*Second))
+
+= displacement(3*Metre, 2*Second, 9.8*Metre/(Second*Second))
+- ```
++ ```
+
+- The same calculation can be written once for any consistent choice of units, instead of
+- being fixed to meters and seconds. A `transparent inline def` resolves its units at each
+- call, so its parameters can be left abstract. The relationships which the formula relies on
+- are then stated as constraints: that a velocity times a time, and an acceleration times a
+- time squared, can each be formed, and that the two results can be added.
++ Lo stesso calcolo si può scrivere una volta sola per qualunque scelta coerente di unità, invece
++ di essere legato a metri e secondi. Una `transparent inline def` risolve le sue unità a ogni
++ chiamata, quindi i suoi parametri possono restare astratti. Le relazioni su cui si basa la
++ formula vengono allora espresse come vincoli: che si possano formare una velocità per un tempo e
++ un'accelerazione per un tempo al quadrato, e che i due risultati si possano sommare.
+
+= time squared, can each be formed, and that the two results can be added.
+=
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+= parse
+- ##
++ ##
+
+- transparent inline def motion
++ transparent inline def motion
+
+-     [ velocity     <: Measure,
++     [ velocity     <: Measure,
+
+-       time         <: Measure,
++       time         <: Measure,
+
+-       acceleration <: Measure ]
++       acceleration <: Measure ]
+
+-     ( initial: Quantity[velocity],
++     ( initial: Quantity[velocity],
+
+-       elapsed: Quantity[time],
++       elapsed: Quantity[time],
+
+-       rate:    Quantity[acceleration] )
++       rate:    Quantity[acceleration] )
+
+-     ( using vt:  Quantity[velocity] is Multiplicable by Quantity[time],
++     ( using vt:  Quantity[velocity] is Multiplicable by Quantity[time],
+
+-             at:  Quantity[acceleration] is Multiplicable by Quantity[time] )
++             at:  Quantity[acceleration] is Multiplicable by Quantity[time] )
+
+-     ( using att: at.Result is Multiplicable by Quantity[time] )
++     ( using att: at.Result is Multiplicable by Quantity[time] )
+
+-     ( using add: vt.Result is Addable by att.Result )
++     ( using add: vt.Result is Addable by att.Result )
+
+- =   initial*elapsed + 0.5*rate*elapsed*elapsed
++ =   initial*elapsed + 0.5*rate*elapsed*elapsed
+
+- val fallen = motion(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second))
++ val fallen = motion(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second))
+
+= val fallen = motion(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second))
+- ```
++ ```
+
+- Those constraints are nothing more than the statement that the equation's dimensions line
+- up, expressed in types. A call whose units cannot satisfy them does not compile.
+- [Numbers](numbers.md#overloading-the-operators) describes `Multiplicable` and `Addable`.
++ Quei vincoli non sono altro che l'affermazione che le dimensioni dell'equazione tornano, espressa
++ in tipi. Una chiamata le cui unità non possono soddisfarli non compila.
++ [Numeri](numbers.md#overloading-the-operators) descrive `Multiplicable` e `Addable`.
+
+- ### What it costs at runtime
++ ### Quanto costa a runtime
+
+- None of this survives to the bytecode. A `Quantity` is an opaque type over a `Double`, its
+- units exist only in the type, and every operation is `inline`. A dimensional calculation
+- therefore compiles to the same arithmetic instructions as the equivalent arithmetic on bare
+- `Double`s would, with no boxing, no wrapper objects, and no virtual dispatch to a typeclass.
++ Nulla di tutto questo sopravvive nel bytecode. Una `Quantity` è un tipo opaco su un `Double`, le
++ sue unità esistono soltanto nel tipo, e ogni operazione è `inline`. Un calcolo dimensionale si
++ compila quindi nelle stesse istruzioni aritmetiche in cui si compilerebbe l'aritmetica
++ equivalente su `Double` nudi, senza boxing, senza oggetti wrapper e senza smistamento virtuale
++ verso una typeclass.
+
+- That is a property worth checking, not merely asserting, and it is checked. The test suite
+- inspects the compiled bytecode of representative calculations, and fails if a typeclass
+- dispatch appears where inlined arithmetic should be. A guarantee about performance which is
+- only claimed tends to stop being true.
++ È una proprietà che vale la pena verificare, non soltanto affermare, e viene verificata. La
++ suite di test ispeziona il bytecode compilato di calcoli rappresentativi, e fallisce se compare
++ uno smistamento verso una typeclass dove dovrebbe esserci aritmetica resa inline. Una garanzia
++ sulle prestazioni che viene soltanto dichiarata tende a smettere di essere vera.
+
+- ### Related
++ ### Correlati
+
+- - [Numbers](numbers.md) describes the numeric types and the operators which quantities use.
+- - [Time](time.md#durations-and-timespans) measures a `Duration` as a quantity of seconds.
+- - [Mathematics](mathematics.md) carries units through vectors, matrices and complex numbers.
+- - [Money](money.md) applies the same idea, of a unit in the type, to currencies.
+- - [Geography](geography.md) and [Chemistry](chemistry.md) build on quantities.
++ - [Numeri](numbers.md) descrive i tipi numerici e gli operatori che le grandezze usano.
++ - [Tempo](time.md#durations-and-timespans) misura una `Duration` come grandezza in secondi.
++ - [Matematica](mathematics.md) porta le unità attraverso vettori, matrici e numeri complessi.
++ - [Denaro](money.md) applica la stessa idea, di un'unità nel tipo, alle valute.
++ - [Geografia](geography.md) e [Chimica](chemistry.md) si basano sulle grandezze.

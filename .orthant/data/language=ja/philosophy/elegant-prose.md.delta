@@ -1,0 +1,205 @@
+orthant 1 language
+
+- # Elegant Prose
++ # 優美な散文
+
+- Code in Soundness should read like elegant prose: someone who knows the domain ought to
+- be able to read a method aloud and understand what it does. This is the aim that the
+- other principles serve — [direct style](direct-style.md), careful [naming](naming.md),
+- [small APIs](small-apis.md), and [honest signatures](honest-signatures.md) all exist so
+- that the meaning of code rises to the surface and the machinery recedes. Clarity for
+- the reader is treated as a primary goal of design, not as a fortunate side effect of it.
++ Soundness のコードは優美な散文のように読めるべきである。その分野を知っている人なら、メソッドを声に出して読み、それが何をするかを理解できるはずである。
++ これは他の原則が仕える目標である。[ダイレクトスタイル](direct-style.md)、注意深い[命名](naming.md)、[小さな API](small-apis.md)、[正直なシグネチャ](honest-signatures.md)はどれも、コードの意味が表面に浮かび上がり、仕組みが背後に退くために存在する。
++ 読み手にとっての明快さは、設計の主要な目標として扱われるのであって、その幸運な副産物として扱われるのではない。
+
+- Prose is learnable by analogy, and so is a well-designed API. A reader who has seen
+- `text.read[Json]` should correctly guess that `text.read[Markdown]` parses Markdown,
+- that `bytes.read[Audio in Wave]` reads a WAV file, and that `stream.read[Csv]` would
+- read CSV — one verb, meaning the same thing across every format. The same analogy runs
+- through the whole vocabulary: whatever can be decoded is `text.as[T]`, whatever can
+- be shown is `value.show`, whatever streams is `source.stream[Data]`, every checked
+- literal is an interpolator (`url"…"`, `p"…"`, `json"…"`, `v"…"`), and every serialized
+- form round-trips through the same pair of operations. Learning one corner of Soundness
+- is learning the grammar of all of it.
++ 散文は類推によって学べるものであり、よく設計された API も同じである。
++ `text.read[Json]` を見たことのある読み手は、`text.read[Markdown]` が Markdown をパースし、`bytes.read[Audio in Wave]` が WAV ファイルを読み、`stream.read[Csv]` が CSV を読むだろうと正しく推測できるはずである。一つの動詞が、どのフォーマットでも同じことを意味する。
++ 同じ類推が語彙全体を貫いている。デコードできるものはすべて `text.as[T]`、表示できるものはすべて `value.show`、ストリームになるものはすべて `source.stream[Data]` であり、検査されるリテラルはすべて補間子（`url"…"`、`p"…"`、`json"…"`、`v"…"`）であり、直列化された形式はすべて同じ一対の操作で往復する。
++ Soundness の一隅を学ぶことは、その全体の文法を学ぶことである。
+
+- The analogy is a design constraint, not an accident: a new module *must* spell its
+- parsing `read`, its rendering `show`, its literals as an interpolator — because the
+- moment it invents `parseFrom` or `stringify`, the reader's correct guesses start
+- failing, and the prose stops scanning.
++ この類推は偶然ではなく設計上の制約である。新しいモジュールは、パースを `read`、描画を `show`、リテラルを補間子と綴ら*なければならない*。それが `parseFrom` や `stringify` を発明した途端、読み手の正しい推測は外れはじめ、散文は韻律を失うからである。
+
+- ## The test
++ ## 試金石
+
+- The claim is checkable: read the code aloud and see whether it makes sense to someone who
+- knows the domain but not the library.
++ この主張は検査できる。コードを声に出して読み、その分野は知っているがライブラリは知らない人にとって意味が通るかどうかを見ればよい。
+
+= knows the domain but not the library.
+=
+- ```scala fuel
++ ```scala fuel
+
+= knows the domain but not the library.
+=
+= ```scala fuel
+- parse
++ parse
+
+= knows the domain but not the library.
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- supervise:
++ supervise:
+
+-   val server = SocketServer(8080).handle:
++   val server = SocketServer(8080).handle:
+
+-     request.target match
++     request.target match
+
+-       case t"/"       => Http.Response(Http.Ok)(homePage)
++       case t"/"       => Http.Response(Http.Ok)(homePage)
+
+-       case t"/status" => Http.Response(Http.Ok)(t"OK")
++       case t"/status" => Http.Response(Http.Ok)(t"OK")
+
+-       case _          => Http.Response(Http.NotFound)(t"No such page")
++       case _          => Http.Response(Http.NotFound)(t"No such page")
+
+=       case _          => Http.Response(Http.NotFound)(t"No such page")
+- ```
++ ```
+
+- "Supervise: the server is a socket server on port 8080 that handles — match the request's
+- target: for slash, an HTTP response, OK, the home page…". A reader who knows HTTP follows
+- that without knowing anything about Soundness.
++ 「監督せよ。サーバーは、ポート 8080 のソケットサーバーで、次のように処理する。リクエストのターゲットをマッチする。スラッシュなら、HTTP レスポンス、OK、ホームページ……」。
++ HTTP を知っている読み手は、Soundness について何も知らなくてもそれについていける。
+
+- The same test applied elsewhere:
++ 同じ試金石を他の場所に当てはめる。
+
+= The same test applied elsewhere:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The same test applied elsewhere:
+=
+= ```scala fuel
+- parse
++ parse
+
+= The same test applied elsewhere:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
++ worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
+
+- path.open[Directory](Read & Exclusive): dir ?=>
++ path.open[Directory](Read & Exclusive): dir ?=>
+
+-   (dir/"greeting.txt").overwrite(t"Hello directory")
++   (dir/"greeting.txt").overwrite(t"Hello directory")
+
+- 5.25.pm on 2018-Aug-11
++ 5.25.pm on 2018-Aug-11
+
+- key.uncloak:
++ key.uncloak:
+
+-   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
++   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+
+=   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+- ```
++ ```
+
+- Each reads as a statement about the domain rather than as an instruction to a machine.
++ どれも、機械への命令としてではなく、その分野についての言明として読める。
+
+- ## What the machinery costs to hide
++ ## 仕組みを隠すことのコスト
+
+- Prose that reads well is not prose with nothing behind it. Each line above rests on
+- several of the other principles at once, and the reader is meant to notice none of them:
++ よく読める散文は、背後に何もない散文ではない。
++ 上のどの行も、他のいくつもの原則に同時に支えられており、読み手はそのどれにも気づかないようになっている。
+
+- ```tabular
++ ```tabular
+
+- column  Expression
+- column  Rests on
+- column  The reader sees
+- row  `path.open[Directory](Read & Exclusive)`  a [scoped capability](delimited-scopes.md), a type-level grant set, and [capture checking](capture-checking.md) proving the handle does not escape  a directory being opened for exclusive reading
+- row  `t"2011-12-13".as[Date]`  a typeclass resolved by target type, a contextual error strategy, and a calendar  text becoming a date
+- row  `5.25.pm on 2018-Aug-11`  a compiletime-checked literal, an [infix](infix-types.md) constructor, and validation that rejects `13.00.am`  a time on a date
++ column  式
++ column  支えているもの
++ column  読み手に見えるもの
++ row  `path.open[Directory](Read & Exclusive)`  [スコープ付きのケイパビリティ](delimited-scopes.md)、型レベルの権限の集合、そしてハンドルが逃げ出さないことを証明する[キャプチャ検査](capture-checking.md)  排他的な読み取りのために開かれるディレクトリ
++ row  `t"2011-12-13".as[Date]`  対象の型で解決される型クラス、コンテキストのエラー戦略、そして暦  日付になるテキスト
++ row  `5.25.pm on 2018-Aug-11`  コンパイル時に検査されるリテラル、[中置](infix-types.md)のコンストラクター、そして `13.00.am` を拒否する検証  ある日付のある時刻
+
+= row  `5.25.pm on 2018-Aug-11`  a compiletime-checked literal, an [infix](infix-types.md) constructor, and validation that rejects `13.00.am`  a time on a date
+- ```
++ ```
+
+- That is the aim: machinery that recedes. When the machinery *has* to be visible — when a
+- capability must be named, or a type ascribed — it is because the reader genuinely needs
+- to know, not because the design leaked.
++ それが目標である。背後に退く仕組みである。
++ 仕組みが見えなければ*ならない*とき、つまりケイパビリティを名指ししなければならないときや型を注釈しなければならないときは、読み手が本当にそれを知る必要があるからであって、設計が漏れ出したからではない。
+
+- ## Where the prose breaks down
++ ## 散文が崩れる場所
+
+- Being honest about this is more useful than the principle stated alone.
++ これについて正直であることは、原則だけを述べるよりも役に立つ。
+
+- **Type ascriptions intrude.** Where inference cannot reach, a type must be written, and a
+- long infix type in the middle of an expression stops the sentence dead.
++ **型注釈が割り込む。**
++ 型推論が届かない場所では型を書かなければならず、式の真ん中の長い中置の型は文をぴたりと止めてしまう。
+
+- **Error messages are not prose.** A missing given is reported as a failed implicit search,
+- in the compiler's vocabulary rather than the library's — which is why
+- `explainMissingContext` exists, and why it is a repair rather than a solution.
++ **エラーメッセージは散文ではない。**
++ 欠けている given は、ライブラリの語彙ではなくコンパイラの語彙で、失敗した暗黙の探索として報告される。`explainMissingContext` が存在するのはそのためであり、それが解決策ではなく修繕であるのもそのためである。
+
+- **Some domains have no good English.** A streaming pipeline reads well; the `Duct` and
+- `Intake` vocabulary underneath it does not, and could not, because the concepts have no
+- everyday names. The response is to keep such vocabulary below the surface where most
+- readers never meet it, not to pretend it reads as prose.
++ **よい英語のない分野もある。**
++ ストリーミングのパイプラインはよく読めるが、その下にある `Duct` と `Intake` の語彙はそうではなく、そうはなりえない。その概念には日常の名前がないからである。
++ その対応は、そうした語彙を、ほとんどの読み手が決して出会わない表面の下に保っておくことであり、それが散文として読めるふりをすることではない。
+
+- **Reading aloud is a test, not a proof.** Code can scan beautifully and be wrong, and the
+- principle is not a substitute for the checking the other principles provide. It makes
+- code that is correct *look* correct, and — more usefully — makes code that is wrong look
+- wrong to a reader who knows the domain.
++ **声に出して読むことは試金石であって、証明ではない。**
++ コードは美しく韻律を刻みながら間違っていることがあり、この原則は他の原則が提供する検査の代わりにはならない。
++ それは正しいコードを正しく*見せ*、そしてより役に立つことに、間違ったコードを、その分野を知っている読み手にとって間違って見せる。
+
+- See [naming](naming.md) and [small APIs](small-apis.md) for the two disciplines that most
+- directly produce this, and [direct style](direct-style.md) for the shape that lets a
+- sentence stay a sentence.
++ これを最も直接に生み出す二つの規律については[命名](naming.md)と[小さな API](small-apis.md)を、文を文のままにしておける形については[ダイレクトスタイル](direct-style.md)を参照。

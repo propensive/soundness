@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.68.8` — Name is not valid in any namespace in scope
++ # `↯/s.68.8` — Имя недопустимо ни в одном пространстве имён в области видимости
+
+- Raised at compiletime when a name literal satisfies none of the namespaces available.
++ Порождается во время компиляции, когда литерал имени не удовлетворяет ни одному из доступных пространств имён.
+
+- ## Cause
++ ## Причина
+
+- An `n"…"` literal is resolved against the namespaces in scope. This error means no namespace
+- in scope admits it.
++ Литерал `n"…"` разрешается относительно пространств имён в области видимости. Эта ошибка
++ означает, что ни одно пространство имён в области видимости его не допускает.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.68.8] the name my/name is not a valid identifier in any namespace in scope
++ [↯/s.68.8] the name my/name is not a valid identifier in any namespace in scope
+
+= [↯/s.68.8] the name my/name is not a valid identifier in any namespace in scope
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Correct the name, or bring the intended namespace into scope so that its rules apply.
++ Исправьте имя или введите нужное пространство имён в область видимости, чтобы применялись его
++ правила.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/nomenclature/src/core/nomenclature.protointernal.scala`
++ - Исходный код: `lib/nomenclature/src/core/nomenclature.protointernal.scala`

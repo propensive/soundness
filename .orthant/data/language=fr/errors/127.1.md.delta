@@ -1,0 +1,131 @@
+orthant 1 language
+
+- # `↯/s.127.1` — `WebDriver.Error`
++ # `↯/s.127.1` — `WebDriver.Error`
+
+- Raised when Tarantula's WebDriver action fails inside the browser.
++ Levée lorsqu'une action WebDriver de Tarantula échoue dans le navigateur.
+
+- ## Cause
++ ## Cause
+
+- The remote WebDriver returned an error response: a 4xx or 5xx status
+- whose body carries the W3C error object,
+- `{"value":{"error":…,"message":…,"stacktrace":…}}`. The constructor
+- takes a `reason: Reason` (decoded from the `error` field, one of the
+- W3C WebDriver error codes), the browser-supplied `message` as
+- `detail`, the `stacktrace`, split on newlines, as
+- `browserStacktrace`, and the specification's optional `data` object,
+- which carries the prompt text on an `unexpected alert open`. The rendered message is `the WebDriver action
+- failed because $reason: $detail`.
++ Le WebDriver distant a renvoyé une réponse d'erreur : un statut 4xx ou 5xx
++ dont le corps porte l'objet d'erreur du W3C,
++ `{"value":{"error":…,"message":…,"stacktrace":…}}`. Le constructeur
++ prend une `reason: Reason` (décodée à partir du champ `error`, l'un des
++ codes d'erreur WebDriver du W3C), le `message` fourni par le navigateur comme
++ `detail`, la `stacktrace`, découpée aux sauts de ligne, comme
++ `browserStacktrace`, et l'objet `data` facultatif de la spécification,
++ qui porte le texte de l'invite lors d'un `unexpected alert open`. Le message produit est
++ `the WebDriver action failed because $reason: $detail`.
+
+- Decoding is total: a code the specification has added since, or a
+- driver-specific one, becomes `Other(code)` rather than being lost.
++ Le décodage est total : un code ajouté depuis à la spécification, ou un code
++ propre à un driver, devient `Other(code)` au lieu d'être perdu.
+
+- ## Variants
++ ## Variantes
+
+- The subcodes below are frozen. `↯/s.127.1.1` to `↯/s.127.1.8` keep the
+- meanings they were first published with — including `Other` at 8,
+- which is why the list is not in alphabetical order — and codes added
+- since append from 9.
++ Les sous-codes ci-dessous sont figés. `↯/s.127.1.1` à `↯/s.127.1.8` gardent les
++ significations avec lesquelles ils ont été publiés pour la première fois — y compris
++ `Other` en 8, ce qui explique que la liste ne soit pas dans l'ordre alphabétique — et les
++ codes ajoutés depuis s'ajoutent à partir de 9.
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Variant
+- column  Wire code
+- column  Meaning
+- column  Resolution
+- row  `↯/s.127.1.1`  `NoSuchElement`  `no such element`  The element addressed by the action was not present in the DOM.  Verify the locator strategy and target; wait for the element to appear before acting on it.
+- row  `↯/s.127.1.2`  `StaleElement`  `stale element reference`  The element was previously located but has since been removed from or replaced in the DOM.  Re-locate the element after navigation or DOM mutation before retrying.
+- row  `↯/s.127.1.3`  `NoSuchWindow`  `no such window`  The window or tab handle referenced by the action does not exist.  Confirm the window handle is current; switch to a valid window before acting.
+- row  `↯/s.127.1.4`  `JavascriptError`  `javascript error`  A script evaluated by the WebDriver threw an exception.  Inspect the script and the supplied `detail` for the underlying JavaScript exception.
+- row  `↯/s.127.1.5`  `ScriptTimeout`  `script timeout`  An asynchronous script did not complete within the configured timeout.  Raise the script timeout, or fix the script so that it resolves promptly.
+- row  `↯/s.127.1.6`  `Timeout`  `timeout`  The WebDriver operation timed out before completion.  Raise the relevant timeout, or fix the page so that the awaited condition can be met.
+- row  `↯/s.127.1.7`  `UnknownCommand`  `unknown command`  The WebDriver does not recognise the command issued.  Confirm the WebDriver version supports the action; upgrade the driver if necessary.
+- row  `↯/s.127.1.8`  `Other`  *(any unrecognized code)*  The WebDriver reported an error code that does not map to one of the other cases. The original code is captured in the `Other(code)` parameter.  Consult the W3C WebDriver specification, or the driver's own documentation, for the reported code.
+- row  `↯/s.127.1.9`  `ElementClickIntercepted`  `element click intercepted`  Another element would receive the click — typically an overlay, a modal or a sticky header.  Scroll the target into view, dismiss the obscuring element, or click through the actions API.
+- row  `↯/s.127.1.10`  `ElementNotInteractable`  `element not interactable`  The element is in the DOM but cannot receive the interaction.  Wait until the element is displayed and enabled; check it is not zero-sized or `pointer-events: none`.
+- row  `↯/s.127.1.11`  `InsecureCertificate`  `insecure certificate`  Navigation was blocked because the page was served with an untrusted certificate.  Request the `acceptInsecureCerts` capability when the session is created.
+- row  `↯/s.127.1.12`  `InvalidArgument`  `invalid argument`  An argument to the command was not of the type or in the range the specification requires.  Check the argument against the specification for that command.
+- row  `↯/s.127.1.13`  `InvalidCookieDomain`  `invalid cookie domain`  A cookie was set for a domain other than the current document's.  Navigate to the cookie's domain before setting it.
+- row  `↯/s.127.1.14`  `InvalidElementState`  `invalid element state`  The element's state forbids the command — clearing a non-editable element, for instance.  Check the element is editable, or use script execution instead.
+- row  `↯/s.127.1.15`  `InvalidSelector`  `invalid selector`  The locator was not valid for its strategy.  Check the CSS selector or XPath expression.
+- row  `↯/s.127.1.16`  `InvalidSessionId`  `invalid session id`  The session is no longer active: it was deleted, or the browser terminated.  Open a fresh session; do not retain a session handle beyond its block.
+- row  `↯/s.127.1.17`  `MoveTargetOutOfBounds`  `move target out of bounds`  A pointer action addressed coordinates outside the viewport.  Scroll the target into view, or use element-relative pointer origins.
+- row  `↯/s.127.1.18`  `NoSuchAlert`  `no such alert`  An alert command was issued while no user prompt was open.  Check for an open prompt before accepting, dismissing or reading it.
+- row  `↯/s.127.1.19`  `NoSuchCookie`  `no such cookie`  No cookie of that name is associated with the current document.  Check the name, the document's domain, and the cookie's path.
+- row  `↯/s.127.1.20`  `NoSuchFrame`  `no such frame`  The frame handle or index referenced by the action does not exist.  Check the frame index or element; switch back to the top-level context first.
+- row  `↯/s.127.1.21`  `NoSuchShadowRoot`  `no such shadow root`  The element does not host a shadow root.  Check the element hosts an open shadow root; closed roots are not reachable.
+- row  `↯/s.127.1.22`  `DetachedShadowRoot`  `detached shadow root`  The shadow root was located but its host has since left the DOM.  Re-locate the host element and its shadow root after DOM mutation.
+- row  `↯/s.127.1.23`  `SessionNotCreated`  `session not created`  The driver could not start a session, commonly a browser/driver version mismatch or a missing browser binary.  Check the driver matches the installed browser; check the requested capabilities.
+- row  `↯/s.127.1.24`  `UnableToSetCookie`  `unable to set cookie`  The driver could not set the cookie.  Check the cookie's domain, path, `secure` and `sameSite` attributes against the current document.
+- row  `↯/s.127.1.25`  `UnableToCaptureScreen`  `unable to capture screen`  The screenshot could not be taken.  Check the element has a non-empty rendered area, and that the window is not minimized.
+- row  `↯/s.127.1.26`  `UnexpectedAlertOpen`  `unexpected alert open`  A user prompt was open when a command that requires none was issued.  Accept or dismiss the prompt, or set the `unhandledPromptBehavior` capability.
+- row  `↯/s.127.1.27`  `UnknownError`  `unknown error`  The driver reported a failure it could not classify. This is also raised when a driver replies with a body that is not the W3C error object at all — a crashed driver, or an interposed proxy — in which case `detail` is the raw body.  Inspect `detail` and `browserStacktrace`; check the driver's own log.
+- row  `↯/s.127.1.28`  `UnknownMethod`  `unknown method`  The command exists but does not support the HTTP method used.  Check the command's method against the specification.
+- row  `↯/s.127.1.29`  `UnsupportedOperation`  `unsupported operation`  The driver does not implement the command.  Check the driver's conformance; some commands, such as printing to PDF, are not universal.
++ column  Variante
++ column  Code réseau
++ column  Signification
++ column  Résolution
++ row  `↯/s.127.1.1`  `NoSuchElement`  `no such element`  L'élément visé par l'action n'était pas présent dans le DOM.  Vérifiez la stratégie de localisation et la cible ; attendez que l'élément apparaisse avant d'agir dessus.
++ row  `↯/s.127.1.2`  `StaleElement`  `stale element reference`  L'élément a été localisé auparavant mais a depuis été retiré du DOM ou remplacé.  Localisez de nouveau l'élément après une navigation ou une mutation du DOM avant de réessayer.
++ row  `↯/s.127.1.3`  `NoSuchWindow`  `no such window`  La poignée de fenêtre ou d'onglet référencée par l'action n'existe pas.  Vérifiez que la poignée de fenêtre est à jour ; passez sur une fenêtre valide avant d'agir.
++ row  `↯/s.127.1.4`  `JavascriptError`  `javascript error`  Un script évalué par le WebDriver a levé une exception.  Examinez le script et le `detail` fourni pour trouver l'exception JavaScript sous-jacente.
++ row  `↯/s.127.1.5`  `ScriptTimeout`  `script timeout`  Un script asynchrone ne s'est pas terminé dans le délai configuré.  Augmentez le délai des scripts, ou corrigez le script pour qu'il se résolve rapidement.
++ row  `↯/s.127.1.6`  `Timeout`  `timeout`  L'opération WebDriver a expiré avant de se terminer.  Augmentez le délai concerné, ou corrigez la page pour que la condition attendue puisse être remplie.
++ row  `↯/s.127.1.7`  `UnknownCommand`  `unknown command`  Le WebDriver ne reconnaît pas la commande émise.  Vérifiez que la version du WebDriver prend en charge l'action ; mettez à jour le driver si nécessaire.
++ row  `↯/s.127.1.8`  `Other`  *(tout code non reconnu)*  Le WebDriver a signalé un code d'erreur qui ne correspond à aucun des autres cas. Le code d'origine est conservé dans le paramètre `Other(code)`.  Consultez la spécification WebDriver du W3C, ou la documentation propre au driver, pour le code signalé.
++ row  `↯/s.127.1.9`  `ElementClickIntercepted`  `element click intercepted`  Un autre élément recevrait le clic — typiquement une surcouche, une fenêtre modale ou un en-tête fixe.  Faites défiler la cible jusqu'à la vue, fermez l'élément qui la masque, ou cliquez par l'API des actions.
++ row  `↯/s.127.1.10`  `ElementNotInteractable`  `element not interactable`  L'élément est dans le DOM mais ne peut pas recevoir l'interaction.  Attendez que l'élément soit affiché et activé ; vérifiez qu'il n'est pas de taille nulle ni en `pointer-events: none`.
++ row  `↯/s.127.1.11`  `InsecureCertificate`  `insecure certificate`  La navigation a été bloquée parce que la page était servie avec un certificat non fiable.  Demandez la capacité `acceptInsecureCerts` à la création de la session.
++ row  `↯/s.127.1.12`  `InvalidArgument`  `invalid argument`  Un argument de la commande n'était pas du type ou dans l'intervalle qu'exige la spécification.  Vérifiez l'argument par rapport à la spécification de cette commande.
++ row  `↯/s.127.1.13`  `InvalidCookieDomain`  `invalid cookie domain`  Un cookie a été défini pour un domaine autre que celui du document courant.  Naviguez vers le domaine du cookie avant de le définir.
++ row  `↯/s.127.1.14`  `InvalidElementState`  `invalid element state`  L'état de l'élément interdit la commande — vider un élément non modifiable, par exemple.  Vérifiez que l'élément est modifiable, ou utilisez plutôt l'exécution de script.
++ row  `↯/s.127.1.15`  `InvalidSelector`  `invalid selector`  Le localisateur n'était pas valide pour sa stratégie.  Vérifiez le sélecteur CSS ou l'expression XPath.
++ row  `↯/s.127.1.16`  `InvalidSessionId`  `invalid session id`  La session n'est plus active : elle a été supprimée, ou le navigateur s'est arrêté.  Ouvrez une nouvelle session ; ne conservez pas une poignée de session au-delà de son bloc.
++ row  `↯/s.127.1.17`  `MoveTargetOutOfBounds`  `move target out of bounds`  Une action de pointeur visait des coordonnées hors de la zone d'affichage.  Faites défiler la cible jusqu'à la vue, ou utilisez des origines de pointeur relatives à l'élément.
++ row  `↯/s.127.1.18`  `NoSuchAlert`  `no such alert`  Une commande d'alerte a été émise alors qu'aucune invite n'était ouverte.  Vérifiez qu'une invite est ouverte avant de l'accepter, de la fermer ou de la lire.
++ row  `↯/s.127.1.19`  `NoSuchCookie`  `no such cookie`  Aucun cookie de ce nom n'est associé au document courant.  Vérifiez le nom, le domaine du document et le chemin du cookie.
++ row  `↯/s.127.1.20`  `NoSuchFrame`  `no such frame`  La poignée ou l'indice de cadre référencé par l'action n'existe pas.  Vérifiez l'indice ou l'élément du cadre ; revenez d'abord au contexte de premier niveau.
++ row  `↯/s.127.1.21`  `NoSuchShadowRoot`  `no such shadow root`  L'élément n'héberge pas de shadow root.  Vérifiez que l'élément héberge une shadow root ouverte ; les racines fermées ne sont pas accessibles.
++ row  `↯/s.127.1.22`  `DetachedShadowRoot`  `detached shadow root`  La shadow root a été localisée, mais son hôte a depuis quitté le DOM.  Localisez de nouveau l'élément hôte et sa shadow root après une mutation du DOM.
++ row  `↯/s.127.1.23`  `SessionNotCreated`  `session not created`  Le driver n'a pas pu démarrer de session, le plus souvent à cause de versions incompatibles du navigateur et du driver ou d'un binaire de navigateur manquant.  Vérifiez que le driver correspond au navigateur installé ; vérifiez les capacités demandées.
++ row  `↯/s.127.1.24`  `UnableToSetCookie`  `unable to set cookie`  Le driver n'a pas pu définir le cookie.  Vérifiez les attributs de domaine, de chemin, `secure` et `sameSite` du cookie par rapport au document courant.
++ row  `↯/s.127.1.25`  `UnableToCaptureScreen`  `unable to capture screen`  La capture d'écran n'a pas pu être prise.  Vérifiez que l'élément a une zone rendue non vide, et que la fenêtre n'est pas réduite.
++ row  `↯/s.127.1.26`  `UnexpectedAlertOpen`  `unexpected alert open`  Une invite était ouverte lorsqu'une commande qui n'en exige aucune a été émise.  Acceptez ou fermez l'invite, ou définissez la capacité `unhandledPromptBehavior`.
++ row  `↯/s.127.1.27`  `UnknownError`  `unknown error`  Le driver a signalé un échec qu'il n'a pas pu classer. Elle est aussi levée lorsqu'un driver répond par un corps qui n'est pas du tout l'objet d'erreur du W3C — un driver planté, ou un proxy intercalé — auquel cas `detail` est le corps brut.  Examinez `detail` et `browserStacktrace` ; consultez le journal propre au driver.
++ row  `↯/s.127.1.28`  `UnknownMethod`  `unknown method`  La commande existe mais ne prend pas en charge la méthode HTTP utilisée.  Vérifiez la méthode de la commande par rapport à la spécification.
++ row  `↯/s.127.1.29`  `UnsupportedOperation`  `unsupported operation`  Le driver n'implémente pas la commande.  Vérifiez la conformité du driver ; certaines commandes, comme l'impression en PDF, ne sont pas universelles.
+
+- ```
++ ```
+
+- **Example.** `[↯/s.127.1.1] the WebDriver action failed because the requested element was not found: no such element: Unable to locate element: {"method":"css selector","selector":"#absent"}`
++ **Exemple.** `[↯/s.127.1.1] the WebDriver action failed because the requested element was not found: no such element: Unable to locate element: {"method":"css selector","selector":"#absent"}`
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/tarantula/src/core/tarantula.WebDriver.scala`
++ - Source : `lib/tarantula/src/core/tarantula.WebDriver.scala`

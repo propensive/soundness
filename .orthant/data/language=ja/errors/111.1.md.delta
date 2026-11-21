@@ -1,0 +1,61 @@
+orthant 1 language
+
+- # `↯/s.111.1` — `Protobuf.Error`
++ # `↯/s.111.1` — `Protobuf.Error`
+
+- Raised when Protocol Buffers wire data cannot be decoded.
++ Protocol Buffers のワイヤ上のデータを復号できないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Locomotion decodes proto3 wire format directly. This error covers a truncated message, a
+- malformed varint, an unexpected wire type for a field number, and a length-delimited field
+- running past the end of the message.
++ Locomotion は proto3 のワイヤ形式を直接復号する。
++ このエラーは、途中で切れたメッセージ、不正な形の varint、フィールド番号に対する予期しないワイヤタイプ、メッセージの終わりを越えて続く長さ区切りのフィールドを扱う。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.111.1.1`  `Truncated`  `[↯/s.111.1.1] the protobuf data ended unexpectedly at offset <offset>`
++ row  `↯/s.111.1.1`  `Truncated`  `[↯/s.111.1.1] the protobuf data ended unexpectedly at offset <offset>`
+
+- row  `↯/s.111.1.2`  `MalformedVarint`  `[↯/s.111.1.2] a varint was malformed at offset <offset>`
++ row  `↯/s.111.1.2`  `MalformedVarint`  `[↯/s.111.1.2] a varint was malformed at offset <offset>`
+
+- row  `↯/s.111.1.3`  `UnexpectedWireType`  `[↯/s.111.1.3] an unexpected wire type, <found>, was encountered at offset <offset>`
++ row  `↯/s.111.1.3`  `UnexpectedWireType`  `[↯/s.111.1.3] an unexpected wire type, <found>, was encountered at offset <offset>`
+
+- row  `↯/s.111.1.4`  `Overflow`  `[↯/s.111.1.4] a numeric value was too large for its type at offset <offset>`
++ row  `↯/s.111.1.4`  `Overflow`  `[↯/s.111.1.4] a numeric value was too large for its type at offset <offset>`
+
+- row  `↯/s.111.1.5`  `MissingField`  `[↯/s.111.1.5] the required field number <number> was missing`
++ row  `↯/s.111.1.5`  `MissingField`  `[↯/s.111.1.5] the required field number <number> was missing`
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- The message carries the byte offset. An unexpected wire type usually means reader and writer
+- disagree about a field's type — the field number matched but the encoding did not.
++ メッセージはバイトオフセットを持つ。
++ 予期しないワイヤタイプは、通常、リーダーとライターがフィールドの型について食い違っていることを意味する。フィールド番号は一致したが、符号化が一致しなかったのである。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/locomotion/src/core/locomotion.Protobuf.scala`
++ - ソース：`lib/locomotion/src/core/locomotion.Protobuf.scala`

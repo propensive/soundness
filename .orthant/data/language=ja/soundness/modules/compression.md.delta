@@ -1,0 +1,391 @@
+orthant 1 language
+
+- ## Compression
++ ## 圧縮
+
+- ### About
++ ### 概要
+
+- A handful of formats carry most of the world's compressed bytes:
+- [DEFLATE](https://en.wikipedia.org/wiki/Deflate) and its wrappers `gzip` and `zlib`,
+- [Brotli](https://en.wikipedia.org/wiki/Brotli), [XZ](https://en.wikipedia.org/wiki/XZ_Utils)
+- and raw LZMA2, and [LZW](https://en.wikipedia.org/wiki/Lempel–Ziv–Welch). All of them compress
+- and decompress data through one pair of methods. The format is a type, and `compress` and
+- `decompress` serve every format, over a whole value or as a stage of a
+- [stream](streams.md).
++ 世界の圧縮されたバイトの大半は、一握りの形式が担っている。
++ [DEFLATE](https://en.wikipedia.org/wiki/Deflate) とそのラッパーである `gzip` と `zlib`、[Brotli](https://en.wikipedia.org/wiki/Brotli)、[XZ](https://en.wikipedia.org/wiki/XZ_Utils) と生の LZMA2、そして [LZW](https://en.wikipedia.org/wiki/Lempel–Ziv–Welch) である。
++ これらはすべて、一組のメソッドでデータを圧縮し、展開する。
++ 形式は型であり、`compress` と `decompress` はあらゆる形式に対して、値全体に対しても[ストリーム](streams.md)の段階としても働く。
+
+- Every format is implemented in pure Scala, so it works on every platform. On the JVM, DEFLATE
+- and its wrappers are also served by the platform's native zlib. That choice is made when the
+- code is built, not at each use, so the JVM pays nothing for the portability.
++ どの形式も純粋な Scala で実装されているので、あらゆるプラットフォームで動作する。
++ JVM では、DEFLATE とそのラッパーはプラットフォームのネイティブな zlib でも提供される。
++ この選択は使うたびにではなくコードのビルド時に行われるので、JVM はこの移植性のために何も支払わない。
+
+- ### On compression
++ ### 圧縮について
+
+- A compression library usually presents a codec which must be constructed, fed and finished: an
+- object with a buffer, a `setInput`, a `deflate` and a `finish`, and a loop around them which
+- is easy to get wrong. The format is a string or an integer, the framing is a flag, and whether
+- a given call has produced everything it will produce is a question the caller has to answer.
++ 圧縮ライブラリは通常、構築し、入力を与え、終了させなければならないコーデックを提示する。
++ バッファーと `setInput`、`deflate`、`finish` を持つオブジェクトと、それらを囲む、間違えやすいループである。
++ 形式は文字列か整数であり、フレーミングはフラグであり、ある呼び出しが出力すべきものをすべて出力したかどうかは、呼び出し側が答えなければならない問いである。
+
+- Here the format is a type, such as `Gzip`, `Brotli` or `Xz`, and the operation is a method on
+- the data. The same instance describes both the whole-value form and the streaming form, so the
+- two agree byte for byte, and a value compressed in one way decompresses in the other. A
+- compression scheme is a stage of a pipeline, not a wrapper around a stream, which is
+- [composability](../../philosophy/composability.md) in its most literal form.
++ ここでは、形式は `Gzip`、`Brotli`、`Xz` のような型であり、操作はデータに対するメソッドである。
++ 同じインスタンスが値全体の形とストリーミングの形の両方を記述するので、両者はバイト単位で一致し、一方の方法で圧縮した値はもう一方の方法で展開できる。
++ 圧縮方式はストリームを包むラッパーではなくパイプラインの段階であり、これは最も文字どおりの形での[合成可能性](../../philosophy/composability.md)である。
+
+- Everything comes from the `soundness` package. The last import lets the samples print their
+- results:
++ すべては `soundness` パッケージから得られる。
++ 最後のインポートは、サンプルが結果を出力できるようにするものである：
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Compressing a value
++ ### 値の圧縮
+
+- A block of bytes is compressed, and decompressed, by naming the format:
++ バイトのブロックは、形式を名指しすることで圧縮され、展開される：
+
+= A block of bytes is compressed, and decompressed, by naming the format:
+=
+- ```scala
++ ```scala
+
+- val text = t"the quick brown fox jumps over the lazy dog. "
++ val text = t"the quick brown fox jumps over the lazy dog. "
+
+- val payload = (text + text + text + text).in[Data]
++ val payload = (text + text + text + text).in[Data]
+
+- val compressed = payload.compress[Gzip]
++ val compressed = payload.compress[Gzip]
+
+= val compressed = payload.compress[Gzip]
+- ```
++ ```
+
+= val compressed = payload.compress[Gzip]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val compressed = payload.compress[Gzip]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val compressed = payload.compress[Gzip]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(payload.length.show)
++ Out.println(payload.length.show)
+
+- Out.println(compressed.length.show)
++ Out.println(compressed.length.show)
+
+- Out.println(compressed.decompress[Gzip].utf8.keep(43))
++ Out.println(compressed.decompress[Gzip].utf8.keep(43))
+
+= Out.println(compressed.decompress[Gzip].utf8.keep(43))
+- ```
++ ```
+
+- ### Compressing a stream
++ ### ストリームの圧縮
+
+- The same names attach to a stream, where they become stages of a pipeline. The data is
+- transformed as it flows, and nothing larger than the pipeline's buffers is held.
++ 同じ名前はストリームにも付き、そこではパイプラインの段階になる。
++ データは流れながら変換され、パイプラインのバッファーより大きなものは保持されない。
+
+- Writing a compressed [file](filesystem.md), and reading it back, is a matter of placing the
+- compressor and the decompressor on either side of the disk. `pump` delivers the compressed
+- stream into the file's intake:
++ 圧縮された[ファイル](filesystem.md)を書き込み、それを読み戻すには、ディスクの両側に圧縮器と展開器を置けばよい。
++ `pump` は圧縮されたストリームをファイルのインテークに引き渡す：
+
+= stream into the file's intake:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- val archive = temporaryDirectory[Path on Linux] / "compression" / Uuid().show / "fox.txt.gz"
++ val archive = temporaryDirectory[Path on Linux] / "compression" / Uuid().show / "fox.txt.gz"
+
+- archive.create[File](CreateFlag.Parents): handle ?=>
++ archive.create[File](CreateFlag.Parents): handle ?=>
+
+-   payload.stream.compress[Gzip].pump(handle.intake())
++   payload.stream.compress[Gzip].pump(handle.intake())
+
+- val restored: Text = archive.open[File]()(file.stream.decompress[Gzip].read[Text])
++ val restored: Text = archive.open[File]()(file.stream.decompress[Gzip].read[Text])
+
+= val restored: Text = archive.open[File]()(file.stream.decompress[Gzip].read[Text])
+- ```
++ ```
+
+- The whole-value and streaming forms interoperate freely. A value which was compressed as a
+- whole decompresses through a stream, and the output of a stream decompresses as a value.
++ 値全体の形とストリーミングの形は自由に相互運用できる。
++ 全体として圧縮された値はストリームを通じて展開でき、ストリームの出力は値として展開できる。
+
+- ### The formats
++ ### 形式
+
+- Seven formats are provided, in four families:
++ 四つの系統に分かれた七つの形式が提供されている：
+
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Algorithm
+- column  Framing
+- column  Carried by
+- row  `Deflate`  DEFLATE  none  ZIP entries
+- row  `Zlib`  DEFLATE  a two-byte header and a checksum  PNG chunks, HTTP `deflate` encoding
+- row  `Gzip`  DEFLATE  a header, timestamp and CRC  `*.gz` files, HTTP content encoding
+- row  `Brotli`  Brotli  the Brotli stream format  HTTP content encoding
+- row  `Xz`  LZMA2  the `*.xz` container, with a CRC-64 check  `*.xz` files
+- row  `Lzma2`  LZMA2  none
+- row  `Lzw`  LZW  none  TIFF and PDF streams
++ column  形式
++ column  アルゴリズム
++ column  フレーミング
++ column  利用先
++ row  `Deflate`  DEFLATE  なし  ZIP のエントリー
++ row  `Zlib`  DEFLATE  2 バイトのヘッダーとチェックサム  PNG のチャンク、HTTP の `deflate` エンコーディング
++ row  `Gzip`  DEFLATE  ヘッダー、タイムスタンプ、CRC  `*.gz` ファイル、HTTP のコンテンツエンコーディング
++ row  `Brotli`  Brotli  Brotli のストリーム形式  HTTP のコンテンツエンコーディング
++ row  `Xz`  LZMA2  CRC-64 チェック付きの `*.xz` コンテナー  `*.xz` ファイル
++ row  `Lzma2`  LZMA2  なし
++ row  `Lzw`  LZW  なし  TIFF と PDF のストリーム
+
+= row  `Lzw`  LZW  none  TIFF and PDF streams
+- ```
++ ```
+
+- #### DEFLATE
++ #### DEFLATE
+
+- `Deflate` is the raw algorithm. `Zlib` adds a two-byte header and a checksum. `Gzip` adds the
+- header, timestamp and CRC which `*.gz` files carry. These are the formats of HTTP content
+- encoding, of ZIP entries and of PNG chunks, and they are the fastest of the set.
++ `Deflate` は生のアルゴリズムである。
++ `Zlib` は 2 バイトのヘッダーとチェックサムを加える。
++ `Gzip` は `*.gz` ファイルが持つヘッダー、タイムスタンプ、CRC を加える。
++ これらは HTTP のコンテンツエンコーディング、ZIP のエントリー、PNG のチャンクの形式であり、この中で最も高速である。
+
+- #### Brotli
++ #### Brotli
+
+- `Brotli` compresses to a smaller size than DEFLATE, at a comparable speed, and is the content
+- encoding of the modern web. Both directions need the whole value before they produce any
+- output. The decoder needs it because backward references may reach across the entire window,
+- and the encoder because it chooses its framing from the total length. A Brotli stage therefore
+- buffers, where a DEFLATE stage does not.
++ `Brotli` は DEFLATE より小さなサイズに、同程度の速度で圧縮し、現代のウェブのコンテンツエンコーディングである。
++ どちらの方向も、出力を生成する前に値全体を必要とする。
++ デコーダーが必要とするのは、後方参照がウィンドウ全体にわたって届きうるからであり、エンコーダーが必要とするのは、全体の長さからフレーミングを選ぶからである。
++ したがって Brotli の段階はバッファリングするが、DEFLATE の段階はしない。
+
+- Brotli can also encode a value *relative to* another which the receiver already holds. A
+- `continuation` is the tail of a Brotli stream whose window has been loaded with a base
+- beforehand. It carries only the new value's blocks, and no stream header, and its backward
+- references reach into the base. A successor which differs from its predecessor by a few edits
+- therefore costs a few bytes:
++ Brotli は、受信側がすでに持っている別の値に*相対的に*値をエンコードすることもできる。
++ `continuation` は、あらかじめベースでウィンドウを満たした Brotli ストリームの末尾である。
++ それは新しい値のブロックだけを持ち、ストリームのヘッダーは持たず、その後方参照はベースの中に届く。
++ したがって、前任と数か所の編集だけが異なる後続は、数バイトで済む：
+
+= therefore costs a few bytes:
+=
+- ```scala
++ ```scala
+
+- val base: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
++ val base: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
+
+- val next: Data = t"the quick brown fox jumped over the lazy dog".in[Data]
++ val next: Data = t"the quick brown fox jumped over the lazy dog".in[Data]
+
+- val continuation = Brotli.continuation(base, next)
++ val continuation = Brotli.continuation(base, next)
+
+= val continuation = Brotli.continuation(base, next)
+- ```
++ ```
+
+- The receiver rebuilds the window from its own copy of the base, with `prefix`, and decodes the
+- prefix and the continuation as one stream. What comes out is the base, followed by the
+- successor:
++ 受信側は自分が持つベースのコピーから `prefix` でウィンドウを再構築し、プレフィックスと継続を一つのストリームとしてデコードする。
++ 出てくるのはベースと、それに続く後続である：
+
+= successor:
+=
+- ```scala
++ ```scala
+
+- val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
++ val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+
+= val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+- ```
++ ```
+
+= val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(next.length.show)
++ Out.println(next.length.show)
+
+- Out.println(continuation.length.show)
++ Out.println(continuation.length.show)
+
+- Out.println((decoded.length == base.length + next.length).inspect)
++ Out.println((decoded.length == base.length + next.length).inspect)
+
+= Out.println((decoded.length == base.length + next.length).inspect)
+- ```
++ ```
+
+- The bytes of a `prefix` are fixed by RFC 7932, together with the window and block parameters.
+- Both methods take the window size as WBITS, from 10 to 24, and `prefix` takes the maximum
+- length of an uncompressed block. Their defaults are `Brotli.Window` and `Brotli.Block`, the
+- largest which the format allows. Both sides must use the same values.
++ `prefix` のバイトは、ウィンドウとブロックのパラメーターとともに RFC 7932 で定められている。
++ どちらのメソッドもウィンドウサイズを 10 から 24 までの WBITS として受け取り、`prefix` は非圧縮ブロックの最大長を受け取る。
++ それらのデフォルトは `Brotli.Window` と `Brotli.Block` であり、形式が許す最大の値である。
++ 両側が同じ値を使わなければならない。
+
+- #### XZ and LZMA2
++ #### XZ と LZMA2
+
+- `Xz` is the codec with the highest ratio. It is LZMA2 inside the `*.xz` container, with a
+- CRC-64 check, and matches what the `xz` command-line tool produces. `Lzma2` is the same codec
+- without the container's framing, and stands to `Xz` as `Deflate` stands to `Gzip`.
++ `Xz` は最も高い圧縮率を持つコーデックである。
++ それは CRC-64 チェック付きの `*.xz` コンテナーに入った LZMA2 であり、`xz` コマンドラインツールが生成するものと一致する。
++ `Lzma2` はコンテナーのフレーミングを持たない同じコーデックであり、`Xz` に対する関係は、`Gzip` に対する `Deflate` の関係と同じである。
+
+- Both default to preset 6. Presets 0 to 3 favor speed, and 4 to 9 favor ratio. An explicit
+- preset is selected with `Xz.compress(stream, preset)` or `Xz.compressor(preset)`.
++ どちらもデフォルトはプリセット 6 である。
++ プリセット 0 から 3 は速度を、4 から 9 は圧縮率を優先する。
++ 明示的なプリセットは `Xz.compress(stream, preset)` または `Xz.compressor(preset)` で選択する。
+
+- #### LZW
++ #### LZW
+
+- `Lzw` is the compression of TIFF and PDF streams. The JDK offers no implementation of it at
+- all, so this one is written from the specification. Its `earlyChange` parameter makes both
+- sides widen their codes one table entry sooner. It is on by default, which is what TIFF, PDF
+- and every known encoder produce. The parameterized `Lzw.compressor` and `Lzw.decompressor`
+- serve formats which state it explicitly.
++ `Lzw` は TIFF と PDF のストリームの圧縮方式である。
++ JDK にはその実装がまったくないので、この実装は仕様から書かれている。
++ その `earlyChange` パラメーターは、両側がコードを一つ前のテーブルエントリーで拡大するようにする。
++ これはデフォルトで有効であり、TIFF、PDF、そして知られているすべてのエンコーダーが生成するものである。
++ パラメーター化された `Lzw.compressor` と `Lzw.decompressor` は、これを明示する形式のためのものである。
+
+- ### Where compression appears
++ ### 圧縮が現れる場所
+
+- Compression is rarely used alone:
++ 圧縮が単独で使われることはまれである：
+
+- - [Archives](archives.md) store their entries compressed, and tar archives travel compressed.
+- - [HTTP](http-client.md) bodies are encoded with it on the wire.
+- - [Container](docker.md) image layers are compressed, and addressed by their
+-   [digest](hashing.md#hashing-a-stream).
+- - [PDF](pdf.md) content streams are stored compressed.
++ - [アーカイブ](archives.md)はエントリーを圧縮して保存し、tar アーカイブは圧縮された状態で運ばれる。
++ - [HTTP](http-client.md) の本文はワイヤ上でこれによってエンコードされる。
++ - [コンテナー](docker.md)イメージのレイヤーは圧縮され、その[ダイジェスト](hashing.md#hashing-a-stream)によってアドレス指定される。
++ - [PDF](pdf.md) のコンテンツストリームは圧縮されて保存される。
+
+- In each case the format is one of the types named here, so a layer, an entry or a body
+- decompresses with the operation described above.
++ いずれの場合も形式はここで挙げた型の一つなので、レイヤー、エントリー、本文は上で説明した操作で展開される。

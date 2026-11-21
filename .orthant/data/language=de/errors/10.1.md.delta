@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.10.1` — `Bench.Error`
++ # `↯/s.10.1` — `Bench.Error`
+
+- Raised when Sedentary cannot execute a benchmark.
++ Wird ausgelöst, wenn Sedentary einen Benchmark nicht ausführen kann.
+
+- ## Cause
++ ## Ursache
+
+- The error is generic; common causes include configuration
+- problems, an inability to start the benchmarking harness, or
+- failures during warm-up.
++ Der Fehler ist allgemein; häufige Ursachen sind
++ Konfigurationsprobleme, die Unfähigkeit, den Benchmark-Harness
++ zu starten, oder Fehler während des Warm-ups.
+
+- ## Example message
++ ## Beispielmeldung
+
+=
+- ```
++ ```
+
+- [↯/s.10.1] unable to run benchmarks
++ [↯/s.10.1] unable to run benchmarks
+
+= [↯/s.10.1] unable to run benchmarks
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Inspect the cause chain or harness logs. More specific reasons
+- may be added in future.
++ Untersuchen Sie die Ursachenkette oder die Logs des Harness.
++ Spezifischere Gründe werden möglicherweise künftig ergänzt.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/sedentary/src/core/sedentary.Bench.scala`
++ - Quelle: `lib/sedentary/src/core/sedentary.Bench.scala`

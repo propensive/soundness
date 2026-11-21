@@ -1,0 +1,63 @@
+orthant 1 language
+
+- # `↯/s.132.1` — `Pty.Error`
++ # `↯/s.132.1` — `Pty.Error`
+
+- Raised when Yossarian encounters an ANSI escape code in a PTY stream
+- that it cannot handle. Each variant identifies the specific kind of
+- malformed escape.
++ Yossarian が PTY のストリームの中で処理できない ANSI エスケープコードに出会ったときに発生する。
++ 各バリアントは、不正なエスケープの具体的な種類を示す。
+
+- ## Cause
++ ## 原因
+
+- Yossarian decodes terminal escape sequences as it processes a PTY
+- stream. When a sequence is malformed or refers to a parameter outside
+- the supported range, parsing stops with this error. The message is
+- `an ANSI escape code could not be handled because $reason`.
++ Yossarian は PTY のストリームを処理しながら、端末のエスケープシーケンスをデコードする。
++ シーケンスの形が不正であるか、サポートされる範囲の外のパラメーターを参照していると、パースはこのエラーで止まる。
++ メッセージは `an ANSI escape code could not be handled because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.132.1.1`  `BadSgrParameters`  An SGR (Select Graphic Rendition) parameter sequence is not valid.  `[↯/s.132.1.1] an ANSI escape code could not be handled because [38;9 is not a valid SGR parameter sequence`  Check the producer of the escape sequence: SGR parameters are semicolon-separated integers in the documented ranges.
+- row  `↯/s.132.1.2`  `BadCsiParameter`  A CSI command received a parameter outside the values it accepts.  `[↯/s.132.1.2] an ANSI escape code could not be handled because 99 is not a valid CSI parameter for the H command`  Constrain the parameter to the range allowed for that command.
+- row  `↯/s.132.1.3`  `NonintegerSgrParameter`  An SGR parameter that should be a number was not numeric.  `[↯/s.132.1.3] an ANSI escape code could not be handled because abc is not a numerical SGR parameter`  Emit only digit-only parameters between `;` separators in SGR sequences.
+- row  `↯/s.132.1.4`  `BadColor`  A 256-colour or palette parameter referenced a colour index outside the valid range.  `[↯/s.132.1.4] an ANSI escape code could not be handled because 300 is not a valid color number`  Use a colour index between 0 and 255 (or 0 and 15 for the basic palette).
+- row  `↯/s.132.1.5`  `BadOscParameter`  An OSC (Operating System Command) used a parameter that is not recognised.  `[↯/s.132.1.5] an ANSI escape code could not be handled because 999 is not a recognized OSC parameter`  Use an OSC parameter from the documented set.
+- row  `↯/s.132.1.6`  `BadCsiCommand`  The terminating character of a CSI sequence is not a recognised CSI command for the given parameters.  `[↯/s.132.1.6] an ANSI escape code could not be handled because Z (with parameter 1) is not a valid CSI command`  Use a documented CSI final byte for the parameter set in question.
+- row  `↯/s.132.1.7`  `BadCsiEscape`  A character appeared inside a CSI sequence that is not allowed there.  `[↯/s.132.1.7] an ANSI escape code could not be handled because @ is not valid in a CSI escape sequence`  CSI sequences allow only the documented intermediate and parameter bytes; review the producer.
+- row  `↯/s.132.1.8`  `BadFeEscape`  The character following `ESC` is not a valid Fe (C1) escape.  `[↯/s.132.1.8] an ANSI escape code could not be handled because Q is not a valid Fe escape`  Use a documented C1 introducer (`[`, `]`, `P`, etc.) after `ESC`.
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.132.1.1`  `BadSgrParameters`  SGR（Select Graphic Rendition）のパラメーターのシーケンスが正しくない。  `[↯/s.132.1.1] an ANSI escape code could not be handled because [38;9 is not a valid SGR parameter sequence`  エスケープシーケンスの生成元を確認する。SGR のパラメーターは、文書化された範囲のセミコロン区切りの整数である。
++ row  `↯/s.132.1.2`  `BadCsiParameter`  CSI コマンドが、受け付ける値の外のパラメーターを受け取った。  `[↯/s.132.1.2] an ANSI escape code could not be handled because 99 is not a valid CSI parameter for the H command`  パラメーターを、そのコマンドに許される範囲に制限する。
++ row  `↯/s.132.1.3`  `NonintegerSgrParameter`  数値であるべき SGR のパラメーターが数値でなかった。  `[↯/s.132.1.3] an ANSI escape code could not be handled because abc is not a numerical SGR parameter`  SGR のシーケンスでは、`;` の区切りの間に数字だけからなるパラメーターだけを出力する。
++ row  `↯/s.132.1.4`  `BadColor`  256 色またはパレットのパラメーターが、正しい範囲の外の色番号を参照した。  `[↯/s.132.1.4] an ANSI escape code could not be handled because 300 is not a valid color number`  0 から 255 の間（基本パレットなら 0 から 15 の間）の色番号を使う。
++ row  `↯/s.132.1.5`  `BadOscParameter`  OSC（Operating System Command）が認識されないパラメーターを使った。  `[↯/s.132.1.5] an ANSI escape code could not be handled because 999 is not a recognized OSC parameter`  文書化された集合の OSC パラメーターを使う。
++ row  `↯/s.132.1.6`  `BadCsiCommand`  CSI シーケンスの終端文字が、与えられたパラメーターに対して認識される CSI コマンドではない。  `[↯/s.132.1.6] an ANSI escape code could not be handled because Z (with parameter 1) is not a valid CSI command`  そのパラメーターの集合に対して文書化された CSI の終端バイトを使う。
++ row  `↯/s.132.1.7`  `BadCsiEscape`  CSI シーケンスの中に、そこでは許されない文字が現れた。  `[↯/s.132.1.7] an ANSI escape code could not be handled because @ is not valid in a CSI escape sequence`  CSI シーケンスに許されるのは、文書化された中間バイトとパラメーターバイトだけである。生成元を見直す。
++ row  `↯/s.132.1.8`  `BadFeEscape`  `ESC` に続く文字が、正しい Fe（C1）エスケープではない。  `[↯/s.132.1.8] an ANSI escape code could not be handled because Q is not a valid Fe escape`  `ESC` の後には、文書化された C1 の導入文字（`[`、`]`、`P` など）を使う。
+
+- ```
++ ```
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/yossarian/src/core/yossarian.Pty.scala`
++ - ソース：`lib/yossarian/src/core/yossarian.Pty.scala`

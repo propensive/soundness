@@ -1,0 +1,234 @@
+orthant 1 language
+
+- # Method Naming Conventions
++ # メソッドの命名規則
+
+- This document defines the canonical meanings of named factory and initialisation
+- methods used consistently across the codebase. For *why* names are chosen as they
+- are — phrase-forming methods, word-length type parameters, and uniqueness across the
+- whole namespace — see [naming](../philosophy/naming.md) and
+- [elegant prose](../philosophy/elegant-prose.md).
++ この文書は、コードベース全体で一貫して使われる、名前付きのファクトリーメソッドと初期化メソッドの正規の意味を定める。
++ 名前が*なぜ*そのように選ばれるのか、つまり句を形作るメソッド、単語の長さの型パラメーター、名前空間全体での一意性については、[命名](../philosophy/naming.md)と[優雅な散文](../philosophy/elegant-prose.md)を参照のこと。
+
+- ## Standard names
++ ## 標準の名前
+
+- Each name has one meaning; the sections below give each in full:
++ それぞれの名前には一つの意味がある。以下の節で、それぞれを詳しく述べる。
+
+= Each name has one meaning; the sections below give each in full:
+=
+- ```tabular
++ ```tabular
+
+- column  Name
+- column  Standing
+- column  Meaning
+- column  Examples
+- row  `apply`  standard  the default factory, used whenever possible
+- row  `build`  standard  assembly driven by a caller-provided callback  `Data.build`, `Text.build`, `Specification.build`
+- row  `create`  standard  brings a resource into existence in an external system  directories, files, sockets, FIFOs
+- row  `make`  standard  construction from dynamically-named inputs, beside an existing `apply`
+- row  `initialize`  standard  a fresh context for one run of a repeatable operation  `Hash.initialize`, `Aes.initialize`
+- row  `init`  non-standard  `Git.init` only, after the `git init` command  `Git.init`
+- row  `construct`  non-standard  `wisteria.ProductDerivation.construct` only  `ProductDerivation.construct`
+- row  `of`  non-standard  a private cast narrowing a type to `X of Y`
++ column  名前
++ column  位置付け
++ column  意味
++ column  例
++ row  `apply`  標準  既定のファクトリーで、可能な限り使う
++ row  `build`  標準  呼び出し側が与えるコールバックが駆動する組み立て  `Data.build`, `Text.build`, `Specification.build`
++ row  `create`  標準  外部のシステムにリソースを生じさせる  ディレクトリ、ファイル、ソケット、FIFO
++ row  `make`  標準  既存の `apply` と並ぶ、動的に名前の付いた入力からの構築
++ row  `initialize`  標準  繰り返し可能な操作の一回の実行のための新しいコンテキスト  `Hash.initialize`, `Aes.initialize`
++ row  `init`  非標準  `git init` コマンドに倣った `Git.init` のみ  `Git.init`
++ row  `construct`  非標準  `wisteria.ProductDerivation.construct` のみ  `ProductDerivation.construct`
++ row  `of`  非標準  型を `X of Y` に狭める非公開のキャスト
+
+= row  `of`  non-standard  a private cast narrowing a type to `X of Y`
+- ```
++ ```
+
+- ### `apply`
++ ### `apply`
+
+- The standard Scala factory method. Used whenever possible. All other names in
+- this document exist because `apply` cannot be used — typically due to overload
+- resolution conflicts with an existing `apply`.
++ Scala の標準のファクトリーメソッドである。
++ 可能な限り使う。
++ この文書の他のすべての名前は、`apply` を使えないために存在する。典型的には、既存の `apply` とのオーバーロード解決の衝突のためである。
+
+- ### `build`
++ ### `build`
+
+- Assembles an instance via a caller-provided callback that drives construction.
+- The two concrete forms are:
++ 構築を駆動する、呼び出し側が与えるコールバックを通じてインスタンスを組み立てる。
++ 具体的な形は二つある。
+
+- - **Allocate → mutate → freeze**: a mutable intermediate structure is allocated,
+-   passed to the caller's lambda for population, then frozen into an immutable
+-   result. Examples: `Data.build`, `Array.scribe`, `Text.build`.
+- - **Callback-driven assembly from source data**: the caller supplies a function
+-   that specifies how to extract or transform fields from an origin value.
+-   Examples: `Specification.build`, `Addressable.build`.
++ - **割り当て → 変更 → 凍結**：変更可能な中間構造を割り当て、それを呼び出し側のラムダに渡して中身を埋めさせ、それから不変の結果へと凍結する。例：`Data.build`、`Array.scribe`、`Text.build`。
++ - **ソースデータからのコールバック駆動の組み立て**：呼び出し側は、元の値からフィールドをどのように取り出し、変換するかを指定する関数を与える。例：`Specification.build`、`Addressable.build`。
+
+- In both forms the caller controls the assembly process through the function
+- argument rather than supplying the finished value directly.
++ どちらの形でも、呼び出し側は完成した値を直接与えるのではなく、関数の引数を通じて組み立ての過程を制御する。
+
+- ### `create`
++ ### `create`
+
+- Brings a resource into existence in an external system, and always has
+- side-effects. Used for filesystem resources (directories, files,
+- sockets, FIFOs). The counterpart to `apply`/`build` for operations that are not
+- pure.
++ 外部のシステムにリソースを生じさせ、常に副作用を持つ。
++ ファイルシステムのリソース（ディレクトリ、ファイル、ソケット、FIFO）に使う。
++ 純粋でない操作のための、`apply`/`build` に対応するものである。
+
+- ### `make`
++ ### `make`
+
+- Constructs a value from dynamically-named inputs, and corresponds to an
+- implementation of `applyDynamicNamed`. While other factory may use parameters
+- with dynamic names, `make` is used where another non-dynamic `apply` method
+- already exists.
++ 動的に名前の付いた入力から値を構築し、`applyDynamicNamed` の実装に対応する。
++ 他のファクトリーも動的な名前のパラメーターを使うことがあるが、`make` は、動的でない別の `apply` メソッドがすでに存在する場合に使う。
+
+- ### `initialize`
++ ### `initialize`
+
+- Returns a fresh operational context for a repeatable operation. Examples
+- include a new hash-digest run (`Hash.initialize`), a cipher instance
+- (`Aes.initialize`), an open file transport (`Openable.initialize`), or a new
+- session (`McpServer.initialize`). The operation may be pure or involve resource
+- acquisition; what unifies these cases is that the result represents the
+- beginning of a single use of an operation that can be started again from
+- scratch.
++ 繰り返し可能な操作のための、新しい操作上のコンテキストを返す。
++ 例には、ハッシュダイジェストの新しい実行（`Hash.initialize`）、暗号のインスタンス（`Aes.initialize`）、開いたファイルのトランスポート（`Openable.initialize`）、新しいセッション（`McpServer.initialize`）がある。
++ 操作は純粋であっても、リソースの取得を伴ってもよい。これらの場合を統一するのは、結果が、最初からやり直すことのできる操作の一回の使用の始まりを表すことである。
+
+- ## Non-standard names
++ ## 非標準の名前
+
+- ### `init`
++ ### `init`
+
+- Used only for `Git.init`, which follows the naming of the `git init` CLI
+- command. Everywhere else, `initialize` is preferred.
++ `git init` という CLI コマンドの命名に従う `Git.init` にだけ使う。
++ それ以外のすべての場所では `initialize` が好まれる。
+
+- ### `construct`
++ ### `construct`
+
+- Reserved exclusively for `wisteria.ProductDerivation.construct`. This is a
+- deliberate special case used in compile-time typeclass derivation and does not
+- follow the general factory naming scheme.
++ `wisteria.ProductDerivation.construct` 専用に予約されている。
++ これはコンパイル時の型クラスの導出で使われる意図的な特例であり、一般的なファクトリーの命名体系には従わない。
+
+- ### `of`
++ ### `of`
+
+- Used only as an instance method that narrows a type to a phantom-parameterised
+- form `X of Y`. The body is always a cast (`asInstanceOf`), and the return type
+- is literally `this.type of topic`. These methods are private to their
+- respective packages.
++ 型を幻のパラメーターを持つ形 `X of Y` に狭めるインスタンスメソッドとしてだけ使う。
++ 本体は常にキャスト（`asInstanceOf`）であり、戻り値の型は文字どおり `this.type of topic` である。
++ これらのメソッドは、それぞれのパッケージに非公開である。
+
+- ## The `unsafe` prefix
++ ## `unsafe` という接頭辞
+
+- A method that takes `vacuous.Unsafe` as a `using` parameter is gated: its caller
+- must hold the token, which in practice means writing `(using Unsafe)` or sitting
+- inside an `unsafely` block. Every such method is named with an `unsafe` prefix
+- followed by a capital letter — `unsafeBuffer`, `unsafeAttested`, `unsafeChild` —
+- so that the boundary is visible at the call site and not only in the signature.
++ `using` パラメーターとして `vacuous.Unsafe` を取るメソッドは門で守られている。その呼び出し側はトークンを保持しなければならず、実際には `(using Unsafe)` と書くか、`unsafely` ブロックの内側にいることを意味する。
++ そのようなメソッドはすべて、`unsafe` という接頭辞の後に大文字が続く名前を持つ（`unsafeBuffer`、`unsafeAttested`、`unsafeChild`）。こうすることで、境界がシグネチャの中だけでなく呼び出し箇所でも見えるようになる。
+
+- This is checked. The Consequent rule `S1.1` is `strict` for every component, so a
+- gated method with an ordinary name fails the build. Where the name cannot take a
+- prefix, the method is renamed rather than exempted: `Regex.apply(parts)(using
+- Unsafe)` became `Regex.unsafeFrom(parts)`.
++ これは検査される。
++ Consequent の規則 `S1.1` はすべてのコンポーネントについて `strict` なので、普通の名前を持つ門で守られたメソッドはビルドを失敗させる。
++ 名前に接頭辞を付けられない場合、メソッドは免除されるのではなく改名される。`Regex.apply(parts)(using Unsafe)` は `Regex.unsafeFrom(parts)` になった。
+
+- Two definitions are outside the rule because neither has a name to prefix: a
+- constructor, and a `given`, which is summoned by type. Both are still gated, and
+- the argument for why the gate is sound belongs in a comment beside them.
++ 二つの定義は、どちらも接頭辞を付ける名前を持たないので、規則の外にある。コンストラクターと、型によって召喚される `given` である。
++ どちらも依然として門で守られており、その門がなぜ健全であるかの論拠は、それらの横のコメントに書くべきである。
+
+- The converse — an `unsafe`-prefixed method must be gated — is `S1.2`, and is
+- advisory rather than strict for now. Eight definitions break it:
++ 逆向き、つまり `unsafe` という接頭辞を持つメソッドは門で守られなければならないという規則は `S1.2` であり、今のところ厳格ではなく勧告である。
++ 八つの定義がこれに違反している。
+
+= advisory rather than strict for now. Eight definitions break it:
+=
+- ```tabular
++ ```tabular
+
+- column  Component
+- column  Definitions
++ column  コンポーネント
++ column  定義
+
+- row  proscenium  `Array.unsafeFrozen`, `Array.unsafeJvm`
++ row  proscenium  `Array.unsafeFrozen`, `Array.unsafeJvm`
+
+- row  vacuous  `Optional.unsafeGet` (private to the extension group)
++ row  vacuous  `Optional.unsafeGet`（拡張のグループに非公開）
+
+- row  urticose  `Port.unsafe`
++ row  urticose  `Port.unsafe`
+
+- row  octogenarian  `Git.Revision.unsafe`, `Git.Tag.unsafe`, `Git.Branch.unsafe`, `Git.Hash.unsafe`
++ row  octogenarian  `Git.Revision.unsafe`, `Git.Tag.unsafe`, `Git.Branch.unsafe`, `Git.Hash.unsafe`
+
+= row  octogenarian  `Git.Revision.unsafe`, `Git.Tag.unsafe`, `Git.Branch.unsafe`, `Git.Hash.unsafe`
+- ```
++ ```
+
+- (`archimedes.Ergo.unsafeInterpolate` is gated since the ambient-strategy drain.)
++ （`archimedes.Ergo.unsafeInterpolate` は、アンビエントな戦略の排出以来、門で守られている。）
+
+- Gating them is wanted and is tracked as a follow-up, not declined: a trial found
+- the change reaches hundreds of call sites, a good share of which are colon-block
+- calls (`Array.unsafeFrozen:` over an indented argument) that cannot take a
+- further argument list without being restructured. `Optional.unsafeGet` needs its
+- own change first: it sits in an extension group carrying a `using
+- Optionality[optional.type]` clause, and an explicit `(using Unsafe)` binds to
+- that leading clause instead, so the method has to leave the group before it can
+- be gated.
++ それらを門で守ることは望まれており、却下されたのではなく後続の作業として追跡されている。試行では、この変更が数百の呼び出し箇所に及ぶことが分かった。そのかなりの部分はコロンブロックの呼び出し（インデントされた引数の上の `Array.unsafeFrozen:`）であり、再構成しない限りさらなる引数リストを取れない。
++ `Optional.unsafeGet` には、まず独自の変更が必要である。これは `using Optionality[optional.type]` 節を持つ拡張のグループの中にあり、明示的な `(using Unsafe)` は代わりにその先頭の節に束縛されてしまうので、このメソッドは門で守られる前にグループを離れなければならない。
+
+- Until then the census counts them as `unsafe-ungated`, which is the reliable
+- record: a `S1.2` warning is dropped whenever the compiler has already reported
+- something at an enclosing position in the same file.
++ それまでは、集計はこれらを `unsafe-ungated` として数え、それが信頼できる記録である。同じファイルの中の囲む位置でコンパイラがすでに何かを報告している場合には、`S1.2` の警告は落とされてしまうからである。
+
+- The prefix is a marker, not a licence. It says a guarantee stops here, which is
+- the beginning of an argument for why that is sound, not the end of one.
++ 接頭辞は目印であって、免罪符ではない。
++ それは保証がここで終わることを示すものであり、それがなぜ健全であるかの論証の始まりであって、終わりではない。
+
+- `unsafely` itself is not covered: the prefix must be a whole word — `unsafe`
+- alone, or `unsafe` then a capital — so the block that supplies the token is
+- exempt by construction, while a method named plainly `unsafe` is not.
++ `unsafely` そのものは対象にならない。接頭辞は単語全体でなければならない（`unsafe` だけか、`unsafe` の後に大文字）ので、トークンを与えるブロックは構造上免除される。一方、単に `unsafe` という名前のメソッドは免除されない。

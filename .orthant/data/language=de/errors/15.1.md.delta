@@ -1,0 +1,63 @@
+orthant 1 language
+
+- # `↯/s.15.1` — `Error.Unchecked`
++ # `↯/s.15.1` — `Error.Unchecked`
+
+- Raised when a non-Soundness `Throwable` must be wrapped as an
+- `Error`.
++ Wird ausgelöst, wenn ein `Throwable`, das nicht aus Soundness stammt, als `Error` umhüllt werden
++ muss.
+
+- ## Cause
++ ## Ursache
+
+- `Error.apply(throwable)` either passes through an existing `Error`
+- or wraps a foreign throwable in `Error.Unchecked`. The wrapper
+- preserves the original message (or notes its absence) and the
+- stack trace from the original throwable.
++ `Error.apply(throwable)` reicht einen vorhandenen `Error` entweder durch oder umhüllt ein fremdes
++ Throwable mit `Error.Unchecked`. Der Wrapper bewahrt die ursprüngliche Meldung (oder vermerkt ihr
++ Fehlen) und den Stacktrace des ursprünglichen Throwables.
+
+- ## Example messages
++ ## Beispielmeldungen
+
+= ## Example messages
+=
+- ```
++ ```
+
+- [↯/s.15.1] unchecked error with message, NullPointerException
++ [↯/s.15.1] unchecked error with message, NullPointerException
+
+= [↯/s.15.1] unchecked error with message, NullPointerException
+- ```
++ ```
+
+= ```
+=
+- ```
++ ```
+
+- [↯/s.15.1] unchecked error with no message
++ [↯/s.15.1] unchecked error with no message
+
+= [↯/s.15.1] unchecked error with no message
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Identify the underlying `Throwable` (`getCause` chain) and decide
+- whether to surface it as a typed Soundness error or fix the source
+- to avoid the foreign throw.
++ Ermitteln Sie das zugrunde liegende `Throwable` (über die Kette von `getCause`) und entscheiden
++ Sie, ob es als typisierter Soundness-Fehler sichtbar gemacht werden soll oder ob die Quelle
++ korrigiert werden soll, um das fremde Werfen zu vermeiden.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/fulminate/src/core/fulminate.Error.scala`
++ - Quelle: `lib/fulminate/src/core/fulminate.Error.scala`

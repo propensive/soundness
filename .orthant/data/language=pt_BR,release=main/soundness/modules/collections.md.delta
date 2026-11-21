@@ -1,0 +1,211 @@
+orthant 1 language
+
+- A map with many entries is quicker to fill in place than to grow one `define` at a time.
+- `Map.build` lends a block a builder to write to, and gives back an ordinary `Map` when the
+- block ends:
++ Um mapa com muitas entradas é mais rápido de preencher no lugar do que de crescer um `define`
++ por vez. `Map.build` empresta a um bloco um builder no qual escrever, e devolve um `Map` comum
++ quando o bloco termina:
+
+= block ends:
+=
+- ```scala fuel
++ ```scala fuel
+
+= block ends:
+=
+= ```scala fuel
+- run
++ run
+
+= block ends:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val court = Map.build[Text, Int]: map =>
++ val court = Map.build[Text, Int]: map =>
+
+-   map(t"Lear") = 80
++   map(t"Lear") = 80
+
+-   map(t"Kent") = 48
++   map(t"Kent") = 48
+
+-   map(t"Gloucester") = 60
++   map(t"Gloucester") = 60
+
+- Out.println(court.at(t"Kent").inspect)
++ Out.println(court.at(t"Kent").inspect)
+
+- Out.println((court == ages.define(t"Gloucester", 60)).inspect)
++ Out.println((court == ages.define(t"Gloucester", 60)).inspect)
+
+= Out.println((court == ages.define(t"Gloucester", 60)).inspect)
+- ```
++ ```
+
+- Only the builder can write to the map, and the builder cannot leave its block: keeping a
+- reference to it for later is a compile error. So the map is immutable from the moment `build`
+- returns, and equal to any other map with the same entries, however that one was made.
++ Só o builder pode escrever no mapa, e o builder não pode sair do seu bloco: guardar uma
++ referência a ele para depois é um erro de compilação. Assim, o mapa é imutável a partir do
++ momento em que `build` retorna, e igual a qualquer outro mapa com as mesmas entradas, seja qual
++ for a forma como esse outro foi feito.
+
+- ### Maps with keys known in advance
++ ### Mapas com chaves conhecidas de antemão
+
+- A map whose keys are all written where it is made can be read faster still. `Map.fixed` finds a
+- *perfect hash* of its keys while the code is compiled: a small calculation which sends each key
+- to a slot of its own. A read is then that calculation and one comparison, whether or not the
+- key is there:
++ Um mapa cujas chaves estão todas escritas onde ele é criado pode ser lido mais rápido ainda.
++ `Map.fixed` encontra um *hash perfeito* das suas chaves enquanto o código é compilado: um pequeno
++ cálculo que envia cada chave para um slot só seu. Uma leitura é então esse cálculo e uma
++ comparação, esteja a chave presente ou não:
+
+= key is there:
+=
+- ```scala fuel
++ ```scala fuel
+
+= key is there:
+=
+= ```scala fuel
+- run
++ run
+
+= key is there:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val cast = Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Gloucester" -> 60, t"Edgar" -> 28)
++ val cast = Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Gloucester" -> 60, t"Edgar" -> 28)
+
+- Out.println(cast.at(t"Edgar").inspect)
++ Out.println(cast.at(t"Edgar").inspect)
+
+- Out.println(cast.at(t"Fool").inspect)
++ Out.println(cast.at(t"Fool").inspect)
+
+- Out.println((cast == court.define(t"Edgar", 28)).inspect)
++ Out.println((cast == court.define(t"Edgar", 28)).inspect)
+
+= Out.println((cast == court.define(t"Edgar", 28)).inspect)
+- ```
++ ```
+
+- The keys must be literals: texts, `Int`s, `Long`s or `Char`s, all of one kind, and each given
+- once. The values can be any expressions. A fixed map is an ordinary `Map` to everything which
+- uses it, and `define` and `omit` work on it as on any other.
++ As chaves precisam ser literais: textos, `Int`s, `Long`s ou `Char`s, todos de um mesmo tipo, e
++ cada uma dada uma só vez. Os valores podem ser quaisquer expressões. Um mapa fixo é um `Map`
++ comum para tudo o que o usa, e `define` e `omit` funcionam nele como em qualquer outro.
+
+- A map which cannot be fixed does not compile, so a map made with `fixed` is never a slower one
+- in disguise. Giving a key twice is one such error:
++ Um mapa que não pode ser fixado não compila, de modo que um mapa feito com `fixed` nunca é um
++ mapa mais lento disfarçado. Dar uma chave duas vezes é um desses erros:
+
+= in disguise. Giving a key twice is one such error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= in disguise. Giving a key twice is one such error:
+=
+= ```scala fuel
+- compile
++ compile
+
+= in disguise. Giving a key twice is one such error:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= in disguise. Giving a key twice is one such error:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Lear" -> 81)
++ Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Lear" -> 81)
+
+= Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Lear" -> 81)
+- ```
++ ```
+
+- A key which is not a literal is another, as are keys of different kinds, and two texts which
+- happen to share a hash code. A map of more than 1,024 entries is too large to write out this
+- way, and is better filled with `Map.build`.
++ Uma chave que não é literal é outro, assim como chaves de tipos diferentes e dois textos que
++ por acaso compartilham um código de hash. Um mapa de mais de 1.024 entradas é grande demais para
++ ser escrito dessa forma, e é melhor preenchê-lo com `Map.build`.
+
+- When the keys are only known once the program is running, `optimize` gives an existing map the
+- same treatment. It finds the hash then, and compiles it with the Scala compiler:
++ Quando as chaves só são conhecidas com o programa em execução, `optimize` dá a um mapa existente
++ o mesmo tratamento. Ele encontra o hash nesse momento e o compila com o compilador Scala:
+
+= same treatment. It finds the hash then, and compiles it with the Scala compiler:
+=
+- ```scala
++ ```scala
+
+- import murmuration.optimize
++ import murmuration.optimize
+
+= import murmuration.optimize
+- ```
++ ```
+
+= import murmuration.optimize
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- val quick = court.optimize
++ val quick = court.optimize
+
+= val quick = court.optimize
+- ```
++ ```
+
+- The compiler must therefore be on the classpath when the program runs, which is why `optimize`
+- comes from a module of its own, in the `staged` bundle, and only on the JVM. Compiling takes
+- about a tenth of a second for each map, and several seconds for the first, so it suits a map
+- which is made once and read a great many times.
++ Por isso, o compilador precisa estar no classpath quando o programa é executado, e é por isso
++ que `optimize` vem de um módulo próprio, no pacote de distribuição `staged`, e só na JVM. A
++ compilação leva cerca de um décimo de segundo por mapa, e vários segundos para o primeiro, de
++ modo que serve a um mapa que é criado uma vez e lido muitíssimas vezes.
+
+- It helps a map keyed by numbers most, which reads about twice as fast. A map keyed by text
+- reads faster when its keys are usually found, and slower when they usually are not, since a
+- text which is absent must still be compared with the one in its slot. A map of four entries or
+- fewer, or one whose keys are not all texts, all `Int`s, all `Long`s or all `Char`s, is given
+- back as it was.
++ O ganho é maior para um mapa com chaves numéricas, que é lido cerca de duas vezes mais rápido.
++ Um mapa com chaves de texto é lido mais rápido quando suas chaves costumam ser encontradas, e
++ mais devagar quando costumam não ser, já que um texto ausente ainda precisa ser comparado com o
++ que está no seu slot. Um mapa de quatro entradas ou menos, ou um cujas chaves não sejam todas
++ textos, todas `Int`s, todas `Long`s ou todas `Char`s, é devolvido como estava.

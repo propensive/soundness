@@ -1,0 +1,14 @@
+orthant 1 language
+
+- Debugging a running application should feel native, not hosted: breakpoints, stepping and
+- inspection through a Debug Adapter Protocol server, with inspected values rendered as their
+- Soundness types — the same no-Java-encodings discipline `core-5` applies to traces, applied
+- to live state. vivisection is that server: `vivisection.DapServer` handles the request set
+- (launch, attach, breakpoints, threads, stack traces, scopes, variables, evaluate, stepping),
+- and its suite's `DapClient` drives a live debuggee through a breakpoint, a `next` step and
+- inspection in the ordinary run, with each local rendered through its `Inspectable` instance
+- and an object snapshot shown by its simple name and identity rather than a JVM class name. The
+- topic is `doc/work/soundness/modules/debugging.md`.
++ 実行中のアプリケーションのデバッグは、間借りしたものではなくネイティブに感じられるべきである。Debug Adapter Protocol のサーバーを通じたブレークポイント、ステップ実行、検査があり、検査した値はその Soundness の型として描画される。これは `core-5` がトレースに適用するのと同じ、Java のエンコーディングを見せない規律を、生きた状態に適用したものである。
++ vivisection がそのサーバーである。`vivisection.DapServer` はリクエストの集合（launch、attach、ブレークポイント、スレッド、スタックトレース、スコープ、変数、evaluate、ステップ実行）を扱い、そのスイートの `DapClient` は通常の実行で、ライブのデバッグ対象をブレークポイント、`next` のステップ、検査へと動かす。各ローカル変数はその `Inspectable` インスタンスを通じて描画され、オブジェクトのスナップショットは JVM のクラス名ではなく、単純名と同一性によって示される。
++ トピックは `doc/work/soundness/modules/debugging.md` である。

@@ -1,0 +1,443 @@
+orthant 1 language
+
+=     by name, and an operation whose policy is missing does not compile.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+-     import filesystemOptions.createParents
++     import filesystemOptions.createParents
+
+-     Beyond single paths: `Cas` is a content-addressed store of blobs under a directory;
+-     `Searchpaths.Stems` resolves an XDG searchpath plane (`Xdg.Data`, `Xdg.Config`) onto real
+-     directories with `discover`, `locations`, `listing` and `destination`; `Umask` and `Fdtable`
+-     are contextual values a daemon supplies on behalf of a client (the mask its creations
+-     honour, and the descriptor table its `/dev/fd/N` paths open through).
++     За пределами отдельных путей: `Cas` — контентно-адресуемое хранилище блобов в каталоге;
++     `Searchpaths.Stems` разрешает плоскость путей поиска XDG (`Xdg.Data`, `Xdg.Config`) в
++     реальные каталоги через `discover`, `locations`, `listing` и `destination`; `Umask` и
++     `Fdtable` — контекстные значения, которые демон предоставляет от имени клиента (маска,
++     которую соблюдают его создания, и таблица дескрипторов, через которую открываются его
++     пути `/dev/fd/N`).
+
+-       Moving a file onto a path where something already exists either destroys that thing or
+-       refuses to; deleting a directory either empties it or refuses; copying a symlink either
+-       follows it or copies the link. Neither answer is right in general, so galilei never
+-       chooses silently: each question is a policy trait — `OverwritePreexisting`,
+-       `DeleteRecursively`, `CreateParents`, `DereferenceSymlinks`, `MoveAtomically`,
+-       `CopyAttributes` — and the operation which must answer it takes the policy as a
+-       contextual parameter. Calling `moveTo` with neither `overwritePreexisting` nor
+-       `failOnPreexisting` in scope is a compile error which names the missing policy. The
+-       policies come in pairs, one permissive and one strict, and are imported by name
+-       (`import soundness.*` does not import givens), for a whole file or narrowed to one block.
++       Перемещение файла на путь, где что-то уже существует, либо уничтожает это, либо
++       отказывается; удаление каталога либо опустошает его, либо отказывается; копирование
++       символической ссылки либо следует за ней, либо копирует саму ссылку. Ни один ответ не
++       верен в общем случае, поэтому galilei никогда не выбирает молча: каждый вопрос — это
++       трейт политики — `OverwritePreexisting`, `DeleteRecursively`,
++       `CreateParents`, `DereferenceSymlinks`, `MoveAtomically`, `CopyAttributes`, —
++       и операция, которая должна на него ответить, принимает политику как контекстный
++       параметр. Вызов `moveTo` без `overwritePreexisting` или `failOnPreexisting` в области
++       видимости — ошибка компиляции, называющая отсутствующую политику. Политики идут парами,
++       одна разрешающая и одна строгая, и импортируются по имени (`import soundness.*` не
++       импортирует given) на весь файл или в пределах одного блока.
+
+-       - `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo`: `OverwritePreexisting` and
+-         `CreateParents` (and `DereferenceSymlinks` for copy and move,
+-         `MoveAtomically` for move).
+-       - `copyInto`, `moveInto`, `symlinkInto`: `OverwritePreexisting` and `DereferenceSymlinks`
+-         (and `MoveAtomically`); parents are created, since the destination directory is named.
++       - `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo`: `OverwritePreexisting` и
++         `CreateParents` (а также `DereferenceSymlinks` для копирования и
++         перемещения, `MoveAtomically` для перемещения).
++       - `copyInto`, `moveInto`, `symlinkInto`: `OverwritePreexisting` и
++         `DereferenceSymlinks` (и `MoveAtomically`); родители создаются, поскольку каталог
++         назначения назван.
+
+-       - `create[…]`: none is required. `CreateFlag.Parents` and `CreateFlag.Replace` state the
+-         intent at the call site; a `CreateParents` policy, if one is in scope where
+-         `create` is called, is honoured too.
++       - `create[…]`: никакая не требуется. `CreateFlag.Parents` и `CreateFlag.Replace`
++         указывают намерение в месте вызова; политика `CreateParents`, если она есть в области
++         видимости там, где вызывается `create`, тоже соблюдается.
+
+-             import filesystemOptions.createParents
++             import filesystemOptions.createParents
+
+-   refer galilei.CreateParents
++   refer galilei.CreateParents
+
+-   entry .dereferenceSymlinks   follow a final-component symbolic link: operate on what it points at
+-       The permissive `DereferenceSymlinks`: `entry()` reports the target's type, `copyTo`
+-       copies the target's content, `descendants` and `checksum` walk through linked
+-       directories, `hardLinks()` counts the target's links.
+-   entry .preserveSymlinks   do not follow a symbolic link: operate on the link itself
+-       The strict `DereferenceSymlinks`: `entry()` reports `Symlink`, `copyTo` copies the
+-       link, a traversal does not descend through a linked directory. `filesize()` always
+-       uses this, so a link's size is the link's.
+-   entry .moveAtomically   `moveTo` must be atomic, and is `Unsupported` where it cannot be
+-       The `MoveAtomically` which asks the backend for an atomic rename (`ATOMIC_MOVE` on the
+-       JVM). A reader never sees a half-moved entry; a move across volumes, which cannot be
+-       atomic, raises `Io.Error` with `Unsupported` rather than falling back to a copy.
+-   entry .moveNonAtomically   `moveTo` may be a copy followed by a delete
+-       The `MoveAtomically` which permits a non-atomic move, so a move across volumes
+-       succeeds, at the cost that a failure midway can leave both the source and a partial
+-       destination.
+-   entry .copyAttributes   a copy carries the source's attributes (timestamps, permissions) with it
+-       The permissive `CopyAttributes`. No operation currently consults it: the policy exists
+-       so that a copy's treatment of attributes is stated once backends honour it.
+-   entry .discardAttributes   a copy takes only the content; the copy's attributes are fresh
+-       The strict `CopyAttributes`; see `.copyAttributes` for its current standing.
+-   entry .deleteRecursively   `delete` and `wipe` on a directory first delete everything beneath it
+-       The permissive `DeleteRecursively on <plane>`, for any plane with an `Explorable` and a
+-       backend. It deletes children depth-first before the operation it guards, so `wipe()`
+-       removes a whole tree. It is also what `overwritePreexisting` needs, so that replacing a
+-       directory can empty it.
+-   entry .deleteOnlyEmpty   `delete` and `wipe` refuse a directory which has children
+-       The strict `DeleteRecursively`: a directory with any child raises `Io.Error` with
+-       `Operation.Delete` and `Reason.DirectoryNotEmpty` before anything is touched. A
+-       program which must never remove more than one entry at a time imports this.
+-   entry .overwritePreexisting   a destination which already exists is removed first
+-       The permissive `OverwritePreexisting on <plane>`, which needs a `DeleteRecursively on
+-       <plane>` in scope (to empty a directory being replaced). `copyTo`, `moveTo`,
+-       `hardLinkTo`, `symlinkTo` and `Device.create` then cannot raise `AlreadyExists`.
+-   entry .failOnPreexisting   a destination which already exists is an `Io.Error`
+-       The strict `OverwritePreexisting`: the operation proceeds untouched, and the backend
+-       raises `Io.Error` with `Reason.AlreadyExists` when it collides with an existing entry,
+-       which the caller must then handle.
+-   entry .createParents   a destination's missing ancestor directories are created
+-       The permissive `CreateParents on <plane>`, needing a backend. Before the
+-       operation, each absent ancestor of the destination is created, walking up from the
+-       nearest. The directories are created with the process's own mask. `copyInto`,
+-       `moveInto` and `symlinkInto` use it implicitly, since their destination directory is
+-       named. With it in scope, `create[…]` makes missing ancestors too, as if
+-       `CreateFlag.Parents` had been given.
+-   entry .requireParents   a destination whose parent is missing is an `Io.Error`
+-       The strict `CreateParents`: nothing is created, and the backend raises
+-       `Io.Error` with `Reason.Nonexistent` for the missing parent.
++   entry .dereferenceSymlinks   следовать символической ссылке в последнем компоненте: работать с тем, на что она указывает
++       Разрешающая `DereferenceSymlinks`: `entry()` сообщает тип цели, `copyTo` копирует
++       содержимое цели, `descendants` и `checksum` проходят через каталоги по ссылкам,
++       `hardLinks()` считает ссылки цели.
++   entry .preserveSymlinks   не следовать символической ссылке: работать с самой ссылкой
++       Строгая `DereferenceSymlinks`: `entry()` сообщает `Symlink`, `copyTo` копирует ссылку,
++       обход не спускается через каталог по ссылке. `filesize()` всегда использует её,
++       поэтому размер ссылки — это размер самой ссылки.
++   entry .moveAtomically   `moveTo` должен быть атомарным и даёт `Unsupported`, где это невозможно
++       `MoveAtomically`, которая просит у бэкенда атомарное переименование (`ATOMIC_MOVE` на
++       JVM). Читающий никогда не видит наполовину перемещённую запись; перемещение между
++       томами, которое не может быть атомарным, порождает `Io.Error` с `Unsupported`, а не
++       откатывается к копированию.
++   entry .moveNonAtomically   `moveTo` может быть копированием с последующим удалением
++       `MoveAtomically`, которая разрешает неатомарное перемещение, поэтому перемещение между
++       томами удаётся ценой того, что неудача на середине может оставить и источник, и
++       частичное место назначения.
++   entry .copyAttributes   копия переносит атрибуты источника (временные метки, права доступа)
++       Разрешающая `CopyAttributes`. Сейчас к ней не обращается ни одна операция: политика
++       существует, чтобы обращение копии с атрибутами было указано, как только бэкенды начнут
++       его соблюдать.
++   entry .discardAttributes   копия берёт только содержимое; атрибуты копии новые
++       Строгая `CopyAttributes`; о её текущем статусе см. `.copyAttributes`.
++   entry .deleteRecursively   `delete` и `wipe` на каталоге сначала удаляют всё, что под ним
++       Разрешающая `DeleteRecursively on <plane>` для любой плоскости с `Explorable` и
++       бэкендом. Она удаляет дочерние записи в глубину перед операцией, которую охраняет,
++       поэтому `wipe()` удаляет целое дерево. Она же нужна `overwritePreexisting`, чтобы
++       замена каталога могла его опустошить.
++   entry .deleteOnlyEmpty   `delete` и `wipe` отказываются удалять каталог, у которого есть дочерние записи
++       Строгая `DeleteRecursively`: каталог с любой дочерней записью порождает `Io.Error` с
++       `Operation.Delete` и `Reason.DirectoryNotEmpty` прежде, чем что-либо будет затронуто.
++       Программа, которая никогда не должна удалять больше одной записи за раз, импортирует
++       её.
++   entry .overwritePreexisting   уже существующее место назначения сначала удаляется
++       Разрешающая `OverwritePreexisting on <plane>`, которой нужна `DeleteRecursively on
++       <plane>` в области видимости (чтобы опустошить заменяемый каталог). Тогда `copyTo`,
++       `moveTo`, `hardLinkTo`, `symlinkTo` и `Device.create` не могут породить
++       `AlreadyExists`.
++   entry .failOnPreexisting   уже существующее место назначения — это `Io.Error`
++       Строгая `OverwritePreexisting`: операция выполняется без вмешательства, и бэкенд
++       порождает `Io.Error` с `Reason.AlreadyExists`, когда сталкивается с существующей
++       записью, которую затем должен обработать вызывающий код.
++   entry .createParents   отсутствующие каталоги-предки места назначения создаются
++       Разрешающая `CreateParents on <plane>`, которой нужен бэкенд. Перед
++       операцией создаётся каждый отсутствующий предок места назначения, поднимаясь от
++       ближайшего. Каталоги создаются с собственной маской процесса. `copyInto`, `moveInto` и
++       `symlinkInto` используют её неявно, поскольку их каталог назначения назван. Когда она в
++       области видимости, `create[…]` тоже создаёт отсутствующих предков, как если бы был
++       передан `CreateFlag.Parents`.
++   entry .requireParents   место назначения, родитель которого отсутствует, — это `Io.Error`
++       Строгая `CreateParents`: ничего не создаётся, и бэкенд порождает `Io.Error`
++       с `Reason.Nonexistent` для отсутствующего родителя.
+
+- entry .CreateParents   the policy for a destination whose parent is missing: create it, or fail
++ entry .CreateParents   политика для места назначения без родительского каталога: создать его или завершиться неудачей
+
+-       A planar policy (`CreateParents on Linux`) whose `#apply` wraps the
+-       operation. `filesystemOptions.createParents` makes each missing ancestor;
+-       `filesystemOptions.requireParents` leaves the backend to raise `Nonexistent`. Needed
+-       by `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo` and `Device.create`. The `create[…]`
+-       operations do not need one, but honour one which is in scope where they are called:
+-       under `createParents` they make missing ancestors without
+-       `CreateFlag.Parents`.
+-   entry #apply   runs an operation at `path`, after creating its missing ancestors or not
++       Политика, привязанная к плоскости (`CreateParents on Linux`), чей `#apply`
++       оборачивает операцию. `filesystemOptions.createParents` создаёт каждого
++       недостающего предка; `filesystemOptions.requireParents` оставляет бэкенду породить
++       `Nonexistent`. Нужна для `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo` и
++       `Device.create`. Операциям `create[…]` она не нужна, но они учитывают политику, находящуюся
++       в области видимости в месте вызова: при `createParents` они создают недостающих предков без
++       `CreateFlag.Parents`.
++   entry #apply   выполняет операцию над `path`, предварительно создав недостающих предков или нет
+
+-       Absent flags mean strictness: creating an entry whose parent is missing raises
+-       `Io.Error` with `Nonexistent` (unless `filesystemOptions.createParents` is
+-       in scope), and creating one which already exists raises `AlreadyExists`, unless the
+-       caller says otherwise at the call site. `Parents` creates
+-       every missing ancestor directory (under the `Umask` in scope); `Replace` deletes an
+-       existing entry at the path first — recursively, if it is a directory. Flags are the
+-       arguments after the form: `path.create[Directory](CreateFlag.Parents)`,
+-       `path.create[File](CreateFlag.Replace)`. `Replace` is deliberately not a policy from
+-       `filesystemOptions`: destructive intent at creation is stated where it happens.
++       Отсутствие флагов означает строгость: создание записи без родительского каталога
++       порождает `Io.Error` с `Nonexistent` (если только в области видимости нет
++       `filesystemOptions.createParents`), а создание уже существующей — `AlreadyExists`,
++       если вызывающий не укажет иное в месте вызова. `Parents` создаёт все недостающие
++       каталоги-предки (с `Umask` в области видимости); `Replace` сначала удаляет существующую
++       по пути запись — рекурсивно, если это каталог. Флаги — это аргументы после формы:
++       `path.create[Directory](CreateFlag.Parents)`, `path.create[File](CreateFlag.Replace)`.
++       `Replace` намеренно не является политикой из `filesystemOptions`: разрушительное намерение
++       при создании указывается там, где оно осуществляется.
+
+- entry .copyTo   `path.copyTo(destination)`: copies an entry to a path, consulting the policies in scope
+-     An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
+-     plane`, a `DereferenceSymlinks`, a `CreateParents on plane`, a backend, a
+-     `Tactic[Io.Error]` and an `Io.Event is Loggable`. Under `failOnPreexisting` an existing
+-     destination raises `AlreadyExists`; under `overwritePreexisting` it is removed first.
+-     Under `requireParents` a missing parent raises `Nonexistent`. A directory is copied
+-     as an empty directory (the JVM's `Files.copy`), not recursively. Logs `Io.Event.Copy`
+-     and returns the destination.
++ entry .copyTo   `path.copyTo(destination)`: копирует запись по пути, обращаясь к политикам в области видимости
++     Расширение для любого `Path on <plane: Filesystem>`, которому нужны `OverwritePreexisting
++     on plane`, `DereferenceSymlinks`, `CreateParents on plane`, бэкенд,
++     `Tactic[Io.Error]` и `Io.Event is Loggable`. При `failOnPreexisting` существующее место
++     назначения порождает `AlreadyExists`; при `overwritePreexisting` оно сначала удаляется.
++     При `requireParents` отсутствующий родительский каталог порождает `Nonexistent`. Каталог
++     копируется как пустой каталог (`Files.copy` из JVM), а не рекурсивно. Записывает в журнал
++     `Io.Event.Copy` и возвращает место назначения.
+
+=     and returns the destination.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+-     import filesystemOptions.createParents
++     import filesystemOptions.createParents
+
+- entry .moveTo   `path.moveTo(destination)`: moves an entry to a path, consulting the policies in scope
+-     An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
+-     plane`, a `MoveAtomically`, a `DereferenceSymlinks`, a `CreateParents on
+-     plane`, a backend, a `Tactic[Io.Error]` and an `Io.Event is Loggable`. With
+-     `moveAtomically` the move is a single rename, and one across volumes is `Unsupported`;
+-     with `moveNonAtomically` it may be a copy and a delete. `AlreadyExists` and
+-     `Nonexistent` arise under the strict policies as for `copyTo`. Logs `Io.Event.Move` and
+-     returns the destination.
++ entry .moveTo   `path.moveTo(destination)`: перемещает запись по пути, обращаясь к политикам в области видимости
++     Расширение для любого `Path on <plane: Filesystem>`, которому нужны `OverwritePreexisting
++     on plane`, `MoveAtomically`, `DereferenceSymlinks`, `CreateParents on plane`,
++     бэкенд, `Tactic[Io.Error]` и `Io.Event is Loggable`. С `moveAtomically` перемещение — это
++     одно переименование, а перемещение между томами — `Unsupported`; с `moveNonAtomically`
++     это может быть копирование и удаление. `AlreadyExists` и `Nonexistent` возникают при
++     строгих политиках так же, как для `copyTo`. Записывает в журнал `Io.Event.Move` и
++     возвращает место назначения.
+
+=     returns the destination.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+-     import filesystemOptions.createParents
++     import filesystemOptions.createParents
+
+- entry .hardLinkTo   `path.hardLinkTo(link)`: makes a hard link at `link` to this entry
+-     An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
+-     plane`, a `CreateParents on plane`, a backend, a `Tactic[Io.Error]` and an
+-     `Io.Event is Loggable`. The receiver is the existing entry and the argument the new
+-     name; afterwards both have the same `entryIdentity`. Logs `Io.Event.HardLink` and
+-     returns the link's path.
++ entry .hardLinkTo   `path.hardLinkTo(link)`: создаёт по пути `link` жёсткую ссылку на эту запись
++     Расширение для любого `Path on <plane: Filesystem>`, которому нужны `OverwritePreexisting
++     on plane`, `CreateParents on plane`, бэкенд, `Tactic[Io.Error]` и
++     `Io.Event is Loggable`. Получатель — существующая запись, а аргумент — новое имя; после
++     этого у обоих одинаковый `entryIdentity`. Записывает в журнал `Io.Event.HardLink` и
++     возвращает путь ссылки.
+
+- entry .symlinkTo   `path.symlinkTo(link)`: makes a symbolic link at `link` pointing at this path
+-     An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
+-     plane`, a `CreateParents on plane`, a backend, a `Tactic[Io.Error]` and an
+-     `Io.Event is Loggable`. The receiver is the target and the argument the link, which is
+-     created; the link stores the receiver's full text. Logs `Io.Event.Symlink` and returns
+-     the link's path.
++ entry .symlinkTo   `path.symlinkTo(link)`: создаёт по пути `link` символическую ссылку, указывающую на этот путь
++     Расширение для любого `Path on <plane: Filesystem>`, которому нужны `OverwritePreexisting
++     on plane`, `CreateParents on plane`, бэкенд, `Tactic[Io.Error]` и
++     `Io.Event is Loggable`. Получатель — цель, а аргумент — ссылка, которая создаётся;
++     ссылка хранит полный текст получателя. Записывает в журнал `Io.Event.Symlink` и
++     возвращает путь ссылки.
+
+=     the link's path.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+-     import filesystemOptions.createParents
++     import filesystemOptions.createParents
+
+-       Many files are looked up not at one location but along a list of them — an icon in
+-       whichever XDG data directory holds it, a configuration file in the first of several
+-       places. An ambience `Searchpath` plane (`Xdg.Data`, `Xdg.Config`) is such a list
+-       presented as one navigable tree, and resolution onto the real platform goes through a
+-       contextual `Searchpaths.Stems`: the ordered directories to try, the head stem being the
+-       writable one. A relative path on the plane then resolves with `discover()` to the first
+-       stem holding it, with `locations()` to every stem holding it, with `listing()` to the
+-       merged directory listing, and with `destination()` to its place under the head stem.
++       Многие файлы ищутся не в одном месте, а вдоль списка мест — значок в том каталоге данных
++       XDG, где он есть, файл конфигурации в первом из нескольких мест. Плоскость `Searchpath` из
++       ambience (`Xdg.Data`, `Xdg.Config`) — это такой список, представленный как одно дерево,
++       по которому можно перемещаться, а разрешение на настоящей платформе идёт через
++       контекстное значение `Searchpaths.Stems`: упорядоченные каталоги, которые нужно
++       перебрать, причём головной ствол — тот, в который можно писать. Относительный путь на
++       плоскости затем разрешается через `discover()` в первый ствол, где он есть, через
++       `locations()` — во все стволы, где он есть, через `listing()` — в объединённый список
++       содержимого каталога, а через `destination()` — в его место под головным стволом.
+
+-       (% / "icons" / "app.png").on[Xdg.Data].discover()        // the first stem's copy, or Unset
++       (% / "icons" / "app.png").on[Xdg.Data].discover()        // the first stem's copy, or Unset
+
+-   refer galilei.discover
++   refer galilei.discover
+
+- entry .discover   `path.discover()`: the first real directory of a searchpath in which the path exists, or `Unset`
+-     An extension on `Path on <plane <: Searchpath>`, needing a `Searchpaths.Stems` for the
+-     plane and a `FilesystemBackend` for its target. First-match-wins, per the XDG
+-     specification; the result is a `Path on stems.Target`. Named `discover` rather than
+-     `locate` or `search`, which zephyrine and gossamer export at the umbrella.
++ entry .discover   `path.discover()`: первый настоящий каталог пути поиска, в котором существует путь, или `Unset`
++     Расширение для `Path on <plane <: Searchpath>`; нужны `Searchpaths.Stems` для плоскости и
++     `FilesystemBackend` для её цели. Побеждает первое совпадение, согласно спецификации XDG;
++     результат — `Path on stems.Target`. Называется `discover`, а не `locate` или
++     `search`, которые экспортируют zephyrine и gossamer в зонтичном модуле.
+
+- entry .destination   `path.destination()`: the path's place under the head stem, where the XDG specification directs writes
+-     An extension on `Path on <plane <: Searchpath>`. Total: nothing is checked on disk.
+-     Creating any missing intermediate directories is the caller's, through
+-     `filesystemOptions.createParents` on the write itself.
++ entry .destination   `path.destination()`: место пути под головным стволом, куда спецификация XDG предписывает писать
++     Расширение для `Path on <plane <: Searchpath>`. Тотально: на диске ничего не проверяется.
++     Создание недостающих промежуточных каталогов — забота вызывающей стороны, через
++     `filesystemOptions.createParents` при самой записи.
+
+-       In `galilei.jvm`. `Device.create(path, Device.Kind.Block, major, minor)` runs the
+-       `mknod` command, consulting the `CreateParents` and `OverwritePreexisting`
+-       policies in scope, and raises `Io.Error` with `PermissionDenied` if the command fails
+-       — making a device node ordinarily needs root.
++       В `galilei.jvm`. `Device.create(path, Device.Kind.Block, major, minor)` выполняет команду
++       `mknod`, учитывая политики `CreateParents` и `OverwritePreexisting` в области
++       видимости, и порождает `Io.Error` с `PermissionDenied`, если команда не удалась, — для
++       создания узла устройства обычно нужны права root.
+
+-       import filesystemOptions.createParents
++       import filesystemOptions.createParents
+
+- entry .mapped   `path.mapped { view => … }`: the whole file mapped into memory, read-only, as a `Terrain` for the length of a block
+-     Nothing is copied: integers are loaded from the page cache in place, and processes which
+-     map one file share one copy of it. The file is unmapped when the block ends, and the view
+-     is a capability which is confined to it. The JVM and Scala Native backends map files;
+-     WASI raises `Io.Error` with the reason `Unsupported`.
++ entry .mapped   `path.mapped { view => … }`: весь файл, отображённый в память только для чтения, как `Terrain` на время блока
++     Ничего не копируется: целые числа загружаются из страничного кеша на месте, а процессы,
++     которые отображают один файл, разделяют одну его копию. Файл перестаёт быть отображённым,
++     когда блок заканчивается, а представление — это возможность, ограниченная этим блоком.
++     Бэкенды JVM и Scala Native отображают файлы; WASI порождает `Io.Error` с причиной
++     `Unsupported`.
+
+- entry .hold   `path.hold(reserve) { holding => … }`: the whole file mapped for changing in place, as a `Holding`, under an exclusive lock
+-     The file is created if it is not there, and extended to `reserve` bytes if it is
+-     shorter; the holding's `expand` extends it further. The lock is on the file itself, and is
+-     held for the block: a second `hold` of the file, in this process or another, raises
+-     `Io.Error` with the reason `Busy`. What was stored is durable when the block ends. Only
+-     the JVM and Scala Native backends map a file for changing; WASI's raises `Unsupported`.
++ entry .hold   `path.hold(reserve) { holding => … }`: весь файл, отображённый для изменения на месте, как `Holding`, под исключительной блокировкой
++     Файл создаётся, если его нет, и удлиняется до `reserve` байтов, если он короче; `expand`
++     у `Holding` удлиняет его дальше. Блокировка ставится на сам файл и удерживается на время
++     блока: второй `hold` этого файла, в этом процессе или в другом, порождает `Io.Error` с
++     причиной `Busy`. Записанное становится долговечным, когда блок заканчивается. Отображать
++     файл для изменения умеют только бэкенды JVM и Scala Native; бэкенд WASI порождает
++     `Unsupported`.
+
+- entry .claim   `path.claim[record] { owner => … }`: ownership of a name for the length of a block, to publish versions of `record` under it
+-     An exclusive operating-system lock is held on the sibling `<name>.lock` throughout, so
+-     one process, and one scope within it, publishes under the name at a time; a second
+-     raises `Io.Error` with the reason `Busy`. The lock is advisory, and dependable between
+-     cooperating processes on a local filesystem.
++ entry .claim   `path.claim[record] { owner => … }`: владение именем на время блока, чтобы публиковать под ним версии `record`
++     На всё это время удерживается исключительная блокировка операционной системы на соседнем
++     файле `<name>.lock`, поэтому под именем публикует одновременно только один процесс и одна
++     область видимости внутри него; второй порождает `Io.Error` с причиной `Busy`. Блокировка
++     рекомендательная и надёжна между взаимодействующими процессами в локальной файловой
++     системе.
+
+- entry .observe   `path.observe[record] { observer => … }`: the version of a name which is now published, mapped, with the means to move on to a newer one
+-     No lock is taken, so an observer never delays the owner, nor the owner an observer.
+-     Whatever is mapped is unmapped when the block ends. A name under which nothing has been
+-     published raises `Io.Error`.
++ entry .observe   `path.observe[record] { observer => … }`: версия имени, опубликованная сейчас, отображённая в память, вместе со средствами перейти к более новой
++     Блокировка не берётся, поэтому наблюдатель никогда не задерживает владельца, а владелец —
++     наблюдателя. Всё, что отображено, перестаёт быть отображённым, когда блок заканчивается.
++     Имя, под которым ничего не опубликовано, порождает `Io.Error`.
+
+- entry .Edition   the identity of one published version: which file the name led to, and when it was written
+-     Two editions are the same version exactly when they are equal; they have no order.
++ entry .Edition   идентичность одной опубликованной версии: к какому файлу вело имя и когда он был записан
++     Две редакции — одна и та же версия ровно тогда, когда они равны; порядка у них нет.
+
+- entry .Owner   ownership of a name, for the block of `claim`: the capability to publish versions of `record` under it
+-   entry #publish   replaces the published file with the encoding of a value, atomically, and answers the new `Edition`
+-       The value is written to the temporary sibling `.<name>.part`, synchronously, and moved
+-       over the name, so an observer which has mapped an earlier version is undisturbed.
++ entry .Owner   владение именем на время блока `claim`: возможность публиковать под ним версии `record`
++   entry #publish   атомарно заменяет опубликованный файл кодированием значения и отвечает новой `Edition`
++       Значение синхронно записывается во временный соседний файл `.<name>.part` и
++       перемещается поверх имени, поэтому наблюдатель, который отобразил более раннюю версию,
++       не затрагивается.
+
+- entry .Observer   a reader's hold on a published name, for the block of `observe`: the current version, mapped, and the means to move on
++ entry .Observer   удержание читающим опубликованного имени на время блока `observe`: текущая версия, отображённая в память, и средства перейти дальше
+
+= entry .Observer   a reader's hold on a published name, for the block of `observe`: the current version, mapped, and the means to move on
+-   detail
++   detail
+
+-       A shared capability: it takes no lock, and may be used from several threads. It keeps
+-       the version it has mapped in existence until it moves on, or its block ends.
+-   entry #edition   the edition of the version which is mapped
+-   entry #map   lends a `Terrain` view of the mapped version for the length of a block, which a `refresh` meanwhile does not disturb
+-   entry #refresh   maps the version the name now leads to, if it is not the one already mapped, and answers whether it did
+-   entry #open   opens the mapped version as `record`, through its `zephyrine.Surveyable` instance, for the length of a block
+-       The type the observer was given is the form its version is read in: an observer of a
+-       `Ratel of Playbill` opens an image of a `Playbill`, and refuses any other.
++       Разделяемая возможность: она не берёт блокировки, и ею можно пользоваться из нескольких
++       потоков выполнения. Она сохраняет существование отображённой ею версии, пока не перейдёт
++       дальше или пока не закончится её блок.
++   entry #edition   редакция отображённой версии
++   entry #map   предоставляет на время представление `Terrain` отображённой версии на время блока; `refresh` в это время его не затрагивает
++   entry #refresh   отображает версию, к которой имя ведёт теперь, если это не уже отображённая, и отвечает, сделал ли он это
++   entry #open   открывает отображённую версию как `record` через её экземпляр `zephyrine.Surveyable` на время блока
++       Тип, переданный наблюдателю, — это форма, в которой читается его версия: наблюдатель
++       `Ratel of Playbill` открывает образ `Playbill` и отклоняет любой другой.

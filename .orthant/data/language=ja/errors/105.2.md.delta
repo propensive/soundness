@@ -1,0 +1,99 @@
+orthant 1 language
+
+- # `↯/s.105.2` — `Crypto.Error`
++ # `↯/s.105.2` — `Crypto.Error`
+
+- Raised when Enigmatic cannot decode encrypted data.
++ Enigmatic が暗号化されたデータをデコードできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- The cryptographic primitive (cipher, signature, or MAC) rejected the
+- input. The constructor takes a `reason: Reason` indicating why the
+- operation failed; the rendered message is `could not decode the
+- encrypted data because $reason`.
++ 暗号プリミティブ（暗号方式、署名、MAC）が入力を拒否した。
++ コンストラクターは操作が失敗した理由を示す `reason: Reason` を受け取り、描画されるメッセージは `could not decode the encrypted data because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.105.2.1` — `BadPadding`
++ ### `↯/s.105.2.1` — `BadPadding`
+
+- The padding bytes did not match the cipher's expectations — typically
+- because the ciphertext was corrupted or the wrong key was supplied
+- (authentication-tag mismatch in AEAD modes).
++ パディングのバイトが暗号方式の期待に一致しなかった。典型的には、暗号文が壊れていたか、誤った鍵が与えられたためである（AEAD モードでの認証タグの不一致）。
+
+- **Example.** `[↯/s.105.2.1] could not decode the encrypted data because the ciphertext was corrupted or the key was wrong`
++ **例。** `[↯/s.105.2.1] could not decode the encrypted data because the ciphertext was corrupted or the key was wrong`
+
+- **Resolution.** Confirm the key and IV match those used at encryption
+- time; verify the ciphertext has not been truncated or modified in
+- transit.
++ **解決方法。** 鍵と IV が暗号化の時点で使われたものと一致することを確かめる。暗号文が途中で切れたり、転送中に改変されたりしていないことを検証する。
+
+- ### `↯/s.105.2.2` — `IllegalBlockSize`
++ ### `↯/s.105.2.2` — `IllegalBlockSize`
+
+- The input length was not a multiple of the cipher's block size, or
+- otherwise incompatible with the cipher's framing.
++ 入力の長さが暗号方式のブロックサイズの倍数でなかったか、その他の点で暗号方式のフレーミングと両立しなかった。
+
+- **Example.** `[↯/s.105.2.2] could not decode the encrypted data because the input length was not valid for the cipher`
++ **例。** `[↯/s.105.2.2] could not decode the encrypted data because the input length was not valid for the cipher`
+
+- **Resolution.** Verify the ciphertext is complete and was produced by
+- the same cipher and mode now being used to decrypt it.
++ **解決方法。** 暗号文が完全であり、今それを復号に使っているのと同じ暗号方式とモードで生成されたことを検証する。
+
+- ### `↯/s.105.2.3` — `InvalidKey`
++ ### `↯/s.105.2.3` — `InvalidKey`
+
+- The key bytes were rejected by the cipher — wrong size, invalid
+- format, or unsupported parameters.
++ 鍵のバイトが暗号方式に拒否された。大きさの誤り、不正な形式、またはサポートされないパラメーターである。
+
+- **Example.** `[↯/s.105.2.3] could not decode the encrypted data because the key was not valid for the cipher`
++ **例。** `[↯/s.105.2.3] could not decode the encrypted data because the key was not valid for the cipher`
+
+- **Resolution.** Confirm the key was produced for the same cipher and
+- parameter set.
++ **解決方法。** 鍵が同じ暗号方式とパラメーターの組のために生成されたことを確かめる。
+
+- ### `↯/s.105.2.4` — `InvalidAlgorithm`
++ ### `↯/s.105.2.4` — `InvalidAlgorithm`
+
+- The requested algorithm or mode is not available in the JVM's
+- configured providers.
++ 要求されたアルゴリズムまたはモードが、JVM に構成されたプロバイダーで利用できない。
+
+- **Example.** `[↯/s.105.2.4] could not decode the encrypted data because the algorithm was not available`
++ **例。** `[↯/s.105.2.4] could not decode the encrypted data because the algorithm was not available`
+
+- **Resolution.** Install or enable a JCA provider that supports the
+- algorithm; check `java.security` policy.
++ **解決方法。** そのアルゴリズムをサポートする JCA プロバイダーをインストールするか有効にする。`java.security` のポリシーを確認する。
+
+- ### `↯/s.105.2.5` — `IoFailure`
++ ### `↯/s.105.2.5` — `IoFailure`
+
+- The cipher implementation could not read or write the data buffers —
+- typically a low-level I/O fault.
++ 暗号方式の実装がデータのバッファを読み書きできなかった。典型的には低レベルの I/O の障害である。
+
+- **Example.** `[↯/s.105.2.5] could not decode the encrypted data because data could not be read or written`
++ **例。** `[↯/s.105.2.5] could not decode the encrypted data because data could not be read or written`
+
+- **Resolution.** Inspect the cause chain for the underlying I/O error.
++ **解決方法。** 原因の連鎖を調べ、根底にある I/O エラーを確認する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/enigmatic/src/core/enigmatic.Crypto.scala`
+- - `↯/s.105.1` — `PemError`, raised when PEM-encoded keys cannot be parsed
++ - ソース：`lib/enigmatic/src/core/enigmatic.Crypto.scala`
++ - `↯/s.105.1` — `PemError`。PEM でエンコードされた鍵をパースできないときに発生する

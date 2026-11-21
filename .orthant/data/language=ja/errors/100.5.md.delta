@@ -1,0 +1,39 @@
+orthant 1 language
+
+- # `↯/s.100.5` — Port number out of range
++ # `↯/s.100.5` — ポート番号が範囲外である
+
+- Raised at compiletime when a port literal is outside the range 1–65535.
++ ポートのリテラルが 1〜65535 の範囲外にあるとき、コンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- TCP and UDP port numbers occupy sixteen bits, and zero is reserved.
++ TCP と UDP のポート番号は 16 ビットを占め、ゼロは予約されている。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.100.5] the TCP port number 70000 is not in the range 1-65535
++ [↯/s.100.5] the TCP port number 70000 is not in the range 1-65535
+
+= [↯/s.100.5] the TCP port number 70000 is not in the range 1-65535
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Use a port between 1 and 65535.
++ 1 から 65535 までのポートを使う。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/urticose/src/core/urticose.internal.scala`
++ - ソース：`lib/urticose/src/core/urticose.internal.scala`

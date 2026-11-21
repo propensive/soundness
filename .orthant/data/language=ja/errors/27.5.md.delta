@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.5` — Binary literal must be 8, 16, 32, or 64 bits
++ # `↯/s.27.5` — 二進リテラルは 8、16、32、64 ビットでなければならない
+
+- Raised at compile time by Hypotenuse's `bin"…"` literal macro when
+- the literal's bit count is not one of the supported widths.
++ リテラルのビット数がサポートされた幅のいずれでもないときに、Hypotenuse の `bin"…"` リテラルのマクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- Binary literals are typed by their bit count; only `8`, `16`,
+- `32`, and `64` are supported.
++ 二進リテラルはそのビット数によって型付けされる。サポートされるのは `8`、`16`、`32`、`64` だけである。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.27.5] a binary literal must be 8, 16, 32 or 64 bits long
++ [↯/s.27.5] a binary literal must be 8, 16, 32 or 64 bits long
+
+= [↯/s.27.5] a binary literal must be 8, 16, 32 or 64 bits long
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Pad or trim the literal to one of the supported widths.
++ リテラルを、サポートされた幅のいずれかに合わせて埋めるか切り詰める。
+
+- ## See also
++ ## 関連項目
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - その他の二進リテラルと十六進リテラルのエラー：[系列](README.md#families)
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

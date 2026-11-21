@@ -1,0 +1,3316 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base embarcadero
++ base embarcadero
+
+- import soundness
++ import soundness
+
+- info   OCI container images and Wasm artifacts as values, and a typed gRPC client for containerd
++ info   値としての OCI コンテナーイメージと Wasm アーティファクト、そして containerd のための型付きの gRPC クライアント
+
+- detail
++ detail
+
+-     _Embarcadero_ covers the two halves of running software in containers. The first is the
+-     **image**: a stack of filesystem layers and a configuration, each piece addressed by the
+-     digest of its bytes, in the format the Open Container Initiative (OCI) standardises and
+-     Docker, containerd, podman and every registry understand. The second is the **daemon**:
+-     containerd, the runtime beneath Docker and Kubernetes, driven over gRPC on a local socket
+-     to register containers, run tasks inside them, and manage images and namespaces.
++     _Embarcadero_ は、コンテナーでソフトウェアを動かすことの二つの側面を扱う。
++     一つ目は**イメージ**である。
++     これはファイルシステムのレイヤーと構成の積み重ねであり、各部分はそのバイトのダイジェストで参照される。その形式は Open Container Initiative（OCI）が標準化したもので、Docker、containerd、podman、そしてあらゆるレジストリが理解する。
++     二つ目は**デーモン**である。
++     Docker と Kubernetes の下にあるランタイムである containerd を、ローカルのソケット上の gRPC で操作し、コンテナーを登録し、その中でタスクを実行し、イメージと名前空間を管理する。
+
+-     An `Oci.Image` is assembled in memory from `Oci.Layer`s (each a `Tarfile`, gzip-compressed and
+-     hashed twice, once uncompressed for its `diffId` and once as stored for its `digest`) and
+-     an `Oci.Image.Config` whose `Oci.ContainerConfig` says what to run. The library computes the
+-     config blob, the `Oci.Manifest` which ties config and layers together by digest, and the
+-     single-entry `Oci.Index`; `Oci.Image#archive` renders the whole thing as an OCI image-layout tar
+-     (an "oci-archive") which `docker load`, `ctr images import`, `podman load` or `skopeo` will
+-     accept. `Oci.Image.wasm` builds the same layout as a Wasm OCI Artifact, whose one layer is an
+-     `application/wasm` component and whose config is a `Oci.WasmConfig` naming the WASI
+-     generation and the Component Model interfaces the component imports and exports. An
+-     existing archive is read by opening it, `data.open[Oci.Image]()` or `path.open[Oci.Image]()`,
+-     which gives an `Oci.Image.Handle` for the scope of a block: its `index`, `manifest`, `config`
+-     and each `layer`, verified against the digests the manifest declares, with an `Oci.Error`
+-     for anything missing, corrupt or unsupported.
++     `Oci.Image` はメモリ上で `Oci.Layer`（それぞれが gzip で圧縮された `Tarfile` であり、二度ハッシュされる。一度は `diffId` のために非圧縮のまま、もう一度は `digest` のために格納された形で）と、何を実行するかを `Oci.ContainerConfig` で示す `Oci.Image.Config` から組み立てられる。
++     ライブラリは構成の blob、構成とレイヤーをダイジェストで結びつける `Oci.Manifest`、そして単一の項目を持つ `Oci.Index` を計算する。
++     `Oci.Image#archive` はその全体を OCI のイメージレイアウトの tar（「oci-archive」）として描画し、それは `docker load`、`ctr images import`、`podman load`、`skopeo` が受け付ける。
++     `Oci.Image.wasm` は同じレイアウトを Wasm OCI Artifact として構築する。その唯一のレイヤーは `application/wasm` のコンポーネントであり、構成は WASI の世代と、コンポーネントがインポートおよびエクスポートする Component Model のインターフェースを示す `Oci.WasmConfig` である。
++     既存のアーカイブは `data.open[Oci.Image]()` または `path.open[Oci.Image]()` で開いて読み取る。
++     これはブロックのスコープの間 `Oci.Image.Handle` を与え、その `index`、`manifest`、`config`、そして各 `layer` はマニフェストが宣言するダイジェストに照らして検証される。欠けているもの、壊れているもの、サポートされていないものに対しては `Oci.Error` が発生する。
+
+-     ```scala
++     ```scala
+
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+=     import codepages.utf8Codepage
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     def entry(name: Text, content: Text): Tar.Entry =
++     def entry(name: Text, content: Text): Tar.Entry =
+
+-       Tar.Entry.File
++       Tar.Entry.File
+
+-         ( path  = name.as[Relative on Tar],
++         ( path  = name.as[Relative on Tar],
+
+-           mode  = UnixMode(),
++           mode  = UnixMode(),
+
+-           user  = UnixUser(0),
++           user  = UnixUser(0),
+
+-           group = UnixGroup(0),
++           group = UnixGroup(0),
+
+-           mtime = 0.bits.u32,
++           mtime = 0.bits.u32,
+
+-           data  = Archive.Body(content.in[Data]) )
++           data  = Archive.Body(content.in[Data]) )
+
+-     val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
++     val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+
+-     val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
++     val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+
+-     image.manifest.layers.map(_.digest)   // List(layer.digest)
++     image.manifest.layers.map(_.digest)   // List(layer.digest)
+
+-     val archive: Data = image.archive.source[Data].memoize
++     val archive: Data = image.archive.source[Data].memoize
+
+-     archive.open[Oci.Image](): handle ?=>
++     archive.open[Oci.Image](): handle ?=>
+
+-       handle.imageConfig.rootfs.diff_ids  // List(layer.diffId)
++       handle.imageConfig.rootfs.diff_ids  // List(layer.diffId)
+
+=       handle.imageConfig.rootfs.diff_ids  // List(layer.diffId)
+-     ```
++     ```
+
+-     A `Containerd` client connects to a daemon through an `Http2.Endpoint` (normally a Unix
+-     socket carrying cleartext HTTP/2) inside a `supervise` scope, bound to one containerd
+-     namespace, and each of its methods is one gRPC call exchanging typed records: a
+-     `Containerd.Container` is registered with `createContainer`, given a root filesystem of `Containerd.Mount`s and
+-     a task with `createTask`, started, signalled, awaited and deleted with the `…Task`
+-     methods, and inspected as a `Workload` whose `state` is a `Containerd.ProcessStatus`. The
+-     `Workload` openable binds that whole lifecycle to a scope,
+-     `container.open[Workload](Read & Launch & Signalling)`, so a task is created, optionally
+-     started, and always killed, reaped and deleted when the block ends. The messages on the
+-     wire — every `…Request` and `…Response`, `Containerd.AnyMessage`, `Containerd.Timestamp`, `Containerd.Empty` — are
+-     ordinary case classes with protobuf field numbers, so they round-trip with the daemon and
+-     can be encoded and decoded directly through locomotion's `Protobuf`.
++     `Containerd` クライアントは `supervise` のスコープ内で `Http2.Endpoint`（通常は平文の HTTP/2 を運ぶ Unix ソケット）を通じてデーモンに接続し、一つの containerd の名前空間に結びつけられる。
++     そのメソッドはそれぞれ、型付きのレコードをやりとりする一回の gRPC 呼び出しである。
++     `Containerd.Container` は `createContainer` で登録され、`Containerd.Mount` からなるルートファイルシステムと、`createTask` でタスクを与えられ、`…Task` メソッドで開始、シグナル送信、待機、削除され、`state` が `Containerd.ProcessStatus` である `Workload` として調べられる。
++     `Workload` の openable は、そのライフサイクル全体をスコープに結びつける。
++     `container.open[Workload](Read & Launch & Signalling)` とすると、タスクが作られ、必要なら開始され、ブロックが終わると必ずキル、回収、削除される。
++     ワイヤ上のメッセージ — すべての `…Request` と `…Response`、`Containerd.AnyMessage`、`Containerd.Timestamp`、`Containerd.Empty` — は protobuf のフィールド番号を持つ通常のケースクラスなので、デーモンとの間で往復でき、locomotion の `Protobuf` で直接エンコードおよびデコードできる。
+
+=     can be encoded and decoded directly through locomotion's `Protobuf`.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     can be encoded and decoded directly through locomotion's `Protobuf`.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     can be encoded and decoded directly through locomotion's `Protobuf`.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     can be encoded and decoded directly through locomotion's `Protobuf`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+-     import logging.silentLogging
++     import logging.silentLogging
+
+-     import probates.awaitProbate
++     import probates.awaitProbate
+
+=     import probates.awaitProbate
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+-     def report[endpoint](endpoint: Http2.Endpoint[endpoint]): Unit = supervise:
++     def report[endpoint](endpoint: Http2.Endpoint[endpoint]): Unit = supervise:
+
+-       val client = Containerd(endpoint, t"default")
++       val client = Containerd(endpoint, t"default")
+
+-       client.version().version
++       client.version().version
+
+-       client.containers().map(_.id)
++       client.containers().map(_.id)
+
+=       client.containers().map(_.id)
+-     ```
++     ```
+
+-     The library has three source sets:
++     このライブラリは三つのソースセットを持つ。
+
+-     - `embarcadero.oci` — `Oci.Image`, `Oci.Layer`, `Oci`, `Oci.Descriptor`, `Oci.Index`, `Oci.RootFs`,
+-       `Oci.History`, `Oci.ContainerConfig`, `Oci.WasmConfig` and `Oci.WasmComponent`, and
+-       `Oci.Image.dataOpenable` for opening in-memory `Data` as an image. It compiles for the
+-       JVM, Scala.js and Scala Native, so an image can be assembled in a browser or a Wasm
+-       guest; it draws on bitumen for its tar layers, pneumatic for gzip, gastronomy for
+-       SHA-256 and jacinta for the JSON documents.
+-     - `embarcadero.oci` on the JVM additionally has `ImageOpenable` and the given
+-       `imagePathOpenable`, which open a filesystem *path* as an image through bitumen's
+-       disk-backed tar reader.
+-     - `embarcadero.containerd` — JVM only: `Containerd`, `Workload`, the `Launch` and
+-       `Signalling` modes, `Containerd.ProcessStatus`, `Containerd.Event`, and the protobuf message types,
+-       over obligatory's gRPC and telekinesis's HTTP/2.
++     - `embarcadero.oci` — `Oci.Image`、`Oci.Layer`、`Oci`、`Oci.Descriptor`、`Oci.Index`、`Oci.RootFs`、`Oci.History`、`Oci.ContainerConfig`、`Oci.WasmConfig`、`Oci.WasmComponent`、そしてメモリ上の `Data` をイメージとして開くための `Oci.Image.dataOpenable`。JVM、Scala.js、Scala Native 向けにコンパイルできるので、イメージをブラウザや Wasm のゲストの中で組み立てられる。tar のレイヤーには bitumen を、gzip には pneumatic を、SHA-256 には gastronomy を、JSON ドキュメントには jacinta を使う。
++     - JVM 上の `embarcadero.oci` には、さらに `ImageOpenable` と given の `imagePathOpenable` がある。これらは bitumen のディスクに基づく tar リーダーを通じて、ファイルシステムの*パス*をイメージとして開く。
++     - `embarcadero.containerd` — JVM のみ。`Containerd`、`Workload`、`Launch` と `Signalling` のモード、`Containerd.ProcessStatus`、`Containerd.Event`、そして protobuf のメッセージ型。obligatory の gRPC と telekinesis の HTTP/2 の上に構築されている。
+
+-     The containerd protobuf records — `Containerd.Container`, `Containerd.Mount`,
+-     `Containerd.Timestamp` and the service requests and replies — are nested in `Containerd`, so
+-     they do not compete with other libraries' names in the `soundness` umbrella. The
+-     givens the library itself needs (`providers.javaBaseProvider`, `alphabets.hexLowerCase`,
+-     `formatting.compactJsonFormatting`, `codepages.utf8Codepage`) are imported inside it, so
+-     a program imports only what its own code uses; the openables (`Oci.Image.dataOpenable`,
+-     `Workload.openable`) sit in their companions and resolve with no import, while
+-     `imagePathOpenable` is a top-level given reached through `import soundness.*`. A
+-     containerd call needs a `Monitor` (from `supervise`) and tactics for `Grpc.Error`,
+-     `Http2.Error`, `Async.Error` and `Protobuf.Error`, and logs a `Containerd.Event` for each
+-     change it makes, so a `Containerd.Event is Loggable` such as `logging.silentLogging` must be
+-     in scope.
++     containerd の protobuf のレコード — `Containerd.Container`、`Containerd.Mount`、`Containerd.Timestamp`、そしてサービスのリクエストと応答 — は `Containerd` の中に入れ子になっているので、`soundness` アンブレラの中で他のライブラリの名前と競合しない。
++     ライブラリ自身が必要とする given（`providers.javaBaseProvider`、`alphabets.hexLowerCase`、`formatting.compactJsonFormatting`、`codepages.utf8Codepage`）はライブラリの内部でインポートされているので、プログラムは自分のコードが使うものだけをインポートすればよい。
++     openable（`Oci.Image.dataOpenable`、`Workload.openable`）はそれぞれのコンパニオンにあり、インポートなしに解決される。一方 `imagePathOpenable` はトップレベルの given であり、`import soundness.*` を通じて得られる。
++     containerd の呼び出しには `Monitor`（`supervise` から得る）と、`Grpc.Error`、`Http2.Error`、`Async.Error`、`Protobuf.Error` の戦術が必要である。
++     また、行う変更ごとに `Containerd.Event` をログに記録するので、`logging.silentLogging` のような `Containerd.Event is Loggable` がスコープになければならない。
+
+- refer embarcadero.Oci.Image
++ refer embarcadero.Oci.Image
+
+- refer embarcadero.Oci.Layer
++ refer embarcadero.Oci.Layer
+
+- refer embarcadero.Oci
++ refer embarcadero.Oci
+
+- refer embarcadero.Containerd
++ refer embarcadero.Containerd
+
+- refer embarcadero.Workload
++ refer embarcadero.Workload
+
+- entry .Oci   the namespace for OCI document types with generic names: `Oci.Manifest`, `Oci.Config`, `Oci.Error`
++ entry .Oci   汎用的な名前を持つ OCI のドキュメント型のための名前空間：`Oci.Manifest`、`Oci.Config`、`Oci.Error`
+
+= entry .Oci   the namespace for OCI document types with generic names: `Oci.Manifest`, `Oci.Config`, `Oci.Error`
+-   detail
++   detail
+
+-       An object holding the OCI types whose natural names are too generic for the `soundness`
+-       umbrella: `Manifest` would clash with revolution's JAR `Manifest`, and `Config` and
+-       `Error` are everyone's. `.Manifest` is the image manifest document, `.Config` the union
+-       of the two config-blob forms, and `.Error` what reading an archive raises.
++       自然な名前が `soundness` アンブレラにとって汎用的すぎる OCI の型を保持するオブジェクトである。
++       `Manifest` は revolution の JAR の `Manifest` と衝突し、`Config` と `Error` は誰もが使う名前である。
++       `.Manifest` はイメージのマニフェストのドキュメント、`.Config` は構成の blob の二つの形のユニオン、`.Error` はアーカイブの読み取りが発生させるものである。
+
+-   refer embarcadero.Oci.Image
++   refer embarcadero.Oci.Image
+
+-   entry .Config   the two forms an image's config blob can take: `Image.Config | WasmConfig`
+-       A type alias. The two are distinguished on the wire by the config descriptor's media
+-       type (`application/vnd.oci.image.config.v1+json` or
+-       `application/vnd.wasm.config.v0+json`); everything above the config blob — manifest,
+-       index, image layout — is shared. `Image#config` and `Image.Handle#config` have this
+-       type, and a `match` on `Image.Config` and `WasmConfig` separates them.
+-   entry .Manifest   an OCI image manifest: a descriptor for the config blob and the ordered layer descriptors
++   entry .Config   イメージの構成の blob がとりうる二つの形：`Image.Config | WasmConfig`
++       型エイリアスである。
++       二つはワイヤ上では構成の記述子のメディアタイプ（`application/vnd.oci.image.config.v1+json` または `application/vnd.wasm.config.v0+json`）で区別される。構成の blob より上のもの — マニフェスト、インデックス、イメージレイアウト — はすべて共通である。
++       `Image#config` と `Image.Handle#config` はこの型を持ち、`Image.Config` と `WasmConfig` に対する `match` で二つを分けられる。
++   entry .Manifest   OCI のイメージマニフェスト：構成の blob の記述子と、順序づけられたレイヤーの記述子
+
+=   entry .Manifest   an OCI image manifest: a descriptor for the config blob and the ordered layer descriptors
+-     detail
++     detail
+
+-         The document (media type `application/vnd.oci.image.manifest.v1+json`) which ties an
+-         image together: `#config` is the `Descriptor` of the config blob and `#layers` the
+-         `Descriptor` of each layer, bottom-most first, so a reader can fetch and verify every
+-         blob by digest. `#schemaVersion` is always `2`. `Image.apply` and `Image.wasm` build
+-         one; `Image.Handle#manifest` reads one back, digest-verified. It encodes and decodes
+-         as JSON through jacinta.
+-     entry #schemaVersion   the manifest schema version: always `2`
+-     entry #mediaType   the manifest's own media type, `application/vnd.oci.image.manifest.v1+json`
+-     entry #config   the descriptor of the config blob, whose media type says which `Oci.Config` form it is
+-     entry #layers   the descriptors of the layers, in order
+-     entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
+-   entry .Error   raised when an OCI archive cannot be read: a missing document, a bad digest, an unsupported form
++         イメージを一つにまとめるドキュメント（メディアタイプ `application/vnd.oci.image.manifest.v1+json`）である。
++         `#config` は構成の blob の `Descriptor` であり、`#layers` は最下層から順に並べた各レイヤーの `Descriptor` である。そのため、読み手はすべての blob をダイジェストで取得し検証できる。
++         `#schemaVersion` は常に `2` である。
++         `Image.apply` と `Image.wasm` はこれを構築し、`Image.Handle#manifest` はダイジェストを検証したうえでこれを読み戻す。
++         jacinta を通じて JSON としてエンコードおよびデコードされる。
++     entry #schemaVersion   マニフェストのスキーマのバージョン：常に `2`
++     entry #mediaType   マニフェスト自身のメディアタイプ、`application/vnd.oci.image.manifest.v1+json`
++     entry #config   構成の blob の記述子。そのメディアタイプがどちらの `Oci.Config` の形かを示す
++     entry #layers   レイヤーの記述子。順序どおりに並ぶ
++     entry #annotations   自由形式の `Map[Text, Text]` のアノテーション。なければ `Unset`
++   entry .Error   OCI アーカイブを読み取れないときに発生する：欠けているドキュメント、不正なダイジェスト、サポートされていない形
+
+=   entry .Error   raised when an OCI archive cannot be read: a missing document, a bad digest, an unsupported form
+-     detail
++     detail
+
+-         Error `↯/s.113.1`: _the OCI image archive could not be read because `reason`_. Raised by
+-         `Image.Handle`'s methods and by the openables, with a `.Reason` saying what went
+-         wrong. The reasons: `MissingLayout` (no `oci-layout` marker), `UnsupportedLayout
+-         (version)` (a layout version not beginning `1.`), `MissingIndex` (no `index.json`),
+-         `MissingBlob(digest)`, `DigestMismatch(expected, actual)` (a blob whose bytes do not
+-         hash to the digest it is addressed by), `InvalidBlob(digest, detail)` (a document
+-         which does not parse, or a blob whose size disagrees with its descriptor),
+-         `UnsupportedDigest(algorithm)` (a digest not prefixed `sha256:`), `NoManifest` (an
+-         index listing no manifests) and `WriteUnsupported` (an archive opened with `Write`).
++         エラー `↯/s.113.1`：_the OCI image archive could not be read because `reason`_。
++         `Image.Handle` のメソッドと openable が、何が問題だったかを示す `.Reason` とともに発生させる。
++         理由は次のとおりである。
++         `MissingLayout`（`oci-layout` マーカーがない）、`UnsupportedLayout (version)`（`1.` で始まらないレイアウトのバージョン）、`MissingIndex`（`index.json` がない）、`MissingBlob(digest)`、`DigestMismatch(expected, actual)`（バイトのハッシュが参照に使われるダイジェストと一致しない blob）、`InvalidBlob(digest, detail)`（パースできないドキュメント、またはサイズが記述子と一致しない blob）、`UnsupportedDigest(algorithm)`（`sha256:` で始まらないダイジェスト）、`NoManifest`（マニフェストを一つも挙げていないインデックス）、`WriteUnsupported`（`Write` で開かれたアーカイブ）。
+
+=         index listing no manifests) and `WriteUnsupported` (an archive opened with `Write`).
+=
+-         ```scala
++         ```scala
+
+=         index listing no manifests) and `WriteUnsupported` (an archive opened with `Write`).
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         index listing no manifests) and `WriteUnsupported` (an archive opened with `Write`).
+=
+=         ```scala
+=         import soundness.*
+-         import codepages.utf8Codepage
++         import codepages.utf8Codepage
+
+-         val archive: Data = t"not an archive".in[Data]
++         val archive: Data = t"not an archive".in[Data]
+
+-         safely(archive.open[Oci.Image]() { handle ?=> handle.index })   // Unset
++         safely(archive.open[Oci.Image]() { handle ?=> handle.index })   // Unset
+
+=         safely(archive.open[Oci.Image]() { handle ?=> handle.index })   // Unset
+-         ```
++         ```
+
+-         Under `safely` any failure is `Unset`; `capture[Oci.Error]` keeps the error so that
+-         its `#reason` can be matched.
+-     entry .Reason   why an archive could not be read, as an enum with a number per case
+-         The number is the error's sub-code:
++         `safely` のもとではどの失敗も `Unset` になる。
++         `capture[Oci.Error]` はエラーを保持するので、その `#reason` でマッチできる。
++     entry .Reason   アーカイブを読み取れなかった理由。case ごとに番号を持つ enum である
++         番号はエラーのサブコードである。
+
+-         ```tabular
++         ```tabular
+
+-         column  Case
+-         column  Code
+-         column  Message
+-         column  Note
++         column  case
++         column  コード
++         column  メッセージ
++         column  備考
+
+-         row  `MissingLayout`  1  _the archive does not contain an oci-layout marker_
++         row  `MissingLayout`  1  _the archive does not contain an oci-layout marker_
+
+-         row  `UnsupportedLayout(version)`  2  _the image layout version `version` is not supported_
++         row  `UnsupportedLayout(version)`  2  _the image layout version `version` is not supported_
+
+-         row  `MissingIndex`  3  _the archive does not contain an index.json document_
++         row  `MissingIndex`  3  _the archive does not contain an index.json document_
+
+-         row  `MissingBlob(digest)`  4  _the blob `digest` is not present in the archive_
++         row  `MissingBlob(digest)`  4  _the blob `digest` is not present in the archive_
+
+-         row  `DigestMismatch(expected, actual)`  5  _the blob addressed as `expected` has the digest `actual`_
++         row  `DigestMismatch(expected, actual)`  5  _the blob addressed as `expected` has the digest `actual`_
+
+-         row  `InvalidBlob(digest, detail)`  6  _the blob `digest` could not be interpreted: `detail`_
++         row  `InvalidBlob(digest, detail)`  6  _the blob `digest` could not be interpreted: `detail`_
+
+-         row  `UnsupportedDigest(algorithm)`  7  _the digest algorithm `algorithm` is not supported_
++         row  `UnsupportedDigest(algorithm)`  7  _the digest algorithm `algorithm` is not supported_
+
+-         row  `NoManifest`  8  _the image index lists no manifests_
++         row  `NoManifest`  8  _the image index lists no manifests_
+
+-         row  `WriteUnsupported`  9  _OCI image archives cannot be opened for writing_
++         row  `WriteUnsupported`  9  _OCI image archives cannot be opened for writing_
+
+=         row  `WriteUnsupported`  9  _OCI image archives cannot be opened for writing_
+-         ```
++         ```
+
+-     entry .communicable   renders each reason as a message, such as _the blob `digest` is not present in the archive_
+-     entry #reason   the `Oci.Error.Reason` which caused the failure
++     entry .communicable   各理由を、_the blob `digest` is not present in the archive_ のようなメッセージとして描画する
++     entry #reason   失敗の原因となった `Oci.Error.Reason`
+
+-   entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config, manifest and index
++   entry .Image   メモリ上で組み立てられる OCI イメージまたは Wasm アーティファクト：レイヤー、構成、マニフェスト、インデックス
+
+=   entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config, manifest and index
+-     detail
++     detail
+
+-         An `Image` is the complete, digest-consistent content of an OCI image: its `#layers`,
+-         the `#config` document and its rendered `#configBytes`, the `#manifest` which names
+-         the config and each layer by `Descriptor`, and the single-entry `#index` which names
+-         the manifest. All of it is computed when the image is built, so the digests and sizes
+-         are right by construction, and `#archive` renders it as the OCI image-layout tar a
+-         runtime imports. The companion builds an image two ways: `.apply` from filesystem
+-         layers and a `ContainerConfig`, and `.wasm` from a compiled Wasm component. Reading an
+-         image back is a scoped *open*: `.Handle` is what `data.open[Image]()` (through
+-         `.dataOpenable`) or `path.open[Image]()` (through `imagePathOpenable`, JVM only)
+-         provides for the duration of a block.
++         `Image` は、ダイジェストの整合した OCI イメージの完全な内容である。
++         その `#layers`、`#config` ドキュメントとそれを描画した `#configBytes`、構成と各レイヤーを `Descriptor` で示す `#manifest`、そしてマニフェストを示す単一の項目を持つ `#index` からなる。
++         これらはすべてイメージを構築するときに計算されるので、ダイジェストとサイズは構成上正しく、`#archive` はそれを、ランタイムがインポートする OCI のイメージレイアウトの tar として描画する。
++         コンパニオンはイメージを二通りの方法で構築する。
++         ファイルシステムのレイヤーと `ContainerConfig` から作る `.apply` と、コンパイルされた Wasm のコンポーネントから作る `.wasm` である。
++         イメージを読み戻すのは、スコープつきの*オープン*である。
++         `.Handle` は、`data.open[Image]()`（`.dataOpenable` を通じて）または `path.open[Image]()`（`imagePathOpenable` を通じて。JVM のみ）がブロックの間だけ与えるものである。
+
+-         The pieces come together in a fixed order, each addressed by the digest of the one
+-         before:
++         各部分は決まった順序で組み合わされ、それぞれが一つ前のもののダイジェストで参照される。
+
+-         ```scala fuel
++         ```scala fuel
+
+=         ```scala fuel
+-         frame
++         frame
+
+-           label A layer: a tar, compressed and hashed twice
++           label レイヤー：圧縮され、二度ハッシュされる tar
+
+=           label A layer: a tar, compressed and hashed twice
+-           code
++           code
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+-               import codepages.utf8Codepage
++               import codepages.utf8Codepage
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+-               def entry(name: Text, content: Text): Tar.Entry =
++               def entry(name: Text, content: Text): Tar.Entry =
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+-                 Tar.Entry.File
++                 Tar.Entry.File
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+-                   ( path  = name.as[Relative on Tar],
++                   ( path  = name.as[Relative on Tar],
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+-                     mode  = UnixMode(),
++                     mode  = UnixMode(),
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+-                     user  = UnixUser(0),
++                     user  = UnixUser(0),
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+-                     group = UnixGroup(0),
++                     group = UnixGroup(0),
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+-                     mtime = 0.bits.u32,
++                     mtime = 0.bits.u32,
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+-                     data  = Archive.Body(content.in[Data]) )
++                     data  = Archive.Body(content.in[Data]) )
+
+=           label A layer: a tar, compressed and hashed twice
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+=                     data  = Archive.Body(content.in[Data]) )
+=
+-               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
++               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+
+-               layer.diffId   // sha256:… of the uncompressed tar
++               layer.diffId   // sha256:… of the uncompressed tar
+
+-               layer.digest   // sha256:… of the gzipped blob, as stored
++               layer.digest   // sha256:… of the gzipped blob, as stored
+
+=               layer.digest   // sha256:… of the gzipped blob, as stored
+-         frame
++         frame
+
+-           label The config: platform, rootfs diff_ids and what to run
++           label 構成：プラットフォーム、rootfs の diff_ids、そして何を実行するか
+
+=           label The config: platform, rootfs diff_ids and what to run
+-           code
++           code
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+-               import codepages.utf8Codepage
++               import codepages.utf8Codepage
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+-               def entry(name: Text, content: Text): Tar.Entry =
++               def entry(name: Text, content: Text): Tar.Entry =
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+-                 Tar.Entry.File
++                 Tar.Entry.File
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+-                   ( path  = name.as[Relative on Tar],
++                   ( path  = name.as[Relative on Tar],
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+-                     mode  = UnixMode(),
++                     mode  = UnixMode(),
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+-                     user  = UnixUser(0),
++                     user  = UnixUser(0),
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+-                     group = UnixGroup(0),
++                     group = UnixGroup(0),
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+-                     mtime = 0.bits.u32,
++                     mtime = 0.bits.u32,
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+-                     data  = Archive.Body(content.in[Data]) )
++                     data  = Archive.Body(content.in[Data]) )
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+=                     data  = Archive.Body(content.in[Data]) )
+=
+-               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
++               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+
+=           label The config: platform, rootfs diff_ids and what to run
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+=                     data  = Archive.Body(content.in[Data]) )
+=
+=               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+-               val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
++               val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+
+-               image.imageConfig.let(_.rootfs.diff_ids)   // List(layer.diffId)
++               image.imageConfig.let(_.rootfs.diff_ids)   // List(layer.diffId)
+
+-               image.configDescriptor.digest              // sha256:… of the config JSON
++               image.configDescriptor.digest              // sha256:… of the config JSON
+
+=               image.configDescriptor.digest              // sha256:… of the config JSON
+-         frame
++         frame
+
+-           label The manifest: the config and each layer, by descriptor
++           label マニフェスト：記述子で示した構成と各レイヤー
+
+=           label The manifest: the config and each layer, by descriptor
+-           code
++           code
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+-               import codepages.utf8Codepage
++               import codepages.utf8Codepage
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+-               def entry(name: Text, content: Text): Tar.Entry =
++               def entry(name: Text, content: Text): Tar.Entry =
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+-                 Tar.Entry.File
++                 Tar.Entry.File
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+-                   ( path  = name.as[Relative on Tar],
++                   ( path  = name.as[Relative on Tar],
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+-                     mode  = UnixMode(),
++                     mode  = UnixMode(),
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+-                     user  = UnixUser(0),
++                     user  = UnixUser(0),
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+-                     group = UnixGroup(0),
++                     group = UnixGroup(0),
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+-                     mtime = 0.bits.u32,
++                     mtime = 0.bits.u32,
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+-                     data  = Archive.Body(content.in[Data]) )
++                     data  = Archive.Body(content.in[Data]) )
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+=                     data  = Archive.Body(content.in[Data]) )
+=
+-               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
++               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+
+=           label The manifest: the config and each layer, by descriptor
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+=                     data  = Archive.Body(content.in[Data]) )
+=
+=               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+-               val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
++               val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+
+-               image.manifest.config.digest            // the config descriptor's digest
++               image.manifest.config.digest            // the config descriptor's digest
+
+-               image.manifest.layers.map(_.digest)     // List(layer.digest)
++               image.manifest.layers.map(_.digest)     // List(layer.digest)
+
+-               image.manifestDescriptor.digest         // sha256:… of the manifest JSON
++               image.manifestDescriptor.digest         // sha256:… of the manifest JSON
+
+=               image.manifestDescriptor.digest         // sha256:… of the manifest JSON
+-         frame
++         frame
+
+-           label The index and the archive: one manifest, written as an oci-layout tar
++           label インデックスとアーカイブ：oci-layout の tar として書き出される一つのマニフェスト
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+-           code
++           code
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+-               import codepages.utf8Codepage
++               import codepages.utf8Codepage
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+-               def entry(name: Text, content: Text): Tar.Entry =
++               def entry(name: Text, content: Text): Tar.Entry =
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+-                 Tar.Entry.File
++                 Tar.Entry.File
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+-                   ( path  = name.as[Relative on Tar],
++                   ( path  = name.as[Relative on Tar],
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+-                     mode  = UnixMode(),
++                     mode  = UnixMode(),
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+-                     user  = UnixUser(0),
++                     user  = UnixUser(0),
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+-                     group = UnixGroup(0),
++                     group = UnixGroup(0),
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+-                     mtime = 0.bits.u32,
++                     mtime = 0.bits.u32,
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+-                     data  = Archive.Body(content.in[Data]) )
++                     data  = Archive.Body(content.in[Data]) )
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+=                     data  = Archive.Body(content.in[Data]) )
+=
+-               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
++               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+
+=           label The index and the archive: one manifest, written as an oci-layout tar
+=           code
+=               import soundness.*
+=               import codepages.utf8Codepage
+=               import strategies.throwUnsafely
+=
+=               def entry(name: Text, content: Text): Tar.Entry =
+=                 Tar.Entry.File
+=                   ( path  = name.as[Relative on Tar],
+=                     mode  = UnixMode(),
+=                     user  = UnixUser(0),
+=                     group = UnixGroup(0),
+=                     mtime = 0.bits.u32,
+=                     data  = Archive.Body(content.in[Data]) )
+=
+=               val layer: Oci.Layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+-               val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
++               val image: Oci.Image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+
+-               image.index.manifests.map(_.digest)     // List(image.manifestDescriptor.digest)
++               image.index.manifests.map(_.digest)     // List(image.manifestDescriptor.digest)
+
+-               val archive: Data = image.archive.source[Data].memoize   // oci-layout, index.json, blobs/sha256/…
++               val archive: Data = image.archive.source[Data].memoize   // oci-layout, index.json, blobs/sha256/…
+
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         An `Image` is a plain case class with no capability of its own, so it can be built
+-         anywhere — on the JVM, in Scala.js or on Scala Native — and handed to code which
+-         writes the archive to a file, pushes it to a registry, or imports it into a daemon.
++         `Image` は自分自身のケイパビリティを持たない単なるケースクラスなので、どこでも — JVM でも、Scala.js でも、Scala Native でも — 構築でき、アーカイブをファイルに書き出したり、レジストリにプッシュしたり、デーモンにインポートしたりするコードに渡せる。
+
+=         writes the archive to a file, pushes it to a registry, or imports it into a daemon.
+-     refer embarcadero.Oci.Layer
++     refer embarcadero.Oci.Layer
+
+-     refer embarcadero.Oci
++     refer embarcadero.Oci
+
+-     refer embarcadero.Oci.ContainerConfig
++     refer embarcadero.Oci.ContainerConfig
+
+=     refer embarcadero.Oci.ContainerConfig
+-     refer embarcadero.Oci.WasmConfig
++     refer embarcadero.Oci.WasmConfig
+
+-     entry .apply   assembles an image from filesystem layers and an optional runtime configuration
+-         `Image(layers, config, architecture, os, annotations)` builds the `Image.Config`
+-         (`architecture` defaults to `amd64` and `os` to `linux`; `rootfs` is the layers'
+-         `diffId`s in order; `config` is the `ContainerConfig`, if any), renders it as compact
+-         JSON for its config blob, descriptors it with the media type
+-         `application/vnd.oci.image.config.v1+json`, wraps it and the layers' descriptors in
+-         an `Oci.Manifest` (carrying `annotations`, if any), and names that manifest from a
+-         single-entry `Index`. Nothing is raised: every digest is computed from bytes already
+-         in memory.
++     entry .apply   ファイルシステムのレイヤーと、省略可能な実行時の構成からイメージを組み立てる
++         `Image(layers, config, architecture, os, annotations)` は `Image.Config` を構築する（`architecture` のデフォルトは `amd64`、`os` のデフォルトは `linux`。`rootfs` はレイヤーの `diffId` を順に並べたもの。`config` は `ContainerConfig` があればそれ）。
++         そしてそれを構成の blob のための簡潔な JSON として描画し、メディアタイプ `application/vnd.oci.image.config.v1+json` で記述子を作り、それとレイヤーの記述子を `Oci.Manifest`（`annotations` があればそれを持つ）に包み、そのマニフェストを単一の項目を持つ `Index` から示す。
++         何も発生しない。
++         すべてのダイジェストは、すでにメモリ上にあるバイトから計算される。
+
+=         in memory.
+=
+-         ```scala
++         ```scala
+
+=         in memory.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         in memory.
+=
+=         ```scala
+=         import soundness.*
+-         import codepages.utf8Codepage
++         import codepages.utf8Codepage
+
+=         in memory.
+=
+=         ```scala
+=         import soundness.*
+=         import codepages.utf8Codepage
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         in memory.
+=
+=         ```scala
+=         import soundness.*
+=         import codepages.utf8Codepage
+=         import strategies.throwUnsafely
+=
+-         val layer: Oci.Layer = Oci.Layer(Tarfile(Nil))
++         val layer: Oci.Layer = Oci.Layer(Tarfile(Nil))
+
+-         val image: Oci.Image =
++         val image: Oci.Image =
+
+-           Oci.Image
++           Oci.Image
+
+-             ( List(layer),
++             ( List(layer),
+
+-               config       = Oci.ContainerConfig(Cmd = List(t"/bin/sh"), WorkingDir = t"/app"),
++               config       = Oci.ContainerConfig(Cmd = List(t"/bin/sh"), WorkingDir = t"/app"),
+
+-               architecture = t"arm64",
++               architecture = t"arm64",
+
+-               annotations  = Map(t"org.opencontainers.image.title" -> t"hello") )
++               annotations  = Map(t"org.opencontainers.image.title" -> t"hello") )
+
+-         image.imageConfig.let(_.architecture)   // t"arm64"
++         image.imageConfig.let(_.architecture)   // t"arm64"
+
+=         image.imageConfig.let(_.architecture)   // t"arm64"
+-         ```
++         ```
+
+-     entry .wasm   assembles a Wasm OCI Artifact: one uncompressed `application/wasm` layer under a Wasm config
+-         `Image.wasm(component, exports, imports, target, architecture, os, annotations)` is the
+-         form the Wasm OCI Artifact layout prescribes for a WebAssembly workload. The one layer is
+-         `Layer.blob(component, media"application/wasm")`: stored verbatim, so its `diffId` and
+-         `digest` coincide. The config blob is a `WasmConfig` (media type
+-         `application/vnd.wasm.config.v0+json`) whose `architecture` is `wasm` and whose `os`
+-         names the WASI generation (`wasip2` by default), with `layerDigests` naming the
+-         component blob and `component` recording the `exports`, `imports` and optional `target`
+-         world as a `WasmComponent`. The manifest, index and archive are the ordinary OCI ones, so
+-         the same registries and tools carry it; a runtime dispatches on the two media types to
+-         hand the component to a Wasm engine (through a shim such as `io.containerd.wasmtime.v1`)
+-         rather than a rootfs to `runc`.
++     entry .wasm   Wasm OCI Artifact を組み立てる：Wasm の構成のもとにある、非圧縮の `application/wasm` のレイヤー一つ
++         `Image.wasm(component, exports, imports, target, architecture, os, annotations)` は、Wasm OCI Artifact のレイアウトが WebAssembly のワークロードに対して定める形である。
++         唯一のレイヤーは `Layer.blob(component, media"application/wasm")` であり、そのまま格納されるので、その `diffId` と `digest` は一致する。
++         構成の blob は `WasmConfig`（メディアタイプ `application/vnd.wasm.config.v0+json`）であり、その `architecture` は `wasm`、`os` は WASI の世代（デフォルトは `wasip2`）を示し、`layerDigests` はコンポーネントの blob を示し、`component` は `exports`、`imports`、省略可能な `target` のワールドを `WasmComponent` として記録する。
++         マニフェスト、インデックス、アーカイブは通常の OCI のものなので、同じレジストリとツールがこれを扱える。
++         ランタイムは二つのメディアタイプでディスパッチし、rootfs を `runc` に渡す代わりに、コンポーネントを（`io.containerd.wasmtime.v1` のようなシムを通じて）Wasm エンジンに渡す。
+
+=         rather than a rootfs to `runc`.
+=
+-         ```scala
++         ```scala
+
+=         rather than a rootfs to `runc`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val component: Data = hex"0061736d01000000"   // a compiled component's bytes
++         val component: Data = hex"0061736d01000000"   // a compiled component's bytes
+
+-         val artifact: Oci.Image =
++         val artifact: Oci.Image =
+
+-           Oci.Image.wasm
++           Oci.Image.wasm
+
+-             ( component,
++             ( component,
+
+-               exports = List(t"wasi:http/incoming-handler@0.2.0"),
++               exports = List(t"wasi:http/incoming-handler@0.2.0"),
+
+-               imports = List(t"wasi:io/streams@0.2.0"),
++               imports = List(t"wasi:io/streams@0.2.0"),
+
+-               target  = t"wasi:http/proxy@0.2.0" )
++               target  = t"wasi:http/proxy@0.2.0" )
+
+-         artifact.wasmConfig.let(_.os)                   // t"wasip2"
++         artifact.wasmConfig.let(_.os)                   // t"wasip2"
+
+-         artifact.manifest.layers.map(_.mediaType)       // List(media"application/wasm")
++         artifact.manifest.layers.map(_.mediaType)       // List(media"application/wasm")
+
+=         artifact.manifest.layers.map(_.mediaType)       // List(media"application/wasm")
+-         ```
++         ```
+
+-         The interfaces are usually not typed by hand but read from the WIT world the component
+-         was linked against: xenophile's `WitDialect.worlds(wit)(name)` gives a world whose
+-         `exports` and `imports` pass straight through, which is how anthology's OCI edge and
+-         the repository's own Wasm end-to-end packager (`tests/wasm/packager`) build the
+-         artifacts they run under wasmtime and `wasmtime serve`. The bytes are never parsed: an
+-         arbitrary payload is packaged just as a real component is.
+-     entry .dataOpenable   the given behind `data.open[Image]()`: opens in-memory bytes as an OCI archive
+-         A given in the companion, so it resolves with no import. It provides an
+-         `Image.DataOpenable` and needs a `Tactic[Oci.Error]`, a `Tactic[Tar.Error]` and a
+-         `Tactic[Truncation.Error]` in scope, which it captures. Opening a filesystem *path*
+-         is `imagePathOpenable`, in the JVM source set.
+-     entry .Config   an OCI image config document: platform, rootfs diff_id chain, run configuration and history
++         インターフェースは通常、手で書くのではなく、コンポーネントがリンクされた WIT のワールドから読み取る。
++         xenophile の `WitDialect.worlds(wit)(name)` は、その `exports` と `imports` をそのまま渡せるワールドを与える。
++         anthology の OCI の境界と、リポジトリ自身の Wasm のエンドツーエンドのパッケージャー（`tests/wasm/packager`）は、こうして wasmtime と `wasmtime serve` のもとで実行するアーティファクトを構築している。
++         バイトは決してパースされない。
++         任意のペイロードも、本物のコンポーネントとまったく同じようにパッケージされる。
++     entry .dataOpenable   `data.open[Image]()` の背後にある given：メモリ上のバイトを OCI アーカイブとして開く
++         コンパニオンにある given なので、インポートなしに解決される。
++         `Image.DataOpenable` を提供し、スコープに `Tactic[Oci.Error]`、`Tactic[Tar.Error]`、`Tactic[Truncation.Error]` を必要とし、それらをキャプチャする。
++         ファイルシステムの*パス*を開くのは、JVM のソースセットにある `imagePathOpenable` である。
++     entry .Config   OCI のイメージ構成のドキュメント：プラットフォーム、rootfs の diff_id の連鎖、実行の構成、履歴
+
+=     entry .Config   an OCI image config document: platform, rootfs diff_id chain, run configuration and history
+-       detail
++       detail
+
+-           The config blob of a filesystem image (media type
+-           `application/vnd.oci.image.config.v1+json`), as `Image.apply` writes it and
+-           `Image.Handle#imageConfig` reads it back. It records the target `#architecture` and
+-           `#os`, the `#rootfs` whose `diff_ids` are the uncompressed layers' digests in order,
+-           the optional `#config` (a `ContainerConfig` of what to run), the build `#history`
+-           and the `#created` time and `#author`. Its JSON encoding and decoding derive
+-           through jacinta, and the member names are the wire names, so `created` renders as
+-           `created`. Together with `WasmConfig` it makes up `Oci.Config`, the union a reader
+-           gets from `Image.Handle#config` when it does not know which kind of artifact it
+-           opened.
+-       entry #architecture   the CPU architecture the image targets, such as `amd64` or `arm64`
+-       entry #os   the operating system the image targets, such as `linux`
+-       entry #rootfs   the `RootFs`: the ordered `diff_id`s of the uncompressed layers
+-       entry #config   the `ContainerConfig` saying how to run the image, or `Unset`
+-       entry #history   how each layer came to be, one `History` per layer or empty change, or `Unset`
+-       entry #created   when the image was built, as RFC 3339 text, or `Unset`
+-       entry #author   who built the image, or `Unset`
+-     entry .Handle   the scoped view of an opened OCI archive: its index, manifest, config and blobs
++           ファイルシステムのイメージの構成の blob（メディアタイプ `application/vnd.oci.image.config.v1+json`）であり、`Image.apply` がこれを書き、`Image.Handle#imageConfig` がこれを読み戻す。
++           対象の `#architecture` と `#os`、`diff_ids` が非圧縮のレイヤーのダイジェストを順に並べたものである `#rootfs`、省略可能な `#config`（何を実行するかを示す `ContainerConfig`）、ビルドの `#history`、そして `#created` の時刻と `#author` を記録する。
++           その JSON のエンコードとデコードは jacinta を通じて導出され、メンバー名はワイヤ上の名前なので、`created` は `created` として描画される。
++           `WasmConfig` とともに `Oci.Config` を構成する。これは、どの種類のアーティファクトを開いたかわからない読み手が `Image.Handle#config` から得るユニオンである。
++       entry #architecture   イメージが対象とする CPU アーキテクチャ。`amd64` や `arm64` など
++       entry #os   イメージが対象とするオペレーティングシステム。`linux` など
++       entry #rootfs   `RootFs`：非圧縮のレイヤーの、順序づけられた `diff_id`
++       entry #config   イメージの実行方法を示す `ContainerConfig`。なければ `Unset`
++       entry #history   各レイヤーがどのように作られたか。レイヤーまたは空の変更ごとに一つの `History`。なければ `Unset`
++       entry #created   イメージがビルドされた時刻。RFC 3339 のテキスト。なければ `Unset`
++       entry #author   イメージをビルドした者。なければ `Unset`
++     entry .Handle   開かれた OCI アーカイブのスコープつきのビュー：そのインデックス、マニフェスト、構成、blob
+
+=     entry .Handle   the scoped view of an opened OCI archive: its index, manifest, config and blobs
+-       detail
++       detail
+
+-           The capability `data.open[Image]()` or `path.open[Image]()` provides for the
+-           duration of its block, and only then: it is an exclusive capability, so it cannot be
+-           stored or returned. The archive's entries are read once and held for the handle's
+-           lifetime, indexed by name, so every lookup after the first is a map access; archives
+-           `Image#archive` writes put `index.json` before the blobs, so the metadata path is
+-           cheap. Every method takes a `Tactic[Oci.Error]` and raises `Oci.Error` for a missing
+-           or unreadable document or blob.
++           `data.open[Image]()` または `path.open[Image]()` がそのブロックの間だけ与えるケイパビリティである。
++           排他的なケイパビリティなので、格納したり返したりはできない。
++           アーカイブの項目は一度だけ読まれ、名前で索引づけられてハンドルの存続期間中保持されるので、最初の後の参照はすべてマップへのアクセスになる。
++           `Image#archive` が書くアーカイブは blob より前に `index.json` を置くので、メタデータへの経路は安価である。
++           どのメソッドも `Tactic[Oci.Error]` を受け取り、欠けている、または読み取れないドキュメントや blob に対しては `Oci.Error` を発生させる。
+
+=           or unreadable document or blob.
+=
+-           ```scala
++           ```scala
+
+=           or unreadable document or blob.
+=
+=           ```scala
+-           import soundness.*
++           import soundness.*
+
+-           import codepages.utf8Codepage
++           import codepages.utf8Codepage
+
+=           import codepages.utf8Codepage
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+-           val image: Oci.Image = Oci.Image(List(Oci.Layer(Tarfile(Nil))))
++           val image: Oci.Image = Oci.Image(List(Oci.Layer(Tarfile(Nil))))
+
+-           val archive: Data = image.archive.source[Data].memoize
++           val archive: Data = image.archive.source[Data].memoize
+
+=           val archive: Data = image.archive.source[Data].memoize
+=
+-           archive.open[Oci.Image](): handle ?=>
++           archive.open[Oci.Image](): handle ?=>
+
+-             handle.index                                          // the top-level index
++             handle.index                                          // the top-level index
+
+-             handle.manifest                                       // the manifest it names, digest-checked
++             handle.manifest                                       // the manifest it names, digest-checked
+
+-             handle.imageConfig                                    // the image config
++             handle.imageConfig                                    // the image config
+
+-             handle.manifest.layers.head.let(handle.verified(_))   // a layer's blob, digest-checked
++             handle.manifest.layers.head.let(handle.verified(_))   // a layer's blob, digest-checked
+
+=             handle.manifest.layers.head.let(handle.verified(_))   // a layer's blob, digest-checked
+-           ```
++           ```
+
+-           A layer is reached three ways, which makes the cost explicit: `#compressed` streams
+-           the stored bytes untouched, `#layer` decompresses them as a stream, and `#verified`
+-           gathers them and checks digest and size against the descriptor. A reader which does
+-           not know whether it has a filesystem image or a Wasm artifact asks for `#config`,
+-           which dispatches on the config descriptor's media type.
++           レイヤーへの到達方法は三つあり、それによってコストが明示される。
++           `#compressed` は格納されたバイトをそのままストリームし、`#layer` はそれをストリームとして展開し、`#verified` はそれを集めてダイジェストとサイズを記述子と照合する。
++           ファイルシステムのイメージと Wasm アーティファクトのどちらを持っているかわからない読み手は `#config` を求める。
++           これは構成の記述子のメディアタイプでディスパッチする。
+
+-           Opening for writing is refused: `archive.open[Image](Write)` raises `Oci.Error` with
+-           `WriteUnsupported`.
++           書き込みのためのオープンは拒否される。
++           `archive.open[Image](Write)` は `WriteUnsupported` とともに `Oci.Error` を発生させる。
+
+-       refer embarcadero.Oci
++       refer embarcadero.Oci
+
+-       entry #blob   a blob by its `sha256:…` digest, as a stream of its stored chunks, unverified
+-           The raw stored bytes (for a layer, the gzip-compressed tar) under
+-           `blobs/sha256/<hex>`, as a `Stream[Data] over Credit`. Raises `Oci.Error` with
+-           `UnsupportedDigest` for a digest whose algorithm is not `sha256`, and `MissingBlob`
+-           when the archive has no such blob. Nothing is checked: `#verified` is the checked
+-           read.
+-       entry #index   the decoded top-level `index.json`, after checking the `oci-layout` marker
+-           Reads the `oci-layout` document and requires its `imageLayoutVersion` to begin with
+-           `1.`, then decodes `index.json` as an `Index`. Raises `Oci.Error` with
+-           `MissingLayout`, `UnsupportedLayout`, `MissingIndex` or, for a document which does
+-           not parse, `InvalidBlob`.
+-       entry #manifest   the index's first manifest, or the one a descriptor selects, digest-verified
+-           `handle.manifest` takes the first descriptor of `#index` (raising `Oci.Error` with
+-           `NoManifest` if there is none); `handle.manifest(descriptor)` takes a chosen one. The
+-           manifest blob is read through `#verified`, so a corrupted manifest is reported as
+-           `DigestMismatch` rather than decoded, and then decoded as an `Oci.Manifest`.
+-       entry #imageConfig   the decoded `Image.Config` of a manifest, by default the first
+-           `handle.imageConfig` or `handle.imageConfig(manifest)`: the manifest's config blob,
+-           verified and decoded as an `Image.Config`. For a Wasm artifact the blob is a
+-           `WasmConfig`, and decoding it here fails with `InvalidBlob`; use `#config` when the
+-           kind is not known.
+-       entry #wasmConfig   the decoded `WasmConfig` of a manifest, by default the first
+-           `handle.wasmConfig` or `handle.wasmConfig(manifest)`: the manifest's config blob,
+-           verified and decoded as a `WasmConfig`.
+-       entry #config   the config blob in whichever form its media type says: `Image.Config` or `WasmConfig`
+-           `handle.config` or `handle.config(manifest)` returns an `Oci.Config`, decoding the
+-           blob as a `WasmConfig` when the config descriptor's media type is
+-           `application/vnd.wasm.config.v0+json` and as an `Image.Config` otherwise. This is the
+-           entry point for a runtime deciding whether to unpack a rootfs or instantiate a
+-           component:
++       entry #blob   `sha256:…` のダイジェストで示す blob。格納されたチャンクのストリームとして、検証せずに返す
++           `blobs/sha256/<hex>` にある、格納された生のバイト（レイヤーなら gzip で圧縮された tar）を `Stream[Data] over Credit` として返す。
++           アルゴリズムが `sha256` でないダイジェストに対しては `UnsupportedDigest` とともに、アーカイブにその blob がないときは `MissingBlob` とともに `Oci.Error` を発生させる。
++           何も検査しない。
++           検査つきの読み取りは `#verified` である。
++       entry #index   `oci-layout` マーカーを検査した後にデコードした、トップレベルの `index.json`
++           `oci-layout` ドキュメントを読み、その `imageLayoutVersion` が `1.` で始まることを要求し、それから `index.json` を `Index` としてデコードする。
++           `MissingLayout`、`UnsupportedLayout`、`MissingIndex`、またはパースできないドキュメントに対しては `InvalidBlob` とともに `Oci.Error` を発生させる。
++       entry #manifest   インデックスの最初のマニフェスト、または記述子が選ぶマニフェスト。ダイジェストを検証する
++           `handle.manifest` は `#index` の最初の記述子をとる（なければ `NoManifest` とともに `Oci.Error` を発生させる）。
++           `handle.manifest(descriptor)` は選んだものをとる。
++           マニフェストの blob は `#verified` を通じて読まれるので、壊れたマニフェストはデコードされるのではなく `DigestMismatch` として報告され、その後 `Oci.Manifest` としてデコードされる。
++       entry #imageConfig   マニフェストのデコードされた `Image.Config`。デフォルトでは最初のマニフェストのもの
++           `handle.imageConfig` または `handle.imageConfig(manifest)` であり、マニフェストの構成の blob を検証して `Image.Config` としてデコードしたものである。
++           Wasm アーティファクトでは blob は `WasmConfig` であり、ここでのデコードは `InvalidBlob` で失敗する。
++           種類がわからないときは `#config` を使う。
++       entry #wasmConfig   マニフェストのデコードされた `WasmConfig`。デフォルトでは最初のマニフェストのもの
++           `handle.wasmConfig` または `handle.wasmConfig(manifest)` であり、マニフェストの構成の blob を検証して `WasmConfig` としてデコードしたものである。
++       entry #config   メディアタイプが示す形での構成の blob：`Image.Config` または `WasmConfig`
++           `handle.config` または `handle.config(manifest)` は `Oci.Config` を返す。
++           構成の記述子のメディアタイプが `application/vnd.wasm.config.v0+json` なら blob を `WasmConfig` として、そうでなければ `Image.Config` としてデコードする。
++           これは、rootfs を展開するかコンポーネントをインスタンス化するかを決めるランタイムの入口である。
+
+=           component:
+=
+-           ```scala
++           ```scala
+
+=           component:
+=
+=           ```scala
+-           import soundness.*
++           import soundness.*
+
+=           import soundness.*
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+-           val archive: Data = Oci.Image.wasm(hex"0061736d01000000").archive.source[Data].memoize
++           val archive: Data = Oci.Image.wasm(hex"0061736d01000000").archive.source[Data].memoize
+
+=           val archive: Data = Oci.Image.wasm(hex"0061736d01000000").archive.source[Data].memoize
+=
+-           archive.open[Oci.Image](): handle ?=>
++           archive.open[Oci.Image](): handle ?=>
+
+-             handle.config match
++             handle.config match
+
+-               case config: Oci.WasmConfig   => config.component.let(_.exports)
++               case config: Oci.WasmConfig   => config.component.let(_.exports)
+
+-               case config: Oci.Image.Config => config.rootfs.diff_ids
++               case config: Oci.Image.Config => config.rootfs.diff_ids
+
+=               case config: Oci.Image.Config => config.rootfs.diff_ids
+-           ```
++           ```
+
+-       entry #compressed   a layer's stored blob, verbatim: for an OCI layer, the gzip-compressed tar
+-           `#blob` by the descriptor's digest, as a `Stream[Data] over Credit`; the cheapest
+-           way to copy a layer from one archive to another.
+-       entry #layer   a layer's content as the uncompressed tar byte stream
+-           Streams `#compressed` through a gzip decoder when the descriptor's media type carries
+-           the `+gzip` suffix, and verbatim otherwise — so a Wasm artifact's
+-           `application/wasm` layer comes back as the component's own bytes. The stream is not
+-           checked against the digest, since checking would mean draining it first.
+-       entry #verified   a blob gathered eagerly and checked against its descriptor's digest and size
+-           Reads the whole blob into a `Data`, computes its SHA-256 and compares it with the
+-           descriptor's `digest`, raising `Oci.Error` with `DigestMismatch(expected, actual)` if
+-           they differ, and compares its length with the descriptor's `size`, raising
+-           `InvalidBlob` if they differ. The opt-in checked path, used by `#manifest`,
+-           `#imageConfig` and `#wasmConfig` for the documents they decode.
+-     entry .DataOpenable   the `Openable` which opens in-memory `Data` as an OCI archive, read-only
++       entry #compressed   格納されたままのレイヤーの blob：OCI のレイヤーなら gzip で圧縮された tar
++           記述子のダイジェストによる `#blob` を `Stream[Data] over Credit` として返す。
++           あるアーカイブから別のアーカイブへレイヤーをコピーする最も安価な方法である。
++       entry #layer   非圧縮の tar のバイトストリームとしてのレイヤーの内容
++           記述子のメディアタイプが `+gzip` の接尾辞を持つときは `#compressed` を gzip のデコーダーに通してストリームし、そうでなければそのままストリームする。
++           そのため、Wasm アーティファクトの `application/wasm` のレイヤーは、コンポーネント自身のバイトとして返ってくる。
++           ストリームはダイジェストと照合されない。
++           照合するには、まずストリームを読み尽くさなければならないからである。
++       entry #verified   先行して集め、記述子のダイジェストとサイズに照らして検査した blob
++           blob 全体を `Data` に読み込み、その SHA-256 を計算して記述子の `digest` と比較し、異なれば `DigestMismatch(expected, actual)` とともに `Oci.Error` を発生させる。
++           また、その長さを記述子の `size` と比較し、異なれば `InvalidBlob` を発生させる。
++           オプトインの検査つきの経路であり、`#manifest`、`#imageConfig`、`#wasmConfig` がデコードするドキュメントのために使う。
++     entry .DataOpenable   メモリ上の `Data` を読み取り専用の OCI アーカイブとして開く `Openable`
+
+=     entry .DataOpenable   the `Openable` which opens in-memory `Data` as an OCI archive, read-only
+-       detail
++       detail
+
+-           The class `Image.dataOpenable` provides, named rather than anonymous so that its
+-           result type is stated exactly. It opens a `Data` (`Self`) as an `Image` (`Form`)
+-           with no flags (`Operand = Nothing`), giving an `Image.Handle` (`Result`) for the
+-           block. It needs a `Tactic[Oci.Error]`, a `Tactic[Tar.Error]` and a
+-           `Tactic[Truncation.Error]`. A mode including `Write` is refused with `Oci.Error`
+-           (`WriteUnsupported`): archives are read, and written only by `Image#archive`.
+-       entry #Self   `Data`: what is opened
+-       entry #Form   `Image`: the form it is opened as
+-       entry #Operand   `Nothing`: there are no open flags
+-       entry #Result   `Image.Handle`: what the block receives
+-       entry #open   reads the bytes as a tar, builds an `Image.Handle` over its entries and runs the block
+-     entry #layers   the image's layers, in order, bottom-most first
+-     entry #config   the config document: an `Image.Config` for a filesystem image, a `WasmConfig` for a Wasm artifact
+-         The `Oci.Config` union; `#imageConfig` and `#wasmConfig` narrow it without a match.
+-     entry #configBytes   the config blob as rendered: compact JSON, the bytes the config digest is taken over
+-     entry #configDescriptor   the descriptor of the config blob, as the manifest references it
+-     entry #manifest   the `Oci.Manifest` naming the config and each layer by descriptor
+-     entry #manifestBytes   the manifest blob as rendered: compact JSON
+-     entry #manifestDescriptor   the descriptor of the manifest blob, as the index references it
+-     entry #index   the single-entry `Index` naming the manifest
+-     entry #indexBytes   the `index.json` document as rendered: compact JSON
+-     entry #imageConfig   the config as an `Image.Config`, or `Unset` for a Wasm artifact
+-     entry #wasmConfig   the config as a `WasmConfig`, or `Unset` for a filesystem image
+-     entry #blobs   every blob as a `(digest, bytes)` pair: the config, each layer, then the manifest
+-         The content `#archive` writes under `blobs/sha256/`, keyed by the canonical
+-         `sha256:<hex>` digest of each.
+-     entry #archive   the image as an OCI image-layout tar: `oci-layout`, `index.json` and `blobs/sha256/…`
+-         A `Tarfile` holding the `oci-layout` marker (`{"imageLayoutVersion":"1.0.0"}`), the
+-         `index.json`, and one file per entry of `#blobs` named by its hex digest, each with mode
+-         `UnixMode()`, owner and group `0` and mtime `0`, so the archive is reproducible. Read it
+-         as bytes with `image.archive.source[Data]` and write it to a file: the result is what
+-         `docker load`, `ctr images import`, `podman load` and `skopeo copy oci-archive:…`
+-         accept, and what `data.open[Image]()` reads back.
+-   entry .Index   an OCI image index: the top-level `index.json` listing one or more manifest descriptors
++           `Image.dataOpenable` が提供するクラスであり、結果の型が正確に示されるよう、匿名ではなく名前を持つ。
++           `Data`（`Self`）を `Image`（`Form`）として、フラグなし（`Operand = Nothing`）で開き、ブロックに `Image.Handle`（`Result`）を与える。
++           `Tactic[Oci.Error]`、`Tactic[Tar.Error]`、`Tactic[Truncation.Error]` を必要とする。
++           `Write` を含むモードは `Oci.Error`（`WriteUnsupported`）で拒否される。
++           アーカイブは読み取るものであり、書き出すのは `Image#archive` だけである。
++       entry #Self   `Data`：開かれるもの
++       entry #Form   `Image`：開かれるときの形
++       entry #Operand   `Nothing`：オープンのフラグはない
++       entry #Result   `Image.Handle`：ブロックが受け取るもの
++       entry #open   バイトを tar として読み、その項目に対する `Image.Handle` を構築し、ブロックを実行する
++     entry #layers   イメージのレイヤー。最下層から順に並ぶ
++     entry #config   構成のドキュメント：ファイルシステムのイメージなら `Image.Config`、Wasm アーティファクトなら `WasmConfig`
++         `Oci.Config` のユニオンである。
++         `#imageConfig` と `#wasmConfig` は、`match` なしにこれを絞り込む。
++     entry #configBytes   描画された構成の blob：簡潔な JSON。構成のダイジェストを計算する対象のバイト
++     entry #configDescriptor   マニフェストが参照する、構成の blob の記述子
++     entry #manifest   構成と各レイヤーを記述子で示す `Oci.Manifest`
++     entry #manifestBytes   描画されたマニフェストの blob：簡潔な JSON
++     entry #manifestDescriptor   インデックスが参照する、マニフェストの blob の記述子
++     entry #index   マニフェストを示す、単一の項目を持つ `Index`
++     entry #indexBytes   描画された `index.json` ドキュメント：簡潔な JSON
++     entry #imageConfig   `Image.Config` としての構成。Wasm アーティファクトなら `Unset`
++     entry #wasmConfig   `WasmConfig` としての構成。ファイルシステムのイメージなら `Unset`
++     entry #blobs   すべての blob を `(digest, bytes)` の組として：構成、各レイヤー、そしてマニフェスト
++         `#archive` が `blobs/sha256/` の下に書き出す内容であり、それぞれの正規の `sha256:<hex>` ダイジェストをキーとする。
++     entry #archive   OCI のイメージレイアウトの tar としてのイメージ：`oci-layout`、`index.json`、`blobs/sha256/…`
++         `oci-layout` マーカー（`{"imageLayoutVersion":"1.0.0"}`）、`index.json`、そして `#blobs` の項目ごとに十六進のダイジェストを名前とするファイルを一つずつ保持する `Tarfile` である。
++         各ファイルのモードは `UnixMode()`、所有者とグループは `0`、mtime は `0` なので、アーカイブは再現可能である。
++         `image.archive.source[Data]` でバイトとして読み、ファイルに書き出す。
++         その結果は `docker load`、`ctr images import`、`podman load`、`skopeo copy oci-archive:…` が受け付けるものであり、`data.open[Image]()` が読み戻すものである。
++   entry .Index   OCI のイメージインデックス：一つ以上のマニフェストの記述子を挙げるトップレベルの `index.json`
+
+=   entry .Index   an OCI image index: the top-level `index.json` listing one or more manifest descriptors
+-     detail
++     detail
+
+-         The document (media type `application/vnd.oci.image.index.v1+json`) at the root of an
+-         image layout, whose `#manifests` are the `Descriptor`s of the manifests the archive
+-         holds. `Image.apply` and `Image.wasm` write a single-entry index; `Image.Handle#index`
+-         reads one back, and `Image.Handle#manifest` takes its first entry by default. It
+-         encodes and decodes as JSON through jacinta.
+-     entry #schemaVersion   the index schema version: always `2`
+-     entry #mediaType   the index's own media type, `application/vnd.oci.image.index.v1+json`
+-     entry #manifests   the descriptors of the manifests, in order
+-     entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
+-   entry .Layer   one image layer, with its two digests: `diffId` of the raw content and `digest` of the stored blob
++         イメージレイアウトの根にあるドキュメント（メディアタイプ `application/vnd.oci.image.index.v1+json`）であり、その `#manifests` はアーカイブが保持するマニフェストの `Descriptor` である。
++         `Image.apply` と `Image.wasm` は単一の項目を持つインデックスを書き出し、`Image.Handle#index` はそれを読み戻し、`Image.Handle#manifest` はデフォルトでその最初の項目をとる。
++         jacinta を通じて JSON としてエンコードおよびデコードされる。
++     entry #schemaVersion   インデックスのスキーマのバージョン：常に `2`
++     entry #mediaType   インデックス自身のメディアタイプ、`application/vnd.oci.image.index.v1+json`
++     entry #manifests   マニフェストの記述子。順序どおりに並ぶ
++     entry #annotations   自由形式の `Map[Text, Text]` のアノテーション。なければ `Unset`
++   entry .Layer   イメージのレイヤー一つと、その二つのダイジェスト：生の内容の `diffId` と、格納された blob の `digest`
+
+=   entry .Layer   one image layer, with its two digests: `diffId` of the raw content and `digest` of the stored blob
+-     detail
++     detail
+
+-         A layer carries two distinct digests, and the OCI format depends on both being right.
+-         The `#diffId` is the SHA-256 of the *uncompressed* content, recorded in the image
+-         config's `rootfs.diff_ids`; the `#digest` is the SHA-256 of the blob *as stored*,
+-         recorded in the manifest's layer descriptor alongside its `size`. For a filesystem
+-         layer the two differ, because storage gzip-compresses the tar; for a blob layer they
+-         coincide. Both are computed lazily from the content, once.
++         レイヤーは二つの異なるダイジェストを持ち、OCI の形式はその両方が正しいことに依存する。
++         `#diffId` は*非圧縮の*内容の SHA-256 であり、イメージ構成の `rootfs.diff_ids` に記録される。
++         `#digest` は*格納された*ままの blob の SHA-256 であり、マニフェストのレイヤーの記述子に `size` とともに記録される。
++         ファイルシステムのレイヤーでは二つは異なる。格納の際に tar が gzip で圧縮されるからである。
++         blob のレイヤーでは二つは一致する。
++         どちらも内容から遅延して、一度だけ計算される。
+
+=         coincide. Both are computed lazily from the content, once.
+=
+-         ```scala
++         ```scala
+
+=         coincide. Both are computed lazily from the content, once.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         coincide. Both are computed lazily from the content, once.
+=
+=         ```scala
+=         import soundness.*
+-         import codepages.utf8Codepage
++         import codepages.utf8Codepage
+
+=         coincide. Both are computed lazily from the content, once.
+=
+=         ```scala
+=         import soundness.*
+=         import codepages.utf8Codepage
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         coincide. Both are computed lazily from the content, once.
+=
+=         ```scala
+=         import soundness.*
+=         import codepages.utf8Codepage
+=         import strategies.throwUnsafely
+=
+-         val layer: Oci.Layer = Oci.Layer(Tarfile(Nil))
++         val layer: Oci.Layer = Oci.Layer(Tarfile(Nil))
+
+-         layer.diffId == layer.digest   // false: the stored blob is gzipped
++         layer.diffId == layer.digest   // false: the stored blob is gzipped
+
+-         layer.descriptor.mediaType     // media"application/vnd.oci.image.layer.v1.tar+gzip"
++         layer.descriptor.mediaType     // media"application/vnd.oci.image.layer.v1.tar+gzip"
+
+-         val wasm: Oci.Layer = Oci.Layer.blob(hex"0061736d01000000", media"application/wasm")
++         val wasm: Oci.Layer = Oci.Layer.blob(hex"0061736d01000000", media"application/wasm")
+
+-         wasm.diffId == wasm.digest     // true: stored verbatim
++         wasm.diffId == wasm.digest     // true: stored verbatim
+
+=         wasm.diffId == wasm.digest     // true: stored verbatim
+-         ```
++         ```
+
+-         A `Layer` has no public constructor: `.apply` makes a filesystem layer from a
+-         `Tarfile`, and `.blob` makes a single-blob layer of any media type. The content is
+-         held by name until first use, and memoized then.
++         `Layer` は公開のコンストラクターを持たない。
++         `.apply` は `Tarfile` からファイルシステムのレイヤーを作り、`.blob` は任意のメディアタイプの単一の blob のレイヤーを作る。
++         内容は最初に使われるまで名前渡しで保持され、そのときにメモ化される。
+
+=         held by name until first use, and memoized then.
+-     refer embarcadero.Oci.Image
++     refer embarcadero.Oci.Image
+
+=     refer embarcadero.Oci.Image
+-     refer embarcadero.Oci.Descriptor
++     refer embarcadero.Oci.Descriptor
+
+-     entry .apply   a filesystem layer from a `Tarfile`, stored gzip-compressed
+-         `Layer(tar)` reads the tar's bytes as the raw content, compresses them with gzip for
+-         the stored blob, and types the descriptor `application/vnd.oci.image.layer.v1.tar+gzip`.
+-         Nothing is read until a digest or the blob is first asked for.
+-     entry .blob   a layer whose content is one opaque blob, stored verbatim under its own media type
+-         `Layer.blob(data, mediaType)` is the form a Wasm OCI Artifact uses for its
+-         `application/wasm` component: no compression, so `#diffId` and `#digest` are the same
+-         value and the descriptor's `size` is the data's length.
+-     entry #raw   the uncompressed content: the tar bytes, or the blob itself
+-     entry #blob   the content as stored: the gzipped tar, or the blob itself
+-     entry #diffId   `sha256:<hex>` of `#raw`, as the image config's `rootfs.diff_ids` records it
+-     entry #digest   `sha256:<hex>` of `#blob`, as the manifest's layer descriptor records it
+-     entry #descriptor   the layer's `Descriptor`: media type, `#digest` and the stored blob's size
+-   entry .Descriptor   an OCI content descriptor: a media type, a `sha256:…` digest and a size, pointing at a blob
++     entry .apply   gzip で圧縮して格納される、`Tarfile` から作るファイルシステムのレイヤー
++         `Layer(tar)` は tar のバイトを生の内容として読み、それを gzip で圧縮して格納する blob とし、記述子を `application/vnd.oci.image.layer.v1.tar+gzip` と型付けする。
++         ダイジェストまたは blob が初めて求められるまで、何も読まれない。
++     entry .blob   内容が一つの不透明な blob であり、それ自身のメディアタイプでそのまま格納されるレイヤー
++         `Layer.blob(data, mediaType)` は、Wasm OCI Artifact が `application/wasm` のコンポーネントに使う形である。
++         圧縮しないので、`#diffId` と `#digest` は同じ値であり、記述子の `size` はデータの長さである。
++     entry #raw   非圧縮の内容：tar のバイト、または blob そのもの
++     entry #blob   格納されたままの内容：gzip で圧縮された tar、または blob そのもの
++     entry #diffId   イメージ構成の `rootfs.diff_ids` が記録する、`#raw` の `sha256:<hex>`
++     entry #digest   マニフェストのレイヤーの記述子が記録する、`#blob` の `sha256:<hex>`
++     entry #descriptor   レイヤーの `Descriptor`：メディアタイプ、`#digest`、そして格納された blob のサイズ
++   entry .Descriptor   OCI のコンテンツ記述子：blob を指す、メディアタイプ、`sha256:…` のダイジェスト、サイズ
+
+=   entry .Descriptor   an OCI content descriptor: a media type, a `sha256:…` digest and a size, pointing at a blob
+-     detail
++     detail
+
+-         The typed, digest-addressed pointer every OCI document uses to name a blob: a
+-         manifest's `config` and `layers`, an index's `manifests`. `#digest` is the
+-         `sha256:<lowercase hex>` of the blob as stored (for a layer, compressed) and `#size`
+-         its byte length, so a reader can fetch the blob and check both. `Layer#descriptor`
+-         makes one for a layer, and `Image#configDescriptor` and `Image#manifestDescriptor` for
+-         the documents. The spec's `platform` member for multi-architecture indexes is not yet
+-         modelled. It is the OCI JSON descriptor; containerd's protobuf one is
+-         `Containerd.ContentDescriptor`.
++         すべての OCI ドキュメントが blob を示すために使う、型付きでダイジェストで参照するポインターである。
++         マニフェストの `config` と `layers`、インデックスの `manifests` がこれにあたる。
++         `#digest` は格納されたままの（レイヤーなら圧縮された）blob の `sha256:<lowercase hex>` であり、`#size` はそのバイト長なので、読み手は blob を取得して両方を検査できる。
++         `Layer#descriptor` はレイヤーの記述子を作り、`Image#configDescriptor` と `Image#manifestDescriptor` はドキュメントの記述子を作る。
++         マルチアーキテクチャのインデックスのための仕様の `platform` メンバーは、まだモデル化されていない。
++         これは OCI の JSON の記述子であり、containerd の protobuf の記述子は `Containerd.ContentDescriptor` である。
+
+=         `Containerd.ContentDescriptor`.
+-     refer embarcadero.Oci.Layer
++     refer embarcadero.Oci.Layer
+
+-     refer embarcadero.Containerd.ContentDescriptor
++     refer embarcadero.Containerd.ContentDescriptor
+
+-     entry #mediaType   the blob's media type, such as `application/vnd.oci.image.layer.v1.tar+gzip`
+-     entry #digest   the `sha256:<hex>` digest of the stored blob
+-     entry #size   the stored blob's length in bytes
+-     entry #annotations   free-form `Map[Text, Text]` annotations, or `Unset`
+-     entry #urls   URLs the blob may be fetched from, or `Unset`
+-   entry .History   one entry of an image config's `history`: how a layer, or an empty change, was produced
++     entry #mediaType   blob のメディアタイプ。`application/vnd.oci.image.layer.v1.tar+gzip` など
++     entry #digest   格納された blob の `sha256:<hex>` ダイジェスト
++     entry #size   格納された blob のバイト長
++     entry #annotations   自由形式の `Map[Text, Text]` のアノテーション。なければ `Unset`
++     entry #urls   blob を取得できる URL。なければ `Unset`
++   entry .History   イメージ構成の `history` の項目一つ：レイヤー、または空の変更がどのように作られたか
+
+=   entry .History   one entry of an image config's `history`: how a layer, or an empty change, was produced
+-     detail
++     detail
+
+-         A record in `Image.Config#history`, one per layer or per empty change, in order. Every
+-         field is optional and omitted from the JSON when unset; the member names are the wire
+-         names, so `created_by` and `empty_layer` keep their underscores.
+-     entry #created   when the change was made, as RFC 3339 text, or `Unset`
+-     entry #created_by   the command which produced the layer, or `Unset`
+-     entry #author   who made the change, or `Unset`
+-     entry #comment   a free-form note, or `Unset`
+-     entry #empty_layer   `true` when the entry produced no filesystem layer, or `Unset`
+-   entry .RootFs   the `rootfs` of an image config: the ordered `diff_id`s of the uncompressed layers
++         `Image.Config#history` のレコードであり、レイヤーまたは空の変更ごとに一つずつ、順に並ぶ。
++         どのフィールドも省略可能で、設定されていなければ JSON から省かれる。
++         メンバー名はワイヤ上の名前なので、`created_by` と `empty_layer` はアンダースコアを保つ。
++     entry #created   変更が行われた時刻。RFC 3339 のテキスト。なければ `Unset`
++     entry #created_by   レイヤーを作ったコマンド。なければ `Unset`
++     entry #author   変更を行った者。なければ `Unset`
++     entry #comment   自由形式の注記。なければ `Unset`
++     entry #empty_layer   その項目がファイルシステムのレイヤーを作らなかったときは `true`。なければ `Unset`
++   entry .RootFs   イメージ構成の `rootfs`：非圧縮のレイヤーの、順序づけられた `diff_id`
+
+=   entry .RootFs   the `rootfs` of an image config: the ordered `diff_id`s of the uncompressed layers
+-     detail
++     detail
+
+-         `RootFs(type, diff_ids)`, where `type` is always `layers` and `diff_ids` lists each
+-         layer's `Layer#diffId` bottom-most first. `Image.apply` builds it from the layers; a
+-         reader checks an unpacked layer's uncompressed tar against the matching entry. The
+-         member names are the wire names.
+-     entry #type   the rootfs type: always `layers`
+-     entry #diff_ids   the layers' `diffId`s, in order
+-   entry .ContainerConfig   the execution parameters of an image: user, environment, entrypoint, command, working directory, labels
++         `RootFs(type, diff_ids)` であり、`type` は常に `layers`、`diff_ids` は各レイヤーの `Layer#diffId` を最下層から順に挙げる。
++         `Image.apply` はレイヤーからこれを構築する。
++         読み手は、展開したレイヤーの非圧縮の tar を対応する項目と照合する。
++         メンバー名はワイヤ上の名前である。
++     entry #type   rootfs の種類：常に `layers`
++     entry #diff_ids   レイヤーの `diffId`。順序どおりに並ぶ
++   entry .ContainerConfig   イメージの実行パラメーター：ユーザー、環境、エントリポイント、コマンド、作業ディレクトリ、ラベル
+
+=   entry .ContainerConfig   the execution parameters of an image: user, environment, entrypoint, command, working directory, labels
+-     detail
++     detail
+
+-         The `config` member of an `Image.Config`: what a runtime does with the image's
+-         filesystem. The member names are capitalised to match the wire format inherited from
+-         the Docker image spec (`Cmd`, `Env`, `WorkingDir`), and every field is optional and
+-         omitted from the JSON when unset.
++         `Image.Config` の `config` メンバーであり、ランタイムがイメージのファイルシステムで何をするかを示す。
++         メンバー名は、Docker のイメージ仕様から受け継いだワイヤ形式に合わせて大文字で始まり（`Cmd`、`Env`、`WorkingDir`）、どのフィールドも省略可能で、設定されていなければ JSON から省かれる。
+
+=         omitted from the JSON when unset.
+=
+-         ```scala
++         ```scala
+
+=         omitted from the JSON when unset.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val config: Oci.ContainerConfig =
++         val config: Oci.ContainerConfig =
+
+-           Oci.ContainerConfig
++           Oci.ContainerConfig
+
+-             ( Env        = List(t"PATH=/usr/bin:/bin"),
++             ( Env        = List(t"PATH=/usr/bin:/bin"),
+
+-               Entrypoint = List(t"/usr/bin/server"),
++               Entrypoint = List(t"/usr/bin/server"),
+
+-               Cmd        = List(t"--port", t"8080"),
++               Cmd        = List(t"--port", t"8080"),
+
+-               WorkingDir = t"/app",
++               WorkingDir = t"/app",
+
+-               Labels     = Map(t"org.opencontainers.image.title" -> t"server") )
++               Labels     = Map(t"org.opencontainers.image.title" -> t"server") )
+
+=               Labels     = Map(t"org.opencontainers.image.title" -> t"server") )
+-         ```
++         ```
+
+=         ```
+-     refer embarcadero.Oci.Image
++     refer embarcadero.Oci.Image
+
+-     entry #User   the user (and optionally group) to run as, or `Unset`
+-     entry #Env   environment variables as `NAME=value` entries, or `Unset`
+-     entry #Entrypoint   the executable and its fixed arguments, or `Unset`
+-     entry #Cmd   the default arguments, appended to `Entrypoint` or run alone, or `Unset`
+-     entry #WorkingDir   the working directory the process starts in, or `Unset`
+-     entry #Labels   free-form `Map[Text, Text]` labels, or `Unset`
+-     entry #StopSignal   the signal which stops the container, such as `SIGTERM`, or `Unset`
+-   entry .WasmConfig   a Wasm artifact config document: the WASI generation, the component blob's digest and its interfaces
++     entry #User   実行するユーザー（および省略可能なグループ）。なければ `Unset`
++     entry #Env   `NAME=value` の項目としての環境変数。なければ `Unset`
++     entry #Entrypoint   実行ファイルとその固定の引数。なければ `Unset`
++     entry #Cmd   デフォルトの引数。`Entrypoint` に付け加えられるか、単独で実行される。なければ `Unset`
++     entry #WorkingDir   プロセスが開始する作業ディレクトリ。なければ `Unset`
++     entry #Labels   自由形式の `Map[Text, Text]` のラベル。なければ `Unset`
++     entry #StopSignal   コンテナーを停止するシグナル。`SIGTERM` など。なければ `Unset`
++   entry .WasmConfig   Wasm アーティファクトの構成のドキュメント：WASI の世代、コンポーネントの blob のダイジェスト、そのインターフェース
+
+=   entry .WasmConfig   a Wasm artifact config document: the WASI generation, the component blob's digest and its interfaces
+-     detail
++     detail
+
+-         The config blob of a Wasm OCI Artifact (media type
+-         `application/vnd.wasm.config.v0+json`). It stands where an `Image.Config` would, but
+-         describes a component rather than a filesystem: there is no `rootfs`, because there
+-         are no layers to stack; `#layerDigests` names the single `application/wasm` blob
+-         directly, and `#component` states the interfaces it needs. `#architecture` is `wasm`
+-         and `#os` names the WASI generation (`wasip1`, `wasip2` or `wasip3`): a runtime
+-         dispatches on those two fields to recognise a Wasm workload at all. `Image.wasm` builds
+-         one, `Image#wasmConfig` and `Image.Handle#wasmConfig` give it back, and it is one arm
+-         of `Oci.Config`. The JSON uses the spec's camelCase `layerDigests` key, and omits
+-         `created` and `author` when unset.
++         Wasm OCI Artifact の構成の blob（メディアタイプ `application/vnd.wasm.config.v0+json`）である。
++         `Image.Config` があるべき場所に置かれるが、ファイルシステムではなくコンポーネントを記述する。
++         積み重ねるレイヤーがないので `rootfs` はなく、`#layerDigests` が単一の `application/wasm` の blob を直接示し、`#component` がそれに必要なインターフェースを述べる。
++         `#architecture` は `wasm` であり、`#os` は WASI の世代（`wasip1`、`wasip2`、`wasip3`）を示す。
++         ランタイムはこの二つのフィールドでディスパッチして、そもそも Wasm のワークロードであることを認識する。
++         `Image.wasm` がこれを構築し、`Image#wasmConfig` と `Image.Handle#wasmConfig` がこれを返し、これは `Oci.Config` の一方の枝である。
++         JSON は仕様のキャメルケースの `layerDigests` キーを使い、`created` と `author` は設定されていなければ省く。
+
+=         `created` and `author` when unset.
+-     refer embarcadero.Oci.Image
++     refer embarcadero.Oci.Image
+
+-     refer embarcadero.Oci.WasmComponent
++     refer embarcadero.Oci.WasmComponent
+
+-     entry #created   when the artifact was built, as RFC 3339 text, or `Unset`
+-     entry #author   who built the artifact, or `Unset`
+-     entry #architecture   always `wasm`
+-     entry #os   the WASI generation: `wasip1`, `wasip2` (the default) or `wasip3`
+-     entry #layerDigests   the digests of the artifact's layers: the one `application/wasm` blob
+-     entry #component   the `WasmComponent` naming the exports, imports and target world, or `Unset`
+-   entry .WasmComponent   the `component` member of a Wasm artifact config: the interfaces it exports and imports, and its target world
++     entry #created   アーティファクトがビルドされた時刻。RFC 3339 のテキスト。なければ `Unset`
++     entry #author   アーティファクトをビルドした者。なければ `Unset`
++     entry #architecture   常に `wasm`
++     entry #os   WASI の世代：`wasip1`、`wasip2`（デフォルト）、または `wasip3`
++     entry #layerDigests   アーティファクトのレイヤーのダイジェスト：唯一の `application/wasm` の blob
++     entry #component   エクスポート、インポート、対象のワールドを示す `WasmComponent`。なければ `Unset`
++   entry .WasmComponent   Wasm アーティファクトの構成の `component` メンバー：エクスポートおよびインポートするインターフェースと、対象のワールド
+
+=   entry .WasmComponent   the `component` member of a Wasm artifact config: the interfaces it exports and imports, and its target world
+-     detail
++     detail
+
+-         What a Wasm OCI Artifact says about the Component Model contract its component was
+-         built to: `#exports`, the interfaces it offers (`wasi:http/incoming-handler@0.2.0`),
+-         `#imports`, the capabilities it needs (`wasi:io/streams@0.2.0`), and `#target`, the
+-         standard world it fits (`wasi:http/proxy@0.2.0`), if any. The Wasm OCI Artifact layout
+-         requires this member for `wasip2` artifacts, and it is what lets a host decide, before
+-         fetching the component, whether it can satisfy the workload. `Image.wasm` builds it
+-         from its `exports`, `imports` and `target` parameters, usually read from the WIT world
+-         the component was linked against.
++         Wasm OCI Artifact が、そのコンポーネントがどの Component Model の契約に合わせてビルドされたかについて述べるものである。
++         `#exports` は提供するインターフェース（`wasi:http/incoming-handler@0.2.0`）、`#imports` は必要とするケイパビリティ（`wasi:io/streams@0.2.0`）、`#target` は適合する標準のワールド（`wasi:http/proxy@0.2.0`）があればそれである。
++         Wasm OCI Artifact のレイアウトは `wasip2` のアーティファクトにこのメンバーを要求し、ホストはこれによって、コンポーネントを取得する前にそのワークロードを満たせるかどうかを判断できる。
++         `Image.wasm` は、通常はコンポーネントがリンクされた WIT のワールドから読み取った `exports`、`imports`、`target` のパラメーターからこれを構築する。
+
+=         the component was linked against.
+-     refer embarcadero.Oci.WasmConfig
++     refer embarcadero.Oci.WasmConfig
+
+-     entry #exports   the interfaces the component exports, as `namespace:package/interface@version` names
+-     entry #imports   the interfaces the component imports
+-     entry #target   the standard world the component targets, or `Unset`
++     entry #exports   コンポーネントがエクスポートするインターフェース。`namespace:package/interface@version` の名前で示す
++     entry #imports   コンポーネントがインポートするインターフェース
++     entry #target   コンポーネントが対象とする標準のワールド。なければ `Unset`
+
+- entry .ImageOpenable   the `Openable` which opens a filesystem path as an OCI archive, read-only
++ entry .ImageOpenable   ファイルシステムのパスを読み取り専用の OCI アーカイブとして開く `Openable`
+
+= entry .ImageOpenable   the `Openable` which opens a filesystem path as an OCI archive, read-only
+-   detail
++   detail
+
+-       In the JVM source set, since it reads the tar from disk through bitumen's
+-       `TarOpenable`. `ImageOpenable[path]` opens any `path` which is `Abstractable across
+-       Paths to Text` (`Self`) as an `Image` (`Form`), with no flags (`Operand = Nothing`),
+-       giving an `Oci.Image.Handle` (`Result`) for the block. It needs a `Tactic[Oci.Error]`, a
+-       `Tactic[Tar.Error]` and a `Tactic[Truncation.Error]`, and refuses a mode including
+-       `Write` with `Oci.Error` (`WriteUnsupported`). The given `imagePathOpenable` provides
+-       it, so a program writes `path.open[Oci.Image]()` rather than naming the class.
++       bitumen の `TarOpenable` を通じてディスクから tar を読むので、JVM のソースセットにある。
++       `ImageOpenable[path]` は、`Abstractable across Paths to Text` である任意の `path`（`Self`）を `Image`（`Form`）として、フラグなし（`Operand = Nothing`）で開き、ブロックに `Oci.Image.Handle`（`Result`）を与える。
++       `Tactic[Oci.Error]`、`Tactic[Tar.Error]`、`Tactic[Truncation.Error]` を必要とし、`Write` を含むモードは `Oci.Error`（`WriteUnsupported`）で拒否する。
++       given の `imagePathOpenable` がこれを提供するので、プログラムはクラスを名指しせずに `path.open[Oci.Image]()` と書く。
+
+-   refer embarcadero.imagePathOpenable
++   refer embarcadero.imagePathOpenable
+
+-   entry #Self   the path type opened
+-   entry #Form   `Image`: the form it is opened as
+-   entry #Operand   `Nothing`: there are no open flags
+-   entry #Result   `Image.Handle`: what the block receives
+-   entry #open   opens the path as a tar, builds an `Image.Handle` over its entries and runs the block
++   entry #Self   開かれるパスの型
++   entry #Form   `Image`：開かれるときの形
++   entry #Operand   `Nothing`：オープンのフラグはない
++   entry #Result   `Image.Handle`：ブロックが受け取るもの
++   entry #open   パスを tar として開き、その項目に対する `Image.Handle` を構築し、ブロックを実行する
+
+- entry .imagePathOpenable   the given behind `path.open[Image]()` on the JVM: opens an archive file as an image
+-     A top-level given in the JVM source set, exported through `soundness.*` so that it is in
+-     scope with the umbrella import. It provides an `ImageOpenable[path]` for any path type
+-     `Abstractable across Paths to Text`, capturing the `Tactic[Oci.Error]`,
+-     `Tactic[Tar.Error]` and `Tactic[Truncation.Error]` it needs. The handle lives for the
+-     block alone.
++ entry .imagePathOpenable   JVM における `path.open[Image]()` の背後にある given：アーカイブファイルをイメージとして開く
++     JVM のソースセットにあるトップレベルの given であり、アンブレラのインポートでスコープに入るよう `soundness.*` を通じてエクスポートされる。
++     `Abstractable across Paths to Text` である任意のパスの型に対して `ImageOpenable[path]` を提供し、必要とする `Tactic[Oci.Error]`、`Tactic[Tar.Error]`、`Tactic[Truncation.Error]` をキャプチャする。
++     ハンドルはブロックの間だけ存続する。
+
+=     block alone.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     block alone.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     block alone.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     block alone.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val file: Path on Linux = % / "tmp" / "image.tar"
++     val file: Path on Linux = % / "tmp" / "image.tar"
+
+-     file.open[Oci.Image](): handle ?=>
++     file.open[Oci.Image](): handle ?=>
+
+-       handle.manifest.layers.map(_.digest)
++       handle.manifest.layers.map(_.digest)
+
+=       handle.manifest.layers.map(_.digest)
+-     ```
++     ```
+
+- entry .Containerd   a connected containerd client: one gRPC call per method, bound to a namespace
++ entry .Containerd   接続された containerd クライアント：メソッドごとに一回の gRPC 呼び出し。名前空間に結びつけられる
+
+= entry .Containerd   a connected containerd client: one gRPC call per method, bound to a namespace
+-   detail
++   detail
+
+-       `Containerd(endpoint, namespace)` connects to a containerd daemon over an
+-       `Http2.Endpoint` — normally a Unix socket such as `/run/containerd/containerd.sock`
+-       carrying cleartext HTTP/2 — and binds every call to one containerd namespace, sent as
+-       the mandatory `containerd-namespace` header. The connection runs background daemons,
+-       so the client must be made inside a `supervise` scope, and it retains its `#channel`,
+-       which holds the ambient `Monitor`: a `Containerd` is itself a capability, written
+-       `Containerd^` where its type is stated.
++       `Containerd(endpoint, namespace)` は `Http2.Endpoint` — 通常は平文の HTTP/2 を運ぶ `/run/containerd/containerd.sock` のような Unix ソケット — を通じて containerd のデーモンに接続し、すべての呼び出しを一つの containerd の名前空間に結びつける。名前空間は必須の `containerd-namespace` ヘッダーとして送られる。
++       接続はバックグラウンドのデーモンを動かすので、クライアントは `supervise` のスコープ内で作らなければならない。また、クライアントは周囲の `Monitor` を保持する `#channel` を保持する。
++       そのため `Containerd` はそれ自体がケイパビリティであり、型を明示する箇所では `Containerd^` と書く。
+
+-       Each method is one unary gRPC call on the shared channel, exchanging the typed message
+-       records of the `containerd` component: `#version`; `#containers`, `#container`,
+-       `#createContainer` and `#deleteContainer` on the containers service; `#namespaces`,
+-       `#createNamespace` and `#deleteNamespace`; `#images`, `#image` and `#deleteImage`;
+-       and, for the tasks which run inside containers, `#createTask`, `#startTask`,
+-       `#killTask`, `#waitTask`, `#deleteTask`, `#task` and `#tasks`. Every call needs a
+-       `Monitor` and tactics for `Grpc.Error` (a non-zero gRPC status from the daemon),
+-       `Http2.Error`, `Async.Error` and `Protobuf.Error`, and each call which changes the
+-       daemon logs a `Containerd.Event` at `info`, so a `Containerd.Event is Loggable` must be in
+-       scope.
++       各メソッドは、共有されたチャンネル上の一回の単項 gRPC 呼び出しであり、`containerd` コンポーネントの型付きのメッセージのレコードをやりとりする。
++       `#version`、コンテナーサービスの `#containers`、`#container`、`#createContainer`、`#deleteContainer`、名前空間の `#namespaces`、`#createNamespace`、`#deleteNamespace`、イメージの `#images`、`#image`、`#deleteImage`、そしてコンテナー内で実行されるタスクのための `#createTask`、`#startTask`、`#killTask`、`#waitTask`、`#deleteTask`、`#task`、`#tasks` である。
++       どの呼び出しも `Monitor` と、`Grpc.Error`（デーモンからのゼロでない gRPC ステータス）、`Http2.Error`、`Async.Error`、`Protobuf.Error` の戦術を必要とする。
++       デーモンを変更する呼び出しはそれぞれ `info` で `Containerd.Event` をログに記録するので、`Containerd.Event is Loggable` がスコープになければならない。
+
+=       scope.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       scope.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       scope.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       scope.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       scope.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       scope.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       scope.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import probates.awaitProbate
+-       import socketBackends.javaBaseSockets
++       import socketBackends.javaBaseSockets
+
+=       scope.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import probates.awaitProbate
+=       import socketBackends.javaBaseSockets
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       scope.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import probates.awaitProbate
+=       import socketBackends.javaBaseSockets
+=       import strategies.throwUnsafely
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       scope.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import probates.awaitProbate
+=       import socketBackends.javaBaseSockets
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=
+-       supervise:
++       supervise:
+
+=       scope.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import probates.awaitProbate
+=       import socketBackends.javaBaseSockets
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=
+=       supervise:
+-         val socket = Uds(t"/run/containerd/containerd.sock")
++         val socket = Uds(t"/run/containerd/containerd.sock")
+
+-         val client = Containerd(Http2.Endpoint(socket, t"localhost"), t"default")
++         val client = Containerd(Http2.Endpoint(socket, t"localhost"), t"default")
+
+-         client.version().version
++         client.version().version
+
+-         client.containers().map(container => (container.id, container.image))
++         client.containers().map(container => (container.id, container.image))
+
+-         client.images().map(_.name)
++         client.images().map(_.name)
+
+-         val rootfs = List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
++         val rootfs = List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
+
+-         client.createContainer(Containerd.Container(t"web", image = t"docker.io/library/alpine:latest"))
++         client.createContainer(Containerd.Container(t"web", image = t"docker.io/library/alpine:latest"))
+
+-         client.createTask(t"web", rootfs)
++         client.createTask(t"web", rootfs)
+
+-         val pid = client.startTask(t"web")
++         val pid = client.startTask(t"web")
+
+-         client.waitTask(t"web").exitStatus
++         client.waitTask(t"web").exitStatus
+
+-         client.deleteTask(t"web")
++         client.deleteTask(t"web")
+
+-         client.deleteContainer(t"web")
++         client.deleteContainer(t"web")
+
+=         client.deleteContainer(t"web")
+-       ```
++       ```
+
+-       A container is a definition; a *task* is a running instance of one, created from the
+-       container with the `Mount`s of its root filesystem, started, signalled, awaited and
+-       deleted in that order (containerd refuses to delete a task it has not reaped). The
+-       `Workload` openable does that sequence for a scope, with teardown on every exit path.
++       コンテナーは定義であり、*タスク*はその実行中のインスタンスである。
++       タスクはコンテナーからそのルートファイルシステムの `Mount` とともに作られ、開始、シグナル送信、待機、削除の順に扱われる（containerd は回収していないタスクの削除を拒否する）。
++       `Workload` の openable は、スコープに対してこの一連の手順を行い、どの終了経路でも後始末をする。
+
+-   refer embarcadero.Workload
++   refer embarcadero.Workload
+
+-   refer embarcadero.Containerd.Container
++   refer embarcadero.Containerd.Container
+
+-   refer embarcadero.Containerd.Event
++   refer embarcadero.Containerd.Event
+
+-   entry .apply   connects to a containerd endpoint, binding every call to a namespace
+-       `Containerd(endpoint, namespace)` takes an `Http2.Endpoint` over any `Connectable`
+-       and `Showable` endpoint type and the namespace name, opens a `Grpc.Channel` whose
+-       default metadata carries `containerd-namespace: <namespace>`, and returns the client.
+-       It needs a `Monitor` and a `Probate` (from `supervise`, with a `probates` given) and
+-       tactics for `Async.Error` and `Socket.Error`, the latter raised if the socket cannot be
+-       connected. The result captures the monitor.
+-   entry #channel   the `Grpc.Channel` every call is made on, carrying the namespace in its default metadata
+-   entry #version   the daemon's version and build revision, as a `VersionResponse`
+-       The `containerd.services.version.v1.Version` call, with an `Empty` request.
+-   entry #containers   the containers in the bound namespace, optionally narrowed by containerd filters
+-       `client.containers()` or `client.containers(filters)`, the containers service's `List`
+-       call. The filters are containerd filter expressions, such as `labels."tier"==db`; an
+-       empty list returns everything.
+-   entry #createContainer   registers a container, returning it as the daemon stored it
+-       The containers service's `Create` call. The `Container`'s `spec` carries the OCI
+-       runtime spec as an `AnyMessage`, passed through verbatim, and its `runtime` names the
+-       runtime plugin (`io.containerd.runc.v2`). Logs `Containerd.Event.ContainerCreated`.
+-   entry #container   a single container by id, as a `Container`
+-       The containers service's `Get` call; a container the daemon does not have is a
+-       `Grpc.Error`.
+-   entry #deleteContainer   removes a container by id
+-       The containers service's `Delete` call. Logs `Containerd.Event.ContainerDeleted`. A
+-       container with a live task cannot be deleted: delete the task first.
+-   entry #namespaces   the namespaces on the daemon, optionally filtered
+-       `client.namespaces()` or `client.namespaces(filter)`, the namespaces service's `List`
+-       call, which is not itself scoped by the bound namespace.
+-   entry #createNamespace   creates a namespace, returning it as stored
+-       The namespaces service's `Create` call, with a `Namespace` of a name and labels.
+-   entry #deleteNamespace   removes a namespace by name
+-       The namespaces service's `Delete` call.
+-   entry #images   the images in the bound namespace, optionally filtered, as `ImageRecord`s
+-       `client.images()` or `client.images(filters)`, the images service's `List` call. An
+-       `ImageRecord` is the daemon's metadata — name, labels and a `ContentDescriptor` of
+-       the manifest — not the image content; an image is loaded from an `Oci.Image#archive`
+-       with `ctr images import`, since the content store is not part of this client.
+-   entry #image   a single image by reference, as an `ImageRecord`
+-       The images service's `Get` call, by a reference such as
+-       `docker.io/library/alpine:latest`.
+-   entry #deleteImage   removes an image by reference, optionally waiting for its content to be collected
+-       `client.deleteImage(name)` or `client.deleteImage(name, sync = true)`, the images
+-       service's `Delete` call; `sync` makes the call return only after garbage collection.
+-       Logs `Containerd.Event.ImageDeleted`.
+-   entry #createTask   creates a task for a container, with its root filesystem mounts, returning the task's pid
+-       `client.createTask(containerId, rootfs, options)`, the tasks service's `Create` call.
+-       The `rootfs` is the `Mount`s of the root filesystem (an overlay of an unpacked
+-       snapshot, typically) and `options` an `AnyMessage` of runtime options, empty by
+-       default. The result is a `CreateTaskResponse` of the container id and the host pid of
+-       the new, not yet started, task. Logs `Containerd.Event.TaskCreated`.
+-   entry #startTask   starts a created task, returning its host pid
+-       `client.startTask(containerId)` or `client.startTask(containerId, execId)` for an
+-       exec process, the tasks service's `Start` call. Logs `Containerd.Event.TaskStarted`.
+-   entry #killTask   sends a signal to a task, or to every process in its container
+-       `client.killTask(containerId, signal, execId, all)`, the tasks service's `Kill` call,
+-       with the signal as a number (`15` for `SIGTERM`, `9` for `SIGKILL`); `all` targets
+-       every process in the container. Logs `Containerd.Event.TaskKilled`.
+-   entry #waitTask   waits for a task to exit, returning its exit status and time
+-       `client.waitTask(containerId)` or `client.waitTask(containerId, execId)`, the tasks
+-       service's `Wait` call, which blocks until the process has exited and returns a
+-       `WaitResponse`. A started task must be waited on before it can be deleted.
+-   entry #deleteTask   deletes a task, returning its final exit status
+-       `client.deleteTask(containerId)` or `client.deleteTask(containerId, execId)`, the
+-       tasks service's `Delete` call, returning a `DeleteTaskResponse`. Logs
+-       `Containerd.Event.TaskDeleted`.
+-   entry #task   the state of a single task, as a `Workload`
+-       `client.task(containerId)` or `client.task(containerId, execId)`, the tasks service's
+-       `Get` call; `Workload#state` is the `ProcessStatus`.
+-   entry #tasks   every task known to the daemon, optionally filtered
+-       `client.tasks()` or `client.tasks(filter)`, the tasks service's `List` call.
++   entry .apply   containerd のエンドポイントに接続し、すべての呼び出しを名前空間に結びつける
++       `Containerd(endpoint, namespace)` は、任意の `Connectable` かつ `Showable` なエンドポイントの型に対する `Http2.Endpoint` と名前空間の名前を受け取り、デフォルトのメタデータに `containerd-namespace: <namespace>` を持つ `Grpc.Channel` を開き、クライアントを返す。
++       `Monitor` と `Probate`（`supervise` と `probates` の given から得る）、そして `Async.Error` と `Socket.Error` の戦術を必要とする。後者はソケットに接続できないときに発生する。
++       結果はモニターをキャプチャする。
++   entry #channel   すべての呼び出しが行われる `Grpc.Channel`。デフォルトのメタデータに名前空間を持つ
++   entry #version   デーモンのバージョンとビルドのリビジョン。`VersionResponse` として返す
++       `Empty` のリクエストによる `containerd.services.version.v1.Version` の呼び出しである。
++   entry #containers   結びつけられた名前空間にあるコンテナー。containerd のフィルターで絞り込める
++       `client.containers()` または `client.containers(filters)` であり、コンテナーサービスの `List` 呼び出しである。
++       フィルターは `labels."tier"==db` のような containerd のフィルター式である。
++       空のリストはすべてを返す。
++   entry #createContainer   コンテナーを登録し、デーモンが格納したとおりに返す
++       コンテナーサービスの `Create` 呼び出しである。
++       `Container` の `spec` は OCI のランタイム仕様を `AnyMessage` として持ち、そのまま渡される。その `runtime` はランタイムのプラグイン（`io.containerd.runc.v2`）を示す。
++       `Containerd.Event.ContainerCreated` をログに記録する。
++   entry #container   id で示す一つのコンテナー。`Container` として返す
++       コンテナーサービスの `Get` 呼び出しである。
++       デーモンが持たないコンテナーは `Grpc.Error` になる。
++   entry #deleteContainer   id で示すコンテナーを削除する
++       コンテナーサービスの `Delete` 呼び出しである。
++       `Containerd.Event.ContainerDeleted` をログに記録する。
++       動作中のタスクを持つコンテナーは削除できないので、先にタスクを削除する。
++   entry #namespaces   デーモン上の名前空間。フィルターで絞り込める
++       `client.namespaces()` または `client.namespaces(filter)` であり、名前空間サービスの `List` 呼び出しである。これ自体は結びつけられた名前空間に限定されない。
++   entry #createNamespace   名前空間を作り、格納されたとおりに返す
++       名前とラベルを持つ `Namespace` による、名前空間サービスの `Create` 呼び出しである。
++   entry #deleteNamespace   名前で示す名前空間を削除する
++       名前空間サービスの `Delete` 呼び出しである。
++   entry #images   結びつけられた名前空間にあるイメージ。フィルターで絞り込める。`ImageRecord` として返す
++       `client.images()` または `client.images(filters)` であり、イメージサービスの `List` 呼び出しである。
++       `ImageRecord` はデーモンのメタデータ — 名前、ラベル、マニフェストの `ContentDescriptor` — であり、イメージの内容ではない。
++       コンテンツストアはこのクライアントに含まれないので、イメージは `Oci.Image#archive` から `ctr images import` で読み込む。
++   entry #image   参照で示す一つのイメージ。`ImageRecord` として返す
++       `docker.io/library/alpine:latest` のような参照による、イメージサービスの `Get` 呼び出しである。
++   entry #deleteImage   参照で示すイメージを削除する。その内容が回収されるのを待つこともできる
++       `client.deleteImage(name)` または `client.deleteImage(name, sync = true)` であり、イメージサービスの `Delete` 呼び出しである。
++       `sync` を指定すると、呼び出しはガベージコレクションの後でのみ戻る。
++       `Containerd.Event.ImageDeleted` をログに記録する。
++   entry #createTask   コンテナーのタスクをルートファイルシステムのマウントとともに作り、タスクの pid を返す
++       `client.createTask(containerId, rootfs, options)` であり、タスクサービスの `Create` 呼び出しである。
++       `rootfs` はルートファイルシステムの `Mount`（通常は展開したスナップショットのオーバーレイ）であり、`options` はランタイムのオプションの `AnyMessage` で、デフォルトでは空である。
++       結果は、コンテナーの id と、まだ開始していない新しいタスクのホスト上の pid からなる `CreateTaskResponse` である。
++       `Containerd.Event.TaskCreated` をログに記録する。
++   entry #startTask   作られたタスクを開始し、そのホスト上の pid を返す
++       `client.startTask(containerId)`、または exec プロセスに対する `client.startTask(containerId, execId)` であり、タスクサービスの `Start` 呼び出しである。
++       `Containerd.Event.TaskStarted` をログに記録する。
++   entry #killTask   タスク、またはそのコンテナー内のすべてのプロセスにシグナルを送る
++       `client.killTask(containerId, signal, execId, all)` であり、タスクサービスの `Kill` 呼び出しである。シグナルは番号（`SIGTERM` なら `15`、`SIGKILL` なら `9`）で示す。
++       `all` はコンテナー内のすべてのプロセスを対象にする。
++       `Containerd.Event.TaskKilled` をログに記録する。
++   entry #waitTask   タスクの終了を待ち、その終了ステータスと時刻を返す
++       `client.waitTask(containerId)` または `client.waitTask(containerId, execId)` であり、タスクサービスの `Wait` 呼び出しである。プロセスが終了するまでブロックし、`WaitResponse` を返す。
++       開始したタスクは、削除する前に待機しなければならない。
++   entry #deleteTask   タスクを削除し、その最終的な終了ステータスを返す
++       `client.deleteTask(containerId)` または `client.deleteTask(containerId, execId)` であり、タスクサービスの `Delete` 呼び出しで、`DeleteTaskResponse` を返す。
++       `Containerd.Event.TaskDeleted` をログに記録する。
++   entry #task   一つのタスクの状態。`Workload` として返す
++       `client.task(containerId)` または `client.task(containerId, execId)` であり、タスクサービスの `Get` 呼び出しである。
++       `Workload#state` は `ProcessStatus` である。
++   entry #tasks   デーモンが知っているすべてのタスク。フィルターで絞り込める
++       `client.tasks()` または `client.tasks(filter)` であり、タスクサービスの `List` 呼び出しである。
+
+-   entry .ProcessStatus   the status of a task's process: `Unknown`, `Created`, `Running`, `Stopped`, `Paused` or `Pausing`
++   entry .ProcessStatus   タスクのプロセスの状態：`Unknown`、`Created`、`Running`、`Stopped`、`Paused`、または `Pausing`
+
+=   entry .ProcessStatus   the status of a task's process: `Unknown`, `Created`, `Running`, `Stopped`, `Paused` or `Pausing`
+-     detail
++     detail
+
+-         containerd's process status, a protobuf enum carried in a `Workload` as its numeric
+-         `#code`: `Unknown` (0), `Created` (1), `Running` (2), `Stopped` (3), `Paused` (4) and
+-         `Pausing` (5). `Workload#state` and `Workload.Handle`'s `state()` decode a code to
+-         one of these, and `Workload(…, status = ProcessStatus.Running.code)` goes the other
+-         way.
++         containerd のプロセスの状態であり、`Workload` の中で数値の `#code` として運ばれる protobuf の enum である。
++         `Unknown`（0）、`Created`（1）、`Running`（2）、`Stopped`（3）、`Paused`（4）、`Pausing`（5）がある。
++         `Workload#state` と `Workload.Handle` の `state()` はコードをこれらのいずれかにデコードし、`Workload(…, status = ProcessStatus.Running.code)` はその逆を行う。
+
+=         way.
+-     refer embarcadero.Workload
++     refer embarcadero.Workload
+
+-     entry .of   the status for a code, or `Unset` for a number the enum does not know
+-     entry #code   the numeric value containerd sends on the wire
++     entry .of   コードに対応する状態。enum が知らない番号なら `Unset`
++     entry #code   containerd がワイヤ上で送る数値
+
+-   entry .Event   what the containerd client logs as it changes the daemon
++   entry .Event   containerd クライアントがデーモンを変更する際にログに記録するもの
+
+=   entry .Event   what the containerd client logs as it changes the daemon
+-     detail
++     detail
+
+-         Every change `Containerd` makes to the daemon is logged at `info`: `ContainerCreated(id)`,
+-         `ContainerDeleted(id)`, `ImageDeleted(name)`, `TaskCreated(container)`,
+-         `TaskStarted(container, pid)`, `TaskKilled(container, signal)` and
+-         `TaskDeleted(container)`. All but `ImageDeleted` are tagged `Log.Process`;
+-         `ImageDeleted` is tagged `Log.Resource`. Reads (`containers`, `version`, `task`, …) log
+-         nothing. A `Containerd.Event is Loggable` must be in scope for every client method;
+-         `logging.silentLogging` discards them.
+-     entry .communicable   renders each event as a message, such as _started the task for container `web` as PID `4321`_
++         `Containerd` がデーモンに加える変更はすべて `info` でログに記録される。
++         `ContainerCreated(id)`、`ContainerDeleted(id)`、`ImageDeleted(name)`、`TaskCreated(container)`、`TaskStarted(container, pid)`、`TaskKilled(container, signal)`、`TaskDeleted(container)` である。
++         `ImageDeleted` 以外はすべて `Log.Process` のタグを持ち、`ImageDeleted` は `Log.Resource` のタグを持つ。
++         読み取り（`containers`、`version`、`task`、…）は何もログに記録しない。
++         クライアントのすべてのメソッドに対して `Containerd.Event is Loggable` がスコープになければならない。
++         `logging.silentLogging` はそれらを破棄する。
++     entry .communicable   各イベントを、_started the task for container `web` as PID `4321`_ のようなメッセージとして描画する
+
+-   entry .AnyMessage   the protobuf `google.protobuf.Any`: a serialized message with its type URL, passed through verbatim
++   entry .AnyMessage   protobuf の `google.protobuf.Any`：型 URL を持つシリアライズされたメッセージ。そのまま渡される
+
+=   entry .AnyMessage   the protobuf `google.protobuf.Any`: a serialized message with its type URL, passed through verbatim
+-     detail
++     detail
+
+-         containerd carries opaque payloads — a container's OCI runtime spec, a runtime's
+-         options, a task's options — as `Any` messages, which this client neither builds nor
+-         interprets: `#typeUrl` names the message type and `#value` holds its serialized bytes
+-         as an `AnyMessage.Payload`. Named `AnyMessage` to keep clear of `scala.Any`. An empty
+-         `AnyMessage()` is the default wherever a message takes one.
++         containerd は不透明なペイロード — コンテナーの OCI ランタイム仕様、ランタイムのオプション、タスクのオプション — を `Any` メッセージとして運ぶ。このクライアントはそれを構築も解釈もしない。
++         `#typeUrl` はメッセージの型を示し、`#value` はそのシリアライズされたバイトを `AnyMessage.Payload` として保持する。
++         `scala.Any` と区別するために `AnyMessage` と名づけている。
++         メッセージが `AnyMessage` を受け取る箇所では、空の `AnyMessage()` がデフォルトである。
+
+=         `AnyMessage()` is the default wherever a message takes one.
+=
+-         ```scala
++         ```scala
+
+=         `AnyMessage()` is the default wherever a message takes one.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         `AnyMessage()` is the default wherever a message takes one.
+=
+=         ```scala
+=         import soundness.*
+-         import codepages.utf8Codepage
++         import codepages.utf8Codepage
+
+-         val spec = Containerd.AnyMessage(t"types.containerd.io/opencontainers/runtime-spec/1/Spec",
++         val spec = Containerd.AnyMessage(t"types.containerd.io/opencontainers/runtime-spec/1/Spec",
+
+-             Containerd.AnyMessage.Payload(t"{}".in[Data]))
++             Containerd.AnyMessage.Payload(t"{}".in[Data]))
+
+-         spec.value.data.length   // 2
++         spec.value.data.length   // 2
+
+=         spec.value.data.length   // 2
+-         ```
++         ```
+
+-     entry .Payload   the serialized bytes of an `AnyMessage`, as an opaque, immutable byte array
++     entry .Payload   `AnyMessage` のシリアライズされたバイト。不透明で不変なバイト配列として保持する
+
+=     entry .Payload   the serialized bytes of an `AnyMessage`, as an opaque, immutable byte array
+-       detail
++       detail
+
+-           An opaque type over a frozen byte array rather than a bare `Data` field, so that
+-           protobuf derivation can see it as a plain, capture-free value. `Payload(data)` wraps
+-           a `Data`, `.empty` is the zero-length payload, and the `data` extension on
+-           `AnyMessage` reads it back. It encodes on the wire as a length-delimited field.
+-       entry .empty   the zero-length payload, the default `value` of an `AnyMessage`
+-       entry .apply   wraps a `Data` as a payload
+-       entry .encodable   encodes a payload as a length-delimited protobuf field
+-       entry .decodable   decodes a length-delimited protobuf field as a payload
+-     entry .data   `payload.data`: the payload's bytes as `Data`
+-     entry #typeUrl   the type URL naming the serialized message's type
+-     entry #value   the serialized message, as an `AnyMessage.Payload`
++           素の `Data` のフィールドではなく、凍結済みのバイト配列に対する不透明型である。
++           そのため、protobuf の導出はこれを単純でキャプチャを持たない値とみなせる。
++           `Payload(data)` は `Data` をラップし、`.empty` は長さゼロのペイロードであり、`AnyMessage` の `data` 拡張メソッドがそれを読み戻す。
++           ワイヤ上では長さで区切られたフィールドとしてエンコードされる。
++       entry .empty   長さゼロのペイロード。`AnyMessage` の `value` のデフォルト
++       entry .apply   `Data` をペイロードとしてラップする
++       entry .encodable   ペイロードを長さで区切られた protobuf のフィールドとしてエンコードする
++       entry .decodable   長さで区切られた protobuf のフィールドをペイロードとしてデコードする
++     entry .data   `payload.data`：`Data` としてのペイロードのバイト
++     entry #typeUrl   シリアライズされたメッセージの型を示す型 URL
++     entry #value   `AnyMessage.Payload` としての、シリアライズされたメッセージ
+
+-   entry .Timestamp   the protobuf `google.protobuf.Timestamp`: seconds and nanoseconds since the Unix epoch
++   entry .Timestamp   protobuf の `google.protobuf.Timestamp`：Unix エポックからの秒とナノ秒
+
+=   entry .Timestamp   the protobuf `google.protobuf.Timestamp`: seconds and nanoseconds since the Unix epoch
+-     detail
++     detail
+
+-         The timestamp containerd's records carry (`Container#createdAt`, `Workload#exitedAt`,
+-         …): whole `#seconds` and a `#nanos` fraction. It is **not** exported to the
+-         `soundness` umbrella, since aviation's `Timestamp` keeps that name: write
+-         `embarcadero.Timestamp`. It converts to and from any instant type through
+-         anticipation's generic time abstraction, so an aviation `Instant` works with no
+-         dependency between the two libraries, at millisecond precision: the generic
+-         representation is epoch milliseconds, so protobuf's sub-millisecond nanoseconds are
+-         not carried.
++         containerd のレコードが持つタイムスタンプ（`Container#createdAt`、`Workload#exitedAt`、…）であり、整数の `#seconds` と端数の `#nanos` からなる。
++         aviation の `Timestamp` がその名前を保持しているので、これは `soundness` アンブレラにエクスポート**されない**。
++         `embarcadero.Timestamp` と書く。
++         anticipation の汎用的な時刻の抽象を通じて任意の時点の型と相互に変換できるので、二つのライブラリの間に依存関係がなくても aviation の `Instant` をミリ秒の精度で扱える。
++         汎用的な表現はエポックからのミリ秒なので、protobuf のミリ秒未満のナノ秒は運ばれない。
+
+=         not carried.
+=
+-         ```scala
++         ```scala
+
+=         not carried.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import abstractables.epochMillisecondsAbstractable
++         import abstractables.epochMillisecondsAbstractable
+
+-         import chronometries.unixChronometry
++         import chronometries.unixChronometry
+
+-         val moment: Instant = Instant(1_700_000_001_000L)
++         val moment: Instant = Instant(1_700_000_001_000L)
+
+-         val stamp: embarcadero.Timestamp = embarcadero.Timestamp.of(moment)
++         val stamp: embarcadero.Timestamp = embarcadero.Timestamp.of(moment)
+
+-         stamp.seconds                        // 1700000001L
++         stamp.seconds                        // 1700000001L
+
+-         stamp.instant[Instant over Unix]     // moment
++         stamp.instant[Instant over Unix]     // moment
+
+=         stamp.instant[Instant over Unix]     // moment
+-         ```
++         ```
+
+-     entry .of   a timestamp from any instant type `Abstractable across Instants to Long`, at millisecond precision
+-     entry #seconds   whole seconds since the Unix epoch
+-     entry #nanos   the nanosecond fraction, `0` to `999999999`; a multiple of a million when made by `.of`
+-     entry #instant   the timestamp as any instant type `Instantiable across Instants from Long`, at millisecond precision
++     entry .of   `Abstractable across Instants to Long` である任意の時点の型から、ミリ秒の精度で作るタイムスタンプ
++     entry #seconds   Unix エポックからの整数の秒
++     entry #nanos   ナノ秒の端数。`0` から `999999999`。`.of` で作った場合は百万の倍数になる
++     entry #instant   `Instantiable across Instants from Long` である任意の時点の型としての、ミリ秒の精度のタイムスタンプ
+
+-   entry .Container   a containerd container record: id, labels, image, runtime, OCI spec, snapshot and timestamps
++   entry .Container   containerd のコンテナーのレコード：id、ラベル、イメージ、ランタイム、OCI 仕様、スナップショット、タイムスタンプ
+
+=   entry .Container   a containerd container record: id, labels, image, runtime, OCI spec, snapshot and timestamps
+-     detail
++     detail
+
+-         The metadata record of the containers service, with its protobuf field numbers
+-         preserved so that it round-trips with the daemon; fields the client does not model
+-         (the `extensions` map) are skipped on decode. Only `#id` is required: `Container(t"web",
+-         image = t"docker.io/library/alpine:latest")` is a complete definition to register with
+-         `Containerd#createContainer` or open as a `Workload`. A container is a definition,
+-         not a process; the task made for it is what runs.
++         コンテナーサービスのメタデータのレコードであり、デーモンとの間で往復できるよう protobuf のフィールド番号を保っている。
++         クライアントがモデル化していないフィールド（`extensions` のマップ）はデコードの際に読み飛ばされる。
++         必須なのは `#id` だけである。
++         `Container(t"web", image = t"docker.io/library/alpine:latest")` は、`Containerd#createContainer` で登録したり `Workload` として開いたりするための完全な定義である。
++         コンテナーはプロセスではなく定義であり、実行されるのはそのために作られたタスクである。
+
+-     refer embarcadero.Containerd
++     refer embarcadero.Containerd
+
+=     refer embarcadero.Containerd
+-     refer embarcadero.Workload
++     refer embarcadero.Workload
+
+-     entry #id   the container's id, unique in its namespace
+-     entry #labels   free-form `Map[Text, Text]` labels; containerd filters can select on them
+-     entry #image   the reference of the image the container was made from
+-     entry #runtime   the `Runtime` binding: the runtime plugin's name and options
+-     entry #spec   the OCI runtime spec, as an opaque `AnyMessage`
+-     entry #snapshotter   the snapshotter which holds the container's root filesystem
+-     entry #snapshotKey   the key of the container's snapshot
+-     entry #createdAt   when the daemon stored the record, as a `Timestamp`
+-     entry #updatedAt   when the record last changed, as a `Timestamp`
+-     entry #sandbox   the sandbox the container belongs to, if any
++     entry #id   コンテナーの id。その名前空間の中で一意である
++     entry #labels   自由形式の `Map[Text, Text]` のラベル。containerd のフィルターでこれを選択できる
++     entry #image   コンテナーの作成元のイメージの参照
++     entry #runtime   `Runtime` の結びつけ：ランタイムのプラグインの名前とオプション
++     entry #spec   不透明な `AnyMessage` としての OCI ランタイム仕様
++     entry #snapshotter   コンテナーのルートファイルシステムを保持するスナップショッター
++     entry #snapshotKey   コンテナーのスナップショットのキー
++     entry #createdAt   デーモンがレコードを格納した時刻。`Timestamp` として示す
++     entry #updatedAt   レコードが最後に変更された時刻。`Timestamp` として示す
++     entry #sandbox   コンテナーが属するサンドボックス（あれば）
+
+-   entry .ContentDescriptor   containerd's protobuf descriptor of a blob: media type, digest, size and annotations
++   entry .ContentDescriptor   containerd の protobuf による blob の記述子：メディアタイプ、ダイジェスト、サイズ、アノテーション
+
+=   entry .ContentDescriptor   containerd's protobuf descriptor of a blob: media type, digest, size and annotations
+-     detail
++     detail
+
+-         The `containerd.types.Descriptor` message, as an `ImageRecord#target` points at its
+-         manifest. Named `ContentDescriptor` to keep clear of the OCI JSON `Oci.Descriptor`, which
+-         has the same meaning on the other side of the library. The `platform` member is not
+-         modelled.
++         `containerd.types.Descriptor` メッセージであり、`ImageRecord#target` はこれでマニフェストを指す。
++         ライブラリのもう一方の側で同じ意味を持つ OCI の JSON の `Oci.Descriptor` と区別するために `ContentDescriptor` と名づけている。
++         `platform` メンバーはモデル化されていない。
+
+=         modelled.
+-     refer embarcadero.Oci.Descriptor
++     refer embarcadero.Oci.Descriptor
+
+-     entry #mediaType   the blob's media type, as text
+-     entry #digest   the `sha256:<hex>` digest of the blob
+-     entry #size   the blob's length in bytes
+-     entry #annotations   free-form `Map[Text, Text]` annotations
++     entry #mediaType   テキストとしての blob のメディアタイプ
++     entry #digest   blob の `sha256:<hex>` ダイジェスト
++     entry #size   blob のバイト長
++     entry #annotations   自由形式の `Map[Text, Text]` のアノテーション
+
+-   entry .ImageRecord   a containerd image record: a reference name pointing at content, with labels and timestamps
++   entry .ImageRecord   containerd のイメージのレコード：内容を指す参照名と、ラベルとタイムスタンプ
+
+=   entry .ImageRecord   a containerd image record: a reference name pointing at content, with labels and timestamps
+-     detail
++     detail
+
+-         The metadata record of the images service, which `Containerd#images` and
+-         `Containerd#image` return: `#name` is the reference (`docker.io/library/alpine:latest`)
+-         and `#target` the `ContentDescriptor` of the manifest in the content store. Named
+-         `ImageRecord` to keep clear of the OCI `Oci.Image` this library builds; the record is the
+-         daemon's index entry, not the content.
++         `Containerd#images` と `Containerd#image` が返す、イメージサービスのメタデータのレコードである。
++         `#name` は参照（`docker.io/library/alpine:latest`）であり、`#target` はコンテンツストア内のマニフェストの `ContentDescriptor` である。
++         このライブラリが構築する OCI の `Oci.Image` と区別するために `ImageRecord` と名づけている。
++         このレコードはデーモンのインデックスの項目であり、内容ではない。
+
+=         daemon's index entry, not the content.
+-     refer embarcadero.Oci.Image
++     refer embarcadero.Oci.Image
+
+-     entry #name   the image reference
+-     entry #labels   free-form `Map[Text, Text]` labels
+-     entry #target   the `ContentDescriptor` of the image's manifest
+-     entry #createdAt   when the daemon stored the record, as a `Timestamp`
+-     entry #updatedAt   when the record last changed, as a `Timestamp`
++     entry #name   イメージの参照
++     entry #labels   自由形式の `Map[Text, Text]` のラベル
++     entry #target   イメージのマニフェストの `ContentDescriptor`
++     entry #createdAt   デーモンがレコードを格納した時刻。`Timestamp` として示す
++     entry #updatedAt   レコードが最後に変更された時刻。`Timestamp` として示す
+
+-   entry .Mount   a mount in a task's root filesystem: a source mounted at a target with a type and options
++   entry .Mount   タスクのルートファイルシステムにおけるマウント：種類とオプションを持ち、ソースをターゲットにマウントする
+
+=   entry .Mount   a mount in a task's root filesystem: a source mounted at a target with a type and options
+-     detail
++     detail
+
+-         The `containerd.types.Mount` message, given to `Containerd#createTask` as the task's
+-         `rootfs` and to `container.open[Workload](…)` as its flags; `#mountType` is the proto's
+-         `type`. An overlay of an unpacked snapshot is the common case:
++         `containerd.types.Mount` メッセージであり、`Containerd#createTask` にはタスクの `rootfs` として、`container.open[Workload](…)` にはそのフラグとして与える。
++         `#mountType` は proto の `type` である。
++         よくあるのは、展開したスナップショットのオーバーレイである。
+
+=         `type`. An overlay of an unpacked snapshot is the common case:
+=
+-         ```scala
++         ```scala
+
+=         `type`. An overlay of an unpacked snapshot is the common case:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val rootfs: List[Containerd.Mount] =
++         val rootfs: List[Containerd.Mount] =
+
+-           List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a", t"upperdir=/b", t"workdir=/c")))
++           List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a", t"upperdir=/b", t"workdir=/c")))
+
+=           List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a", t"upperdir=/b", t"workdir=/c")))
+-         ```
++         ```
+
+-     entry #mountType   the filesystem type, such as `overlay` or `bind`
+-     entry #source   what is mounted
+-     entry #target   where it is mounted, within the task's root
+-     entry #options   the mount options, as `key=value` entries
++     entry #mountType   ファイルシステムの種類。`overlay` や `bind` など
++     entry #source   マウントされるもの
++     entry #target   タスクのルートの中でマウントされる場所
++     entry #options   `key=value` の項目としてのマウントオプション
+
+-   entry .Namespace   a containerd namespace: an isolation scope for containers, images and tasks, with labels
++   entry .Namespace   containerd の名前空間：コンテナー、イメージ、タスクを隔離するスコープ。ラベルを持つ
+
+=   entry .Namespace   a containerd namespace: an isolation scope for containers, images and tasks, with labels
+-     detail
++     detail
+
+-         The record of the namespaces service: a `#name` (`default`, `k8s.io`, `moby`) and
+-         free-form `#labels`. A `Containerd` client is bound to one namespace at connection;
+-         `Containerd#namespaces`, `#createNamespace` and `#deleteNamespace` manage them.
+-     entry #name   the namespace's name
+-     entry #labels   free-form `Map[Text, Text]` labels
++         名前空間サービスのレコードであり、`#name`（`default`、`k8s.io`、`moby`）と自由形式の `#labels` を持つ。
++         `Containerd` クライアントは接続時に一つの名前空間に結びつけられる。
++         `Containerd#namespaces`、`#createNamespace`、`#deleteNamespace` が名前空間を管理する。
++     entry #name   名前空間の名前
++     entry #labels   自由形式の `Map[Text, Text]` のラベル
+
+-   entry .Runtime   a container's runtime binding: the runtime plugin's name and its opaque options
++   entry .Runtime   コンテナーのランタイムの結びつけ：ランタイムのプラグインの名前と、その不透明なオプション
+
+=   entry .Runtime   a container's runtime binding: the runtime plugin's name and its opaque options
+-     detail
++     detail
+
+-         The `Container.Runtime` message: `#name` is the plugin (`io.containerd.runc.v2` for a
+-         filesystem image, `io.containerd.wasmtime.v1` for a Wasm artifact under a wasmtime
+-         shim) and `#options` an `AnyMessage` of its options. The name is exported to the
+-         `soundness` umbrella as `Runtime`, so no other library may export one.
+-     entry #name   the runtime plugin's name
+-     entry #options   the plugin's options, as an opaque `AnyMessage`
++         `Container.Runtime` メッセージである。
++         `#name` はプラグイン（ファイルシステムのイメージなら `io.containerd.runc.v2`、wasmtime のシムのもとの Wasm アーティファクトなら `io.containerd.wasmtime.v1`）であり、`#options` はそのオプションの `AnyMessage` である。
++         この名前は `soundness` アンブレラに `Runtime` としてエクスポートされるので、他のライブラリはこの名前をエクスポートできない。
++     entry #name   ランタイムのプラグインの名前
++     entry #options   不透明な `AnyMessage` としての、プラグインのオプション
+
+-   entry .Empty   the protobuf `google.protobuf.Empty`: a message with no fields
+-       The request of parameterless calls such as `Containerd#version`, and the reply of the
+-       delete calls. `Empty()` is its only value.
++   entry .Empty   protobuf の `google.protobuf.Empty`：フィールドを持たないメッセージ
++       `Containerd#version` のようなパラメーターのない呼び出しのリクエストであり、削除の呼び出しの応答である。
++       `Empty()` が唯一の値である。
+
+-   entry .VersionResponse   the reply of containerd's `Version` call: the daemon's version and git revision
++   entry .VersionResponse   containerd の `Version` 呼び出しの応答：デーモンのバージョンと git のリビジョン
+
+=   entry .VersionResponse   the reply of containerd's `Version` call: the daemon's version and git revision
+-     detail
++     detail
+
+-         What `Containerd#version` returns: `#version` is the semantic version (`1.7.0`) and
+-         `#revision` the git revision the daemon was built from.
+-     entry #version   the daemon's semantic version
+-     entry #revision   the git revision it was built from
++         `Containerd#version` が返すものである。
++         `#version` はセマンティックバージョン（`1.7.0`）であり、`#revision` はデーモンのビルド元の git のリビジョンである。
++     entry #version   デーモンのセマンティックバージョン
++     entry #revision   ビルド元の git のリビジョン
+
+-   entry .CreateContainerRequest   the request of the containers service's `Create`: the container to register
++   entry .CreateContainerRequest   コンテナーサービスの `Create` のリクエスト：登録するコンテナー
+
+=   entry .CreateContainerRequest   the request of the containers service's `Create`: the container to register
+-     detail
++     detail
+
+-         The `…Request` and `…Response` types are the containerd gRPC protocol mirrored field by field, each
+-         a case class with protobuf field numbers which `Containerd`'s methods build and
+-         decode, exported so that a program can speak to the daemon directly through a
+-         `Grpc.Channel` or encode them with `in[Protobuf]`. For the containers service:
+-         `CreateContainerRequest(container)` and `CreateContainerResponse(container)`,
+-         `GetContainerRequest(id)` and `GetContainerResponse(container)`,
+-         `ListContainersRequest(filters)` and `ListContainersResponse(containers)`, and
+-         `DeleteContainerRequest(id)`, whose reply is `Empty`.
+-     entry #container   the `Container` to register
++         `…Request` と `…Response` の型は、containerd の gRPC プロトコルをフィールドごとに写したものである。
++         それぞれは `Containerd` のメソッドが構築およびデコードする、protobuf のフィールド番号を持つケースクラスであり、プログラムが `Grpc.Channel` を通じて直接デーモンとやりとりしたり、`in[Protobuf]` でエンコードしたりできるようエクスポートされている。
++         コンテナーサービスについては、`CreateContainerRequest(container)` と `CreateContainerResponse(container)`、`GetContainerRequest(id)` と `GetContainerResponse(container)`、`ListContainersRequest(filters)` と `ListContainersResponse(containers)`、そして応答が `Empty` である `DeleteContainerRequest(id)` がある。
++     entry #container   登録する `Container`
+
+-   entry .CreateContainerResponse   the reply of the containers service's `Create`: the container as stored
+-     entry #container   the stored `Container`
++   entry .CreateContainerResponse   コンテナーサービスの `Create` の応答：格納されたとおりのコンテナー
++     entry #container   格納された `Container`
+
+-   entry .GetContainerRequest   the request of the containers service's `Get`: a container id
+-     entry #id   the id of the container to fetch
++   entry .GetContainerRequest   コンテナーサービスの `Get` のリクエスト：コンテナーの id
++     entry #id   取得するコンテナーの id
+
+-   entry .GetContainerResponse   the reply of the containers service's `Get`: the container
+-     entry #container   the requested `Container`
++   entry .GetContainerResponse   コンテナーサービスの `Get` の応答：コンテナー
++     entry #container   要求された `Container`
+
+-   entry .ListContainersRequest   the request of the containers service's `List`: optional filter expressions
+-     entry #filters   containerd filter expressions, such as `labels."tier"==db`; empty for everything
++   entry .ListContainersRequest   コンテナーサービスの `List` のリクエスト：省略可能なフィルター式
++     entry #filters   `labels."tier"==db` のような containerd のフィルター式。すべてを得るなら空
+
+-   entry .ListContainersResponse   the reply of the containers service's `List`: the matching containers
+-     entry #containers   the matching `Container`s, in containerd's order
++   entry .ListContainersResponse   コンテナーサービスの `List` の応答：一致するコンテナー
++     entry #containers   一致する `Container`。containerd の順序で並ぶ
+
+-   entry .DeleteContainerRequest   the request of the containers service's `Delete`: a container id; the reply is `Empty`
+-     entry #id   the id of the container to remove
++   entry .DeleteContainerRequest   コンテナーサービスの `Delete` のリクエスト：コンテナーの id。応答は `Empty`
++     entry #id   削除するコンテナーの id
+
+-   entry .CreateNamespaceRequest   the request of the namespaces service's `Create`: the namespace to create
++   entry .CreateNamespaceRequest   名前空間サービスの `Create` のリクエスト：作成する名前空間
+
+=   entry .CreateNamespaceRequest   the request of the namespaces service's `Create`: the namespace to create
+-     detail
++     detail
+
+-         The namespaces service's messages: `CreateNamespaceRequest(namespace)` and
+-         `CreateNamespaceResponse(namespace)`, `ListNamespacesRequest(filter)` and
+-         `ListNamespacesResponse(namespaces)`, and `DeleteNamespaceRequest(name)`, whose reply
+-         is `Empty`.
+-     entry #namespace   the `Namespace` to create
++         名前空間サービスのメッセージは、`CreateNamespaceRequest(namespace)` と `CreateNamespaceResponse(namespace)`、`ListNamespacesRequest(filter)` と `ListNamespacesResponse(namespaces)`、そして応答が `Empty` である `DeleteNamespaceRequest(name)` である。
++     entry #namespace   作成する `Namespace`
+
+-   entry .CreateNamespaceResponse   the reply of the namespaces service's `Create`: the namespace as stored
+-     entry #namespace   the stored `Namespace`
++   entry .CreateNamespaceResponse   名前空間サービスの `Create` の応答：格納されたとおりの名前空間
++     entry #namespace   格納された `Namespace`
+
+-   entry .ListNamespacesRequest   the request of the namespaces service's `List`: an optional filter expression
+-     entry #filter   a containerd filter expression; empty for everything
++   entry .ListNamespacesRequest   名前空間サービスの `List` のリクエスト：省略可能なフィルター式
++     entry #filter   containerd のフィルター式。すべてを得るなら空
+
+-   entry .ListNamespacesResponse   the reply of the namespaces service's `List`: the matching namespaces
+-     entry #namespaces   the matching `Namespace`s
++   entry .ListNamespacesResponse   名前空間サービスの `List` の応答：一致する名前空間
++     entry #namespaces   一致する `Namespace`
+
+-   entry .DeleteNamespaceRequest   the request of the namespaces service's `Delete`: a namespace name; the reply is `Empty`
+-     entry #name   the name of the namespace to remove
++   entry .DeleteNamespaceRequest   名前空間サービスの `Delete` のリクエスト：名前空間の名前。応答は `Empty`
++     entry #name   削除する名前空間の名前
+
+-   entry .GetImageRequest   the request of the images service's `Get`: an image reference
++   entry .GetImageRequest   イメージサービスの `Get` のリクエスト：イメージの参照
+
+=   entry .GetImageRequest   the request of the images service's `Get`: an image reference
+-     detail
++     detail
+
+-         The images service's messages: `GetImageRequest(name)` and `GetImageResponse(image)`,
+-         `ListImagesRequest(filters)` and `ListImagesResponse(images)`, and
+-         `DeleteImageRequest(name, sync)`, whose reply is `Empty`.
+-     entry #name   the reference of the image to fetch
++         イメージサービスのメッセージは、`GetImageRequest(name)` と `GetImageResponse(image)`、`ListImagesRequest(filters)` と `ListImagesResponse(images)`、そして応答が `Empty` である `DeleteImageRequest(name, sync)` である。
++     entry #name   取得するイメージの参照
+
+-   entry .GetImageResponse   the reply of the images service's `Get`: the image record
+-     entry #image   the requested `ImageRecord`
++   entry .GetImageResponse   イメージサービスの `Get` の応答：イメージのレコード
++     entry #image   要求された `ImageRecord`
+
+-   entry .ListImagesRequest   the request of the images service's `List`: optional filter expressions
+-     entry #filters   containerd filter expressions; empty for everything
++   entry .ListImagesRequest   イメージサービスの `List` のリクエスト：省略可能なフィルター式
++     entry #filters   containerd のフィルター式。すべてを得るなら空
+
+-   entry .ListImagesResponse   the reply of the images service's `List`: the matching image records
+-     entry #images   the matching `ImageRecord`s
++   entry .ListImagesResponse   イメージサービスの `List` の応答：一致するイメージのレコード
++     entry #images   一致する `ImageRecord`
+
+-   entry .DeleteImageRequest   the request of the images service's `Delete`: an image reference and whether to wait; the reply is `Empty`
+-     entry #name   the reference of the image to remove
+-     entry #sync   whether to return only after the content has been garbage-collected
++   entry .DeleteImageRequest   イメージサービスの `Delete` のリクエスト：イメージの参照と、待つかどうか。応答は `Empty`
++     entry #name   削除するイメージの参照
++     entry #sync   内容がガベージコレクションされた後でのみ戻るかどうか
+
+-   entry .CreateTaskRequest   the request of the tasks service's `Create`: the container, its rootfs mounts, stdio and options
++   entry .CreateTaskRequest   タスクサービスの `Create` のリクエスト：コンテナー、その rootfs のマウント、標準入出力、オプション
+
+=   entry .CreateTaskRequest   the request of the tasks service's `Create`: the container, its rootfs mounts, stdio and options
+-     detail
++     detail
+
+-         The tasks service's messages: `CreateTaskRequest` and `CreateTaskResponse(containerId,
+-         pid)`, `StartRequest(containerId, execId)` and `StartResponse(pid)`,
+-         `KillRequest(containerId, execId, signal, all)` with an `Empty` reply,
+-         `WaitRequest(containerId, execId)` and `WaitResponse(exitStatus, exitedAt)`,
+-         `DeleteTaskRequest(containerId, execId)` and `DeleteTaskResponse(id, pid, exitStatus,
+-         exitedAt)`, `GetTaskRequest(containerId, execId)` and `GetTaskResponse(process)`, and
+-         `ListTasksRequest(filter)` and `ListTasksResponse(tasks)`. An empty `execId` means the
+-         container's main task; a non-empty one names an exec process within it.
+-     entry #containerId   the container to create the task for
+-     entry #rootfs   the `Mount`s of the task's root filesystem
+-     entry #stdin   the path the task's standard input is read from; empty for none
+-     entry #stdout   the path the task's standard output is written to; empty for none
+-     entry #stderr   the path the task's standard error is written to; empty for none
+-     entry #terminal   whether the task gets a pseudo-terminal
+-     entry #options   runtime options, as an opaque `AnyMessage`
++         タスクサービスのメッセージは、`CreateTaskRequest` と `CreateTaskResponse(containerId, pid)`、`StartRequest(containerId, execId)` と `StartResponse(pid)`、応答が `Empty` である `KillRequest(containerId, execId, signal, all)`、`WaitRequest(containerId, execId)` と `WaitResponse(exitStatus, exitedAt)`、`DeleteTaskRequest(containerId, execId)` と `DeleteTaskResponse(id, pid, exitStatus, exitedAt)`、`GetTaskRequest(containerId, execId)` と `GetTaskResponse(process)`、そして `ListTasksRequest(filter)` と `ListTasksResponse(tasks)` である。
++         空の `execId` はコンテナーのメインのタスクを意味し、空でないものはその中の exec プロセスを示す。
++     entry #containerId   タスクを作成する対象のコンテナー
++     entry #rootfs   タスクのルートファイルシステムの `Mount`
++     entry #stdin   タスクの標準入力を読み取るパス。なければ空
++     entry #stdout   タスクの標準出力を書き出すパス。なければ空
++     entry #stderr   タスクの標準エラー出力を書き出すパス。なければ空
++     entry #terminal   タスクが疑似端末を得るかどうか
++     entry #options   不透明な `AnyMessage` としての、ランタイムのオプション
+
+-   entry .CreateTaskResponse   the reply of the tasks service's `Create`: the container id and the new task's host pid
+-     entry #containerId   the container the task was created for
+-     entry #pid   the host pid of the created task
++   entry .CreateTaskResponse   タスクサービスの `Create` の応答：コンテナーの id と、新しいタスクのホスト上の pid
++     entry #containerId   タスクが作成された対象のコンテナー
++     entry #pid   作成されたタスクのホスト上の pid
+
+-   entry .StartRequest   the request of the tasks service's `Start`: the task, or exec process, to start
+-     entry #containerId   the container whose task to start
+-     entry #execId   the exec process to start; empty for the main task
++   entry .StartRequest   タスクサービスの `Start` のリクエスト：開始するタスク、または exec プロセス
++     entry #containerId   タスクを開始するコンテナー
++     entry #execId   開始する exec プロセス。メインのタスクなら空
+
+-   entry .StartResponse   the reply of the tasks service's `Start`: the started process's host pid
+-     entry #pid   the host pid of the started process
++   entry .StartResponse   タスクサービスの `Start` の応答：開始したプロセスのホスト上の pid
++     entry #pid   開始したプロセスのホスト上の pid
+
+-   entry .KillRequest   the request of the tasks service's `Kill`: a signal for a task, an exec process or every process; the reply is `Empty`
+-     entry #containerId   the container whose task to signal
+-     entry #execId   the exec process to signal; empty for the main task
+-     entry #signal   the signal number, such as `15` for `SIGTERM`
+-     entry #all   whether to signal every process in the container
++   entry .KillRequest   タスクサービスの `Kill` のリクエスト：タスク、exec プロセス、またはすべてのプロセスへのシグナル。応答は `Empty`
++     entry #containerId   タスクにシグナルを送るコンテナー
++     entry #execId   シグナルを送る exec プロセス。メインのタスクなら空
++     entry #signal   シグナルの番号。`SIGTERM` なら `15` など
++     entry #all   コンテナー内のすべてのプロセスにシグナルを送るかどうか
+
+-   entry .WaitRequest   the request of the tasks service's `Wait`: the task, or exec process, to wait for
+-     entry #containerId   the container whose task to wait for
+-     entry #execId   the exec process to wait for; empty for the main task
++   entry .WaitRequest   タスクサービスの `Wait` のリクエスト：待機するタスク、または exec プロセス
++     entry #containerId   タスクを待機するコンテナー
++     entry #execId   待機する exec プロセス。メインのタスクなら空
+
+-   entry .WaitResponse   the reply of the tasks service's `Wait`: the exit status and the time of exit
+-     entry #exitStatus   the process's exit status
+-     entry #exitedAt   when it exited, as a `Timestamp`
++   entry .WaitResponse   タスクサービスの `Wait` の応答：終了ステータスと終了時刻
++     entry #exitStatus   プロセスの終了ステータス
++     entry #exitedAt   終了した時刻。`Timestamp` として示す
+
+-   entry .DeleteTaskRequest   the request of the tasks service's `Delete`: the task, or exec process, to remove
+-     entry #containerId   the container whose task to delete
+-     entry #execId   the exec process to delete; empty for the main task
++   entry .DeleteTaskRequest   タスクサービスの `Delete` のリクエスト：削除するタスク、または exec プロセス
++     entry #containerId   タスクを削除するコンテナー
++     entry #execId   削除する exec プロセス。メインのタスクなら空
+
+-   entry .DeleteTaskResponse   the reply of the tasks service's `Delete`: the removed process's id, pid, exit status and time
+-     entry #id   the exec id of the removed process
+-     entry #pid   its host pid
+-     entry #exitStatus   the exit status it stopped with
+-     entry #exitedAt   when it exited, as a `Timestamp`
++   entry .DeleteTaskResponse   タスクサービスの `Delete` の応答：削除したプロセスの id、pid、終了ステータス、時刻
++     entry #id   削除したプロセスの exec id
++     entry #pid   そのホスト上の pid
++     entry #exitStatus   停止したときの終了ステータス
++     entry #exitedAt   終了した時刻。`Timestamp` として示す
+
+-   entry .GetTaskRequest   the request of the tasks service's `Get`: the task, or exec process, to look up
+-     entry #containerId   the container whose task to fetch
+-     entry #execId   the exec process to fetch; empty for the main task
++   entry .GetTaskRequest   タスクサービスの `Get` のリクエスト：調べるタスク、または exec プロセス
++     entry #containerId   タスクを取得するコンテナー
++     entry #execId   取得する exec プロセス。メインのタスクなら空
+
+-   entry .GetTaskResponse   the reply of the tasks service's `Get`: the process state
+-     entry #process   the requested `Workload`
++   entry .GetTaskResponse   タスクサービスの `Get` の応答：プロセスの状態
++     entry #process   要求された `Workload`
+
+-   entry .ListTasksRequest   the request of the tasks service's `List`: an optional filter expression
+-     entry #filter   a containerd filter expression; empty for everything
++   entry .ListTasksRequest   タスクサービスの `List` のリクエスト：省略可能なフィルター式
++     entry #filter   containerd のフィルター式。すべてを得るなら空
+
+-   entry .ListTasksResponse   the reply of the tasks service's `List`: the matching task processes
+-     entry #tasks   the matching `Workload`s
++   entry .ListTasksResponse   タスクサービスの `List` の応答：一致するタスクのプロセス
++     entry #tasks   一致する `Workload`
+
+- entry .Workload   a task's process state, and the openable which scopes a container's whole lifecycle to a block
++ entry .Workload   タスクのプロセスの状態と、コンテナーのライフサイクル全体をブロックのスコープに収める openable
+
+= entry .Workload   a task's process state, and the openable which scopes a container's whole lifecycle to a block
+-   detail
++   detail
+
+-       `Workload` is two things. As a **record**, it is a task's process state as containerd
+-       reports it (`containerd.v1.types.Process`, in part): the `#containerId` and exec `#id`
+-       it belongs to, its host `#pid`, the raw `#status` code (decoded by `#state` to a
+-       `Containerd.ProcessStatus`), and the `#exitStatus` and `#exitedAt` once it has stopped. It is
+-       what `Containerd#task` and `Containerd#tasks` return.
++       `Workload` は二つのものである。
++       **レコード**としては、containerd が報告するタスクのプロセスの状態（一部は `containerd.v1.types.Process`）である。それが属する `#containerId` と exec の `#id`、ホスト上の `#pid`、生の `#status` コード（`#state` によって `Containerd.ProcessStatus` にデコードされる）、そして停止した後の `#exitStatus` と `#exitedAt` を持つ。
++       これは `Containerd#task` と `Containerd#tasks` が返すものである。
+
+-       As a **form**, it is what a `Containerd.Container` is opened as: `container.open[Workload]()`
+-       registers the container, creates a task for it with the `Containerd.Mount`s given as flags, runs
+-       the block with a `Workload.Handle`, and on every exit path — normal, exception or
+-       error — kills the task if it was started, reaps it, deletes it, and deletes the
+-       container. The lifetime of the workload *is* the scope. The mode says what the block
+-       may do: the default `Read` creates the container and task without starting it, an
+-       inspection scope; `Launch` starts the task and confers `await`; `Signalling` confers
+-       `kill`.
++       **形式**としては、`Containerd.Container` を開くときの形式である。`container.open[Workload]()` はコンテナーを登録し、フラグとして与えられた `Containerd.Mount` を使ってそのタスクを作成し、`Workload.Handle` を渡してブロックを実行する。そして通常の終了、例外、エラーのどの終了経路でも、タスクが開始されていればそれを kill し、回収し、削除し、コンテナーを削除する。
++       ワークロードの生存期間がそのまま*スコープ*である。
++       モードはブロックに何ができるかを示す。デフォルトの `Read` はコンテナーとタスクを作成するが開始はせず、検査のためのスコープになる。`Launch` はタスクを開始し、`await` を与える。`Signalling` は `kill` を与える。
+
+=       `kill`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `kill`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `kill`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `kill`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       `kill`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       `kill`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       `kill`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import probates.awaitProbate
+-       import socketBackends.javaBaseSockets
++       import socketBackends.javaBaseSockets
+
+=       `kill`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import probates.awaitProbate
+=       import socketBackends.javaBaseSockets
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       `kill`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import probates.awaitProbate
+=       import socketBackends.javaBaseSockets
+=       import strategies.throwUnsafely
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       `kill`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import probates.awaitProbate
+=       import socketBackends.javaBaseSockets
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=
+-       supervise:
++       supervise:
+
+=       `kill`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import probates.awaitProbate
+=       import socketBackends.javaBaseSockets
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=
+=       supervise:
+-         val socket = Uds(t"/run/containerd/containerd.sock")
++         val socket = Uds(t"/run/containerd/containerd.sock")
+
+-         given containerd: (Containerd^) = Containerd(Http2.Endpoint(socket, t"localhost"), t"default")
++         given containerd: (Containerd^) = Containerd(Http2.Endpoint(socket, t"localhost"), t"default")
+
+-         val spec = Containerd.Container(t"web", image = t"docker.io/library/alpine:latest")
++         val spec = Containerd.Container(t"web", image = t"docker.io/library/alpine:latest")
+
+-         val rootfs = Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a"))
++         val rootfs = Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a"))
+
+-         val exit: Int = spec.open[Workload](Read & Launch & Signalling, rootfs): workload ?=>
++         val exit: Int = spec.open[Workload](Read & Launch & Signalling, rootfs): workload ?=>
+
+-           workload.pid
++           workload.pid
+
+-           workload.state()
++           workload.state()
+
+-           workload.await().exitStatus
++           workload.await().exitStatus
+
+=           workload.await().exitStatus
+-       ```
++       ```
+
+-       The `Containerd^` must be a given in scope, since `.openable` resolves through it, and
+-       the `Monitor` comes from `supervise`. Teardown is best-effort and never masks the
+-       block's own result or error: a block which throws still sees its task killed and
+-       deleted, and the exception escapes. A failed `createContainer` makes no further
+-       calls.
++       `.openable` はそれを通して解決されるので、`Containerd^` はスコープ内の given でなければならず、`Monitor` は `supervise` から来る。
++       後片付けはベストエフォートであり、ブロック自身の結果やエラーを覆い隠すことは決してない。例外を投げたブロックでもタスクは kill され削除され、例外はそのまま外へ出る。
++       `createContainer` が失敗した場合、それ以上の呼び出しは行われない。
+
+-   refer embarcadero.Containerd
++   refer embarcadero.Containerd
+
+-   refer embarcadero.Launch
++   refer embarcadero.Launch
+
+-   refer embarcadero.Signalling
++   refer embarcadero.Signalling
+
+-   refer embarcadero.Containerd.ProcessStatus
++   refer embarcadero.Containerd.ProcessStatus
+
+-   entry .openable   the given behind `container.open[Workload](…)`: a `Workload.Openable` over the `Containerd^` in scope
+-       A given in the companion, so it resolves with no import. It needs a `Containerd^` given
+-       and a `Monitor^`, and tactics for `Grpc.Error`, `Http2.Error`, `Async.Error` and
+-       `Protobuf.Error`, all of which it captures.
+-   entry .Grant   the grants particular to workloads: `Launch` (the task is started) and `Signal` (it may be signalled)
++   entry .openable   `container.open[Workload](…)` の背後にある given。スコープ内の `Containerd^` の上の `Workload.Openable`
++       コンパニオンにある given なので、インポートなしで解決される。
++       `Containerd^` の given と `Monitor^`、そして `Grpc.Error`、`Http2.Error`、`Async.Error`、`Protobuf.Error` に対する戦術を必要とし、それらをすべてキャプチャする。
++   entry .Grant   ワークロードに特有の権限。`Launch`（タスクが開始される）と `Signal`（シグナルを送ってよい）
+
+=   entry .Grant   the grants particular to workloads: `Launch` (the task is started) and `Signal` (it may be signalled)
+-     detail
++     detail
+
+-         Two traits in aperture's open `Grant` hierarchy, selected by the modes `Launch` and
+-         `Signalling` and refining the `Workload.Handle` a block receives, so that `await` is
+-         available only on a started task and `kill` only when signalling was asked for.
+-     entry .Launch   the grant that the task is started on open, conferring `await`
+-     entry .Signal   the grant conferring `kill`
+-         The grant keeps the name `Signal`; its mode is `Signalling`, since profanity's
+-         interrupt holds `Signal` in the `soundness` umbrella.
+-   entry .Handle   the scoped handle to a running or created task: its pid, state, exit and signals
++         aperture の開いた `Grant` 階層にある二つのトレイトであり、モード `Launch` と `Signalling` によって選ばれ、ブロックが受け取る `Workload.Handle` を細分化する。そのため `await` は開始されたタスクでのみ、`kill` はシグナル送信が求められたときにのみ利用できる。
++     entry .Launch   開くときにタスクが開始されるという権限。`await` を与える
++     entry .Signal   `kill` を与える権限
++         権限は `Signal` という名前を保つ。そのモードは `Signalling` である。`soundness` アンブレラでは profanity の割り込みが `Signal` を使っているからである。
++   entry .Handle   実行中または作成済みのタスクへのスコープ付きのハンドル。その pid、状態、終了、シグナル
+
+=   entry .Handle   the scoped handle to a running or created task: its pid, state, exit and signals
+-     detail
++     detail
+
+-         What the block of `container.open[Workload](…)` receives: an exclusive capability
+-         holding the `#containerId` and `#pid` of the task made for the scope. Its operations
+-         are extensions in the companion, gated by the grants the mode conferred, rather than
+-         methods: `.state` on any handle, `.await` on a `Launch`ed one, `.kill` on a
+-         `Signalling` one. Each is a call to the daemon and needs the same `Monitor` and
+-         tactics as `Containerd`'s methods. The handle cannot escape its block.
+-     entry .state   the task's current `ProcessStatus`, by asking the daemon
+-         `workload.state()`, available on every handle: `Containerd#task` for the handle's
+-         container, decoded to `Created`, `Running`, `Stopped`, `Paused`, `Pausing` or
+-         `Unknown`.
+-     entry .await   waits for a launched task to exit, returning its `WaitResponse`
+-         `workload.await()`, available when the mode included `Launch`. Named `await` rather
+-         than `wait`, which `Object#wait` holds.
+-     entry .kill   sends a signal to the task, or to every process in its container
+-         `workload.kill(signal)` or `workload.kill(signal, all = true)`, available when the
+-         mode included `Signalling`.
+-     entry #containerId   the id of the container the scope registered
+-     entry #pid   the task's host pid: of the started process under `Launch`, else of the created task
+-   entry .Openable   the `Openable` which opens a `Container` as a `Workload`, with `Mount`s as its flags
++         `container.open[Workload](…)` のブロックが受け取るもの。スコープのために作られたタスクの `#containerId` と `#pid` を保持する排他的なケイパビリティである。
++         その操作はメソッドではなく、コンパニオンにある拡張であり、モードが与えた権限によって制限される。`.state` はどのハンドルでも、`.await` は `Launch` されたハンドルで、`.kill` は `Signalling` のハンドルで使える。
++         それぞれがデーモンへの呼び出しであり、`Containerd` のメソッドと同じ `Monitor` と戦術を必要とする。
++         ハンドルはそのブロックの外へ逃げられない。
++     entry .state   デーモンに問い合わせた、タスクの現在の `ProcessStatus`
++         `workload.state()`。どのハンドルでも使える。ハンドルのコンテナーに対する `Containerd#task` であり、`Created`、`Running`、`Stopped`、`Paused`、`Pausing`、`Unknown` のいずれかにデコードされる。
++     entry .await   起動されたタスクの終了を待ち、その `WaitResponse` を返す
++         `workload.await()`。モードが `Launch` を含むときに使える。
++         `wait` ではなく `await` と名付けられているのは、`Object#wait` がその名前を使っているからである。
++     entry .kill   タスク、またはそのコンテナー内のすべてのプロセスにシグナルを送る
++         `workload.kill(signal)` または `workload.kill(signal, all = true)`。モードが `Signalling` を含むときに使える。
++     entry #containerId   スコープが登録したコンテナーの id
++     entry #pid   タスクのホスト上の pid。`Launch` の下では開始されたプロセスのもの、それ以外では作成されたタスクのもの
++   entry .Openable   `Container` を `Workload` として開く `Openable`。`Mount` をフラグとする
+
+=   entry .Openable   the `Openable` which opens a `Container` as a `Workload`, with `Mount`s as its flags
+-     detail
++     detail
+
+-         The class `Workload.openable` provides, named so that its result type is stated
+-         exactly. It opens a `Containerd.Container` (`Self`) as a `Workload` (`Form`), taking the
+-         `Containerd.Mount`s of the root filesystem as flags (`Operand`), and gives a `Workload.Handle`
+-         (`Result`). It is built over a `Containerd^` and a `Monitor^` and the four tactics a
+-         containerd call needs.
+-     entry #Self   `Container`: what is opened
+-     entry #Form   `Workload`: the form it is opened as
+-     entry #Operand   `Mount`: the flags are the root filesystem's mounts
+-     entry #Result   `Workload.Handle`: what the block receives
+-     entry #open   creates the container and its task, starts it under `Launch`, runs the block, and tears everything down
+-         The sequence is `createContainer`, `createTask` with the flags as `rootfs`,
+-         `startTask` if the mode includes `Launch`, the block, then — in a `finally` —
+-         `killTask(9, all = true)` and `waitTask` if it was started, `deleteTask`, and
+-         `deleteContainer`. Each teardown step is wrapped in `safely`, so a failure there
+-         cannot mask the block's result.
+-   entry #containerId   the container the task belongs to
+-   entry #id   the exec id within the container; empty for the container's main task
+-   entry #pid   the task's host pid
+-   entry #status   the raw containerd status code; `#state` decodes it
+-   entry #exitStatus   the exit status, once the task has stopped
+-   entry #exitedAt   when the task exited, as a `Timestamp`
+-   entry #state   the `#status` code as a `ProcessStatus`, `Unknown` for a code the enum does not know
++         `Workload.openable` が提供するクラスであり、結果の型が正確に示されるように名前が付けられている。
++         `Containerd.Container`（`Self`）を `Workload`（`Form`）として開き、ルートファイルシステムの `Containerd.Mount` をフラグ（`Operand`）として取り、`Workload.Handle`（`Result`）を与える。
++         `Containerd^` と `Monitor^`、そして containerd の呼び出しに必要な四つの戦術の上に構築される。
++     entry #Self   `Container`。開かれるもの
++     entry #Form   `Workload`。開くときの形式
++     entry #Operand   `Mount`。フラグはルートファイルシステムのマウントである
++     entry #Result   `Workload.Handle`。ブロックが受け取るもの
++     entry #open   コンテナーとそのタスクを作成し、`Launch` の下ではそれを開始し、ブロックを実行し、すべてを破棄する
++         手順は `createContainer`、フラグを `rootfs` とする `createTask`、モードが `Launch` を含むなら `startTask`、ブロック、そして `finally` の中で、開始されていれば `killTask(9, all = true)` と `waitTask`、`deleteTask`、`deleteContainer` である。
++         後片付けの各段階は `safely` で包まれているので、そこでの失敗がブロックの結果を覆い隠すことはない。
++   entry #containerId   タスクが属するコンテナー
++   entry #id   コンテナー内の exec の id。コンテナーのメインタスクでは空
++   entry #pid   タスクのホスト上の pid
++   entry #status   containerd の生の状態コード。`#state` がそれをデコードする
++   entry #exitStatus   タスクが停止した後の終了ステータス
++   entry #exitedAt   タスクが終了した時刻。`Timestamp` として
++   entry #state   `#status` コードを `ProcessStatus` にしたもの。列挙型が知らないコードは `Unknown`
+
+- entry .Launch   the open mode which starts the task: `container.open[Workload](Read & Launch)`
+-     A `Mode granting Workload.Grant.Launch`, composed with aperture's `Read` and with
+-     `Signalling` by `&`. With it, `Workload.Openable` calls `startTask` after creating the
+-     task, the handle's `pid` is the started process's, `await` becomes available, and
+-     teardown kills and reaps the task before deleting it. Without it the task is created but
+-     never started.
++ entry .Launch   タスクを開始する open のモード：`container.open[Workload](Read & Launch)`
++     `Mode granting Workload.Grant.Launch` であり、aperture の `Read` や `Signalling` と `&` で組み合わせる。
++     これがあると、`Workload.Openable` はタスクを作成した後に `startTask` を呼び、ハンドルの `pid` は開始されたプロセスのものになり、`await` が使えるようになり、後片付けはタスクを削除する前にそれを kill して回収する。
++     これがなければ、タスクは作成されるが開始されることはない。
+
+- entry .Signalling   the open mode which lets the block signal the task: `container.open[Workload](Read & Launch & Signalling)`
+-     A `Mode granting Workload.Grant.Signal`, composed with `Read` and `Launch` by `&`. With
+-     it, `kill` is available on the `Workload.Handle`. The name is `Signalling`, not `Signal`,
+-     because profanity's interrupt holds `Signal` in the `soundness` umbrella; the grant
+-     itself is still `Workload.Grant.Signal`.
++ entry .Signalling   ブロックがタスクにシグナルを送れるようにする open のモード：`container.open[Workload](Read & Launch & Signalling)`
++     `Mode granting Workload.Grant.Signal` であり、`Read` や `Launch` と `&` で組み合わせる。
++     これがあると、`Workload.Handle` で `kill` が使えるようになる。
++     名前が `Signal` ではなく `Signalling` なのは、`soundness` アンブレラでは profanity の割り込みが `Signal` を使っているからである。権限自体は今も `Workload.Grant.Signal` である。

@@ -1,0 +1,24 @@
+orthant 1 language
+
+- `etc/compatibility.tsv` records the matrix, and `etc/check-compatibility.py` (run by `make
+- build`) regenerates its platform columns from `build.mill` — each component's `scalaJs`/
+- `scalaNative` flags and `sources`/`jsSources`/`nativeSources` source sets — and fails on any
+- divergence from the committed copy or on an exclusion with no reason in `notes`. The matrix is
+- therefore a contract: a module added without a row, or a flag flipped without the file, fails
+- the build, and the only hand-written content is the reason for every `no` or `core` cell.
++ `etc/compatibility.tsv` consigne la matrice, et `etc/check-compatibility.py` (exécuté par
++ `make build`) régénère ses colonnes de plateformes à partir de `build.mill` — les indicateurs
++ `scalaJs`/`scalaNative` de chaque composant et ses ensembles de sources
++ `sources`/`jsSources`/`nativeSources` — et échoue à toute divergence avec la copie versionnée ou
++ à toute exclusion sans raison dans `notes`. La matrice est donc un contrat : un module ajouté
++ sans ligne, ou un indicateur basculé sans le fichier, fait échouer le build, et le seul contenu
++ écrit à la main est la raison de chaque cellule `no` ou `core`.
+
+-     grep -v '^#' etc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 104 → 145 minus inherent exclusions
++     grep -v '^#' etc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 104 → 145 minus inherent exclusions
+
+- Done when: every exclusion reason in `etc/compatibility.tsv` describes an inherent platform
+- limitation, and a reason vocabulary check in CI enforces the distinction.
++ Terminé lorsque : chaque raison d'exclusion de `etc/compatibility.tsv` décrit une limitation
++ inhérente de la plateforme, et une vérification du vocabulaire des raisons dans la CI fait
++ respecter la distinction.

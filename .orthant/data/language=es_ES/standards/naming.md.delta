@@ -1,0 +1,262 @@
+orthant 1 language
+
+- # Method Naming Conventions
++ # Convenciones de nombres de métodos
+
+- This document defines the canonical meanings of named factory and initialisation
+- methods used consistently across the codebase. For *why* names are chosen as they
+- are — phrase-forming methods, word-length type parameters, and uniqueness across the
+- whole namespace — see [naming](../philosophy/naming.md) and
+- [elegant prose](../philosophy/elegant-prose.md).
++ Este documento define los significados canónicos de los métodos de factoría e inicialización con
++ nombre que se usan de forma coherente en todo el código. Para saber *por qué* los nombres se eligen
++ como se eligen —métodos que forman frases, parámetros de tipo con palabras completas y unicidad en
++ todo el espacio de nombres—, véanse [nombres](../philosophy/naming.md) y
++ [prosa elegante](../philosophy/elegant-prose.md).
+
+- ## Standard names
++ ## Nombres estándar
+
+- Each name has one meaning; the sections below give each in full:
++ Cada nombre tiene un único significado; las secciones siguientes los dan completos:
+
+= Each name has one meaning; the sections below give each in full:
+=
+- ```tabular
++ ```tabular
+
+- column  Name
+- column  Standing
+- column  Meaning
+- column  Examples
+- row  `apply`  standard  the default factory, used whenever possible
+- row  `build`  standard  assembly driven by a caller-provided callback  `Data.build`, `Text.build`, `Specification.build`
+- row  `create`  standard  brings a resource into existence in an external system  directories, files, sockets, FIFOs
+- row  `make`  standard  construction from dynamically-named inputs, beside an existing `apply`
+- row  `initialize`  standard  a fresh context for one run of a repeatable operation  `Hash.initialize`, `Aes.initialize`
+- row  `init`  non-standard  `Git.init` only, after the `git init` command  `Git.init`
+- row  `construct`  non-standard  `wisteria.ProductDerivation.construct` only  `ProductDerivation.construct`
+- row  `of`  non-standard  a private cast narrowing a type to `X of Y`
++ column  Nombre
++ column  Categoría
++ column  Significado
++ column  Ejemplos
++ row  `apply`  estándar  la factoría por defecto, que se usa siempre que es posible
++ row  `build`  estándar  ensamblaje dirigido por una retrollamada que aporta quien llama  `Data.build`, `Text.build`, `Specification.build`
++ row  `create`  estándar  hace existir un recurso en un sistema externo  directorios, ficheros, sockets, FIFO
++ row  `make`  estándar  construcción a partir de entradas con nombre dinámico, junto a un `apply` existente
++ row  `initialize`  estándar  un contexto nuevo para una ejecución de una operación repetible  `Hash.initialize`, `Aes.initialize`
++ row  `init`  no estándar  solo `Git.init`, por la orden `git init`  `Git.init`
++ row  `construct`  no estándar  solo `wisteria.ProductDerivation.construct`  `ProductDerivation.construct`
++ row  `of`  no estándar  una conversión privada que estrecha un tipo a `X of Y`
+
+= row  `of`  non-standard  a private cast narrowing a type to `X of Y`
+- ```
++ ```
+
+- ### `apply`
++ ### `apply`
+
+- The standard Scala factory method. Used whenever possible. All other names in
+- this document exist because `apply` cannot be used — typically due to overload
+- resolution conflicts with an existing `apply`.
++ El método de factoría estándar de Scala. Se usa siempre que es posible. Todos los demás nombres de
++ este documento existen porque no se puede usar `apply`, normalmente por conflictos en la
++ resolución de sobrecargas con un `apply` ya existente.
+
+- ### `build`
++ ### `build`
+
+- Assembles an instance via a caller-provided callback that drives construction.
+- The two concrete forms are:
++ Ensambla una instancia mediante una retrollamada, aportada por quien llama, que dirige la
++ construcción. Las dos formas concretas son:
+
+- - **Allocate → mutate → freeze**: a mutable intermediate structure is allocated,
+-   passed to the caller's lambda for population, then frozen into an immutable
+-   result. Examples: `Data.build`, `Array.scribe`, `Text.build`.
+- - **Callback-driven assembly from source data**: the caller supplies a function
+-   that specifies how to extract or transform fields from an origin value.
+-   Examples: `Specification.build`, `Addressable.build`.
++ - **Reservar → mutar → congelar**: se reserva una estructura intermedia mutable, se pasa a la
++   lambda de quien llama para que la rellene y después se congela en un resultado inmutable.
++   Ejemplos: `Data.build`, `Array.scribe`, `Text.build`.
++ - **Ensamblaje dirigido por retrollamada a partir de datos de origen**: quien llama aporta una
++   función que especifica cómo extraer o transformar campos de un valor de origen.
++   Ejemplos: `Specification.build`, `Addressable.build`.
+
+- In both forms the caller controls the assembly process through the function
+- argument rather than supplying the finished value directly.
++ En ambas formas, quien llama controla el proceso de ensamblaje mediante el argumento función, en
++ lugar de aportar directamente el valor terminado.
+
+- ### `create`
++ ### `create`
+
+- Brings a resource into existence in an external system, and always has
+- side-effects. Used for filesystem resources (directories, files,
+- sockets, FIFOs). The counterpart to `apply`/`build` for operations that are not
+- pure.
++ Hace existir un recurso en un sistema externo, y siempre tiene efectos secundarios. Se usa para
++ recursos del sistema de ficheros (directorios, ficheros, sockets, FIFO). Es la contrapartida de
++ `apply`/`build` para las operaciones que no son puras.
+
+- ### `make`
++ ### `make`
+
+- Constructs a value from dynamically-named inputs, and corresponds to an
+- implementation of `applyDynamicNamed`. While other factory may use parameters
+- with dynamic names, `make` is used where another non-dynamic `apply` method
+- already exists.
++ Construye un valor a partir de entradas con nombre dinámico, y corresponde a una implementación de
++ `applyDynamicNamed`. Aunque otras factorías pueden usar parámetros con nombres dinámicos, `make`
++ se usa cuando ya existe otro método `apply` no dinámico.
+
+- ### `initialize`
++ ### `initialize`
+
+- Returns a fresh operational context for a repeatable operation. Examples
+- include a new hash-digest run (`Hash.initialize`), a cipher instance
+- (`Aes.initialize`), an open file transport (`Openable.initialize`), or a new
+- session (`McpServer.initialize`). The operation may be pure or involve resource
+- acquisition; what unifies these cases is that the result represents the
+- beginning of a single use of an operation that can be started again from
+- scratch.
++ Devuelve un contexto operativo nuevo para una operación repetible. Entre los ejemplos están una
++ nueva ejecución de resumen hash (`Hash.initialize`), una instancia de cifrado (`Aes.initialize`),
++ un transporte de fichero abierto (`Openable.initialize`) o una nueva sesión
++ (`McpServer.initialize`). La operación puede ser pura o implicar la adquisición de recursos; lo
++ que une estos casos es que el resultado representa el comienzo de un único uso de una operación
++ que puede volver a empezarse desde cero.
+
+- ## Non-standard names
++ ## Nombres no estándar
+
+- ### `init`
++ ### `init`
+
+- Used only for `Git.init`, which follows the naming of the `git init` CLI
+- command. Everywhere else, `initialize` is preferred.
++ Se usa solo para `Git.init`, que sigue el nombre de la orden `git init` de la línea de comandos.
++ En todos los demás casos se prefiere `initialize`.
+
+- ### `construct`
++ ### `construct`
+
+- Reserved exclusively for `wisteria.ProductDerivation.construct`. This is a
+- deliberate special case used in compile-time typeclass derivation and does not
+- follow the general factory naming scheme.
++ Reservado exclusivamente para `wisteria.ProductDerivation.construct`. Es un caso especial
++ deliberado que se usa en la derivación de clases de tipos en tiempo de compilación y no sigue el
++ esquema general de nombres de factorías.
+
+- ### `of`
++ ### `of`
+
+- Used only as an instance method that narrows a type to a phantom-parameterised
+- form `X of Y`. The body is always a cast (`asInstanceOf`), and the return type
+- is literally `this.type of topic`. These methods are private to their
+- respective packages.
++ Se usa solo como método de instancia que estrecha un tipo a una forma parametrizada con un tipo
++ fantasma, `X of Y`. El cuerpo es siempre una conversión forzada (`asInstanceOf`), y el tipo de
++ retorno es literalmente `this.type of topic`. Estos métodos son privados de sus paquetes
++ respectivos.
+
+- ## The `unsafe` prefix
++ ## El prefijo `unsafe`
+
+- A method that takes `vacuous.Unsafe` as a `using` parameter is gated: its caller
+- must hold the token, which in practice means writing `(using Unsafe)` or sitting
+- inside an `unsafely` block. Every such method is named with an `unsafe` prefix
+- followed by a capital letter — `unsafeBuffer`, `unsafeAttested`, `unsafeChild` —
+- so that the boundary is visible at the call site and not only in the signature.
++ Un método que toma `vacuous.Unsafe` como parámetro `using` está protegido por una compuerta: quien
++ lo llama debe tener el token, lo que en la práctica significa escribir `(using Unsafe)` o estar
++ dentro de un bloque `unsafely`. Todo método así lleva el prefijo `unsafe` seguido de una
++ mayúscula —`unsafeBuffer`, `unsafeAttested`, `unsafeChild`—, para que la frontera sea visible en
++ el punto de llamada y no solo en la signatura.
+
+- This is checked. The Consequent rule `S1.1` is `strict` for every component, so a
+- gated method with an ordinary name fails the build. Where the name cannot take a
+- prefix, the method is renamed rather than exempted: `Regex.apply(parts)(using
+- Unsafe)` became `Regex.unsafeFrom(parts)`.
++ Esto se comprueba. La regla `S1.1` de Consequent es `strict` para todos los componentes, así que
++ un método protegido con un nombre corriente hace fallar la compilación. Cuando el nombre no puede
++ llevar un prefijo, el método se renombra en lugar de quedar exento: `Regex.apply(parts)(using
++ Unsafe)` pasó a ser `Regex.unsafeFrom(parts)`.
+
+- Two definitions are outside the rule because neither has a name to prefix: a
+- constructor, and a `given`, which is summoned by type. Both are still gated, and
+- the argument for why the gate is sound belongs in a comment beside them.
++ Dos definiciones quedan fuera de la regla porque ninguna tiene un nombre al que poner prefijo: un
++ constructor y un `given`, que se convoca por su tipo. Ambas siguen protegidas por la compuerta, y
++ el argumento de por qué la compuerta es sólida corresponde a un comentario junto a ellas.
+
+- The converse — an `unsafe`-prefixed method must be gated — is `S1.2`, and is
+- advisory rather than strict for now. Eight definitions break it:
++ La inversa —un método con prefijo `unsafe` debe estar protegido— es `S1.2`, y por ahora es
++ orientativa en lugar de estricta. Ocho definiciones la incumplen:
+
+= advisory rather than strict for now. Eight definitions break it:
+=
+- ```tabular
++ ```tabular
+
+- column  Component
+- column  Definitions
++ column  Componente
++ column  Definiciones
+
+- row  proscenium  `Array.unsafeFrozen`, `Array.unsafeJvm`
++ row  proscenium  `Array.unsafeFrozen`, `Array.unsafeJvm`
+
+- row  vacuous  `Optional.unsafeGet` (private to the extension group)
++ row  vacuous  `Optional.unsafeGet` (privada del grupo de extensiones)
+
+- row  urticose  `Port.unsafe`
++ row  urticose  `Port.unsafe`
+
+- row  octogenarian  `Git.Revision.unsafe`, `Git.Tag.unsafe`, `Git.Branch.unsafe`, `Git.Hash.unsafe`
++ row  octogenarian  `Git.Revision.unsafe`, `Git.Tag.unsafe`, `Git.Branch.unsafe`, `Git.Hash.unsafe`
+
+= row  octogenarian  `Git.Revision.unsafe`, `Git.Tag.unsafe`, `Git.Branch.unsafe`, `Git.Hash.unsafe`
+- ```
++ ```
+
+- (`archimedes.Ergo.unsafeInterpolate` is gated since the ambient-strategy drain.)
++ (`archimedes.Ergo.unsafeInterpolate` está protegido desde el vaciado de estrategias ambientales.)
+
+- Gating them is wanted and is tracked as a follow-up, not declined: a trial found
+- the change reaches hundreds of call sites, a good share of which are colon-block
+- calls (`Array.unsafeFrozen:` over an indented argument) that cannot take a
+- further argument list without being restructured. `Optional.unsafeGet` needs its
+- own change first: it sits in an extension group carrying a `using
+- Optionality[optional.type]` clause, and an explicit `(using Unsafe)` binds to
+- that leading clause instead, so the method has to leave the group before it can
+- be gated.
++ Protegerlas es algo deseado y está registrado como tarea pendiente, no descartado: una prueba
++ mostró que el cambio alcanza cientos de puntos de llamada, buena parte de los cuales son llamadas
++ en bloque con dos puntos (`Array.unsafeFrozen:` sobre un argumento sangrado) que no pueden recibir
++ otra lista de argumentos sin reestructurarse. `Optional.unsafeGet` necesita antes un cambio
++ propio: está en un grupo de extensiones que lleva una cláusula `using
++ Optionality[optional.type]`, y un `(using Unsafe)` explícito se liga a esa cláusula inicial, así
++ que el método tiene que salir del grupo antes de poder protegerse.
+
+- Until then the census counts them as `unsafe-ungated`, which is the reliable
+- record: a `S1.2` warning is dropped whenever the compiler has already reported
+- something at an enclosing position in the same file.
++ Hasta entonces, el censo las cuenta como `unsafe-ungated`, que es el registro fiable: un aviso de
++ `S1.2` se descarta cada vez que el compilador ya ha notificado algo en una posición envolvente
++ del mismo fichero.
+
+- The prefix is a marker, not a licence. It says a guarantee stops here, which is
+- the beginning of an argument for why that is sound, not the end of one.
++ El prefijo es una señal, no una licencia. Dice que una garantía termina aquí, lo cual es el
++ comienzo de un argumento de por qué eso es sólido, no su final.
+
+- `unsafely` itself is not covered: the prefix must be a whole word — `unsafe`
+- alone, or `unsafe` then a capital — so the block that supplies the token is
+- exempt by construction, while a method named plainly `unsafe` is not.
++ `unsafely` en sí no está incluido: el prefijo debe ser una palabra completa —`unsafe` solo, o
++ `unsafe` seguido de una mayúscula—, de modo que el bloque que aporta el token queda exento por
++ construcción, mientras que un método llamado simplemente `unsafe` no lo está.

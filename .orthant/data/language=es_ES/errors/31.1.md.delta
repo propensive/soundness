@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.31.1` — `Reference.Error`
++ # `↯/s.31.1` — `Reference.Error`
+
+- Raised by Gnossienne when a reference cannot be resolved.
++ Lo lanza Gnossienne cuando no se puede resolver una referencia.
+
+- ## Cause
++ ## Causa
+
+- A reference token (typically embedded in markdown or another
+- structured document) could not be resolved to a target. The
+- constructor takes the offending `reference` text along with a
+- `reason: Reason`; the rendered message is `the reference $reference
++ Un token de referencia (normalmente incrustado en Markdown o en otro documento estructurado) no
++ se pudo resolver a un destino. El constructor toma el texto `reference` problemático junto con un
++ `reason: Reason`; el mensaje representado es `the reference $reference
+
+- could not be resolved because $reason`.
++ could not be resolved because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.31.1.1` — `NotFound`
++ ### `↯/s.31.1.1` — `NotFound`
+
+- No target with the given reference was present in the resolver's
+- store.
++ En el almacén del resolutor no había ningún destino con la referencia dada.
+
+- **Example.** `[↯/s.31.1.1] the reference hamlet.md could not be resolved because no target with that reference was found in the store`
++ **Ejemplo.** `[↯/s.31.1.1] the reference hamlet.md could not be resolved because no target with that reference was found in the store`
+
+- **Resolution.** Confirm the target exists and the reference text
+- matches it exactly (case sensitivity, anchors, etc.).
++ **Solución.** Confirma que el destino existe y que el texto de la referencia coincide con él
++ exactamente (distinción entre mayúsculas y minúsculas, anclas, etc.).
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/gnossienne/src/core/gnossienne.Reference.scala`
++ - Código fuente: `lib/gnossienne/src/core/gnossienne.Reference.scala`

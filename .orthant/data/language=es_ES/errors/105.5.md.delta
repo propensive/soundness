@@ -1,0 +1,96 @@
+orthant 1 language
+
+- # `↯/s.105.5` — `Certificate.Error`
++ # `↯/s.105.5` — `Certificate.Error`
+
+- Raised when Enigmatic cannot build an X.509 certificate.
++ Se lanza cuando Enigmatic no puede construir un certificado X.509.
+
+- ## Cause
++ ## Causa
+
+- Certificate generation refuses inputs that would produce a structurally
+- valid certificate that no verifier would accept — a serial number
+- outside the range X.509 permits, a validity period that never opens, a
+- key whose encoding is not a `SubjectPublicKeyInfo`, or a cipher and
+- digest with no object identifier assigned to the pair. The message is
+- `could not build the certificate because $reason`.
++ La generación de certificados rechaza las entradas que producirían un certificado
++ estructuralmente válido que ningún verificador aceptaría: un número de serie fuera del rango que
++ permite X.509, un periodo de validez que nunca empieza, una clave cuya codificación no es un
++ `SubjectPublicKeyInfo`, o un cifrado y un resumen sin un identificador de objeto asignado al par.
++ El mensaje es `could not build the certificate because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.105.5.1` — `UnknownAlgorithm`
++ ### `↯/s.105.5.1` — `UnknownAlgorithm`
+
+- The cipher and the ambient `SignatureDigest` have no signature algorithm
+- object identifier between them. RSA and ECDSA have identifiers assigned
+- for SHA-256, SHA-384 and SHA-512 only.
++ El cifrado y el `SignatureDigest` ambiental no tienen entre ambos un identificador de objeto de
++ algoritmo de firma. RSA y ECDSA tienen identificadores asignados solo para SHA-256, SHA-384 y
++ SHA-512.
+
+- **Example.** `[↯/s.105.5.1] could not build the certificate because no signature algorithm is assigned to SHA1`
++ **Ejemplo.** `[↯/s.105.5.1] could not build the certificate because no signature algorithm is assigned to SHA1`
+
+- **Resolution.** Choose one of the digests that has an identifier; the
+- default, SHA-256, is what every current certificate profile mandates.
++ **Solución.** Elige uno de los resúmenes que tienen identificador; el predeterminado, SHA-256, es
++ el que exigen todos los perfiles de certificado actuales.
+
+- ### `↯/s.105.5.2` — `BadPublicKey`
++ ### `↯/s.105.5.2` — `BadPublicKey`
+
+- The key's public half was not a DER `SubjectPublicKeyInfo`, so it cannot
+- be embedded in a certificate.
++ La mitad pública de la clave no era un `SubjectPublicKeyInfo` DER, así que no puede incrustarse en
++ un certificado.
+
+- **Example.** `[↯/s.105.5.2] could not build the certificate because the public key was not a SubjectPublicKeyInfo`
++ **Ejemplo.** `[↯/s.105.5.2] could not build the certificate because the public key was not a SubjectPublicKeyInfo`
+
+- **Resolution.** This indicates a provider that does not follow the
+- `Crypto` contract's key encodings; check which provider is in scope.
++ **Solución.** Esto indica un proveedor que no sigue las codificaciones de claves del contrato de
++ `Crypto`; comprueba qué proveedor hay en el ámbito.
+
+- ### `↯/s.105.5.3` — `BadSerialNumber`
++ ### `↯/s.105.5.3` — `BadSerialNumber`
+
+- The serial number was zero or negative. RFC 5280 requires a positive
+- integer.
++ El número de serie era cero o negativo. La RFC 5280 exige un entero positivo.
+
+- **Example.** `[↯/s.105.5.3] could not build the certificate because the serial number was negative or zero`
++ **Ejemplo.** `[↯/s.105.5.3] could not build the certificate because the serial number was negative or zero`
+
+- **Resolution.** Use a positive serial number; for a certificate
+- authority it must also be unique among the certificates it has issued.
++ **Solución.** Usa un número de serie positivo; para una autoridad de certificación, también debe
++ ser único entre los certificados que ha emitido.
+
+- ### `↯/s.105.5.4` — `BadValidity`
++ ### `↯/s.105.5.4` — `BadValidity`
+
+- The validity period's end was not after its start.
++ El final del periodo de validez no era posterior a su inicio.
+
+- **Example.** `[↯/s.105.5.4] could not build the certificate because the validity period ended before it began`
++ **Ejemplo.** `[↯/s.105.5.4] could not build the certificate because the validity period ended before it began`
+
+- **Resolution.** Build the period with the earlier instant first, as
+- `notBefore ~ notAfter`.
++ **Solución.** Construye el periodo con el instante anterior primero, como `notBefore ~ notAfter`.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/enigmatic/src/x509/enigmatic.Certificate.scala`
+- - `↯/s.105.4` — `Asn1Error`, raised when the certificate's DER cannot be
+-   read back
++ - Código fuente: `lib/enigmatic/src/x509/enigmatic.Certificate.scala`
++ - `↯/s.105.4` — `Asn1Error`, que se lanza cuando no puede volver a leerse el DER del certificado

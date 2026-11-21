@@ -1,0 +1,56 @@
+orthant 1 language
+
+- # `↯/s.116.1` — `Httpd.Error`
++ # `↯/s.116.1` — `Httpd.Error`
+
+- Raised when Scintillate cannot start an HTTP server on the
+- requested port.
++ Sollevato quando Scintillate non riesce ad avviare un server HTTP sulla
++ porta richiesta.
+
+- ## Cause
++ ## Causa
+
+- The OS refused to bind the listener — typically because the port is
+- already in use, or it is privileged and the process lacks
+- permission.
++ Il sistema operativo ha rifiutato di fare il bind del listener, di solito perché la porta è
++ già in uso, oppure perché è privilegiata e il processo non ha
++ il permesso.
+
+- This is **not** an HTTP 5xx response. That is
+- `Http.Status.Category.ServerError` in telekinesis, and it describes a
+- response the server sent; this describes a server that never started.
+- The error was called `ServerError` until the two were told apart.
++ **Non** si tratta di una risposta HTTP 5xx. Quella è
++ `Http.Status.Category.ServerError` in telekinesis, e descrive una
++ risposta che il server ha inviato; questo errore descrive un server che non si è mai avviato.
++ L'errore si chiamava `ServerError` finché i due non sono stati distinti.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.116.1] could not start an HTTP server on port 80
++ [↯/s.116.1] could not start an HTTP server on port 80
+
+= [↯/s.116.1] could not start an HTTP server on port 80
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Choose a different port, free the conflicting one, or run with
+- sufficient privilege.
++ Scegliere una porta diversa, liberare quella in conflitto, o eseguire con
++ privilegi sufficienti.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/scintillate/src/server/scintillate.Httpd.scala`
++ - Sorgente: `lib/scintillate/src/server/scintillate.Httpd.scala`

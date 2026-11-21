@@ -1,0 +1,339 @@
+orthant 1 language
+
+- # Contextual-Value Naming Standards
++ # Standards de nommage des valeurs contextuelles
+
+- This standard defines how importable `given` values are named and grouped. It covers
+- the *orphan* contextual values: those a user brings into scope by name, either from a
+- choice package (`import strategies.throwUnsafely`) or, for the few that cannot be
+- anchored to a companion, from a library's top level (`import bitumen.tarPathOpenable`).
+- Where a given *lives* is decided by the placement rules in `.claude/CLAUDE.md`; this
+- document decides what it is *called*. For why the name matters at all, see
+- [declarative context](../philosophy/declarative-context.md) and
+- [naming](../philosophy/naming.md).
++ Ce standard définit comment les valeurs `given` importables sont nommées et regroupées. Il
++ couvre les valeurs contextuelles *orphelines* : celles qu'un utilisateur amène dans la portée par
++ leur nom, soit depuis un package de choix (`import strategies.throwUnsafely`), soit, pour les
++ rares qui ne peuvent pas être ancrées à un compagnon, depuis le niveau supérieur d'une
++ bibliothèque (`import bitumen.tarPathOpenable`). L'endroit où *réside* un given est décidé par les
++ règles de placement de `.claude/CLAUDE.md` ; ce document décide de son *nom*. Pour savoir pourquoi
++ le nom compte, voir [le contexte déclaratif](../philosophy/declarative-context.md) et
++ [le nommage](../philosophy/naming.md).
+
+- Givens in companion objects (`Tui.Block.Anchoring.default`, `Buffering.standard`) are outside
+- this standard: they resolve by type and are never written at an import site.
++ Les givens des objets compagnons (`Tui.Block.Anchoring.default`, `Buffering.standard`) sont hors
++ du champ de ce standard : ils se résolvent par leur type et ne sont jamais écrits sur un site
++ d'import.
+
+- ## The test
++ ## Le critère
+
+- A reader who knows everything Soundness can do, but nothing about what it calls things,
+- should be able to say what a given does from its name alone, with the package stripped
+- off. `throwUnsafely` passes: it is a strategy, and it throws. `enabled` and `native` fail:
+- enabled *what*, and native *to what*? The name is the only thing visible at the import
+- line, and often the only thing visible anywhere, so it carries the whole meaning.
++ Un lecteur qui sait tout ce que Soundness sait faire, mais rien de la façon dont il nomme les
++ choses, doit pouvoir dire ce que fait un given à partir de son seul nom, package retiré.
++ `throwUnsafely` passe le critère : c'est une stratégie, et elle lève une exception. `enabled` et
++ `native` échouent : activé, *quoi* ? natif, *de quoi* ? Le nom est la seule chose visible sur la
++ ligne d'import, et souvent la seule chose visible où que ce soit ; il porte donc tout le sens.
+
+- ## Rules
++ ## Règles
+
+- ### 1. The family is the role, as a package
++ ### 1. La famille est le rôle, sous forme de package
+
+- A choice package is named for the role its members fill: a plural count noun
+- (`strategies`, `stdios`, `filesystemBackends`, `probates`) or a mass noun
+- (`formatting`, `threading`, `logging`). Never a singular count noun: `blockCipherModes`,
+- not `blockCipherMode`. Family names are global — same-named blocks from different
+- libraries merge in the `soundness` umbrella — so a family must mean one role
+- everywhere.
++ Un package de choix est nommé d'après le rôle que remplissent ses membres : un nom comptable au
++ pluriel (`strategies`, `stdios`, `filesystemBackends`, `probates`) ou un nom massif
++ (`formatting`, `threading`, `logging`). Jamais un nom comptable au singulier :
++ `blockCipherModes`, et non `blockCipherMode`. Les noms de familles sont globaux — des blocs de même
++ nom issus de bibliothèques différentes fusionnent dans l'umbrella `soundness` — si bien qu'une
++ famille doit désigner un seul rôle partout.
+
+- Families are never nested. A library declares each family as one top-level `package
+- <family>:` block, and the umbrella mirrors it under the same name, so
+- `import aviation.monthFormats.englishMonths` and `import soundness.monthFormats.englishMonths`
+- are the same path. A family that would naturally sit inside another takes its parent's word
+- as a prefix instead (`dateSeparators`, `timeSeparators`, `randomSizes`, `pathInterfaces`).
++ Les familles ne sont jamais imbriquées. Une bibliothèque déclare chaque famille comme un unique
++ bloc de niveau supérieur `package
++ <family>:`, et l'umbrella le reflète sous le même nom, si bien que
++ `import aviation.monthFormats.englishMonths` et `import soundness.monthFormats.englishMonths`
++ sont le même chemin. Une famille qui trouverait naturellement sa place dans une autre prend plutôt
++ le mot de son parent comme préfixe (`dateSeparators`, `timeSeparators`, `randomSizes`,
++ `pathInterfaces`).
+
+- ### 2. The name is the choice, then the role
++ ### 2. Le nom est le choix, puis le rôle
+
+- The choice word comes first, and the role's singular is appended unless the choice
+- already implies it:
++ Le mot du choix vient en premier, et le singulier du rôle est ajouté à la fin, à moins que le
++ choix ne l'implique déjà :
+
+= already implies it:
+=
+- ```scala
++ ```scala
+
+- import probates.cancelProbate           // cancel + Probate
++ import probates.cancelProbate           // cancel + Probate
+
+- import textSanitizers.strictSanitizer   // strict + Sanitizer
++ import textSanitizers.strictSanitizer   // strict + Sanitizer
+
+- import sortingAlgorithms.quicksort      // "quicksort" is already a sorting algorithm
++ import sortingAlgorithms.quicksort      // "quicksort" is already a sorting algorithm
+
+- import codepages.utf8Codepage         // UTF-8 could be a charset; say which
++ import codepages.utf8Codepage         // UTF-8 could be a charset; say which
+
+- import regexBackends.re2                // RE2 is a regex engine; nothing to add
++ import regexBackends.re2                // RE2 is a regex engine; nothing to add
+
+= import regexBackends.re2                // RE2 is a regex engine; nothing to add
+- ```
++ ```
+
+- The suffix is the role's own word (`…Probate`, `…Stdio`, `…Formatting`), not a synonym
+- for it, so that every member of a family ends the same way.
++ Le suffixe est le mot propre du rôle (`…Probate`, `…Stdio`, `…Formatting`), et non un synonyme,
++ afin que tous les membres d'une famille se terminent de la même façon.
+
+- ### 3. Unique with the package removed
++ ### 3. Unique une fois le package retiré
+
+- Every orphan given is unique across the whole of Soundness, judged as if the package
+- were not there. All of them are exported into `soundness`, and any two may have to
+- coexist in one scope, so `import x.enabled` and `import y.enabled` cannot both exist.
++ Chaque given orphelin est unique dans l'ensemble de Soundness, jugé comme si le package n'existait
++ pas. Tous sont exportés dans `soundness`, et deux d'entre eux quelconques peuvent devoir coexister
++ dans une même portée ; `import x.enabled` et `import y.enabled` ne peuvent donc pas exister tous
++ les deux.
+
+- The corollary is that there are no toggle members. A switch is named for the behaviour
+- it selects, on both sides:
++ Le corollaire est qu'il n'y a pas de membres bascules. Un interrupteur est nommé d'après le
++ comportement qu'il choisit, des deux côtés :
+
+= it selects, on both sides:
+=
+- ```scala
++ ```scala
+
+- import filesystemOptions.deleteRecursively     // not deleteRecursively.enabled
++ import filesystemOptions.deleteRecursively     // not deleteRecursively.enabled
+
+- import filesystemOptions.deleteOnlyEmpty       // not deleteRecursively.disabled
++ import filesystemOptions.deleteOnlyEmpty       // not deleteRecursively.disabled
+
+- import arithmeticOptions.checkedOverflow       // not overflow.checked
++ import arithmeticOptions.checkedOverflow       // not overflow.checked
+
+- import dynamicAccess.dynamicJson               // not dynamicJsonAccess.enabled
++ import dynamicAccess.dynamicJson               // not dynamicJsonAccess.enabled
+
+= import dynamicAccess.dynamicJson               // not dynamicJsonAccess.enabled
+- ```
++ ```
+
+- ### 4. Existing vocabulary only
++ ### 4. Uniquement le vocabulaire existant
+
+- A name reuses the type or term it selects, so that the import and the declaration it
+- enables read with the same words: `cancelProbate` selects a `Probate`; `taiChronometry`
+- selects the `Tai` timeline; `offHeapCloak` is the `OffHeapCloak`. A name never coins a
+- term that appears nowhere else in Soundness.
++ Un nom réutilise le type ou le terme qu'il choisit, afin que l'import et la déclaration qu'il
++ permet se lisent avec les mêmes mots : `cancelProbate` choisit une `Probate` ; `taiChronometry`
++ choisit la ligne de temps `Tai` ; `offHeapCloak` est l'`OffHeapCloak`. Un nom n'invente jamais un
++ terme qui n'apparaît nulle part ailleurs dans Soundness.
+
+- `default`, `standard`, `basic` and `simple` are not choice words: they say that a
+- choice is common, not what it is. `indentedCssFormatting`, `thickTableStyle` and
+- `timestampedLogFormat` each say what they do; `standardCssFormatting` said only that
+- somebody preferred it. The exception is when such a word *is* the type's own name
+- (`standardKeyboard` selects `Keyboard.Standard`; the RFC 4648 alphabets are called
+- "standard" by their specification).
++ `default`, `standard`, `basic` et `simple` ne sont pas des mots de choix : ils disent qu'un choix
++ est courant, pas ce qu'il est. `indentedCssFormatting`, `thickTableStyle` et
++ `timestampedLogFormat` disent chacun ce qu'ils font ; `standardCssFormatting` disait seulement que
++ quelqu'un le préférait. L'exception est le cas où un tel mot *est* le nom propre du type
++ (`standardKeyboard` choisit `Keyboard.Standard` ; les alphabets de la RFC 4648 sont appelés
++ « standard » par leur spécification).
+
+- Numerals belong in a name only when they are part of the choice (`sha256Signature`,
+- `xterm256Termcap`, `iso8601DateFormat`), never to tell two givens apart
++ Les chiffres n'ont leur place dans un nom que lorsqu'ils font partie du choix
++ (`sha256Signature`, `xterm256Termcap`, `iso8601DateFormat`), jamais pour distinguer deux givens
+
+- (`populatedEquality2`).
++ (`populatedEquality2`).
+
+- ### 5. Provenance words for backends
++ ### 5. Mots de provenance pour les backends
+
+- When the choice is *which implementation*, the choice word names where the
+- implementation comes from. One word per source, used the same way everywhere:
++ Lorsque le choix porte sur *quelle implémentation*, le mot du choix nomme la provenance de
++ l'implémentation. Un mot par source, employé de la même façon partout :
+
+= implementation comes from. One word per source, used the same way everywhere:
+=
+- ```tabular
++ ```tabular
+
+- column  Source
++ column  Source
+
+- column  Word
+- column  Examples
+- row  A Java module  the module's name  `javaBaseFilesystem`, `javaBaseSockets`, `javaNetHttp`, `jdkHttpserver`
+- row  A WASI interface  `wasi` + the interface  `wasiFilesystem` (`wasi:filesystem`), `wasiHttp`, `wasiSockets`
+- row  Scala Native, over libc/POSIX  `scalaNative`  `scalaNativeFilesystem`, `scalaNativeSockets`
++ column  Mot
++ column  Exemples
++ row  Un module Java  le nom du module  `javaBaseFilesystem`, `javaBaseSockets`, `javaNetHttp`, `jdkHttpserver`
++ row  Une interface WASI  `wasi` + l'interface  `wasiFilesystem` (`wasi:filesystem`), `wasiHttp`, `wasiSockets`
++ row  Scala Native, sur libc/POSIX  `scalaNative`  `scalaNativeFilesystem`, `scalaNativeSockets`
+
+- row  Scala.js  `javascript`  `javascriptThreads`
++ row  Scala.js  `javascript`  `javascriptThreads`
+
+- row  Soundness's own pure-Scala code  `soundness`  `soundnessHttp`, `soundnessHttpd`, `soundnessProvider`
+- row  A third party  its own name  `opensslProvider`, `re2`, `resendCourier`
++ row  Le code pur Scala de Soundness lui-même  `soundness`  `soundnessHttp`, `soundnessHttpd`, `soundnessProvider`
++ row  Un tiers  son propre nom  `opensslProvider`, `re2`, `resendCourier`
+
+= row  A third party  its own name  `opensslProvider`, `re2`, `resendCourier`
+- ```
++ ```
+
+- Java modules are named because that is what a `requires` clause names: Soundness
+- intends to declare, per module, which Java modules it depends on, and the given that
+- selects a Java-backed implementation should say which module it is drawing on.
+- `java.base` supplies most of them, so `javaBase…` is the common case; where two
+- `java.base` choices differ, the name says how (`fileDescriptorStdio` wraps the process
+- file descriptors; `javaLangSystemStdio` wraps `java.lang.System`'s redirectable
+- streams).
++ Les modules Java sont nommés parce que c'est ce que nomme une clause `requires` : Soundness entend
++ déclarer, module par module, de quels modules Java il dépend, et le given qui choisit une
++ implémentation adossée à Java doit dire de quel module il tire parti. `java.base` fournit la
++ plupart d'entre elles, si bien que `javaBase…` est le cas courant ; lorsque deux choix de
++ `java.base` diffèrent, le nom dit en quoi (`fileDescriptorStdio` enveloppe les descripteurs de
++ fichiers du processus ; `javaLangSystemStdio` enveloppe les flux redirigeables de
++ `java.lang.System`).
+
+- Two things look like provenance and are not. A Java *type* adopted as a representative
+- keeps the type-path name it already has elsewhere in Soundness (`javaNioPath`,
+- `javaUtilDate`, `javaNetUrl`): the choice there is the type, not the module. And Java's
+- own concept words stay Java's where they name the concept rather than the source:
+- `platformThreads` and `virtualThreads` are platform and virtual threads;
+- `systemClassloader` and `platformClassloader` are the JDK's names for those loaders.
++ Deux choses ressemblent à une provenance et n'en sont pas. Un *type* Java adopté comme
++ représentant garde le nom de chemin de type qu'il a déjà ailleurs dans Soundness (`javaNioPath`,
++ `javaUtilDate`, `javaNetUrl`) : le choix y porte sur le type, pas sur le module. Et les mots de
++ concept propres à Java restent ceux de Java lorsqu'ils nomment le concept plutôt que la source :
++ `platformThreads` et `virtualThreads` sont les threads de plateforme et les threads virtuels ;
++ `systemClassloader` et `platformClassloader` sont les noms que donne le JDK à ces chargeurs.
+
+- `native` never appears alone. It has meant Scala Native, the JDK's `WatchService` and
+- Soundness's own HTTP stack at different times, which is three meanings too many.
++ `native` n'apparaît jamais seul. Il a désigné tour à tour Scala Native, le `WatchService` du JDK
++ et la pile HTTP de Soundness elle-même, ce qui fait trois sens de trop.
+
+- ### 6. Top-level orphans are named for their library
++ ### 6. Les orphelins de niveau supérieur sont nommés d'après leur bibliothèque
+
+- A given that cannot live in a companion (its subject is owned elsewhere, or is a union
+- or alias, or the library is a platform component of a platform-neutral type) stays at
+- the library's top level with a name qualified by what it is for: `tarPathOpenable`,
+- `terminalStdio`, `collationComparable`. It is never anonymous, since an unnameable
+- given cannot be imported selectively or disambiguated, and never a bare generic word.
++ Un given qui ne peut pas résider dans un compagnon (son sujet appartient à un autre module, ou est
++ une union ou un alias, ou la bibliothèque est un composant de plateforme d'un type indépendant de la
++ plateforme) reste au niveau supérieur de la bibliothèque avec un nom qualifié par ce à quoi il
++ sert : `tarPathOpenable`, `terminalStdio`, `collationComparable`. Il n'est jamais anonyme, puisqu'un
++ given qu'on ne peut pas nommer ne peut être ni importé sélectivement ni désambiguïsé, et jamais un
++ simple mot générique.
+
+- ## Sanctioned without a suffix
++ ## Admis sans suffixe
+
+- These pass rule 2 because the choice already names the role, and are listed so that
+- nobody re-litigates them:
++ Ceux-ci passent la règle 2 parce que le choix nomme déjà le rôle, et sont listés afin que personne
++ ne les remette en cause :
+
+= nobody re-litigates them:
+=
+- ```tabular
++ ```tabular
+
+- column  Family
+- column  Sanctioned members
+- row  `sortingAlgorithms`  all
+- row  `alphabets`  all
++ column  Famille
++ column  Membres admis
++ row  `sortingAlgorithms`  tous
++ row  `alphabets`  tous
+
+- row  `blockCipherModes`  `cbc`, `ctr`, `cfb`, `ofb`
++ row  `blockCipherModes`  `cbc`, `ctr`, `cfb`, `ofb`
+
+- row  `blockCipherPaddings`  `pkcs7`, `iso10126`
++ row  `blockCipherPaddings`  `pkcs7`, `iso10126`
+
+- row  `regexBackends`  `re2`
++ row  `regexBackends`  `re2`
+
+- row  `internetAccess`  `online`, `offline`
++ row  `internetAccess`  `online`, `offline`
+
+- row  `endianness`  all
++ row  `endianness`  tous
+
+- row  `htmlDoms`  `whatwg`, `html4Transitional`
++ row  `htmlDoms`  `whatwg`, `html4Transitional`
+
+- row  `currencies`  `Usd`… (ISO codes, used as terms)
+- row  `strategies`  all
+- row  `calendars`  all
+- row  `highlighting`  all
+- row  `caseSensitivity`  all
+- row  `dysasymptotics`  all
++ row  `currencies`  `Usd`… (codes ISO, employés comme termes)
++ row  `strategies`  tous
++ row  `calendars`  tous
++ row  `highlighting`  tous
++ row  `caseSensitivity`  tous
++ row  `dysasymptotics`  tous
+
+- row  `context`  `explainMissingContext`
++ row  `context`  `explainMissingContext`
+
+= row  `context`  `explainMissingContext`
+- ```
++ ```
+
+- ## Checking
++ ## Vérification
+
+- `make build` runs `etc/check-given-uniqueness.py`, which reads every choice package in
+- the libraries and their `soundness_*` export mirrors and fails on a duplicate name or an
+- unmirrored family. A new orphan given is checked against the whole namespace when it is
+- added, not when a user meets the clash.
++ `make build` exécute `etc/check-given-uniqueness.py`, qui lit chaque package de choix des
++ bibliothèques et de leurs miroirs d'export `soundness_*` et échoue sur un nom en double ou une
++ famille sans miroir. Un nouveau given orphelin est vérifié par rapport à l'ensemble de l'espace de
++ noms au moment où il est ajouté, et non au moment où un utilisateur rencontre la collision.

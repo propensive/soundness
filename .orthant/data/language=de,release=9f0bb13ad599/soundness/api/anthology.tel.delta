@@ -1,0 +1,65 @@
+orthant 1 language
+
+-   entry .Notice   one diagnostic: its importance, file, message, span, semantic markup and bolt code
++   entry .Notice   eine Diagnose: ihre Wichtigkeit, Datei, Meldung, Spanne, semantisches Markup und Bolt-Code
+
+-         `#markup` is only set by `Scalac` under `scalacOptions.semanticDiagnostics`: the raw
+-         message with the compiler's in-band semantic markers (U+E000 and its companions)
+-         preserved, which the delicious library parses into a `SemanticMessage` of styled spans,
+-         placeholders and pickled types, so that a "found `A`, required `B`" message arrives as
+-         two types to render and compare rather than as text to re-parse.
+-
+-         `#code` is only set by `Scalac` under `scalacOptions.boltCodes`, and only for an error or
+-         a warning: the bolt code Proscala gives the diagnostic, as a `fulminate.Bolt`, such as
+-         `↯/p.1.7` for a type mismatch (upstream's `E007`). Proscala writes the code in the heading
+-         of its own report, not in the message, so it is read here from the diagnostic itself.
+-     entry #importance   whether the notice is informational, a warning or an error
+-     entry #file   the name the source was given when it was compiled
+-     entry #message   the diagnostic's text, with any semantic markers stripped
+-     entry #span   the region of the source the notice concerns, or `Unset`
+-     entry #markup   the raw message with semantic markers, under `-Zsemantic-diagnostics`, else `Unset`
++         `#markup` wird nur von `Scalac` unter `scalacOptions.semanticDiagnostics` gesetzt: die
++         rohe Meldung mit erhaltenen semantischen In-Band-Markern des Compilers (U+E000 und
++         seine Gefährten), die die Bibliothek Delicious zu einer `SemanticMessage` aus
++         gestalteten Spannen, Platzhaltern und gepickelten Typen parst, sodass eine Meldung
++         „found `A`, required `B`“ als zwei Typen ankommt, die dargestellt und verglichen werden,
++         statt als Text, der neu geparst werden muss.
++
++         `#code` wird nur von `Scalac` unter `scalacOptions.boltCodes` gesetzt, und nur für einen
++         Fehler oder eine Warnung: der Bolt-Code, den Proscala der Diagnose gibt, als
++         `fulminate.Bolt`, etwa `↯/p.1.7` für einen Typkonflikt (`E007` bei Upstream). Proscala
++         schreibt den Code in die Überschrift seines eigenen Berichts, nicht in die Meldung, daher
++         wird er hier aus der Diagnose selbst gelesen.
++     entry #importance   ob die Notice informativ, eine Warnung oder ein Fehler ist
++     entry #file   der Name, den die Quelle beim Kompilieren erhielt
++     entry #message   der Text der Diagnose, ohne semantische Marker
++     entry #span   der Bereich der Quelle, den die Notice betrifft, oder `Unset`
++     entry #markup   die rohe Meldung mit semantischen Markern, unter `-Zsemantic-diagnostics`, sonst `Unset`
+
+-     entry #code   the diagnostic's bolt code, under `-Zbolt-codes`, else `Unset`
++     entry #code   der Bolt-Code der Diagnose, unter `-Zbolt-codes`, sonst `Unset`
+
+-   entry .newSyntax   `-new-syntax`, at every version
+-   entry .sourceFuture   `-source future`, at every version
+-   entry .experimental   `-experimental`, at 3.4 to 3.8
+-   entry .semanticDiagnostics   `-Zsemantic-diagnostics`, at 3.9: keeps each notice's semantic markup
+-       Under this option the compiler marks each interpolated argument of a message in band,
+-       with pickled TASTy for the types among them, and a `Compiler.Notice` keeps that marked-up form
+-       as its `markup` alongside the plain `message`, for the delicious library to parse into
+-       a `SemanticMessage`.
+-   entry .boltCodes   `-Zbolt-codes`, at 3.9: gives each error and warning notice its bolt code
+-       Under this option Proscala gives every error and warning a bolt code, `↯/p.1.7`, and a
+-       `Compiler.Notice` carries it as its `code`.
+-   entry .warnings   the warning options: `-feature`, `-deprecation`, `-W…` flags and `-Wunused`
++   entry .newSyntax   `-new-syntax`, in jeder Version
++   entry .sourceFuture   `-source future`, in jeder Version
++   entry .experimental   `-experimental`, in 3.4 bis 3.8
++   entry .semanticDiagnostics   `-Zsemantic-diagnostics`, in 3.9: behält das semantische Markup jeder Notice
++       Unter dieser Option markiert der Compiler jedes interpolierte Argument einer Meldung
++       in-band, mit gepickeltem TASTy für die Typen darunter, und eine `Compiler.Notice`
++       behält diese markierte Form als ihr `markup` neben der einfachen `message`, damit die
++       Bibliothek delicious sie zu einer `SemanticMessage` parsen kann.
++   entry .boltCodes   `-Zbolt-codes`, in 3.9: gibt jeder Fehler- und Warnungs-Notice ihren Bolt-Code
++       Unter dieser Option gibt Proscala jedem Fehler und jeder Warnung einen Bolt-Code,
++       `↯/p.1.7`, und eine `Compiler.Notice` trägt ihn als ihren `code`.
++   entry .warnings   die Warnungsoptionen: `-feature`, `-deprecation`, `-W…`-Flags und `-Wunused`

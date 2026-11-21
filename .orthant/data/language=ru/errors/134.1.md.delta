@@ -1,0 +1,57 @@
+orthant 1 language
+
+- # `↯/s.134.1` — `Yaml.Error`
++ # `↯/s.134.1` — `Yaml.Error`
+
+- Raised when a YAML document cannot be parsed, or cannot be read as the type asked for.
++ Порождается, когда документ YAML не удаётся разобрать или прочитать как запрошенный тип.
+
+- ## Cause
++ ## Причина
+
+- Ypsiloid reports both parse failures and conversion failures through this error. A parse
+- failure means the text is not well-formed YAML; a conversion failure means the document is
+- valid but does not have the shape the target type requires.
++ Ypsiloid сообщает через эту ошибку как о неудачах разбора, так и о неудачах преобразования.
++ Неудача разбора означает, что текст не является корректным YAML; неудача преобразования
++ означает, что документ допустим, но не имеет той формы, которой требует целевой тип.
+
+- ## Variants
++ ## Варианты
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Код
++ column  Причина
++ column  Сообщение
+
+- row  `↯/s.134.1.1`  `NotType`  `[↯/s.134.1.1] the YAML value had type <found> instead of <expected>`
++ row  `↯/s.134.1.1`  `NotType`  `[↯/s.134.1.1] the YAML value had type <found> instead of <expected>`
+
+- row  `↯/s.134.1.2`  `Absent`  `[↯/s.134.1.2] the YAML value was not present`
++ row  `↯/s.134.1.2`  `Absent`  `[↯/s.134.1.2] the YAML value was not present`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- For a parse failure, check the document against the YAML specification — indentation and
+- block-scalar indicators are the usual culprits. For a conversion failure, compare the
+- document's shape with the type's fields; under an accruing strategy every mismatch is
+- reported at once, each with a path to the offending node.
++ При неудаче разбора сверьте документ со спецификацией YAML — обычно виноваты отступы и
++ индикаторы блочных скаляров. При неудаче преобразования сравните форму документа с полями
++ типа; при накапливающей стратегии сообщается сразу о каждом несовпадении, каждое — с путём к
++ проблемному узлу.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/ypsiloid/src/core/ypsiloid.Yaml.scala`
++ - Исходник: `lib/ypsiloid/src/core/ypsiloid.Yaml.scala`

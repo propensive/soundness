@@ -1,0 +1,1039 @@
+orthant 1 language
+
+- ## Compilation
++ ## Compilación
+
+- ### About
++ ### Descripción
+
+- The Scala compiler is invoked as a typed API. Sources are supplied as values. Options are typed
+- flags, valid only for the compiler versions which support them. Results, which are diagnostics
+- with their positions, progress, and success or failure, are [streams](streams.md) and values,
+- not console output.
++ El compilador de Scala se invoca como una API tipada. Las fuentes se proporcionan como valores. Las
++ opciones son indicadores tipados, válidos solo para las versiones del compilador que los
++ admiten. Los resultados, que son los diagnósticos con sus posiciones, el progreso y el éxito o el
++ fracaso, son [flujos](streams.md) y valores, no salida por consola.
+
+- This is the machinery beneath [staged execution](staging.md) and the compiletime
+- [benchmarks](../../standards/benchmarking.md), and it serves any tool which compiles Scala on a
+- user's behalf.
++ Esta es la maquinaria que hay bajo la [ejecución por etapas](staging.md) y los
++ [benchmarks](../../standards/benchmarking.md) en tiempo de compilación, y sirve a cualquier
++ herramienta que compile Scala en nombre de un usuario.
+
+- Compilation is half the job. The output is then *linked* into an artifact: an executable JAR,
+- JavaScript, a WebAssembly component, a native binary or an Android package. The intermediate
+- representation which a compilation emits, and the artifact which a linker produces, are both
+- types. A mismatch between them is a compile error in the tool, and not a failure at link time.
++ Compilar es la mitad del trabajo. Después, la salida se *enlaza* en un artefacto: un JAR ejecutable,
++ JavaScript, un componente WebAssembly, un binario nativo o un paquete de Android. La representación
++ intermedia que emite una compilación y el artefacto que produce un enlazador son ambos tipos. Un
++ desajuste entre ellos es un error de compilación en la herramienta, y no un fallo en tiempo de
++ enlazado.
+
+- ### On driving the compiler
++ ### Sobre cómo dirigir el compilador
+
+- The command line of the compiler is stringly typed twice over. Options are strings whose
+- validity depends on the version of the compiler, and diagnostics come back as formatted text to
+- parse again. A build tool, a notebook or a code runner wants the inverse: typed options, checked
+- against the version in use, and structured diagnostics.
++ La línea de órdenes del compilador está tipada con cadenas por partida doble. Las opciones son
++ cadenas cuya validez depende de la versión del compilador, y los diagnósticos vuelven como texto
++ formateado que hay que analizar de nuevo. Una herramienta de construcción, un cuaderno o un ejecutor
++ de código quieren lo contrario: opciones tipadas, comprobadas contra la versión en uso, y
++ diagnósticos estructurados.
+
+- `Scalac` provides that. It invokes the compiler in the same process, over sources in memory. A
+- compilation described as a value and run by a toolchain is
+- [direct style](../../philosophy/direct-style.md): the build is code, checked like any other code.
++ `Scalac` lo proporciona. Invoca el compilador en el mismo proceso, sobre fuentes en memoria. Una
++ compilación descrita como un valor y ejecutada por una cadena de herramientas es
++ [estilo directo](../../philosophy/direct-style.md): la construcción es código, comprobado como
++ cualquier otro código.
+
+- Everything comes from the `soundness` package:
++ Todo procede del paquete `soundness`:
+
+= Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import workingDirectories.javaBaseWorkingDirectory
++ import workingDirectories.javaBaseWorkingDirectory
+
+= import workingDirectories.javaBaseWorkingDirectory
+- ```
++ ```
+
+- The samples on this page run compilers and linkers, so they are compiled but not run.
++ Los ejemplos de esta página ejecutan compiladores y enlazadores, así que se compilan pero no se
++ ejecutan.
+
+- ### Configuring a compiler
++ ### Configurar un compilador
+
+- A `Scalac` is parameterized by its language version, and carries its options. Each option is a
+- typed value, usable only at the versions which accept it:
++ Un `Scalac` se parametriza por su versión del lenguaje y lleva sus opciones. Cada opción es un valor
++ tipado, utilizable solo en las versiones que la aceptan:
+
+= typed value, usable only at the versions which accept it:
+=
+- ```scala
++ ```scala
+
+- val compiler = Scalac[3.8](List(scalacOptions.experimental, scalacOptions.newSyntax))
++ val compiler = Scalac[3.8](List(scalacOptions.experimental, scalacOptions.newSyntax))
+
+= val compiler = Scalac[3.8](List(scalacOptions.experimental, scalacOptions.newSyntax))
+- ```
++ ```
+
+- The options mirror the compiler's own, for warnings, language features and internal flags, under
+- `scalacOptions`. An option which does not exist at the chosen version is a compile error in the
+- tool, not a complaint from the compiler at [runtime].
++ Las opciones reflejan las del propio compilador, para avisos, características del lenguaje e
++ indicadores internos, bajo `scalacOptions`. Una opción que no existe en la versión elegida es un
++ error de compilación en la herramienta, no una queja del compilador en [tiempo de ejecución].
+
+- ### Compiling
++ ### Compilar
+
+- Sources are a map from names to content. They are compiled against a [classpath](classpath.md)
+- into an output directory. The returned process exposes its diagnostics and progress as streams,
+- and completes with a result:
++ Las fuentes son un mapa de nombres a contenido. Se compilan contra un [classpath](classpath.md) en
++ un directorio de salida. El proceso devuelto expone sus diagnósticos y su progreso como flujos, y
++ termina con un resultado:
+
+= and completes with a result:
+=
+- ```scala
++ ```scala
+
+= and completes with a result:
+=
+= ```scala
+- supervise:
++ supervise:
+
+-   val process = compiler(classpath)(Map(t"hello.scala" -> source), outputPath)
++   val process = compiler(classpath)(Map(t"hello.scala" -> source), outputPath)
+
+-   val result = process.complete()   // Compiler.Result.Success, Failure, or Crash
++   val result = process.complete()   // Compiler.Result.Success, Failure, or Crash
+
+-   process.notices.each: notice =>
++   process.notices.each: notice =>
+
+-     report(notice.importance, notice.file, notice.message)
++     report(notice.importance, notice.file, notice.message)
+
+-   result
++   result
+
+=   result
+- ```
++ ```
+
+- `complete()` gives a `Compiler.Result`, which is `Success`, `Failure` or `Crash`. Each
+- `Compiler.Notice` carries its importance, which is info, warning or error, its file and its
+- span. A tool can underline the offending code, and need not echo the compiler's output. A crash
+- arrives as a value too, with its [stack trace](stack-traces.md), and the process can be aborted
+- before the compilation ends.
++ `complete()` da un `Compiler.Result`, que es `Success`, `Failure` o `Crash`. Cada `Compiler.Notice`
++ lleva su importancia, que es información, aviso o error, su fichero y su tramo. Una herramienta
++ puede subrayar el código culpable, y no necesita repetir la salida del compilador. Un fallo
++ catastrófico llega también como valor, con su [traza de pila](stack-traces.md), y el proceso puede
++ abortarse antes de que termine la compilación.
+
+- ### Semantic diagnostics
++ ### Diagnósticos semánticos
+
+- A compiler error message is usually a sentence with types spliced into it. By the time it
+- reaches a tool, those types are just words. Asked for semantic diagnostics, the compiler instead
+- marks each interpolated argument in band, with pickled TASTy for the types among them, and a
+- `Compiler.Notice` keeps that marked-up form beside the plain one.
++ Un mensaje de error del compilador suele ser una frase con tipos insertados en ella. Para cuando
++ llega a una herramienta, esos tipos son solo palabras. Si se le piden diagnósticos semánticos, el
++ compilador marca en cambio cada argumento interpolado dentro del propio texto, con TASTy empaquetado
++ para los tipos que haya entre ellos, y un `Compiler.Notice` conserva esa forma marcada junto a la
++ forma llana.
+
+- The markup parses into a `SemanticMessage`: a typed tree of styled spans, placeholders and types.
+- Each type is unpickled from its TASTy and rendered again through the same machinery which
+- renders types elsewhere, so a type reads as it would in the code, abbreviated against what is
+- imported. A "found `A`, required `B`" message therefore arrives as two types to render, link and
+- compare, and not as a string to parse again.
++ El marcado se analiza como un `SemanticMessage`: un árbol tipado de tramos con estilo, marcadores y
++ tipos. Cada tipo se desempaqueta de su TASTy y se representa de nuevo mediante la misma maquinaria
++ que representa los tipos en otros lugares, de modo que un tipo se lee como se leería en el código,
++ abreviado según lo que esté importado. Un mensaje «found `A`, required `B`» llega por tanto como
++ dos tipos que representar, enlazar y comparar, y no como una cadena que analizar de nuevo.
+
+- ### Universes
++ ### Universos
+
+- A compilation emits one intermediate representation, and that choice decides which library
+- artifacts it can link against. The universe is a type parameter of the `Compilation`, so a
+- Scala.js compilation cannot be mistaken for a native one. The compiler flags which each universe
+- needs follow from it, and are not supplied by hand:
++ Una compilación emite una representación intermedia, y esa elección decide contra qué artefactos de
++ biblioteca puede enlazar. El universo es un parámetro de tipo de la `Compilation`, así que una
++ compilación de Scala.js no puede confundirse con una nativa. Los indicadores del compilador que
++ necesita cada universo se derivan de él, y no se proporcionan a mano:
+
+= needs follow from it, and are not supplied by hand:
+=
+- ```tabular
++ ```tabular
+
+- column  Universe
+- column  Emits
+- column  Compiler flag
+- column  Runtime libraries on the classpath
+- row  `Toolchain.Universe.Classfile`  JVM classfiles
+- row  `Toolchain.Universe.Sjsir`  Scala.js IR  `-scalajs`  `scalajs-javalib`, `scalajs-library_2.13`, `scalajs-scalalib_2.13`, `scala3-library_sjs1`
+- row  `Toolchain.Universe.Nir`  Scala Native IR  `-Xplugin:` with the `NirPlugin` jar  `scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`
++ column  Universo
++ column  Emite
++ column  Indicador del compilador
++ column  Bibliotecas de tiempo de ejecución en el classpath
++ row  `Toolchain.Universe.Classfile`  ficheros de clase de la JVM
++ row  `Toolchain.Universe.Sjsir`  IR de Scala.js  `-scalajs`  `scalajs-javalib`, `scalajs-library_2.13`, `scalajs-scalalib_2.13`, `scala3-library_sjs1`
++ row  `Toolchain.Universe.Nir`  IR de Scala Native  `-Xplugin:` con el jar de `NirPlugin`  `scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`
+
+= row  `Toolchain.Universe.Nir`  Scala Native IR  `-Xplugin:` with the `NirPlugin` jar  `scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`
+- ```
++ ```
+
+- The form with a single type argument targets the classfile universe. `targeting` selects another
+- explicitly:
++ La forma con un único argumento de tipo apunta al universo de ficheros de clase. `targeting`
++ selecciona otro explícitamente:
+
+= explicitly:
+=
+- ```scala
++ ```scala
+
+- val forJs = compiler.targeting[Toolchain.Universe.Sjsir]
++ val forJs = compiler.targeting[Toolchain.Universe.Sjsir]
+
+= val forJs = compiler.targeting[Toolchain.Universe.Sjsir]
+- ```
++ ```
+
+- The runtime libraries are supplied on the classpath like any other. Their absence appears as
+- ordinary compiler diagnostics, and not as a distinct kind of failure. `Toolchain.Universe.Nir`
+- also needs a `NirPlugin` in scope, which is evidence of where the Scala Native compiler plugin
+- lives, since NIR is emitted by a plugin and not by a backend built into the compiler.
++ Las bibliotecas de tiempo de ejecución se proporcionan en el classpath como cualquier otra. Su
++ ausencia aparece como diagnósticos ordinarios del compilador, y no como una clase distinta de
++ fallo. `Toolchain.Universe.Nir` necesita además un `NirPlugin` en el ámbito, que es evidencia de
++ dónde reside el plugin del compilador de Scala Native, ya que NIR lo emite un plugin y no un
++ backend integrado en el compilador.
+
+- ### Producing artifacts
++ ### Producir artefactos
+
+- Universes and application formats are the nodes of a `Toolchain`, a
+- [directed acyclic graph](graphs.md) whose edges are tools. Producing an artifact is a search for
+- a path. `produce` takes what you have, the format you want, and an output location, and runs
+- each tool on the path between them:
++ Los universos y los formatos de aplicación son los nodos de una `Toolchain`, un
++ [grafo dirigido acíclico](graphs.md) cuyas aristas son herramientas. Producir un artefacto es buscar
++ un camino. `produce` toma lo que tienes, el formato que quieres y una ubicación de salida, y ejecuta
++ cada herramienta del camino entre ellos:
+
+= each tool on the path between them:
+=
+- ```scala
++ ```scala
+
+= each tool on the path between them:
+=
+= ```scala
+- supervise:
++ supervise:
+
+= supervise:
+-   Toolchain(jarEdges()).produce
++   Toolchain(jarEdges()).produce
+
+=   Toolchain(jarEdges()).produce
+-     ( Deliverable.Emission(outputPath, classpath),
++     ( Deliverable.Emission(outputPath, classpath),
+
+=   Toolchain(jarEdges()).produce
+=     ( Deliverable.Emission(outputPath, classpath),
+-       Toolchain.Universe.Classfile,
++       Toolchain.Universe.Classfile,
+
+=     ( Deliverable.Emission(outputPath, classpath),
+=       Toolchain.Universe.Classfile,
+-       Artifact.Jar,
++       Artifact.Jar,
+
+=       Artifact.Jar,
+-       destination,
++       destination,
+
+-       List(jarOptions.name(t"app.jar")),
++       List(jarOptions.name(t"app.jar")),
+
+=       List(jarOptions.name(t"app.jar")),
+-       List(EntryPoint(fqcn"com.example.Main")) )
++       List(EntryPoint(fqcn"com.example.Main")) )
+
+=       List(jarOptions.name(t"app.jar")),
+=       List(EntryPoint(fqcn"com.example.Main")) )
+- ```
++ ```
+
+- Each universe reaches its own set of application formats:
++ Cada universo alcanza su propio conjunto de formatos de aplicación:
+
+= Each universe reaches its own set of application formats:
+=
+- ```tabular
++ ```tabular
+
+- column  From
+- column  Format
+- column  Artifact
+- row  any universe  `Library`  unlinked output, packaged for downstream assembly
+- row  `Toolchain.Universe.Classfile`  `Artifact.Jar`  an executable JAR
+- row  `Toolchain.Universe.Classfile`  `Shrunk.Jar`  an executable JAR of only what its entry point reaches
+- row  `Toolchain.Universe.Classfile`  `Dex`  an archive of Dalvik bytecode
+- row  `Toolchain.Universe.Classfile`  `Apk`  a complete, signed and aligned Android package
+- row  `Toolchain.Universe.Classfile`  `Xeq`  a bundle runnable straight from a shell
+- row  `Toolchain.Universe.Sjsir`  `Js`  an ECMAScript module, a CommonJS module or a plain script
+- row  `Toolchain.Universe.Sjsir`  `Wasm`  a WebAssembly module with JavaScript glue
+- row  `Toolchain.Universe.Sjsir`  `Wasi`  a standalone component at a stated WASI generation
+- row  `Toolchain.Universe.Sjsir`  `OciImage`  that component, wrapped as an OCI artifact
+- row  `Toolchain.Universe.Nir`  `Artifact.Binary`  a native executable for one target triple
++ column  Desde
++ column  Formato
++ column  Artefacto
++ row  cualquier universo  `Library`  salida sin enlazar, empaquetada para un ensamblado posterior
++ row  `Toolchain.Universe.Classfile`  `Artifact.Jar`  un JAR ejecutable
++ row  `Toolchain.Universe.Classfile`  `Shrunk.Jar`  un JAR ejecutable con solo lo que alcanza su punto de entrada
++ row  `Toolchain.Universe.Classfile`  `Dex`  un archivo de bytecode Dalvik
++ row  `Toolchain.Universe.Classfile`  `Apk`  un paquete de Android completo, firmado y alineado
++ row  `Toolchain.Universe.Classfile`  `Xeq`  una agrupación ejecutable directamente desde una shell
++ row  `Toolchain.Universe.Sjsir`  `Js`  un módulo ECMAScript, un módulo CommonJS o un script simple
++ row  `Toolchain.Universe.Sjsir`  `Wasm`  un módulo WebAssembly con código de enlace en JavaScript
++ row  `Toolchain.Universe.Sjsir`  `Wasi`  un componente autónomo en una generación de WASI declarada
++ row  `Toolchain.Universe.Sjsir`  `OciImage`  ese componente, envuelto como artefacto OCI
++ row  `Toolchain.Universe.Nir`  `Artifact.Binary`  un ejecutable nativo para una tripleta de destino
+
+= row  `Toolchain.Universe.Nir`  `Artifact.Binary`  a native executable for one target triple
+- ```
++ ```
+
+- The module system of a `Js` node is part of its identity, as the target triple is part of a
+- binary's.
++ El sistema de módulos de un nodo `Js` forma parte de su identidad, igual que la tripleta de destino
++ forma parte de la de un binario.
+
+- A format several edges away needs no special handling. An `Apk` runs dexing and then packaging,
+- and an `OciImage` links the component and then wraps it, because those are the paths. A build
+- which cannot reach a format says so, with a `NoPath` naming the two formats, and does not fail
+- part of the way through. A setting which configures nothing on the path is rejected before any
+- tool runs.
++ Un formato a varias aristas de distancia no necesita ningún tratamiento especial. Un `Apk` ejecuta
++ el dexado y después el empaquetado, y una `OciImage` enlaza el componente y después lo envuelve,
++ porque esos son los caminos. Una construcción que no puede alcanzar un formato lo dice, con un
++ `NoPath` que nombra los dos formatos, y no falla a mitad de camino. Un ajuste que no configura nada
++ del camino se rechaza antes de que se ejecute ninguna herramienta.
+
+- An edge whose tool has prerequisites comes from a provider which demands evidence of them, so an
+- edge whose tooling is absent cannot be built. `sjsEdges.wasi()` needs a probed `WasiToolchain`
+- and a `Wasi.World`, and `nativeEdges()` probes for `clang`.
++ Una arista cuya herramienta tiene requisitos previos procede de un proveedor que exige evidencia de
++ ellos, así que no puede construirse una arista cuyas herramientas falten. `sjsEdges.wasi()` necesita
++ una `WasiToolchain` sondeada y un `Wasi.World`, y `nativeEdges()` sondea en busca de `clang`.
+
+- The identity of a format is its kind, which is a source, an intermediate representation or an
+- application, and its `id`. Wherever a parameter changes what a user receives, it is part of the
+- `id`, and each parameterization is a distinct node: the module system a JavaScript host imports
+- through, the WASI generation an artifact's ABI follows, the target triple a binary runs on, the
+- delivery mode of a bundle. A binary for `Triple.Arm64MacOs` is as distinct from one for
+- `Triple.X64Linux` as a JAR is from a JavaScript bundle. That they share a linker does not make
+- them interchangeable.
++ La identidad de un formato es su clase, que es una fuente, una representación intermedia o una
++ aplicación, y su `id`. Siempre que un parámetro cambia lo que recibe un usuario, forma parte del
++ `id`, y cada parametrización es un nodo distinto: el sistema de módulos a través del que importa un
++ anfitrión de JavaScript, la generación de WASI a la que se ajusta la ABI de un artefacto, la tripleta de
++ destino en la que se ejecuta un binario, el modo de entrega de una agrupación. Un binario para
++ `Triple.Arm64MacOs` es tan distinto de uno para `Triple.X64Linux` como un JAR lo es de una
++ agrupación de JavaScript. Que compartan enlazador no los hace intercambiables.
+
+- The set of nodes is open. `Artifact`, `Tool` and `Edge` are ordinary public types, so an edge
+- registered for a format which these libraries have never heard of extends the graph. A format
+- can be declared as data, by its kind and name, which is how a registry read at runtime declares
+- one:
++ El conjunto de nodos es abierto. `Artifact`, `Tool` y `Edge` son tipos públicos ordinarios, así que
++ una arista registrada para un formato del que estas bibliotecas nunca han oído hablar amplía el
++ grafo. Un formato puede declararse como datos, por su clase y su nombre, que es como lo declara un
++ registro leído en tiempo de ejecución:
+
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+- ##
++ ##
+
+- val proto = Artifact.source(t"proto")
++ val proto = Artifact.source(t"proto")
+
+- val descriptor = Artifact(Artifact.Kind.Ir, t"descriptor")
++ val descriptor = Artifact(Artifact.Kind.Ir, t"descriptor")
+
+= val descriptor = Artifact(Artifact.Kind.Ir, t"descriptor")
+- ```
++ ```
+
+- A declared format is the same node as the built-in format of its kind and name, so
+- `Artifact.ir(t"classfile")` reaches every edge registered for `Toolchain.Universe.Classfile`.
++ Un formato declarado es el mismo nodo que el formato integrado de su clase y su nombre, así que
++ `Artifact.ir(t"classfile")` alcanza todas las aristas registradas para
++ `Toolchain.Universe.Classfile`.
+
+- ### Deliverables and paths
++ ### Entregables y caminos
+
+- The value which flows along a path is a `Deliverable`, and its case says where in the graph it
+- belongs:
++ El valor que fluye a lo largo de un camino es un `Deliverable`, y su caso indica a qué lugar del
++ grafo pertenece:
+
+= belongs:
+=
+- ```tabular
++ ```tabular
+
+- column  Case
+- column  Holds
+- column  Belongs at
+- row  `Deliverable.Sources`  sources  a source node
+- row  `Deliverable.Emission`  an output directory and the classpath it was compiled against  an intermediate representation
+- row  `Deliverable.Product`  a linked or packaged file  an application format
++ column  Caso
++ column  Contiene
++ column  Pertenece a
++ row  `Deliverable.Sources`  fuentes  un nodo de fuentes
++ row  `Deliverable.Emission`  un directorio de salida y el classpath contra el que se compiló  una representación intermedia
++ row  `Deliverable.Product`  un fichero enlazado o empaquetado  un formato de aplicación
+
+= row  `Deliverable.Product`  a linked or packaged file  an application format
+- ```
++ ```
+
+- The path itself can be asked for directly, which is how a tool reports what it is about to run:
++ El propio camino puede pedirse directamente, que es como una herramienta informa de lo que está a
++ punto de ejecutar:
+
+= The path itself can be asked for directly, which is how a tool reports what it is about to run:
+=
+- ```scala
++ ```scala
+
+- val steps = Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Toolchain.Universe.Classfile, Apk).map(_.target.id)
++ val steps = Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Toolchain.Universe.Classfile, Apk).map(_.target.id)
+
+= val steps = Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Toolchain.Universe.Classfile, Apk).map(_.target.id)
+- ```
++ ```
+
+- Here `steps` is `List(t"dex", t"apk")`. The path is the *unique shortest* one. Where none
+- exists, `path` raises `NoPath`. Where two are equally short, it raises `AmbiguousPath`, which is
+- resolved by producing an intermediate format explicitly in a separate step, and not by a
+- tie-break the caller cannot see. Assembly is checked as strictly. `Toolchain` rejects a
+- duplicate edge between the same pair of formats, and rejects a cycle.
++ Aquí `steps` es `List(t"dex", t"apk")`. El camino es el *único más corto*. Donde no existe
++ ninguno, `path` lanza `NoPath`. Donde hay dos igual de cortos, lanza `AmbiguousPath`, que se
++ resuelve produciendo un formato intermedio explícitamente en un paso aparte, y no mediante un
++ desempate que quien llama no puede ver. El ensamblado se comprueba con el mismo rigor. `Toolchain`
++ rechaza una arista duplicada entre el mismo par de formatos, y rechaza un ciclo.
+
+- Each intermediate product on a path of several stages is written below the destination, under
+- the `id` of its format, and the final product is written to the destination itself. An APK,
+- whose path runs `Classfile → Dex → Apk`, therefore dexes into `dex/` and packages from there.
+- Nothing about that sequence is written into the APK tool.
++ Cada producto intermedio de un camino de varias etapas se escribe bajo el destino, con el `id` de
++ su formato, y el producto final se escribe en el propio destino. Un APK, cuyo camino es
++ `Classfile → Dex → Apk`, se dexa por tanto en `dex/` y se empaqueta desde ahí. Nada de esa
++ secuencia está escrito en la herramienta de APK.
+
+- A staging rig must fold its own running classpath into the JARs it produces. It pairs
+- `Bundler.applicationClasspath`, which is the classpath of the running application, introspected
+- from the classloader which loaded it, with its compiled output:
++ Un montaje de ejecución por etapas debe incorporar su propio classpath en ejecución a los JAR que
++ produce. Empareja `Bundler.applicationClasspath`, que es el classpath de la aplicación en
++ ejecución, obtenido por introspección del cargador de clases que la cargó, con su salida compilada:
+
+= from the classloader which loaded it, with its compiled output:
+=
+- ```scala
++ ```scala
+
+- def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Linux =
++ def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Linux =
+
+= def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Linux =
+-   Toolchain(jarEdges()).produce
++   Toolchain(jarEdges()).produce
+
+-     ( Deliverable.Emission(out, Bundler.applicationClasspath),
++     ( Deliverable.Emission(out, Bundler.applicationClasspath),
+
+=     ( Deliverable.Emission(out, Bundler.applicationClasspath),
+-       Toolchain.Universe.Classfile,
++       Toolchain.Universe.Classfile,
+
+=     ( Deliverable.Emission(out, Bundler.applicationClasspath),
+=       Toolchain.Universe.Classfile,
+-       Artifact.Jar,
++       Artifact.Jar,
+
+-       out,
++       out,
+
+-       List(jarOptions.name(t"$uuid.jar")),
++       List(jarOptions.name(t"$uuid.jar")),
+
+-       List(EntryPoint(executor)) )
++       List(EntryPoint(executor)) )
+
+=       List(EntryPoint(executor)) )
+- ```
++ ```
+
+- ### Settings
++ ### Ajustes
+
+- A tool is configured by `Setting`s. A setting is addressed to the formats whose production it
+- configures, and not to a tool directly. `produce` applies each setting, in order, to every edge
+- on the path whose target it applies to. A setting which matches no format on the path raises
+- `InapplicableSetting` before any tool runs.
++ Una herramienta se configura mediante `Setting`s. Un ajuste se dirige a los formatos cuya
++ producción configura, y no directamente a una herramienta. `produce` aplica cada ajuste, en orden,
++ a cada arista del camino a cuyo destino se aplica. Un ajuste que no coincide con ningún formato del
++ camino lanza `InapplicableSetting` antes de que se ejecute ninguna herramienta.
+
+- Addressing settings to formats lets one setting configure several stages. An Android API level
+- is a property of the application, but it governs both how D8 desugars and what the manifest
+- declares. So `apkOptions.minApi` applies to `Dex` and `Apk` alike, and dispatches to the
+- configuration type of each node. The other groups of settings are:
++ Dirigir los ajustes a formatos permite que un solo ajuste configure varias etapas. Un nivel de API
++ de Android es una propiedad de la aplicación, pero rige tanto cómo desazucara D8 como lo que
++ declara el manifiesto. Así, `apkOptions.minApi` se aplica igual a `Dex` que a `Apk`, y despacha
++ al tipo de configuración de cada nodo. Los demás grupos de ajustes son:
+
+= configuration type of each node. The other groups of settings are:
+=
+- ```tabular
++ ```tabular
+
+- column  Settings
+- column  Configure
+- column  Apply to
+- row  `linkerOptions.checkIr`, `sourceMaps`, `esVersion.*`, `optimize.*`  the Scala.js linker  every format the Scala.js linker produces
+- row  `nativeOptions.gc.*`  the garbage collector  native binaries
+- row  `nativeOptions.mode.*`  the build mode  native binaries
+- row  `nativeOptions.lto.*`  link-time optimization  native binaries
++ column  Ajustes
++ column  Configuran
++ column  Se aplican a
++ row  `linkerOptions.checkIr`, `sourceMaps`, `esVersion.*`, `optimize.*`  el enlazador de Scala.js  todos los formatos que produce el enlazador de Scala.js
++ row  `nativeOptions.gc.*`  el recolector de basura  binarios nativos
++ row  `nativeOptions.mode.*`  el modo de construcción  binarios nativos
++ row  `nativeOptions.lto.*`  la optimización en tiempo de enlazado  binarios nativos
+
+= row  `nativeOptions.lto.*`  link-time optimization  native binaries
+- ```
++ ```
+
+- Entry points are ambient along the whole path in the same way, and each tool applies or ignores
+- them as its format demands:
++ Los puntos de entrada son ambientales a lo largo de todo el camino del mismo modo, y cada
++ herramienta los aplica o los ignora según exija su formato:
+
+= them as its format demands:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Entry points
+- row  `Artifact.Jar`  at most one, recorded as its `Main-Class`
+- row  `Shrunk`  any number, each a root of what is kept
+- row  `Shrunk.Jar`  at most one, recorded as its `Main-Class`
+- row  `Artifact.Binary`  exactly one
+- row  `Apk`  exactly one
+- row  `Js`, `Wasm`, `Wasi`  any number, each run as a module initializer
+- row  `Library`, `Dex`  ignored, since neither records an entry point
++ column  Formato
++ column  Puntos de entrada
++ row  `Artifact.Jar`  como mucho uno, registrado como su `Main-Class`
++ row  `Shrunk`  cualquier número, cada uno una raíz de lo que se conserva
++ row  `Shrunk.Jar`  como mucho uno, registrado como su `Main-Class`
++ row  `Artifact.Binary`  exactamente uno
++ row  `Apk`  exactamente uno
++ row  `Js`, `Wasm`, `Wasi`  cualquier número, cada uno ejecutado como inicializador de módulo
++ row  `Library`, `Dex`  ignorados, puesto que ninguno registra un punto de entrada
+
+= row  `Library`, `Dex`  ignored, since neither records an entry point
+- ```
++ ```
+
+- ### Shrinking
++ ### Reducción
+
+- An executable JAR made through `jarEdges` holds the whole classpath: every class of every
+- library, whether or not the application can reach it. `shrinkEdges` adds a path which holds only
+- what it can. `Shrunk` is a closed world of classfiles, the classes which the entry points reach
+- and no others, and `Shrunk.Jar` is an executable JAR of one:
++ Un JAR ejecutable hecho mediante `jarEdges` contiene el classpath entero: cada clase de cada
++ biblioteca, la pueda alcanzar o no la aplicación. `shrinkEdges` añade un camino que contiene solo
++ lo que puede alcanzar. `Shrunk` es un mundo cerrado de ficheros de clase, las clases que alcanzan
++ los puntos de entrada y ninguna otra, y `Shrunk.Jar` es un JAR ejecutable de uno de ellos:
+
+= and no others, and `Shrunk.Jar` is an executable JAR of one:
+=
+- ```scala
++ ```scala
+
+= and no others, and `Shrunk.Jar` is an executable JAR of one:
+=
+= ```scala
+- supervise:
++ supervise:
+
+-   Toolchain(shrinkEdges(scalac)).produce
++   Toolchain(shrinkEdges(scalac)).produce
+
+=   Toolchain(shrinkEdges(scalac)).produce
+-     ( Deliverable.Emission(outputPath, classpath),
++     ( Deliverable.Emission(outputPath, classpath),
+
+=   Toolchain(shrinkEdges(scalac)).produce
+=     ( Deliverable.Emission(outputPath, classpath),
+-       Toolchain.Universe.Classfile,
++       Toolchain.Universe.Classfile,
+
+-       Shrunk.Jar,
++       Shrunk.Jar,
+
+=       Shrunk.Jar,
+-       destination,
++       destination,
+
+-       List(shrinkOptions.name(t"app.jar")),
++       List(shrinkOptions.name(t"app.jar")),
+
+=       List(shrinkOptions.name(t"app.jar")),
+-       List(EntryPoint(fqcn"com.example.Main")) )
++       List(EntryPoint(fqcn"com.example.Main")) )
+
+=       List(shrinkOptions.name(t"app.jar")),
+=       List(EntryPoint(fqcn"com.example.Main")) )
+- ```
++ ```
+
+- The path is `Classfile → Shrunk → Shrunk.Jar`, so the closed world is written below the
+- destination, under `shrunk/`, and the JAR is packaged from there. `shrinkEdges` takes the
+- `Scalac` which compiled the classes, because it compiles them again.
++ El camino es `Classfile → Shrunk → Shrunk.Jar`, así que el mundo cerrado se escribe bajo el
++ destino, en `shrunk/`, y el JAR se empaqueta desde ahí. `shrinkEdges` toma el `Scalac` que compiló
++ las clases, porque las vuelve a compilar.
+
+- A tool which shrinks bytecode must be told about everything the compiler generated: the
+- forwarders a class has for a trait's methods, the bridges, the fields behind a lazy value, the
+- static side of an object. Shrinking here is done earlier, on the TASTy which the compiler wrote
+- beside each class. The classes this compiler compiled are recompiled from it, and the members
+- nothing reaches are taken out after inlining and before the phases which generate any of that,
+- so none of it is generated for a member which is not kept. A unit which nothing reaches is
+- never read, and the macros in it never run.
++ A una herramienta que reduce bytecode hay que informarle de todo lo que generó el compilador: los
++ reenviadores que tiene una clase para los métodos de un trait, los puentes, los campos tras un
++ valor perezoso, el lado estático de un objeto. Aquí la reducción se hace antes, sobre el TASTy que
++ el compilador escribió junto a cada clase. Las clases que compiló este compilador se recompilan a
++ partir de él, y los miembros que nada alcanza se eliminan después de la expansión en línea y antes
++ de las fases que generan todo aquello, de modo que nada de ello se genera para un miembro que no se
++ conserva. Una unidad que nada alcanza nunca se lee, y sus macros nunca se ejecutan.
+
+- Three kinds of class make up the closed world:
++ Tres clases de clase componen el mundo cerrado:
+
+= Three kinds of class make up the closed world:
+=
+- ```tabular
++ ```tabular
+
+- column  Class
+- column  Treatment
+- row  compiled by this compiler, and reached  recompiled from its TASTy, with only the members which are reached
+- row  compiled by this compiler, and named only as a type  written as a shell: a name, its flags and its parents
+- row  any other: Java, Kotlin, the standard library  copied as it is, if bytecode which is kept refers to it
++ column  Clase
++ column  Tratamiento
++ row  compilada por este compilador, y alcanzada  recompilada a partir de su TASTy, con solo los miembros que se alcanzan
++ row  compilada por este compilador, y nombrada solo como tipo  escrita como un cascarón: un nombre, sus indicadores y sus padres
++ row  cualquier otra: Java, Kotlin, la biblioteca estándar  copiada tal cual, si el bytecode que se conserva hace referencia a ella
+
+= row  any other: Java, Kotlin, the standard library  copied as it is, if bytecode which is kept refers to it
+- ```
++ ```
+
+- The standard library, and any other library of Scala, is taken a class at a time. A library
+- with no TASTy is taken whole as soon as one class of it is reached, since such a library may
+- load its own classes by name, which no reference in bytecode shows.
++ La biblioteca estándar, y cualquier otra biblioteca de Scala, se toma clase a clase. Una biblioteca
++ sin TASTy se toma entera en cuanto se alcanza una de sus clases, ya que una biblioteca así puede
++ cargar sus propias clases por nombre, cosa que ninguna referencia en el bytecode muestra.
+
+- What the analysis cannot see is what is reached by reflection, and it is told with settings:
++ Lo que el análisis no puede ver es lo que se alcanza por reflexión, y se le indica con ajustes:
+
+= What the analysis cannot see is what is reached by reflection, and it is told with settings:
+=
+- ```tabular
++ ```tabular
+
+- column  Setting
+- column  Effect
+- row  `shrinkOptions.keep(pattern)`  a class which matches is kept with every member
+- row  `shrinkOptions.pin(pattern)`  a unit whose top-level class matches is copied as it is, with all it refers to
+- row  `shrinkOptions.services(false)`  the implementations which `META-INF/services` files name are no longer entry points
+- row  `shrinkOptions.fine(true)`  a library with no TASTy is taken a class at a time too
+- row  `shrinkOptions.name(name)`  the filename of the JAR
++ column  Ajuste
++ column  Efecto
++ row  `shrinkOptions.keep(pattern)`  una clase que coincide se conserva con todos sus miembros
++ row  `shrinkOptions.pin(pattern)`  una unidad cuya clase de nivel superior coincide se copia tal cual, con todo aquello a lo que hace referencia
++ row  `shrinkOptions.services(false)`  las implementaciones que nombran los ficheros `META-INF/services` dejan de ser puntos de entrada
++ row  `shrinkOptions.fine(true)`  una biblioteca sin TASTy también se toma clase a clase
++ row  `shrinkOptions.name(name)`  el nombre de fichero del JAR
+
+= row  `shrinkOptions.name(name)`  the filename of the JAR
+- ```
++ ```
+
+- In a pattern, `*` stands for part of a name and `**` for any number of packages, so
+- `com.example.plugins.**` matches every class beneath that package. A class named in a literal
+- `Class.forName` call which is reached is kept without being asked for, and so is a member
+- called through a structural type, by its name.
++ En un patrón, `*` representa parte de un nombre y `**` cualquier número de paquetes, así que
++ `com.example.plugins.**` coincide con todas las clases bajo ese paquete. Una clase nombrada en una
++ llamada literal a `Class.forName` que se alcanza se conserva sin que haga falta pedirlo, y lo mismo
++ ocurre con un miembro llamado a través de un tipo estructural, por su nombre.
+
+- Outside a toolchain, a `Shrink` does the same to any classpath, and reports what it did:
++ Fuera de una cadena de herramientas, un `Shrink` hace lo mismo con cualquier classpath, e informa
++ de lo que hizo:
+
+= Outside a toolchain, a `Shrink` does the same to any classpath, and reports what it did:
+=
+- ```scala
++ ```scala
+
+- val report = Shrink(keep = List(t"com.example.plugins.**"))(classpath, List(fqcn"com.example.Main"), destination)
++ val report = Shrink(keep = List(t"com.example.plugins.**"))(classpath, List(fqcn"com.example.Main"), destination)
+
+= val report = Shrink(keep = List(t"com.example.plugins.**"))(classpath, List(fqcn"com.example.Main"), destination)
+- ```
++ ```
+
+- Here `report.kept` is the number of classes in the closed world and `report.classes` the number
+- on the classpath, `report.read` is the number of units which were recompiled of the
+- `report.units` which could have been, and `report.why(fqcn"scala.Option")` is the chain of
+- classes, each referring to the one before, which led to a class being kept.
++ Aquí `report.kept` es el número de clases del mundo cerrado y `report.classes` el número que hay
++ en el classpath, `report.read` es el número de unidades que se recompilaron de las
++ `report.units` que podrían haberse recompilado, y `report.why(fqcn"scala.Option")` es la cadena de
++ clases, cada una con una referencia a la anterior, que llevó a conservar una clase.
+
+- A closed world is checked before it is written. A reference from anything kept to a member
+- which was removed is found twice over, in the compiler's trees before any bytecode is generated
+- and in the bytecode afterwards, and raises a `Shrink.Error` naming both ends; what would have
+- been a `NoSuchMethodError` when the application ran is an error when it is built. A unit which
+- cannot be recompiled is pinned, and `report.notes` says why.
++ Un mundo cerrado se comprueba antes de escribirse. Una referencia desde cualquier cosa conservada a
++ un miembro que se eliminó se detecta por partida doble, en los árboles del compilador antes de
++ generar ningún bytecode y en el bytecode después, y lanza un `Shrink.Error` que nombra ambos
++ extremos; lo que habría sido un `NoSuchMethodError` al ejecutarse la aplicación es un error al
++ construirla. Una unidad que no puede recompilarse se fija, y `report.notes` dice por qué.
+
+- What reflection sees of a class is changed by shrinking it, as it must be. A class which has
+- lost members has another default `serialVersionUID`, so a class whose instances one build
+- writes and another reads should be given one with `@SerialVersionUID`; within one closed world,
+- serialization is unaffected. The classes and methods which reflection lists are those which
+- were kept, and a generic signature may name a class which was not.
++ Lo que la reflexión ve de una clase cambia al reducirla, como debe ser. Una clase que ha perdido
++ miembros tiene otro `serialVersionUID` por defecto, así que a una clase cuyas instancias escribe
++ una construcción y lee otra debería dársele uno con `@SerialVersionUID`; dentro de un mismo mundo
++ cerrado, la serialización no se ve afectada. Las clases y los métodos que enumera la reflexión son
++ los que se conservaron, y una signatura genérica puede nombrar una clase que no se conservó.
+
+- Two things are beyond it. Code which is compiled at run time, by a staging compiler, needs the
+- TASTy of everything it refers to, which a closed world does not hold, so the classes it uses
+- must be pinned and their TASTy supplied apart. And the recompilation runs with one set of
+- options for the whole classpath: Soundness's own, with those of the `Scalac` added, though
+- whether each unit was capture-checked is read from its TASTy.
++ Dos cosas quedan fuera de su alcance. El código que se compila en tiempo de ejecución, por un
++ compilador de ejecución por etapas, necesita el TASTy de todo aquello a lo que hace referencia, que
++ un mundo cerrado no contiene, así que las clases que usa deben fijarse y su TASTy debe
++ proporcionarse aparte. Y la recompilación se ejecuta con un único conjunto de opciones para todo el
++ classpath: las de Soundness, con las del `Scalac` añadidas, aunque si cada unidad pasó la
++ comprobación de capturas se lee de su TASTy.
+
+- ### WASI components
++ ### Componentes WASI
+
+- A WASI component is a `Wasi(Wasi.Version.Wasip2)`: a component-model `*.wasm` whose imports and
+- exports are described by WIT. It has two prerequisites beyond the linker, and the provider of
+- the edge demands both, so an edge without them cannot be constructed. A `WasiToolchain` is
+- evidence that the native tools which the link shells out to, `wasm-tools` and the scala-wasm
+- fork of `wit-bindgen`, are present, and is obtained only through the probing constructor
+- `WasiToolchain()`. A `Wasi.World` names the directory of WIT packages and the world to link
+- against:
++ Un componente WASI es un `Wasi(Wasi.Version.Wasip2)`: un `*.wasm` del modelo de componentes cuyas
++ importaciones y exportaciones se describen con WIT. Tiene dos requisitos previos además del
++ enlazador, y el proveedor de la arista exige ambos, así que no puede construirse una arista sin
++ ellos. Una `WasiToolchain` es evidencia de que las herramientas nativas a las que recurre el
++ enlazado, `wasm-tools` y el fork de scala-wasm de `wit-bindgen`, están presentes, y solo se obtiene
++ mediante el constructor de sondeo `WasiToolchain()`. Un `Wasi.World` nombra el directorio de
++ paquetes WIT y el mundo contra el que enlazar:
+
+= against:
+=
+- ```scala
++ ```scala
+
+- def component(witDirectory: Path on Linux, emission: Deliverable, destination: Path on Linux)
++ def component(witDirectory: Path on Linux, emission: Deliverable, destination: Path on Linux)
+
+- :   Path on Linux =
++ :   Path on Linux =
+
+-   given WasiToolchain = WasiToolchain()
++   given WasiToolchain = WasiToolchain()
+
+-   given Wasi.World = Wasi.World(witDirectory, t"my-world")
++   given Wasi.World = Wasi.World(witDirectory, t"my-world")
+
+-   supervise:
++   supervise:
+
+-     Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())
++     Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())
+
+-     . produce(emission, Toolchain.Universe.Sjsir, OciImage, destination)
++     . produce(emission, Toolchain.Universe.Sjsir, OciImage, destination)
+
+=     . produce(emission, Toolchain.Universe.Sjsir, OciImage, destination)
+- ```
++ ```
+
+- WASI generations are separate nodes, because they determine the ABI of an artifact:
++ Las generaciones de WASI son nodos separados, porque determinan la ABI de un artefacto:
+
+= WASI generations are separate nodes, because they determine the ABI of an artifact:
+=
+- ```tabular
++ ```tabular
+
+- column  Generation
+- column  Interface
++ column  Generación
++ column  Interfaz
+
+- column  Producible
++ column  Producible
+
+- row  `Wasi.Version.Wasip1`  a flat, libc-style syscall interface on core modules  no
+- row  `Wasi.Version.Wasip2`  the component model  yes
+- row  `Wasi.Version.Wasip3`  the component model with native asynchrony  no
++ row  `Wasi.Version.Wasip1`  una interfaz de llamadas al sistema plana, al estilo de libc, sobre módulos básicos  no
++ row  `Wasi.Version.Wasip2`  el modelo de componentes  sí
++ row  `Wasi.Version.Wasip3`  el modelo de componentes con asincronía nativa  no
+
+= row  `Wasi.Version.Wasip3`  the component model with native asynchrony  no
+- ```
++ ```
+
+- Asking for a generation with no edge which produces it raises `NoPath`, and does not silently
+- produce something else.
++ Pedir una generación sin ninguna arista que la produzca lanza `NoPath`, y no produce en silencio
++ otra cosa.
+
+- Wrapping a component as an OCI artifact is a further edge, `Wasi(Wasip2) → OciImage`, and not
+- something the component link knows about. The path composes the two. `Js(module)` and `Wasm`
+- need no native tooling at all, since the linker is an ordinary JVM library.
++ Envolver un componente como artefacto OCI es una arista más, `Wasi(Wasip2) → OciImage`, y no algo
++ que el enlazado del componente conozca. El camino compone las dos. `Js(module)` y `Wasm` no
++ necesitan ninguna herramienta nativa, ya que el enlazador es una biblioteca ordinaria de la JVM.
+
+- ### Native binaries
++ ### Binarios nativos
+
+- The native edges shell out to `clang` and `clang++`. `nativeEdges` probes for them once, and
+- raises `Toolchain.Error` if either is missing. It takes the triples to target, and defaults to
+- the build host's own:
++ Las aristas nativas recurren a `clang` y `clang++`. `nativeEdges` sondea en busca de ellos una vez,
++ y lanza `Toolchain.Error` si falta alguno. Toma las tripletas a las que apuntar, y por defecto usa
++ la del propio anfitrión de construcción:
+
+= the build host's own:
+=
+- ```scala
++ ```scala
+
+- def binary(emission: Deliverable, destination: Path on Linux): Path on Linux = supervise:
++ def binary(emission: Deliverable, destination: Path on Linux): Path on Linux = supervise:
+
+-   Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
++   Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
+
+-     ( emission,
++     ( emission,
+
+-       Toolchain.Universe.Nir,
++       Toolchain.Universe.Nir,
+
+-       Artifact.Binary(Triple.X64Linux),
++       Artifact.Binary(Triple.X64Linux),
+
+=       Artifact.Binary(Triple.X64Linux),
+-       destination,
++       destination,
+
+-       List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
++       List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
+
+=       List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
+-       List(EntryPoint(fqcn"com.example.Main")) )
++       List(EntryPoint(fqcn"com.example.Main")) )
+
+=       List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
+=       List(EntryPoint(fqcn"com.example.Main")) )
+- ```
++ ```
+
+- Each triple is its own node, rendered as an LLVM target triple such as `aarch64-apple-darwin` or
+- `x86_64-unknown-linux-gnu`. A target other than the build host needs a C toolchain which can
+- cross-compile to it.
++ Cada tripleta es su propio nodo, representado como una tripleta de destino de LLVM como
++ `aarch64-apple-darwin` o `x86_64-unknown-linux-gnu`. Un destino distinto del anfitrión de
++ construcción necesita una cadena de herramientas de C que pueda compilar de forma cruzada para él.
+
+- ### Other languages
++ ### Otros lenguajes
+
+- `Javac` compiles Java sources through the same shape of API. A tool which orchestrates
+- compilation does not change idiom from one language to another, and a mixed Scala and Java
+- application links into one artifact.
++ `Javac` compila fuentes Java mediante una API de la misma forma. Una herramienta que orquesta la
++ compilación no cambia de estilo de un lenguaje a otro, y una aplicación mixta de Scala y Java se
++ enlaza en un único artefacto.
+
+- `Kotlinc` does the same for Kotlin. It is parameterized by the language version it targets, and
+- its options, such as `-Werror`, `-jvm-target` and explicit API mode, are under `kotlincOptions`
+- and checked against the version in the same way:
++ `Kotlinc` hace lo mismo para Kotlin. Se parametriza por la versión del lenguaje a la que apunta, y
++ sus opciones, como `-Werror`, `-jvm-target` y el modo de API explícita, están bajo
++ `kotlincOptions` y se comprueban contra la versión del mismo modo:
+
+= and checked against the version in the same way:
+=
+- ```scala
++ ```scala
+
+- def kotlin(kotlinSource: Text, out: Path on Linux): Compiler.Result = supervise:
++ def kotlin(kotlinSource: Text, out: Path on Linux): Compiler.Result = supervise:
+
+-   val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
++   val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
+
+-   val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> kotlinSource), out)
++   val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> kotlinSource), out)
+
+-   process.complete()
++   process.complete()
+
+=   process.complete()
+- ```
++ ```
+
+- The Kotlin compiler reads its sources from disk, so they are written to a scratch directory,
+- which is removed when the compilation ends. A diagnostic still names the source as it was given,
+- not the file it was written to. The Kotlin standard library is never implied. Like every other
+- classpath entry, it is supplied explicitly. The output is classfiles, linkable as any classfile
+- artifact, including a `Dex` or an `Apk`.
++ El compilador de Kotlin lee sus fuentes del disco, así que se escriben en un directorio temporal,
++ que se elimina cuando termina la compilación. Un diagnóstico sigue nombrando la fuente tal como se
++ dio, no el fichero en el que se escribió. La biblioteca estándar de Kotlin nunca se da por
++ supuesta. Como cualquier otra entrada del classpath, se proporciona explícitamente. La salida son
++ ficheros de clase, enlazables como cualquier artefacto de ficheros de clase, incluidos un `Dex` o
++ un `Apk`.
+
+- As with the Scala compiler behind `Scalac`, the Kotlin compiler itself is a compile-only
+- dependency. A tool which drives it puts `kotlin-compiler-embeddable` on its own runtime
+- classpath, and chooses the version it wants to drive rather than inheriting one.
++ Igual que con el compilador de Scala que hay tras `Scalac`, el propio compilador de Kotlin es una
++ dependencia solo de compilación. Una herramienta que lo dirige pone `kotlin-compiler-embeddable`
++ en su propio classpath de tiempo de ejecución, y elige la versión que quiere dirigir en lugar de
++ heredar una.
+
+- Calling *into* a compiled Kotlin library needs no compilation at all. Its declarations are read
+- from its classfiles, as [foreign interoperability](foreign-interop.md) describes.
++ Llamar *a* una biblioteca de Kotlin compilada no requiere compilación alguna. Sus declaraciones se
++ leen de sus ficheros de clase, como describe [interoperabilidad foránea](foreign-interop.md).
+
+- ### Related
++ ### Relacionado
+
+- - [Staging](staging.md) compiles quoted code with a `Scalac` and runs it elsewhere.
+- - [Classpath](classpath.md) describes the classpaths which a compilation reads and produces.
+- - [Packaging](packaging.md) describes the JAR files and other archives which a toolchain writes.
+- - [Graphs](graphs.md) describes the `Dag` which a `Toolchain` is.
+- - [Foreign interoperability](foreign-interop.md) calls into compiled Kotlin and other
+-   languages.
+- - [Concurrency](concurrency.md) describes `supervise`, which a compilation runs inside.
+- - [Containers](docker.md), [metaprogramming](metaprogramming.md) and [syntax highlighting](syntax-highlighting.md) use the compiler's output and model.
++ - [Ejecución por etapas](staging.md) compila código citado con un `Scalac` y lo ejecuta en otro lugar.
++ - [Classpath](classpath.md) describe los classpaths que lee y produce una compilación.
++ - [Empaquetado](packaging.md) describe los ficheros JAR y otros archivos que escribe una cadena de
++   herramientas.
++ - [Grafos](graphs.md) describe el `Dag` que es una `Toolchain`.
++ - [Interoperabilidad foránea](foreign-interop.md) llama a Kotlin compilado y a otros
++   lenguajes.
++ - [Concurrencia](concurrency.md) describe `supervise`, dentro del cual se ejecuta una compilación.
++ - [Contenedores](docker.md), [metaprogramación](metaprogramming.md) y [resaltado de sintaxis](syntax-highlighting.md) usan la salida y el modelo del compilador.

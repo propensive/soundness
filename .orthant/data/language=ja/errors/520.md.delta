@@ -1,0 +1,16 @@
+orthant 1 language
+
+- # `SN-520` — Cannot match against a doctype declaration (retired)
++ # `SN-520` — doctype 宣言に対してマッチできない（廃止）
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ このエラーはもう存在しない。
++ このページは、コードが再利用されないように、また古いリリースからの参照が引き続き解決できるように残されている。
+
+- ## What became of it
++ ## その後
+
+- Honeycomb's HTML pattern matching no longer raises this error: nothing in the source reported it when Soundness
+- adopted bolt codes, so it was given none.
++ Honeycomb の HTML のパターンマッチは、もうこのエラーを発生させない。Soundness が bolt のコードを採用したとき、ソースの中にこれを報告するものは何もなかったので、コードは与えられなかった。

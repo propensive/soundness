@@ -1,0 +1,64 @@
+orthant 1 language
+
+- # `↯/s.129.2` — `Ergo.Error`
++ # `↯/s.129.2` — `Ergo.Error`
+
+- Raised when a mathematical expression written in the Ergo shorthand cannot be parsed.
++ Порождается, когда математическое выражение, записанное в сокращённой нотации Ergo, невозможно разобрать.
+
+- ## Cause
++ ## Причина
+
+- Ergo is a compact syntax for mathematical notation, expanded into MathML. This error covers
+- a malformed expression: unbalanced grouping, an unknown operator, or a missing operand.
++ Ergo — компактный синтаксис для математической нотации, раскрываемый в MathML. Эта ошибка
++ охватывает некорректное выражение: несбалансированную группировку, неизвестный оператор или
++ отсутствующий операнд.
+
+- ## Variants
++ ## Варианты
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Код
++ column  Причина
++ column  Сообщение
+
+- row  `↯/s.129.2.1`  `Empty`  `[↯/s.129.2.1] the expression was empty`
++ row  `↯/s.129.2.1`  `Empty`  `[↯/s.129.2.1] the expression was empty`
+
+- row  `↯/s.129.2.2`  `BadOpener`  `[↯/s.129.2.2] the expression must start with a bracket, not <char>`
++ row  `↯/s.129.2.2`  `BadOpener`  `[↯/s.129.2.2] the expression must start with a bracket, not <char>`
+
+- row  `↯/s.129.2.3`  `Unclosed`  `[↯/s.129.2.3] a group was not closed with <expected>`
++ row  `↯/s.129.2.3`  `Unclosed`  `[↯/s.129.2.3] a group was not closed with <expected>`
+
+- row  `↯/s.129.2.4`  `UnexpectedEnd`  `[↯/s.129.2.4] the expression ended unexpectedly`
++ row  `↯/s.129.2.4`  `UnexpectedEnd`  `[↯/s.129.2.4] the expression ended unexpectedly`
+
+- row  `↯/s.129.2.5`  `MissingBody`  `[↯/s.129.2.5] the <char> introducer must be followed by a group`
++ row  `↯/s.129.2.5`  `MissingBody`  `[↯/s.129.2.5] the <char> introducer must be followed by a group`
+
+- row  `↯/s.129.2.6`  `Unsupported`  `[↯/s.129.2.6] the <<label>> element has no ergo representation`
++ row  `↯/s.129.2.6`  `Unsupported`  `[↯/s.129.2.6] the <<label>> element has no ergo representation`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- The message names the position and the construct at fault. Where an expression is genuinely
+- complex, writing the MathML directly is the alternative.
++ Сообщение называет позицию и дефектную конструкцию. Когда выражение действительно сложное,
++ альтернатива — писать MathML напрямую.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/archimedes/src/core/archimedes.Ergo.scala`
++ - Исходник: `lib/archimedes/src/core/archimedes.Ergo.scala`

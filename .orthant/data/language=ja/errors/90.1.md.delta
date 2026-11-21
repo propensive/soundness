@@ -1,0 +1,75 @@
+orthant 1 language
+
+- # `↯/s.90.1` — `Css.Error`
++ # `↯/s.90.1` — `Css.Error`
+
+- Raised when a stylesheet contains a construct that is not valid CSS.
++ スタイルシートが有効な CSS ではない構文を含むときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Cataclysm checks property names against the known set and parses selectors against the full
+- modern grammar, so a misspelled property or a malformed selector is reported rather than
+- passed to a browser that will silently ignore it.
++ Cataclysm はプロパティ名を既知の集合と照合し、セレクターを現代の完全な文法に従ってパースする。
++ そのため、綴りを誤ったプロパティや不正な形のセレクターは、それを黙って無視するブラウザに渡されるのではなく、報告される。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.90.1.1`  `UnterminatedComment`  a comment was not terminated
++ row  `↯/s.90.1.1`  `UnterminatedComment`  a comment was not terminated
+
+- row  `↯/s.90.1.2`  `UnterminatedString`  a string literal was not terminated
++ row  `↯/s.90.1.2`  `UnterminatedString`  a string literal was not terminated
+
+- row  `↯/s.90.1.3`  `UnexpectedEnd`  the input ended before a rule was closed
++ row  `↯/s.90.1.3`  `UnexpectedEnd`  the input ended before a rule was closed
+
+- row  `↯/s.90.1.4`  `UnexpectedChar`  the character <char> was not expected here
++ row  `↯/s.90.1.4`  `UnexpectedChar`  the character <char> was not expected here
+
+- row  `↯/s.90.1.5`  `EmptySelector`  a selector was expected but none was found
++ row  `↯/s.90.1.5`  `EmptySelector`  a selector was expected but none was found
+
+- row  `↯/s.90.1.6`  `UnknownProperty`  <name> is not a recognized CSS property
++ row  `↯/s.90.1.6`  `UnknownProperty`  <name> is not a recognized CSS property
+
+- row  `↯/s.90.1.7`  `BadValue`  <value> is not a valid value for the <property> property
++ row  `↯/s.90.1.7`  `BadValue`  <value> is not a valid value for the <property> property
+
+- row  `↯/s.90.1.8`  `UnsupportedValue`  the value of <name> uses an unsupported type
++ row  `↯/s.90.1.8`  `UnsupportedValue`  the value of <name> uses an unsupported type
+
+- row  `↯/s.90.1.9`  `InvalidName`  <name> is not a valid CSS identifier
++ row  `↯/s.90.1.9`  `InvalidName`  <name> is not a valid CSS identifier
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Correct the property name or the selector. Errors accumulate: a rule with several faults
+- reports all of them, which is why the error type is plural — `CssErrors` carries the list.
++ プロパティ名またはセレクターを修正する。
++ エラーは蓄積される。
++ 複数の誤りを持つルールはそのすべてを報告し、エラーの型が複数形であるのはそのためである。
++ `CssErrors` がそのリストを運ぶ。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/cataclysm/src/core/cataclysm.Css.scala`
++ - ソース：`lib/cataclysm/src/core/cataclysm.Css.scala`

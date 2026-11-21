@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.13` — `S8` value above `Byte.MaxValue`
++ # `↯/s.27.13` — Valor `S8` acima de `Byte.MaxValue`
+
+- Raised at compile time by Hypotenuse's `s8` macro when the value
+- exceeds `127`.
++ Lançado em tempo de compilação pela macro `s8` do Hypotenuse quando o valor
++ excede `127`.
+
+- ## Cause
++ ## Causa
+
+- An `S8` (signed 8-bit) is bounded above by `Byte.MaxValue`.
++ Um `S8` (inteiro de 8 bits com sinal) é limitado superiormente por `Byte.MaxValue`.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.27.13] an S8 may not be greater than 127
++ [↯/s.27.13] an S8 may not be greater than 127
+
+= [↯/s.27.13] an S8 may not be greater than 127
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Provide a value in the range `-128`–`127`.
++ Forneça um valor no intervalo `-128`–`127`.
+
+- ## See also
++ ## Veja também
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Os outros erros de literais inteiros: [Famílias](README.md#families)
++ - Código-fonte: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

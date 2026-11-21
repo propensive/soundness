@@ -1,0 +1,37 @@
+orthant 1 language
+
+- ### `↯/s.105.2.6` — `BadTag`
++ ### `↯/s.105.2.6` — `BadTag`
+
+- An authenticated cipher's tag did not verify: the ciphertext, the associated data or the
+- nonce is not what was sealed, or the key is not the one it was sealed with.
++ Das Tag einer authentifizierten Chiffre ließ sich nicht verifizieren: Der Geheimtext, die
++ assoziierten Daten oder die Nonce sind nicht das, was versiegelt wurde, oder der Schlüssel ist
++ nicht der, mit dem versiegelt wurde.
+
+- **Example.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
++ **Beispiel.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
+
+- **Resolution.** Treat the data as forged or corrupt, and do not use any part of it. Confirm
+- that the nonce and the associated data are exactly those given to `seal`.
++ **Behebung.** Behandeln Sie die Daten als gefälscht oder beschädigt, und verwenden Sie keinen
++ Teil davon. Stellen Sie sicher, dass die Nonce und die assoziierten Daten genau die sind, die
++ `seal` übergeben wurden.
+
+- ### `↯/s.105.2.7` — `BadWrap`
++ ### `↯/s.105.2.7` — `BadWrap`
+
+- Wrapped key material did not pass the integrity check that key wrapping builds in: it was
+- wrapped under a different key, or has been altered, or is not a whole number of 64-bit blocks.
++ Verpacktes Schlüsselmaterial hat die Integritätsprüfung nicht bestanden, die die
++ Schlüsselverpackung eingebaut hat: Es wurde unter einem anderen Schlüssel verpackt, wurde
++ verändert oder ist keine ganze Zahl von 64-Bit-Blöcken.
+
+- **Example.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
++ **Beispiel.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
+
+- **Resolution.** Confirm that the key-encryption key is the one the material was wrapped
+- under, and that the wrapped material arrived complete.
++ **Behebung.** Stellen Sie sicher, dass der Schlüsselverschlüsselungsschlüssel derjenige ist,
++ unter dem das Material verpackt wurde, und dass das verpackte Material vollständig angekommen
++ ist.

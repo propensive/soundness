@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.112.6` — Missing `Online` instance
++ # `↯/s.112.6` — Istanza di `Online` mancante
+
+- Raised at compile time by Obligatory's `rpc` macro when no
+- contextual `Online` instance is available.
++ Sollevato in fase di compilazione dalla macro `rpc` di Obligatory quando non è disponibile alcuna
++ istanza contestuale di `Online`.
+
+- ## Cause
++ ## Causa
+
+- The macro requires an `Online` instance to confirm network
+- operations are permitted in the current scope.
++ La macro richiede un'istanza di `Online` per confermare che le operazioni di rete sono ammesse
++ nell'ambito corrente.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.112.6] a contextual `Online` instance is required
++ [↯/s.112.6] a contextual `Online` instance is required
+
+= [↯/s.112.6] a contextual `Online` instance is required
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Bring an `Online` instance into scope at the call site.
++ Porta un'istanza di `Online` nell'ambito del punto di chiamata.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/obligatory/src/json/obligatory.internal.scala`
++ - Sorgente: `lib/obligatory/src/json/obligatory.internal.scala`

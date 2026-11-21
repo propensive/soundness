@@ -1,0 +1,169 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base sigillate
++ base sigillate
+
+- import soundness
++ import soundness
+
+- info   JOSE: signed and encrypted tokens, keys as JSON, and bearer authentication
++ info   JOSE：署名され暗号化されたトークン、JSON としての鍵、ベアラー認証
+
+- detail
++ detail
+
+-     _Sigillate_ implements [JOSE](https://www.rfc-editor.org/rfc/rfc7515), the standards
+-     (RFC 7515–7519) behind the tokens web APIs authenticate with: `Jws`, content with a
+-     signature or MAC over it; `Jwe`, encrypted content; `Jwk` and `Jwks`, keys as JSON; and
+-     `Jwt`, a set of claims carried in either. They are built over enigmatic's keys and ciphers
+-     and jacinta's JSON.
++     _Sigillate_ は [JOSE](https://www.rfc-editor.org/rfc/rfc7515) を実装する。
++     これは、Web API が認証に使うトークンの背後にある標準（RFC 7515–7519）である。
++     `Jws` は署名または MAC の付いたコンテンツ、`Jwe` は暗号化されたコンテンツ、`Jwk` と `Jwks` は JSON としての鍵、`Jwt` はそのどちらかで運ばれるクレームの集合である。
++     これらは enigmatic の鍵と暗号方式、そして jacinta の JSON の上に作られている。
+
+-     The key's type chooses the algorithm. A header's `alg` is compared with the algorithm
+-     the key's cipher stands for, and is never used to decide what to do with the key, so a
+-     token cannot be relabelled to be checked some other way:
++     鍵の型がアルゴリズムを選ぶ。
++     ヘッダーの `alg` は、鍵の暗号方式が表すアルゴリズムと比較され、鍵をどう扱うかを決めるためには決して使われないので、トークンのラベルを付け替えて別の方法で検査させることはできない。
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     import soundness.textDecodable
++     import soundness.textDecodable
+
+-     import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.skipSanitizer
++     import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.skipSanitizer
+
+-     import cloaks.heapCloak
++     import cloaks.heapCloak
+
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+-     import providers.javaBaseProvider
++     import providers.javaBaseProvider
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import formatting.compactJsonFormatting
++     import formatting.compactJsonFormatting
+
+-     val key = PrivateKey.generate[Ecdsa[256]]()
++     val key = PrivateKey.generate[Ecdsa[256]]()
+
+-     val token: Text = Jwt(Jwt.Claims(issuer = t"globe", subject = t"burbage")).sign(key).in[Text]
++     val token: Text = Jwt(Jwt.Claims(issuer = t"globe", subject = t"burbage")).sign(key).in[Text]
+
+-     val jwt: Jwt = Jwt.verify(token, key.public)
++     val jwt: Jwt = Jwt.verify(token, key.public)
+
+-     ```
++     ```
+
+-     The library has three source sets:
++     このライブラリには三つのソースセットがある。
+
+-     - `sigillate.core` — `Jws`, `Jwe`, `Jwk`, `Jwks`, `Jwt` and `Jose`, which holds the header,
+-       the error and the typeclasses that map a cipher to an algorithm name.
+-     - `sigillate.http` — `Jwks.retrieve`, a key set fetched from the URL its owner publishes
+-       it at.
+-     - `sigillate.server` — `bearerAuth`, bearer-token authentication as scintillate
+-       middleware, with the verified token in scope as `jwt`.
++     - `sigillate.core` — `Jws`、`Jwe`、`Jwk`、`Jwks`、`Jwt`、そして `Jose`。`Jose` はヘッダー、エラー、暗号方式をアルゴリズム名に写す型クラスを持つ。
++     - `sigillate.http` — `Jwks.retrieve`。所有者が公開している URL から取得した鍵の集合である。
++     - `sigillate.server` — `bearerAuth`。scintillate のミドルウェアとしてのベアラートークン認証であり、検証されたトークンが `jwt` としてスコープに入る。
+
+-     Everything is exported to the `soundness` umbrella. There are no choice packages of its
+-     own; signing and encryption need a `Crypto` provider (`providers.javaBaseProvider`),
+-     reading a private key needs a `Cloak` (`cloaks.heapCloak`), verifying a token needs a
+-     `Clock`, and every failure is a `Jose.Error`.
++     すべては `soundness` のアンブレラにエクスポートされる。
++     独自の選択パッケージはない。
++     署名と暗号化には `Crypto` プロバイダー（`providers.javaBaseProvider`）が、秘密鍵を読むには `Cloak`（`cloaks.heapCloak`）が、トークンを検証するには `Clock` が必要であり、すべての失敗は `Jose.Error` である。
+
+- refer sigillate.Jws
++ refer sigillate.Jws
+
+- refer sigillate.Jwe
++ refer sigillate.Jwe
+
+- refer sigillate.Jwk
++ refer sigillate.Jwk
+
+- refer sigillate.Jwt
++ refer sigillate.Jwt
+
+- refer sigillate.Jose.Error
++ refer sigillate.Jose.Error
+
+- entry .Jws   a JSON Web Signature: content with a signature or MAC over it and its header
++ entry .Jws   JSON Web Signature：コンテンツと、それとそのヘッダーに対する署名または MAC
+
+= entry .Jws   a JSON Web Signature: content with a signature or MAC over it and its header
+-   detail
++   detail
+
+-       `Jws(payload, key)` signs under the algorithm the key's cipher stands for.
+-       `#verify` checks the signature against a public or symmetric key and gives the payload,
+-       which is the only way to reach it. The compact serialization is the `Text` codec; the
+-       JSON serializations are `#flattened`, `Jws.general` and `Jws.read`.
++       `Jws(payload, key)` は、鍵の暗号方式が表すアルゴリズムのもとで署名する。
++       `#verify` は、公開鍵または対称鍵に照らして署名を検査し、ペイロードを与える。
++       ペイロードに到達する方法はこれだけである。
++       コンパクト直列化形式は `Text` のコーデックであり、JSON 直列化形式は `#flattened`、`Jws.general`、`Jws.read` である。
+
+- entry .Jwe   JSON Web Encryption: content encrypted under a key conveyed to its recipient
++ entry .Jwe   JSON Web Encryption：受信者に伝えられる鍵のもとで暗号化されたコンテンツ
+
+= entry .Jwe   JSON Web Encryption: content encrypted under a key conveyed to its recipient
+-   detail
++   detail
+
+-       `Jwe[content](payload, key)` encrypts with the content cipher named by the type
+-       argument, conveying its key by the key-management family the recipient's key stands
+-       for; `#decrypt` reverses it. Every failure to decrypt is the same error.
++       `Jwe[content](payload, key)` は、型引数が指定するコンテンツの暗号方式で暗号化し、その鍵を、受信者の鍵が表す鍵管理の一群によって伝える。
++       `#decrypt` はそれを元に戻す。
++       復号のあらゆる失敗は同じエラーである。
+
+- entry .Jwk   a JSON Web Key: a public, private or symmetric key as a JSON object
++ entry .Jwk   JSON Web Key：JSON オブジェクトとしての公開鍵、秘密鍵、または対称鍵
+
+= entry .Jwk   a JSON Web Key: a public, private or symmetric key as a JSON object
+-   detail
++   detail
+
+-       `Jwk(key)` writes a public key, and `Jwk(key, Divulgence)` a private or symmetric one.
+-       `#publicKey`, `#privateKey` and `#symmetricKey` read it back as a key of a named cipher,
+-       and `#thumbprint` is its RFC 7638 thumbprint.
++       `Jwk(key)` は公開鍵を書き、`Jwk(key, Divulgence)` は秘密鍵または対称鍵を書く。
++       `#publicKey`、`#privateKey`、`#symmetricKey` は、それを指定した暗号方式の鍵として読み戻し、`#thumbprint` はその RFC 7638 サムプリントである。
+
+- entry .Jwt   a JSON Web Token: registered claims and an application's own
++ entry .Jwt   JSON Web Token：登録済みのクレームと、アプリケーション独自のクレーム
+
+= entry .Jwt   a JSON Web Token: registered claims and an application's own
+-   detail
++   detail
+
+-       `Jwt.verify` checks a signed token against a key and its validity period against the
+-       `Clock` in scope. `#validate` checks its issuer and audience, and `#sign` makes a `Jws`
+-       of it.
++       `Jwt.verify` は、トークンを鍵に照らして検査し、その有効期間をスコープにある `Clock` に照らして検査する。
++       `#validate` はその発行者と受け手を検査し、`#sign` はそれから `Jws` を作る。

@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.84.1` — `Exec.Error`
++ # `↯/s.84.1` — `Exec.Error`
+
+- Raised when a Guillotine command exits with a non-zero status.
++ Sollevato quando un comando di Guillotine termina con uno stato diverso da zero.
+
+- ## Cause
++ ## Causa
+
+- Guillotine wraps process execution; this error is thrown when the
+- exit status indicates failure. The constructor captures the
+- `Command`, the standard-output stream, and the standard-error
+- stream so callers can inspect both.
++ Guillotine incapsula l'esecuzione dei processi; questo errore viene lanciato quando lo stato di uscita
++ indica un fallimento. Il costruttore cattura il `Command`, lo stream dello standard output e lo
++ stream dello standard error, così che il chiamante possa ispezionarli entrambi.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.84.1] execution of the command `git status` failed
++ [↯/s.84.1] execution of the command `git status` failed
+
+= [↯/s.84.1] execution of the command `git status` failed
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Inspect `stderr` for the underlying error; check command syntax,
+- arguments, and whether the binary exists.
++ Ispeziona `stderr` per trovare l'errore sottostante; controlla la sintassi del comando, gli argomenti
++ e che il binario esista.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/guillotine/src/core/guillotine.Exec.scala`
++ - Sorgente: `lib/guillotine/src/core/guillotine.Exec.scala`

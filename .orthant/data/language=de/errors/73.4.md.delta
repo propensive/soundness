@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.73.4` — `Timespan.Error`
++ # `↯/s.73.4` — `Timespan.Error`
+
+- Raised when a text value does not parse as an ISO-8601 duration.
++ Wird ausgelöst, wenn sich ein Textwert nicht als Dauer nach ISO 8601 parsen lässt.
+
+- ## Cause
++ ## Ursache
+
+- `Timespan`'s `Decodable` instance and the `dur"…"` interpolator share one
+- parser. When it rejects the input — a bare `P`, a missing designator, or
+- components out of order — this error carries the offending text. The
+- message is `$text is not a recognized duration`.
++ Die `Decodable`-Instanz von `Timespan` und der Interpolator `dur"…"` teilen sich
++ einen Parser. Wenn er die Eingabe ablehnt – ein bloßes `P`, ein fehlender
++ Designator oder Komponenten in falscher Reihenfolge –, trägt dieser Fehler den
++ störenden Text. Die Meldung lautet `$text is not a recognized duration`.
+
+- This was a variant of `↯/s.73.3` until durations were separated from moments:
+- a duration has no date, no clock time and no timezone, so a failure to read
+- one is not a failure to determine a moment.
++ Dies war eine Variante von `↯/s.73.3`, bis Dauern von Momenten getrennt wurden:
++ Eine Dauer hat kein Datum, keine Uhrzeit und keine Zeitzone, also ist das
++ Scheitern beim Lesen einer Dauer kein Scheitern beim Bestimmen eines Moments.
+
+- **Example.** `[↯/s.73.4] P is not a recognized duration`
++ **Beispiel.** `[↯/s.73.4] P is not a recognized duration`
+
+- **Resolution.** Supply a complete ISO-8601 duration, such as `P1Y2M3DT4H5M6S`
+- for one year, two months, three days, four hours, five minutes and six
+- seconds. A `dur"…"` literal is checked at compile time and cannot raise this.
++ **Behebung.** Geben Sie eine vollständige Dauer nach ISO 8601 an, etwa `P1Y2M3DT4H5M6S`
++ für ein Jahr, zwei Monate, drei Tage, vier Stunden, fünf Minuten und sechs
++ Sekunden. Ein `dur"…"`-Literal wird zur Kompilierzeit geprüft und kann diesen Fehler nicht auslösen.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/aviation/src/core/aviation.Timespan.scala`
+- - Related: `↯/s.73.3` (`Moment.Error`)
++ - Quelle: `lib/aviation/src/core/aviation.Timespan.scala`
++ - Verwandt: `↯/s.73.3` (`Moment.Error`)

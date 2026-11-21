@@ -1,0 +1,407 @@
+orthant 1 language
+
+- ## Geography
++ ## География
+
+- ### About
++ ### Обзор
+
+- Angles, positions on the Earth, and the compass are typed values.
++ Углы, положения на Земле и компас — типизированные значения.
+
+- An `Angle` is a real angular quantity. It is constructed in degrees or in radians, is added
+- and scaled with wrapping, and is normalized to a principal value. It is not a bare number
+- whose unit is a matter of memory.
++ `Angle` — это настоящая угловая величина. Она строится в градусах или в радианах, складывается
++ и масштабируется с переходом через границу и нормализуется к главному значению. Это не голое
++ число, единицу которого приходится держать в памяти.
+
+- A `Location` is a latitude and a longitude, packed into a single value. Bearings, angular
+- distances and [geohashes](https://en.wikipedia.org/wiki/Geohash) are computed from it, and a
+- bearing is shown as a point of a
+- [compass rose](https://en.wikipedia.org/wiki/Compass_rose) with 4, 8 or 16 points.
++ `Location` — это широта и долгота, упакованные в одно значение. Из него вычисляются азимуты,
++ угловые расстояния и [геохеши](https://en.wikipedia.org/wiki/Geohash), а азимут показывается
++ как румб [розы ветров](https://en.wikipedia.org/wiki/Compass_rose) с 4, 8 или 16 румбами.
+
+- ### On angles and positions
++ ### Об углах и положениях
+
+- The oldest bug in geometric code is the unit of an angle: a `Double` which one function
+- treats as degrees, and another as radians, with nothing in the type to decide between them.
+- Angles also wrap, since 370° is 10°, and code which forgets that accumulates rotations which
+- compare as unequal when they should not. Positions inherit both problems twice over, once
+- for each coordinate.
++ Старейшая ошибка в геометрическом коде — единица угла: `Double`, который одна функция
++ считает градусами, а другая — радианами, и в типе нет ничего, что рассудило бы их. Углы к тому
++ же переходят через границу, поскольку 370° — это 10°, и код, который об этом забывает,
++ накапливает повороты, которые сравниваются как неравные, когда не должны. Положения наследуют
++ обе проблемы вдвойне, по разу для каждой координаты.
+
+- Here the angle is a type of its own. It is constructed through its unit, and its arithmetic
+- wraps, so a bare number never stands for an angle. Angles and locations which are
+- dimensioned values, not bare doubles, rule out
+- [impossible states](../../philosophy/impossible-states.md): a latitude cannot be added to a
+- distance.
++ Здесь угол — отдельный тип. Он строится через свою единицу, а его арифметика переходит через
++ границу, поэтому голое число никогда не выступает в роли угла. Углы и положения, которые
++ являются размерными значениями, а не голыми double, исключают
++ [невозможные состояния](../../philosophy/impossible-states.md): широту нельзя прибавить к
++ расстоянию.
+
+- Everything comes from the `soundness` package. An angle's textual form, which is degrees
+- with a `°`, is a named given, imported beside it, and the last import lets the samples print
+- their results:
++ Всё берётся из пакета `soundness`. Текстовая форма угла — градусы со знаком `°` — это
++ именованный given, импортируемый рядом с ним, а последний импорт позволяет примерам печатать
++ свои результаты:
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import soundness.angleShowable
++ import soundness.angleShowable
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Angles
++ ### Углы
+
+- An angle is written through its unit, by multiplying the constant `Degree`, or with the
+- extension `.deg`, or with `.rad` for radians. It is read back in either unit:
++ Угол записывается через свою единицу — умножением константы `Degree`, расширением `.deg` или
++ `.rad` для радиан. Читается он обратно в любой из единиц:
+
+= extension `.deg`, or with `.rad` for radians. It is read back in either unit:
+=
+- ```scala
++ ```scala
+
+- val bearing = 45.0.deg
++ val bearing = 45.0.deg
+
+= val bearing = 45.0.deg
+- ```
++ ```
+
+= val bearing = 45.0.deg
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val bearing = 45.0.deg
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val bearing = 45.0.deg
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(bearing.show)
++ Out.println(bearing.show)
+
+- Out.println(bearing.radians.inspect)
++ Out.println(bearing.radians.inspect)
+
+= Out.println(bearing.radians.inspect)
+- ```
++ ```
+
+- Arithmetic wraps, as angles do. Two normal forms are available: `principal`, in
+- `[0°, 360°)`, and `canonical`, in `[−180°, 180°)`:
++ Арифметика переходит через границу, как и положено углам. Доступны две нормальные формы:
++ `principal` — в `[0°, 360°)` и `canonical` — в `[−180°, 180°)`:
+
+= `[0°, 360°)`, and `canonical`, in `[−180°, 180°)`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `[0°, 360°)`, and `canonical`, in `[−180°, 180°)`:
+=
+= ```scala fuel
+- run
++ run
+
+= `[0°, 360°)`, and `canonical`, in `[−180°, 180°)`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Angle.degrees(375).principal.show)
++ Out.println(Angle.degrees(375).principal.show)
+
+- Out.println(Angle.degrees(355).canonical.show)
++ Out.println(Angle.degrees(355).canonical.show)
+
+= Out.println(Angle.degrees(355).canonical.show)
+- ```
++ ```
+
+- [SVG](svg.md#transforms) rotates figures by these angles, and
+- [Colors](colors.md#adjusting) turns hues by them.
++ [SVG](svg.md#transforms) поворачивает фигуры на эти углы, а
++ [Цвета](colors.md#adjusting) поворачивают на них оттенки.
+
+- ### Compass points
++ ### Румбы
+
+- An angle resolves to the nearest point of a compass rose. The number of points is chosen as
+- a type argument:
++ Угол сводится к ближайшему румбу розы ветров. Число румбов выбирается как аргумент типа:
+
+= a type argument:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a type argument:
+=
+= ```scala fuel
+- run
++ run
+
+= a type argument:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Compass[4](Angle.degrees(315)).inspect)
++ Out.println(Compass[4](Angle.degrees(315)).inspect)
+
+- Out.println(Compass[8](Angle.degrees(315)).inspect)
++ Out.println(Compass[8](Angle.degrees(315)).inspect)
+
+- Out.println(Compass[16](Angle.degrees(330)).inspect)
++ Out.println(Compass[16](Angle.degrees(330)).inspect)
+
+= Out.println(Compass[16](Angle.degrees(330)).inspect)
+- ```
++ ```
+
+- The winds are ordinary enumerations, so a bearing can be matched, stored and shown like any
+- other value:
++ Ветры — обычные перечисления, поэтому азимут можно сопоставлять, хранить и показывать, как
++ любое другое значение:
+
+- ```tabular
++ ```tabular
+
+- column  Rose
+- column  Resolves to
+- column  Bearing given
++ column  Роза
++ column  Сводится к
++ column  given для азимута
+
+- row  `Compass[4]`  `CardinalWind`: `North`, `East`, `South`, `West`  `compassBearings.fourPointCompassBearing`
++ row  `Compass[4]`  `CardinalWind`: `North`, `East`, `South`, `West`  `compassBearings.fourPointCompassBearing`
+
+- row  `Compass[8]`  `CardinalWind` or `IntercardinalWind`, adding `Northeast`, `Southeast`, `Southwest`, `Northwest`  `compassBearings.eightPointCompassBearing`
+- row  `Compass[16]`  any of those or a `HalfWind`, adding `NorthNortheast`, `EastNortheast` and the other six  `compassBearings.sixteenPointCompassBearing`
++ row  `Compass[8]`  `CardinalWind` или `IntercardinalWind`, добавляя `Northeast`, `Southeast`, `Southwest`, `Northwest`  `compassBearings.eightPointCompassBearing`
++ row  `Compass[16]`  любой из них или `HalfWind`, добавляя `NorthNortheast`, `EastNortheast` и остальные шесть  `compassBearings.sixteenPointCompassBearing`
+
+= row  `Compass[16]`  any of those or a `HalfWind`, adding `NorthNortheast`, `EastNortheast` and the other six  `compassBearings.sixteenPointCompassBearing`
+- ```
++ ```
+
+- The number of points is a type argument, not a parameter at runtime, so the *type* of a
+- resolved bearing says which rose it came from. A `CardinalWind` cannot be passed where a
+- `HalfWind` of sixteen points is expected, and a match on a bearing of four points is
+- exhaustive over four cases, not sixteen.
++ Число румбов — аргумент типа, а не параметр времени выполнения, поэтому *тип* полученного
++ азимута говорит, из какой розы он взят. `CardinalWind` нельзя передать туда, где ожидается
++ `HalfWind` из шестнадцати румбов, а сопоставление по азимуту из четырёх румбов исчерпывается
++ четырьмя кейсами, а не шестнадцатью.
+
+- A rose with a different number of points is added by implementing `Directional`, which has a
+- single method, from an angle to a value. A domain with sectors of its own, such as a
+- wind-rose with twelve points, or a radar with sixty, therefore uses the same `Compass`
+- machinery.
++ Роза с другим числом румбов добавляется реализацией `Directional`, у которого единственный
++ метод — из угла в значение. Поэтому предметная область с собственными секторами, такая как роза
++ ветров с двенадцатью румбами или радар с шестьюдесятью, использует тот же механизм `Compass`.
+
+- ### Locations
++ ### Положения
+
+- A `Location` pairs a latitude and a longitude, constructed from angles. It answers
+- geographic questions: the initial bearing toward another location, on whichever compass is
+- asked for, the angular distance between two points along the great circle, and the geohash
+- of the position, to a chosen precision:
++ `Location` объединяет широту и долготу, построенные из углов. Он отвечает на географические
++ вопросы: начальный азимут на другое положение — по тому компасу, какой запрошен, угловое
++ расстояние между двумя точками по большому кругу и геохеш положения с выбранной точностью:
+
+= of the position, to a chosen precision:
+=
+- ```scala
++ ```scala
+
+- import compassBearings.eightPointCompassBearing
++ import compassBearings.eightPointCompassBearing
+
+- val here = Location(51.5.deg, 0.1.deg)
++ val here = Location(51.5.deg, 0.1.deg)
+
+- val there = Location(48.9.deg, 2.4.deg)
++ val there = Location(48.9.deg, 2.4.deg)
+
+= val there = Location(48.9.deg, 2.4.deg)
+- ```
++ ```
+
+= val there = Location(48.9.deg, 2.4.deg)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val there = Location(48.9.deg, 2.4.deg)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val there = Location(48.9.deg, 2.4.deg)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(here.bearing[Compass[8]](there).inspect)
++ Out.println(here.bearing[Compass[8]](there).inspect)
+
+- Out.println(here.surfaceDistance(there).show)
++ Out.println(here.surfaceDistance(there).show)
+
+- Out.println(here.geohash(6).inspect)
++ Out.println(here.geohash(6).inspect)
+
+= Out.println(here.geohash(6).inspect)
+- ```
++ ```
+
+- The surface distance is itself an `Angle`: the fraction of the great circle which lies
+- between the points. It multiplies by the radius of a planet to give a
+- [length](quantities.md), which keeps the geometry separate from the choice of sphere. A
+- calculation on Earth, and the same calculation on Mars, differ only in the radius by which
+- they are multiplied.
++ Расстояние по поверхности само является `Angle`: долей большого круга, которая лежит между
++ точками. При умножении на радиус планеты оно даёт [длину](quantities.md), что отделяет
++ геометрию от выбора сферы. Расчёт на Земле и тот же расчёт на Марсе различаются только
++ радиусом, на который они умножаются.
+
+- A `Location` is stored as a packed pair of fixed-point angles, not as two boxed doubles, so
+- a collection of positions costs one machine word each. A type which has a position, such as
+- a city, a station or a photograph, supplies a `Locatable` instance, and is then accepted
+- wherever a location is. The geographic operations therefore apply to values of the domain
+- directly, without their coordinates being extracted first.
++ `Location` хранится как упакованная пара углов с фиксированной точкой, а не как два
++ упакованных double, поэтому коллекция положений стоит по одному машинному слову на каждое. Тип,
++ у которого есть положение, например город, станция или фотография, предоставляет экземпляр
++ `Locatable` и после этого принимается везде, где принимается положение. Поэтому географические
++ операции применяются к значениям предметной области напрямую, без предварительного извлечения
++ их координат.
+
+- Geohashes are the usual base-32 encoding, and share the property which matters. Two
+- locations which are close together usually share a prefix, so a query by prefix is a coarse
+- search by proximity. "Usually" is the honest word. The boundaries of the encoding's cells
+- mean that two points on either side of one share nothing, which is why a geohash prefix is a
+- first filter, not an answer.
++ Геохеши — это обычное кодирование base-32, и у них есть то свойство, которое важно. Два
++ положения, которые находятся близко друг к другу, обычно имеют общий префикс, поэтому запрос по
++ префиксу — это грубый поиск по близости. «Обычно» — честное слово. Границы ячеек кодирования
++ означают, что у двух точек по разные стороны от одной из них нет ничего общего, поэтому префикс
++ геохеша — первый фильтр, а не ответ.
+
+- ### Geo URIs
++ ### URI geo
+
+- A location travels in text as a `geo:` URI, of
+- [RFC 5870](https://datatracker.ietf.org/doc/html/rfc5870), with an optional altitude and
+- uncertainty. A `Geolocation` is decoded from such text, and encoded back. A malformed URI
+- raises a typed error which names the fault:
++ Положение передаётся в тексте как URI `geo:` по
++ [RFC 5870](https://datatracker.ietf.org/doc/html/rfc5870), с необязательными высотой и
++ погрешностью. `Geolocation` декодируется из такого текста и кодируется обратно. Некорректный
++ URI порождает типизированную ошибку, которая называет неисправность:
+
+= raises a typed error which names the fault:
+=
+- ```scala
++ ```scala
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- val place = t"geo:51.5,0.1".as[Geolocation].location
++ val place = t"geo:51.5,0.1".as[Geolocation].location
+
+= val place = t"geo:51.5,0.1".as[Geolocation].location
+- ```
++ ```
+
+= val place = t"geo:51.5,0.1".as[Geolocation].location
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val place = t"geo:51.5,0.1".as[Geolocation].location
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- t"geo:north".as[Geolocation]
++ t"geo:north".as[Geolocation]
+
+= t"geo:north".as[Geolocation]
+- ```
++ ```
+
+- ### Related
++ ### Связанное
+
+- - [Quantities](quantities.md) describes the lengths which a distance is measured in.
+- - [Network addresses](network-addresses.md) describes the other kinds of URI.
+- - [Base encoding](base-encoding.md) lists the Geohash alphabet among its Base32 alphabets.
++ - [Величины](quantities.md) описывает длины, в которых измеряется расстояние.
++ - [Сетевые адреса](network-addresses.md) описывает другие виды URI.
++ - [Кодирование по основанию](base-encoding.md) перечисляет алфавит Geohash среди своих
++   алфавитов Base32.

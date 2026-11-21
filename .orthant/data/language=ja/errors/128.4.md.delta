@@ -1,0 +1,63 @@
+orthant 1 language
+
+- # `↯/s.128.4` — `Xml.Provider.Error`
++ # `↯/s.128.4` — `Xml.Provider.Error`
+
+- Raised when an XML value does not conform to the XML Schema an `Xml.Provider` reads it by.
++ XML の値が、`Xml.Provider` がそれを読むときに使う XML Schema に適合しないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Xylophone's `Xml.Provider` checks a document against its schema as a record's fields are read,
+- and reports each mismatch through the `Tactic` of the code reading the field, so that a
+- validating reader can collect them all. The message is `the XML did not conform to its schema because
+- $reason`.
++ Xylophone の `Xml.Provider` は、レコードのフィールドが読まれるときに文書をそのスキーマに照らして検査し、不一致のそれぞれを、フィールドを読むコードの `Tactic` を通じて報告する。そのため検証を行うリーダーはそれらをすべて集められる。
++ メッセージは `the XML did not conform to its schema because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.128.4.1`  `OutOfRange`  A number falls outside the bounds of its type: a `minInclusive`, `maxInclusive`, `minExclusive` or `maxExclusive` facet, or the bounds a builtin such as `xs:positiveInteger` implies. An absent bound is `Unset`.  `[↯/s.128.4.1] the XML did not conform to its schema because the value 200 is outside the range 0 to 150`  Supply a value within the range, or relax the facet.
+- row  `↯/s.128.4.2`  `LengthOutOfRange`  A value's length violates a `length`, `minLength` or `maxLength` facet.  `[↯/s.128.4.2] the XML did not conform to its schema because the length of abcd is outside the range 3 to 3`  Supply a value of a permitted length.
+- row  `↯/s.128.4.3`  `PatternMismatch`  A value does not match a `pattern` facet.  `[↯/s.128.4.3] the XML did not conform to its schema because the value nope does not match the pattern \d{3}-[A-Z]{2}`  Supply a value matching the pattern.
+- row  `↯/s.128.4.4`  `NotPermitted`  A value is not among an `enumeration` facet's values.  `[↯/s.128.4.4] the XML did not conform to its schema because the value urgent is not one of low, normal, high`  Supply one of the permitted values.
+- row  `↯/s.128.4.5`  `TooManyDigits`  A decimal has more digits than a `totalDigits` or `fractionDigits` facet allows.  `[↯/s.128.4.5] the XML did not conform to its schema because the value 1.234 has more digits than the 5 total or 2 fraction digits permitted`  Round or truncate the value to the permitted digits.
+- row  `↯/s.128.4.6`  `Absent`  A required element or attribute — one with `minOccurs` of at least one, or `use="required"` — is missing, or the element it names is in the wrong namespace.  `[↯/s.128.4.6] the XML did not conform to its schema because the element or attribute city is required`  Add the element or attribute, in the namespace the schema expects.
+- row  `↯/s.128.4.7`  `Malformed`  A value's text cannot be read as its type — `xs:int` text which is not a number, say — or the element has no text to read.  `[↯/s.128.4.7] the XML did not conform to its schema because the text none is not a valid Double`  Give the element or attribute text of the type the schema declares.
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.128.4.1`  `OutOfRange`  数がその型の境界の外にある。`minInclusive`、`maxInclusive`、`minExclusive`、`maxExclusive` のファセット、または `xs:positiveInteger` のような組み込みの型が意味する境界である。存在しない境界は `Unset` である。  `[↯/s.128.4.1] the XML did not conform to its schema because the value 200 is outside the range 0 to 150`  範囲内の値を与えるか、ファセットを緩める。
++ row  `↯/s.128.4.2`  `LengthOutOfRange`  値の長さが `length`、`minLength`、`maxLength` のファセットに違反している。  `[↯/s.128.4.2] the XML did not conform to its schema because the length of abcd is outside the range 3 to 3`  許された長さの値を与える。
++ row  `↯/s.128.4.3`  `PatternMismatch`  値が `pattern` のファセットに一致しない。  `[↯/s.128.4.3] the XML did not conform to its schema because the value nope does not match the pattern \d{3}-[A-Z]{2}`  パターンに一致する値を与える。
++ row  `↯/s.128.4.4`  `NotPermitted`  値が `enumeration` のファセットの値のどれでもない。  `[↯/s.128.4.4] the XML did not conform to its schema because the value urgent is not one of low, normal, high`  許された値の一つを与える。
++ row  `↯/s.128.4.5`  `TooManyDigits`  十進数が、`totalDigits` や `fractionDigits` のファセットが許すより多くの桁を持つ。  `[↯/s.128.4.5] the XML did not conform to its schema because the value 1.234 has more digits than the 5 total or 2 fraction digits permitted`  値を許された桁数に丸めるか切り詰める。
++ row  `↯/s.128.4.6`  `Absent`  必須の要素または属性（`minOccurs` が 1 以上のもの、または `use="required"` のもの）が欠けているか、それが名指す要素が誤った名前空間にある。  `[↯/s.128.4.6] the XML did not conform to its schema because the element or attribute city is required`  スキーマが期待する名前空間に、その要素または属性を追加する。
++ row  `↯/s.128.4.7`  `Malformed`  値のテキストをその型として読めない（たとえば数でない `xs:int` のテキスト）か、要素に読むべきテキストがない。  `[↯/s.128.4.7] the XML did not conform to its schema because the text none is not a valid Double`  スキーマが宣言する型のテキストを要素または属性に与える。
+
+- ```
++ ```
+
+- ## See also
++ ## 関連項目
+
+- - [`↯/s.128.3` — `Xsd.Error`](128.3.md)
++ - [`↯/s.128.3` — `Xsd.Error`](128.3.md)
+
+- - [`↯/s.106.3` — `Json.Provider.Error`](106.3.md)
++ - [`↯/s.106.3` — `Json.Provider.Error`](106.3.md)
+
+- - [`↯/s.118.10` — `Tel.Provider.Error`](118.10.md)
++ - [`↯/s.118.10` — `Tel.Provider.Error`](118.10.md)

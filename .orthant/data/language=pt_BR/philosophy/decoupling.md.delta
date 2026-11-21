@@ -1,0 +1,164 @@
+orthant 1 language
+
+- # Decoupling
++ # Desacoplamento
+
+- Soundness modules are decoupled: unrelated libraries do not depend on one another
+- directly, even when they need to interoperate. Small shared abstractions — typeclasses
+- describing only what is needed — let two modules cooperate without either knowing of
+- the other, so each can be adopted à la carte and can evolve on its own. The seamless
+- integration that users experience comes from these common interfaces, not from a web of
+- hard dependencies between components that ought to remain separate.
++ Os módulos do Soundness são desacoplados: bibliotecas não relacionadas não dependem diretamente
++ umas das outras, mesmo quando precisam interoperar. Pequenas abstrações compartilhadas — classes
++ de tipos que descrevem apenas o necessário — permitem que dois módulos cooperem sem que nenhum
++ conheça o outro, de modo que cada um pode ser adotado à la carte e evoluir por conta própria. A
++ integração sem emendas que os usuários experimentam vem dessas interfaces comuns, e não de uma
++ teia de dependências rígidas entre componentes que deveriam permanecer separados.
+
+- ## The problem, stated concretely
++ ## O problema, em termos concretos
+
+- A time library and an HTTP library both need to talk about instants: one produces them,
+- the other puts them in `Date` headers. There are three conventional ways to arrange
+- that, and all three are bad.
++ Uma biblioteca de tempo e uma biblioteca HTTP precisam ambas falar de instantes: uma os produz,
++ a outra os coloca em cabeçalhos `Date`. Há três formas convencionais de organizar isso, e as
++ três são ruins.
+
+- The HTTP library can depend on the time library — imposing it on every user who wanted
+- only HTTP. The time library can depend on the HTTP library — absurd, but it happens. Or
+- each can define its own instant type, leaving users to convert at every boundary, and
+- leaving the two definitions free to disagree.
++ A biblioteca HTTP pode depender da biblioteca de tempo — impondo-a a todo usuário que só queria
++ HTTP. A biblioteca de tempo pode depender da biblioteca HTTP — absurdo, mas acontece. Ou cada
++ uma pode definir seu próprio tipo de instante, deixando os usuários converterem em cada
++ fronteira, e deixando as duas definições livres para divergir.
+
+- ## The arrangement Soundness uses
++ ## O arranjo que o Soundness usa
+
+- A third module defines a *marker* and a pair of typeclasses saying how any type converts
+- to and from a common representation:
++ Um terceiro módulo define um *marcador* e um par de classes de tipos que dizem como qualquer
++ tipo é convertido de e para uma representação comum:
+
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+- ##
++ ##
+
+- sealed trait Instants   // the marker: "this conversion is about instants"
++ sealed trait Instants   // the marker: "this conversion is about instants"
+
+- given Long is Abstractable across Instants to Long
++ given Long is Abstractable across Instants to Long
+
+- given Long is Instantiable across Instants from Long
++ given Long is Instantiable across Instants from Long
+
+- ```
++ ```
+
+- The time library declares that *its* instant type is abstractable across `Instants`. The
+- HTTP library declares that it accepts anything abstractable across `Instants`. Neither
+- mentions the other, and neither is loaded unless the program uses it.
++ A biblioteca de tempo declara que o tipo de instante *dela* é abstraível através de
++ `Instants`. A biblioteca HTTP declara que aceita qualquer coisa abstraível através de
++ `Instants`. Nenhuma menciona a outra, e nenhuma é carregada a menos que o programa a use.
+
+- These markers are small and there are not many: `Instants`, `Durations`, `Dates`,
+- `Paths`, `Urls`, `HttpStreams`, `Text`, and a handful more. Each names one concept that
+- several libraries need to agree about, and defines nothing but the agreement.
++ Esses marcadores são pequenos e não são muitos: `Instants`, `Durations`, `Dates`, `Paths`,
++ `Urls`, `HttpStreams`, `Text` e mais alguns. Cada um nomeia um único conceito sobre o qual várias
++ bibliotecas precisam concordar, e não define nada além do acordo.
+
+- ## What it buys
++ ## O que isso compra
+
+- **À la carte adoption.** A program that wants only JSON parsing gets a dependency graph
+- containing JSON parsing. The integrations it does not use are not in the build, because
+- the modules that provide them are not depended upon.
++ **Adoção à la carte.** Um programa que só quer análise de JSON obtém um grafo de dependências que
++ contém a análise de JSON. As integrações que ele não usa não estão no build, porque não se
++ depende dos módulos que as fornecem.
+
+- **Foreign types participate.** The typeclass has no privileged implementations, so a
+- `java.time.Instant`, or a type from an unrelated library, becomes usable wherever an
+- instant is expected by supplying an instance. Nothing has to be wrapped, and the
+- integration lives in the program rather than requiring either library to change.
++ **Tipos estrangeiros participam.** A classe de tipos não tem implementações privilegiadas, então
++ um `java.time.Instant`, ou um tipo de uma biblioteca não relacionada, passa a poder ser usado
++ onde quer que se espere um instante, bastando fornecer uma instância. Nada precisa ser envolvido,
++ e a integração vive no programa, em vez de exigir que alguma das bibliotecas mude.
+
+- **Independent evolution.** The time library can change its internal representation
+- without the HTTP library recompiling, because what they share is the marker and the
+- shape of the conversion, not a type.
++ **Evolução independente.** A biblioteca de tempo pode mudar sua representação interna sem que a
++ biblioteca HTTP seja recompilada, porque o que elas compartilham é o marcador e a forma da
++ conversão, e não um tipo.
+
+- ## The same principle inside a module
++ ## O mesmo princípio dentro de um módulo
+
+- Decoupling operates below the module boundary too, as a *backend seam*: the operations a
+- capability needs are gathered into one trait, and the platform-specific implementations
+- are supplied separately.
++ O desacoplamento também opera abaixo da fronteira do módulo, como uma *costura de backend*: as
++ operações de que uma capability precisa são reunidas em uma única trait, e as implementações
++ específicas de cada plataforma são fornecidas à parte.
+
+- `FilesystemBackend` collects stat, open, read, write, list, link and delete; everything
+- in the [filesystem](../en/modules/filesystem.md) API is defined in terms of them. The
+- `java.nio` implementation, the WASI implementation over `wasi:filesystem`, and any
+- future one are interchangeable, and the user-facing API mentions no platform at all. The
+- same shape gives [sockets](../en/modules/sockets.md) a `SocketBackend`,
+- [compression](../en/modules/compression.md) its per-platform DEFLATE engines, and
+- [images](../en/modules/images.md) their codecs.
++ `FilesystemBackend` reúne stat, open, read, write, list, link e delete; tudo na API de
++ [sistema de arquivos](../en/modules/filesystem.md) é definido em termos delas. A implementação
++ `java.nio`, a implementação WASI sobre `wasi:filesystem` e qualquer outra futura são
++ intercambiáveis, e a API voltada ao usuário não menciona plataforma nenhuma. A mesma forma dá
++ aos [sockets](../en/modules/sockets.md) um `SocketBackend`, à
++ [compressão](../en/modules/compression.md) seus motores DEFLATE por plataforma, e às
++ [imagens](../en/modules/images.md) seus codecs.
+
+- That is what makes the same code run on the JVM, in a browser, in a native binary and
+- inside a WebAssembly component: not conditional compilation, but a seam narrow enough
+- that several implementations can honestly sit behind it.
++ É isso que faz o mesmo código rodar na JVM, em um navegador, em um binário nativo e dentro de um
++ componente WebAssembly: não compilação condicional, mas uma costura estreita o bastante para que
++ várias implementações possam honestamente ficar atrás dela.
+
+- ## What it costs
++ ## Quanto custa
+
+- Indirection is not free to read. Following how a `Yaml` value becomes an HTTP body means
+- finding the `Abstractable across HttpStreams` instance, which is not where either the
+- YAML code or the HTTP code is — and a reader who does not know the convention will not
+- guess where to look.
++ A indireção não é de graça para ler. Seguir como um valor `Yaml` se torna um corpo HTTP
++ significa encontrar a instância `Abstractable across HttpStreams`, que não está nem onde está o
++ código YAML nem onde está o código HTTP — e um leitor que não conhece a convenção não vai
++ adivinhar onde procurar.
+
+- The mitigation is that there is *one* convention rather than a different mechanism per
+- integration, so the cost is paid once in learning and not once per boundary. But it is a
+- real cost, and it is the reason the set of markers is kept small: each one is a piece of
+- vocabulary every reader must eventually acquire.
++ A atenuação é que há *uma* convenção, e não um mecanismo diferente por integração, então o custo
++ é pago uma vez no aprendizado, e não uma vez por fronteira. Mas é um custo real, e é a razão de o
++ conjunto de marcadores ser mantido pequeno: cada um é uma peça de vocabulário que todo leitor
++ precisa, mais cedo ou mais tarde, adquirir.
+
+- See [honest signatures](honest-signatures.md) for why the typeclasses stay minimal, and
+- [composability](composability.md) for what the shared interfaces make possible.
++ Veja [assinaturas honestas](honest-signatures.md) para por que as classes de tipos permanecem
++ mínimas, e [composabilidade](composability.md) para o que as interfaces compartilhadas tornam
++ possível.

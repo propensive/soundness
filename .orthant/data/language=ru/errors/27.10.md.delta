@@ -1,0 +1,37 @@
+orthant 1 language
+
+- # `↯/s.27.10` — `Decimal.Error`
++ # `↯/s.27.10` — `Decimal.Error`
+
+- Raised when a value cannot be represented as an arbitrary-precision decimal.
++ Порождается, когда значение нельзя представить как десятичное число произвольной точности.
+
+- ## Cause
++ ## Причина
+
+- A `Decimal` is constructed from text, from an integer, or from a `Double`. From text, this
+- error means the text is not a decimal number; from a `Double`, that the double has no exact
+- decimal representation.
++ `Decimal` строится из текста, из целого числа или из `Double`. Для текста эта ошибка означает,
++ что текст не является десятичным числом; для `Double` — что у числа с плавающей точкой нет
++ точного десятичного представления.
+
+- ## Resolution
++ ## Решение
+
+- For text, check the syntax — an optional sign, digits, an optional point and an optional
+- exponent. For a `Double`, the failure is telling you the binary value is not exactly the
+- decimal you intended; construct from text, or from an unscaled integer and a scale.
++ Для текста проверьте синтаксис: необязательный знак, цифры, необязательная точка и
++ необязательная экспонента. Для `Double` неудача сообщает, что двоичное значение не равно в
++ точности задуманному десятичному; стройте значение из текста или из немасштабированного целого
++ числа и масштаба.
+
+- > This error previously used the code `↯/s.62.2`, which collided with `EnvironmentError`.
++ > Раньше эта ошибка использовала код `↯/s.62.2`, который совпадал с кодом `EnvironmentError`.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/hypotenuse/src/core/hypotenuse.Decimal.scala`
++ - Исходник: `lib/hypotenuse/src/core/hypotenuse.Decimal.scala`

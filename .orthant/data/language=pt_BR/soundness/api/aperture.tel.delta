@@ -1,0 +1,1846 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base aperture
++ base aperture
+
+- import soundness
++ import soundness
+
+- info   scoped access to resources: `open`, `create`, `archive` and `session`, with modes carried as grants in the handle's type
++ info   acesso com escopo a recursos: `open`, `create`, `archive` e `session`, com os modos levados como concessões no tipo do handle
+
+- detail
++ detail
+
+-     _Aperture_ names one pattern which recurs across Soundness: a value says *where* something
+-     is — a path, a URL, an in-memory reference — and getting at its contents is a distinct,
+-     **scoped** act. A file is opened for streaming, a directory as a confined root, a Git
+-     repository for reading its refs, a URL for a session of requests; in each case a handle is
+-     lent to a block, and the end of the block is the end of the access.
++     _Aperture_ dá nome a um padrão que se repete em todo o Soundness: um valor diz *onde* algo
++     está — um caminho, uma URL, uma referência em memória — e chegar ao seu conteúdo é um ato
++     distinto, **com escopo**. Um arquivo é aberto para streaming, um diretório como raiz
++     confinada, um repositório Git para ler suas refs, uma URL para uma sessão de requisições; em
++     cada caso, um handle é emprestado a um bloco, e o fim do bloco é o fim do acesso.
+
+-     The library defines the typeclasses behind four verbs, and the extension methods which
+-     invoke them on any value:
++     A biblioteca define as classes de tipos por trás de quatro verbos e os métodos de extensão
++     que os invocam sobre qualquer valor:
+
+-     - `open[Form](mode, flags*)`, through `Openable`: access to something which exists, with a
+-       `Mode` (`Read`, `Write`, `Exclusive` and their `&`-combinations) whose `Grant`s are
+-       carried in the handle's type, so a write through a read-only handle does not compile;
+-     - `create[Form](flags*)`, through `Creatable`: bringing something into existence, either
+-       empty or by authoring it in a scope that commits when the block completes;
+-     - `archive[Form](flags*)`, through `Archivable`: gathering something's contents into an
+-       in-memory archive value;
+-     - `session`, through `Sessional`: a live interaction — a connection, a warm compiler, a
+-       browser — lent to a block and disposed of when it ends.
++     - `open[Form](mode, flags*)`, por meio de `Openable`: acesso a algo que existe, com um
++       `Mode` (`Read`, `Write`, `Exclusive` e suas combinações com `&`) cujas `Grant`s são
++       levadas no tipo do handle, de modo que uma escrita por um handle somente leitura não
++       compila;
++     - `create[Form](flags*)`, por meio de `Creatable`: trazer algo à existência, vazio ou
++       compondo-o em um escopo que é efetivado quando o bloco termina;
++     - `archive[Form](flags*)`, por meio de `Archivable`: reunir o conteúdo de algo em um valor
++       de arquivo em memória;
++     - `session`, por meio de `Sessional`: uma interação ativa — uma conexão, um compilador
++       aquecido, um navegador — emprestada a um bloco e descartada quando ele termina.
+
+=       browser — lent to a block and disposed of when it ends.
+=
+-     ```scala
++     ```scala
+
+=       browser — lent to a block and disposed of when it ends.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=       browser — lent to a block and disposed of when it ends.
+=
+=     ```scala
+=     import soundness.*
+-     import filesystemBackends.javaBaseFilesystem
++     import filesystemBackends.javaBaseFilesystem
+
+=       browser — lent to a block and disposed of when it ends.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+-     import filesystemOptions.dereferenceSymlinks
++     import filesystemOptions.dereferenceSymlinks
+
+=       browser — lent to a block and disposed of when it ends.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+-     import pathInterfaces.pathOnLinux
++     import pathInterfaces.pathOnLinux
+
+=       browser — lent to a block and disposed of when it ends.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=       browser — lent to a block and disposed of when it ends.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+=     import strategies.throwUnsafely
+-     import temporaryDirectories.javaBaseTemporaryDirectory
++     import temporaryDirectories.javaBaseTemporaryDirectory
+
+=       browser — lent to a block and disposed of when it ends.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+=     import strategies.throwUnsafely
+=     import temporaryDirectories.javaBaseTemporaryDirectory
+-     import charsets.utf8Charset
++     import charsets.utf8Charset
+
+=       browser — lent to a block and disposed of when it ends.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+=     import strategies.throwUnsafely
+=     import temporaryDirectories.javaBaseTemporaryDirectory
+=     import charsets.utf8Charset
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     val file: Path on Linux = temporaryDirectory[Path on Linux] / "notes.txt"
++     val file: Path on Linux = temporaryDirectory[Path on Linux] / "notes.txt"
+
+=     val file: Path on Linux = temporaryDirectory[Path on Linux] / "notes.txt"
+=
+-     file.open[File](Write, OpenFlag.Create): handle ?=>
++     file.open[File](Write, OpenFlag.Create): handle ?=>
+
+-       handle.write(Chain(t"Hello, world".in[Data]))
++       handle.write(Chain(t"Hello, world".in[Data]))
+
+-     file.open[File]()(file.read[Text])
++     file.open[File]()(file.read[Text])
+
+=     file.open[File]()(file.read[Text])
+-     ```
++     ```
+
+-     The *form* — what the target is opened, created or archived *as* — is a type argument,
+-     because one target may have several instances: a path opens as a `File`, a `Directory`, a
+-     `Zip` or a `Pdf`. Where a target has exactly one instance the form may be omitted; with
+-     several, the ambiguity error lists the alternatives. Flags after the mode are of the
+-     instance's own `Operand` type, so they are specific to what is being opened and an
+-     irrelevant flag does not typecheck. Every instance is written in the prepositional style,
+-     `target is Openable in Form by Flag to Handle`.
++     A *forma* — aquilo *como* o alvo é aberto, criado ou arquivado — é um argumento de tipo,
++     porque um alvo pode ter várias instâncias: um caminho abre como `File`, `Directory`, `Zip`
++     ou `Pdf`. Quando um alvo tem exatamente uma instância, a forma pode ser omitida; com várias,
++     o erro de ambiguidade lista as alternativas. As flags depois do modo são do tipo `Operand`
++     da própria instância, então são específicas daquilo que está sendo aberto, e uma flag
++     irrelevante não passa na verificação de tipos. Toda instância é escrita no estilo
++     preposicional, `target is Openable in Form by Flag to Handle`.
+
+-     Handles are capabilities, confined to their block by capture checking: neither a handle
+-     nor a closure over it nor a collection holding it can be the block's result. `Stale` is
+-     the companion idea for values read *through* a handle from state the handle does not own.
++     Handles são capabilities, confinadas ao seu bloco pela verificação de capturas: nem um
++     handle, nem uma closure sobre ele, nem uma coleção que o contenha pode ser o resultado do
++     bloco. `Stale` é a ideia complementar para valores lidos *por meio de* um handle a partir de
++     um estado que o handle não possui.
+
+-     Aperture depends only on `prepositional`, so it sits below every library which provides
+-     instances: galilei (files, directories, scratch space), octogenarian (`Git.Repo`,
+-     `Git.Worktree`), bitumen and zeppelin (archives), facsimile (PDF documents), telekinesis
+-     and coaxial (sessions), and others. It has a single source set, `aperture.core`, for every
+-     platform, and everything is exported to the `soundness` umbrella.
++     Aperture depende apenas de `prepositional`, então fica abaixo de toda biblioteca que fornece
++     instâncias: galilei (arquivos, diretórios, espaço temporário), octogenarian (`Git.Repo`,
++     `Git.Worktree`), bitumen e zeppelin (arquivamento), facsimile (documentos PDF),
++     telekinesis e coaxial (sessões), entre outras. Ela tem um único source set,
++     `aperture.core`, para todas as plataformas, e tudo é exportado para o guarda-chuva
++     `soundness`.
+
+- refer aperture.Openable
++ refer aperture.Openable
+
+- refer aperture.Creatable
++ refer aperture.Creatable
+
+- refer aperture.Sessional
++ refer aperture.Sessional
+
+- refer aperture.Mode
++ refer aperture.Mode
+
+- refer aperture.Grant
++ refer aperture.Grant
+
+- refer aperture.open
++ refer aperture.open
+
+- entry .Openable   a typeclass for targets which can be opened in a form, lending a granted handle to a block
++ entry .Openable   uma classe de tipos para alvos que podem ser abertos em uma forma, emprestando um handle com concessões a um bloco
+
+= entry .Openable   a typeclass for targets which can be opened in a form, lending a granted handle to a block
+-   detail
++   detail
+
+-       An instance is written `target is Openable in Form by Flag to Handle`: `Self` is the
+-       target (a path, a reference), `Form` is what it is opened as, `Operand` the flag type
+-       admissible for that pair, and `Result` the handle. The instance's one method, `#open`,
+-       receives the target, the `Mode` the caller asked for, and the flags, and runs the block
+-       with a handle typed `Result & Granting[grants]`, where `grants` is the mode's `Grants`.
++       Uma instância é escrita `target is Openable in Form by Flag to Handle`: `Self` é o alvo
++       (um caminho, uma referência), `Form` é aquilo como ele é aberto, `Operand` o tipo de flag
++       admissível para esse par, e `Result` o handle. O único método da instância, `#open`,
++       recebe o alvo, o `Mode` que quem chama pediu e as flags, e executa o bloco com um handle
++       do tipo `Result & Granting[grants]`, em que `grants` são as `Grants` do modo.
+
+-       Users call it through the `open` extension, never directly:
++       Os usuários o chamam pela extensão `open`, nunca diretamente:
+
+=       Users call it through the `open` extension, never directly:
+=
+-       ```scala
++       ```scala
+
+=       Users call it through the `open` extension, never directly:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       Users call it through the `open` extension, never directly:
+=
+=       ```scala
+=       import soundness.*
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+=       Users call it through the `open` extension, never directly:
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+-       import filesystemOptions.dereferenceSymlinks
++       import filesystemOptions.dereferenceSymlinks
+
+=       Users call it through the `open` extension, never directly:
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       Users call it through the `open` extension, never directly:
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       Users call it through the `open` extension, never directly:
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+-       import temporaryDirectories.javaBaseTemporaryDirectory
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+=       Users call it through the `open` extension, never directly:
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       Users call it through the `open` extension, never directly:
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+=       import charsets.utf8Charset
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+=       Users call it through the `open` extension, never directly:
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+=       import charsets.utf8Charset
+=       import codepages.utf8Codepage
+=
+-       val directory: Path on Linux = temporaryDirectory[Path on Linux] / "work"
++       val directory: Path on Linux = temporaryDirectory[Path on Linux] / "work"
+
+-       directory.open[Directory](Read & Write): dir ?=>
++       directory.open[Directory](Read & Write): dir ?=>
+
+-         (dir / "greeting.txt").overwrite(t"Hello directory")
++         (dir / "greeting.txt").overwrite(t"Hello directory")
+
+=         (dir / "greeting.txt").overwrite(t"Hello directory")
+-       ```
++       ```
+
+-       An instance's operations on the handle are extension methods gated on the grants, such
+-       as `extension (handle: (DocHandle & Granting[Grant.Write])^) def append(…)`, so the mode
+-       chosen at the call site decides what compiles inside the block. An instance translates
+-       the mode into its backend's own terms by interrogating `mode.atoms` (`mode.atoms.has(Read)`).
++       As operações de uma instância sobre o handle são métodos de extensão restritos pelas
++       concessões, como `extension (handle: (DocHandle & Granting[Grant.Write])^) def append(…)`,
++       de modo que o modo escolhido no ponto de chamada decide o que compila dentro do bloco. Uma
++       instância traduz o modo para os termos do seu backend interrogando `mode.atoms`
++       (`mode.atoms.has(Read)`).
+
+-       Instances should be named classes rather than anonymous `given … = new Openable:`
+-       instances: an anonymous subclass freshens the handle's capability type in the inferred
+-       `Result` member, and the block's handle then fails to typecheck against the extension
+-       methods that gate on it.
++       As instâncias devem ser classes nomeadas, e não instâncias anônimas
++       `given … = new Openable:`: uma subclasse anônima renova o tipo de capability do handle no
++       membro `Result` inferido, e o handle do bloco então falha na verificação de tipos contra
++       os métodos de extensão que dependem dele.
+
+=       methods that gate on it.
+-   refer aperture.open
++   refer aperture.open
+
+=   refer aperture.open
+-   refer aperture.Opener
++   refer aperture.Opener
+
+=   refer aperture.open
+=   refer aperture.Opener
+-   refer aperture.Mode
++   refer aperture.Mode
+
+=   refer aperture.Mode
+-   refer aperture.Granting
++   refer aperture.Granting
+
+-   entry #open   opens a target in a mode, with flags, and runs a block with the granted handle
+-       `open(value, mode, flags)(block)`: the implementation an instance provides. The block
+-       takes the handle `(Result & Granting[grants])^` as a contextual parameter, and its
+-       result is returned once the instance has closed whatever it opened. Called by
+-       `Opener#apply`; user code writes `value.open[Form](mode, flags*)` instead.
++   entry #open   abre um alvo em um modo, com flags, e executa um bloco com o handle com concessões
++       `open(value, mode, flags)(block)`: a implementação que uma instância fornece. O bloco
++       recebe o handle `(Result & Granting[grants])^` como parâmetro contextual, e seu resultado
++       é devolvido depois que a instância fecha o que tiver aberto. Chamado por `Opener#apply`;
++       o código do usuário escreve `value.open[Form](mode, flags*)` em vez disso.
+
+- entry .Opener   the applier `open[Form]` returns, which takes an optional mode, the flags and the block
++ entry .Opener   o aplicador que `open[Form]` devolve, que recebe um modo opcional, as flags e o bloco
+
+= entry .Opener   the applier `open[Form]` returns, which takes an optional mode, the flags and the block
+-   detail
++   detail
+
+-       `value.open[Form]` resolves the `Openable` instance from the form alone and returns an
+-       `Opener`; its overloaded `#apply` then takes the arguments. The two steps are
+-       deliberate: overloaded extension methods do not resolve across several parameter
+-       lists, so the applier is where the optional mode can be overloaded safely.
++       `value.open[Form]` resolve a instância de `Openable` apenas pela forma e devolve um
++       `Opener`; seu `#apply` sobrecarregado recebe então os argumentos. As duas etapas são
++       deliberadas: métodos de extensão sobrecarregados não são resolvidos através de várias
++       listas de parâmetros, então o aplicador é o lugar onde o modo opcional pode ser
++       sobrecarregado com segurança.
+
+=       lists, so the applier is where the optional mode can be overloaded safely.
+=
+-       ```scala
++       ```scala
+
+=       lists, so the applier is where the optional mode can be overloaded safely.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       lists, so the applier is where the optional mode can be overloaded safely.
+=
+=       ```scala
+=       import soundness.*
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+=       lists, so the applier is where the optional mode can be overloaded safely.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+-       import filesystemOptions.dereferenceSymlinks
++       import filesystemOptions.dereferenceSymlinks
+
+=       lists, so the applier is where the optional mode can be overloaded safely.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       lists, so the applier is where the optional mode can be overloaded safely.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       lists, so the applier is where the optional mode can be overloaded safely.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+-       import temporaryDirectories.javaBaseTemporaryDirectory
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+=       lists, so the applier is where the optional mode can be overloaded safely.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       lists, so the applier is where the optional mode can be overloaded safely.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+=       import charsets.utf8Charset
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+-       val file: Path on Linux = temporaryDirectory[Path on Linux] / "notes.txt"
++       val file: Path on Linux = temporaryDirectory[Path on Linux] / "notes.txt"
+
+-       file.open[File]() { handle ?=> handle.read[Text] }
++       file.open[File]() { handle ?=> handle.read[Text] }
+
+-       file.open[File](Read & Write) { handle ?=> handle.write(Chain(t"more".in[Data])) }
++       file.open[File](Read & Write) { handle ?=> handle.write(Chain(t"more".in[Data])) }
+
+=       file.open[File](Read & Write) { handle ?=> handle.write(Chain(t"more".in[Data])) }
+-       ```
++       ```
+
+-       The `#openable` field is `tracked`, so the instance's `Self`, `Operand` and `Result`
+-       members stay precise in the types of `#apply`.
++       O campo `#openable` é `tracked`, então os membros `Self`, `Operand` e `Result` da
++       instância permanecem precisos nos tipos de `#apply`.
+
+=       members stay precise in the types of `#apply`.
+-   refer aperture.open
++   refer aperture.open
+
+=   refer aperture.open
+-   refer aperture.Openable
++   refer aperture.Openable
+
+-   entry #openable   the `Openable` instance the form resolved
+-   entry #value   the target to be opened
+-   entry #apply   opens the target, read-only by default or in the mode given, and runs the block
+-       Two overloads. `apply(flags*)(block)` opens with the `Read` mode, so the handle is
+-       `Granting[Grant.Read]`; `apply(mode, flags*)(block)` opens with the mode given, so the
+-       handle grants exactly `mode.Grants`. Flags are of the instance's `Operand` type and
+-       follow the mode. The handle is the block's contextual parameter (`handle ?=> …`).
++   entry #openable   a instância de `Openable` que a forma resolveu
++   entry #value   o alvo a ser aberto
++   entry #apply   abre o alvo, somente para leitura por padrão ou no modo dado, e executa o bloco
++       Duas sobrecargas. `apply(flags*)(block)` abre com o modo `Read`, então o handle é
++       `Granting[Grant.Read]`; `apply(mode, flags*)(block)` abre com o modo dado, então o handle
++       concede exatamente `mode.Grants`. As flags são do tipo `Operand` da instância e vêm
++       depois do modo. O handle é o parâmetro contextual do bloco (`handle ?=> …`).
+
+- entry .open   opens a value in a form: `path.open[File](Read & Write) { handle ?=> … }`
++ entry .open   abre um valor em uma forma: `path.open[File](Read & Write) { handle ?=> … }`
+
+= entry .open   opens a value in a form: `path.open[File](Read & Write) { handle ?=> … }`
+-   detail
++   detail
+
+-       An extension on any value which has an `Openable` instance in the form named. It
+-       returns an `Opener`, whose `apply` takes an optional `Mode` (the default is `Read`),
+-       then flags of the instance's `Operand` type, then a block which receives the handle as
+-       a contextual parameter.
++       Uma extensão sobre qualquer valor que tenha uma instância de `Openable` na forma
++       indicada. Ela devolve um `Opener`, cujo `apply` recebe um `Mode` opcional (o padrão é
++       `Read`), depois flags do tipo `Operand` da instância, depois um bloco que recebe o handle
++       como parâmetro contextual.
+
+-       The mode chosen decides the handle's type, and so which of its operations compile:
++       O modo escolhido decide o tipo do handle e, portanto, quais de suas operações compilam:
+
+=       The mode chosen decides the handle's type, and so which of its operations compile:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Opened with no mode: the handle grants only reading
++         label Aberto sem modo: o handle concede apenas leitura
+
+=         label Opened with no mode: the handle grants only reading
+-         code
++         code
+
+-             file.open[File](): handle ?=>
++             file.open[File](): handle ?=>
+
+=             file.open[File](): handle ?=>
+-               handle.read[Text]
++               handle.read[Text]
+
+-               handle.write(Chain(t"more".in[Data]))   // does not compile
++               handle.write(Chain(t"more".in[Data]))   // does not compile
+
+=               handle.write(Chain(t"more".in[Data]))   // does not compile
+-       frame
++       frame
+
+-         label `Read & Write`: both kinds of operation compile
++         label `Read & Write`: os dois tipos de operação compilam
+
+=         label `Read & Write`: both kinds of operation compile
+-         code
++         code
+
+-             file.open[File](Read & Write): handle ?=>
++             file.open[File](Read & Write): handle ?=>
+
+=             file.open[File](Read & Write): handle ?=>
+-               handle.read[Text]
++               handle.read[Text]
+
+=             file.open[File](Read & Write): handle ?=>
+=               handle.read[Text]
+-               handle.write(Chain(t"more".in[Data]))
++               handle.write(Chain(t"more".in[Data]))
+
+=               handle.write(Chain(t"more".in[Data]))
+-       frame
++       frame
+
+-         label `Read & Write & Exclusive`: and no other handle may overlap it
++         label `Read & Write & Exclusive`: e nenhum outro handle pode se sobrepor a ele
+
+=         label `Read & Write & Exclusive`: and no other handle may overlap it
+-         code
++         code
+
+-             file.open[File](Read & Write & Exclusive): handle ?=>
++             file.open[File](Read & Write & Exclusive): handle ?=>
+
+=             file.open[File](Read & Write & Exclusive): handle ?=>
+-               handle.read[Text]
++               handle.read[Text]
+
+=             file.open[File](Read & Write & Exclusive): handle ?=>
+=               handle.read[Text]
+-               handle.write(Chain(t"more".in[Data]))
++               handle.write(Chain(t"more".in[Data]))
+
+=               handle.write(Chain(t"more".in[Data]))
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       The form may be omitted, `value.open()`, when the target has exactly one `Openable`
+-       instance; with several, the ambiguity error lists them. The handle is a capability
+-       confined to the block: returning it, a closure over it, or a collection of it is a
+-       compile error.
++       A forma pode ser omitida, `value.open()`, quando o alvo tem exatamente uma instância de
++       `Openable`; com várias, o erro de ambiguidade as lista. O handle é uma capability
++       confinada ao bloco: devolvê-lo, uma closure sobre ele ou uma coleção dele é um erro de
++       compilação.
+
+=       compile error.
+-   refer aperture.Openable
++   refer aperture.Openable
+
+=   refer aperture.Openable
+-   refer aperture.Opener
++   refer aperture.Opener
+
+=   refer aperture.Openable
+=   refer aperture.Opener
+-   refer aperture.Mode
++   refer aperture.Mode
+
+- entry .Mode   which grants an `open` call confers, composable with `&`
++ entry .Mode   quais concessões uma chamada a `open` confere, combináveis com `&`
+
+= entry .Mode   which grants an `open` call confers, composable with `&`
+-   detail
++   detail
+
+-       A `Mode` is a term-level choice of grants, carried as its `#Grants` type member so that
+-       the mode written at the call site determines the handle's type inside the block. The
+-       atomic modes are `Read`, `Write` and `Exclusive` (and libraries add their own, such as
+-       galilei's `Shared`); `&` composes them dependently, so `Read & Write` has `Grants =
+-       Grant.Read & Grant.Write` with no macros or inline expansion.
++       Um `Mode` é uma escolha de concessões no nível dos termos, levada como seu membro de tipo
++       `#Grants`, para que o modo escrito no ponto de chamada determine o tipo do handle dentro
++       do bloco. Os modos atômicos são `Read`, `Write` e `Exclusive` (e as bibliotecas
++       acrescentam os seus, como o `Shared` de galilei); `&` os combina de forma dependente,
++       então `Read & Write` tem `Grants = Grant.Read & Grant.Write`, sem macros nem expansão
++       inline.
+
+=       Grant.Read & Grant.Write` with no macros or inline expansion.
+=
+-       ```scala
++       ```scala
+
+=       Grant.Read & Grant.Write` with no macros or inline expansion.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val mode: Mode granting (Grant.Read & Grant.Write) = Read & Write
++       val mode: Mode granting (Grant.Read & Grant.Write) = Read & Write
+
+-       (Read & Write & Exclusive).atoms == Set(Read, Write, Exclusive)
++       (Read & Write & Exclusive).atoms == Set(Read, Write, Exclusive)
+
+=       (Read & Write & Exclusive).atoms == Set(Read, Write, Exclusive)
+-       ```
++       ```
+
+-       At runtime a composite mode is identified by `#atoms`, the set of atomic modes it was
+-       built from, which is how an `Openable` instance translates a mode into operating-system
+-       flags. Atomic modes are global values compared by reference, so a library defining a
+-       new one makes it an `object … extends Mode` or a top-level `val`.
++       Em tempo de execução, um modo composto é identificado por `#atoms`, o conjunto de modos
++       atômicos a partir do qual foi construído, e é assim que uma instância de `Openable`
++       traduz um modo em flags do sistema operacional. Os modos atômicos são valores globais
++       comparados por referência, então uma biblioteca que define um novo o torna um
++       `object … extends Mode` ou um `val` de nível superior.
+
+-   refer aperture.Grant
++   refer aperture.Grant
+
+-   refer aperture.granting
++   refer aperture.granting
+
+-   entry #Grants   the grants this mode confers, as an intersection of `Grant` subtypes
+-   entry #atoms   the atomic modes this mode was composed from
+-       An atomic mode's atoms are itself alone; `Read & Write` has `Set(Read, Write)`. An
+-       `Openable` instance tests membership, `mode.atoms.has(Write)`, to decide how to open
+-       its target.
+-   entry #&   composes two modes: the union of their atoms, the intersection of their grants
+-       `Read & Write` is a `Mode granting (Grant.Read & Grant.Write)`. The operation is
+-       associative and order-insensitive in effect, since both the grants and the atoms are
+-       sets.
++   entry #Grants   as concessões que este modo confere, como uma interseção de subtipos de `Grant`
++   entry #atoms   os modos atômicos a partir dos quais este modo foi composto
++       Os átomos de um modo atômico são apenas ele mesmo; `Read & Write` tem `Set(Read, Write)`.
++       Uma instância de `Openable` testa a pertinência, `mode.atoms.has(Write)`, para decidir
++       como abrir seu alvo.
++   entry #&   combina dois modos: a união de seus átomos, a interseção de suas concessões
++       `Read & Write` é um `Mode granting (Grant.Read & Grant.Write)`. A operação é associativa
++       e, em efeito, indiferente à ordem, já que tanto as concessões quanto os átomos são
++       conjuntos.
+
+- entry .Grant   a phantom marker of a permitted kind of operation, composed by intersection
++ entry .Grant   um marcador fantasma de um tipo de operação permitido, combinado por interseção
+
+= entry .Grant   a phantom marker of a permitted kind of operation, composed by intersection
+-   detail
++   detail
+
+-       Grants are never instantiated: they exist only as types, intersected into a handle's
+-       type through `Granting`, where they gate which extension methods apply. Intersection
+-       makes more grants a more specific type, so an operation demanding `Grant.Write` accepts
+-       any handle whose mode included `Write`, whatever else it included.
++       Concessões nunca são instanciadas: existem apenas como tipos, intersectadas no tipo de
++       um handle por meio de `Granting`, onde restringem quais métodos de extensão se aplicam.
++       A interseção torna mais concessões um tipo mais específico, então uma operação que exige
++       `Grant.Write` aceita qualquer handle cujo modo incluiu `Write`, seja o que for que mais
++       ele tenha incluído.
+
+-       The hierarchy is open: a library defining an `Openable` instance may introduce grants
+-       particular to its domain by extending `Grant`, with a matching `Mode`.
++       A hierarquia é aberta: uma biblioteca que define uma instância de `Openable` pode
++       introduzir concessões próprias do seu domínio estendendo `Grant`, com um `Mode`
++       correspondente.
+
+=       particular to its domain by extending `Grant`, with a matching `Mode`.
+-   refer aperture.Granting
++   refer aperture.Granting
+
+=   refer aperture.Granting
+-   refer aperture.Mode
++   refer aperture.Mode
+
+-   entry .Read   the grant to read a handle's contents, conferred by the `Read` mode
+-   entry .Write   the grant to modify a handle's contents, conferred by the `Write` mode
+-       Writing does not imply reading: a handle opened with `Write` alone has no read
+-       operations, and `Read & Write` is needed for both.
+-   entry .Exclusive   a guarantee that no other handle on the same entity is open at the same time
+-       Conferred by the `Exclusive` mode. How an instance keeps the guarantee is its own
+-       affair: galilei refuses an overlapping open within the program with an `Io.Error`
+-       whose reason is `Busy`, and for a file also takes an operating-system lock.
++   entry .Read   a concessão de ler o conteúdo de um handle, conferida pelo modo `Read`
++   entry .Write   a concessão de modificar o conteúdo de um handle, conferida pelo modo `Write`
++       Escrever não implica ler: um handle aberto apenas com `Write` não tem operações de
++       leitura, e `Read & Write` é necessário para ambas.
++   entry .Exclusive   a garantia de que nenhum outro handle sobre a mesma entidade está aberto ao mesmo tempo
++       Conferida pelo modo `Exclusive`. Como uma instância mantém a garantia é assunto dela:
++       galilei recusa uma abertura sobreposta dentro do programa com um `Io.Error` cujo motivo
++       é `Busy` e, para um arquivo, também obtém um lock do sistema operacional.
+
+- entry .Granting   mixed into a handle to attach the grants its mode selected
+-     `Granting[+grants <: Grant]` is the marker an `Openable` or `Creatable` instance mixes into
+-     the handle it lends, as `new Handle(…) with Granting[grants] {}`. It is covariant, so a
+-     handle `Granting[Grant.Read & Grant.Write]` is also a `Granting[Grant.Read]`, and an
+-     extension method written for `(Handle & Granting[Grant.Read])^` applies to it.
++ entry .Granting   misturado a um handle para anexar as concessões que seu modo selecionou
++     `Granting[+grants <: Grant]` é o marcador que uma instância de `Openable` ou `Creatable`
++     mistura ao handle que empresta, como `new Handle(…) with Granting[grants] {}`. Ele é
++     covariante, então um handle `Granting[Grant.Read & Grant.Write]` também é um
++     `Granting[Grant.Read]`, e um método de extensão escrito para
++     `(Handle & Granting[Grant.Read])^` se aplica a ele.
+
+=     extension method written for `(Handle & Granting[Grant.Read])^` applies to it.
+=
+-     ```scala
++     ```scala
+
+=     extension method written for `(Handle & Granting[Grant.Read])^` applies to it.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     class Notebook extends caps.ExclusiveCapability:
++     class Notebook extends caps.ExclusiveCapability:
+
+-       def text: Text = t"notes"
++       def text: Text = t"notes"
+
+-     extension (notebook: (Notebook & Granting[Grant.Read])^)
++     extension (notebook: (Notebook & Granting[Grant.Read])^)
+
+-       def contents: Text = notebook.text
++       def contents: Text = notebook.text
+
+=       def contents: Text = notebook.text
+-     ```
++     ```
+
+- entry .granting   `Mode granting Grant.Read`: refines a type's `Grants` member to exactly those grants
+-     An infix type alias: `refined granting grants` is `refined { type Grants = grants }`. It
+-     reads naturally in signatures, `mode: Mode granting grants`, and is the type of the atomic
+-     modes: `Read` is a `Mode granting Grant.Read`.
++ entry .granting   `Mode granting Grant.Read`: refina o membro `Grants` de um tipo para exatamente essas concessões
++     Um alias de tipo infixo: `refined granting grants` é `refined { type Grants = grants }`.
++     Ele se lê naturalmente em assinaturas, `mode: Mode granting grants`, e é o tipo dos modos
++     atômicos: `Read` é um `Mode granting Grant.Read`.
+
+- entry .Read   the mode which grants reading: the default for `open`
+-     A `Mode granting Grant.Read`. `value.open[Form]()` with no mode uses it; pass it
+-     explicitly to combine it, as `Read & Write` or `Read & Exclusive`.
++ entry .Read   o modo que concede leitura: o padrão para `open`
++     Um `Mode granting Grant.Read`. `value.open[Form]()` sem modo o usa; passe-o
++     explicitamente para combiná-lo, como `Read & Write` ou `Read & Exclusive`.
+
+- entry .Write   the mode which grants writing, without reading
+-     A `Mode granting Grant.Write`. `Write` alone does not confer read access: open with
+-     `Read & Write` for a handle which both reads and writes.
++ entry .Write   o modo que concede escrita, sem leitura
++     Um `Mode granting Grant.Write`. `Write` sozinho não confere acesso de leitura: abra com
++     `Read & Write` para obter um handle que tanto lê quanto escreve.
+
+=     `Read & Write` for a handle which both reads and writes.
+=
+-     ```scala
++     ```scala
+
+=     `Read & Write` for a handle which both reads and writes.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `Read & Write` for a handle which both reads and writes.
+=
+=     ```scala
+=     import soundness.*
+-     import filesystemBackends.javaBaseFilesystem
++     import filesystemBackends.javaBaseFilesystem
+
+=     `Read & Write` for a handle which both reads and writes.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+-     import filesystemOptions.dereferenceSymlinks
++     import filesystemOptions.dereferenceSymlinks
+
+=     `Read & Write` for a handle which both reads and writes.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+-     import pathInterfaces.pathOnLinux
++     import pathInterfaces.pathOnLinux
+
+=     `Read & Write` for a handle which both reads and writes.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     `Read & Write` for a handle which both reads and writes.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+=     import strategies.throwUnsafely
+-     import temporaryDirectories.javaBaseTemporaryDirectory
++     import temporaryDirectories.javaBaseTemporaryDirectory
+
+=     `Read & Write` for a handle which both reads and writes.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+=     import strategies.throwUnsafely
+=     import temporaryDirectories.javaBaseTemporaryDirectory
+-     import charsets.utf8Charset
++     import charsets.utf8Charset
+
+=     `Read & Write` for a handle which both reads and writes.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+=     import strategies.throwUnsafely
+=     import temporaryDirectories.javaBaseTemporaryDirectory
+=     import charsets.utf8Charset
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     val file: Path on Linux = temporaryDirectory[Path on Linux] / "log.txt"
++     val file: Path on Linux = temporaryDirectory[Path on Linux] / "log.txt"
+
+=     val file: Path on Linux = temporaryDirectory[Path on Linux] / "log.txt"
+=
+-     file.open[File](Write, OpenFlag.Create): handle ?=>
++     file.open[File](Write, OpenFlag.Create): handle ?=>
+
+-       handle.write(Chain(t"entry".in[Data]))
++       handle.write(Chain(t"entry".in[Data]))
+
+=       handle.write(Chain(t"entry".in[Data]))
+-     ```
++     ```
+
+- entry .Exclusive   the mode which grants exclusivity: no other handle on the entity may be open meanwhile
+-     A `Mode granting Grant.Exclusive`, combined with another mode, as `Read & Exclusive`. An
+-     overlapping open while the exclusive scope lasts fails, in either order; galilei reports
+-     it as an `Io.Error` whose reason is `Busy`, and for a file also takes an
+-     operating-system lock so the exclusivity holds against other processes.
++ entry .Exclusive   o modo que concede exclusividade: nenhum outro handle sobre a entidade pode estar aberto enquanto isso
++     Um `Mode granting Grant.Exclusive`, combinado com outro modo, como `Read & Exclusive`. Uma
++     abertura sobreposta enquanto dura o escopo exclusivo falha, em qualquer ordem; galilei a
++     informa como um `Io.Error` cujo motivo é `Busy` e, para um arquivo, também obtém um lock
++     do sistema operacional, para que a exclusividade valha contra outros processos.
+
+- entry .Creatable   a typeclass for targets which can be brought into existence, empty or authored in a scope
++ entry .Creatable   uma classe de tipos para alvos que podem ser trazidos à existência, vazios ou compostos em um escopo
+
+= entry .Creatable   a typeclass for targets which can be brought into existence, empty or authored in a scope
+-   detail
++   detail
+
+-       The counterpart of `Openable`, for creating rather than accessing. An instance is
+-       written `target is Creatable in Form by Flag to Handle`, and serves two kinds of
+-       creation with one verb:
++       A contraparte de `Openable`, para criar em vez de acessar. Uma instância é escrita
++       `target is Creatable in Form by Flag to Handle` e atende a dois tipos de criação com um
++       único verbo:
+
+-       - **instantiation**, `path.create[Directory]()`: the artifact is made to exist, empty,
+-         with no scope, and the target is returned;
+-       - **scoped authoring**, `path.create[Tar]() { tar ?=> … }`: the artifact is created and
+-         populated through a handle granted the instance's `#Grants` — write access from
+-         birth, since a newborn artifact is unconditionally its creator's — and committed when
+-         the block completes.
++       - **instanciação**, `path.create[Directory]()`: o artefato passa a existir, vazio, sem
++         escopo, e o alvo é devolvido;
++       - **composição com escopo**, `path.create[Tar]() { tar ?=> … }`: o artefato é criado e
++         preenchido por meio de um handle com as `#Grants` da instância — acesso de escrita
++         desde o nascimento, já que um artefato recém-nascido pertence incondicionalmente a
++         quem o criou — e efetivado quando o bloco termina.
+
+-       An exception escaping an authoring scope leaves nothing behind: instances guarantee it
+-       by staging to a temporary sibling and moving it into place atomically, or by removing
+-       what they made.
++       Uma exceção que escapa de um escopo de composição não deixa nada para trás: as
++       instâncias garantem isso preparando o resultado em um irmão temporário e movendo-o para
++       o lugar atomicamente, ou removendo o que fizeram.
+
+=       what they made.
+=
+-       ```scala
++       ```scala
+
+=       what they made.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       what they made.
+=
+=       ```scala
+=       import soundness.*
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+=       what they made.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+-       import filesystemOptions.dereferenceSymlinks
++       import filesystemOptions.dereferenceSymlinks
+
+=       what they made.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       what they made.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       what they made.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+-       import temporaryDirectories.javaBaseTemporaryDirectory
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+=       what they made.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       what they made.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+=       import charsets.utf8Charset
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+-       val target: Path on Linux = temporaryDirectory[Path on Linux] / "payload.bin"
++       val target: Path on Linux = temporaryDirectory[Path on Linux] / "payload.bin"
+
+-       target.create[File](): handle ?=>
++       target.create[File](): handle ?=>
+
+-         handle.write(Chain(t"payload".in[Data]))
++         handle.write(Chain(t"payload".in[Data]))
+
+=         handle.write(Chain(t"payload".in[Data]))
+-       ```
++       ```
+
+-       There is no `Mode`: what a creation scope may do is not the caller's choice, and the
+-       permissions the created entry persists with are a matter for flags. Creating something
+-       which may already exist is governed by per-form flags (galilei's `CreateFlag.Replace`),
+-       and replacement is never the default. This differs from *opening* a possibly-absent
+-       entity for writing (`OpenFlag.Create`), which accesses whatever is there.
++       Não há `Mode`: o que um escopo de criação pode fazer não é escolha de quem chama, e as
++       permissões com que a entrada criada persiste são assunto das flags. Criar algo que pode
++       já existir é regido por flags por forma (o `CreateFlag.Replace` de galilei), e a
++       substituição nunca é o padrão. Isso difere de *abrir* para escrita uma entidade
++       possivelmente ausente (`OpenFlag.Create`), que acessa o que estiver lá.
+
+=       entity for writing (`OpenFlag.Create`), which accesses whatever is there.
+-   refer aperture.create
++   refer aperture.create
+
+=   refer aperture.create
+-   refer aperture.Creator
++   refer aperture.Creator
+
+=   refer aperture.Creator
+-   refer aperture.Openable
++   refer aperture.Openable
+
+-   entry #Grants   the grants the authoring handle carries, fixed by the instance
+-   entry #make   creates the artifact, empty, with no scope
+-       The default runs `#create` with a block which does nothing, which suits builder forms
+-       whose discarded handle costs nothing. An instance holding operating-system resources
+-       overrides it to create directly — notably a FIFO, which must never be opened merely to
+-       be created, since opening one for writing blocks until a reader appears.
+-   entry #create   creates the artifact and runs a block with a handle to author it, committing on success
+-       `create(value, flags)(block)`: the block takes `(Result & Granting[Grants])^` as a
+-       contextual parameter; its result is returned after the artifact is committed, and an
+-       exception from it commits nothing. Called by `Creator#apply`; user code writes
+-       `value.create[Form](flags*) { handle ?=> … }`.
++   entry #Grants   as concessões que o handle de composição leva, fixadas pela instância
++   entry #make   cria o artefato, vazio, sem escopo
++       O padrão executa `#create` com um bloco que não faz nada, o que serve a formas de
++       builder cujo handle descartado não custa nada. Uma instância que detém recursos do
++       sistema operacional o sobrescreve para criar diretamente — notadamente um FIFO, que
++       nunca deve ser aberto apenas para ser criado, já que abrir um para escrita bloqueia até
++       que apareça um leitor.
++   entry #create   cria o artefato e executa um bloco com um handle para compô-lo, efetivando em caso de sucesso
++       `create(value, flags)(block)`: o bloco recebe `(Result & Granting[Grants])^` como
++       parâmetro contextual; seu resultado é devolvido depois que o artefato é efetivado, e uma
++       exceção vinda dele não efetiva nada. Chamado por `Creator#apply`; o código do usuário
++       escreve `value.create[Form](flags*) { handle ?=> … }`.
+
+- entry .Creator   the applier `create[Form]` returns, for instantiation or for scoped authoring
++ entry .Creator   o aplicador que `create[Form]` devolve, para instanciação ou para composição com escopo
+
+= entry .Creator   the applier `create[Form]` returns, for instantiation or for scoped authoring
+-   detail
++   detail
+
+-       `value.create[Form]` resolves the `Creatable` instance from the form and returns a
+-       `Creator`. Its overloaded `#apply` takes the flags alone, to make an empty artifact and
+-       return the target, or the flags and a block, to author the artifact's contents.
++       `value.create[Form]` resolve a instância de `Creatable` pela forma e devolve um
++       `Creator`. Seu `#apply` sobrecarregado recebe apenas as flags, para fazer um artefato
++       vazio e devolver o alvo, ou as flags e um bloco, para compor o conteúdo do artefato.
+
+=       return the target, or the flags and a block, to author the artifact's contents.
+-   refer aperture.create
++   refer aperture.create
+
+=   refer aperture.create
+-   refer aperture.Creatable
++   refer aperture.Creatable
+
+-   entry #creatable   the `Creatable` instance the form resolved
+-   entry #value   the target to be created
+-   entry #apply   creates the target empty and returns it, or authors it within a block
+-       `apply(flags*)` calls `Creatable#make` and returns the target, which now exists;
+-       `apply(flags*)(block)` calls `Creatable#create`, lending the block a handle granted the
+-       instance's `Grants`, and returns the block's result once the artifact is committed.
++   entry #creatable   a instância de `Creatable` que a forma resolveu
++   entry #value   o alvo a ser criado
++   entry #apply   cria o alvo vazio e o devolve, ou o compõe dentro de um bloco
++       `apply(flags*)` chama `Creatable#make` e devolve o alvo, que agora existe;
++       `apply(flags*)(block)` chama `Creatable#create`, emprestando ao bloco um handle com as
++       `Grants` da instância, e devolve o resultado do bloco depois que o artefato é efetivado.
+
+- entry .create   creates a value in a form: `path.create[Directory]()`, or `path.create[Tar]() { … }`
++ entry .create   cria um valor em uma forma: `path.create[Directory]()`, ou `path.create[Tar]() { … }`
+
+= entry .create   creates a value in a form: `path.create[Directory]()`, or `path.create[Tar]() { … }`
+-   detail
++   detail
+
+-       An extension on any value with a `Creatable` instance in the form named, returning a
+-       `Creator`. With no block, the artifact is made empty and the target returned; with a
+-       block, the artifact is authored through a handle and committed when the block
+-       completes, and left absent if the block throws.
++       Uma extensão sobre qualquer valor com uma instância de `Creatable` na forma indicada,
++       que devolve um `Creator`. Sem bloco, o artefato é feito vazio e o alvo é devolvido; com
++       um bloco, o artefato é composto por meio de um handle e efetivado quando o bloco
++       termina, e fica ausente se o bloco lançar uma exceção.
+
+=       completes, and left absent if the block throws.
+=
+-       ```scala
++       ```scala
+
+=       completes, and left absent if the block throws.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       completes, and left absent if the block throws.
+=
+=       ```scala
+=       import soundness.*
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+=       completes, and left absent if the block throws.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+-       import filesystemOptions.dereferenceSymlinks
++       import filesystemOptions.dereferenceSymlinks
+
+=       completes, and left absent if the block throws.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       completes, and left absent if the block throws.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       completes, and left absent if the block throws.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+-       import temporaryDirectories.javaBaseTemporaryDirectory
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+=       completes, and left absent if the block throws.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       completes, and left absent if the block throws.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+=       import charsets.utf8Charset
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+=       completes, and left absent if the block throws.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+=       import charsets.utf8Charset
+=       import codepages.utf8Codepage
+=
+-       val directory: Path on Linux = temporaryDirectory[Path on Linux] / "work"
++       val directory: Path on Linux = temporaryDirectory[Path on Linux] / "work"
+
+-       directory.create[Directory]()
++       directory.create[Directory]()
+
+-       (directory / "inner").create[Directory](): dir ?=>
++       (directory / "inner").create[Directory](): dir ?=>
+
+-         (dir / "inner.txt").overwrite(t"hello")
++         (dir / "inner.txt").overwrite(t"hello")
+
+=         (dir / "inner.txt").overwrite(t"hello")
+-       ```
++       ```
+
+-       Flags are of the instance's `Operand` type; galilei's are `CreateFlag`s such as
+-       `CreateFlag.Parents` and `CreateFlag.Replace`.
++       As flags são do tipo `Operand` da instância; as de galilei são `CreateFlag`s como
++       `CreateFlag.Parents` e `CreateFlag.Replace`.
+
+=       `CreateFlag.Parents` and `CreateFlag.Replace`.
+-   refer aperture.Creatable
++   refer aperture.Creatable
+
+=   refer aperture.Creatable
+-   refer aperture.Creator
++   refer aperture.Creator
+
+- entry .Archivable   a typeclass for values whose contents can be gathered into an archive value
++ entry .Archivable   uma classe de tipos para valores cujo conteúdo pode ser reunido em um valor de arquivo
+
+= entry .Archivable   a typeclass for values whose contents can be gathered into an archive value
+-   detail
++   detail
+
+-       An instance is written `target is Archivable in Form by Flag to Result`: the form is the
+-       archive format (`Tar`, `Zip`, `Ar`), `Operand` the flag type which tunes the archiving
+-       for that pair (a long-name convention, an owner to record, a compression method), and
+-       `Result` the in-memory archive produced. Unlike `Creatable`, nothing is written: the
+-       result is a value, and where it goes — streamed, compressed, written to a file — is the
+-       caller's next step.
++       Uma instância é escrita `target is Archivable in Form by Flag to Result`: a forma é o
++       formato de arquivo (`Tar`, `Zip`, `Ar`), `Operand` o tipo de flag que ajusta o
++       arquivamento para esse par (uma convenção de nomes longos, um proprietário a registrar,
++       um método de compressão), e `Result` o arquivo em memória produzido. Ao contrário de
++       `Creatable`, nada é escrito: o resultado é um valor, e para onde ele vai — transmitido
++       em stream, comprimido, gravado em um arquivo comum — é o próximo passo de quem chama.
+
+=       caller's next step.
+=
+-       ```scala
++       ```scala
+
+=       caller's next step.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       caller's next step.
+=
+=       ```scala
+=       import soundness.*
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+=       caller's next step.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+-       import filesystemOptions.dereferenceSymlinks
++       import filesystemOptions.dereferenceSymlinks
+
+=       caller's next step.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       caller's next step.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       caller's next step.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+-       import temporaryDirectories.javaBaseTemporaryDirectory
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+=       caller's next step.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       caller's next step.
+=
+=       ```scala
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+=       import charsets.utf8Charset
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+-       val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
++       val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+
+-       source.archive[Tar]().entries.map(_.entryName)
++       source.archive[Tar]().entries.map(_.entryName)
+
+=       source.archive[Tar]().entries.map(_.entryName)
+-       ```
++       ```
+
+-       The instances for directories live in the companions of the format types (`Tar`, `Zip`,
+-       `Ar`) and walk the tree through galilei's filesystem backend, so they are in implicit
+-       scope with no import.
++       As instâncias para diretórios ficam nos objetos companheiros dos tipos de formato
++       (`Tar`, `Zip`, `Ar`) e percorrem a árvore pelo backend de sistema de arquivos de
++       galilei, então estão no escopo implícito sem nenhum import.
+
+=       scope with no import.
+-   refer aperture.archive
++   refer aperture.archive
+
+-   refer aperture.Archiver
++   refer aperture.Archiver
+
+-   entry #archive   gathers a value's contents, tuned by flags, into the archive value
+-       `archive(value, flags)`: the implementation an instance provides. Called by
+-       `Archiver#apply`; user code writes `value.archive[Form](flags*)`.
++   entry #archive   reúne o conteúdo de um valor, ajustado por flags, no valor de arquivo
++       `archive(value, flags)`: a implementação que uma instância fornece. Chamado por
++       `Archiver#apply`; o código do usuário escreve `value.archive[Form](flags*)`.
+
+- entry .Archiver   the applier `archive[Form]` returns, which takes the flags
++ entry .Archiver   o aplicador que `archive[Form]` devolve, que recebe as flags
+
+= entry .Archiver   the applier `archive[Form]` returns, which takes the flags
+-   detail
++   detail
+
+-       `value.archive[Form]` resolves the `Archivable` instance from the form and returns an
+-       `Archiver`, whose `#apply` takes flags of the instance's `Operand` type and returns the
+-       archive. The shape mirrors `Opener` and `Creator`.
++       `value.archive[Form]` resolve a instância de `Archivable` pela forma e devolve um
++       `Archiver`, cujo `#apply` recebe flags do tipo `Operand` da instância e devolve o
++       arquivo. A forma espelha `Opener` e `Creator`.
+
+=       archive. The shape mirrors `Opener` and `Creator`.
+-   refer aperture.archive
++   refer aperture.archive
+
+-   entry #archivable   the `Archivable` instance the form resolved
+-   entry #value   the value to be archived
+-   entry #apply   archives the value with the flags given, returning the archive
++   entry #archivable   a instância de `Archivable` que a forma resolveu
++   entry #value   o valor a ser arquivado
++   entry #apply   arquiva o valor com as flags dadas, devolvendo o arquivo
+
+- entry .archive   archives a value in a form: `directory.archive[Tar]()` gives the tarball of a tree
+-     An extension on any value with an `Archivable` instance in the form named, returning an
+-     `Archiver` whose `apply` takes flags of the instance's `Operand` type. The result is an
+-     in-memory archive value of the instance's `Result` type, which the format's library
+-     then serializes or compresses.
++ entry .archive   arquiva um valor em uma forma: `directory.archive[Tar]()` dá o tarball de uma árvore
++     Uma extensão sobre qualquer valor com uma instância de `Archivable` na forma indicada,
++     que devolve um `Archiver` cujo `apply` recebe flags do tipo `Operand` da instância. O
++     resultado é um valor de arquivo em memória do tipo `Result` da instância, que a
++     biblioteca do formato então serializa ou comprime.
+
+=     then serializes or compresses.
+=
+-     ```scala
++     ```scala
+
+=     then serializes or compresses.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     then serializes or compresses.
+=
+=     ```scala
+=     import soundness.*
+-     import filesystemBackends.javaBaseFilesystem
++     import filesystemBackends.javaBaseFilesystem
+
+=     then serializes or compresses.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+-     import filesystemOptions.dereferenceSymlinks
++     import filesystemOptions.dereferenceSymlinks
+
+=     then serializes or compresses.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+-     import pathInterfaces.pathOnLinux
++     import pathInterfaces.pathOnLinux
+
+=     then serializes or compresses.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     then serializes or compresses.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+=     import strategies.throwUnsafely
+-     import temporaryDirectories.javaBaseTemporaryDirectory
++     import temporaryDirectories.javaBaseTemporaryDirectory
+
+=     then serializes or compresses.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+=     import strategies.throwUnsafely
+=     import temporaryDirectories.javaBaseTemporaryDirectory
+-     import charsets.utf8Charset
++     import charsets.utf8Charset
+
+=     then serializes or compresses.
+=
+=     ```scala
+=     import soundness.*
+=     import filesystemBackends.javaBaseFilesystem
+=     import filesystemOptions.dereferenceSymlinks
+=     import pathInterfaces.pathOnLinux
+=     import strategies.throwUnsafely
+=     import temporaryDirectories.javaBaseTemporaryDirectory
+=     import charsets.utf8Charset
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
++     val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+
+-     val tar: Tar = source.archive[Tar]()
++     val tar: Tar = source.archive[Tar]()
+
+=     val tar: Tar = source.archive[Tar]()
+-     ```
++     ```
+
+- entry .Sessional   a typeclass for targets which lend a live session to a block and dispose of it after
++ entry .Sessional   uma classe de tipos para alvos que emprestam uma sessão ativa a um bloco e a descartam depois
+
+= entry .Sessional   a typeclass for targets which lend a live session to a block and dispose of it after
+-   detail
++   detail
+
+-       A session is a stateful interaction scope: a network connection, a warm compiler, a
+-       browser driven remotely, a device over SSH. An instance is written `target is Sessional
+-       to Handle`; its `#session` establishes the session with the target, lends the handle to
+-       the block for its duration, and disposes of it when the block ends, whether it returns
+-       or throws.
++       Uma sessão é um escopo de interação com estado: uma conexão de rede, um compilador
++       aquecido, um navegador controlado remotamente, um dispositivo via SSH. Uma instância é
++       escrita `target is Sessional to Handle`; seu `#session` estabelece a sessão com o alvo,
++       empresta o handle ao bloco durante sua execução e o descarta quando o bloco termina,
++       seja retornando, seja lançando uma exceção.
+
+=       or throws.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       or throws.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       or throws.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       or throws.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       import soundness.httpUrlSessional
++       import soundness.httpUrlSessional
+
+-       import socketBackends.javaBaseSockets
++       import socketBackends.javaBaseSockets
+
+-       val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
++       val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+-       url"https://example.com".session: session ?=>
++       url"https://example.com".session: session ?=>
+
+=       url"https://example.com".session: session ?=>
+-         session.fetch(request).status
++         session.fetch(request).status
+
+=         session.fetch(request).status
+-         session.fetch(request).status
++         session.fetch(request).status
+
+=         session.fetch(request).status
+-       ```
++       ```
+
+-       The block's result type is quantified outside it, so a value still borrowing the
+-       session — the handle itself, a closure over it, a response streaming from the live
+-       connection — cannot be its result; a session-independent value, such as one which has
+-       been read in full, may. Instances at a transport layer (coaxial's for any
+-       `Connectable` endpoint) lend a raw connection; richer layers lend protocol-aware
+-       handles, such as telekinesis's HTTP sessions or exegesis's language-server sessions.
++       O tipo do resultado do bloco é quantificado fora dele, então um valor que ainda toma a
++       sessão emprestada — o próprio handle, uma closure sobre ele, uma resposta transmitida em
++       stream a partir da conexão ativa — não pode ser seu resultado; um valor independente da
++       sessão, como um que foi lido por inteiro, pode. Instâncias em uma camada de transporte
++       (a de coaxial, para qualquer endpoint `Connectable`) emprestam uma conexão crua;
++       camadas mais ricas emprestam handles cientes do protocolo, como as sessões HTTP de
++       telekinesis ou as sessões de servidor de linguagem de exegesis.
+
+-       Instances whose subject is owned by another library are top-level givens with
+-       library-qualified names, imported by name (`import soundness.httpUrlSessional`).
++       Instâncias cujo sujeito pertence a outra biblioteca são givens de nível superior com
++       nomes qualificados pela biblioteca, importados pelo nome
++       (`import soundness.httpUrlSessional`).
+
+-   refer aperture.session
++   refer aperture.session
+
+=   refer aperture.session
+-   refer aperture.Openable
++   refer aperture.Openable
+
+-   entry #session   establishes a session with a target, runs a block with it, and disposes of it
+-       `session(target)(lambda)`: the implementation an instance provides. The handle is the
+-       lambda's contextual parameter, and is disposed of in every outcome. User code writes
+-       `target.session { handle ?=> … }`.
++   entry #session   estabelece uma sessão com um alvo, executa um bloco com ela e a descarta
++       `session(target)(lambda)`: a implementação que uma instância fornece. O handle é o
++       parâmetro contextual do lambda e é descartado em todos os desfechos. O código do usuário
++       escreve `target.session { handle ?=> … }`.
+
+- entry .session   opens a session on a value and lends its handle to a block: `url.session { s ?=> … }`
+-     An extension on any value with a `Sessional` instance in scope. The handle — of whatever
+-     type the instance provides — is the block's contextual parameter, and is disposed of
+-     when the block ends. A value borrowing the session cannot be the result: returning the
+-     handle, a closure over it, or a collection holding it, or assigning it to a variable
+-     outside the block, is a compile error (_… outlives its scope_, _… cannot flow into
++ entry .session   abre uma sessão sobre um valor e empresta seu handle a um bloco: `url.session { s ?=> … }`
++     Uma extensão sobre qualquer valor com uma instância de `Sessional` no escopo. O handle —
++     do tipo que a instância fornecer — é o parâmetro contextual do bloco e é descartado
++     quando o bloco termina. Um valor que toma a sessão emprestada não pode ser o resultado:
++     devolver o handle, uma closure sobre ele ou uma coleção que o contenha, ou atribuí-lo a
++     uma variável fora do bloco, é um erro de compilação (_… outlives its scope_, _… cannot flow into
+
+-     capture set …_).
++     capture set …_).
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+=     ##
+-     import soundness.*
++     import soundness.*
+
+-     import soundness.httpUrlSessional
++     import soundness.httpUrlSessional
+
+-     import socketBackends.javaBaseSockets
++     import socketBackends.javaBaseSockets
+
+-     val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
++     val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+-     url"https://example.com".session: session ?=>
++     url"https://example.com".session: session ?=>
+
+-       session.fetch(request).status
++       session.fetch(request).status
+
+=       session.fetch(request).status
+-     ```
++     ```
+
+-     The extension is a plain method, not inline, and the instance and the block may share
+-     capabilities (a monitor, a tactic): both take their capture sets as parameters rather
+-     than as fresh, separated ones.
++     A extensão é um método comum, não inline, e a instância e o bloco podem compartilhar
++     capabilities (um monitor, uma tática): ambos recebem seus conjuntos de captura como
++     parâmetros, e não como conjuntos novos e separados.
+
+- entry .Stale   a value as a handle saw it, over state other processes may have changed since
++ entry .Stale   um valor como um handle o viu, sobre um estado que outros processos podem ter alterado desde então
+
+= entry .Stale   a value as a handle saw it, over state other processes may have changed since
+-   detail
++   detail
+
+-       `Stale[value]` wraps a value read through a handle from state the handle does not own:
+-       a ref in a repository other processes write, a file's size, a directory's entries. The
+-       value is immutable and pure, but what it records may have changed before the read
+-       returned. The type exists so a signature can say so: a method returning
+-       `Stale[Git.Hash]` resolved a ref, and a method taking one is conditional on the ref
+-       still holding that value, and fails with a typed error if it does not.
++       `Stale[value]` envolve um valor lido por meio de um handle a partir de um estado que o
++       handle não possui: uma ref em um repositório no qual outros processos escrevem, o tamanho
++       de um arquivo, as entradas de um diretório. O valor é imutável e puro, mas o que ele
++       registra pode ter mudado antes de a leitura retornar. O tipo existe para que uma
++       assinatura possa dizê-lo: um método que devolve `Stale[Git.Hash]` resolveu uma ref, e um
++       método que recebe um está condicionado a que a ref ainda tenha esse valor, e falha com um
++       erro tipado se não tiver.
+
+=       still holding that value, and fails with a typed error if it does not.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       still holding that value, and fails with a typed error if it does not.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       still holding that value, and fails with a typed error if it does not.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       still holding that value, and fails with a typed error if it does not.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       ##
+=       import soundness.*
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+=       ##
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+-       import filesystemOptions.dereferenceSymlinks
++       import filesystemOptions.dereferenceSymlinks
+
+=       ##
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       ##
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       ##
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+-       import temporaryDirectories.javaBaseTemporaryDirectory
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+=       ##
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       ##
+=       import soundness.*
+=       import filesystemBackends.javaBaseFilesystem
+=       import filesystemOptions.dereferenceSymlinks
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+=       import charsets.utf8Charset
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+-       val directory: Path on Linux = temporaryDirectory[Path on Linux] / "repo"
++       val directory: Path on Linux = temporaryDirectory[Path on Linux] / "repo"
+
+-       directory.open[Git.Worktree](Read & Write): worktree ?=>
++       directory.open[Git.Worktree](Read & Write): worktree ?=>
+
+-         val head: Stale[Git.Head] = worktree.head()
++         val head: Stale[Git.Head] = worktree.head()
+
+-         (worktree / "notes.txt").overwrite(t"Remember the milk")
++         (worktree / "notes.txt").overwrite(t"Remember the milk")
+
+-         worktree.add(worktree / "notes.txt")
++         worktree.add(worktree / "notes.txt")
+
+-         worktree.commit(t"Add notes", head)
++         worktree.commit(t"Add notes", head)
+
+=         worktree.commit(t"Add notes", head)
+-       ```
++       ```
+
+-       If another process moved HEAD between the read and the commit, the commit fails with
+-       `Git.Error(Moved(…))` rather than overwriting that work.
++       Se outro processo mover HEAD entre a leitura e o commit, o commit falha com
++       `Git.Error(Moved(…))` em vez de sobrescrever esse trabalho.
+
+-       There is deliberately no timestamp: a clock would be a dependency, and recency is not a
+-       property to reason from. The only sound use of a stale value is to hand it back to the
+-       handle which produced it, or to read its `#value` knowing it may be out of date.
++       Deliberadamente, não há carimbo de tempo: um relógio seria uma dependência, e a
++       atualidade não é uma propriedade a partir da qual raciocinar. O único uso correto de um
++       valor desatualizado é devolvê-lo ao handle que o produziu, ou ler seu `#value` sabendo
++       que ele pode estar desatualizado.
+
+-   refer octogenarian.Git
++   refer octogenarian.Git
+
+-   entry #value   the value as it was when it was read
+-   entry #let   derives a value from a stale one, which stays exactly as stale
+-       `Stale(1).let(_ + 1) == Stale(2)`. A method rather than an extension, so that vacuous's
+-       `let` on `Optional`, which is imported everywhere, does not claim the receiver.
++   entry #value   o valor como era quando foi lido
++   entry #let   deriva um valor de um valor desatualizado, que continua exatamente tão desatualizado quanto
++       `Stale(1).let(_ + 1) == Stale(2)`. Um método em vez de uma extensão, para que o `let` de
++       vacuous sobre `Optional`, que é importado em toda parte, não se apodere do receptor.

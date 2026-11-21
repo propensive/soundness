@@ -1,0 +1,91 @@
+orthant 1 language
+
+- # `↯/s.100.10` — `Hostname.Error`
++ # `↯/s.100.10` — `Hostname.Error`
+
+- Raised when a value cannot be parsed as a valid DNS hostname.
++ Levée lorsqu'une valeur ne peut pas être analysée comme un nom d'hôte DNS valide.
+
+- ## Cause
++ ## Cause
+
+- Urticose validates hostnames per the DNS rules: total length ≤ 253,
+- each label ≤ 63 characters, only `A`-`Z`, `a`-`z`, `0`-`9`, and `-`
+- allowed (and `-` not at the start of a label). The message is `the
++ Urticose valide les noms d'hôte selon les règles du DNS : longueur totale ≤ 253,
++ chaque label ≤ 63 caractères, seuls `A`-`Z`, `a`-`z`, `0`-`9` et `-`
++ étant autorisés (et `-` pas au début d'un label). Le message est `the
+
+- hostname is not valid because $reason`.
++ hostname is not valid because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.100.10.1` — `LongDnsLabel`
++ ### `↯/s.100.10.1` — `LongDnsLabel`
+
+- A single DNS label is longer than 63 characters.
++ Un label DNS dépasse à lui seul 63 caractères.
+
+- **Example.** `[↯/s.100.10.1] the hostname is not valid because the DNS label tomorrowandtomorrowandtomorrow... is longer than 63 characters`
++ **Exemple.** `[↯/s.100.10.1] the hostname is not valid because the DNS label tomorrowandtomorrowandtomorrow... is longer than 63 characters`
+
+- **Resolution.** Shorten the offending label.
++ **Résolution.** Raccourcissez le label fautif.
+
+- ### `↯/s.100.10.2` — `LongHostname`
++ ### `↯/s.100.10.2` — `LongHostname`
+
+- The hostname as a whole exceeds 253 characters.
++ Le nom d'hôte dans son ensemble dépasse 253 caractères.
+
+- **Example.** `[↯/s.100.10.2] the hostname is not valid because the hostname is longer than 253 characters`
++ **Exemple.** `[↯/s.100.10.2] the hostname is not valid because the hostname is longer than 253 characters`
+
+- **Resolution.** Use a shorter fully-qualified domain name.
++ **Résolution.** Utilisez un nom de domaine pleinement qualifié plus court.
+
+- ### `↯/s.100.10.3` — `InvalidChar`
++ ### `↯/s.100.10.3` — `InvalidChar`
+
+- A character that is not permitted in a DNS hostname appears.
++ Un caractère qui n'est pas autorisé dans un nom d'hôte DNS apparaît.
+
+- **Example.** `[↯/s.100.10.3] the hostname is not valid because the character _ is not allowed in a hostname`
++ **Exemple.** `[↯/s.100.10.3] the hostname is not valid because the character _ is not allowed in a hostname`
+
+- **Resolution.** Remove or replace the offending character.
++ **Résolution.** Supprimez ou remplacez le caractère fautif.
+
+- ### `↯/s.100.10.4` — `EmptyDnsLabel`
++ ### `↯/s.100.10.4` — `EmptyDnsLabel`
+
+- A label is empty — typically caused by `..` in the input or a leading
+- or trailing dot.
++ Un label est vide — ce qui est généralement dû à un `..` dans l'entrée ou à un
++ point initial ou final.
+
+- **Example.** `[↯/s.100.10.4] the hostname is not valid because a DNS label cannot be empty`
++ **Exemple.** `[↯/s.100.10.4] the hostname is not valid because a DNS label cannot be empty`
+
+- **Resolution.** Remove the empty label.
++ **Résolution.** Supprimez le label vide.
+
+- ### `↯/s.100.10.5` — `InitialDash`
++ ### `↯/s.100.10.5` — `InitialDash`
+
+- A label starts with `-`, which DNS does not allow.
++ Un label commence par `-`, ce que le DNS n'autorise pas.
+
+- **Example.** `[↯/s.100.10.5] the hostname is not valid because the DNS label -elsinore begins with a dash which is not allowed`
++ **Exemple.** `[↯/s.100.10.5] the hostname is not valid because the DNS label -elsinore begins with a dash which is not allowed`
+
+- **Resolution.** Remove or relocate the leading dash.
++ **Résolution.** Supprimez ou déplacez le tiret initial.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/urticose/src/core/urticose.Hostname.scala`
++ - Source : `lib/urticose/src/core/urticose.Hostname.scala`

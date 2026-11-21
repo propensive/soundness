@@ -1,0 +1,3213 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base sibylline
++ base sibylline
+
+- import soundness
++ import soundness
+
+- info   typed conversations with language models: sessions, streaming, tools as Scala methods, structured answers and batches
++ info   conversas tipadas com modelos de linguagem: sessões, streaming, ferramentas como métodos Scala, respostas estruturadas e lotes
+
+- detail
++ detail
+
+-     _Sibylline_ talks to large language models through one vocabulary, whatever the provider.
+-     A provider and model are a plain value (`Anthropic`, `OpenAI`, `Gemini`, or an
+-     OpenAI-compatible server such as vLLM, Ollama or Groq), tuned by methods which each return
+-     a new value; a conversation is an `Llm.Session`, opened on that value with `session` and
+-     reached inside the block as `llm`, which accumulates its history and token usage; a turn
+-     returns an `Llm.Reply`, pure data which says why the model stopped; streamed output is an
+-     `Llm.Response` whose text is pulled off the live connection; a tool is an ordinary Scala
+-     method annotated `@ability`, gathered into a `Toolkit` whose JSON schemas are derived from
+-     the parameter types; and `solicit[T]` asks for an answer of a type and decodes the document
+-     the model supplies against a schema derived from `T`.
++     _Sibylline_ conversa com grandes modelos de linguagem por meio de um único vocabulário,
++     qualquer que seja o provedor. Um provedor e um modelo são um valor simples (`Anthropic`,
++     `OpenAI`, `Gemini` ou um servidor compatível com OpenAI, como vLLM, Ollama ou Groq),
++     ajustado por métodos que retornam cada um um novo valor; uma conversa é uma `Llm.Session`,
++     aberta sobre esse valor com `session` e alcançada dentro do bloco como `llm`, que acumula
++     seu histórico e seu uso de tokens; um turno retorna um `Llm.Reply`, dados puros que dizem
++     por que o modelo parou; a saída em streaming é um `Llm.Response` cujo texto é puxado da
++     conexão viva; uma ferramenta é um método Scala comum anotado com `@ability`, reunido em um
++     `Toolkit` cujos schemas JSON são derivados dos tipos dos parâmetros; e `solicit[T]` pede uma
++     resposta de um tipo e decodifica o documento que o modelo fornece contra um schema derivado
++     de `T`.
+
+=     the model supplies against a schema derived from `T`.
+=
+-     ```scala
++     ```scala
+
+=     the model supplies against a schema derived from `T`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+-     import httpBackends.javaNetHttp
++     import httpBackends.javaNetHttp
+
+-     import internetAccess.online
++     import internetAccess.online
+
+-     import logging.silentLogging
++     import logging.silentLogging
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…").prompted(t"Be terse.").limit(1024)
++     val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…").prompted(t"Be terse.").limit(1024)
+
+=     val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…").prompted(t"Be terse.").limit(1024)
+-     ```
++     ```
+
+=     val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…").prompted(t"Be terse.").limit(1024)
+=     ```
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…").prompted(t"Be terse.").limit(1024)
+=     ```
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…").prompted(t"Be terse.").limit(1024)
+=     ```
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+-     val reply: Llm.Reply = claude.session:
++     val reply: Llm.Reply = claude.session:
+
+-       llm.ask(t"What is the tallest mountain in Estonia?")
++       llm.ask(t"What is the tallest mountain in Estonia?")
+
+-       llm.ask(t"And how tall is it?")
++       llm.ask(t"And how tall is it?")
+
+-     reply.text
++     reply.text
+
+-     reply.stop
++     reply.stop
+
+-     reply.usage
++     reply.usage
+
+=     reply.usage
+-     ```
++     ```
+
+-     Each provider's API is a JSON dialect: a request with the model, the messages so far and a
+-     few tuning knobs; a reply with content blocks, a stop reason and token counts; a streaming
+-     variant of server-sent events; and a tool-calling protocol. The dialects differ in every
+-     detail and agree in every concept, so the concepts are modelled once — `Llm.Message`,
+-     `Llm.Content`, `Llm.Reply`, `Llm.Usage`, `Llm.Tool`, `Llm.Stop`, `Llm.Event` — and
+-     translated onto each wire by a private `Llm.Dialect` the provider's `Sessional` constructs.
+-     A block the wire does not model is kept verbatim as `Llm.Content.Opaque`, so a transcript
+-     never lies.
++     A API de cada provedor é um dialeto JSON: uma requisição com o modelo, as mensagens até
++     então e alguns botões de ajuste; uma resposta com blocos de conteúdo, um motivo de parada e
++     contagens de tokens; uma variante em streaming de server-sent events; e um protocolo de
++     chamada de ferramentas. Os dialetos diferem em cada detalhe e concordam em cada conceito,
++     então os conceitos são modelados uma única vez — `Llm.Message`, `Llm.Content`, `Llm.Reply`,
++     `Llm.Usage`, `Llm.Tool`, `Llm.Stop`, `Llm.Event` — e traduzidos para cada protocolo de
++     transmissão por um `Llm.Dialect` privado que o `Sessional` do provedor constrói. Um bloco
++     que o protocolo não modela é guardado literalmente como `Llm.Content.Opaque`, de modo que
++     uma transcrição nunca mente.
+
+-     A session is a capability confined to its block by capture checking: the pure values it
+-     produces (a `Reply`, a snapshot of `history`, the folded `usage`) leave freely, while the
+-     session itself and any `Response` in flight cannot be returned or stashed, so a connection
+-     cannot be held open by accident, and a new turn cannot be started while a stream is
+-     undrained. A `Toolkit` given in scope turns `ask` into the whole tool loop: the model's
+-     calls are run, their results reported, and the conversation continued until the model
+-     answers in text or the `iterating` bound trips.
++     Uma sessão é uma capability confinada ao seu bloco pela verificação de capturas: os valores
++     puros que ela produz (um `Reply`, um instantâneo de `history`, o `usage` acumulado) saem
++     livremente, enquanto a própria sessão e qualquer `Response` em andamento não podem ser
++     retornados nem guardados, de modo que uma conexão não pode ser mantida aberta por acidente,
++     e um novo turno não pode começar enquanto um stream não tiver sido esgotado. Um given
++     `Toolkit` no escopo transforma `ask` no laço de ferramentas inteiro: as chamadas do modelo são
++     executadas, seus resultados reportados e a conversa continuada até que o modelo responda em
++     texto ou que o limite de `iterating` seja atingido.
+
+-     Every failure is an `Llm.Error` (error `↯/s.126.1`) whose `Reason` is one of a fixed set, with the
+-     HTTP status and any `retry-after` delay; a rate limit or an overload is retried three times
+-     before it is raised. A call needs an `Online` capability (`internetAccess.online`), an
+-     `Http.Backend` (`httpBackends.javaNetHttp`), an `Http.Event is Loggable`
+-     (`logging.silentLogging`) and a `Tactic[Llm.Error]`, all of which the provider's
+-     `sessional` given takes from scope when `session` is called; a `Toolkit` is the one given
+-     a session reads at each `ask`, and `Toolkit.empty` applies when none is given.
++     Toda falha é um `Llm.Error` (erro `↯/s.126.1`) cujo `Reason` é um de um conjunto fixo, com o
++     status HTTP e qualquer atraso `retry-after`; um limite de taxa ou uma sobrecarga é tentado de
++     novo três vezes antes de ser lançado. Uma chamada precisa de uma capability `Online`
++     (`internetAccess.online`), de um `Http.Backend` (`httpBackends.javaNetHttp`), de um
++     `Http.Event is Loggable` (`logging.silentLogging`) e de uma `Tactic[Llm.Error]`, que o given
++     `sessional` do provedor obtém todos do escopo quando `session` é chamado; um `Toolkit` é o
++     único given que uma sessão lê a cada `ask`, e `Toolkit.empty` se aplica quando nenhum é dado.
+
+-     The library is one source set, `sibylline.core`, for the JVM: every call is a synchronous
+-     round trip on the caller's thread, and a retry or a batch's `await` sleeps the thread.
+-     `Anthropic`, `Gemini`, `OpenAI`, `Llm`, `Toolkit`, `ability`, `llm` and `solicit` are
+-     exported to the `soundness` umbrella. The `@about` annotation which describes a tool is
+-     synesthesia's, so one description serves a method exposed both as an MCP tool and as a
+-     model ability.
++     A biblioteca é um único conjunto de código-fonte, `sibylline.core`, para a JVM: cada chamada
++     é uma ida e volta síncrona na thread de quem chama, e uma nova tentativa ou o `await` de um
++     lote faz a thread dormir. `Anthropic`, `Gemini`, `OpenAI`, `Llm`, `Toolkit`, `ability`, `llm`
++     e `solicit` são exportados para o guarda-chuva `soundness`. A anotação `@about`, que descreve
++     uma ferramenta, é do synesthesia, de modo que uma única descrição serve a um método exposto
++     tanto como ferramenta MCP quanto como habilidade do modelo.
+
+- refer sibylline.Llm
++ refer sibylline.Llm
+
+- refer sibylline.Anthropic
++ refer sibylline.Anthropic
+
+- refer sibylline.OpenAI
++ refer sibylline.OpenAI
+
+- refer sibylline.Gemini
++ refer sibylline.Gemini
+
+- refer sibylline.Toolkit
++ refer sibylline.Toolkit
+
+- refer sibylline.llm
++ refer sibylline.llm
+
+- refer sibylline.solicit
++ refer sibylline.solicit
+
+- entry .llm   the session a `provider.session:` block lends, as a contextual accessor
+-     `llm` is the `Llm.Session` the enclosing `session` block was given: `llm.ask(…)`,
+-     `llm.stream(…)`, `llm.solicit[T](…)`, `llm.history` and `llm.usage`. It is a named
+-     contextual parameter, not a `summon`, so it refers to the very session the block owns, and
+-     its result captures that session, which keeps it confined to the block.
++ entry .llm   a sessão que um bloco `provider.session:` empresta, como acessor contextual
++     `llm` é a `Llm.Session` que o bloco `session` envolvente recebeu: `llm.ask(…)`,
++     `llm.stream(…)`, `llm.solicit[T](…)`, `llm.history` e `llm.usage`. É um parâmetro
++     contextual nomeado, não um `summon`, de modo que se refere à própria sessão que o bloco
++     possui, e seu resultado captura essa sessão, o que o mantém confinado ao bloco.
+
+=     its result captures that session, which keeps it confined to the block.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     its result captures that session, which keeps it confined to the block.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     its result captures that session, which keeps it confined to the block.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     its result captures that session, which keeps it confined to the block.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     claude.session:
++     claude.session:
+
+-       llm.ask(t"Hello.")
++       llm.ask(t"Hello.")
+
+-       llm.usage
++       llm.usage
+
+=       llm.usage
+-     ```
++     ```
+
+- entry .solicit   a structured answer of a named type, decoded from the document the model supplies
+-     An extension on `Llm.Session`. `llm.solicit[T](prompt)` derives the JSON schema of `T`
+-     (`T is Schematic over JsonSchema`, derived for a case class), sends `prompt` as the user
+-     turn, and decodes the reply to `T` (`T is Decodable in Json`). How the schema reaches the
+-     model is the dialect's business: on a dialect whose wire constrains a reply natively
+-     (`Anthropic`, through the Messages API's output format) it is the reply's `format`; on the
+-     others the model is forced to call one synthetic tool named `answer` whose arguments have
+-     that schema, and the arguments are decoded. The caller names a type and receives a value,
+-     on every provider, including local servers with no structured-output mode.
++ entry .solicit   uma resposta estruturada de um tipo nomeado, decodificada do documento que o modelo fornece
++     Uma extensão de `Llm.Session`. `llm.solicit[T](prompt)` deriva o schema JSON de `T`
++     (`T is Schematic over JsonSchema`, derivado para uma case class), envia `prompt` como turno
++     do usuário e decodifica a resposta para `T` (`T is Decodable in Json`). Como o schema chega
++     ao modelo é assunto do dialeto: em um dialeto cujo protocolo restringe uma resposta
++     nativamente (`Anthropic`, pelo formato de saída da Messages API), ele é o `format` da
++     resposta; nos outros, o modelo é forçado a chamar uma ferramenta sintética chamada `answer`
++     cujos argumentos têm esse schema, e os argumentos são decodificados. Quem chama nomeia um
++     tipo e recebe um valor, em todo provedor, incluindo servidores locais sem modo de saída
++     estruturada.
+
+=     on every provider, including local servers with no structured-output mode.
+=
+-     ```scala
++     ```scala
+
+=     on every provider, including local servers with no structured-output mode.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     case class Appraisal(ticker: Text, rating: Text, confidence: Double)
++     case class Appraisal(ticker: Text, rating: Text, confidence: Double)
+
+=     case class Appraisal(ticker: Text, rating: Text, confidence: Double)
+-     ```
++     ```
+
+=     case class Appraisal(ticker: Text, rating: Text, confidence: Double)
+=     ```
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     case class Appraisal(ticker: Text, rating: Text, confidence: Double)
+=     ```
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     case class Appraisal(ticker: Text, rating: Text, confidence: Double)
+=     ```
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     ```
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     claude.session:
++     claude.session:
+
+-       llm.solicit[Appraisal](t"Summarize your recommendation for AAPL.")
++       llm.solicit[Appraisal](t"Summarize your recommendation for AAPL.")
+
+=       llm.solicit[Appraisal](t"Summarize your recommendation for AAPL.")
+-     ```
++     ```
+
+-     A reply which ignores the forced tool, which is not JSON, or whose document does not decode
+-     to `T` raises `Llm.Error` with the reason `Malformed`, through the session's own tactic, so
+-     a malformed answer is an error to handle rather than a value which looks right. The turn is
+-     committed to the history like any other.
++     Uma resposta que ignora a ferramenta forçada, que não é JSON ou cujo documento não se
++     decodifica para `T` lança `Llm.Error` com o motivo `Malformed`, pela tática da própria
++     sessão, de modo que uma resposta malformada é um erro a tratar, e não um valor que parece
++     certo. O turno é registrado no histórico como qualquer outro.
+
+- entry .ability   marks a method as a tool the model may call, for `Toolkit(…)` to derive
+-     A `StaticAnnotation`, written `@ability` on a method of the object a `Toolkit` is built
+-     from. The method's first parameter list becomes the tool's JSON schema (each parameter
+-     type needs a `Schematic over JsonSchema` and a `Decodable in Json`), its return type is
+-     encoded as the result (`Encodable in Json`), and a second, contextual parameter list is
+-     summoned where `Toolkit(…)` is written. Its description is synesthesia's `@about(text)`,
+-     shared with the MCP integration; a method without one has an empty description. The name
+-     is `ability`, not `tool`, which synesthesia already exports.
++ entry .ability   marca um método como ferramenta que o modelo pode chamar, para `Toolkit(…)` derivar
++     Uma `StaticAnnotation`, escrita `@ability` em um método do objeto a partir do qual um
++     `Toolkit` é construído. A primeira lista de parâmetros do método se torna o schema JSON da
++     ferramenta (cada tipo de parâmetro precisa de um `Schematic over JsonSchema` e de um
++     `Decodable in Json`), seu tipo de retorno é codificado como resultado (`Encodable in Json`),
++     e uma segunda lista de parâmetros, contextual, é convocada onde `Toolkit(…)` é escrito. Sua
++     descrição é o `@about(text)` do synesthesia, compartilhado com a integração MCP; um método
++     sem ela tem descrição vazia. O nome é `ability`, e não `tool`, que o synesthesia já exporta.
+
+=     is `ability`, not `tool`, which synesthesia already exports.
+=
+-     ```scala
++     ```scala
+
+=     is `ability`, not `tool`, which synesthesia already exports.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Broker:
++     object Broker:
+
+-       @ability
++       @ability
+
+-       @about(t"Look up the current price of a stock ticker")
++       @about(t"Look up the current price of a stock ticker")
+
+-       def price(ticker: Text): Double = if ticker == t"AAPL" then 211.5 else 100.0
++       def price(ticker: Text): Double = if ticker == t"AAPL" then 211.5 else 100.0
+
+-     Toolkit(Broker).specs.map(_.name)
++     Toolkit(Broker).specs.map(_.name)
+
+=     Toolkit(Broker).specs.map(_.name)
+-     ```
++     ```
+
+- entry .Toolkit   the tools a conversation offers its model: their specifications and a dispatcher
++ entry .Toolkit   as ferramentas que uma conversa oferece ao seu modelo: suas especificações e um despachante
+
+= entry .Toolkit   the tools a conversation offers its model: their specifications and a dispatcher
+-   detail
++   detail
+
+-       A `Toolkit` is what a session reads, as a given, at every `ask`: `#specs` are the
+-       `Llm.Tool`s offered to the model, and `#invoke` runs the one the model named with the
+-       JSON arguments it supplied. With a toolkit given in scope, `ask` runs the whole loop —
+-       the model's calls are invoked, each result reported back as an `Llm.Content.ToolResult`,
+-       and the exchange re-sent — until the model stops for a reason other than `ToolCall` or the
+-       `iterations` bound trips with `Llm.Error(ToolLoopExceeded)`. With no given in scope
+-       `.empty` applies, and a `ToolCall` reply is returned to the caller to handle.
++       Um `Toolkit` é o que uma sessão lê, como given, a cada `ask`: `#specs` são as `Llm.Tool`s
++       oferecidas ao modelo, e `#invoke` executa aquela que o modelo nomeou com os argumentos
++       JSON que ele forneceu. Com um given de toolkit no escopo, `ask` executa o laço inteiro — as
++       chamadas do modelo são invocadas, cada resultado é reportado de volta como um
++       `Llm.Content.ToolResult`, e a troca é reenviada — até que o modelo pare por um motivo
++       diferente de `ToolCall` ou que o limite de `iterations` seja atingido com
++       `Llm.Error(ToolLoopExceeded)`. Sem given no escopo, `.empty` se aplica, e uma resposta
++       `ToolCall` é retornada a quem chama para que a trate.
+
+-       `Toolkit(target)` derives one from the `@ability`-annotated methods of an object:
++       `Toolkit(target)` deriva um a partir dos métodos anotados com `@ability` de um objeto:
+
+=       `Toolkit(target)` derives one from the `@ability`-annotated methods of an object:
+=
+-       ```scala
++       ```scala
+
+=       `Toolkit(target)` derives one from the `@ability`-annotated methods of an object:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Toolkit(target)` derives one from the `@ability`-annotated methods of an object:
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       object Broker:
++       object Broker:
+
+=       object Broker:
+-         @ability
++         @ability
+
+-         @about(t"Look up the current price of a stock ticker")
++         @about(t"Look up the current price of a stock ticker")
+
+-         def price(ticker: Text): Double = if ticker == t"AAPL" then 211.5 else 100.0
++         def price(ticker: Text): Double = if ticker == t"AAPL" then 211.5 else 100.0
+
+-       val broker: Toolkit = Toolkit(Broker)
++       val broker: Toolkit = Toolkit(Broker)
+
+-       broker.specs.map(_.name)                                // List(t"price")
++       broker.specs.map(_.name)                                // List(t"price")
+
+-       broker.invoke(t"price", j"""{"ticker": "AAPL"}""")   // j"211.5"
++       broker.invoke(t"price", j"""{"ticker": "AAPL"}""")   // j"211.5"
+
+=       broker.invoke(t"price", j"""{"ticker": "AAPL"}""")   // j"211.5"
+-       ```
++       ```
+
+=       broker.invoke(t"price", j"""{"ticker": "AAPL"}""")   // j"211.5"
+=       ```
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       broker.invoke(t"price", j"""{"ticker": "AAPL"}""")   // j"211.5"
+=       ```
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       broker.invoke(t"price", j"""{"ticker": "AAPL"}""")   // j"211.5"
+=       ```
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       broker.invoke(t"price", j"""{"ticker": "AAPL"}""")   // j"211.5"
+=       ```
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       claude.session:
++       claude.session:
+
+-         given Toolkit = broker
++         given Toolkit = broker
+
+-         llm.ask(t"Compare AAPL and MSFT.")   // calls price twice, then answers in text
++         llm.ask(t"Compare AAPL and MSFT.")   // calls price twice, then answers in text
+
+=         llm.ask(t"Compare AAPL and MSFT.")   // calls price twice, then answers in text
+-       ```
++       ```
+
+-       A failure inside `invoke` — an unknown tool, a missing or malformed argument, or an
+-       error the method itself raised — reaches the model as a tool result marked as an error,
+-       which it can correct itself from, rather than ending the conversation. A textual result
+-       is sent as prose, not as a JSON-quoted string. Every turn the loop makes is committed to
+-       the session's history, so the record shows the calls the model made and what it was told.
++       Uma falha dentro de `invoke` — uma ferramenta desconhecida, um argumento ausente ou
++       malformado, ou um erro que o próprio método lançou — chega ao modelo como resultado de
++       ferramenta marcado como erro, a partir do qual ele pode se corrigir, em vez de encerrar a
++       conversa. Um resultado textual é enviado como prosa, e não como string entre aspas JSON.
++       Cada turno que o laço faz é registrado no histórico da sessão, de modo que o registro
++       mostra as chamadas que o modelo fez e o que lhe foi dito.
+
+-       A toolkit built where a capability is in scope captures it (a contextual parameter is
+-       summoned at the construction site), and capture checking confines the toolkit
+-       accordingly; a toolkit of pure methods is a plain value which may be shared.
++       Um toolkit construído onde uma capability está no escopo a captura (um parâmetro contextual
++       é convocado no local da construção), e a verificação de capturas confina o toolkit de
++       acordo; um toolkit de métodos puros é um valor simples que pode ser compartilhado.
+
+-   refer sibylline.ability
++   refer sibylline.ability
+
+-   refer sibylline.Llm.Tool
++   refer sibylline.Llm.Tool
+
+-   entry .empty   the toolkit a session has unless another is given: no tools
+-       The default given, in `Toolkit`'s companion: `specs` is empty and `invoke` raises
+-       `Llm.Error(Invalid)`, _no tool named `name` is defined_, for a call which should never
+-       arrive. A `given Toolkit = Toolkit(…)` in the session block outranks it.
+-   entry .apply   derives a toolkit from the `@ability` methods of an object
+-       `Toolkit(target)` is a macro. For each method of `target`'s type annotated `@ability`
+-       (directly, or on a method it overrides) it makes an `Llm.Tool` named after the method,
+-       described by its `@about` annotation (or empty), whose schema is a JSON object with one
+-       required property per parameter of the first parameter list, each parameter type's
+-       schema summoned as `Schematic over JsonSchema`; and a dispatcher which decodes each
+-       argument (`Decodable in Json`), applies the method, and encodes the result (`Encodable
+-       in Json`). A method may have one explicit parameter list and, optionally, one contextual
+-       list, whose values are summoned where `Toolkit(…)` is written, so the model never sees
+-       them.
++   entry .empty   o toolkit que uma sessão tem, a menos que outro seja dado: nenhuma ferramenta
++       O given padrão, no objeto companheiro de `Toolkit`: `specs` é vazio e `invoke` lança
++       `Llm.Error(Invalid)`, _no tool named `name` is defined_, para uma chamada que nunca deveria
++       chegar. Um `given Toolkit = Toolkit(…)` no bloco da sessão tem precedência sobre ele.
++   entry .apply   deriva um toolkit a partir dos métodos `@ability` de um objeto
++       `Toolkit(target)` é uma macro. Para cada método do tipo de `target` anotado com `@ability`
++       (diretamente, ou em um método que ele sobrescreve), ela cria uma `Llm.Tool` com o nome do
++       método, descrita pela sua anotação `@about` (ou vazia), cujo schema é um objeto JSON com uma
++       propriedade obrigatória por parâmetro da primeira lista de parâmetros, sendo o schema do
++       tipo de cada parâmetro convocado como `Schematic over JsonSchema`; e um despachante que
++       decodifica cada argumento (`Decodable in Json`), aplica o método e codifica o resultado
++       (`Encodable in Json`). Um método pode ter uma lista de parâmetros explícita e,
++       opcionalmente, uma lista contextual, cujos valores são convocados onde `Toolkit(…)` é
++       escrito, de modo que o modelo nunca os vê.
+
+=       them.
+=
+-       ```scala
++       ```scala
+
+=       them.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       them.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       object Greeter:
++       object Greeter:
+
+=       object Greeter:
+-         @ability
++         @ability
+
+-         def shout(message: Text)(using suffix: Text): Text = t"$message$suffix"
++         def shout(message: Text)(using suffix: Text): Text = t"$message$suffix"
+
+-       given suffix: Text = t"!"
++       given suffix: Text = t"!"
+
+-       Toolkit(Greeter).invoke(t"shout", j"""{"message": "hello"}""")   // j""""hello!""""
++       Toolkit(Greeter).invoke(t"shout", j"""{"message": "hello"}""")   // j""""hello!""""
+
+=       Toolkit(Greeter).invoke(t"shout", j"""{"message": "hello"}""")   // j""""hello!""""
+-       ```
++       ```
+
+-       Each is a compile error: a target with no `@ability` method, a parameter with no JSON
+-       schema or decoder, a return type with no encoder, a contextual parameter nothing in
+-       scope provides, or a method with more than two parameter lists.
+-   entry #specs   the tools offered to the model: each a name, a description and an argument schema
+-   entry #invoke   runs the named tool with the model's JSON arguments, and encodes its result as JSON
+-       Raises `Llm.Error` with reason `Invalid` for a tool the toolkit does not have or an
+-       argument which is missing or does not decode; the session's tool loop turns such an error
+-       into an error-marked `ToolResult` for the model to read.
++       Cada um destes é um erro de compilação: um alvo sem método `@ability`, um parâmetro sem
++       schema JSON ou decodificador, um tipo de retorno sem codificador, um parâmetro contextual
++       que nada no escopo fornece, ou um método com mais de duas listas de parâmetros.
++   entry #specs   as ferramentas oferecidas ao modelo: cada uma com um nome, uma descrição e um schema de argumentos
++   entry #invoke   executa a ferramenta nomeada com os argumentos JSON do modelo e codifica seu resultado como JSON
++       Lança `Llm.Error` com o motivo `Invalid` para uma ferramenta que o toolkit não tem ou para
++       um argumento ausente ou que não se decodifica; o laço de ferramentas da sessão transforma
++       um erro assim em um `ToolResult` marcado como erro, para o modelo ler.
+
+- entry .internal   the macro implementation behind `Toolkit(…)`
++ entry .internal   a implementação em macro por trás de `Toolkit(…)`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the `Toolkit.apply` macro has a stable
+-       home.
+-   entry .argument   decodes one tool argument from JSON, or `Unset` when it is malformed
+-   entry .toolkit   the macro behind `Toolkit.apply`: `@ability` methods to specifications and a dispatcher
++       Não é para uso direto: o objeto existe para que a macro `Toolkit.apply` tenha uma casa
++       estável.
++   entry .argument   decodifica um argumento de ferramenta a partir de JSON, ou `Unset` quando ele é malformado
++   entry .toolkit   a macro por trás de `Toolkit.apply`: dos métodos `@ability` a especificações e um despachante
+
+- entry .Llm   the provider-neutral vocabulary: messages, replies, sessions, streams, tools, usage and errors
++ entry .Llm   o vocabulário neutro em relação ao provedor: mensagens, respostas, sessões, streams, ferramentas, uso e erros
+
+= entry .Llm   the provider-neutral vocabulary: messages, replies, sessions, streams, tools, usage and errors
+-   detail
++   detail
+
+-       `Llm` is the object which holds everything the dialects share. A conversation is a
+-       `.Session`, obtained only through a provider's `session` and reached as `llm`; a turn is
+-       a `.Message` of a `.Role` and a list of `.Content` blocks; a completed assistant turn is
+-       a `.Reply` with its `.Stop` reason and `.Usage`; a streamed turn is a `.Response` of
+-       `.Event`s; a tool is a `.Tool`; the knobs every wire expresses are `.Settings`; a
+-       failure is an `.Error`. A provider adapter is a `.Dialect`, which encodes an `.Exchange`
+-       to its wire and translates the reply or the stream back.
++       `Llm` é o objeto que contém tudo o que os dialetos compartilham. Uma conversa é uma
++       `.Session`, obtida apenas pelo `session` de um provedor e alcançada como `llm`; um turno é
++       uma `.Message` de um `.Role` e uma lista de blocos `.Content`; um turno de assistente
++       concluído é um `.Reply` com seu motivo `.Stop` e seu `.Usage`; um turno em streaming é um
++       `.Response` de `.Event`s; uma ferramenta é uma `.Tool`; os botões de ajuste que todo
++       protocolo expressa são `.Settings`; uma falha é um `.Error`. Um adaptador de provedor é um
++       `.Dialect`, que codifica uma `.Exchange` para seu protocolo e traduz de volta a resposta ou
++       o stream.
+
+=       to its wire and translates the reply or the stream back.
+=
+-       ```scala
++       ```scala
+
+=       to its wire and translates the reply or the stream back.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       to its wire and translates the reply or the stream back.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val question = Llm.Message(Llm.Role.User, t"How many bones are in the human hand?")
++       val question = Llm.Message(Llm.Role.User, t"How many bones are in the human hand?")
+
+-       val illustrated = Llm.Message
++       val illustrated = Llm.Message
+
+-         ( Llm.Role.User,
++         ( Llm.Role.User,
+
+=         ( Llm.Role.User,
+-           List
++           List
+
+-             ( Llm.Content.Textual(t"What is in this picture?"),
++             ( Llm.Content.Textual(t"What is in this picture?"),
+
+-               Llm.Content.Graphic(Llm.Content.Source.Remote(url"https://example.com/hand.png")) ) )
++               Llm.Content.Graphic(Llm.Content.Source.Remote(url"https://example.com/hand.png")) ) )
+
+=               Llm.Content.Graphic(Llm.Content.Source.Remote(url"https://example.com/hand.png")) ) )
+-       ```
++       ```
+
+-       Identifiers are typed by what they name: an `Llm.Id[Llm.Reply]` is a reply's, an
+-       `Llm.Id[Llm.Request]` a batched request's, an `Llm.Id[Anthropic.Batch[?]]` a batch's,
+-       and none is a `Text`, so a reply's identifier cannot be handed to a method expecting a
+-       batch's. A batch of questions is a list of `.Request`s and answers as `.Outcome`s.
++       Os identificadores são tipados pelo que nomeiam: um `Llm.Id[Llm.Reply]` é o de uma
++       resposta, um `Llm.Id[Llm.Request]` o de uma requisição em lote, um
++       `Llm.Id[Anthropic.Batch[?]]` o de um lote, e nenhum é um `Text`, de modo que o
++       identificador de uma resposta não pode ser entregue a um método que espera o de um lote.
++       Um lote de perguntas é uma lista de `.Request`s, e suas respostas, `.Outcome`s.
+
+=       batch's. A batch of questions is a list of `.Request`s and answers as `.Outcome`s.
+-   refer sibylline.Llm.Session
++   refer sibylline.Llm.Session
+
+-   refer sibylline.Llm.Reply
++   refer sibylline.Llm.Reply
+
+-   refer sibylline.Llm.Message
++   refer sibylline.Llm.Message
+
+-   refer sibylline.Llm.Content
++   refer sibylline.Llm.Content
+
+-   refer sibylline.Llm.Error
++   refer sibylline.Llm.Error
+
+-   refer sibylline.llm
++   refer sibylline.llm
+
+-   entry .Role   the two turn-taking roles: `User` and `Assistant`
+-       A conversation alternates between the two. The system prompt is not a role — two of the
+-       wire APIs carry it outside the message list — so it is set on the provider value with
+-       `prompted` and travels as a field of the `Exchange`, never as a message.
+-   entry .Id   an identifier typed by what it names: a reply, a batched request or a batch
++   entry .Role   os dois papéis que se alternam nos turnos: `User` e `Assistant`
++       Uma conversa alterna entre os dois. O prompt de sistema não é um papel — duas das APIs o
++       transmitem fora da lista de mensagens —, então ele é definido no valor do provedor com
++       `prompted` e viaja como campo da `Exchange`, nunca como mensagem.
++   entry .Id   um identificador tipado pelo que nomeia: uma resposta, uma requisição em lote ou um lote
+
+=   entry .Id   an identifier typed by what it names: a reply, a batched request or a batch
+-     detail
++     detail
+
+-         `Llm.Id[subject]` is an opaque type over `Text`: a provider mints a reply's
+-         (`Reply#id`, `Event.Started#id`) and a batch's (`Anthropic.Batch#id`) from the wire, and
+-         a caller mints a request's with `.request`, which checks it before any provider can
+-         reject it. The text is read back with `.text`, and distinct subjects never mix.
++         `Llm.Id[subject]` é um tipo opaco sobre `Text`: um provedor cunha o de uma resposta
++         (`Reply#id`, `Event.Started#id`) e o de um lote (`Anthropic.Batch#id`) a partir do que é
++         transmitido, e quem chama cunha o de uma requisição com `.request`, que o verifica antes
++         que qualquer provedor possa rejeitá-lo. O texto é lido de volta com `.text`, e assuntos
++         distintos nunca se misturam.
+
+=         reject it. The text is read back with `.text`, and distinct subjects never mix.
+=
+-         ```scala
++         ```scala
+
+=         reject it. The text is read back with `.text`, and distinct subjects never mix.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         reject it. The text is read back with `.text`, and distinct subjects never mix.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         reject it. The text is read back with `.text`, and distinct subjects never mix.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-         val id: Llm.Id[Llm.Request] = Llm.Id.request(t"aapl")
++         val id: Llm.Id[Llm.Request] = Llm.Id.request(t"aapl")
+
+-         id.text == t"aapl"
++         id.text == t"aapl"
+
+-         val batch: Llm.Id[Anthropic.Batch[?]] = t"msgbatch_1".as[Llm.Id[Anthropic.Batch[?]]]
++         val batch: Llm.Id[Anthropic.Batch[?]] = t"msgbatch_1".as[Llm.Id[Anthropic.Batch[?]]]
+
+=         val batch: Llm.Id[Anthropic.Batch[?]] = t"msgbatch_1".as[Llm.Id[Anthropic.Batch[?]]]
+-         ```
++         ```
+
+-         An `Id` is `Showable` (as its text), encodable and decodable in `Text` and therefore
+-         in JSON, and inspects as `Llm.Id(…)` so that it is not mistaken for a bare `Text`.
+-     entry .request   a request identifier of the caller's choosing, checked before submission
+-         Accepts one to sixty-four characters from letters, digits, `_` and `-` — Anthropic's
+-         `custom_id` rule, the strictest of the wire APIs', applied for every dialect — and
+-         raises `Llm.Error` with reason `Invalid`, _the request identifier `text` is not
+-         permitted_, for anything else, so a bad identifier fails before a batch is sent.
+-     entry .text   the identifier's text
+-         An extension on any `Id[subject]`: `reply.id.let(_.text) == t"msg_1"`.
+-     entry .showable   shows an identifier as its text
+-     entry .encodable   encodes an identifier as text, and so as a JSON string
+-     entry .decodable   decodes any text as an identifier, unchecked
+-         Reading a stored batch identifier back: `text.as[Llm.Id[Anthropic.Batch[?]]]`. No rule
+-         is applied; `.request` is the checked way to mint a request's.
+-     entry .inspectable   inspects an identifier as `Llm.Id("…")`, distinguishing it from a `Text`
+-   entry .Request   one question in a batch: its identifier and its prompt
++         Um `Id` é `Showable` (como seu texto), codificável e decodificável em `Text` e, portanto,
++         em JSON, e é inspecionado como `Llm.Id(…)`, para que não seja confundido com um `Text`
++         puro.
++     entry .request   um identificador de requisição escolhido por quem chama, verificado antes do envio
++         Aceita de um a sessenta e quatro caracteres entre letras, dígitos, `_` e `-` — a regra
++         `custom_id` da Anthropic, a mais estrita entre as das APIs, aplicada a todo dialeto — e
++         lança `Llm.Error` com o motivo `Invalid`, _the request identifier `text` is not
++         permitted_, para qualquer outra coisa, de modo que um identificador ruim falha antes que um
++         lote seja enviado.
++     entry .text   o texto do identificador
++         Uma extensão de qualquer `Id[subject]`: `reply.id.let(_.text) == t"msg_1"`.
++     entry .showable   mostra um identificador como seu texto
++     entry .encodable   codifica um identificador como texto e, assim, como string JSON
++     entry .decodable   decodifica qualquer texto como identificador, sem verificação
++         Para ler de volta um identificador de lote armazenado:
++         `text.as[Llm.Id[Anthropic.Batch[?]]]`. Nenhuma regra é aplicada; `.request` é a maneira
++         verificada de cunhar o de uma requisição.
++     entry .inspectable   inspeciona um identificador como `Llm.Id("…")`, distinguindo-o de um `Text`
++   entry .Request   uma pergunta em um lote: seu identificador e seu prompt
+
+=   entry .Request   one question in a batch: its identifier and its prompt
+-     detail
++     detail
+
+-         `Llm.Request(id, prompt)` is what `Anthropic#elicitAll` takes a list of: each becomes
+-         its own exchange, with the provider value's system prompt, priming and settings, and
+-         its `Outcome` is keyed by `#id`, since the provider returns outcomes in any order.
++         `Llm.Request(id, prompt)` é aquilo de que `Anthropic#elicitAll` recebe uma lista: cada uma
++         se torna sua própria troca, com o prompt de sistema, o priming e as configurações do valor
++         do provedor, e seu `Outcome` é indexado por `#id`, já que o provedor retorna os resultados
++         em qualquer ordem.
+
+=         its `Outcome` is keyed by `#id`, since the provider returns outcomes in any order.
+=
+-         ```scala
++         ```scala
+
+=         its `Outcome` is keyed by `#id`, since the provider returns outcomes in any order.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         its `Outcome` is keyed by `#id`, since the provider returns outcomes in any order.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         its `Outcome` is keyed by `#id`, since the provider returns outcomes in any order.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+=
+-         val requests = List
++         val requests = List
+
+=
+=         val requests = List
+-           ( Llm.Request(Llm.Id.request(t"aapl"), t"Summarize your recommendation for AAPL."),
++           ( Llm.Request(Llm.Id.request(t"aapl"), t"Summarize your recommendation for AAPL."),
+
+=
+=         val requests = List
+=           ( Llm.Request(Llm.Id.request(t"aapl"), t"Summarize your recommendation for AAPL."),
+-             Llm.Request(Llm.Id.request(t"msft"), t"Summarize your recommendation for MSFT.") )
++             Llm.Request(Llm.Id.request(t"msft"), t"Summarize your recommendation for MSFT.") )
+
+=             Llm.Request(Llm.Id.request(t"msft"), t"Summarize your recommendation for MSFT.") )
+-         ```
++         ```
+
+-     entry #id   the identifier its outcome will carry, made with `Llm.Id.request`
+-     entry #prompt   the user turn of the request's exchange
+-   entry .Outcome   what became of one batched request: its decoded answer, or the error standing in for it
++     entry #id   o identificador que seu resultado carregará, criado com `Llm.Id.request`
++     entry #prompt   o turno do usuário na troca da requisição
++   entry .Outcome   o que aconteceu com uma requisição em lote: sua resposta decodificada, ou o erro que a substitui
+
+=   entry .Outcome   what became of one batched request: its decoded answer, or the error standing in for it
+-     detail
++     detail
+
+-         `Anthropic.Batch#outcomes()` returns one `Outcome[value]` per request, in the
+-         provider's order. `#result` is a `value | Llm.Error`: a succeeded request's reply
+-         decoded to the batch's type, or an `Llm.Error` for a request which errored (with the
+-         provider's reason), was canceled (`Provider("canceled")`), expired
+-         (`Provider("expired")`), or whose answer did not match its schema (`Malformed`). Match
+-         on the union:
++         `Anthropic.Batch#outcomes()` retorna um `Outcome[value]` por requisição, na ordem do
++         provedor. `#result` é um `value | Llm.Error`: a resposta de uma requisição bem-sucedida
++         decodificada para o tipo do lote, ou um `Llm.Error` para uma requisição que deu erro (com
++         o motivo do provedor), foi cancelada (`Provider("canceled")`), expirou
++         (`Provider("expired")`) ou cuja resposta não correspondeu ao seu schema (`Malformed`).
++         Faça o casamento de padrões sobre a união:
+
+=         on the union:
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         on the union:
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         on the union:
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+-         batch.outcomes().each: outcome =>
++         batch.outcomes().each: outcome =>
+
+=         batch.outcomes().each: outcome =>
+-           outcome.result match
++           outcome.result match
+
+=         batch.outcomes().each: outcome =>
+=           outcome.result match
+-             case appraisal: Appraisal => Out.println(t"${outcome.id}: ${appraisal.rating}")
++             case appraisal: Appraisal => Out.println(t"${outcome.id}: ${appraisal.rating}")
+
+=         batch.outcomes().each: outcome =>
+=           outcome.result match
+=             case appraisal: Appraisal => Out.println(t"${outcome.id}: ${appraisal.rating}")
+-             case error: Llm.Error     => Out.println(t"${outcome.id} failed: ${error.message}")
++             case error: Llm.Error     => Out.println(t"${outcome.id} failed: ${error.message}")
+
+=         batch.outcomes().each: outcome =>
+=           outcome.result match
+=             case appraisal: Appraisal => Out.println(t"${outcome.id}: ${appraisal.rating}")
+=             case error: Llm.Error     => Out.println(t"${outcome.id} failed: ${error.message}")
+-         ```
++         ```
+
+-     entry #id   the request's own identifier, by which the outcome is matched to its question
+-     entry #result   the decoded answer, or the `Llm.Error` which stands in for it
+-   entry .Content   one block of a message, in the vocabulary every dialect translates to and from
++     entry #id   o identificador próprio da requisição, pelo qual o resultado é associado à sua pergunta
++     entry #result   a resposta decodificada, ou o `Llm.Error` que a substitui
++   entry .Content   um bloco de uma mensagem, no vocabulário de e para o qual todo dialeto traduz
+
+=   entry .Content   one block of a message, in the vocabulary every dialect translates to and from
+-     detail
++     detail
+
+-         A message's content is a list of blocks. `Textual(text)` is prose; `Graphic(source)`
+-         an image and `Document(source)` a document (a PDF, say), each from a `.Source`;
+-         `ToolUse(id, tool, arguments)` a call the model made, with its arguments as `Json`;
+-         `ToolResult(id, content, failure)` the answer to that call, in a user turn, with
+-         `failure = true` marking an error the model should recover from; `Thinking(text,
+-         signature)` the model's reasoning where the provider exposes it, and `Redacted(data)`
+-         reasoning it withheld; and `Opaque(provider, json)` any provider block the vocabulary
+-         does not model, verbatim. A dialect replays its own provider's opaque blocks when the
+-         history is re-sent and drops another provider's, so a transcript is never corrupted and
+-         never lies.
++         O conteúdo de uma mensagem é uma lista de blocos. `Textual(text)` é prosa;
++         `Graphic(source)` uma imagem e `Document(source)` um documento (um PDF, por exemplo), cada
++         um a partir de uma `.Source`; `ToolUse(id, tool, arguments)` uma chamada que o modelo fez,
++         com seus argumentos como `Json`; `ToolResult(id, content, failure)` a resposta a essa
++         chamada, em um turno do usuário, com `failure = true` marcando um erro do qual o modelo
++         deve se recuperar; `Thinking(text, signature)` o raciocínio do modelo onde o provedor o
++         expõe, e `Redacted(data)` o raciocínio que ele reteve; e `Opaque(provider, json)` qualquer
++         bloco do provedor que o vocabulário não modela, literalmente. Um dialeto reproduz os
++         blocos opacos do seu próprio provedor quando o histórico é reenviado e descarta os de
++         outro provedor, de modo que uma transcrição nunca é corrompida e nunca mente.
+
+=         never lies.
+=
+-         ```scala
++         ```scala
+
+=         never lies.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         never lies.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val call = Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")
++         val call = Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")
+
+-         val answer = Llm.Content.ToolResult(t"toolu_1", List(Llm.Content.Textual(t"211.5")))
++         val answer = Llm.Content.ToolResult(t"toolu_1", List(Llm.Content.Textual(t"211.5")))
+
+-         val failed = Llm.Content.ToolResult(t"toolu_1", List(Llm.Content.Textual(t"no such ticker")), failure = true)
++         val failed = Llm.Content.ToolResult(t"toolu_1", List(Llm.Content.Textual(t"no such ticker")), failure = true)
+
+=         val failed = Llm.Content.ToolResult(t"toolu_1", List(Llm.Content.Textual(t"no such ticker")), failure = true)
+-         ```
++         ```
+
+-         Not every block has a form on every wire: OpenAI's Chat Completions drops a
+-         `Document`, and Gemini carries no identifier on a tool call, so there the tool's name
+-         serves as the `ToolUse` id and a `ToolResult` addresses its call by that name.
++         Nem todo bloco tem uma forma em todo protocolo: o Chat Completions da OpenAI descarta um
++         `Document`, e o Gemini não transmite identificador em uma chamada de ferramenta, então ali
++         o nome da ferramenta serve como id do `ToolUse`, e um `ToolResult` endereça sua chamada por
++         esse nome.
+
+-     refer sibylline.Llm.Message
++     refer sibylline.Llm.Message
+
+-     entry .Source   where binary content lives: inline bytes with a media type, or a URL
+-         `Inline(data, mediaType)` carries the bytes themselves, rendered as base64 on the wire
+-         (or as a data URL, on a wire which takes only URLs); `Remote(url)` is an `HttpUrl` the
+-         provider fetches itself.
++     entry .Source   onde vive o conteúdo binário: bytes embutidos com um tipo de mídia, ou uma URL
++         `Inline(data, mediaType)` carrega os próprios bytes, renderizados como base64 na
++         transmissão (ou como URL de dados, em um protocolo que só aceita URLs); `Remote(url)` é uma
++         `HttpUrl` que o próprio provedor busca.
+
+=         provider fetches itself.
+=
+-         ```scala
++         ```scala
+
+=         provider fetches itself.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         provider fetches itself.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         Llm.Content.Graphic(Llm.Content.Source.Remote(url"https://example.com/hand.png"))
++         Llm.Content.Graphic(Llm.Content.Source.Remote(url"https://example.com/hand.png"))
+
+=         Llm.Content.Graphic(Llm.Content.Source.Remote(url"https://example.com/hand.png"))
+-         ```
++         ```
+
+-   entry .Message   one turn of a conversation: a role and a list of content blocks
++   entry .Message   um turno de uma conversa: um papel e uma lista de blocos de conteúdo
+
+=   entry .Message   one turn of a conversation: a role and a list of content blocks
+-     detail
++     detail
+
+-         `Message(role, content)` is a user or assistant turn; `Message(role, text)` makes the
+-         common one-block textual turn. `Session#ask` and `Session#stream` accept a message as
+-         readily as text, which is how an image, a document or a tool result is sent, and
+-         `Session#record` appends one to the history without a round trip.
++         `Message(role, content)` é um turno de usuário ou de assistente; `Message(role, text)` cria
++         o turno textual comum de um bloco. `Session#ask` e `Session#stream` aceitam uma mensagem
++         tão prontamente quanto texto, que é como se envia uma imagem, um documento ou um resultado
++         de ferramenta, e `Session#record` acrescenta uma ao histórico sem uma ida e volta.
+
+=         `Session#record` appends one to the history without a round trip.
+=
+-         ```scala
++         ```scala
+
+=         `Session#record` appends one to the history without a round trip.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         `Session#record` appends one to the history without a round trip.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val plain = Llm.Message(Llm.Role.User, t"Tallest mountain in Estonia?")
++         val plain = Llm.Message(Llm.Role.User, t"Tallest mountain in Estonia?")
+
+-         val illustrated = Llm.Message
++         val illustrated = Llm.Message
+
+-           ( Llm.Role.User,
++           ( Llm.Role.User,
+
+-             List
++             List
+
+-               ( Llm.Content.Textual(t"What is in this picture?"),
++               ( Llm.Content.Textual(t"What is in this picture?"),
+
+-                 Llm.Content.Graphic(Llm.Content.Source.Remote(url"https://example.com/hand.png")) ) )
++                 Llm.Content.Graphic(Llm.Content.Source.Remote(url"https://example.com/hand.png")) ) )
+
+=                 Llm.Content.Graphic(Llm.Content.Source.Remote(url"https://example.com/hand.png")) ) )
+-         ```
++         ```
+
+-     refer sibylline.Llm.Content
++     refer sibylline.Llm.Content
+
+-     entry .apply   `Message(role, text)`: a turn of one textual block
+-     entry #role   `User` or `Assistant`
+-     entry #content   the turn's blocks, in order
+-   entry .Stop   why the model stopped emitting
+-       `Ended` is a natural end of turn; `Exhausted` the output-token limit; `ToolCall` a
+-       request to run a tool, which the session's tool loop dispatches on; `Refused` a refusal;
+-       `Sequence(text)` one of the `stopping` sequences, which is carried; `Filtered(detail)` a
+-       content filter; and `Other(code)` any reason the vocabulary does not model, with the
+-       provider's code kept. Decoding is total, so no stop reason is ever lost. A reply which
+-       contains a tool call is `ToolCall` on every dialect, even where the wire (Gemini) says
+-       it stopped normally.
+-   entry .Usage   token accounting: input and output counts, and the optional cache and reasoning counts
++     entry .apply   `Message(role, text)`: um turno de um bloco textual
++     entry #role   `User` ou `Assistant`
++     entry #content   os blocos do turno, em ordem
++   entry .Stop   por que o modelo parou de emitir
++       `Ended` é um fim de turno natural; `Exhausted`, o limite de tokens de saída; `ToolCall`, um
++       pedido para executar uma ferramenta, sobre o qual o laço de ferramentas da sessão despacha;
++       `Refused`, uma recusa; `Sequence(text)`, uma das sequências de `stopping`, que é
++       transportada; `Filtered(detail)`, um filtro de conteúdo; e `Other(code)`, qualquer motivo
++       que o vocabulário não modela, com o código do provedor preservado. A decodificação é
++       total, de modo que nenhum motivo de parada se perde. Uma resposta que contém uma chamada
++       de ferramenta é `ToolCall` em todo dialeto, mesmo onde o protocolo (Gemini) diz que parou
++       normalmente.
++   entry .Usage   contabilidade de tokens: contagens de entrada e saída, e as contagens opcionais de cache e de raciocínio
+
+=   entry .Usage   token accounting: input and output counts, and the optional cache and reasoning counts
+-     detail
++     detail
+
+-         `Usage(input, output, cacheRead, cacheWrite, reasoning)`: only the input and output
+-         counts are universal, and the rest are `Optional`, reported by some providers only —
+-         `cacheRead` and `cacheWrite` by Anthropic (and `cacheRead` by OpenAI), `reasoning` by
+-         Gemini. A reply's usage is the cost of that turn; `Session#usage` is the fold over
+-         every committed turn, and `.addable` is how it folds: an absent count plus an absent
+-         count stays absent, so a total is never invented.
++         `Usage(input, output, cacheRead, cacheWrite, reasoning)`: só as contagens de entrada e de
++         saída são universais, e as demais são `Optional`, reportadas apenas por alguns provedores
++         — `cacheRead` e `cacheWrite` pela Anthropic (e `cacheRead` pela OpenAI), `reasoning` pelo
++         Gemini. O uso de uma resposta é o custo daquele turno; `Session#usage` é a acumulação de
++         todos os turnos registrados, e `.addable` é como ela acumula: uma contagem ausente mais
++         uma contagem ausente continua ausente, de modo que um total nunca é inventado.
+
+=         count stays absent, so a total is never invented.
+=
+-         ```scala
++         ```scala
+
+=         count stays absent, so a total is never invented.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Llm.Usage(1, 2) + Llm.Usage(3, 4)                                       // Usage(4, 6)
++         Llm.Usage(1, 2) + Llm.Usage(3, 4)                                       // Usage(4, 6)
+
+-         Llm.Usage(1, 2, cacheRead = 10) + Llm.Usage(3, 4, cacheRead = 5, reasoning = 7)
++         Llm.Usage(1, 2, cacheRead = 10) + Llm.Usage(3, 4, cacheRead = 5, reasoning = 7)
+
+=         Llm.Usage(1, 2, cacheRead = 10) + Llm.Usage(3, 4, cacheRead = 5, reasoning = 7)
+-         ```
++         ```
+
+-     entry .addable   `usage + usage`: sums the counts, keeping an optional count absent when both are
+-     entry #input   the input tokens
+-     entry #output   the output tokens
+-     entry #cacheRead   the input tokens read from the provider's prompt cache, where reported
+-         What `Anthropic#caching` is for: a cached system prompt shows up here on every request
+-         which shares it.
+-     entry #cacheWrite   the input tokens written to the prompt cache, where reported
+-     entry #reasoning   the tokens spent thinking, where reported
+-   entry .Reply   one completed assistant turn: its message, stop reason, usage, model and identifier
++     entry .addable   `usage + usage`: soma as contagens, mantendo ausente uma contagem opcional quando ambas são ausentes
++     entry #input   os tokens de entrada
++     entry #output   os tokens de saída
++     entry #cacheRead   os tokens de entrada lidos do cache de prompts do provedor, onde reportados
++         É para isso que serve `Anthropic#caching`: um prompt de sistema em cache aparece aqui em
++         toda requisição que o compartilha.
++     entry #cacheWrite   os tokens de entrada gravados no cache de prompts, onde reportados
++     entry #reasoning   os tokens gastos pensando, onde reportados
++   entry .Reply   um turno de assistente concluído: sua mensagem, motivo de parada, uso, modelo e identificador
+
+=   entry .Reply   one completed assistant turn: its message, stop reason, usage, model and identifier
+-     detail
++     detail
+
+-         Pure data, so it may leave the session block. `#text` joins its textual blocks and
+-         `#toolCalls` picks out its `ToolUse` blocks; `#stop` says why the model stopped and
+-         `#usage` what the turn cost; `#model` and `#id` are what the provider reported, when it
+-         did.
++         Dados puros, então pode sair do bloco da sessão. `#text` junta seus blocos textuais, e
++         `#toolCalls` seleciona seus blocos `ToolUse`; `#stop` diz por que o modelo parou, e
++         `#usage`, quanto o turno custou; `#model` e `#id` são o que o provedor reportou, quando
++         reportou.
+
+=         did.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         did.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         did.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+-         val reply: Llm.Reply = claude.session(llm.ask(t"Tallest mountain in Estonia?"))
++         val reply: Llm.Reply = claude.session(llm.ask(t"Tallest mountain in Estonia?"))
+
+-         reply.text
++         reply.text
+
+-         reply.stop == Llm.Stop.Ended
++         reply.stop == Llm.Stop.Ended
+
+-         reply.usage.output
++         reply.usage.output
+
+-         reply.id.let(_.text)
++         reply.id.let(_.text)
+
+=         reply.id.let(_.text)
+-         ```
++         ```
+
+=         ```
+-     refer sibylline.Llm.Session
++     refer sibylline.Llm.Session
+
+-     entry #message   the assistant message, with every content block the model sent
+-     entry #stop   why the model stopped: `Ended`, `Exhausted`, `ToolCall`, …
+-     entry #usage   the tokens this turn cost
+-     entry #model   the model the provider reported, or `Unset`
+-     entry #id   the reply's identifier as the provider issued it, or `Unset`
+-     entry #text   the reply's textual blocks, joined
+-         Thinking, tool calls and opaque blocks are left out; a reply of no text is empty.
+-     entry #toolCalls   the reply's `ToolUse` blocks, in order
+-         What the tool loop runs when `#stop` is `ToolCall`; empty for a reply which called no
+-         tool.
+-   entry .ToolChoice   whether the model may, must, must not, or must specifically call a tool
+-       `Auto` leaves the choice to the model, `Forbidden` prevents any call, `Required` demands
+-       one, and `Named(tool)` demands that tool. Set through `Settings#toolChoice`; `solicit`
+-       sets `Named("answer")` for its one forced turn on a dialect without native structured
+-       output. Every wire supports all four.
+-   entry .Settings   the request knobs every wire expresses
++     entry #message   a mensagem do assistente, com todos os blocos de conteúdo que o modelo enviou
++     entry #stop   por que o modelo parou: `Ended`, `Exhausted`, `ToolCall`, …
++     entry #usage   os tokens que este turno custou
++     entry #model   o modelo que o provedor reportou, ou `Unset`
++     entry #id   o identificador da resposta como o provedor o emitiu, ou `Unset`
++     entry #text   os blocos textuais da resposta, juntados
++         Raciocínio, chamadas de ferramenta e blocos opacos ficam de fora; uma resposta sem texto é
++         vazia.
++     entry #toolCalls   os blocos `ToolUse` da resposta, em ordem
++         O que o laço de ferramentas executa quando `#stop` é `ToolCall`; vazio para uma resposta
++         que não chamou ferramenta alguma.
++   entry .ToolChoice   se o modelo pode, deve, não deve ou deve especificamente chamar uma ferramenta
++       `Auto` deixa a escolha ao modelo, `Forbidden` impede qualquer chamada, `Required` exige
++       uma, e `Named(tool)` exige aquela ferramenta. Definido por `Settings#toolChoice`; `solicit`
++       define `Named("answer")` para seu único turno forçado em um dialeto sem saída estruturada
++       nativa. Todo protocolo suporta os quatro.
++   entry .Settings   os botões de ajuste de requisição que todo protocolo expressa
+
+=   entry .Settings   the request knobs every wire expresses
+-     detail
++     detail
+
+-         `maxTokens`, `temperature`, `topP`, `stopSequences`, `toolChoice` and `iterations`,
+-         each optional: a knob left `Unset` is omitted from the request, so the provider's own
+-         default applies, rather than sent as a default of the library's. A provider value's
+-         `limit`, `warmth`, `sampling`, `stopping` and `iterating` set them one at a time; a
+-         provider-specific knob (a thinking budget, caching, a beta header) is a method of the
+-         provider value, not a field here. Anthropic's wire requires `max_tokens`, so an unset
+-         `maxTokens` is sent as 4096 there.
+-     entry #maxTokens   the most output tokens a turn may produce
+-     entry #temperature   the sampling temperature
+-     entry #topP   the nucleus-sampling threshold
+-     entry #stopSequences   the texts at which the model stops; empty for none
+-     entry #toolChoice   whether and which tool the model must call
+-     entry #iterations   the most tool-loop round trips one `ask` may make; 16 when unset
+-   entry .Tool   a tool the model may call: its name, its description and the JSON schema of its arguments
++         `maxTokens`, `temperature`, `topP`, `stopSequences`, `toolChoice` e `iterations`, cada um
++         opcional: um ajuste deixado `Unset` é omitido da requisição, de modo que o padrão do
++         próprio provedor se aplica, em vez de ser enviado como um padrão da biblioteca. Os
++         métodos `limit`, `warmth`, `sampling`, `stopping` e `iterating` do valor do provedor os
++         definem um de cada vez; um ajuste específico de provedor (um orçamento de raciocínio,
++         cache, um cabeçalho beta) é um método do valor do provedor, não um campo aqui. O protocolo
++         da Anthropic exige `max_tokens`, então um `maxTokens` não definido é enviado ali como 4096.
++     entry #maxTokens   o máximo de tokens de saída que um turno pode produzir
++     entry #temperature   a temperatura de amostragem
++     entry #topP   o limiar da amostragem por núcleo
++     entry #stopSequences   os textos nos quais o modelo para; vazio para nenhum
++     entry #toolChoice   se o modelo deve chamar uma ferramenta, e qual
++     entry #iterations   o máximo de idas e voltas do laço de ferramentas que um `ask` pode fazer; 16 quando não definido
++   entry .Tool   uma ferramenta que o modelo pode chamar: seu nome, sua descrição e o schema JSON dos seus argumentos
+
+=   entry .Tool   a tool the model may call: its name, its description and the JSON schema of its arguments
+-     detail
++     detail
+
+-         `Tool(name, description, parameters)` is the wire specification only; the `Toolkit`
+-         macro produces one per `@ability` method, with the dispatcher which runs it. A provider
+-         value's `tooled(tools)` advertises tools in every turn without a toolkit to run them,
+-         for a program which handles `ToolCall` replies itself.
++         `Tool(name, description, parameters)` é apenas a especificação transmitida; a macro
++         `Toolkit` produz uma por método `@ability`, com o despachante que a executa. O
++         `tooled(tools)` de um valor de provedor anuncia ferramentas em todo turno sem um toolkit
++         para executá-las, para um programa que trata ele mesmo as respostas `ToolCall`.
+
+=         for a program which handles `ToolCall` replies itself.
+-     refer sibylline.Toolkit
++     refer sibylline.Toolkit
+
+-     entry #name   the name the model calls it by
+-     entry #description   what it does, as the model reads it
+-     entry #parameters   the JSON schema of its arguments, an object with one property per parameter
+-   entry .Exchange   a pure description of one request: everything a dialect needs to encode a wire call
++     entry #name   o nome pelo qual o modelo a chama
++     entry #description   o que ela faz, como o modelo o lê
++     entry #parameters   o schema JSON dos seus argumentos, um objeto com uma propriedade por parâmetro
++   entry .Exchange   uma descrição pura de uma requisição: tudo de que um dialeto precisa para codificar uma chamada
+
+=   entry .Exchange   a pure description of one request: everything a dialect needs to encode a wire call
+-     detail
++     detail
+
+-         `Exchange(system, history, tools, settings, format)`: the system prompt, the whole
+-         history including the new turn, the tools on offer, the settings, and, when set, the
+-         JSON schema the reply's text must conform to. The session builds one per round trip and
+-         the dialect encodes it; a dialect which is not `structured` never sees a `format`. A
+-         program only meets an `Exchange` when it implements or fakes a `Dialect`.
+-     entry #system   the system prompt, or `Unset`
+-     entry #history   every message so far, ending with the turn being sent
+-     entry #tools   the tools offered in this turn
+-     entry #settings   the knobs for this turn
+-     entry #format   the JSON schema a structured reply must conform to, or `Unset`
+-   entry .Event   the neutral streaming vocabulary: blocks open, grow by increments and close
++         `Exchange(system, history, tools, settings, format)`: o prompt de sistema, o histórico
++         inteiro incluindo o novo turno, as ferramentas oferecidas, as configurações e, quando
++         definido, o schema JSON ao qual o texto da resposta deve se conformar. A sessão constrói
++         uma por ida e volta, e o dialeto a codifica; um dialeto que não é `structured` nunca vê um
++         `format`. Um programa só encontra uma `Exchange` quando implementa ou simula um `Dialect`.
++     entry #system   o prompt de sistema, ou `Unset`
++     entry #history   todas as mensagens até então, terminando com o turno sendo enviado
++     entry #tools   as ferramentas oferecidas neste turno
++     entry #settings   os ajustes deste turno
++     entry #format   o schema JSON ao qual uma resposta estruturada deve se conformar, ou `Unset`
++   entry .Event   o vocabulário neutro de streaming: blocos se abrem, crescem por incrementos e se fecham
+
+=   entry .Event   the neutral streaming vocabulary: blocks open, grow by increments and close
+-     detail
++     detail
+
+-         Every wire's event stream reduces to the same index-addressed shape. `Started(id,
+-         model)` begins the message; `Opened(index, content)` opens a content block, as it
+-         first appears; `Delta(index, increment)` grows it by an `.Increment`; `Closed(index)`
+-         closes it; `Update(stop, usage)` carries message-level state, possibly several times
+-         (Anthropic reports input tokens at the start and output tokens at the end, and the
+-         accumulator sums them); and `Finished` ends the message. `Response#events` yields
+-         these, and `Response#reply()` folds them into a `Reply`; a stream which ends without
+-         `Finished`, or with a block still open, raises `Llm.Error(Interrupted)`.
++         O stream de eventos de todo protocolo se reduz à mesma forma, endereçada por índice.
++         `Started(id, model)` começa a mensagem; `Opened(index, content)` abre um bloco de
++         conteúdo, tal como ele aparece pela primeira vez; `Delta(index, increment)` o faz crescer
++         por um `.Increment`; `Closed(index)` o fecha; `Update(stop, usage)` transporta o estado no
++         nível da mensagem, possivelmente várias vezes (a Anthropic reporta os tokens de entrada no
++         início e os de saída no fim, e o acumulador os soma); e `Finished` termina a mensagem.
++         `Response#events` produz estes, e `Response#reply()` os acumula em um `Reply`; um stream
++         que termina sem `Finished`, ou com um bloco ainda aberto, lança
++         `Llm.Error(Interrupted)`.
+
+=         `Finished`, or with a block still open, raises `Llm.Error(Interrupted)`.
+=
+-         ```scala
++         ```scala
+
+=         `Finished`, or with a block still open, raises `Llm.Error(Interrupted)`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         `Finished`, or with a block still open, raises `Llm.Error(Interrupted)`.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val events: List[Llm.Event] =
++         val events: List[Llm.Event] =
+
+=         val events: List[Llm.Event] =
+-           List
++           List
+
+-             ( Llm.Event.Started(Unset, Unset),
++             ( Llm.Event.Started(Unset, Unset),
+
+-               Llm.Event.Opened(0, Llm.Content.ToolUse(t"id1", t"price", j"{}")),
++               Llm.Event.Opened(0, Llm.Content.ToolUse(t"id1", t"price", j"{}")),
+
+-               Llm.Event.Delta(0, Llm.Event.Increment.Arguments(t"""{"tick""")),
++               Llm.Event.Delta(0, Llm.Event.Increment.Arguments(t"""{"tick""")),
+
+-               Llm.Event.Delta(0, Llm.Event.Increment.Arguments(t"""er": "AAPL"}""")),
++               Llm.Event.Delta(0, Llm.Event.Increment.Arguments(t"""er": "AAPL"}""")),
+
+-               Llm.Event.Closed(0),
++               Llm.Event.Closed(0),
+
+-               Llm.Event.Update(Llm.Stop.ToolCall, Unset),
++               Llm.Event.Update(Llm.Stop.ToolCall, Unset),
+
+-               Llm.Event.Finished )
++               Llm.Event.Finished )
+
+=               Llm.Event.Finished )
+-         ```
++         ```
+
+-         Text deltas fill the block they address; a tool call's arguments arrive as partial
+-         JSON which is parsed when the block closes (`Malformed` if it is not JSON by then).
++         Os deltas de texto preenchem o bloco que endereçam; os argumentos de uma chamada de
++         ferramenta chegam como JSON parcial, que é analisado quando o bloco se fecha (`Malformed`
++         se até lá não for JSON).
+
+=         JSON which is parsed when the block closes (`Malformed` if it is not JSON by then).
+-     refer sibylline.Llm.Response
++     refer sibylline.Llm.Response
+
+-     entry .Increment   a fragment of an open block: text, thinking, a signature, or partial JSON arguments
+-         `Textual(text)` extends a text block, `Thinking(text)` a thinking block,
+-         `Signature(text)` a thinking block's signature, and `Arguments(json)` a tool call's
+-         arguments with partial JSON text, complete only when the block closes.
+-   entry .Dialect   the seam a provider adapter implements: encode an exchange, make the call, translate the reply
++     entry .Increment   um fragmento de um bloco aberto: texto, raciocínio, uma assinatura ou argumentos JSON parciais
++         `Textual(text)` estende um bloco de texto, `Thinking(text)` um bloco de raciocínio,
++         `Signature(text)` a assinatura de um bloco de raciocínio, e `Arguments(json)` os
++         argumentos de uma chamada de ferramenta com texto JSON parcial, completo apenas quando o
++         bloco se fecha.
++   entry .Dialect   a costura que um adaptador de provedor implementa: codificar uma troca, fazer a chamada, traduzir a resposta
+
+=   entry .Dialect   the seam a provider adapter implements: encode an exchange, make the call, translate the reply
+-     detail
++     detail
+
+-         A dialect speaks two methods: `#exchange` for one full reply, `#stream` for the
+-         event stream, both from a pure `Exchange`; `#name` names the wire, and `#structured`
+-         says whether it honours `Exchange#format` natively. The library's four dialects
+-         (Anthropic's Messages API, OpenAI's Chat Completions and Responses, Gemini) are private
+-         and are constructed by each provider's `Sessional`, capturing the HTTP capabilities and
+-         the caller's tactic, so the session never touches HTTP. The trait is public so that a
+-         test can fake one; `Session`'s constructor, which takes a dialect, is not, so a custom
+-         dialect cannot be driven through a `Session` from outside the library.
++         Um dialeto fala por dois métodos: `#exchange` para uma resposta completa e `#stream` para
++         o stream de eventos, ambos a partir de uma `Exchange` pura; `#name` nomeia o protocolo, e
++         `#structured` diz se ele respeita `Exchange#format` nativamente. Os quatro dialetos da
++         biblioteca (a Messages API da Anthropic, o Chat Completions e o Responses da OpenAI, o
++         Gemini) são privados e são construídos pelo `Sessional` de cada provedor, capturando as
++         capabilities HTTP e a tática de quem chama, de modo que a sessão nunca toca em HTTP. O
++         trait é público para que um teste possa simular um; o construtor de `Session`, que recebe
++         um dialeto, não é, de modo que um dialeto personalizado não pode ser conduzido por uma
++         `Session` de fora da biblioteca.
+
+=         dialect cannot be driven through a `Session` from outside the library.
+=
+-         ```scala
++         ```scala
+
+=         dialect cannot be driven through a `Session` from outside the library.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         class Scripted(answers: List[Llm.Reply]) extends Llm.Dialect:
++         class Scripted(answers: List[Llm.Reply]) extends Llm.Dialect:
+
+-           private val replies = scala.collection.mutable.Queue(answers.stdlib*)
++           private val replies = scala.collection.mutable.Queue(answers.stdlib*)
+
+-           def name: Text = t"scripted"
++           def name: Text = t"scripted"
+
+-           def exchange(turn: Llm.Exchange): Llm.Reply = replies.dequeue()
++           def exchange(turn: Llm.Exchange): Llm.Reply = replies.dequeue()
+
+-           def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, scala.caps.any} =
++           def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, scala.caps.any} =
+
+-             Iterator.from(List.iterator(List[Llm.Event]()))
++             Iterator.from(List.iterator(List[Llm.Event]()))
+
+=             Iterator.from(List.iterator(List[Llm.Event]()))
+-         ```
++         ```
+
+-         The shared HTTP engine behind the real dialects applies one retry policy: a 429, 503 or
+-         529 is retried three times, after the `retry-after` delay when the provider sends one
+-         and with exponential backoff (1, 2, 4 seconds) when it does not; any other failure is
+-         mapped through the dialect's error envelope and raised as `Llm.Error`.
+-     entry #name   the wire's name: `anthropic`, `openai`, `openai-responses`, `gemini`
+-     entry #exchange   one non-streamed round trip: the exchange to a `Reply`
+-     entry #stream   one streamed round trip: the exchange to an iterator of `Event`s
+-         The result captures the dialect and the fresh streaming state it advances, so its type
+-         is `Iterator[Event]^{this, caps.any}`; an implementation must declare the same.
+-     entry #structured   whether the wire constrains a reply to a JSON schema natively; `false` unless overridden
+-         Anthropic's dialect is `true`. When `false`, `solicit` obtains a structured answer
+-         through a forced tool call instead, and the caller sees no difference; a fake dialect
+-         which overrides it to `true` must return the JSON document as the reply's text.
+-   entry .Error   raised when a model request fails: unreachable, unauthorized, rate-limited, malformed, …
++         O motor HTTP compartilhado por trás dos dialetos reais aplica uma única política de novas
++         tentativas: um 429, 503 ou 529 é tentado de novo três vezes, depois do atraso
++         `retry-after` quando o provedor envia um, e com backoff exponencial (1, 2, 4 segundos)
++         quando não envia; qualquer outra falha é mapeada pelo envelope de erro do dialeto e
++         lançada como `Llm.Error`.
++     entry #name   o nome do protocolo: `anthropic`, `openai`, `openai-responses`, `gemini`
++     entry #exchange   uma ida e volta sem streaming: da troca a um `Reply`
++     entry #stream   uma ida e volta com streaming: da troca a um iterador de `Event`s
++         O resultado captura o dialeto e o novo estado de streaming que ele faz avançar, então seu
++         tipo é `Iterator[Event]^{this, caps.any}`; uma implementação deve declarar o mesmo.
++     entry #structured   se o protocolo restringe nativamente uma resposta a um schema JSON; `false` a menos que sobrescrito
++         O dialeto da Anthropic é `true`. Quando é `false`, `solicit` obtém uma resposta
++         estruturada por meio de uma chamada de ferramenta forçada, e quem chama não vê diferença;
++         um dialeto simulado que o sobrescreve como `true` deve retornar o documento JSON como texto
++         da resposta.
++   entry .Error   lançado quando uma requisição ao modelo falha: inalcançável, não autorizada, com limite de taxa, malformada, …
+
+=   entry .Error   raised when a model request fails: unreachable, unauthorized, rate-limited, malformed, …
+-     detail
++     detail
+
+-         Error `↯/s.126.1`, subcoded by `.Reason`: _the model request failed because `reason`:
+-         `detail`_. Every failure a provider, the network or the translation can produce is an
+-         `Llm.Error`; `#status` is the HTTP status when there was one, and `#retry` the
+-         `retry-after` delay in seconds on a rate limit or overload, the two facts a caller
+-         needs to decide whether and when to try again. A rate limit or overload has already
+-         been retried three times by the time it is raised. The `Tactic[Llm.Error]` is taken
+-         when `session` opens, so `strategies.throwUnsafely`, `safely` or `recover` around the
+-         session call handles every turn inside it:
++         Erro `↯/s.126.1`, com subcódigo dado por `.Reason`: _the model request failed because
++         `reason`: `detail`_. Toda falha que um provedor, a rede ou a tradução podem produzir é um
++         `Llm.Error`; `#status` é o status HTTP quando houve um, e `#retry`, o atraso
++         `retry-after` em segundos em um limite de taxa ou sobrecarga — os dois fatos de que quem
++         chama precisa para decidir se e quando tentar de novo. Um limite de taxa ou sobrecarga já
++         foi tentado de novo três vezes quando é lançado. A `Tactic[Llm.Error]` é obtida quando
++         `session` abre, de modo que `strategies.throwUnsafely`, `safely` ou `recover` em volta da
++         chamada da sessão trata todo turno dentro dela:
+
+=         session call handles every turn inside it:
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         session call handles every turn inside it:
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         session call handles every turn inside it:
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+-         recover:
++         recover:
+
+-           case error: Llm.Error => error.reason match
++           case error: Llm.Error => error.reason match
+
+-             case Llm.Error.Reason.Unauthorized => Out.println(t"check the API key")
++             case Llm.Error.Reason.Unauthorized => Out.println(t"check the API key")
+
+-             case Llm.Error.Reason.TooLarge     => Out.println(t"shorten the conversation")
++             case Llm.Error.Reason.TooLarge     => Out.println(t"shorten the conversation")
+
+-             case other                         => Out.println(error.message)
++             case other                         => Out.println(error.message)
+
+-         . protect:
++         . protect:
+
+-             val reply = claude.session(llm.ask(t"Hello"))
++             val reply = claude.session(llm.ask(t"Hello"))
+
+-             Out.println(reply.text)
++             Out.println(reply.text)
+
+=             Out.println(reply.text)
+-         ```
++         ```
+
+-         A wire error envelope is mapped onto a reason by its type or its status, and an error
+-         code which matches no reason is kept under `Provider(code)`, so the wire's own error is
+-         never lost.
+-     entry .Reason   the fixed set of failure kinds, each the error's subcode
+-         The numbers are frozen; a reason added later appends:
++         Um envelope de erro do protocolo é mapeado para um motivo pelo seu tipo ou pelo seu
++         status, e um código de erro que não corresponde a nenhum motivo é guardado em
++         `Provider(code)`, de modo que o erro próprio do protocolo nunca se perde.
++     entry .Reason   o conjunto fixo de categorias de falha, cada uma o subcódigo do erro
++         Os números estão congelados; um motivo acrescentado depois vai para o fim:
+
+-         ```tabular
++         ```tabular
+
+-         column  Case
+-         column  Code
+-         column  Message
+-         column  Note
++         column  Caso
++         column  Código
++         column  Mensagem
++         column  Observação
+
+-         row  `Unreachable`  1  _the provider could not be reached_
++         row  `Unreachable`  1  _the provider could not be reached_
+
+-         row  `Unauthorized`  2  _the API key was missing, invalid or expired_
++         row  `Unauthorized`  2  _the API key was missing, invalid or expired_
+
+-         row  `Invalid`  3  _the provider rejected the request as invalid_  also an unknown tool, a malformed argument or a bad request identifier
++         row  `Invalid`  3  _the provider rejected the request as invalid_  também uma ferramenta desconhecida, um argumento malformado ou um identificador de requisição ruim
+
+-         row  `NotFound`  4  _the model or endpoint does not exist_
++         row  `NotFound`  4  _the model or endpoint does not exist_
+
+-         row  `TooLarge`  5  _the conversation exceeds the model's context window_
++         row  `TooLarge`  5  _the conversation exceeds the model's context window_
+
+-         row  `RateLimited`  6  _the provider imposed a rate limit_
++         row  `RateLimited`  6  _the provider imposed a rate limit_
+
+-         row  `Overloaded`  7  _the provider is temporarily overloaded_
++         row  `Overloaded`  7  _the provider is temporarily overloaded_
+
+-         row  `Malformed`  8  _the provider's reply could not be interpreted_  the reply, a stream frame or a structured answer
++         row  `Malformed`  8  _the provider's reply could not be interpreted_  a resposta, um quadro do stream ou uma resposta estruturada
+
+-         row  `Interrupted`  9  _the stream ended before the message was complete_
++         row  `Interrupted`  9  _the stream ended before the message was complete_
+
+-         row  `ToolLoopExceeded`  10  _the tool-use loop exceeded its iteration limit_  its `iterations` bound
+-         row  `Provider(code0)`  11  _the provider reported the error code `code0`_  a code which maps to none of the others
++         row  `ToolLoopExceeded`  10  _the tool-use loop exceeded its iteration limit_  seu limite de `iterations`
++         row  `Provider(code0)`  11  _the provider reported the error code `code0`_  um código que não corresponde a nenhum dos outros
+
+=         row  `Provider(code0)`  11  _the provider reported the error code `code0`_  a code which maps to none of the others
+-         ```
++         ```
+
+-     entry .communicable   renders each reason as the message the error carries
+-     entry #reason   which kind of failure it was
+-     entry #detail   the provider's message, or the library's account of a local failure
+-     entry #status   the HTTP status, when there was one
+-     entry #retry   the `retry-after` delay in seconds, on a rate limit or overload which sent one
+-   entry .Response   a streamed assistant turn in flight: its events, its text, and the reply once drained
++     entry .communicable   renderiza cada motivo como a mensagem que o erro carrega
++     entry #reason   que categoria de falha foi
++     entry #detail   a mensagem do provedor, ou o relato da biblioteca sobre uma falha local
++     entry #status   o status HTTP, quando houve um
++     entry #retry   o atraso `retry-after` em segundos, em um limite de taxa ou sobrecarga que enviou um
++   entry .Response   um turno de assistente em streaming em andamento: seus eventos, seu texto e a resposta depois de esgotado
+
+=   entry .Response   a streamed assistant turn in flight: its events, its text, and the reply once drained
+-     detail
++     detail
+
+-         `Session#stream` returns one. `#text` is an iterator of the text fragments, pulled
+-         synchronously off the connection as they arrive, and `#events` the finer-grained
+-         `Event`s; `#reply()` drains whatever remains, folds everything into a `Reply`, and
+-         commits the user and assistant turns to the session's history together. Every event
+-         pulled through any of the three feeds the same accumulator, so a partially-consumed
+-         stream still completes on `reply()`, and `reply()` is idempotent.
++         `Session#stream` retorna um. `#text` é um iterador dos fragmentos de texto, puxados
++         sincronamente da conexão à medida que chegam, e `#events`, os `Event`s mais finos;
++         `#reply()` esgota o que resta, acumula tudo em um `Reply` e registra juntos os turnos do
++         usuário e do assistente no histórico da sessão. Todo evento puxado por qualquer um dos três
++         alimenta o mesmo acumulador, de modo que um stream parcialmente consumido ainda se completa
++         em `reply()`, e `reply()` é idempotente.
+
+=         stream still completes on `reply()`, and `reply()` is idempotent.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         stream still completes on `reply()`, and `reply()` is idempotent.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         stream still completes on `reply()`, and `reply()` is idempotent.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         stream still completes on `reply()`, and `reply()` is idempotent.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         claude.session:
++         claude.session:
+
+-           val response = llm.stream(t"Write a limerick about Tallinn.")
++           val response = llm.stream(t"Write a limerick about Tallinn.")
+
+-           response.text.each(Out.print(_))
++           response.text.each(Out.print(_))
+
+-           response.reply()
++           response.reply()
+
+=           response.reply()
+-         ```
++         ```
+
+-         Nothing is committed until `reply()` is called: an abandoned or failed stream leaves
+-         the history as it was, so a failed turn is simply re-asked from the previous turn
+-         boundary. The response borrows the session, so it is confined to the session's block
+-         and — since the session is exclusive — no other turn can begin while it is undrained;
+-         storing it in an outer variable is a compile error.
++         Nada é registrado até que `reply()` seja chamado: um stream abandonado ou que falhou deixa
++         o histórico como estava, de modo que um turno que falhou é simplesmente perguntado de novo
++         a partir da fronteira do turno anterior. A resposta toma emprestada a sessão, então fica
++         confinada ao bloco da sessão e — como a sessão é exclusiva — nenhum outro turno pode
++         começar enquanto ela não for esgotada; armazená-la em uma variável externa é um erro de
++         compilação.
+
+=         storing it in an outer variable is a compile error.
+-     refer sibylline.Llm.Session
++     refer sibylline.Llm.Session
+
+-     refer sibylline.Llm.Event
++     refer sibylline.Llm.Event
+
+-     entry #events   every streaming event, once, in order
+-     entry #text   the text deltas only, as they arrive
+-         For `response.text.each(Out.print(_))`; the thinking, tool-argument and signature
+-         increments are absorbed but not yielded.
+-     entry #reply   drains the stream, assembles the `Reply`, and commits the turn to the session
+-         Raises `Llm.Error(Interrupted)` if the stream ended before `Finished` or with a block
+-         still open, and `Malformed` if a tool call's streamed arguments were not JSON. A second
+-         call returns the same `Reply` without touching the stream.
+-   entry .Session   a conversation: the one mutable holder of its history and usage, confined to its block
++     entry #events   todos os eventos de streaming, uma vez, em ordem
++     entry #text   apenas os deltas de texto, à medida que chegam
++         Para `response.text.each(Out.print(_))`; os incrementos de raciocínio, de argumentos de
++         ferramenta e de assinatura são absorvidos, mas não produzidos.
++     entry #reply   esgota o stream, monta o `Reply` e registra o turno na sessão
++         Lança `Llm.Error(Interrupted)` se o stream terminou antes de `Finished` ou com um bloco
++         ainda aberto, e `Malformed` se os argumentos transmitidos de uma chamada de ferramenta não
++         eram JSON. Uma segunda chamada retorna o mesmo `Reply` sem tocar no stream.
++   entry .Session   uma conversa: o único detentor mutável do seu histórico e uso, confinado ao seu bloco
+
+=   entry .Session   a conversation: the one mutable holder of its history and usage, confined to its block
+-     detail
++     detail
+
+-         A session is opened on a provider value with `session` — `claude.session: …` — and
+-         reached inside the block as `llm`; it has no public constructor. `#ask` sends a turn
+-         and returns the `Reply`, committing both turns to `#history`; `#stream` sends a turn
+-         and returns a `Response` to read as it arrives; `solicit[T]` asks for a typed answer;
+-         `#record` seeds the history without a round trip; `#usage` is the fold of every
+-         committed turn's cost.
++         Uma sessão é aberta sobre um valor de provedor com `session` — `claude.session: …` — e
++         alcançada dentro do bloco como `llm`; ela não tem construtor público. `#ask` envia um
++         turno e retorna o `Reply`, registrando ambos os turnos em `#history`; `#stream` envia um
++         turno e retorna um `Response` para ler à medida que chega; `solicit[T]` pede uma resposta
++         tipada; `#record` semeia o histórico sem uma ida e volta; `#usage` é a acumulação do custo
++         de todos os turnos registrados.
+
+-         With a `Toolkit` given in scope, `ask` runs the tool loop, and the history grows by
+-         every turn the loop makes:
++         Com um given `Toolkit` no escopo, `ask` executa o laço de ferramentas, e o histórico cresce
++         a cada turno que o laço faz:
+
+=         every turn the loop makes:
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         ```scala fuel
+-         frame
++         frame
+
+-           label The question
++           label A pergunta
+
+=           label The question
+-           code
++           code
+
+=           label The question
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label The question
+=           code
+=               import soundness.*
+=
+-               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
++               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+
+-               val history: List[Llm.Message] = List(asked)
++               val history: List[Llm.Message] = List(asked)
+
+=               val history: List[Llm.Message] = List(asked)
+-         frame
++         frame
+
+-           label The model stops to call a tool
++           label O modelo para para chamar uma ferramenta
+
+=           label The model stops to call a tool
+-           code
++           code
+
+=           label The model stops to call a tool
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label The model stops to call a tool
+=           code
+=               import soundness.*
+=
+-               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
++               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+
+=           label The model stops to call a tool
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+-               val called = Llm.Message
++               val called = Llm.Message
+
+=           label The model stops to call a tool
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+-                 ( Llm.Role.Assistant,
++                 ( Llm.Role.Assistant,
+
+=           label The model stops to call a tool
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+=                 ( Llm.Role.Assistant,
+-                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
++                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
+
+-               val history: List[Llm.Message] = List(asked, called)
++               val history: List[Llm.Message] = List(asked, called)
+
+=               val history: List[Llm.Message] = List(asked, called)
+-         frame
++         frame
+
+-           label The loop runs the tool and reports its result
++           label O laço executa a ferramenta e reporta seu resultado
+
+=           label The loop runs the tool and reports its result
+-           code
++           code
+
+=           label The loop runs the tool and reports its result
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label The loop runs the tool and reports its result
+=           code
+=               import soundness.*
+=
+-               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
++               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+
+=           label The loop runs the tool and reports its result
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+-               val called = Llm.Message
++               val called = Llm.Message
+
+=           label The loop runs the tool and reports its result
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+-                 ( Llm.Role.Assistant,
++                 ( Llm.Role.Assistant,
+
+=           label The loop runs the tool and reports its result
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+=                 ( Llm.Role.Assistant,
+-                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
++                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
+
+=           label The loop runs the tool and reports its result
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+=                 ( Llm.Role.Assistant,
+=                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
+=
+-               val reported = Llm.Message
++               val reported = Llm.Message
+
+=           label The loop runs the tool and reports its result
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+=                 ( Llm.Role.Assistant,
+=                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
+=
+=               val reported = Llm.Message
+-                 ( Llm.Role.User,
++                 ( Llm.Role.User,
+
+=           label The loop runs the tool and reports its result
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+=                 ( Llm.Role.Assistant,
+=                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
+=
+=               val reported = Llm.Message
+=                 ( Llm.Role.User,
+-                   List(Llm.Content.ToolResult(t"toolu_1", List(Llm.Content.Textual(t"211.5")))) )
++                   List(Llm.Content.ToolResult(t"toolu_1", List(Llm.Content.Textual(t"211.5")))) )
+
+-               val history: List[Llm.Message] = List(asked, called, reported)
++               val history: List[Llm.Message] = List(asked, called, reported)
+
+=               val history: List[Llm.Message] = List(asked, called, reported)
+-         frame
++         frame
+
+-           label The model answers in text, and the loop ends
++           label O modelo responde em texto, e o laço termina
+
+=           label The model answers in text, and the loop ends
+-           code
++           code
+
+=           label The model answers in text, and the loop ends
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label The model answers in text, and the loop ends
+=           code
+=               import soundness.*
+=
+-               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
++               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+
+=           label The model answers in text, and the loop ends
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+-               val called = Llm.Message
++               val called = Llm.Message
+
+=           label The model answers in text, and the loop ends
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+-                 ( Llm.Role.Assistant,
++                 ( Llm.Role.Assistant,
+
+=           label The model answers in text, and the loop ends
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+=                 ( Llm.Role.Assistant,
+-                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
++                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
+
+=           label The model answers in text, and the loop ends
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+=                 ( Llm.Role.Assistant,
+=                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
+=
+-               val reported = Llm.Message
++               val reported = Llm.Message
+
+=           label The model answers in text, and the loop ends
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+=                 ( Llm.Role.Assistant,
+=                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
+=
+=               val reported = Llm.Message
+-                 ( Llm.Role.User,
++                 ( Llm.Role.User,
+
+=           label The model answers in text, and the loop ends
+=           code
+=               import soundness.*
+=
+=               val asked = Llm.Message(Llm.Role.User, t"Price AAPL?")
+=
+=               val called = Llm.Message
+=                 ( Llm.Role.Assistant,
+=                   List(Llm.Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")) )
+=
+=               val reported = Llm.Message
+=                 ( Llm.Role.User,
+-                   List(Llm.Content.ToolResult(t"toolu_1", List(Llm.Content.Textual(t"211.5")))) )
++                   List(Llm.Content.ToolResult(t"toolu_1", List(Llm.Content.Textual(t"211.5")))) )
+
+-               val answered = Llm.Message(Llm.Role.Assistant, t"AAPL is trading at 211.50 dollars.")
++               val answered = Llm.Message(Llm.Role.Assistant, t"AAPL is trading at 211.50 dollars.")
+
+-               val history: List[Llm.Message] = List(asked, called, reported, answered)
++               val history: List[Llm.Message] = List(asked, called, reported, answered)
+
+=               val history: List[Llm.Message] = List(asked, called, reported, answered)
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         That four-message history is what `llm.history` holds after one `ask` which made one
+-         tool call, and what the next `ask` sends in full: history is replayed by the client on
+-         every wire, never threaded server-side.
++         Esse histórico de quatro mensagens é o que `llm.history` contém depois de um `ask` que fez
++         uma chamada de ferramenta, e o que o próximo `ask` envia por inteiro: o histórico é
++         reproduzido pelo cliente em todo protocolo, nunca mantido do lado do servidor.
+
+-         A session is an exclusive, stateful capability: `ask`, `stream` and `record` are
+-         updates, a streamed `Response` borrows it, and the `session` block's result type is
+-         quantified outside the block, so returning the session, or a closure over it, is a
+-         compile error, while a `Reply`, a `history` snapshot or a `Usage` leaves freely. Every
+-         method raises `Llm.Error` through the tactic taken when the session was opened.
++         Uma sessão é uma capability exclusiva e com estado: `ask`, `stream` e `record` são
++         atualizações, um `Response` em streaming a toma emprestada, e o tipo do resultado do bloco
++         `session` é quantificado fora do bloco, de modo que retornar a sessão, ou uma closure
++         sobre ela, é um erro de compilação, enquanto um `Reply`, um instantâneo de `history` ou um
++         `Usage` saem livremente. Todo método lança `Llm.Error` pela tática obtida quando a sessão
++         foi aberta.
+
+-     refer sibylline.llm
++     refer sibylline.llm
+
+-     refer sibylline.solicit
++     refer sibylline.solicit
+
+=     refer sibylline.solicit
+-     refer sibylline.Llm.Response
++     refer sibylline.Llm.Response
+
+=     refer sibylline.Llm.Response
+-     refer sibylline.Toolkit
++     refer sibylline.Toolkit
+
+-     entry #history   every committed message so far, as a snapshot which may leave the block
+-     entry #usage   the fold of every committed turn's `Usage`
+-     entry #record   appends a message to the history without a round trip
+-         Replaying a transcript, or seeding context: a recorded message is sent with every later
+-         turn but costs nothing until then. A provider value's `primed(messages)` does the same
+-         for every session opened on it.
+-     entry #ask   sends a turn and returns the reply, running the tool loop if a `Toolkit` is given
+-         `ask(text)` sends a one-block user turn; `ask(message)` any `Message`, which is how an
+-         image, a document or a hand-made tool result is sent. The user turn and the reply are
+-         committed to the history together, after the call has succeeded. If the given `Toolkit`
+-         has tools and the reply's stop is `ToolCall`, each call is invoked, its result (or, for
+-         a failed or unknown call, an error-marked result) is sent as the next user turn, and
+-         the exchange repeats until the model stops for another reason, every turn committed;
+-         `Settings#iterations` (`iterating`, default 16) bounds the round trips, beyond which
+-         `Llm.Error(ToolLoopExceeded)` is raised. With no tools on offer a `ToolCall` reply is
+-         returned for the caller to handle.
++     entry #history   todas as mensagens registradas até então, como um instantâneo que pode sair do bloco
++     entry #usage   a acumulação dos `Usage` de todos os turnos registrados
++     entry #record   acrescenta uma mensagem ao histórico sem uma ida e volta
++         Para reproduzir uma transcrição, ou semear contexto: uma mensagem registrada é enviada com
++         todo turno posterior, mas não custa nada até lá. O `primed(messages)` de um valor de
++         provedor faz o mesmo para toda sessão aberta sobre ele.
++     entry #ask   envia um turno e retorna a resposta, executando o laço de ferramentas se um `Toolkit` for dado
++         `ask(text)` envia um turno de usuário de um bloco; `ask(message)`, qualquer `Message`, que
++         é como se envia uma imagem, um documento ou um resultado de ferramenta feito à mão. O
++         turno do usuário e a resposta são registrados juntos no histórico, depois que a chamada
++         tem sucesso. Se o `Toolkit` dado tem ferramentas e a parada da resposta é `ToolCall`, cada
++         chamada é invocada, seu resultado (ou, para uma chamada que falhou ou é desconhecida, um
++         resultado marcado como erro) é enviado como o próximo turno do usuário, e a troca se repete
++         até que o modelo pare por outro motivo, com cada turno registrado; `Settings#iterations`
++         (`iterating`, padrão 16) limita as idas e voltas, além das quais
++         `Llm.Error(ToolLoopExceeded)` é lançado. Sem ferramentas oferecidas, uma resposta
++         `ToolCall` é retornada para que quem chama a trate.
+
+=         returned for the caller to handle.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         returned for the caller to handle.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         returned for the caller to handle.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         returned for the caller to handle.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         claude.session:
++         claude.session:
+
+-           given Toolkit = broker
++           given Toolkit = broker
+
+-           llm.ask(t"Compare AAPL and MSFT.")
++           llm.ask(t"Compare AAPL and MSFT.")
+
+=           llm.ask(t"Compare AAPL and MSFT.")
+-         ```
++         ```
+
+-     entry #stream   sends a turn and returns a `Response` to read as it arrives
+-         `stream(text)` or `stream(message)`. Nothing is committed until the response's
+-         `reply()` is called; the response borrows the session, so no other turn can begin
+-         while it is undrained, and it cannot leave the block.
+-     entry #structured   whether this session's dialect constrains replies to a schema natively
+-         `true` on Anthropic; `solicit` reads it to choose between the native format and a
+-         forced tool call.
++     entry #stream   envia um turno e retorna um `Response` para ler à medida que chega
++         `stream(text)` ou `stream(message)`. Nada é registrado até que o `reply()` da resposta seja
++         chamado; a resposta toma emprestada a sessão, então nenhum outro turno pode começar
++         enquanto ela não for esgotada, e ela não pode sair do bloco.
++     entry #structured   se o dialeto desta sessão restringe nativamente as respostas a um schema
++         `true` na Anthropic; `solicit` o lê para escolher entre o formato nativo e uma chamada de
++         ferramenta forçada.
+
+- entry .Anthropic   a Claude model on Anthropic's Messages API: a pure, reusable value which opens sessions and batches
++ entry .Anthropic   um modelo Claude na Messages API da Anthropic: um valor puro e reutilizável que abre sessões e lotes
+
+= entry .Anthropic   a Claude model on Anthropic's Messages API: a pure, reusable value which opens sessions and batches
+-   detail
++   detail
+
+-       `Anthropic(model, key)` names a model and carries the API key; every tuning method
+-       returns a new value, so a configured model is an immutable value which may be a `val`,
+-       shared and reused across sessions. It is the target of `session`, through the
+-       `.sessional` given, and additionally offers what the Messages API alone has: structured
+-       batches (`#elicitAll`, `#batch`), token counting (`#countTokens`), prompt caching
+-       (`#caching`), a version header (`#versioned`) and beta features (`#trying`).
++       `Anthropic(model, key)` nomeia um modelo e carrega a chave de API; todo método de ajuste
++       retorna um novo valor, de modo que um modelo configurado é um valor imutável que pode ser um
++       `val`, compartilhado e reutilizado entre sessões. É o alvo de `session`, pelo given
++       `.sessional`, e oferece ainda o que só a Messages API tem: lotes estruturados
++       (`#elicitAll`, `#batch`), contagem de tokens (`#countTokens`), cache de prompts
++       (`#caching`), um cabeçalho de versão (`#versioned`) e recursos beta (`#trying`).
+
+=       (`#caching`), a version header (`#versioned`) and beta features (`#trying`).
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A model and its key
++         label Um modelo e sua chave
+
+=         label A model and its key
+-         code
++         code
+
+=         label A model and its key
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A model and its key
+=         code
+=             import soundness.*
+=
+-             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
++             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
+
+=             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
+-       frame
++       frame
+
+-         label A system prompt and an output limit
++         label Um prompt de sistema e um limite de saída
+
+=         label A system prompt and an output limit
+-         code
++         code
+
+=         label A system prompt and an output limit
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A system prompt and an output limit
+=         code
+=             import soundness.*
+=
+-             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
++             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
+
+=         label A system prompt and an output limit
+=         code
+=             import soundness.*
+=
+=             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
+-               . prompted(t"Be terse.")
++               . prompted(t"Be terse.")
+
+=         label A system prompt and an output limit
+=         code
+=             import soundness.*
+=
+=             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
+=               . prompted(t"Be terse.")
+-               . limit(1024)
++               . limit(1024)
+
+=               . limit(1024)
+-       frame
++       frame
+
+-         label The prompt cached at the provider, and a bounded tool loop
++         label O prompt em cache no provedor, e um laço de ferramentas limitado
+
+=         label The prompt cached at the provider, and a bounded tool loop
+-         code
++         code
+
+=         label The prompt cached at the provider, and a bounded tool loop
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label The prompt cached at the provider, and a bounded tool loop
+=         code
+=             import soundness.*
+=
+-             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
++             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
+
+=         label The prompt cached at the provider, and a bounded tool loop
+=         code
+=             import soundness.*
+=
+=             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
+-               . prompted(t"Be terse.")
++               . prompted(t"Be terse.")
+
+=         label The prompt cached at the provider, and a bounded tool loop
+=         code
+=             import soundness.*
+=
+=             val claude = Anthropic(t"claude-sonnet-4-5", t"sk-ant-…")
+=               . prompted(t"Be terse.")
+-               . limit(1024)
++               . limit(1024)
+
+-               . caching
++               . caching
+
+-               . iterating(4)
++               . iterating(4)
+
+=               . iterating(4)
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+=       ##
+=       ```
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ##
+=       ```
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       ##
+=       ```
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       ##
+=       ```
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       claude.session:
++       claude.session:
+
+=       claude.session:
+-         llm.ask(t"What is the tallest mountain in Estonia?")
++         llm.ask(t"What is the tallest mountain in Estonia?")
+
+=       claude.session:
+=         llm.ask(t"What is the tallest mountain in Estonia?")
+-       ```
++       ```
+
+-       Opening a session needs an `Online`, an `Http.Backend`, an `Http.Event is Loggable` and
+-       a `Tactic[Llm.Error]` in scope (`internetAccess.online`, `httpBackends.javaNetHttp`,
+-       `logging.silentLogging`, `strategies.throwUnsafely`). The wire headers (`x-api-key`,
+-       `anthropic-version`, `anthropic-beta`) are declared as givens in the companion, so using
+-       `Anthropic` needs no imports. The Messages API is stateless per request, so a session is
+-       only memory, and its dialect is the one which constrains a structured reply natively, so
+-       `solicit[T]` sends the schema as the reply's format rather than a forced tool. A knob left
+-       unset is omitted from the request, except `max_tokens`, which the wire requires and which
+-       is sent as 4096 when `limit` has not been called.
++       Abrir uma sessão requer um `Online`, um `Http.Backend`, um `Http.Event is Loggable` e uma
++       `Tactic[Llm.Error]` no escopo (`internetAccess.online`, `httpBackends.javaNetHttp`,
++       `logging.silentLogging`, `strategies.throwUnsafely`). Os cabeçalhos do protocolo
++       (`x-api-key`, `anthropic-version`, `anthropic-beta`) são declarados como givens no objeto
++       companheiro, de modo que usar `Anthropic` não requer imports. A Messages API não guarda
++       estado entre requisições, então uma sessão é só memória, e seu dialeto é o que restringe
++       nativamente uma resposta estruturada, de modo que `solicit[T]` envia o schema como formato
++       da resposta, e não como uma ferramenta forçada. Um ajuste não definido é omitido da
++       requisição, exceto `max_tokens`, que o protocolo exige e que é enviado como 4096 quando
++       `limit` não foi chamado.
+
+-       The class is deliberately not a case class: `Anthropic(…)` is typed as plain `Anthropic`,
+-       which is what the `Sessional` instance matches.
++       A classe deliberadamente não é uma case class: `Anthropic(…)` é tipado como `Anthropic`
++       simples, que é o que a instância de `Sessional` casa.
+
+=       which is what the `Sessional` instance matches.
+-   refer sibylline.Llm.Session
++   refer sibylline.Llm.Session
+
+-   refer sibylline.Anthropic.Batch
++   refer sibylline.Anthropic.Batch
+
+-   refer sibylline.solicit
++   refer sibylline.solicit
+
+-   entry .apply   `Anthropic(model, key)`: a model on `api.anthropic.com`, version `2023-06-01`, nothing else set
+-   entry .xApiKey   the `x-api-key` header directive, so `xApiKey = key` names it in an HTTP request
+-       In implicit scope through the companion; used by the dialect, and available to a program
+-       which calls the API with telekinesis directly.
+-   entry .anthropicVersion   the `anthropic-version` header directive
+-   entry .anthropicBeta   the `anthropic-beta` header directive
+-   entry .Sessional   the `Sessional` instance which opens an `Llm.Session` on an `Anthropic` value
++   entry .apply   `Anthropic(model, key)`: um modelo em `api.anthropic.com`, versão `2023-06-01`, nada mais definido
++   entry .xApiKey   a diretiva de cabeçalho `x-api-key`, para que `xApiKey = key` a nomeie em uma requisição HTTP
++       No escopo implícito pelo objeto companheiro; usada pelo dialeto, e disponível para um
++       programa que chama a API diretamente com o telekinesis.
++   entry .anthropicVersion   a diretiva de cabeçalho `anthropic-version`
++   entry .anthropicBeta   a diretiva de cabeçalho `anthropic-beta`
++   entry .Sessional   a instância de `Sessional` que abre uma `Llm.Session` sobre um valor `Anthropic`
+
+=   entry .Sessional   the `Sessional` instance which opens an `Llm.Session` on an `Anthropic` value
+-     detail
++     detail
+
+-         The class behind `.sessional`: `Self` is `Anthropic`, `Result` is a fresh
+-         `Llm.Session^`, and `session(target)(block)` constructs the Messages dialect from the
+-         HTTP capabilities and tactic in scope and lends a session over it to the block. The
+-         `Result` capability is fresh for each call, so returning the session, or anything
+-         which captures it, from the block is rejected by the capture checker. A named class
+-         rather than an anonymous given so that its `Result` type is stated exactly.
++         A classe por trás de `.sessional`: `Self` é `Anthropic`, `Result` é uma `Llm.Session^`
++         nova, e `session(target)(block)` constrói o dialeto Messages a partir das capabilities HTTP
++         e da tática no escopo e empresta ao bloco uma sessão sobre ele. A capability `Result` é
++         nova a cada chamada, então retornar a sessão, ou qualquer coisa que a capture, a partir do
++         bloco é rejeitado pelo verificador de capturas. É uma classe nomeada, e não um given
++         anônimo, para que seu tipo `Result` seja declarado exatamente.
+
+-     entry #Self   `Anthropic`
++     entry #Self   `Anthropic`
+
+-     entry #Result   `Llm.Session^`, the fresh session handle the block receives
+-     entry #session   opens a session on the target and runs the block with it
+-   entry .sessional   the given which makes `anthropic.session: …` resolve
+-       In implicit scope through the companion. It needs an `Online`, an `Http.Backend`, an
+-       `Http.Event is Loggable`, a `Tactic[Llm.Error]` and `Diagnostics` where `session` is
+-       called, and captures the first three.
+-   entry .Batch   a batch of structured questions on the Message Batches API, as last seen
++     entry #Result   `Llm.Session^`, o handle de sessão novo que o bloco recebe
++     entry #session   abre uma sessão sobre o alvo e executa o bloco com ela
++   entry .sessional   o given que permite resolver `anthropic.session: …`
++       No escopo implícito pelo objeto companheiro. Precisa de um `Online`, um `Http.Backend`, um
++       `Http.Event is Loggable`, uma `Tactic[Llm.Error]` e `Diagnostics` onde `session` é
++       chamado, e captura os três primeiros.
++   entry .Batch   um lote de perguntas estruturadas na Message Batches API, como visto pela última vez
+
+=   entry .Batch   a batch of structured questions on the Message Batches API, as last seen
+-     detail
++     detail
+
+-         `Anthropic#elicitAll[T](requests)` submits one and `Anthropic#batch[T](id)` finds one
+-         again. A `Batch[T]` is a pure record of its `#id`, `#status` and `#counts`, and of the
+-         type each answer decodes to; consulting the provider — `#refresh()`, `#await()`,
+-         `#outcomes()` — takes the HTTP capabilities and tactic at the call, so a batch may be
+-         kept, passed around, or resumed from its identifier in a later process. The Message
+-         Batches API runs the requests asynchronously, over minutes to hours, at half the price
+-         of the Messages API.
++         `Anthropic#elicitAll[T](requests)` envia um, e `Anthropic#batch[T](id)` o encontra de
++         novo. Um `Batch[T]` é um registro puro do seu `#id`, `#status` e `#counts`, e do tipo para
++         o qual cada resposta se decodifica; consultar o provedor — `#refresh()`, `#await()`,
++         `#outcomes()` — recebe as capabilities HTTP e a tática na chamada, de modo que um lote pode
++         ser guardado, repassado ou retomado a partir do seu identificador em um processo
++         posterior. A Message Batches API executa as requisições de forma assíncrona, ao longo de
++         minutos a horas, pela metade do preço da Messages API.
+
+=         of the Messages API.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         of the Messages API.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         of the Messages API.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         ##
+-         val requests = List
++         val requests = List
+
+=         ##
+=         val requests = List
+-           ( Llm.Request(Llm.Id.request(t"aapl"), t"Summarize your recommendation for AAPL."),
++           ( Llm.Request(Llm.Id.request(t"aapl"), t"Summarize your recommendation for AAPL."),
+
+=         ##
+=         val requests = List
+=           ( Llm.Request(Llm.Id.request(t"aapl"), t"Summarize your recommendation for AAPL."),
+-             Llm.Request(Llm.Id.request(t"msft"), t"Summarize your recommendation for MSFT.") )
++             Llm.Request(Llm.Id.request(t"msft"), t"Summarize your recommendation for MSFT.") )
+
+-         val batch: Anthropic.Batch[Appraisal] = claude.elicitAll[Appraisal](requests)
++         val batch: Anthropic.Batch[Appraisal] = claude.elicitAll[Appraisal](requests)
+
+-         val ended = batch.await()
++         val ended = batch.await()
+
+-         ended.outcomes().each: outcome =>
++         ended.outcomes().each: outcome =>
+
+=         ended.outcomes().each: outcome =>
+-           outcome.result match
++           outcome.result match
+
+=         ended.outcomes().each: outcome =>
+=           outcome.result match
+-             case appraisal: Appraisal => Out.println(t"${outcome.id}: ${appraisal.rating}")
++             case appraisal: Appraisal => Out.println(t"${outcome.id}: ${appraisal.rating}")
+
+=         ended.outcomes().each: outcome =>
+=           outcome.result match
+=             case appraisal: Appraisal => Out.println(t"${outcome.id}: ${appraisal.rating}")
+-             case error: Llm.Error     => Out.println(t"${outcome.id} failed: ${error.message}")
++             case error: Llm.Error     => Out.println(t"${outcome.id} failed: ${error.message}")
+
+=         ended.outcomes().each: outcome =>
+=           outcome.result match
+=             case appraisal: Appraisal => Out.println(t"${outcome.id}: ${appraisal.rating}")
+=             case error: Llm.Error     => Out.println(t"${outcome.id} failed: ${error.message}")
+-         ```
++         ```
+
+-         Outcomes arrive in the provider's order, not the order of submission, which is why
+-         each carries its request's identifier.
++         Os resultados chegam na ordem do provedor, não na ordem de envio, e é por isso que cada um
++         carrega o identificador da sua requisição.
+
+-     refer sibylline.Llm.Request
++     refer sibylline.Llm.Request
+
+-     refer sibylline.Llm.Outcome
++     refer sibylline.Llm.Outcome
+
+-     entry .Status   where a batch is in its life: `Processing`, `Canceling`, `Ended`, or `Other(code)`
+-         Decoding is total: a status the vocabulary does not model keeps the provider's code.
+-         `await` polls until `Ended`.
+-     entry .Counts   how many of the batch's requests are in each state
++     entry .Status   em que ponto da sua vida um lote está: `Processing`, `Canceling`, `Ended` ou `Other(code)`
++         A decodificação é total: um status que o vocabulário não modela guarda o código do
++         provedor. `await` consulta até `Ended`.
++     entry .Counts   quantas das requisições do lote estão em cada estado
+
+=     entry .Counts   how many of the batch's requests are in each state
+-       detail
++       detail
+
+-           `Counts(processing, succeeded, errored, canceled, expired)`; `processing` reaches
+-           zero when the batch has `Ended`.
+-       entry #processing   requests still running
+-       entry #succeeded   requests which produced a reply
+-       entry #errored   requests the provider rejected
+-       entry #canceled   requests canceled before they ran
+-       entry #expired   requests the batch expired before running
+-     entry #id   the batch's identifier, an `Llm.Id[Anthropic.Batch[?]]`, by which it is found again
+-     entry #status   the status as last seen; `refresh()` for the current one
+-     entry #counts   the request counts as last seen
+-     entry #refresh   fetches the batch's current status and counts, as a new `Batch`
+-         One `GET` of the batch resource; raises `Llm.Error` (`NotFound` for an identifier the
+-         provider does not know). The receiver is unchanged.
+-     entry #await   polls until the batch has ended, sleeping `seconds` (30 by default) between polls
+-         A plain blocking wait on the caller's thread, each poll a `refresh()`; returns the
+-         ended batch. A batch already `Ended` returns at once.
+-     entry #outcomes   every request's outcome, in the provider's order
+-         Reads the results file (JSON Lines) and decodes each line to an `Llm.Outcome[T]`: a
+-         succeeded request's reply text parsed as JSON and decoded to `T`, or an `Llm.Error`
+-         for one which errored, was canceled, expired, or whose answer did not match the
+-         schema. The batch should have `Ended`; raises `Llm.Error` if the results are not yet
+-         available.
+-   entry #model   the model's identifier, as given to `Anthropic(model, key)`
+-   entry #system   the system prompt set by `#prompted`, or `Unset`
+-   entry #settings   the `Llm.Settings` the tuning methods have built up
+-   entry #priming   the history every session opened on this value starts from
+-   entry #tools   the tools advertised in every turn, set by `#tooled`
+-   entry #cached   whether the system prompt is marked as a prompt-cache breakpoint
+-   entry #prompted   a copy with a system prompt
+-       The system prompt travels outside the message list, as the Messages API takes it.
+-   entry #caching   a copy whose system prompt is a prompt-cache breakpoint
+-       Sends the system prompt as a content block with ephemeral cache control, so every request
+-       sharing it — each turn of a long session, or each request of a batch — reads the prefix
+-       from the provider's cache; `Llm.Usage#cacheRead` on each reply reports how much was read.
+-       Only meaningful after `#prompted`.
+-   entry #limit   a copy with a maximum number of output tokens
+-       Sent as `max_tokens`; 4096 is sent when this has not been called, since the wire
+-       requires a value.
+-   entry #warmth   a copy with a sampling temperature
+-   entry #sampling   a copy with a nucleus-sampling threshold (`top_p`)
+-   entry #stopping   a copy with stop sequences
+-       A reply which ended at one has `Llm.Stop.Sequence(text)` as its stop reason.
+-   entry #iterating   a copy with a bound on the tool loop's round trips per `ask`; 16 unless set
+-   entry #primed   a copy whose sessions begin with the given history
+-       Replaying a transcript: the messages are sent with every turn and cost nothing until
+-       then. `Llm.Session#record` adds to one session instead.
+-   entry #tooled   a copy which advertises the given `Llm.Tool`s in every turn
+-       Specifications only: with no `Toolkit` given to run them, a `ToolCall` reply is returned
+-       to the caller. A `Toolkit` given in the session block offers its own tools in addition.
+-   entry #on   a copy addressing a different base URL
+-       For a proxy or a gateway speaking the Messages API; the default is
++           `Counts(processing, succeeded, errored, canceled, expired)`; `processing` chega a zero
++           quando o lote está `Ended`.
++       entry #processing   requisições ainda em execução
++       entry #succeeded   requisições que produziram uma resposta
++       entry #errored   requisições que o provedor rejeitou
++       entry #canceled   requisições canceladas antes de executarem
++       entry #expired   requisições que o lote expirou antes de executarem
++     entry #id   o identificador do lote, um `Llm.Id[Anthropic.Batch[?]]`, pelo qual ele é encontrado de novo
++     entry #status   o status como visto pela última vez; `refresh()` para o atual
++     entry #counts   as contagens de requisições como vistas pela última vez
++     entry #refresh   busca o status e as contagens atuais do lote, como um novo `Batch`
++         Um único `GET` do recurso do lote; lança `Llm.Error` (`NotFound` para um identificador
++         que o provedor não conhece). O receptor não muda.
++     entry #await   consulta até que o lote tenha terminado, dormindo `seconds` (30 por padrão) entre as consultas
++         Uma simples espera bloqueante na thread de quem chama, sendo cada consulta um
++         `refresh()`; retorna o lote terminado. Um lote já `Ended` retorna de imediato.
++     entry #outcomes   o resultado de cada requisição, na ordem do provedor
++         Lê o arquivo de resultados (JSON Lines) e decodifica cada linha para um
++         `Llm.Outcome[T]`: o texto da resposta de uma requisição bem-sucedida analisado como JSON e
++         decodificado para `T`, ou um `Llm.Error` para uma que deu erro, foi cancelada, expirou ou
++         cuja resposta não correspondeu ao schema. O lote deveria estar `Ended`; lança `Llm.Error`
++         se os resultados ainda não estiverem disponíveis.
++   entry #model   o identificador do modelo, como dado a `Anthropic(model, key)`
++   entry #system   o prompt de sistema definido por `#prompted`, ou `Unset`
++   entry #settings   as `Llm.Settings` que os métodos de ajuste construíram
++   entry #priming   o histórico a partir do qual começa toda sessão aberta sobre este valor
++   entry #tools   as ferramentas anunciadas em todo turno, definidas por `#tooled`
++   entry #cached   se o prompt de sistema está marcado como ponto de quebra do cache de prompts
++   entry #prompted   uma cópia com um prompt de sistema
++       O prompt de sistema viaja fora da lista de mensagens, como a Messages API o recebe.
++   entry #caching   uma cópia cujo prompt de sistema é um ponto de quebra do cache de prompts
++       Envia o prompt de sistema como bloco de conteúdo com controle de cache efêmero, de modo
++       que toda requisição que o compartilha — cada turno de uma sessão longa, ou cada requisição
++       de um lote — lê o prefixo do cache do provedor; `Llm.Usage#cacheRead` em cada resposta
++       reporta quanto foi lido. Só tem sentido depois de `#prompted`.
++   entry #limit   uma cópia com um número máximo de tokens de saída
++       Enviado como `max_tokens`; 4096 é enviado quando isto não foi chamado, já que o protocolo
++       exige um valor.
++   entry #warmth   uma cópia com uma temperatura de amostragem
++   entry #sampling   uma cópia com um limiar de amostragem por núcleo (`top_p`)
++   entry #stopping   uma cópia com sequências de parada
++       Uma resposta que terminou em uma delas tem `Llm.Stop.Sequence(text)` como motivo de parada.
++   entry #iterating   uma cópia com um limite para as idas e voltas do laço de ferramentas por `ask`; 16, a menos que definido
++   entry #primed   uma cópia cujas sessões começam com o histórico dado
++       Para reproduzir uma transcrição: as mensagens são enviadas com todo turno e não custam
++       nada até lá. `Llm.Session#record` acrescenta a uma única sessão.
++   entry #tooled   uma cópia que anuncia as `Llm.Tool`s dadas em todo turno
++       Apenas especificações: sem um `Toolkit` dado para executá-las, uma resposta `ToolCall` é
++       retornada a quem chama. Um `Toolkit` dado no bloco da sessão oferece, além destas, as
++       suas próprias ferramentas.
++   entry #on   uma cópia que endereça uma URL base diferente
++       Para um proxy ou um gateway que fala a Messages API; o padrão é
+
+-       `https://api.anthropic.com`.
++       `https://api.anthropic.com`.
+
+-   entry #versioned   a copy sending a different `anthropic-version` header; `2023-06-01` by default
+-   entry #trying   a copy sending an `anthropic-beta` header, to opt into a beta feature
+-   entry #elicitAll   submits many structured questions as one batch, answered later at half the price
+-       `claude.elicitAll[T](requests)` makes one exchange per `Llm.Request` — this value's
+-       system prompt, priming and settings, the request's prompt as the user turn, and the
+-       schema derived from `T` as the reply's format — and posts them to the Message Batches API,
+-       returning an `Anthropic.Batch[T]` in its initial `Processing` state. Needs `T is
+-       Schematic over JsonSchema` and `T is Json.Decodable`, plus the HTTP capabilities and a
+-       `Tactic[Llm.Error]`. Each request's identifier should come from `Llm.Id.request`, which
+-       applies the `custom_id` rule before anything is sent.
++   entry #versioned   uma cópia que envia um cabeçalho `anthropic-version` diferente; `2023-06-01` por padrão
++   entry #trying   uma cópia que envia um cabeçalho `anthropic-beta`, para aderir a um recurso beta
++   entry #elicitAll   envia muitas perguntas estruturadas como um único lote, respondido mais tarde pela metade do preço
++       `claude.elicitAll[T](requests)` cria uma troca por `Llm.Request` — o prompt de sistema, o
++       priming e as configurações deste valor, o prompt da requisição como turno do usuário e o
++       schema derivado de `T` como formato da resposta — e as envia à Message Batches API,
++       retornando um `Anthropic.Batch[T]` em seu estado inicial `Processing`. Precisa de
++       `T is Schematic over JsonSchema` e `T is Json.Decodable`, além das capabilities HTTP e de
++       uma `Tactic[Llm.Error]`. O identificador de cada requisição deve vir de `Llm.Id.request`,
++       que aplica a regra `custom_id` antes que qualquer coisa seja enviada.
+
+=       applies the `custom_id` rule before anything is sent.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       applies the `custom_id` rule before anything is sent.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       applies the `custom_id` rule before anything is sent.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       val batch = claude.prompted(t"Be terse.").elicitAll[Appraisal](requests)
++       val batch = claude.prompted(t"Be terse.").elicitAll[Appraisal](requests)
+
+-       batch.id.text   // keep this to resume the batch later
++       batch.id.text   // keep this to resume the batch later
+
+=       batch.id.text   // keep this to resume the batch later
+-       ```
++       ```
+
+-   entry #batch   a batch submitted earlier, in this process or another, found again by its identifier
+-       `claude.batch[T](id)` fetches the batch's current status and counts; `T` is the type
+-       its answers decode to, which the caller must name again, since the provider does not
+-       record it. Raises `Llm.Error(NotFound)` for an unknown identifier.
++   entry #batch   um lote enviado antes, neste processo ou em outro, encontrado de novo pelo seu identificador
++       `claude.batch[T](id)` busca o status e as contagens atuais do lote; `T` é o tipo para o
++       qual suas respostas se decodificam, que quem chama deve nomear de novo, já que o provedor
++       não o registra. Lança `Llm.Error(NotFound)` para um identificador desconhecido.
+
+=       record it. Raises `Llm.Error(NotFound)` for an unknown identifier.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       record it. Raises `Llm.Error(NotFound)` for an unknown identifier.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       record it. Raises `Llm.Error(NotFound)` for an unknown identifier.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       val resumed = claude.batch[Appraisal](t"msgbatch_1".as[Llm.Id[Anthropic.Batch[?]]])
++       val resumed = claude.batch[Appraisal](t"msgbatch_1".as[Llm.Id[Anthropic.Batch[?]]])
+
+-       resumed.status
++       resumed.status
+
+=       resumed.status
+-       ```
++       ```
+
+-   entry #countTokens   the input tokens a prospective conversation would cost, without running it
+-       `claude.countTokens(messages, system)` calls the `count_tokens` endpoint with this
+-       model, the messages and an optional system prompt, and returns the count, so a program
+-       can decide whether a document fits before sending it. Raises `Llm.Error(Malformed)` if
+-       the count is missing from the reply.
++   entry #countTokens   os tokens de entrada que uma conversa prospectiva custaria, sem executá-la
++       `claude.countTokens(messages, system)` chama o endpoint `count_tokens` com este modelo, as
++       mensagens e um prompt de sistema opcional, e retorna a contagem, para que um programa possa
++       decidir se um documento cabe antes de enviá-lo. Lança `Llm.Error(Malformed)` se a contagem
++       estiver ausente da resposta.
+
+=       the count is missing from the reply.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       the count is missing from the reply.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       the count is missing from the reply.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       claude.countTokens(List(question), system = t"Be terse.")
++       claude.countTokens(List(question), system = t"Be terse.")
+
+=       claude.countTokens(List(question), system = t"Be terse.")
+-       ```
++       ```
+
+- entry .OpenAI   a model on OpenAI's Chat Completions API, or any compatible server: a pure, reusable value
++ entry .OpenAI   um modelo na Chat Completions API da OpenAI, ou em qualquer servidor compatível: um valor puro e reutilizável
+
+= entry .OpenAI   a model on OpenAI's Chat Completions API, or any compatible server: a pure, reusable value
+-   detail
++   detail
+
+-       `OpenAI(model, key)` names a model at `api.openai.com`; `OpenAI.compatible(base, model,
+-       key)` names one on any server speaking the same wire — vLLM, Ollama, Groq, Mistral and
+-       the rest — where only the base URL changes and a local server may need no key at all.
+-       Tuning methods return new values, and the value is the target of `session` through the
+-       `.sessional` given. `#responses` is the same model spoken to through OpenAI's Responses
+-       API instead.
++       `OpenAI(model, key)` nomeia um modelo em `api.openai.com`; `OpenAI.compatible(base, model,
++       key)` nomeia um em qualquer servidor que fale o mesmo protocolo — vLLM, Ollama, Groq,
++       Mistral e os demais —, onde só muda a URL base e um servidor local pode não precisar de
++       chave alguma. Os métodos de ajuste retornam novos valores, e o valor é o alvo de `session`
++       pelo given `.sessional`. `#responses` é o mesmo modelo, acessado pela Responses API da
++       OpenAI.
+
+=       API instead.
+=
+-       ```scala
++       ```scala
+
+=       API instead.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val gpt = OpenAI(t"gpt-5", t"sk-…").warmth(0.2)
++       val gpt = OpenAI(t"gpt-5", t"sk-…").warmth(0.2)
+
+-       val local = OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")
++       val local = OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")
+
+=       val local = OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")
+-       ```
++       ```
+
+=       val local = OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")
+=       ```
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       val local = OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")
+=       ```
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       val local = OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")
+=       ```
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       local.session:
++       local.session:
+
+=       local.session:
+-         llm.ask(t"What is the tallest mountain in Estonia?")
++         llm.ask(t"What is the tallest mountain in Estonia?")
+
+=       local.session:
+=         llm.ask(t"What is the tallest mountain in Estonia?")
+-       ```
++       ```
+
+-       The key, when there is one, is sent as a bearer token; the system prompt becomes a
+-       leading `system` message; a streamed request asks for the final usage chunk; a tool call's
+-       arguments, which this wire carries as a string of JSON, are parsed into `Json`. The Chat
+-       dialect is not `structured`, so `solicit[T]` forces a call to a synthetic `answer` tool.
+-       A `Document` block has no form on this wire and is dropped. The class is not a case
+-       class, so `OpenAI(…)` is typed as plain `OpenAI`, which the `Sessional` instance matches.
++       A chave, quando existe, é enviada como bearer token; o prompt de sistema vira uma
++       mensagem `system` inicial; uma requisição em streaming pede o chunk final de uso; os
++       argumentos de uma chamada de ferramenta, que este protocolo transporta como uma string de
++       JSON, são analisados em `Json`. O dialeto Chat não é `structured`, então `solicit[T]` força
++       uma chamada a uma ferramenta sintética `answer`. Um bloco `Document` não tem forma neste
++       protocolo e é descartado. A classe não é uma case class, então `OpenAI(…)` é tipado como
++       `OpenAI` simples, que é o que a instância de `Sessional` casa.
+
+=       class, so `OpenAI(…)` is typed as plain `OpenAI`, which the `Sessional` instance matches.
+-   refer sibylline.Llm.Session
++   refer sibylline.Llm.Session
+
+-   refer sibylline.OpenAI.Responses
++   refer sibylline.OpenAI.Responses
+
+-   entry .apply   `OpenAI(model, key)`: a model on `api.openai.com/v1`, nothing else set
+-   entry .compatible   `OpenAI.compatible(base, model, key)`: the same wire on another server, the key optional
+-       `OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")` for a keyless local
+-       server; with a key, it is sent as a bearer token. Endpoints are addressed beneath the
+-       base, so it includes the `/v1` where the server expects one.
+-   entry .Sessional   the `Sessional` instance which opens an `Llm.Session` on an `OpenAI` value
++   entry .apply   `OpenAI(model, key)`: um modelo em `api.openai.com/v1`, nada mais definido
++   entry .compatible   `OpenAI.compatible(base, model, key)`: o mesmo protocolo em outro servidor, com a chave opcional
++       `OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")` para um servidor local sem
++       chave; com uma chave, ela é enviada como bearer token. Os endpoints são endereçados
++       abaixo da base, então ela inclui o `/v1` onde o servidor espera um.
++   entry .Sessional   a instância de `Sessional` que abre uma `Llm.Session` sobre um valor `OpenAI`
+
+=   entry .Sessional   the `Sessional` instance which opens an `Llm.Session` on an `OpenAI` value
+-     detail
++     detail
+
+-         The class behind `.sessional`: `Self` is `OpenAI`, `Result` a fresh `Llm.Session^`,
+-         and `session(target)(block)` constructs the Chat Completions dialect from the HTTP
+-         capabilities and tactic in scope and lends a session over it to the block, which cannot
+-         return it.
++         A classe por trás de `.sessional`: `Self` é `OpenAI`, `Result` é uma `Llm.Session^`
++         nova, e `session(target)(block)` constrói o dialeto Chat Completions a partir das
++         capabilities HTTP e da tática no escopo e empresta ao bloco uma sessão sobre ele, que o
++         bloco não pode retornar.
+
+-     entry #Self   `OpenAI`
++     entry #Self   `OpenAI`
+
+-     entry #Result   `Llm.Session^`, the fresh session handle the block receives
+-     entry #session   opens a session on the target and runs the block with it
+-   entry .sessional   the given which makes `openai.session: …` resolve
+-       In implicit scope through the companion; needs an `Online`, an `Http.Backend`, an
+-       `Http.Event is Loggable`, a `Tactic[Llm.Error]` and `Diagnostics` where `session` is
+-       called.
+-   entry .Responses   an `OpenAI` value spoken to through the Responses API instead of Chat Completions
++     entry #Result   `Llm.Session^`, o handle de sessão novo que o bloco recebe
++     entry #session   abre uma sessão sobre o alvo e executa o bloco com ela
++   entry .sessional   o given que permite resolver `openai.session: …`
++       No escopo implícito pelo objeto companheiro; precisa de um `Online`, um `Http.Backend`, um
++       `Http.Event is Loggable`, uma `Tactic[Llm.Error]` e `Diagnostics` onde `session` é
++       chamado.
++   entry .Responses   um valor `OpenAI` acessado pela Responses API em vez da Chat Completions
+
+=   entry .Responses   an `OpenAI` value spoken to through the Responses API instead of Chat Completions
+-     detail
++     detail
+
+-         Obtained with `OpenAI(model, key).responses`: the same credentials, model and knobs,
+-         a different wire shape — item-based input, with the system prompt as `instructions`,
+-         and semantic streaming events. It is the target of `session` through its own
+-         `.sessional`. History is replayed by the client on every turn, as in every other
+-         dialect; a reasoning item in the output is dropped, a refusal becomes text, and any
+-         other item is kept as `Llm.Content.Opaque("openai-responses", …)`. Like the Chat
+-         dialect it is not `structured`, so `solicit[T]` forces the `answer` tool.
++         Obtido com `OpenAI(model, key).responses`: as mesmas credenciais, modelo e ajustes, com
++         outra forma de protocolo — entrada baseada em itens, com o prompt de sistema como
++         `instructions`, e eventos de streaming semânticos. É o alvo de `session` pelo seu
++         próprio `.sessional`. O histórico é reproduzido pelo cliente a cada turno, como em todos
++         os outros dialetos; um item de raciocínio na saída é descartado, uma recusa vira texto, e
++         qualquer outro item é mantido como `Llm.Content.Opaque("openai-responses", …)`. Como o
++         dialeto Chat, ele não é `structured`, então `solicit[T]` força a ferramenta `answer`.
+
+=         dialect it is not `structured`, so `solicit[T]` forces the `answer` tool.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         dialect it is not `structured`, so `solicit[T]` forces the `answer` tool.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         dialect it is not `structured`, so `solicit[T]` forces the `answer` tool.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+-         gpt.responses.session:
++         gpt.responses.session:
+
+-           llm.ask(t"What is the tallest mountain in Estonia?")
++           llm.ask(t"What is the tallest mountain in Estonia?")
+
+=           llm.ask(t"What is the tallest mountain in Estonia?")
+-         ```
++         ```
+
+-         The value has no tuning methods of its own: configure the `OpenAI` value first, then
+-         take `responses`.
+-     entry .Sessional   the `Sessional` instance which opens an `Llm.Session` on a `Responses` value
++         O valor não tem métodos de ajuste próprios: configure primeiro o valor `OpenAI`, depois
++         tome `responses`.
++     entry .Sessional   a instância de `Sessional` que abre uma `Llm.Session` sobre um valor `Responses`
+
+=     entry .Sessional   the `Sessional` instance which opens an `Llm.Session` on a `Responses` value
+-       detail
++       detail
+
+-           `Self` is `OpenAI.Responses`, `Result` a fresh `Llm.Session^`; `session` constructs
+-           the Responses dialect over the underlying `OpenAI` value's settings.
++           `Self` é `OpenAI.Responses`, `Result` é uma `Llm.Session^` nova; `session` constrói o
++           dialeto Responses sobre os ajustes do valor `OpenAI` subjacente.
+
+-       entry #Self   `OpenAI.Responses`
++       entry #Self   `OpenAI.Responses`
+
+-       entry #Result   `Llm.Session^`, the fresh session handle the block receives
+-       entry #session   opens a session on the target and runs the block with it
+-     entry .sessional   the given which makes `openai.responses.session: …` resolve
+-         In implicit scope through the companion; needs the same `Online`, `Http.Backend`,
+-         `Http.Event is Loggable`, `Tactic[Llm.Error]` and `Diagnostics` as `OpenAI.sessional`.
+-   entry #model   the model's identifier
+-   entry #system   the system prompt set by `#prompted`, or `Unset`
+-   entry #settings   the `Llm.Settings` the tuning methods have built up
+-   entry #priming   the history every session opened on this value starts from
+-   entry #tools   the tools advertised in every turn, set by `#tooled`
+-   entry #prompted   a copy with a system prompt, sent as a leading `system` message
+-   entry #limit   a copy with a maximum number of output tokens (`max_completion_tokens`)
+-   entry #warmth   a copy with a sampling temperature
+-   entry #sampling   a copy with a nucleus-sampling threshold (`top_p`)
+-   entry #stopping   a copy with stop sequences
+-   entry #iterating   a copy with a bound on the tool loop's round trips per `ask`; 16 unless set
+-   entry #primed   a copy whose sessions begin with the given history
+-   entry #tooled   a copy which advertises the given `Llm.Tool`s in every turn, without running them
+-   entry #responses   the same model, credentials and knobs through the Responses API
+-       Returns an `OpenAI.Responses`, whose `session` speaks `/responses` rather than
++       entry #Result   `Llm.Session^`, o handle de sessão novo que o bloco recebe
++       entry #session   abre uma sessão sobre o alvo e executa o bloco com ela
++     entry .sessional   o given que permite resolver `openai.responses.session: …`
++         No escopo implícito pelo objeto companheiro; precisa dos mesmos `Online`,
++         `Http.Backend`, `Http.Event is Loggable`, `Tactic[Llm.Error]` e `Diagnostics` que
++         `OpenAI.sessional`.
++   entry #model   o identificador do modelo
++   entry #system   o prompt de sistema definido por `#prompted`, ou `Unset`
++   entry #settings   as `Llm.Settings` que os métodos de ajuste construíram
++   entry #priming   o histórico a partir do qual começa toda sessão aberta sobre este valor
++   entry #tools   as ferramentas anunciadas em todo turno, definidas por `#tooled`
++   entry #prompted   uma cópia com um prompt de sistema, enviado como mensagem `system` inicial
++   entry #limit   uma cópia com um número máximo de tokens de saída (`max_completion_tokens`)
++   entry #warmth   uma cópia com uma temperatura de amostragem
++   entry #sampling   uma cópia com um limiar de amostragem por núcleo (`top_p`)
++   entry #stopping   uma cópia com sequências de parada
++   entry #iterating   uma cópia com um limite para as idas e voltas do laço de ferramentas por `ask`; 16, a menos que definido
++   entry #primed   uma cópia cujas sessões começam com o histórico dado
++   entry #tooled   uma cópia que anuncia as `Llm.Tool`s dadas em todo turno, sem executá-las
++   entry #responses   o mesmo modelo, credenciais e ajustes pela Responses API
++       Retorna um `OpenAI.Responses`, cujo `session` fala com `/responses` em vez de
+
+-       `/chat/completions`.
++       `/chat/completions`.
+
+- entry .Gemini   a model on Google's Gemini API: a pure, reusable value which opens sessions
++ entry .Gemini   um modelo na Gemini API do Google: um valor puro e reutilizável que abre sessões
+
+= entry .Gemini   a model on Google's Gemini API: a pure, reusable value which opens sessions
+-   detail
++   detail
+
+-       `Gemini(model, key)` names a model on `generativelanguage.googleapis.com` and carries
+-       the API key, sent as the `x-goog-api-key` header. Tuning methods return new values, and
+-       the value is the target of `session` through the `.sessional` given.
++       `Gemini(model, key)` nomeia um modelo em `generativelanguage.googleapis.com` e carrega a
++       chave da API, enviada como cabeçalho `x-goog-api-key`. Os métodos de ajuste retornam novos
++       valores, e o valor é o alvo de `session` pelo given `.sessional`.
+
+=       the value is the target of `session` through the `.sessional` given.
+=
+-       ```scala
++       ```scala
+
+=       the value is the target of `session` through the `.sessional` given.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val gemini = Gemini(t"gemini-2.5-pro", t"AIza…").prompted(t"Be terse.").limit(256)
++       val gemini = Gemini(t"gemini-2.5-pro", t"AIza…").prompted(t"Be terse.").limit(256)
+
+=       val gemini = Gemini(t"gemini-2.5-pro", t"AIza…").prompted(t"Be terse.").limit(256)
+-       ```
++       ```
+
+=       val gemini = Gemini(t"gemini-2.5-pro", t"AIza…").prompted(t"Be terse.").limit(256)
+=       ```
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       val gemini = Gemini(t"gemini-2.5-pro", t"AIza…").prompted(t"Be terse.").limit(256)
+=       ```
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       val gemini = Gemini(t"gemini-2.5-pro", t"AIza…").prompted(t"Be terse.").limit(256)
+=       ```
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       gemini.session:
++       gemini.session:
+
+=       gemini.session:
+-         llm.ask(t"What is the tallest mountain in Estonia?")
++         llm.ask(t"What is the tallest mountain in Estonia?")
+
+=       gemini.session:
+=         llm.ask(t"What is the tallest mountain in Estonia?")
+-       ```
++       ```
+
+-       The wire's conventions are translated: the system prompt becomes the system instruction,
+-       the assistant role is `model`, a reply containing a function call is `Llm.Stop.ToolCall`
+-       even though the API says it stopped normally, a safety or recitation block is
+-       `Llm.Stop.Filtered(code)`, and the reasoning token count is reported as
+-       `Llm.Usage#reasoning`. Function calls carry no identifier on this wire, so a `ToolUse`
+-       block's id is the tool's name, and a `ToolResult` addresses its call by that name. The
+-       dialect is not `structured`, so `solicit[T]` forces a call to a synthetic `answer` tool.
+-       The class is not a case class, so `Gemini(…)` is typed as plain `Gemini`, which the
+-       `Sessional` instance matches.
++       As convenções do protocolo são traduzidas: o prompt de sistema vira a instrução de
++       sistema, o papel de assistente é `model`, uma resposta contendo uma chamada de função é
++       `Llm.Stop.ToolCall` mesmo que a API diga que parou normalmente, um bloqueio por segurança
++       ou por recitação é `Llm.Stop.Filtered(code)`, e a contagem de tokens de raciocínio é
++       reportada como `Llm.Usage#reasoning`. As chamadas de função não carregam identificador
++       neste protocolo, então o id de um bloco `ToolUse` é o nome da ferramenta, e um
++       `ToolResult` endereça sua chamada por esse nome. O dialeto não é `structured`, então
++       `solicit[T]` força uma chamada a uma ferramenta sintética `answer`. A classe não é uma
++       case class, então `Gemini(…)` é tipado como `Gemini` simples, que é o que a instância de
++       `Sessional` casa.
+
+=       `Sessional` instance matches.
+-   refer sibylline.Llm.Session
++   refer sibylline.Llm.Session
+
+-   entry .apply   `Gemini(model, key)`: a model on `generativelanguage.googleapis.com`, nothing else set
+-   entry .xGoogApiKey   the `x-goog-api-key` header directive, so `xGoogApiKey = key` names it in an HTTP request
+-       In implicit scope through the companion.
+-   entry .Sessional   the `Sessional` instance which opens an `Llm.Session` on a `Gemini` value
++   entry .apply   `Gemini(model, key)`: um modelo em `generativelanguage.googleapis.com`, nada mais definido
++   entry .xGoogApiKey   a diretiva de cabeçalho `x-goog-api-key`, para que `xGoogApiKey = key` a nomeie em uma requisição HTTP
++       No escopo implícito pelo objeto companheiro.
++   entry .Sessional   a instância de `Sessional` que abre uma `Llm.Session` sobre um valor `Gemini`
+
+=   entry .Sessional   the `Sessional` instance which opens an `Llm.Session` on a `Gemini` value
+-     detail
++     detail
+
+-         The class behind `.sessional`: `Self` is `Gemini`, `Result` a fresh `Llm.Session^`,
+-         and `session(target)(block)` constructs the Gemini dialect from the HTTP capabilities
+-         and tactic in scope and lends a session over it to the block, which cannot return it.
++         A classe por trás de `.sessional`: `Self` é `Gemini`, `Result` é uma `Llm.Session^`
++         nova, e `session(target)(block)` constrói o dialeto Gemini a partir das capabilities
++         HTTP e da tática no escopo e empresta ao bloco uma sessão sobre ele, que o bloco não pode
++         retornar.
+
+-     entry #Self   `Gemini`
++     entry #Self   `Gemini`
+
+-     entry #Result   `Llm.Session^`, the fresh session handle the block receives
+-     entry #session   opens a session on the target and runs the block with it
+-   entry .sessional   the given which makes `gemini.session: …` resolve
+-       In implicit scope through the companion; needs an `Online`, an `Http.Backend`, an
+-       `Http.Event is Loggable`, a `Tactic[Llm.Error]` and `Diagnostics` where `session` is
+-       called.
+-   entry #model   the model's identifier, addressed in the endpoint path
+-   entry #system   the system prompt set by `#prompted`, or `Unset`
+-   entry #settings   the `Llm.Settings` the tuning methods have built up
+-   entry #priming   the history every session opened on this value starts from
+-   entry #tools   the tools advertised in every turn, set by `#tooled`
+-   entry #prompted   a copy with a system prompt, sent as the system instruction
+-   entry #limit   a copy with a maximum number of output tokens (`maxOutputTokens`)
+-   entry #warmth   a copy with a sampling temperature
+-   entry #sampling   a copy with a nucleus-sampling threshold (`topP`)
+-   entry #stopping   a copy with stop sequences
+-   entry #iterating   a copy with a bound on the tool loop's round trips per `ask`; 16 unless set
+-   entry #primed   a copy whose sessions begin with the given history
+-   entry #tooled   a copy which advertises the given `Llm.Tool`s in every turn, without running them
+-   entry #on   a copy addressing a different base URL
+-       For a proxy or a gateway speaking the Gemini API; the `v1beta/models/…` path is
+-       appended beneath it.
++     entry #Result   `Llm.Session^`, o handle de sessão novo que o bloco recebe
++     entry #session   abre uma sessão sobre o alvo e executa o bloco com ela
++   entry .sessional   o given que permite resolver `gemini.session: …`
++       No escopo implícito pelo objeto companheiro; precisa de um `Online`, um `Http.Backend`, um
++       `Http.Event is Loggable`, uma `Tactic[Llm.Error]` e `Diagnostics` onde `session` é
++       chamado.
++   entry #model   o identificador do modelo, endereçado no caminho do endpoint
++   entry #system   o prompt de sistema definido por `#prompted`, ou `Unset`
++   entry #settings   as `Llm.Settings` que os métodos de ajuste construíram
++   entry #priming   o histórico a partir do qual começa toda sessão aberta sobre este valor
++   entry #tools   as ferramentas anunciadas em todo turno, definidas por `#tooled`
++   entry #prompted   uma cópia com um prompt de sistema, enviado como instrução de sistema
++   entry #limit   uma cópia com um número máximo de tokens de saída (`maxOutputTokens`)
++   entry #warmth   uma cópia com uma temperatura de amostragem
++   entry #sampling   uma cópia com um limiar de amostragem por núcleo (`topP`)
++   entry #stopping   uma cópia com sequências de parada
++   entry #iterating   uma cópia com um limite para as idas e voltas do laço de ferramentas por `ask`; 16, a menos que definido
++   entry #primed   uma cópia cujas sessões começam com o histórico dado
++   entry #tooled   uma cópia que anuncia as `Llm.Tool`s dadas em todo turno, sem executá-las
++   entry #on   uma cópia que endereça uma URL base diferente
++       Para um proxy ou um gateway que fala a Gemini API; o caminho `v1beta/models/…` é
++       acrescentado abaixo dela.

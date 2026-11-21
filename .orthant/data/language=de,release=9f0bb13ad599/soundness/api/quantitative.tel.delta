@@ -1,0 +1,61 @@
+orthant 1 language
+
+-   entry .TemperatureGradient   distance⁻¹·temperature
+-   entry .temperatureGradient   `temperature gradient`
+-   entry .ThermalConductance   distance²·mass·time⁻³·temperature⁻¹
++   entry .TemperatureGradient   Strecke⁻¹·Temperatur
++   entry .temperatureGradient   `temperature gradient`
++   entry .ThermalConductance   Strecke²·Masse·Zeit⁻³·Temperatur⁻¹
+
+- entry .Dyne   the dyne, the CGS unit of force, a `MetricUnit`
+- entry .Erg   the erg, the CGS unit of energy, a `MetricUnit`
+- entry .Barye   the barye, a tenth of a pascal: the CGS unit of pressure, a `MetricUnit`
+- entry .Poise   the poise, a tenth of a pascal-second: the CGS unit of dynamic viscosity, a `MetricUnit`
+-     Defined as a tenth of a `Pascal`, so dimensionally a pressure rather than a viscosity.
+- entry .Galileo   the gal, a centimetre per second squared: the CGS unit of acceleration, a `MetricUnit`
+- entry .Stokes   the stokes, the CGS unit of kinematic viscosity, a `MetricUnit`
+- entry .Gauss   the gauss, the CGS unit of magnetic flux density, a `MetricUnit`
+- entry .Maxwell   the maxwell, the CGS unit of magnetic flux, a `MetricUnit`
+- entry .Oersted   the oersted, 79.577 amperes per metre: the CGS unit of magnetic field strength, a `MetricUnit`
+- entry .Gilbert   the gilbert, 0.796 amperes: the CGS unit of magnetomotive force, a `MetricUnit`
+- entry .Biot   the biot, ten amperes: the CGS unit of current, a `MetricUnit`
+- entry .Emu   the electromagnetic unit of magnetization, amperes per square metre, a `MetricUnit`
+- entry .Franklin   the franklin, 3.34×10⁻¹⁰ coulombs: the CGS unit of charge, a `MetricUnit`
+- entry .Debye   the debye, 3.335×10⁻³⁰ coulomb-metres: a unit of electric dipole moment, a `MetricUnit`
+- entry .Lambert   the lambert, the CGS unit of luminance, a `MetricUnit`
+- entry .Phot   the phot, the CGS unit of illuminance, a `MetricUnit`
+- entry .Langley   the langley, 41840 joules per square metre, a `MetricUnit`
+- entry .Kayser   the kayser, a wavenumber of one per centimetre, a `MetricUnit`
+- entry .Darcy   the darcy, 0.987×10⁻¹² square metres: a unit of permeability, a `MetricUnit`
++ entry .Dyne   das Dyn, die CGS-Einheit der Kraft, eine `MetricUnit`
++ entry .Erg   das Erg, die CGS-Einheit der Energie, eine `MetricUnit`
++ entry .Barye   das Barye, ein Zehntel Pascal: die CGS-Einheit des Drucks, eine `MetricUnit`
++ entry .Poise   das Poise, ein Zehntel Pascalsekunde: die CGS-Einheit der dynamischen Viskosität, eine `MetricUnit`
++     Als ein Zehntel `Pascal` definiert, daher dimensional ein Druck statt einer Viskosität.
++ entry .Galileo   das Gal, ein Zentimeter pro Quadratsekunde: die CGS-Einheit der Beschleunigung, eine `MetricUnit`
++ entry .Stokes   das Stokes, die CGS-Einheit der kinematischen Viskosität, eine `MetricUnit`
++ entry .Gauss   das Gauß, die CGS-Einheit der magnetischen Flussdichte, eine `MetricUnit`
++ entry .Maxwell   das Maxwell, die CGS-Einheit des magnetischen Flusses, eine `MetricUnit`
++ entry .Oersted   das Oersted, 79.577 Ampere pro Meter: die CGS-Einheit der magnetischen Feldstärke, eine `MetricUnit`
++ entry .Gilbert   das Gilbert, 0.796 Ampere: die CGS-Einheit der magnetomotorischen Kraft, eine `MetricUnit`
++ entry .Biot   das Biot, zehn Ampere: die CGS-Einheit der Stromstärke, eine `MetricUnit`
++ entry .Emu   die elektromagnetische Einheit der Magnetisierung, Ampere pro Quadratmeter, eine `MetricUnit`
++ entry .Franklin   das Franklin, 3.34×10⁻¹⁰ Coulomb: die CGS-Einheit der Ladung, eine `MetricUnit`
++ entry .Debye   das Debye, 3.335×10⁻³⁰ Coulombmeter: eine Einheit des elektrischen Dipolmoments, eine `MetricUnit`
++ entry .Lambert   das Lambert, die CGS-Einheit der Leuchtdichte, eine `MetricUnit`
++ entry .Phot   das Phot, die CGS-Einheit der Beleuchtungsstärke, eine `MetricUnit`
++ entry .Langley   das Langley, 41840 Joule pro Quadratmeter, eine `MetricUnit`
++ entry .Kayser   das Kayser, eine Wellenzahl von eins pro Zentimeter, eine `MetricUnit`
++ entry .Darcy   das Darcy, 0.987×10⁻¹² Quadratmeter: eine Einheit der Permeabilität, eine `MetricUnit`
+
+-       86400 seconds. Its unit value is `SolarDay`.
+-   entry .designation   the symbol `d`
+-   entry .ratio   `Ratio[Seconds[1] & Days[-1], 86400.0]`: a day is 86400 seconds
+- entry .SiderealDays   the sidereal day, a unit of `Time`: `SiderealDays[power]`
++       86400 Sekunden. Sein Einheitswert ist `SolarDay`.
++   entry .designation   das Symbol `d`
++   entry .ratio   `Ratio[Seconds[1] & Days[-1], 86400.0]`: ein Tag sind 86400 Sekunden
++ entry .SiderealDays   der Sterntag, eine Einheit der `Time`: `SiderealDays[power]`
+
+-   entry .GravitationalConstant   G, 6.674×10⁻¹¹ N·m²·kg⁻²
++   entry .GravitationalConstant   G, 6.674×10⁻¹¹ N·m²·kg⁻²

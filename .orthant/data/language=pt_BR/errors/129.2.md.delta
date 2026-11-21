@@ -1,0 +1,63 @@
+orthant 1 language
+
+- # `↯/s.129.2` — `Ergo.Error`
++ # `↯/s.129.2` — `Ergo.Error`
+
+- Raised when a mathematical expression written in the Ergo shorthand cannot be parsed.
++ Lançado quando uma expressão matemática escrita na notação abreviada Ergo não pode ser analisada.
+
+- ## Cause
++ ## Causa
+
+- Ergo is a compact syntax for mathematical notation, expanded into MathML. This error covers
+- a malformed expression: unbalanced grouping, an unknown operator, or a missing operand.
++ Ergo é uma sintaxe compacta para notação matemática, expandida em MathML. Este erro cobre uma
++ expressão malformada: agrupamento desbalanceado, um operador desconhecido ou um operando ausente.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+- row  `↯/s.129.2.1`  `Empty`  `[↯/s.129.2.1] the expression was empty`
++ row  `↯/s.129.2.1`  `Empty`  `[↯/s.129.2.1] the expression was empty`
+
+- row  `↯/s.129.2.2`  `BadOpener`  `[↯/s.129.2.2] the expression must start with a bracket, not <char>`
++ row  `↯/s.129.2.2`  `BadOpener`  `[↯/s.129.2.2] the expression must start with a bracket, not <char>`
+
+- row  `↯/s.129.2.3`  `Unclosed`  `[↯/s.129.2.3] a group was not closed with <expected>`
++ row  `↯/s.129.2.3`  `Unclosed`  `[↯/s.129.2.3] a group was not closed with <expected>`
+
+- row  `↯/s.129.2.4`  `UnexpectedEnd`  `[↯/s.129.2.4] the expression ended unexpectedly`
++ row  `↯/s.129.2.4`  `UnexpectedEnd`  `[↯/s.129.2.4] the expression ended unexpectedly`
+
+- row  `↯/s.129.2.5`  `MissingBody`  `[↯/s.129.2.5] the <char> introducer must be followed by a group`
++ row  `↯/s.129.2.5`  `MissingBody`  `[↯/s.129.2.5] the <char> introducer must be followed by a group`
+
+- row  `↯/s.129.2.6`  `Unsupported`  `[↯/s.129.2.6] the <<label>> element has no ergo representation`
++ row  `↯/s.129.2.6`  `Unsupported`  `[↯/s.129.2.6] the <<label>> element has no ergo representation`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- The message names the position and the construct at fault. Where an expression is genuinely
+- complex, writing the MathML directly is the alternative.
++ A mensagem nomeia a posição e a construção responsáveis pela falha. Quando uma expressão é
++ realmente complexa, a alternativa é escrever o MathML diretamente.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/archimedes/src/core/archimedes.Ergo.scala`
++ - Código-fonte: `lib/archimedes/src/core/archimedes.Ergo.scala`

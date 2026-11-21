@@ -1,0 +1,1495 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base hellenism
++ base hellenism
+
+- import soundness
++ import soundness
+
+- info   the JVM classpath, its classloaders and its resources as typed values
++ info   der Klassenpfad der JVM, ihre Classloader und ihre Ressourcen als typisierte Werte
+
+- detail
++ detail
+
+-     _Hellenism_ represents the three things the JVM uses to find code and data — the
+-     **classpath** (an ordered list of directories, JAR files and the Java runtime), the
+-     **classloaders** which search it, and the **resources** bundled on it — as immutable,
+-     typed values, in place of the standard API's nullable lookups and mutable global state.
++     _Hellenism_ stellt die drei Dinge, mit denen die JVM Code und Daten findet — den
++     **Klassenpfad** (eine geordnete Liste von Verzeichnissen, JAR-Dateien und der
++     Java-Laufzeit), die **Classloader**, die ihn durchsuchen, und die **Ressourcen**, die darauf
++     gebündelt sind —, als unveränderliche, typisierte Werte dar, anstelle der nullbaren
++     Abfragen und des veränderlichen globalen Zustands der Standard-API.
+
+-     A resource is a path on the `Classpath` plane, read with the same `read[Data]` or
+-     `read[Text]` as any other source, and the `cp"…"` interpolator checks that the resource
+-     exists while the code compiles. A classpath is a value whose `Classpath.Entry`s can be
+-     listed and matched, and a classloader is a `Classloader` value, chosen explicitly as a
+-     contextual value from the `classloaders` package rather than reached for through the
+-     thread's mutable state.
++     Eine Ressource ist ein Pfad auf der Ebene `Classpath`, gelesen mit demselben `read[Data]`
++     oder `read[Text]` wie jede andere Quelle, und der Interpolator `cp"…"` prüft beim
++     Kompilieren des Codes, dass die Ressource existiert. Ein Klassenpfad ist ein Wert, dessen
++     `Classpath.Entry`s sich auflisten und abgleichen lassen, und ein Classloader ist ein
++     `Classloader`-Wert, ausdrücklich als Kontextwert aus dem Paket `classloaders` gewählt, statt
++     über den veränderlichen Zustand des Threads herangezogen zu werden.
+
+=     thread's mutable state.
+=
+-     ```scala
++     ```scala
+
+=     thread's mutable state.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     thread's mutable state.
+=
+=     ```scala
+=     import soundness.*
+-     import classloaders.threadContextClassloader
++     import classloaders.threadContextClassloader
+
+=     thread's mutable state.
+=
+=     ```scala
+=     import soundness.*
+=     import classloaders.threadContextClassloader
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import systems.javaBaseSystem
++     import systems.javaBaseSystem
+
+-     val bytes: Data = cp"/scala/Option.class".read[Data]
++     val bytes: Data = cp"/scala/Option.class".read[Data]
+
+-     val classpath: LocalClasspath = System.properties.java.`class`.path().as[LocalClasspath]
++     val classpath: LocalClasspath = System.properties.java.`class`.path().as[LocalClasspath]
+
+-     val loader: Classloader = classpath.classloader(Classloader.Delegation.Deferential)
++     val loader: Classloader = classpath.classloader(Classloader.Delegation.Deferential)
+
+=     val loader: Classloader = classpath.classloader(Classloader.Delegation.Deferential)
+-     ```
++     ```
+
+-     The library is split into three source sets, by what each platform can do:
++     Die Bibliothek ist in drei Source-Sets aufgeteilt, je nachdem, was jede Plattform kann:
+
+-     - `hellenism.core` — `Classpath`, `Resource`, `cp"…"`, `Classloader`, `ClassRef` and the
+-       `classloaders` package. Compiles for the JVM, Scala.js and Scala Native; on Native a
+-       program's classpath is linked into its binary, and `cp"…"` resources reach the
+-       javalib's embedded resources.
+-     - `hellenism.core` on the JVM and Scala.js additionally has the extensions which need
+-       `java.net.URL`, `URLClassLoader` and `ServiceLoader`: `classloader`, `services`,
+-       `javaUrl` and `classpathEntry`.
+-     - `hellenism.jvm` — `LocalClasspath` and everything backed by the filesystem:
+-       `classpathSubstantiable`, `Classloader#classpath` and `Classpath.of`.
++     - `hellenism.core` — `Classpath`, `Resource`, `cp"…"`, `Classloader`, `ClassRef` und das
++       Paket `classloaders`. Kompiliert für die JVM, Scala.js und Scala Native; unter Native
++       wird der Klassenpfad eines Programms in dessen Binärdatei gelinkt, und
++       `cp"…"`-Ressourcen erreichen die eingebetteten Ressourcen der javalib.
++     - `hellenism.core` enthält auf der JVM und unter Scala.js zusätzlich die Erweiterungen,
++       die `java.net.URL`, `URLClassLoader` und `ServiceLoader` brauchen: `classloader`,
++       `services`, `javaUrl` und `classpathEntry`.
++     - `hellenism.jvm` — `LocalClasspath` und alles, was auf dem Dateisystem beruht:
++       `classpathSubstantiable`, `Classloader#classpath` und `Classpath.of`.
+
+-     Everything is exported to the `soundness` umbrella, and the `classloaders` choice
+-     package merges with the umbrella's own, so a user writes `import soundness.*` and then
+-     imports one classloader by name.
++     Alles wird in den Umbrella `soundness` exportiert, und das Auswahlpaket `classloaders`
++     verschmilzt mit dem des Umbrellas, sodass man `import soundness.*` schreibt und dann einen
++     Classloader namentlich importiert.
+
+- refer hellenism.Classpath
++ refer hellenism.Classpath
+
+- refer hellenism.Classloader
++ refer hellenism.Classloader
+
+- refer hellenism.LocalClasspath
++ refer hellenism.LocalClasspath
+
+- entry .Classloader   a Java `ClassLoader` as a value: resolves names, reads resources, scopes itself
++ entry .Classloader   ein Java-`ClassLoader` als Wert: löst Namen auf, liest Ressourcen, begrenzt seinen eigenen Geltungsbereich
+
+= entry .Classloader   a Java `ClassLoader` as a value: resolves names, reads resources, scopes itself
+-   detail
++   detail
+
+-       A `Classloader` wraps a `java.lang.ClassLoader`, whose raw instance is `#java`. It is
+-       the context every resource read resolves against — the `Streamable` givens for
+-       `Resource` and for a `Path on Classpath` take one as a contextual parameter — and is
+-       chosen by importing one of the `classloaders` package's givens by name, or by building
+-       one over a `Classpath` with `classloader`.
++       Ein `Classloader` umhüllt einen `java.lang.ClassLoader`, dessen rohe Instanz `#java` ist.
++       Er ist der Kontext, gegen den jedes Lesen einer Ressource aufgelöst wird — die
++       `Streamable`-Givens für `Resource` und für einen `Path on Classpath` nehmen einen als
++       Kontextparameter —, und wird gewählt, indem man eines der Givens des Pakets
++       `classloaders` namentlich importiert oder mit `classloader` einen über einem `Classpath`
++       baut.
+
+-       Two classloaders may resolve the same path to different resources, or one to nothing at
+-       all, which is why the choice is never implicit: a `Classloader` is always a value or a
+-       named given in scope.
++       Zwei Classloader können denselben Pfad zu verschiedenen Ressourcen auflösen oder einer
++       zu gar nichts, weshalb die Wahl nie implizit ist: Ein `Classloader` ist immer ein Wert
++       oder ein benanntes Given im Geltungsbereich.
+
+=       named given in scope.
+=
+-       ```scala
++       ```scala
+
+=       named given in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       named given in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+-       val loader: Classloader = Classloader[Option[Int]]
++       val loader: Classloader = Classloader[Option[Int]]
+
+-       loader.parent
++       loader.parent
+
+-       loader.on(t"scala.Option")
++       loader.on(t"scala.Option")
+
+-       loader.use:
++       loader.use:
+
+-         Classloader.threadContext == loader
++         Classloader.threadContext == loader
+
+=         Classloader.threadContext == loader
+-       ```
++       ```
+
+-       A classloader is `Findable`, with the `Classpath` as its `#Plane`, so a `Path on
+-       Classpath` can be tested for existence against it (`classpathSubstantiable`, in
++       Ein Classloader ist `Findable`, mit `Classpath` als seiner `#Plane`, sodass sich ein
++       `Path on Classpath` gegen ihn auf Existenz prüfen lässt (`classpathSubstantiable`, in
+
+-       `hellenism.jvm`).
++       `hellenism.jvm`).
+
+-   refer hellenism.classloaders
++   refer hellenism.classloaders
+
+=   refer hellenism.classloaders
+-   refer hellenism.classloader
++   refer hellenism.classloader
+
+-   entry .threadContext   the current thread's context classloader, as a value
+-       The classloader `Thread.currentThread.getContextClassLoader` returns at the moment of
+-       the call. `classloaders.threadContextClassloader` is the given built from it, and
+-       `#use` installs another classloader as the thread's context for the duration of a block.
+-   entry .apply   the classloader which loaded a type, as `Classloader[T]`
+-       `Classloader[T]` is a macro which finds the class of `T` through `ClassRef[T]` and
+-       returns the classloader which loaded it. This is how a plugin's own classloader is
+-       reached from one of its classes, and how a program finds the classpath it was itself
+-       loaded from (`LocalClasspath.of(Classloader[Main.type])`), which under a host such as a
+-       test runner differs from the `java.class.path` property.
++   entry .threadContext   der Kontext-Classloader des aktuellen Threads, als Wert
++       Der Classloader, den `Thread.currentThread.getContextClassLoader` im Moment des Aufrufs
++       zurückgibt. `classloaders.threadContextClassloader` ist das daraus gebaute Given, und
++       `#use` setzt für die Dauer eines Blocks einen anderen Classloader als Kontext des
++       Threads ein.
++   entry .apply   der Classloader, der einen Typ geladen hat, als `Classloader[T]`
++       `Classloader[T]` ist ein Makro, das die Klasse von `T` über `ClassRef[T]` findet und den
++       Classloader zurückgibt, der sie geladen hat. So erreicht man den eigenen Classloader
++       eines Plugins von einer seiner Klassen aus, und so findet ein Programm den Klassenpfad,
++       aus dem es selbst geladen wurde (`LocalClasspath.of(Classloader[Main.type])`), der sich
++       unter einem Host wie einem Test-Runner von der Eigenschaft `java.class.path`
++       unterscheidet.
+
+-       The type may be a proper type, an object's type or an unapplied type constructor, and
+-       may be nested in an object or a class: the macro resolves it to its JVM binary name
+-       (`Outer$Nested`), where a lookup by the dotted source name would fail.
++       Der Typ kann ein eigentlicher Typ, der Typ eines Objekts oder ein nicht angewandter
++       Typkonstruktor sein und in einem Objekt oder einer Klasse verschachtelt sein: Das Makro
++       löst ihn zu seinem binären JVM-Namen auf (`Outer$Nested`), wo eine Suche nach dem
++       punktierten Quellnamen fehlschlagen würde.
+
+=       (`Outer$Nested`), where a lookup by the dotted source name would fail.
+=
+-       ```scala
++       ```scala
+
+=       (`Outer$Nested`), where a lookup by the dotted source name would fail.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       object Outer:
++       object Outer:
+
+-         class Nested
++         class Nested
+
+-       Classloader[Outer.Nested].java == classOf[Outer.Nested].getClassLoader
++       Classloader[Outer.Nested].java == classOf[Outer.Nested].getClassLoader
+
+=       Classloader[Outer.Nested].java == classOf[Outer.Nested].getClassLoader
+-       ```
++       ```
+
+-   entry .Delegation   which side wins when a loader and its parent both offer a class
++   entry .Delegation   welche Seite gewinnt, wenn ein Loader und sein Elternteil beide eine Klasse anbieten
+
+=   entry .Delegation   which side wins when a loader and its parent both offer a class
+-     detail
++     detail
+
+-         A classloader built over a classpath with `classloader` must say how it resolves a
+-         name which both it and its parent can load. The JVM's own order consults the parent
+-         first; the reverse prefers the loader's own entries, which isolates a plugin's
+-         versions of shared libraries from its host's. The choice is always spelled out, since
+-         the two give different classes for the same name and neither is right for every use.
++         Ein mit `classloader` über einem Klassenpfad gebauter Classloader muss angeben, wie er
++         einen Namen auflöst, den sowohl er als auch sein Elternteil laden können. Die eigene
++         Reihenfolge der JVM befragt zuerst das Elternteil; die umgekehrte bevorzugt die eigenen
++         Einträge des Loaders, was die Versionen gemeinsamer Bibliotheken eines Plugins von
++         denen seines Hosts isoliert. Die Wahl wird immer ausdrücklich getroffen, da die beiden
++         für denselben Namen verschiedene Klassen liefern und keine für jeden Zweck richtig ist.
+
+=         the two give different classes for the same name and neither is right for every use.
+=
+-         ```scala
++         ```scala
+
+=         the two give different classes for the same name and neither is right for every use.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val contract = LocalClasspath(Classpath.Entry.Jar(t"/lib/contract.jar"))
++         val contract = LocalClasspath(Classpath.Entry.Jar(t"/lib/contract.jar"))
+
+-         val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
++         val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
+
+-         val shared = contract.classloader(Classloader.Delegation.Deferential)
++         val shared = contract.classloader(Classloader.Delegation.Deferential)
+
+-         val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
++         val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
+
+=         val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
+-         ```
++         ```
+
+-         Here the plugin sees the contract it was written against through its parent, while
+-         everything else it bundles is its own.
++         Hier sieht das Plugin den Vertrag, gegen den es geschrieben wurde, über sein
++         Elternteil, während alles andere, was es bündelt, sein eigenes ist.
+
+-         `Deferential` is parent-first, the JVM's standard order: the loader asks its parent
+-         for every name before looking in its own entries, which is what a plain
+-         `URLClassLoader` does, so a class the parent can load is shared with the code being
+-         loaded. `Preferential` is child-first: the loader looks in its own entries first and
+-         defers to its parent only for a name it cannot find, so the classpath's versions of
+-         shared libraries shadow the parent's. A `Preferential` loader still honours the
+-         `ClassLoader` contract: it consults `findLoadedClass` under the per-name loading lock
+-         before defining a class, so a second request for the same name, or two threads
+-         racing on it, never reaches `defineClass` twice.
+-   entry #java   the underlying `java.lang.ClassLoader`
+-       The raw Java classloader, for the Java APIs which take one. Two `Classloader`s are the
+-       same loader when their `java` instances are.
+-   entry #Plane   the plane this classloader finds paths on: `Classpath`
+-   entry #parent   the parent classloader, or `Unset` for the bootstrap loader
+-       Every JVM classloader but the bootstrap loader has a parent it delegates to; this walks
+-       one step up the chain, wrapped as a `Classloader`.
+-   entry #use   runs a block with this as the thread's context classloader
+-       Installs this classloader as the current thread's context classloader, evaluates the
+-       block, and restores the previous one in a `finally`, so a change of classloader is
+-       scoped to exactly the code which needs it — loading a plugin, or calling a Java library
+-       which reads the context loader — rather than left set for the thread.
++         `Deferential` ist Eltern-zuerst, die Standardreihenfolge der JVM: Der Loader fragt für
++         jeden Namen sein Elternteil, bevor er in seinen eigenen Einträgen sucht, was ein
++         einfacher `URLClassLoader` tut, sodass eine Klasse, die das Elternteil laden kann, mit
++         dem geladenen Code geteilt wird. `Preferential` ist Kind-zuerst: Der Loader sucht
++         zuerst in seinen eigenen Einträgen und überlässt nur einen Namen, den er nicht finden
++         kann, seinem Elternteil, sodass die Versionen gemeinsamer Bibliotheken auf dem
++         Klassenpfad die des Elternteils verdecken. Ein `Preferential`-Loader hält dennoch den
++         Vertrag von `ClassLoader` ein: Er befragt `findLoadedClass` unter der Ladesperre pro
++         Name, bevor er eine Klasse definiert, sodass eine zweite Anfrage nach demselben Namen
++         oder zwei darum konkurrierende Threads nie zweimal `defineClass` erreichen.
++   entry #java   der zugrunde liegende `java.lang.ClassLoader`
++       Der rohe Java-Classloader, für die Java-APIs, die einen nehmen. Zwei `Classloader`s sind
++       derselbe Loader, wenn ihre `java`-Instanzen es sind.
++   entry #Plane   die Ebene, auf der dieser Classloader Pfade findet: `Classpath`
++   entry #parent   der Eltern-Classloader, oder `Unset` für den Bootstrap-Loader
++       Jeder JVM-Classloader außer dem Bootstrap-Loader hat ein Elternteil, an das er
++       delegiert; dies geht in der Kette einen Schritt nach oben, als `Classloader` umhüllt.
++   entry #use   führt einen Block mit diesem als Kontext-Classloader des Threads aus
++       Setzt diesen Classloader als Kontext-Classloader des aktuellen Threads ein, wertet den
++       Block aus und stellt den vorigen in einem `finally` wieder her, sodass ein Wechsel des
++       Classloaders genau auf den Code begrenzt ist, der ihn braucht — das Laden eines Plugins
++       oder den Aufruf einer Java-Bibliothek, die den Kontext-Loader liest —, statt für den
++       Thread gesetzt zu bleiben.
+
+=       which reads the context loader — rather than left set for the thread.
+=
+-       ```scala
++       ```scala
+
+=       which reads the context loader — rather than left set for the thread.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       classloaders.systemClassloader.use:
++       classloaders.systemClassloader.use:
+
+-         Classloader[Option[Int]]
++         Classloader[Option[Int]]
+
+=         Classloader[Option[Int]]
+-       ```
++       ```
+
+-   entry #on   loads and initialises a class by its binary name, if this loader has it
+-       `Class.forName(name, true, java)`: the class is initialised, and the result is `Unset`
+-       rather than a thrown `ClassNotFoundException` when the loader cannot find it. The name
+-       is the JVM binary name, with `$` between a nested class and its owner.
+-   entry #resource   the bytes of a resource, or `Unset` if this loader does not have it
+-       Reads the whole of `getResourceAsStream(path)` and closes the stream. The path is
+-       relative, without a leading `/`, as the Java API takes it. The method takes no
+-       capability, so its result retains nothing and the read may sit inside a `safely` block;
+-       `#apply` is the same read with the result logged.
++   entry #on   lädt und initialisiert eine Klasse anhand ihres binären Namens, sofern dieser Loader sie hat
++       `Class.forName(name, true, java)`: Die Klasse wird initialisiert, und das Ergebnis ist
++       `Unset` statt einer geworfenen `ClassNotFoundException`, wenn der Loader sie nicht
++       finden kann. Der Name ist der binäre JVM-Name, mit `$` zwischen einer verschachtelten
++       Klasse und ihrem Besitzer.
++   entry #resource   die Bytes einer Ressource, oder `Unset`, wenn dieser Loader sie nicht hat
++       Liest `getResourceAsStream(path)` vollständig und schließt den Stream. Der Pfad ist
++       relativ, ohne führendes `/`, wie die Java-API ihn nimmt. Die Methode nimmt keine
++       Capability, sodass ihr Ergebnis nichts festhält und das Lesen in einem `safely`-Block
++       stehen kann; `#apply` ist dasselbe Lesen mit protokolliertem Ergebnis.
+
+=       `#apply` is the same read with the result logged.
+=
+-       ```scala
++       ```scala
+
+=       `#apply` is the same read with the result logged.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `#apply` is the same read with the result logged.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+-       safely(threadContextClassloader.resource(t"scala/Option.class")).let(_.length)
++       safely(threadContextClassloader.resource(t"scala/Option.class")).let(_.length)
+
+=       safely(threadContextClassloader.resource(t"scala/Option.class")).let(_.length)
+-       ```
++       ```
+
+-   entry #apply   the bytes of a resource, logged as a `Classpath.Event` when found
+-       As `#resource`, and logs `Classpath.Event.ResourceLoaded` at `fine` level when the
+-       resource is present. It needs a `Classpath.Event is Loggable` in scope, such as
+-       `logging.silentLogging`.
++   entry #apply   die Bytes einer Ressource, als `Classpath.Event` protokolliert, wenn sie gefunden wird
++       Wie `#resource`, und protokolliert `Classpath.Event.ResourceLoaded` auf der Stufe
++       `fine`, wenn die Ressource vorhanden ist. Braucht ein `Classpath.Event is Loggable` im
++       Geltungsbereich, etwa `logging.silentLogging`.
+
+- entry .Classpath   the root of the classpath plane, and a classpath as a list of entries
++ entry .Classpath   die Wurzel der Klassenpfad-Ebene, und ein Klassenpfad als Liste von Einträgen
+
+= entry .Classpath   the root of the classpath plane, and a classpath as a list of entries
+-   detail
++   detail
+
+-       `Classpath` is two things which share a name. As a **type**, it is a classpath: an
+-       ordered list of `#entries`, each a `Classpath.Entry`, which `LocalClasspath` and
+-       `OnlineClasspath` implement. As an **object**, it is the root of the classpath
+-       **plane**, so a resource is a `Path on Classpath` built from it:
++       `Classpath` sind zwei Dinge, die sich einen Namen teilen. Als **Typ** ist es ein
++       Klassenpfad: eine geordnete Liste von `#entries`, jeweils ein `Classpath.Entry`, die
++       `LocalClasspath` und `OnlineClasspath` implementieren. Als **Objekt** ist es die Wurzel
++       der Klassenpfad-**Ebene**, sodass eine Ressource ein daraus gebauter `Path on Classpath`
++       ist:
+
+=       **plane**, so a resource is a `Path on Classpath` built from it:
+=
+-       ```scala
++       ```scala
+
+=       **plane**, so a resource is a `Path on Classpath` built from it:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       **plane**, so a resource is a `Path on Classpath` built from it:
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       **plane**, so a resource is a `Path on Classpath` built from it:
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val path: Path on Classpath = Classpath / "scala" / "Option.class"
++       val path: Path on Classpath = Classpath / "scala" / "Option.class"
+
+-       val same: Path on Classpath = t"/scala/Option.class".as[Path on Classpath]
++       val same: Path on Classpath = t"/scala/Option.class".as[Path on Classpath]
+
+-       path.read[Data]
++       path.read[Data]
+
+=       path.read[Data]
+-       ```
++       ```
+
+-       A path on the classpath encodes as `/`-separated text with no root prefix, each segment
+-       held to `.Rules`: no `/`, not beginning with a digit, and only letters, digits, `_`,
+-       `$` and `.`. The path is read through the `Classloader` given in scope (`.streamable`),
+-       and raises `Classpath.Error` if that loader does not have it.
++       Ein Pfad auf dem Klassenpfad wird als durch `/` getrennter Text ohne Wurzelpräfix
++       kodiert, wobei jedes Segment `.Rules` einhalten muss: kein `/`, kein Beginn mit einer
++       Ziffer und nur Buchstaben, Ziffern, `_`, `$` und `.`. Der Pfad wird über das Given
++       `Classloader` im Geltungsbereich gelesen (`.streamable`) und löst `Classpath.Error` aus,
++       wenn dieser Loader ihn nicht hat.
+
+-       On the JVM, the extensions `classloader` and `services` build a classloader over a
+-       classpath and enumerate its service providers; `Classpath.of` reads one back from a
+-       `URLClassLoader`.
++       Auf der JVM bauen die Erweiterungen `classloader` und `services` einen Classloader über
++       einem Klassenpfad und zählen dessen Service-Provider auf; `Classpath.of` liest einen aus
++       einem `URLClassLoader` zurück.
+
+=       `URLClassLoader`.
+-   refer hellenism.LocalClasspath
++   refer hellenism.LocalClasspath
+
+-   refer hellenism.OnlineClasspath
++   refer hellenism.OnlineClasspath
+
+-   refer hellenism.Resource
++   refer hellenism.Resource
+
+-   entry .Plane   the plane type of classpath paths: `Classpath` itself
+-   entry .Rules   what a segment of a classpath path may be
+-       A segment must not contain `/`, must not begin with a digit, and must match
+-       `[a-zA-Z0-9_$.]+`: the characters a class file or package directory name may use. A
+-       path which breaks a rule fails to decode with a `Path.Error`.
+-   entry .nominative   the given which holds classpath paths to `.Rules`
+-   entry .radical   how the classpath root is read from and written to text
+-       The root encodes as the empty text, so a path reads as `/scala/Option.class`; decoding
+-       accepts only text beginning with `/`, and fails with `Path.Error(InvalidRoot)` otherwise.
+-   entry .filesystem   the classpath as a `Filesystem`: `/`-separated, with one root
+-       Named `Java classpath`, with `/` as its separator and `.` and `..` as the self and
+-       parent segments, and a single root, so a path on the classpath is always absolute.
+-   entry .Directory   makes a `Classpath.Entry.Directory` from any path type
+-       `Classpath.Directory(path)` takes any value which is `Abstractable across Paths to
+-       Text` — a galilei `Path`, or text — and makes the directory entry for it.
+-   entry .Jar   makes a `Classpath.Entry.Jar` from any path type
+-       `Classpath.Jar(path)` takes any value which is `Abstractable across Paths to Text` and
+-       makes the JAR entry for it.
+-   entry .streamable   reads a `Path on Classpath` as bytes, through the `Classloader` in scope
+-       The given which lets a classpath path be `read[Data]` (or `read[Text]`, or as any type
+-       decodable from a stream). It needs a `Classloader` given and a `Tactic[Classpath.Error]`,
+-       which is raised when the classloader does not have the resource.
+-   entry .source   reads a `Path on Classpath` as a stream metered by `Credit`
+-       As `.streamable`, with a `Buffering` in scope, for reading the resource lazily as a
+-       stream rather than all at once.
+-   entry .Entry   one entry of a classpath: a directory, a JAR, a URL or the Java runtime
++   entry .Plane   der Ebenentyp von Klassenpfad-Pfaden: `Classpath` selbst
++   entry .Rules   was ein Segment eines Klassenpfad-Pfads sein darf
++       Ein Segment darf kein `/` enthalten, nicht mit einer Ziffer beginnen und muss auf
++       `[a-zA-Z0-9_$.]+` passen: die Zeichen, die der Name einer Klassendatei oder eines
++       Paketverzeichnisses verwenden darf. Ein Pfad, der eine Regel verletzt, lässt sich nicht
++       dekodieren und schlägt mit einem `Path.Error` fehl.
++   entry .nominative   das Given, das Klassenpfad-Pfade an `.Rules` bindet
++   entry .radical   wie die Klassenpfad-Wurzel aus Text gelesen und in Text geschrieben wird
++       Die Wurzel wird als leerer Text kodiert, sodass sich ein Pfad als `/scala/Option.class`
++       liest; das Dekodieren akzeptiert nur Text, der mit `/` beginnt, und schlägt sonst mit
++       `Path.Error(InvalidRoot)` fehl.
++   entry .filesystem   der Klassenpfad als `Filesystem`: durch `/` getrennt, mit einer Wurzel
++       Benannt `Java classpath`, mit `/` als Trennzeichen und `.` und `..` als Selbst- und
++       Elternsegmenten sowie einer einzigen Wurzel, sodass ein Pfad auf dem Klassenpfad immer
++       absolut ist.
++   entry .Directory   erzeugt aus einem beliebigen Pfadtyp ein `Classpath.Entry.Directory`
++       `Classpath.Directory(path)` nimmt jeden Wert, der `Abstractable across Paths to Text` ist
++       — einen `Path` von galilei oder Text —, und erzeugt den Verzeichniseintrag dafür.
++   entry .Jar   erzeugt aus einem beliebigen Pfadtyp ein `Classpath.Entry.Jar`
++       `Classpath.Jar(path)` nimmt jeden Wert, der `Abstractable across Paths to Text` ist, und
++       erzeugt den JAR-Eintrag dafür.
++   entry .streamable   liest einen `Path on Classpath` als Bytes, über den `Classloader` im Geltungsbereich
++       Das Given, mit dem sich ein Klassenpfad-Pfad per `read[Data]` (oder `read[Text]`, oder
++       als jeder aus einem Stream dekodierbare Typ) lesen lässt. Es braucht ein
++       `Classloader`-Given und eine `Tactic[Classpath.Error]`, die ausgelöst wird, wenn der
++       Classloader die Ressource nicht hat.
++   entry .source   liest einen `Path on Classpath` als durch `Credit` bemessenen Stream
++       Wie `.streamable`, mit einem `Buffering` im Geltungsbereich, um die Ressource lazy als
++       Stream statt auf einmal zu lesen.
++   entry .Entry   ein Eintrag eines Klassenpfads: ein Verzeichnis, ein JAR, eine URL oder die Java-Laufzeit
+
+=   entry .Entry   one entry of a classpath: a directory, a JAR, a URL or the Java runtime
+-     detail
++     detail
+
+-         A sealed hierarchy of the places a classpath entry can point to. A `LocalClasspath`
+-         holds only `Directory`, `Jar` and `JavaRuntime` entries, so a match over its entries
+-         need not handle `Url`; an `OnlineClasspath` may hold any.
++         Eine versiegelte Hierarchie der Orte, auf die ein Klassenpfad-Eintrag verweisen kann.
++         Ein `LocalClasspath` enthält nur Einträge `Directory`, `Jar` und `JavaRuntime`, sodass
++         ein Abgleich über seine Einträge `Url` nicht behandeln muss; ein `OnlineClasspath` kann
++         jeden enthalten.
+
+=         need not handle `Url`; an `OnlineClasspath` may hold any.
+=
+-         ```scala
++         ```scala
+
+=         need not handle `Url`; an `OnlineClasspath` may hold any.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val entries: List[Classpath.Entry] =
++         val entries: List[Classpath.Entry] =
+
+-           List(Classpath.Entry.Jar(t"/lib/app.jar"), Classpath.Entry.Directory(t"/classes/"))
++           List(Classpath.Entry.Jar(t"/lib/app.jar"), Classpath.Entry.Directory(t"/classes/"))
+
+-         entries.map:
++         entries.map:
+
+-           case Classpath.Entry.Directory(path) => t"directory $path"
++           case Classpath.Entry.Directory(path) => t"directory $path"
+
+-           case Classpath.Entry.Jar(path)       => t"archive $path"
++           case Classpath.Entry.Jar(path)       => t"archive $path"
+
+-           case Classpath.Entry.Url(url)        => t"remote $url"
++           case Classpath.Entry.Url(url)        => t"remote $url"
+
+-           case Classpath.Entry.JavaRuntime     => t"the Java runtime"
++           case Classpath.Entry.JavaRuntime     => t"the Java runtime"
+
+=           case Classpath.Entry.JavaRuntime     => t"the Java runtime"
+-         ```
++         ```
+
+-         On the JVM, `javaUrl` converts any entry to the `java.net.URL` a `URLClassLoader`
+-         takes.
+-     entry .Directory   a directory of class files and resources, by its path
+-       entry #path    the directory's path, as text
+-       entry #apply   the directory as a path type of the caller's choosing
+-           `entry[Path on Linux]()` (or any `Instantiable across Paths from Text`) makes a
+-           typed path from the entry's text.
+-     entry .Jar   a JAR file, by its path
+-       entry #path    the archive's path, as text
+-       entry #apply   the archive as a path type of the caller's choosing
+-     entry .Url   an entry fetched over the network, by its URL
+-       entry #url     the URL, as text
+-       entry #apply   the entry as a URL type of the caller's choosing
+-           `entry[HttpUrl]()` (or any `Instantiable across Urls from Text`) makes a typed URL
+-           from the entry's text.
+-     entry .JavaRuntime   the JDK's own modules, the `jrt:/` filesystem
+-         The entry which supplies `java.lang.String` and the rest of the JDK. It has no path:
+-         a `URLClassLoader` cannot load from `jrt:/`, so `classloader` omits it and relies on
+-         the platform loader at the root of every parent chain, and `LocalClasspath#apply`
+-         drops it from the text it renders.
+-   entry .Error   raised when a resource is not on the classpath
++         Auf der JVM wandelt `javaUrl` jeden Eintrag in die `java.net.URL` um, die ein
++         `URLClassLoader` nimmt.
++     entry .Directory   ein Verzeichnis mit Klassendateien und Ressourcen, anhand seines Pfads
++       entry #path    der Pfad des Verzeichnisses, als Text
++       entry #apply   das Verzeichnis als Pfadtyp nach Wahl des Aufrufers
++           `entry[Path on Linux]()` (oder jedes `Instantiable across Paths from Text`) erzeugt
++           aus dem Text des Eintrags einen typisierten Pfad.
++     entry .Jar   eine JAR-Datei, anhand ihres Pfads
++       entry #path    der Pfad des Archivs, als Text
++       entry #apply   das Archiv als Pfadtyp nach Wahl des Aufrufers
++     entry .Url   ein über das Netzwerk abgerufener Eintrag, anhand seiner URL
++       entry #url     die URL, als Text
++       entry #apply   der Eintrag als URL-Typ nach Wahl des Aufrufers
++           `entry[HttpUrl]()` (oder jedes `Instantiable across Urls from Text`) erzeugt aus dem
++           Text des Eintrags eine typisierte URL.
++     entry .JavaRuntime   die eigenen Module des JDK, das Dateisystem `jrt:/`
++         Der Eintrag, der `java.lang.String` und den Rest des JDK liefert. Er hat keinen Pfad:
++         Ein `URLClassLoader` kann nicht aus `jrt:/` laden, also lässt `classloader` ihn weg und
++         verlässt sich auf den Plattform-Loader an der Wurzel jeder Elternkette, und
++         `LocalClasspath#apply` lässt ihn in dem Text, den es darstellt, weg.
++   entry .Error   ausgelöst, wenn eine Ressource nicht auf dem Klassenpfad liegt
+
+=   entry .Error   raised when a resource is not on the classpath
+-     detail
++     detail
+
+-         Error `↯/s.67.1`: _the resource `path` was not on the classpath_. Raised by the `Streamable`
+-         givens for `Resource` and `Path on Classpath` when the `Classloader` in scope does
+-         not have the resource. A `cp"…"` resource is checked at compile time against the
+-         compiler's classpath, so this error at runtime means the program was launched with a
+-         different one.
+-     entry #resource   the path which was asked for
+-   entry .Event   what a classloader logs as it reads resources
++         Fehler `↯/s.67.1`: _the resource `path` was not on the classpath_. Ausgelöst von den
++         `Streamable`-Givens für `Resource` und `Path on Classpath`, wenn der `Classloader` im
++         Geltungsbereich die Ressource nicht hat. Eine `cp"…"`-Ressource wird zur
++         Kompilierzeit gegen den Klassenpfad des Compilers geprüft, sodass dieser
++         Fehler zur Laufzeit bedeutet, dass das Programm mit einem anderen gestartet wurde.
++     entry #resource   der Pfad, nach dem gefragt wurde
++   entry .Event   was ein Classloader protokolliert, während er Ressourcen liest
+
+=   entry .Event   what a classloader logs as it reads resources
+-     detail
++     detail
+
+-         Every `Event` is tagged `Log.Runtime` and `Log.Resource`, so a logging configuration
+-         can select or silence them by tag. `Classloader#apply` logs `ResourceLoaded` at
+-         `fine`, and a failed read logs `ResourceMissing` as a warning before raising
+-         `Classpath.Error`. A `Classpath.Event is Loggable` must be in scope for the logged
+-         reads; `logging.silentLogging` discards them.
+-     entry .communicable   renders each event as a message
+-     entry .ResourceLoaded   a resource was read: _loaded the classpath resource `path`_
+-       entry #path   the resource's path
+-     entry .ResourceMissing   a resource was not found: _the classpath resource `path` was not found_
+-       entry #path   the resource's path
+-   entry #entries   the classpath's entries, in search order
++         Jedes `Event` ist mit `Log.Runtime` und `Log.Resource` getaggt, sodass eine
++         Protokollkonfiguration sie nach Tag auswählen oder stummschalten kann.
++         `Classloader#apply` protokolliert `ResourceLoaded` auf `fine`, und ein fehlgeschlagenes
++         Lesen protokolliert `ResourceMissing` als Warnung, bevor es `Classpath.Error` auslöst.
++         Für die protokollierten Lesevorgänge muss ein `Classpath.Event is Loggable` im
++         Geltungsbereich sein; `logging.silentLogging` verwirft sie.
++     entry .communicable   stellt jedes Ereignis als Meldung dar
++     entry .ResourceLoaded   eine Ressource wurde gelesen: _loaded the classpath resource `path`_
++       entry #path   der Pfad der Ressource
++     entry .ResourceMissing   eine Ressource wurde nicht gefunden: _the classpath resource `path` was not found_
++       entry #path   der Pfad der Ressource
++   entry #entries   die Einträge des Klassenpfads, in Suchreihenfolge
+
+- entry .OnlineClasspath   a classpath whose entries may be fetched over the network
++ entry .OnlineClasspath   ein Klassenpfad, dessen Einträge über das Netzwerk abgerufen werden können
+
+= entry .OnlineClasspath   a classpath whose entries may be fetched over the network
+-   detail
++   detail
+
+-       A `Classpath` of any `Classpath.Entry`s, including `Url`s. `Classpath.of` builds one
+-       from a `URLClassLoader` whose URLs include an `http` or `https` one; a classpath of
+-       local entries alone is a `LocalClasspath`, whose entries are typed to exclude URLs.
++       Ein `Classpath` aus beliebigen `Classpath.Entry`s, einschließlich `Url`s. `Classpath.of`
++       baut einen aus einem `URLClassLoader`, unter dessen URLs eine `http`- oder `https`-URL
++       ist; ein Klassenpfad nur aus lokalen Einträgen ist ein `LocalClasspath`, dessen Einträge
++       so typisiert sind, dass sie URLs ausschließen.
+
+=       local entries alone is a `LocalClasspath`, whose entries are typed to exclude URLs.
+-   refer hellenism.LocalClasspath
++   refer hellenism.LocalClasspath
+
+-   entry #entries   the entries, in search order
++   entry #entries   die Einträge, in Suchreihenfolge
+
+- entry .Resource   a resource on the classpath, named by `cp"…"` and checked at compile time
++ entry .Resource   eine Ressource auf dem Klassenpfad, benannt mit `cp"…"` und zur Kompilierzeit geprüft
+
+= entry .Resource   a resource on the classpath, named by `cp"…"` and checked at compile time
+-   detail
++   detail
+
+-       A `Resource` is a `Path on Classpath` which the compiler has confirmed exists: the only
+-       way to make one is the `cp"…"` interpolator, whose macro looks the path up on the
+-       compiler's own classpath. Its type carries the path as the literal type `Locus`, so
+-       `cp"/data/table.csv"` is a `Resource { type Locus = "/data/table.csv" }`.
++       Eine `Resource` ist ein `Path on Classpath`, dessen Existenz der Compiler bestätigt hat:
++       Der einzige Weg, eine zu erzeugen, ist der Interpolator `cp"…"`, dessen Makro den Pfad
++       auf dem eigenen Klassenpfad des Compilers nachschlägt. Ihr Typ trägt den Pfad als
++       literalen Typ `Locus`, sodass `cp"/data/table.csv"` eine `Resource { type Locus =
++       "/data/table.csv" }` ist.
+
+-       A resource reads like any other source, through the `Classloader` given in scope:
++       Eine Ressource liest sich wie jede andere Quelle, über das Given `Classloader` im
++       Geltungsbereich:
+
+=       A resource reads like any other source, through the `Classloader` given in scope:
+=
+-       ```scala
++       ```scala
+
+=       A resource reads like any other source, through the `Classloader` given in scope:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       A resource reads like any other source, through the `Classloader` given in scope:
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       A resource reads like any other source, through the `Classloader` given in scope:
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val data: Data = cp"/scala/Option.class".read[Data]
++       val data: Data = cp"/scala/Option.class".read[Data]
+
+=       val data: Data = cp"/scala/Option.class".read[Data]
+-       ```
++       ```
+
+-       The runtime classloader may still lack what the compiler's classpath had, in which case
+-       the read raises `Classpath.Error`.
++       Dem Classloader zur Laufzeit kann dennoch fehlen, was der Klassenpfad des Compilers
++       hatte; in diesem Fall löst das Lesen `Classpath.Error` aus.
+
+-   refer hellenism.cp
++   refer hellenism.cp
+
+-   entry .streamable   reads a `Resource` as bytes, through the `Classloader` in scope
+-       The given which lets a resource be `read[Data]`, `read[Text]`, or read as any type
+-       decodable from a stream. The `Classpath.Error` for a missing resource is thrown
+-       unscoped rather than raised through a tactic, since a `cp"…"` resource has been checked
+-       at compile time.
+-   entry .source   reads a `Resource` as a stream metered by `Credit`
+-       As `.streamable`, with a `Buffering` in scope, for reading the resource lazily.
+-   entry .nominable   a resource's name: the last segment of its path, or `/` for the root
+-   entry #path   the resource's path on the classpath plane
++   entry .streamable   liest eine `Resource` als Bytes, über den `Classloader` im Geltungsbereich
++       Das Given, mit dem sich eine Ressource per `read[Data]`, `read[Text]` oder als jeder aus
++       einem Stream dekodierbare Typ lesen lässt. Der `Classpath.Error` für eine fehlende
++       Ressource wird ohne Geltungsbereich geworfen statt über eine Taktik ausgelöst, da eine
++       `cp"…"`-Ressource zur Kompilierzeit geprüft wurde.
++   entry .source   liest eine `Resource` als durch `Credit` bemessenen Stream
++       Wie `.streamable`, mit einem `Buffering` im Geltungsbereich, um die Ressource lazy zu
++       lesen.
++   entry .nominable   der Name einer Ressource: das letzte Segment ihres Pfads, oder `/` für die Wurzel
++   entry #path   der Pfad der Ressource auf der Klassenpfad-Ebene
+
+- entry .cp   the `cp"…"` interpolator: a classpath resource, checked as the code compiles
+-     `cp"/path/to/resource"` names a resource on the classpath and checks, while the code
+-     compiles, that it exists on the compiler's classpath (through the compiler's thread
+-     context classloader). The result is a `Resource` whose `Locus` type member is the path's
+-     literal type. A path which is not a valid classpath path is a compile error, _hellenism:
+-     the path `elsinore` is not a valid classpath path_, and one which exists nowhere on the
+-     compiler's classpath is another, _hellenism: the path `/missing.txt` is not on the
+-     classpath_.
++ entry .cp   der Interpolator `cp"…"`: eine Klassenpfad-Ressource, beim Kompilieren des Codes geprüft
++     `cp"/path/to/resource"` benennt eine Ressource auf dem Klassenpfad und prüft beim
++     Kompilieren des Codes, dass sie auf dem Klassenpfad des Compilers existiert (über den
++     Thread-Kontext-Classloader des Compilers). Das Ergebnis ist eine `Resource`, deren
++     Typ-Member `Locus` der literale Typ des Pfads ist. Ein Pfad, der kein gültiger
++     Klassenpfad-Pfad ist, ist ein Kompilierfehler, _hellenism: the path `elsinore` is not a
++     valid classpath path_, und einer, der nirgends auf dem Klassenpfad des Compilers
++     existiert, ein weiterer, _hellenism: the path `/missing.txt` is not on the classpath_.
+
+=     classpath_.
+=
+-     ```scala
++     ```scala
+
+=     classpath_.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     classpath_.
+=
+=     ```scala
+=     import soundness.*
+-     import classloaders.threadContextClassloader
++     import classloaders.threadContextClassloader
+
+=     classpath_.
+=
+=     ```scala
+=     import soundness.*
+=     import classloaders.threadContextClassloader
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     cp"/scala/Option.class".read[Data].length
++     cp"/scala/Option.class".read[Data].length
+
+=     cp"/scala/Option.class".read[Data].length
+-     ```
++     ```
+
+-     The path should begin with `/`, as a classpath path is always absolute; the macro
+-     tolerates one without, but the `Classpath` plane does not decode such text. The
+-     interpolator takes no `$`-substitutions: the path must be a literal, since it is checked
+-     at compile time.
++     Der Pfad sollte mit `/` beginnen, da ein Klassenpfad-Pfad immer absolut ist; das Makro
++     toleriert einen ohne, aber die Ebene `Classpath` dekodiert solchen Text nicht. Der
++     Interpolator nimmt keine `$`-Ersetzungen: Der Pfad muss ein Literal sein, da er zur
++     Kompilierzeit geprüft wird.
+
+- entry .classloaders   the standard classloaders, each a given to import by name
++ entry .classloaders   die Standard-Classloader, jeder ein namentlich zu importierendes Given
+
+= entry .classloaders   the standard classloaders, each a given to import by name
+-   detail
++   detail
+
+-       Which classloader resolves a resource is decided by the `Classloader` given in scope,
+-       and the choice is deliberately never implicit: `import soundness.*` brings none of
+-       these in, and one is imported by name.
++       Welcher Classloader eine Ressource auflöst, entscheidet das Given `Classloader` im
++       Geltungsbereich, und die Wahl ist bewusst nie implizit: `import soundness.*` bringt
++       keinen davon herein, und einer wird namentlich importiert.
+
+=       these in, and one is imported by name.
+=
+-       ```scala
++       ```scala
+
+=       these in, and one is imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       these in, and one is imported by name.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       import classloaders.threadContextClassloader
+-       ```
++       ```
+
+-       The thread's context classloader suits most applications. The system and platform
+-       loaders are the JVM's own, and `scalaClassloader` is whichever loaded the Scala
+-       library. A classloader built from a `Classpath` with `classloader` can be bound as a
+-       local given instead.
+-   entry .threadContextClassloader   the current thread's context classloader
+-       Built from `Classloader.threadContext` when the given is first used, so it is the
+-       context loader of the thread which first asked for it.
+-   entry .systemClassloader   the JVM's system (application) classloader
+-       `ClassLoader.getSystemClassLoader`: the loader over the `java.class.path` property, at
+-       the top of the application's delegation chain.
+-   entry .platformClassloader   the JVM's platform classloader
+-       `ClassLoader.getPlatformClassLoader`: the loader of the JDK's own modules, and the
+-       default parent of a classloader built with `classloader`.
+-   entry .scalaClassloader   the classloader which loaded the Scala library
+-       `Classloader[List]`: the loader the Scala standard library came from, which is the
+-       application loader in a plain `java -cp` process and the host's under a plugin system.
++       Der Kontext-Classloader des Threads passt für die meisten Anwendungen. Der System- und
++       der Plattform-Loader sind die eigenen der JVM, und `scalaClassloader` ist derjenige, der
++       die Scala-Bibliothek geladen hat. Ein mit `classloader` aus einem `Classpath` gebauter
++       Classloader kann stattdessen als lokales Given gebunden werden.
++   entry .threadContextClassloader   der Kontext-Classloader des aktuellen Threads
++       Aus `Classloader.threadContext` gebaut, wenn das Given zum ersten Mal verwendet wird,
++       also der Kontext-Loader des Threads, der zuerst danach gefragt hat.
++   entry .systemClassloader   der System-Classloader (Anwendungs-Classloader) der JVM
++       `ClassLoader.getSystemClassLoader`: der Loader über der Eigenschaft `java.class.path`, an
++       der Spitze der Delegationskette der Anwendung.
++   entry .platformClassloader   der Plattform-Classloader der JVM
++       `ClassLoader.getPlatformClassLoader`: der Loader der eigenen Module des JDK und das
++       standardmäßige Elternteil eines mit `classloader` gebauten Classloaders.
++   entry .scalaClassloader   der Classloader, der die Scala-Bibliothek geladen hat
++       `Classloader[List]`: der Loader, aus dem die Scala-Standardbibliothek stammt; in einem
++       einfachen `java -cp`-Prozess ist das der Anwendungs-Loader, unter einem Plugin-System der
++       des Hosts.
+
+- entry .ClassRef   a `Class[?]` found from a type, as `ClassRef[T]`
+-     `ClassRef` is the opaque type `hellenism.internal.ClassRef`, exported here. `ClassRef[T]`
+-     is a macro which resolves a type to its runtime class: a proper type is linked with
+-     `classOf`, binding the class the caller itself links against, and an unapplied type
+-     constructor is looked up by its JVM binary name. A type nested in an object or a class
+-     resolves to its binary name (`Outer$Nested`), where `Class.forName` on the dotted source
+-     name would fail. `ClassRef(javaClass)` wraps a class already in hand.
++ entry .ClassRef   eine aus einem Typ gefundene `Class[?]`, als `ClassRef[T]`
++     `ClassRef` ist der opake Typ `hellenism.internal.ClassRef`, hier exportiert.
++     `ClassRef[T]` ist ein Makro, das einen Typ zu seiner Laufzeitklasse auflöst: Ein
++     eigentlicher Typ wird mit `classOf` gelinkt, was die Klasse bindet, gegen die der Aufrufer
++     selbst linkt, und ein nicht angewandter Typkonstruktor wird nach seinem binären JVM-Namen
++     nachgeschlagen. Ein in einem Objekt oder einer Klasse verschachtelter Typ wird zu seinem
++     binären Namen aufgelöst (`Outer$Nested`), wo `Class.forName` mit dem punktierten
++     Quellnamen fehlschlagen würde. `ClassRef(javaClass)` umhüllt eine bereits vorliegende
++     Klasse.
+
+=     name would fail. `ClassRef(javaClass)` wraps a class already in hand.
+=
+-     ```scala
++     ```scala
+
+=     name would fail. `ClassRef(javaClass)` wraps a class already in hand.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Outer:
++     object Outer:
+
+-       class Nested
++       class Nested
+
+-     ClassRef[Outer.Nested].getName.nn.tt == t"Outer$$Nested"
++     ClassRef[Outer.Nested].getName.nn.tt == t"Outer$$Nested"
+
+-     ClassRef[Outer.type].getName.nn.tt
++     ClassRef[Outer.type].getName.nn.tt
+
+-     ClassRef[scala.Option].getName.nn.tt == t"scala.Option"
++     ClassRef[scala.Option].getName.nn.tt == t"scala.Option"
+
+=     ClassRef[scala.Option].getName.nn.tt == t"scala.Option"
+-     ```
++     ```
+
+-     A `ClassRef` is a `Class[?]`, so every Java method of a class is available on it. Its
+-     `classloader` extension gives the `Classloader` which loaded it, and on the JVM
+-     `classpathEntry` gives the `Classpath.Entry` it was loaded from. It inspects as the source
+-     which would produce it, `classOf[java.lang.String]`, rather than the two-word
+-     `class java.lang.String` of `Class#toString`.
++     Eine `ClassRef` ist eine `Class[?]`, sodass jede Java-Methode einer Klasse auf ihr
++     verfügbar ist. Ihre Erweiterung `classloader` liefert den `Classloader`, der sie geladen
++     hat, und auf der JVM liefert `classpathEntry` den `Classpath.Entry`, aus dem sie geladen
++     wurde. Sie wird als der Quelltext inspiziert, der sie erzeugen würde,
++     `classOf[java.lang.String]`, statt als das zweiwortige `class java.lang.String` von
++     `Class#toString`.
+
+- entry .internal   the macro implementations behind `cp"…"`, `ClassRef[T]` and `Classloader[T]`
++ entry .internal   die Makro-Implementierungen hinter `cp"…"`, `ClassRef[T]` und `Classloader[T]`
+
+= entry .internal   the macro implementations behind `cp"…"`, `ClassRef[T]` and `Classloader[T]`
+-   hidden
++   hidden
+
+= entry .internal   the macro implementations behind `cp"…"`, `ClassRef[T]` and `Classloader[T]`
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the macros have a stable home. `ClassRef`
+-       is exported from here to the `hellenism` package.
+-   entry .ClassRef   a `Class[?]` found from a type; see `hellenism.ClassRef`
++       Nicht zur direkten Verwendung: Das Objekt existiert, damit die Makros eine stabile
++       Heimat haben. `ClassRef` wird von hier in das Paket `hellenism` exportiert.
++   entry .ClassRef   eine aus einem Typ gefundene `Class[?]`; siehe `hellenism.ClassRef`
+
+=   entry .ClassRef   a `Class[?]` found from a type; see `hellenism.ClassRef`
+-     detail
++     detail
+
+-         The opaque type `ClassRef <: Class[?]`, with the macro `ClassRef[T]` and the wrapper
+-         `ClassRef(javaClass)`. Its page under the `hellenism` package has the full account.
+-     entry .apply   `ClassRef[T]` resolves a type to its class; `ClassRef(cls)` wraps one
+-         The macro form takes a type of any kind: a proper type is linked with `classOf`, an
+-         unapplied type constructor is looked up by its JVM binary name, and a type with no
+-         class at all is a compile error, _hellenism: the type `T` does not have a class_.
+-     entry .inspectable   renders a class reference as `classOf[java.lang.String]`
+-   entry .classloader   the classloader which loaded a `ClassRef`'s class
+-       An extension on `ClassRef`: `classRef.getClassLoader`, wrapped as a `Classloader`.
+-       `Classloader[T]` is `ClassRef[T].classloader`.
+-   entry .classpath   the macro behind `cp"…"`
+-       Reads the interpolator's one literal part, decodes it as a `Path on Classpath`, looks it
+-       up on the compiler's context classloader, and splices a `Resource` whose `Locus` type is
+-       the literal.
++         Der opake Typ `ClassRef <: Class[?]`, mit dem Makro `ClassRef[T]` und dem Wrapper
++         `ClassRef(javaClass)`. Seine Seite unter dem Paket `hellenism` enthält die vollständige
++         Beschreibung.
++     entry .apply   `ClassRef[T]` löst einen Typ zu seiner Klasse auf; `ClassRef(cls)` umhüllt eine
++         Die Makroform nimmt einen Typ beliebiger Art: Ein eigentlicher Typ wird mit `classOf`
++         gelinkt, ein nicht angewandter Typkonstruktor wird nach seinem binären JVM-Namen
++         nachgeschlagen, und ein Typ ganz ohne Klasse ist ein Kompilierfehler, _hellenism: the
++         type `T` does not have a class_.
++     entry .inspectable   stellt eine Klassenreferenz als `classOf[java.lang.String]` dar
++   entry .classloader   der Classloader, der die Klasse einer `ClassRef` geladen hat
++       Eine Erweiterung auf `ClassRef`: `classRef.getClassLoader`, als `Classloader` umhüllt.
++       `Classloader[T]` ist `ClassRef[T].classloader`.
++   entry .classpath   das Makro hinter `cp"…"`
++       Liest den einen literalen Teil des Interpolators, dekodiert ihn als `Path on Classpath`,
++       schlägt ihn im Kontext-Classloader des Compilers nach und spleißt eine `Resource` ein,
++       deren Typ `Locus` das Literal ist.
+
+- entry .Hellenism2   the trait which holds the `ClassRef[T]` macro implementation
++ entry .Hellenism2   der Trait, der die Makro-Implementierung von `ClassRef[T]` enthält
+
+= entry .Hellenism2   the trait which holds the `ClassRef[T]` macro implementation
+-   hidden
++   hidden
+
+= entry .Hellenism2   the trait which holds the `ClassRef[T]` macro implementation
+=   hidden
+-   detail
++   detail
+
+-       Mixed into `internal`; not for direct use.
+-   entry #makeClass   the macro behind `ClassRef[T]`: a type to its class, by `classOf` or binary name
++       In `internal` eingemischt; nicht zur direkten Verwendung.
++   entry #makeClass   das Makro hinter `ClassRef[T]`: ein Typ zu seiner Klasse, per `classOf` oder binärem Namen
+
+- entry .classloader   builds a classloader over a classpath, with a chosen delegation and parent
++ entry .classloader   baut einen Classloader über einem Klassenpfad, mit gewählter Delegation und gewähltem Elternteil
+
+= entry .classloader   builds a classloader over a classpath, with a chosen delegation and parent
+-   detail
++   detail
+
+-       A JVM-only extension on `Classpath` (absent on Scala Native, where the classpath is
+-       linked into the binary). It builds a `URLClassLoader` over the classpath's entries —
+-       `JavaRuntime` is omitted, since a `URLClassLoader` cannot load from `jrt:/` and the
+-       platform loader at the root of every chain supplies the JDK anyway — delegating to
+-       `parent` as `delegation` says.
++       Eine nur für die JVM verfügbare Erweiterung auf `Classpath` (nicht vorhanden unter
++       Scala Native, wo der Klassenpfad in die Binärdatei gelinkt wird). Sie baut einen
++       `URLClassLoader` über den Einträgen des Klassenpfads — `JavaRuntime` wird weggelassen, da
++       ein `URLClassLoader` nicht aus `jrt:/` laden kann und der Plattform-Loader an der Wurzel
++       jeder Kette das JDK ohnehin liefert — und delegiert an `parent`, wie `delegation` es
++       angibt.
+
+=       `parent` as `delegation` says.
+=
+-       ```scala
++       ```scala
+
+=       `parent` as `delegation` says.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
++       val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
+
+-       val loader = plugin.classloader(Classloader.Delegation.Preferential)
++       val loader = plugin.classloader(Classloader.Delegation.Preferential)
+
+-       loader.parent.let(_.java == ClassLoader.getPlatformClassLoader.nn)
++       loader.parent.let(_.java == ClassLoader.getPlatformClassLoader.nn)
+
+=       loader.parent.let(_.java == ClassLoader.getPlatformClassLoader.nn)
+-       ```
++       ```
+
+-       The delegation is required: `Deferential` is the JVM's parent-first order, which shares
+-       the parent's classes with what is loaded; `Preferential` is child-first, which isolates
+-       the classpath's own versions of its libraries from the parent's. See
+-       `Classloader.Delegation`. The parent is the platform classloader
+-       (`classloaders.platformClassloader`) unless another is given.
++       Die Delegation ist erforderlich: `Deferential` ist die Eltern-zuerst-Reihenfolge der
++       JVM, die die Klassen des Elternteils mit dem Geladenen teilt; `Preferential` ist
++       Kind-zuerst, was die eigenen Versionen der Bibliotheken des Klassenpfads von denen des
++       Elternteils isoliert. Siehe `Classloader.Delegation`. Das Elternteil ist der
++       Plattform-Classloader (`classloaders.platformClassloader`), sofern kein anderer
++       angegeben ist.
+
+- entry .services   the providers of a service interface declared on a classpath
++ entry .services   die Provider einer Service-Schnittstelle, die auf einem Klassenpfad deklariert sind
+
+= entry .services   the providers of a service interface declared on a classpath
+-   detail
++   detail
+
+-       A JVM-only extension on `Classpath`. `classpath.services[Service]` finds every
+-       implementation of `Service` registered under `META-INF/services/<Service>` on the
+-       classpath's entries, through `java.util.ServiceLoader`, instantiates each, and returns
+-       them as a `Set` typed to the service. The lookup uses a fresh `URLClassLoader` over the
+-       entries whose parent is the loader of the service class itself (or the system loader,
+-       for a JDK interface), so a provider is linked against the same `Service` the caller
+-       named; providers are deduplicated by their class.
++       Eine nur für die JVM verfügbare Erweiterung auf `Classpath`.
++       `classpath.services[Service]` findet über `java.util.ServiceLoader` jede Implementierung
++       von `Service`, die unter `META-INF/services/<Service>` in den Einträgen des Klassenpfads
++       registriert ist, instanziiert jede und gibt sie als auf den Service typisiertes `Set`
++       zurück. Die Suche verwendet einen frischen `URLClassLoader` über den Einträgen, dessen
++       Elternteil der Loader der Service-Klasse selbst ist (oder der System-Loader, für eine
++       JDK-Schnittstelle), sodass ein Provider gegen dasselbe `Service` gelinkt wird, das der
++       Aufrufer benannt hat; Provider werden anhand ihrer Klasse dedupliziert.
+
+=       named; providers are deduplicated by their class.
+=
+-       ```scala
++       ```scala
+
+=       named; providers are deduplicated by their class.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val classpath = LocalClasspath.of(Classloader[Option[Int]])
++       val classpath = LocalClasspath.of(Classloader[Option[Int]])
+
+-       classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme.nn.tt)
++       classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme.nn.tt)
+
+=       classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme.nn.tt)
+-       ```
++       ```
+
+-       The `Set` is unordered: a service whose providers must be ranked needs a key of its
+-       own.
++       Das `Set` ist ungeordnet: Ein Service, dessen Provider in eine Rangfolge gebracht
++       werden müssen, braucht einen eigenen Schlüssel.
+
+- entry .javaUrl   a classpath entry as the `java.net.URL` a `URLClassLoader` takes
+-     A JVM-only extension on `Classpath.Entry`. A `Directory` or `Jar` becomes a `file:` URL
+-     from its path, a `Url` is parsed as written, and `JavaRuntime` is `jrt:/`.
++ entry .javaUrl   ein Klassenpfad-Eintrag als die `java.net.URL`, die ein `URLClassLoader` nimmt
++     Eine nur für die JVM verfügbare Erweiterung auf `Classpath.Entry`. Ein `Directory` oder
++     `Jar` wird aus seinem Pfad zu einer `file:`-URL, eine `Url` wird so geparst, wie sie
++     geschrieben ist, und `JavaRuntime` ist `jrt:/`.
+
+- entry .classpathEntry   the classpath entry a class was loaded from, if it is known
+-     A JVM-only extension on `ClassRef`. Reads the class's protection domain's code source
+-     location and classifies it as a `Classpath.Entry`: a `file:` URL ending in `/` is a
+-     `Directory`, any other `file:` URL a `Jar`, `http` and `https` a `Url`, and `jrt` the
+-     `JavaRuntime`. A URL of any other protocol is `Unset`.
++ entry .classpathEntry   der Klassenpfad-Eintrag, aus dem eine Klasse geladen wurde, sofern er bekannt ist
++     Eine nur für die JVM verfügbare Erweiterung auf `ClassRef`. Liest den Ort der Codequelle
++     der Schutzdomäne der Klasse und ordnet ihn als `Classpath.Entry` ein: Eine `file:`-URL, die
++     auf `/` endet, ist ein `Directory`, jede andere `file:`-URL ein `Jar`, `http` und `https`
++     eine `Url` und `jrt` die `JavaRuntime`. Eine URL jedes anderen Protokolls ist `Unset`.
+
+=     `JavaRuntime`. A URL of any other protocol is `Unset`.
+=
+-     ```scala
++     ```scala
+
+=     `JavaRuntime`. A URL of any other protocol is `Unset`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     ClassRef[Option[Int]].classpathEntry
++     ClassRef[Option[Int]].classpathEntry
+
+=     ClassRef[Option[Int]].classpathEntry
+-     ```
++     ```
+
+- entry .classpathSubstantiable   tests whether a `Path on Classpath` exists, through the `Classloader` in scope
+-     The `Substantiable` given for classpath paths, in `hellenism.jvm`: `path.existent()` is
+-     whether the classloader in scope has a resource at that path, so a program can check for
+-     an optional resource rather than handle a `Classpath.Error`. It is a top-level given, so
+-     it must be imported by name: `import soundness.classpathSubstantiable`.
++ entry .classpathSubstantiable   prüft, ob ein `Path on Classpath` existiert, über den `Classloader` im Geltungsbereich
++     Das `Substantiable`-Given für Klassenpfad-Pfade, in `hellenism.jvm`: `path.existent()`
++     gibt an, ob der Classloader im Geltungsbereich eine Ressource an diesem Pfad hat, sodass
++     ein Programm auf eine optionale Ressource prüfen kann, statt einen `Classpath.Error` zu
++     behandeln. Es ist ein Given auf oberster Ebene und muss daher namentlich importiert
++     werden: `import soundness.classpathSubstantiable`.
+
+=     it must be imported by name: `import soundness.classpathSubstantiable`.
+=
+-     ```scala
++     ```scala
+
+=     it must be imported by name: `import soundness.classpathSubstantiable`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import soundness.classpathSubstantiable
++     import soundness.classpathSubstantiable
+
+=     import soundness.classpathSubstantiable
+-     import classloaders.threadContextClassloader
++     import classloaders.threadContextClassloader
+
+-     val path: Path on Classpath = Classpath / "scala" / "Option.class"
++     val path: Path on Classpath = Classpath / "scala" / "Option.class"
+
+-     path.existent()
++     path.existent()
+
+=     path.existent()
+-     ```
++     ```
+
+- entry .classpath   the classpath a classloader loads from, if it is a `URLClassLoader`
+-     An extension on `Classloader` in `hellenism.jvm`. Walks the loader and its parents to the
+-     nearest `URLClassLoader` and reads its URLs back as a `Classpath` with `Classpath.of`; a
+-     chain with no `URLClassLoader` in it gives `Unset`. Under a host such as a test runner,
+-     which isolates each suite in a `URLClassLoader` of its own, this is the classpath the
+-     suite's classes actually came from, where the `java.class.path` property names the
+-     host's jars; `LocalClasspath.of(classloader)` combines the two.
++ entry .classpath   der Klassenpfad, aus dem ein Classloader lädt, sofern er ein `URLClassLoader` ist
++     Eine Erweiterung auf `Classloader` in `hellenism.jvm`. Geht den Loader und seine
++     Elternteile bis zum nächsten `URLClassLoader` durch und liest dessen URLs mit
++     `Classpath.of` als `Classpath` zurück; eine Kette ohne `URLClassLoader` ergibt `Unset`.
++     Unter einem Host wie einem Test-Runner, der jede Suite in einem eigenen `URLClassLoader`
++     isoliert, ist dies der Klassenpfad, aus dem die Klassen der Suite tatsächlich stammen,
++     während die Eigenschaft `java.class.path` die JARs des Hosts nennt;
++     `LocalClasspath.of(classloader)` kombiniert beides.
+
+- entry .of   reads a `Classpath` back from a `URLClassLoader`'s URLs, as `Classpath.of`
+-     An extension on the `Classpath` object, in `hellenism.jvm`. Each URL becomes a
+-     `Classpath.Entry` by its protocol (`file:` to a `Directory` or `Jar`, `http`/`https` to a
+-     `Url`, `jrt` to `JavaRuntime`; any other protocol is dropped). The result is an
+-     `OnlineClasspath` if any entry is a `Url`, and otherwise a `LocalClasspath`, whose
+-     entries are typed to exclude URLs.
++ entry .of   liest einen `Classpath` aus den URLs eines `URLClassLoader` zurück, als `Classpath.of`
++     Eine Erweiterung auf dem Objekt `Classpath`, in `hellenism.jvm`. Jede URL wird anhand
++     ihres Protokolls zu einem `Classpath.Entry` (`file:` zu einem `Directory` oder `Jar`,
++     `http`/`https` zu einer `Url`, `jrt` zu `JavaRuntime`; jedes andere Protokoll wird
++     verworfen). Das Ergebnis ist ein `OnlineClasspath`, wenn ein Eintrag eine `Url` ist, und
++     andernfalls ein `LocalClasspath`, dessen Einträge so typisiert sind, dass sie URLs
++     ausschließen.
+
+- entry .LocalClasspath   a classpath of local entries alone: directories, JARs and the Java runtime
++ entry .LocalClasspath   ein Klassenpfad nur aus lokalen Einträgen: Verzeichnisse, JARs und die Java-Laufzeit
+
+= entry .LocalClasspath   a classpath of local entries alone: directories, JARs and the Java runtime
+-   detail
++   detail
+
+-       The classpath of a running program, as a value. Its `#entries` are typed as
+-       `Directory | Jar | JavaRuntime`, so a match over them need not handle `Url`, and it
+-       round-trips to the text the `java.class.path` property holds: `.decodable` reads one
+-       from the property, and `#apply` writes one back, each using the platform's path
+-       separator and so needing a `System` in scope.
++       Der Klassenpfad eines laufenden Programms, als Wert. Seine `#entries` sind als
++       `Directory | Jar | JavaRuntime` typisiert, sodass ein Abgleich über sie `Url` nicht
++       behandeln muss, und er macht den Hin- und Rückweg zu dem Text, den die Eigenschaft
++       `java.class.path` enthält: `.decodable` liest einen aus der Eigenschaft, und `#apply`
++       schreibt einen zurück, jeweils mit dem Pfadtrennzeichen der Plattform, weshalb ein
++       `System` im Geltungsbereich nötig ist.
+
+=       separator and so needing a `System` in scope.
+=
+-       ```scala
++       ```scala
+
+=       separator and so needing a `System` in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       separator and so needing a `System` in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       separator and so needing a `System` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       val running: LocalClasspath = System.properties.java.`class`.path().as[LocalClasspath]
++       val running: LocalClasspath = System.properties.java.`class`.path().as[LocalClasspath]
+
+-       val own: LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
++       val own: LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+
+-       own.entries.map:
++       own.entries.map:
+
+-         case Classpath.Entry.Directory(path) => t"directory $path"
++         case Classpath.Entry.Directory(path) => t"directory $path"
+
+-         case Classpath.Entry.Jar(path)       => t"archive $path"
++         case Classpath.Entry.Jar(path)       => t"archive $path"
+
+-         case Classpath.Entry.JavaRuntime     => t"the Java runtime"
++         case Classpath.Entry.JavaRuntime     => t"the Java runtime"
+
+=         case Classpath.Entry.JavaRuntime     => t"the Java runtime"
+-       ```
++       ```
+
+-       A classpath is built from entries with `apply`, from one path with `of`, and extended
+-       with `+ path`, which adds a directory or a JAR according to what is on disk and
+-       ignores an entry already present. The `classloader` and `services` extensions then
+-       build a loader over it or enumerate its providers.
++       Ein Klassenpfad wird mit `apply` aus Einträgen gebaut, mit `of` aus einem Pfad und mit
++       `+ path` erweitert, was je nachdem, was auf der Festplatte liegt, ein Verzeichnis oder
++       ein JAR hinzufügt und einen bereits vorhandenen Eintrag ignoriert. Die Erweiterungen
++       `classloader` und `services` bauen dann einen Loader darüber oder zählen seine Provider
++       auf.
+
+-   refer hellenism.Classpath
++   refer hellenism.Classpath
+
+=   refer hellenism.Classpath
+-   refer hellenism.classloader
++   refer hellenism.classloader
+
+-   entry .encodable   renders a classpath as `java.class.path` text, with the platform separator
+-       Needs a `System` in scope for the `path.separator` property. `JavaRuntime` entries are
+-       dropped, since the property has no spelling for them.
+-   entry .inspectable   a debug rendering: `classpath⟨/x.jar:/a/b/⟩`, always with `:`
+-       Always available, with no `System`, so it cannot be mistaken for the platform text
+-       `.encodable` produces: the entries are joined with `:` whatever the platform, and
+-       `JavaRuntime` shows as `‹jrt›`.
+-   entry .decodable   reads a classpath from `java.class.path` text
+-       Splits the text on the platform's `path.separator` (needing a `System`, and raising
+-       `Property.Error` if it is unset). An element ending in `/` is a `Directory`, one matching
+-       `*.jar` a `Jar`, and anything else a `Directory`.
++   entry .encodable   stellt einen Klassenpfad als `java.class.path`-Text dar, mit dem Trennzeichen der Plattform
++       Braucht ein `System` im Geltungsbereich für die Eigenschaft `path.separator`.
++       `JavaRuntime`-Einträge werden verworfen, da die Eigenschaft keine Schreibweise für sie
++       hat.
++   entry .inspectable   eine Debug-Darstellung: `classpath⟨/x.jar:/a/b/⟩`, immer mit `:`
++       Immer verfügbar, ohne `System`, sodass sie nicht mit dem Plattformtext verwechselt werden
++       kann, den `.encodable` erzeugt: Die Einträge werden unabhängig von der Plattform mit `:`
++       verbunden, und `JavaRuntime` erscheint als `‹jrt›`.
++   entry .decodable   liest einen Klassenpfad aus `java.class.path`-Text
++       Teilt den Text am `path.separator` der Plattform (was ein `System` braucht und
++       `Property.Error` auslöst, wenn es nicht gesetzt ist). Ein Element, das auf `/` endet,
++       ist ein `Directory`, eines, das auf `*.jar` passt, ein `Jar`, und alles andere ein
++       `Directory`.
+
+=       `*.jar` a `Jar`, and anything else a `Directory`.
+=
+-       ```scala
++       ```scala
+
+=       `*.jar` a `Jar`, and anything else a `Directory`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `*.jar` a `Jar`, and anything else a `Directory`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       `*.jar` a `Jar`, and anything else a `Directory`.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       t"/classes/:/lib/app.jar".as[LocalClasspath]
++       t"/classes/:/lib/app.jar".as[LocalClasspath]
+
+=       t"/classes/:/lib/app.jar".as[LocalClasspath]
+-       ```
++       ```
+
+-   entry .of   the classpath a classloader loads from, or one of a single path
+-       `LocalClasspath.of(classloader)` is the classpath a `URLClassLoader` over local entries
+-       loads from, found through `Classloader#classpath`, and otherwise the `java.class.path`
+-       property. Code which launches a JVM to run its own classes should take its classpath
+-       from this, with the classloader of one of its own classes
+-       (`LocalClasspath.of(Classloader[Main.type])`): under a host such as a test runner,
+-       which isolates each suite in a `URLClassLoader`, the property names the host's own
+-       jars, not the code's.
++   entry .of   der Klassenpfad, aus dem ein Classloader lädt, oder einer aus einem einzelnen Pfad
++       `LocalClasspath.of(classloader)` ist der Klassenpfad, aus dem ein `URLClassLoader` über
++       lokalen Einträgen lädt, gefunden über `Classloader#classpath`, und andernfalls die
++       Eigenschaft `java.class.path`. Code, der eine JVM startet, um seine eigenen Klassen
++       auszuführen, sollte seinen Klassenpfad hieraus nehmen, mit dem Classloader einer seiner
++       eigenen Klassen (`LocalClasspath.of(Classloader[Main.type])`): Unter einem Host wie
++       einem Test-Runner, der jede Suite in einem `URLClassLoader` isoliert, nennt die
++       Eigenschaft die eigenen JARs des Hosts, nicht die des Codes.
+
+-       `LocalClasspath.of(path)` is the classpath of one entry, by its path: a `Directory` or a
+-       `Jar` according to what is on disk (so it may raise `Path.Error` or `Io.Error`, and needs
+-       a `DereferenceSymlinks` policy). It is `of`, not `apply`, because a single
+-       `Classpath.Entry` is itself a path, and `LocalClasspath(entry)` would be ambiguous with
+-       the entries' `apply`.
+-   entry .apply   a classpath of the given entries, in order
+-       Takes any number of `Classpath.Entry.Directory`, `Classpath.Entry.Jar` and
+-       `Classpath.Entry.JavaRuntime` entries, in search order. For a single path, use `of`.
++       `LocalClasspath.of(path)` ist der Klassenpfad eines Eintrags, anhand seines Pfads: ein
++       `Directory` oder ein `Jar`, je nachdem, was auf der Festplatte liegt (er kann also
++       `Path.Error` oder `Io.Error` auslösen und braucht eine `DereferenceSymlinks`-Richtlinie).
++       Es heißt `of`, nicht `apply`, weil ein einzelner `Classpath.Entry` selbst ein Pfad ist und
++       `LocalClasspath(entry)` mit dem `apply` der Einträge mehrdeutig wäre.
++   entry .apply   ein Klassenpfad aus den gegebenen Einträgen, in Reihenfolge
++       Nimmt beliebig viele Einträge `Classpath.Entry.Directory`, `Classpath.Entry.Jar` und
++       `Classpath.Entry.JavaRuntime`, in Suchreihenfolge. Für einen einzelnen Pfad verwenden
++       Sie `of`.
+
+=       `Classpath.Entry.JavaRuntime` entries, in search order. For a single path, use `of`.
+=
+-       ```scala
++       ```scala
+
+=       `Classpath.Entry.JavaRuntime` entries, in search order. For a single path, use `of`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       LocalClasspath(Classpath.Entry.Jar(t"/x.jar"), Classpath.Entry.Directory(t"/a/b/"))
++       LocalClasspath(Classpath.Entry.Jar(t"/x.jar"), Classpath.Entry.Directory(t"/a/b/"))
+
+=       LocalClasspath(Classpath.Entry.Jar(t"/x.jar"), Classpath.Entry.Directory(t"/a/b/"))
+-       ```
++       ```
+
+-   entry .paths   `classpath + path`: adds a directory or JAR, by what is on disk
+-       The `Addable` given which extends a classpath with any path type. The path is read as a
+-       `Path on Linux` and checked on disk: a directory becomes a `Directory` entry, anything
+-       else a `Jar`, and an entry already present leaves the classpath as it was. It needs a
+-       `Tactic[Path.Error]`, a `Tactic[Io.Error]` and a `DereferenceSymlinks` policy in scope.
+-   entry #entries   the entries, in search order, typed to exclude URLs
+-   entry #entrySet   the entries as a set, for the membership check `+ path` makes
+-   entry #apply   the classpath as `java.class.path` text, with the platform separator
+-       Needs a `System` in scope for the `path.separator` property. `Directory` and `Jar`
+-       entries are joined in order; `JavaRuntime` is dropped, since the property has no
+-       spelling for it.
++   entry .paths   `classpath + path`: fügt je nach Inhalt der Festplatte ein Verzeichnis oder JAR hinzu
++       Das `Addable`-Given, das einen Klassenpfad um einen beliebigen Pfadtyp erweitert. Der
++       Pfad wird als `Path on Linux` gelesen und auf der Festplatte geprüft: Ein Verzeichnis
++       wird zu einem `Directory`-Eintrag, alles andere zu einem `Jar`, und ein bereits
++       vorhandener Eintrag lässt den Klassenpfad unverändert. Es braucht eine
++       `Tactic[Path.Error]`, eine `Tactic[Io.Error]` und eine `DereferenceSymlinks`-Richtlinie
++       im Geltungsbereich.
++   entry #entries   die Einträge, in Suchreihenfolge, so typisiert, dass sie URLs ausschließen
++   entry #entrySet   die Einträge als Menge, für die Mitgliedschaftsprüfung, die `+ path` vornimmt
++   entry #apply   der Klassenpfad als `java.class.path`-Text, mit dem Trennzeichen der Plattform
++       Braucht ein `System` im Geltungsbereich für die Eigenschaft `path.separator`.
++       `Directory`- und `Jar`-Einträge werden in Reihenfolge verbunden; `JavaRuntime` wird
++       verworfen, da die Eigenschaft keine Schreibweise dafür hat.

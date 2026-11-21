@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.24.9` — Pattern not exhaustive
++ # `↯/s.24.9` — パターンが網羅的でない
+
+- Raised by Contingency's pattern-analysis macro when a partial
+- function does not cover every possible error type.
++ 部分関数がありうるすべてのエラー型を扱っていないときに、Contingency のパターン解析マクロが発生させる。
+
+- ## Cause
++ ## 原因
+
+- `mitigate`/`recover` patterns must cover every error variant that
+- can flow into them. When a case is missing, this halt fires.
++ `mitigate`/`recover` のパターンは、そこに流れ込みうるすべてのエラーのバリアントを扱わなければならない。
++ ケースが欠けていると、この停止が起こる。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.24.9] the pattern is not exhaustive
++ [↯/s.24.9] the pattern is not exhaustive
+
+= [↯/s.24.9] the pattern is not exhaustive
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Add the missing case(s), or use a wildcard fallback.
++ 欠けているケースを加えるか、ワイルドカードの代替を使う。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - ソース：`lib/contingency/src/core/contingency.internal.scala`

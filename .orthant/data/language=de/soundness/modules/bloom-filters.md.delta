@@ -1,0 +1,378 @@
+orthant 1 language
+
+- ## Bloom Filters
++ ## Bloomfilter
+
+- ### About
++ ### Überblick
+
+- A [Bloom filter](https://en.wikipedia.org/wiki/Bloom_filter) answers the question "have I seen
+- this before?" in constant space, at the price of an occasional false positive. A *no* is always
+- right. A *yes* is right with a probability which the filter's size controls.
++ Ein [Bloomfilter](https://en.wikipedia.org/wiki/Bloom_filter) beantwortet die Frage „Habe ich das
++ schon einmal gesehen?“ mit konstantem Speicherbedarf, um den Preis gelegentlicher falsch positiver
++ Ergebnisse. Ein *Nein* ist immer richtig. Ein *Ja* ist mit einer Wahrscheinlichkeit richtig, die
++ die Größe des Filters steuert.
+
+- A filter is constructed from the two numbers which actually matter: roughly how many elements
+- it will hold, and the rate of false positives to tolerate. The size of the bit array and the
+- number of hashes are worked out from them.
++ Ein Filter wird aus den beiden Zahlen konstruiert, auf die es tatsächlich ankommt: ungefähr wie
++ viele Elemente er aufnehmen wird und welche Rate falsch positiver Ergebnisse tolerierbar ist. Die
++ Größe des Bit-Arrays und die Anzahl der Hashes werden daraus berechnet.
+
+- Any [digestible](hashing.md#hashing-your-own-types) value can be added, and the hash algorithm
+- is chosen as a type. A filter is [immutable]: adding an element gives a new filter, so filters
+- are shared and accumulated as safely as any other value.
++ Jeder [hashbare](hashing.md#hashing-your-own-types) Wert kann hinzugefügt werden, und der
++ Hash-Algorithmus wird als Typ gewählt. Ein Filter ist [unveränderlich]: Das Hinzufügen eines
++ Elements liefert einen neuen Filter, sodass Filter so sicher geteilt und angesammelt werden wie
++ jeder andere Wert.
+
+- ### On probabilistic membership
++ ### Über probabilistische Mitgliedschaft
+
+- Storing every element of a large set, just to answer whether something is a member, is often a
+- waste. A cache of URLs which have already been fetched, a guard against sending a notification
+- twice, and a check before an expensive lookup all survive the occasional false *yes*.
++ Jedes Element einer großen Menge zu speichern, nur um zu beantworten, ob etwas ein Mitglied ist,
++ ist oft Verschwendung. Ein Cache bereits abgerufener URLs, ein Schutz davor, eine Benachrichtigung
++ zweimal zu senden, und eine Prüfung vor einem teuren Nachschlagen überstehen alle das gelegentliche
++ falsche *Ja*.
+
+- A Bloom filter hashes each element to a handful of positions in an array of bits, and
+- remembers only the bits. That is a few bits for each element, whatever the size of the
+- elements. But tuning a filter means choosing the size of the bit array and the number of hash
+- functions, by a formula which most code copies from a textbook, sometimes wrongly.
++ Ein Bloomfilter hasht jedes Element auf eine Handvoll Positionen in einem Array von Bits und merkt
++ sich nur die Bits. Das sind ein paar Bits pro Element, unabhängig von der Größe der Elemente. Einen
++ Filter abzustimmen heißt aber, die Größe des Bit-Arrays und die Anzahl der Hashfunktionen zu wählen,
++ nach einer Formel, die der meiste Code aus einem Lehrbuch abschreibt, manchmal falsch.
+
+- Here the filter is asked for by intent: the expected size, and the target error rate. The
+- parameters are computed. The error rate is a [bounded number](numbers.md#bounded-numbers), so
+- a rate outside `[0, 1]` does not compile. The filter's error rate is fixed by how it is
+- constructed, and is not checked at each use, which is
+- [safety by construction](../../philosophy/safety-by-construction.md).
++ Hier wird der Filter nach Absicht angefordert: die erwartete Größe und die angestrebte Fehlerrate.
++ Die Parameter werden berechnet. Die Fehlerrate ist eine [begrenzte Zahl](numbers.md#bounded-numbers),
++ sodass eine Rate außerhalb von `[0, 1]` nicht kompiliert. Die Fehlerrate des Filters ist durch seine
++ Konstruktion festgelegt und wird nicht bei jeder Verwendung geprüft, und das ist
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md).
+
+- Everything comes from the `soundness` package. A provider of hash algorithms is in scope, and
+- the last import lets the samples print their results:
++ Alles kommt aus dem Paket `soundness`. Ein Provider für Hash-Algorithmen ist im Geltungsbereich, und
++ der letzte Import lässt die Beispiele ihre Ergebnisse ausgeben:
+
+= the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import providers.soundnessProvider
++ import providers.soundnessProvider
+
+- import Blake3.hash
++ import Blake3.hash
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Creating and adding
++ ### Erzeugen und hinzufügen
+
+- A filter is created for a type of element, an expected size and an error rate. `+` adds one
+- element, and `++` adds many:
++ Ein Filter wird für einen Elementtyp, eine erwartete Größe und eine Fehlerrate erzeugt. `+` fügt ein
++ Element hinzu, `++` viele:
+
+= element, and `++` adds many:
+=
+- ```scala
++ ```scala
+
+- val bloom = BloomFilter[Text](100, 0.001) + t"Hello world"
++ val bloom = BloomFilter[Text](100, 0.001) + t"Hello world"
+
+- val fuller = bloom ++ List(t"hello", t"world")
++ val fuller = bloom ++ List(t"hello", t"world")
+
+= val fuller = bloom ++ List(t"hello", t"world")
+- ```
++ ```
+
+- Anything with a `Digestible` instance can be an element, including text, numbers and case
+- classes, since elements enter the filter through the same hashing as everything else.
++ Alles mit einer `Digestible`-Instanz kann ein Element sein, auch Text, Zahlen und Case-Klassen, da
++ Elemente über dasselbe Hashing in den Filter gelangen wie alles andere.
+
+- An error rate which is not a probability does not compile:
++ Eine Fehlerrate, die keine Wahrscheinlichkeit ist, kompiliert nicht:
+
+= An error rate which is not a probability does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- BloomFilter[Text](100, 1.5)
++ BloomFilter[Text](100, 1.5)
+
+= BloomFilter[Text](100, 1.5)
+- ```
++ ```
+
+- ### Querying
++ ### Abfragen
+
+- `hits` asks whether an element may be present. A `false` is definitive: the element was never
+- added. A `true` means *probably*, with the probability of a false positive which the filter
+- was built for:
++ `hits` fragt, ob ein Element vorhanden sein könnte. Ein `false` ist endgültig: Das Element wurde
++ nie hinzugefügt. Ein `true` bedeutet *wahrscheinlich*, mit der Wahrscheinlichkeit eines falsch
++ positiven Ergebnisses, für die der Filter gebaut wurde:
+
+= was built for:
+=
+- ```scala fuel
++ ```scala fuel
+
+= was built for:
+=
+= ```scala fuel
+- run
++ run
+
+= was built for:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(fuller.hits(t"hello").inspect)
++ Out.println(fuller.hits(t"hello").inspect)
+
+- Out.println(fuller.hits(t"goodbye").inspect)
++ Out.println(fuller.hits(t"goodbye").inspect)
+
+- Out.println(bloom.hits(t"hello").inspect)
++ Out.println(bloom.hits(t"hello").inspect)
+
+= Out.println(bloom.hits(t"hello").inspect)
+- ```
++ ```
+
+- The last line shows that `bloom` itself was not changed when `fuller` was made from it.
++ Die letzte Zeile zeigt, dass `bloom` selbst nicht verändert wurde, als `fuller` daraus erzeugt
++ wurde.
+
+- The asymmetry is the contract. A Bloom filter suits exactly those places where a false *yes*
+- costs a redundant check, and a false *no* would be a bug.
++ Die Asymmetrie ist der Vertrag. Ein Bloomfilter passt genau an die Stellen, wo ein falsches *Ja*
++ eine überflüssige Prüfung kostet und ein falsches *Nein* ein Bug wäre.
+
+- ### Choosing the parameters
++ ### Die Parameter wählen
+
+- The two numbers given at construction are the expected number of elements and the tolerable
+- rate of false positives. The size of the bit array and the number of hash functions follow
+- from them, by the standard formulae. Stating the intent, and not the parameters, means that
+- the two cannot disagree: a filter sized for a hundred elements at one in a thousand is exactly
+- that.
++ Die beiden bei der Konstruktion angegebenen Zahlen sind die erwartete Anzahl von Elementen und die
++ tolerierbare Rate falsch positiver Ergebnisse. Die Größe des Bit-Arrays und die Anzahl der
++ Hashfunktionen folgen daraus, nach den Standardformeln. Die Absicht statt der Parameter anzugeben
++ bedeutet, dass beide nicht im Widerspruch stehen können: Ein Filter, der für hundert Elemente bei
++ eins zu tausend bemessen ist, ist genau das.
+
+- It is worth knowing what happens when the *expected size* is wrong. A filter which is given
+- far more elements than it was built for keeps working, but its rate of false positives rises
+- above the rate requested. The rate is a promise about a filter used as intended, not a
+- guarantee which holds however the filter is filled.
++ Es lohnt sich zu wissen, was passiert, wenn die *erwartete Größe* falsch ist. Ein Filter, der weit
++ mehr Elemente erhält, als er vorgesehen war, funktioniert weiter, aber seine Rate falsch positiver
++ Ergebnisse steigt über die angeforderte Rate. Die Rate ist ein Versprechen über einen
++ bestimmungsgemäß verwendeten Filter, keine Garantie, die gilt, wie auch immer der Filter befüllt
++ wird.
+
+- ### Where the bits come from
++ ### Woher die Bits kommen
+
+- The hash algorithm is part of the filter's type, and every bit position is derived from a
+- single digest of the element. The digest's first two 64-bit words, `h₁` and `h₂`, give
+- position *i* as `h₁ + i·h₂`, modulo the size of the bit array. This is the double-hashing
+- scheme which Guava also uses, and it costs one digest for each element, however many positions
+- are needed. An algorithm whose digest is shorter than sixteen bytes, such as a CRC, is applied
+- again under a counter until enough bytes have been gathered.
++ Der Hash-Algorithmus ist Teil des Filtertyps, und jede Bitposition wird aus einem einzigen Hashwert
++ des Elements abgeleitet. Die ersten beiden 64-Bit-Wörter des Hashwerts, `h₁` und `h₂`, ergeben die
++ Position *i* als `h₁ + i·h₂`, modulo der Größe des Bit-Arrays. Das ist das Double-Hashing-Verfahren,
++ das auch Guava verwendet, und es kostet einen Hashwert pro Element, egal wie viele Positionen
++ gebraucht werden. Ein Algorithmus, dessen Hashwert kürzer als sechzehn Bytes ist, etwa ein CRC, wird
++ unter einem Zähler erneut angewandt, bis genug Bytes gesammelt sind.
+
+- The algorithm in scope therefore decides the filter's behavior, and two filters over the same
+- elements agree only if they agree on the algorithm.
++ Der Algorithmus im Geltungsbereich bestimmt daher das Verhalten des Filters, und zwei Filter über
++ denselben Elementen stimmen nur überein, wenn sie im Algorithmus übereinstimmen.
+
+- A Bloom filter has no adversary to resist, only a distribution to spread, so the cryptographic
+- BLAKE3 is more hash than it needs. `Murmur3`, the 128-bit MurmurHash3, costs about a fifth as
+- much for each element, and is the algorithm which Guava's filters use. It is chosen by naming
+- it, behind the same [permit](hashing.md#fast-hashing) as the checksums:
++ Ein Bloomfilter muss keinem Angreifer widerstehen, sondern nur eine Verteilung streuen, daher ist
++ das kryptografische BLAKE3 mehr Hash, als er braucht. `Murmur3`, das 128-Bit-MurmurHash3, kostet pro
++ Element etwa ein Fünftel davon und ist der Algorithmus, den die Filter von Guava verwenden. Er wird
++ gewählt, indem man ihn nennt, hinter derselben [Erlaubnis](hashing.md#fast-hashing) wie die
++ Prüfsummen:
+
+= it, behind the same [permit](hashing.md#fast-hashing) as the checksums:
+=
+- ```scala
++ ```scala
+
+- import cryptoPermits.permitNonCryptographicHashes
++ import cryptoPermits.permitNonCryptographicHashes
+
+- val fast = BloomFilter[Text](10_000, 0.01)[Murmur3]
++ val fast = BloomFilter[Text](10_000, 0.01)[Murmur3]
+
+= val fast = BloomFilter[Text](10_000, 0.01)[Murmur3]
+- ```
++ ```
+
+- ### Filling a filter in place
++ ### Einen Filter an Ort und Stelle befüllen
+
+- A filter fresh from `BloomFilter[Text](n, p)` is *exclusive*. It belongs to the code which
+- made it, and that code fills it in place, with `add` and `addAll`, with no copying at all, and
+- then freezes it:
++ Ein frisch aus `BloomFilter[Text](n, p)` kommender Filter ist *exklusiv*. Er gehört dem Code, der
++ ihn erzeugt hat, und dieser Code befüllt ihn an Ort und Stelle, mit `add` und `addAll`, ganz ohne
++ Kopieren, und friert ihn dann ein:
+
+= then freezes it:
+=
+- ```scala
++ ```scala
+
+- val filter = BloomFilter[Text](10_000, 0.01)
++ val filter = BloomFilter[Text](10_000, 0.01)
+
+- filter.add(t"first")
++ filter.add(t"first")
+
+- filter.addAll(List(t"second", t"third"))
++ filter.addAll(List(t"second", t"third"))
+
+- val frozen = BloomFilter.freeze(filter)
++ val frozen = BloomFilter.freeze(filter)
+
+= val frozen = BloomFilter.freeze(filter)
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(frozen.hits(t"second").inspect)
++ Out.println(frozen.hits(t"second").inspect)
+
+- Out.println(frozen.hits(t"fourth").inspect)
++ Out.println(frozen.hits(t"fourth").inspect)
+
+= Out.println(frozen.hits(t"fourth").inspect)
+- ```
++ ```
+
+- `freeze` consumes the exclusive filter, and the compiler's separation checking rejects any
+- later use of `filter`. What it gives is the frozen form, which may be shared across threads,
+- held in a data structure and queried from anywhere, but never written to. This is the same
+- discipline as freezing an array, and it is what makes the immutability below free, not copied.
++ `freeze` verbraucht den exklusiven Filter, und das Separation-Checking des Compilers weist jede
++ spätere Verwendung von `filter` zurück. Was es liefert, ist die eingefrorene Form, die zwischen
++ Threads geteilt, in einer Datenstruktur gehalten und von überall abgefragt, aber nie beschrieben
++ werden kann. Das ist dieselbe Disziplin wie beim Einfrieren eines Arrays, und sie macht die
++ Unveränderlichkeit unten kostenlos statt kopiert.
+
+- ### Immutability
++ ### Unveränderlichkeit
+
+- `+` and `++` give new filters, and do not change the original, at the price of one copy of
+- the bits each. Building a filter from a large collection with `++` is a single pass and a
+- single copy, not the sequence of copies which repeated `+` would make. Filling an exclusive
+- filter with `addAll`, before freezing it, makes no copy at all.
++ `+` und `++` liefern neue Filter und ändern das Original nicht, um den Preis von jeweils einer
++ Kopie der Bits. Einen Filter mit `++` aus einer großen Collection zu bauen ist ein einziger
++ Durchgang und eine einzige Kopie, nicht die Folge von Kopien, die wiederholtes `+` erzeugen würde.
++ Einen exklusiven Filter vor dem Einfrieren mit `addAll` zu befüllen, erzeugt überhaupt keine Kopie.
+
+- The operations on a filter, side by side:
++ Die Operationen auf einem Filter im Vergleich:
+
+- ```tabular
++ ```tabular
+
+- column  Operation
++ column  Operation
+
+- column  Applies to
+- column  Yields
+- column  Copies the bits
+- row  `filter + element`  any filter  a new frozen filter  once
+- row  `filter ++ elements`  any filter  a new frozen filter  once
+- row  `filter.add(element)`  an exclusive filter  nothing; fills it in place  never
+- row  `filter.addAll(elements)`  an exclusive filter  nothing; fills it in place  never
+- row  `BloomFilter.freeze(filter)`  an exclusive filter, consumed  the frozen filter  never
+- row  `filter.hits(element)`  any filter  `false` if absent, `true` if probably present  never
++ column  Gilt für
++ column  Liefert
++ column  Kopiert die Bits
++ row  `filter + element`  jeden Filter  einen neuen eingefrorenen Filter  einmal
++ row  `filter ++ elements`  jeden Filter  einen neuen eingefrorenen Filter  einmal
++ row  `filter.add(element)`  einen exklusiven Filter  nichts; befüllt ihn an Ort und Stelle  nie
++ row  `filter.addAll(elements)`  einen exklusiven Filter  nichts; befüllt ihn an Ort und Stelle  nie
++ row  `BloomFilter.freeze(filter)`  einen exklusiven Filter, verbraucht  den eingefrorenen Filter  nie
++ row  `filter.hits(element)`  jeden Filter  `false`, wenn abwesend, `true`, wenn wahrscheinlich vorhanden  nie
+
+= row  `filter.hits(element)`  any filter  `false` if absent, `true` if probably present  never
+- ```
++ ```
+
+- [Caching](caching.md) covers the case where the answer itself must be remembered, not only
+- whether it has been seen.
++ [Caching](caching.md) behandelt den Fall, in dem die Antwort selbst gemerkt werden muss, nicht nur,
++ ob sie schon gesehen wurde.

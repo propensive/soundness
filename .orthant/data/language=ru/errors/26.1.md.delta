@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.26.1` — `Database.Error`
++ # `↯/s.26.1` — `Database.Error`
+
+- Raised when an Anamnesis database operation cannot proceed.
++ Порождается, когда операция с базой данных Anamnesis не может продолжиться.
+
+- ## Cause
++ ## Причина
+
+- Anamnesis maintains an in-memory store of references and the
+- relations between them. When a query refers to data the store
+- does not know about, this error is raised. The constructor takes
+- a `reason: Reason`; the rendered message is `the database
++ Anamnesis поддерживает хранилище ссылок и отношений между ними в
++ памяти. Когда запрос обращается к данным, о которых хранилище не
++ знает, порождается эта ошибка. Конструктор принимает
++ `reason: Reason`; отображаемое сообщение — `the database
+
+- operation failed because $reason`.
++ operation failed because $reason`.
+
+- ## Variants
++ ## Варианты
+
+- ### `↯/s.26.1.1` — `UnknownReference`
++ ### `↯/s.26.1.1` — `UnknownReference`
+
+- The value passed to `Database.ref` has not previously been
+- stored, so no `Ref` can be returned for it.
++ Значение, переданное в `Database.ref`, ранее не сохранялось,
++ поэтому для него невозможно вернуть `Ref`.
+
+- **Example.** `[↯/s.26.1.1] the database operation failed because the value has not been stored in the database`
++ **Пример.** `[↯/s.26.1.1] the database operation failed because the value has not been stored in the database`
+
+- **Resolution.** Call `Database.store` with the value before
+- asking for a `Ref` to it.
++ **Решение.** Вызовите `Database.store` со значением, прежде чем
++ запрашивать для него `Ref`.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/anamnesis/src/core/anamnesis.Database.scala`
++ - Исходник: `lib/anamnesis/src/core/anamnesis.Database.scala`

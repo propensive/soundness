@@ -1,0 +1,277 @@
+orthant 1 language
+
+- ## Email
++ ## E-Mail
+
+- ### About
++ ### Überblick
+
+- An email is composed from typed parts: a body in text, or HTML, or both, with inline content
+- and attachments. It is sent through a pluggable *courier*.
++ Eine E-Mail wird aus typisierten Teilen zusammengesetzt: einem Body in Text oder HTML oder beidem,
++ mit eingebetteten Inhalten und Anhängen. Sie wird über einen austauschbaren *Kurier* versendet.
+
+- The recipients' addresses are the validated
+- [email addresses](network-addresses.md#email-addresses) used everywhere else, so a malformed
+- address cannot reach the step of sending. The MIME structure follows from what the message
+- contains. The transport is a [contextual value], so the same code composes a message
+- whichever delivery service is in scope.
++ Die Adressen der Empfänger sind die validierten
++ [E-Mail-Adressen](network-addresses.md#email-addresses), die überall sonst verwendet werden,
++ sodass eine fehlerhafte Adresse den Schritt des Versendens nicht erreichen kann. Die MIME-Struktur
++ folgt aus dem, was die Nachricht enthält. Der Transport ist ein [Kontextwert], sodass derselbe Code
++ eine Nachricht zusammensetzt, gleich welcher Zustelldienst im Geltungsbereich ist.
+
+- ### On email
++ ### Über E-Mail
+
+- Assembling an email correctly means assembling MIME. Alternative bodies, inline images and
+- attachments each call for a different multipart type, and these nest. An API which exposes
+- this structure directly makes the common case, of sending some text, perhaps with an
+- attachment, bear all of that weight. An API which hides it entirely makes the structured
+- cases impossible.
++ Eine E-Mail korrekt zusammenzusetzen heißt, MIME zusammenzusetzen. Alternative Bodies, eingebettete
++ Bilder und Anhänge verlangen jeweils einen anderen Multipart-Typ, und diese verschachteln sich.
++ Eine API, die diese Struktur direkt offenlegt, lässt den häufigen Fall, etwas Text zu senden,
++ vielleicht mit einem Anhang, dieses ganze Gewicht tragen. Eine API, die sie ganz verbirgt, macht
++ die strukturierten Fälle unmöglich.
+
+- Here the structure is derived from the content. A message states what it *is*: text, HTML or
+- both, with attachments or without. Its content type follows. Sending it is a single method,
+- whose arguments name the recipients and the subject. A message which is assembled from typed
+- parts, with its addresses validated as the code compiles, is
+- [safety by construction](../../philosophy/safety-by-construction.md) for mail.
++ Hier wird die Struktur aus dem Inhalt abgeleitet. Eine Nachricht gibt an, was sie *ist*: Text, HTML
++ oder beides, mit Anhängen oder ohne. Ihr Content-Type folgt daraus. Sie zu senden ist eine einzige
++ Methode, deren Argumente die Empfänger und den Betreff nennen. Eine Nachricht, die aus typisierten
++ Teilen zusammengesetzt ist und deren Adressen beim Kompilieren des Codes validiert werden, ist
++ [Sicherheit durch Konstruktion](../../philosophy/safety-by-construction.md) für Post.
+
+- Everything comes from the `soundness` package. A courier and a sender are in scope:
++ Alles stammt aus dem Paket `soundness`. Ein Kurier und ein Absender sind im Geltungsbereich:
+
+= Everything comes from the `soundness` package. A courier and a sender are in scope:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import couriers.resendCourier
++ import couriers.resendCourier
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- given sender: Sender = Sender(email"noreply@example.com")
++ given sender: Sender = Sender(email"noreply@example.com")
+
+- given apiKey: Resend.ApiKey = Resend.ApiKey(t"re_123456789")
++ given apiKey: Resend.ApiKey = Resend.ApiKey(t"re_123456789")
+
+= given apiKey: Resend.ApiKey = Resend.ApiKey(t"re_123456789")
+- ```
++ ```
+
+- The samples on this page would send real mail, so they are compiled but not run.
++ Die Beispiele auf dieser Seite würden echte Post versenden, daher werden sie kompiliert, aber
++ nicht ausgeführt.
+
+- ### Sending
++ ### Versenden
+
+- Anything *sendable* is sent with `send`: text, an [HTML](html.md) document, or a fully
+- composed `Email`. `send` takes the fields of the envelope as parameters:
++ Alles *Versendbare* wird mit `send` versendet: Text, ein [HTML](html.md)-Dokument oder eine
++ vollständig zusammengesetzte `Email`. `send` nimmt die Felder des Umschlags als Parameter:
+
+= composed `Email`. `send` takes the fields of the envelope as parameters:
+=
+- ```tabular
++ ```tabular
+
+- column  Parameter
++ column  Parameter
+
+- column  Takes
+- column  If omitted
+- row  `subject`  `Text`  required
+- row  `to`  one `EmailAddress` or a list  required
+- row  `cc`  one `EmailAddress` or a list  none
+- row  `bcc`  one `EmailAddress` or a list  none
+- row  `replyTo`  one `EmailAddress` or a list  none
++ column  Nimmt
++ column  Wenn weggelassen
++ row  `subject`  `Text`  erforderlich
++ row  `to`  eine `EmailAddress` oder eine Liste  erforderlich
++ row  `cc`  eine `EmailAddress` oder eine Liste  keine
++ row  `bcc`  eine `EmailAddress` oder eine Liste  keine
++ row  `replyTo`  eine `EmailAddress` oder eine Liste  keine
+
+= row  `replyTo`  one `EmailAddress` or a list  none
+- ```
++ ```
+
+- A message to one recipient:
++ Eine Nachricht an einen Empfänger:
+
+= A message to one recipient:
+=
+- ```scala
++ ```scala
+
+- def notify(): Resend.Receipt =
++ def notify(): Resend.Receipt =
+
+-   t"Your order has shipped.".send
++   t"Your order has shipped.".send
+
+-     ( subject = t"Shipping confirmation",
++     ( subject = t"Shipping confirmation",
+
+-       to      = email"customer@example.com" )
++       to      = email"customer@example.com" )
+
+=       to      = email"customer@example.com" )
+- ```
++ ```
+
+- An HTML document is sent as an HTML message in the same way. A failure to deliver raises a
+- `Courier.Error`, which names the sender, the recipient and the subject at fault.
++ Ein HTML-Dokument wird auf dieselbe Weise als HTML-Nachricht versendet. Ein Fehlschlag der
++ Zustellung löst einen `Courier.Error` aus, der den Absender, den Empfänger und den Betreff nennt,
++ um die es geht.
+
+- An address which is not valid never gets that far, since it does not compile:
++ Eine Adresse, die nicht gültig ist, kommt nie so weit, da sie nicht kompiliert:
+
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+- ##
++ ##
+
+- email"customer.example.com"
++ email"customer.example.com"
+
+= email"customer.example.com"
+- ```
++ ```
+
+- ### Composing
++ ### Zusammensetzen
+
+- A richer message is built as an `Email`. Its body is text, HTML, or both. The form with both
+- is delivered as `multipart/alternative`, so that capable clients show the HTML, and others
+- show the text. Attachments are added with `attach`. An `Asset` is a named, typed source of
+- bytes, which carries its filename and its [media type](media-types.md):
++ Eine reichhaltigere Nachricht wird als `Email` gebaut. Ihr Body ist Text, HTML oder beides. Die
++ Form mit beidem wird als `multipart/alternative` zugestellt, sodass fähige Clients das HTML zeigen
++ und andere den Text. Anhänge werden mit `attach` hinzugefügt. Ein `Asset` ist eine benannte,
++ typisierte Quelle von Bytes, die ihren Dateinamen und ihren [Medientyp](media-types.md) trägt:
+
+= bytes, which carries its filename and its [media type](media-types.md):
+=
+- ```scala
++ ```scala
+
+- val textVersion = t"Sales rose 4% in August."
++ val textVersion = t"Sales rose 4% in August."
+
+- val htmlVersion = t"<p>Sales rose <b>4%</b> in August.</p>"
++ val htmlVersion = t"<p>Sales rose <b>4%</b> in August.</p>"
+
+- val report = Asset(t"report.csv", media"text/csv", Chain(t"month,sales\nAugust,104".in[Data]))
++ val report = Asset(t"report.csv", media"text/csv", Chain(t"month,sales\nAugust,104".in[Data]))
+
+- val message = Email(Map(), Email.Message(Email.Content(Email.Body(textVersion, htmlVersion))))
++ val message = Email(Map(), Email.Message(Email.Content(Email.Body(textVersion, htmlVersion))))
+
+-   . attach(report)
++   . attach(report)
+
+- def distribute(recipients: List[EmailAddress]): Resend.Receipt =
++ def distribute(recipients: List[EmailAddress]): Resend.Receipt =
+
+-   message.send(subject = t"Monthly report", to = recipients)
++   message.send(subject = t"Monthly report", to = recipients)
+
+=   message.send(subject = t"Monthly report", to = recipients)
+- ```
++ ```
+
+- The message's content type follows from what it holds, with each layer wrapping the one
+- inside it:
++ Der Content-Type der Nachricht folgt aus dem, was sie enthält, wobei jede Schicht die darin
++ liegende umhüllt:
+
+= inside it:
+=
+- ```tabular
++ ```tabular
+
+- column  The message has
+- column  Content type
+- row  a text body only  `text/plain`
+- row  an HTML body only  `text/html`
+- row  both a text and an HTML body  `multipart/alternative`
+- row  inline content  `multipart/related`, around the body
+- row  attachments  `multipart/mixed`, around the rest
++ column  Die Nachricht hat
++ column  Content-Type
++ row  nur einen Text-Body  `text/plain`
++ row  nur einen HTML-Body  `text/html`
++ row  sowohl einen Text- als auch einen HTML-Body  `multipart/alternative`
++ row  eingebettete Inhalte  `multipart/related`, um den Body
++ row  Anhänge  `multipart/mixed`, um den Rest
+
+= row  attachments  `multipart/mixed`, around the rest
+- ```
++ ```
+
+- Plain text is itself sendable, so `Email(t"hello")` is the form in one line. An email reports
+- its `text`, `html`, `attachments` and `inlines` back, so a composed message can be inspected
+- before it goes.
++ Reiner Text ist selbst versendbar, sodass `Email(t"hello")` die Form in einer Zeile ist. Eine
++ E-Mail gibt ihre `text`, `html`, `attachments` und `inlines` zurück, sodass eine zusammengesetzte
++ Nachricht untersucht werden kann, bevor sie abgeht.
+
+- ### Couriers
++ ### Kuriere
+
+- The courier is the mechanism of delivery, and is supplied as a [given]. The courier which is
+- provided delivers through the HTTP API of [Resend](https://resend.com/), and returns a receipt
+- with the provider's id for the message. Another delivery service is plugged in by
+- implementing the `Courier` trait, which has one method, without touching any code which
+- composes messages.
++ Der Kurier ist der Mechanismus der Zustellung und wird als [Given][given] geliefert. Der
++ mitgelieferte Kurier stellt über die HTTP-API von [Resend](https://resend.com/) zu und gibt eine
++ Quittung mit der ID des Anbieters für die Nachricht zurück. Ein anderer Zustelldienst wird
++ eingesteckt, indem man den Trait `Courier` implementiert, der eine Methode hat, ohne Code
++ anzurühren, der Nachrichten zusammensetzt.
+
+- ### Related
++ ### Verwandte Themen
+
+- - [Network addresses](network-addresses.md#email-addresses) validates the addresses.
+- - [HTML](html.md) writes the body of an HTML message.
+- - [HTTP client](http-client.md) carries the request to the delivery service.
++ - [Netzwerkadressen](network-addresses.md#email-addresses) validiert die Adressen.
++ - [HTML](html.md) schreibt den Body einer HTML-Nachricht.
++ - [HTTP-Client](http-client.md) trägt den Request zum Zustelldienst.

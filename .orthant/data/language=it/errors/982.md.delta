@@ -1,0 +1,17 @@
+orthant 1 language
+
+- # `SN-982` — Blank line before multi-line case (retired)
++ # `SN-982` — Riga vuota prima di un case su più righe (ritirato)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Questo errore non esiste più. La pagina è conservata perché il codice non venga riusato, e perché
++ un riferimento a esso da una release precedente si possa ancora risolvere.
+
+- ## What became of it
++ ## Che fine ha fatto
+
+- This Decorum rule was withdrawn. The house style no longer requires a blank line before
+- a multi-line `case` clause.
++ Questa regola di Decorum è stata ritirata. Lo stile della casa non richiede più una riga vuota prima
++ di una clausola `case` su più righe.

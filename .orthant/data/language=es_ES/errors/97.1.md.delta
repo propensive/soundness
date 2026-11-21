@@ -1,0 +1,90 @@
+orthant 1 language
+
+- # `↯/s.97.1` — `Semver.Error`
++ # `↯/s.97.1` — `Semver.Error`
+
+- Raised when a value is not a valid semantic version.
++ Se lanza cuando un valor no es una versión semántica válida.
+
+- ## Cause
++ ## Causa
+
+- Revolution validates input strings against the SemVer 2.0
+- grammar: `MAJOR.MINOR.PATCH[-prerelease][+build]`. The constructor
+- records the offending `version` and a `reason: Reason`; the
+- rendered message is `$version is not a valid semantic version
++ Revolution valida las cadenas de entrada con la gramática de SemVer 2.0:
++ `MAJOR.MINOR.PATCH[-prerelease][+build]`. El constructor registra la `version` infractora y un
++ `reason: Reason`; el mensaje representado es `$version is not a valid semantic version
+
+- because $reason`.
++ because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.97.1.1` — `BadFormat`
++ ### `↯/s.97.1.1` — `BadFormat`
+
+- The string did not match the SemVer grammar at all (e.g. fewer
+- than three numeric components, or unrecognised separators).
++ La cadena no se ajustaba en absoluto a la gramática de SemVer (por ejemplo, menos de tres
++ componentes numéricos, o separadores no reconocidos).
+
+- **Example.** `[↯/s.97.1.1] 1.2 is not a valid semantic version because the string did not match the SemVer 2.0 grammar`
++ **Ejemplo.** `[↯/s.97.1.1] 1.2 is not a valid semantic version because the string did not match the SemVer 2.0 grammar`
+
+- **Resolution.** Provide a fully-formed `MAJOR.MINOR.PATCH` string,
+- optionally followed by `-prerelease` and `+build`.
++ **Solución.** Proporciona una cadena `MAJOR.MINOR.PATCH` completa, seguida opcionalmente de
++ `-prerelease` y `+build`.
+
+- ### `↯/s.97.1.2` — `EmptyIdentifier`
++ ### `↯/s.97.1.2` — `EmptyIdentifier`
+
+- The string contained a `-` or `+` separator with nothing after it
+- — an empty prerelease or build identifier.
++ La cadena contenía un separador `-` o `+` sin nada detrás: un identificador de prerrelease o de
++ compilación vacío.
+
+- **Example.** `[↯/s.97.1.2] 1.2.3- is not a valid semantic version because a prerelease or build identifier was empty`
++ **Ejemplo.** `[↯/s.97.1.2] 1.2.3- is not a valid semantic version because a prerelease or build identifier was empty`
+
+- **Resolution.** Either remove the trailing separator or supply a
+- non-empty identifier after it.
++ **Solución.** Elimina el separador final o proporciona tras él un identificador no vacío.
+
+- ### `↯/s.97.1.3` — `LeadingZero`
++ ### `↯/s.97.1.3` — `LeadingZero`
+
+- A numeric identifier (one of `MAJOR`, `MINOR`, `PATCH`, or a
+- numeric prerelease segment) had a leading zero, which SemVer
+- forbids.
++ Un identificador numérico (uno de `MAJOR`, `MINOR`, `PATCH`, o un segmento numérico de
++ prerrelease) tenía un cero inicial, lo que SemVer prohíbe.
+
+- **Example.** `[↯/s.97.1.3] 01.2.3 is not a valid semantic version because a numeric identifier had a leading zero`
++ **Ejemplo.** `[↯/s.97.1.3] 01.2.3 is not a valid semantic version because a numeric identifier had a leading zero`
+
+- **Resolution.** Strip leading zeros from numeric identifiers.
++ **Solución.** Quita los ceros iniciales de los identificadores numéricos.
+
+- ### `↯/s.97.1.4` — `InvalidCharacter`
++ ### `↯/s.97.1.4` — `InvalidCharacter`
+
+- A prerelease or build identifier contained a character outside
+- the allowed set `[0-9A-Za-z-]`.
++ Un identificador de prerrelease o de compilación contenía un carácter fuera del conjunto
++ permitido `[0-9A-Za-z-]`.
+
+- **Example.** `[↯/s.97.1.4] 1.2.3-alpha! is not a valid semantic version because an identifier contained a character outside [0-9A-Za-z-]`
++ **Ejemplo.** `[↯/s.97.1.4] 1.2.3-alpha! is not a valid semantic version because an identifier contained a character outside [0-9A-Za-z-]`
+
+- **Resolution.** Remove or escape the invalid character.
++ **Solución.** Elimina o escapa el carácter no válido.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/revolution/src/core/revolution.Semver.scala`
++ - Fuente: `lib/revolution/src/core/revolution.Semver.scala`

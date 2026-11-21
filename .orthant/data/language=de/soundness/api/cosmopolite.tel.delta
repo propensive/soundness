@@ -1,0 +1,580 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base cosmopolite
++ base cosmopolite
+
+- import soundness
++ import soundness
+
+- info   multilingual values whose types record their languages, locales, and each language's sort order
++ info   mehrsprachige Werte, deren Typen ihre Sprachen, Locales und die Sortierreihenfolge jeder Sprache festhalten
+
+- detail
++ detail
+
+-     _Cosmopolite_ puts a program's translations in its code and the set of languages in the
+-     type. Each supported language — `en`, `fr`, `de`, `es`, `pl` — is a value which lifts a
+-     translation into a single-language `Polyglot`, alternatives combine with `|`, and the
+-     combined type is the intersection of the languages provided, so a `Polyglot[Text, en & fr]`
+-     has an English and a French text. Reading one needs a `Locale` of a language it carries,
+-     and a translation set lacking a required language is a compile error rather than a runtime
+-     fallback in front of the one user who chose that language.
++     _Cosmopolite_ legt die Übersetzungen eines Programms in seinen Code und die Menge der
++     Sprachen in den Typ. Jede unterstützte Sprache — `en`, `fr`, `de`, `es`, `pl` — ist ein Wert,
++     der eine Übersetzung in einen einsprachigen `Polyglot` hebt; Alternativen werden mit `|`
++     kombiniert, und der kombinierte Typ ist der Schnitt der bereitgestellten Sprachen, sodass
++     ein `Polyglot[Text, en & fr]` einen englischen und einen französischen Text hat. Zum Lesen
++     eines solchen Werts ist ein `Locale` einer Sprache nötig, die er trägt, und eine
++     Übersetzungsmenge, der eine benötigte Sprache fehlt, ergibt einen Kompilierfehler statt eines
++     Rückfalls zur Laufzeit vor genau dem einen Benutzer, der diese Sprache gewählt hat.
+
+=     fallback in front of the one user who chose that language.
+=
+-     ```scala
++     ```scala
+
+=     fallback in front of the one user who chose that language.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val greeting: Polyglot[Text, en & fr] = en(t"Hello") | fr(t"Bonjour")
++     val greeting: Polyglot[Text, en & fr] = en(t"Hello") | fr(t"Bonjour")
+
+-     given Locale[en & fr] = Locale(fr)
++     given Locale[en & fr] = Locale(fr)
+
+-     greeting()   // t"Bonjour"
++     greeting()   // t"Bonjour"
+
+=     greeting()   // t"Bonjour"
+-     ```
++     ```
+
+-     A `Locale` usually arrives at runtime, from a header or a setting: a language code decodes
+-     to `Locale[en & pl & fr & de & es]`, falling back to English for a code it does not know.
+-     A `Polyglot` may carry any type, not only text — a date format, a currency convention, a
+-     whole page.
++     Ein `Locale` kommt meist zur Laufzeit an, aus einem Header oder einer Einstellung: Ein
++     Sprachcode wird zu `Locale[en & pl & fr & de & es]` dekodiert, mit Rückfall auf Englisch
++     für einen Code, den er nicht kennt. Ein `Polyglot` kann jeden Typ tragen, nicht nur Text —
++     ein Datumsformat, eine Währungskonvention, eine ganze Seite.
+
+-     Each language also has a sort order, its `Collatable` instance, following CLDR: Polish
+-     and Spanish tailor the Unicode collation (ó after o, ñ after n), while English, French and
+-     German use the root table. The top-level given `localeCollation` turns the `Locale` in scope
+-     into the `Collation` that gossamer's text comparison uses; it is a top-level given, so it
+-     is imported by name (`import soundness.localeCollation`), along with
+-     `soundness.collationComparable` for ordering `Text` by a collation.
++     Jede Sprache hat außerdem eine Sortierreihenfolge, ihre `Collatable`-Instanz, nach CLDR:
++     Polnisch und Spanisch passen die Unicode-Kollation an (ó nach o, ñ nach n), während
++     Englisch, Französisch und Deutsch die Wurzeltabelle verwenden. Das Given `localeCollation`
++     auf oberster Ebene macht aus dem `Locale` im Geltungsbereich die `Collation`, die der
++     Textvergleich von gossamer verwendet; als Given auf oberster Ebene wird es namentlich
++     importiert (`import soundness.localeCollation`), zusammen mit
++     `soundness.collationComparable`, um `Text` nach einer Kollation zu ordnen.
+
+=     `soundness.collationComparable` for ordering `Text` by a collation.
+=
+-     ```scala
++     ```scala
+
+=     `soundness.collationComparable` for ordering `Text` by a collation.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `soundness.collationComparable` for ordering `Text` by a collation.
+=
+=     ```scala
+=     import soundness.*
+-     import soundness.collationComparable
++     import soundness.collationComparable
+
+=     `soundness.collationComparable` for ordering `Text` by a collation.
+=
+=     ```scala
+=     import soundness.*
+=     import soundness.collationComparable
+-     import soundness.localeCollation
++     import soundness.localeCollation
+
+=     `soundness.collationComparable` for ordering `Text` by a collation.
+=
+=     ```scala
+=     import soundness.*
+=     import soundness.collationComparable
+=     import soundness.localeCollation
+-     import soundness.sortingAlgorithms.timsort
++     import soundness.sortingAlgorithms.timsort
+
+-     given Locale[es] = Locale(es)
++     given Locale[es] = Locale(es)
+
+-     List(t"año", t"anzuelo", t"ano").sort   // List(t"ano", t"anzuelo", t"año")
++     List(t"año", t"anzuelo", t"ano").sort   // List(t"ano", t"anzuelo", t"año")
+
+=     List(t"año", t"anzuelo", t"ano").sort   // List(t"ano", t"anzuelo", t"año")
+-     ```
++     ```
+
+-     The library has one source set, `cosmopolite.core`, which compiles for every platform.
+-     Everything is exported to the `soundness` umbrella.
++     Die Bibliothek hat ein Source-Set, `cosmopolite.core`, das für jede Plattform kompiliert.
++     Alles wird in den `soundness`-Umbrella exportiert.
+
+- refer cosmopolite.Polyglot
++ refer cosmopolite.Polyglot
+
+- refer cosmopolite.Locale
++ refer cosmopolite.Locale
+
+- refer cosmopolite.Language
++ refer cosmopolite.Language
+
+- refer cosmopolite.localeCollation
++ refer cosmopolite.localeCollation
+
+- entry .Language   a natural language, which lifts a translation into a single-language `Polyglot`
++ entry .Language   eine natürliche Sprache, die eine Übersetzung in einen einsprachigen `Polyglot` hebt
+
+= entry .Language   a natural language, which lifts a translation into a single-language `Polyglot`
+-   detail
++   detail
+
+-       `Language` is the parent of the language objects `en`, `fr`, `de`, `es` and `pl`. Each has
+-       a two-letter `#code`, and a type member `#Code` naming its phantom type tag (the trait of
+-       the same name), so `en.Code` is `en`. Applying a language to a value makes the
+-       `Polyglot` which carries that value in that language:
++       `Language` ist das Elternteil der Sprachobjekte `en`, `fr`, `de`, `es` und `pl`. Jedes hat
++       einen zweibuchstabigen `#code` und einen Typ-Member `#Code`, der sein Phantom-Typ-Tag
++       benennt (den gleichnamigen Trait), sodass `en.Code` gleich `en` ist. Wird eine Sprache
++       auf einen Wert angewendet, entsteht der `Polyglot`, der diesen Wert in dieser Sprache
++       trägt:
+
+=       `Polyglot` which carries that value in that language:
+=
+-       ```scala
++       ```scala
+
+=       `Polyglot` which carries that value in that language:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val hello: Polyglot[Text, en] = en(t"Hello")
++       val hello: Polyglot[Text, en] = en(t"Hello")
+
+-       val greeting: Polyglot[Text, en & fr] = hello | fr(t"Bonjour")
++       val greeting: Polyglot[Text, en & fr] = hello | fr(t"Bonjour")
+
+=       val greeting: Polyglot[Text, en & fr] = hello | fr(t"Bonjour")
+-       ```
++       ```
+
+-       The translation is a context function of a `Locale` of the language, so code computing
+-       it — sorting, formatting — sees that language's locale, whatever locale the caller has.
+-       A new language is an object extending `Language(code)` with a `type Code`, paired with a
+-       trait to serve as its tag.
++       Die Übersetzung ist eine Kontextfunktion eines `Locale` der Sprache, sodass Code, der sie
++       berechnet — Sortieren, Formatieren —, das Locale dieser Sprache sieht, welches Locale der
++       Aufrufer auch hat. Eine neue Sprache ist ein Objekt, das `Language(code)` mit einem
++       `type Code` erweitert, gepaart mit einem Trait, der als ihr Tag dient.
+
+=       trait to serve as its tag.
+-   refer cosmopolite.Polyglot
++   refer cosmopolite.Polyglot
+
+-   entry #code   the language's ISO 639-1 code, such as `t"fr"`
+-   entry #Code   the phantom type which tags values in this language, such as `fr`
+-   entry #apply   a translation in this language, as a single-language `Polyglot`
+-       `fr(t"Bonjour")` is a `Polyglot[Text, fr]`. The argument is evaluated with a `Locale` of
+-       this language in scope, so a translation which sorts or formats text does so in its own
+-       language.
++   entry #code   der ISO-639-1-Code der Sprache, etwa `t"fr"`
++   entry #Code   der Phantomtyp, der Werte in dieser Sprache taggt, etwa `fr`
++   entry #apply   eine Übersetzung in dieser Sprache, als einsprachiger `Polyglot`
++       `fr(t"Bonjour")` ist ein `Polyglot[Text, fr]`. Das Argument wird mit einem `Locale` dieser
++       Sprache im Geltungsbereich ausgewertet, sodass eine Übersetzung, die Text sortiert oder
++       formatiert, dies in ihrer eigenen Sprache tut.
+
+- entry .Polyglot   a value in several languages, its type recording exactly which
++ entry .Polyglot   ein Wert in mehreren Sprachen, dessen Typ genau festhält, in welchen
+
+= entry .Polyglot   a value in several languages, its type recording exactly which
+-   detail
++   detail
+
+-       A `Polyglot[V, L]` holds a `V` for each language in the intersection `L`: one made by
+-       `en(…) | fr(…)` is a `Polyglot[V, en & fr]`. Requiring one with a language it lacks does
+-       not compile, so a missing translation is found where the value is written.
++       Ein `Polyglot[V, L]` enthält ein `V` für jede Sprache im Schnitt `L`: Einer, der mit
++       `en(…) | fr(…)` gebildet wird, ist ein `Polyglot[V, en & fr]`. Einen mit einer Sprache zu
++       verlangen, die ihm fehlt, kompiliert nicht, sodass eine fehlende Übersetzung dort
++       gefunden wird, wo der Wert geschrieben wird.
+
+=       not compile, so a missing translation is found where the value is written.
+=
+-       ```scala
++       ```scala
+
+=       not compile, so a missing translation is found where the value is written.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val greeting: Polyglot[Text, en & fr] = en(t"Hello") | fr(t"Bonjour")
++       val greeting: Polyglot[Text, en & fr] = en(t"Hello") | fr(t"Bonjour")
+
+-       val partial: Polyglot[Text, en & fr] = en(t"Hello")   // does not compile
++       val partial: Polyglot[Text, en & fr] = en(t"Hello")   // does not compile
+
+-       given Locale[en & fr] = Locale(fr)
++       given Locale[en & fr] = Locale(fr)
+
+-       greeting()   // t"Bonjour"
++       greeting()   // t"Bonjour"
+
+=       greeting()   // t"Bonjour"
+-       ```
++       ```
+
+-       `#apply()` reads the value in the language of the `Locale` in scope, which must be a
+-       `Locale` of the polyglot's languages.
++       `#apply()` liest den Wert in der Sprache des `Locale` im Geltungsbereich, das ein
++       `Locale` der Sprachen des Polyglots sein muss.
+
+-   refer cosmopolite.Language
++   refer cosmopolite.Language
+
+-   refer cosmopolite.Locale
++   refer cosmopolite.Locale
+
+-   entry #values   the translations, keyed by `Language`
+-   entry #|   combines translations, or picks one at once if a `Locale` for both is in scope
+-       `a | b` merges two polyglots into one whose language type is the intersection of both.
+-       It is transparent and inline: when a `Locale` covering both sets of languages is already
+-       in scope where the expression is written, it reads that locale's value immediately and the
+-       result is the value itself rather than a `Polyglot`. Where both carry a language, the
+-       right-hand translation wins.
+-   entry #apply   the value in the language of the `Locale` in scope
+-       Needs a `Locale[L]` for the polyglot's language type `L`; since that locale names one of
+-       the languages the value carries, the read cannot miss.
++   entry #values   die Übersetzungen, nach `Language` geschlüsselt
++   entry #|   kombiniert Übersetzungen oder wählt sofort eine aus, wenn ein `Locale` für beide im Geltungsbereich ist
++       `a | b` führt zwei Polyglots zu einem zusammen, dessen Sprachtyp der Schnitt beider ist.
++       Die Methode ist transparent und inline: Ist dort, wo der Ausdruck geschrieben wird,
++       bereits ein `Locale` im Geltungsbereich, das beide Sprachmengen abdeckt, liest sie
++       sofort den Wert dieses Locales, und das Ergebnis ist der Wert selbst statt eines
++       `Polyglot`. Tragen beide eine Sprache, gewinnt die Übersetzung auf der rechten Seite.
++   entry #apply   der Wert in der Sprache des `Locale` im Geltungsbereich
++       Benötigt ein `Locale[L]` für den Sprachtyp `L` des Polyglots; da dieses Locale eine der
++       Sprachen benennt, die der Wert trägt, kann das Lesen nicht fehlschlagen.
+
+- entry .Locale   the language a program is speaking, as a contextual value
++ entry .Locale   die Sprache, die ein Programm spricht, als Kontextwert
+
+= entry .Locale   the language a program is speaking, as a contextual value
+-   detail
++   detail
+
+-       A `Locale` holds a `Language`, and its type parameter states which languages it may be:
+-       a `Locale[en & fr]` is one of English or French, which is what a `Polyglot[V, en & fr]`
+-       needs to be read. The parameter is contravariant, so a locale known to be French serves
+-       where any of a set including French is asked for.
++       Ein `Locale` enthält eine `Language`, und sein Typparameter gibt an, welche Sprachen es
++       sein kann: Ein `Locale[en & fr]` ist Englisch oder Französisch, und genau das braucht ein
++       `Polyglot[V, en & fr]`, um gelesen zu werden. Der Parameter ist kontravariant, sodass ein
++       Locale, das bekanntermaßen Französisch ist, überall dient, wo eine beliebige Sprache
++       aus einer Menge verlangt wird, die Französisch enthält.
+
+=       where any of a set including French is asked for.
+=
+-       ```scala
++       ```scala
+
+=       where any of a set including French is asked for.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Locale[en & pl & fr & de & es] = t"pl".as[Locale[en & pl & fr & de & es]]
++       given Locale[en & pl & fr & de & es] = t"pl".as[Locale[en & pl & fr & de & es]]
+
+=       given Locale[en & pl & fr & de & es] = t"pl".as[Locale[en & pl & fr & de & es]]
+-       ```
++       ```
+
+-       A `Locale` in scope also selects its language's sort order through `localeCollation`.
++       Ein `Locale` im Geltungsbereich wählt über `localeCollation` auch die
++       Sortierreihenfolge seiner Sprache.
+
+=       A `Locale` in scope also selects its language's sort order through `localeCollation`.
+-   refer cosmopolite.Polyglot
++   refer cosmopolite.Polyglot
+
+=   refer cosmopolite.Polyglot
+-   refer cosmopolite.localeCollation
++   refer cosmopolite.localeCollation
+
+-   entry .encodable   writes a locale as its language's code, such as `t"fr"`
+-   entry .inspectable   a debug rendering of a locale, as `Locale(fr)`
+-       The constructor form, so it is not mistaken for the bare code `.encodable` writes.
+-   entry .decodable   reads a locale from a language code, falling back to English
+-       Decodes to `Locale[en & pl & fr & de & es]`: `t"pl"`, `t"fr"`, `t"de"` and `t"es"` are
+-       their languages, and any other text — including a regional form such as `t"fr-CA"`, or
+-       upper case — is silently `en`. Normalise the code first if the fallback matters.
+-   entry #language   the language this locale speaks
++   entry .encodable   schreibt ein Locale als Code seiner Sprache, etwa `t"fr"`
++   entry .inspectable   eine Debug-Darstellung eines Locales, als `Locale(fr)`
++       Die Konstruktorform, damit sie nicht mit dem bloßen Code verwechselt wird, den
++       `.encodable` schreibt.
++   entry .decodable   liest ein Locale aus einem Sprachcode, mit Rückfall auf Englisch
++       Dekodiert zu `Locale[en & pl & fr & de & es]`: `t"pl"`, `t"fr"`, `t"de"` und `t"es"` sind
++       ihre Sprachen, und jeder andere Text — auch eine regionale Form wie `t"fr-CA"` oder
++       Großschreibung — wird stillschweigend zu `en`. Normalisieren Sie den Code vorher, wenn
++       der Rückfall eine Rolle spielt.
++   entry #language   die Sprache, die dieses Locale spricht
+
+- entry .Collatable   a typeclass giving a language its sort order, as a `Collation`
++ entry .Collatable   eine Typklasse, die einer Sprache ihre Sortierreihenfolge als `Collation` gibt
+
+= entry .Collatable   a typeclass giving a language its sort order, as a `Collation`
+-   detail
++   detail
+
+-       `pl is Collatable` provides the `Collation` by which Polish text sorts; the subject is the
+-       language's phantom tag. Each language object holds its own instance as `collatable`, so
+-       it is in implicit scope. Code does not usually summon it: `localeCollation` turns the
+-       `Locale` in scope into its language's collation.
++       `pl is Collatable` stellt die `Collation` bereit, nach der polnischer Text sortiert wird;
++       das Subjekt ist das Phantom-Tag der Sprache. Jedes Sprachobjekt hält seine eigene Instanz
++       als `collatable`, sodass sie im impliziten Geltungsbereich liegt. Code ruft sie
++       gewöhnlich nicht herbei: `localeCollation` macht aus dem `Locale` im Geltungsbereich die
++       Kollation seiner Sprache.
+
+=       `Locale` in scope into its language's collation.
+-   refer cosmopolite.localeCollation
++   refer cosmopolite.localeCollation
+
+-   entry #collation   the language's collation
++   entry #collation   die Kollation der Sprache
+
+- entry .en   English, the language with code `en`, and its phantom type tag
++ entry .en   Englisch, die Sprache mit dem Code `en`, und ihr Phantom-Typ-Tag
+
+= entry .en   English, the language with code `en`, and its phantom type tag
+-   detail
++   detail
+
+-       A `Language`: `en(value)` makes a `Polyglot[V, en]`. As a type, `en` tags values and
+-       locales in English. English sorts by the root Unicode collation, which keeps accented
+-       letters with their bases (`cafe < café < caff`, `año < anzuelo`).
+-   entry .Code   the phantom tag of English: `en`
+-   entry .collatable   English collation: the root Unicode collation table
++       Eine `Language`: `en(value)` bildet einen `Polyglot[V, en]`. Als Typ taggt `en` Werte und
++       Locales auf Englisch. Englisch sortiert nach der Unicode-Wurzelkollation, die
++       akzentuierte Buchstaben bei ihren Grundbuchstaben hält (`cafe < café < caff`,
++       `año < anzuelo`).
++   entry .Code   das Phantom-Tag von Englisch: `en`
++   entry .collatable   englische Kollation: die Unicode-Wurzelkollationstabelle
+
+- entry .fr   French, the language with code `fr`, and its phantom type tag
++ entry .fr   Französisch, die Sprache mit dem Code `fr`, und ihr Phantom-Typ-Tag
+
+= entry .fr   French, the language with code `fr`, and its phantom type tag
+-   detail
++   detail
+
+-       A `Language`: `fr(value)` makes a `Polyglot[V, fr]`. As a type, `fr` tags values and
+-       locales in French. French sorts by the root Unicode collation with forward secondary
+-       accents (`cote < coté < côte < côté`), as CLDR's `fr` does; the backward accents of
+-       traditional, now Canadian, French are not used.
+-   entry .Code   the phantom tag of French: `fr`
+-   entry .collatable   French collation: the root Unicode table, with forward secondary accents
++       Eine `Language`: `fr(value)` bildet einen `Polyglot[V, fr]`. Als Typ taggt `fr` Werte und
++       Locales auf Französisch. Französisch sortiert nach der Unicode-Wurzelkollation mit
++       vorwärts gewerteten sekundären Akzenten (`cote < coté < côte < côté`), wie das `fr` von
++       CLDR; die rückwärts gewerteten Akzente des traditionellen, heute kanadischen
++       Französisch werden nicht verwendet.
++   entry .Code   das Phantom-Tag von Französisch: `fr`
++   entry .collatable   französische Kollation: die Unicode-Wurzeltabelle mit vorwärts gewerteten sekundären Akzenten
+
+- entry .de   German, the language with code `de`, and its phantom type tag
++ entry .de   Deutsch, die Sprache mit dem Code `de`, und ihr Phantom-Typ-Tag
+
+= entry .de   German, the language with code `de`, and its phantom type tag
+-   detail
++   detail
+
+-       A `Language`: `de(value)` makes a `Polyglot[V, de]`. As a type, `de` tags values and
+-       locales in German. German sorts by the root Unicode collation, in which umlauts differ
+-       from their bases only at the secondary level (`ab < äb`, `äa < ab`), as CLDR's standard
+-       German does; DIN phonebook order is not provided.
+-   entry .Code   the phantom tag of German: `de`
+-   entry .collatable   German collation: the root Unicode table, umlauts differing at the secondary level
++       Eine `Language`: `de(value)` bildet einen `Polyglot[V, de]`. Als Typ taggt `de` Werte und
++       Locales auf Deutsch. Deutsch sortiert nach der Unicode-Wurzelkollation, in der sich
++       Umlaute von ihren Grundbuchstaben nur auf der sekundären Ebene unterscheiden
++       (`ab < äb`, `äa < ab`), wie im Standarddeutsch von CLDR; die Telefonbuchreihenfolge nach
++       DIN wird nicht bereitgestellt.
++   entry .Code   das Phantom-Tag von Deutsch: `de`
++   entry .collatable   deutsche Kollation: die Unicode-Wurzeltabelle, Umlaute unterscheiden sich auf der sekundären Ebene
+
+- entry .es   Spanish, the language with code `es`, and its phantom type tag
++ entry .es   Spanisch, die Sprache mit dem Code `es`, und ihr Phantom-Typ-Tag
+
+= entry .es   Spanish, the language with code `es`, and its phantom type tag
+-   detail
++   detail
+
+-       A `Language`: `es(value)` makes a `Polyglot[V, es]`. As a type, `es` tags values and
+-       locales in Spanish. Spanish sorts with ñ as a letter of its own between n and o, so
+-       `ano < anzuelo < año`, with Ñ a tertiary (case) variant of ñ.
+-   entry .Code   the phantom tag of Spanish: `es`
+-   entry .collatable   Spanish collation: CLDR's, with ñ a letter between n and o
++       Eine `Language`: `es(value)` bildet einen `Polyglot[V, es]`. Als Typ taggt `es` Werte und
++       Locales auf Spanisch. Spanisch sortiert ñ als eigenen Buchstaben zwischen n und o, also
++       `ano < anzuelo < año`, mit Ñ als tertiärer Variante (Groß-/Kleinschreibung) von ñ.
++   entry .Code   das Phantom-Tag von Spanisch: `es`
++   entry .collatable   spanische Kollation: die von CLDR, mit ñ als Buchstabe zwischen n und o
+
+- entry .pl   Polish, the language with code `pl`, and its phantom type tag
++ entry .pl   Polnisch, die Sprache mit dem Code `pl`, und ihr Phantom-Typ-Tag
+
+= entry .pl   Polish, the language with code `pl`, and its phantom type tag
+-   detail
++   detail
+
+-       A `Language`: `pl(value)` makes a `Polyglot[V, pl]`. As a type, `pl` tags values and
+-       locales in Polish. Polish sorts its nine accented letters — ą ć ę ł ń ó ś ź ż — as letters
+-       in their own right, each after its base, with ż after ź (`z < ź < ż`) and each capital a
+-       tertiary variant of its small letter.
+-   entry .Code   the phantom tag of Polish: `pl`
+-   entry .collatable   Polish collation: CLDR's, with nine accented letters sorted after their bases
++       Eine `Language`: `pl(value)` bildet einen `Polyglot[V, pl]`. Als Typ taggt `pl` Werte und
++       Locales auf Polnisch. Polnisch sortiert seine neun akzentuierten Buchstaben — ą ć ę ł ń ó
++       ś ź ż — als eigenständige Buchstaben, jeden nach seinem Grundbuchstaben, mit ż nach ź
++       (`z < ź < ż`) und jedem Großbuchstaben als tertiärer Variante seines Kleinbuchstabens.
++   entry .Code   das Phantom-Tag von Polnisch: `pl`
++   entry .collatable   polnische Kollation: die von CLDR, mit neun akzentuierten Buchstaben nach ihren Grundbuchstaben sortiert
+
+- entry .via   a value computed in a locale: `Text via pl` is `Locale[pl] ?=> Text`
+-     An infix type alias for a context function of a `Locale`. A definition typed `T via L` is
+-     evaluated with a `Locale[L]` in scope, so whatever it computes — a sort, a formatted
+-     number — follows that locale, and its callers must provide one.
++ entry .via   ein in einem Locale berechneter Wert: `Text via pl` ist `Locale[pl] ?=> Text`
++     Ein infixer Typalias für eine Kontextfunktion eines `Locale`. Eine Definition mit dem Typ
++     `T via L` wird mit einem `Locale[L]` im Geltungsbereich ausgewertet, sodass alles, was sie
++     berechnet — eine Sortierung, eine formatierte Zahl —, diesem Locale folgt, und ihre
++     Aufrufer müssen eines bereitstellen.
+
+=     number — follows that locale, and its callers must provide one.
+=
+-     ```scala
++     ```scala
+
+=     number — follows that locale, and its callers must provide one.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     number — follows that locale, and its callers must provide one.
+=
+=     ```scala
+=     import soundness.*
+-     import soundness.collationComparable
++     import soundness.collationComparable
+
+=     number — follows that locale, and its callers must provide one.
+=
+=     ```scala
+=     import soundness.*
+=     import soundness.collationComparable
+-     import soundness.localeCollation
++     import soundness.localeCollation
+
+-     def first: Text via pl = List(t"ó", t"oz").minimum.or(t"")
++     def first: Text via pl = List(t"ó", t"oz").minimum.or(t"")
+
+=     def first: Text via pl = List(t"ó", t"oz").minimum.or(t"")
+=
+-     given Locale[pl] = Locale(pl)
++     given Locale[pl] = Locale(pl)
+
+-     first   // t"oz"
++     first   // t"oz"
+
+=     first   // t"oz"
+-     ```
++     ```
+
+- entry .localeCollation   the `Collation` of the `Locale` in scope's language, for sorting and comparing text
+-     A top-level given, needing a `Locale[L]` and an `L is Collatable`: it provides the
+-     `Collation` gossamer's text ordering uses, so `sort`, `<` and `minimum` on `Text` follow the
+-     locale's language. It sits at package level because neither companion can hold it —
+-     `Collation` belongs to gossamer, the language tags to cosmopolite — so it must be imported
+-     by name, `import soundness.localeCollation`, alongside `soundness.collationComparable`.
++ entry .localeCollation   die `Collation` der Sprache des `Locale` im Geltungsbereich, zum Sortieren und Vergleichen von Text
++     Ein Given auf oberster Ebene, das ein `Locale[L]` und ein `L is Collatable` benötigt: Es
++     stellt die `Collation` bereit, die die Textordnung von gossamer verwendet, sodass `sort`,
++     `<` und `minimum` auf `Text` der Sprache des Locales folgen. Es steht auf Paketebene, weil
++     keines der beiden Begleitobjekte es aufnehmen kann — `Collation` gehört zu gossamer, die
++     Sprach-Tags zu cosmopolite —, daher muss es namentlich importiert werden,
++     `import soundness.localeCollation`, neben `soundness.collationComparable`.
+
+=     by name, `import soundness.localeCollation`, alongside `soundness.collationComparable`.
+=
+-     ```scala
++     ```scala
+
+=     by name, `import soundness.localeCollation`, alongside `soundness.collationComparable`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     by name, `import soundness.localeCollation`, alongside `soundness.collationComparable`.
+=
+=     ```scala
+=     import soundness.*
+-     import soundness.collationComparable
++     import soundness.collationComparable
+
+=     by name, `import soundness.localeCollation`, alongside `soundness.collationComparable`.
+=
+=     ```scala
+=     import soundness.*
+=     import soundness.collationComparable
+-     import soundness.localeCollation
++     import soundness.localeCollation
+
+=     by name, `import soundness.localeCollation`, alongside `soundness.collationComparable`.
+=
+=     ```scala
+=     import soundness.*
+=     import soundness.collationComparable
+=     import soundness.localeCollation
+-     import soundness.sortingAlgorithms.timsort
++     import soundness.sortingAlgorithms.timsort
+
+=     import soundness.sortingAlgorithms.timsort
+=
+-     given Locale[pl] = Locale(pl)
++     given Locale[pl] = Locale(pl)
+
+-     List(t"pod", t"ó", t"oz").sort   // List(t"oz", t"ó", t"pod")
++     List(t"pod", t"ó", t"oz").sort   // List(t"oz", t"ó", t"pod")
+
+=     List(t"pod", t"ó", t"oz").sort   // List(t"oz", t"ó", t"pod")
+-     ```
++     ```

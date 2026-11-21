@@ -1,0 +1,542 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base imperial
++ base imperial
+
+- import soundness
++ import soundness
+
+- info   the standard directories of a Unix system and a user's home, as typed, nested names
++ info   die Standardverzeichnisse eines Unix-Systems und des Home-Verzeichnisses eines Benutzers, als typisierte, verschachtelte Namen
+
+- detail
++ detail
+
+-     _Imperial_ names the conventional directories of a Unix system as a tree of nested
+-     objects, so that a standard location is written as a value rather than as text, and a
+-     mistyped directory is a compile error. `Home` is the tree beneath the user's home
+-     directory, and `Base` the tree beneath the filesystem root. Each object is named for the
+-     directory it stands for, capitalized, with any leading `.` dropped — `$HOME/.local/bin`
+-     is `Home.Local.Bin` and `/var/lib` is `Base.Var.Lib`.
++     _Imperial_ benennt die üblichen Verzeichnisse eines Unix-Systems als Baum verschachtelter
++     Objekte, sodass ein Standardort als Wert statt als Text geschrieben wird und ein vertipptes
++     Verzeichnis ein Kompilierfehler ist. `Home` ist der Baum unterhalb des Home-Verzeichnisses
++     des Benutzers, `Base` der Baum unterhalb der Dateisystemwurzel. Jedes Objekt ist nach dem
++     Verzeichnis benannt, für das es steht, großgeschrieben und ohne einen führenden `.` —
++     `$HOME/.local/bin` ist `Home.Local.Bin` und `/var/lib` ist `Base.Var.Lib`.
+
+-     Every node is a `BaseLayout`. Applying one, with a path type as its type argument,
+-     resolves it to that type against the `Environment` and `System` in scope, so the same
+-     names serve a `Path on Linux`, plain `Text` or any other representation which is
+-     `Instantiable across Paths from Text`:
++     Jeder Knoten ist ein `BaseLayout`. Seine Anwendung mit einem Pfadtyp als Typargument löst
++     ihn gegen das `Environment` und das `System` im Geltungsbereich zu diesem Typ auf; dieselben
++     Namen dienen also einem `Path on Linux`, schlichtem `Text` oder jeder anderen Darstellung,
++     die `Instantiable across Paths from Text` ist:
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import environments.javaBaseEnvironment
++     import environments.javaBaseEnvironment
+
+-     import systems.javaBaseSystem
++     import systems.javaBaseSystem
+
+-     Home.Config[Path on Linux]()        // ~/.config
++     Home.Config[Path on Linux]()        // ~/.config
+
+-     Home.Local.Share[Path on Linux]()   // ~/.local/share
++     Home.Local.Share[Path on Linux]()   // ~/.local/share
+
+-     Base.Var.Log[Path on Linux]()       // /var/log
++     Base.Var.Log[Path on Linux]()       // /var/log
+
+-     Base.Usr.Bin.readOnly               // true
++     Base.Usr.Bin.readOnly               // true
+
+-     Base.Etc.readOnly                   // false
++     Base.Etc.readOnly                   // false
+
+-     ```
++     ```
+
+-     A layout also says whether it is meant to be written to: `readOnly` is `true` for
+-     `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the per-process
+-     directories under `/proc`. The layouts are fixed paths: `Home.Config` is always
+-     `$HOME/.config`, whatever `XDG_CONFIG_HOME` says; for the XDG-aware locations, use
+-     ambience's `Xdg` values.
++     Ein Layout sagt auch, ob darin geschrieben werden soll: `readOnly` ist `true` für `/boot`,
++     `/efi`, `/sys`, `/usr` und alles darunter sowie für die prozessbezogenen Verzeichnisse unter
++     `/proc`. Die Layouts sind feste Pfade: `Home.Config` ist immer `$HOME/.config`, was auch
++     immer `XDG_CONFIG_HOME` sagt; für die XDG-bewussten Orte verwenden Sie die `Xdg`-Werte von
++     ambience.
+
+-     The library has a single source set, `imperial.core`, and everything is exported to the
+-     `soundness` umbrella.
++     Die Bibliothek hat ein einziges Source-Set, `imperial.core`, und alles wird in das
++     `soundness`-Umbrella exportiert.
+
+- refer imperial.BaseLayout
++ refer imperial.BaseLayout
+
+- refer imperial.Home
++ refer imperial.Home
+
+- refer imperial.Base
++ refer imperial.Base
+
+- entry .BaseLayout   a directory in a standard layout, resolved to any path type against the environment
++ entry .BaseLayout   ein Verzeichnis in einem Standard-Layout, gegen die Umgebung zu jedem Pfadtyp aufgelöst
+
+= entry .BaseLayout   a directory in a standard layout, resolved to any path type against the environment
+-   detail
++   detail
+
+-       A `BaseLayout` is one node of the `Home` or `Base` tree: the name of a directory, the
+-       layout it sits in (carried as the contextual `BaseLayout.Dir` of its enclosing
+-       object), and whether it is `#readOnly`. Its `#Topic` type member is a tuple of the
+-       directory names from the node up to its root, so `Base.Var.Log` has the topic `("log",
+-       "var")` and the type of each node is distinct.
++       Ein `BaseLayout` ist ein Knoten des Baums `Home` oder `Base`: der Name eines
++       Verzeichnisses, das Layout, in dem es liegt (als kontextuelles `BaseLayout.Dir` seines
++       umschließenden Objekts mitgeführt), und ob es `#readOnly` ist. Sein Typ-Member `#Topic`
++       ist ein Tupel der Verzeichnisnamen vom Knoten bis zu seiner Wurzel; `Base.Var.Log` hat
++       also das Topic `("log", "var")`, und der Typ jedes Knotens ist eindeutig.
+
+-       Applying a layout, `layout[Path on Linux]()`, renders its absolute path and constructs
+-       a value of the requested path type from it. A layout under `Home` reads the `HOME`
+-       environment variable, raising `Environment.Error` if it is not set; one under `Base`
+-       needs no environment variable at all, though both signatures ask for an `Environment`
+-       and a `System` in scope.
++       Die Anwendung eines Layouts, `layout[Path on Linux]()`, stellt seinen absoluten Pfad dar
++       und konstruiert daraus einen Wert des angeforderten Pfadtyps. Ein Layout unter `Home` liest
++       die Umgebungsvariable `HOME` und löst `Environment.Error` aus, wenn sie nicht gesetzt ist;
++       eines unter `Base` braucht überhaupt keine Umgebungsvariable, obwohl beide Signaturen ein
++       `Environment` und ein `System` im Geltungsbereich verlangen.
+
+=       and a `System` in scope.
+=
+-       ```scala
++       ```scala
+
+=       and a `System` in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       and a `System` in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       and a `System` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       and a `System` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import environments.javaBaseEnvironment
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       Base.Usr.Share.Doc[Path on Linux]()   // /usr/share/doc
++       Base.Usr.Share.Doc[Path on Linux]()   // /usr/share/doc
+
+-       Base.Proc(Pid(1)).absolutePath        // t"/proc/1"
++       Base.Proc(Pid(1)).absolutePath        // t"/proc/1"
+
+=       Base.Proc(Pid(1)).absolutePath        // t"/proc/1"
+-       ```
++       ```
+
+-       A new layout nested in an existing one is an object extending `BaseLayout` inside it,
+-       which picks up its parent's `#dir` as its own base.
++       Ein neues Layout, das in einem bestehenden verschachtelt ist, ist ein Objekt darin, das
++       `BaseLayout` erweitert und das `#dir` seines Elternteils als eigene Basis übernimmt.
+
+=       which picks up its parent's `#dir` as its own base.
+-   refer imperial.Home
++   refer imperial.Home
+
+=   refer imperial.Home
+-   refer imperial.Base
++   refer imperial.Base
+
+-   entry .Dir   a layout's position: whether it is under the home directory, and its path segments
++   entry .Dir   die Position eines Layouts: ob es unter dem Home-Verzeichnis liegt, und seine Pfadsegmente
+
+=   entry .Dir   a layout's position: whether it is under the home directory, and its path segments
+-     detail
++     detail
+
+-         A layout's `BaseLayout.Dir` is passed to its nested layouts as a contextual value,
+-         which is how a nested object knows the directory it sits in. Segments are held
+-         innermost first.
+-     entry #home   whether the path is relative to the user's home directory
+-     entry #path   the path's segments, innermost first
+-     entry #/   the directory of a child, by its name
+-     entry #render   the absolute path as text, given the home directory's path
+-         A `Dir` which is not home-relative and has no segments renders as `/`.
+-   entry #readOnly   whether the directory is conventionally not written to by programs
+-       `true` for `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the
+-       directories of `/proc`; `false` for every layout under `Home`.
+-   entry #Topic   the directory names from this node up to its root, as a tuple type
+-   entry #absolutePath   the layout's absolute path, as text
+-       Needs an `Environment` and a `System`. A layout under `Home` reads the `HOME`
+-       environment variable, without a trailing `/`, and raises `Environment.Error` if it
+-       is unset.
+-   entry #dir   the `BaseLayout.Dir` of this layout, given to the layouts nested in it
+-   entry #apply   the layout's absolute path, as a path type of the caller's choosing
+-       `layout[Path on Linux]()` makes a value of any type which is `Instantiable across
+-       Paths from Text` from `#absolutePath`. Needs an `Environment` and a `System`, and
+-       raises `Environment.Error` (for a `Home` layout whose `HOME` is unset) and
+-       `Property.Error`.
++         Das `BaseLayout.Dir` eines Layouts wird seinen verschachtelten Layouts als Kontextwert
++         übergeben; so weiß ein verschachteltes Objekt, in welchem Verzeichnis es liegt. Die
++         Segmente werden mit dem innersten zuerst gehalten.
++     entry #home   ob der Pfad relativ zum Home-Verzeichnis des Benutzers ist
++     entry #path   die Segmente des Pfads, das innerste zuerst
++     entry #/   das Verzeichnis eines Kindes, über seinen Namen
++     entry #render   der absolute Pfad als Text, gegeben den Pfad des Home-Verzeichnisses
++         Ein `Dir`, das nicht relativ zum Home-Verzeichnis ist und keine Segmente hat, wird als
++         `/` dargestellt.
++   entry #readOnly   ob in das Verzeichnis üblicherweise nicht von Programmen geschrieben wird
++       `true` für `/boot`, `/efi`, `/sys`, `/usr` und alles darunter sowie die Verzeichnisse von
++       `/proc`; `false` für jedes Layout unter `Home`.
++   entry #Topic   die Verzeichnisnamen von diesem Knoten bis zu seiner Wurzel, als Tupeltyp
++   entry #absolutePath   der absolute Pfad des Layouts, als Text
++       Braucht ein `Environment` und ein `System`. Ein Layout unter `Home` liest die
++       Umgebungsvariable `HOME`, ohne abschließenden `/`, und löst `Environment.Error` aus, wenn
++       sie nicht gesetzt ist.
++   entry #dir   das `BaseLayout.Dir` dieses Layouts, den in ihm verschachtelten Layouts übergeben
++   entry #apply   der absolute Pfad des Layouts, als Pfadtyp nach Wahl des Aufrufers
++       `layout[Path on Linux]()` erzeugt aus `#absolutePath` einen Wert jedes Typs, der
++       `Instantiable across Paths from Text` ist. Braucht ein `Environment` und ein `System` und
++       löst `Environment.Error` (für ein `Home`-Layout, dessen `HOME` nicht gesetzt ist) und
++       `Property.Error` aus.
+
+- entry .Home   the user's home directory, `$HOME`, and the standard directories beneath it
++ entry .Home   das Home-Verzeichnis des Benutzers, `$HOME`, und die Standardverzeichnisse darunter
+
+= entry .Home   the user's home directory, `$HOME`, and the standard directories beneath it
+-   detail
++   detail
+
+-       A `BaseLayout` resolved against the `HOME` environment variable. `Home[Path on
+-       Linux]()` is the home directory itself; its nested objects name the conventional
+-       directories beneath it.
++       Ein `BaseLayout`, aufgelöst gegen die Umgebungsvariable `HOME`. `Home[Path on
++       Linux]()` ist das Home-Verzeichnis selbst; seine verschachtelten Objekte benennen die
++       üblichen Verzeichnisse darunter.
+
+=       directories beneath it.
+=
+-       ```scala
++       ```scala
+
+=       directories beneath it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       directories beneath it.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       directories beneath it.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       directories beneath it.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import environments.javaBaseEnvironment
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       Home.Cache[Path on Linux]()       // ~/.cache
++       Home.Cache[Path on Linux]()       // ~/.cache
+
+-       Home.Local.Bin[Path on Linux]()   // ~/.local/bin
++       Home.Local.Bin[Path on Linux]()   // ~/.local/bin
+
+=       Home.Local.Bin[Path on Linux]()   // ~/.local/bin
+-       ```
++       ```
+
+-       The paths are fixed: `Home.Config` is `$HOME/.config` even where `XDG_CONFIG_HOME`
+-       names another directory, so a program which should honour the XDG variables should
+-       use ambience's `Xdg` instead.
++       Die Pfade sind fest: `Home.Config` ist `$HOME/.config`, auch wo `XDG_CONFIG_HOME` ein
++       anderes Verzeichnis nennt; ein Programm, das die XDG-Variablen beachten soll, sollte
++       stattdessen `Xdg` aus ambience verwenden.
+
+=       use ambience's `Xdg` instead.
+-   refer imperial.BaseLayout
++   refer imperial.BaseLayout
+
+=   refer imperial.BaseLayout
+-   refer imperial.Base
++   refer imperial.Base
+
+-   entry .Cache   the user's cache directory, `~/.cache`
+-   entry .Config   the user's configuration directory, `~/.config`
+-   entry .Local   the user's local installation prefix, `~/.local`
++   entry .Cache   das Cache-Verzeichnis des Benutzers, `~/.cache`
++   entry .Config   das Konfigurationsverzeichnis des Benutzers, `~/.config`
++   entry .Local   das lokale Installationspräfix des Benutzers, `~/.local`
+
+=   entry .Local   the user's local installation prefix, `~/.local`
+-     detail
++     detail
+
+-         The per-user counterpart of `/usr`, holding a user's own programs, libraries, data
+-         and state.
+-     entry .Bin   the user's own executables, `~/.local/bin`
+-     entry .Lib   the user's own libraries, `~/.local/lib`
+-     entry .Share   the user's own application data, `~/.local/share`
+-     entry .State   the user's application state, `~/.local/state`
++         Das benutzerbezogene Gegenstück zu `/usr`, das die eigenen Programme, Bibliotheken,
++         Daten und Zustände eines Benutzers enthält.
++     entry .Bin   die eigenen ausführbaren Dateien des Benutzers, `~/.local/bin`
++     entry .Lib   die eigenen Bibliotheken des Benutzers, `~/.local/lib`
++     entry .Share   die eigenen Anwendungsdaten des Benutzers, `~/.local/share`
++     entry .State   der Anwendungszustand des Benutzers, `~/.local/state`
+
+- entry .Base   the filesystem root, `/`, and the standard system directories beneath it
++ entry .Base   die Dateisystemwurzel, `/`, und die Standard-Systemverzeichnisse darunter
+
+= entry .Base   the filesystem root, `/`, and the standard system directories beneath it
+-   detail
++   detail
+
+-       A `BaseLayout` for the root directory, with nested objects for the directories of the
+-       Filesystem Hierarchy Standard. `Base[Path on Linux]()` is `/`. None of its layouts
+-       reads the environment, so none raises `Environment.Error` in practice.
++       Ein `BaseLayout` für das Wurzelverzeichnis, mit verschachtelten Objekten für die
++       Verzeichnisse des Filesystem Hierarchy Standard. `Base[Path on Linux]()` ist `/`. Keines
++       seiner Layouts liest die Umgebung, sodass in der Praxis keines `Environment.Error`
++       auslöst.
+
+=       reads the environment, so none raises `Environment.Error` in practice.
+=
+-       ```scala
++       ```scala
+
+=       reads the environment, so none raises `Environment.Error` in practice.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       reads the environment, so none raises `Environment.Error` in practice.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       reads the environment, so none raises `Environment.Error` in practice.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       reads the environment, so none raises `Environment.Error` in practice.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import environments.javaBaseEnvironment
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       Base.Usr.Share[Path on Linux]()   // /usr/share
++       Base.Usr.Share[Path on Linux]()   // /usr/share
+
+-       Base.Var.Lib[Path on Linux]()     // /var/lib
++       Base.Var.Lib[Path on Linux]()     // /var/lib
+
+-       Base.Usr.readOnly                 // true
++       Base.Usr.readOnly                 // true
+
+=       Base.Usr.readOnly                 // true
+-       ```
++       ```
+
+=       ```
+-   refer imperial.BaseLayout
++   refer imperial.BaseLayout
+
+=   refer imperial.BaseLayout
+-   refer imperial.Home
++   refer imperial.Home
+
+-   entry .Boot   the boot loader's files, `/boot`, read-only
+-   entry .Efi   the EFI system partition, `/efi`, read-only
+-   entry .Etc   the system's configuration files, `/etc`
+-   entry .Home   the directory holding users' home directories, `/home`
+-       Not to be confused with the top-level `Home`, which is the current user's own home
+-       directory.
+-   entry .Root   the root user's home directory, `/root`
+-   entry .Srv   data served by the system, `/srv`
+-   entry .Tmp   temporary files, `/tmp`, which may not survive a reboot
+-   entry .Run   runtime data since the last boot, `/run`
++   entry .Boot   die Dateien des Bootloaders, `/boot`, schreibgeschützt
++   entry .Efi   die EFI-Systempartition, `/efi`, schreibgeschützt
++   entry .Etc   die Konfigurationsdateien des Systems, `/etc`
++   entry .Home   das Verzeichnis, das die Home-Verzeichnisse der Benutzer enthält, `/home`
++       Nicht zu verwechseln mit dem `Home` der obersten Ebene, dem eigenen Home-Verzeichnis des
++       aktuellen Benutzers.
++   entry .Root   das Home-Verzeichnis des Root-Benutzers, `/root`
++   entry .Srv   vom System bereitgestellte Daten, `/srv`
++   entry .Tmp   temporäre Dateien, `/tmp`, die einen Neustart möglicherweise nicht überstehen
++   entry .Run   Laufzeitdaten seit dem letzten Start, `/run`
+
+=   entry .Run   runtime data since the last boot, `/run`
+-     detail
++     detail
+
+-         Volatile state such as sockets and process identifier files, cleared at boot.
+-     entry .Log   runtime logs, `/run/log`
+-     entry .User   per-user runtime directories, `/run/user`
+-   entry .Usr   shareable, read-only system data, `/usr`
++         Flüchtiger Zustand wie Sockets und Prozess-ID-Dateien, beim Start geleert.
++     entry .Log   Laufzeitprotokolle, `/run/log`
++     entry .User   benutzerbezogene Laufzeitverzeichnisse, `/run/user`
++   entry .Usr   gemeinsam nutzbare, schreibgeschützte Systemdaten, `/usr`
+
+=   entry .Usr   shareable, read-only system data, `/usr`
+-     detail
++     detail
+
+-         Every layout beneath `/usr` is `readOnly`: programs installed by the system's
+-         package manager live here, and an application should not write to it.
+-     entry .Bin   system executables, `/usr/bin`, read-only
+-     entry .Include   C header files, `/usr/include`, read-only
+-     entry .Lib   system libraries, `/usr/lib`, read-only
+-     entry .Share   architecture-independent data, `/usr/share`, read-only
++         Jedes Layout unterhalb von `/usr` ist `readOnly`: Hier liegen die vom Paketmanager des
++         Systems installierten Programme, und eine Anwendung sollte nicht hineinschreiben.
++     entry .Bin   ausführbare Systemdateien, `/usr/bin`, schreibgeschützt
++     entry .Include   C-Header-Dateien, `/usr/include`, schreibgeschützt
++     entry .Lib   Systembibliotheken, `/usr/lib`, schreibgeschützt
++     entry .Share   architekturunabhängige Daten, `/usr/share`, schreibgeschützt
+
+-       detail
++       detail
+
+-           Documentation, and the factory defaults from which `/etc` and `/var` can be
+-           rebuilt.
+-       entry .Doc   package documentation, `/usr/share/doc`, read-only
+-       entry .Factory   pristine copies of system configuration, `/usr/share/factory`, read-only
++           Dokumentation und die Werksvorgaben, aus denen `/etc` und `/var` neu aufgebaut werden
++           können.
++       entry .Doc   Paketdokumentation, `/usr/share/doc`, schreibgeschützt
++       entry .Factory   unberührte Kopien der Systemkonfiguration, `/usr/share/factory`, schreibgeschützt
+
+-         detail
++         detail
+
+-             The defaults from which a system's `/etc` and `/var` can be restored.
+-         entry .Etc   the factory copy of `/etc`, `/usr/share/factory/etc`, read-only
+-         entry .Var   the factory copy of `/var`, `/usr/share/factory/var`, read-only
+-   entry .Var   variable data which persists across reboots, `/var`
++             Die Vorgaben, aus denen `/etc` und `/var` eines Systems wiederhergestellt werden
++             können.
++         entry .Etc   die Werkskopie von `/etc`, `/usr/share/factory/etc`, schreibgeschützt
++         entry .Var   die Werkskopie von `/var`, `/usr/share/factory/var`, schreibgeschützt
++   entry .Var   veränderliche Daten, die Neustarts überdauern, `/var`
+
+=   entry .Var   variable data which persists across reboots, `/var`
+-     detail
++     detail
+
+-         Data which the system's programs write while running: caches, state, logs, queues
+-         and temporary files which must survive a reboot.
+-     entry .Cache   application caches, `/var/cache`
+-     entry .Lib   application state, `/var/lib`
+-     entry .Log   log files, `/var/log`
+-     entry .Spool   queues of pending work, such as mail and print jobs, `/var/spool`
+-     entry .Tmp   temporary files preserved across reboots, `/var/tmp`
+-   entry .Dev   device files, `/dev`
++         Daten, die die Programme des Systems während der Ausführung schreiben: Caches,
++         Zustände, Protokolle, Warteschlangen und temporäre Dateien, die einen Neustart
++         überstehen müssen.
++     entry .Cache   Anwendungs-Caches, `/var/cache`
++     entry .Lib   Anwendungszustand, `/var/lib`
++     entry .Log   Protokolldateien, `/var/log`
++     entry .Spool   Warteschlangen anstehender Arbeit, etwa Mail- und Druckaufträge, `/var/spool`
++     entry .Tmp   temporäre Dateien, die über Neustarts hinweg erhalten bleiben, `/var/tmp`
++   entry .Dev   Gerätedateien, `/dev`
+
+=   entry .Dev   device files, `/dev`
+-     detail
++     detail
+
+-         The kernel's device nodes.
+-     entry .Shm   shared memory, `/dev/shm`
+-   entry .Proc   the process information filesystem, `/proc`
++         Die Geräteknoten des Kernels.
++     entry .Shm   gemeinsamer Speicher, `/dev/shm`
++   entry .Proc   das Dateisystem für Prozessinformationen, `/proc`
+
+=   entry .Proc   the process information filesystem, `/proc`
+-     detail
++     detail
+
+-         The kernel's view of running processes. `Base.Proc(pid)` is the directory of one
+-         process, `/proc/<pid>`, and is read-only.
++         Die Sicht des Kernels auf laufende Prozesse. `Base.Proc(pid)` ist das Verzeichnis eines
++         Prozesses, `/proc/<pid>`, und ist schreibgeschützt.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         Base.Proc(Pid(1)).readOnly   // true
++         Base.Proc(Pid(1)).readOnly   // true
+
+-         ```
++         ```
+
+-     entry .apply   the directory of one process, `/proc/<pid>`, by its `Pid`
+-     entry .Sys   kernel parameters, `/proc/sys`, read-only
+-   entry .Sys   the kernel's device and driver tree, `/sys`, read-only
++     entry .apply   das Verzeichnis eines Prozesses, `/proc/<pid>`, über seine `Pid`
++     entry .Sys   Kernelparameter, `/proc/sys`, schreibgeschützt
++   entry .Sys   der Geräte- und Treiberbaum des Kernels, `/sys`, schreibgeschützt

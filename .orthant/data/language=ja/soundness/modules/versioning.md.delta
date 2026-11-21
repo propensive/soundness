@@ -1,0 +1,271 @@
+orthant 1 language
+
+- ## Versioning
++ ## バージョニング
+
+- ### About
++ ### 概要
+
+- A [semantic version](https://semver.org/) is a structured claim: this major version, this
+- minor, this patch, and perhaps a prerelease. The specification has precise rules for validity
+- and for ordering, and `Semver` implements them exactly. A version literal is checked at
+- [compiletime], versions compare by the specification's rules of precedence, and text is parsed
+- with a typed error.
++ [セマンティックバージョン](https://semver.org/)は構造を持つ主張である。このメジャーバージョン、このマイナー、このパッチ、そして場合によってはプレリリース。
++ 仕様には正当性と順序についての厳密な規則があり、`Semver` はそれを正確に実装する。
++ バージョンのリテラルは[コンパイル時]に検査され、バージョンは仕様の優先順位の規則で比較され、テキストは型付きのエラーとともにパースされる。
+
+- JAR *manifests* are handled here too. They are read and written as typed values, whose standard
+- attributes have real types: a `Main-Class` is an [Fqcn](stack-traces.md), not a string.
++ JAR の*マニフェスト*もここで扱う。
++ それは型付きの値として読み書きされ、その標準の属性は本物の型を持つ。`Main-Class` は文字列ではなく [Fqcn](stack-traces.md) である。
+
+- ### On version numbers
++ ### バージョン番号について
+
+- Version strings invite thinking in strings: split on dots, compare the characters, and
+- `1.10.0` sorts before `1.9.0`. The semantic versioning specification pins down both the grammar
+- and the rules of precedence, including the subtle ones:
++ バージョン文字列は、文字列として考えることを誘う。ドットで分割し、文字を比較すると、`1.10.0` が `1.9.0` より前に並んでしまう。
++ セマンティックバージョニングの仕様は、文法と優先順位の規則の両方を、微妙なものも含めて厳密に定めている。
+
+- - Leading zeros are illegal, and a prerelease identifier may contain only certain characters.
+- - Numeric identifiers compare numerically.
+- - `1.0.0-alpha` precedes `1.0.0`.
+- - Build metadata never affects ordering.
++ - 先頭のゼロは不正であり、プレリリースの識別子は特定の文字しか含められない。
++ - 数値の識別子は数値として比較される。
++ - `1.0.0-alpha` は `1.0.0` より前にある。
++ - ビルドメタデータは順序に決して影響しない。
+
+- Rules that precise belong in a type. A version which cannot be constructed invalid, and which
+- compares as the specification says, is
+- [safety by construction](../../philosophy/safety-by-construction.md).
++ それほど厳密な規則は型に属する。
++ 不正な状態で構築できず、仕様の述べるとおりに比較されるバージョンは、[構築による安全性](../../philosophy/safety-by-construction.md)である。
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception, and
+- the last import lets them print their results:
++ すべては `soundness` パッケージから来る。
++ サンプルはどんなエラーも例外として投げ、最後のインポートによって結果を出力できる。
+
+= the last import lets them print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Versions
++ ### バージョン
+
+- The `v"…"` [interpolator] writes a version, and checks it at compiletime:
++ `v"…"` [補間子]はバージョンを書き、それをコンパイル時に検査する。
+
+= The `v"…"` [interpolator] writes a version, and checks it at compiletime:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The `v"…"` [interpolator] writes a version, and checks it at compiletime:
+=
+= ```scala fuel
+- compile
++ compile
+
+= compile
+- ##
++ ##
+
+- val version = v"1.4.2"
++ val version = v"1.4.2"
+
+= val version = v"1.4.2"
+- ```
++ ```
+
+- A literal which is not a semantic version does not compile:
++ セマンティックバージョンでないリテラルはコンパイルされない。
+
+= A literal which is not a semantic version does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A literal which is not a semantic version does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- v"1.2"
++ v"1.2"
+
+= v"1.2"
+- ```
++ ```
+
+- Text is [decoded](decoding.md#decoding-a-value) to the same type with `as[Semver]`, and a
+- malformed version raises a `Semver.Error`:
++ テキストは `as[Semver]` で同じ型に[デコード](decoding.md#decoding-a-value)され、不正な形式のバージョンは `Semver.Error` を発生させる。
+
+= malformed version raises a `Semver.Error`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= malformed version raises a `Semver.Error`:
+=
+= ```scala fuel
+- run
++ run
+
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"2.0.0-rc.1".as[Semver].show)
++ Out.println(t"2.0.0-rc.1".as[Semver].show)
+
+= Out.println(t"2.0.0-rc.1".as[Semver].show)
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- t"2.0".as[Semver]
++ t"2.0".as[Semver]
+
+= t"2.0".as[Semver]
+- ```
++ ```
+
+- ### Ordering
++ ### 順序
+
+- Ordering follows the specification exactly. A longer prerelease follows a shorter one, numeric
+- identifiers compare as numbers, and a release outranks its own prereleases:
++ 順序は仕様に正確に従う。
++ 長いプレリリースは短いものの後に来て、数値の識別子は数として比較され、リリースは自身のプレリリースより上位になる。
+
+= identifiers compare as numbers, and a release outranks its own prereleases:
+=
+- ```scala fuel
++ ```scala fuel
+
+= identifiers compare as numbers, and a release outranks its own prereleases:
+=
+= ```scala fuel
+- compile
++ compile
+
+= compile
+- run
++ run
+
+= compile
+= run
+- ##
++ ##
+
+- Out.println((v"1.0.0-alpha" < v"1.0.0-alpha.1").inspect)
++ Out.println((v"1.0.0-alpha" < v"1.0.0-alpha.1").inspect)
+
+- Out.println((v"1.0.0-beta.2" < v"1.0.0-beta.11").inspect)
++ Out.println((v"1.0.0-beta.2" < v"1.0.0-beta.11").inspect)
+
+- Out.println((v"1.0.0-rc.1" < v"1.0.0").inspect)
++ Out.println((v"1.0.0-rc.1" < v"1.0.0").inspect)
+
+- Out.println((v"1.9.0" < v"1.10.0").inspect)
++ Out.println((v"1.9.0" < v"1.10.0").inspect)
+
+= Out.println((v"1.9.0" < v"1.10.0").inspect)
+- ```
++ ```
+
+- A version knows whether it is still in initial `development`, with a major version of zero,
+- when anything may change. `release` strips the prerelease and build parts.
++ バージョンは、メジャーバージョンがゼロで、何でも変わりうる初期の `development` の段階にまだあるかどうかを知っている。
++ `release` はプレリリースとビルドの部分を取り除く。
+
+- ### Manifests
++ ### マニフェスト
+
+- A JAR's `META-INF/MANIFEST.MF` is read and written as a `Manifest` of typed attributes. The
+- standard attributes are named values, and reading one gives a value of its proper type:
++ JAR の `META-INF/MANIFEST.MF` は、型付きの属性の `Manifest` として読み書きされる。
++ 標準の属性は名前付きの値であり、それを読むとその本来の型の値が得られる。
+
+= standard attributes are named values, and reading one gives a value of its proper type:
+=
+- ```scala
++ ```scala
+
+- import manifestAttributes.*
++ import manifestAttributes.*
+
+- val manifest = Manifest
++ val manifest = Manifest
+
+-   ( ManifestVersion(()),
++   ( ManifestVersion(()),
+
+-     MainClass(fqcn"com.example.Main"),
++     MainClass(fqcn"com.example.Main"),
+
+-     CreatedBy(t"Soundness") )
++     CreatedBy(t"Soundness") )
+
+- val main: Optional[Fqcn] = manifest(MainClass)
++ val main: Optional[Fqcn] = manifest(MainClass)
+
+= val main: Optional[Fqcn] = manifest(MainClass)
+- ```
++ ```
+
+- A manifest read from a JAR is parsed through the same type. Tools which inspect or rewrite
+- manifests, as [Packaging](packaging.md) does, therefore work with values, not with the format's
+- fussy rules for wrapping lines. [Archives](archives.md) reads and writes the JAR itself.
++ JAR から読んだマニフェストも同じ型を通じてパースされる。
++ したがって、[パッケージング](packaging.md)のようにマニフェストを検査したり書き換えたりするツールは、この形式の面倒な行の折り返しの規則ではなく、値を扱う。
++ JAR そのものは[アーカイブ](archives.md)が読み書きする。

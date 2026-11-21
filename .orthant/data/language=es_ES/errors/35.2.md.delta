@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.35.2` — Encoding not available
++ # `↯/s.35.2` — Codificación no disponible
+
+- Raised at compile time by Hieroglyph's `enc"…"` macro when the
+- named encoding is not supported by the JVM.
++ Lo lanza en tiempo de compilación la macro `enc"…"` de Hieroglyph cuando la JVM no admite la
++ codificación nombrada.
+
+- ## Cause
++ ## Causa
+
+- The macro looks up the encoding via `Encoding.unapply`. If the JVM
+- does not recognise the name, the macro halts.
++ La macro busca la codificación mediante `Encoding.unapply`. Si la JVM no reconoce el nombre, la
++ macro se detiene.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.35.2] the encoding XYZ-9 was not available
++ [↯/s.35.2] the encoding XYZ-9 was not available
+
+= [↯/s.35.2] the encoding XYZ-9 was not available
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Use a JVM-supported encoding name. Standard encodings like
+- `UTF-8`, `ISO-8859-1`, and `US-ASCII` are always present.
++ Usa un nombre de codificación que admita la JVM. Las codificaciones estándar, como `UTF-8`,
++ `ISO-8859-1` y `US-ASCII`, están siempre presentes.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/hieroglyph/src/core/hieroglyph.internal.scala`
++ - Fuente: `lib/hieroglyph/src/core/hieroglyph.internal.scala`

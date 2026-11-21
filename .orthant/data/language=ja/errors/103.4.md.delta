@@ -1,0 +1,41 @@
+orthant 1 language
+
+- # `↯/s.103.4` — `Auth.Error`
++ # `↯/s.103.4` — `Auth.Error`
+
+- Raised when an HTTP authentication value is not valid.
++ HTTP の認証の値が正当でないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Telekinesis throws this error when an `Authorization` header value
+- (or similar) does not match the expected scheme syntax.
++ Telekinesis は、`Authorization` ヘッダー（またはそれに類するもの）の値が期待されるスキームの構文にマッチしないとき、このエラーを投げる。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.103.4] the authentication value Basic ??? is not valid
++ [↯/s.103.4] the authentication value Basic ??? is not valid
+
+= [↯/s.103.4] the authentication value Basic ??? is not valid
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Verify the value matches the expected scheme (`Basic`, `Bearer`,
+- etc.) and is correctly encoded.
++ 値が期待されるスキーム（`Basic`、`Bearer` など）にマッチし、正しくエンコードされていることを確かめる。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/telekinesis/src/core/telekinesis.Auth.scala`
++ - ソース：`lib/telekinesis/src/core/telekinesis.Auth.scala`

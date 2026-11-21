@@ -1,0 +1,49 @@
+orthant 1 language
+
+- # `↯/s.24.3` — `Validation`
++ # `↯/s.24.3` — `Validation`
+
+- Raised when one or more validation messages are collected against
+- specific document or structure pointers.
++ Lançado quando uma ou mais mensagens de validação são coletadas para
++ ponteiros específicos de um documento ou estrutura.
+
+- ## Cause
++ ## Causa
+
+- `Validation` carries a list of `(Pointer, Message)` pairs, each
+- identifying a location and the issue at that location. It is used
+- in pipelines that walk a structure and accumulate failures rather
+- than aborting on the first.
++ `Validation` carrega uma lista de pares `(Pointer, Message)`, cada um
++ identificando uma posição e o problema nessa posição. É usado
++ em pipelines que percorrem uma estrutura e acumulam falhas em vez
++ de abortar na primeira.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.24.3] /name: the value was not set; /age: the value was not in range
++ [↯/s.24.3] /name: the value was not set; /age: the value was not in range
+
+= [↯/s.24.3] /name: the value was not set; /age: the value was not in range
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Iterate over the embedded pairs to surface each message at its
+- pointer; correct the source structure.
++ Percorra os pares contidos para expor cada mensagem em seu
++ ponteiro; corrija a estrutura de origem.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/contingency/src/core/contingency.Validation.scala`
++ - Código-fonte: `lib/contingency/src/core/contingency.Validation.scala`

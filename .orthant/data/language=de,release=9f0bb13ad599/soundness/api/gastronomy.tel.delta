@@ -1,0 +1,25 @@
+orthant 1 language
+
+-       row  `Sha2[512]`  `0x13`  `sha2-512`
+-       row  `Sha2[384]`  `0x20`  `sha2-384`
++       row  `Sha2[512]`  `0x13`  `sha2-512`
++       row  `Sha2[384]`  `0x20`  `sha2-384`
+
+-   entry .sha2_224   `0x1013`, `sha2-224`: a two-byte varint in the envelope
+-   entry .blake3   `0x1e`, `blake3`: a draft entry in the table, but unambiguous and widely implemented
+-   entry .md5   `0xd5`, `md5`: a draft entry in the table
+-   entry .name   the registered name of a code this library knows, or `Unset`
+-       `Multicodec.name(0x12)` is `t"sha2-256"`; `0x00` is `identity`. A code outside the set
+-       above is legal and representable in a `Multihash` but has no name here.
+-   entry .apply   `Multicodec[algorithm](code, name)`: an instance for an algorithm of one's own
+-   entry #code   the algorithm's multicodec code, as registered in the multiformats table
+-   entry #name   the algorithm's registered multicodec name, such as `sha2-256`
++   entry .sha2_224   `0x1013`, `sha2-224`: ein Zwei-Byte-Varint im Umschlag
++   entry .blake3   `0x1e`, `blake3`: ein Entwurfseintrag in der Tabelle, aber eindeutig und weit verbreitet implementiert
++   entry .md5   `0xd5`, `md5`: ein Entwurfseintrag in der Tabelle
++   entry .name   der registrierte Name eines Codes, den diese Bibliothek kennt, oder `Unset`
++       `Multicodec.name(0x12)` ist `t"sha2-256"`; `0x00` ist `identity`. Ein Code außerhalb der obigen
++       Menge ist zulässig und in einem `Multihash` darstellbar, hat hier aber keinen Namen.
++   entry .apply   `Multicodec[algorithm](code, name)`: eine Instanz für einen eigenen Algorithmus
++   entry #code   der Multicodec-Code des Algorithmus, wie in der Multiformats-Tabelle registriert
++   entry #name   der registrierte Multicodec-Name des Algorithmus, etwa `sha2-256`

@@ -1,0 +1,87 @@
+orthant 1 language
+
+-     A layout also says whether it is meant to be written to: `readOnly` is `true` for
+-     `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the per-process
+-     directories under `/proc`. The five `Home` layouts which the XDG Base Directory
+-     specification lets a user move follow its variables: `Home.Config` is `$HOME/.config`
+-     unless `XDG_CONFIG_HOME` is set to an absolute path, when it is that path.
++     レイアウトは、書き込むためのものかどうかも示す。
++     `readOnly` は、`/boot`、`/efi`、`/sys`、`/usr` とその下のすべて、そして `/proc` の下のプロセスごとのディレクトリで `true` である。
++     XDG Base Directory 仕様がユーザーに移動を許す五つの `Home` のレイアウトは、その変数に従う。
++     `Home.Config` は、`XDG_CONFIG_HOME` が絶対パスに設定されていればそのパスであり、そうでなければ `$HOME/.config` である。
+
+-         A layout's `BaseLayout.Dir` is passed to its nested layouts as a contextual value,
+-         which is how a nested object knows the directory it sits in. Segments are held
+-         innermost first.
+-     entry #home   whether the path is relative to the user's home directory
+-     entry #path   the path's segments, innermost first
+-     entry #/   the directory of a child, by its name
+-     entry #render   the absolute path as text, given the home directory's path
+-         A `Dir` which is not home-relative and has no segments renders as `/`.
+-   entry #readOnly   whether the directory is conventionally not written to by programs
+-       `true` for `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the
+-       directories of `/proc`; `false` for every layout under `Home`.
+-   entry #Topic   the directory names from this node up to its root, as a tuple type
+-   entry #absolutePath   the layout's absolute path, as text
+-       Needs an `Environment` and a `System`. A layout which names a `#variable` is that
+-       variable's value, if it is an absolute path. Otherwise a layout under `Home` reads
+-       the `HOME` environment variable, without a trailing `/`, and raises
+-       `Environment.Error` if it is unset.
+-   entry #variable   the environment variable which relocates the layout, if there is one
+-   entry #relocation   where `#variable` puts the layout: its value, if set to an absolute path
+-   entry #dir   the `BaseLayout.Dir` of this layout, given to the layouts nested in it
+-   entry #apply   the layout's absolute path, as a path type of the caller's choosing
+-       `layout[Path on Linux]()` makes a value of any type which is `Instantiable across
+-       Paths from Text` from `#absolutePath`. Needs an `Environment` and a `System`, and
+-       raises `Environment.Error` (for a `Home` layout whose `HOME` is unset) and
+-       `Property.Error`.
++         レイアウトの `BaseLayout.Dir` は、コンテキスト値として入れ子のレイアウトに渡される。
++         入れ子のオブジェクトは、こうして自身が置かれているディレクトリを知る。
++         セグメントは内側のものから先に保持される。
++     entry #home   パスがユーザーのホームディレクトリからの相対パスかどうか
++     entry #path   パスのセグメント。内側のものから先に並ぶ
++     entry #/   名前で指定した子のディレクトリ
++     entry #render   ホームディレクトリのパスを与えて、絶対パスをテキストとして描画する
++         ホームからの相対ではなく、セグメントを持たない `Dir` は `/` として描画される。
++   entry #readOnly   そのディレクトリに、慣習上プログラムが書き込まないかどうか
++       `/boot`、`/efi`、`/sys`、`/usr` とその下のすべて、そして `/proc` のディレクトリでは `true` であり、`Home` の下のすべてのレイアウトでは `false` である。
++   entry #Topic   このノードからルートまでのディレクトリ名。タプル型として
++   entry #absolutePath   レイアウトの絶対パス。テキストとして
++       `Environment` と `System` を必要とする。
++       `#variable` を指定するレイアウトは、その変数の値が絶対パスであればその値である。
++       そうでなければ、`Home` の下のレイアウトは、末尾の `/` なしで環境変数 `HOME` を読み、設定されていなければ `Environment.Error` を発生させる。
++   entry #variable   レイアウトを移動させる環境変数。あれば
++   entry #relocation   `#variable` がレイアウトを置く場所：絶対パスに設定されていれば、その値
++   entry #dir   このレイアウトの `BaseLayout.Dir`。その中に入れ子にされたレイアウトに与えられる
++   entry #apply   レイアウトの絶対パス。呼び出し側が選んだパスの型として
++       `layout[Path on Linux]()` は、`#absolutePath` から、`Instantiable across Paths from Text` である任意の型の値を作る。
++       `Environment` と `System` を必要とし、`Environment.Error`（`HOME` が設定されていない `Home` のレイアウトの場合）と `Property.Error` を発生させる。
+
+-       `Cache`, `Config`, `Local.Bin`, `Local.Share` and `Local.State` are the directories
+-       the XDG Base Directory specification lets a user move, and each is where its variable
+-       says when that is set to an absolute path: `Home.Config` is `$XDG_CONFIG_HOME`, and
+-       `$HOME/.config` otherwise. A relative or empty value is ignored, as the specification
+-       requires. The other layouts are fixed.
++       `Cache`、`Config`、`Local.Bin`、`Local.Share`、`Local.State` は、XDG Base Directory 仕様がユーザーに移動を許すディレクトリであり、それぞれ、その変数が絶対パスに設定されていれば変数が示す場所にある。
++       `Home.Config` は `$XDG_CONFIG_HOME` であり、そうでなければ `$HOME/.config` である。
++       仕様が求めるとおり、相対パスや空の値は無視される。
++       ほかのレイアウトは固定である。
+
+-   entry .Cache   the user's cache directory, `$XDG_CACHE_HOME` or `~/.cache`
+-   entry .Config   the user's configuration directory, `$XDG_CONFIG_HOME` or `~/.config`
+-   entry .Local   the user's local installation prefix, `~/.local`
++   entry .Cache   ユーザーのキャッシュディレクトリ、`$XDG_CACHE_HOME` または `~/.cache`
++   entry .Config   ユーザーの設定ディレクトリ、`$XDG_CONFIG_HOME` または `~/.config`
++   entry .Local   ユーザーのローカルのインストール先の接頭辞、`~/.local`
+
+-         The per-user counterpart of `/usr`, holding a user's own programs, libraries, data
+-         and state.
+-     entry .Bin   the user's own executables, `$XDG_BIN_HOME` or `~/.local/bin`
+-     entry .Lib   the user's own libraries, `~/.local/lib`
+-     entry .Share   the user's own application data, `$XDG_DATA_HOME` or `~/.local/share`
+-     entry .State   the user's application state, `$XDG_STATE_HOME` or `~/.local/state`
++         `/usr` に対応するユーザーごとのディレクトリであり、ユーザー自身のプログラム、ライブラリ、データ、状態を保持する。
++     entry .Bin   ユーザー自身の実行ファイル、`$XDG_BIN_HOME` または `~/.local/bin`
++     entry .Lib   ユーザー自身のライブラリ、`~/.local/lib`
++     entry .Share   ユーザー自身のアプリケーションのデータ、`$XDG_DATA_HOME` または `~/.local/share`
++     entry .State   ユーザーのアプリケーションの状態、`$XDG_STATE_HOME` または `~/.local/state`

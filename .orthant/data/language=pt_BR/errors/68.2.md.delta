@@ -1,0 +1,60 @@
+orthant 1 language
+
+- # `↯/s.68.2` — `Moniker.Error`
++ # `↯/s.68.2` — `Moniker.Error`
+
+- Raised when a moniker — a stable, compiletime-checked identifier — is not valid.
++ Lançado quando um moniker — um identificador estável, verificado em tempo de compilação — não é
++ válido.
+
+- ## Cause
++ ## Causa
+
+- A moniker names something so it can be referred to across edits: a test, a benchmark cell,
+- a schema field. Its syntax is restricted so that it can appear unquoted on a command line
+- and in a report.
++ Um moniker nomeia algo para que possa ser referenciado ao longo de edições: um teste, uma célula
++ de benchmark, um campo de schema. Sua sintaxe é restrita para que ele possa aparecer sem aspas
++ em uma linha de comando e em um relatório.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+- row  `↯/s.68.2.1`  `Unreadable`  `[↯/s.68.2.1] the vocabulary could not be read`
++ row  `↯/s.68.2.1`  `Unreadable`  `[↯/s.68.2.1] the vocabulary could not be read`
+
+- row  `↯/s.68.2.2`  `OutOfRange`  `[↯/s.68.2.2] the number <n> is outside the representable range`
++ row  `↯/s.68.2.2`  `OutOfRange`  `[↯/s.68.2.2] the number <n> is outside the representable range`
+
+- row  `↯/s.68.2.3`  `Malformed`  `[↯/s.68.2.3] <name> is not of the form <adjective>-<animal>`
++ row  `↯/s.68.2.3`  `Malformed`  `[↯/s.68.2.3] <name> is not of the form <adjective>-<animal>`
+
+- row  `↯/s.68.2.4`  `UnknownWord`  `[↯/s.68.2.4] the word <word> does not appear in the vocabulary`
++ row  `↯/s.68.2.4`  `UnknownWord`  `[↯/s.68.2.4] the word <word> does not appear in the vocabulary`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Use an identifier made of letters, digits and the permitted separators, beginning with a
+- letter. The reason names the specific rule that was broken.
++ Use um identificador feito de letras, dígitos e dos separadores permitidos, começando com uma
++ letra. O motivo nomeia a regra específica que foi violada.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/nomenclature/src/lexicon/nomenclature.Moniker.scala`
++ - Código-fonte: `lib/nomenclature/src/lexicon/nomenclature.Moniker.scala`

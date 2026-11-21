@@ -1,0 +1,23 @@
+orthant 1 language
+
+- The objection to immutability is always the same: changing one field deep inside a
+- structure means rebuilding every layer above it. That is true, and it is a problem of
+- syntax rather than of semantics — so Soundness solves it with syntax. A
+- [lens](/doc/soundness/modules/optics.md) takes the update written as an ordinary path assignment and
+- does the rebuilding:
++ La objeción a la inmutabilidad es siempre la misma: cambiar un campo en lo más profundo de una
++ estructura obliga a reconstruir todas las capas que hay por encima. Es cierto, y es un problema de
++ sintaxis y no de semántica, así que Soundness lo resuelve con sintaxis. Una
++ [lente](/doc/soundness/modules/optics.md) recibe la actualización escrita como una asignación corriente a
++ una ruta y hace la reconstrucción:
+
+- A **`Canvas`**, obtained by opening a [raster](/doc/soundness/modules/images.md) for writing, mutates
+- pixels in place — because generating a large image one pixel-function call at a time is
+- the wrong shape for a drawing algorithm. The mutation is scoped to the `open` block and
+- gated on the `Write` grant, and `snapshot` takes an independent copy for anything that
+- must outlive it.
++ Un **`Canvas`**, que se obtiene abriendo un [ráster](/doc/soundness/modules/images.md) para escritura, muta
++ los píxeles en su sitio, porque generar una imagen grande con una llamada a una función por píxel
++ no es la forma adecuada para un algoritmo de dibujo. La mutación está limitada al ámbito del
++ bloque `open` y condicionada por la concesión `Write`, y `snapshot` toma una copia independiente
++ para lo que deba sobrevivirle.

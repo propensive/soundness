@@ -1,0 +1,107 @@
+orthant 1 language
+
+=         label A typeface, provided for the web as a linked font file
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+-                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+=         label The face paired with its provision: a font for the web
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+-                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+-                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+-         The class every factory in `Web` returns, so that a provision has a stable type:
+-         `Web.Provision[family](sources, coverage)` is a `(Typeface of family) is
+-         Typesettable in Web` whose `#sources` are the `Typesettable.Source`s the browser
+-         obtains the typeface from and whose `#coverage` is the `Font.Coverage` it was declared
+-         with. `FontFace.rules` renders one source at a time.
+-     entry #sources   where the browser gets the typeface: linked, imported, local or generic
+-     entry #coverage   the weights, slants, widths and axes the provision was declared to offer
+-     entry #Self   the typeface provided, `Typeface of family`
+-     entry #Form   the medium, `Web`
+-   entry .sansSerif   the generic `sans-serif` family, provided on the web with no declaration
+-       A browser sets each generic family from whatever it has, so the provision has a
+-       single `Generic` source and `Font.Coverage.Unknown`, which admits every face; it renders
+-       no at-rule, and `font-family: sans-serif` unquoted.
+-   entry .serif   the generic `serif` family, provided with no declaration
+-   entry .monospace   the generic `monospace` family, provided with no declaration
+-   entry .cursive   the generic `cursive` family, provided with no declaration
+-   entry .fantasy   the generic `fantasy` family, provided with no declaration
+-   entry .systemUi   the generic `system-ui` family, provided with no declaration
+-   entry .linked   a provision from a font file the browser fetches from a URL
+-       `Web.linked[family](url, coverage, format)` takes any URL type `Abstractable across
+-       Urls to Text` (an `HttpUrl` from `url"…"`, or text), the `Font.Coverage` the file is
+-       declared to have — since the file is not to hand to be read, only what is declared
+-       is admitted, so a font declared at one weight refuses a request for another rather
+-       than letting the browser synthesize it — and an optional
+-       `Typesettable.Source.Format` (`Ttf`, `Otf`, `Woff` or `Woff2`) for the `format()`
+-       hint. The `family` type argument is normally inferred from the given's declared
+-       type. It renders as a `@font-face` whose `src` is `url("…") format("woff2")`.
+-   entry .local   a provision from a font the reader is expected to have installed
+-       `Web.local[family](coverage)` names the typeface in a `src: local("Name")`, the
+-       typeface's family name being the `family` literal. Nothing guarantees the reader has
+-       it, so this is the weakest provision, and its coverage — `Font.Coverage.Unknown` unless
+-       given, which admits every face — says only what is declared.
++         Die Klasse, die jede Fabrik in `Web` zurückgibt, sodass eine Bereitstellung einen
++         stabilen Typ hat: `Web.Provision[family](sources, coverage)` ist ein `(Typeface of family) is
++         Typesettable in Web`, dessen `#sources` die `Typesettable.Source`s sind, aus denen der
++         Browser die Schriftart erhält, und dessen `#coverage` die `Font.Coverage` ist, mit der es
++         deklariert wurde. `FontFace.rules` stellt eine Quelle nach der anderen dar.
++     entry #sources   woher der Browser die Schriftart bekommt: verlinkt, importiert, lokal oder generisch
++     entry #coverage   die Stärken, Neigungen, Breiten und Achsen, die die Bereitstellung laut Deklaration bietet
++     entry #Self   die bereitgestellte Schriftart, `Typeface of family`
++     entry #Form   das Medium, `Web`
++   entry .sansSerif   die generische Familie `sans-serif`, im Web ohne Deklaration bereitgestellt
++       Ein Browser setzt jede generische Familie aus dem, was er hat, daher hat die
++       Bereitstellung eine einzige `Generic`-Quelle und `Font.Coverage.Unknown`, was jeden
++       Schriftschnitt zulässt; sie stellt keine At-Regel dar und `font-family: sans-serif` ohne
++       Anführungszeichen.
++   entry .serif   die generische Familie `serif`, ohne Deklaration bereitgestellt
++   entry .monospace   die generische Familie `monospace`, ohne Deklaration bereitgestellt
++   entry .cursive   die generische Familie `cursive`, ohne Deklaration bereitgestellt
++   entry .fantasy   die generische Familie `fantasy`, ohne Deklaration bereitgestellt
++   entry .systemUi   die generische Familie `system-ui`, ohne Deklaration bereitgestellt
++   entry .linked   eine Bereitstellung aus einer Schriftdatei, die der Browser von einer URL abruft
++       `Web.linked[family](url, coverage, format)` nimmt einen beliebigen URL-Typ, der `Abstractable across
++       Urls to Text` ist (eine `HttpUrl` aus `url"…"` oder Text), die `Font.Coverage`, die die Datei
++       laut Deklaration hat — da die Datei nicht zum Lesen vorliegt, wird nur zugelassen, was
++       deklariert ist, sodass eine in einer Stärke deklarierte Schrift eine Anfrage nach einer
++       anderen ablehnt, statt den Browser sie synthetisieren zu lassen —, und ein optionales
++       `Typesettable.Source.Format` (`Ttf`, `Otf`, `Woff` oder `Woff2`) für den Hinweis
++       `format()`. Das Typargument `family` wird normalerweise aus dem deklarierten Typ des
++       Givens inferiert. Es wird als `@font-face` dargestellt, dessen `src` `url("…") format("woff2")` ist.
++   entry .local   eine Bereitstellung aus einer Schrift, die der Leser voraussichtlich installiert hat
++       `Web.local[family](coverage)` nennt die Schriftart in einem `src: local("Name")`, wobei der
++       Familienname der Schriftart das Literal `family` ist. Nichts garantiert, dass der Leser
++       sie hat, daher ist dies die schwächste Bereitstellung, und ihre Abdeckung —
++       `Font.Coverage.Unknown`, sofern nicht angegeben, was jeden Schriftschnitt zulässt — sagt nur,
++       was deklariert ist.

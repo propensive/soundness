@@ -1,0 +1,416 @@
+orthant 1 language
+
+- ## Interpolation
++ ## Interpolación
+
+- ### About
++ ### Descripción
+
+- Checked literals are used throughout Soundness: a `url"…"` which must be a URL, an `sh"…"`
+- whose quoting must balance, a `j"…"` which must be JSON. All of them are built on one piece of
+- machinery for defining custom
+- [string interpolators](https://docs.scala-lang.org/scala3/book/string-interpolation.html).
++ Soundness usa literales comprobados por todas partes: un `url"…"` que debe ser una URL, un
++ `sh"…"` cuyas comillas deben estar equilibradas, un `j"…"` que debe ser JSON. Todos se construyen
++ sobre una misma maquinaria para definir
++ [interpoladores de cadenas](https://docs.scala-lang.org/scala3/book/string-interpolation.html)
++ propios.
+
+- An [interpolator] defined with it does two things at [compiletime]. It validates the literal's
+- content, and reports an error at the exact character at fault. And it accepts substitutions
+- only of the types it declares, each checked for the position it occupies. This is the principal
+- instrument of [safety by construction](../../philosophy/safety-by-construction.md).
++ Un [interpolador] definido con ella hace dos cosas en [tiempo de compilación]. Valida el contenido
++ del literal e informa de un error exactamente en el carácter culpable. Y solo acepta sustituciones
++ de los tipos que declara, cada una comprobada según la posición que ocupa. Es el principal
++ instrumento de la [seguridad por construcción](../../philosophy/safety-by-construction.md).
+
+- Defining an interpolator does not mean writing a macro by hand. The work of capturing the
+- literal's parts, and their positions in the source file, is done once. The author of an
+- interpolator supplies ordinary [typeclass] instances, which say how the parts are parsed and
+- what may be substituted where.
++ Definir un interpolador no significa escribir una macro a mano. El trabajo de capturar las partes
++ del literal, y sus posiciones en el fichero fuente, se hace una sola vez. Quien escribe un
++ interpolador proporciona instancias corrientes de [clases de tipos][clase de tipos], que indican
++ cómo se analizan las partes y qué puede sustituirse en cada sitio.
+
+- ### On interpolators
++ ### Sobre los interpoladores
+
+- Scala's built-in `s"…"` interpolation glues strings together without types. Any value is
+- converted with `toString`, and the literal parts mean nothing to the compiler. Yet a string
+- literal very often *is* something: a URL, a path, a regular expression, a fragment of SQL. It
+- has a syntax which could be checked the moment it is written, and positions where only certain
+- values make sense.
++ La interpolación `s"…"` incorporada en Scala pega cadenas sin tipos. Cualquier valor se convierte
++ con `toString`, y las partes literales no significan nada para el compilador. Sin embargo, un
++ literal de cadena muy a menudo *es* algo: una URL, una ruta, una expresión regular, un fragmento
++ de SQL. Tiene una sintaxis que podría comprobarse en el momento de escribirlo, y posiciones en las
++ que solo tienen sentido ciertos valores.
+
+- Here an interpolated string is treated as a small program to be compiled:
++ Aquí una cadena interpolada se trata como un pequeño programa que compilar:
+
+- - The literal parts are parsed at compiletime, by the interpolator's own logic, so a malformed
+-   literal never reaches a running program.
+- - Substitutions are resolved through typeclasses. What may be substituted, and how it is made
+-   safe for its position, is decided by instances in scope, not by `toString`.
+- - The source positions of the parts are captured, so an error message points at the offending
+-   character, not at the whole expression.
++ - Las partes literales se analizan en tiempo de compilación, con la propia lógica del
++   interpolador, así que un literal mal formado nunca llega a un programa en ejecución.
++ - Las sustituciones se resuelven mediante clases de tipos. Qué puede sustituirse, y cómo se hace
++   seguro para su posición, lo deciden las instancias en el ámbito, no `toString`.
++ - Se capturan las posiciones en el fichero fuente de las partes, así que un mensaje de error
++   señala el carácter culpable, no la expresión entera.
+
+- Everything comes from the `soundness` package:
++ Todo procede del paquete `soundness`:
+
+= Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+= import soundness.*
+- ```
++ ```
+
+- A [media type](media-types.md) literal shows the result. A well-formed one is a `MediaType`,
+- and a misspelled one does not compile:
++ Un literal de [tipo de medio](media-types.md) muestra el resultado. Uno bien formado es un
++ `MediaType`, y uno mal escrito no compila:
+
+= and a misspelled one does not compile:
+=
+- ```scala
++ ```scala
+
+- val plain: MediaType = media"text/plain"
++ val plain: MediaType = media"text/plain"
+
+= val plain: MediaType = media"text/plain"
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- media"text/plian"
++ media"text/plian"
+
+= media"text/plian"
+- ```
++ ```
+
+- ### Anatomy of an interpolator
++ ### Anatomía de un interpolador
+
+- An interpolator is made of three pieces. The first is a prefix method on `StringContext`, which
+- names the interpolator and hands its content to the machinery:
++ Un interpolador consta de tres piezas. La primera es un método prefijo sobre `StringContext`, que
++ da nombre al interpolador y entrega su contenido a la maquinaria:
+
+= names the interpolator and hands its content to the machinery:
+=
+- ```scala
++ ```scala
+
+- extension (inline context: StringContext)
++ extension (inline context: StringContext)
+
+-   transparent inline def media: Interpolation = interpolation[MediaType](context)
++   transparent inline def media: Interpolation = interpolation[MediaType](context)
+
+=   transparent inline def media: Interpolation = interpolation[MediaType](context)
+- ```
++ ```
+
+- The second is an `Interpolable` instance for the target type, which does the parsing and the
+- construction. It receives the literal parts with their source positions, and produces the
+- value, reporting any fault against the character which caused it.
++ La segunda es una instancia de `Interpolable` para el tipo de destino, que hace el análisis y la
++ construcción. Recibe las partes literales con sus posiciones en el fichero fuente y produce el
++ valor, informando de cualquier fallo en el carácter que lo causó.
+
+- The third is a set of `Insertion` instances, which declare the types that may be substituted,
+- and how each becomes part of the result.
++ La tercera es un conjunto de instancias de `Insertion`, que declaran los tipos que pueden
++ sustituirse y cómo pasa cada uno a formar parte del resultado.
+
+- ### Substitutions
++ ### Sustituciones
+
+- An `Insertion` maps a substituted value into the interpolator's own input type, so the
+- interpolator controls how foreign values enter. The insertions of the
+- [shell interpolator](processes.md) show the idea. Text becomes one argument, and a list becomes
+- several:
++ Una `Insertion` convierte un valor sustituido en el tipo de entrada propio del interpolador, de
++ modo que el interpolador controla cómo entran los valores ajenos. Las inserciones del
++ [interpolador de shell](processes.md) muestran la idea. Un texto se convierte en un argumento, y
++ una lista en varios:
+
+= several:
+=
+- ```scala
++ ```scala
+
+- given Insertion[Sh.Parameters, Text] = value => Sh.Parameters(value)
++ given Insertion[Sh.Parameters, Text] = value => Sh.Parameters(value)
+
+- given Insertion[Sh.Parameters, List[Text]] = xs => Sh.Parameters(xs*)
++ given Insertion[Sh.Parameters, List[Text]] = xs => Sh.Parameters(xs*)
+
+= given Insertion[Sh.Parameters, List[Text]] = xs => Sh.Parameters(xs*)
+- ```
++ ```
+
+- Insertion is a typeclass, so a new type becomes substitutable by declaring one instance,
+- without touching the interpolator. A type with no instance cannot be substituted at all, which
+- is how an interpolator forbids what it cannot make safe.
++ Insertion es una clase de tipos, así que un tipo nuevo pasa a poder sustituirse declarando una
++ instancia, sin tocar el interpolador. Un tipo sin instancia no puede sustituirse en absoluto, y
++ así es como un interpolador prohíbe lo que no puede hacer seguro.
+
+- Sometimes different positions accept different things. A URL's port takes a number, and its
+- path takes text. A `Substitution` is an `Insertion` with one more type parameter, a singleton
+- `Label`, which tells the positions apart.
++ A veces posiciones distintas aceptan cosas distintas. El puerto de una URL recibe un número, y su
++ ruta recibe texto. Una `Substitution` es una `Insertion` con un parámetro de tipo más, un `Label`
++ singleton, que distingue las posiciones.
+
+- At [runtime] the two behave identically. The difference is at compiletime. An insertion tells
+- the interpolator's parser only that *something* was substituted. A substitution passes the
+- parser its label, and the parser proceeds as though the position held a representative token of
+- the substituted type: `"0"` for a number, `""""` for a string.
++ En [tiempo de ejecución] ambas se comportan igual. La diferencia está en tiempo de compilación. Una
++ inserción solo le dice al analizador del interpolador que se sustituyó *algo*. Una sustitución le
++ pasa al analizador su rótulo, y el analizador continúa como si la posición contuviera un token
++ representativo del tipo sustituido: `"0"` para un número, `""""` para una cadena.
+
+= the substituted type: `"0"` for a number, `""""` for a string.
+=
+- ```scala
++ ```scala
+
+- enum SqlInput:
++ enum SqlInput:
+
+-   case IntInput(value: Int)
++   case IntInput(value: Int)
+
+-   case StrInput(value: Text)
++   case StrInput(value: Text)
+
+- given Substitution[SqlInput, Int, "0"] = SqlInput.IntInput(_)
++ given Substitution[SqlInput, Int, "0"] = SqlInput.IntInput(_)
+
+- given Substitution[SqlInput, Text, "\"\""] = SqlInput.StrInput(_)
++ given Substitution[SqlInput, Text, "\"\""] = SqlInput.StrInput(_)
+
+= given Substitution[SqlInput, Text, "\"\""] = SqlInput.StrInput(_)
+- ```
++ ```
+
+- The interpolator's compiletime reading of the literal can then depend on what was substituted.
+- It can check the *shape* of a literal which contains substitutions, instead of giving up
+- wherever one appears.
++ La lectura del literal que hace el interpolador en tiempo de compilación puede entonces depender
++ de lo que se sustituyó. Puede comprobar la *forma* de un literal que contiene sustituciones, en
++ lugar de rendirse allí donde aparece una.
+
+- ### Patterns
++ ### Patrones
+
+- The same machinery runs in reverse. An `Extrapolable` instance lets an interpolated literal
+- serve as a pattern in a `match`, taking a value apart and binding its substitutions. This is
+- how the patterns of [`j"…"`](json.md#matching-json) and [`html"…"`](html.md) work. One
+- definition gives both the construction and the match.
++ La misma maquinaria funciona a la inversa. Una instancia de `Extrapolable` permite que un literal
++ interpolado sirva de patrón en un `match`, descomponiendo un valor y ligando sus sustituciones. Así
++ funcionan los patrones de [`j"…"`](json.md#matching-json) y de [`html"…"`](html.md). Una sola
++ definición proporciona tanto la construcción como la coincidencia.
+
+- The four typeclasses, side by side:
++ Las cuatro clases de tipos, una junto a otra:
+
+= The four typeclasses, side by side:
+=
+- ```tabular
++ ```tabular
+
+- column  Typeclass
+- column  Given for
+- column  Says
+- row  `Interpolable`  the result type  how the literal parts are parsed into a value
+- row  `Insertion[input, value]`  a substitutable type  how a value enters the interpolator's input
+- row  `Substitution[input, value, label]`  a substitutable type  the same, and which token the parser sees in its place
+- row  `Extrapolable`  the matched type  how a value is taken apart by a literal pattern
++ column  Clase de tipos
++ column  Given para
++ column  Indica
++ row  `Interpolable`  el tipo del resultado  cómo se analizan las partes literales para obtener un valor
++ row  `Insertion[input, value]`  un tipo que puede sustituirse  cómo entra un valor en la entrada del interpolador
++ row  `Substitution[input, value, label]`  un tipo que puede sustituirse  lo mismo, y qué token ve el analizador en su lugar
++ row  `Extrapolable`  el tipo con el que se hace coincidir  cómo descompone un valor un patrón literal
+
+= row  `Extrapolable`  the matched type  how a value is taken apart by a literal pattern
+- ```
++ ```
+
+- ### Compiletime and runtime
++ ### Tiempo de compilación y tiempo de ejecución
+
+- An interpolator's parsing logic is ordinary code, and it runs in both worlds. At compiletime it
+- checks literals, and gives compile errors. At runtime it parses input which is built
+- dynamically, and gives typed [errors](errors.md).
++ La lógica de análisis de un interpolador es código corriente, y se ejecuta en ambos mundos. En
++ tiempo de compilación comprueba literales y produce errores de compilación. En tiempo de ejecución
++ analiza entradas construidas dinámicamente y produce [errores](errors.md) tipados.
+
+- The two cannot drift apart, because they are the same code. A hand-written macro with a
+- separate runtime parser can make no such guarantee.
++ Ambos no pueden divergir, porque son el mismo código. Una macro escrita a mano con un analizador
++ de tiempo de ejecución aparte no puede dar esa garantía.
+
+- ### Parts and origins
++ ### Partes y orígenes
+
+- `interpolate` receives two type parameters, which carry what the compiler knows about the
+- literal:
++ `interpolate` recibe dos parámetros de tipo, que llevan lo que el compilador sabe del literal:
+
+= literal:
+=
+- ```tabular
++ ```tabular
+
+- column  Type parameter
+- column  Carries
+- row  `parts`  a tuple of the literal's fragments, as singleton string types, so the interpolator sees the text of each
+- row  `origins`  where each fragment began in the source file, so an error against a character resolves to that character's position
++ column  Parámetro de tipo
++ column  Lleva
++ row  `parts`  una tupla de los fragmentos del literal, como tipos de cadena singleton, para que el interpolador vea el texto de cada uno
++ row  `origins`  dónde empezaba cada fragmento en el fichero fuente, para que un error en un carácter se resuelva a la posición de ese carácter
+
+= row  `origins`  where each fragment began in the source file, so an error against a character resolves to that character's position
+- ```
++ ```
+
+- The media-type interpolator's instance, in outline, hands both to a macro:
++ La instancia del interpolador de tipos de medio, a grandes rasgos, pasa ambos a una macro:
+
+= The media-type interpolator's instance, in outline, hands both to a macro:
+=
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+= parse
+- ##
++ ##
+
+- import gesticulate.internal
++ import gesticulate.internal
+
+- inline given interpolable: MediaType is Interpolable:
++ inline given interpolable: MediaType is Interpolable:
+
+-   transparent inline def interpolate[parts <: Tuple, origins <: Tuple](inline insertions: Any*)
++   transparent inline def interpolate[parts <: Tuple, origins <: Tuple](inline insertions: Any*)
+
+-   :   MediaType =
++   :   MediaType =
+
+-     ${internal.mediaInterpolator[parts]('insertions)}
++     ${internal.mediaInterpolator[parts]('insertions)}
+
+=     ${internal.mediaInterpolator[parts]('insertions)}
+- ```
++ ```
+
+- That is what makes the compile error for `media"text/plian"` point at the misspelled subtype,
+- not at the whole literal. [Metaprogramming](metaprogramming.md) describes the macros
+- themselves.
++ Eso es lo que hace que el error de compilación de `media"text/plian"` señale el subtipo mal
++ escrito, y no el literal entero. [Metaprogramación](metaprogramming.md) describe las propias
++ macros.
+
+- ### Returning a precise type
++ ### Devolver un tipo preciso
+
+- The prefix method is `transparent inline`, so an interpolator may return something more
+- specific than its declared type. A literal can thereby carry what it *is* into the type system,
+- beyond merely being valid:
++ El método prefijo es `transparent inline`, así que un interpolador puede devolver algo más
++ específico que su tipo declarado. Un literal puede así llevar al sistema de tipos lo que *es*, más
++ allá de ser simplemente válido:
+
+- - A [path](paths.md) literal returns a path on a particular platform.
+- - A name literal returns a name which is proved valid for its kind.
+- - A document literal checked against a schema returns a document typed by that schema.
++ - Un literal de [ruta](paths.md) devuelve una ruta de una plataforma concreta.
++ - Un literal de nombre devuelve un nombre del que se demuestra que es válido para su clase.
++ - Un literal de documento comprobado contra un esquema devuelve un documento tipado por ese
++   esquema.
+
+- The cost of that precision is that the result type depends on the literal's content, so the
+- literal must be known at compiletime. Where it is not, the corresponding runtime parser, which
+- is the same code, returns the general type and a typed error.
++ El precio de esa precisión es que el tipo del resultado depende del contenido del literal, así que
++ el literal debe conocerse en tiempo de compilación. Donde no se conoce, el analizador de tiempo de
++ ejecución correspondiente, que es el mismo código, devuelve el tipo general y un error tipado.
+
+- ### Choosing between compiletime and runtime
++ ### Elegir entre tiempo de compilación y tiempo de ejecución
+
+- An interpolator is the right tool where a literal has a syntax, and the syntax can be checked.
+- It is the wrong tool where the content is truly dynamic. There is then nothing to check as the
+- code compiles, and the interpolator's machinery buys nothing over the runtime parser it
+- delegates to.
++ Un interpolador es la herramienta adecuada cuando un literal tiene una sintaxis y esa sintaxis
++ puede comprobarse. Es la herramienta equivocada cuando el contenido es verdaderamente dinámico.
++ Entonces no hay nada que comprobar al compilar el código, y la maquinaria del interpolador no
++ aporta nada frente al analizador de tiempo de ejecución en el que delega.
+
+- The convention throughout is therefore to offer both: `url"…"` for a literal, and
+- [`as[Url]`](decoding.md#decoding-a-value) for text obtained at runtime. The same code is behind
+- each, so a program can move a value from one to the other without any change in behavior.
++ Por eso la convención en todas partes es ofrecer ambos: `url"…"` para un literal, y
++ [`as[Url]`](decoding.md#decoding-a-value) para texto obtenido en tiempo de ejecución. Detrás de
++ cada uno está el mismo código, así que un programa puede pasar un valor de uno a otro sin ningún
++ cambio de comportamiento.
+
+- ### Related
++ ### Relacionado
+
+- Interpolators defined this way include those for [text](text.md#writing-text),
+- [JSON](json.md#building-json), [XML](xml.md) and [HTML](html.md),
+- [URLs and other network addresses](network-addresses.md), [paths](paths.md),
+- [regular expressions](patterns.md), [shell commands](processes.md),
+- [media types](media-types.md) and [error messages](errors.md#defining-an-error).
+- - [Names](names.md) checks an identifier with an interpolator.
++ Entre los interpoladores definidos de esta forma están los de [texto](text.md#writing-text),
++ [JSON](json.md#building-json), [XML](xml.md) y [HTML](html.md),
++ [URL y otras direcciones de red](network-addresses.md), [rutas](paths.md),
++ [expresiones regulares](patterns.md), [órdenes de shell](processes.md),
++ [tipos de medio](media-types.md) y [mensajes de error](errors.md#defining-an-error).
++ - [Nombres](names.md) comprueba un identificador con un interpolador.

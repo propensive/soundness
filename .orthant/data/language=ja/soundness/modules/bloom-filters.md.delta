@@ -1,0 +1,353 @@
+orthant 1 language
+
+- ## Bloom Filters
++ ## Bloom フィルター
+
+- ### About
++ ### 概要
+
+- A [Bloom filter](https://en.wikipedia.org/wiki/Bloom_filter) answers the question "have I seen
+- this before?" in constant space, at the price of an occasional false positive. A *no* is always
+- right. A *yes* is right with a probability which the filter's size controls.
++ [Bloom フィルター](https://en.wikipedia.org/wiki/Bloom_filter)は、「これを前に見たことがあるか」という問いに一定の領域で答える。その代償として、ときおり偽陽性が出る。
++ *いいえ*は常に正しい。
++ *はい*は、フィルターのサイズが制御する確率で正しい。
+
+- A filter is constructed from the two numbers which actually matter: roughly how many elements
+- it will hold, and the rate of false positives to tolerate. The size of the bit array and the
+- number of hashes are worked out from them.
++ フィルターは、実際に重要な二つの数から構築される。おおよそいくつの要素を保持するかと、許容する偽陽性の割合である。
++ ビット配列のサイズとハッシュの数は、それらから算出される。
+
+- Any [digestible](hashing.md#hashing-your-own-types) value can be added, and the hash algorithm
+- is chosen as a type. A filter is [immutable]: adding an element gives a new filter, so filters
+- are shared and accumulated as safely as any other value.
++ [ダイジェスト可能](hashing.md#hashing-your-own-types)な値なら何でも追加でき、ハッシュアルゴリズムは型として選ぶ。
++ フィルターは[不変]である。要素を追加すると新しいフィルターが得られるので、フィルターは他のどんな値とも同じく安全に共有され、蓄積される。
+
+- ### On probabilistic membership
++ ### 確率的な所属について
+
+- Storing every element of a large set, just to answer whether something is a member, is often a
+- waste. A cache of URLs which have already been fetched, a guard against sending a notification
+- twice, and a check before an expensive lookup all survive the occasional false *yes*.
++ 何かが要素であるかに答えるためだけに大きな集合のすべての要素を格納するのは、しばしば無駄である。
++ すでに取得した URL のキャッシュ、通知を二度送らないための防御、高価な検索の前の検査は、どれもときおりの誤った*はい*に耐えられる。
+
+- A Bloom filter hashes each element to a handful of positions in an array of bits, and
+- remembers only the bits. That is a few bits for each element, whatever the size of the
+- elements. But tuning a filter means choosing the size of the bit array and the number of hash
+- functions, by a formula which most code copies from a textbook, sometimes wrongly.
++ Bloom フィルターは各要素をビットの配列の中の少数の位置にハッシュし、そのビットだけを覚えておく。
++ 要素の大きさにかかわらず、要素ごとに数ビットである。
++ しかしフィルターを調整するには、ビット配列のサイズとハッシュ関数の数を選ばなければならない。その公式を、ほとんどのコードは教科書から写しており、ときには誤って写している。
+
+- Here the filter is asked for by intent: the expected size, and the target error rate. The
+- parameters are computed. The error rate is a [bounded number](numbers.md#bounded-numbers), so
+- a rate outside `[0, 1]` does not compile. The filter's error rate is fixed by how it is
+- constructed, and is not checked at each use, which is
+- [safety by construction](../../philosophy/safety-by-construction.md).
++ ここでは、フィルターは意図によって求められる。期待されるサイズと、目標とする誤り率である。
++ パラメーターは計算される。
++ 誤り率は[範囲付きの数](numbers.md#bounded-numbers)なので、`[0, 1]` の外の割合はコンパイルされない。
++ フィルターの誤り率は構築の仕方によって固定され、使うたびに検査されることはない。これが[構築による安全性](../../philosophy/safety-by-construction.md)である。
+
+- Everything comes from the `soundness` package. A provider of hash algorithms is in scope, and
+- the last import lets the samples print their results:
++ すべては `soundness` パッケージから来る。
++ ハッシュアルゴリズムのプロバイダーがスコープ内にあり、最後のインポートはサンプルが結果を出力できるようにする：
+
+= the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import providers.soundnessProvider
++ import providers.soundnessProvider
+
+- import Blake3.hash
++ import Blake3.hash
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Creating and adding
++ ### 作成と追加
+
+- A filter is created for a type of element, an expected size and an error rate. `+` adds one
+- element, and `++` adds many:
++ フィルターは、要素の型、期待されるサイズ、誤り率を指定して作成する。
++ `+` は要素を一つ追加し、`++` は多数を追加する：
+
+= element, and `++` adds many:
+=
+- ```scala
++ ```scala
+
+- val bloom = BloomFilter[Text](100, 0.001) + t"Hello world"
++ val bloom = BloomFilter[Text](100, 0.001) + t"Hello world"
+
+- val fuller = bloom ++ List(t"hello", t"world")
++ val fuller = bloom ++ List(t"hello", t"world")
+
+= val fuller = bloom ++ List(t"hello", t"world")
+- ```
++ ```
+
+- Anything with a `Digestible` instance can be an element, including text, numbers and case
+- classes, since elements enter the filter through the same hashing as everything else.
++ `Digestible` インスタンスを持つものなら何でも要素にでき、テキスト、数、ケースクラスも含まれる。要素は他のすべてと同じハッシュ化を通してフィルターに入るからである。
+
+- An error rate which is not a probability does not compile:
++ 確率でない誤り率はコンパイルされない：
+
+= An error rate which is not a probability does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- BloomFilter[Text](100, 1.5)
++ BloomFilter[Text](100, 1.5)
+
+= BloomFilter[Text](100, 1.5)
+- ```
++ ```
+
+- ### Querying
++ ### 問い合わせ
+
+- `hits` asks whether an element may be present. A `false` is definitive: the element was never
+- added. A `true` means *probably*, with the probability of a false positive which the filter
+- was built for:
++ `hits` は、要素が存在するかもしれないかを問う。
++ `false` は決定的であり、その要素は一度も追加されていない。
++ `true` は*おそらく*を意味し、偽陽性の確率はフィルターが構築されたときの値である：
+
+= was built for:
+=
+- ```scala fuel
++ ```scala fuel
+
+= was built for:
+=
+= ```scala fuel
+- run
++ run
+
+= was built for:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(fuller.hits(t"hello").inspect)
++ Out.println(fuller.hits(t"hello").inspect)
+
+- Out.println(fuller.hits(t"goodbye").inspect)
++ Out.println(fuller.hits(t"goodbye").inspect)
+
+- Out.println(bloom.hits(t"hello").inspect)
++ Out.println(bloom.hits(t"hello").inspect)
+
+= Out.println(bloom.hits(t"hello").inspect)
+- ```
++ ```
+
+- The last line shows that `bloom` itself was not changed when `fuller` was made from it.
++ 最後の行は、`fuller` が `bloom` から作られたときに `bloom` 自体は変更されなかったことを示す。
+
+- The asymmetry is the contract. A Bloom filter suits exactly those places where a false *yes*
+- costs a redundant check, and a false *no* would be a bug.
++ この非対称性が契約である。
++ Bloom フィルターがまさに適するのは、誤った*はい*が余分な検査一回分のコストで済み、誤った*いいえ*ならバグになるような場所である。
+
+- ### Choosing the parameters
++ ### パラメーターの選択
+
+- The two numbers given at construction are the expected number of elements and the tolerable
+- rate of false positives. The size of the bit array and the number of hash functions follow
+- from them, by the standard formulae. Stating the intent, and not the parameters, means that
+- the two cannot disagree: a filter sized for a hundred elements at one in a thousand is exactly
+- that.
++ 構築時に与える二つの数は、期待される要素の数と、許容できる偽陽性の割合である。
++ ビット配列のサイズとハッシュ関数の数は、標準の公式によってそれらから導かれる。
++ パラメーターではなく意図を述べるので、二つが食い違うことはない。百個の要素について千分の一で設計されたフィルターは、まさにそのとおりのものである。
+
+- It is worth knowing what happens when the *expected size* is wrong. A filter which is given
+- far more elements than it was built for keeps working, but its rate of false positives rises
+- above the rate requested. The rate is a promise about a filter used as intended, not a
+- guarantee which holds however the filter is filled.
++ *期待されるサイズ*が誤っているときに何が起きるかは知っておく価値がある。
++ 設計よりはるかに多くの要素を与えられたフィルターは動き続けるが、偽陽性の割合は要求された割合を上回る。
++ この割合は意図どおりに使われたフィルターについての約束であり、フィルターをどう埋めても成り立つ保証ではない。
+
+- ### Where the bits come from
++ ### ビットの出どころ
+
+- The hash algorithm is part of the filter's type, and every bit position is derived from a
+- single digest of the element. The digest's first two 64-bit words, `h₁` and `h₂`, give
+- position *i* as `h₁ + i·h₂`, modulo the size of the bit array. This is the double-hashing
+- scheme which Guava also uses, and it costs one digest for each element, however many positions
+- are needed. An algorithm whose digest is shorter than sixteen bytes, such as a CRC, is applied
+- again under a counter until enough bytes have been gathered.
++ ハッシュアルゴリズムはフィルターの型の一部であり、ビットの位置はどれも要素の単一のダイジェストから導かれる。
++ ダイジェストの最初の二つの 64 ビット語 `h₁` と `h₂` から、位置 *i* はビット配列のサイズを法とした `h₁ + i·h₂` として得られる。
++ これは Guava も使う二重ハッシュの方式であり、必要な位置がいくつあっても、要素ごとにダイジェスト一回分のコストしかかからない。
++ CRC のようにダイジェストが 16 バイトより短いアルゴリズムは、十分なバイトが集まるまでカウンターを付けて再び適用される。
+
+- The algorithm in scope therefore decides the filter's behavior, and two filters over the same
+- elements agree only if they agree on the algorithm.
++ したがって、スコープ内のアルゴリズムがフィルターの動作を決め、同じ要素についての二つのフィルターは、アルゴリズムが一致する場合にのみ一致する。
+
+- A Bloom filter has no adversary to resist, only a distribution to spread, so the cryptographic
+- BLAKE3 is more hash than it needs. `Murmur3`, the 128-bit MurmurHash3, costs about a fifth as
+- much for each element, and is the algorithm which Guava's filters use. It is chosen by naming
+- it, behind the same [permit](hashing.md#fast-hashing) as the checksums:
++ Bloom フィルターには抵抗すべき敵はおらず、散らすべき分布があるだけなので、暗号学的な BLAKE3 は必要以上のハッシュである。
++ 128 ビットの MurmurHash3 である `Murmur3` は、要素ごとのコストが約五分の一であり、Guava のフィルターが使うアルゴリズムである。
++ これはチェックサムと同じ[許可](hashing.md#fast-hashing)の後ろで、名前を挙げて選ぶ：
+
+= it, behind the same [permit](hashing.md#fast-hashing) as the checksums:
+=
+- ```scala
++ ```scala
+
+- import cryptoPermits.permitNonCryptographicHashes
++ import cryptoPermits.permitNonCryptographicHashes
+
+- val fast = BloomFilter[Text](10_000, 0.01)[Murmur3]
++ val fast = BloomFilter[Text](10_000, 0.01)[Murmur3]
+
+= val fast = BloomFilter[Text](10_000, 0.01)[Murmur3]
+- ```
++ ```
+
+- ### Filling a filter in place
++ ### その場でのフィルターの充填
+
+- A filter fresh from `BloomFilter[Text](n, p)` is *exclusive*. It belongs to the code which
+- made it, and that code fills it in place, with `add` and `addAll`, with no copying at all, and
+- then freezes it:
++ `BloomFilter[Text](n, p)` から得たばかりのフィルターは*排他的*である。
++ それはそれを作ったコードに属し、そのコードは `add` と `addAll` によって、一切コピーせずにその場で埋め、それから凍結する：
+
+= then freezes it:
+=
+- ```scala
++ ```scala
+
+- val filter = BloomFilter[Text](10_000, 0.01)
++ val filter = BloomFilter[Text](10_000, 0.01)
+
+- filter.add(t"first")
++ filter.add(t"first")
+
+- filter.addAll(List(t"second", t"third"))
++ filter.addAll(List(t"second", t"third"))
+
+- val frozen = BloomFilter.freeze(filter)
++ val frozen = BloomFilter.freeze(filter)
+
+= val frozen = BloomFilter.freeze(filter)
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(frozen.hits(t"second").inspect)
++ Out.println(frozen.hits(t"second").inspect)
+
+- Out.println(frozen.hits(t"fourth").inspect)
++ Out.println(frozen.hits(t"fourth").inspect)
+
+= Out.println(frozen.hits(t"fourth").inspect)
+- ```
++ ```
+
+- `freeze` consumes the exclusive filter, and the compiler's separation checking rejects any
+- later use of `filter`. What it gives is the frozen form, which may be shared across threads,
+- held in a data structure and queried from anywhere, but never written to. This is the same
+- discipline as freezing an array, and it is what makes the immutability below free, not copied.
++ `freeze` は排他的なフィルターを消費し、コンパイラの分離検査はその後の `filter` の使用をすべて拒む。
++ `freeze` が与えるのは凍結された形であり、スレッドをまたいで共有でき、データ構造に保持でき、どこからでも問い合わせられるが、書き込むことは決してできない。
++ これは配列を凍結するのと同じ規律であり、下で述べる不変性をコピーではなく無償のものにしているのはこれである。
+
+- ### Immutability
++ ### 不変性
+
+- `+` and `++` give new filters, and do not change the original, at the price of one copy of
+- the bits each. Building a filter from a large collection with `++` is a single pass and a
+- single copy, not the sequence of copies which repeated `+` would make. Filling an exclusive
+- filter with `addAll`, before freezing it, makes no copy at all.
++ `+` と `++` は新しいフィルターを与え、元のフィルターを変更しない。その代償は、それぞれビットのコピー一回である。
++ 大きなコレクションから `++` でフィルターを構築するのは、一回の走査と一回のコピーであり、`+` を繰り返したときのような一連のコピーではない。
++ 凍結する前に排他的なフィルターを `addAll` で埋めるなら、コピーはまったく発生しない。
+
+- The operations on a filter, side by side:
++ フィルターに対する演算を並べると次のようになる：
+
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Applies to
+- column  Yields
+- column  Copies the bits
+- row  `filter + element`  any filter  a new frozen filter  once
+- row  `filter ++ elements`  any filter  a new frozen filter  once
+- row  `filter.add(element)`  an exclusive filter  nothing; fills it in place  never
+- row  `filter.addAll(elements)`  an exclusive filter  nothing; fills it in place  never
+- row  `BloomFilter.freeze(filter)`  an exclusive filter, consumed  the frozen filter  never
+- row  `filter.hits(element)`  any filter  `false` if absent, `true` if probably present  never
++ column  演算
++ column  対象
++ column  結果
++ column  ビットのコピー
++ row  `filter + element`  任意のフィルター  新しい凍結されたフィルター  一回
++ row  `filter ++ elements`  任意のフィルター  新しい凍結されたフィルター  一回
++ row  `filter.add(element)`  排他的なフィルター  なし。その場で埋める  なし
++ row  `filter.addAll(elements)`  排他的なフィルター  なし。その場で埋める  なし
++ row  `BloomFilter.freeze(filter)`  排他的なフィルター（消費される）  凍結されたフィルター  なし
++ row  `filter.hits(element)`  任意のフィルター  存在しなければ `false`、おそらく存在すれば `true`  なし
+
+= row  `filter.hits(element)`  any filter  `false` if absent, `true` if probably present  never
+- ```
++ ```
+
+- [Caching](caching.md) covers the case where the answer itself must be remembered, not only
+- whether it has been seen.
++ [キャッシュ](caching.md)は、見たことがあるかどうかだけでなく、答えそのものを覚えておかなければならない場合を扱う。

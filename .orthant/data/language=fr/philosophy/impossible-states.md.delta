@@ -1,0 +1,348 @@
+orthant 1 language
+
+- # Impossible States
++ # États impossibles
+
+- The first of Soundness's two golden rules: the types of a program should admit only
+- states that are valid, so that an impossible state cannot even be written down.
+- Rather than constructing a value and then checking whether it is legal, the type makes
+- an illegal value impossible to construct, moving the error from runtime to compiletime.
+- A type that can hold only meaningful values needs no defensive checks downstream,
+- because the compiler has already ruled out everything else. This pairs with the
+- companion rule that transitions between states should be [total](total-transitions.md).
++ La première des deux règles d'or de Soundness : les types d'un programme ne doivent admettre que
++ des états valides, si bien qu'un état impossible ne peut même pas s'écrire.
++ Plutôt que de construire une valeur puis de vérifier si elle est légale, le type rend une valeur
++ illégale impossible à construire, ce qui fait passer l'erreur de l'exécution à la compilation.
++ Un type qui ne peut contenir que des valeurs sensées n'a besoin d'aucune vérification
++ défensive en aval, car le compilateur a déjà exclu tout le reste. Cette règle va de pair avec la
++ règle compagne selon laquelle les transitions entre états doivent être
++ [totales](total-transitions.md).
+
+- ## The shape of the rule
++ ## La forme de la règle
+
+- Most validation is written the wrong way round. A value is constructed, then checked,
+- and the check's result is discarded — so every subsequent function receives a value that
+- *might* be valid and must either trust or re-check it:
++ La plupart des validations sont écrites à l'envers. Une valeur est construite, puis vérifiée, et
++ le résultat de la vérification est jeté — si bien que chaque fonction qui suit reçoit une valeur
++ qui *pourrait* être valide, et doit soit lui faire confiance, soit la revérifier :
+
+= *might* be valid and must either trust or re-check it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= *might* be valid and must either trust or re-check it:
+=
+= ```scala fuel
+- parse
++ parse
+
+= *might* be valid and must either trust or re-check it:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val port = readPort()          // an Int; could be anything
++ val port = readPort()          // an Int; could be anything
+
+- if port < 1 || port > 65535 then fail()
++ if port < 1 || port > 65535 then fail()
+
+- connect(port)                  // connect must trust, or check again
++ connect(port)                  // connect must trust, or check again
+
+= connect(port)                  // connect must trust, or check again
+- ```
++ ```
+
+- The type-first version makes the check the *only* way to obtain the value, so possessing
+- one is proof:
++ La version qui part du type fait de la vérification le *seul* moyen d'obtenir la valeur, si bien
++ qu'en posséder une en constitue la preuve :
+
+= one is proof:
+=
+- ```scala fuel
++ ```scala fuel
+
+= one is proof:
+=
+= ```scala fuel
+- parse
++ parse
+
+= one is proof:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val port = text.as[Port]       // a Port, or a typed failure
++ val port = text.as[Port]       // a Port, or a typed failure
+
+- connect(port)                  // nothing left to check
++ connect(port)                  // nothing left to check
+
+= connect(port)                  // nothing left to check
+- ```
++ ```
+
+- `connect` cannot be given an out-of-range port, because no such `Port` exists.
++ On ne peut pas donner à `connect` un port hors limites, car un tel `Port` n'existe pas.
+
+- ## Three ways a type rules a state out
++ ## Trois façons dont un type exclut un état
+
+- ```tabular
++ ```tabular
+
+- column  Way
+- column  What the type carries
+- column  Example
+- row  refinement  the permitted range  `0.0 ~ 1.0`
+- row  parameterization  a property that would otherwise be a field  `Eur` and `Gbp`
+- row  construction  a literal already parsed against its grammar  `2012-Feb-30`
++ column  Façon
++ column  Ce que porte le type
++ column  Exemple
++ row  raffinement  l'intervalle permis  `0.0 ~ 1.0`
++ row  paramétrage  une propriété qui serait sinon un champ  `Eur` et `Gbp`
++ row  construction  un littéral déjà analysé selon sa grammaire  `2012-Feb-30`
+
+= row  construction  a literal already parsed against its grammar  `2012-Feb-30`
+- ```
++ ```
+
+- **By refinement.** A number carries its permitted range in its type, so the range is
+- checked where the value is written and arithmetic works out the range of the result:
++ **Par raffinement.** Un nombre porte son intervalle permis dans son type, si bien que l'intervalle
++ est vérifié là où la valeur est écrite, et que l'arithmétique calcule l'intervalle du résultat :
+
+= checked where the value is written and arithmetic works out the range of the result:
+=
+- ```scala fuel
++ ```scala fuel
+
+= checked where the value is written and arithmetic works out the range of the result:
+=
+= ```scala fuel
+- parse
++ parse
+
+= checked where the value is written and arithmetic works out the range of the result:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val rate: 0.0 ~ 1.0 = 0.001
++ val rate: 0.0 ~ 1.0 = 0.001
+
+- val bad:  0.0 ~ 1.0 = 1.5      // does not compile
++ val bad:  0.0 ~ 1.0 = 1.5      // does not compile
+
+= val bad:  0.0 ~ 1.0 = 1.5      // does not compile
+- ```
++ ```
+
+- **By parameterization.** A property that would otherwise be a field becomes a type
+- argument, and values differing in it become different types. Money in one currency
+- cannot be added to money in another; a path on one platform cannot be used where another
+- is expected; a task on one timeline cannot be subtracted from a task on another:
++ **Par paramétrage.** Une propriété qui serait sinon un champ devient un argument de type, et des
++ valeurs qui diffèrent par elle deviennent des types différents. De l'argent dans une devise ne
++ peut pas s'ajouter à de l'argent dans une autre ; un chemin d'une plateforme ne peut pas être
++ utilisé là où l'on attend celui d'une autre ; une tâche sur une ligne de temps ne peut
++ pas être soustraite d'une tâche sur une autre :
+
+= is expected; a task on one timeline cannot be subtracted from a task on another:
+=
+- ```scala fuel
++ ```scala fuel
+
+= is expected; a task on one timeline cannot be subtracted from a task on another:
+=
+= ```scala fuel
+- parse
++ parse
+
+= is expected; a task on one timeline cannot be subtracted from a task on another:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- Eur(3.01) + Gbp(2.50)          // does not compile
++ Eur(3.01) + Gbp(2.50)          // does not compile
+
+- Instant(0L).over[Tai] - Instant(0L)   // does not compile
++ Instant(0L).over[Tai] - Instant(0L)   // does not compile
+
+= Instant(0L).over[Tai] - Instant(0L)   // does not compile
+- ```
++ ```
+
+- **By construction.** A literal is parsed against its grammar as the code compiles, so a
+- malformed one is a compile error rather than a value:
++ **Par construction.** Un littéral est analysé selon sa grammaire pendant la compilation du code,
++ si bien qu'un littéral malformé est une erreur de compilation plutôt qu'une valeur :
+
+= malformed one is a compile error rather than a value:
+=
+- ```scala fuel
++ ```scala fuel
+
+= malformed one is a compile error rather than a value:
+=
+= ```scala fuel
+- parse
++ parse
+
+= malformed one is a compile error rather than a value:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- 2012-Feb-30                    // does not compile: no such date
++ 2012-Feb-30                    // does not compile: no such date
+
+- url"https://example.com/"      // checked against the URL grammar
++ url"https://example.com/"      // checked against the URL grammar
+
+- media"application/jsom"        // does not compile: did you mean application/json?
++ media"application/jsom"        // does not compile: did you mean application/json?
+
+= media"application/jsom"        // does not compile: did you mean application/json?
+- ```
++ ```
+
+- The third is [safety by construction](safety-by-construction.md), which this rule's
+- practical work mostly consists of.
++ La troisième est la [sûreté par construction](safety-by-construction.md), en quoi consiste
++ l'essentiel du travail pratique de cette règle.
+
+- ## Encoding a state machine
++ ## Encoder un automate à états
+
+- The rule is most valuable where a type has *modes*. The usual encoding gives one class
+- every field any mode needs, with the invalid combinations excluded by comment:
++ La règle a le plus de valeur là où un type a des *modes*. L'encodage habituel donne à une seule
++ classe tous les champs dont un mode quelconque a besoin, les combinaisons invalides étant exclues
++ par un commentaire :
+
+= every field any mode needs, with the invalid combinations excluded by comment:
+=
+- ```scala fuel
++ ```scala fuel
+
+= every field any mode needs, with the invalid combinations excluded by comment:
+=
+= ```scala fuel
+- parse
++ parse
+
+= every field any mode needs, with the invalid combinations excluded by comment:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- case class Connection(socket: Optional[Socket], error: Optional[Text], closed: Boolean)
++ case class Connection(socket: Optional[Socket], error: Optional[Text], closed: Boolean)
+
+= case class Connection(socket: Optional[Socket], error: Optional[Text], closed: Boolean)
+- ```
++ ```
+
+- Nothing prevents a `Connection` that is closed *and* holds a socket, or one with neither
+- a socket nor an error, and every reader must reconstruct which combinations were meant.
+- The enumerated form admits only the states that exist:
++ Rien n'empêche une `Connection` fermée *et* qui détient un socket, ou une qui n'a ni socket ni
++ erreur, et chaque lecteur doit reconstituer quelles combinaisons étaient voulues. La forme
++ énumérée n'admet que les états qui existent :
+
+= The enumerated form admits only the states that exist:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The enumerated form admits only the states that exist:
+=
+= ```scala fuel
+- parse
++ parse
+
+= The enumerated form admits only the states that exist:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- enum Connection:
++ enum Connection:
+
+-   case Open(socket: Socket)
++   case Open(socket: Socket)
+
+-   case Failed(reason: Text)
++   case Failed(reason: Text)
+
+-   case Closed
++   case Closed
+
+=   case Closed
+- ```
++ ```
+
+- The four impossible combinations are now unwriteable, and — because the compiler checks
+- exhaustiveness — every place that handles a `Connection` is told when a case is added.
++ Les quatre combinaisons impossibles ne peuvent désormais plus s'écrire, et — puisque le
++ compilateur vérifie l'exhaustivité — chaque endroit qui traite une `Connection` est averti
++ lorsqu'un cas est ajouté.
+
+- ## What it costs
++ ## Ce que cela coûte
+
+- Three costs, all real.
++ Trois coûts, tous réels.
+
+- **Constructing is fallible.** Turning text into a `Port` can fail, so it needs an error
+- strategy in scope. The check has not disappeared; it has moved to a single place and
+- left a proof behind.
++ **La construction peut échouer.** Transformer du texte en `Port` peut échouer, et exige donc une
++ stratégie d'erreur dans la portée. La vérification n'a pas disparu ; elle s'est déplacée en un
++ seul endroit et a laissé une preuve derrière elle.
+
+- **Types get more specific, and inference works harder.** A method that used to take an
+- `Int` now takes a `Port[Tcp]`, and callers must produce one. That is the point — but it
+- does mean a refactor propagates further than it would have.
++ **Les types deviennent plus spécifiques, et l'inférence travaille davantage.** Une méthode qui
++ prenait un `Int` prend désormais un `Port[Tcp]`, et les appelants doivent en produire un. C'est
++ tout l'intérêt — mais cela signifie qu'une refactorisation se propage plus loin qu'elle ne
++ l'aurait fait.
+
+- **Not everything can be ruled out.** A hostname's syntax is checkable; whether it
+- resolves is not. The discipline is to encode what is genuinely determined by the value
+- and to leave the rest to [honest signatures](honest-signatures.md) and typed errors,
+- rather than to invent a type that promises more than it can prove.
++ **Tout ne peut pas être exclu.** La syntaxe d'un nom d'hôte est vérifiable ; le fait qu'il se
++ résolve ne l'est pas. La discipline consiste à encoder ce qui est réellement déterminé par la
++ valeur, et à laisser le reste aux [signatures honnêtes](honest-signatures.md) et aux erreurs
++ typées, plutôt qu'à inventer un type qui promet plus qu'il ne peut prouver.
+
+- See [total transitions](total-transitions.md) for the companion rule, and
+- [safety by construction](safety-by-construction.md) for how the checking is done.
++ Voir les [transitions totales](total-transitions.md) pour la règle compagne, et la
++ [sûreté par construction](safety-by-construction.md) pour la façon dont la vérification est faite.

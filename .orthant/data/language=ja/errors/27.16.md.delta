@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.27.16` — Bound expression must use a comparison operator
++ # `↯/s.27.16` — 境界の式は比較演算子を使わなければならない
+
+- Raised at compile time by Hypotenuse's `bounded` macro when the
+- bound expression does not use one of the recognised comparison
+- operators.
++ 境界の式が認識される比較演算子のいずれも使っていないときに、Hypotenuse の `bounded` マクロによってコンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- The macro analyses bound expressions of the shape
+- `x <= n`/`x < n`/`x >= n`/`x > n`. Anything else cannot be turned
+- into a refinement.
++ マクロは、`x <= n`/`x < n`/`x >= n`/`x > n` という形の境界の式を解析する。
++ それ以外のものは細分化に変換できない。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.27.16] <message describing the unsupported bound shape>
++ [↯/s.27.16] <message describing the unsupported bound shape>
+
+= [↯/s.27.16] <message describing the unsupported bound shape>
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Express the bound using `<`, `<=`, `>`, or `>=` against a constant.
++ 境界を、定数に対する `<`、`<=`、`>`、`>=` を使って表す。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

@@ -1,0 +1,983 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base adversaria
++ base adversaria
+
+- import soundness
++ import soundness
+
+- info   static annotations read back as typeclass instances, and fields reached by name, all resolved at compile time
++ info   anotaciones estáticas leídas como instancias de clases de tipos, y campos alcanzados por nombre, todo resuelto en tiempo de compilación
+
+- detail
++ detail
+
+-     _Adversaria_ reads Scala's static annotations without the consumer writing a macro.
+-     Summoning `Annotated` for a type yields the annotations on the type itself, on its fields,
+-     or on the variants of a sealed hierarchy, computed while the code compiles, with no runtime
+-     reflection; the query is written in the prepositional style, narrowing by annotation type
+-     with `by`, by field with `on`, and to the variants of a sum type with `under`.
++     _Adversaria_ lee las anotaciones estáticas de Scala sin que quien la usa escriba una macro.
++     Convocar `Annotated` para un tipo produce las anotaciones del propio tipo, de sus campos o de
++     las variantes de una jerarquía sellada, calculadas mientras se compila el código, sin
++     reflexión en tiempo de ejecución; la consulta se escribe en el estilo preposicional,
++     acotando por tipo de anotación con `by`, por campo con `on`, y a las variantes de un tipo
++     suma con `under`.
+
+=     with `by`, by field with `on`, and to the variants of a sum type with `under`.
+=
+-     ```scala
++     ```scala
+
+=     with `by`, by field with `on`, and to the variants of a sum type with `under`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     final case class ident() extends StaticAnnotation
++     final case class ident() extends StaticAnnotation
+
+-     final case class primary() extends StaticAnnotation
++     final case class primary() extends StaticAnnotation
+
+-     case class Sonnet(firstLine: Text, @ident @primary number: Long)
++     case class Sonnet(firstLine: Text, @ident @primary number: Long)
+
+-     summon[Sonnet is Annotated on "number"]()          // Set(ident(), primary())
++     summon[Sonnet is Annotated on "number"]()          // Set(ident(), primary())
+
+-     summon[Sonnet is Annotated by ident].field         // "number"
++     summon[Sonnet is Annotated by ident].field         // "number"
+
+=     summon[Sonnet is Annotated by ident].field         // "number"
+-     ```
++     ```
+
+-     The library also defines `@name`, the annotation every Soundness serialization format
+-     honours to rename a field or a variant on the wire, with `relabelling` and
+-     `variantRelabelling`, which format derivations read; and `Dereferenceable`, which reaches
+-     a record's fields by name at runtime through a table of accessors generated as the code
+-     compiles, each one a panopticon `Lens`.
++     La biblioteca también define `@name`, la anotación que respetan todos los formatos de
++     serialización de Soundness para renombrar un campo o una variante en la transmisión, con
++     `relabelling` y `variantRelabelling`, que leen las derivaciones de formato; y
++     `Dereferenceable`, que alcanza los campos de un registro por nombre en tiempo de ejecución
++     mediante una tabla de accesores generada al compilar el código, cada uno de ellos una `Lens`
++     de panopticon.
+
+-     The library has a single source set, `adversaria.core`, for every platform; the
+-     `adversaria.examples` component holds test fixtures and is not published. Everything is
+-     exported to the `soundness` umbrella, and the instances are given in the typeclasses'
+-     companions, so no import beyond `soundness.*` is needed.
++     La biblioteca tiene un único conjunto de fuentes, `adversaria.core`, para todas las
++     plataformas; el componente `adversaria.examples` contiene fixtures de prueba y no se publica.
++     Todo se exporta al paraguas `soundness`, y las instancias se dan en los objetos compañeros de
++     las clases de tipos, así que no hace falta ninguna importación aparte de `soundness.*`.
+
+- refer adversaria.Annotated
++ refer adversaria.Annotated
+
+- refer adversaria.Dereferenceable
++ refer adversaria.Dereferenceable
+
+- refer adversaria.name
++ refer adversaria.name
+
+- refer adversaria.relabelling
++ refer adversaria.relabelling
+
+- refer adversaria.fieldAnnotations
++ refer adversaria.fieldAnnotations
+
+- refer adversaria.annotatedFields
++ refer adversaria.annotatedFields
+
+- refer adversaria.typeAnnotation
++ refer adversaria.typeAnnotation
+
+- entry .Annotated   a typeclass whose instances hold the static annotations on a type, its fields or its variants
++ entry .Annotated   una clase de tipos cuyas instancias contienen las anotaciones estáticas de un tipo, sus campos o sus variantes
+
+= entry .Annotated   a typeclass whose instances hold the static annotations on a type, its fields or its variants
+-   detail
++   detail
+
+-       `Annotated` instances are never written by hand: `.annotations`, a transparent inline
+-       given in the companion, generates one for whatever is asked. The request is a
+-       prepositional type:
++       Las instancias de `Annotated` nunca se escriben a mano: `.annotations`, un given inline
++       transparente del objeto compañero, genera una para lo que se pida. La petición es un tipo
++       preposicional:
+
+-       - `T is Annotated` — every annotation on the type `T` itself, and on its fields;
+-       - `T is Annotated by A` — only those of annotation type `A` (a subtype check, so
+-         `by marker[Person]` excludes a `marker[Play]`);
+-       - `T is Annotated on "field"` — only the field named, whose name is checked against
+-         `T`'s primary constructor;
+-       - `Annotated under S` — the annotations on each variant of the sealed type or enum `S`.
++       - `T is Annotated` — todas las anotaciones del propio tipo `T` y de sus campos;
++       - `T is Annotated by A` — solo las de tipo de anotación `A` (una comprobación de
++         subtipo, de modo que `by marker[Person]` excluye un `marker[Play]`);
++       - `T is Annotated on "field"` — solo el campo nombrado, cuyo nombre se comprueba con el
++         constructor primario de `T`;
++       - `Annotated under S` — las anotaciones de cada variante del tipo sellado o enum `S`.
+
+-       The instance's precise type depends on the answer, which is why the given is
+-       transparent: a query on fields gives an `Annotated.Fields` with `fields`, `annotations`
+-       and `apply()`; one which matches exactly one field gives an `Annotated.Field`, which
+-       also knows that field's name and offers a lens onto it; and an `under` query gives an
+-       `Annotated.Subtypes`.
++       El tipo preciso de la instancia depende de la respuesta, y por eso el given es
++       transparente: una consulta sobre campos da un `Annotated.Fields` con `fields`,
++       `annotations` y `apply()`; una que coincide exactamente con un campo da un
++       `Annotated.Field`, que además conoce el nombre de ese campo y ofrece una lente sobre él; y
++       una consulta `under` da un `Annotated.Subtypes`.
+
+-       The narrowing is best watched one preposition at a time:
++       El acotamiento se ve mejor preposición a preposición:
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Every annotation on the type and its fields
++         label Todas las anotaciones del tipo y de sus campos
+
+=         label Every annotation on the type and its fields
+-         code
++         code
+
+-             summon[Sonnet is Annotated].fields
++             summon[Sonnet is Annotated].fields
+
+-             // Map("number" -> Set(ident(), primary()))
++             // Map("number" -> Set(ident(), primary()))
+
+=             // Map("number" -> Set(ident(), primary()))
+-       frame
++       frame
+
+-         label `on`: the annotations of one field
++         label `on`: las anotaciones de un campo
+
+=         label `on`: the annotations of one field
+-         code
++         code
+
+-             summon[Sonnet is Annotated on "number"]()
++             summon[Sonnet is Annotated on "number"]()
+
+-             // Set(ident(), primary())
++             // Set(ident(), primary())
+
+=             // Set(ident(), primary())
+-       frame
++       frame
+
+-         label `by`: only one annotation type, on that field
++         label `by`: solo un tipo de anotación, en ese campo
+
+=         label `by`: only one annotation type, on that field
+-         code
++         code
+
+-             summon[Sonnet is Annotated by ident on "number"]()
++             summon[Sonnet is Annotated by ident on "number"]()
+
+-             // Set(ident())
++             // Set(ident())
+
+=             // Set(ident())
+-       frame
++       frame
+
+-         label `by` alone: the one field so annotated, and a lens onto it
++         label `by` solo: el único campo así anotado, y una lente sobre él
+
+=         label `by` alone: the one field so annotated, and a lens onto it
+-         code
++         code
+
+-             summon[Sonnet is Annotated by ident].field
++             summon[Sonnet is Annotated by ident].field
+
+-             // "number"
++             // "number"
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       Annotations are rebuilt in the generated code from their trees, so an annotation's
+-       arguments should be literals, references to stable values, or nested constructor
+-       calls; an annotation whose arguments cannot be rebuilt is silently left out.
++       Las anotaciones se reconstruyen en el código generado a partir de sus árboles, así que los
++       argumentos de una anotación deben ser literales, referencias a valores estables o llamadas
++       anidadas a constructores; una anotación cuyos argumentos no pueden reconstruirse se omite
++       sin aviso.
+
+-   refer adversaria.fieldAnnotations
++   refer adversaria.fieldAnnotations
+
+-   refer adversaria.subtypeAnnotations
++   refer adversaria.subtypeAnnotations
+
+-   refer adversaria.Annotated.Field
++   refer adversaria.Annotated.Field
+
+-   entry .annotations   generates the `Annotated` instance for any request, as the code compiles
+-       A transparent inline given in the companion, so in implicit scope: `summon[T is
+-       Annotated by A on "field"]` expands it with the annotation type (`StaticAnnotation`
+-       when no `by` is given), the subject, the field (the `Plane`) and the variant root (the
+-       `Limit`). Its result type is the most precise of `Annotated.Fields`,
+-       `Annotated.Field` and `Annotated.Subtypes` that fits the answer.
+-   entry .Fields   the instance for a query on a type and its fields: their annotations, by field name
++   entry .annotations   genera la instancia de `Annotated` para cualquier petición, mientras se compila el código
++       Un given inline transparente del objeto compañero, y por tanto en el ámbito implícito:
++       `summon[T is Annotated by A on "field"]` lo expande con el tipo de anotación
++       (`StaticAnnotation` cuando no se da `by`), el sujeto, el campo (el `Plane`) y la raíz de
++       las variantes (el `Limit`). Su tipo de resultado es el más preciso de `Annotated.Fields`,
++       `Annotated.Field` y `Annotated.Subtypes` que encaja con la respuesta.
++   entry .Fields   la instancia para una consulta sobre un tipo y sus campos: sus anotaciones, por nombre de campo
+
+=   entry .Fields   the instance for a query on a type and its fields: their annotations, by field name
+-     detail
++     detail
+
+-         What `summon[T is Annotated]` or `summon[T is Annotated by A]` gives when the answer
+-         is not a single field. `#fields` maps each field carrying an annotation of *any* type
+-         to its annotations of the requested type, so a field with only other annotations
+-         appears with an empty set; `fieldAnnotations` filters those out.
++         Lo que da `summon[T is Annotated]` o `summon[T is Annotated by A]` cuando la respuesta no
++         es un único campo. `#fields` asocia cada campo que lleva una anotación de *cualquier*
++         tipo con sus anotaciones del tipo solicitado, de modo que un campo con solo otras
++         anotaciones aparece con un conjunto vacío; `fieldAnnotations` los descarta.
+
+=         appears with an empty set; `fieldAnnotations` filters those out.
+=
+-         ```scala
++         ```scala
+
+=         appears with an empty set; `fieldAnnotations` filters those out.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         final case class ref(x: Int) extends StaticAnnotation
++         final case class ref(x: Int) extends StaticAnnotation
+
+-         case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int)
++         case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int)
+
+-         summon[Letters is Annotated].fields
++         summon[Letters is Annotated].fields
+
+-         // Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)))
++         // Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)))
+
+=         // Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)))
+-         ```
++         ```
+
+-     entry #fields   each annotated field's name, with its annotations of the requested type
+-   entry .AnnotatedFields   the concrete `Annotated.Fields` the macro builds
++     entry #fields   el nombre de cada campo anotado, con sus anotaciones del tipo solicitado
++   entry .AnnotatedFields   el `Annotated.Fields` concreto que construye la macro
+
+=   entry .AnnotatedFields   the concrete `Annotated.Fields` the macro builds
+-     detail
++     detail
+
+-         Holds the type's own annotations and the fields' annotations, as the macro found
+-         them. It is what `summon[T is Annotated]` returns, so its members are the ones a
+-         caller uses.
+-     entry #fields   each annotated field's name, with its annotations of the requested type
+-     entry #annotations   the annotations of the requested type on the type itself
+-         `summon[Play is Annotated by unique].annotations` is the empty set if `Play`
+-         carries no `unique`, whatever its fields carry.
+-     entry #apply   the annotations: on the type itself, or on the field named with `on`
+-         `summon[Play is Annotated]()` gives the type's own annotations; for a query with
+-         `on "field"`, or one matching exactly one field, it gives that field's.
+-   entry .Field   the instance for a query which matched exactly one field: its name, and a lens onto it
++         Contiene las anotaciones del propio tipo y las de los campos, tal como las encontró la
++         macro. Es lo que devuelve `summon[T is Annotated]`, así que sus miembros son los que usa
++         quien llama.
++     entry #fields   el nombre de cada campo anotado, con sus anotaciones del tipo solicitado
++     entry #annotations   las anotaciones del tipo solicitado sobre el propio tipo
++         `summon[Play is Annotated by unique].annotations` es el conjunto vacío si `Play` no lleva
++         ningún `unique`, lleven lo que lleven sus campos.
++     entry #apply   las anotaciones: sobre el propio tipo, o sobre el campo nombrado con `on`
++         `summon[Play is Annotated]()` da las anotaciones propias del tipo; para una consulta con
++         `on "field"`, o una que coincide exactamente con un campo, da las de ese campo.
++   entry .Field   la instancia para una consulta que coincidió exactamente con un campo: su nombre y una lente sobre él
+
+=   entry .Field   the instance for a query which matched exactly one field: its name, and a lens onto it
+-     detail
++     detail
+
+-         When the requested annotations sit on exactly one field — `summon[T is Annotated by
+-         A]` where only one field carries an `A`, or any query naming a field with `on` —
+-         the instance is a `Field`, which knows the field's name and type. Finding "the field
+-         marked as the identifier" is usually the prelude to reading or writing it, so it
+-         offers a lens:
++         Cuando las anotaciones solicitadas están exactamente en un campo —`summon[T is Annotated
++         by A]` cuando solo un campo lleva una `A`, o cualquier consulta que nombre un campo con
++         `on`—, la instancia es un `Field`, que conoce el nombre y el tipo del campo. Encontrar «el
++         campo marcado como identificador» suele ser el preludio para leerlo o escribirlo, así que
++         ofrece una lente:
+
+=         offers a lens:
+=
+-         ```scala
++         ```scala
+
+=         offers a lens:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         final case class ident() extends StaticAnnotation
++         final case class ident() extends StaticAnnotation
+
+-         case class Person(name: Text, @ident email: Text)
++         case class Person(name: Text, @ident email: Text)
+
+-         val person = Person(t"Romeo", t"romeo@example.com")
++         val person = Person(t"Romeo", t"romeo@example.com")
+
+-         summon[Person is Annotated by ident].field                                   // "email"
++         summon[Person is Annotated by ident].field                                   // "email"
+
+-         summon[Person is Annotated by ident].lens(person)                            // t"romeo@example.com"
++         summon[Person is Annotated by ident].lens(person)                            // t"romeo@example.com"
+
+-         summon[Person is Annotated by ident].lens.update(person, t"montague@example.com")
++         summon[Person is Annotated by ident].lens.update(person, t"montague@example.com")
+
+=         summon[Person is Annotated by ident].lens.update(person, t"montague@example.com")
+-         ```
++         ```
+
+-         If several fields carry the annotation, the instance is only an `Annotated.Fields`,
+-         and `field` and `lens` do not compile: the instance's type records whether the match
+-         was unique.
+-     entry #field   the name of the one annotated field
+-     entry #lens   a panopticon `Lens` onto the annotated field, to read or update it
+-         Summoned at the use site, where the subject is known to be a product: the field's
+-         name, as a literal type, is resolved against it by panopticon. `lens(value)` reads
+-         the field; `lens.update(value, replacement)` returns a copy with it replaced.
+-   entry .AnnotatedField   the concrete `Annotated.Field` the macro builds when one field matched
++         Si varios campos llevan la anotación, la instancia es solo un `Annotated.Fields`, y
++         `field` y `lens` no compilan: el tipo de la instancia registra si la coincidencia fue
++         única.
++     entry #field   el nombre del único campo anotado
++     entry #lens   una `Lens` de panopticon sobre el campo anotado, para leerlo o actualizarlo
++         Se convoca en el punto de uso, donde se sabe que el sujeto es un producto: panopticon
++         resuelve con él el nombre del campo, como tipo literal. `lens(value)` lee el campo;
++         `lens.update(value, replacement)` devuelve una copia con el campo sustituido.
++   entry .AnnotatedField   el `Annotated.Field` concreto que construye la macro cuando coincidió un campo
+
+=   entry .AnnotatedField   the concrete `Annotated.Field` the macro builds when one field matched
+-     detail
++     detail
+
+-         An `Annotated.AnnotatedFields` whose `Unique` type is `true`, whose `Topic` is the
+-         field's type and whose `Target` is its name as a literal type.
+-     entry #field   the name of the one annotated field
+-   entry .Subtypes   the instance for an `under` query: the annotations on each variant of a sealed type
++         Un `Annotated.AnnotatedFields` cuyo tipo `Unique` es `true`, cuyo `Topic` es el tipo del
++         campo y cuyo `Target` es su nombre como tipo literal.
++     entry #field   el nombre del único campo anotado
++   entry .Subtypes   la instancia para una consulta `under`: las anotaciones de cada variante de un tipo sellado
+
+=   entry .Subtypes   the instance for an `under` query: the annotations on each variant of a sealed type
+-     detail
++     detail
+
+-         `summon[Annotated under S]` maps the name of each direct subtype of the sealed trait
+-         or enum `S` to its annotations of the requested type.
++         `summon[Annotated under S]` asocia el nombre de cada subtipo directo del trait sellado o
++         enum `S` con sus anotaciones del tipo solicitado.
+
+=         or enum `S` to its annotations of the requested type.
+=
+-         ```scala
++         ```scala
+
+=         or enum `S` to its annotations of the requested type.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         final case class number(number: Int) extends StaticAnnotation
++         final case class number(number: Int) extends StaticAnnotation
+
+-         final case class primary() extends StaticAnnotation
++         final case class primary() extends StaticAnnotation
+
+-         sealed trait Colored
++         sealed trait Colored
+
+-         @number(3) case class Hsv(hue: Double, saturation: Double, value: Double) extends Colored
++         @number(3) case class Hsv(hue: Double, saturation: Double, value: Double) extends Colored
+
+-         @primary() case class Rgb(red: Int, green: Int, blue: Int) extends Colored
++         @primary() case class Rgb(red: Int, green: Int, blue: Int) extends Colored
+
+-         summon[Annotated under Colored].subtypes
++         summon[Annotated under Colored].subtypes
+
+-         // Map("Hsv" -> Set(number(3)), "Rgb" -> Set(primary()))
++         // Map("Hsv" -> Set(number(3)), "Rgb" -> Set(primary()))
+
+=         // Map("Hsv" -> Set(number(3)), "Rgb" -> Set(primary()))
+-         ```
++         ```
+
+-     entry #subtypes   each variant's name, with its annotations of the requested type
+-     entry #apply   each variant's name, with its annotations: the same map as `#subtypes`
+-   entry .AnnotatedSubtypes   the concrete `Annotated.Subtypes` the macro builds
+-     entry #subtypes   each variant's name, with its annotations of the requested type
+-     entry #apply   each variant's name, with its annotations
+-   entry #Operand   the annotation type the query asked for, `StaticAnnotation` when it named none
+-   entry #Unique   whether the query matched exactly one field, as a literal Boolean type
++     entry #subtypes   el nombre de cada variante, con sus anotaciones del tipo solicitado
++     entry #apply   el nombre de cada variante, con sus anotaciones: la misma asociación que `#subtypes`
++   entry .AnnotatedSubtypes   el `Annotated.Subtypes` concreto que construye la macro
++     entry #subtypes   el nombre de cada variante, con sus anotaciones del tipo solicitado
++     entry #apply   el nombre de cada variante, con sus anotaciones
++   entry #Operand   el tipo de anotación que pidió la consulta, `StaticAnnotation` cuando no nombró ninguno
++   entry #Unique   si la consulta coincidió exactamente con un campo, como tipo Boolean literal
+
+- entry .Dereferenceable   a typeclass for reaching a record's fields by name, as values of one type
++ entry .Dereferenceable   una clase de tipos para alcanzar por nombre los campos de un registro, como valores de un tipo
+
+= entry .Dereferenceable   a typeclass for reaching a record's fields by name, as values of one type
+-   detail
++   detail
+
+-       `entity is Dereferenceable to value` lists the fields of `entity` whose type conforms to
+-       `value`, and reads, updates or modifies one by name, through a table of accessors
+-       generated as the code compiles rather than by runtime reflection. The instance is an
+-       inline given in the companion, so in implicit scope for any type. A record whose fields
+-       are all `Int` dereferences `to Int`; any record dereferences `to Any`, covering every
+-       field.
++       `entity is Dereferenceable to value` enumera los campos de `entity` cuyo tipo es conforme a
++       `value`, y lee, actualiza o modifica uno por nombre, mediante una tabla de accesores
++       generada al compilar el código y no por reflexión en tiempo de ejecución. La instancia es
++       un given inline del objeto compañero, y por tanto está en el ámbito implícito para
++       cualquier tipo. Un registro cuyos campos son todos `Int` se desreferencia `to Int`;
++       cualquier registro se desreferencia `to Any`, que abarca todos los campos.
+
+=       field.
+=
+-       ```scala
++       ```scala
+
+=       field.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Letters(alpha: Int, beta: Int, gamma: Int)
++       case class Letters(alpha: Int, beta: Int, gamma: Int)
+
+-       val letters = Letters(1, 2, 3)
++       val letters = Letters(1, 2, 3)
+
+-       val fields = summon[Letters is Dereferenceable to Int]
++       val fields = summon[Letters is Dereferenceable to Int]
+
+-       fields.names(letters)                 // List(t"alpha", t"beta", t"gamma")
++       fields.names(letters)                 // List(t"alpha", t"beta", t"gamma")
+
+-       fields.select(letters, t"beta")       // 2
++       fields.select(letters, t"beta")       // 2
+
+-       fields.update(letters, t"beta", 20)   // Letters(1, 20, 3)
++       fields.update(letters, t"beta", 20)   // Letters(1, 20, 3)
+
+=       fields.update(letters, t"beta", 20)   // Letters(1, 20, 3)
+-       ```
++       ```
+
+-       Reading covers every field member of the right type, including an object's `val`s.
+-       Writing needs a lens, and there is one only for a primary-constructor parameter whose
+-       type accepts every value of the instance's `Result` type: a `val` computed in a body has
+-       nothing to write, and a `Long` field of a record dereferenced `to Any` cannot accept an
+-       arbitrary `Any`, so both are readable but `#lens`, `#update` and `#modify` give `Unset`
+-       for them.
++       La lectura abarca todo miembro de campo del tipo adecuado, incluidos los `val` de un
++       objeto. La escritura necesita una lente, y solo hay una para un parámetro del constructor
++       primario cuyo tipo acepta todo valor del tipo `Result` de la instancia: un `val` calculado
++       en un cuerpo no tiene nada que escribir, y un campo `Long` de un registro desreferenciado
++       `to Any` no puede aceptar un `Any` arbitrario, así que ambos son legibles, pero `#lens`,
++       `#update` y `#modify` dan `Unset` para ellos.
+
+-   refer adversaria.membersOfType
++   refer adversaria.membersOfType
+
+-   entry #names   the names of the fields whose type conforms to the instance's `Result`
+-   entry #select   the value of the field named
+-       `select(entity, name)` reads the field through its generated accessor. The name must be
+-       one of `#names`; any other fails at runtime with a missing key, so check `#names` (or
+-       use `#members`) for a name from outside the program.
+-   entry #values   the values of every such field, in declaration order
+-   entry #lens   a panopticon `Lens` onto the field named, or `Unset` if it cannot be written
+-       `Unset` where the name is not a field, is not a parameter of the primary constructor,
+-       or has a type narrower than `Result`. The lens rebuilds the record with the primary
+-       constructor, replacing one field. Being an optic, it composes with any other.
+-   entry #update   a copy of the record with the field named replaced, or `Unset` if it cannot be written
+-       `update(entity, name, value)` is `lens(name)` applied, so it is `Unset` in the same
+-       cases as `#lens`.
+-   entry #modify   a copy of the record with a function applied to the field named, or `Unset`
+-       `modify(entity, name)(lambda)`: `numbers.modify(letters, t"gamma")(_*10)`. `Unset` in
+-       the same cases as `#lens`.
+-   entry #members   every such field, as a map from its name to its value
++   entry #names   los nombres de los campos cuyo tipo es conforme al `Result` de la instancia
++   entry #select   el valor del campo nombrado
++       `select(entity, name)` lee el campo mediante su accesor generado. El nombre debe ser uno de
++       `#names`; cualquier otro falla en tiempo de ejecución por una clave inexistente, así que
++       comprueba `#names` (o usa `#members`) para un nombre procedente de fuera del programa.
++   entry #values   los valores de todos esos campos, en orden de declaración
++   entry #lens   una `Lens` de panopticon sobre el campo nombrado, o `Unset` si no puede escribirse
++       `Unset` cuando el nombre no es un campo, no es un parámetro del constructor primario o
++       tiene un tipo más estrecho que `Result`. La lente reconstruye el registro con el
++       constructor primario, sustituyendo un campo. Al ser una óptica, se compone con cualquier
++       otra.
++   entry #update   una copia del registro con el campo nombrado sustituido, o `Unset` si no puede escribirse
++       `update(entity, name, value)` es `lens(name)` aplicada, así que es `Unset` en los mismos
++       casos que `#lens`.
++   entry #modify   una copia del registro con una función aplicada al campo nombrado, o `Unset`
++       `modify(entity, name)(lambda)`: `numbers.modify(letters, t"gamma")(_*10)`. `Unset` en los
++       mismos casos que `#lens`.
++   entry #members   todos esos campos, como una asociación de su nombre a su valor
+
+=   entry #members   every such field, as a map from its name to its value
+-       ```scala
++       ```scala
+
+=   entry #members   every such field, as a map from its name to its value
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Play(title: Text, year: Long)
++       case class Play(title: Text, year: Long)
+
+-       summon[Play is Dereferenceable to Any].members(Play(t"Hamlet", 1603L))
++       summon[Play is Dereferenceable to Any].members(Play(t"Hamlet", 1603L))
+
+-       // Map(t"title" -> t"Hamlet", t"year" -> 1603L)
++       // Map(t"title" -> t"Hamlet", t"year" -> 1603L)
+
+=       // Map(t"title" -> t"Hamlet", t"year" -> 1603L)
+-       ```
++       ```
+
+- entry .membersOfType   the values of every field of a record which have the type asked for
+-     An extension on any value: `record.membersOfType[Int]` is the `values` of its
+-     `Dereferenceable to Int` instance, in declaration order. It lets a generic renderer or a
+-     template engine read a value's fields of one type without casting.
++ entry .membersOfType   los valores de todos los campos de un registro que tienen el tipo pedido
++     Una extensión sobre cualquier valor: `record.membersOfType[Int]` son los `values` de su
++     instancia `Dereferenceable to Int`, en orden de declaración. Permite que un representador
++     genérico o un motor de plantillas lea los campos de un tipo de un valor sin conversiones de
++     tipo.
+
+=     template engine read a value's fields of one type without casting.
+=
+-     ```scala
++     ```scala
+
+=     template engine read a value's fields of one type without casting.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Settings:
++     object Settings:
+
+-       val width: Int = 80
++       val width: Int = 80
+
+-       val name: Text = t"main"
++       val name: Text = t"main"
+
+-       val height: Int = 24
++       val height: Int = 24
+
+-     Settings.membersOfType[Int]   // List(80, 24)
++     Settings.membersOfType[Int]   // List(80, 24)
+
+=     Settings.membersOfType[Int]   // List(80, 24)
+-     ```
++     ```
+
+- entry .fieldAnnotations   the annotations of one type on each field of a type, omitting fields without one
+-     `fieldAnnotations[T, A]` is the `fields` of `T is Annotated by A`, with the fields which
+-     carry no `A` removed, keyed by field name as `Text`. It returns an empty map for a type
+-     whose instance is not field-based, so a caller need not match on the instance's kind.
++ entry .fieldAnnotations   las anotaciones de un tipo sobre cada campo de un tipo, omitiendo los campos sin ninguna
++     `fieldAnnotations[T, A]` son los `fields` de `T is Annotated by A`, sin los campos que no
++     llevan ninguna `A`, indexados por nombre de campo como `Text`. Devuelve una asociación vacía
++     para un tipo cuya instancia no se basa en campos, de modo que quien llama no necesita
++     distinguir la clase de instancia.
+
+=     whose instance is not field-based, so a caller need not match on the instance's kind.
+=
+-     ```scala
++     ```scala
+
+=     whose instance is not field-based, so a caller need not match on the instance's kind.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     final case class marker[topic](id: Int) extends StaticAnnotation
++     final case class marker[topic](id: Int) extends StaticAnnotation
+
+-     case class Tagged(@marker(1) bare: Int, @marker[Text](2) specific: Int, plain: Int)
++     case class Tagged(@marker(1) bare: Int, @marker[Text](2) specific: Int, plain: Int)
+
+-     fieldAnnotations[Tagged, marker[Any]]    // Map(t"bare" -> Set(marker(1)))
++     fieldAnnotations[Tagged, marker[Any]]    // Map(t"bare" -> Set(marker(1)))
+
+-     fieldAnnotations[Tagged, marker[Text]]   // Map(t"specific" -> Set(marker[Text](2)))
++     fieldAnnotations[Tagged, marker[Text]]   // Map(t"specific" -> Set(marker[Text](2)))
+
+=     fieldAnnotations[Tagged, marker[Text]]   // Map(t"specific" -> Set(marker[Text](2)))
+-     ```
++     ```
+
+-     A bare annotation infers its type argument as `Any`, so a `marker[Any]` query sees it and
+-     a `marker[Text]` query does not.
++     Una anotación desnuda infiere `Any` como argumento de tipo, de modo que una consulta
++     `marker[Any]` la ve y una consulta `marker[Text]` no.
+
+- entry .subtypeAnnotations   the annotations of one type on each variant of a sealed type, omitting variants without one
+-     `subtypeAnnotations[S, A]` is the `subtypes` of `Annotated by A under S`, with the variants
+-     which carry no `A` removed, keyed by variant name. It is what renaming the cases of a sum
+-     type is built on.
++ entry .subtypeAnnotations   las anotaciones de un tipo sobre cada variante de un tipo sellado, omitiendo las variantes sin ninguna
++     `subtypeAnnotations[S, A]` son los `subtypes` de `Annotated by A under S`, sin las variantes
++     que no llevan ninguna `A`, indexados por nombre de variante. Es la base sobre la que se
++     construye el renombrado de los casos de un tipo suma.
+
+=     type is built on.
+=
+-     ```scala
++     ```scala
+
+=     type is built on.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     type is built on.
+=
+=     ```scala
+=     import soundness.*
+=
+-     sealed trait Decision
++     sealed trait Decision
+
+=     type is built on.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+-     @name[Json](t"yes") case object Accept extends Decision
++     @name[Json](t"yes") case object Accept extends Decision
+
+=     type is built on.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+=     @name[Json](t"yes") case object Accept extends Decision
+-     @name(t"no") case object Reject extends Decision
++     @name(t"no") case object Reject extends Decision
+
+=     type is built on.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+=     @name[Json](t"yes") case object Accept extends Decision
+=     @name(t"no") case object Reject extends Decision
+-     case object Defer extends Decision
++     case object Defer extends Decision
+
+-     subtypeAnnotations[Decision, name[Json]]   // Map(t"Accept" -> Set(name[Json](t"yes")))
++     subtypeAnnotations[Decision, name[Json]]   // Map(t"Accept" -> Set(name[Json](t"yes")))
+
+=     subtypeAnnotations[Decision, name[Json]]   // Map(t"Accept" -> Set(name[Json](t"yes")))
+-     ```
++     ```
+
+- entry .relabelling   the serialized names of a type's fields for one format, from its `@name` annotations
+-     `relabelling[T, Format]` maps each `@name`-annotated field of `T` to the name it takes in
+-     `Format`: a `@name[Format](…)` overrides a bare `@name(…)`, which applies to every format.
+-     Fields without a `@name` are absent, and keep their own names. Each Soundness format's
+-     derivation reads it, so one annotation serves JSON, XML, YAML and the rest alike.
++ entry .relabelling   los nombres serializados de los campos de un tipo para un formato, a partir de sus anotaciones `@name`
++     `relabelling[T, Format]` asocia cada campo de `T` anotado con `@name` con el nombre que toma
++     en `Format`: un `@name[Format](…)` prevalece sobre un `@name(…)` desnudo, que se aplica a
++     todos los formatos. Los campos sin `@name` no aparecen y conservan sus propios nombres. La
++     derivación de cada formato de Soundness lo lee, de modo que una sola anotación sirve por
++     igual para JSON, XML, YAML y los demás.
+
+=     derivation reads it, so one annotation serves JSON, XML, YAML and the rest alike.
+=
+-     ```scala
++     ```scala
+
+-     case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
++     case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+
+=     case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+-     ```
++     ```
+
+-     Under JSON the JSON-specific rename and the bare one both apply; under XML, only the bare
+-     one:
++     En JSON se aplican tanto el renombrado específico de JSON como el desnudo; en XML, solo el
++     desnudo:
+
+-     ```scala fuel
++     ```scala fuel
+
+-     alternative JSON
++     alternative JSON
+
+=     alternative JSON
+-       code
++       code
+
+-           relabelling[Record, Json]   // Map(t"firstName" -> t"first_name", t"year" -> t"yob")
++           relabelling[Record, Json]   // Map(t"firstName" -> t"first_name", t"year" -> t"yob")
+
+-     alternative XML
++     alternative XML
+
+=     alternative XML
+-       code
++       code
+
+-           relabelling[Record, Xml]    // Map(t"year" -> t"yob")
++           relabelling[Record, Xml]    // Map(t"year" -> t"yob")
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+- entry .variantRelabelling   the serialized names of a sum type's variants for one format, from their `@name` annotations
+-     As `relabelling`, for the cases of an enum or the subtypes of a sealed trait: each renamed
+-     variant's name maps to its discriminator in `Format`, a `@name[Format](…)` overriding a
+-     bare `@name(…)`.
++ entry .variantRelabelling   los nombres serializados de las variantes de un tipo suma para un formato, a partir de sus anotaciones `@name`
++     Como `relabelling`, para los casos de un enum o los subtipos de un trait sellado: el nombre
++     de cada variante renombrada se asocia con su discriminador en `Format`, y un
++     `@name[Format](…)` prevalece sobre un `@name(…)` desnudo.
+
+=     bare `@name(…)`.
+=
+-     ```scala
++     ```scala
+
+=     bare `@name(…)`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     bare `@name(…)`.
+=
+=     ```scala
+=     import soundness.*
+=
+-     sealed trait Decision
++     sealed trait Decision
+
+=     bare `@name(…)`.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+-     @name[Json](t"yes") case object Accept extends Decision
++     @name[Json](t"yes") case object Accept extends Decision
+
+=     bare `@name(…)`.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+=     @name[Json](t"yes") case object Accept extends Decision
+-     @name(t"no") case object Reject extends Decision
++     @name(t"no") case object Reject extends Decision
+
+=     bare `@name(…)`.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+=     @name[Json](t"yes") case object Accept extends Decision
+=     @name(t"no") case object Reject extends Decision
+-     case object Defer extends Decision
++     case object Defer extends Decision
+
+-     variantRelabelling[Decision, Json]   // Map(t"Accept" -> t"yes", t"Reject" -> t"no")
++     variantRelabelling[Decision, Json]   // Map(t"Accept" -> t"yes", t"Reject" -> t"no")
+
+=     variantRelabelling[Decision, Json]   // Map(t"Accept" -> t"yes", t"Reject" -> t"no")
+-     ```
++     ```
+
+- entry .annotatedFields   the names of the fields of a type which carry one annotation
+-     `annotatedFields[T, A]` is the `Set` of names of the fields of `T` annotated with an `A`, as
+-     a literal built when the derivation compiles. It is the form a derivation wants when it only
+-     needs to know *which* fields are marked — xylophone's `@attribute` and `@unqualified` — and
+-     constructs no annotation instance, where `fieldAnnotations` builds each field's annotations
+-     into a `Set` inside a `Map`.
++ entry .annotatedFields   los nombres de los campos de un tipo que llevan una anotación
++     `annotatedFields[T, A]` es el `Set` de nombres de los campos de `T` anotados con una `A`,
++     como un literal construido al compilar la derivación. Es la forma que quiere una derivación
++     cuando solo necesita saber *qué* campos están marcados —`@attribute` y `@unqualified` de
++     xylophone— y no construye ninguna instancia de anotación, mientras que `fieldAnnotations`
++     construye las anotaciones de cada campo en un `Set` dentro de un `Map`.
+
+=     into a `Set` inside a `Map`.
+=
+-     ```scala
++     ```scala
+
+=     into a `Set` inside a `Map`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     case class Book(title: Text, @Xml.attribute isbn: Text)
++     case class Book(title: Text, @Xml.attribute isbn: Text)
+
+-     annotatedFields[Book, Xml.attribute]   // Set(t"isbn")
++     annotatedFields[Book, Xml.attribute]   // Set(t"isbn")
+
+=     annotatedFields[Book, Xml.attribute]   // Set(t"isbn")
+-     ```
++     ```
+
+- entry .typeAnnotation   the annotation of one type on a type itself, if it has one
+-     `typeAnnotation[T, A]` is the `A` annotating the type `T` — not its fields — rebuilt once,
+-     where it is asked for, or `Unset`. It reads the payload of an annotation on a class, such as
+-     xylophone's `@xmlns("urn:x")`.
++ entry .typeAnnotation   la anotación de un tipo sobre un propio tipo, si la tiene
++     `typeAnnotation[T, A]` es la `A` que anota el tipo `T` —no sus campos—, reconstruida una
++     vez, allí donde se pide, o `Unset`. Lee la carga útil de una anotación sobre una clase, como
++     `@xmlns("urn:x")` de xylophone.
+
+=     xylophone's `@xmlns("urn:x")`.
+=
+-     ```scala
++     ```scala
+
+=     xylophone's `@xmlns("urn:x")`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     @Xml.xmlns(t"urn:example") case class Order(id: Int)
++     @Xml.xmlns(t"urn:example") case class Order(id: Int)
+
+-     typeAnnotation[Order, Xml.xmlns].let(_.uri)   // t"urn:example"
++     typeAnnotation[Order, Xml.xmlns].let(_.uri)   // t"urn:example"
+
+=     typeAnnotation[Order, Xml.xmlns].let(_.uri)   // t"urn:example"
+-     ```
++     ```
+
+- entry .name   `@name(t"…")`: renames a field or variant in serialization, for every format or for one
++ entry .name   `@name(t"…")`: renombra un campo o una variante en la serialización, para todos los formatos o para uno
+
+= entry .name   `@name(t"…")`: renames a field or variant in serialization, for every format or for one
+-   detail
++   detail
+
+-       A static annotation. `@name(t"first_name")` (inferred as `name[Any]`) renames the field
+-       or variant in every serialization format; `@name[Json](t"first_name")` only in JSON.
+-       Several `@name`s with different formats may sit on one field, and a format-specific one
+-       overrides the bare one for its format. Derivations read them through `relabelling` and
+-       `variantRelabelling`.
++       Una anotación estática. `@name(t"first_name")` (inferida como `name[Any]`) renombra el
++       campo o la variante en todos los formatos de serialización; `@name[Json](t"first_name")`,
++       solo en JSON. Un mismo campo puede llevar varios `@name` con formatos distintos, y uno
++       específico de un formato prevalece sobre el desnudo para ese formato. Las derivaciones los
++       leen mediante `relabelling` y `variantRelabelling`.
+
+=       `variantRelabelling`.
+=
+-       ```scala
++       ```scala
+
+=       `variantRelabelling`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Book(@name[Xml](t"Title") title: Text, @name(t"pub") published: Int)
++       case class Book(@name[Xml](t"Title") title: Text, @name(t"pub") published: Int)
+
+=       case class Book(@name[Xml](t"Title") title: Text, @name(t"pub") published: Int)
+-       ```
++       ```
+
+-   entry #name   the name the field or variant takes in serialization
++   entry #name   el nombre que toma el campo o la variante en la serialización
+
+- entry .internal   the macros which build `Annotated` and `Dereferenceable` instances
++ entry .internal   las macros que construyen las instancias de `Annotated` y `Dereferenceable`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object houses the macro implementations behind
+-       `Annotated.annotations` and the `Dereferenceable` given.
+-   entry .general   the macro behind `Annotated`: collects the annotations a query asks for
+-   entry .dereferenceable   the macro behind `Dereferenceable`: generates the accessor and lens tables
++       No es para uso directo: el objeto alberga las implementaciones de las macros que hay
++       detrás de `Annotated.annotations` y del given `Dereferenceable`.
++   entry .general   la macro que hay detrás de `Annotated`: reúne las anotaciones que pide una consulta
++   entry .dereferenceable   la macro que hay detrás de `Dereferenceable`: genera las tablas de accesores y de lentes

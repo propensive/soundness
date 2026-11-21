@@ -1,0 +1,623 @@
+orthant 1 language
+
+- # Writing Soundness Documentation
++ # Como escrever a documentação do Soundness
+
+- The documents in `doc/modules/` are tutorials, each introducing one feature of
+- Soundness — a capability that may span several internal modules — to a reader meeting
+- it for the first time. This guide sets out how to write them: who they address, the
+- voice they use, and the conventions they follow.
++ Os documentos em `doc/modules/` são tutoriais, e cada um apresenta um recurso do Soundness — uma
++ capacidade que pode abranger vários módulos internos — a um leitor que o encontra pela primeira
++ vez. Este guia estabelece como escrevê-los: a quem se dirigem, a voz que usam e as convenções que
++ seguem.
+
+- ## Audience and scope
++ ## Público e escopo
+
+- Assume a reader with a basic understanding of Scala and of the subject at hand, but
+- pace the prose for someone meeting Soundness's treatment of it for the first time.
++ Pressuponha um leitor com uma compreensão básica de Scala e do assunto em questão, mas dê à prosa
++ o ritmo de quem encontra pela primeira vez a abordagem do Soundness para esse assunto.
+
+- Explain Soundness's own implementations in depth. The concepts Soundness builds on —
+- JSON, regular expressions, time zones — need not be taught from scratch, but give
+- enough of each to motivate the design that follows. Link complex or esoteric
+- background to an external resource, such as Wikipedia, rather than explaining it
+- inline.
++ Explique em profundidade as implementações do próprio Soundness. Os conceitos sobre os quais o
++ Soundness se apoia — JSON, expressões regulares, fusos horários — não precisam ser ensinados do
++ zero, mas dê o bastante de cada um para motivar o design que vem a seguir. Para um contexto
++ complexo ou esotérico, aponte um recurso externo, como a Wikipédia, em vez de explicá-lo no
++ texto.
+
+- Limit terms and phrases to those familiar to both British and American readers.
++ Limite-se a termos e expressões familiares tanto a leitores britânicos quanto a americanos.
+
+- Before writing, decide who opens the page and why. A reader comes to a tutorial to get
+- something done — read a configuration file, call a service, make sense of an error — and reads
+- with questions the page should answer in the order they arise: what is the least that works,
+- what happens when it fails, what does it cost, how does it fit with what is already in use. Put
+- the commonest task first, and answer the worry before the reader has to go looking.
++ Antes de escrever, decida quem abre a página e por quê. Um leitor chega a um tutorial para fazer
++ algo — ler um arquivo de configuração, chamar um serviço, entender um erro — e lê com perguntas
++ que a página deve responder na ordem em que surgem: qual é o mínimo que funciona, o que acontece
++ quando falha, quanto custa, como se encaixa no que já está em uso. Ponha primeiro a tarefa mais
++ comum e responda à preocupação antes que o leitor precise ir atrás dela.
+
+- Prefer short sentences that each make one point. A sentence that needs two semicolons or a
+- parenthesis inside a dash is two or three sentences.
++ Prefira frases curtas, cada uma com uma única ideia. Uma frase que precisa de dois pontos e
++ vírgulas, ou de um parêntese dentro de um travessão, são duas ou três frases.
+
+- ## Voice: Classic Style
++ ## Voz: o estilo clássico
+
+- Write in Classic Style, as described by Steven Pinker: the writer shows the reader
+- something true or interesting in the world and helps them see it clearly, as a
+- conversation between equals. The reader is intelligent and capable. Truth can be
+- perceived and described plainly, and success is measured by whether the reader grasps
+- the point without effort.
++ Escreva no estilo clássico, tal como Steven Pinker o descreve: quem escreve mostra ao leitor algo
++ verdadeiro ou interessante no mundo e o ajuda a vê-lo com clareza, como numa conversa entre
++ iguais. O leitor é inteligente e capaz. A verdade pode ser percebida e descrita com simplicidade,
++ e o sucesso se mede por o leitor captar a ideia sem esforço.
+
+- - **Show, don't announce.** Present the idea itself, not your intention to present it.
+-   Avoid throat-clearing ("In this section…", "It is important to note that…") and
+-   signposting ("Firstly…", "In conclusion…").
+- - **Stay out of view.** Avoid first-person pronouns and meta-discussion of the writing,
+-   the document, or its structure. Do not refer to the document by its genre: never
+-   justify a choice as one that "suits a tutorial" or is made "for this guide". State
+-   the choice directly instead — write "the `throwUnsafely` strategy raises an exception
+-   on failure", not "raising an exception suits a tutorial".
+- - **Be plain and direct.** Prefer straightforward phrasing over ornate, inflated, or
+-   needlessly technical wording. Cut clutter, hedging, and unnecessary qualifiers.
+- - **Project confidence.** State things plainly rather than hedging or apologising;
+-   avoid academic over-qualification.
+- - **Ground the abstract.** Reach for concrete imagery and examples to anchor abstract
+-   ideas.
+- - **Guide the reader's gaze.** Structure each sentence so attention falls naturally on
+-   what matters most.
+- - **Sound like someone who knows the subject.** The voice is calm, knowledgeable, and
+-   unstrained; the prose feels effortless even when heavily revised.
+- - **Avoid devices that depend on shared context.** State the point directly rather than
+-   through rhetorical questions or allusion. Avoid bureaucratic prose, excessive passive
+-   voice, and pretentious diction.
++ - **Mostre, não anuncie.** Apresente a própria ideia, não a sua intenção de apresentá-la. Evite
++   rodeios (“Nesta seção…”, “É importante notar que…”) e sinalizações (“Em primeiro lugar…”,
++   “Em conclusão…”).
++ - **Fique fora de vista.** Evite pronomes de primeira pessoa e metadiscussão sobre a escrita, o
++   documento ou sua estrutura. Não se refira ao documento pelo seu gênero: nunca justifique uma
++   escolha como algo que “convém a um tutorial” ou que é feito “para este guia”. Enuncie a
++   escolha diretamente — escreva “a estratégia `throwUnsafely` lança uma exceção em caso de
++   falha”, não “lançar uma exceção convém a um tutorial”.
++ - **Seja simples e direto.** Prefira formulações diretas a palavras rebuscadas, infladas ou
++   desnecessariamente técnicas. Corte o excesso, as ressalvas e os qualificadores
++   desnecessários.
++ - **Transmita confiança.** Afirme as coisas com simplicidade, em vez de se resguardar ou se
++   desculpar; evite a qualificação excessiva acadêmica.
++ - **Dê chão ao abstrato.** Recorra a imagens e exemplos concretos para ancorar ideias
++   abstratas.
++ - **Conduza o olhar do leitor.** Estruture cada frase de modo que a atenção caia naturalmente no
++   que mais importa.
++ - **Soe como quem conhece o assunto.** A voz é calma, conhecedora e sem tensão; a prosa parece
++   fluir sem esforço mesmo quando muito revisada.
++ - **Evite recursos que dependem de um contexto compartilhado.** Enuncie a ideia diretamente, em
++   vez de por meio de perguntas retóricas ou alusões. Evite a prosa burocrática, o excesso de voz
++   passiva e a dicção pretensiosa.
+
+- ## Emphasis
++ ## Ênfase
+
+- Draw attention to the typesafety and compiletime checking Soundness performs, and
+- explain the design ideas behind each API — especially those that may be unconventional.
+- Occasionally connect these to Soundness's general design philosophy, so the reader sees
+- not just how a feature works but why it is shaped as it is.
++ Chame a atenção para a segurança de tipos e a verificação em tempo de compilação que o Soundness
++ realiza, e explique as ideias de design por trás de cada API — sobretudo as que podem ser pouco
++ convencionais. De vez em quando, ligue-as à filosofia geral de design do Soundness, para que o
++ leitor veja não só como um recurso funciona, mas por que tem a forma que tem.
+
+- ## Language and spelling
++ ## Idioma e ortografia
+
+- Use American English spelling. Always write "runtime" and "compiletime" as single
+- words, never as "run time", "run-time", "compile time", or "compile-time".
++ Use a ortografia do inglês americano. Escreva sempre “runtime” e “compiletime” como palavras
++ únicas, nunca como “run time”, “run-time”, “compile time” ou “compile-time”.
+
+- ## Document structure
++ ## Estrutura do documento
+
+- Begin with a `## Title`, then up to three introductory paragraphs giving an overview of
+- the subject's scope. Within these, an `### About` section gives the overview and an
+- `### On <topic>` section motivates the design. After the introduction, cover the
+- individual topics in their own `###` sections.
++ Comece com um `## Title` e, em seguida, até três parágrafos introdutórios que deem uma visão geral
++ do alcance do assunto. Dentro deles, uma seção `### About` traz a visão geral, e uma seção
++ `### On <topic>` motiva o design. Depois da introdução, trate cada tópico em sua própria seção
++ `###`.
+
+- Prioritise foundational details and the most commonly used features; deprioritise
+- implementation details and esoteric features.
++ Priorize os detalhes fundamentais e os recursos mais usados; deixe em segundo plano os detalhes
++ de implementação e os recursos esotéricos.
+
+- The reader already knows the subject is Soundness, so do not make "Soundness" the
+- reflexive subject of every sentence, least of all the opening one. Lead with the
+- capability or the thing itself — "Regular expressions are checked as the code compiles",
+- not "Soundness checks regular expressions as the code compiles". Name the project where
+- it genuinely marks a contrast — what Soundness does against what other libraries do — and
+- when you do name it, call it "Soundness", never an internal module name.
++ O leitor já sabe que o assunto é o Soundness, então não faça de “Soundness” o sujeito automático
++ de toda frase, muito menos da primeira. Comece pela capacidade ou pela própria coisa — “As
++ expressões regulares são verificadas enquanto o código compila”, não “O Soundness verifica as
++ expressões regulares enquanto o código compila”. Nomeie o projeto onde ele de fato marca um contraste — o que o Soundness faz
++ diante do que outras bibliotecas fazem — e, quando o nomear, chame-o de “Soundness”, nunca por
++ um nome de módulo interno.
+
+- ## Code samples
++ ## Exemplos de código
+
+- Write code in idiomatic Soundness Scala, formatted according to `syntax.md`. Use inline
+- backticks for code, and for the specific names of terms and types; use triple-backtick
+- blocks for block-level samples.
++ Escreva código em Scala idiomático do Soundness, formatado segundo `syntax.md`. Use crases
++ inline para código e para os nomes específicos de termos e tipos; use blocos com três crases para
++ exemplos em nível de bloco.
+
+- Samples should be complete — including imports where necessary, though wildcard imports
+- are fine — and should follow on from one another: a term with a given name means the
+- same thing throughout a document, and a single identifier is never assigned more than
+- once.
++ Os exemplos devem ser completos — incluindo os imports onde forem necessários, embora imports
++ curinga sejam aceitáveis — e devem dar continuidade uns aos outros: um termo com um dado nome
++ significa a mesma coisa em todo o documento, e um mesmo identificador nunca é atribuído mais de
++ uma vez.
+
+- Every sample is checked mechanically, twice over, and both checkers follow the fences in
+- order as one session:
++ Cada exemplo é verificado mecanicamente, duas vezes, e ambos os verificadores seguem os blocos
++ em ordem, como uma única sessão:
+
+= order as one session:
+=
+- ```tabular
++ ```tabular
+
+- column  Command
+- column  Checks
+- row  `make fuelcheck`  compiles each tutorial with fuel against `main`'s own test assembly (`.pyrocosm/fuel/config.tel`)
+- row  `make doccheck`  evaluates each fence through the flame REPL (`etc/doccheck.py`) against the latest release, and checks the names used against the source (`etc/doccheck-names.py`)
+- row  `make doccheck DOC=json`  the same, for one tutorial
++ column  Comando
++ column  Verifica
++ row  `make fuelcheck`  compila cada tutorial com o fuel contra o próprio assembly de testes de `main` (`.pyrocosm/fuel/config.tel`)
++ row  `make doccheck`  avalia cada bloco pelo REPL do flame (`etc/doccheck.py`) contra o último release, e confere os nomes usados contra o código-fonte (`etc/doccheck-names.py`)
++ row  `make doccheck DOC=json`  o mesmo, para um único tutorial
+
+= row  `make doccheck DOC=json`  the same, for one tutorial
+- ```
++ ```
+
+- A few conventions make that possible:
++ Algumas convenções tornam isso possível:
+
+- - A sample must introduce every name it uses, in a fence of the same tutorial, so the fences
+-   form one continuous session. Where a tutorial needs a value it cannot sensibly construct
+-   in prose — a path that must exist, a running service — put the binding in
+-   `doc/fixtures/<tutorial>.scala`, which both checkers compile before the first fence.
+- - A line that is meant not to compile carries a trailing `// does not compile` comment (with
+-   an optional explanation after a colon). Both checkers compile it on its own and report it
+-   if it compiles after all; fuel shows its error as a note on the line. New samples use an
+-   `errors show` fence instead, for the reason given under "Showing, not telling".
+- - A fence that says more than its code does so in a TEL preamble: it opens with
+-   ` ```scala fuel `, and the preamble ends at a line holding `##`. Its directives are below.
++ - Um exemplo deve introduzir todos os nomes que usa, num bloco do mesmo tutorial, de modo que os
++   blocos formem uma sessão contínua. Quando um tutorial precisa de um valor que não pode ser
++   construído de modo sensato na prosa — um caminho que precisa existir, um serviço em execução
++   —, ponha o vínculo em `doc/fixtures/<tutorial>.scala`, que ambos os verificadores compilam
++   antes do primeiro bloco.
++ - Uma linha que não deve compilar leva um comentário final `// does not compile` (com uma
++   explicação opcional depois de dois-pontos). Ambos os verificadores a compilam isoladamente e
++   a relatam se ela acabar compilando; o fuel mostra o erro como uma nota na linha. Exemplos
++   novos usam em vez disso um bloco `errors show`, pelo motivo dado em “Mostrar, não dizer”.
++ - Um bloco que diz mais do que o seu código o faz num preâmbulo TEL: abre com
++   ` ```scala fuel `, e o preâmbulo termina numa linha que contém `##`. Suas diretivas estão
++   abaixo.
+
+- The preamble directives:
++ As diretivas do preâmbulo:
+
+= The preamble directives:
+=
+- ```tabular
++ ```tabular
+
+- column  Directive
+- column  Use it for
+- column  Meaning
+- row  `typecheck`  a fence that cannot run in a REPL session: one that opens a browser, binds a socket, reads a terminal, dispatches a JVM  fuel compiles it, and the REPL checker leaves it alone
+- row  `errors show`  a fence whose point is its error  the error is rendered beneath it
+- row  `run`  a fence whose point is what it prints, or the error it throws  fuel compiles it and runs it, and shows its output beneath it; the REPL checker leaves it alone
+- row  `highlight`  the part of a fence the prose is about  the range is underlined, with a caption beside it
+- row  `error`, `caution`  a part of a fence that is wrong, or risky, by design  the range is marked as the compiler would mark it, with the caption given
+- row  `parse`  a sketch that is not meant to compile at all  it is only parsed
+- row  `feature experimental.captureChecking`  the first fence that needs a language feature  the feature is enabled from there on
+- row  `restart`  a fence that must not follow the ones before it  the session begins afresh
+- row  `frame`  an animation  each `frame` has its `code` (and perhaps a `label`); later fences follow the last
+- row  `alternative`  versions of the same code, one under each tab  each has its `code` (or its `frame`s); later fences follow the first
+- row  `substitute`  code that must be there to compile but is noise to the reader  the range is shown as `...`, or the text given
+- row  `focus`  one region of a long fragment, or of one frame, that the prose is about  everything else in the block fades
+- row  `path`  a fence holding the contents of a file  the file's name is shown above it, and a `run` fence can read it
++ column  Diretiva
++ column  Use-a para
++ column  Significado
++ row  `typecheck`  um bloco que não pode ser executado numa sessão de REPL: um que abre um navegador, vincula um socket, lê um terminal, despacha uma JVM  o fuel o compila, e o verificador do REPL o deixa de lado
++ row  `errors show`  um bloco cujo propósito é o seu erro  o erro é renderizado abaixo dele
++ row  `run`  um bloco cujo propósito é o que ele imprime, ou o erro que lança  o fuel o compila e o executa, e mostra a saída abaixo dele; o verificador do REPL o deixa de lado
++ row  `highlight`  a parte de um bloco de que a prosa trata  o intervalo é sublinhado, com uma legenda ao lado
++ row  `error`, `caution`  uma parte de um bloco que está errada, ou é arriscada, de propósito  o intervalo é marcado como o compilador o marcaria, com a legenda dada
++ row  `parse`  um esboço que não deve compilar de forma alguma  ele é apenas analisado
++ row  `feature experimental.captureChecking`  o primeiro bloco que precisa de um recurso da linguagem  o recurso fica habilitado dali em diante
++ row  `restart`  um bloco que não deve seguir os anteriores  a sessão recomeça do zero
++ row  `frame`  uma animação  cada `frame` tem seu `code` (e talvez um `label`); os blocos seguintes continuam a partir do último
++ row  `alternative`  versões do mesmo código, uma em cada aba  cada uma tem seu `code` (ou seus `frame`s); os blocos seguintes continuam a partir da primeira
++ row  `substitute`  código que precisa estar lá para compilar, mas é ruído para o leitor  o intervalo é mostrado como `...`, ou como o texto dado
++ row  `focus`  uma região de um fragmento longo, ou de um quadro, de que a prosa trata  todo o resto do bloco esmaece
++ row  `path`  um bloco com o conteúdo de um arquivo  o nome do arquivo é mostrado acima dele, e um bloco `run` pode lê-lo
+
+= row  `path`  a fence holding the contents of a file  the file's name is shown above it, and a `run` fence can read it
+- ```
++ ```
+
+- Use an animation only where watching the code change from one frame to the next teaches
+- something that two fences side by side would not: each frame builds on the last. Where the
+- versions are instead choices made at the same point — the same program under another policy
+- import, backend or calendar, or the same thing written two ways — make them alternatives, with
+- a tab title of a word or two (`Julian`, `RE2`, `Imported`). Only the first alternative joins
+- the session, so put first the one the rest of the tutorial uses, and nothing after a `##` in
+- such a fence. `etc/doccheck.py` runs the first alternative too.
++ Use uma animação apenas onde ver o código mudar de um quadro para o seguinte ensina algo que dois
++ blocos lado a lado não ensinariam: cada quadro se apoia no anterior. Onde as versões são, em vez
++ disso, escolhas feitas no mesmo ponto — o mesmo programa sob outro import de política, backend ou
++ calendário, ou a mesma coisa escrita de dois modos —, faça delas alternativas, com um título de
++ aba de uma ou duas palavras (`Julian`, `RE2`, `Imported`). Só a primeira alternativa entra na
++ sessão, então ponha primeiro a que o resto do tutorial usa, e nada depois de um `##` num bloco
++ assim. `etc/doccheck.py` também executa a primeira alternativa.
+
+- A `substitute` names its range as a mark does — a literal, or `start..end`, refined by `line`
+- and `occurrence` — and is for a `???` that stands for something supplied, a long key or literal
+- whose content is not the point, or setup repeated in every frame. Don't substitute code the
+- prose discusses.
++ Um `substitute` nomeia seu intervalo como uma marca o faz — um literal, ou `start..end`, refinado
++ por `line` e `occurrence` — e serve para um `???` que representa algo fornecido, para uma chave
++ ou um literal longo cujo conteúdo não vem ao caso, ou para uma preparação repetida em todos os
++ quadros. Não substitua código de que a prosa trata.
+
+- ### Showing, not telling
++ ### Mostrar, não dizer
+
+- A sample shows what the code does; it does not describe it. A comment in a sample is the writer
+- talking over the code, so a sample has none. Each thing
+- a comment used to say has a better place:
++ Um exemplo mostra o que o código faz; não o descreve. Um comentário num exemplo é quem escreve
++ falando por cima do código, então um exemplo não tem comentários. Cada coisa
++ que um comentário costumava dizer tem um lugar melhor:
+
+= a comment used to say has a better place:
+=
+- ```tabular
++ ```tabular
+
+- column  Instead of a comment saying
+- column  Write
+- row  what an expression evaluates to  a `run` fence which prints it, so the real output appears beneath
+- row  what a line is for  a `highlight` with a caption, or a sentence before the fence
+- row  why code does not compile  an `errors show` fence, so the compiler's own message is shown
+- row  what a program throws  a `run` fence with `errors show`
+- row  that something is risky or discouraged  a `caution` mark, or a sentence before the fence
++ column  Em vez de um comentário que diz
++ column  Escreva
++ row  o valor de uma expressão  um bloco `run` que o imprime, para que a saída real apareça abaixo
++ row  para que serve uma linha  um `highlight` com uma legenda, ou uma frase antes do bloco
++ row  por que o código não compila  um bloco `errors show`, para que a própria mensagem do compilador seja mostrada
++ row  o que um programa lança  um bloco `run` com `errors show`
++ row  que algo é arriscado ou desaconselhado  uma marca `caution`, ou uma frase antes do bloco
+
+= row  that something is risky or discouraged  a `caution` mark, or a sentence before the fence
+- ```
++ ```
+
+- A fence that prints needs a `Stdio` in scope, so a tutorial with `run` fences imports one once,
+- with its first imports, and says in a clause what the line is for:
++ Um bloco que imprime precisa de um `Stdio` no escopo, então um tutorial com blocos `run` importa
++ um uma única vez, junto com seus primeiros imports, e diz numa oração para que serve a linha:
+
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+- ##
++ ##
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- A `run` fence prints with `Out.println`. Print a value with `show` where it has a `Showable`
+- instance, since that is the form a user would display, and with `inspect` otherwise — a
+- `Boolean`, a case class, a nested structure. Print the values a reader would want to see and no
+- more: one fence with three lines of output teaches more than three fences with one.
++ Um bloco `run` imprime com `Out.println`. Imprima um valor com `show` quando ele tiver uma
++ instância de `Showable`, já que essa é a forma que um usuário exibiria, e com `inspect` nos
++ demais casos — um `Boolean`, uma case class, uma estrutura aninhada. Imprima os valores que um
++ leitor gostaria de ver e nada mais: um bloco com três linhas de saída ensina mais do que três
++ blocos com uma.
+
+- Prefer the compiler's words to a paraphrase of them. A reader who meets an error in their own
+- code searches for its text, so a sample that fails shows the message they will see. A message of
+- one line appears as a note on the line; a longer one appears as a card beneath the fence. A
+- failing sample is a fence of its own, holding only the code that fails:
++ Prefira as palavras do compilador a uma paráfrase delas. Um leitor que encontra um erro no
++ próprio código procura pelo seu texto, então um exemplo que falha mostra a mensagem que ele verá.
++ Uma mensagem de uma linha aparece como nota na linha; uma mais longa aparece como um cartão abaixo
++ do bloco. Um exemplo que falha é um bloco próprio, contendo apenas o código que falha:
+
+= failing sample is a fence of its own, holding only the code that fails:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  Use it when
+- row  `compile` and `errors show`  the code does not compile
+- row  `run` and `errors show`  the code compiles, and fails when it runs
++ column  Forma
++ column  Use quando
++ row  `compile` e `errors show`  o código não compila
++ row  `run` e `errors show`  o código compila e falha ao ser executado
+
+= row  `run` and `errors show`  the code compiles, and fails when it runs
+- ```
++ ```
+
+- Keep a failing expression minimal: the one call that is wrong, without the calls that would
+- follow it. Avoid the `// does not compile` marker in new samples. A fence that holds one never
+- joins the session, and every marker line and `run` fence after it then fails for want of that
+- fence, which fuel counts as the failure it was told to expect — so a line which compiles
+- perfectly well can pass as one which does not.
++ Mantenha mínima uma expressão que falha: a única chamada que está errada, sem as chamadas que
++ viriam depois. Evite o marcador `// does not compile` em exemplos novos. Um bloco que o contém
++ nunca entra na sessão, e toda linha com marcador e todo bloco `run` posterior falham então por
++ falta desse bloco, o que o fuel conta como a falha que lhe disseram para esperar — de modo que
++ uma linha que compila perfeitamente pode passar por uma que não compila.
+
+- Check what a sample shows as well as that it passes. Read the captured output and each error
+- message in the rendered page: a sample can compile, run, and still print something other than
+- what the prose around it says.
++ Verifique o que um exemplo mostra, além de que ele passa. Leia a saída capturada e cada mensagem
++ de erro na página renderizada: um exemplo pode compilar, ser executado e ainda assim imprimir
++ algo diferente do que a prosa ao redor diz.
+
+- The session has a few rules of its own, which a tutorial's fences must respect:
++ A sessão tem algumas regras próprias, que os blocos de um tutorial devem respeitar:
+
+- - A definition which later fences use goes in a plain fence, and a `run` fence only prints. The
+-   REPL checker skips every fence which names a mode, so a definition inside one is lost to it.
+- - A name defined in a tutorial — an enumeration's cases, a companion's members — is not carried
+-   into a later fence by an `import` of it. Write `Color.Red` in later fences, or repeat the
+-   import in the fence that needs it.
+- - Name a given whose type starts with a type defined in the tutorial:
+-   `given personParsable: (Person is Json.Parsable)`. An anonymous `given Person is …` hides
+-   `Person` from every later fence.
+- - A given which must be found while another is derived is declared in the fence that uses it,
+-   inside a `locally` block, as an import of a different policy is.
+- - A fence whose code depends on a macro or an inline given being expanded needs `compile`, since
+-   `typecheck`, the default, stops before expansion.
+- - An import which cannot be resolved breaks every fence after it, because a failed fence still
+-   leaves its imports behind. Fix the first error in a tutorial before reading the others.
++ - Uma definição que blocos posteriores usam vai num bloco simples, e um bloco `run` só imprime. O
++   verificador do REPL pula todo bloco que nomeia um modo, então uma definição dentro de um deles
++   se perde para ele.
++ - Um nome definido num tutorial — os casos de uma enumeração, os membros de um objeto companheiro
++   — não é levado a um bloco posterior por um `import` dele. Escreva `Color.Red` nos blocos
++   posteriores, ou repita o import no bloco que precisar dele.
++ - Dê nome a um given cujo tipo comece por um tipo definido no tutorial:
++   `given personParsable: (Person is Json.Parsable)`. Um `given Person is …` anônimo esconde
++   `Person` de todos os blocos posteriores.
++ - Um given que precisa ser encontrado enquanto outro é derivado é declarado no bloco que o usa,
++   dentro de um bloco `locally`, como se faz com o import de uma política diferente.
++ - Um bloco cujo código depende da expansão de uma macro ou de um given inline precisa de
++   `compile`, já que `typecheck`, o padrão, para antes da expansão.
++ - Um import que não pode ser resolvido quebra todos os blocos depois dele, porque um bloco que
++   falhou ainda deixa seus imports para trás. Corrija o primeiro erro de um tutorial antes de ler
++   os outros.
+
+- `inspect` writes a present optional value between corner brackets and an absent one as `○`, and
+- a floating-point number has no `show` without a `Decimalizer` in scope, so it is printed with
+- `inspect` too. Say what the notation means where a tutorial first shows it.
++ `inspect` escreve um valor opcional presente entre colchetes de canto e um ausente como `○`, e um
++ número de ponto flutuante não tem `show` sem um `Decimalizer` no escopo, então também é impresso
++ com `inspect`. Diga o que a notação significa onde um tutorial a mostrar pela primeira vez.
+
+- A `run` fence which touches the world outside the program — the disk, a subprocess — creates
+- what it needs within itself, and does not rely on what an earlier `run` fence left behind. Fuel
+- runs a fence again only when the fence changes, so on a partial rebuild an earlier fence's
+- effects may be absent, or belong to a different temporary directory. Give such a tutorial one
+- fixed working location, write to it with flags which replace what is there, and print results,
+- never paths: an absolute path in captured output, or in a captured error message, is the path
+- on whichever machine built the documentation. For the same reason, do not `run` a fence which
+- prints the real environment, user name or host name; give it a fixed environment instead.
++ Um bloco `run` que toca o mundo fora do programa — o disco, um subprocesso — cria dentro de si o
++ que precisa, e não depende do que um bloco `run` anterior deixou para trás. O fuel só executa um
++ bloco de novo quando o bloco muda, então, numa reconstrução parcial, os efeitos de um bloco
++ anterior podem estar ausentes, ou pertencer a um diretório temporário diferente. Dê a um tutorial
++ assim um único local de trabalho fixo, escreva nele com flags que substituem o que lá estiver e
++ imprima resultados, nunca caminhos: um caminho absoluto na saída capturada, ou numa mensagem de
++ erro capturada, é o caminho na máquina que construiu a documentação, qualquer que seja. Pelo
++ mesmo motivo, não use `run` num bloco que imprime o ambiente real, o nome de usuário ou o nome do
++ host; dê a ele um ambiente fixo.
+
+- A fence that cannot run where the documentation is built — one that needs the network, a
+- terminal, a browser or a running service — stays `typecheck`, and the prose says what it would
+- do. Never write the output of such a fence by hand as though it had been captured.
++ Um bloco que não pode ser executado onde a documentação é construída — um que precisa da rede, de
++ um terminal, de um navegador ou de um serviço em execução — continua `typecheck`, e a prosa diz o
++ que ele faria. Nunca escreva à mão a saída de um bloco assim como se ela tivesse sido capturada.
+
+- ## Links
++ ## Links
+
+- A tutorial is rarely read alone. The reader arrives with something to get done, and the thing
+- they need next is often on another page, so link to it at the point they would want it:
++ Um tutorial raramente é lido sozinho. O leitor chega com algo a fazer, e aquilo de que precisa
++ em seguida muitas vezes está em outra página, então ponha o link no ponto em que ele o
++ quereria:
+
+- - a concept another tutorial teaches, at its first use in each section, with the section's anchor
+-   where the target is one section of a long page: `[strategy](errors.md#choosing-a-strategy)`;
+- - a combination of two features, from both pages. Where an instance joins one module's type to
+-   another's typeclass — a date that is encoded in JSON, a quantity that is shown in a table, a
+-   path that is a command-line parameter — each tutorial gives the combination a short section or
+-   a sentence, with a sample, and links to the other;
+- - a design idea, to its essay in `doc/philosophy/`, once, where the design is being explained;
+- - an API entity, by naming it in inline code with its sigil (`` `#Json` `` for a type,
+-   `` `.fetch` `` for a term), which fuel resolves and links.
++ - um conceito que outro tutorial ensina, no seu primeiro uso em cada seção, com a âncora da seção
++   quando o destino é uma seção de uma página longa: `[strategy](errors.md#choosing-a-strategy)`;
++ - uma combinação de dois recursos, a partir de ambas as páginas. Quando uma instância junta o tipo
++   de um módulo à classe de tipos de outro — uma data codificada em JSON, uma quantidade mostrada
++   numa tabela, um caminho que é um parâmetro de linha de comando —, cada tutorial dá à combinação
++   uma seção curta ou uma frase, com um exemplo, e um link para o outro;
++ - uma ideia de design, para o seu ensaio em `doc/philosophy/`, uma vez, onde o design está sendo
++   explicado;
++ - uma entidade da API, nomeando-a em código inline com o seu sigilo (`` `#Json` `` para um tipo,
++   `` `.fetch` `` para um termo), que o fuel resolve e transforma em link.
+
+- Link text is the name of the thing linked to, never "here" or "this page". `fuel compile` checks
+- that every link has a target.
++ O texto do link é o nome da coisa a que ele leva, nunca “aqui” ou “esta página”. `fuel compile`
++ verifica que todo link tem um destino.
+
+- ## Glossary
++ ## Glossário
+
+- A word with a precise meaning in Soundness — *tactic*, *strategy*, *capability*, *choice
+- package* — is defined in `doc/en/glossary.tel`, and written in brackets where a reader may not yet
+- know it: `[tactic]`, or `[strategies][strategy]` for an inflected form. Fuel shows the definition
+- when the term is pointed at, and links it to the page named in its entry.
++ Uma palavra com um significado preciso no Soundness — *tática*, *estratégia*, *capability*,
++ *pacote de escolhas* — é definida em `doc/en/glossary.tel` e escrita entre colchetes onde o
++ leitor talvez ainda não a conheça: `[tactic]`, ou `[strategies][strategy]` para uma forma
++ flexionada. O fuel mostra a definição quando se aponta para o termo, e o liga à página nomeada
++ na sua entrada.
+
+- - Mark a term at its first use in a section, not at every use.
+- - A definition is one to three plain sentences that would make sense to a reader who has read
+-   nothing else, and it names the page that explains the term in full as its `link`.
+- - Add a term when a tutorial relies on a word whose everyday meaning would mislead, or which
+-   Soundness uses more narrowly than Scala does. Ordinary Scala vocabulary a reader is assumed to
+-   know — *trait*, *case class* — is not defined. A term is also defined when its translation
+-   must be the same everywhere, so that every language renders it alike, even if it is ordinary
+-   vocabulary.
+- - Fuel does not report a bracketed term with no definition; it is shown as plain bracketed
+-   text, so search the tutorial for bracketed words before committing.
++ - Marque um termo no seu primeiro uso numa seção, não em todos os usos.
++ - Uma definição tem de uma a três frases simples que fariam sentido para um leitor que não leu
++   mais nada, e nomeia como seu `link` a página que explica o termo por completo.
++ - Acrescente um termo quando um tutorial se apoia numa palavra cujo sentido corrente induziria
++   ao erro, ou que o Soundness usa de modo mais restrito do que o Scala. O vocabulário comum de
++   Scala que se pressupõe que o leitor conheça — *trait*, *case class* — não é definido. Um termo
++   também é definido quando sua tradução precisa ser a mesma em toda parte, para que todos os
++   idiomas o traduzam da mesma forma, mesmo que seja vocabulário comum.
++ - O fuel não relata um termo entre colchetes sem definição; ele é mostrado como texto simples
++   entre colchetes, então procure palavras entre colchetes no tutorial antes de fazer o commit.
+
+- ## Tables
++ ## Tabelas
+
+- Fuel does not support Markdown pipe tables. A table is a fence marked `tabular`, written in
+- TEL: a `column` line per column (with an indented `title` and `align` where needed), a
+- `row` line per row, and an optional `caption`. Fields are separated by two spaces, so a
+- cell may hold single spaces but never two in a row. A row with an empty cell takes the long
+- form, `row` alone with an indented `cell` line per cell, a bare `cell` for the empty one.
+- Cells are Markdown phrasing, and code containing a backtick needs a double-backtick span.
++ O fuel não suporta tabelas Markdown com barras verticais. Uma tabela é um bloco marcado como
++ `tabular`, escrito em TEL: uma linha `column` por coluna (com `title` e `align` indentados onde
++ for preciso), uma linha `row` por linha da tabela e um `caption` opcional. Os campos são
++ separados por dois espaços, então uma célula pode conter espaços simples, mas nunca dois
++ seguidos. Uma linha com uma célula vazia usa a forma longa, `row` sozinho com uma linha `cell`
++ indentada por célula, e um `cell` vazio para a célula vazia. As células são conteúdo Markdown
++ em linha, e código que contém uma crase precisa de um trecho com crase dupla.
+
+= Cells are Markdown phrasing, and code containing a backtick needs a double-backtick span.
+=
+- ```tabular
++ ```tabular
+
+- column  Glyph
+- column  Meaning
+- column  Example
+- row  `↗`  superscript  `x↗2` is *x²*
++ column  Glifo
++ column  Significado
++ column  Exemplo
++ row  `↗`  sobrescrito  `x↗2` é *x²*
+
+- row  `↘`
++ row  `↘`
+
+-   cell  subscript
++   cell  subscrito
+
+-   cell
++   cell
+
+=   cell
+- ```
++ ```
+
+- Use a table when the items share attributes: an enumeration, a mapping, a comparison, the
+- reasons an error can carry, the choices made by an import. Explanation — why, trade-offs,
+- caveats — stays in prose. Introduce a table with a sentence, as a sample is introduced, and
+- keep each cell to a phrase. `fuel compile` validates every table.
++ Use uma tabela quando os itens compartilham atributos: uma enumeração, um mapeamento, uma
++ comparação, os motivos que um erro pode carregar, as escolhas feitas por um import. A
++ explicação — o porquê, os prós e contras, as ressalvas — fica na prosa. Apresente uma tabela com
++ uma frase, como se apresenta um exemplo, e mantenha cada célula numa locução. `fuel compile`
++ valida toda tabela.
+
+- The format pages share three layouts, so that every format reads the same:
++ As páginas de formatos compartilham três layouts, para que todo formato seja lido da mesma
++ forma:
+
+= The format pages share three layouts, so that every format reads the same:
+=
+- ```tabular
++ ```tabular
+
+- column  Layout
++ column  Layout
+
+- column  Columns
+- row  Optional-field policies  *A field which is* · *Reads as* · *Unless*
+- row  Codec modes  *Import* · *For a record* · *For any other type*
+- row  Output forms  *Form* · *Serializes on* · *Hands out*
++ column  Colunas
++ row  Políticas de campos opcionais  *Um campo que é* · *É lido como* · *A menos que*
++ row  Modos de codec  *Import* · *Para um registro* · *Para qualquer outro tipo*
++ row  Formas de saída  *Forma* · *Serializa em* · *Entrega*
+
+= row  Output forms  *Form* · *Serializes on* · *Hands out*
+- ```
++ ```

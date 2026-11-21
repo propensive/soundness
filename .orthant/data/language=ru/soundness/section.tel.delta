@@ -1,0 +1,10 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- # What a reader is told of the section `soundness`: its title in the navigation.
++ # Что сообщается читателю о разделе `soundness`: его заголовок в навигации.
+
+- title  Soundness
++ title  Soundness

@@ -1,0 +1,497 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base larceny
++ base larceny
+
+- import soundness
++ import soundness
+
+- info   a compiler plugin which captures the compile errors and warnings of a block as values, for testing
++ info   un plugin del compilatore che cattura come valori gli errori e gli avvisi di compilazione di un blocco, per i test
+
+- detail
++ detail
+
+-     _Larceny_ makes the failure to compile testable. Code wrapped in `demilitarize` is compiled
+-     separately, and the errors and warnings that fall inside it are delivered to the program as
+-     a `List[CompileError]` instead of failing the build. A test can then assert that an invalid
+-     literal, a wrong-currency addition or an undeclared relation genuinely does not compile:
+-     where invariants live in types, the impossibility is the feature, and this is how it is
+-     tested.
++     _Larceny_ rende verificabile la mancata compilazione. Il codice racchiuso in `demilitarize`
++     viene compilato separatamente, e gli errori e gli avvisi che ricadono al suo interno vengono
++     consegnati al programma come `List[CompileError]` invece di far fallire la build. Un test può
++     allora asserire che un letterale non valido, un'addizione tra valute diverse o una relazione
++     non dichiarata davvero non compilano: dove gli invarianti vivono nei tipi, l'impossibilità è
++     la funzionalità stessa, ed è così che la si verifica.
+
+=     tested.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     tested.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     tested.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     tested.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+-     test(m"a type error is captured as an error"):
++     test(m"a type error is captured as an error"):
+
+=     test(m"a type error is captured as an error"):
+-       demilitarize:
++       demilitarize:
+
+=       demilitarize:
+-         val int: Int = "not an int"
++         val int: Int = "not an int"
+
+-       . map(_.reason)
++       . map(_.reason)
+
+=       . map(_.reason)
+-     . assert(_ == List(CompileError.Reason.TypeMismatch))
++     . assert(_ == List(CompileError.Reason.TypeMismatch))
+
+=       . map(_.reason)
+=     . assert(_ == List(CompileError.Reason.TypeMismatch))
+-     ```
++     ```
+
+-     The library is a compiler plugin, and `demilitarize` does nothing without it: the plugin
+-     must be enabled for every compilation whose sources use it, by passing its jar to the
+-     compiler as `-Xplugin:<path to the larceny plugin jar>` (the jar's `plugin.properties`
+-     names `larceny.LarcenyPlugin`). The plugin is published as a standalone artifact rather
+-     than in a Soundness bundle, because a `-Xplugin` jar must declare exactly one plugin; it
+-     must also be on the compile classpath, since `demilitarize` and `CompileError` are ordinary
+-     symbols. Soundness's own test modules add both.
++     La libreria è un plugin del compilatore, e `demilitarize` non fa nulla senza di esso: il plugin
++     va abilitato per ogni compilazione i cui sorgenti lo usano, passandone il jar al compilatore
++     come `-Xplugin:<path to the larceny plugin jar>` (il `plugin.properties` del jar nomina
++     `larceny.LarcenyPlugin`). Il plugin è pubblicato come artefatto autonomo anziché in un bundle
++     di Soundness, perché un jar `-Xplugin` deve dichiarare esattamente un plugin; deve anche
++     trovarsi nel classpath di compilazione, perché `demilitarize` e `CompileError` sono simboli
++     ordinari. I moduli di test di Soundness stesso aggiungono entrambe le cose.
+
+-     The plugin runs after parsing and before typing. For each compilation unit containing a
+-     `demilitarize` block, it compiles the same source again in a sub-compilation, on the same
+-     classpath and with the same language settings, prelude (`-Yimports`, `-Yno-predef`),
+-     `-Ycc-new`, `-Z` features, `-preview`, warning flags (`-deprecation`, `-feature`,
+-     `-unchecked`, `-Wall`, `-Wunused`, `-Wconf`) and other plugins, but without itself. The
+-     diagnostics whose point falls inside each block are captured and replaced, in the main
+-     compilation, by code constructing the corresponding `CompileError` values; typing then sees
+-     only those constructions, so the build succeeds as long as nothing outside a
+-     `demilitarize` block is wrong. `-Werror` is deliberately not propagated, so warnings are
+-     captured as warnings.
++     Il plugin viene eseguito dopo il parsing e prima della tipizzazione. Per ogni unità di
++     compilazione che contiene un blocco `demilitarize`, compila di nuovo lo stesso sorgente in una
++     sottocompilazione, sullo stesso classpath e con le stesse impostazioni del linguaggio, lo
++     stesso preludio (`-Yimports`, `-Yno-predef`), `-Ycc-new`, le funzionalità `-Z`, `-preview`, le
++     flag degli avvisi (`-deprecation`, `-feature`, `-unchecked`, `-Wall`, `-Wunused`, `-Wconf`) e
++     gli altri plugin, ma senza sé stesso. I diagnostici il cui punto ricade all'interno di ciascun
++     blocco vengono catturati e sostituiti, nella compilazione principale, da codice che costruisce
++     i valori `CompileError` corrispondenti; la tipizzazione vede quindi soltanto queste
++     costruzioni, e la build riesce purché nulla fuori da un blocco `demilitarize` sia sbagliato.
++     `-Werror` non viene propagato di proposito, quindi gli avvisi vengono catturati come avvisi.
+
+-     An error in an early phase stops later phases running. So that one failing block cannot
+-     hide the diagnostics of another, the plugin replaces each block containing an error with
+-     `{}` and recompiles, as many times as needed, which is why a file with many
+-     `demilitarize` blocks compiles more slowly than its size suggests. Within one block, an
+-     error suppresses that block's late-phase warnings (deprecation among them), which are
+-     never reached.
++     Un errore in una fase iniziale impedisce l'esecuzione delle fasi successive. Perché un blocco
++     che fallisce non possa nascondere i diagnostici di un altro, il plugin sostituisce ogni blocco
++     contenente un errore con `{}` e ricompila, tutte le volte che serve, ed è per questo che un
++     file con molti blocchi `demilitarize` si compila più lentamente di quanto la sua dimensione
++     lasci pensare. All'interno di un blocco, un errore sopprime gli avvisi delle fasi avanzate di
++     quel blocco (tra cui quelli di deprecazione), che non vengono mai raggiunte.
+
+-     Inside a `demilitarize` block, calls through inline extension sugar may dealias opaque
+-     collections in proxy types and report a spurious mismatch between `scala.collection` and
+-     `proscenium` types; call the underlying method directly in such a block.
++     All'interno di un blocco `demilitarize`, le chiamate tramite lo zucchero delle estensioni
++     inline possono risolvere gli alias delle collezioni opache nei tipi proxy e segnalare una
++     falsa discordanza tra i tipi di `scala.collection` e quelli di `proscenium`; in un tale blocco
++     si chiama direttamente il metodo sottostante.
+
+-     The library is the single JVM-only source set `larceny.plugin`, which depends on the Scala
+-     compiler and nothing of Soundness's. `CompileError` and `demilitarize` are exported to the
+-     `soundness` umbrella.
++     La libreria è l'unico insieme di sorgenti, solo per la JVM, `larceny.plugin`, che dipende dal
++     compilatore Scala e da nulla di Soundness. `CompileError` e `demilitarize` sono esportati nel
++     modulo ombrello `soundness`.
+
+- refer larceny.demilitarize
++ refer larceny.demilitarize
+
+- refer larceny.CompileError
++ refer larceny.CompileError
+
+- refer larceny.LarcenyPlugin
++ refer larceny.LarcenyPlugin
+
+- entry .demilitarize   compiles a block separately and returns its compile errors and warnings as values
+-     `demilitarize(code)` is rewritten by the larceny plugin, before typing, into the
+-     `List[CompileError]` of every diagnostic whose point lies inside `code`, in the order the
+-     compiler reported them. Code which compiles cleanly gives an empty list. The block itself
+-     is never typed in the main compilation, so it may contain anything that parses.
++ entry .demilitarize   compila un blocco separatamente e ne restituisce come valori gli errori e gli avvisi di compilazione
++     `demilitarize(code)` viene riscritto dal plugin larceny, prima della tipizzazione, nella
++     `List[CompileError]` di ogni diagnostico il cui punto sta all'interno di `code`, nell'ordine in
++     cui il compilatore li ha segnalati. Il codice che compila senza problemi dà una lista vuota. Il
++     blocco stesso non viene mai tipizzato nella compilazione principale, quindi può contenere
++     qualunque cosa si possa analizzare.
+
+=     is never typed in the main compilation, so it may contain anything that parses.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     is never typed in the main compilation, so it may contain anything that parses.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     is never typed in the main compilation, so it may contain anything that parses.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     is never typed in the main compilation, so it may contain anything that parses.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+-     @deprecated("superseded by `current`", "0.1.0")
++     @deprecated("superseded by `current`", "0.1.0")
+
+-     def obsolete(): Int = 42
++     def obsolete(): Int = 42
+
+-     test(m"warnings can be filtered out, leaving the errors"):
++     test(m"warnings can be filtered out, leaving the errors"):
+
+=     test(m"warnings can be filtered out, leaving the errors"):
+-       demilitarize:
++       demilitarize:
+
+-         obsolete()
++         obsolete()
+
+=         obsolete()
+-         val int: Int = "not an int"
++         val int: Int = "not an int"
+
+-       . filter(_.error).map(_.reason)
++       . filter(_.error).map(_.reason)
+
+=       . filter(_.error).map(_.reason)
+-     . assert(_ == List(CompileError.Reason.TypeMismatch))
++     . assert(_ == List(CompileError.Reason.TypeMismatch))
+
+=       . filter(_.error).map(_.reason)
+=     . assert(_ == List(CompileError.Reason.TypeMismatch))
+-     ```
++     ```
+
+-     Without the plugin enabled the call is an ordinary method, and returns an empty list:
+-     every assertion of a failure would then fail, rather than silently pass. A block with an
+-     error reports none of its own late-phase warnings, since compilation of the block stops
+-     at the error.
++     Senza il plugin abilitato la chiamata è un metodo ordinario, e restituisce una lista vuota:
++     ogni asserzione di un fallimento fallirebbe allora, invece di passare in silenzio. Un blocco con
++     un errore non segnala nessuno dei propri avvisi delle fasi avanzate, perché la compilazione del
++     blocco si ferma all'errore.
+
+- entry .procrastinate   defers compiling a block of source to run time, through the `Subcompiler`
+-     The plugin rewrites `procrastinate(code)` into a call on `Subcompiler` carrying the
+-     block's source text and the classpath, so that the code is compiled when the program runs
+-     rather than when it is built. Without the plugin it returns its argument.
++ entry .procrastinate   rimanda a runtime la compilazione di un blocco di sorgente, tramite il `Subcompiler`
++     Il plugin riscrive `procrastinate(code)` in una chiamata su `Subcompiler` che porta con sé il
++     testo sorgente del blocco e il classpath, così che il codice venga compilato quando il
++     programma viene eseguito anziché quando viene costruito. Senza il plugin restituisce il proprio
++     argomento.
+
+- entry .CompileError   one diagnostic captured by `demilitarize`: its reason, message, position and severity
++ entry .CompileError   un diagnostico catturato da `demilitarize`: il suo motivo, messaggio, posizione e gravità
+
+= entry .CompileError   one diagnostic captured by `demilitarize`: its reason, message, position and severity
+-   detail
++   detail
+
+-       A case class describing a single compiler error, warning or informational message from
+-       within a `demilitarize` block. `#reason` is the compiler's own message identifier, as a
+-       `CompileError.Reason`, which is the most robust thing to assert on; `#message` is its
+-       full text; `#focus` is the source text the diagnostic spans; and `#importance` says
+-       whether it is an error, a warning or information.
++       Una case class che descrive un singolo errore, avviso o messaggio informativo del compilatore
++       proveniente da un blocco `demilitarize`. `#reason` è l'identificatore del messaggio proprio
++       del compilatore, come `CompileError.Reason`, ed è la cosa più robusta su cui fare
++       asserzioni; `#message` è il suo testo completo; `#focus` è il testo sorgente coperto dal
++       diagnostico; e `#importance` dice se si tratta di un errore, di un avviso o di
++       un'informazione.
+
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+-       ##
++       ##
+
+-       import soundness.*
++       import soundness.*
+
+-       @deprecated("superseded by `current`", "0.1.0")
++       @deprecated("superseded by `current`", "0.1.0")
+
+-       def obsolete(): Int = 42
++       def obsolete(): Int = 42
+
+-       test(m"a deprecation warning names the deprecated method"):
++       test(m"a deprecation warning names the deprecated method"):
+
+-         demilitarize:
++         demilitarize:
+
+-           obsolete()
++           obsolete()
+
+-         . map(_.message)
++         . map(_.message)
+
+-       . assert(_.exists(_.contains("obsolete")))
++       . assert(_.exists(_.contains("obsolete")))
+
+-       ```
++       ```
+
+-       Positions are taken from the user's source even for a diagnostic raised inside an
+-       inline or macro expansion: the plugin takes the narrowest position in the compilation
+-       unit which lies within the call site, so `#focus` is, for example, the bad splice in an
+-       interpolator rather than the whole literal.
++       Le posizioni vengono prese dal sorgente dell'utente anche per un diagnostico sollevato
++       all'interno di un'espansione inline o di macro: il plugin prende la posizione più stretta
++       nell'unità di compilazione che sta all'interno del punto di chiamata, quindi `#focus` è, per
++       esempio, lo splice errato in un interpolatore anziché l'intero letterale.
+
+-   refer larceny.demilitarize
++   refer larceny.demilitarize
+
+-   refer larceny.CompileError.Reason
++   refer larceny.CompileError.Reason
+
+-   entry .apply   a `CompileError` from a reason ordinal, message, focus, start, offset and severity level
+-       The form the plugin generates. An ordinal newer than `CompileError.Reason` knows becomes
+-       `NoExplanation`, and a level outside the known range an `Error`, so that a diagnostic
+-       from a newer compiler is still captured rather than silently dropped.
+-   entry .Importance   the severity of a captured diagnostic: `Info`, `Warning` or `Error`
++   entry .apply   un `CompileError` a partire da un ordinale di motivo, un messaggio, un focus, un inizio, un offset e un livello di gravità
++       La forma che il plugin genera. Un ordinale più recente di quelli noti a
++       `CompileError.Reason` diventa `NoExplanation`, e un livello fuori dall'intervallo noto un
++       `Error`, così che un diagnostico proveniente da un compilatore più recente venga comunque
++       catturato anziché scartato in silenzio.
++   entry .Importance   la gravità di un diagnostico catturato: `Info`, `Warning` o `Error`
+
+=   entry .Importance   the severity of a captured diagnostic: `Info`, `Warning` or `Error`
+-     detail
++     detail
+
+-         An enum whose cases mirror the Scala compiler's diagnostic levels and are named as
+-         `anthology.Importance`'s are. It is restated here because the plugin depends on
+-         nothing of Soundness's.
+-     entry .apply   the importance for a compiler diagnostic level, treating an unknown level as `Error`
+-   entry .Reason   the compiler's identifier for the kind of a diagnostic, such as `TypeMismatch`
++         Un enum i cui casi rispecchiano i livelli di diagnostica del compilatore Scala e hanno gli
++         stessi nomi di quelli di `anthology.Importance`. È ridichiarato qui perché il plugin non
++         dipende da nulla di Soundness.
++     entry .apply   l'importanza per un livello di diagnostica del compilatore, trattando un livello sconosciuto come `Error`
++   entry .Reason   l'identificatore del compilatore per il tipo di un diagnostico, come `TypeMismatch`
+
+=   entry .Reason   the compiler's identifier for the kind of a diagnostic, such as `TypeMismatch`
+-     detail
++     detail
+
+-         An enum with one case for each of the Scala 3 compiler's `ErrorMessageID`s, in the
+-         same order, so that a captured diagnostic can be matched by kind rather than by the
+-         wording of its message: `TypeMismatch`, `NotAMember`, `MissingImplicitArgument`,
+-         `AmbiguousOverload`, `PatternMatchExhaustivity`, `MatchCaseUnreachable`, and so on.
+-         `NoExplanation` is the reason of a diagnostic with no specific identifier, which
+-         includes every error a macro raises with `halt` and every `compiletime.error`. The
+-         cases marked _old_ in the source are retired identifiers kept for their position.
++         Un enum con un caso per ciascuno degli `ErrorMessageID` del compilatore Scala 3, nello
++         stesso ordine, così che un diagnostico catturato si possa abbinare per tipo anziché per la
++         formulazione del suo messaggio: `TypeMismatch`, `NotAMember`, `MissingImplicitArgument`,
++         `AmbiguousOverload`, `PatternMatchExhaustivity`, `MatchCaseUnreachable` e così via.
++         `NoExplanation` è il motivo di un diagnostico senza identificatore specifico, il che
++         include ogni errore che una macro solleva con `halt` e ogni `compiletime.error`. I casi
++         contrassegnati con _old_ nel sorgente sono identificatori ritirati conservati per la loro
++         posizione.
+
+-         ```scala fuel
++         ```scala fuel
+
+-         typecheck
++         typecheck
+
+-         ##
++         ##
+
+-         import soundness.*
++         import soundness.*
+
+-         test(m"a missing member is reported by its reason"):
++         test(m"a missing member is reported by its reason"):
+
+-           demilitarize:
++           demilitarize:
+
+-             t"text".noSuchMember
++             t"text".noSuchMember
+
+-           . map(_.reason)
++           . map(_.reason)
+
+-         . assert(_ == List(CompileError.Reason.NotAMember))
++         . assert(_ == List(CompileError.Reason.NotAMember))
+
+-         ```
++         ```
+
+-   entry .Id   an extractor matching a `CompileError` by its `CompileError.Reason`
+-       `case CompileError.Id(reason) =>` binds the error's reason; it always matches. It was
+-       formerly the separate type `CompileErrorId`.
+-   entry #reason   the compiler's identifier for the kind of diagnostic, as a `CompileError.Reason`
+-   entry #message   the full text of the diagnostic, as the compiler wrote it
+-   entry #focus   the source text spanned by the diagnostic's position
+-   entry #start   the offset in the source file at which the diagnostic's span starts
+-   entry #offset   the distance of the diagnostic's point from the start of its span
+-   entry #importance   whether the diagnostic is an error, a warning or information
+-   entry #point   the offset in the source file of the diagnostic's point: `#start` plus `#offset`
+-   entry #warning   whether the diagnostic is a warning
+-   entry #error   whether the diagnostic is an error
++   entry .Id   un estrattore che abbina un `CompileError` in base al suo `CompileError.Reason`
++       `case CompileError.Id(reason) =>` lega il motivo dell'errore; corrisponde sempre. In passato
++       era il tipo separato `CompileErrorId`.
++   entry #reason   l'identificatore del compilatore per il tipo di diagnostico, come `CompileError.Reason`
++   entry #message   il testo completo del diagnostico, come lo ha scritto il compilatore
++   entry #focus   il testo sorgente coperto dalla posizione del diagnostico
++   entry #start   l'offset nel file sorgente in cui inizia l'estensione del diagnostico
++   entry #offset   la distanza del punto del diagnostico dall'inizio della sua estensione
++   entry #importance   se il diagnostico è un errore, un avviso o un'informazione
++   entry #point   l'offset nel file sorgente del punto del diagnostico: `#start` più `#offset`
++   entry #warning   se il diagnostico è un avviso
++   entry #error   se il diagnostico è un errore
+
+- entry .LarcenyPlugin   the compiler plugin class, named in larceny's `plugin.properties`
++ entry .LarcenyPlugin   la classe del plugin del compilatore, nominata nel `plugin.properties` di larceny
+
+= entry .LarcenyPlugin   the compiler plugin class, named in larceny's `plugin.properties`
+-   detail
++   detail
+
+-       The `StandardPlugin` the compiler instantiates when larceny's jar is passed with
+-       `-Xplugin:`. It installs a single phase, `LarcenyTransformer`, and is not used directly.
++       Lo `StandardPlugin` che il compilatore istanzia quando il jar di larceny viene passato con
++       `-Xplugin:`. Installa un'unica fase, `LarcenyTransformer`, e non si usa direttamente.
+
+-   refer larceny.LarcenyTransformer
++   refer larceny.LarcenyTransformer
+
+-   entry #name   the plugin's name, `larceny`
++   entry #name   il nome del plugin, `larceny`
+
+- entry .LarcenyTransformer   the plugin phase which finds `demilitarize` blocks and substitutes their errors
++ entry .LarcenyTransformer   la fase del plugin che trova i blocchi `demilitarize` e ne sostituisce gli errori
+
+= entry .LarcenyTransformer   the plugin phase which finds `demilitarize` blocks and substitutes their errors
+-   hidden
++   hidden
+
+= entry .LarcenyTransformer   the plugin phase which finds `demilitarize` blocks and substitutes their errors
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. A phase named `errorcap`, running after `parser` and before
+-       `typer`, which collects the regions of every `demilitarize` block in a unit, runs the
+-       `Subcompiler` over the unit's source, and rewrites each block into the construction of
+-       its captured `CompileError`s.
+-   entry .isLarceny   whether a `-Xplugin` path (jar or directory) is the larceny plugin itself
+-       Read from the path's `plugin.properties`; it is how the plugin keeps itself out of its
+-       own sub-compilations, which would otherwise recurse.
+-   entry #phaseName   the phase's name, `errorcap`
++       Non è per l'uso diretto. Una fase chiamata `errorcap`, eseguita dopo `parser` e prima di
++       `typer`, che raccoglie le regioni di ogni blocco `demilitarize` in un'unità, esegue il
++       `Subcompiler` sul sorgente dell'unità, e riscrive ciascun blocco nella costruzione dei suoi
++       `CompileError` catturati.
++   entry .isLarceny   se un percorso `-Xplugin` (jar o directory) è il plugin larceny stesso
++       Si legge dal `plugin.properties` del percorso; è il modo in cui il plugin si esclude dalle
++       proprie sottocompilazioni, che altrimenti andrebbero in ricorsione.
++   entry #phaseName   il nome della fase, `errorcap`
+
+- entry .Subcompiler   the sub-compilation that compiles a source and collects its diagnostics
++ entry .Subcompiler   la sottocompilazione che compila un sorgente e ne raccoglie i diagnostici
+
+= entry .Subcompiler   the sub-compilation that compiles a source and collects its diagnostics
+-   hidden
++   hidden
+
+= entry .Subcompiler   the sub-compilation that compiles a source and collects its diagnostics
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. `.compile` compiles a source with a fresh compiler, collecting
+-       every diagnostic as a `CompileError`; given regions, it blanks each one containing an
+-       error and recompiles until no new errors appear, so that one block's error cannot hide
+-       another's diagnostics.
+-   entry .compile   compiles a source and returns its diagnostics as `CompileError`s
+-   entry .CustomReporter   the compiler reporter which records diagnostics as `CompileError`s
++       Non è per l'uso diretto. `.compile` compila un sorgente con un compilatore nuovo,
++       raccogliendo ogni diagnostico come `CompileError`; date delle regioni, svuota ognuna di
++       quelle che contengono un errore e ricompila finché non compaiono nuovi errori, così che
++       l'errore di un blocco non possa nascondere i diagnostici di un altro.
++   entry .compile   compila un sorgente e ne restituisce i diagnostici come `CompileError`
++   entry .CustomReporter   il reporter del compilatore che registra i diagnostici come `CompileError`
+
+=   entry .CustomReporter   the compiler reporter which records diagnostics as `CompileError`s
+-     detail
++     detail
+
+-         Places each diagnostic at the narrowest position in the compilation unit's own source
+-         which lies within the user's call site.
+-     entry #errors   the diagnostics recorded so far
+-     entry #doReport   records one diagnostic as a `CompileError`
++         Colloca ogni diagnostico nella posizione più stretta del sorgente proprio dell'unità di
++         compilazione che sta all'interno del punto di chiamata dell'utente.
++     entry #errors   i diagnostici registrati finora
++     entry #doReport   registra un diagnostico come `CompileError`

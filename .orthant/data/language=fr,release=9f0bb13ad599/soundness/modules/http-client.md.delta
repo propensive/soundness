@@ -1,7 +1,4 @@
 orthant 1 language
 
-!     new Spring[Data]:
-!       def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
-!         Http.emptyBody())
 -     Spring[Data](Http.emptyBody()))
 +     Spring[Data](Http.emptyBody()))

@@ -1,0 +1,281 @@
+orthant 1 language
+
+- ## Bit Flags
++ ## Flags de bits
+
+- ### About
++ ### Visão geral
+
+- A `Flags[Color]` is a set of on-or-off switches, one for each case of the `Color`
+- [enumeration], held in the bits of a single `Long`. A flag is set and tested by naming its case,
+- never by a bit number. The value stays one machine word, so it is as cheap to copy and store as
+- a number, but it reads like a set.
++ Um `Flags[Color]` é um conjunto de chaves liga-desliga, uma para cada caso da [enumeração]
++ `Color`, guardadas nos bits de um único `Long`. Uma flag é ligada e testada pelo nome de seu
++ caso, nunca por um número de bit. O valor continua sendo uma única palavra de máquina, então é
++ tão barato de copiar e armazenar quanto um número, mas se lê como um conjunto.
+
+- ### On flag sets
++ ### Sobre conjuntos de flags
+
+- Bit flags are one of the oldest data structures in systems programming. A program writes
+- `flags | 0x10` to switch an option on and `flags & 0x04` to test another, and the meaning of each
+- bit is recorded in a comment, if anywhere. The compact representation is worth keeping: a
+- `Set[Color]` costs an allocation and several pointers to hold what fits in one word.
++ Flags de bits são uma das estruturas de dados mais antigas da programação de sistemas. Um
++ programa escreve `flags | 0x10` para ligar uma opção e `flags & 0x04` para testar outra, e o
++ significado de cada bit fica registrado em um comentário, se é que fica em algum lugar. A
++ representação compacta vale a pena manter: um `Set[Color]` custa uma alocação e vários ponteiros
++ para guardar o que cabe em uma palavra.
+
+- The untyped access is not worth keeping. Nothing stops a program testing a bit that belongs to a
+- different set of options, or a bit that means nothing at all.
++ O acesso sem tipos não vale a pena manter. Nada impede um programa de testar um bit que pertence
++ a outro conjunto de opções, ou um bit que não significa nada.
+
+- `Flags` keeps the word and gives the bits types. Each case of an enumeration owns the bit at its
+- ordinal: the first case owns bit 0, the second bit 1, and so on. A flag can only be named by a
+- case of the right enumeration, so a flag from another set of options is an
+- [impossible state](../../philosophy/impossible-states.md), rejected at [compiletime]. Everything
+- comes from the `soundness` package. The second import lets the samples print their results:
++ `Flags` mantém a palavra e dá tipos aos bits. Cada caso de uma enumeração possui o bit em seu
++ ordinal: o primeiro caso possui o bit 0, o segundo o bit 1, e assim por diante. Uma flag só pode
++ ser nomeada por um caso da enumeração certa, então uma flag de outro conjunto de opções é um
++ [estado impossível](../../philosophy/impossible-states.md), rejeitado em
++ [tempo de compilação]. Tudo vem do pacote `soundness`. O segundo import permite que os exemplos
++ imprimam seus resultados:
+
+= comes from the `soundness` package. The second import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Setting and testing flags
++ ### Ligar e testar flags
+
+- `Flags[Color]()` makes a flag set for the enumeration `Color`, with every flag off:
++ `Flags[Color]()` cria um conjunto de flags para a enumeração `Color`, com todas as flags
++ desligadas:
+
+= `Flags[Color]()` makes a flag set for the enumeration `Color`, with every flag off:
+=
+- ```scala
++ ```scala
+
+- enum Color:
++ enum Color:
+
+-   case Red, Orange, Yellow, Green, Blue, Indigo, Violet
++   case Red, Orange, Yellow, Green, Blue, Indigo, Violet
+
+- val none = Flags[Color]()
++ val none = Flags[Color]()
+
+= val none = Flags[Color]()
+- ```
++ ```
+
+- Assigning `true` to a case switches its flag on. A `Flags` value is [immutable], so the assignment
+- is an expression whose value is a new flag set, and `none` is left as it was:
++ Atribuir `true` a um caso liga sua flag. Um valor `Flags` é [imutável], então a atribuição é uma
++ expressão cujo valor é um novo conjunto de flags, e `none` fica como estava:
+
+= is an expression whose value is a new flag set, and `none` is left as it was:
+=
+- ```scala fuel
++ ```scala fuel
+
+- highlight none(Color.Orange) = true  a new `Flags[Color]`, with Orange on
++ highlight none(Color.Orange) = true  a new `Flags[Color]`, with Orange on
+
+= highlight none(Color.Orange) = true  a new `Flags[Color]`, with Orange on
+- ##
++ ##
+
+- val warm = none(Color.Orange) = true
++ val warm = none(Color.Orange) = true
+
+= val warm = none(Color.Orange) = true
+- ```
++ ```
+
+- Applying a flag set to a case tests its flag:
++ Aplicar um conjunto de flags a um caso testa sua flag:
+
+= Applying a flag set to a case tests its flag:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Applying a flag set to a case tests its flag:
+=
+= ```scala fuel
+- run
++ run
+
+= Applying a flag set to a case tests its flag:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(warm(Color.Orange).inspect)
++ Out.println(warm(Color.Orange).inspect)
+
+- Out.println(warm(Color.Red).inspect)
++ Out.println(warm(Color.Red).inspect)
+
+- Out.println(none(Color.Orange).inspect)
++ Out.println(none(Color.Orange).inspect)
+
+= Out.println(none(Color.Orange).inspect)
+- ```
++ ```
+
+- A program that switches several flags usually keeps the current set in a `var`, and assigns each
+- new set back to it. Assigning `false` switches a flag off again:
++ Um programa que liga várias flags geralmente mantém o conjunto atual em uma `var` e atribui cada
++ novo conjunto de volta a ela. Atribuir `false` desliga uma flag de novo:
+
+= new set back to it. Assigning `false` switches a flag off again:
+=
+- ```scala
++ ```scala
+
+- var flags = Flags[Color]()
++ var flags = Flags[Color]()
+
+- flags = flags(Color.Orange) = true
++ flags = flags(Color.Orange) = true
+
+- flags = flags(Color.Green) = true
++ flags = flags(Color.Green) = true
+
+- flags = flags(Color.Violet) = true
++ flags = flags(Color.Violet) = true
+
+- flags = flags(Color.Green) = false
++ flags = flags(Color.Green) = false
+
+= flags = flags(Color.Green) = false
+- ```
++ ```
+
+- Because every step produces a new value, a flag set can be shared between threads, or stored in
+- another data structure, as safely as the `Long` it is.
++ Como cada passo produz um novo valor, um conjunto de flags pode ser compartilhado entre threads,
++ ou armazenado em outra estrutura de dados, com a mesma segurança que o `Long` que ele é.
+
+- ### Flags as a set
++ ### Flags como conjunto
+
+- `set` reads the flags that are on as an ordinary `Set` of the enumeration's cases, ready for
+- iteration and the [set operations](collections.md#sets-and-maps):
++ `set` lê as flags ligadas como um `Set` comum dos casos da enumeração, pronto para iteração e
++ para as [operações de conjuntos](collections.md#sets-and-maps):
+
+= iteration and the [set operations](collections.md#sets-and-maps):
+=
+- ```scala fuel
++ ```scala fuel
+
+= iteration and the [set operations](collections.md#sets-and-maps):
+=
+= ```scala fuel
+- run
++ run
+
+= iteration and the [set operations](collections.md#sets-and-maps):
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(flags.set.show)
++ Out.println(flags.set.show)
+
+- Out.println(none.set.show)
++ Out.println(none.set.show)
+
+= Out.println(none.set.show)
+- ```
++ ```
+
+- ### What the compiler rejects
++ ### O que o compilador rejeita
+
+- A flag set accepts only the cases of its own enumeration. A case of another enumeration is a type
+- error, where a raw bit mask would have silently tested whichever bit had the same position:
++ Um conjunto de flags aceita apenas os casos de sua própria enumeração. Um caso de outra
++ enumeração é um erro de tipo, onde uma máscara de bits crua teria testado em silêncio qualquer
++ bit que estivesse na mesma posição:
+
+= error, where a raw bit mask would have silently tested whichever bit had the same position:
+=
+- ```scala
++ ```scala
+
+- enum Weekday:
++ enum Weekday:
+
+-   case Monday, Tuesday, Wednesday
++   case Monday, Tuesday, Wednesday
+
+=   case Monday, Tuesday, Wednesday
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- flags(Weekday.Monday)
++ flags(Weekday.Monday)
+
+= flags(Weekday.Monday)
+- ```
++ ```
+
+- ### How many flags
++ ### Quantas flags
+
+- A flag occupies the bit at its case's ordinal, and a `Long` has 64 bits, so an enumeration of up
+- to 64 cases fits in one flag set. The cases, their names and their ordinals come from the
+- enumeration's `Enumerable` instance, which is [derived][derivation] from the `enum` declaration;
+- [Enumerations by name and position](decoding.md#enumerations-by-name-and-position) shows what
+- else that instance provides.
++ Uma flag ocupa o bit no ordinal de seu caso, e um `Long` tem 64 bits, então uma enumeração de
++ até 64 casos cabe em um único conjunto de flags. Os casos, seus nomes e seus ordinais vêm da
++ instância de `Enumerable` da enumeração, que é [derivada][derivação] da declaração `enum`;
++ [Enumerações por nome e por posição](decoding.md#enumerations-by-name-and-position) mostra o que
++ mais essa instância fornece.
+
+- ### Related
++ ### Relacionados
+
+- - [Numbers](numbers.md) and [binary data](binary-data.md) describe the bits beneath a set of flags.
++ - [Números](numbers.md) e [dados binários](binary-data.md) descrevem os bits por baixo de um
++   conjunto de flags.

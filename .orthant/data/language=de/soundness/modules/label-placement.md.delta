@@ -1,0 +1,645 @@
+orthant 1 language
+
+- ## Label placement
++ ## Platzierung von Beschriftungen
+
+- ### About
++ ### Überblick
+
+- Text on a picture is set beside the thing it names: a label by a point, a name by a town, a
+- percentage in a wedge. When two things are close, their labels collide, and the picture is worse
+- than it would be with one of them moved a little.
++ Text auf einem Bild steht neben dem, was er benennt: eine Beschriftung bei einem Punkt, ein
++ Name bei einer Stadt, ein Prozentwert in einem Segment. Liegen zwei Dinge nah beieinander,
++ stoßen ihre Beschriftungen zusammen, und das Bild ist schlechter, als es wäre, wenn eine von
++ ihnen ein wenig verschoben wäre.
+
+- Cartouche decides where each piece of text goes. It takes every label with its measured size,
+- the point it describes and the sides it may lie on, together with everything else on the page
+- which text must not cover, and finds a position for each one. [Charts](charts.md) use it for
+- their labels. A map would use it for its place names.
++ Cartouche entscheidet, wohin jedes Stück Text kommt. Es nimmt jede Beschriftung mit ihrer
++ gemessenen Größe, dem Punkt, den sie beschreibt, und den Seiten, auf denen sie liegen darf,
++ zusammen mit allem anderen auf der Seite, was Text nicht verdecken darf, und findet für jede eine
++ Position. [Diagramme](charts.md) verwenden es für ihre Beschriftungen. Eine Karte würde es für
++ ihre Ortsnamen verwenden.
+
+- ### On placement
++ ### Über Platzierung
+
+- The code which builds a picture knows what each label says and what it describes, but not where
+- the other labels will end up, and so it cannot avoid them. Cartouche resolves this by running
+- the code which builds the picture twice. The first run describes the labels. The engine arranges
+- them. The second run builds the picture with the answers.
++ Der Code, der ein Bild aufbaut, weiß, was jede Beschriftung sagt und was sie beschreibt, aber
++ nicht, wo die anderen Beschriftungen landen werden, und kann ihnen daher nicht ausweichen.
++ Cartouche löst das, indem es den Code, der das Bild aufbaut, zweimal ausführt. Der erste
++ Durchlauf beschreibt die Beschriftungen. Die Engine ordnet sie an. Der zweite Durchlauf baut
++ das Bild mit den Antworten.
+
+- The body of `arrange` is that code, and `position` is how it asks for the place of a label.
+- Everything comes from the `soundness` package. The second import lets the samples print their
+- results, and the `Decimalizer` fixes how many significant figures a coordinate is printed with:
++ Der Rumpf von `arrange` ist dieser Code, und mit `position` fragt er nach dem Platz einer
++ Beschriftung. Alles stammt aus dem Paket `soundness`. Der zweite Import lässt die Beispiele
++ ihre Ergebnisse ausgeben, und der `Decimalizer` legt fest, mit wie vielen signifikanten
++ Stellen eine Koordinate ausgegeben wird:
+
+= results, and the `Decimalizer` fixes how many significant figures a coordinate is printed with:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- given decimalizer: Decimalizer = Decimalizer(5)
++ given decimalizer: Decimalizer = Decimalizer(5)
+
+= given decimalizer: Decimalizer = Decimalizer(5)
+- ```
++ ```
+
+- Here two labels of the same size ask for the same point:
++ Hier fragen zwei Beschriftungen gleicher Größe nach demselben Punkt:
+
+= Here two labels of the same size ask for the same point:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Here two labels of the same size ask for the same point:
+=
+= ```scala fuel
+- run
++ run
+
+= Here two labels of the same size ask for the same point:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val picture = arrange:
++ val picture = arrange:
+
+-   val first = position(60.0, 12.0, 100.0, 100.0)
++   val first = position(60.0, 12.0, 100.0, 100.0)
+
+-   val second = position(60.0, 12.0, 100.0, 100.0)
++   val second = position(60.0, 12.0, 100.0, 100.0)
+
+-   (first.attachment, second.attachment)
++   (first.attachment, second.attachment)
+
+- Out.println(picture.inspect)
++ Out.println(picture.inspect)
+
+= Out.println(picture.inspect)
+- ```
++ ```
+
+- The first is set to the east of the point, as labels are by preference. The second would cover
+- it, so it is set to the west.
++ Die erste wird östlich des Punkts gesetzt, wo Beschriftungen bevorzugt stehen. Die zweite
++ würde sie verdecken und wird daher westlich gesetzt.
+
+- In the first run of the body, each `position` answers provisionally, with the label where it was
+- asked for, and the result of that run is thrown away. The engine then solves the whole
+- arrangement, and in the second run each call answers with its solved position. The value of
+- `arrange` is the value of the body's second run, so a chart built inside `arrange` is what comes
+- out of it.
++ Im ersten Durchlauf des Rumpfs antwortet jedes `position` vorläufig, mit der Beschriftung dort,
++ wo nach ihr gefragt wurde, und das Ergebnis dieses Durchlaufs wird verworfen. Die Engine löst
++ dann die gesamte Anordnung, und im zweiten Durchlauf antwortet jeder Aufruf mit seiner gelösten
++ Position. Der Wert von `arrange` ist der Wert des zweiten Durchlaufs des Rumpfs, sodass ein
++ innerhalb von `arrange` gebautes Diagramm das ist, was dabei herauskommt.
+
+- The body is run twice, so it must be repeatable: the same `position` calls, in the same order,
+- each time, and nothing done which should not happen twice. A counter which numbers the labels
+- belongs inside the body, where it starts again with the second run.
++ Der Rumpf wird zweimal ausgeführt, muss also wiederholbar sein: jedes Mal dieselben
++ `position`-Aufrufe in derselben Reihenfolge, und nichts, was nicht zweimal geschehen sollte. Ein
++ Zähler, der die Beschriftungen durchnummeriert, gehört in den Rumpf, wo er mit dem zweiten
++ Durchlauf von vorn beginnt.
+
+- ### Captions and targets
++ ### Captions und Ziele
+
+- A label is a *caption*: a width and height, the point it describes, and how it may be set
+- relative to that point. The engine sees only geometry. Whoever draws the text measures it.
+- `position` takes the parts of the caption directly, or a `Caption` built beforehand:
++ Eine Beschriftung ist eine *Caption*: eine Breite und Höhe, der Punkt, den sie beschreibt, und
++ die Art, wie sie relativ zu diesem Punkt gesetzt werden darf. Die Engine sieht nur Geometrie.
++ Wer den Text zeichnet, misst ihn. `position` nimmt die Teile der Caption direkt oder eine vorab
++ gebaute `Caption`:
+
+= `position` takes the parts of the caption directly, or a `Caption` built beforehand:
+=
+- ```scala
++ ```scala
+
+- val caption = Caption(60.0, 12.0, 100.0, 100.0, standoff = 4.0, reach = 24.0)
++ val caption = Caption(60.0, 12.0, 100.0, 100.0, standoff = 4.0, reach = 24.0)
+
+- val placed = arrange(position(caption))
++ val placed = arrange(position(caption))
+
+= val placed = arrange(position(caption))
+- ```
++ ```
+
+- The answer is a `Caption.Position`: the point to set the text at, the side of the target it lies
+- on, the box it occupies, a leader line if it needed one, and whether it is to be drawn at all:
++ Die Antwort ist eine `Caption.Position`: der Punkt, an dem der Text gesetzt wird, die Seite des
++ Ziels, auf der er liegt, der Kasten, den er einnimmt, eine Führungslinie, falls er eine
++ brauchte, und ob er überhaupt gezeichnet werden soll:
+
+= on, the box it occupies, a leader line if it needed one, and whether it is to be drawn at all:
+=
+- ```scala fuel
++ ```scala fuel
+
+= on, the box it occupies, a leader line if it needed one, and whether it is to be drawn at all:
+=
+= ```scala fuel
+- run
++ run
+
+= on, the box it occupies, a leader line if it needed one, and whether it is to be drawn at all:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(placed.attachment.inspect)
++ Out.println(placed.attachment.inspect)
+
+- Out.println(placed.x.show)
++ Out.println(placed.x.show)
+
+- Out.println(placed.y.show)
++ Out.println(placed.y.show)
+
+- Out.println(placed.visible.inspect)
++ Out.println(placed.visible.inspect)
+
+= Out.println(placed.visible.inspect)
+- ```
++ ```
+
+- The side is an `Attachment`, which is `East`, `West`, `North`, `South`, one of the four
+- diagonals, or `Center`. The point is the anchor of the label on that side. For `East`, it is the
+- middle of the left edge of the label, so text set there with its start at the point lies to the
+- east of the target. Here the `standoff` of `4.0` puts the point four units east of the target. A
+- renderer turns the attachment into its own alignment. An SVG `text` element uses `text-anchor`
+- and `dominant-baseline`.
++ Die Seite ist ein `Attachment`, also `East`, `West`, `North`, `South`, eine der vier
++ Diagonalen oder `Center`. Der Punkt ist der Anker der Beschriftung auf dieser Seite. Für `East`
++ ist er die Mitte der linken Kante der Beschriftung, sodass Text, der dort mit seinem Anfang am
++ Punkt gesetzt wird, östlich des Ziels liegt. Hier setzt der `standoff` von `4.0` den Punkt vier
++ Einheiten östlich des Ziels. Ein Renderer verwandelt das Attachment in seine eigene
++ Ausrichtung. Ein SVG-`text`-Element verwendet `text-anchor` und `dominant-baseline`.
+
+- `attachments` lists the sides the label may lie on, best first. The default tries east, then
+- west, then the diagonals, then north and south. A label which may lie on one side only is given
+- just that side. `standoff` is the gap between the target and the near edge of the label, for a
+- label which sits beside a marker rather than on its center.
++ `attachments` listet die Seiten auf, auf denen die Beschriftung liegen darf, die beste zuerst.
++ Die Vorgabe probiert Osten, dann Westen, dann die Diagonalen, dann Norden und Süden. Eine
++ Beschriftung, die nur auf einer Seite liegen darf, erhält nur diese Seite. `standoff` ist der
++ Abstand zwischen dem Ziel und der nahen Kante der Beschriftung, für eine Beschriftung, die neben
++ einer Markierung statt auf ihrer Mitte sitzt.
+
+- The rest of the parameters of a caption are described in the sections which follow. All of them
+- are:
++ Die übrigen Parameter einer Caption werden in den folgenden Abschnitten beschrieben. Alle
++ zusammen sind:
+
+= are:
+=
+- ```tabular
++ ```tabular
+
+= are:
+=
+= ```tabular
+- column  Parameter
++ column  Parameter
+
+- column  Default
+- column  Meaning
+- row  `width`, `height`  required  the label's measured size
+- row  `x`, `y`  required  the target point
+- row  `attachments`  east, west, the diagonals, north, south  the sides it may lie on, best first
+- row  `standoff`  `0.0`  the gap between the target and the label's near edge
+- row  `reach`  `0.0`  how far it may be moved from the target
+- row  `padding`  `0.0`  clearance demanded beyond its own box
+- row  `priority`  `0`  higher is placed first
+- row  `fallback`  `Caption.Fallback.Overlap`  what to do when no position is clear
++ column  Vorgabe
++ column  Bedeutung
++ row  `width`, `height`  erforderlich  die gemessene Größe der Beschriftung
++ row  `x`, `y`  erforderlich  der Zielpunkt
++ row  `attachments`  Osten, Westen, die Diagonalen, Norden, Süden  die Seiten, auf denen sie liegen darf, die beste zuerst
++ row  `standoff`  `0.0`  der Abstand zwischen dem Ziel und der nahen Kante der Beschriftung
++ row  `reach`  `0.0`  wie weit sie vom Ziel weggerückt werden darf
++ row  `padding`  `0.0`  geforderter Freiraum über den eigenen Kasten hinaus
++ row  `priority`  `0`  höher wird zuerst platziert
++ row  `fallback`  `Caption.Fallback.Overlap`  was zu tun ist, wenn keine Position frei ist
+
+= row  `fallback`  `Caption.Fallback.Overlap`  what to do when no position is clear
+- ```
++ ```
+
+- ### Obstacles
++ ### Hindernisse
+
+- Labels avoid each other, and they avoid whatever the body declares with `avoid`:
++ Beschriftungen weichen einander aus, und sie weichen allem aus, was der Rumpf mit `avoid`
++ deklariert:
+
+= Labels avoid each other, and they avoid whatever the body declares with `avoid`:
+=
+- ```tabular
++ ```tabular
+
+- column  Obstacle
+- column  Parameters
+- column  Covers
+- row  `Obstacle.Box`  `left`, `top`, `width`, `height`  a bar
+- row  `Obstacle.Line`  `x1`, `y1`, `x2`, `y2`, and a `width` defaulting to `1.0`  a plotted line
+- row  `Obstacle.Disc`  `x`, `y`, `radius`  a marker
++ column  Hindernis
++ column  Parameter
++ column  Deckt ab
++ row  `Obstacle.Box`  `left`, `top`, `width`, `height`  einen Balken
++ row  `Obstacle.Line`  `x1`, `y1`, `x2`, `y2` und eine `width` mit der Vorgabe `1.0`  eine gezeichnete Linie
++ row  `Obstacle.Disc`  `x`, `y`, `radius`  eine Markierung
+
+= row  `Obstacle.Disc`  `x`, `y`, `radius`  a marker
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val kept = arrange:
++ val kept = arrange:
+
+-   avoid(Obstacle.Box(100.0, 90.0, 40.0, 20.0))
++   avoid(Obstacle.Box(100.0, 90.0, 40.0, 20.0))
+
+-   avoid(Obstacle.Line(0.0, 100.0, 300.0, 100.0), Obstacle.Disc(100.0, 100.0, 3.0))
++   avoid(Obstacle.Line(0.0, 100.0, 300.0, 100.0), Obstacle.Disc(100.0, 100.0, 3.0))
+
+-   position(60.0, 12.0, 100.0, 100.0)
++   position(60.0, 12.0, 100.0, 100.0)
+
+- Out.println(kept.attachment.inspect)
++ Out.println(kept.attachment.inspect)
+
+= Out.println(kept.attachment.inspect)
+- ```
++ ```
+
+- The box lies to the east of the point, and the line runs through it, so a label set to the west
+- would touch the line. The label is set to the northwest instead. A polyline is its segments, each an `Obstacle.Line`. The `width` of a line is its stroke, and a label may not
+- touch it.
++ Der Kasten liegt östlich des Punkts, und die Linie verläuft durch ihn, sodass eine westlich
++ gesetzte Beschriftung die Linie berühren würde. Die Beschriftung wird stattdessen nordwestlich
++ gesetzt. Eine Polylinie besteht aus ihren Segmenten, jedes ein `Obstacle.Line`. Die `width`
++ einer Linie ist ihre Strichstärke, und eine Beschriftung darf sie nicht berühren.
+
+- `canvas` declares the area which labels must stay within, which is otherwise unbounded. Here the
+- label would run off the right edge, so it is set to the west:
++ `canvas` deklariert die Fläche, innerhalb derer Beschriftungen bleiben müssen und die sonst
++ unbegrenzt ist. Hier würde die Beschriftung über den rechten Rand hinauslaufen und wird daher
++ westlich gesetzt:
+
+= label would run off the right edge, so it is set to the west:
+=
+- ```scala fuel
++ ```scala fuel
+
+= label would run off the right edge, so it is set to the west:
+=
+= ```scala fuel
+- run
++ run
+
+= label would run off the right edge, so it is set to the west:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val inside = arrange:
++ val inside = arrange:
+
+-   canvas(Obstacle.Box(0.0, 0.0, 120.0, 120.0))
++   canvas(Obstacle.Box(0.0, 0.0, 120.0, 120.0))
+
+-   position(60.0, 12.0, 110.0, 100.0)
++   position(60.0, 12.0, 110.0, 100.0)
+
+- Out.println(inside.attachment.inspect)
++ Out.println(inside.attachment.inspect)
+
+= Out.println(inside.attachment.inspect)
+- ```
++ ```
+
+- ### Displacement and leaders
++ ### Verschiebung und Führungslinien
+
+- When every side of the target is blocked, a label may be moved away from it, up to its `reach`,
+- which is zero unless given. A label moved further than a short threshold gets a *leader*: a line
+- from its edge back to the target, so what it names stays clear:
++ Wenn jede Seite des Ziels blockiert ist, darf eine Beschriftung von ihm weggerückt werden, bis
++ zu ihrer `reach`, die null ist, sofern nicht angegeben. Eine Beschriftung, die weiter als eine
++ kurze Schwelle verschoben wird, erhält eine *Führungslinie*: eine Linie von ihrer Kante zurück
++ zum Ziel, sodass klar bleibt, was sie benennt:
+
+= from its edge back to the target, so what it names stays clear:
+=
+- ```scala fuel
++ ```scala fuel
+
+= from its edge back to the target, so what it names stays clear:
+=
+= ```scala fuel
+- run
++ run
+
+= from its edge back to the target, so what it names stays clear:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val led = arrange:
++ val led = arrange:
+
+-   avoid(Obstacle.Box(0.0, 0.0, 200.0, 110.0))
++   avoid(Obstacle.Box(0.0, 0.0, 200.0, 110.0))
+
+-   position(60.0, 12.0, 100.0, 100.0, attachments = List(Caption.Attachment.South), reach = 40.0)
++   position(60.0, 12.0, 100.0, 100.0, attachments = List(Caption.Attachment.South), reach = 40.0)
+
+- Out.println(led.attachment.inspect)
++ Out.println(led.attachment.inspect)
+
+- Out.println(led.leader.present.inspect)
++ Out.println(led.leader.present.inspect)
+
+= Out.println(led.leader.present.inspect)
+- ```
++ ```
+
+- The label is set below the box, and its leader runs up to the point. A leader is part of the
+- arrangement. Later labels avoid it, as they avoid the label it belongs to, and the leader of a
+- label may not cross another label. It may cross a fixed obstacle, since pointing past a bar or a
+- marker to the target is what a leader is for.
++ Die Beschriftung wird unter den Kasten gesetzt, und ihre Führungslinie läuft hinauf zum Punkt.
++ Eine Führungslinie ist Teil der Anordnung. Spätere Beschriftungen weichen ihr aus, so wie sie
++ der Beschriftung ausweichen, zu der sie gehört, und die Führungslinie einer Beschriftung darf
++ keine andere Beschriftung kreuzen. Sie darf ein festes Hindernis kreuzen, denn an einem Balken
++ oder einer Markierung vorbei auf das Ziel zu zeigen, ist genau der Zweck einer Führungslinie.
+
+- `padding` is clearance demanded around a label beyond its own box, so neighboring labels are
+- not set touching.
++ `padding` ist der Freiraum, der um eine Beschriftung über ihren eigenen Kasten hinaus gefordert
++ wird, sodass benachbarte Beschriftungen nicht aneinanderstoßend gesetzt werden.
+
+- ### Priority and hiding
++ ### Priorität und Ausblenden
+
+- Labels are placed in order of `priority`, highest first, and otherwise in the order the body
+- asked for them. A label placed earlier keeps its target, and those after it move. A label with a
+- single side and no reach is placed exactly where it was asked for, whatever is there, and
+- everything after it steers around it. That is how the tick labels and legend of a chart hold
+- still while its point labels move.
++ Beschriftungen werden in der Reihenfolge ihrer `priority` platziert, die höchste zuerst, und
++ ansonsten in der Reihenfolge, in der der Rumpf nach ihnen gefragt hat. Eine früher platzierte
++ Beschriftung behält ihr Ziel, und die nach ihr rücken. Eine Beschriftung mit einer einzigen
++ Seite und ohne Reichweite wird genau dort platziert, wo nach ihr gefragt wurde, gleich was dort
++ ist, und alles nach ihr steuert um sie herum. So bleiben die Teilstrich-Beschriftungen und die
++ Legende eines Diagramms stehen, während sich seine Punktbeschriftungen bewegen.
+
+- A label which collides wherever it is put is drawn at the position where it overlaps least. A
+- caption whose `fallback` is `Caption.Fallback.Hide` is instead not drawn. Its position reports
+- `visible` as false, and the body draws nothing for it. A hidden label blocks nothing:
++ Eine Beschriftung, die kollidiert, wo immer sie hingesetzt wird, wird an der Position
++ gezeichnet, an der sie am wenigsten überlappt. Eine Caption, deren `fallback`
++ `Caption.Fallback.Hide` ist, wird stattdessen nicht gezeichnet. Ihre Position meldet `visible`
++ als falsch, und der Rumpf zeichnet nichts für sie. Eine ausgeblendete Beschriftung blockiert
++ nichts:
+
+= `visible` as false, and the body draws nothing for it. A hidden label blocks nothing:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `visible` as false, and the body draws nothing for it. A hidden label blocks nothing:
+=
+= ```scala fuel
+- run
++ run
+
+= `visible` as false, and the body draws nothing for it. A hidden label blocks nothing:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val hidden = arrange:
++ val hidden = arrange:
+
+-   avoid(Obstacle.Box(0.0, 0.0, 300.0, 300.0))
++   avoid(Obstacle.Box(0.0, 0.0, 300.0, 300.0))
+
+-   position(60.0, 12.0, 100.0, 100.0, fallback = Caption.Fallback.Hide)
++   position(60.0, 12.0, 100.0, 100.0, fallback = Caption.Fallback.Hide)
+
+- Out.println(hidden.visible.inspect)
++ Out.println(hidden.visible.inspect)
+
+= Out.println(hidden.visible.inspect)
+- ```
++ ```
+
+- ### Choosing an arranger
++ ### Einen Arranger wählen
+
+- The algorithm which arranges is the `Arranger` in scope. The default is greedy. Each label, in
+- priority order, takes the least displaced position which is clear of everything placed before
+- it, or the least collision if nothing is clear. It is deterministic, and its work is bounded by
+- the number of positions a label may take. A label placed early is never moved to make room for
+- one placed later, which on a dense picture leaves collisions which a different order would have
+- avoided.
++ Der Algorithmus, der die Anordnung vornimmt, ist der `Arranger` im Geltungsbereich. Die Vorgabe
++ ist gierig. Jede Beschriftung nimmt in Prioritätsreihenfolge die am wenigsten verschobene
++ Position, die von allem frei ist, was vor ihr platziert wurde, oder die mit der geringsten
++ Kollision, wenn nichts frei ist. Er ist deterministisch, und seine Arbeit ist durch die Anzahl
++ der Positionen begrenzt, die eine Beschriftung einnehmen kann. Eine früh platzierte
++ Beschriftung wird nie verschoben, um einer später platzierten Platz zu machen, was auf einem
++ dichten Bild Kollisionen hinterlässt, die eine andere Reihenfolge vermieden hätte.
+
+- Simulated annealing starts from the greedy arrangement, and then moves labels among their
+- positions at random. It keeps a move which lowers the total collision and displacement, and
+- sometimes one which raises it, less often as it cools. It is chosen by importing it:
++ Simulated Annealing beginnt mit der gierigen Anordnung und verschiebt Beschriftungen dann
++ zufällig zwischen ihren Positionen. Es behält einen Zug, der die Gesamtsumme aus Kollision und
++ Verschiebung senkt, und manchmal einen, der sie erhöht, seltener, je weiter es abkühlt. Es wird
++ durch Import gewählt:
+
+= sometimes one which raises it, less often as it cools. It is chosen by importing it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= sometimes one which raises it, less often as it cools. It is chosen by importing it:
+=
+= ```scala fuel
+- run
++ run
+
+= sometimes one which raises it, less often as it cools. It is chosen by importing it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- import arrangers.annealingArranger
++ import arrangers.annealingArranger
+
+- val annealed = arrange:
++ val annealed = arrange:
+
+-   val first = position(60.0, 12.0, 100.0, 100.0, reach = 20.0)
++   val first = position(60.0, 12.0, 100.0, 100.0, reach = 20.0)
+
+-   val second = position(60.0, 12.0, 102.0, 101.0, reach = 20.0)
++   val second = position(60.0, 12.0, 102.0, 101.0, reach = 20.0)
+
+-   val third = position(60.0, 12.0, 98.0, 99.0, reach = 20.0)
++   val third = position(60.0, 12.0, 98.0, 99.0, reach = 20.0)
+
+-   List(first.attachment, second.attachment, third.attachment)
++   List(first.attachment, second.attachment, third.attachment)
+
+- Out.println(annealed.inspect)
++ Out.println(annealed.inspect)
+
+= Out.println(annealed.inspect)
+- ```
++ ```
+
+- Its random moves are drawn from a fixed seed, so the same input arranges the same way every
+- time, and it stops after a set number of moves. Both arrangers are case classes,
+- `Arranger.Greedy` and `Arranger.Annealing`, whose parameters can be given in place of the
+- defaults:
++ Seine zufälligen Züge werden aus einem festen Seed gezogen, sodass dieselbe Eingabe jedes Mal
++ gleich angeordnet wird, und es hört nach einer festgelegten Anzahl von Zügen auf. Beide
++ Arranger sind Case-Klassen, `Arranger.Greedy` und `Arranger.Annealing`, deren Parameter anstelle
++ der Vorgaben angegeben werden können:
+
+= defaults:
+=
+- ```tabular
++ ```tabular
+
+= defaults:
+=
+= ```tabular
+- column  Parameter
++ column  Parameter
+
+= defaults:
+=
+= ```tabular
+= column  Parameter
+- column  Default
++ column  Vorgabe
+
+- column  Arranger
++ column  Arranger
+
+- column  Meaning
+- row  `step`  `4.0`  both  the step between candidate positions
+- row  `rings`  `8`  both  how many steps out to search
+- row  `leaderThreshold`  `6.0`  both  the displacement beyond which a leader is drawn
+- row  `leaderWidth`  `1.0`  both  the stroke width of a leader
+- row  `seed`  `Seed(0L)`  annealing  the seed its random moves are drawn from
+- row  `iterations`  `4000`  annealing  the number of moves
+- row  `temperature`  `1.0`  annealing  the starting temperature
+- row  `cooling`  `0.995`  annealing  the factor the temperature is multiplied by at each move
+- row  `displacementWeight`  `0.05`  annealing  the cost of displacement against that of collision
++ column  Bedeutung
++ row  `step`  `4.0`  beide  der Schritt zwischen Kandidatenpositionen
++ row  `rings`  `8`  beide  wie viele Schritte weit nach außen gesucht wird
++ row  `leaderThreshold`  `6.0`  beide  die Verschiebung, ab der eine Führungslinie gezeichnet wird
++ row  `leaderWidth`  `1.0`  beide  die Strichstärke einer Führungslinie
++ row  `seed`  `Seed(0L)`  Annealing  der Seed, aus dem seine zufälligen Züge gezogen werden
++ row  `iterations`  `4000`  Annealing  die Anzahl der Züge
++ row  `temperature`  `1.0`  Annealing  die Anfangstemperatur
++ row  `cooling`  `0.995`  Annealing  der Faktor, mit dem die Temperatur bei jedem Zug multipliziert wird
++ row  `displacementWeight`  `0.05`  Annealing  die Kosten der Verschiebung gegenüber denen der Kollision
+
+= row  `displacementWeight`  `0.05`  annealing  the cost of displacement against that of collision
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- given arranger: Arranger = Arranger.Greedy(step = 2.0, rings = 12)
++ given arranger: Arranger = Arranger.Greedy(step = 2.0, rings = 12)
+
+= given arranger: Arranger = Arranger.Greedy(step = 2.0, rings = 12)
+- ```
++ ```
+
+- Any other algorithm is an `Arranger` too: a value with one method, which takes the captions,
+- the obstacles and the canvas, and answers with a position for each caption in turn.
++ Jeder andere Algorithmus ist ebenfalls ein `Arranger`: ein Wert mit einer Methode, die die
++ Captions, die Hindernisse und die Zeichenfläche nimmt und der Reihe nach für jede Caption mit
++ einer Position antwortet.
+
+- ### Related
++ ### Verwandte Themen
+
+- - [Charts](charts.md) place their labels through `arrange`.
+- - [SVG](svg.md) describes the `text` elements which a renderer sets at the answered positions.
+- - [Randomness](randomness.md) describes the `Seed` which the annealing arranger draws from.
++ - [Diagramme](charts.md) platzieren ihre Beschriftungen über `arrange`.
++ - [SVG](svg.md) beschreibt die `text`-Elemente, die ein Renderer an den gelieferten Positionen
++   setzt.
++ - [Zufall](randomness.md) beschreibt den `Seed`, aus dem der Annealing-Arranger zieht.

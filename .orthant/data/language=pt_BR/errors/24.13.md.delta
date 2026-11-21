@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.24.13` — Wildcard in pattern type extraction
++ # `↯/s.24.13` — Curinga na extração do tipo de padrão
+
+- Raised by Contingency's pattern-type extractor when a wildcard
+- pattern is encountered where a concrete type was needed.
++ Lançado pelo extrator de tipos de padrões do Contingency quando encontra um padrão
++ curinga onde era necessário um tipo concreto.
+
+- ## Cause
++ ## Causa
+
+- A wildcard `_` pattern carries no type information that the
+- extractor can use to register a recovered case.
++ Um padrão curinga `_` não carrega nenhuma informação de tipo que o
++ extrator possa usar para registrar um caso recuperado.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.24.13] wildcard
++ [↯/s.24.13] wildcard
+
+= [↯/s.24.13] wildcard
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Replace the wildcard with a typed pattern (e.g. `error: SomeError`).
++ Substitua o curinga por um padrão tipado (por exemplo, `error: SomeError`).
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Código-fonte: `lib/contingency/src/core/contingency.internal.scala`

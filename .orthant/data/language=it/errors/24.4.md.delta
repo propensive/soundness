@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.24.4` — `accrue` argument must be match cases
++ # `↯/s.24.4` — L'argomento di `accrue` deve essere un insieme di casi di match
+
+- Raised at compiletime when the argument to `accrue` is not written as a literal block of
+- `case` clauses.
++ Sollevato a tempo di compilazione quando l'argomento di `accrue` non è scritto come un blocco
++ letterale di clausole `case`.
+
+- ## Cause
++ ## Causa
+
+- As with `recover`, the cases are inspected at compiletime to determine which error types are
+- accrued, so the argument must be written inline.
++ Come per `recover`, i casi vengono ispezionati a tempo di compilazione per stabilire quali tipi di
++ errore vengono accumulati, quindi l'argomento deve essere scritto sul posto.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.24.4] argument to `accrue` should be a partial function implemented as match cases
++ [↯/s.24.4] argument to `accrue` should be a partial function implemented as match cases
+
+= [↯/s.24.4] argument to `accrue` should be a partial function implemented as match cases
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Write the cases inline rather than passing a partial function computed elsewhere.
++ Scrivere i casi sul posto anziché passare una funzione parziale calcolata altrove.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Sorgente: `lib/contingency/src/core/contingency.internal.scala`

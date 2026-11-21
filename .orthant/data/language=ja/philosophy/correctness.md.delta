@@ -1,0 +1,155 @@
+orthant 1 language
+
+- # Correctness
++ # 正しさ
+
+- Correctness is the end that Soundness's other principles serve: a program should be
+- constrained to behave correctly, and the language should help ensure that it does.
+- Where most libraries make correctness merely possible, Soundness tries to make
+- incorrectness impossible — moving checks to compiletime, ruling out invalid states, and
+- making failure visible in the types — so that a program which compiles is already known
+- to be right about a great deal. This is what "sound by default" means: safety is the
+- starting point, not an extra to be bolted on later.
++ 正しさは、Soundness の他の原則が仕える目的である。プログラムは正しく振る舞うよう制約されるべきであり、言語はそれを確かにする手助けをすべきである。
++ ほとんどのライブラリが正しさを単に可能にするところで、Soundness は誤りを不可能にしようとする。検査をコンパイル時に移し、無効な状態を排除し、失敗を型の中で見えるようにすることで、コンパイルされるプログラムが、すでに多くのことについて正しいと分かっているようにする。
++ これが「既定で健全」の意味である。安全性は出発点であって、後から取り付ける追加品ではない。
+
+- ## What "a great deal" amounts to
++ ## 「多くのこと」とは何か
+
+- The claim is worth making concrete. In a program built on Soundness — each line below
+- with the relevant module's names in scope — the following are compile errors rather than
+- possibilities:
++ この主張は具体的にする価値がある。
++ Soundness の上に作られたプログラムでは（以下の各行では、関係するモジュールの名前がスコープにあるものとする）、次のものは起こりうることではなくコンパイルエラーである。
+
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+- ##
++ ##
+
+- 2012-Feb-30                            // a date that does not exist
++ 2012-Feb-30                            // a date that does not exist
+
+- Eur(3.01) + Gbp(2.50)                  // money in mismatched currencies
++ Eur(3.01) + Gbp(2.50)                  // money in mismatched currencies
+
+- url"https:/example.com"                // a malformed URL
++ url"https:/example.com"                // a malformed URL
+
+- (3*Metre) + (4*Second)                 // incoherent dimensions
++ (3*Metre) + (4*Second)                 // incoherent dimensions
+
+- Br(Hr)                                 // a void element given children
++ Br(Hr)                                 // a void element given children
+
+- json.verify[Person].nope               // a field the schema does not declare
++ json.verify[Person].nope               // a field the schema does not declare
+
+- ```
++ ```
+
+- And the following are *visible in a signature*, so a caller cannot fail to know about
+- them: that an operation might fail and how; that it might block; that it needs the
+- network, the filesystem, or a random source; that it logs, and what.
++ そして次のものは*シグネチャの中に見える*ので、呼び出し側がそれを知らずにいることはありえない。操作が失敗するかもしれないこととその仕方、ブロックするかもしれないこと、ネットワーク、ファイルシステム、乱数源を必要とすること、ログを出力することとその内容である。
+
+- None of this is exotic. Each is an ordinary mistake that ordinary programs make, caught
+- by construction rather than by review.
++ これらはどれも風変わりなものではない。
++ どれも普通のプログラムが犯す普通の誤りであり、レビューによってではなく構築によって捕らえられる。
+
+- ## Where the checking happens
++ ## 検査が行われる場所
+
+- Three mechanisms carry most of the weight, and they are described in their own right
+- elsewhere.
++ 三つの仕組みが重みの大半を担っており、それぞれは別の場所で単独に説明されている。
+
+- Values are checked **as they are constructed**, so possessing one is proof it is
+- well-formed — the subject of [safety by construction](safety-by-construction.md).
++ 値は**構築されるときに**検査されるので、それを持っていることが、それが正しい形であることの証明になる。これは[構築による安全性](safety-by-construction.md)の主題である。
+
+- Types are shaped so that **invalid states have no representation**, and every transition
+- between states is **total** — the two golden rules, in
+- [impossible states](impossible-states.md) and [total transitions](total-transitions.md).
++ 型は**無効な状態が表現を持たない**ように形作られ、状態の間のすべての遷移は**全域的**である。これは二つの黄金律であり、[不可能な状態](impossible-states.md)と[全域的な遷移](total-transitions.md)で述べられている。
+
+- Requirements are stated **honestly in signatures**, so nothing an operation needs is
+- hidden and nothing it declares is unused — [honest signatures](honest-signatures.md).
++ 要求は**シグネチャの中で正直に**述べられるので、操作が必要とするもので隠されているものはなく、宣言するもので使われないものもない。[正直なシグネチャ](honest-signatures.md)を参照のこと。
+
+- ## The conviction underneath
++ ## 根底にある確信
+
+- Any static analysis a programmer can perform, the compiler can perform better; and any
+- analysis the compiler can perform, it should.
++ プログラマーが行えるどんな静的解析も、コンパイラのほうがうまく行える。そしてコンパイラが行えるどんな解析も、コンパイラが行うべきである。
+
+- A programmer checking by eye that every `match` covers every case does the compiler's
+- job, less reliably, and does it again after every change. The compiler does it on every
+- build, exhaustively, and reports every site affected by adding an enumeration case. The
+- question is therefore never *whether* to do the analysis but *who* does it — and the
+- answer is the same every time.
++ すべての `match` がすべての場合を網羅していることを目で確かめるプログラマーは、コンパイラの仕事をより不確かに行い、変更のたびにそれをやり直している。
++ コンパイラはビルドのたびにそれを網羅的に行い、列挙型にケースを加えたときに影響を受けるすべての箇所を報告する。
++ したがって問いは決して解析を行う*かどうか*ではなく、*誰が*行うかであり、その答えは毎回同じである。
+
+- This is why exhaustivity warnings are treated as errors rather than as noise, why
+- `-Wunused` is on, and why a deliberately partial match must say so with `.absolve`
+- rather than being silently permitted. The discipline costs nothing except accidental
+- partiality, which is the kind that becomes a bug.
++ これが、網羅性の警告が雑音ではなくエラーとして扱われる理由であり、`-Wunused` が有効になっている理由であり、意図的に部分的なマッチが黙って許されるのではなく `.absolve` でそう言わなければならない理由である。
++ この規律は、偶然の部分性、つまりバグになる種類の部分性以外には何も犠牲にしない。
+
+- ## What correctness is not
++ ## 正しさではないもの
+
+- **It is not verification.** Soundness does not prove that a program computes the right
+- answer. It rules out large, well-understood classes of wrongness — malformed values,
+- impossible states, unhandled failures, escaped resources — and leaves the domain logic
+- to the programmer and the tests.
++ **それは検証ではない。**
++ Soundness は、プログラムが正しい答えを計算することを証明しない。
++ 不正な形の値、不可能な状態、処理されない失敗、逃げ出したリソースといった、よく理解された大きな種類の誤りを排除し、ドメインのロジックはプログラマーとテストに委ねる。
+
+- **It is not a guarantee about the outside world.** A `Hostname` is syntactically valid;
+- whether it resolves is not a static question. The discipline is to encode what is
+- genuinely determined by the value and to report the rest as typed failures, rather than
+- to invent a type that promises more than it can deliver.
++ **それは外部の世界についての保証ではない。**
++ `Hostname` は構文的に有効である。それが名前解決できるかどうかは静的な問いではない。
++ 規律とは、値によって本当に決まることを符号化し、残りを型付きの失敗として報告することであり、提供できる以上のことを約束する型をこしらえることではない。
+
+- **It is not free of judgement.** Every check moved to compiletime is a constraint on what
+- can be written, and a constraint that rules out more mistakes than it rules out
+- legitimate programs is a good one. That trade is made case by case, and it is possible to
+- get wrong in both directions.
++ **それは判断を免れない。**
++ コンパイル時に移したすべての検査は書けるものに対する制約であり、正当なプログラムを排除するより多くの誤りを排除する制約は良い制約である。
++ その引き換えはその都度行われ、どちらの方向にも誤ることがありうる。
+
+- ## What it costs
++ ## コスト
+
+- Compiletime, mostly. Type-level computation, inlining and macro expansion are work the
+- compiler does on every build so the machine need not do it on every run, and a Soundness
+- project compiles more slowly than an equivalent one written loosely.
++ 主にコンパイル時間である。
++ 型レベルの計算、インライン化、マクロの展開は、実行のたびに機械が行わずに済むように、コンパイラがビルドのたびに行う仕事であり、Soundness のプロジェクトは、緩く書かれた同等のプロジェクトよりもコンパイルが遅い。
+
+- The second cost is a steeper start. A library that accepts `String` everywhere is easier
+- to begin with than one that wants a `Path on Linux`, a `Port` and a `MediaType`; the
+- payment comes back at the point where the loose version would have been debugging a
+- production incident. That is a real trade, and worth making knowingly rather than by
+- assumption.
++ 第二のコストは、より険しい出だしである。
++ どこでも `String` を受け付けるライブラリは、`Path on Linux`、`Port`、`MediaType` を求めるライブラリよりも始めやすい。その支払いは、緩い版なら本番環境の障害をデバッグしていたはずの時点で戻ってくる。
++ それは本物の引き換えであり、思い込みによってではなく、承知の上で行う価値がある。
+
+- See [zero cost](zero-cost.md) for why the runtime bill, at least, is close to nothing.
++ 少なくとも実行時の請求がほとんどゼロに近い理由については、[ゼロコスト](zero-cost.md)を参照のこと。

@@ -1,0 +1,3422 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base probably
++ base probably
+
+- import soundness
++ import soundness
+
+- info   the test framework: suites of tests as values, assertions with structural contrasts, and a typed event stream for a host
++ info   テストフレームワーク。値としてのテストのスイート、構造的な対比を伴うアサーション、ホストのための型付きのイベントストリーム
+
+- detail
++ detail
+
+-     _Probably_ is Soundness's test framework. A test is a **value**: `test(m"…")` names it,
+-     the block beneath produces a result, and `assert`, `check` or `matches` states what must
+-     hold of that result. A failed equality assertion is reported not as two `toString`s but as
+-     a structural **contrast** of the expected and observed values (chiaroscuro's
+-     `Juxtaposition`), and every result leaves the suite as a typed `TestEvent`, so a host
+-     renders the run however it likes.
++     _Probably_ は Soundness のテストフレームワークである。
++     テストは**値**である。
++     `test(m"…")` がそれに名前を付け、その下のブロックが結果を生み、`assert`、`check`、`matches` がその結果について成り立たなければならないことを述べる。
++     失敗した等価性のアサーションは、二つの `toString` としてではなく、期待した値と観測した値の構造的な**対比**（chiaroscuro の `Juxtaposition`）として報告される。
++     そしてすべての結果は型付きの `TestEvent` としてスイートを離れるので、ホストは実行を好きなように描画できる。
+
+=     renders the run however it likes.
+=
+-     ```scala
++     ```scala
+
+=     renders the run however it likes.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Tests extends Suite("parser", m"Parser tests"):
++     object Tests extends Suite("parser", m"Parser tests"):
+
+-       def run(): Unit =
++       def run(): Unit =
+
+-         suite(m"Numbers"):
++         suite(m"Numbers"):
+
+-           test(m"a decimal integer parses"):
++           test(m"a decimal integer parses"):
+
+-             safely(t"42".as[Int])
++             safely(t"42".as[Int])
+
+=             safely(t"42".as[Int])
+-           . assert(_ == 42)
++           . assert(_ == 42)
+
+-         aspirationally:
++         aspirationally:
+
+-           test(m"a hexadecimal integer parses"):
++           test(m"a hexadecimal integer parses"):
+
+-             safely(t"0x2a".as[Int])
++             safely(t"0x2a".as[Int])
+
+=             safely(t"0x2a".as[Int])
+-           . assert(_ == 42)
++           . assert(_ == 42)
+
+=           . assert(_ == 42)
+-     ```
++     ```
+
+-     A `Suite` is **not a main class** and the tests have no `main`: the beneficence compiler
+-     plugin lists every `Suite` object in `META-INF/services/probably.Suite`, and every test in
+-     `META-INF/probably/tests`, and the `fume` runner discovers suites from those indexes on a
+-     built classpath, drives each through `Suite#invoke` with an event sink, and renders the
+-     `TestEvent`s. The `events` component carries them across a classloader boundary as
+-     length-prefixed BinTEL frames (`Streamer`), or out of a separate JVM (`Standalone`). A
+-     repository which wants a plain `java` entry point for CI writes `Suite.main(arguments,
+-     Tests)`, which prints one line per completed test and exits with the suites' status.
++     `Suite` は**メインクラスではなく**、テストには `main` がない。
++     beneficence コンパイラプラグインは、すべての `Suite` オブジェクトを `META-INF/services/probably.Suite` に、すべてのテストを `META-INF/probably/tests` に一覧する。
++     `fume` ランナーは、ビルドされたクラスパス上のこれらのインデックスからスイートを発見し、それぞれをイベントのシンクとともに `Suite#invoke` で駆動し、`TestEvent` を描画する。
++     `events` コンポーネントは、それらを長さの接頭辞付きの BinTEL フレーム（`Streamer`）としてクラスローダーの境界を越えて運ぶか、別の JVM から運び出す（`Standalone`）。
++     CI のために素の `java` のエントリーポイントを望むリポジトリは `Suite.main(arguments, Tests)` と書く。
++     これは完了したテストごとに一行を表示し、スイートのステータスで終了する。
+
+-     The pieces, from the surface down:
++     表面から下へ、構成要素は次のとおりである。
+
+-     - **Declaring**: `test`, `suite`, `impromptu` and `aspirationally` are package-level
+-       functions; each needs a `Testable` in scope (a `Suite`'s own, a `suite` block's, or an
+-       `impromptu` block's) and, to assert, a `Runner`. A test may carry a stable moniker
+-       (`n"square"`) and tags (`n"slow"`), both `n"…"` literals checked at compile time
+-       against the `Probing` and `Tagging` naming planes.
+-     - **Asserting**: `Test#assert` and `Test#check` are macros which find the `Runner` and
+-       the `Inclusion`s for its report type, run the body, and record a `Verdict`. `assert`
+-       demands a **pure** body (one closing over no capability), which is what lets a queued
+-       runner (`--workers=<n>`) run it on a worker thread; `check` takes any body, runs it
+-       inline and returns the value. Neither resolves anything about how a failure would be
+-       shown: a failed assertion is diagnosed afterwards, and only if the host asked
+-       (`--diagnose=…`; see `Diagnosis`).
+-     - **Spreading**: `Test.Id#over` runs one test once per value of an `Axis` (or per
+-       combination of two), recording each verdict at that coordinate of a single named test.
+-     - **Running**: a `Runner` is built from a `Selection` (parsed from command-line terms:
+-       hashes, monikers, globs, `kind:`, `tag:`, `not:`, axis constraints, `--list`,
+-       `--scale=`, `--workers=`) and a `Reporter`; `Reporter.report` accumulates a `Report`, a
+-       tree of `Entry`s whose cells hold `Run`s of `Metric`s, and emits every datum as a
+-       `TestEvent`.
+-     - **Measuring**: `Benchmark`, `Strain` and `Hotspots` are the results of the three timed
+-       kinds (benchmarks, stress tests, profiles, declared through the sedentary library), each
+-       with an `Inclusion[Report, …]` which records it as metrics at a coordinate.
++     - **宣言**：`test`、`suite`、`impromptu`、`aspirationally` はパッケージレベルの関数である。それぞれスコープ内に `Testable`（`Suite` 自身のもの、`suite` ブロックのもの、または `impromptu` ブロックのもの）を必要とし、アサートするには `Runner` を必要とする。テストは安定したモニカー（`n"square"`）とタグ（`n"slow"`）を持つことができ、どちらも `Probing` と `Tagging` の命名プレーンに照らしてコンパイル時に検査される `n"…"` リテラルである。
++     - **アサーション**：`Test#assert` と `Test#check` はマクロであり、`Runner` とその報告の型のための `Inclusion` を見つけ、本体を実行し、`Verdict` を記録する。`assert` は**純粋な**本体（どのケイパビリティも閉じ込めないもの）を要求し、それによってキュー付きのランナー（`--workers=<n>`）がそれをワーカースレッドで実行できる。`check` は任意の本体を受け取り、その場で実行して値を返す。どちらも、失敗がどう表示されるかについては何も解決しない。失敗したアサーションは後から、ホストが求めた場合にだけ診断される（`--diagnose=…`。`Diagnosis` を参照）。
++     - **展開**：`Test.Id#over` は、一つのテストを `Axis` の値ごとに（または二つの組み合わせごとに）一度ずつ実行し、それぞれの判定を一つの名前付きのテストのその座標に記録する。
++     - **実行**：`Runner` は、`Selection`（コマンドラインの項からパースされる。ハッシュ、モニカー、グロブ、`kind:`、`tag:`、`not:`、軸の制約、`--list`、`--scale=`、`--workers=`）と `Reporter` から作られる。`Reporter.report` は `Report`（そのセルが `Metric` の `Run` を持つ `Entry` の木）を蓄積し、すべてのデータを `TestEvent` として発する。
++     - **計測**：`Benchmark`、`Strain`、`Hotspots` は、時間を計る三つの種類（sedentary ライブラリを通して宣言されるベンチマーク、ストレステスト、プロファイル）の結果であり、それぞれ、それを座標の指標として記録する `Inclusion[Report, …]` を持つ。
+
+-     The library has four components. `probably.core` (JVM, Scala.js and Scala Native) holds
+-     everything but `Suite` and the wire format; `probably.cli` adds `Suite`;
+-     `probably.events` adds `Streamer` and `Standalone`, the BinTEL framing of the event stream
+-     for a host; and `probably.diagnosis` (JVM only) adds `Dissector`, the engine which
+-     diagnoses a failed assertion, and with it a dependency on the compiler. Everything is exported to the `soundness` umbrella except `probably.Tag`, whose
+-     name is honeycomb's HTML tag there: write `probably.Tag` when the type must be named (tags
+-     are usually written as `n"…"` literals). The hypotenuse checking vocabulary — `===`,
+-     `!==`, `+/-`, `±`, `Checkable` and `Tolerance` — is re-exported here so that `import
+-     probably.*` still provides it. The choice packages `harnesses` and
+-     `decimalizers` hold givens which are imported by name, since `import probably.*` does not
+-     import givens.
++     このライブラリには四つのコンポーネントがある。
++     `probably.core`（JVM、Scala.js、Scala Native）は `Suite` とワイヤ形式以外のすべてを持つ。
++     `probably.cli` は `Suite` を加える。
++     `probably.events` は、ホストのためのイベントストリームの BinTEL フレーミングである `Streamer` と `Standalone` を加える。
++     `probably.diagnosis`（JVM のみ）は、失敗したアサーションを診断するエンジンである `Dissector` を加え、それとともにコンパイラへの依存を加える。
++     `probably.Tag` を除き、すべては `soundness` アンブレラにエクスポートされる。
++     アンブレラではその名前は honeycomb の HTML タグであるので、型に名前を付けなければならないときは `probably.Tag` と書く（タグは普通 `n"…"` リテラルとして書く）。
++     hypotenuse の検査の語彙（`===`、`!==`、`+/-`、`±`、`Checkable`、`Tolerance`）は、`import probably.*` が引き続きそれを提供するように、ここで再エクスポートされる。
++     `import probably.*` は given をインポートしないので、選択パッケージ `harnesses` と `decimalizers` は名前でインポートする given を持つ。
+
+-     A listing (`--list`, which is how a host budgets a run before staging anything)
+-     executes the whole of `run()`: `assert` bodies are skipped when
+-     unselected, but every `check` body runs, as does every statement between tests, so a
+-     `val` consumed only inside test bodies is best made `lazy`.
++     一覧（`--list`。ホストが何かをステージングする前に実行の見積もりを立てる方法）は `run()` の全体を実行する。
++     選択されていない `assert` の本体は飛ばされるが、すべての `check` の本体は実行され、テストの間にあるすべての文も実行される。
++     そのため、テストの本体の中でだけ使われる `val` は `lazy` にするのがよい。
+
+- refer probably.Suite
++ refer probably.Suite
+
+- refer probably.test
++ refer probably.test
+
+- refer probably.Test
++ refer probably.Test
+
+- refer probably.Runner
++ refer probably.Runner
+
+- refer probably.Selection
++ refer probably.Selection
+
+- refer probably.TestEvent
++ refer probably.TestEvent
+
+- refer chiaroscuro.Juxtaposition
++ refer chiaroscuro.Juxtaposition
+
+- entry .test   declares a test by its description, with optional moniker and tags
++ entry .test   説明によってテストを宣言する。モニカーとタグは省略可能
+
+= entry .test   declares a test by its description, with optional moniker and tags
+-   detail
++   detail
+
+-       `test(m"…")` makes a `Test.Id` from a description, the `Testable` in scope (which says
+-       which suite the test belongs to) and the call's `Codepoint`; applying the id to a block
+-       makes a `Test`, which `assert`, `check` or `matches` then runs. The description may
+-       carry tags after it, `test(m"fetches", n"slow", n"network")`, by which a selection
+-       admits or excludes the test; each is an `n"…"` literal checked against the `Tagging`
+-       rule (identifier characters and `-`).
++       `test(m"…")` は、説明、スコープ内の `Testable`（テストがどのスイートに属するかを示す）、呼び出しの `Codepoint` から `Test.Id` を作る。
++       その ID をブロックに適用すると `Test` ができ、`assert`、`check`、`matches` がそれを実行する。
++       説明の後にはタグを付けられる（`test(m"fetches", n"slow", n"network")`）。
++       選択はタグによってテストを受け入れたり除外したりする。
++       各タグは、`Tagging` の規則（識別子の文字と `-`）に照らして検査される `n"…"` リテラルである。
+
+-       The second form names the test with a **moniker** first, `test(n"square", m"square a
+-       number")`: a compile-time-checked Java identifier which addresses the test in selections
+-       and charts stably, however its description is reworded.
++       二つ目の形は、テストに先に**モニカー**で名前を付ける：`test(n"square", m"square a number")`。
++       モニカーはコンパイル時に検査される Java の識別子であり、説明がどう書き直されても、選択やチャートでテストを安定して指す。
+
+=       and charts stably, however its description is reworded.
+=
+-       ```scala
++       ```scala
+
+=       and charts stably, however its description is reworded.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       and charts stably, however its description is reworded.
+=
+=       ```scala
+=       import soundness.*
+-       import soundness.{nominative, taggingNominative}
++       import soundness.{nominative, taggingNominative}
+
+=       and charts stably, however its description is reworded.
+=
+=       ```scala
+=       import soundness.*
+=       import soundness.{nominative, taggingNominative}
+=
+-       given tutorial: (Testable of Impromptu) = Testable.detached
++       given tutorial: (Testable of Impromptu) = Testable.detached
+
+=       import soundness.{nominative, taggingNominative}
+=
+=       given tutorial: (Testable of Impromptu) = Testable.detached
+-       given runner: Runner[Report] = Runner()
++       given runner: Runner[Report] = Runner()
+
+-       test(m"square a number")(3*3).assert(_ == 9)
++       test(m"square a number")(3*3).assert(_ == 9)
+
+-       test(n"square", m"square a number", n"quick")(3*3).assert(_ == 9)
++       test(n"square", m"square a number", n"quick")(3*3).assert(_ == 9)
+
+=       test(n"square", m"square a number", n"quick")(3*3).assert(_ == 9)
+-       ```
++       ```
+
+-       A `test` with no `Testable` in scope is a compile error, _a test must be declared for a
+-       Suite — in its body, or in a method taking `(using Testable of "<the suite's name>")` —
+-       or inside an `impromptu` block_. A method which declares tests for a suite names it by
+-       its id, `def numbers()(using Testable of "parser"): Unit`, or is generic in the topic,
+-       `[topic <: Label](using Testable of topic)`.
++       スコープ内に `Testable` のない `test` はコンパイルエラーになる：_a test must be declared for a Suite — in its body, or in a method taking `(using Testable of "<the suite's name>")` — or inside an `impromptu` block_。
++       スイートのためにテストを宣言するメソッドは、その ID でスイートを指す（`def numbers()(using Testable of "parser"): Unit`）か、トピックについて汎用的にする（`[topic <: Label](using Testable of topic)`）。
+
+=       `[topic <: Label](using Testable of topic)`.
+-   refer probably.Test
++   refer probably.Test
+
+=   refer probably.Test
+-   refer probably.Testable
++   refer probably.Testable
+
+-   refer probably.suite
++   refer probably.suite
+
+- entry .suite   groups tests under a name, as a nested suite of the one in scope
++ entry .suite   スコープ内のスイートの入れ子のスイートとして、名前の下にテストをまとめる
+
+= entry .suite   groups tests under a name, as a nested suite of the one in scope
+-   detail
++   detail
+
+-       `suite(m"Numbers") { … }` declares a group: the block runs with a new `Testable` of the
+-       same topic as the enclosing one, so the tests within belong to the group, which belongs
+-       to the suite, and their paths (`parser/Numbers/a decimal integer parses`) and ids
+-       reflect it. It needs the enclosing `Testable`, a `Runner` (which enters the group and
+-       reports its start and end) and a `Codepoint`. The second form gives the group a
+-       moniker, `suite(n"numbers", m"Numbers")`.
++       `suite(m"Numbers") { … }` はグループを宣言する。
++       ブロックは、囲んでいるものと同じトピックの新しい `Testable` とともに実行されるので、その中のテストはグループに属し、グループはスイートに属し、テストのパス（`parser/Numbers/a decimal integer parses`）と ID はそれを反映する。
++       囲んでいる `Testable`、`Runner`（グループに入り、その開始と終了を報告する）、`Codepoint` が必要である。
++       二つ目の形はグループにモニカーを与える：`suite(n"numbers", m"Numbers")`。
+
+-       A group is always entered, whatever the selection: its body is cheap, and pruning by
+-       name would defeat selection by hash or moniker of the tests within it. With a queued
+-       runner, the group's `SuiteEnded` event is held back until the last assertion queued
+-       within it has completed.
++       グループは、選択がどうであれ常に入られる。
++       その本体は安価であり、名前で刈り込むと、その中のテストのハッシュやモニカーによる選択が成り立たなくなるからである。
++       キュー付きのランナーでは、グループの `SuiteEnded` イベントは、その中でキューに入れられた最後のアサーションが完了するまで保留される。
+
+=       within it has completed.
+-   refer probably.test
++   refer probably.test
+
+=   refer probably.test
+-   refer probably.Testable
++   refer probably.Testable
+
+- entry .impromptu   admits tests which no `Suite` declares statically
++ entry .impromptu   どの `Suite` も静的に宣言しないテストを受け入れる
+
+= entry .impromptu   admits tests which no `Suite` declares statically
+-   detail
++   detail
+
+-       Tests a program makes up as it runs — one per file of a conformance corpus — or tests
+-       run on a `Runner` of the caller's own, outside any suite, are declared inside an
+-       `impromptu` block. Within it `test`, `suite` and the rest work as usual, attributed to
+-       the position of the surrounding `Testable` if there is one (`Testable.detached`
+-       otherwise), but their `Testable`'s topic is `Impromptu`, so the beneficence plugin
+-       leaves them out of the index of tests it writes, and a host learns of them only as they
+-       run.
++       プログラムが実行中に作り出すテスト（適合性コーパスのファイルごとに一つなど）や、どのスイートの外でも呼び出し側自身の `Runner` で実行されるテストは、`impromptu` ブロックの中で宣言する。
++       その中では `test`、`suite` などは普段どおりに働き、囲んでいる `Testable` があればその位置に（なければ `Testable.detached` に）帰属する。
++       ただしその `Testable` のトピックは `Impromptu` なので、beneficence プラグインはそれらを自分が書くテストのインデックスから除き、ホストはそれらが実行されたときに初めてそれらを知る。
+
+=       run.
+=
+-       ```scala
++       ```scala
+
+=       run.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       run.
+=
+=       ```scala
+=       import soundness.*
+=
+-       given tutorial: (Testable of Impromptu) = Testable.detached
++       given tutorial: (Testable of Impromptu) = Testable.detached
+
+=       run.
+=
+=       ```scala
+=       import soundness.*
+=
+=       given tutorial: (Testable of Impromptu) = Testable.detached
+-       given runner: Runner[Report] = Runner()
++       given runner: Runner[Report] = Runner()
+
+=       given runner: Runner[Report] = Runner()
+=
+-       impromptu:
++       impromptu:
+
+-         List(t"1", t"22", t"333").each: digits =>
++         List(t"1", t"22", t"333").each: digits =>
+
+-           test(m"$digits parses")(safely(digits.as[Int])).assert(_.present)
++           test(m"$digits parses")(safely(digits.as[Int])).assert(_.present)
+
+=           test(m"$digits parses")(safely(digits.as[Int])).assert(_.present)
+-       ```
++       ```
+
+-       The block's result is returned, so `impromptu(test(m"probe"))` is a `Test.Id`.
++       ブロックの結果が返されるので、`impromptu(test(m"probe"))` は `Test.Id` である。
+
+=       The block's result is returned, so `impromptu(test(m"probe"))` is a `Test.Id`.
+-   refer probably.Impromptu
++   refer probably.Impromptu
+
+=   refer probably.Impromptu
+-   refer probably.Testable
++   refer probably.Testable
+
+- entry .aspirationally   records every assertion in the block as an aspiration, neither failing nor forgotten
++ entry .aspirationally   ブロック内のすべてのアサーションを願望として記録する。失敗にもならず、忘れられもしない
+
+= entry .aspirationally   records every assertion in the block as an aspiration, neither failing nor forgotten
+-   detail
++   detail
+
+-       A test which *should* pass but is known not to yet is written like any other, inside an
+-       `aspirationally` block. Every verdict within is recorded as `Verdict.AspirePass` or
+-       `Verdict.AspireFail` (and an exception as `AspireFail`), so the run does not fail on it,
+-       and a host reports it distinctly once it starts to pass. The block sees a
+-       `Runner.Aspirational` view of the contextual runner, which shares its state and report
+-       and differs only in how verdicts are recorded; a pure aspiration is queued like any
+-       other assertion under `--workers`.
++       通る*べき*だが、まだ通らないとわかっているテストは、他のテストと同じように `aspirationally` ブロックの中に書く。
++       その中のすべての判定は `Verdict.AspirePass` か `Verdict.AspireFail` として記録され（例外は `AspireFail` として記録される）、実行はそれによって失敗しない。
++       そしてそれが通り始めると、ホストはそれを区別して報告する。
++       ブロックはコンテキストのランナーの `Runner.Aspirational` という見え方を見る。
++       これはランナーの状態と報告を共有し、判定の記録のしかただけが異なる。
++       純粋な願望は、`--workers` のもとで他のアサーションと同じようにキューに入れられる。
+
+=       other assertion under `--workers`.
+=
+-       ```scala
++       ```scala
+
+=       other assertion under `--workers`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       other assertion under `--workers`.
+=
+=       ```scala
+=       import soundness.*
+=
+-       given tutorial: (Testable of Impromptu) = Testable.detached
++       given tutorial: (Testable of Impromptu) = Testable.detached
+
+=       other assertion under `--workers`.
+=
+=       ```scala
+=       import soundness.*
+=
+=       given tutorial: (Testable of Impromptu) = Testable.detached
+-       given runner: Runner[Report] = Runner()
++       given runner: Runner[Report] = Runner()
+
+-       aspirationally:
++       aspirationally:
+
+-         test(m"a hexadecimal integer parses"):
++         test(m"a hexadecimal integer parses"):
+
+-           safely(t"0x2a".as[Int])
++           safely(t"0x2a".as[Int])
+
+-         . assert(_ == 42)
++         . assert(_ == 42)
+
+=         . assert(_ == 42)
+-       ```
++       ```
+
+=       ```
+-   refer probably.Verdict
++   refer probably.Verdict
+
+=   refer probably.Verdict
+-   refer probably.Runner
++   refer probably.Runner
+
+- entry .Suite   a suite of tests: an object with a title, an id and a `run()` body, driven by a host through `invoke`
++ entry .Suite   テストのスイート。タイトル、ID、`run()` の本体を持つオブジェクトで、ホストが `invoke` を通して駆動する
+
+= entry .Suite   a suite of tests: an object with a title, an id and a `run()` body, driven by a host through `invoke`
+-   detail
++   detail
+
+-       A `Suite` is the unit a host runs. It is an `object` extending `Suite(id, title)` or
+-       `Suite(title)` whose `#run` body declares tests, and it is **not a main class**: the
+-       beneficence plugin records every `Suite` object in the jar's
+-       `META-INF/services/probably.Suite` index, and the fume runner discovers suites there,
+-       drives each through `#invoke` with an event sink, and renders the stream of `TestEvent`s.
+-       The suite itself renders nothing.
++       `Suite` はホストが実行する単位である。
++       `Suite(id, title)` か `Suite(title)` を継承する `object` であり、その `#run` の本体がテストを宣言する。
++       これは**メインクラスではない**。
++       beneficence プラグインがすべての `Suite` オブジェクトを jar の `META-INF/services/probably.Suite` のインデックスに記録し、fume ランナーはそこからスイートを発見し、それぞれをイベントのシンクとともに `#invoke` で駆動し、`TestEvent` のストリームを描画する。
++       スイート自身は何も描画しない。
+
+=       The suite itself renders nothing.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       The suite itself renders nothing.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       The suite itself renders nothing.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       object Tests extends Suite("parser", m"Parser tests"):   // `fume run parser`
++       object Tests extends Suite("parser", m"Parser tests"):   // `fume run parser`
+
+=       object Tests extends Suite("parser", m"Parser tests"):   // `fume run parser`
+-         def run(): Unit =
++         def run(): Unit =
+
+-           suite(m"Numbers"):
++           suite(m"Numbers"):
+
+-             test(m"a decimal integer parses"):
++             test(m"a decimal integer parses"):
+
+-               safely(t"42".as[Int])
++               safely(t"42".as[Int])
+
+-             . assert(_ == 42)
++             . assert(_ == 42)
+
+=             . assert(_ == 42)
+-       ```
++       ```
+
+-       A suite has a **title** and an **id**. The id is what a selection and a path know it
+-       by, and is either given as a string literal before the title, or derived from the title
+-       by `.derive`: `Suite(m"Honeycomb Tests")` has the id `honeycomb-tests`. A given id is
+-       also the suite's `Topic` type: within its body the contextual `Testable` is a `Testable
+-       of "parser"`, each `suite` block passes the topic on, and a method which declares tests
+-       for the suite says so with `(using Testable of "parser")`. A suite with a derived id has
+-       the topic `Derived`, which no literal equals, so its tests are written in its body or in
+-       a method generic in the topic.
++       スイートは**タイトル**と **ID** を持つ。
++       ID は選択やパスがスイートを知るためのものであり、タイトルの前に文字列リテラルとして与えるか、`.derive` によってタイトルから導出される。
++       `Suite(m"Honeycomb Tests")` の ID は `honeycomb-tests` である。
++       与えられた ID はスイートの `Topic` 型でもある。
++       その本体の中ではコンテキストの `Testable` は `Testable of "parser"` であり、各 `suite` ブロックはそのトピックを引き継ぎ、スイートのためにテストを宣言するメソッドは `(using Testable of "parser")` でそれを示す。
++       ID が導出されたスイートのトピックは、どのリテラルとも等しくない `Derived` なので、そのテストはその本体の中か、トピックについて汎用的なメソッドの中に書く。
+
+-       A suite is a `Testable` (its name is the title, its `key` the id) and provides two
+-       givens to its body: `#testable`, a pure view of itself, and `#runner`, the runner of
+-       the current invocation. A host may invoke a suite any number of times through one
+-       classloader: each `#invoke` installs a fresh runner, and `#runner` is `inline` so every
+-       assertion reads the current one.
++       スイートは `Testable` であり（その名前はタイトル、その `key` は ID である）、その本体に二つの given を提供する。
++       自身の純粋な見え方である `#testable` と、現在の呼び出しのランナーである `#runner` である。
++       ホストは一つのクラスローダーを通してスイートを何度でも呼び出せる。
++       `#invoke` のたびに新しいランナーが設置され、`#runner` は `inline` なので、すべてのアサーションが現在のランナーを読む。
+
+-       For CI, or a host too old to read the jar's event schema, `.main` and `.run` are a
+-       plain entry point: a test object's own `main` is `Suite.main(arguments, Tests)`.
++       CI のため、または jar のイベントのスキーマを読めない古いホストのために、`.main` と `.run` は素のエントリーポイントになる。
++       テストオブジェクト自身の `main` は `Suite.main(arguments, Tests)` である。
+
+=       plain entry point: a test object's own `main` is `Suite.main(arguments, Tests)`.
+-   refer probably.Testable
++   refer probably.Testable
+
+=   refer probably.Testable
+-   refer probably.TestEvent
++   refer probably.TestEvent
+
+=   refer probably.TestEvent
+-   refer probably.Streamer
++   refer probably.Streamer
+
+=   refer probably.Streamer
+-   refer probably.Selection
++   refer probably.Selection
+
+-   entry .Derivation   the evidence that fixes a title-only suite's topic as `Derived`
+-       `Suite(title)` has a type parameter nothing else constrains; the one instance of
+-       `Derivation`, `.derivation`, is `Derivation[Derived]`, which is what gives such a suite
+-       the topic `Derived`. Not something a user writes.
+-   entry .derivation   the given `Derivation[Derived]`, in implicit scope
+-   entry .derive   the id derived from a title: lower-case letters and digits, with `-` between runs
+-       Each run of anything other than a letter or digit becomes one `-`, with none at either
+-       end, and `suite` if that leaves nothing: `Suite.derive(t"Honeycomb Tests")` is
+-       `honeycomb-tests`, and `Suite.derive(t"  y\"…\" interpolator (v2) ")` is
+-       `y-interpolator-v2`.
+-   entry .run   runs suites with a plain text report on the `Stdio` in scope, answering their status
+-       `Suite.run(arguments, suites*)` invokes each suite with the arguments (selection terms,
+-       space- or newline-separated; the empty text means all), printing `[pass] parser /
+-       Numbers / a decimal integer parses` per completed test, a `DetailMessage` or the
+-       `expected:`/`found:` of a `DetailCompare` beneath it, `suite threw: …` for a terminated
+-       run, and finally `3 passed, 1 failed`. It returns the worst status: 0 passed, 1
+-       failures, 2 a suite threw. It needs a `Stdio`, such as `stdios.javaLangSystemStdio`.
++   entry .Derivation   タイトルだけのスイートのトピックを `Derived` に固定する証拠
++       `Suite(title)` には、他に何も制約しない型パラメーターがある。
++       `Derivation` の唯一のインスタンスである `.derivation` は `Derivation[Derived]` であり、これがそのようなスイートにトピック `Derived` を与える。
++       ユーザーが書くものではない。
++   entry .derivation   暗黙のスコープにある given `Derivation[Derived]`
++   entry .derive   タイトルから導出された ID。小文字と数字で、連なりの間に `-` を置く
++       文字や数字以外のものの連なりはそれぞれ一つの `-` になり、両端には付かず、何も残らなければ `suite` になる。
++       `Suite.derive(t"Honeycomb Tests")` は `honeycomb-tests` であり、`Suite.derive(t"  y\"…\" interpolator (v2) ")` は `y-interpolator-v2` である。
++   entry .run   スコープ内の `Stdio` に素のテキストの報告を出してスイートを実行し、そのステータスを返す
++       `Suite.run(arguments, suites*)` は、各スイートを引数（選択の項。空白か改行で区切り、空のテキストはすべてを意味する）とともに呼び出す。
++       完了したテストごとに `[pass] parser / Numbers / a decimal integer parses` を表示し、その下に `DetailMessage`、または `DetailCompare` の `expected:`/`found:` を表示し、中断された実行には `suite threw: …` を表示し、最後に `3 passed, 1 failed` を表示する。
++       最悪のステータスを返す。
++       0 は成功、1 は失敗あり、2 はスイートが例外を投げたことを表す。
++       `stdios.javaLangSystemStdio` のような `Stdio` が必要である。
+
+=       failures, 2 a suite threw. It needs a `Stdio`, such as `stdios.javaLangSystemStdio`.
+=
+-       ```scala
++       ```scala
+
+=       failures, 2 a suite threw. It needs a `Stdio`, such as `stdios.javaLangSystemStdio`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import stdios.javaLangSystemStdio, termcapDefinitions.basicTermcap
++       import stdios.javaLangSystemStdio, termcapDefinitions.basicTermcap
+
+=       import stdios.javaLangSystemStdio, termcapDefinitions.basicTermcap
+=
+-       object Probe extends Suite(m"probe"):
++       object Probe extends Suite(m"probe"):
+
+-         def run(): Unit = test(m"one")(1).assert(_ == 1)
++         def run(): Unit = test(m"one")(1).assert(_ == 1)
+
+-       Suite.run(t"", Probe)
++       Suite.run(t"", Probe)
+
+=       Suite.run(t"", Probe)
+-       ```
++       ```
+
+-   entry .main   the `java` entry point for a test object: runs the suites, then exits with their status
+-       `Suite.main(arguments, Tests)` is `.run` over the standard `Stdio`, followed by
+-       `Exit(status).terminate()`. A test object which wants to be launched as `java -cp …
+-       Tests` defines `def main(arguments: Array[String]): Unit = Suite.main(arguments, Tests)`;
+-       a host such as fume never needs it.
+-   entry #Topic   the suite's topic: its id as a literal type, or `Derived`
+-   entry #workers   how many workers this suite's queued assertions may run on, when the host queues at all
+-       With `--workers=<n>` the runner uses the larger of the host's count and this; the
+-       default, 1, keeps declaration order. Override it in a suite whose pure assertions may
+-       run beside one another. Only assertions the compiler has verified pure are queued, so
+-       nothing scoped by the suite's blocks can be shared between workers, but effects the
+-       checker does not track (raw JDK I/O, system properties, a thread-affine library)
+-       remain the suite's own responsibility.
++   entry .main   テストオブジェクトのための `java` のエントリーポイント。スイートを実行し、そのステータスで終了する
++       `Suite.main(arguments, Tests)` は、標準の `Stdio` の上での `.run` の後に `Exit(status).terminate()` を続けたものである。
++       `java -cp … Tests` として起動されたいテストオブジェクトは `def main(arguments: Array[String]): Unit = Suite.main(arguments, Tests)` を定義する。
++       fume のようなホストはこれを必要としない。
++   entry #Topic   スイートのトピック。リテラル型としての ID、または `Derived`
++   entry #workers   ホストがキューを使う場合に、このスイートのキューに入れられたアサーションが使えるワーカーの数
++       `--workers=<n>` のもとでは、ランナーはホストの数とこれの大きい方を使う。
++       既定の 1 は宣言の順序を保つ。
++       純粋なアサーションが並んで実行されてよいスイートでは、これをオーバーライドする。
++       キューに入れられるのはコンパイラが純粋だと検証したアサーションだけなので、スイートのブロックがスコープを持つものがワーカー間で共有されることはない。
++       しかし検査器が追跡しない作用（生の JDK の入出力、システムプロパティ、スレッドに結び付いたライブラリ）は、引き続きスイート自身の責任である。
+
+=       remain the suite's own responsibility.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       remain the suite's own responsibility.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       remain the suite's own responsibility.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       class Parallel extends Suite(m"parallel"):
++       class Parallel extends Suite(m"parallel"):
+
+-         override def workers: Int = 4
++         override def workers: Int = 4
+
+-         def run(): Unit = ()
++         def run(): Unit = ()
+
+=         def run(): Unit = ()
+-       ```
++       ```
+
+-   entry #runner0   the runner of the current invocation, replaced by every `invoke`
+-       The per-run state. It is a public `var` only so that `#runner` can be an `inline given`
+-       reading it; a suite's body reaches the runner through `#runner`, and a host through
+-       `#invoke`.
+-   entry #runner   the given `Runner[Report]` a suite's body asserts through
+-       Inline, so every summons reads the *current* runner: a memoized alias would keep the
+-       first runner a suite ever saw, which is wrong for a suite invoked more than once in one
+-       classloader, by a host running several suites through one loader, or by another suite
+-       which invokes it as a nested suite.
+-   entry #testable   the given `Testable of Topic` the suite's body declares tests for
+-       A pure `Testable` view of the suite rather than the suite itself, which captures its
+-       runner and so is a capability. `Testable` equality is structural (name and parent), so
+-       the view is interchangeable with the suite wherever tests are grouped or reported.
+-   entry #run   the suite's body: where its tests are declared
+-       Abstract; every statement in it runs on every invocation, including a `--list` one, so
+-       a value consumed only inside test bodies is best declared `lazy`.
+-   entry #apply   runs the suite's body as a nested suite of the runner in scope
+-       `Tests()` within another suite's body enters this suite as a group of that one, on the
+-       caller's runner, which becomes this suite's `#runner` for the duration.
+-   entry #invoke   runs the suite with an event sink and returns its exit status
+-       `invoke(arguments, sink)` parses the arguments as a `Selection` (terms separated by
+-       newlines in one `Text`, the empty text meaning none), installs a fresh runner whose
+-       report emits every datum as a `TestEvent` through `sink`, runs `#run`, drains any
+-       queued assertions, and returns 0 (passed), 1 (failures) or 2 (the suite threw, after a
+-       `RunTerminated` event). The stream ends with `RunCompleted`; a selection which admits
+-       nothing emits `NothingMatched` first.
++   entry #runner0   現在の呼び出しのランナー。`invoke` のたびに置き換えられる
++       実行ごとの状態である。
++       これが public な `var` であるのは、`#runner` をそれを読む `inline given` にするためだけである。
++       スイートの本体は `#runner` を通して、ホストは `#invoke` を通してランナーに届く。
++   entry #runner   スイートの本体がアサートに使う given `Runner[Report]`
++       インラインなので、召喚のたびに*現在の*ランナーを読む。
++       メモ化されたエイリアスだと、スイートが最初に見たランナーを保ち続けてしまう。
++       これは、一つのクラスローダーの中で複数回呼び出されるスイート、つまり一つのローダーを通して複数のスイートを実行するホストや、それを入れ子のスイートとして呼び出す別のスイートに対しては誤りである。
++   entry #testable   スイートの本体がテストを宣言する対象の given `Testable of Topic`
++       スイート自身はそのランナーをキャプチャするのでケイパビリティであり、これはスイート自身ではなく、スイートの純粋な `Testable` としての見え方である。
++       `Testable` の等価性は構造的（名前と親）なので、テストがまとめられたり報告されたりするところでは、この見え方はスイートと交換可能である。
++   entry #run   スイートの本体。そのテストが宣言される場所
++       抽象メソッドである。
++       その中のすべての文は、`--list` のものを含めすべての呼び出しで実行されるので、テストの本体の中でだけ使われる値は `lazy` で宣言するのがよい。
++   entry #apply   スイートの本体を、スコープ内のランナーの入れ子のスイートとして実行する
++       別のスイートの本体の中の `Tests()` は、このスイートをそのスイートのグループとして、呼び出し側のランナーの上で開始する。
++       そのランナーは、その間このスイートの `#runner` になる。
++   entry #invoke   イベントのシンクとともにスイートを実行し、その終了ステータスを返す
++       `invoke(arguments, sink)` は引数を `Selection` としてパースする（項は一つの `Text` の中で改行で区切り、空のテキストは項がないことを意味する）。
++       そして、報告がすべてのデータを `TestEvent` として `sink` を通して発する新しいランナーを設置し、`#run` を実行し、キューに入れられたアサーションを排出し、0（成功）、1（失敗あり）、2（スイートが例外を投げた。`RunTerminated` イベントの後）を返す。
++       ストリームは `RunCompleted` で終わり、何も受け入れない選択は最初に `NothingMatched` を発する。
+
+-       With `--list` among the arguments nothing runs: the traversal records what the
+-       selection admits and emits one `TestScheduled` per admitted test, with its kind,
+-       expected measuring time, tags and axes, which is how a host budgets a run before
+-       staging anything.
++       引数の中に `--list` があれば何も実行されない。
++       走査は選択が受け入れるものを記録し、受け入れられたテストごとに、その種類、計測の見込み時間、タグ、軸を持つ `TestScheduled` を一つ発する。
++       これが、ホストが何かをステージングする前に実行の見積もりを立てる方法である。
+
+=       staging anything.
+=
+-       ```scala
++       ```scala
+
+=       staging anything.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       staging anything.
+=
+=       ```scala
+=       import soundness.*
+=
+-       object Probe extends Suite(m"probe"):
++       object Probe extends Suite(m"probe"):
+
+=       object Probe extends Suite(m"probe"):
+-         def run(): Unit =
++         def run(): Unit =
+
+-           test(m"one")(1).assert(_ == 1)
++           test(m"one")(1).assert(_ == 1)
+
+-           test(m"two")(2).assert(_ == 3)
++           test(m"two")(2).assert(_ == 3)
+
+-       val events: scala.collection.mutable.ListBuffer[TestEvent] = scala.collection.mutable.ListBuffer()
++       val events: scala.collection.mutable.ListBuffer[TestEvent] = scala.collection.mutable.ListBuffer()
+
+-       val status: Int = Probe.invoke(t"", event => events.append(event))
++       val status: Int = Probe.invoke(t"", event => events.append(event))
+
+=       val status: Int = Probe.invoke(t"", event => events.append(event))
+-       ```
++       ```
+
+-       The sink is a pure function (`TestEvent -> Unit`) and may be called from a worker
+-       thread under `--workers`, so it must be safe to call concurrently.
++       シンクは純粋な関数（`TestEvent -> Unit`）であり、`--workers` のもとではワーカースレッドから呼ばれることがあるので、並行に呼んでも安全でなければならない。
+
+- entry .Testable   what tests are attached to: a `Suite`, a `suite` group or an `impromptu` block
++ entry .Testable   テストが付けられる先。`Suite`、`suite` のグループ、または `impromptu` ブロック
+
+= entry .Testable   what tests are attached to: a `Suite`, a `suite` group or an `impromptu` block
+-   detail
++   detail
+
+-       Every `test` and `suite` declaration takes a `Testable` as a contextual parameter, which
+-       says where the test belongs; its `#Topic` says so **statically**: the literal id of the
+-       `Suite` the test is declared for (`Testable of "parser"`), which every `suite` group
+-       within it passes on; `Derived` for a suite whose id is derived from its title; or
+-       `Impromptu` for tests only known by running them. The compiler therefore refuses a test
+-       which belongs nowhere, and the beneficence plugin, reading the topic from each
+-       declaration it compiles, lists every suite's tests without running anything.
++       すべての `test` と `suite` の宣言は、テストがどこに属するかを示す `Testable` をコンテキストパラメーターとして受け取る。
++       その `#Topic` はそれを**静的に**示す。
++       テストが宣言される `Suite` のリテラルの ID（`Testable of "parser"`）であり、その中の各 `suite` グループがそれを引き継ぐ。
++       あるいは、ID がタイトルから導出されたスイートなら `Derived`、実行して初めてわかるテストなら `Impromptu` である。
++       したがってコンパイラはどこにも属さないテストを拒否し、beneficence プラグインは、コンパイルする各宣言からトピックを読んで、何も実行せずにすべてのスイートのテストを一覧する。
+
+-       A `Testable` has a `#name` (a `Message`), an optional `#parent`, an optional `#moniker`
+-       and, for a suite, a `#key` (its id). Equality is structural — the name and the parent —
+-       so two values built on different lines for the same position in the hierarchy are
+-       equal, and `Test.Id#id` is a function of the texts of the names alone.
++       `Testable` は `#name`（`Message`）、省略可能な `#parent`、省略可能な `#moniker`、そしてスイートなら `#key`（その ID）を持つ。
++       等価性は構造的（名前と親）である。
++       そのため、階層の同じ位置について別々の行で作られた二つの値は等しく、`Test.Id#id` は名前のテキストだけの関数である。
+
+=       equal, and `Test.Id#id` is a function of the texts of the names alone.
+=
+-       ```scala
++       ```scala
+
+=       equal, and `Test.Id#id` is a function of the texts of the names alone.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val group: Testable of Impromptu = Testable.of[Impromptu](m"group", Testable.detached)
++       val group: Testable of Impromptu = Testable.of[Impromptu](m"group", Testable.detached)
+
+-       group.parent.let(_.name.text)
++       group.parent.let(_.name.text)
+
+-       group.id.ids
++       group.id.ids
+
+=       group.id.ids
+-       ```
++       ```
+
+=       ```
+-   refer probably.Suite
++   refer probably.Suite
+
+=   refer probably.Suite
+-   refer probably.test
++   refer probably.test
+
+=   refer probably.test
+-   refer probably.Impromptu
++   refer probably.Impromptu
+
+-   refer probably.Derived
++   refer probably.Derived
+
+-   entry .orphan   the compile error for a `test` with no `Testable` in scope
+-       The text of the `@missingContext` annotation on every declaration's parameter: _a test
+-       must be declared for a Suite — in its body, or in a method taking `(using Testable of
+-       "<the suite's name>")` — or inside an `impromptu` block_.
+-   entry .of   makes a `Testable of topic` from a name, with an optional parent, moniker and key
+-       `Testable.of[topic](name, parent, moniker, key)` needs a `Codepoint`, which marks where
+-       it was declared. `suite` uses it to make each group's `Testable` from the enclosing one.
+-   entry .impromptu   the same position in the hierarchy as a `Testable`, with the topic `Impromptu`
+-       For tests not statically attributed to the given `Testable`: `impromptu` builds the
+-       block's context this way, so an impromptu test is reported at the surrounding suite's
+-       position but is absent from the index.
+-   entry .detached   where `impromptu` tests go when no `Testable` surrounds the block
+-       A root `Testable of Impromptu` named `impromptu`, and the value to bind as a given where
+-       tests are run outside any suite, as a REPL or a tutorial does.
+-   entry #Topic   the suite the tests belong to, as a type: a literal id, `Derived` or `Impromptu`
+-   entry #name   the suite's or group's title
+-   entry #moniker   the group's stable moniker, if it was given one
+-   entry #key   a suite's id, as text; `Unset` for a group
+-       Unlike a moniker, an id need not be a Java identifier (`html-5` is one), so it is plain
+-       text, and a selection naming it may be parsed as a glob.
+-   entry #parent   the group or suite this one is within, or `Unset` for a root
+-   entry #id   the `Test.Id` of the suite or group itself: what a path and a report node know it by
++   entry .orphan   スコープ内に `Testable` のない `test` に対するコンパイルエラー
++       すべての宣言のパラメーターに付いた `@missingContext` アノテーションのテキストである：_a test must be declared for a Suite — in its body, or in a method taking `(using Testable of "<the suite's name>")` — or inside an `impromptu` block_。
++   entry .of   名前から `Testable of topic` を作る。親、モニカー、キーは省略可能
++       `Testable.of[topic](name, parent, moniker, key)` には、それが宣言された場所を示す `Codepoint` が必要である。
++       `suite` はこれを使って、囲んでいるものから各グループの `Testable` を作る。
++   entry .impromptu   `Testable` と階層上の同じ位置で、トピックを `Impromptu` にしたもの
++       与えられた `Testable` に静的に帰属しないテストのためのものである。
++       `impromptu` はブロックのコンテキストをこのように作るので、即席のテストは囲んでいるスイートの位置で報告されるが、インデックスにはない。
++   entry .detached   ブロックを囲む `Testable` がないときに `impromptu` のテストが行く先
++       `impromptu` という名前の根の `Testable of Impromptu` であり、REPL やチュートリアルのように、どのスイートの外でもテストを実行する場所で given として束縛する値である。
++   entry #Topic   テストが属するスイートを表す型。リテラルの ID、`Derived`、または `Impromptu`
++   entry #name   スイートまたはグループのタイトル
++   entry #moniker   グループに安定したモニカーが与えられていれば、そのモニカー
++   entry #key   テキストとしてのスイートの ID。グループでは `Unset`
++       モニカーとは異なり、ID は Java の識別子である必要はない（`html-5` も ID である）ので、素のテキストであり、それを指す選択はグロブとしてパースされることがある。
++   entry #parent   これを含むグループかスイート。根なら `Unset`
++   entry #id   スイートまたはグループ自身の `Test.Id`。パスや報告のノードがそれを知るためのもの
+
+- entry .Impromptu   the topic of a `Testable` whose tests are not attributed to a `Suite` at compile time
+-     An opaque `Label` which no literal equals: tests declared under a `Testable of Impromptu`
+-     (inside an `impromptu` block, or for a method taking `(using Testable of Impromptu)`) are
+-     known only by running them, and no listing made without running the suite includes them.
++ entry .Impromptu   コンパイル時にテストが `Suite` に帰属しない `Testable` のトピック
++     どのリテラルとも等しくない不透明な `Label` である。
++     `Testable of Impromptu` のもとで（`impromptu` ブロックの中で、または `(using Testable of Impromptu)` を受け取るメソッドのために）宣言されたテストは、実行して初めてわかり、スイートを実行せずに作った一覧には含まれない。
+
+- entry .Derived   the topic of a suite whose id is derived from its title
+-     An opaque `Label` which no literal equals, like `Impromptu`, so the tests of
+-     `Suite(m"Jacinta tests")` can only be declared where its own `Testable` is in scope — its
+-     body — or in a method generic in the topic, `[topic <: Label](using Testable of topic)`.
+-     A suite given an id has that id for its topic instead.
++ entry .Derived   ID がタイトルから導出されたスイートのトピック
++     `Impromptu` と同じく、どのリテラルとも等しくない不透明な `Label` である。
++     そのため `Suite(m"Jacinta tests")` のテストは、それ自身の `Testable` がスコープ内にある場所（その本体）か、トピックについて汎用的なメソッド（`[topic <: Label](using Testable of topic)`）の中でしか宣言できない。
++     ID を与えられたスイートは、代わりにその ID をトピックとする。
+
+- entry .Test   a declared test with its body, ready to be asserted, checked or matched
++ entry .Test   本体を持つ宣言されたテスト。アサート、チェック、マッチされるのを待っている
+
+= entry .Test   a declared test with its body, ready to be asserted, checked or matched
+-   detail
++   detail
+
+-       A `Test[result]` pairs a `Test.Id` with an `#action`, the body as a function of the
+-       `Harness` which runs it, and is made by applying a `Test.Id` to a block:
+-       `test(m"…")(body)`. The companion's extensions are the three ways to run one:
++       `Test[result]` は `Test.Id` と `#action`（それを実行する `Harness` の関数としての本体）の組であり、`Test.Id` をブロックに適用して作る：`test(m"…")(body)`。
++       コンパニオンの拡張メソッドは、それを実行する三つの方法である。
+
+-       - `.assert(predicate)` runs the body, applies the predicate, records a `Verdict`, and
+-         returns `Unit`. Its body must be **pure** — it may close over no capability (a
+-         `Monitor` from an enclosing `supervise`, an `Online`, a started server) — since a
+-         queued runner may run it on a worker after the block which scoped the capability has
+-         exited. A body which needs one creates it inside itself, or the test becomes a
+-         `check`. An unselected `assert` never runs at all.
+-       - `.check(predicate)` accepts any body, runs it inline, records the verdict, and
+-         **returns the value**, so later tests can build on it. An unselected `check` still
+-         runs (its value flows onward) but records nothing.
+-       - `.matches { case … }` asserts that the value fits a pattern.
++       - `.assert(predicate)` は本体を実行し、述語を適用し、`Verdict` を記録して、`Unit` を返す。その本体は**純粋**でなければならない。どのケイパビリティ（囲んでいる `supervise` からの `Monitor`、`Online`、起動したサーバー）も閉じ込めてはならない。キュー付きのランナーは、ケイパビリティのスコープを作ったブロックが終了した後に、それをワーカーで実行することがあるからである。ケイパビリティを必要とする本体は、それを自分の中で作るか、テストを `check` にする。選択されていない `assert` はまったく実行されない。
++       - `.check(predicate)` は任意の本体を受け入れ、その場で実行し、判定を記録し、**値を返す**ので、後のテストがその上に組み立てられる。選択されていない `check` も実行される（その値は先へ流れる）が、何も記録しない。
++       - `.matches { case … }` は、値がパターンに合うことをアサートする。
+
+=       - `.matches { case … }` asserts that the value fits a pattern.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A test is a named value
++         label テストは名前の付いた値である
+
+=         label A test is a named value
+-         code
++         code
+
+=         label A test is a named value
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A test is a named value
+=         code
+=             import soundness.*
+=
+-             given tutorial: (Testable of Impromptu) = Testable.detached
++             given tutorial: (Testable of Impromptu) = Testable.detached
+
+=         label A test is a named value
+=         code
+=             import soundness.*
+=
+=             given tutorial: (Testable of Impromptu) = Testable.detached
+-             given runner: Runner[Report] = Runner()
++             given runner: Runner[Report] = Runner()
+
+=         label A test is a named value
+=         code
+=             import soundness.*
+=
+=             given tutorial: (Testable of Impromptu) = Testable.detached
+=             given runner: Runner[Report] = Runner()
+=
+-             case class Person(name: Text, age: Int)
++             case class Person(name: Text, age: Int)
+
+-             val probe: Test[Person] = test(m"the oldest person")(Person(t"Lear", 82))
++             val probe: Test[Person] = test(m"the oldest person")(Person(t"Lear", 82))
+
+=             val probe: Test[Person] = test(m"the oldest person")(Person(t"Lear", 82))
+-       frame
++       frame
+
+-         label An assertion records a verdict and returns nothing
++         label アサーションは判定を記録し、何も返さない
+
+=         label An assertion records a verdict and returns nothing
+-         substitute given..Runner()  ...
++         substitute given..Runner()  ...
+
+=         label An assertion records a verdict and returns nothing
+=         substitute given..Runner()  ...
+-         code
++         code
+
+=         label An assertion records a verdict and returns nothing
+=         substitute given..Runner()  ...
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label An assertion records a verdict and returns nothing
+=         substitute given..Runner()  ...
+=         code
+=             import soundness.*
+=
+-             given tutorial: (Testable of Impromptu) = Testable.detached
++             given tutorial: (Testable of Impromptu) = Testable.detached
+
+=         label An assertion records a verdict and returns nothing
+=         substitute given..Runner()  ...
+=         code
+=             import soundness.*
+=
+=             given tutorial: (Testable of Impromptu) = Testable.detached
+-             given runner: Runner[Report] = Runner()
++             given runner: Runner[Report] = Runner()
+
+=         label An assertion records a verdict and returns nothing
+=         substitute given..Runner()  ...
+=         code
+=             import soundness.*
+=
+=             given tutorial: (Testable of Impromptu) = Testable.detached
+=             given runner: Runner[Report] = Runner()
+=
+-             case class Person(name: Text, age: Int)
++             case class Person(name: Text, age: Int)
+
+-             test(m"the oldest person")(Person(t"Lear", 82)).assert(_.age > 40)
++             test(m"the oldest person")(Person(t"Lear", 82)).assert(_.age > 40)
+
+=             test(m"the oldest person")(Person(t"Lear", 82)).assert(_.age > 40)
+-       frame
++       frame
+
+-         label A check returns the value for a later test to build on
++         label チェックは、後のテストが使うための値を返す
+
+=         label A check returns the value for a later test to build on
+-         substitute given..Runner()  ...
++         substitute given..Runner()  ...
+
+=         label A check returns the value for a later test to build on
+=         substitute given..Runner()  ...
+-         code
++         code
+
+=         label A check returns the value for a later test to build on
+=         substitute given..Runner()  ...
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A check returns the value for a later test to build on
+=         substitute given..Runner()  ...
+=         code
+=             import soundness.*
+=
+-             given tutorial: (Testable of Impromptu) = Testable.detached
++             given tutorial: (Testable of Impromptu) = Testable.detached
+
+=         label A check returns the value for a later test to build on
+=         substitute given..Runner()  ...
+=         code
+=             import soundness.*
+=
+=             given tutorial: (Testable of Impromptu) = Testable.detached
+-             given runner: Runner[Report] = Runner()
++             given runner: Runner[Report] = Runner()
+
+=         label A check returns the value for a later test to build on
+=         substitute given..Runner()  ...
+=         code
+=             import soundness.*
+=
+=             given tutorial: (Testable of Impromptu) = Testable.detached
+=             given runner: Runner[Report] = Runner()
+=
+-             case class Person(name: Text, age: Int)
++             case class Person(name: Text, age: Int)
+
+-             val oldest: Person = test(m"the oldest person")(Person(t"Lear", 82)).check(_.age > 40)
++             val oldest: Person = test(m"the oldest person")(Person(t"Lear", 82)).check(_.age > 40)
+
+-             test(m"the oldest person is named")(oldest.name).assert(_ == t"Lear")
++             test(m"the oldest person is named")(oldest.name).assert(_ == t"Lear")
+
+=             test(m"the oldest person is named")(oldest.name).assert(_ == t"Lear")
+-       frame
++       frame
+
+-         label A failed equality is reported as a contrast, field by field
++         label 失敗した等価性は、フィールドごとの対比として報告される
+
+=         label A failed equality is reported as a contrast, field by field
+-         substitute given..Runner()  ...
++         substitute given..Runner()  ...
+
+=         label A failed equality is reported as a contrast, field by field
+=         substitute given..Runner()  ...
+-         code
++         code
+
+=         label A failed equality is reported as a contrast, field by field
+=         substitute given..Runner()  ...
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A failed equality is reported as a contrast, field by field
+=         substitute given..Runner()  ...
+=         code
+=             import soundness.*
+=
+-             given tutorial: (Testable of Impromptu) = Testable.detached
++             given tutorial: (Testable of Impromptu) = Testable.detached
+
+=         label A failed equality is reported as a contrast, field by field
+=         substitute given..Runner()  ...
+=         code
+=             import soundness.*
+=
+=             given tutorial: (Testable of Impromptu) = Testable.detached
+-             given runner: Runner[Report] = Runner()
++             given runner: Runner[Report] = Runner()
+
+=         label A failed equality is reported as a contrast, field by field
+=         substitute given..Runner()  ...
+=         code
+=             import soundness.*
+=
+=             given tutorial: (Testable of Impromptu) = Testable.detached
+=             given runner: Runner[Report] = Runner()
+=
+-             case class Person(name: Text, age: Int)
++             case class Person(name: Text, age: Int)
+
+-             test(m"the oldest person")(Person(t"Lear", 82)).assert(_ == Person(t"Lear", 80))
++             test(m"the oldest person")(Person(t"Lear", 82)).assert(_ == Person(t"Lear", 80))
+
+-             // reported as Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Lear"), t"age" -> Different(t"80", t"82", t"+2")), …)
++             // reported as Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Lear"), t"age" -> Different(t"80", t"82", t"+2")), …)
+
+=             // reported as Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Lear"), t"age" -> Different(t"80", t"82", t"+2")), …)
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       Both `assert` and `check` are macros which find the `Runner` in scope (a compile error,
+-       _No `Runner` instance is available_, otherwise) and the `Inclusion[report, Verdict]`
+-       and `Inclusion[report, Verdict.Detail]` for its report type. Nothing else is resolved
+-       at the assertion: it records where its predicate is written and gathers, only on
+-       failure, the locals the predicate closes over. A failed predicate is then handed to
+-       the installed `Diagnostician`, when the run was asked to diagnose failures, whose
+-       account of it — a `Verdict.Detail.Dissection` of the predicate's intermediate values,
+-       and for an equality a `Verdict.Detail.Compare` of its two sides — is recorded and
+-       emitted as `TestEvent.DetailDissection` and `TestEvent.DetailCompare`. A body which
+-       throws records
+-       `Verdict.Throws`; a predicate which throws, `Verdict.CheckThrows`. Values captured
+-       with `Harness#capture` during a failed test are recorded as `Verdict.Detail.Captures`.
++       `assert` と `check` はどちらもマクロであり、スコープ内の `Runner`（なければコンパイルエラー _No `Runner` instance is available_ になる）と、その報告の型のための `Inclusion[report, Verdict]` と `Inclusion[report, Verdict.Detail]` を見つける。
++       アサーションの位置ではそれ以外に何も解決されない。
++       アサーションは述語が書かれた場所を記録し、失敗したときにだけ、述語が閉じ込めるローカル変数を集める。
++       失敗した述語は、実行が失敗の診断を求められていれば、設置された `Diagnostician` に渡される。
++       その説明、つまり述語の途中の値の `Verdict.Detail.Dissection` と、等価性ならその両辺の `Verdict.Detail.Compare` が記録され、`TestEvent.DetailDissection` と `TestEvent.DetailCompare` として発せられる。
++       例外を投げる本体は `Verdict.Throws` を記録し、例外を投げる述語は `Verdict.CheckThrows` を記録する。
++       失敗したテストの間に `Harness#capture` でキャプチャされた値は、`Verdict.Detail.Captures` として記録される。
+
+=       with `Harness#capture` during a failed test are recorded as `Verdict.Detail.Captures`.
+-   refer probably.test
++   refer probably.test
+
+=   refer probably.test
+-   refer probably.Runner
++   refer probably.Runner
+
+=   refer probably.Runner
+-   refer probably.Verdict
++   refer probably.Verdict
+
+=   refer probably.Verdict
+-   refer probably.Diagnosis
++   refer probably.Diagnosis
+
+=   refer probably.Diagnosis
+-   refer probably.Dissector
++   refer probably.Dissector
+
+-   entry .assert   runs a pure test and records whether its predicate held; `assert()` records that it ran
+-       An extension on `Test[test]`. `assert(predicate)` records `Pass` or `Fail` (or, inside
+-       `aspirationally`, `AspirePass`/`AspireFail`); `assert()` with no predicate passes
+-       whenever the body returns. The body must be pure: in a capture-checked unit, a `Test`
+-       which captures a capability is rejected at the call site by the capture checker, since
+-       the expansion passes it to a parameter typed as the pure `Test[test]`. Only an
+-       assertion the compiler has verified pure is queued
+-       under `--workers`; one from a unit compiled without capture checking runs inline, in
+-       order.
+-   entry .matches   asserts that the value fits a partial function's pattern
+-       `test(m"…")(value).matches { case Some(_) => }` is `assert(pf.isDefinedAt(_))`.
+-   entry .check   runs any test inline, records the verdict, and returns the value
+-       An extension on `Test[test]^`, so the body may close over capabilities. The value is
+-       returned for later tests to use; a body which throws rethrows after recording
+-       `Verdict.Throws`, since there is no value to return. A `check` runs even when the
+-       selection does not admit it, and under `--list`, so a long computation which is only
+-       needed by later assertions costs every listing.
+-   entry .Id   a test's identity: its name, its suite, where it was declared, and its moniker, tags and key
++   entry .assert   純粋なテストを実行し、その述語が成り立ったかどうかを記録する。`assert()` は実行されたことを記録する
++       `Test[test]` の拡張メソッドである。
++       `assert(predicate)` は `Pass` か `Fail`（`aspirationally` の中では `AspirePass`/`AspireFail`）を記録する。
++       述語のない `assert()` は、本体が戻れば常に成功する。
++       本体は純粋でなければならない。
++       キャプチャ検査されるユニットでは、展開がそれを純粋な `Test[test]` として型付けされたパラメーターに渡すので、ケイパビリティをキャプチャする `Test` は呼び出し側でキャプチャ検査器に拒否される。
++       `--workers` のもとでキューに入れられるのは、コンパイラが純粋だと検証したアサーションだけである。
++       キャプチャ検査なしでコンパイルされたユニットからのものは、順序どおりにその場で実行される。
++   entry .matches   値が部分関数のパターンに合うことをアサートする
++       `test(m"…")(value).matches { case Some(_) => }` は `assert(pf.isDefinedAt(_))` である。
++   entry .check   任意のテストをその場で実行し、判定を記録して、値を返す
++       `Test[test]^` の拡張メソッドなので、本体はケイパビリティを閉じ込めてよい。
++       値は後のテストが使うために返される。
++       例外を投げる本体は、返す値がないので、`Verdict.Throws` を記録した後に例外を投げ直す。
++       `check` は、選択がそれを受け入れないときも `--list` のもとでも実行されるので、後のアサーションだけが必要とする長い計算は、一覧のたびにコストがかかる。
++   entry .Id   テストの身元。名前、スイート、宣言された場所、そしてモニカー、タグ、キー
+
+=   entry .Id   a test's identity: its name, its suite, where it was declared, and its moniker, tags and key
+-     detail
++     detail
+
+-         A `Test.Id` is what `test(m"…")` returns before a body is given, and what every
+-         report line, event and selection is keyed by. Its `#id` is six hex digits computed
+-         from the **text** of the name and of the suites' names alone, so a host reading the
+-         beneficence plugin's index arrives at the same id without constructing the test. It
+-         is `Comparable` lexicographically on the path of ids from the root.
++         `Test.Id` は、本体が与えられる前に `test(m"…")` が返すものであり、すべての報告の行、イベント、選択のキーになるものである。
++         その `#id` は、名前とスイートの名前の**テキスト**だけから計算される六桁の16進数字なので、beneficence プラグインのインデックスを読むホストは、テストを作らずに同じ ID にたどり着く。
++         根からの ID のパスについて辞書順に `Comparable` である。
+
+-         Applying an id to a block makes a `Test`; `#over` spreads it across one or two axes
+-         instead.
++         ID をブロックに適用すると `Test` ができる。
++         `#over` は、代わりにそれを一つか二つの軸にわたって展開する。
+
+-     refer probably.Test
++     refer probably.Test
+
+-     refer probably.Axis
++     refer probably.Axis
+
+-     entry .comparable   orders ids by their path of hashes from the root suite
+-     entry #name   the description, as a `Message`
+-     entry #suite   the `Testable` the test was declared for, or `Unset` for a root
+-     entry #codepoint   where the test was declared: source file and line
+-     entry #moniker   the stable `n"…"` identifier, if one was given
+-     entry #tags   the declared tags, in declaration order
+-     entry #key   a suite's id; `Unset` for a test or group
+-     entry #timestamp   when the id was constructed, in milliseconds since the epoch
+-     entry #id   six hex digits: the low 24 bits of the names' hash
+-         With `h(suite)` the sum of the `String#hashCode`s of the texts of the suite's name
+-         and its ancestors' names, the id is the low 24 bits of `h(suite) ^ name.text.hashCode`
+-         in hex, so `a quoted name` under `Probably Tests/group` has an id any reader of the
+-         names can compute.
+-     entry #ids   the ids from this entry up to the root, this one first
+-     entry #label   what addresses this entry besides its hash and name: a moniker, or a suite's id
+-     entry #apply   makes a `Test` from a body, which may use the `Harness` in scope
+-         `test(m"…")(body)`: the body is a `Harness ?=> result`, so it may call `capture`.
+-         The capture of any capability by the body lands on the returned `Test`
+-         (`Test[result]^{body}`), not on `result`, so a test which asserts a pure value
+-         computed through a capability does not stamp that capability on the value's type.
+-     entry #over   spreads the test over one or two axes, one cell per value the body defines
+-         `over(axis)(body)` is a `Spread`: the body runs once per value of the `Axis`, and each
+-         verdict is recorded at that value's coordinate of this one named test. A partial body
+-         (`{ case … }`) leaves gaps at the values it does not define. An enum's companion
+-         object may stand in for an axis, `over(Codec)`, with the enum's cases as its values.
+-         `over(first, second)` is a `Spread2` over the grid of two axes.
++     entry .comparable   根のスイートからのハッシュのパスによって ID を順序付ける
++     entry #name   `Message` としての説明
++     entry #suite   テストが宣言された `Testable`。根なら `Unset`
++     entry #codepoint   テストが宣言された場所。ソースファイルと行
++     entry #moniker   与えられていれば、安定した `n"…"` の識別子
++     entry #tags   宣言されたタグ、宣言の順序どおり
++     entry #key   スイートの ID。テストやグループでは `Unset`
++     entry #timestamp   ID が作られた時刻、エポックからのミリ秒数
++     entry #id   六桁の16進数字。名前のハッシュの下位 24 ビット
++         `h(suite)` を、スイートの名前とその祖先の名前のテキストの `String#hashCode` の和とすると、ID は `h(suite) ^ name.text.hashCode` の下位 24 ビットの16進表記である。
++         そのため `Probably Tests/group` の下の `a quoted name` には、名前を読む誰もが計算できる ID がある。
++     entry #ids   このエントリーから根までの ID。このエントリーのものが先頭
++     entry #label   ハッシュと名前のほかにこのエントリーを指すもの。モニカー、またはスイートの ID
++     entry #apply   本体から `Test` を作る。本体はスコープ内の `Harness` を使ってよい
++         `test(m"…")(body)` の本体は `Harness ?=> result` なので、`capture` を呼べる。
++         本体によるケイパビリティのキャプチャは、`result` ではなく返される `Test`（`Test[result]^{body}`）に付くので、ケイパビリティを通して計算された純粋な値をアサートするテストが、そのケイパビリティを値の型に刻むことはない。
++     entry #over   テストを一つか二つの軸にわたって展開する。本体が定義する値ごとに一つのセル
++         `over(axis)(body)` は `Spread` である。
++         本体は `Axis` の値ごとに一度ずつ実行され、各判定はこの一つの名前付きのテストの、その値の座標に記録される。
++         部分的な本体（`{ case … }`）は、定義しない値のところに空白を残す。
++         列挙型のコンパニオンオブジェクトは軸の代わりになり（`over(Codec)`）、列挙型のケースがその値になる。
++         `over(first, second)` は、二つの軸の格子にわたる `Spread2` である。
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         given tutorial: (Testable of Impromptu) = Testable.detached
++         given tutorial: (Testable of Impromptu) = Testable.detached
+
+-         given runner: Runner[Report] = Runner()
++         given runner: Runner[Report] = Runner()
+
+-         test(m"double every value").over(Axis(t"n")(1, 2, 3, 4)): n =>
++         test(m"double every value").over(Axis(t"n")(1, 2, 3, 4)): n =>
+
+-           n*2
++           n*2
+
+-         . assert((n, result) => result == n*2)
++         . assert((n, result) => result == n*2)
+
+-         test(m"biaxial spread with a gap").over(Axis(t"x")(1, 2, 3), Axis(t"y")(10, 20)):
++         test(m"biaxial spread with a gap").over(Axis(t"x")(1, 2, 3), Axis(t"y")(10, 20)):
+
+-           case (x, y) if x + y != 23 => x*y
++           case (x, y) if x + y != 23 => x*y
+
+-         . assert((x, y, result) => result == x*y)
++         . assert((x, y, result) => result == x*y)
+
+-         ```
++         ```
+
+-     entry #depth   how many levels down from the root this entry is
+-   entry #id   the test's `Test.Id`
+-   entry #action   the body, as a function of the `Harness` which runs it
++     entry #depth   このエントリーが根から何段下にあるか
++   entry #id   テストの `Test.Id`
++   entry #action   それを実行する `Harness` の関数としての本体
+
+- entry .Tag   a label on a test, orthogonal to its name: `slow`, `network`, `nightly`
++ entry .Tag   名前とは独立した、テストに付けるラベル：`slow`、`network`、`nightly`
+
+= entry .Tag   a label on a test, orthogonal to its name: `slow`, `network`, `nightly`
+-   detail
++   detail
+
+-       A tag is written as an `n"…"` literal after a test's description, `test(m"fetches",
+-       n"slow", n"network")`, checked at compile time against the `Tagging` rule
+-       (`[A-Za-z_][A-Za-z0-9_-]*`, so it can be typed unquoted on a command line and completed
+-       by a shell). A selection admits by tag (`tag:slow,network`: any of) and excludes by tag
+-       (`not:tag:slow`), and a host can enumerate the tags a classpath carries from the index.
++       タグはテストの説明の後に `n"…"` リテラルとして書き（`test(m"fetches", n"slow", n"network")`）、`Tagging` の規則（`[A-Za-z_][A-Za-z0-9_-]*`。そのためコマンドラインで引用符なしに入力でき、シェルで補完できる）に照らしてコンパイル時に検査される。
++       選択はタグによって受け入れ（`tag:slow,network`：いずれか）、タグによって除外する（`not:tag:slow`）。
++       ホストは、クラスパスが運ぶタグをインデックスから列挙できる。
+
+-       `Tag` is its own type rather than `Text`, so a declaration cannot mistake a description
+-       for a tag, and an `into` type, so a `Name[Tagging]` literal is accepted directly. It is
+-       **not** exported to the `soundness` umbrella, where `Tag` is honeycomb's HTML tag: name
+-       it as `probably.Tag` when the type must be written.
++       `Tag` は `Text` ではなく独自の型なので、宣言が説明をタグと取り違えることはない。
++       また `into` 型なので、`Name[Tagging]` のリテラルを直接受け入れる。
++       `soundness` アンブレラには**エクスポートされない**。
++       そこでは `Tag` は honeycomb の HTML タグなので、型を書かなければならないときは `probably.Tag` と書く。
+
+-   refer probably.Tagging
++   refer probably.Tagging
+
+=   refer probably.Tagging
+-   refer probably.Selection
++   refer probably.Selection
+
+-   entry .showable   renders a tag as its text
+-   entry .inspectable   renders a tag as `Tag(slow)`
+-   entry .conversion   the `Conversion[Name[Tagging], Tag]` which lets an `n"…"` literal be a tag
+-       With `Probing`'s plane also in scope, a literal which is a valid Java identifier infers
+-       to the intersection of the two planes and is a `Name[Tagging]` by covariance; one with
+-       a `-` is a tag alone.
+-   entry #name   the tag as a validated `Name[Tagging]`
+-   entry #text   the tag's text
++   entry .showable   タグをそのテキストとして描画する
++   entry .inspectable   タグを `Tag(slow)` として描画する
++   entry .conversion   `n"…"` リテラルをタグにできるようにする `Conversion[Name[Tagging], Tag]`
++       `Probing` のプレーンもスコープ内にあると、有効な Java の識別子であるリテラルは二つのプレーンの交差に推論され、共変性によって `Name[Tagging]` になる。
++       `-` を含むものはタグにしかならない。
++   entry #name   検証済みの `Name[Tagging]` としてのタグ
++   entry #text   タグのテキスト
+
+- entry .Tagging   the naming plane of tags: `Name[Tagging]`
++ entry .Tagging   タグの命名プレーン：`Name[Tagging]`
+
+= entry .Tagging   the naming plane of tags: `Name[Tagging]`
+-   detail
++   detail
+
+-       A sealed trait with no values of its own, used as the plane of nomenclature names for
+-       tags. Its `.nominative` rule is `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`, and is exported
+-       at package level as `taggingNominative`, so `n"no-network"` is valid wherever
+-       `probably` is imported.
+-   entry .nominative   the rule a tag's name must match: identifier characters and `-`
++       それ自身の値を持たないシールされたトレイトであり、タグのための nomenclature の名前のプレーンとして使われる。
++       その `.nominative` の規則は `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]` であり、パッケージレベルで `taggingNominative` としてエクスポートされているので、`probably` をインポートしたところならどこでも `n"no-network"` が有効である。
++   entry .nominative   タグの名前が合わなければならない規則：識別子の文字と `-`
+
+- entry .Probing   the naming plane of monikers: `Name[Probing]`
++ entry .Probing   モニカーの命名プレーン：`Name[Probing]`
+
+= entry .Probing   the naming plane of monikers: `Name[Probing]`
+-   detail
++   detail
+
+-       A sealed trait with no values of its own, used as the plane of stable test, suite and
+-       axis identifiers. Its `.nominative` rule is `JavaIdentifier`, and is exported at package
+-       level as `nominative`, so `n"square"` is valid wherever `probably` is imported; a
+-       moniker addresses a test in selections, charts and historical comparisons
+-       independently of its description.
+-   entry .nominative   the rule a moniker must match: a valid Java identifier
++       それ自身の値を持たないシールされたトレイトであり、テスト、スイート、軸の安定した識別子のプレーンとして使われる。
++       その `.nominative` の規則は `JavaIdentifier` であり、パッケージレベルで `nominative` としてエクスポートされているので、`probably` をインポートしたところならどこでも `n"square"` が有効である。
++       モニカーは、説明とは独立に、選択、チャート、過去との比較でテストを指す。
++   entry .nominative   モニカーが合わなければならない規則：有効な Java の識別子
+
+- entry .nominative   `Probing.nominative`, exported so that `n"…"` monikers work with `import probably.*`
+-     Both this and `taggingNominative` are in scope together, so a literal valid in both
+-     planes (`n"slow"`) infers to their intersection and is usable as either a moniker or a
+-     tag; one with a `-` is a tag alone. The `soundness` umbrella exports it under the same
+-     name, so a suite using `n"…"` literals imports `soundness.nominative` by name.
++ entry .nominative   `import probably.*` で `n"…"` のモニカーが使えるようにエクスポートされた `Probing.nominative`
++     これと `taggingNominative` は同時にスコープ内にあるので、両方のプレーンで有効なリテラル（`n"slow"`）はその交差に推論され、モニカーとしてもタグとしても使える。
++     `-` を含むものはタグにしかならない。
++     `soundness` アンブレラは同じ名前でこれをエクスポートするので、`n"…"` リテラルを使うスイートは `soundness.nominative` を名前でインポートする。
+
+- entry .taggingNominative   `Tagging.nominative`, exported so that `n"…"` tags work with `import probably.*`
++ entry .taggingNominative   `import probably.*` で `n"…"` のタグが使えるようにエクスポートされた `Tagging.nominative`
+
+- entry .Checkable   hypotenuse's `Checkable`, re-exported: how `===` compares a value against another
+-     The checking vocabulary — `===`, `!==`, `+/-`, `±`, `Checkable` and `Tolerance` — lives in
+-     `hypotenuse.check`, so that modules which only compare values need not depend on the test
+-     framework, and is re-exported here so that `import probably.*` still provides it.
+-     `left === right` needs a `left is Checkable against right`: equal frozen arrays, chains
+-     element by element, any `Commensurable` value, or a value against a `Tolerance`.
++ entry .Checkable   再エクスポートされた hypotenuse の `Checkable`。`===` が値を別の値とどう比較するか
++     検査の語彙（`===`、`!==`、`+/-`、`±`、`Checkable`、`Tolerance`）は `hypotenuse.check` にあり、値を比較するだけのモジュールがテストフレームワークに依存せずに済むようになっている。
++     そして `import probably.*` が引き続きそれを提供するように、ここで再エクスポートされる。
++     `left === right` には `left is Checkable against right` が必要である。
++     等しい凍結済みの配列、要素ごとのチェーン、任意の `Commensurable` な値、または `Tolerance` に対する値である。
+
+=     element by element, any `Commensurable` value, or a value against a `Tolerance`.
+=
+-     ```scala
++     ```scala
+
+=     element by element, any `Commensurable` value, or a value against a `Tolerance`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     given tutorial: (Testable of Impromptu) = Testable.detached
++     given tutorial: (Testable of Impromptu) = Testable.detached
+
+-     given runner: Runner[Report] = Runner()
++     given runner: Runner[Report] = Runner()
+
+-     test(m"the mean converges")(0.005).assert(_ === 0.0 +/- 0.02)
++     test(m"the mean converges")(0.005).assert(_ === 0.0 +/- 0.02)
+
+=     test(m"the mean converges")(0.005).assert(_ === 0.0 +/- 0.02)
+-     ```
++     ```
+
+- entry .Tolerance   hypotenuse's `Tolerance`, re-exported: a value with a margin, made by `+/-` or `±`
+-     `base +/- tolerance` (or `base ± tolerance`) is a `Tolerance[value]` which `covers` any
+-     value strictly within the margin, for `===` in a numeric assertion where exact equality is
+-     wrong.
++ entry .Tolerance   再エクスポートされた hypotenuse の `Tolerance`。`+/-` か `±` で作る、幅を持つ値
++     `base +/- tolerance`（または `base ± tolerance`）は、幅の厳密に内側にある任意の値を `covers` する `Tolerance[value]` であり、厳密な等価性が適切でない数値のアサーションで `===` に使う。
+
+- entry .Harness   what a test body runs under: a place to capture named values for a failure report
++ entry .Harness   テストの本体が実行される環境。失敗の報告のために名前付きの値をキャプチャする場所
+
+= entry .Harness   what a test body runs under: a place to capture named values for a failure report
+-   detail
++   detail
+
+-       Every test body is a `Harness ?=> result`; the runner supplies a fresh `Harness` per
+-       run, and `#capture` records a named value on it. When the test fails, the captured
+-       values are recorded as `Verdict.Detail.Captures` and emitted as
+-       `TestEvent.DetailCaptures`, so the report shows the intermediate values beside the
+-       verdict. The `harnesses.threadLocalHarness` given captures through the runner's
+-       current harness from code which has no `Harness` of its own.
++       すべてのテストの本体は `Harness ?=> result` である。
++       ランナーは実行ごとに新しい `Harness` を供給し、`#capture` がそれに名前付きの値を記録する。
++       テストが失敗すると、キャプチャされた値は `Verdict.Detail.Captures` として記録され、`TestEvent.DetailCaptures` として発せられるので、報告は判定の横に途中の値を示す。
++       `harnesses.threadLocalHarness` の given は、自分の `Harness` を持たないコードから、ランナーの現在のハーネスを通してキャプチャする。
+
+=       current harness from code which has no `Harness` of its own.
+=
+-       ```scala
++       ```scala
+
+=       current harness from code which has no `Harness` of its own.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       current harness from code which has no `Harness` of its own.
+=
+=       ```scala
+=       import soundness.*
+=
+-       given tutorial: (Testable of Impromptu) = Testable.detached
++       given tutorial: (Testable of Impromptu) = Testable.detached
+
+=       current harness from code which has no `Harness` of its own.
+=
+=       ```scala
+=       import soundness.*
+=
+=       given tutorial: (Testable of Impromptu) = Testable.detached
+-       given runner: Runner[Report] = Runner()
++       given runner: Runner[Report] = Runner()
+
+-       test(m"a captured intermediate"):
++       test(m"a captured intermediate"):
+
+-         val parsed: Optional[Int] = safely(t"42".as[Int])
++         val parsed: Optional[Int] = safely(t"42".as[Int])
+
+-         summon[Harness].capture(t"parsed", parsed)
++         summon[Harness].capture(t"parsed", parsed)
+
+-         parsed.or(0)*2
++         parsed.or(0)*2
+
+-       . assert(_ == 84)
++       . assert(_ == 84)
+
+=       . assert(_ == 84)
+-       ```
++       ```
+
+-   entry #capture   records a named value, decomposed for the report, and returns it unchanged
+-       Needs a `Decomposable` for the value's type (derived for case classes, collections and
+-       anything `Inspectable`); the rendering is the decomposition's `inspect`.
++   entry #capture   名前付きの値を、報告のために分解して記録し、変えずに返す
++       値の型の `Decomposable`（ケースクラス、コレクション、任意の `Inspectable` に対して導出される）が必要である。
++       描画は分解の `inspect` である。
+
+- entry .Diagnosis   how a failed assertion is diagnosed after the fact: the request, and the site
++ entry .Diagnosis   失敗したアサーションを事後にどう診断するか。要求と位置
+
+= entry .Diagnosis   how a failed assertion is diagnosed after the fact: the request, and the site
+-   detail
++   detail
+
+-       An assertion site holds no rendering logic. When its predicate fails, and the run was
+-       started with `--diagnose=<presentations>`, the installed `Diagnostician` is given the
+-       site, the value which failed and the locals the predicate closes over, and answers
+-       with `Verdict.Detail`s. The test's body is not run again; the predicate is evaluated
+-       once more, on the same value.
++       アサーションの位置は描画のロジックを持たない。
++       その述語が失敗し、実行が `--diagnose=<presentations>` とともに開始されていれば、設置された `Diagnostician` に、位置、失敗した値、述語が閉じ込めるローカル変数が渡され、それは `Verdict.Detail` で答える。
++       テストの本体は再実行されない。
++       述語が同じ値についてもう一度評価される。
+
+=
+-       ```
++       ```
+
+-       fume run --diagnose=dissect,contrast,inspect
++       fume run --diagnose=dissect,contrast,inspect
+
+=       fume run --diagnose=dissect,contrast,inspect
+-       ```
++       ```
+
+-       Because the rendering is chosen when the diagnosis is made, a suite contributes
+-       `Inspectable`, `Showable` and `Contrastable` instances — in a companion, by an import
+-       which precedes the assertion, or as a member of the object the suite is written in —
+-       without knowing whether any front-end will ask for them. A given which is local to a
+-       method, or a member of a class rather than an object, is not seen.
++       描画は診断が行われるときに選ばれるので、スイートは、どのフロントエンドがそれを求めるかを知らずに、`Inspectable`、`Showable`、`Contrastable` のインスタンスを提供できる（コンパニオンに置くか、アサーションより前のインポートで与えるか、スイートが書かれたオブジェクトのメンバーにする）。
++       メソッドにローカルな given や、オブジェクトではなくクラスのメンバーである given は見えない。
+
+=       method, or a member of a class rather than an object, is not seen.
+-   refer probably.Dissector
++   refer probably.Dissector
+
+=   refer probably.Dissector
+-   refer probably.Selection
++   refer probably.Selection
+
+-   entry .Presentation   one way to present a failure: `Inspect`, `Show`, `Contrast` or `Dissect`
+-       `Inspect` renders each value through `Inspectable`, and `Show` through `Showable`
+-       (each falling back to the other); `Contrast` compares the two sides of a failed
+-       equality structurally; `Dissect` gives every intermediate value of the predicate.
+-   entry .Request   the presentations a host asked for
+-     entry .none   no diagnosis at all, the default
+-     entry .parse   reads a comma-separated list of `inspect`, `show`, `contrast` and `dissect`, ignoring other words
+-     entry #nil   whether nothing was asked for
+-     entry #has   whether a presentation was asked for
+-   entry .Site   where a predicate is written: its enclosing top-level class, its source offsets and its text
+-       The offsets are those of the predicate's tree in the class's TASTy, which is how the
+-       engine finds it again. `#known` is false for a predicate not written at the assertion,
+-       such as `assert()`'s.
++   entry .Presentation   失敗を示す一つの方法：`Inspect`、`Show`、`Contrast`、`Dissect`
++       `Inspect` は各値を `Inspectable` を通して描画し、`Show` は `Showable` を通して描画する（それぞれ他方に代替する）。
++       `Contrast` は失敗した等価性の両辺を構造的に比較する。
++       `Dissect` は述語のすべての途中の値を示す。
++   entry .Request   ホストが求めた表示方法
++     entry .none   診断をまったく行わない。既定値
++     entry .parse   `inspect`、`show`、`contrast`、`dissect` のカンマ区切りのリストを読み、他の語は無視する
++     entry #nil   何も求められていないかどうか
++     entry #has   ある表示方法が求められたかどうか
++   entry .Site   述語が書かれた場所。それを囲むトップレベルのクラス、ソースのオフセット、テキスト
++       オフセットはクラスの TASTy における述語の木のものであり、エンジンはそれによって述語を再び見つける。
++       `assert()` のもののように、アサーションの位置に書かれていない述語では `#known` は false である。
+
+- entry .Diagnostician   an engine which can account for a failed predicate
++ entry .Diagnostician   失敗した述語を説明できるエンジン
+
+= entry .Diagnostician   an engine which can account for a failed predicate
+-   detail
++   detail
+
+-       `#diagnose` answers the details of a failure, or `Nil` when it can say nothing; it
+-       never throws. One is installed for a classloader with `.install`, which
+-       `Streamer.stream` does when `probably.diagnosis` is on the classpath. With none
+-       installed, a diagnosed failure records the value's `toString` as a message.
++       `#diagnose` は失敗の詳細を答え、何も言えないときは `Nil` を答える。
++       決して例外を投げない。
++       エンジンは `.install` でクラスローダーごとに設置される。
++       `probably.diagnosis` がクラスパスにあるとき、`Streamer.stream` がそれを行う。
++       何も設置されていなければ、診断された失敗は値の `toString` をメッセージとして記録する。
+
+=       installed, a diagnosed failure records the value's `toString` as a message.
+-   refer probably.Dissector
++   refer probably.Dissector
+
+-   entry .install   makes an engine the one failed assertions are taken to
+-   entry .apply   the installed engine, if any
++   entry .install   エンジンを、失敗したアサーションが送られる先にする
++   entry .apply   設置されたエンジンがあれば、そのエンジン
+
+- entry .Dissector   the engine which reads a failed predicate from TASTy and compiles an instrumented copy of it
++ entry .Dissector   失敗した述語を TASTy から読み、計装したそのコピーをコンパイルするエンジン
+
+= entry .Dissector   the engine which reads a failed predicate from TASTy and compiles an instrumented copy of it
+-   detail
++   detail
+
+-       In `probably.diagnosis`, which depends on the compiler. For each failing site, once:
+-       the predicate's tree is read from the TASTy of the class which encloses it (TASTy is
+-       pickled before inlining, so it is there as written); each subexpression is wrapped in
+-       an inline recorder, the parameter becomes the failed value and each free local the
+-       value the site captured; and the result is compiled by the staging compiler in the
+-       suite's classloader. Which typeclass renders a value is resolved only then.
++       コンパイラに依存する `probably.diagnosis` にある。
++       失敗する位置ごとに一度だけ次のことを行う。
++       述語の木を、それを囲むクラスの TASTy から読む（TASTy はインライン化の前にピクルされるので、書かれたとおりの形でそこにある）。
++       各部分式をインラインの記録器で包み、パラメーターを失敗した値に、各自由なローカル変数をその位置がキャプチャした値にする。
++       そして結果を、スイートのクラスローダーの中でステージングのコンパイラがコンパイルする。
++       どの型クラスが値を描画するかは、そのときになって初めて解決される。
+
+-       A predicate which cannot be instrumented — it uses a private member or a local
+-       method, or its instrumented copy does not compile — is diagnosed less finely: without
+-       descending into the arguments of inline calls, then by the failed value alone. Setting
+-       the `probably.diagnosis.debug` system property prints why.
++       計装できない述語（private なメンバーやローカルメソッドを使うもの、または計装したコピーがコンパイルできないもの）は、より粗く診断される。
++       まずインライン呼び出しの引数の中に降りずに診断し、次に失敗した値だけで診断する。
++       `probably.diagnosis.debug` システムプロパティを設定すると、その理由が表示される。
+
+=       the `probably.diagnosis.debug` system property prints why.
+-   refer probably.Diagnosis
++   refer probably.Diagnosis
+
+-   entry #diagnose   the details of one failure, from the site's cached diagnosis
++   entry #diagnose   位置のキャッシュされた診断から得た、一つの失敗の詳細
+
+- entry .harnesses   the `Harness` policies, each a given to import by name
++ entry .harnesses   `Harness` のポリシー。それぞれ名前でインポートする given
+
+= entry .harnesses   the `Harness` policies, each a given to import by name
+-   detail
++   detail
+
+-       A `Harness` is normally the one a test body receives contextually. The one given here
+-       serves code which has no harness in hand but runs within a test.
+-   entry .threadLocalHarness   a `Harness` which captures through whichever test is running on this thread
+-       `capture` delegates to the runner's current harness for the thread (`Runner.run`
+-       installs one for the duration of each test body), and returns the value unchanged when
+-       no test is running.
++       `Harness` は普通、テストの本体がコンテキストとして受け取るものである。
++       ここにある given は、手元にハーネスを持たないがテストの中で実行されるコードのためのものである。
++   entry .threadLocalHarness   このスレッドで実行中のテストを通してキャプチャする `Harness`
++       `capture` はそのスレッドに対するランナーの現在のハーネスに委ね（`Runner.run` は各テストの本体の間それを設置する）、テストが実行中でなければ値を変えずに返す。
+
+- entry .decimalizers   the default rendering of decimals in numeric comparisons, a given to import by name
++ entry .decimalizers   数値の比較における小数の既定の描画。名前でインポートする given
+
+= entry .decimalizers   the default rendering of decimals in numeric comparisons, a given to import by name
+-   detail
++   detail
+
+-       `Axable.double` labels an axis value with `show`, which needs a `Decimalizer`; this
+-       package supplies the default rather than `import probably.*` silently doing so.
+-   entry .fourDecimalPlaces   a `Decimalizer(4)`
++       `Axable.double` は軸の値に `show` でラベルを付けるが、それには `Decimalizer` が必要である。
++       このパッケージは、`import probably.*` が黙ってそうするのではなく、既定値を供給する。
++   entry .fourDecimalPlaces   `Decimalizer(4)`
+
+- entry .Verdict   the outcome of one run of a check: pass, fail, throws, or an aspiration
++ entry .Verdict   検査の一回の実行の結果。成功、失敗、例外、または願望
+
+= entry .Verdict   the outcome of one run of a check: pass, fail, throws, or an aspiration
+-   detail
++   detail
+
+-       `Pass(duration)` and `Fail(duration)` are the predicate's answer; `Throws(exception,
+-       duration)` means the body threw, and `CheckThrows(exception, duration)` the predicate;
+-       `AspirePass` and `AspireFail` are the verdicts within an `aspirationally` block, where
+-       an exception is also an `AspireFail`. Durations are in nanoseconds. A test with several
+-       cells passes when its verdicts are uniformly `Pass`, uniformly `AspirePass` or
+-       uniformly `AspireFail`; any failure, exception or mixture fails it. On the wire a
+-       verdict is a `TestEvent.Outcome`, with the exception rendered as a `TestEvent.Trace`.
++       `Pass(duration)` と `Fail(duration)` は述語の答えである。
++       `Throws(exception, duration)` は本体が例外を投げたことを、`CheckThrows(exception, duration)` は述語が投げたことを意味する。
++       `AspirePass` と `AspireFail` は `aspirationally` ブロックの中での判定であり、そこでは例外も `AspireFail` になる。
++       継続時間の単位はナノ秒である。
++       複数のセルを持つテストは、その判定が一様に `Pass`、一様に `AspirePass`、または一様に `AspireFail` のときに成功する。
++       失敗、例外、混在はどれもそれを失敗させる。
++       ワイヤ上では判定は `TestEvent.Outcome` であり、例外は `TestEvent.Trace` として描画される。
+
+-   refer probably.Trial
++   refer probably.Trial
+
+=   refer probably.Trial
+-   refer probably.TestEvent
++   refer probably.TestEvent
+
+-   entry .Detail   a failure's supporting information: a stack trace, captures, a contrast or a message
+-       `Throws(stack)` and `CheckThrows(stack)` carry the `StackTrace`; `Captures(values)` the
+-       values captured with `Harness#capture`, by name; `Compare(expected, found,
+-       juxtaposition)` the decomposed texts of both sides of a failed equality and their
+-       `Juxtaposition`; `Dissection(source, rows, reproducible)` the intermediate values of a
+-       failed predicate, and whether it failed again when evaluated for its diagnosis; and
+-       `Message(message)` free text. Each is recorded through
+-       `Inclusion[Report, Verdict.Detail]` and emitted as the matching `TestEvent.Detail…`.
+-   entry #timestamp   when the verdict was made, in milliseconds since the epoch
+-   entry #duration   how long the body took, in nanoseconds
++   entry .Detail   失敗を裏付ける情報。スタックトレース、キャプチャ、対比、またはメッセージ
++       `Throws(stack)` と `CheckThrows(stack)` は `StackTrace` を運ぶ。
++       `Captures(values)` は `Harness#capture` でキャプチャされた値を名前ごとに運ぶ。
++       `Compare(expected, found, juxtaposition)` は、失敗した等価性の両辺の分解されたテキストとその `Juxtaposition` を運ぶ。
++       `Dissection(source, rows, reproducible)` は、失敗した述語の途中の値と、診断のために評価したときに再び失敗したかどうかを運ぶ。
++       `Message(message)` は自由なテキストである。
++       それぞれ `Inclusion[Report, Verdict.Detail]` を通して記録され、対応する `TestEvent.Detail…` として発せられる。
++   entry #timestamp   判定が下された時刻、エポックからのミリ秒数
++   entry #duration   本体にかかった時間、ナノ秒
+
+- entry .Trial   the raw result of running a test body: its value or its exception, timed, with its captures
++ entry .Trial   テストの本体を実行した生の結果。時間を計った値か例外と、そのキャプチャ
+
+= entry .Trial   the raw result of running a test body: its value or its exception, timed, with its captures
+-   detail
++   detail
+
+-       `Runner#run` returns a `Trial`: `Returns(result, duration, context)` or
+-       `Throws(exception, duration, context)`, where `context` is the map of names to
+-       captured values and the exception is a thunk which rethrows it. `assert` and `check`
+-       turn a trial into a `Verdict`.
+-   entry #get   the result, or rethrows the exception
++       `Runner#run` は `Trial` を返す。
++       `Returns(result, duration, context)` か `Throws(exception, duration, context)` であり、`context` は名前からキャプチャされた値へのマップ、例外はそれを投げ直すサンクである。
++       `assert` と `check` は試行を `Verdict` に変える。
++   entry #get   結果を返すか、例外を投げ直す
+
+- entry .Runner   runs tests under a selection, reporting through a `Reporter`
++ entry .Runner   選択のもとでテストを実行し、`Reporter` を通して報告する
+
+= entry .Runner   runs tests under a selection, reporting through a `Reporter`
+-   detail
++   detail
+
+-       A `Runner[report]` is what `assert`, `check`, `suite` and the measuring kinds summon
+-       to record results: it holds the `Selection` which decides what runs, the `#report`
+-       accumulated so far, and the queue of workers when the selection asked for them. A
+-       `Suite` makes one per invocation and provides it as a given; outside a suite,
+-       `Runner()` makes one over `Selection.all` with the `Reporter[Report]` in implicit
+-       scope.
++       `Runner[report]` は、`assert`、`check`、`suite` と計測を行う種類のテストが結果を記録するために召喚するものである。
++       何を実行するかを決める `Selection`、これまでに蓄積された `#report`、そして選択がワーカーを求めた場合はワーカーのキューを保持する。
++       `Suite` は呼び出しごとに一つを作り、given として提供する。
++       スイートの外では、`Runner()` が `Selection.all` に対して、暗黙のスコープにある `Reporter[Report]` を使うものを作る。
+
+=       scope.
+=
+-       ```scala
++       ```scala
+
+=       scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       scope.
+=
+=       ```scala
+=       import soundness.*
+-       import soundness.{nominative, taggingNominative}
++       import soundness.{nominative, taggingNominative}
+
+=       scope.
+=
+=       ```scala
+=       import soundness.*
+=       import soundness.{nominative, taggingNominative}
+=
+-       given tutorial: (Testable of Impromptu) = Testable.detached
++       given tutorial: (Testable of Impromptu) = Testable.detached
+
+-       given runner: Runner[Report] = Runner(Selection.parse(List(t"--list")))
++       given runner: Runner[Report] = Runner(Selection.parse(List(t"--list")))
+
+=       given runner: Runner[Report] = Runner(Selection.parse(List(t"--list")))
+=
+-       impromptu:
++       impromptu:
+
+-         test(m"spread", n"axial").over(Axis(t"n")(1, 2, 3)) { n => n }.assert(_ > 0)
++         test(m"spread", n"axial").over(Axis(t"n")(1, 2, 3)) { n => n }.assert(_ > 0)
+
+-       runner.listed.map(_.id.name.text)
++       runner.listed.map(_.id.name.text)
+
+=       runner.listed.map(_.id.name.text)
+-       ```
++       ```
+
+-       **Queued execution.** With `--workers=<n>` (`Selection#workers`), a pure assertion is
+-       not run where the traversal meets it: its thunk is queued, announced to the reporter,
+-       and run by one of `n` virtual-thread workers while the traversal carries on, so the
+-       suite's code between tests runs exactly once and the schedule is known as fast as the
+-       bodies run. Only assertions the compiler has verified pure are queued, so a worker can
+-       never reach a resource the traversal has released; `check`s and everything else run
+-       inline. `#drain` waits for every worker before `#complete` decides whether the run
+-       passed, and a `Throwable` which escapes a worker is rethrown on the traversal's thread.
++       **キューによる実行。** `--workers=<n>`（`Selection#workers`）を指定すると、純粋なアサーションは走査がそれに出会った場所では実行されない。
++       そのサンクはキューに入れられ、レポーターに告知され、`n` 個の仮想スレッドのワーカーの一つが実行する。その間も走査は続くので、テストの間にあるスイートのコードはちょうど一度だけ実行され、本体が実行される速さでスケジュールが判明する。
++       キューに入るのはコンパイラが純粋であると検証したアサーションだけなので、走査が解放したリソースにワーカーが触れることはない。
++       `check` やそれ以外のものはすべてその場で実行される。
++       `#drain` はすべてのワーカーを待ってから、`#complete` が実行の成否を決める。ワーカーから逃れた `Throwable` は走査のスレッドで再送出される。
+
+-       **Listing.** With `--list` (`Selection#listOnly`), `#skip` records every admitted test
+-       instead of running it, and `#listed` is the schedule: one row per test with its kind,
+-       expected measuring time and axes.
++       **一覧。** `--list`（`Selection#listOnly`）を指定すると、`#skip` は受け入れたテストを実行する代わりにすべて記録し、`#listed` がスケジュールとなる。
++       テストごとに一行で、その種類、予想される計測時間、軸を示す。
+
+=       expected measuring time and axes.
+-   refer probably.Selection
++   refer probably.Selection
+
+-   refer probably.Reporter
++   refer probably.Reporter
+
+=   refer probably.Reporter
+-   refer probably.Report
++   refer probably.Report
+
+=   refer probably.Report
+-   refer probably.Suite
++   refer probably.Suite
+
+-   entry .apply   a root runner over a selection, with an optional worker count, reporting to the `Reporter` in scope
+-       `Runner(selection, workers)` is a `Runner.Root`. The worker count overrides the
+-       selection's (a suite may ask for more than the host offered, never for queueing the
+-       host did not ask for).
+-   entry .Scheduled   one row of a listing: a test, its kind, its expected time and its axes
++   entry .apply   選択に対するルートのランナー。ワーカー数を任意で指定でき、スコープ内の `Reporter` に報告する
++       `Runner(selection, workers)` は `Runner.Root` である。
++       ワーカー数は選択のものより優先される（スイートはホストが提供した以上を求めることはできるが、ホストが求めていないキューを求めることはできない）。
++   entry .Scheduled   一覧の一行。テスト、その種類、予想時間、軸を示す
+
+=   entry .Scheduled   one row of a listing: a test, its kind, its expected time and its axes
+-     detail
++     detail
+
+-         What `--list` produces per admitted test. An axial spread's cells each call `#skip`,
+-         but they are one test with coordinates, not many tests, so the row's `#expected` is
+-         the sum over its admitted cells and its `#axes` carry the distinct values seen, in
+-         first-appearance order, followed by any declared emergent axes.
+-     entry #id   the test's id
+-     entry #kind   check, bench, stress or profile
+-     entry #expected   the nanoseconds the test will spend measuring, summed over its cells; absent for untimed kinds
+-     entry #axes   the test's axes with the values, or declared bounds, of its admitted cells
+-     entry #tags   the test's own tags
+-   entry .Aspirational   the runner within an `aspirationally` block: the base runner, recording verdicts as aspirations
+-       Shares the base runner's state and report; only `#aspirational` differs.
+-   entry .Root   the runner `Runner.apply` makes: selection, listing, queue and report in one
+-   entry #aspirational   whether verdicts are recorded as `AspirePass`/`AspireFail`; `false` except in `Runner.Aspirational`
+-   entry #report   the report accumulated so far
+-   entry #queued   whether pure assertions are queued for workers rather than run inline
+-   entry #defer   queues the rest of an assertion for a worker, announcing it as scheduled
+-       The workers start on the first deferral, so a run which queues nothing has no threads.
+-   entry #drain   waits for every queued assertion, rethrowing any `Throwable` a worker let escape
+-   entry #scale   the selection's duration multiplier, which the timed kinds apply to their targets
+-   entry #skip   whether a test, or one cell of an axial test, is excluded by the selection
+-       `skip(id, kind, coordinates, expected)` consults `Selection#admits` with the test's
+-       tags; in listing mode every test is skipped, and an admitted one is noted for
+-       `#listed` with `expected`, the caller's estimate in nanoseconds of how long it will
+-       measure (declared metadata, not a promise; `Unset` for a plain check). The shorter
+-       forms `skip(id)` and `skip(id, kind, coordinates)` pass `Check` and `Unset`.
+-   entry #declare   announces, for a listing, an emergent axis of a test with the bounds its values will lie within
+-       A stress sweep's `N` acquires its values only as the run produces them; declaring it
+-       with `least` and `most` lets a host offer a range of it without iterating cells which
+-       do not yet exist. A no-op outside listing mode, and reported only if the test itself is
+-       listed.
+-   entry #listed   the schedule a `--list` run produced: one `Runner.Scheduled` per admitted test, in first-appearance order
+-   entry #admitted   how many tests or cells the selection admitted, for the `NothingMatched` event
+-   entry #run   runs a test body under a fresh `Harness`, timing it, bracketed by the reporter's `started` and `ended`
+-       Returns a `Trial`: the value, or the `Exception` the body threw, with the duration and
+-       the captures. An `Error` is not caught, but the bracket still closes, so a termination
+-       does not report the test as active.
+-   entry #suite   enters a group: declares it, runs its block with its `Testable`, and ends it
+-       A group is always entered, whatever the selection. With assertions still queued from
+-       within the block, the group's end is reported when the last of them completes.
+-   entry #terminate   abandons what is queued, waits for what is in flight, and reports the run as terminated
+-       Called by `Suite#invoke` when `run()` throws: the reporter's `fail` receives the error
+-       and the tests active at the time, and `complete` follows.
+-   entry #complete   settles the run: `Report#passed` is decided here and `RunCompleted` emitted
+-   entry #maybeRun   runs a test unless the selection skips it, returning the `Trial` or `Unset`
++         受け入れられたテストごとに `--list` が生成するもの。
++         軸方向の展開ではセルごとに `#skip` が呼ばれるが、それらは座標を持つ一つのテストであって多数のテストではない。そのため行の `#expected` は受け入れられたセルの合計となり、`#axes` には観測された異なる値が初出順に並び、その後に宣言された創発的な軸が続く。
++     entry #id   テストの ID
++     entry #kind   check、bench、stress、profile のいずれか
++     entry #expected   テストが計測に費やすナノ秒数。セルについて合計したもの。時間を計らない種類では存在しない
++     entry #axes   テストの軸と、受け入れられたセルの値または宣言された範囲
++     entry #tags   テスト自身のタグ
++   entry .Aspirational   `aspirationally` ブロック内のランナー。基になるランナーであり、判定を願望として記録する
++       基になるランナーの状態とレポートを共有し、`#aspirational` だけが異なる。
++   entry .Root   `Runner.apply` が作るランナー。選択、一覧、キュー、レポートを一つにまとめたもの
++   entry #aspirational   判定を `AspirePass`/`AspireFail` として記録するかどうか。`Runner.Aspirational` 以外では `false`
++   entry #report   これまでに蓄積されたレポート
++   entry #queued   純粋なアサーションをその場で実行せず、ワーカーのためにキューに入れるかどうか
++   entry #defer   アサーションの残りをワーカーのためにキューに入れ、スケジュール済みとして告知する
++       ワーカーは最初の遅延時に起動するので、何もキューに入れない実行ではスレッドは作られない。
++   entry #drain   キューに入れたすべてのアサーションを待ち、ワーカーから逃れた `Throwable` があれば再送出する
++   entry #scale   選択の継続時間の倍率。時間を計る種類のテストはこれを目標値に適用する
++   entry #skip   テスト、または軸を持つテストの一つのセルが、選択によって除外されるかどうか
++       `skip(id, kind, coordinates, expected)` はテストのタグを使って `Selection#admits` に問い合わせる。
++       一覧モードではすべてのテストがスキップされ、受け入れられたものは `#listed` のために `expected` とともに記録される。`expected` は、計測にかかる時間を呼び出し側がナノ秒で見積もったものである（宣言されたメタデータであって約束ではない。単純な check では `Unset`）。
++       短い形の `skip(id)` と `skip(id, kind, coordinates)` は `Check` と `Unset` を渡す。
++   entry #declare   一覧のために、テストの創発的な軸を、その値が収まる範囲とともに告知する
++       ストレステストの掃引の `N` は、実行が値を生成するにつれて初めて値を得る。
++       `least` と `most` で宣言しておくと、ホストはまだ存在しないセルを巡回せずにその範囲を提示できる。
++       一覧モード以外では何もせず、テスト自身が一覧に載る場合にだけ報告される。
++   entry #listed   `--list` の実行が生成したスケジュール。受け入れられたテストごとに一つの `Runner.Scheduled` が初出順に並ぶ
++   entry #admitted   選択が受け入れたテストまたはセルの数。`NothingMatched` イベントのためのもの
++   entry #run   新しい `Harness` のもとでテスト本体を実行して時間を計る。前後をレポーターの `started` と `ended` で囲む
++       `Trial` を返す。値または本体が送出した `Exception` に、継続時間とキャプチャが付いたものである。
++       `Error` は捕捉されないが、囲みは閉じられるので、終了してもテストが実行中と報告されることはない。
++   entry #suite   グループに入る。グループを宣言し、その `Testable` でブロックを実行し、グループを終える
++       グループには選択にかかわらず必ず入る。
++       ブロック内からキューに入ったアサーションが残っている場合、グループの終了はその最後のものが完了したときに報告される。
++   entry #terminate   キューにあるものを放棄し、実行中のものを待ち、実行を終了したものとして報告する
++       `run()` が例外を送出したときに `Suite#invoke` が呼び出す。
++       レポーターの `fail` がエラーとその時点で実行中のテストを受け取り、続いて `complete` が呼ばれる。
++   entry #complete   実行を決着させる。ここで `Report#passed` が決まり、`RunCompleted` が出力される
++   entry #maybeRun   選択がスキップしない限りテストを実行し、`Trial` または `Unset` を返す
+
+- entry .Reporter   how a runner declares, brackets and settles the results it records, for a report type
++ entry .Reporter   ランナーが記録する結果を、レポートの型に対してどう宣言し、囲み、決着させるか
+
+= entry .Reporter   how a runner declares, brackets and settles the results it records, for a report type
+-   detail
++   detail
+
+-       A `Reporter[report]` makes the `#report` a `Runner` accumulates into and receives the
+-       run's lifecycle: `#declare` for each group, `#started`/`#ended` around each test and
+-       group, `#scheduled` for each queued assertion, `#fail` for a terminated run and
+-       `#complete` at the end. Verdicts and measurements reach the report through
+-       `Inclusion[report, …]` givens instead. `.report` is the standard reporter over `Report`;
+-       a `Suite` installs one of its own whose report emits every datum as a `TestEvent`, and
+-       a host which only wants a listing may report to `Unit`.
++       `Reporter[report]` は `Runner` が蓄積していく `#report` を作り、実行のライフサイクルを受け取る。
++       各グループについての `#declare`、各テストとグループの前後の `#started`/`#ended`、キューに入った各アサーションについての `#scheduled`、終了した実行についての `#fail`、そして最後の `#complete` である。
++       判定と計測値は、代わりに `Inclusion[report, …]` の given を通してレポートに届く。
++       `.report` は `Report` に対する標準のレポーターである。
++       `Suite` は独自のレポーターを設定し、そのレポートはすべてのデータを `TestEvent` として出力する。一覧だけを求めるホストは `Unit` に報告してもよい。
+
+=       a host which only wants a listing may report to `Unit`.
+=
+-       ```scala
++       ```scala
+
+=       a host which only wants a listing may report to `Unit`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given reporter: Reporter[Unit] = new Reporter[Unit]:
++       given reporter: Reporter[Unit] = new Reporter[Unit]:
+
+-         def report(): Unit = ()
++         def report(): Unit = ()
+
+-         def fail(report: Unit, error: Throwable, active: Set[Test.Id]): Unit = ()
++         def fail(report: Unit, error: Throwable, active: Set[Test.Id]): Unit = ()
+
+-         def declare(report: Unit, suite: Testable): Unit = ()
++         def declare(report: Unit, suite: Testable): Unit = ()
+
+-         def complete(report: Unit): Unit = ()
++         def complete(report: Unit): Unit = ()
+
+-       val listing: Runner[Unit] = Runner(Selection.parse(List(t"--list")))
++       val listing: Runner[Unit] = Runner(Selection.parse(List(t"--list")))
+
+=       val listing: Runner[Unit] = Runner(Selection.parse(List(t"--list")))
+-       ```
++       ```
+
+=       ```
+-   refer probably.Runner
++   refer probably.Runner
+
+=   refer probably.Runner
+-   refer probably.Report
++   refer probably.Report
+
+=   refer probably.Report
+-   refer probably.Inclusion
++   refer probably.Inclusion
+
+-   entry .report   the given `Reporter[Report]`, in implicit scope: a fresh `Report` per run
+-   entry #report   makes the report a run accumulates into
+-   entry #fail   the run terminated with an error while the given tests were active
+-   entry #declare   a group or suite was entered
+-   entry #complete   the run is over; the report decides whether it passed
+-   entry #started   a test (or, when `suite` is true, a group) has begun; defaulted to nothing
+-   entry #ended   a test or group has ended; defaulted to nothing
+-   entry #scheduled   a pure assertion was queued for a worker; it starts and ends later, in the worker's brackets
++   entry .report   暗黙のスコープにある given の `Reporter[Report]`。実行ごとに新しい `Report` を作る
++   entry #report   実行が蓄積していくレポートを作る
++   entry #fail   指定したテストが実行中のときに、実行がエラーで終了した
++   entry #declare   グループまたはスイートに入った
++   entry #complete   実行が終わった。成否はレポートが決める
++   entry #started   テスト（`suite` が true の場合はグループ）が始まった。既定では何もしない
++   entry #ended   テストまたはグループが終わった。既定では何もしない
++   entry #scheduled   純粋なアサーションがワーカーのためにキューに入った。その開始と終了は後で、ワーカーの囲みの中で起こる
+
+- entry .Report   the accumulated results of a run: a tree of suites whose leaves are `Entry`s of cells
++ entry .Report   実行の蓄積された結果。葉がセルを持つ `Entry` であるスイートの木
+
+= entry .Report   the accumulated results of a run: a tree of suites whose leaves are `Entry`s of cells
+-   detail
++   detail
+
+-       The report's intermediate representation. Suites are namespacing only; each leaf is an
+-       `Entry` — one per named test of any kind — holding the test's axes and a sparse map of
+-       cells, each a `Tally` of `Run`s. Rendering is the consumer's business: with a sink
+-       installed (as `Suite#invoke` does), every recorded datum also leaves as a `TestEvent`,
+-       and `#complete` emits `RunCompleted` instead of rendering anything.
++       レポートの中間表現である。
++       スイートは名前空間としての役割しか持たない。各葉は `Entry`（種類を問わず名前の付いたテストごとに一つ）で、テストの軸と、セルの疎なマップを保持する。各セルは `Run` の `Tally` である。
++       描画は利用者の仕事である。
++       シンクが設定されていると（`Suite#invoke` がそうするように）、記録されたすべてのデータは `TestEvent` としても出ていき、`#complete` は何かを描画する代わりに `RunCompleted` を出力する。
+
+-       Verdicts, details and measurements enter through the `Inclusion` givens in the
+-       companion (`.verdict`, `.detail`, `.anchor`) and in `Benchmark`, `Strain` and
+-       `Hotspots`, each of which records a `Run` at a coordinate and emits the matching event.
++       判定、詳細、計測値は、コンパニオンにある `Inclusion` の given（`.verdict`、`.detail`、`.anchor`）と、`Benchmark`、`Strain`、`Hotspots` にある given を通して入る。いずれも座標に `Run` を記録し、対応するイベントを出力する。
+
+=       `Hotspots`, each of which records a `Run` at a coordinate and emits the matching event.
+=
+-       ```scala
++       ```scala
+
+=       `Hotspots`, each of which records a `Run` at a coordinate and emits the matching event.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Hotspots`, each of which records a `Run` at a coordinate and emits the matching event.
+=
+=       ```scala
+=       import soundness.*
+=
+-       given tutorial: (Testable of Impromptu) = Testable.detached
++       given tutorial: (Testable of Impromptu) = Testable.detached
+
+=       `Hotspots`, each of which records a `Run` at a coordinate and emits the matching event.
+=
+=       ```scala
+=       import soundness.*
+=
+=       given tutorial: (Testable of Impromptu) = Testable.detached
+-       given runner: Runner[Report] = Runner()
++       given runner: Runner[Report] = Runner()
+
+-       test(m"one")(1).assert(_ == 1)
++       test(m"one")(1).assert(_ == 1)
+
+-       runner.complete()
++       runner.complete()
+
+-       runner.report.passed
++       runner.report.passed
+
+=       runner.report.passed
+-       ```
++       ```
+
+-       A run in which nothing was counted has not passed: a check counts once it has a
+-       verdict, and a measurement counts by having run at all.
++       何も数えられなかった実行は成功していない。
++       check は判定を得た時点で数えられ、計測は実行されたこと自体で数えられる。
+
+-   refer probably.Entry
++   refer probably.Entry
+
+-   refer probably.Run
++   refer probably.Run
+
+=   refer probably.Run
+-   refer probably.Inclusion
++   refer probably.Inclusion
+
+=   refer probably.Inclusion
+-   refer probably.TestEvent
++   refer probably.TestEvent
+
+-   entry .verdict   the `Inclusion[Report, Verdict]`: records a verdict as a `Run` with its duration, and emits `TestCompleted`
+-       A `Throws` or `CheckThrows` verdict also records its stack trace as a detail and emits
+-       `DetailThrows`.
+-   entry .anchor   the `Inclusion[Report, Anchor]`: sets a test's comparison anchor and emits `AnchorRecorded`
+-   entry .detail   the `Inclusion[Report, Verdict.Detail]`: records a detail and emits the matching `Detail…` event
+-   entry #passed   whether the run passed: no termination, something counted, and no failing entry
+-       Decided by `#complete`; `false` before it.
+-   entry #resolve   the `ReportLine.Suite` node of a `Testable`, from the root
+-   entry #declare   records a suite or group, emitting `SuiteStarted`; a second declaration of the same id merges
+-       Two distinct suites can share a `Test.Id` (identity is name and parent, and every
+-       top-level suite of the same name has the same id), so declaring merges into the
+-       existing node rather than replacing its subtree.
+-   entry #fail   records a termination: the error, and the tests active when it happened; emits `RunTerminated`
+-   entry #record   records one `Run` at one coordinate of one test, creating the entry on first sight
+-       Repeated runs of the same coordinates accumulate in the cell; `headline`, when given,
+-       designates the entry's headline metric.
+-   entry #addDetail   appends a `Verdict.Detail` to a test's details
+-   entry #anchor   sets the comparison anchor of a test's entry; a no-op if the test recorded no cells
+-   entry #complete   settles the run: decides `#passed` and emits `RunCompleted`
++   entry .verdict   `Inclusion[Report, Verdict]`。判定を継続時間付きの `Run` として記録し、`TestCompleted` を出力する
++       `Throws` または `CheckThrows` の判定は、そのスタックトレースも詳細として記録し、`DetailThrows` を出力する。
++   entry .anchor   `Inclusion[Report, Anchor]`。テストの比較のアンカーを設定し、`AnchorRecorded` を出力する
++   entry .detail   `Inclusion[Report, Verdict.Detail]`。詳細を記録し、対応する `Detail…` イベントを出力する
++   entry #passed   実行が成功したかどうか。終了がなく、何かが数えられ、失敗したエントリーがないこと
++       `#complete` が決める。それより前は `false` である。
++   entry #resolve   `Testable` の `ReportLine.Suite` ノードを、ルートからたどって得る
++   entry #declare   スイートまたはグループを記録し、`SuiteStarted` を出力する。同じ ID の二度目の宣言はマージされる
++       異なる二つのスイートが `Test.Id` を共有することがある（同一性は名前と親で決まり、同じ名前のトップレベルのスイートはすべて同じ ID を持つ）。そのため宣言は、既存のノードの部分木を置き換えるのではなく、そこにマージする。
++   entry #fail   終了を記録する。エラーと、それが起きたときに実行中だったテストを記録し、`RunTerminated` を出力する
++   entry #record   一つのテストの一つの座標に一つの `Run` を記録する。エントリーは初めて現れたときに作られる
++       同じ座標の繰り返しの実行はセルに蓄積される。
++       `headline` を指定すると、エントリーの見出しの指標を指定する。
++   entry #addDetail   テストの詳細に `Verdict.Detail` を追加する
++   entry #anchor   テストのエントリーの比較のアンカーを設定する。テストがセルを記録していなければ何もしない
++   entry #complete   実行を決着させる。`#passed` を決め、`RunCompleted` を出力する
+
+- entry .ReportLine   a node of a `Report`: a suite with its children, or an item holding an `Entry`
+-     `ReportLine.Suite(suite, tests)` is a namespace node whose `tests` is a `TestsMap` of
+-     its children, keyed by `Test.Id`; `ReportLine.Item(entry)` is a leaf. The root is a
+-     `Suite` with no `Testable`.
++ entry .ReportLine   `Report` のノード。子を持つスイート、または `Entry` を保持する項目
++     `ReportLine.Suite(suite, tests)` は名前空間のノードで、その `tests` は子を `Test.Id` をキーとして持つ `TestsMap` である。
++     `ReportLine.Item(entry)` は葉である。
++     ルートは `Testable` を持たない `Suite` である。
+
+- entry .TestsMap   the insertion-ordered, mutex-guarded map of report lines within one suite node
+-   entry #list   the lines in insertion order, with their ids
+-   entry #apply   the line of a test id, or `Unset`
+-   entry #update   sets the line of a test id
+-   entry #getOrElseUpdate   the line of a test id, inserting the given one if absent
++ entry .TestsMap   一つのスイートのノード内の、挿入順を保ちミューテックスで保護されたレポート行のマップ
++   entry #list   挿入順の行と、その ID
++   entry #apply   テスト ID の行、または `Unset`
++   entry #update   テスト ID の行を設定する
++   entry #getOrElseUpdate   テスト ID の行。存在しなければ指定したものを挿入する
+
+- entry .Inclusion   how a piece of test data is included in a report, at a test's coordinates
++ entry .Inclusion   テストデータの一片を、テストの座標においてレポートにどう含めるか
+
+= entry .Inclusion   how a piece of test data is included in a report, at a test's coordinates
+-   detail
++   detail
+
+-       `Inclusion[report, data]` is the typeclass the `assert`/`check` macros and the
+-       measuring kinds summon to record a `Verdict`, a `Verdict.Detail`, a `Benchmark`, a
+-       `Strain`, a `Hotspots` or an `Anchor` in a report of type `report`. `Report` has
+-       givens for each; a report type of the caller's own supplies its own. Data recorded
+-       without coordinates belongs to the test's single cell.
++       `Inclusion[report, data]` は、`assert`/`check` マクロと計測を行う種類のテストが、`Verdict`、`Verdict.Detail`、`Benchmark`、`Strain`、`Hotspots`、`Anchor` を `report` 型のレポートに記録するために召喚する型クラスである。
++       `Report` にはそれぞれの given がある。呼び出し側独自のレポートの型は、独自の given を提供する。
++       座標なしで記録されたデータは、テストの唯一のセルに属する。
+
+=       without coordinates belongs to the test's single cell.
+=
+-       ```scala
++       ```scala
+
+=       without coordinates belongs to the test's single cell.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given verdicts: Inclusion[Unit, Verdict] = (_, _, _, _) => ()
++       given verdicts: Inclusion[Unit, Verdict] = (_, _, _, _) => ()
+
+-       given details: Inclusion[Unit, Verdict.Detail] = (_, _, _, _) => ()
++       given details: Inclusion[Unit, Verdict.Detail] = (_, _, _, _) => ()
+
+=       given details: Inclusion[Unit, Verdict.Detail] = (_, _, _, _) => ()
+-       ```
++       ```
+
+=       ```
+-   refer probably.Report
++   refer probably.Report
+
+-   entry #include   records the datum at the given coordinates of the given test, returning the report
+-       The three-argument form records at `Nil`, the single cell of a test with no axes.
++   entry #include   指定したテストの指定した座標にデータを記録し、レポートを返す
++       引数が三つの形は、軸を持たないテストの唯一のセルである `Nil` に記録する。
+
+- entry .Entry   one named test and its results: an ordered list of axes and a sparse map of cells
++ entry .Entry   名前の付いた一つのテストとその結果。順序付きの軸のリストと、セルの疎なマップ
+
+= entry .Entry   one named test and its results: an ordered list of axes and a sparse map of cells
+-   detail
++   detail
+
+-       A leaf of the `Report`. Its `#axes` may grow during the run, as emergent axes acquire
+-       coordinates; its `#cells` are keyed by coordinates in axis space, positionally aligned
+-       with the axes, each a `Tally` of the runs at that address. A test with no axes has
+-       exactly one cell, at `Nil`; combinations of axis values without a cell are gaps,
+-       rendered as empty positions in a grid.
++       `Report` の葉である。
++       その `#axes` は、創発的な軸が座標を得るにつれて実行中に増えることがある。
++       `#cells` は軸の空間の座標をキーとし、座標は位置によって軸と対応する。各セルはその番地での実行の `Tally` である。
++       軸を持たないテストはちょうど一つのセルを `Nil` に持つ。
++       セルを持たない軸の値の組み合わせは欠落であり、グリッドでは空の位置として描画される。
+
+=       rendered as empty positions in a grid.
+-   refer probably.Report
++   refer probably.Report
+
+=   refer probably.Report
+-   refer probably.Axis
++   refer probably.Axis
+
+-   refer probably.Tally
++   refer probably.Tally
+
+-   entry .Kind   the four kinds of entry: `Check`, `Bench`, `Stress` and `Profile`
+-       What `kind:test`, `kind:bench`, `kind:stress` and `kind:profile` select, and the
+-       `kind` field of a `TestCompleted` event (`check`, `bench`, `stress`, `profile`).
+-   entry #id   the test's id
+-   entry #kind   the entry's kind
+-   entry #headline   the metric a grid or comparison shows for this entry, if one was designated
+-   entry #anchor   the comparison anchor, if `Report#anchor` set one
+-   entry #axes   the axes seen so far, in first-appearance order
+-   entry #cells   every cell with its coordinate values
+-   entry #cell   the `Tally` at the given coordinates, created if absent
+-       Appends any not-yet-seen axes and registers each axis's values in first-appearance
+-       order.
+-   entry #values   the coordinate values of one axis in presentation order
+-       First-appearance order for a discrete axis, numeric order for an integral or decimal
+-       one.
++   entry .Kind   エントリーの四つの種類。`Check`、`Bench`、`Stress`、`Profile`
++       `kind:test`、`kind:bench`、`kind:stress`、`kind:profile` が選択するものであり、`TestCompleted` イベントの `kind` フィールド（`check`、`bench`、`stress`、`profile`）である。
++   entry #id   テストの ID
++   entry #kind   エントリーの種類
++   entry #headline   グリッドや比較がこのエントリーについて示す指標。指定されていれば
++   entry #anchor   比較のアンカー。`Report#anchor` が設定していれば
++   entry #axes   これまでに観測された軸。初出順
++   entry #cells   すべてのセルとその座標の値
++   entry #cell   指定した座標の `Tally`。存在しなければ作られる
++       まだ観測されていない軸を追加し、各軸の値を初出順に登録する。
++   entry #values   一つの軸の座標の値を、表示の順に並べたもの
++       離散的な軸では初出順、整数または小数の軸では数値の順である。
+
+- entry .Run   one execution of one cell: a verdict, recorded metrics, failure details and any payload
++ entry .Run   一つのセルの一回の実行。判定、記録された指標、失敗の詳細、ペイロード
+
+= entry .Run   one execution of one cell: a verdict, recorded metrics, failure details and any payload
+-   detail
++   detail
+
+-       For a check, `#verdict` is present and `#metrics` holds `Metric.Duration`; for a
+-       measurement the verdict is absent and the metrics carry the figures (insertion order is
+-       presentation order). `#payload` holds structure a number cannot: a profile's hot
+-       frames, or a benchmark's operation-size units. In a capacity search, `#sustained`
+-       marks the winning run.
+-   entry .Payload   structure a numeric metric cannot carry
+-       `Frames(hotspots)` is a profile's `Hotspots`; `Sizing(operationSize, operationRate)` a
+-       benchmark's preformatted units.
+-   entry #verdict   the verdict, for a check
+-   entry #metrics   the recorded metrics, in presentation order
+-   entry #details   failure details attached to this run
+-   entry #payload   the structural payload, if any
+-   entry #sustained   whether this run is the winning row of a capacity search
++       check では `#verdict` が存在し、`#metrics` は `Metric.Duration` を保持する。
++       計測では判定は存在せず、指標が数値を運ぶ（挿入順が表示の順である）。
++       `#payload` は数値では表せない構造を保持する。プロファイルのホットなフレームや、ベンチマークの操作サイズの単位である。
++       容量探索では、`#sustained` が勝ち残った実行を示す。
++   entry .Payload   数値の指標では運べない構造
++       `Frames(hotspots)` はプロファイルの `Hotspots` であり、`Sizing(operationSize, operationRate)` はベンチマークの整形済みの単位である。
++   entry #verdict   判定。check の場合
++   entry #metrics   記録された指標。表示の順
++   entry #details   この実行に付いた失敗の詳細
++   entry #payload   構造を持つペイロード。あれば
++   entry #sustained   この実行が容量探索で勝ち残った行かどうか
+
+- entry .Tally   the accumulated runs at one coordinate of a test
++ entry .Tally   テストの一つの座標で蓄積された実行
+
+= entry .Tally   the accumulated runs at one coordinate of a test
+-   detail
++   detail
+
+-       Repeated executions of the same cell gather here, which generalises repeated-verdict
+-       accumulation to every test kind. Mutex-guarded, since a queued runner's workers record
+-       concurrently.
+-   entry #record   appends a run
+-   entry #runs   the runs so far
++       同じセルの繰り返しの実行はここに集まる。これは、判定の繰り返しの蓄積をすべての種類のテストに一般化したものである。
++       キューを使うランナーのワーカーは並行して記録するので、ミューテックスで保護されている。
++   entry #record   実行を追加する
++   entry #runs   これまでの実行
+
+- entry .Axis   one input variable of a test: a labelled domain of values, each a coordinate of the test's cells
++ entry .Axis   テストの一つの入力変数。ラベルの付いた値の定義域で、各値がテストのセルの座標となる
+
+= entry .Axis   one input variable of a test: a labelled domain of values, each a coordinate of the test's cells
+-   detail
++   detail
+
+-       Most tests have no axes. Given one, `Test.Id#over` runs the body once per value and
+-       records each verdict at that value's coordinate of a single named test; a comparative
+-       benchmark has a discrete axis of implementations, and input data of different sizes
+-       forms a numeric axis. An axis is built from a label and values, `Axis(t"n")(1, 2, 3)`,
+-       from a label and a range, `Axis(t"n")(1 to 64)`, or from an enum's companion object,
+-       `Axis(Codec)`, whose label is the lower-cased enum name and whose values are its cases.
+-       `Axis` is an `into` type, so an enum companion is accepted directly wherever a concrete
+-       axis is expected (`.companion`).
++       ほとんどのテストは軸を持たない。
++       軸が一つあると、`Test.Id#over` は値ごとに一度本体を実行し、名前の付いた一つのテストのその値の座標に各判定を記録する。
++       比較のベンチマークは実装の離散的な軸を持ち、サイズの異なる入力データは数値の軸をなす。
++       軸は、ラベルと値から `Axis(t"n")(1, 2, 3)`、ラベルと範囲から `Axis(t"n")(1 to 64)`、または列挙型のコンパニオンオブジェクトから `Axis(Codec)` として作る。最後の形では、ラベルは列挙型の名前を小文字にしたもので、値はそのケースである。
++       `Axis` は `into` 型なので、具体的な軸が期待される場所ではどこでも列挙型のコンパニオンをそのまま受け付ける（`.companion`）。
+
+=       axis is expected (`.companion`).
+=
+-       ```scala
++       ```scala
+
+=       axis is expected (`.companion`).
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       enum Codec:
++       enum Codec:
+
+-         case Zip, Tar, Cpio
++         case Zip, Tar, Cpio
+
+-       val sizes: Axis[Int] = Axis(t"n")(1, 2, 4, 8)
++       val sizes: Axis[Int] = Axis(t"n")(1, 2, 4, 8)
+
+-       val codecs: Axis[Codec] = Axis(Codec)
++       val codecs: Axis[Codec] = Axis(Codec)
+
+-       sizes.coordinate(4)
++       sizes.coordinate(4)
+
+-       codecs.spec
++       codecs.spec
+
+=       codecs.spec
+-       ```
++       ```
+
+-       The values' type needs an `Axable`, which gives each value a stable label and, for
+-       numeric domains, a number, which makes the axis orderable and chartable.
++       値の型には `Axable` が必要である。`Axable` は各値に安定したラベルを与え、数値の定義域では数値も与えるので、軸を順序付けたりグラフにしたりできる。
+
+-   refer probably.Axable
++   refer probably.Axable
+
+=   refer probably.Axable
+-   refer probably.Axis.Value
++   refer probably.Axis.Value
+
+=   refer probably.Axis.Value
+-   refer probably.Test
++   refer probably.Test
+
+-   entry .Domain   the kind of an axis: `Discrete` labels in declaration order, or `Integral`/`Decimal` coordinates in numeric order
+-   entry .Spec   the erased description of an axis as a report records it: its label, domain and whether it is emergent
++   entry .Domain   軸の種類。宣言順のラベルである `Discrete`、または数値の順の座標である `Integral`/`Decimal`
++   entry .Spec   レポートが記録する、軸のイレイジャ後の記述。ラベル、定義域、創発的かどうか
+
+=   entry .Spec   the erased description of an axis as a report records it: its label, domain and whether it is emergent
+-     detail
++     detail
+
+-         What selection, rendering and charting consume. An emergent axis acquires its
+-         coordinate values from the run itself (a stress sweep's `N`) rather than from a
+-         declared domain.
+-     entry #label   the axis's label, which an axis constraint such as `N<32` names
+-     entry #domain   discrete, integral or decimal
+-     entry #emergent   whether the run, not a declaration, produces the values
+-   entry .Schedule   what a listing knows of one axis of a test before anything runs
++         選択、描画、グラフ化が消費するもの。
++         創発的な軸は、宣言された定義域からではなく、実行そのものから座標の値を得る（ストレステストの掃引の `N`）。
++     entry #label   軸のラベル。`N<32` のような軸の制約が名指すもの
++     entry #domain   離散、整数、小数のいずれか
++     entry #emergent   値を生み出すのが宣言ではなく実行であるかどうか
++   entry .Schedule   何かが実行される前に、一覧がテストの一つの軸について知っていること
+
+=   entry .Schedule   what a listing knows of one axis of a test before anything runs
+-     detail
++     detail
+
+-         The spec, the distinct values of the cells the selection admits in first-appearance
+-         order (none for an emergent axis), and, for an emergent axis whose producer declared
+-         them, the bounds its values will lie within. A host completes axis constraints from
+-         these.
+-     entry #spec   the axis
+-     entry #values   the admitted cells' values; empty for an emergent axis
+-     entry #least   the least value an emergent axis will produce, if declared
+-     entry #most   the greatest value an emergent axis will produce, if declared
+-   entry .apply   an axis from a label and values, a label and a `Range`, or an enum's companion object
+-       `Axis(label)(values*)` needs an `Axable` for the values' type; `Axis(label)(range)` is
+-       an `Axis[Int]`; `Axis(companion)` takes an enum's companion (anything with `valueOf`)
+-       with an `Enumerable`, labelled with the enum's simple name in lower case.
+-   entry .emergent   an axis with no declared values, which the run populates
+-       `Axis.emergent[Int](t"N")`: the spec is marked emergent, and `Entry#cell` extends the
+-       axis's values as coordinates arrive.
+-   entry .companion   the `Conversion` which lets an enum's companion object stand for an axis
+-       Generic positions such as `over` cannot drive this conversion, so they take explicit
+-       companion overloads instead.
+-   entry #label   the axis's label
+-   entry #values   the declared values, in declaration order
+-   entry #emergent   whether the values come from the run
+-   entry #axable   the `Axable` for the values' type
+-   entry #spec   the erased `Axis.Spec`
+-   entry #point   one value as a `Value`
+-   entry #coordinate   one value as the `(Axis.Spec, Value)` pair a cell is addressed by
++         仕様、選択が受け入れたセルの異なる値を初出順に並べたもの（創発的な軸では何もない）、そして生産者が宣言した創発的な軸では、その値が収まる範囲である。
++         ホストはこれらから軸の制約を補完する。
++     entry #spec   軸
++     entry #values   受け入れられたセルの値。創発的な軸では空
++     entry #least   創発的な軸が生み出す最小の値。宣言されていれば
++     entry #most   創発的な軸が生み出す最大の値。宣言されていれば
++   entry .apply   ラベルと値、ラベルと `Range`、または列挙型のコンパニオンオブジェクトから作る軸
++       `Axis(label)(values*)` には値の型の `Axable` が必要である。
++       `Axis(label)(range)` は `Axis[Int]` である。
++       `Axis(companion)` は列挙型のコンパニオン（`valueOf` を持つもの）を `Enumerable` とともに受け取り、列挙型の単純名を小文字にしたものをラベルとする。
++   entry .emergent   宣言された値を持たず、実行が値を埋める軸
++       `Axis.emergent[Int](t"N")` では、仕様は創発的と印され、座標が届くにつれて `Entry#cell` が軸の値を広げる。
++   entry .companion   列挙型のコンパニオンオブジェクトを軸の代わりに使えるようにする `Conversion`
++       `over` のような汎用の位置はこの変換を働かせられないので、代わりに明示的なコンパニオンのオーバーロードを受け取る。
++   entry #label   軸のラベル
++   entry #values   宣言された値。宣言順
++   entry #emergent   値が実行から来るかどうか
++   entry #axable   値の型の `Axable`
++   entry #spec   イレイジャ後の `Axis.Spec`
++   entry #point   一つの値を `Value` として表したもの
++   entry #coordinate   一つの値を、セルの番地となる `(Axis.Spec, Value)` の組として表したもの
+
+-   entry .Value   one coordinate on one axis: a discrete label, an integer or a decimal
++   entry .Value   一つの軸上の一つの座標。離散的なラベル、整数、小数のいずれか
+
+=   entry .Value   one coordinate on one axis: a discrete label, an integer or a decimal
+-     detail
++     detail
+
+-         A cell of a test is addressed by a list of values positionally aligned with the test's
+-         axes; a test with no axes has the single address `Nil`. `Value(x)` makes one through
+-         the `Axable` in scope: `Discrete(label)` for a discrete domain, `Integral(number)` or
+-         `Decimal(number)` for the numeric ones.
+-     entry .apply   a value from a domain value, through its `Axable`
+-     entry #text   the label a selection matches: the discrete label, or the number shown
+-     entry #numeric   the number, or `Unset` for a discrete value
++         テストのセルは、位置によってテストの軸と対応する値のリストを番地とする。軸を持たないテストの番地は `Nil` だけである。
++         `Value(x)` はスコープ内の `Axable` を通して値を作る。離散的な定義域では `Discrete(label)`、数値の定義域では `Integral(number)` または `Decimal(number)` となる。
++     entry .apply   定義域の値から、その `Axable` を通して作る値
++     entry #text   選択が照合するラベル。離散的なラベル、または表示される数値
++     entry #numeric   数値。離散的な値では `Unset`
+
+- entry .Axable   how a domain value becomes a point on an axis: a stable label and, for numeric domains, a number
++ entry .Axable   定義域の値が軸上の点になる方法。安定したラベルと、数値の定義域では数値
+
+= entry .Axable   how a domain value becomes a point on an axis: a stable label and, for numeric domains, a number
+-   detail
++   detail
+
+-       The typeclass behind `Axis`. The companion covers `Int` and `Long` (integral),
+-       `Double` (decimal, labelled with the `Decimalizer` in scope), `Text` (discrete) and
+-       every `reflect.Enum` with an `Enumerable` (discrete, labelled by case name). A type of
+-       the caller's own supplies `label`, and `domain`/`numeric` when it is numeric.
++       `Axis` の背後にある型クラスである。
++       コンパニオンは `Int` と `Long`（整数）、`Double`（小数。スコープ内の `Decimalizer` でラベル付けされる）、`Text`（離散）、そして `Enumerable` を持つすべての `reflect.Enum`（離散。ケース名でラベル付けされる）を扱う。
++       呼び出し側独自の型は `label` を提供し、数値の型であれば `domain`/`numeric` も提供する。
+
+=       the caller's own supplies `label`, and `domain`/`numeric` when it is numeric.
+-   refer probably.Axis
++   refer probably.Axis
+
+=   refer probably.Axis
+-   refer probably.Axis.Value
++   refer probably.Axis.Value
+
+-   entry .int   `Int` on an integral axis
+-   entry .long   `Long` on an integral axis
+-   entry .double   `Double` on a decimal axis
+-   entry .text   `Text` on a discrete axis, labelled by itself
+-   entry .enumerable   any enum with an `Enumerable`, on a discrete axis labelled by case name
+-   entry #domain   the axis domain of the type; `Discrete` by default
+-   entry #label   the stable text of a value, used in reports and matched by `axis=value` selections
+-   entry #numeric   the value as a number, for numeric domains; `Unset` by default
++   entry .int   整数の軸上の `Int`
++   entry .long   整数の軸上の `Long`
++   entry .double   小数の軸上の `Double`
++   entry .text   離散的な軸上の `Text`。それ自身でラベル付けされる
++   entry .enumerable   `Enumerable` を持つ任意の列挙型。ケース名でラベル付けされる離散的な軸上にある
++   entry #domain   型の軸の定義域。既定では `Discrete`
++   entry #label   値の安定したテキスト。レポートで使われ、`axis=value` の選択で照合される
++   entry #numeric   数値の定義域での、値の数値。既定では `Unset`
+
+- entry .Anchor   the distinguished comparison point of a test: one value on one axis, with `Baseline` settings
++ entry .Anchor   テストの特別な比較点。一つの軸上の一つの値と、`Baseline` の設定
+
+= entry .Anchor   the distinguished comparison point of a test: one value on one axis, with `Baseline` settings
+-   detail
++   detail
+
+-       A comparative benchmark anchors one axis value, and every other cell along that axis
+-       renders relative to it. Recorded through `Report.anchor` and emitted as
+-       `TestEvent.AnchorRecorded`.
+-   entry #axis   the axis the anchor is on
+-   entry #value   the anchored value
+-   entry #baseline   how the other cells compare to it
++       比較のベンチマークは一つの軸の値をアンカーとし、その軸に沿った他のすべてのセルはそれに対する相対値として描画される。
++       `Report.anchor` を通して記録され、`TestEvent.AnchorRecorded` として出力される。
++   entry #axis   アンカーがある軸
++   entry #value   アンカーとなる値
++   entry #baseline   他のセルがそれとどう比較されるか
+
+- entry .Baseline   how cells are compared to an anchor: which statistic, which metric, and which mean
++ entry .Baseline   セルをアンカーとどう比較するか。どの統計量、どの指標、どの平均を使うか
+
+= entry .Baseline   how cells are compared to an anchor: which statistic, which metric, and which mean
+-   detail
++   detail
+
+-       `Baseline(compare, metric, mode)` defaults to the `Mean` of the `Cadential` metric
+-       under the `Geometric` mode. The three enums' cases are exported at package level, so
+-       `Baseline(Min, Temporal, Arithmetic)` reads without qualification.
+-   entry .Compare   which statistic of a cell is compared: `Min`, `Mean` or `Max`
+-   entry .Metric   which figure is compared: `Cadential` (throughput) or `Temporal` (time)
+-   entry .Mode   which mean summarises a comparison: `Geometric` or `Arithmetic`
+-   entry #compare   the statistic
+-   entry #metric   the figure
+-   entry #mode   the mean
++       `Baseline(compare, metric, mode)` は、既定では `Geometric` モードのもとでの `Cadential` 指標の `Mean` である。
++       三つの列挙型のケースはパッケージのレベルでエクスポートされているので、`Baseline(Min, Temporal, Arithmetic)` は修飾なしで読める。
++   entry .Compare   セルのどの統計量を比較するか。`Min`、`Mean`、`Max`
++   entry .Metric   どの数値を比較するか。`Cadential`（スループット）または `Temporal`（時間）
++   entry .Mode   比較をどの平均で要約するか。`Geometric` または `Arithmetic`
++   entry #compare   統計量
++   entry #metric   数値
++   entry #mode   平均
+
+- entry .Min   `Baseline.Compare.Min`, exported at package level
+- entry .Mean   `Baseline.Compare.Mean`, exported at package level
+- entry .Max   `Baseline.Compare.Max`, exported at package level
+- entry .Cadential   `Baseline.Metric.Cadential`, exported at package level
+- entry .Temporal   `Baseline.Metric.Temporal`, exported at package level
+- entry .Arithmetic   `Baseline.Mode.Arithmetic`, exported at package level
+- entry .Geometric   `Baseline.Mode.Geometric`, exported at package level
++ entry .Min   `Baseline.Compare.Min`。パッケージのレベルでエクスポートされる
++ entry .Mean   `Baseline.Compare.Mean`。パッケージのレベルでエクスポートされる
++ entry .Max   `Baseline.Compare.Max`。パッケージのレベルでエクスポートされる
++ entry .Cadential   `Baseline.Metric.Cadential`。パッケージのレベルでエクスポートされる
++ entry .Temporal   `Baseline.Metric.Temporal`。パッケージのレベルでエクスポートされる
++ entry .Arithmetic   `Baseline.Mode.Arithmetic`。パッケージのレベルでエクスポートされる
++ entry .Geometric   `Baseline.Mode.Geometric`。パッケージのレベルでエクスポートされる
+
+- entry .Benchmark   the measured result of a benchmark: iterations, timings, confidence and allocation
++ entry .Benchmark   ベンチマークの計測結果。反復回数、時間、信頼度、アロケーション
+
+= entry .Benchmark   the measured result of a benchmark: iterations, timings, confidence and allocation
+-   detail
++   detail
+
+-       What the sedentary library's `Bench` produces for one cell and records through
+-       `.inclusion`: `#nanoseconds` of measurement over `#iterations` in `#runs` batches, the
+-       `#mean`, `#min`, `#max` and standard deviation `#sd` of the per-operation time in
+-       nanoseconds, the `#confidence` percentile of the interval, and the optional
+-       `#operationSize`, `#operationRate`, `#operationQuantity` and bytes of `#allocation` per
+-       operation. Times are nanoseconds; the headline metric is `Throughput` when an operation
+-       size was declared, `Mean` otherwise.
++       sedentary ライブラリの `Bench` が一つのセルについて生成し、`.inclusion` を通して記録するものである。
++       `#runs` 回のバッチで `#iterations` 回の操作にわたる `#nanoseconds` の計測、操作あたりの時間（ナノ秒）の `#mean`、`#min`、`#max` と標準偏差 `#sd`、区間の `#confidence` パーセンタイル、そして任意の `#operationSize`、`#operationRate`、`#operationQuantity` と操作あたりの `#allocation` のバイト数である。
++       時間はナノ秒である。見出しの指標は、操作サイズが宣言されていれば `Throughput`、そうでなければ `Mean` である。
+
+=       size was declared, `Mean` otherwise.
+-   refer probably.Metric
++   refer probably.Metric
+
+-   refer probably.Strain
++   refer probably.Strain
+
+-   refer probably.Hotspots
++   refer probably.Hotspots
+
+-   entry .inclusion   the `Inclusion[Report, Benchmark]`: records the figures as metrics at a coordinate, and emits `BenchmarkRecorded`
+-       The metrics are `Iterations`, `Mean`, `Least`, `Most`, `Deviation`, `Percentile`,
+-       `Confidence` (the interval's half-width as a fraction of the mean), `Throughput` and,
+-       when measured, `Allocation`; declared units travel as a `Run.Payload.Sizing`.
+-   entry .Percentiles   the confidence levels a benchmark may report: `80 | 85 | 90 | 95 | 96 | 97 | 98 | 99`
+-   entry #nanoseconds   the total measuring time
+-   entry #iterations   how many operations were timed
+-   entry #runs   how many independent measurement runs the statistics are over
+-   entry #mean   the mean time per operation, in nanoseconds
+-   entry #min   the fastest run's mean
+-   entry #max   the slowest run's mean
+-   entry #sd   the standard deviation of the runs' means
+-   entry #confidence   the percentile of the confidence interval
+-   entry #operationSize   the preformatted size of one operation, if declared
+-   entry #operationRate   the preformatted rate unit, if declared
+-   entry #operationQuantity   the size of one operation as a number, in the unit `operationSize` names
+-       Not yet carried by `TestEvent.BenchmarkRecorded`, so a host does not see it.
+-   entry #allocation   bytes allocated per operation, when the harness measured it
+-   entry #tQuantile   the one-sided Student's t quantile for a percentile and degrees of freedom
+-       Tabulated for df up to 29 (rounding an out-of-table df down, for a slightly wider
+-       interval) and the normal quantile beyond.
+-   entry #confidenceInterval   the half-width of the confidence interval, in nanoseconds
+-   entry #throughput   operations per second, from the mean
++   entry .inclusion   `Inclusion[Report, Benchmark]`。数値を座標の指標として記録し、`BenchmarkRecorded` を出力する
++       指標は `Iterations`、`Mean`、`Least`、`Most`、`Deviation`、`Percentile`、`Confidence`（区間の半幅を平均に対する割合で表したもの）、`Throughput`、そして計測された場合は `Allocation` である。宣言された単位は `Run.Payload.Sizing` として運ばれる。
++   entry .Percentiles   ベンチマークが報告できる信頼水準。`80 | 85 | 90 | 95 | 96 | 97 | 98 | 99`
++   entry #nanoseconds   計測時間の合計
++   entry #iterations   時間を計った操作の数
++   entry #runs   統計量の基になった独立した計測の回数
++   entry #mean   操作あたりの平均時間。ナノ秒
++   entry #min   最速の計測の平均
++   entry #max   最遅の計測の平均
++   entry #sd   計測の平均の標準偏差
++   entry #confidence   信頼区間のパーセンタイル
++   entry #operationSize   一つの操作の整形済みのサイズ。宣言されていれば
++   entry #operationRate   整形済みの速度の単位。宣言されていれば
++   entry #operationQuantity   一つの操作のサイズを、`operationSize` が名指す単位で表した数値
++       `TestEvent.BenchmarkRecorded` はまだこれを運ばないので、ホストには見えない。
++   entry #allocation   操作あたりに割り当てられたバイト数。ハーネスが計測した場合
++   entry #tQuantile   パーセンタイルと自由度に対する、片側のスチューデントの t 分位点
++       自由度 29 までは表を引き（表にない自由度は切り下げるので、区間はわずかに広くなる）、それを超えると正規分布の分位点を使う。
++   entry #confidenceInterval   信頼区間の半幅。ナノ秒
++   entry #throughput   平均から求めた、毎秒の操作数
+
+- entry .Strain   the measured response to a stress test: throughput, memory and latency under concurrency
++ entry .Strain   ストレステストへの計測された応答。並行処理のもとでのスループット、メモリ、レイテンシ
+
+= entry .Strain   the measured response to a stress test: throughput, memory and latency under concurrency
+-   detail
++   detail
+
+-       The memory and scaling counterpart of `Benchmark`, produced by sedentary's `Stress`
+-       for one cell: `#concurrency` workers ran a body repeatedly for a wall-clock window of
+-       `#nanoseconds`, completing `#operations` in total; `#allocation` is the heap allocated
+-       over the window, `#peakHeap` the high-water mark, `#retained` the live set after a
+-       post-run collection (a bounded-memory design shows a flat, small value), and
+-       `#gcCount`/`#gcTime` the collector deltas (time in milliseconds). The optional `#p50`,
+-       `#p90`, `#p99` and `#p999` are per-operation latency percentiles in nanoseconds. In a
+-       capacity search, `#compliance` is the fraction of operations within the latency
+-       threshold and `#sustained` marks the winning row.
++       `Benchmark` に対応するメモリとスケーリングの計測で、sedentary の `Stress` が一つのセルについて生成する。
++       `#concurrency` 個のワーカーが `#nanoseconds` の壁時計の時間枠のあいだ本体を繰り返し実行し、合計 `#operations` 回の操作を完了した。
++       `#allocation` は時間枠のあいだに割り当てられたヒープ、`#peakHeap` は最高水位、`#retained` は実行後のコレクションの後の生存集合（メモリが有界な設計では平坦で小さな値になる）、`#gcCount`/`#gcTime` はコレクターの差分（時間はミリ秒）である。
++       任意の `#p50`、`#p90`、`#p99`、`#p999` は、操作あたりのレイテンシのパーセンタイルで、ナノ秒である。
++       容量探索では、`#compliance` はレイテンシの閾値に収まった操作の割合であり、`#sustained` は勝ち残った行を示す。
+
+=       threshold and `#sustained` marks the winning row.
+-   refer probably.Benchmark
++   refer probably.Benchmark
+
+=   refer probably.Benchmark
+-   refer probably.Metric
++   refer probably.Metric
+
+-   entry .inclusion   the `Inclusion[Report, Strain]`: records the figures as metrics on the emergent `N` axis, and emits `StrainRecorded`
+-       Concurrency is a coordinate, not a metric: every strain lands on an emergent integral
+-       axis `N` (unless the producer supplied one), so a sweep's steps accumulate as cells of
+-       one entry. The headline metric is `Throughput`.
+-   entry #concurrency   how many workers ran the body
+-   entry #operations   how many operations completed
+-   entry #nanoseconds   the window's length
+-   entry #allocation   total heap allocation over the window, in bytes
+-   entry #peakHeap   the high-water mark of the heap pools, in bytes
+-   entry #retained   the live set after a post-run collection, in bytes
+-   entry #gcCount   collections during the window
+-   entry #gcTime   time in collection, in milliseconds
+-   entry #p50   the median per-operation latency, in nanoseconds, if measured
+-   entry #p90   the 90th-percentile latency, if measured
+-   entry #p99   the 99th-percentile latency, if measured
+-   entry #p999   the 99.9th-percentile latency, if measured
+-   entry #compliance   the fraction of operations within the latency threshold, in a capacity search
+-   entry #sustained   whether this is the winning row of a capacity search
+-   entry #throughput   operations per second over the window
+-   entry #allocationRate   bytes allocated per operation
++   entry .inclusion   `Inclusion[Report, Strain]`。数値を創発的な `N` 軸上の指標として記録し、`StrainRecorded` を出力する
++       並行度は指標ではなく座標である。すべての Strain は創発的な整数の軸 `N` に置かれる（生産者が軸を与えた場合を除く）ので、掃引の各段階は一つのエントリーのセルとして蓄積される。
++       見出しの指標は `Throughput` である。
++   entry #concurrency   本体を実行したワーカーの数
++   entry #operations   完了した操作の数
++   entry #nanoseconds   時間枠の長さ
++   entry #allocation   時間枠のあいだのヒープのアロケーションの合計。バイト
++   entry #peakHeap   ヒープのプールの最高水位。バイト
++   entry #retained   実行後のコレクションの後の生存集合。バイト
++   entry #gcCount   時間枠のあいだのコレクションの回数
++   entry #gcTime   コレクションに費やした時間。ミリ秒
++   entry #p50   操作あたりのレイテンシの中央値。ナノ秒。計測された場合
++   entry #p90   90 パーセンタイルのレイテンシ。計測された場合
++   entry #p99   99 パーセンタイルのレイテンシ。計測された場合
++   entry #p999   99.9 パーセンタイルのレイテンシ。計測された場合
++   entry #compliance   容量探索で、レイテンシの閾値に収まった操作の割合
++   entry #sustained   これが容量探索で勝ち残った行かどうか
++   entry #throughput   時間枠における毎秒の操作数
++   entry #allocationRate   操作あたりに割り当てられたバイト数
+
+- entry .Hotspots   the measured response to a profile: execution samples and the hottest methods
++ entry .Hotspots   プロファイルへの計測された応答。実行サンプルと最もホットなメソッド
+
+= entry .Hotspots   the measured response to a profile: execution samples and the hottest methods
+-   detail
++   detail
+
+-       Produced by sedentary's `Profile` from JFR execution samples: `#total` samples were
+-       taken over the profiling window, and `#frames` are the hottest methods in descending
+-       order of sample count, by self time. A host renders them as a histogram, coloured by
+-       package.
++       sedentary の `Profile` が JFR の実行サンプルから生成する。
++       プロファイルの時間枠のあいだに `#total` 個のサンプルが取られ、`#frames` は最もホットなメソッドを、セルフ時間によるサンプル数の降順に並べたものである。
++       ホストはこれをパッケージで色分けしたヒストグラムとして描画する。
+
+=       package.
+-   refer probably.Benchmark
++   refer probably.Benchmark
+
+-   entry .inclusion   the `Inclusion[Report, Hotspots]`: records `Samples` as the metric with the frames as payload, and emits `HotspotsRecorded`
+-   entry .Frame   one hot method: its demangled class and method names, and how many samples landed in it
+-     entry #className   the class, demangled
+-     entry #method   the method
+-     entry #samples   samples whose top frame was this method
+-   entry #total   how many samples were taken
+-   entry #frames   the hottest methods, most samples first
++   entry .inclusion   `Inclusion[Report, Hotspots]`。`Samples` を指標とし、フレームをペイロードとして記録し、`HotspotsRecorded` を出力する
++   entry .Frame   一つのホットなメソッド。デマングルされたクラス名とメソッド名、そこに入ったサンプルの数
++     entry #className   デマングルされたクラス
++     entry #method   メソッド
++     entry #samples   最上位のフレームがこのメソッドであったサンプル
++   entry #total   取られたサンプルの数
++   entry #frames   最もホットなメソッド。サンプルの多い順
+
+- entry .Metric   the closed set of quantities a run can record, each with a dimension, a sense and a label
++ entry .Metric   実行が記録できる量の閉じた集合。それぞれが次元、向き、ラベルを持つ
+
+= entry .Metric   the closed set of quantities a run can record, each with a dimension, a sense and a label
+-   detail
++   detail
+
+-       Each cell of a test stores a map of these to values, and one of them (or, for a check,
+-       the verdict) is the test's headline. Times are nanoseconds, memory bytes, rates
+-       operations per second and fractions in the unit interval. The cases are `Duration`,
+-       `Mean`, `Least`, `Most`, `Deviation`, `Percentile`, `Confidence`, `Iterations`,
+-       `Throughput`, `Operations`, `Allocation`, `PeakHeap`, `Retained`, `GcCount`, `GcTime`,
+-       `P50`, `P90`, `P99`, `P999`, `Compliance` and `Samples`. On the wire a metric is keyed
+-       by its case name, which is stable where its label is not.
+-   entry .Dimension   the physical interpretation of a value: `Time`, `Memory`, `Rate`, `Count` or `Fraction`
+-   entry .Sense   whether smaller or larger is better: `LowerIsBetter`, `HigherIsBetter` or `Neutral`
+-   entry #dimension   the metric's dimension, which chooses its formatting
+-   entry #sense   which direction is an improvement, for comparisons and chart orientation
+-   entry #label   the display label: `μ`, `σ`, `p99`, `Alloc·op¯¹`, …
++       テストの各セルはこれらから値へのマップを保存し、そのうちの一つ（check では判定）がテストの見出しとなる。
++       時間はナノ秒、メモリはバイト、速度は毎秒の操作数、割合は単位区間の値である。
++       ケースは `Duration`、`Mean`、`Least`、`Most`、`Deviation`、`Percentile`、`Confidence`、`Iterations`、`Throughput`、`Operations`、`Allocation`、`PeakHeap`、`Retained`、`GcCount`、`GcTime`、`P50`、`P90`、`P99`、`P999`、`Compliance`、`Samples` である。
++       ワイヤ上では、指標はケース名をキーとする。ラベルは安定していないが、ケース名は安定している。
++   entry .Dimension   値の物理的な解釈。`Time`、`Memory`、`Rate`、`Count`、`Fraction`
++   entry .Sense   小さいほうが良いか大きいほうが良いか。`LowerIsBetter`、`HigherIsBetter`、`Neutral`
++   entry #dimension   指標の次元。書式を決める
++   entry #sense   比較とグラフの向きのために、どちらの方向が改善か
++   entry #label   表示用のラベル。`μ`、`σ`、`p99`、`Alloc·op¯¹`、…
+
+- entry .Selection   which tests, and which of their cells, a run admits, parsed from command-line terms
++ entry .Selection   実行がどのテストとそのどのセルを受け入れるか。コマンドラインの項からパースされる
+
+= entry .Selection   which tests, and which of their cells, a run admits, parsed from command-line terms
+-   detail
++   detail
+
+-       `Selection.parse(terms)` reads the terms a host passes to `Suite#invoke`. Identity
+-       terms — six-hex-digit hashes, monikers and name globs — union with each other;
+-       `kind:test|bench|stress|profile` terms, `tag:a,b` terms (any of the listed tags; a
+-       second `tag:` term intersects) and axis constraints (`parser=jacinta`, `N<32`, `N>=4`,
+-       `N=4..64`, `N=4..`, `N=..64`) intersect with that union; and `not:<term>` terms are
+-       subtracted last, each removing whatever its term would admit. An unrecognised term is a
+-       name glob. Globs follow kaleidoscope's rules: `*` matches within one `/`-joined link
+-       of a path, so spanning a suite takes `**`, as in `jacinta/**` or `**/parseJson`; a
+-       suite's id (which may hold a `-`) matches too. An empty selection admits everything.
++       `Selection.parse(terms)` は、ホストが `Suite#invoke` に渡す項を読む。
++       同一性の項（16 進 6 桁のハッシュ、モニカー、名前のグロブ）は互いに和集合をとる。
++       `kind:test|bench|stress|profile` の項、`tag:a,b` の項（列挙したタグのいずれか。二つ目の `tag:` の項は共通部分をとる）、軸の制約（`parser=jacinta`、`N<32`、`N>=4`、`N=4..64`、`N=4..`、`N=..64`）は、その和集合との共通部分をとる。
++       `not:<term>` の項は最後に差し引かれ、それぞれがその項の受け入れるものを取り除く。
++       認識されない項は名前のグロブである。
++       グロブは kaleidoscope の規則に従う。`*` はパスの `/` でつながれた一つのリンクの中でマッチするので、スイートをまたぐには `jacinta/**` や `**/parseJson` のように `**` が必要である。スイートの ID（`-` を含むことがある）もマッチする。
++       空の選択はすべてを受け入れる。
+
+=       suite's id (which may hold a `-`) matches too. An empty selection admits everything.
+=
+-       ```scala
++       ```scala
+
+=       suite's id (which may hold a `-`) matches too. An empty selection admits everything.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import soundness.taggingNominative
++       import soundness.taggingNominative
+
+=       import soundness.taggingNominative
+=
+-       given tutorial: (Testable of Impromptu) = Testable.detached
++       given tutorial: (Testable of Impromptu) = Testable.detached
+
+-       val selection: Selection = Selection.parse(List(t"**", t"not:tag:slow", t"N=4.."))
++       val selection: Selection = Selection.parse(List(t"**", t"not:tag:slow", t"N=4.."))
+
+-       val slow: Test.Id = impromptu(test(m"slow one", n"slow"))
++       val slow: Test.Id = impromptu(test(m"slow one", n"slow"))
+
+-       val quick: Test.Id = impromptu(test(m"quick one"))
++       val quick: Test.Id = impromptu(test(m"quick one"))
+
+-       selection.admits(slow, Entry.Kind.Check, Nil, slow.tags)    // false
++       selection.admits(slow, Entry.Kind.Check, Nil, slow.tags)    // false
+
+-       selection.admits(quick, Entry.Kind.Check, Nil, quick.tags)  // true
++       selection.admits(quick, Entry.Kind.Check, Nil, quick.tags)  // true
+
+=       selection.admits(quick, Entry.Kind.Check, Nil, quick.tags)  // true
+-       ```
++       ```
+
+-       Three further terms are not selections but arrive on the same command line:
+-       `--list` (enumerate, run nothing), `--scale=<factor>` (multiply every declared
+-       measuring duration; a non-positive or unparseable factor is ignored) and
+-       `--workers=<n>` (queue pure assertions on `n` workers; 0, the default, runs everything
+-       inline).
++       さらに三つの項は選択ではないが、同じコマンドラインで届く。
++       `--list`（列挙して何も実行しない）、`--scale=<factor>`（宣言された計測時間すべてに掛ける。正でない、またはパースできない係数は無視される）、`--workers=<n>`（純粋なアサーションを `n` 個のワーカーのキューに入れる。既定の 0 ではすべてをその場で実行する）である。
+
+=       inline).
+-   refer probably.Runner
++   refer probably.Runner
+
+-   refer probably.Tag
++   refer probably.Tag
+
+=   refer probably.Tag
+-   refer probably.Axis
++   refer probably.Axis
+
+-   entry .Term   an identity term: an `Identifier` (a moniker or hash) or a `Glob` (matched against names and paths)
+-   entry .Constraint   an axis constraint: `Membership`, `Least`, `Most` or `Interval`
++   entry .Term   同一性の項。`Identifier`（モニカーまたはハッシュ）または `Glob`（名前とパスに照合される）
++   entry .Constraint   軸の制約。`Membership`、`Least`、`Most`、`Interval`
+
+=   entry .Constraint   an axis constraint: `Membership`, `Least`, `Most` or `Interval`
+-     detail
++     detail
+
+-         `Membership(axis, values)` is `N=4,8`; `Least(axis, limit, inclusive)` is `N>4` or
+-         `N>=4` (and `N=4..`); `Most` the mirror; `Interval(axis, least, most)` is `N=4..64`,
+-         inclusive at both ends. A constraint on an axis a cell does not have admits the cell,
+-         but as a `not:` term removes nothing.
+-     entry #axis   the axis label the constraint names
+-   entry .all   the empty selection, which admits everything
+-   entry .parse   a selection from command-line terms
+-   entry #terms   the identity terms, unioned
+-   entry #kinds   the admitted kinds; empty means all
+-   entry #constraints   the axis constraints, intersected
+-   entry #tags   each `tag:` term as a set of alternatives; the sets intersect
+-   entry #exclusions   the `not:` terms, each a one-term selection, subtracted after admission
+-   entry #listOnly   whether `--list` was given
+-   entry #scale   the multiplier on every declared measuring duration; 1.0 by default
+-       Geometric: 2.0 runs each measurement twice as long, 0.25 a quarter as long. Latency
+-       thresholds are not scaled, being pass/fail criteria rather than durations.
+-   entry #workers   how many workers execute queued assertions; 0 queues nothing
+-   entry #diagnosis   how failed assertions are to be diagnosed (`--diagnose=…`); not at all by default
+-   entry #trivial   whether the selection selects nothing in particular: no terms, kinds, constraints, tags or exclusions
+-   entry #admits   whether a test, of a kind, at coordinates, with tags, is admitted
++         `Membership(axis, values)` は `N=4,8` である。
++         `Least(axis, limit, inclusive)` は `N>4` または `N>=4`（および `N=4..`）であり、`Most` はその逆である。
++         `Interval(axis, least, most)` は `N=4..64` で、両端を含む。
++         セルが持たない軸に対する制約はそのセルを受け入れるが、`not:` の項としては何も取り除かない。
++     entry #axis   制約が名指す軸のラベル
++   entry .all   すべてを受け入れる空の選択
++   entry .parse   コマンドラインの項から作る選択
++   entry #terms   同一性の項。和集合をとる
++   entry #kinds   受け入れる種類。空ならすべて
++   entry #constraints   軸の制約。共通部分をとる
++   entry #tags   各 `tag:` の項を選択肢の集合としたもの。集合どうしは共通部分をとる
++   entry #exclusions   `not:` の項。それぞれ一つの項からなる選択で、受け入れの後に差し引かれる
++   entry #listOnly   `--list` が指定されたかどうか
++   entry #scale   宣言されたすべての計測時間に掛ける倍率。既定では 1.0
++       幾何的である。2.0 は各計測を 2 倍の長さで、0.25 は 4 分の 1 の長さで実行する。
++       レイテンシの閾値は継続時間ではなく合否の基準なので、倍率は掛からない。
++   entry #workers   キューに入ったアサーションを実行するワーカーの数。0 なら何もキューに入れない
++   entry #diagnosis   失敗したアサーションをどう診断するか（`--diagnose=…`）。既定では診断しない
++   entry #trivial   選択が特に何も選ばないかどうか。項、種類、制約、タグ、除外のいずれもない
++   entry #admits   ある種類の、ある座標の、あるタグを持つテストが受け入れられるかどうか
+
+- entry .Spread   a test spread over the domain of one axis, awaiting its assertion
++ entry .Spread   一つの軸の定義域にわたって展開され、アサーションを待つテスト
+
+= entry .Spread   a test spread over the domain of one axis, awaiting its assertion
+-   detail
++   detail
+
+-       `test(m"…").over(axis)(body)` is a `Spread[value, result]`. Its `.assert` runs the body
+-       once per axis value the body defines and records each verdict at that value's
+-       coordinate of the one named test; a value the partial body does not define is a gap.
+-       The body is pure, as `Test.assert`'s is, and the assertion sees either the result
+-       alone or the axis value and the result together.
++       `test(m"…").over(axis)(body)` は `Spread[value, result]` である。
++       その `.assert` は、本体が定義する軸の値ごとに一度本体を実行し、名前の付いた一つのテストのその値の座標に各判定を記録する。部分関数である本体が定義しない値は欠落となる。
++       本体は `Test.assert` の本体と同じく純粋であり、アサーションは結果だけ、または軸の値と結果の両方を見る。
+
+=       alone or the axis value and the result together.
+-   refer probably.Axis
++   refer probably.Axis
+
+=   refer probably.Axis
+-   refer probably.Test
++   refer probably.Test
+
+-   entry .assert   asserts every cell: with no predicate, with one over the result, or with one over the value and result
+-       Needs a `Runner` and the `Inclusion`s for verdicts and details in scope, as `Test.assert`
+-       does.
+-   entry #id   the test's id
+-   entry #axis   the axis
+-   entry #action   the body: a partial function over the axis's values, per harness
++   entry .assert   すべてのセルをアサートする。述語なし、結果に対する述語、または値と結果に対する述語で
++       `Test.assert` と同じく、`Runner` と、判定と詳細の `Inclusion` がスコープ内に必要である。
++   entry #id   テストの ID
++   entry #axis   軸
++   entry #action   本体。ハーネスごとの、軸の値に対する部分関数
+
+- entry .Spread2   a test spread over the domains of two axes: one cell per combination the body defines
++ entry .Spread2   二つの軸の定義域にわたって展開されたテスト。本体が定義する組み合わせごとに一つのセル
+
+= entry .Spread2   a test spread over the domains of two axes: one cell per combination the body defines
+-   detail
++   detail
+
+-       `test(m"…").over(first, second)(body)` is a `Spread2[left, right, result]`, rendered as
+-       a grid with gaps at undefined combinations. The predicate given to `.assert` may take
+-       the result alone or both axis values and the result.
++       `test(m"…").over(first, second)(body)` は `Spread2[left, right, result]` であり、定義されない組み合わせを欠落としたグリッドとして描画される。
++       `.assert` に渡す述語は、結果だけ、または両方の軸の値と結果を受け取れる。
+
+-   refer probably.Spread
++   refer probably.Spread
+
+-   entry .assert   asserts every defined cell of the grid
+-   entry #id   the test's id
+-   entry #first   the first axis
+-   entry #second   the second axis
+-   entry #action   the body: a partial function over pairs of values, per harness
++   entry .assert   グリッドの定義されたすべてのセルをアサートする
++   entry #id   テストの ID
++   entry #first   一つ目の軸
++   entry #second   二つ目の軸
++   entry #action   本体。ハーネスごとの、値の組に対する部分関数
+
+- entry .TestEvent   the typed event stream a run produces, for a host which renders results itself
++ entry .TestEvent   結果を自分で描画するホストのために、実行が生成する型付きのイベントストリーム
+
+= entry .TestEvent   the typed event stream a run produces, for a host which renders results itself
+-   detail
++   detail
+
+-       The low-level counterpart of the `Report` accumulator: every datum a run records also
+-       leaves, through the sink `Suite#invoke` installs, as one of these events, and a host
+-       (fume, or `Suite.run`) renders them as a terminal display, HTML or anything else.
+-       Events are rich but **wire-safe**: every payload is a flat case class of scalars,
+-       `Optional`s, `List`s and `Map[Text, Text]`, so the whole enum derives a BinTEL schema
+-       and codec with no hand-written instances, and `Streamer` carries it across a
+-       classloader boundary. Recursive structures are flattened structurally: a stack trace
+-       becomes its cause chain in order (`Trace`), a `Juxtaposition` becomes depth-indexed
+-       rows (`CompareRow`) from which a renderer rebuilds the tree, and a metrics ledger a
+-       list of labelled values (`MetricValue`). A `Message` is rendered to `Text` at this
+-       boundary.
++       `Report` の蓄積に対応する低レベルのものである。
++       実行が記録するすべてのデータは、`Suite#invoke` が設定するシンクを通して、これらのイベントの一つとしても出ていく。ホスト（fume または `Suite.run`）はそれを端末の表示、HTML、その他何にでも描画する。
++       イベントは情報が豊富だが**ワイヤ上で安全**である。すべてのペイロードはスカラー、`Optional`、`List`、`Map[Text, Text]` からなる平坦なケースクラスなので、列挙型全体が手書きのインスタンスなしに BinTEL のスキーマとコーデックを導出し、`Streamer` がそれをクラスローダーの境界を越えて運ぶ。
++       再帰的な構造は構造的に平坦化される。スタックトレースは順に並んだ原因の連鎖（`Trace`）となり、`Juxtaposition` は描画器が木を再構築できる、深さで索引付けされた行（`CompareRow`）となり、指標の台帳はラベル付きの値のリスト（`MetricValue`）となる。
++       `Message` はこの境界で `Text` に描画される。
+
+-       The cases, in the order a run emits them:
++       ケースを、実行が出力する順に示す。
+
+-       - `TestScheduled(test, kind, expected, tags, axes)` — the schedule: one per test a
+-         `--list` selection admits, or per assertion a queued runner defers, before it runs.
+-       - `SuiteStarted(suite, timestamp)` and `SuiteEnded(suite, timestamp)` — around a suite
+-         or group; the end is held back until the group's last queued assertion completes.
+-       - `TestStarted(test, timestamp)` and `TestEnded(test, timestamp)` — progress only,
+-         bracketing a test's execution for a live display.
+-       - `TestCompleted(test, kind, coordinates, outcome, metrics, timestamp)` — a check's
+-         result, following `TestEnded`.
+-       - `DetailCaptures(test, values)`, `DetailCompare(test, expected, found, rows)`,
+-         `DetailDissection(test, source, rows, reproducible)`,
+-         `DetailMessage(test, message)` and `DetailThrows(test, check, stack)` — a failure's
+-         supporting information (`check` is whether the predicate, rather than the body,
+-         threw).
+-       - `BenchmarkRecorded`, `StrainRecorded`, `HotspotsRecorded` — the measuring kinds'
+-         figures at a coordinate, field for field as `Benchmark`, `Strain` and `Hotspots`.
+-       - `AnchorRecorded(test, axis, discrete, integral, decimal, compare, metric, mode)` — a
+-         comparison anchor.
+-       - `NothingMatched(admitted)` — a non-trivial selection admitted nothing.
+-       - `RunTerminated(error, active, timestamp)` — the suite threw, with the tests active.
+-       - `RunCompleted(passed, timestamp)` — always last.
++       - `TestScheduled(test, kind, expected, tags, axes)` — スケジュール。`--list` の選択が受け入れたテストごとに、またはキューを使うランナーが遅延させたアサーションごとに、その実行前に一つ出力される。
++       - `SuiteStarted(suite, timestamp)` と `SuiteEnded(suite, timestamp)` — スイートまたはグループの前後。終了は、グループの最後のキューに入ったアサーションが完了するまで保留される。
++       - `TestStarted(test, timestamp)` と `TestEnded(test, timestamp)` — 進捗のみ。ライブ表示のためにテストの実行の前後を囲む。
++       - `TestCompleted(test, kind, coordinates, outcome, metrics, timestamp)` — check の結果。`TestEnded` の後に続く。
++       - `DetailCaptures(test, values)`、`DetailCompare(test, expected, found, rows)`、`DetailDissection(test, source, rows, reproducible)`、`DetailMessage(test, message)`、`DetailThrows(test, check, stack)` — 失敗の補足情報（`check` は、本体ではなく述語が例外を送出したかどうか）。
++       - `BenchmarkRecorded`、`StrainRecorded`、`HotspotsRecorded` — 計測を行う種類のテストの、座標における数値。フィールドは `Benchmark`、`Strain`、`Hotspots` と一対一に対応する。
++       - `AnchorRecorded(test, axis, discrete, integral, decimal, compare, metric, mode)` — 比較のアンカー。
++       - `NothingMatched(admitted)` — 自明でない選択が何も受け入れなかった。
++       - `RunTerminated(error, active, timestamp)` — スイートが例外を送出した。実行中だったテストを伴う。
++       - `RunCompleted(passed, timestamp)` — 常に最後。
+
+=       - `RunCompleted(passed, timestamp)` — always last.
+=
+-       ```scala
++       ```scala
+
+=       - `RunCompleted(passed, timestamp)` — always last.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       - `RunCompleted(passed, timestamp)` — always last.
+=
+=       ```scala
+=       import soundness.*
+=
+-       object Probe extends Suite(m"probe"):
++       object Probe extends Suite(m"probe"):
+
+-         def run(): Unit = test(m"one")(1).assert(_ == 2)
++         def run(): Unit = test(m"one")(1).assert(_ == 2)
+
+-       val failures: scala.collection.mutable.ListBuffer[Text] = scala.collection.mutable.ListBuffer()
++       val failures: scala.collection.mutable.ListBuffer[Text] = scala.collection.mutable.ListBuffer()
+
+-       Probe.invoke(t"", {
++       Probe.invoke(t"", {
+
+-         case TestEvent.TestCompleted(test, _, _, outcome, _, _) if outcome.outcome == t"fail" =>
++         case TestEvent.TestCompleted(test, _, _, outcome, _, _) if outcome.outcome == t"fail" =>
+
+-           failures.append(test.path.join(t"/"))
++           failures.append(test.path.join(t"/"))
+
+-         case _ => () })
++         case _ => () })
+
+=         case _ => () })
+-       ```
++       ```
+
+-       Any change to a case's fields changes the stream's layout and `Streamer.fingerprint`,
+-       so a host built against another version reports the suite as incompatible rather than
+-       misreading it.
++       ケースのフィールドを変更すると、ストリームのレイアウトと `Streamer.fingerprint` が変わる。そのため、別のバージョンに対してビルドされたホストは、スイートを誤読するのではなく、互換性がないと報告する。
+
+=       misreading it.
+-   refer probably.Streamer
++   refer probably.Streamer
+
+=   refer probably.Streamer
+-   refer probably.Suite
++   refer probably.Suite
+
+=   refer probably.Suite
+-   refer probably.Report
++   refer probably.Report
+
+-   entry .Ref   a test's or suite's identity on the wire: hash, name, moniker, path and declaration site
++   entry .Ref   ワイヤ上でのテストまたはスイートの同一性。ハッシュ、名前、モニカー、パス、宣言箇所
+
+=   entry .Ref   a test's or suite's identity on the wire: hash, name, moniker, path and declaration site
+-     detail
++     detail
+
+-         `path` is the full name-or-moniker path from the root suite to the entry, including
+-         the entry itself, so a tree can be rebuilt from refs alone. For a suite, `name` is
+-         its title and `moniker` its id.
+-     entry .of   the ref of a `Test.Id`
+-     entry #id   the six-hex-digit hash
+-     entry #name   the display name
+-     entry #moniker   the moniker, or a suite's id, if any
+-     entry #path   the labels from the root suite to this entry
+-     entry #file   the declaring source file
+-     entry #line   the declaring line
+-   entry .Frame   one stack frame: class, method, file and line
+-     entry #className   the frame's class
+-     entry #method   the method
+-     entry #file   the source file
+-     entry #line   the line, if known
+-   entry .Hotspot   one hot method of a profile: class, method and samples
+-     entry #className   the class, demangled
+-     entry #method   the method
+-     entry #samples   samples whose top frame was this method
+-   entry .TraceComponent   one exception of a flattened cause chain: its class name, message and frames
+-     entry #className   the exception's class name
+-     entry #message   its rendered message
+-     entry #frames   its stack frames
+-   entry .Trace   a stack trace flattened to its cause chain, outermost first
+-     entry .of   the trace of a `StackTrace`
+-     entry #components   the chain, outermost exception first
+-   entry .Outcome   a verdict without its live exception: `pass`, `fail`, `throws`, `check-throws`, `aspire-pass` or `aspire-fail`
++         `path` は、ルートのスイートからエントリーまでの、エントリー自身を含む名前またはモニカーの完全なパスなので、ref だけから木を再構築できる。
++         スイートでは、`name` はその題名で、`moniker` はその ID である。
++     entry .of   `Test.Id` の ref
++     entry #id   16 進 6 桁のハッシュ
++     entry #name   表示名
++     entry #moniker   モニカー、またはスイートの ID。あれば
++     entry #path   ルートのスイートからこのエントリーまでのラベル
++     entry #file   宣言しているソースファイル
++     entry #line   宣言している行
++   entry .Frame   一つのスタックフレーム。クラス、メソッド、ファイル、行
++     entry #className   フレームのクラス
++     entry #method   メソッド
++     entry #file   ソースファイル
++     entry #line   行。分かっていれば
++   entry .Hotspot   プロファイルの一つのホットなメソッド。クラス、メソッド、サンプル
++     entry #className   デマングルされたクラス
++     entry #method   メソッド
++     entry #samples   最上位のフレームがこのメソッドであったサンプル
++   entry .TraceComponent   平坦化された原因の連鎖の一つの例外。クラス名、メッセージ、フレーム
++     entry #className   例外のクラス名
++     entry #message   描画されたメッセージ
++     entry #frames   スタックフレーム
++   entry .Trace   原因の連鎖に平坦化されたスタックトレース。最も外側が先
++     entry .of   `StackTrace` のトレース
++     entry #components   連鎖。最も外側の例外が先
++   entry .Outcome   生きた例外を持たない判定。`pass`、`fail`、`throws`、`check-throws`、`aspire-pass`、`aspire-fail`
+
+=   entry .Outcome   a verdict without its live exception: `pass`, `fail`, `throws`, `check-throws`, `aspire-pass` or `aspire-fail`
+-     detail
++     detail
+
+-         The two throwing outcomes carry the `stack`; `duration` is in nanoseconds.
+-     entry .of   the outcome of a `Verdict`
+-     entry #outcome   the outcome word
+-     entry #duration   the body's duration
+-     entry #stack   the trace, for the throwing outcomes
+-   entry .DissectRow   one intermediate value of a dissected predicate, pre-order with depth
++         例外を送出した二つの結果は `stack` を運ぶ。`duration` はナノ秒である。
++     entry .of   `Verdict` の結果
++     entry #outcome   結果を表す語
++     entry #duration   本体の継続時間
++     entry #stack   トレース。例外を送出した結果の場合
++   entry .DissectRow   分解された述語の一つの中間値。深さ付きの前順
+
+=   entry .DissectRow   one intermediate value of a dissected predicate, pre-order with depth
+-     detail
++     detail
+
+-         `start` and `end` are offsets into the predicate's source, of which `code` is that
+-         slice, so a renderer can set each value under the subexpression it belongs to.
+-         `kind` is `value`, or `thrown` for the root of a predicate which threw.
+-   entry .CompareRow   one row of a flattened `Juxtaposition`, pre-order with depth
++         `start` と `end` は述語のソースへのオフセットで、`code` はその切り出しである。そのため描画器は、各値をそれが属する部分式の下に置ける。
++         `kind` は `value` であるか、例外を送出した述語のルートでは `thrown` である。
++   entry .CompareRow   平坦化された `Juxtaposition` の一つの行。深さ付きの前順
+
+=   entry .CompareRow   one row of a flattened `Juxtaposition`, pre-order with depth
+-     detail
++     detail
+
+-         `kind` is `same`, `different` or `collation`; a collation's type name travels in
+-         `difference`, and its children follow at `depth + 1`, so a renderer can rebuild the
+-         tree.
+-     entry .flatten   the rows of a `Juxtaposition`
+-     entry #depth   the row's depth in the tree
+-     entry #label   the field name or sequence index
+-     entry #kind   `same`, `different` or `collation`
+-     entry #left   the expected side
+-     entry #right   the observed side
+-     entry #difference   the difference, or a collation's type name
+-   entry .Coordinate   an axis coordinate on the wire: the spec's fields, and the value as one of three `Optional`s
++         `kind` は `same`、`different`、`collation` のいずれかである。
++         照合の型名は `difference` で運ばれ、その子は `depth + 1` で続くので、描画器は木を再構築できる。
++     entry .flatten   `Juxtaposition` の行
++     entry #depth   木における行の深さ
++     entry #label   フィールド名またはシーケンスのインデックス
++     entry #kind   `same`、`different`、`collation` のいずれか
++     entry #left   期待された側
++     entry #right   観測された側
++     entry #difference   差分、または照合の型名
++   entry .Coordinate   ワイヤ上の軸の座標。仕様のフィールドと、三つの `Optional` のいずれかとしての値
+
+=   entry .Coordinate   an axis coordinate on the wire: the spec's fields, and the value as one of three `Optional`s
+-     detail
++     detail
+
+-         Exactly one of `discrete`, `integral` and `decimal` is present, according to
+-         `domain`.
+-     entry .of   a coordinate from a spec and value, or a list from coordinates
+-     entry #axis   the axis label
+-     entry #domain   `discrete`, `integral` or `decimal`
+-     entry #emergent   whether the axis is emergent
+-     entry #discrete   the label, for a discrete axis
+-     entry #integral   the integer, for an integral axis
+-     entry #decimal   the number, for a decimal axis
+-   entry .MetricValue   one metric of a result, keyed by the `Metric` case's name
+-     entry .of   the values of a metrics ledger
+-     entry #metric   the case name, stable across versions where its label is not
+-     entry #value   the value
+-   entry .AxisSchedule   one axis of a scheduled test: its spec, the admitted values' labels, and declared bounds
+-     entry .of   the wire form of an `Axis.Schedule`
+-     entry #axis   the axis label
+-     entry #domain   `discrete`, `integral` or `decimal`
+-     entry #emergent   whether the axis is emergent
+-     entry #values   the labels of the admitted cells' values; none for an emergent axis
+-     entry #least   the least value an emergent axis will produce, if declared
+-     entry #most   the greatest, if declared
+-   entry .kindName   the wire name of an `Entry.Kind`: `check`, `bench`, `stress` or `profile`
++         `domain` に応じて、`discrete`、`integral`、`decimal` のちょうど一つが存在する。
++     entry .of   仕様と値から作る座標、または座標から作るリスト
++     entry #axis   軸のラベル
++     entry #domain   `discrete`、`integral`、`decimal` のいずれか
++     entry #emergent   軸が創発的かどうか
++     entry #discrete   ラベル。離散的な軸の場合
++     entry #integral   整数。整数の軸の場合
++     entry #decimal   数値。小数の軸の場合
++   entry .MetricValue   結果の一つの指標。`Metric` のケース名をキーとする
++     entry .of   指標の台帳の値
++     entry #metric   ケース名。ラベルは安定していないが、ケース名はバージョン間で安定している
++     entry #value   値
++   entry .AxisSchedule   スケジュールされたテストの一つの軸。仕様、受け入れられた値のラベル、宣言された範囲
++     entry .of   `Axis.Schedule` のワイヤ形式
++     entry #axis   軸のラベル
++     entry #domain   `discrete`、`integral`、`decimal` のいずれか
++     entry #emergent   軸が創発的かどうか
++     entry #values   受け入れられたセルの値のラベル。創発的な軸では何もない
++     entry #least   創発的な軸が生み出す最小の値。宣言されていれば
++     entry #most   最大の値。宣言されていれば
++   entry .kindName   `Entry.Kind` のワイヤ上の名前。`check`、`bench`、`stress`、`profile`
+
+- entry .internal   the macro implementations behind `Test.assert` and `Test.check`
++ entry .internal   `Test.assert` と `Test.check` の背後にあるマクロの実装
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. The object exists so that the assertion macros have a stable home;
+-       `assertion` is the runtime they both expand to, which `Spread` and `Spread2` call
+-       directly.
+-   entry .check   the macro behind `Test.check`: a `Trial` whose value is returned
+-   entry .assert   the macro behind `Test.assert`: passes the test through `pure`, and records whether the unit was capture checked
+-   entry .pure   an identity on `Test[test]` which the capture checker holds to its pure parameter type
+-   entry .succeed   the predicate which always holds, for `assert()` and `check()`
+-   entry .assertion   runs, judges and records one assertion, inline or queued
+-       Skips an unselected `assert`, runs an unselected `check` without recording, queues a
+-       selected pure `assert` when the runner has workers, and otherwise runs it inline;
+-       records the verdict, the contrast of a failed equality when an expectation was lifted,
+-       and the captures.
++       直接使うためのものではない。
++       このオブジェクトは、アサーションのマクロに安定した置き場所を与えるために存在する。`assertion` は両者が展開される先の実行時の処理であり、`Spread` と `Spread2` はそれを直接呼ぶ。
++   entry .check   `Test.check` の背後にあるマクロ。値が返される `Trial`
++   entry .assert   `Test.assert` の背後にあるマクロ。テストを `pure` に通し、そのユニットがキャプチャ検査されたかどうかを記録する
++   entry .pure   `Test[test]` に対する恒等関数。キャプチャ検査器はこれを純粋なパラメーターの型に従わせる
++   entry .succeed   常に成り立つ述語。`assert()` と `check()` のためのもの
++   entry .assertion   一つのアサーションを、その場で、またはキューに入れて実行し、判定し、記録する
++       選択されていない `assert` はスキップし、選択されていない `check` は記録せずに実行する。選択された純粋な `assert` は、ランナーにワーカーがあればキューに入れ、そうでなければその場で実行する。
++       判定、期待値が持ち上げられていた場合は失敗した等価性の対比、そしてキャプチャを記録する。
+
+- entry .Streamer   writes a run's `TestEvent`s as length-prefixed BinTEL frames to a host's `OutputStream`
++ entry .Streamer   実行の `TestEvent` を、長さ接頭辞付きの BinTEL フレームとしてホストの `OutputStream` に書き込む
+
+= entry .Streamer   writes a run's `TestEvent`s as length-prefixed BinTEL frames to a host's `OutputStream`
+-   detail
++   detail
+
+-       The one JDK-typed surface of the `events` component, because the host (a test-running
+-       tool such as fume) may call `.stream` reflectively from **another classloader world**,
+-       whose Soundness classes are not this one's: it erases to `stream(String, String,
+-       OutputStream): int`. The first frame is a schema **fingerprint**: both ends derive the
+-       BinTEL schema from their own `TestEvent` and compare, so a version skew which changes
+-       the wire layout is detected before any event is decoded. Each frame is a 4-byte
+-       big-endian length then the payload, flushed as written.
++       `events` コンポーネントの唯一の JDK 型の表面である。
++       ホスト（fume のようなテストを実行するツール）は、Soundness のクラスがこちらのものとは異なる**別のクラスローダーの世界**から `.stream` をリフレクションで呼び出すことがあるからである。
++       それは `stream(String, String, OutputStream): int` にイレイジャされる。
++       最初のフレームはスキーマの**フィンガープリント**である。
++       両端はそれぞれ自分の `TestEvent` から BinTEL スキーマを導出して比較するので、ワイヤ上のレイアウトを変えるバージョンのずれは、どのイベントもデコードされる前に検出される。
++       各フレームは 4 バイトのビッグエンディアンの長さとそれに続くペイロードであり、書き込まれるたびにフラッシュされる。
+
+=       big-endian length then the payload, flushed as written.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       big-endian length then the payload, flushed as written.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       big-endian length then the payload, flushed as written.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       val output: java.io.OutputStream = java.io.ByteArrayOutputStream()
++       val output: java.io.OutputStream = java.io.ByteArrayOutputStream()
+
+-       val status: Int = Streamer.stream(t"parser.Tests", t"--list", output)
++       val status: Int = Streamer.stream(t"parser.Tests", t"--list", output)
+
+=       val status: Int = Streamer.stream(t"parser.Tests", t"--list", output)
+-       ```
++       ```
+
+=       ```
+-   refer probably.TestEvent
++   refer probably.TestEvent
+
+=   refer probably.TestEvent
+-   refer probably.Suite
++   refer probably.Suite
+
+-   refer probably.Standalone
++   refer probably.Standalone
+
+-   entry .reentrant   `true`: suites on this classpath may be invoked repeatedly through one classloader
+-       A host probes for this method reflectively; its absence means an older Probably whose
+-       suites memoized their first runner and needed a fresh loader each time.
+-   entry .queued   `true`: suites on this classpath understand `--workers=<n>`
+-       Probed reflectively like `.reentrant`; to an older Probably the term is a name glob
+-       which admits nothing, so a host must not pass it blindly.
+-   entry .diagnostic   `true`: suites on this classpath understand `--diagnose=<presentations>`
+-       Probed reflectively like `.reentrant`.
+-   entry .fingerprint   the BLAKE3 hash of the derived `TestEvent` schema's structure
+-       A fingerprint of the wire layout: two versions whose `TestEvent`s differ in any field,
+-       order or case produce different fingerprints.
+-   entry .read   decodes one frame's payload back to a `TestEvent`
+-       The decode inverse, for a host whose own modules are separation-checked and cannot
+-       expand the derived decoder themselves. A decode failure throws; wrap calls in `safely`.
+-   entry .stream   runs a named suite with selection terms, writing the fingerprint and then one frame per event
+-       `stream(suite, arguments, output)` loads the `Suite` object named (`parser.Tests`,
+-       from this classloader), invokes it with the newline-separated terms, writes every
+-       event under a mutex, closes the stream, and returns the suite's status: 0 passed, 1
+-       failures, 2 the suite or the machinery threw.
++   entry .reentrant   `true`：このクラスパス上のスイートは、一つのクラスローダーを通じて繰り返し呼び出せる
++       ホストはこのメソッドをリフレクションでプローブする。
++       これがないことは、スイートが最初のランナーをメモ化し、毎回新しいローダーを必要とした古い Probably であることを意味する。
++   entry .queued   `true`：このクラスパス上のスイートは `--workers=<n>` を理解する
++       `.reentrant` と同様にリフレクションでプローブされる。
++       古い Probably にとってこの項は何にもマッチしない名前のグロブなので、ホストはそれをむやみに渡してはならない。
++   entry .diagnostic   `true`：このクラスパス上のスイートは `--diagnose=<presentations>` を理解する
++       `.reentrant` と同様にリフレクションでプローブされる。
++   entry .fingerprint   導出された `TestEvent` スキーマの構造の BLAKE3 ハッシュ
++       ワイヤ上のレイアウトのフィンガープリントである。
++       `TestEvent` がいずれかのフィールド、順序、ケースで異なる二つのバージョンは、異なるフィンガープリントを生成する。
++   entry .read   一つのフレームのペイロードを `TestEvent` にデコードし戻す
++       デコードの逆操作であり、自身のモジュールが分離検査されていて、導出されたデコーダーを自分では展開できないホストのためのものである。
++       デコードの失敗は例外を投げるので、呼び出しは `safely` で包むこと。
++   entry .stream   名前付きのスイートを選択項とともに実行し、フィンガープリントと、続いてイベントごとに一つのフレームを書き込む
++       `stream(suite, arguments, output)` は、名指された `Suite` オブジェクト（`parser.Tests`、このクラスローダーから）をロードし、改行区切りの項でそれを呼び出し、すべてのイベントをミューテックスの下で書き込み、ストリームを閉じて、スイートのステータスを返す。
++       0 は成功、1 は失敗あり、2 はスイートまたは仕組みが例外を投げたことを表す。
+
+- entry .Standalone   the entry point for running one suite in a JVM of its own
++ entry .Standalone   一つのスイートを専用の JVM で実行するためのエントリーポイント
+
+= entry .Standalone   the entry point for running one suite in a JVM of its own
+-   detail
++   detail
+
+-       `java -cp <classpath> probably.Standalone <suite> <term>…` is what a host launches
+-       when a suite must not share its process. The run is streamed exactly as
+-       `Streamer.stream` streams it, on standard output, which is reserved for the frames:
+-       whatever the suite itself prints to standard output is sent to standard error. The JVM
+-       exits with the suite's status (0 passed, 1 failures, 2 threw; 2 also for no suite
+-       named).
++       スイートがプロセスを共有してはならないときにホストが起動するのが `java -cp <classpath> probably.Standalone <suite> <term>…` である。
++       実行は `Streamer.stream` がストリームするのとまったく同じように、フレーム専用の標準出力にストリームされる。
++       スイート自身が標準出力に出力するものはすべて標準エラーに送られる。
++       JVM はスイートのステータスで終了する（0 は成功、1 は失敗あり、2 は例外。スイートが名指されなかった場合も 2）。
+
+=       named).
+-   refer probably.Streamer
++   refer probably.Streamer
+
+-   entry .main   runs the suite named by the first argument with the rest as terms, and exits with its status
++   entry .main   最初の引数で名指されたスイートを残りを項として実行し、そのステータスで終了する

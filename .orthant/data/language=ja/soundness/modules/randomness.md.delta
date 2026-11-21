@@ -1,0 +1,553 @@
+orthant 1 language
+
+- ## Randomness
++ ## 乱数
+
+- ### About
++ ### 概要
+
+- Random values of any type, not only numbers, come from the `Randomizable` [typeclass]. An
+- instance is [derived][derivation] for a case class or an enumeration from its structure, so a
+- whole tree of test data is one call.
++ 数だけでなく任意の型のランダムな値が、`Randomizable` [型クラス]から得られる。
++ ケースクラスや列挙型のインスタンスはその構造から[導出される][導出]ので、テストデータの木全体が一回の呼び出しで得られる。
+
+- The *source* of the randomness and the *shape* of the numbers are separate choices, and both
+- are explicit. The source is a [given] in scope, and is either seeded and reproducible, or
+- cryptographically secure. The distribution which a `Double` is drawn from is another given:
+- uniform, Gaussian or gamma.
++ 乱数の*源*と数の*形*は別々の選択であり、どちらも明示的である。
++ 源はスコープにある [given] であり、シードを与えられ再現可能なものか、暗号論的に安全なもののどちらかである。
++ `Double` が引かれる分布は別の given である。一様分布、ガウス分布、ガンマ分布がある。
+
+- ### On randomness
++ ### 乱数について
+
+- Randomness hides assumptions:
++ 乱数は前提を隠す。
+
+- - `math.random()` answers only one narrow question, a uniform `Double`, and everything else is
+-   assembled by hand.
+- - The seed is global and implicit, so a failing test which depended on chance cannot be
+-   replayed.
+- - Whether the generator is predictable is nowhere visible in the code. That is harmless in a
+-   simulation, and fatal in a generator of tokens.
++ - `math.random()` は一つの狭い問い、つまり一様な `Double` にしか答えず、それ以外はすべて手で組み立てられる。
++ - シードはグローバルで暗黙的なので、偶然に依存して失敗したテストは再現できない。
++ - 生成器が予測可能かどうかは、コードのどこにも見えない。
++   シミュレーションでは無害だが、トークンの生成器では致命的である。
+
+- Here the concerns are separate, and each has a name:
++ ここでは関心事が分けられ、それぞれに名前がある。
+
+= Here the concerns are separate, and each has a name:
+=
+- ```tabular
++ ```tabular
+
+- column  Concern
+- column  Stated by
+- row  where randomness is used  a `stochastic` block
+- row  which generator supplies it  an import from `randomization`
+- row  what distribution shapes a number  a `Distribution` given
+- row  how a value of some type is generated  a `Randomizable` instance, usually derived
++ column  関心事
++ column  述べるもの
++ row  乱数がどこで使われるか  `stochastic` ブロック
++ row  どの生成器がそれを供給するか  `randomization` からのインポート
++ row  どの分布が数の形を決めるか  `Distribution` の given
++ row  ある型の値がどう生成されるか  `Randomizable` インスタンス。通常は導出される
+
+= row  how a value of some type is generated  a `Randomizable` instance, usually derived
+- ```
++ ```
+
+- A source of randomness which is a [capability], not a global, is
+- [declarative context](../../philosophy/declarative-context.md): reproducibility follows from the
+- scope, not from discipline.
++ グローバルではなく[ケイパビリティ]である乱数の源は、[宣言的なコンテキスト](../../philosophy/declarative-context.md)である。再現性は規律からではなくスコープから導かれる。
+
+- Everything comes from the `soundness` package. A seeded source makes every run produce the same
+- values, and the last import lets the samples print their results:
++ すべては `soundness` パッケージから来る。
++ シードを与えた源はすべての実行で同じ値を生み、最後のインポートはサンプルが結果を表示できるようにする。
+
+= values, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import randomization.seededRandomization
++ import randomization.seededRandomization
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- given seed: Seed = Seed(1L)
++ given seed: Seed = Seed(1L)
+
+= given seed: Seed = Seed(1L)
+- ```
++ ```
+
+- ### Generating values
++ ### 値の生成
+
+- `stochastic` opens a scope which has a source of randomness. Within it, `arbitrary` produces a
+- value of any type with a `Randomizable` instance. The primitive types have instances, and a
+- case class or an enumeration derives one from its members:
++ `stochastic` は乱数の源を持つスコープを開く。
++ その中では、`arbitrary` が `Randomizable` インスタンスを持つ任意の型の値を生み出す。
++ プリミティブ型にはインスタンスがあり、ケースクラスや列挙型はそのメンバーからインスタンスを導出する。
+
+= case class or an enumeration derives one from its members:
+=
+- ```scala
++ ```scala
+
+- case class Point(x: Int, y: Int)
++ case class Point(x: Int, y: Int)
+
+= case class Point(x: Int, y: Int)
+- ```
++ ```
+
+= case class Point(x: Int, y: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Point(x: Int, y: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Point(x: Int, y: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= case class Point(x: Int, y: Int)
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- stochastic:
++ stochastic:
+
+-   Out.println(arbitrary[Int]().show)
++   Out.println(arbitrary[Int]().show)
+
+-   Out.println(arbitrary[Point]().inspect)
++   Out.println(arbitrary[Point]().inspect)
+
+=   Out.println(arbitrary[Point]().inspect)
+- ```
++ ```
+
+- The source is the seeded one, so running the code again with the same seed produces the same
+- values. That is what replaying a failing property test requires.
++ 源はシードを与えたものなので、同じシードでコードを再び実行すると同じ値が生み出される。
++ それが、失敗したプロパティテストを再現するのに必要なことである。
+
+- Outside a `stochastic` block there is no source, and no random value can be asked for:
++ `stochastic` ブロックの外には源がなく、ランダムな値を求めることはできない。
+
+= Outside a `stochastic` block there is no source, and no random value can be asked for:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- arbitrary[Int]()
++ arbitrary[Int]()
+
+= arbitrary[Int]()
+- ```
++ ```
+
+- ### Distributions
++ ### 分布
+
+- A random `Double` needs a shape, which a `Distribution` in scope supplies. Until the code says
+- which kind of `Double` it means, one cannot be generated, which prevents the classic mistake of
+- treating a uniform draw as though it were normal.
++ ランダムな `Double` には形が必要であり、スコープにある `Distribution` がそれを提供する。
++ コードがどの種類の `Double` を意図しているかを述べるまで、それは生成できない。これは、一様な抽出を正規分布であるかのように扱うという古典的な誤りを防ぐ。
+
+= treating a uniform draw as though it were normal.
+=
+- ```tabular
++ ```tabular
+
+- column  Distribution
+- column  Parameters
+- column  Draws from
+- row  `Gaussian`  `mean`, defaulting to `0.0`, and `std`, to `1.0`  a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution)
+- row  `UniformDistribution`  `start` and `end`  a flat range
+- row  `Gamma`  `shape` and `scale`  a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution)
++ column  分布
++ column  パラメーター
++ column  引く元
++ row  `Gaussian`  `mean`（デフォルトは `0.0`）と `std`（デフォルトは `1.0`）  [正規分布](https://en.wikipedia.org/wiki/Normal_distribution)
++ row  `UniformDistribution`  `start` と `end`  平らな範囲
++ row  `Gamma`  `shape` と `scale`  [ガンマ分布](https://en.wikipedia.org/wiki/Gamma_distribution)
+
+= row  `Gamma`  `shape` and `scale`  a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution)
+- ```
++ ```
+
+- Common choices are also givens, to import from the package `randomDistributions`:
++ よく使う選択はパッケージ `randomDistributions` からインポートする given にもなっている。
+
+= Common choices are also givens, to import from the package `randomDistributions`:
+=
+- ```tabular
++ ```tabular
+
+- column  Given
+- column  Draws from
+- row  `gaussianDistribution`  the standard normal distribution
+- row  `uniformUnitIntervalDistribution`  a flat range from 0 to 1
+- row  `uniformSymmetricUnitIntervalDistribution`  a flat range from -1 to 1
+- row  `binaryDistribution`  a random `Long`, converted to a `Double`
++ column  given
++ column  引く元
++ row  `gaussianDistribution`  標準正規分布
++ row  `uniformUnitIntervalDistribution`  0 から 1 までの平らな範囲
++ row  `uniformSymmetricUnitIntervalDistribution`  -1 から 1 までの平らな範囲
++ row  `binaryDistribution`  `Double` に変換したランダムな `Long`
+
+= row  `binaryDistribution`  a random `Long`, converted to a `Double`
+- ```
++ ```
+
+- Ten thousand draws from a Gaussian with a standard deviation of 2 have a mean close to 0:
++ 標準偏差 2 のガウス分布から一万回引くと、平均は 0 に近くなる。
+
+= Ten thousand draws from a Gaussian with a standard deviation of 2 have a mean close to 0:
+=
+- ```scala
++ ```scala
+
+- val draws = stochastic:
++ val draws = stochastic:
+
+-   given distribution: Distribution = Gaussian(0.0, 2.0)
++   given distribution: Distribution = Gaussian(0.0, 2.0)
+
+-   List.fill(10000)(arbitrary[Double]())
++   List.fill(10000)(arbitrary[Double]())
+
+=   List.fill(10000)(arbitrary[Double]())
+- ```
++ ```
+
+=   List.fill(10000)(arbitrary[Double]())
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   List.fill(10000)(arbitrary[Double]())
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   List.fill(10000)(arbitrary[Double]())
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((draws.fold(0.0)(_ + _)/10000).inspect)
++ Out.println((draws.fold(0.0)(_ + _)/10000).inspect)
+
+= Out.println((draws.fold(0.0)(_ + _)/10000).inspect)
+- ```
++ ```
+
+- [Mathematics](mathematics.md) has the statistics to describe such a sample.
++ そうした標本を記述する統計は、[数学](mathematics.md)にある。
+
+- ### Sources
++ ### 源
+
+- The generator behind a scope is chosen by an import from the package `randomization`. The
+- secure generators draw from the JDK's
+- [cryptographically secure](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator)
+- source, for values which an adversary must not predict:
++ スコープの背後にある生成器は、パッケージ `randomization` からのインポートで選ばれる。
++ 安全な生成器は、敵対者が予測してはならない値のために、JDK の[暗号論的に安全な](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator)源から引く。
+
+= source, for values which an adversary must not predict:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  Generator
+- column  Reproducible
+- row  `seededRandomization`  ordinary, from the `Seed` in scope  yes
+- row  `unseededRandomization`  ordinary  no, it varies run to run
+- row  `secureUnseededRandomization`  secure  no
+- row  `stronglySecureRandomization`  the platform's strongest secure source  no
++ column  インポート
++ column  生成器
++ column  再現可能か
++ row  `seededRandomization`  通常のもの、スコープにある `Seed` から  はい
++ row  `unseededRandomization`  通常のもの  いいえ、実行ごとに変わる
++ row  `secureUnseededRandomization`  安全なもの  いいえ
++ row  `stronglySecureRandomization`  プラットフォームの最も強力な安全な源  いいえ
+
+- row
++ row
+
+-   cell  `secureSeededRandomization`
++   cell  `secureSeededRandomization`
+
+-   cell  secure, seeded from the `Seed` in scope
++   cell  安全なもの、スコープにある `Seed` からシードを与えられる
+
+-   cell
++   cell
+
+=   cell
+- ```
++ ```
+
+- Simulation and the generation of secrets therefore cannot be confused: the difference is
+- written at the import. [Cryptography](cryptography.md) generates keys from the secure sources.
++ したがってシミュレーションと秘密の生成を取り違えることはありえない。違いはインポートに書かれている。
++ [暗号](cryptography.md)は、安全な源から鍵を生成する。
+
+- ### Collections and custom types
++ ### コレクションと独自の型
+
+- A random collection needs a size, which is chosen by a `Random.Size` given.
+- `randomSizes.uniformSizeUpto100` bounds it at a hundred elements.
++ ランダムなコレクションにはサイズが必要であり、それは `Random.Size` の given で選ばれる。
++ `randomSizes.uniformSizeUpto100` はそれを百要素までに制限する。
+
+- A type whose values need more care than generating each field defines an instance of its own,
+- or maps an existing one:
++ 各フィールドを生成するよりも注意を要する値を持つ型は、独自のインスタンスを定義するか、既存のインスタンスを写す。
+
+= or maps an existing one:
+=
+- ```scala
++ ```scala
+
+- import randomDistributions.uniformUnitIntervalDistribution
++ import randomDistributions.uniformUnitIntervalDistribution
+
+- case class Latitude(degrees: Double)
++ case class Latitude(degrees: Double)
+
+- given latitudeRandomizable: (Latitude is Randomizable) =
++ given latitudeRandomizable: (Latitude is Randomizable) =
+
+-   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
++   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+
+=   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+- ```
++ ```
+
+=   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+=   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- stochastic:
++ stochastic:
+
+-   Out.println(arbitrary[Latitude]().inspect)
++   Out.println(arbitrary[Latitude]().inspect)
+
+=   Out.println(arbitrary[Latitude]().inspect)
+- ```
++ ```
+
+- Where generating each field *is* right, the instance is derived from the type. A case class of
+- randomizable fields is randomizable, and a sealed hierarchy picks among its variants. That is
+- what property-based [testing](testing.md) needs, to generate values of an arbitrary type.
++ 各フィールドを生成することが*正しい*場合は、インスタンスは型から導出される。
++ ランダム化できるフィールドからなるケースクラスはランダム化でき、シールされた階層はそのバリアントの中から選ぶ。
++ それが、任意の型の値を生成するためにプロパティベースの[テスト](testing.md)が必要とするものである。
+
+- ### Reproducing a run
++ ### 実行の再現
+
+- A failing randomized test is worth nothing if it cannot be run again. Under
+- `seededRandomization`, the whole scope is a function of its `Seed`. Recording the seed of a
+- failing run, and supplying it again, reproduces exactly the same values. That includes the
+- sizes of generated collections, which are drawn from the same generator:
++ ランダム化されたテストが失敗しても、もう一度実行できなければ何の価値もない。
++ `seededRandomization` のもとでは、スコープ全体がその `Seed` の関数である。
++ 失敗した実行のシードを記録し、それを再び与えると、まったく同じ値が再現される。
++ それには生成されたコレクションのサイズも含まれる。サイズも同じ生成器から引かれるからである。
+
+= sizes of generated collections, which are drawn from the same generator:
+=
+- ```scala
++ ```scala
+
+- import randomSizes.uniformSizeUpto100
++ import randomSizes.uniformSizeUpto100
+
+- def sample(): List[Int] =
++ def sample(): List[Int] =
+
+-   given seed: Seed = Seed(42L)
++   given seed: Seed = Seed(42L)
+
+-   stochastic:
++   stochastic:
+
+-     arbitrary[List[Int]]().excerpt(0, 3)
++     arbitrary[List[Int]]().excerpt(0, 3)
+
+=     arbitrary[List[Int]]().excerpt(0, 3)
+- ```
++ ```
+
+=     arbitrary[List[Int]]().excerpt(0, 3)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=     arbitrary[List[Int]]().excerpt(0, 3)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=     arbitrary[List[Int]]().excerpt(0, 3)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ##
+- Out.println(sample().inspect)
++ Out.println(sample().inspect)
+
+= Out.println(sample().inspect)
+- Out.println(sample().inspect)
++ Out.println(sample().inspect)
+
+= Out.println(sample().inspect)
+- ```
++ ```
+
+- Nesting is deterministic too. A scope's generator is derived from that of the scope enclosing
+- it, so restoring the outer seed restores the inner sequence.
++ 入れ子も決定的である。
++ スコープの生成器はそれを囲むスコープの生成器から導かれるので、外側のシードを復元すれば内側の列も復元される。
+
+- What is determined is the *sequence of draws*, and that is only as reproducible as the code
+- which makes them. Single-threaded code draws in a fixed order, and reproduces exactly.
+- [Concurrent](concurrency.md) code which draws from one scope does not. Its threads interleave
+- differently on each run, so the same seed hands different values to different threads. Where a
+- concurrent computation must be reproducible, each strand needs a scope of its own, seeded
+- deterministically.
++ 決定されるのは*抽出の列*であり、それはその抽出を行うコードと同じ程度にしか再現可能でない。
++ シングルスレッドのコードは決まった順序で引くので、正確に再現される。
++ 一つのスコープから引く[並行](concurrency.md)のコードはそうではない。
++ そのスレッドは実行ごとに異なる形で交錯するので、同じシードが異なるスレッドに異なる値を渡す。
++ 並行の計算が再現可能でなければならない場合は、各ストランドに、決定的にシードを与えた独自のスコープが必要である。
+
+- ### Shuffling and coin-tosses
++ ### シャッフルとコイン投げ
+
+- A `Random` in scope also shuffles a sequence, and answers a fair coin-toss. These are small
+- conveniences which otherwise get written by hand, badly:
++ スコープにある `Random` は、列をシャッフルし、公平なコイン投げにも答える。
++ これらは小さな便利機能だが、さもなければ手で、しかもまずく書かれるものである。
+
+= conveniences which otherwise get written by hand, badly:
+=
+- ```scala fuel
++ ```scala fuel
+
+= conveniences which otherwise get written by hand, badly:
+=
+= ```scala fuel
+- run
++ run
+
+= conveniences which otherwise get written by hand, badly:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- stochastic: (random: Random) ?=>
++ stochastic: (random: Random) ?=>
+
+-   Out.println(random.shuffle(List(1, 2, 3, 4, 5)).inspect)
++   Out.println(random.shuffle(List(1, 2, 3, 4, 5)).inspect)
+
+-   Out.println(toss().inspect)
++   Out.println(toss().inspect)
+
+=   Out.println(toss().inspect)
+- ```
++ ```
+
+- ### Related
++ ### 関連
+
+- - [UUIDs](uuid.md) and [label placement](label-placement.md) draw from a seeded source of randomness.
++ - [UUID](uuid.md) と[ラベルの配置](label-placement.md)は、シードを与えた乱数の源から引く。

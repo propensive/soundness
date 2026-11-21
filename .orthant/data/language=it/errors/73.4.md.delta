@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.73.4` — `Timespan.Error`
++ # `↯/s.73.4` — `Timespan.Error`
+
+- Raised when a text value does not parse as an ISO-8601 duration.
++ Sollevato quando un valore testuale non viene analizzato come una durata ISO-8601.
+
+- ## Cause
++ ## Causa
+
+- `Timespan`'s `Decodable` instance and the `dur"…"` interpolator share one
+- parser. When it rejects the input — a bare `P`, a missing designator, or
+- components out of order — this error carries the offending text. The
+- message is `$text is not a recognized duration`.
++ L'istanza `Decodable` di `Timespan` e l'interpolatore `dur"…"` condividono un unico
++ parser. Quando questo rifiuta l'input — una `P` isolata, un designatore mancante o
++ componenti fuori ordine — questo errore riporta il testo incriminato. Il
++ messaggio è `$text is not a recognized duration`.
+
+- This was a variant of `↯/s.73.3` until durations were separated from moments:
+- a duration has no date, no clock time and no timezone, so a failure to read
+- one is not a failure to determine a moment.
++ Era una variante di `↯/s.73.3` finché le durate non sono state separate dai momenti:
++ una durata non ha data, né ora del giorno, né fuso orario, quindi non riuscire a leggerne
++ una non significa non riuscire a determinare un momento.
+
+- **Example.** `[↯/s.73.4] P is not a recognized duration`
++ **Esempio.** `[↯/s.73.4] P is not a recognized duration`
+
+- **Resolution.** Supply a complete ISO-8601 duration, such as `P1Y2M3DT4H5M6S`
+- for one year, two months, three days, four hours, five minutes and six
+- seconds. A `dur"…"` literal is checked at compile time and cannot raise this.
++ **Soluzione.** Fornire una durata ISO-8601 completa, come `P1Y2M3DT4H5M6S`
++ per un anno, due mesi, tre giorni, quattro ore, cinque minuti e sei
++ secondi. Un letterale `dur"…"` viene verificato in fase di compilazione e non può sollevare questo errore.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/aviation/src/core/aviation.Timespan.scala`
+- - Related: `↯/s.73.3` (`Moment.Error`)
++ - Sorgente: `lib/aviation/src/core/aviation.Timespan.scala`
++ - Correlati: `↯/s.73.3` (`Moment.Error`)

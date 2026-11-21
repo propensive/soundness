@@ -1,0 +1,245 @@
+orthant 1 language
+
+- # Safety by Construction
++ # La sûreté par construction
+
+- Soundness makes invalid values impossible to construct in the first place, checking
+- them as the code compiles. A guiding conviction is that any static analysis a
+- programmer can do, the compiler can do better — and any analysis the compiler can do,
+- it should. A value that exists is therefore known to be well-formed, and the code that
+- receives it need not check again.
++ Soundness rend les valeurs invalides impossibles à construire dès le départ, en les vérifiant
++ pendant la compilation du code. Une conviction directrice est que toute analyse statique qu'un
++ programmeur peut faire, le compilateur peut la faire mieux — et que toute analyse que le compilateur
++ peut faire, il doit la faire. Une valeur qui existe est donc connue pour être bien formée, et le
++ code qui la reçoit n'a pas à la vérifier de nouveau.
+
+- Interpolators express this most clearly. Each little language embedded in a program —
+- URLs, paths, regular expressions, dates, media types, JSON — has a grammar, and its
+- literals are parsed against that grammar at compiletime, by the same parser that will
+- handle runtime input. A malformed literal is a compile error pointing at the offending
+- character:
++ Les interpolateurs l'expriment le plus clairement. Chaque petit langage incorporé dans un programme —
++ URL, chemins, expressions régulières, dates, types de média, JSON — a une grammaire, et ses
++ littéraux sont analysés selon cette grammaire à la compilation, par le même analyseur qui traitera
++ les entrées à l'exécution. Un littéral mal formé est une erreur de compilation qui désigne le
++ caractère fautif :
+
+= character:
+=
+- ```scala fuel
++ ```scala fuel
+
+= character:
+=
+= ```scala fuel
+- parse
++ parse
+
+= character:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- url"https://example.com/api"    // checked against the URL grammar
++ url"https://example.com/api"    // checked against the URL grammar
+
+- r"[a-z]+(suffix"                // does not compile: unclosed group
++ r"[a-z]+(suffix"                // does not compile: unclosed group
+
+- media"application/jsom"         // does not compile: did you mean application/json?
++ media"application/jsom"         // does not compile: did you mean application/json?
+
+- v"1.2"                          // does not compile: not a semantic version
++ v"1.2"                          // does not compile: not a semantic version
+
+= v"1.2"                          // does not compile: not a semantic version
+- ```
++ ```
+
+- The same principle reaches beyond literals. A date that cannot exist — the 31st of a
+- 30-day month — is rejected where it is written; a `Money in "EUR"` cannot be added to a
+- `Money in "GBP"`; a database relation the schema does not declare fails to compile; and
+- an HTML `<br>` given children is a compile error because the specification says so.
+- In each case the check is not a runtime validation moved earlier, but a construction
+- that only admits valid values — so the invalid state has no representation at all, and
+- downstream code inherits the guarantee for free.
++ Le même principe s'étend au-delà des littéraux. Une date qui ne peut exister — le 31 d'un mois de
++ 30 jours — est rejetée là où elle est écrite ; un `Money in "EUR"` ne peut être additionné à un
++ `Money in "GBP"` ; une relation de base de données que le schéma ne déclare pas ne compile pas ; et
++ une balise HTML `<br>` dotée d'enfants est une erreur de compilation, parce que la spécification le
++ dit. Dans chaque cas, la vérification n'est pas une validation à l'exécution avancée dans le temps,
++ mais une construction qui n'admet que des valeurs valides — l'état invalide n'a donc aucune
++ représentation, et le code en aval hérite gratuitement de la garantie.
+
+- ## One parser, two moments
++ ## Un analyseur, deux moments
+
+- The property that makes this trustworthy is that the compiletime and runtime paths are
+- *the same code*. An interpolator's parsing logic is ordinary Scala; it runs at
+- compiletime against a literal, giving a compile error, and at runtime against dynamic
+- input, giving a typed error:
++ La propriété qui rend cela digne de confiance est que les chemins de la compilation et de
++ l'exécution sont *le même code*. La logique d'analyse d'un interpolateur est du Scala ordinaire ;
++ elle s'exécute à la compilation sur un littéral, ce qui donne une erreur de compilation, et à
++ l'exécution sur une entrée dynamique, ce qui donne une erreur typée :
+
+= input, giving a typed error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= input, giving a typed error:
+=
+= ```scala fuel
+- parse
++ parse
+
+= input, giving a typed error:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- url"https://example.com/api"          // checked as the code compiles
++ url"https://example.com/api"          // checked as the code compiles
+
+- text.as[HttpUrl]                      // checked as the program runs
++ text.as[HttpUrl]                      // checked as the program runs
+
+= text.as[HttpUrl]                      // checked as the program runs
+- ```
++ ```
+
+- The two cannot drift, because there is nothing to keep in step. A hand-written macro plus
+- a separate runtime parser is the arrangement this avoids: two implementations of one
+- grammar, differing in exactly the edge cases nobody tested.
++ Les deux ne peuvent diverger, car il n'y a rien à maintenir en phase. Une macro écrite à la main plus
++ un analyseur distinct pour l'exécution, voilà la disposition que cela évite : deux implémentations
++ d'une même grammaire, qui diffèrent précisément dans les cas limites que personne n'a testés.
+
+- The convention is therefore that every checked literal has a runtime counterpart, and a
+- value can move between the two — a configuration read from a file and a default written
+- in source produce the same type, with the same guarantees.
++ La convention est donc que chaque littéral vérifié a un équivalent à l'exécution, et qu'une valeur
++ peut passer de l'un à l'autre — une configuration lue dans un fichier et une valeur par défaut
++ écrite dans le source produisent le même type, avec les mêmes garanties.
+
+- ## Precision in the return type
++ ## La précision dans le type de retour
+
+- An interpolator's prefix method is `transparent inline`, so it may return something more
+- specific than its declared type. This is what allows a literal to carry what it *is* into
+- the type system rather than merely validating itself:
++ La méthode de préfixe d'un interpolateur est `transparent inline` ; elle peut donc renvoyer quelque
++ chose de plus précis que son type déclaré. C'est ce qui permet à un littéral de faire entrer ce qu'il
++ *est* dans le système de types, au lieu de seulement se valider lui-même :
+
+= the type system rather than merely validating itself:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the type system rather than merely validating itself:
+=
+= ```scala fuel
+- parse
++ parse
+
+= the type system rather than merely validating itself:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- p"/home/user/data.csv"                // a Path, on a specific platform
++ p"/home/user/data.csv"                // a Path, on a specific platform
+
+- n"worker"                             // a Name, valid for its plane
++ n"worker"                             // a Name, valid for its plane
+
+- % / "lear" / "kent"                   // Path of ("kent", "lear") — the elements in the type
++ % / "lear" / "kent"                   // Path of ("kent", "lear") — the elements in the type
+
+= % / "lear" / "kent"                   // Path of ("kent", "lear") — the elements in the type
+- ```
++ ```
+
+- The last is the strongest form: the path's element names are in its type, so code that
+- receives it knows exactly where it points. That precision is only available for literals,
+- which is the honest limit of the technique — text obtained at runtime yields the general
+- type, because nothing more is known about it.
++ Le dernier est la forme la plus forte : les noms des éléments du chemin sont dans son type, si bien
++ que le code qui le reçoit sait exactement où il pointe. Cette précision n'est disponible que pour les
++ littéraux, ce qui est la limite honnête de la technique — un texte obtenu à l'exécution donne le type
++ général, car on n'en sait rien de plus.
+
+- ## What can and cannot be checked this way
++ ## Ce qui peut et ne peut pas être vérifié ainsi
+
+- The technique applies where validity is a property of the *value*, decidable from the
+- value alone. A URL's syntax, a date's existence, a media type's registration, a regular
+- expression's balance, a schema's shape: all decidable, all checked.
++ La technique s'applique là où la validité est une propriété de la *valeur*, décidable à partir de la
++ seule valeur. La syntaxe d'une URL, l'existence d'une date, l'enregistrement d'un type de média,
++ l'équilibre d'une expression régulière, la forme d'un schéma : tout cela est décidable, et tout cela
++ est vérifié.
+
+- It does not apply where validity depends on the world. Whether `example.com` resolves,
+- whether a file exists, whether a port is free, whether a certificate is still valid —
+- none is knowable when the code compiles, and a type claiming otherwise would be lying.
+- Those become typed errors at the point of use, which is [total
+- transitions](total-transitions.md) doing the work instead.
++ Elle ne s'applique pas là où la validité dépend du monde. Savoir si `example.com` se résout, si un
++ fichier existe, si un port est libre, si un certificat est encore valide — rien de cela ne peut être
++ connu à la compilation du code, et un type qui prétendrait le contraire mentirait. Ces cas deviennent
++ des erreurs typées au point d'utilisation, et ce sont alors les [transitions
++ totales](total-transitions.md) qui font le travail.
+
+- The line between the two is worth drawing carefully, because the temptation is to over-claim.
+- A `Hostname` promises syntactic validity and nothing more, and the documentation says so
+- rather than letting a reader infer that a well-typed hostname is a reachable one.
++ La ligne entre les deux mérite d'être tracée avec soin, car la tentation est d'en promettre trop. Un
++ `Hostname` promet la validité syntaxique et rien de plus, et la documentation le dit, au lieu de
++ laisser un lecteur en déduire qu'un nom d'hôte bien typé est un nom d'hôte joignable.
+
+- ## What it costs
++ ## Ce que cela coûte
+
+- **Compiletime.** Every literal is parsed by the compiler, and a file dense with them
+- compiles measurably more slowly. Macro expansion is the single largest contributor to
+- Soundness's own build times.
++ **La compilation.** Chaque littéral est analysé par le compilateur, et un fichier qui en contient
++ beaucoup compile sensiblement plus lentement. Le développement des macros est le premier facteur des
++ temps de build de Soundness lui-même.
+
+- **Error messages are the macro's responsibility.** A compile error from a failed literal is
+- only as good as the message the interpolator produces. Getting a caret onto the offending
+- character — rather than underlining the whole expression — takes deliberate work with the
+- source positions the interpolator is given, and an interpolator that skimps on it produces
+- worse diagnostics than a runtime parser would have.
++ **Les messages d'erreur sont la responsabilité de la macro.** Une erreur de compilation due à un
++ littéral invalide ne vaut que ce que vaut le message que produit l'interpolateur. Placer un caret sur
++ le caractère fautif — plutôt que de souligner toute l'expression — demande un travail délibéré avec
++ les positions dans le source que reçoit l'interpolateur, et un interpolateur qui le néglige produit
++ de moins bons diagnostics que ne l'aurait fait un analyseur à l'exécution.
+
+- **Literals must be literals.** A URL assembled from parts at compiletime cannot use the
+- interpolator's checking unless the parts are themselves literals. The runtime path is
+- always available, but the guarantee is weaker, and the shape of the code differs — which
+- occasionally pushes a design toward keeping something literal that would otherwise have
+- been computed.
++ **Les littéraux doivent être des littéraux.** Une URL assemblée à partir de parties à la compilation
++ ne peut profiter de la vérification de l'interpolateur que si les parties sont elles-mêmes des
++ littéraux. Le chemin de l'exécution est toujours disponible, mais la garantie est plus faible, et la
++ forme du code diffère — ce qui pousse parfois une conception à garder littéral quelque chose qui,
++ sinon, aurait été calculé.
+
+- See [impossible states](impossible-states.md) for the rule this serves, and
+- [interpolation](../en/modules/interpolation.md) for how such a literal is built.
++ Voir [les états impossibles](impossible-states.md) pour la règle que cela sert, et
++ [l'interpolation](../en/modules/interpolation.md) pour la façon dont un tel littéral est construit.

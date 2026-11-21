@@ -1,0 +1,104 @@
+orthant 1 language
+
+- # `↯/s.81.2` — `Multipart.Error`
++ # `↯/s.81.2` — `Multipart.Error`
+
+- Raised when multipart MIME data cannot be parsed.
++ Порождается, когда не удаётся разобрать данные multipart MIME.
+
+- ## Cause
++ ## Причина
+
+- Gesticulate parses multipart bodies bounded by a delimiter declared
+- in the `Content-Type` header. Each part has its own headers and
+- body. This error reports a structural problem with the multipart
+- stream. The message is `multipart data could not be read because
++ Gesticulate разбирает тела multipart, ограниченные разделителем,
++ объявленным в заголовке `Content-Type`. У каждой части свои заголовки и
++ тело. Эта ошибка сообщает о структурной проблеме в потоке данных
++ multipart. Сообщение — `multipart data could not be read because
+
+- $reason`.
++ $reason`.
+
+- ## Variants
++ ## Варианты
+
+- ### `↯/s.81.2.1` — `Expected`
++ ### `↯/s.81.2.1` — `Expected`
+
+- A specific character was expected at the parser's position but a
+- different one was encountered.
++ В позиции парсера ожидался определённый символ, но встретился
++ другой.
+
+- **Example.** `[↯/s.81.2.1] multipart data could not be read because the character ':' was expected`
++ **Пример.** `[↯/s.81.2.1] multipart data could not be read because the character ':' was expected`
+
+- **Resolution.** Confirm the producer is emitting valid multipart
+- data; check for missing CRLFs or boundaries.
++ **Решение.** Убедитесь, что источник выдаёт корректные данные
++ multipart; проверьте, нет ли пропущенных CRLF или границ.
+
+- ### `↯/s.81.2.2` — `StreamContinues`
++ ### `↯/s.81.2.2` — `StreamContinues`
+
+- Bytes appeared after the closing boundary.
++ После закрывающей границы появились байты.
+
+- **Example.** `[↯/s.81.2.2] multipart data could not be read because the stream continues beyond the last part`
++ **Пример.** `[↯/s.81.2.2] multipart data could not be read because the stream continues beyond the last part`
+
+- **Resolution.** Truncate the body at the closing boundary, or stop
+- emitting bytes after it.
++ **Решение.** Обрежьте тело по закрывающей границе или прекратите
++ выдавать байты после неё.
+
+- ### `↯/s.81.2.3` — `BadBoundaryEnding`
++ ### `↯/s.81.2.3` — `BadBoundaryEnding`
+
+- Content followed a boundary that does not match the documented
+- terminator format.
++ За границей следовало содержимое, не соответствующее документированному
++ формату завершителя.
+
+- **Example.** `[↯/s.81.2.3] multipart data could not be read because unexpected content followed the boundary`
++ **Пример.** `[↯/s.81.2.3] multipart data could not be read because unexpected content followed the boundary`
+
+- **Resolution.** Boundaries must be followed either by `\r\n` (start
+- of next part) or `--\r\n` (end of body); fix the producer.
++ **Решение.** За границей должно следовать либо `\r\n` (начало
++ следующей части), либо `--\r\n` (конец тела); исправьте источник.
+
+- ### `↯/s.81.2.4` — `MediaType`
++ ### `↯/s.81.2.4` — `MediaType`
+
+- A part's `Content-Type` header is not a valid media type.
++ Заголовок `Content-Type` части не является допустимым медиатипом.
+
+- **Example.** `[↯/s.81.2.4] multipart data could not be read because the media type is invalid`
++ **Пример.** `[↯/s.81.2.4] multipart data could not be read because the media type is invalid`
+
+- **Resolution.** See `↯/s.81.1` for media-type rules.
++ **Решение.** Правила для медиатипов см. в `↯/s.81.1`.
+
+- ### `↯/s.81.2.5` — `BadDisposition`
++ ### `↯/s.81.2.5` — `BadDisposition`
+
+- A part's `Content-Disposition` header has the wrong format.
++ Заголовок `Content-Disposition` части имеет неверный формат.
+
+- **Example.** `` [↯/s.81.2.5] multipart data could not be read because the `Content-Disposition` header has the wrong format ``
++ **Пример.** `` [↯/s.81.2.5] multipart data could not be read because the `Content-Disposition` header has the wrong format ``
+
+- **Resolution.** Use the standard form, e.g.
++ **Решение.** Используйте стандартную форму, например
+
+- `form-data; name="field"; filename="x.txt"`.
++ `form-data; name="field"; filename="x.txt"`.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/gesticulate/src/core/gesticulate.Multipart.scala`
++ - Исходный код: `lib/gesticulate/src/core/gesticulate.Multipart.scala`

@@ -1,0 +1,10 @@
+orthant 1 language
+
+- The full table is in the
+- [rule reference](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers).
+- Each retired `SN-nnn` page under [`doc/work/errors/`](../errors/) also names its
+- replacement, so an older reference still resolves.
++ Die vollständige Tabelle steht in der
++ [Regelreferenz](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers).
++ Jede ausgemusterte `SN-nnn`-Seite unter [`doc/work/errors/`](../errors/) nennt außerdem ihren Ersatz,
++ sodass ein älterer Verweis weiterhin aufgelöst wird.

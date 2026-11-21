@@ -1,0 +1,76 @@
+orthant 1 language
+
+- # `↯/s.118.6` — `Telp.Error`
++ # `↯/s.118.6` — `Telp.Error`
+
+- Raised when a TELP does not parse or does not resolve.
++ Levée lorsqu'un TELP ne s'analyse pas ou ne se résout pas.
+
+- ## Cause
++ ## Cause
+
+- TELP is TEL's textual path language over the semantic model of a schema-typed document. Its
+- failures are outcomes of the resolving API, not document errors: they carry no TEL E-codes.
+- Every reason carries the 0-based index of the component at which parsing or resolution failed.
++ TELP est le langage de chemins textuel de TEL, défini sur le modèle sémantique d'un document
++ typé par un schéma. Ses échecs sont des résultats de l'API de résolution, et non des erreurs de
++ document : ils ne portent pas de codes E de TEL. Chaque raison porte l'index, à partir de 0, du
++ composant auquel l'analyse ou la résolution a échoué.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
++ column  Raison
+
+- column  Message
++ column  Message
+
+- row  `↯/s.118.6.1`  `Syntax`  the path is not syntactically valid
++ row  `↯/s.118.6.1`  `Syntax`  the path is not syntactically valid
+
+- row  `↯/s.118.6.2`  `UnknownKeyword`  the component matches no keyword of the current struct
++ row  `↯/s.118.6.2`  `UnknownKeyword`  the component matches no keyword of the current struct
+
+- row  `↯/s.118.6.3`  `NonStructDescent`  the path descends below a value or flag
++ row  `↯/s.118.6.3`  `NonStructDescent`  the path descends below a value or flag
+
+- row  `↯/s.118.6.4`  `AbsentMember`  the non-repeatable optional member is not present
++ row  `↯/s.118.6.4`  `AbsentMember`  the non-repeatable optional member is not present
+
+- row  `↯/s.118.6.5`  `IndexOutOfRange`  the index selector exceeds the occurrence sequence
++ row  `↯/s.118.6.5`  `IndexOutOfRange`  the index selector exceeds the occurrence sequence
+
+- row  `↯/s.118.6.6`  `TypeNotKeyed`  a key selector was applied to a type with no key field
++ row  `↯/s.118.6.6`  `TypeNotKeyed`  a key selector was applied to a type with no key field
+
+- row  `↯/s.118.6.7`  `KeyNotFound`  no occurrence has the selected key value
++ row  `↯/s.118.6.7`  `KeyNotFound`  no occurrence has the selected key value
+
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- A path's delimiter is its first character: a component containing the chosen delimiter is
+- written under a different one (there is no escape syntax). An all-digit component is always an
+- occurrence index, so an all-digit key value can only be selected by position. Resolution needs
+- a composed schema; an untyped document has no semantic model and no TELP resolution.
++ Le délimiteur d'un chemin est son premier caractère : un composant qui contient le délimiteur
++ choisi s'écrit avec un autre délimiteur (il n'existe pas de syntaxe d'échappement). Un composant
++ entièrement numérique est toujours un index d'occurrence, si bien qu'une valeur de clé
++ entièrement numérique ne peut être sélectionnée que par sa position. La résolution nécessite un
++ schéma composé ; un document non typé n'a pas de modèle sémantique, ni de résolution TELP.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/stratiform/src/core/stratiform.Telp.scala`
++ - Source : `lib/stratiform/src/core/stratiform.Telp.scala`

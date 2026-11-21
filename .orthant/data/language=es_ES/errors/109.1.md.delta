@@ -1,0 +1,82 @@
+orthant 1 language
+
+- # `↯/s.109.1` — `Tmux.Error`
++ # `↯/s.109.1` — `Tmux.Error`
+
+- Raised when Exoskeleton cannot execute the `tmux` binary.
++ Se lanza cuando Exoskeleton no puede ejecutar el binario `tmux`.
+
+- ## Cause
++ ## Causa
+
+- Exoskeleton's `Tmux` integration shells out to `tmux`. If the
+- binary is not on `PATH` (or is not executable), this error is
+- thrown.
++ La integración `Tmux` de Exoskeleton invoca `tmux` desde la shell. Si el binario no está en el
++ `PATH` (o no es ejecutable), se lanza este error.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.109.1] can't execute tmux
++ [↯/s.109.1] can't execute tmux
+
+= [↯/s.109.1] can't execute tmux
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Install `tmux` and ensure it is on the `PATH` of the process.
++ Instala `tmux` y asegúrate de que está en el `PATH` del proceso.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.109.1.1` — `ShellNotInstalled`
++ ### `↯/s.109.1.1` — `ShellNotInstalled`
+
+- The shell that tmux was asked to run is not on the `PATH`.
++ La shell que se pidió ejecutar a tmux no está en el `PATH`.
+
+- **Example.** `` [↯/s.109.1.1] can't drive tmux: the shell binary `fish` is not installed ``
++ **Ejemplo.** `` [↯/s.109.1.1] can't drive tmux: the shell binary `fish` is not installed ``
+
+- **Resolution.** Install the shell, or name one that is present.
++ **Solución.** Instala la shell, o nombra una que esté presente.
+
+- ### `↯/s.109.1.2` — `SessionDied`
++ ### `↯/s.109.1.2` — `SessionDied`
+
+- The tmux session ended while the program was driving it.
++ La sesión de tmux terminó mientras el programa la controlaba.
+
+- **Example.** `[↯/s.109.1.2] can't drive tmux: the tmux session terminated unexpectedly`
++ **Ejemplo.** `[↯/s.109.1.2] can't drive tmux: the tmux session terminated unexpectedly`
+
+- **Resolution.** The session was killed, or the command inside it exited. Check the tmux server's own logs.
++ **Solución.** La sesión se mató, o la orden que contenía terminó. Consulta los propios registros del
++ servidor de tmux.
+
+- ### `↯/s.109.1.3` — `ExecFailed`
++ ### `↯/s.109.1.3` — `ExecFailed`
+
+- The `tmux` binary could not be executed at all.
++ El binario `tmux` no pudo ejecutarse en absoluto.
+
+- **Example.** `[↯/s.109.1.3] can't drive tmux: could not execute tmux`
++ **Ejemplo.** `[↯/s.109.1.3] can't drive tmux: could not execute tmux`
+
+- **Resolution.** Install tmux, or ensure it is on the `PATH` of the process.
++ **Solución.** Instala tmux, o asegúrate de que está en el `PATH` del proceso.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/exoskeleton/src/rig/exoskeleton.Tmux.scala`
++ - Código fuente: `lib/exoskeleton/src/rig/exoskeleton.Tmux.scala`

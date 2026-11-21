@@ -1,0 +1,14 @@
+orthant 1 language
+
+- Occasionally the question is not what the compiler *typed*, but what it *emitted*: whether a
+- combinator inlines away, or what a hot path compiles to. A classfile parses into typed methods
+- and instructions, and each instruction carries the state of the operand stack, reconstructed.
+- Bytes which are not a classfile raise a `Classfile.Error`:
++ Gelegentlich lautet die Frage nicht, was der Compiler *typisiert*, sondern was er *ausgegeben*
++ hat: ob sich ein Kombinator weginlinen lässt oder wozu ein heißer Pfad kompiliert. Eine
++ Classfile wird in typisierte Methoden und Instruktionen geparst, und jede Instruktion trägt den
++ rekonstruierten Zustand des Operandenstapels. Bytes, die keine Classfile sind, lösen einen
++ `Classfile.Error` aus:
+
+- val methods = safely(Classfile[Exit]).let(_.methods.map(_.name))
++ val methods = safely(Classfile[Exit]).let(_.methods.map(_.name))

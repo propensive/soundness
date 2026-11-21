@@ -1,0 +1,2236 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base ambience
++ base ambience
+
+- import soundness
++ import soundness
+
+- info   a program's surroundings — environment variables, system properties, directories, the platform — as typed contextual values
++ info   o entorno de um programa — variáveis de ambiente, propriedades do sistema, diretórios, a plataforma — como valores contextuais tipados
+
+- detail
++ detail
+
+-     _Ambience_ represents the things a program inherits from wherever it was started — its
+-     **environment variables**, the JVM's **system properties**, the **working directory**, a
+-     **temporary directory**, the **terminal**'s capabilities, the **operating system** and
+-     **processor** it runs on — as typed, contextual values, in place of the raw platform's
+-     nullable strings reached through global static calls.
++     _Ambience_ representa o que um programa herda do lugar onde foi iniciado — suas
++     **variáveis de ambiente**, as **propriedades do sistema** da JVM, o **diretório de trabalho**,
++     um **diretório temporário**, as capacidades do **terminal**, o **sistema operacional** e o
++     **processador** em que roda — como valores contextuais tipados, em vez das strings anuláveis
++     da plataforma crua, acessadas por chamadas estáticas globais.
+
+-     Each source is a small trait: an `Environment` answers a variable's name with its optional
+-     text, a `System` answers a property's name, a `WorkingDirectory` and a `TemporaryDirectory`
+-     each name one directory. A method which reads from one takes it as a `using` parameter, so
+-     its dependence on its surroundings is visible in its signature, and a test, a sandbox or a
+-     daemon serving many shells can supply a different one. Reading is typed: a variable is read
+-     as a member of `Environment` (`Environment.editor[Text]`, where the camel-case name becomes
+-     `EDITOR`), a property as a dotted member path of `System.properties`
+-     (`System.properties.user.home[Text]()`), and each decodes to the type asked for, raising
+-     `Environment.Error` or `Property.Error` when the value is not set.
++     Cada origem é um trait pequeno: um `Environment` responde ao nome de uma variável com seu texto
++     opcional, um `System` responde ao nome de uma propriedade, e um `WorkingDirectory` e um
++     `TemporaryDirectory` nomeiam, cada um, um diretório. Um método que lê de um deles o recebe como
++     parâmetro `using`, de modo que sua dependência do entorno fica visível na assinatura, e um
++     teste, um sandbox ou um daemon que atende a muitos shells pode fornecer outro. A leitura é
++     tipada: uma variável é lida como membro de `Environment` (`Environment.editor[Text]`, em que o
++     nome em camel case vira `EDITOR`), uma propriedade como um caminho de membros separados por
++     pontos de `System.properties` (`System.properties.user.home[Text]()`), e cada uma é decodificada
++     para o tipo pedido, lançando `Environment.Error` ou `Property.Error` quando o valor não está
++     definido.
+
+=     `Environment.Error` or `Property.Error` when the value is not set.
+=
+-     ```scala
++     ```scala
+
+=     `Environment.Error` or `Property.Error` when the value is not set.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import environments.javaBaseEnvironment
++     import environments.javaBaseEnvironment
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import systems.javaBaseSystem
++     import systems.javaBaseSystem
+
+-     val editor: Text = Environment.editor[Text]
++     val editor: Text = Environment.editor[Text]
+
+-     val columns: Int = Environment.columns[Int]
++     val columns: Int = Environment.columns[Int]
+
+-     val separator: Char = System.properties.file.separator[Char]()
++     val separator: Char = System.properties.file.separator[Char]()
+
+-     val platform: (Os, Architecture) = (System.os, System.architecture)
++     val platform: (Os, Architecture) = (System.os, System.architecture)
+
+=     val platform: (Os, Architecture) = (System.os, System.architecture)
+-     ```
++     ```
+
+-     The real environment and properties are never in scope by themselves: each is a given in
+-     a choice package, imported by name, because `import soundness.*` does not import givens.
+-     The packages are `environments` (`javaBaseEnvironment`, `emptyEnvironment`, and the daemon
+-     and WASI ones other libraries add), `systems` (`javaBaseSystem`, `emptySystem`),
+-     `workingDirectories`, `temporaryDirectories`, `termcaps` and `wasiApis`. An `Environment`
+-     is a single function from a name to an `Optional[Text]`, so one built for a block is a
+-     lambda, and `variables(name = value)` lays one variable over the environment in scope.
++     O ambiente e as propriedades reais nunca estão em escopo por si sós: cada um é um given em um
++     pacote de escolhas, importado pelo nome, porque `import soundness.*` não importa givens. Os
++     pacotes são `environments` (`javaBaseEnvironment`, `emptyEnvironment` e os de daemon e de WASI
++     que outras bibliotecas acrescentam), `systems` (`javaBaseSystem`, `emptySystem`),
++     `workingDirectories`, `temporaryDirectories`, `termcaps` e `wasiApis`. Um `Environment` é uma
++     única função de um nome para um `Optional[Text]`, então um ambiente construído para um bloco é
++     uma lambda, e `variables(name = value)` sobrepõe uma variável ao ambiente em escopo.
+
+-     On top of the raw sources, `Xdg` and `Directories` give the standard directories of the
+-     XDG base directory specification (and their Windows equivalents) as paths of any type, a
+-     `Configurator` reads an application's settings from properties and variables under one
+-     prefix, and `Searchpath` is the marker for a path plane which searches a list of
+-     directories, such as the XDG data and config directories.
++     Sobre as origens cruas, `Xdg` e `Directories` dão os diretórios padrão da especificação XDG
++     base directory (e seus equivalentes no Windows) como caminhos de qualquer tipo, um
++     `Configurator` lê as configurações de uma aplicação a partir de propriedades e variáveis sob um
++     prefixo, e `Searchpath` é o marcador de um plano de caminhos que faz busca em uma lista de
++     diretórios, como os diretórios XDG de dados e de configuração.
+
+-     The library has two source sets. `ambience.core` has everything above and compiles for
+-     the JVM, Scala.js and Scala Native, where the `javaBase…` givens read `java.lang.System`.
+-     `ambience.wasi` adds `environments.wasiEnvironment` and
+-     `workingDirectories.wasiWorkingDirectory`, which read the `wasi:cli/environment`
+-     interface of a Wasm component. Other libraries add to the choice packages: `ethereal`
+-     ships `environments.daemonEnvironment` and `workingDirectories.daemonClientWorkingDirectory`,
+-     and `exoskeleton` ships `environments.daemonClientEnvironment`.
++     A biblioteca tem dois source sets. `ambience.core` contém tudo o que foi dito acima e compila
++     para a JVM, Scala.js e Scala Native, onde os givens `javaBase…` leem `java.lang.System`.
++     `ambience.wasi` acrescenta `environments.wasiEnvironment` e
++     `workingDirectories.wasiWorkingDirectory`, que leem a interface `wasi:cli/environment` de um
++     componente Wasm. Outras bibliotecas acrescentam itens aos pacotes de escolhas: `ethereal`
++     fornece `environments.daemonEnvironment` e `workingDirectories.daemonClientWorkingDirectory`,
++     e `exoskeleton` fornece `environments.daemonClientEnvironment`.
+
+-     Everything is exported to the `soundness` umbrella, which has one consequence to know:
+-     `soundness.System` is this library's `System`, and shadows `java.lang.System` in any file
+-     which imports `soundness.*`. A bare `System.nanoTime`, `System.out` or `System.arraycopy`
+-     in such a file fails with _value nanoTime is not a member of object ambience.System_; write
+-     `java.lang.System.nanoTime`, or `import java.lang as jl` and `jl.System.nanoTime`.
++     Tudo é exportado para o guarda-chuva `soundness`, o que tem uma consequência a conhecer:
++     `soundness.System` é o `System` desta biblioteca e oculta `java.lang.System` em qualquer
++     arquivo que importe `soundness.*`. Um `System.nanoTime`, `System.out` ou `System.arraycopy`
++     sem qualificação em tal arquivo falha com _value nanoTime is not a member of object
++     ambience.System_; escreva `java.lang.System.nanoTime`, ou `import java.lang as jl` e
++     `jl.System.nanoTime`.
+
+- refer ambience.Environment
++ refer ambience.Environment
+
+- refer ambience.System
++ refer ambience.System
+
+- refer ambience.Property
++ refer ambience.Property
+
+- refer ambience.WorkingDirectory
++ refer ambience.WorkingDirectory
+
+- refer ambience.Xdg
++ refer ambience.Xdg
+
+- refer ambience.environments
++ refer ambience.environments
+
+- refer ambience.systems
++ refer ambience.systems
+
+- entry .Environment   the environment variables, as a contextual value read by typed member access
++ entry .Environment   as variáveis de ambiente, como um valor contextual lido por acesso tipado a membros
+
+= entry .Environment   the environment variables, as a contextual value read by typed member access
+-   detail
++   detail
+
+-       An `Environment` is the source of a program's environment variables: `#variable` answers
+-       a name with its text, or `Unset` if it is not defined, and `#entries` enumerates every
+-       variable where the environment can. The real one is `environments.javaBaseEnvironment`,
+-       imported by name; `environments.emptyEnvironment` defines nothing; and since the trait
+-       has a single abstract method, a lambda from name to `Optional[Text]` is an environment
+-       for a test or a block.
++       Um `Environment` é a origem das variáveis de ambiente de um programa: `#variable` responde a
++       um nome com seu texto, ou `Unset` se ela não estiver definida, e `#entries` enumera todas as
++       variáveis quando o ambiente consegue. O real é `environments.javaBaseEnvironment`, importado
++       pelo nome; `environments.emptyEnvironment` não define nada; e, como o trait tem um único
++       método abstrato, uma lambda de nome para `Optional[Text]` é um ambiente para um teste ou um
++       bloco.
+
+-       The companion is the way to read a variable. `Environment.editor[Text]` reads `EDITOR`:
+-       a member name in camel case becomes the conventional upper-snake-case variable name
+-       (`xdgConfigHome` is `XDG_CONFIG_HOME`), and the type argument says what the value
+-       should decode to, through a `Variable` instance for that name and type. `Variable`'s
+-       companion has instances for the well-known variables (`home`, `path`, `shell`, the XDG
+-       ones) typed as paths, `columns` as an `Int`, and a generic fallback for any name as
+-       `Text` or as any type `Decodable in Text`. A name which is not a valid identifier, or
+-       which is only known at runtime, is read with `Environment[Text](t"NAME")`.
++       O objeto companheiro é o meio de ler uma variável. `Environment.editor[Text]` lê `EDITOR`:
++       um nome de membro em camel case vira o nome convencional da variável em upper snake case
++       (`xdgConfigHome` é `XDG_CONFIG_HOME`), e o argumento de tipo diz para o que o valor deve ser
++       decodificado, por meio de uma instância de `Variable` para aquele nome e tipo. O companheiro
++       de `Variable` tem instâncias para as variáveis conhecidas (`home`, `path`, `shell`, as do
++       XDG) tipadas como caminhos, `columns` como `Int`, e um fallback genérico para qualquer nome
++       como `Text` ou como qualquer tipo `Decodable in Text`. Um nome que não é um identificador
++       válido, ou que só é conhecido em tempo de execução, é lido com `Environment[Text](t"NAME")`.
+
+=       which is only known at runtime, is read with `Environment[Text](t"NAME")`.
+=
+-       ```scala
++       ```scala
+
+=       which is only known at runtime, is read with `Environment[Text](t"NAME")`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       which is only known at runtime, is read with `Environment[Text](t"NAME")`.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       which is only known at runtime, is read with `Environment[Text](t"NAME")`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val lang: Text = Environment.lang[Text]
++       val lang: Text = Environment.lang[Text]
+
+-       val width: Int = Environment.columns[Int]
++       val width: Int = Environment.columns[Int]
+
+-       val custom: Text = Environment[Text](t"MY_SETTING")
++       val custom: Text = Environment[Text](t"MY_SETTING")
+
+=       val custom: Text = Environment[Text](t"MY_SETTING")
+-       ```
++       ```
+
+-       Both forms need an `Environment` in scope and raise `Environment.Error` when the variable
+-       is not defined; a `safely(…)` around the read turns a missing variable into `Unset`.
++       As duas formas precisam de um `Environment` em escopo e lançam `Environment.Error` quando a
++       variável não está definida; um `safely(…)` em volta da leitura transforma uma variável
++       ausente em `Unset`.
+
+-       The environment is a capability, so a block can run against a different one, and a given
+-       in a narrower scope wins:
++       O ambiente é uma capability, então um bloco pode rodar com outro, e um given em um escopo
++       mais estreito prevalece:
+
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative The JVM
++       alternative The JVM
+
+=       alternative The JVM
+-         code
++         code
+
+=       alternative The JVM
+=         code
+-             locally:
++             locally:
+
+=       alternative The JVM
+=         code
+=             locally:
+-               import environments.javaBaseEnvironment
++               import environments.javaBaseEnvironment
+
+-               safely(Environment.editor[Text])   // whatever EDITOR is in the shell which started the JVM
++               safely(Environment.editor[Text])   // whatever EDITOR is in the shell which started the JVM
+
+-       alternative Empty
++       alternative Empty
+
+=       alternative Empty
+-         code
++         code
+
+=       alternative Empty
+=         code
+-             locally:
++             locally:
+
+-               import environments.emptyEnvironment
++               import environments.emptyEnvironment
+
+-               safely(Environment.editor[Text])   // Unset
++               safely(Environment.editor[Text])   // Unset
+
+-       alternative For a test
++       alternative For a test
+
+=       alternative For a test
+-         code
++         code
+
+=       alternative For a test
+=         code
+-             locally:
++             locally:
+
+-               given Environment = name => if name == t"EDITOR" then t"vim" else Unset
++               given Environment = name => if name == t"EDITOR" then t"vim" else Unset
+
+-               safely(Environment.editor[Text])   // t"vim"
++               safely(Environment.editor[Text])   // t"vim"
+
+-       alternative Overlaid
++       alternative Overlaid
+
+=       alternative Overlaid
+-         code
++         code
+
+=       alternative Overlaid
+=         code
+-             locally:
++             locally:
+
+=       alternative Overlaid
+=         code
+=             locally:
+-               import environments.javaBaseEnvironment
++               import environments.javaBaseEnvironment
+
+-               variables(editor = t"nano"):
++               variables(editor = t"nano"):
+
+-                 safely(Environment.editor[Text])   // t"nano"; every other variable as before
++                 safely(Environment.editor[Text])   // t"nano"; every other variable as before
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       A resident daemon serves invocations from many shells, each with its own environment,
+-       and the JVM's global one belongs to whichever shell started the daemon: in a daemon the
+-       invocation's environment is `environments.daemonClientEnvironment` (from `exoskeleton`),
+-       and the launching one `environments.daemonEnvironment` (from `ethereal`).
++       Um daemon residente atende a invocações de muitos shells, cada um com seu próprio ambiente,
++       e o ambiente global da JVM pertence ao shell que iniciou o daemon: em um daemon, o ambiente
++       da invocação é `environments.daemonClientEnvironment` (de `exoskeleton`), e o de quem o
++       lançou é `environments.daemonEnvironment` (de `ethereal`).
+
+-       An `Environment` is `Findable`, so a `Path` can be resolved relative to it where a
+-       filesystem library offers that.
++       Um `Environment` é `Findable`, então um `Path` pode ser resolvido relativamente a ele onde
++       uma biblioteca de sistema de arquivos oferecer isso.
+
+-   refer ambience.Variable
++   refer ambience.Variable
+
+-   refer ambience.variables
++   refer ambience.variables
+
+-   refer ambience.environments
++   refer ambience.environments
+
+=   refer ambience.environments
+-   refer ambience.System
++   refer ambience.System
+
+-   entry .apply   reads a variable by its runtime name, decoded to the type asked for
+-       `Environment[Text](t"HOME")` reads the variable named by the text, through the
+-       `Variable[Label, T]` instance for the type (`Text`, or any type `Decodable in Text`), and
+-       raises `Environment.Error` if it is not defined. It needs an `Environment` in scope. This
+-       is the form for a name which is not known until runtime or which is not an identifier;
+-       a well-known variable is more simply a member access, `Environment.home[Text]`.
+-   entry .selectDynamic   the member-access form: `Environment.xdgConfigHome[Text]` reads `XDG_CONFIG_HOME`
+-       Any identifier is a member of `Environment`: the camel-case name is translated to
+-       upper-snake-case (`xdgConfigHome` to `XDG_CONFIG_HOME`, `term` to `TERM`) by the
+-       `Variable` instance's `defaultName`, the variable is read from the `Environment` in
+-       scope, and its text is decoded by the instance for the name and the type argument.
+-       `Environment.Error` is raised, through the `Tactic` in scope, when the variable is not
+-       defined. The type argument is usually needed: `Environment.home[Text]`, or
+-       `Environment.home[Path on Linux]` where the `Variable.home` instance reads a path of
+-       any type `Instantiable across Paths from Text`.
+-   entry .provided   an `Environment` from any `Environment.Provider` in scope
+-       A given in the companion, so it needs no import: wherever a `Provider` — such as a CLI
+-       invocation, which carries the environment it was called from — is a given, an
+-       `Environment` is summonable directly.
+-   entry .Provider   something which carries a canonical environment, such as a CLI invocation
++   entry .apply   lê uma variável pelo nome em tempo de execução, decodificada para o tipo pedido
++       `Environment[Text](t"HOME")` lê a variável nomeada pelo texto, por meio da instância
++       `Variable[Label, T]` para o tipo (`Text`, ou qualquer tipo `Decodable in Text`), e lança
++       `Environment.Error` se ela não estiver definida. Precisa de um `Environment` em escopo. Esta
++       é a forma para um nome que só se conhece em tempo de execução ou que não é um identificador;
++       uma variável conhecida é mais simplesmente um acesso a membro, `Environment.home[Text]`.
++   entry .selectDynamic   a forma de acesso a membro: `Environment.xdgConfigHome[Text]` lê `XDG_CONFIG_HOME`
++       Qualquer identificador é membro de `Environment`: o nome em camel case é traduzido para
++       upper snake case (`xdgConfigHome` para `XDG_CONFIG_HOME`, `term` para `TERM`) pelo
++       `defaultName` da instância de `Variable`, a variável é lida do `Environment` em escopo, e
++       seu texto é decodificado pela instância para o nome e o argumento de tipo.
++       `Environment.Error` é lançado, por meio da `Tactic` em escopo, quando a variável não está
++       definida. O argumento de tipo costuma ser necessário: `Environment.home[Text]`, ou
++       `Environment.home[Path on Linux]`, em que a instância `Variable.home` lê um caminho de
++       qualquer tipo `Instantiable across Paths from Text`.
++   entry .provided   um `Environment` a partir de qualquer `Environment.Provider` em escopo
++       Um given no companheiro, então dispensa import: onde quer que um `Provider` — como uma
++       invocação de CLI, que carrega o ambiente de onde foi chamada — seja um given, um
++       `Environment` pode ser convocado diretamente.
++   entry .Provider   algo que carrega um ambiente canônico, como uma invocação de CLI
+
+=   entry .Provider   something which carries a canonical environment, such as a CLI invocation
+-     detail
++     detail
+
+-         A trait with one member, `#environment`. A type which has an environment of its own
+-         (an invocation of a daemon, say) extends it, and `Environment.provided` makes that
+-         environment the one in scope wherever the provider is a given.
+-     entry #environment   the environment this provider carries
+-   entry .Error   raised when a variable which was read is not defined
++         Um trait com um único membro, `#environment`. Um tipo que tem um ambiente próprio (uma
++         invocação de um daemon, por exemplo) o estende, e `Environment.provided` torna esse
++         ambiente o que está em escopo onde quer que o provedor seja um given.
++     entry #environment   o ambiente que este provedor carrega
++   entry .Error   lançado quando uma variável lida não está definida
+
+=   entry .Error   raised when a variable which was read is not defined
+-     detail
++     detail
+
+-         Error `↯/s.62.2`: _the environment variable `variable` was not defined_. Raised by
+-         `Environment.apply` and the member-access form through the `Tactic[Environment.Error]`
+-         in scope; `safely(Environment.editor[Text])` reads as `Unset` instead.
+-     entry #variable   the name of the variable which was not defined, as it was looked up (`EDITOR`)
+-   entry #variable   the value of a variable by name, or `Unset` if it is not defined
+-       The one abstract method: the raw text of the variable, undecoded. `Environment.apply`
+-       and the member-access form call this and decode the result.
+-   entry #entries   every variable, where the environment can enumerate them; `Unset` where it cannot
+-       The JVM's environment and the empty environment can list themselves; one built from a
+-       lambda cannot, and answers `Unset`. A child process started under an environment which
+-       can be enumerated is given exactly these variables, which is why `variables(…)` adds its
+-       overrides to the entries as well as to lookups.
++         Erro `↯/s.62.2`: _the environment variable `variable` was not defined_. Lançado por
++         `Environment.apply` e pela forma de acesso a membro por meio da `Tactic[Environment.Error]`
++         em escopo; `safely(Environment.editor[Text])` resulta em `Unset`.
++     entry #variable   o nome da variável que não estava definida, como foi buscado (`EDITOR`)
++   entry #variable   o valor de uma variável pelo nome, ou `Unset` se ela não estiver definida
++       O único método abstrato: o texto cru da variável, não decodificado. `Environment.apply` e a
++       forma de acesso a membro o chamam e decodificam o resultado.
++   entry #entries   todas as variáveis, onde o ambiente consegue enumerá-las; `Unset` onde não consegue
++       O ambiente da JVM e o ambiente vazio conseguem listar a si mesmos; um construído a partir de
++       uma lambda não consegue, e responde `Unset`. Um processo filho iniciado sob um ambiente
++       enumerável recebe exatamente essas variáveis, e é por isso que `variables(…)` acrescenta
++       suas substituições às entradas, além das buscas.
+
+- entry .Variable   how one environment variable is named and decoded, by its camel-case label
++ entry .Variable   como uma variável de ambiente é nomeada e decodificada, por seu rótulo em camel case
+
+= entry .Variable   how one environment variable is named and decoded, by its camel-case label
+-   detail
++   detail
+
+-       `Variable[alias, T]` is the typeclass behind `Environment.alias[T]`: for a label such as
+-       `"xdgConfigHome"` it knows the variable's real name (`#defaultName`, which is `#name` if
+-       the instance overrides it and otherwise the label in upper-snake-case) and how to
+-       `#read` its text as a `T`.
++       `Variable[alias, T]` é a classe de tipos por trás de `Environment.alias[T]`: para um rótulo
++       como `"xdgConfigHome"`, ela conhece o nome real da variável (`#defaultName`, que é `#name`
++       se a instância o sobrescreve e, caso contrário, o rótulo em upper snake case) e sabe como
++       ler (`#read`) seu texto como um `T`.
+
+-       The companion has instances for the well-known variables, each keyed by its label:
++       O companheiro tem instâncias para as variáveis conhecidas, cada uma indexada por seu rótulo:
+
+-       `home`, `mail`, `shell`, `oldpwd`, `windowid`, `editor`, `pager`, `manpager`,
++       `home`, `mail`, `shell`, `oldpwd`, `windowid`, `editor`, `pager`, `manpager`,
+
+-       `sshAuthSock`, `xdgDataHome`, `xdgConfigHome`, `xdgBinHome`, `xdgStateHome`,
++       `sshAuthSock`, `xdgDataHome`, `xdgConfigHome`, `xdgBinHome`, `xdgStateHome`,
+
+-       `xdgCacheHome` and `xdgRuntimeDir` read a single path of any type `Instantiable across
+-       Paths from Text`; `path`, `xdgDataDirs` and `xdgConfigDirs` read a list of paths, split
+-       on the `path.separator` property of the `System` in scope (or `:` where it has none);
+-       `columns` reads an `Int`; and `lang`, `display` and `term` read `Text`. From the
+-       `Protovariable` parent come the two fallbacks for any label: `generic` reads the text as
+-       it is, and `decoder` reads it as any type `Decodable in Text`.
++       `xdgCacheHome` e `xdgRuntimeDir` leem um único caminho de qualquer tipo `Instantiable across
++       Paths from Text`; `path`, `xdgDataDirs` e `xdgConfigDirs` leem uma lista de caminhos,
++       separada pela propriedade `path.separator` do `System` em escopo (ou por `:` onde ele não a
++       tem); `columns` lê um `Int`; e `lang`, `display` e `term` leem `Text`. Do pai
++       `Protovariable` vêm os dois fallbacks para qualquer rótulo: `generic` lê o texto como está,
++       e `decoder` o lê como qualquer tipo `Decodable in Text`.
+
+=       it is, and `decoder` reads it as any type `Decodable in Text`.
+=
+-       ```scala
++       ```scala
+
+=       it is, and `decoder` reads it as any type `Decodable in Text`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       it is, and `decoder` reads it as any type `Decodable in Text`.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       it is, and `decoder` reads it as any type `Decodable in Text`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       import environments.javaBaseEnvironment
+=       import pathInterfaces.pathOnLinux
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val home: Path on Linux = Environment.home[Path on Linux]
++       val home: Path on Linux = Environment.home[Path on Linux]
+
+-       val searchpath: List[Path on Linux] = Environment.path[List[Path on Linux]]
++       val searchpath: List[Path on Linux] = Environment.path[List[Path on Linux]]
+
+-       summon[Variable["xdgDataHome", Text]].defaultName   // t"XDG_DATA_HOME"
++       summon[Variable["xdgDataHome", Text]].defaultName   // t"XDG_DATA_HOME"
+
+=       summon[Variable["xdgDataHome", Text]].defaultName   // t"XDG_DATA_HOME"
+-       ```
++       ```
+
+-       A program may declare its own instance for a variable, as a given `Variable["myVar",
+-       MyType]`, and `Environment.myVar[MyType]` reads it.
++       Um programa pode declarar sua própria instância para uma variável, como um given
++       `Variable["myVar", MyType]`, e `Environment.myVar[MyType]` a lê.
+
+=       MyType]`, and `Environment.myVar[MyType]` reads it.
+-   refer ambience.Environment
++   refer ambience.Environment
+
+-   refer ambience.Protovariable
++   refer ambience.Protovariable
+
+-   entry .path   `PATH`, as a list of paths split on the platform's path separator
+-       Needs a `System` for the `path.separator` property, falling back to `:`.
+-   entry .xdgDataDirs   `XDG_DATA_DIRS`, as a list of paths
+-   entry .xdgConfigDirs   `XDG_CONFIG_DIRS`, as a list of paths
+-   entry .xdgDataHome   `XDG_DATA_HOME`, as a path
+-   entry .xdgConfigHome   `XDG_CONFIG_HOME`, as a path
+-   entry .xdgBinHome   `XDG_BIN_HOME`, as a path
+-   entry .xdgStateHome   `XDG_STATE_HOME`, as a path
+-   entry .xdgCacheHome   `XDG_CACHE_HOME`, as a path
+-   entry .xdgRuntimeDir   `XDG_RUNTIME_DIR`, as a path
+-   entry .home   `HOME`, as a path
+-   entry .mail   `MAIL`, as a path
+-   entry .shell   `SHELL`, as a path
+-   entry .oldpwd   `OLDPWD`, as a path
+-   entry .windowid   `WINDOWID`, as a path
+-   entry .editor   `EDITOR`, as a path
+-   entry .pager   `PAGER`, as a path
+-   entry .manpager   `MANPAGER`, as a path
+-   entry .sshAuthSock   `SSH_AUTH_SOCK`, as a path
+-   entry .columns   `COLUMNS`, as an `Int`
+-   entry .lang   `LANG`, as text
+-   entry .display   `DISPLAY`, as text
+-   entry .term   `TERM`, as text
+-   entry #defaultName   the variable's real name: `#name` if set, otherwise the label in upper-snake-case
+-       `"xdgDataHome"` becomes `XDG_DATA_HOME` and `"term"` becomes `TERM`.
+-   entry #name   an explicit variable name, overriding the derived one; `Unset` by default
+-   entry #read   decodes the variable's text to the instance's type
++   entry .path   `PATH`, como uma lista de caminhos separada pelo separador de caminhos da plataforma
++       Precisa de um `System` para a propriedade `path.separator`, recorrendo a `:`.
++   entry .xdgDataDirs   `XDG_DATA_DIRS`, como uma lista de caminhos
++   entry .xdgConfigDirs   `XDG_CONFIG_DIRS`, como uma lista de caminhos
++   entry .xdgDataHome   `XDG_DATA_HOME`, como um caminho
++   entry .xdgConfigHome   `XDG_CONFIG_HOME`, como um caminho
++   entry .xdgBinHome   `XDG_BIN_HOME`, como um caminho
++   entry .xdgStateHome   `XDG_STATE_HOME`, como um caminho
++   entry .xdgCacheHome   `XDG_CACHE_HOME`, como um caminho
++   entry .xdgRuntimeDir   `XDG_RUNTIME_DIR`, como um caminho
++   entry .home   `HOME`, como um caminho
++   entry .mail   `MAIL`, como um caminho
++   entry .shell   `SHELL`, como um caminho
++   entry .oldpwd   `OLDPWD`, como um caminho
++   entry .windowid   `WINDOWID`, como um caminho
++   entry .editor   `EDITOR`, como um caminho
++   entry .pager   `PAGER`, como um caminho
++   entry .manpager   `MANPAGER`, como um caminho
++   entry .sshAuthSock   `SSH_AUTH_SOCK`, como um caminho
++   entry .columns   `COLUMNS`, como um `Int`
++   entry .lang   `LANG`, como texto
++   entry .display   `DISPLAY`, como texto
++   entry .term   `TERM`, como texto
++   entry #defaultName   o nome real da variável: `#name`, se definido, ou então o rótulo em upper snake case
++       `"xdgDataHome"` vira `XDG_DATA_HOME` e `"term"` vira `TERM`.
++   entry #name   um nome explícito de variável, que substitui o derivado; `Unset` por padrão
++   entry #read   decodifica o texto da variável para o tipo da instância
+
+- entry .Protovariable   the fallback `Variable` instances for any label: as text, or as any decodable type
++ entry .Protovariable   as instâncias de `Variable` de fallback para qualquer rótulo: como texto, ou como qualquer tipo decodificável
+
+= entry .Protovariable   the fallback `Variable` instances for any label: as text, or as any decodable type
+-   detail
++   detail
+
+-       The parent of the `Variable` companion, holding the two instances which apply to every
+-       label, at lower priority than the named ones in `Variable` itself: so
+-       `Environment.anything[Text]` reads any variable as text, and `Environment.anything[Int]`
+-       decodes it with the `Int is Decodable in Text` instance. Not normally referred to
+-       directly.
+-   entry #generic   any variable, as its raw text
+-   entry #decoder   any variable, decoded to a type which is `Decodable in Text`
++       O pai do companheiro de `Variable`, que guarda as duas instâncias aplicáveis a qualquer
++       rótulo, com prioridade menor que a das instâncias nomeadas no próprio `Variable`: assim,
++       `Environment.anything[Text]` lê qualquer variável como texto, e `Environment.anything[Int]`
++       a decodifica com a instância `Int is Decodable in Text`. Normalmente não é referido
++       diretamente.
++   entry #generic   qualquer variável, como seu texto cru
++   entry #decoder   qualquer variável, decodificada para um tipo que é `Decodable in Text`
+
+- entry .variables   runs a block with named variables laid over the environment in scope
++ entry .variables   executa um bloco com variáveis nomeadas sobrepostas ao ambiente em escopo
+
+= entry .variables   runs a block with named variables laid over the environment in scope
+-   detail
++   detail
+
+-       `variables(name = value, …)(block)` names each variable in camel case and sets it in the
+-       conventional upper-snake-case form — `gitIndexFile` is `GIT_INDEX_FILE` — on top of the
+-       `Environment` in scope, for the duration of the block, which takes the new environment as
+-       a context parameter. Lookups of other names fall through to the outer environment, and
+-       the overrides are added to `Environment#entries` too, so a subprocess started within the
+-       block inherits them.
++       `variables(name = value, …)(block)` nomeia cada variável em camel case e a define na forma
++       convencional em upper snake case — `gitIndexFile` é `GIT_INDEX_FILE` — sobre o
++       `Environment` em escopo, durante o bloco, que recebe o novo ambiente como parâmetro de
++       contexto. As buscas por outros nomes recaem no ambiente externo, e as substituições também
++       são acrescentadas a `Environment#entries`, de modo que um subprocesso iniciado dentro do
++       bloco as herda.
+
+=       block inherits them.
+=
+-       ```scala
++       ```scala
+
+=       block inherits them.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       block inherits them.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       block inherits them.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       variables(gitIndexFile = t"/tmp/index", home = t"/home/juliet"):
++       variables(gitIndexFile = t"/tmp/index", home = t"/home/juliet"):
+
+-         (Environment.gitIndexFile[Text], Environment.home[Text])   // (t"/tmp/index", t"/home/juliet")
++         (Environment.gitIndexFile[Text], Environment.home[Text])   // (t"/tmp/index", t"/home/juliet")
+
+=         (Environment.gitIndexFile[Text], Environment.home[Text])   // (t"/tmp/index", t"/home/juliet")
+-       ```
++       ```
+
+-       The values are `Text`; an outer `Environment` is required.
+-   entry .applyDynamicNamed   the named-argument application behind `variables(name = value)(block)`
+-       Not called by name: the compiler rewrites `variables(gitIndexFile = t"…")` to it. Each
+-       argument name is converted from camel case to upper snake case, and the block receives
+-       the extended `Environment` as a context parameter.
++       Os valores são `Text`; é necessário um `Environment` externo.
++   entry .applyDynamicNamed   a aplicação com argumentos nomeados por trás de `variables(name = value)(block)`
++       Não é chamado pelo nome: o compilador reescreve `variables(gitIndexFile = t"…")` para ele.
++       Cada nome de argumento é convertido de camel case para upper snake case, e o bloco recebe
++       o `Environment` estendido como parâmetro de contexto.
+
+- entry .System   the system properties, as a contextual value, and the platform read from them
++ entry .System   as propriedades do sistema, como um valor contextual, e a plataforma lida a partir delas
+
+= entry .System   the system properties, as a contextual value, and the platform read from them
+-   detail
++   detail
+
+-       A `System` answers a property's name with its text, or `Unset`; the JVM's own is
+-       `systems.javaBaseSystem`, imported by name, and `systems.emptySystem` defines nothing.
+-       A lambda from name to `Optional[Text]` is a `System` for a test.
++       Um `System` responde ao nome de uma propriedade com seu texto, ou `Unset`; o da própria JVM
++       é `systems.javaBaseSystem`, importado pelo nome, e `systems.emptySystem` não define nada.
++       Uma lambda de nome para `Optional[Text]` é um `System` para um teste.
+
+-       Properties are read through `.properties`, with the dotted name written as a path of
+-       members ending in an application whose type argument says what the value decodes to:
+-       `System.properties.user.home[Text]()`, `System.properties.file.separator[Char]()`. The
+-       companion's `Property` instances know the types of the standard properties (`java.home`
+-       and `user.home` as paths, `os.arch` as an `Architecture`, `java.class.version` as an
+-       `Int`), and any other property reads as `Text` or as any type `Decodable in Text`. A
+-       property which is not defined raises `Property.Error`.
++       As propriedades são lidas por meio de `.properties`, com o nome pontuado escrito como um
++       caminho de membros que termina em uma aplicação cujo argumento de tipo diz para o que o
++       valor é decodificado: `System.properties.user.home[Text]()`,
++       `System.properties.file.separator[Char]()`. As instâncias de `Property` do companheiro
++       conhecem os tipos das propriedades padrão (`java.home` e `user.home` como caminhos,
++       `os.arch` como `Architecture`, `java.class.version` como `Int`), e qualquer outra
++       propriedade é lida como `Text` ou como qualquer tipo `Decodable in Text`. Uma propriedade
++       não definida lança `Property.Error`.
+
+=       property which is not defined raises `Property.Error`.
+=
+-       ```scala
++       ```scala
+
+=       property which is not defined raises `Property.Error`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       val user: Text = System.properties.user.name[Text]()
++       val user: Text = System.properties.user.name[Text]()
+
+-       val tmp: Text = System.properties.java.io.tmpdir[Text]()
++       val tmp: Text = System.properties.java.io.tmpdir[Text]()
+
+-       val os: Os = System.os
++       val os: Os = System.os
+
+-       val arch: Architecture = System.architecture
++       val arch: Architecture = System.architecture
+
+=       val arch: Architecture = System.architecture
+-       ```
++       ```
+
+-       Properties and environment variables are alike in being textual key/value data, and
+-       differ in where they come from: a property is passed as a `-D` argument to the JVM and
+-       named in dotted lower case, a variable is inherited from the shell and named in upper
+-       snake case. Each is decoded at the point of reading rather than passed inward as text.
++       Propriedades e variáveis de ambiente se parecem por serem dados textuais de chave e valor, e
++       diferem na origem: uma propriedade é passada à JVM como argumento `-D` e nomeada em
++       minúsculas separadas por pontos; uma variável é herdada do shell e nomeada em upper snake
++       case. Cada uma é decodificada no ponto de leitura, em vez de ser repassada adiante como
++       texto.
+
+-       In a file which imports `soundness.*`, this `System` shadows `java.lang.System`: write
+-       `java.lang.System.nanoTime` for the Java one.
++       Em um arquivo que importa `soundness.*`, este `System` oculta `java.lang.System`: escreva
++       `java.lang.System.nanoTime` para o do Java.
+
+-   refer ambience.Property
++   refer ambience.Property
+
+-   refer ambience.systems
++   refer ambience.systems
+
+=   refer ambience.systems
+-   refer ambience.Os
++   refer ambience.Os
+
+=   refer ambience.Os
+-   refer ambience.Architecture
++   refer ambience.Architecture
+
+-   entry .os   the running operating system, decoded from the `os.name` property
+-       `System.os` reads `os.name` from the `System` in scope and decodes it as an `Os`, so a
+-       program matches on `Os.MacOs` rather than on the many spellings the property takes. It
+-       panics, rather than raising, if the property is not defined, as the typed property reads
+-       do; a lenient check is `system(t"os.name").let(_.as[Os])`.
+-   entry .architecture   the running processor architecture, decoded from the `os.arch` property
+-       `System.architecture` reads `os.arch` and decodes it as an `Architecture`, `Arm(64)` for
+-       `aarch64` or `arm64`. Panics if the property is not defined.
+-   entry .properties   the root of the dotted-name path for reading a property
++   entry .os   o sistema operacional em execução, decodificado da propriedade `os.name`
++       `System.os` lê `os.name` do `System` em escopo e o decodifica como `Os`, de modo que um
++       programa casa com `Os.MacOs` em vez de com as muitas grafias que a propriedade assume.
++       Entra em pânico, em vez de lançar um erro, se a propriedade não estiver definida, como fazem
++       as leituras tipadas de propriedades; uma verificação tolerante é
++       `system(t"os.name").let(_.as[Os])`.
++   entry .architecture   a arquitetura do processador em execução, decodificada da propriedade `os.arch`
++       `System.architecture` lê `os.arch` e o decodifica como `Architecture`, `Arm(64)` para
++       `aarch64` ou `arm64`. Entra em pânico se a propriedade não estiver definida.
++   entry .properties   a raiz do caminho de nome pontuado para ler uma propriedade
+
+=   entry .properties   the root of the dotted-name path for reading a property
+-     detail
++     detail
+
+-         `System.properties.a.b.c[T]()` reads the property `a.b.c`: each member access extends
+-         a `Property.Access` with one more segment, and the final application reads the
+-         property from the `System` in scope through the `Property` instance for that name and
+-         type. `System.properties[T](t"a.b.c")` reads a property by its runtime name.
++         `System.properties.a.b.c[T]()` lê a propriedade `a.b.c`: cada acesso a membro estende um
++         `Property.Access` com mais um segmento, e a aplicação final lê a propriedade do `System`
++         em escopo por meio da instância de `Property` para aquele nome e tipo.
++         `System.properties[T](t"a.b.c")` lê uma propriedade pelo nome em tempo de execução.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         import systems.javaBaseSystem
++         import systems.javaBaseSystem
+
+-         System.properties.java.version[Text]()
++         System.properties.java.version[Text]()
+
+-         System.properties.path.separator[Char]()
++         System.properties.path.separator[Char]()
+
+-         System.properties[Text](t"java.vendor")
++         System.properties[Text](t"java.vendor")
+
+-         ```
++         ```
+
+-     entry .apply   reads a property by its runtime name, decoded to the type asked for
+-         Needs a `System`, and a `Property` instance for the type: `Text`, or any type
+-         `Decodable in Text`. Raises `Property.Error` if the property is not defined.
+-     entry .selectDynamic   begins a dotted property name: `System.properties.user` is a `Property.Access["user"]`
+-   entry #apply   the value of a property by name, or `Unset` if it is not defined
+-       The one abstract method, the raw text. The typed reads call this and decode the result.
++     entry .apply   lê uma propriedade pelo nome em tempo de execução, decodificada para o tipo pedido
++         Precisa de um `System` e de uma instância de `Property` para o tipo: `Text`, ou qualquer
++         tipo `Decodable in Text`. Lança `Property.Error` se a propriedade não estiver definida.
++     entry .selectDynamic   inicia um nome de propriedade pontuado: `System.properties.user` é um `Property.Access["user"]`
++   entry #apply   o valor de uma propriedade pelo nome, ou `Unset` se ela não estiver definida
++       O único método abstrato, o texto cru. As leituras tipadas o chamam e decodificam o
++       resultado.
+
+- entry .Property   how one system property, by its dotted name, is decoded to a type
++ entry .Property   como uma propriedade do sistema, por seu nome pontuado, é decodificada para um tipo
+
+= entry .Property   how one system property, by its dotted name, is decoded to a type
+-   detail
++   detail
+
+-       `name is Property of T` is the typeclass behind `System.properties.<name>[T]()`: for the
+-       literal property name it knows how to `#read` the optional text as a `T`, and what to do
+-       when the property is missing. The companion has instances for the standard JVM
+-       properties, so each reads as its natural type: `java.home`, `user.home` and `user.dir`
+-       as a path of any type `Instantiable across Paths from Text`; `file.separator` and
+-       `path.separator` as a `Char`; `os.arch` as an `Architecture`; `java.class.version` as an
+-       `Int` (`65` for Java 21); and `java.version`, `java.vendor`, `java.vendor.url`,
+-       `java.runtime.version`, `line.separator`, `user.name`, `os.name` and `os.version` as
+-       `Text`. Any other property reads as `Text` (`.generic`) or as any type `Decodable in
+-       Text` (`.decoder`), each raising `Property.Error` through the `Tactic` in scope if it is
+-       not defined.
++       `name is Property of T` é a classe de tipos por trás de `System.properties.<name>[T]()`:
++       para o nome literal da propriedade, ela sabe como ler (`#read`) o texto opcional como um `T`
++       e o que fazer quando a propriedade falta. O companheiro tem instâncias para as propriedades
++       padrão da JVM, de modo que cada uma é lida como seu tipo natural: `java.home`, `user.home` e
++       `user.dir` como um caminho de qualquer tipo `Instantiable across Paths from Text`;
++       `file.separator` e `path.separator` como `Char`; `os.arch` como `Architecture`;
++       `java.class.version` como `Int` (`65` para o Java 21); e `java.version`, `java.vendor`,
++       `java.vendor.url`, `java.runtime.version`, `line.separator`, `user.name`, `os.name` e
++       `os.version` como `Text`. Qualquer outra propriedade é lida como `Text` (`.generic`) ou como
++       qualquer tipo `Decodable in Text` (`.decoder`), e cada uma lança `Property.Error` por meio
++       da `Tactic` em escopo se não estiver definida.
+
+-       The standard instances with a fixed type panic rather than raise on a missing property,
+-       since a JVM always defines them; the generic ones, and `javaRuntimeVersion` and
+-       `javaClassVersion`, need a `Tactic[Property.Error]`.
++       As instâncias padrão de tipo fixo entram em pânico, em vez de lançar um erro, quando a
++       propriedade falta, já que uma JVM sempre as define; as genéricas, e `javaRuntimeVersion` e
++       `javaClassVersion`, precisam de uma `Tactic[Property.Error]`.
+
+=       `javaClassVersion`, need a `Tactic[Property.Error]`.
+=
+-       ```scala
++       ```scala
+
+=       `javaClassVersion`, need a `Tactic[Property.Error]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `javaClassVersion`, need a `Tactic[Property.Error]`.
+=
+=       ```scala
+=       import soundness.*
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       import soundness.*
+=       import pathInterfaces.pathOnLinux
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import pathInterfaces.pathOnLinux
+=       import strategies.throwUnsafely
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       val home: Path on Linux = System.properties.user.home[Path on Linux]()
++       val home: Path on Linux = System.properties.user.home[Path on Linux]()
+
+-       val classVersion: Int = System.properties.java.`class`.version[Int]()
++       val classVersion: Int = System.properties.java.`class`.version[Int]()
+
+-       val custom: Int = System.properties.myapp.port[Int]()
++       val custom: Int = System.properties.myapp.port[Int]()
+
+=       val custom: Int = System.properties.myapp.port[Int]()
+-       ```
++       ```
+
+-       A property name which is a Scala keyword, such as `class` in `java.class.path`, is
+-       written in backticks.
++       Um nome de propriedade que é palavra-chave de Scala, como `class` em `java.class.path`, é
++       escrito entre crases.
+
+=       written in backticks.
+-   refer ambience.System
++   refer ambience.System
+
+-   entry .apply   makes a `Property` instance from a function on the property's text
+-       `Property[name, T](text => …)` is the instance which decodes a defined property with the
+-       function and panics if it is undefined; it is how the companion's fixed-type instances
+-       are written, and how a program declares the type of a property of its own.
+-   entry .generic   any property, as its raw text; raises `Property.Error` if undefined
+-   entry .decoder   any property, decoded to a type which is `Decodable in Text`; raises `Property.Error` if undefined
+-   entry .javaHome   `java.home`, as a path of any type
+-   entry .javaVersion   `java.version`, as text
+-   entry .javaVendor   `java.vendor`, as text
+-   entry .javaVendorUrl   `java.vendor.url`, as text
+-   entry .javaRuntimeVersion   `java.runtime.version`, as text (`21.0.2+13-LTS`); raises `Property.Error` if undefined
+-   entry .javaClassVersion   `java.class.version`, as the major class-file version (`65` for Java 21)
+-       The property is a decimal such as `65.0`; its integer part is what is wanted. Raises
+-       `Property.Error` if the property is undefined or does not parse.
+-   entry .fileSeparator   `file.separator`, as a `Char`
+-   entry .pathSeparator   `path.separator`, as a `Char`
+-   entry .lineSeparator   `line.separator`, as text
+-   entry .userName   `user.name`, as text
+-   entry .userHome   `user.home`, as a path of any type
+-   entry .userDir   `user.dir`, as a path of any type
+-   entry .osName   `os.name`, as text; `System.os` decodes it as an `Os`
+-   entry .osVersion   `os.version`, as text
+-   entry .osArch   `os.arch`, as an `Architecture`
+-   entry .Access   a partly-written dotted property name, extended by member access and read by application
++   entry .apply   cria uma instância de `Property` a partir de uma função sobre o texto da propriedade
++       `Property[name, T](text => …)` é a instância que decodifica uma propriedade definida com a
++       função e entra em pânico se ela não estiver definida; é assim que as instâncias de tipo fixo
++       do companheiro são escritas, e como um programa declara o tipo de uma propriedade própria.
++   entry .generic   qualquer propriedade, como seu texto cru; lança `Property.Error` se não estiver definida
++   entry .decoder   qualquer propriedade, decodificada para um tipo que é `Decodable in Text`; lança `Property.Error` se não estiver definida
++   entry .javaHome   `java.home`, como um caminho de qualquer tipo
++   entry .javaVersion   `java.version`, como texto
++   entry .javaVendor   `java.vendor`, como texto
++   entry .javaVendorUrl   `java.vendor.url`, como texto
++   entry .javaRuntimeVersion   `java.runtime.version`, como texto (`21.0.2+13-LTS`); lança `Property.Error` se não estiver definida
++   entry .javaClassVersion   `java.class.version`, como a versão maior do formato de class file (`65` para o Java 21)
++       A propriedade é um decimal como `65.0`; o que se quer é sua parte inteira. Lança
++       `Property.Error` se a propriedade não estiver definida ou não puder ser analisada.
++   entry .fileSeparator   `file.separator`, como `Char`
++   entry .pathSeparator   `path.separator`, como `Char`
++   entry .lineSeparator   `line.separator`, como texto
++   entry .userName   `user.name`, como texto
++   entry .userHome   `user.home`, como um caminho de qualquer tipo
++   entry .userDir   `user.dir`, como um caminho de qualquer tipo
++   entry .osName   `os.name`, como texto; `System.os` o decodifica como `Os`
++   entry .osVersion   `os.version`, como texto
++   entry .osArch   `os.arch`, como `Architecture`
++   entry .Access   um nome de propriedade pontuado escrito em parte, estendido por acesso a membro e lido por aplicação
+
+=   entry .Access   a partly-written dotted property name, extended by member access and read by application
+-     detail
++     detail
+
+-         `System.properties.user` is a `Property.Access["user"]`; `.home` extends it to
+-         `Property.Access["user.home"]`, and `[Text]()` reads it. The name is carried in the
+-         type, so the `Property` instance is chosen by the full dotted name at compile time.
+-     entry #selectDynamic   extends the name by one dotted segment
+-     entry #applyDynamic   extends the name by one segment and reads the property in a single step
+-     entry #property   the dotted property name written so far, as a string
+-     entry #apply   reads the named property from the `System` in scope, decoded to the type argument
+-   entry .Error   raised when a property which was read is not defined
++         `System.properties.user` é um `Property.Access["user"]`; `.home` o estende para
++         `Property.Access["user.home"]`, e `[Text]()` o lê. O nome é carregado no tipo, de modo
++         que a instância de `Property` é escolhida pelo nome pontuado completo em tempo de
++         compilação.
++     entry #selectDynamic   estende o nome com mais um segmento pontuado
++     entry #applyDynamic   estende o nome com mais um segmento e lê a propriedade em um único passo
++     entry #property   o nome pontuado da propriedade escrito até aqui, como string
++     entry #apply   lê a propriedade nomeada do `System` em escopo, decodificada para o argumento de tipo
++   entry .Error   lançado quando uma propriedade lida não está definida
+
+=   entry .Error   raised when a property which was read is not defined
+-     detail
++     detail
+
+-         Error `↯/s.62.1`: _the system property `property` was not defined_. Raised by the `generic`
+-         and `decoder` instances, and by `javaRuntimeVersion` and `javaClassVersion`, through
+-         the `Tactic[Property.Error]` in scope; also by other libraries which read a property
+-         they need, such as `LocalClasspath` reading `path.separator`.
+-     entry #property   the dotted name of the property which was not defined
+-   entry #read   decodes a property's optional text, given its name, to the instance's type
+-   entry #Self   the property's name, as a literal string type
++         Erro `↯/s.62.1`: _the system property `property` was not defined_. Lançado pelas
++         instâncias `generic` e `decoder`, e por `javaRuntimeVersion` e `javaClassVersion`, por
++         meio da `Tactic[Property.Error]` em escopo; também por outras bibliotecas que leem uma
++         propriedade de que precisam, como `LocalClasspath` ao ler `path.separator`.
++     entry #property   o nome pontuado da propriedade que não estava definida
++   entry #read   decodifica o texto opcional de uma propriedade, dado seu nome, para o tipo da instância
++   entry #Self   o nome da propriedade, como um tipo string literal
+
+- entry .Os   the operating system a program runs on, as a value decoded from `os.name`
++ entry .Os   o sistema operacional em que um programa roda, como um valor decodificado de `os.name`
+
+= entry .Os   the operating system a program runs on, as a value decoded from `os.name`
+-   detail
++   detail
+
+-       An enum of the operating systems the JVM reports — `Linux`, `MacOs`, `Windows`,
+-       `FreeBsd`, `OpenBsd`, `NetBsd`, `Solaris`, `Aix` — and `Other(name)` for one it does not
+-       know, keeping the name. `System.os` reads the running one from the `System` in scope,
+-       and `text.as[Os]` decodes any `os.name` text, matching on the lowercased prefix so that
+-       `Mac OS X`, `Windows Server 2022` and `SunOS` each decode as expected.
++       Um enum dos sistemas operacionais que a JVM informa — `Linux`, `MacOs`, `Windows`,
++       `FreeBsd`, `OpenBsd`, `NetBsd`, `Solaris`, `Aix` — e `Other(name)` para um que ele não
++       conhece, guardando o nome. `System.os` lê o que está em execução a partir do `System` em
++       escopo, e `text.as[Os]` decodifica qualquer texto de `os.name`, casando com o prefixo em
++       minúsculas, de modo que `Mac OS X`, `Windows Server 2022` e `SunOS` são decodificados como
++       se espera.
+
+=       `Mac OS X`, `Windows Server 2022` and `SunOS` each decode as expected.
+=
+-       ```scala
++       ```scala
+
+=       `Mac OS X`, `Windows Server 2022` and `SunOS` each decode as expected.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Mac OS X`, `Windows Server 2022` and `SunOS` each decode as expected.
+=
+=       ```scala
+=       import soundness.*
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       t"Mac OS X".as[Os]              // Os.MacOs
++       t"Mac OS X".as[Os]              // Os.MacOs
+
+-       t"Windows Server 2022".as[Os]   // Os.Windows
++       t"Windows Server 2022".as[Os]   // Os.Windows
+
+-       t"Plan 9".as[Os]                // Os.Other(t"Plan 9")
++       t"Plan 9".as[Os]                // Os.Other(t"Plan 9")
+
+-       val asset: Optional[Text] = (System.os, System.architecture) match
++       val asset: Optional[Text] = (System.os, System.architecture) match
+
+-         case (Os.Linux, Architecture.X86(64)) => t"linux-x64"
++         case (Os.Linux, Architecture.X86(64)) => t"linux-x64"
+
+-         case (Os.MacOs, Architecture.Arm(64)) => t"macos-arm64"
++         case (Os.MacOs, Architecture.Arm(64)) => t"macos-arm64"
+
+-         case _                                => Unset
++         case _                                => Unset
+
+=         case _                                => Unset
+-       ```
++       ```
+
+-       `Os` is not the target of `Vm.intercept`; the virtual machine's events are intercepted
+-       through `Vm`.
++       `Os` não é o alvo de `Vm.intercept`; os eventos da máquina virtual são interceptados por
++       meio de `Vm`.
+
+=       through `Vm`.
+-   refer ambience.System
++   refer ambience.System
+
+=   refer ambience.System
+-   refer ambience.Architecture
++   refer ambience.Architecture
+
+-   entry .decodable   reads an `os.name` text as an `Os`, by its lowercased prefix
+-       `linux`; `mac` or `darwin`; `windows`; `freebsd`; `openbsd`; `netbsd`; `sunos` or
+-       `solaris`; `aix`; anything else is `Other(name)`. Decoding never fails.
++   entry .decodable   lê um texto de `os.name` como `Os`, pelo prefixo em minúsculas
++       `linux`; `mac` ou `darwin`; `windows`; `freebsd`; `openbsd`; `netbsd`; `sunos` ou
++       `solaris`; `aix`; qualquer outra coisa é `Other(name)`. A decodificação nunca falha.
+
+- entry .Architecture   the processor architecture, as a value decoded from `os.arch`
++ entry .Architecture   a arquitetura do processador, como um valor decodificado de `os.arch`
+
+= entry .Architecture   the processor architecture, as a value decoded from `os.arch`
+-   detail
++   detail
+
+-       An enum of processor families with their word size: `X86(32 | 64)`, `Arm(32 | 64)`,
+-       `Ppc(32 | 64, littleEndian)`, `Sparc(32 | 64)`, `Mips(32 | 64)`, `S390(31 | 64)`,
+-       `RiscV`, and `Other(name)` for one it does not know. `System.architecture` reads the
+-       running one from the `System` in scope, so code which chooses a native library or a code
+-       path by architecture matches on a value rather than on a string whose spelling varies by
+-       platform.
++       Um enum de famílias de processadores com seu tamanho de palavra: `X86(32 | 64)`,
++       `Arm(32 | 64)`, `Ppc(32 | 64, littleEndian)`, `Sparc(32 | 64)`, `Mips(32 | 64)`,
++       `S390(31 | 64)`, `RiscV`, e `Other(name)` para uma que ele não conhece.
++       `System.architecture` lê a que está em execução a partir do `System` em escopo, de modo que
++       o código que escolhe uma biblioteca nativa ou um caminho de execução pela arquitetura casa
++       com um valor, em vez de com uma string cuja grafia varia conforme a plataforma.
+
+=       platform.
+=
+-       ```scala
++       ```scala
+
+=       platform.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       t"amd64".as[Architecture]     // Architecture.X86(64)
++       t"amd64".as[Architecture]     // Architecture.X86(64)
+
+-       t"aarch64".as[Architecture]   // Architecture.Arm(64)
++       t"aarch64".as[Architecture]   // Architecture.Arm(64)
+
+-       t"ppc64le".as[Architecture]   // Architecture.Ppc(64, true)
++       t"ppc64le".as[Architecture]   // Architecture.Ppc(64, true)
+
+=       t"ppc64le".as[Architecture]   // Architecture.Ppc(64, true)
+-       ```
++       ```
+
+=       ```
+-   refer ambience.System
++   refer ambience.System
+
+=   refer ambience.System
+-   refer ambience.Os
++   refer ambience.Os
+
+-   entry .decodable   reads an `os.arch` text as an `Architecture`
+-       Decoding never fails; an unrecognised name is kept as `Other(name)`:
++   entry .decodable   lê um texto de `os.arch` como `Architecture`
++       A decodificação nunca falha; um nome não reconhecido é guardado como `Other(name)`:
+
+-       ```tabular
++       ```tabular
+
+-       column  `os.arch`
++       column  `os.arch`
+
+-       column  Architecture
++       column  Arquitetura
+
+-       row  `x86`, `i386`  `X86(32)`
++       row  `x86`, `i386`  `X86(32)`
+
+-       row  `x86_64`, `amd64`  `X86(64)`
++       row  `x86_64`, `amd64`  `X86(64)`
+
+-       row  `arm`  `Arm(32)`
++       row  `arm`  `Arm(32)`
+
+-       row  `aarch64`, `arm64`  `Arm(64)`
++       row  `aarch64`, `arm64`  `Arm(64)`
+
+-       row  `ppc`  `Ppc(32)`
++       row  `ppc`  `Ppc(32)`
+
+-       row  `ppc64`  `Ppc(64)`
++       row  `ppc64`  `Ppc(64)`
+
+-       row  `ppc64le`  `Ppc(64, true)`, little-endian
++       row  `ppc64le`  `Ppc(64, true)`, little-endian
+
+-       row  `sparc`  `Sparc(32)`
++       row  `sparc`  `Sparc(32)`
+
+-       row  `sparcv9`  `Sparc(64)`
++       row  `sparcv9`  `Sparc(64)`
+
+-       row  `mips`  `Mips(32)`
++       row  `mips`  `Mips(32)`
+
+-       row  `mips64`  `Mips(64)`
++       row  `mips64`  `Mips(64)`
+
+-       row  `riscv64`  `RiscV`
++       row  `riscv64`  `RiscV`
+
+-       row  `s390`  `S390(31)`
++       row  `s390`  `S390(31)`
+
+-       row  `s390x`  `S390(64)`
++       row  `s390x`  `S390(64)`
+
+-       row  any other name  `Other(name)`
++       row  qualquer outro nome  `Other(name)`
+
+=       row  any other name  `Other(name)`
+-       ```
++       ```
+
+- entry .Vm   the virtual machine the program runs in: the target of `Vm.intercept`
+-     An object with no members of its own. It is where the events the virtual machine raises —
+-     its shutdown, an uncaught exception, a garbage collection — are intercepted, through
+-     `Vm.intercept[Shutdown]`, `Vm.intercept[Fault]` and `Vm.intercept[GarbageCollection]` in
+-     the `parasite` library, which declares those events as interceptable on this target. Only
+-     the JVM provides the events today, but none of them is JVM-specific in principle, which is
+-     why the target is `Vm` and not the staging rig `Jvm`.
++ entry .Vm   a máquina virtual em que o programa roda: o alvo de `Vm.intercept`
++     Um objeto sem membros próprios. É onde os eventos que a máquina virtual gera — seu
++     desligamento, uma exceção não capturada, uma coleta de lixo — são interceptados, por meio de
++     `Vm.intercept[Shutdown]`, `Vm.intercept[Fault]` e `Vm.intercept[GarbageCollection]` na
++     biblioteca `parasite`, que declara esses eventos como interceptáveis neste alvo. Hoje só a
++     JVM fornece os eventos, mas nenhum deles é, em princípio, específico da JVM, e é por isso
++     que o alvo é `Vm` e não o rig de execução em estágios `Jvm`.
+
+=     why the target is `Vm` and not the staging rig `Jvm`.
+=
+-     ```scala
++     ```scala
+
+=     why the target is `Vm` and not the staging rig `Jvm`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     Vm.intercept[Shutdown]:
++     Vm.intercept[Shutdown]:
+
+-       ()   // runs as the virtual machine shuts down
++       ()   // runs as the virtual machine shuts down
+
+=       ()   // runs as the virtual machine shuts down
+-     ```
++     ```
+
+- entry .WorkingDirectory   the directory a program was launched in, as a contextual value
++ entry .WorkingDirectory   o diretório em que um programa foi lançado, como um valor contextual
+
+= entry .WorkingDirectory   the directory a program was launched in, as a contextual value
+-   detail
++   detail
+
+-       A `WorkingDirectory` names one directory, as `#directory()` text; a method which
+-       resolves a relative path against the working directory takes one as a `using`
+-       parameter, rather than reading `user.dir` from a global. The ones to import by name are
+-       in the `workingDirectories` package: `javaBaseWorkingDirectory` is the JVM's `user.dir`,
+-       `systemWorkingDirectory` reads `user.dir` from the `System` in scope,
+-       `wasiWorkingDirectory` a Wasm component's initial directory, and
+-       `daemonClientWorkingDirectory` (from `ethereal`) the directory each invocation of a
+-       daemon was made from. `WorkingDirectory(path)` makes one from any path value, and the
+-       top-level `workingDirectory[Path on Linux]` resolves the one in scope to a path type.
++       Um `WorkingDirectory` nomeia um diretório, como texto de `#directory()`; um método que
++       resolve um caminho relativo em relação ao diretório de trabalho recebe um como parâmetro
++       `using`, em vez de ler `user.dir` de um global. Os que se importam pelo nome estão no pacote
++       `workingDirectories`: `javaBaseWorkingDirectory` é o `user.dir` da JVM,
++       `systemWorkingDirectory` lê `user.dir` do `System` em escopo, `wasiWorkingDirectory` é o
++       diretório inicial de um componente Wasm, e `daemonClientWorkingDirectory` (de `ethereal`) é
++       o diretório a partir do qual cada invocação de um daemon foi feita.
++       `WorkingDirectory(path)` cria um a partir de qualquer valor de caminho, e o
++       `workingDirectory[Path on Linux]` de nível superior resolve o que está em escopo para um
++       tipo de caminho.
+
+=       top-level `workingDirectory[Path on Linux]` resolves the one in scope to a path type.
+=
+-       ```scala
++       ```scala
+
+=       top-level `workingDirectory[Path on Linux]` resolves the one in scope to a path type.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       top-level `workingDirectory[Path on Linux]` resolves the one in scope to a path type.
+=
+=       ```scala
+=       import soundness.*
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       import pathInterfaces.pathOnLinux
+-       import workingDirectories.javaBaseWorkingDirectory
++       import workingDirectories.javaBaseWorkingDirectory
+
+-       val cwd: Path on Linux = workingDirectory[Path on Linux]
++       val cwd: Path on Linux = workingDirectory[Path on Linux]
+
+-       val fixed: WorkingDirectory = WorkingDirectory(t"/tmp/work")
++       val fixed: WorkingDirectory = WorkingDirectory(t"/tmp/work")
+
+-       fixed.directory()   // t"/tmp/work"
++       fixed.directory()   // t"/tmp/work"
+
+=       fixed.directory()   // t"/tmp/work"
+-       ```
++       ```
+
+-   refer ambience.workingDirectories
++   refer ambience.workingDirectories
+
+-   refer ambience.workingDirectory
++   refer ambience.workingDirectory
+
+-   entry .apply   a working directory from any path type which is `Abstractable across Paths to Text`
+-   entry .provided   a `WorkingDirectory` from any `WorkingDirectory.Provider` in scope
+-       A given in the companion, so it needs no import: wherever a provider, such as a CLI
+-       invocation, is a given, its working directory is summonable directly.
+-   entry .Provider   something which carries a canonical working directory, such as a CLI invocation
++   entry .apply   um diretório de trabalho a partir de qualquer tipo de caminho que seja `Abstractable across Paths to Text`
++   entry .provided   um `WorkingDirectory` a partir de qualquer `WorkingDirectory.Provider` em escopo
++       Um given no companheiro, então dispensa import: onde quer que um provedor, como uma
++       invocação de CLI, seja um given, seu diretório de trabalho pode ser convocado diretamente.
++   entry .Provider   algo que carrega um diretório de trabalho canônico, como uma invocação de CLI
+
+=   entry .Provider   something which carries a canonical working directory, such as a CLI invocation
+-     detail
++     detail
+
+-         A trait with one member, `#workingDirectory`. Each client of a daemon has a working
+-         directory of its own, so the invocation type provides it, and `WorkingDirectory.provided`
+-         makes it the one in scope.
+-     entry #workingDirectory   the working directory this provider carries
+-   entry .Error   raised when a working directory is needed and there is none
++         Um trait com um único membro, `#workingDirectory`. Cada cliente de um daemon tem seu
++         próprio diretório de trabalho, então o tipo da invocação o fornece, e
++         `WorkingDirectory.provided` o torna o que está em escopo.
++     entry #workingDirectory   o diretório de trabalho que este provedor carrega
++   entry .Error   lançado quando um diretório de trabalho é necessário e não há nenhum
+
+=   entry .Error   raised when a working directory is needed and there is none
+-     detail
++     detail
+
+-         Error `↯/s.62.3`: _there is no working directory_. Raised by code which must resolve a
+-         relative path and has no `WorkingDirectory` to resolve it against, such as a daemon
+-         invocation whose client could not report one.
+-   entry #directory   the working directory, as text
++         Erro `↯/s.62.3`: _there is no working directory_. Lançado por código que precisa resolver
++         um caminho relativo e não tem um `WorkingDirectory` em relação ao qual resolvê-lo, como
++         uma invocação de daemon cujo cliente não conseguiu informar um.
++   entry #directory   o diretório de trabalho, como texto
+
+- entry .TemporaryDirectory   a directory for temporary files, as a contextual value
++ entry .TemporaryDirectory   um diretório para arquivos temporários, como um valor contextual
+
+= entry .TemporaryDirectory   a directory for temporary files, as a contextual value
+-   detail
++   detail
+
+-       A `TemporaryDirectory` names one directory as `#directory()` text, and `#path[T]`
+-       instantiates it as any path type. The ones to import by name are in the
+-       `temporaryDirectories` package: `javaBaseTemporaryDirectory` reads the JVM's
+-       `java.io.tmpdir`, `systemTemporaryDirectory` the same property from the `System` in
+-       scope, and `environmentTemporaryDirectory` the first of `TMPDIR`, `TMP` and `TEMP` from
+-       the `Environment` in scope. The top-level `temporaryDirectory[Path on Linux]` resolves
+-       the one in scope to a path type.
++       Um `TemporaryDirectory` nomeia um diretório como texto de `#directory()`, e `#path[T]` o
++       instancia como qualquer tipo de caminho. Os que se importam pelo nome estão no pacote
++       `temporaryDirectories`: `javaBaseTemporaryDirectory` lê o `java.io.tmpdir` da JVM,
++       `systemTemporaryDirectory` lê a mesma propriedade do `System` em escopo, e
++       `environmentTemporaryDirectory` lê a primeira de `TMPDIR`, `TMP` e `TEMP` do `Environment`
++       em escopo. O `temporaryDirectory[Path on Linux]` de nível superior resolve o que está em
++       escopo para um tipo de caminho.
+
+=       the one in scope to a path type.
+=
+-       ```scala
++       ```scala
+
+=       the one in scope to a path type.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       the one in scope to a path type.
+=
+=       ```scala
+=       import soundness.*
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       import pathInterfaces.pathOnLinux
+-       import temporaryDirectories.javaBaseTemporaryDirectory
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+-       val tmp: Path on Linux = temporaryDirectory[Path on Linux]
++       val tmp: Path on Linux = temporaryDirectory[Path on Linux]
+
+=       val tmp: Path on Linux = temporaryDirectory[Path on Linux]
+-       ```
++       ```
+
+-   refer ambience.temporaryDirectories
++   refer ambience.temporaryDirectories
+
+-   refer ambience.temporaryDirectory
++   refer ambience.temporaryDirectory
+
+-   entry #directory   the temporary directory, as text
+-   entry #path   the temporary directory as a path of any type `Instantiable across Paths from Text`
++   entry #directory   o diretório temporário, como texto
++   entry #path   o diretório temporário como um caminho de qualquer tipo `Instantiable across Paths from Text`
+
+- entry .workingDirectory   the `WorkingDirectory` in scope, resolved to a path type: `workingDirectory[Path on Linux]`
+-     Needs a `WorkingDirectory` and a path type which is `Representative of Paths`. The text
+-     is instantiated through the type's trusted instantiation where it has one — a working
+-     directory comes from the operating system, so it is not validated — and otherwise from
+-     plain text. The method is `inline`, so it can be expanded inside a daemon's `cli` block.
++ entry .workingDirectory   o `WorkingDirectory` em escopo, resolvido para um tipo de caminho: `workingDirectory[Path on Linux]`
++     Precisa de um `WorkingDirectory` e de um tipo de caminho que seja `Representative of Paths`.
++     O texto é instanciado pela instanciação confiável do tipo, quando ele tem uma — um diretório
++     de trabalho vem do sistema operacional, então não é validado — e, caso contrário, a partir de
++     texto simples. O método é `inline`, então pode ser expandido dentro do bloco `cli` de um
++     daemon.
+
+=     plain text. The method is `inline`, so it can be expanded inside a daemon's `cli` block.
+=
+-     ```scala
++     ```scala
+
+=     plain text. The method is `inline`, so it can be expanded inside a daemon's `cli` block.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     plain text. The method is `inline`, so it can be expanded inside a daemon's `cli` block.
+=
+=     ```scala
+=     import soundness.*
+-     import pathInterfaces.pathOnLinux
++     import pathInterfaces.pathOnLinux
+
+-     import workingDirectories.javaBaseWorkingDirectory
++     import workingDirectories.javaBaseWorkingDirectory
+
+-     workingDirectory[Path on Linux]
++     workingDirectory[Path on Linux]
+
+=     workingDirectory[Path on Linux]
+-     ```
++     ```
+
+- entry .temporaryDirectory   the `TemporaryDirectory` in scope, resolved to a path type: `temporaryDirectory[Path on Linux]`
+-     Needs a `TemporaryDirectory` and a path type which is `Representative of Paths`; the text
+-     is instantiated through the type's trusted instantiation, as `workingDirectory` does.
++ entry .temporaryDirectory   o `TemporaryDirectory` em escopo, resolvido para um tipo de caminho: `temporaryDirectory[Path on Linux]`
++     Precisa de um `TemporaryDirectory` e de um tipo de caminho que seja `Representative of
++     Paths`; o texto é instanciado pela instanciação confiável do tipo, como faz
++     `workingDirectory`.
+
+=     is instantiated through the type's trusted instantiation, as `workingDirectory` does.
+=
+-     ```scala
++     ```scala
+
+=     is instantiated through the type's trusted instantiation, as `workingDirectory` does.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     is instantiated through the type's trusted instantiation, as `workingDirectory` does.
+=
+=     ```scala
+=     import soundness.*
+-     import pathInterfaces.pathOnLinux
++     import pathInterfaces.pathOnLinux
+
+-     import temporaryDirectories.javaBaseTemporaryDirectory
++     import temporaryDirectories.javaBaseTemporaryDirectory
+
+-     temporaryDirectory[Path on Linux]
++     temporaryDirectory[Path on Linux]
+
+=     temporaryDirectory[Path on Linux]
+-     ```
++     ```
+
+- entry .Xdg   the XDG base directories, from the environment where set and the specification's defaults where not
++ entry .Xdg   os diretórios base do XDG, do ambiente quando definidos e dos padrões da especificação quando não
+
+= entry .Xdg   the XDG base directories, from the environment where set and the specification's defaults where not
+-   detail
++   detail
+
+-       The XDG base directory specification says where a program's data, configuration, cache
+-       and state belong, honouring the user's environment (`XDG_DATA_HOME`, `XDG_CONFIG_DIRS`,
+-       …) where it is set and falling back to the specification's defaults beneath the home
+-       directory (from the `user.home` property) where it is not. Each method takes the path
+-       type to return as a type argument, and needs an `Environment` and a `System` in scope.
+-       `Directories` is the same set of directories with the Windows locations substituted on
++       A especificação XDG base directory diz onde ficam os dados, a configuração, o cache e o
++       estado de um programa, respeitando o ambiente do usuário (`XDG_DATA_HOME`,
++       `XDG_CONFIG_DIRS`, …) quando definido e recorrendo aos padrões da especificação sob o
++       diretório home (da propriedade `user.home`) quando não. Cada método recebe como argumento de
++       tipo o tipo de caminho a retornar, e precisa de um `Environment` e de um `System` em escopo.
++       `Directories` é o mesmo conjunto de diretórios, com os locais do Windows no lugar deles no
+
+-       Windows.
++       Windows.
+
+=       Windows.
+=
+-       ```scala
++       ```scala
+
+=       Windows.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       Windows.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       Windows.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       Windows.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import pathInterfaces.pathOnLinux
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       Xdg.configHome[Path on Linux]   // $XDG_CONFIG_HOME, or ~/.config
++       Xdg.configHome[Path on Linux]   // $XDG_CONFIG_HOME, or ~/.config
+
+-       Xdg.cacheHome[Path on Linux]    // $XDG_CACHE_HOME, or ~/.cache
++       Xdg.cacheHome[Path on Linux]    // $XDG_CACHE_HOME, or ~/.cache
+
+-       Xdg.dataDirs[Path on Linux]     // $XDG_DATA_DIRS, or /usr/local/share and /usr/share
++       Xdg.dataDirs[Path on Linux]     // $XDG_DATA_DIRS, or /usr/local/share and /usr/share
+
+=       Xdg.dataDirs[Path on Linux]     // $XDG_DATA_DIRS, or /usr/local/share and /usr/share
+-       ```
++       ```
+
+-       Using these rather than a hard-coded `~/.myapp` is what makes a program's files land
+-       where the user's backup, sync and cleanup tools expect them.
++       Usar estes, em vez de um `~/.myapp` fixo no código, é o que faz os arquivos de um programa
++       irem parar onde as ferramentas de backup, sincronização e limpeza do usuário os esperam.
+
+-       `Xdg.Data` and `Xdg.Config` are the two XDG searchpath planes: a `Path on Xdg.Data`
+-       denotes a subpath searched across `dataHome` and every entry of `dataDirs`, in that
+-       order of precedence, and `Path on Xdg.Config` likewise across `configHome` and
+-       `configDirs`. The searching itself is in the `galilei` library.
++       `Xdg.Data` e `Xdg.Config` são os dois planos de searchpath do XDG: um `Path on Xdg.Data`
++       denota um subcaminho buscado em `dataHome` e em cada entrada de `dataDirs`, nessa ordem de
++       precedência, e `Path on Xdg.Config`, da mesma forma, em `configHome` e `configDirs`. A
++       busca em si fica na biblioteca `galilei`.
+
+-   refer ambience.Directories
++   refer ambience.Directories
+
+-   refer ambience.Searchpath
++   refer ambience.Searchpath
+
+=   refer ambience.Searchpath
+-   refer ambience.Environment
++   refer ambience.Environment
+
+-   entry .Data   the searchpath plane over `dataHome` and `dataDirs`, a `Searchpath`
+-       A `Path on Xdg.Data` is a subpath such as `myapp/schema.json`, resolved by searching the
+-       data home and then each data directory. The resolution lives in `galilei`.
+-   entry .Config   the searchpath plane over `configHome` and `configDirs`, a `Searchpath`
+-   entry .dataHome   `$XDG_DATA_HOME`, or `~/.local/share`
+-   entry .configHome   `$XDG_CONFIG_HOME`, or `~/.config`
+-   entry .cacheHome   `$XDG_CACHE_HOME`, or `~/.cache`
+-   entry .stateHome   `$XDG_STATE_HOME`, or `~/.local/state`
+-   entry .runtimeDir   `$XDG_RUNTIME_DIR`, or `Unset`: the specification gives it no default
+-   entry .bin   `$XDG_BIN_HOME`, or `~/.local/bin`
+-   entry .dataDirs   `$XDG_DATA_DIRS` split on the path separator, or `/usr/local/share` and `/usr/share`
+-   entry .configDirs   `$XDG_CONFIG_DIRS` split on the path separator, or `/etc/xdg`
++   entry .Data   o plano de searchpath sobre `dataHome` e `dataDirs`, um `Searchpath`
++       Um `Path on Xdg.Data` é um subcaminho como `myapp/schema.json`, resolvido buscando no
++       diretório home de dados e depois em cada diretório de dados. A resolução fica em `galilei`.
++   entry .Config   o plano de searchpath sobre `configHome` e `configDirs`, um `Searchpath`
++   entry .dataHome   `$XDG_DATA_HOME`, ou `~/.local/share`
++   entry .configHome   `$XDG_CONFIG_HOME`, ou `~/.config`
++   entry .cacheHome   `$XDG_CACHE_HOME`, ou `~/.cache`
++   entry .stateHome   `$XDG_STATE_HOME`, ou `~/.local/state`
++   entry .runtimeDir   `$XDG_RUNTIME_DIR`, ou `Unset`: a especificação não lhe dá um padrão
++   entry .bin   `$XDG_BIN_HOME`, ou `~/.local/bin`
++   entry .dataDirs   `$XDG_DATA_DIRS` separado pelo separador de caminhos, ou `/usr/local/share` e `/usr/share`
++   entry .configDirs   `$XDG_CONFIG_DIRS` separado pelo separador de caminhos, ou `/etc/xdg`
+
+- entry .Directories   the standard user directories, with the Windows locations on Windows and XDG's elsewhere
++ entry .Directories   os diretórios padrão do usuário, com os locais do Windows no Windows e os do XDG nas demais plataformas
+
+= entry .Directories   the standard user directories, with the Windows locations on Windows and XDG's elsewhere
+-   detail
++   detail
+
+-       The same directories as `Xdg`, chosen by platform: where the `System` in scope reports
+-       an `os.name` which decodes as `Os.Windows`, the data, config, cache and state homes are
+-       the roaming or local `AppData` directories (from `APPDATA` and `LOCALAPPDATA`, with the
+-       conventional defaults under the home directory where they are unset), the runtime
+-       directory and `bin` sit under local `AppData`, and the data and config directories are
+-       `PROGRAMDATA`; on every other platform, or where `os.name` is absent, each is the `Xdg`
+-       directory of the same name. Each method takes the path type as a type argument and
+-       needs an `Environment` and a `System`.
++       Os mesmos diretórios de `Xdg`, escolhidos pela plataforma: quando o `System` em escopo
++       informa um `os.name` que se decodifica como `Os.Windows`, os diretórios home de dados,
++       configuração, cache e estado são os diretórios `AppData` roaming ou local (de `APPDATA` e
++       `LOCALAPPDATA`, com os padrões convencionais sob o diretório home quando não definidos), o
++       diretório de runtime e `bin` ficam sob o `AppData` local, e os diretórios de dados e de
++       configuração são `PROGRAMDATA`; em qualquer outra plataforma, ou quando `os.name` está
++       ausente, cada um é o diretório de `Xdg` de mesmo nome. Cada método recebe o tipo de caminho
++       como argumento de tipo e precisa de um `Environment` e de um `System`.
+
+=       needs an `Environment` and a `System`.
+=
+-       ```scala
++       ```scala
+
+=       needs an `Environment` and a `System`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       needs an `Environment` and a `System`.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       needs an `Environment` and a `System`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import pathInterfaces.pathOnLinux
++       import pathInterfaces.pathOnLinux
+
+=       needs an `Environment` and a `System`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import pathInterfaces.pathOnLinux
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       Directories.configHome[Path on Linux]
++       Directories.configHome[Path on Linux]
+
+-       Directories.homeText   // the user.home property
++       Directories.homeText   // the user.home property
+
+=       Directories.homeText   // the user.home property
+-       ```
++       ```
+
+=       ```
+-   refer ambience.Xdg
++   refer ambience.Xdg
+
+-   entry .home   the user's home directory, from `user.home`, as a path of any type
+-       Needs only a `System`; panics if `user.home` is not set, as a JVM always sets it.
+-   entry .homeText   the user's home directory, from `user.home`, as text
+-   entry .dataHome   roaming `AppData` on Windows; `Xdg.dataHome` elsewhere
+-   entry .configHome   roaming `AppData` on Windows; `Xdg.configHome` elsewhere
+-   entry .cacheHome   local `AppData` on Windows; `Xdg.cacheHome` elsewhere
+-   entry .stateHome   local `AppData` on Windows; `Xdg.stateHome` elsewhere
+-   entry .runtimeDir   `Temp` under local `AppData` on Windows; `Xdg.runtimeDir` elsewhere, which may be `Unset`
+-   entry .bin   `Programs` under local `AppData` on Windows; `Xdg.bin` elsewhere
+-   entry .dataDirs   `PROGRAMDATA` (or `C:\ProgramData`) on Windows; `Xdg.dataDirs` elsewhere
+-   entry .configDirs   `PROGRAMDATA` (or `C:\ProgramData`) on Windows; `Xdg.configDirs` elsewhere
++   entry .home   o diretório home do usuário, de `user.home`, como um caminho de qualquer tipo
++       Precisa apenas de um `System`; entra em pânico se `user.home` não estiver definido, já que
++       uma JVM sempre o define.
++   entry .homeText   o diretório home do usuário, de `user.home`, como texto
++   entry .dataHome   `AppData` roaming no Windows; `Xdg.dataHome` nas demais plataformas
++   entry .configHome   `AppData` roaming no Windows; `Xdg.configHome` nas demais plataformas
++   entry .cacheHome   `AppData` local no Windows; `Xdg.cacheHome` nas demais plataformas
++   entry .stateHome   `AppData` local no Windows; `Xdg.stateHome` nas demais plataformas
++   entry .runtimeDir   `Temp` sob o `AppData` local no Windows; `Xdg.runtimeDir` nas demais plataformas, que pode ser `Unset`
++   entry .bin   `Programs` sob o `AppData` local no Windows; `Xdg.bin` nas demais plataformas
++   entry .dataDirs   `PROGRAMDATA` (ou `C:\ProgramData`) no Windows; `Xdg.dataDirs` nas demais plataformas
++   entry .configDirs   `PROGRAMDATA` (ou `C:\ProgramData`) no Windows; `Xdg.configDirs` nas demais plataformas
+
+- entry .Searchpath   the marker for a path plane which searches an ordered list of real directories
++ entry .Searchpath   o marcador de um plano de caminhos que busca em uma lista ordenada de diretórios reais
+
+= entry .Searchpath   the marker for a path plane which searches an ordered list of real directories
+-   detail
++   detail
+
+-       A _searchpath plane_ joins an ordered list of directories into a single searchable view
+-       — the XDG data directories, or `$PATH` — so that a `Path on Xdg.Data` names a subpath
+-       found in whichever directory has it first. A plane extends `Searchpath` to opt in, as
+-       `Xdg.Data` and `Xdg.Config` do; the companion then supplies the `serpentine` givens every
+-       such plane needs, in implicit scope: paths are rooted at `%`, the root encodes as
+-       nothing (so a path reads as `myapp/config.json`), and each segment is held to `.Rules`.
++       Um _plano de searchpath_ junta uma lista ordenada de diretórios em uma única visão
++       pesquisável — os diretórios de dados do XDG, ou `$PATH` — de modo que um `Path on Xdg.Data`
++       nomeia um subcaminho encontrado no primeiro diretório que o tiver. Um plano estende
++       `Searchpath` para aderir, como fazem `Xdg.Data` e `Xdg.Config`; o companheiro então fornece,
++       no escopo implícito, os givens de `serpentine` de que todo plano assim precisa: os caminhos
++       têm raiz em `%`, a raiz é codificada como nada (de modo que um caminho se lê
++       `myapp/config.json`), e cada segmento é submetido a `.Rules`.
+
+-       Deliberately, a searchpath plane has no `Filesystem` instance: the absolute-path
+-       operations of `galilei`, bounded by a `Filesystem`, must not apply to a virtual path,
+-       which they would resolve as a literal platform path. The joining machinery — the ordered
+-       stems a plane resolves onto, first-match resolution and merged, shadowed listings — is
+-       `galilei`'s `Searchpaths`.
++       Propositalmente, um plano de searchpath não tem instância de `Filesystem`: as operações de
++       caminho absoluto de `galilei`, limitadas por um `Filesystem`, não devem se aplicar a um
++       caminho virtual, que elas resolveriam como um caminho literal da plataforma. O mecanismo de
++       junção — as raízes ordenadas sobre as quais um plano é resolvido, a resolução pela primeira
++       correspondência e as listagens mescladas e sombreadas — é o `Searchpaths` de `galilei`.
+
+=       `galilei`'s `Searchpaths`.
+-   refer ambience.Xdg
++   refer ambience.Xdg
+
+-   entry .Rules   what a segment of a searchpath path may be
+-       A segment must not contain `/`, and must not be `.`, `..` or empty.
+-   entry .nominative   the given which holds searchpath paths to `.Rules`
+-   entry .submissible   the given which lets a path on any searchpath plane be built from the root `%`
+-   entry .radical   how the root `%` of a searchpath plane is written: as nothing
+-       The root is implicit in every entry's text, so a path on the plane encodes as its
+-       segments alone.
+-   entry .eradicable   how the root `%` of a searchpath plane is read: always `%`, consuming no text
+-       Reading the root cannot fail, so this given is pure and takes no tactic.
++   entry .Rules   o que um segmento de um caminho de searchpath pode ser
++       Um segmento não deve conter `/`, nem ser `.`, `..` ou vazio.
++   entry .nominative   o given que submete os caminhos de searchpath a `.Rules`
++   entry .submissible   o given que permite construir um caminho em qualquer plano de searchpath a partir da raiz `%`
++   entry .radical   como a raiz `%` de um plano de searchpath é escrita: como nada
++       A raiz está implícita no texto de cada entrada, então um caminho no plano é codificado
++       apenas por seus segmentos.
++   entry .eradicable   como a raiz `%` de um plano de searchpath é lida: sempre `%`, sem consumir texto
++       Ler a raiz não pode falhar, então este given é puro e não recebe tática.
+
+- entry .Configurator   a source of an application's settings, keyed by camel-case name, composed by priority
++ entry .Configurator   uma origem das configurações de uma aplicação, indexada por nome em camel case, composta por prioridade
+
+= entry .Configurator   a source of an application's settings, keyed by camel-case name, composed by priority
+-   detail
++   detail
+
+-       A `Configurator` reads a setting by its canonical camel-case name (`logLevel`) from one
+-       source, which owns the mapping into its native namespace: `Configurator.environment`
+-       reads `MYAPP_LOG_LEVEL` from the `Environment` in scope and `Configurator.properties`
+-       reads `myapp.log.level` from the `System`, each under the application's
+-       `Configurator.Prefix`. Configurators compose with `#++`, and composition order is
+-       priority order: the left source is consulted first, and a name it does not have falls
+-       through to the right.
++       Um `Configurator` lê uma configuração por seu nome canônico em camel case (`logLevel`) de uma
++       origem, que é dona do mapeamento para seu namespace nativo: `Configurator.environment` lê
++       `MYAPP_LOG_LEVEL` do `Environment` em escopo e `Configurator.properties` lê
++       `myapp.log.level` do `System`, cada um sob o `Configurator.Prefix` da aplicação.
++       Configuradores se compõem com `#++`, e a ordem de composição é a ordem de prioridade: a
++       origem da esquerda é consultada primeiro, e um nome que ela não tem recai na da direita.
+
+-       Declaring a `Prefix` given is what activates the standard cascade, `.default`: system
+-       properties take priority over environment variables, and the command line, which beats
+-       both, is handled by whichever type consults the configurator. A `Configurator` given in
+-       lexical scope overrides the default, so a configuration file in any format joins the
+-       cascade as a lambda from name to `Optional[Text]`.
++       Declarar um given `Prefix` é o que ativa a cascata padrão, `.default`: as propriedades do
++       sistema têm prioridade sobre as variáveis de ambiente, e a linha de comando, que vence as
++       duas, é tratada pelo tipo que consultar o configurador. Um given `Configurator` no escopo
++       léxico substitui o padrão, de modo que um arquivo de configuração em qualquer formato entra
++       na cascata como uma lambda de nome para `Optional[Text]`.
+
+=       cascade as a lambda from name to `Optional[Text]`.
+=
+-       ```scala
++       ```scala
+
+=       cascade as a lambda from name to `Optional[Text]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       cascade as a lambda from name to `Optional[Text]`.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       import environments.javaBaseEnvironment
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       given Configurator.Prefix = Configurator.Prefix(t"myapp")
++       given Configurator.Prefix = Configurator.Prefix(t"myapp")
+
+-       val file: Configurator = name => if name == t"port" then t"7070" else Unset
++       val file: Configurator = name => if name == t"port" then t"7070" else Unset
+
+-       (Configurator.properties ++ Configurator.environment ++ file).read(t"port")
++       (Configurator.properties ++ Configurator.environment ++ file).read(t"port")
+
+=       (Configurator.properties ++ Configurator.environment ++ file).read(t"port")
+-       ```
++       ```
+
+-       A configurator is a capability: it reaches outside the program, so the type is tracked
+-       wherever it appears, and a method which reads settings takes `using Configurator`. It is
+-       shared, not exclusive, since reading is free of side effects.
++       Um configurador é uma capability: ele alcança o exterior do programa, então o tipo é
++       rastreado onde quer que apareça, e um método que lê configurações recebe
++       `using Configurator`. Ele é compartilhado, não exclusivo, já que a leitura não tem efeitos
++       colaterais.
+
+=       shared, not exclusive, since reading is free of side effects.
+-   refer ambience.Environment
++   refer ambience.Environment
+
+=   refer ambience.Environment
+-   refer ambience.System
++   refer ambience.System
+
+-   entry .Prefix   the application's name, which prefixes its variables (`MYAPP_`) and properties (`myapp.`)
++   entry .Prefix   o nome da aplicação, que prefixa suas variáveis (`MYAPP_`) e propriedades (`myapp.`)
+
+=   entry .Prefix   the application's name, which prefixes its variables (`MYAPP_`) and properties (`myapp.`)
+-     detail
++     detail
+
+-         Declared once as a given, `given Configurator.Prefix = Configurator.Prefix(t"myapp")`:
+-         it is upper-cased for the environment and lower-cased for properties.
+-     entry #name   the application's name
+-   entry .environment   the configurator over the `Environment` in scope: `logLevel` reads `MYAPP_LOG_LEVEL`
+-       The camel-case name is converted to upper snake case and prefixed with the upper-cased
+-       `Prefix` and an underscore. Needs a `Prefix` and an `Environment`.
+-   entry .properties   the configurator over the `System` in scope: `logLevel` reads `myapp.log.level`
+-       The camel-case name is converted to dotted lower case and prefixed with the lower-cased
+-       `Prefix` and a dot. Needs a `Prefix` and a `System`.
+-   entry .default   the standard cascade, properties before environment, activated by a `Prefix` given
+-       `properties ++ environment`. A given in the companion, so it is summoned wherever a
+-       `Prefix`, an `Environment` and a `System` are in scope; a `Configurator` given in lexical
+-       scope outranks it.
+-   entry #read   the setting's text by its camel-case name, or `Unset` if this source does not have it
+-   entry #++   composes two configurators, this one taking priority
+-       `this ++ that` reads from `this` and falls through to `that` for a name it does not have.
+-       The result is a fresh configurator capturing both.
++         Declarado uma vez como given, `given Configurator.Prefix = Configurator.Prefix(t"myapp")`:
++         é convertido para maiúsculas para o ambiente e para minúsculas para as propriedades.
++     entry #name   o nome da aplicação
++   entry .environment   o configurador sobre o `Environment` em escopo: `logLevel` lê `MYAPP_LOG_LEVEL`
++       O nome em camel case é convertido para upper snake case e prefixado com o `Prefix` em
++       maiúsculas e um sublinhado. Precisa de um `Prefix` e de um `Environment`.
++   entry .properties   o configurador sobre o `System` em escopo: `logLevel` lê `myapp.log.level`
++       O nome em camel case é convertido para minúsculas separadas por pontos e prefixado com o
++       `Prefix` em minúsculas e um ponto. Precisa de um `Prefix` e de um `System`.
++   entry .default   a cascata padrão, propriedades antes do ambiente, ativada por um given `Prefix`
++       `properties ++ environment`. Um given no companheiro, então é convocado onde quer que um
++       `Prefix`, um `Environment` e um `System` estejam em escopo; um given `Configurator` no
++       escopo léxico tem precedência sobre ele.
++   entry #read   o texto da configuração pelo nome em camel case, ou `Unset` se esta origem não a tiver
++   entry #++   compõe dois configuradores, com prioridade para este
++       `this ++ that` lê de `this` e recai em `that` para um nome que ele não tem. O resultado é
++       um novo configurador que captura os dois.
+
+- entry .WasiEnvironmentApi   the WIT interface type of `wasi:cli/environment`, as `ambience.wasi` binds it
+-     `Interface in Wit at "/ambience/environment.wit"`: the type of the `wasiApis.wasiEnvironmentApi`
+-     given, against which `environments.wasiEnvironment` and
+-     `workingDirectories.wasiWorkingDirectory` are typechecked. Only in the `ambience.wasi`
+-     source set.
++ entry .WasiEnvironmentApi   o tipo de interface WIT de `wasi:cli/environment`, como `ambience.wasi` o vincula
++     `Interface in Wit at "/ambience/environment.wit"`: o tipo do given
++     `wasiApis.wasiEnvironmentApi`, contra o qual `environments.wasiEnvironment` e
++     `workingDirectories.wasiWorkingDirectory` são verificados quanto ao tipo. Apenas no source
++     set `ambience.wasi`.
+
+- entry .environments   the environments to import by name: the JVM's, the empty one, a daemon's, a Wasm component's
++ entry .environments   os ambientes a importar pelo nome: o da JVM, o vazio, o de um daemon, o de um componente Wasm
+
+= entry .environments   the environments to import by name: the JVM's, the empty one, a daemon's, a Wasm component's
+-   detail
++   detail
+
+-       Which environment `Environment.editor[Text]` reads from is the `Environment` given in
+-       scope, and the choice is never implicit: `import soundness.*` brings none of these in,
+-       and one is imported by name.
++       O ambiente de que `Environment.editor[Text]` lê é o given `Environment` em escopo, e a
++       escolha nunca é implícita: `import soundness.*` não traz nenhum destes, e um deles é
++       importado pelo nome.
+
+=       and one is imported by name.
+=
+-       ```scala
++       ```scala
+
+=       and one is imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       and one is imported by name.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       import environments.javaBaseEnvironment
+-       ```
++       ```
+
+-       `javaBaseEnvironment` suits an ordinary program. `emptyEnvironment` is for tests and
+-       sandboxes. The two daemon environments, shipped by other libraries, distinguish the
+-       invocation's environment from the one the daemon was launched with. An `Environment` is
+-       a single function from name to `Optional[Text]`, so a custom one is a lambda bound as a
+-       local given.
+-   entry .javaBaseEnvironment   the environment the JVM was started with, from `java.lang.System.getenv`
+-       Enumerable: `entries` is the whole environment. In a daemon this is not any invocation's
+-       environment: the launcher starts the daemon with a sanitized environment, and each
+-       invocation's own arrives with it as `daemonClientEnvironment`.
+-   entry .emptyEnvironment   an environment which defines nothing; `entries` is the empty map
+-       For a test or a sandbox: every read is `Unset`, so every typed read raises
++       `javaBaseEnvironment` serve a um programa comum. `emptyEnvironment` é para testes e
++       sandboxes. Os dois ambientes de daemon, fornecidos por outras bibliotecas, distinguem o
++       ambiente da invocação daquele com que o daemon foi lançado. Um `Environment` é uma única
++       função de nome para `Optional[Text]`, então um ambiente personalizado é uma lambda vinculada
++       como given local.
++   entry .javaBaseEnvironment   o ambiente com que a JVM foi iniciada, de `java.lang.System.getenv`
++       Enumerável: `entries` é o ambiente inteiro. Em um daemon, este não é o ambiente de nenhuma
++       invocação: o lançador inicia o daemon com um ambiente sanitizado, e o ambiente próprio de
++       cada invocação chega com ela como `daemonClientEnvironment`.
++   entry .emptyEnvironment   um ambiente que não define nada; `entries` é o mapa vazio
++       Para um teste ou um sandbox: toda leitura é `Unset`, então toda leitura tipada lança
+
+-       `Environment.Error`.
++       `Environment.Error`.
+
+-   entry .wasiEnvironment   a Wasm component's environment, from `wasi:cli/environment`'s `get-environment`
+-       In the `ambience.wasi` source set. An `inline` given, so that the Wasm Component import
+-       materialises at the site which summons it, in code compiled for a Wasm target; a
+-       WASI-linked application summons it once. It cannot enumerate: `entries` is `Unset`.
+-   entry .daemonEnvironment   the environment of the invocation which started the daemon; shipped by `ethereal`
+-       The launcher starts a daemon with a sanitized environment of its own, so that the
+-       daemon's state does not depend on who happened to start it, and sends the environment
+-       it was itself started with on the daemon's standard input. This given is that
+-       environment, held in memory. Few things want it rather than the current invocation's
+-       environment, which is `daemonClientEnvironment`; without a launcher (a JVM run
+-       directly) it is the JVM's own environment.
+-   entry .daemonClientEnvironment   the environment of the current invocation of a daemon; shipped by `exoskeleton`
+-       Needs a `Cli` in scope, the invocation, and is its environment: the variables of the
+-       shell which ran the command, not of the shell which started the daemon. This is the
+-       environment a daemon's command handler should read.
++   entry .wasiEnvironment   o ambiente de um componente Wasm, do `get-environment` de `wasi:cli/environment`
++       No source set `ambience.wasi`. Um given `inline`, para que o import do Wasm Component se
++       materialize no ponto que o convoca, em código compilado para um alvo Wasm; uma aplicação
++       vinculada ao WASI o convoca uma vez. Ele não consegue enumerar: `entries` é `Unset`.
++   entry .daemonEnvironment   o ambiente da invocação que iniciou o daemon; fornecido por `ethereal`
++       O lançador inicia um daemon com um ambiente sanitizado próprio, para que o estado do daemon
++       não dependa de quem por acaso o iniciou, e envia o ambiente com que ele mesmo foi iniciado
++       pela entrada padrão do daemon. Este given é esse ambiente, mantido em memória. Poucas coisas
++       o querem em vez do ambiente da invocação atual, que é `daemonClientEnvironment`; sem um
++       lançador (uma JVM executada diretamente), é o próprio ambiente da JVM.
++   entry .daemonClientEnvironment   o ambiente da invocação atual de um daemon; fornecido por `exoskeleton`
++       Precisa de um `Cli` em escopo, a invocação, e é o ambiente dela: as variáveis do shell que
++       executou o comando, não do shell que iniciou o daemon. Este é o ambiente que o handler de
++       comandos de um daemon deve ler.
+
+- entry .systems   the system-property sources to import by name: the JVM's, or an empty one
++ entry .systems   as origens de propriedades do sistema a importar pelo nome: a da JVM, ou uma vazia
+
+= entry .systems   the system-property sources to import by name: the JVM's, or an empty one
+-   detail
++   detail
+
+-       The `System` in scope is where `System.properties.user.home[Text]()`, `System.os` and
+-       the standard directories read from. `import soundness.*` does not bring one in; one is
+-       imported by name, or a lambda from name to `Optional[Text]` is bound as a local given
+-       for a test.
++       O `System` em escopo é de onde `System.properties.user.home[Text]()`, `System.os` e os
++       diretórios padrão leem. `import soundness.*` não traz nenhum; um é importado pelo nome, ou
++       uma lambda de nome para `Optional[Text]` é vinculada como given local para um teste.
+
+=       for a test.
+=
+-       ```scala
++       ```scala
+
+=       for a test.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       for a test.
+=
+=       ```scala
+=       import soundness.*
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+=       import systems.javaBaseSystem
+-       ```
++       ```
+
+-   entry .javaBaseSystem   the JVM's properties, from `java.lang.System.getProperty`
+-   entry .emptySystem   a system which defines no properties
+-       For a test which must not depend on the JVM it runs under: every read is `Unset`, so
+-       every typed read raises `Property.Error` or, for the fixed-type standard properties,
+-       panics.
++   entry .javaBaseSystem   as propriedades da JVM, de `java.lang.System.getProperty`
++   entry .emptySystem   um sistema que não define propriedades
++       Para um teste que não deve depender da JVM em que roda: toda leitura é `Unset`, então toda
++       leitura tipada lança `Property.Error` ou, para as propriedades padrão de tipo fixo, entra em
++       pânico.
+
+- entry .workingDirectories   the working directories to import by name: the JVM's, the `System`'s, a daemon client's, a Wasm component's
++ entry .workingDirectories   os diretórios de trabalho a importar pelo nome: o da JVM, o do `System`, o de um cliente de daemon, o de um componente Wasm
+
+= entry .workingDirectories   the working directories to import by name: the JVM's, the `System`'s, a daemon client's, a Wasm component's
+-   detail
++   detail
+
+-       The `WorkingDirectory` in scope is what `workingDirectory[Path on Linux]` resolves, and
+-       what a relative path is resolved against. One is imported by name:
++       O `WorkingDirectory` em escopo é o que `workingDirectory[Path on Linux]` resolve, e aquele
++       em relação ao qual um caminho relativo é resolvido. Um é importado pelo nome:
+
+=       what a relative path is resolved against. One is imported by name:
+=
+-       ```scala
++       ```scala
+
+=       what a relative path is resolved against. One is imported by name:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import workingDirectories.javaBaseWorkingDirectory
++       import workingDirectories.javaBaseWorkingDirectory
+
+=       import workingDirectories.javaBaseWorkingDirectory
+-       ```
++       ```
+
+-       In a daemon, the directory each invocation was made from is
+-       `daemonClientWorkingDirectory`, not the JVM's.
+-   entry .javaBaseWorkingDirectory   the JVM's `user.dir` property
+-       `systemWorkingDirectory` specialised to `systems.javaBaseSystem`.
+-   entry .systemWorkingDirectory   `user.dir` read from the `System` in scope
+-       Needs a `System`, which lets a test fix the working directory by fixing the system;
+-       panics if the property is not set.
+-   entry .wasiWorkingDirectory   a Wasm component's initial directory, from `wasi:cli/environment`'s `initial-cwd`
+-       In the `ambience.wasi` source set; an `inline` given, materialised where it is summoned.
+-       A component with no initial directory falls back to `/`.
+-   entry .daemonClientWorkingDirectory   the directory the current daemon invocation was made from; shipped by `ethereal`
+-       Needs a `Cli` in scope, the invocation, and is its working directory. Each client of a
+-       daemon has its own, which the JVM's `user.dir` — the directory the daemon was started
+-       in — says nothing about.
++       Em um daemon, o diretório a partir do qual cada invocação foi feita é
++       `daemonClientWorkingDirectory`, não o da JVM.
++   entry .javaBaseWorkingDirectory   a propriedade `user.dir` da JVM
++       `systemWorkingDirectory` especializado para `systems.javaBaseSystem`.
++   entry .systemWorkingDirectory   `user.dir` lido do `System` em escopo
++       Precisa de um `System`, o que permite a um teste fixar o diretório de trabalho fixando o
++       sistema; entra em pânico se a propriedade não estiver definida.
++   entry .wasiWorkingDirectory   o diretório inicial de um componente Wasm, do `initial-cwd` de `wasi:cli/environment`
++       No source set `ambience.wasi`; um given `inline`, materializado onde é convocado. Um
++       componente sem diretório inicial recorre a `/`.
++   entry .daemonClientWorkingDirectory   o diretório a partir do qual a invocação atual do daemon foi feita; fornecido por `ethereal`
++       Precisa de um `Cli` em escopo, a invocação, e é o diretório de trabalho dela. Cada cliente
++       de um daemon tem o seu, sobre o qual o `user.dir` da JVM — o diretório em que o daemon foi
++       iniciado — nada diz.
+
+- entry .temporaryDirectories   the temporary directories to import by name: by property, by `System`, or by environment
++ entry .temporaryDirectories   os diretórios temporários a importar pelo nome: por propriedade, por `System` ou pelo ambiente
+
+= entry .temporaryDirectories   the temporary directories to import by name: by property, by `System`, or by environment
+-   detail
++   detail
+
+-       The `TemporaryDirectory` in scope is what `temporaryDirectory[Path on Linux]` resolves.
+-       One is imported by name:
++       O `TemporaryDirectory` em escopo é o que `temporaryDirectory[Path on Linux]` resolve. Um é
++       importado pelo nome:
+
+=       One is imported by name:
+=
+-       ```scala
++       ```scala
+
+=       One is imported by name:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import temporaryDirectories.javaBaseTemporaryDirectory
++       import temporaryDirectories.javaBaseTemporaryDirectory
+
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       ```
++       ```
+
+-   entry .javaBaseTemporaryDirectory   the JVM's `java.io.tmpdir` property
+-       Panics if the property is not set, which a JVM always sets.
+-   entry .systemTemporaryDirectory   `java.io.tmpdir`, requiring a `System` in scope
+-       Takes a `System` so that the dependence is declared, though the value read is the
+-       JVM's own `java.io.tmpdir` property.
+-   entry .environmentTemporaryDirectory   the first of `TMPDIR`, `TMP` and `TEMP` in the `Environment` in scope
+-       Needs an `Environment`; panics if none of the three variables is set.
++   entry .javaBaseTemporaryDirectory   a propriedade `java.io.tmpdir` da JVM
++       Entra em pânico se a propriedade não estiver definida, o que uma JVM sempre faz.
++   entry .systemTemporaryDirectory   `java.io.tmpdir`, exigindo um `System` em escopo
++       Recebe um `System` para que a dependência seja declarada, embora o valor lido seja a
++       própria propriedade `java.io.tmpdir` da JVM.
++   entry .environmentTemporaryDirectory   a primeira de `TMPDIR`, `TMP` e `TEMP` no `Environment` em escopo
++       Precisa de um `Environment`; entra em pânico se nenhuma das três variáveis estiver definida.
+
+- entry .termcaps   the terminal capabilities read from the environment, as a given to import by name
++ entry .termcaps   as capacidades do terminal lidas do ambiente, como um given a importar pelo nome
+
+= entry .termcaps   the terminal capabilities read from the environment, as a given to import by name
+-   detail
++   detail
+
+-       A `Termcap` says what the terminal can do — whether it takes ANSI escapes, its colour
+-       depth, its width and height — and styled output is rendered to fit it. The fixed ones
+-       (`basicTermcap`, `xterm256Termcap`, `xtermTrueColorTermcap`) are in the
+-       `anticipation` library's `termcapDefinitions` package; this package's
+-       `environmentTermcap` works the capabilities out from the environment.
++       Um `Termcap` diz o que o terminal sabe fazer — se aceita escapes ANSI, sua profundidade de
++       cor, sua largura e altura — e a saída estilizada é renderizada para se ajustar a ele. Os
++       fixos (`basicTermcap`, `xterm256Termcap`, `xtermTrueColorTermcap`) estão no pacote
++       `termcapDefinitions` da biblioteca `anticipation`; o `environmentTermcap` deste pacote deduz
++       as capacidades a partir do ambiente.
+
+=       `environmentTermcap` works the capabilities out from the environment.
+=
+-       ```scala
++       ```scala
+
+=       `environmentTermcap` works the capabilities out from the environment.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `environmentTermcap` works the capabilities out from the environment.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+-       import termcaps.environmentTermcap
++       import termcaps.environmentTermcap
+
+=       import termcaps.environmentTermcap
+-       ```
++       ```
+
+-   entry .environmentTermcap   a terminal described by `COLUMNS` and `COLORTERM`, or by `tput colors`
+-       Needs an `Environment`. ANSI escapes are assumed. The width is `COLUMNS` where the
+-       invoking context set it; where it is absent or malformed — output redirected to a file
+-       or a pipe, say — the width is unbounded and nothing wraps. The colour depth is
+-       `TrueColor` where `COLORTERM` is `truecolor`, and otherwise is read by running `tput
+-       colors`, falling back to `NoColor` if that fails. Both are computed once, lazily, when
+-       first asked for.
++   entry .environmentTermcap   um terminal descrito por `COLUMNS` e `COLORTERM`, ou por `tput colors`
++       Precisa de um `Environment`. Escapes ANSI são pressupostos. A largura é `COLUMNS` quando o
++       contexto que invoca a definiu; quando está ausente ou malformada — saída redirecionada para
++       um arquivo ou um pipe, por exemplo — a largura é ilimitada e nada quebra linha. A
++       profundidade de cor é `TrueColor` quando `COLORTERM` é `truecolor` e, caso contrário, é lida
++       executando `tput colors`, recorrendo a `NoColor` se isso falhar. Ambas são calculadas uma
++       vez, de forma preguiçosa, quando pedidas pela primeira vez.
+
+- entry .wasiApis   the WIT interface definitions of `ambience.wasi`, as givens to import by name
++ entry .wasiApis   as definições de interface WIT de `ambience.wasi`, como givens a importar pelo nome
+
+= entry .wasiApis   the WIT interface definitions of `ambience.wasi`, as givens to import by name
+-   detail
++   detail
+
+-       The `call` materialiser of a WASI import consults the interface in scope for the
+-       function's module id. Only in the `ambience.wasi` source set.
+-   entry .wasiEnvironmentApi   the `wasi:cli/environment` interface, from the bundled `/ambience/environment.wit`
+-       A `WasiEnvironmentApi`, read from the classpath resource. Import it by name where
+-       `environments.wasiEnvironment` or `workingDirectories.wasiWorkingDirectory` is used.
++       O materializador `call` de um import WASI consulta a interface em escopo para o id de
++       módulo da função. Apenas no source set `ambience.wasi`.
++   entry .wasiEnvironmentApi   a interface `wasi:cli/environment`, do `/ambience/environment.wit` incluído
++       Um `WasiEnvironmentApi`, lido do recurso do classpath. Importe-o pelo nome onde
++       `environments.wasiEnvironment` ou `workingDirectories.wasiWorkingDirectory` for usado.

@@ -1,0 +1,41 @@
+orthant 1 language
+
+- # `↯/s.16.4` — Value below its lower bound
++ # `↯/s.16.4` — Valeur inférieure à sa borne inférieure
+
+- Raised at compiletime when a literal is less than the minimum its bounded type permits.
++ Levée à la compilation lorsqu'un littéral est inférieur au minimum que permet son type borné.
+
+- ## Cause
++ ## Cause
+
+- A bounded numeric type carries its range in its type, so a literal outside the range is
+- rejected where it is written.
++ Un type numérique borné porte son intervalle dans son type, si bien qu'un littéral hors de
++ l'intervalle est rejeté là où il est écrit.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.16.4] the value -0.5 is less than the lower bound for this value, 0.0
++ [↯/s.16.4] the value -0.5 is less than the lower bound for this value, 0.0
+
+= [↯/s.16.4] the value -0.5 is less than the lower bound for this value, 0.0
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Use a value within the range, or widen the type's bounds.
++ Utilisez une valeur comprise dans l'intervalle, ou élargissez les bornes du type.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/cardinality/src/core/cardinality.internal.scala`
++ - Source : `lib/cardinality/src/core/cardinality.internal.scala`

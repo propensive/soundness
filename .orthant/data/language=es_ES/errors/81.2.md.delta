@@ -1,0 +1,100 @@
+orthant 1 language
+
+- # `↯/s.81.2` — `Multipart.Error`
++ # `↯/s.81.2` — `Multipart.Error`
+
+- Raised when multipart MIME data cannot be parsed.
++ Se lanza cuando no pueden analizarse unos datos MIME multipart.
+
+- ## Cause
++ ## Causa
+
+- Gesticulate parses multipart bodies bounded by a delimiter declared
+- in the `Content-Type` header. Each part has its own headers and
+- body. This error reports a structural problem with the multipart
+- stream. The message is `multipart data could not be read because
++ Gesticulate analiza cuerpos multipart delimitados por un separador declarado en la cabecera
++ `Content-Type`. Cada parte tiene sus propias cabeceras y su propio cuerpo. Este error informa de
++ un problema estructural del flujo multipart. El mensaje es `multipart data could not be read because
+
+- $reason`.
++ $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.81.2.1` — `Expected`
++ ### `↯/s.81.2.1` — `Expected`
+
+- A specific character was expected at the parser's position but a
+- different one was encountered.
++ Se esperaba un carácter concreto en la posición del analizador, pero se encontró otro distinto.
+
+- **Example.** `[↯/s.81.2.1] multipart data could not be read because the character ':' was expected`
++ **Ejemplo.** `[↯/s.81.2.1] multipart data could not be read because the character ':' was expected`
+
+- **Resolution.** Confirm the producer is emitting valid multipart
+- data; check for missing CRLFs or boundaries.
++ **Solución.** Confirma que el productor emite datos multipart válidos; busca CRLF o fronteras que
++ falten.
+
+- ### `↯/s.81.2.2` — `StreamContinues`
++ ### `↯/s.81.2.2` — `StreamContinues`
+
+- Bytes appeared after the closing boundary.
++ Aparecieron bytes tras la frontera de cierre.
+
+- **Example.** `[↯/s.81.2.2] multipart data could not be read because the stream continues beyond the last part`
++ **Ejemplo.** `[↯/s.81.2.2] multipart data could not be read because the stream continues beyond the last part`
+
+- **Resolution.** Truncate the body at the closing boundary, or stop
+- emitting bytes after it.
++ **Solución.** Trunca el cuerpo en la frontera de cierre, o deja de emitir bytes tras ella.
+
+- ### `↯/s.81.2.3` — `BadBoundaryEnding`
++ ### `↯/s.81.2.3` — `BadBoundaryEnding`
+
+- Content followed a boundary that does not match the documented
+- terminator format.
++ Tras una frontera venía un contenido que no se ajusta al formato de terminador documentado.
+
+- **Example.** `[↯/s.81.2.3] multipart data could not be read because unexpected content followed the boundary`
++ **Ejemplo.** `[↯/s.81.2.3] multipart data could not be read because unexpected content followed the boundary`
+
+- **Resolution.** Boundaries must be followed either by `\r\n` (start
+- of next part) or `--\r\n` (end of body); fix the producer.
++ **Solución.** Las fronteras deben ir seguidas de `\r\n` (comienzo de la parte siguiente) o de
++ `--\r\n` (fin del cuerpo); corrige el productor.
+
+- ### `↯/s.81.2.4` — `MediaType`
++ ### `↯/s.81.2.4` — `MediaType`
+
+- A part's `Content-Type` header is not a valid media type.
++ La cabecera `Content-Type` de una parte no es un tipo de medio válido.
+
+- **Example.** `[↯/s.81.2.4] multipart data could not be read because the media type is invalid`
++ **Ejemplo.** `[↯/s.81.2.4] multipart data could not be read because the media type is invalid`
+
+- **Resolution.** See `↯/s.81.1` for media-type rules.
++ **Solución.** Consulta `↯/s.81.1` para las reglas de los tipos de medio.
+
+- ### `↯/s.81.2.5` — `BadDisposition`
++ ### `↯/s.81.2.5` — `BadDisposition`
+
+- A part's `Content-Disposition` header has the wrong format.
++ La cabecera `Content-Disposition` de una parte tiene un formato incorrecto.
+
+- **Example.** `` [↯/s.81.2.5] multipart data could not be read because the `Content-Disposition` header has the wrong format ``
++ **Ejemplo.** `` [↯/s.81.2.5] multipart data could not be read because the `Content-Disposition` header has the wrong format ``
+
+- **Resolution.** Use the standard form, e.g.
++ **Solución.** Usa la forma estándar, por ejemplo,
+
+- `form-data; name="field"; filename="x.txt"`.
++ `form-data; name="field"; filename="x.txt"`.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/gesticulate/src/core/gesticulate.Multipart.scala`
++ - Fuente: `lib/gesticulate/src/core/gesticulate.Multipart.scala`

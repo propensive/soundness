@@ -1,0 +1,76 @@
+orthant 1 language
+
+- # `↯/s.106.1` — `Json.Error`
++ # `↯/s.106.1` — `Json.Error`
+
+- Raised when accessing a JSON value fails because the value is missing
+- or has the wrong type.
++ Порождается, когда доступ к значению JSON завершается неудачей, потому что
++ значение отсутствует или имеет неверный тип.
+
+- ## Cause
++ ## Причина
+
+- Jacinta's `Json` API allows direct field, index, and type access on a
+- parsed value. When the requested access cannot be satisfied, this
+- error is thrown. The message is `could not access the value because
+- $reason`.
++ API `Json` в Jacinta позволяет напрямую обращаться к полям, индексам и
++ типам разобранного значения. Когда запрошенный доступ невозможен,
++ выбрасывается эта ошибка. Сообщение:
++ `could not access the value because $reason`.
+
+- ## Variants
++ ## Варианты
+
+- ### `↯/s.106.1.1` — `OutOfRange`
++ ### `↯/s.106.1.1` — `OutOfRange`
+
+- An index access referred to a position past the end of a JSON array.
++ Доступ по индексу ссылается на позицию за концом массива JSON.
+
+- **Example.** `[↯/s.106.1.1] could not access the value because the array index is out of range`
++ **Пример.** `[↯/s.106.1.1] could not access the value because the array index is out of range`
+
+- **Resolution.** Check the array length before indexing, or use an
+- optional accessor.
++ **Решение.** Проверьте длину массива перед доступом по индексу или
++ используйте опциональный метод доступа.
+
+- ### `↯/s.106.1.2` — `NotType`
++ ### `↯/s.106.1.2` — `NotType`
+
+- A typed accessor was used but the value's actual primitive type is
+- different.
++ Использован типизированный метод доступа, но фактический примитивный тип
++ значения другой.
+
+- **Example.** `[↯/s.106.1.2] could not access the value because the JSON value had type string instead of number`
++ **Пример.** `[↯/s.106.1.2] could not access the value because the JSON value had type string instead of number`
+
+- **Resolution.** Use the accessor matching the JSON value's actual
+- type, or coerce/convert the value before reading it.
++ **Решение.** Используйте метод доступа, соответствующий фактическому типу
++ значения JSON, или приведите либо преобразуйте значение перед чтением.
+
+- ### `↯/s.106.1.3` — `Absent`
++ ### `↯/s.106.1.3` — `Absent`
+
+- The named field does not exist in the JSON object.
++ Названное поле не существует в объекте JSON.
+
+- **Example.** `[↯/s.106.1.3] could not access the value because the JSON value was not present`
++ **Пример.** `[↯/s.106.1.3] could not access the value because the JSON value was not present`
+
+- **Resolution.** Confirm the field name and case; use an optional
+- accessor if the field may legitimately be missing.
++ **Решение.** Проверьте имя поля и его регистр; используйте опциональный
++ метод доступа, если поле может законно отсутствовать.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/jacinta/src/core/jacinta.Json.scala`
+- - `↯/s.106.2` — JSON pointer resolution failure
++ - Исходный код: `lib/jacinta/src/core/jacinta.Json.scala`
++ - `↯/s.106.2` — сбой разрешения указателя JSON

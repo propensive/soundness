@@ -1,0 +1,350 @@
+orthant 1 language
+
+- # Total Transitions
++ # Transitions totales
+
+- The second golden rule, the companion to making
+- [impossible states unrepresentable](impossible-states.md): every operation that moves a
+- value from one state to another should be total — defined for every input it can be
+- given. When all the starting states are valid and every transition between them is
+- total, a program that begins in a correct state can never leave one. Partiality — an
+- operation undefined for some of its inputs — is the gap through which invalid states
+- creep back in, so Soundness designs it out, typically by giving an operation a return
+- type rich enough to express the cases it cannot otherwise handle.
++ La seconde règle d'or, compagne de celle qui consiste à rendre
++ [les états impossibles non représentables](impossible-states.md) : chaque opération qui fait
++ passer une valeur d'un état à un autre doit être totale — définie pour chaque entrée qu'on peut lui
++ donner. Lorsque tous les états de départ sont valides et que chaque transition entre eux est
++ totale, un programme qui commence dans un état correct ne peut jamais en sortir. La partialité —
++ une opération indéfinie pour certaines de ses entrées — est la brèche par laquelle les états
++ invalides se réintroduisent ; Soundness l'élimine donc dès la conception, généralement en donnant à
++ une opération un type de retour assez riche pour exprimer les cas qu'elle ne pourrait pas traiter
++ autrement.
+
+- The compiler polices totality wherever it is allowed to, and it should be allowed to. A
+- pattern match that misses a case is partiality in its plainest form, and Scala reports
+- it — so the warnings that require matches to be exhaustive should be switched on and
+- treated as errors, never suppressed as noise. Under that regime, adding a case to an
+- enumeration produces a compile error at every match that has not considered it: the
+- compiler walks the consequences of a change through the codebase, which is precisely the
+- analysis a programmer would otherwise perform by memory. A deliberately partial match is
+- still expressible — `.absolve` marks the assertion, visibly and searchably — so the
+- discipline costs nothing except accidental partiality, which is the kind that becomes a
+- bug.
++ Le compilateur contrôle la totalité partout où on le lui permet, et il faut le lui permettre. Un
++ filtrage par motif qui oublie un cas est la partialité sous sa forme la plus nue, et Scala le
++ signale — les avertissements qui exigent des filtrages exhaustifs doivent donc être activés et
++ traités comme des erreurs, jamais supprimés comme du bruit. Sous ce régime, ajouter un cas à une
++ énumération produit une erreur de compilation à chaque filtrage qui ne l'a pas pris en compte : le
++ compilateur suit les conséquences d'un changement à travers le code, ce qui est précisément
++ l'analyse qu'un programmeur ferait sinon de mémoire. Un filtrage délibérément partiel reste
++ exprimable — `.absolve` marque l'assertion, de façon visible et repérable par recherche — si bien
++ que la discipline ne coûte rien, sauf la partialité accidentelle, celle qui devient un bogue.
+
+- ## Making an operation total
++ ## Rendre une opération totale
+
+- An operation is partial when it has nothing to return for some of its inputs. There are
+- three honest ways to make it total, and one dishonest one:
++ Une opération est partielle lorsqu'elle n'a rien à renvoyer pour certaines de ses entrées. Il y a
++ trois façons honnêtes de la rendre totale, et une malhonnête :
+
+- ```tabular
++ ```tabular
+
+- column  Technique
++ column  Technique
+
+- column  An undefined input becomes
+- row  widen the return type to admit absence  an `Optional` that is `Unset`
+- row  widen it to admit failure  a typed error, handled at the call site
+- row  narrow the input type  impossible to pass
+- row  return a plausible value (dishonest)  a wrong answer that propagates
++ column  Une entrée indéfinie devient
++ row  élargir le type de retour pour admettre l'absence  un `Optional` qui vaut `Unset`
++ row  l'élargir pour admettre l'échec  une erreur typée, gérée sur le site d'appel
++ row  restreindre le type d'entrée  impossible à passer
++ row  renvoyer une valeur plausible (malhonnête)  une mauvaise réponse qui se propage
+
+= row  return a plausible value (dishonest)  a wrong answer that propagates
+- ```
++ ```
+
+- **Widen the return type to admit absence.** A lookup that may find nothing returns an
+- `Optional`, so "not found" is a value rather than an exception or a `null`:
++ **Élargir le type de retour pour admettre l'absence.** Une recherche qui peut ne rien trouver
++ renvoie un `Optional`, si bien que « introuvable » est une valeur plutôt qu'une exception ou un
++ `null` :
+
+= `Optional`, so "not found" is a value rather than an exception or a `null`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Optional`, so "not found" is a value rather than an exception or a `null`:
+=
+= ```scala fuel
+- parse
++ parse
+
+= `Optional`, so "not found" is a value rather than an exception or a `null`:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- enumerable.value(t"North")    // Optional[Direction]
++ enumerable.value(t"North")    // Optional[Direction]
+
+- tracked.locate(pointer)       // Optional[Position] — an unresolved path is not an error
++ tracked.locate(pointer)       // Optional[Position] — an unresolved path is not an error
+
+= tracked.locate(pointer)       // Optional[Position] — an unresolved path is not an error
+- ```
++ ```
+
+- **Widen it to admit failure.** Where the caller should know *why*, the operation raises a
+- typed error and the response is chosen at the call site:
++ **L'élargir pour admettre l'échec.** Lorsque l'appelant doit savoir *pourquoi*, l'opération lève
++ une erreur typée et la réponse est choisie sur le site d'appel :
+
+= typed error and the response is chosen at the call site:
+=
+- ```scala fuel
++ ```scala fuel
+
+= typed error and the response is chosen at the call site:
+=
+= ```scala fuel
+- parse
++ parse
+
+= typed error and the response is chosen at the call site:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def parsePort(text: Text): Port raises PortError raises NumberError
++ def parsePort(text: Text): Port raises PortError raises NumberError
+
+= def parsePort(text: Text): Port raises PortError raises NumberError
+- ```
++ ```
+
+- **Narrow the input type.** Best of all, where it is available: if the operation is
+- undefined for some inputs, take an input type that excludes them. `Port` exists precisely
+- so that `connect` need not be partial.
++ **Restreindre le type d'entrée.** C'est la meilleure solution, quand elle est disponible : si
++ l'opération est indéfinie pour certaines entrées, prendre un type d'entrée qui les exclut. `Port`
++ existe précisément pour que `connect` n'ait pas à être partielle.
+
+- The dishonest way is to return a plausible value for the undefined cases — zero, empty,
+- the first element — which converts a detectable failure into a wrong answer that
+- propagates.
++ La façon malhonnête consiste à renvoyer une valeur plausible pour les cas indéfinis — zéro, vide,
++ le premier élément — ce qui transforme un échec détectable en une mauvaise réponse qui se
++ propage.
+
+- ## Exhaustivity as a change-propagation tool
++ ## L'exhaustivité comme outil de propagation des changements
+
+- The most valuable consequence of treating exhaustivity warnings as errors is not that
+- today's matches are complete. It is what happens tomorrow, when a case is added:
++ La conséquence la plus précieuse du fait de traiter les avertissements d'exhaustivité comme des
++ erreurs n'est pas que les filtrages d'aujourd'hui sont complets. C'est ce qui se passe demain,
++ lorsqu'un cas est ajouté :
+
+= today's matches are complete. It is what happens tomorrow, when a case is added:
+=
+- ```scala fuel
++ ```scala fuel
+
+= today's matches are complete. It is what happens tomorrow, when a case is added:
+=
+= ```scala fuel
+- parse
++ parse
+
+= parse
+- frame
++ frame
+
+-   label Yesterday
++   label Hier
+
+=   label Yesterday
+-   code
++   code
+
+=   label Yesterday
+=   code
+-       enum Connection:
++       enum Connection:
+
+=   label Yesterday
+=   code
+=       enum Connection:
+-         case Open(socket: Socket)
++         case Open(socket: Socket)
+
+=   label Yesterday
+=   code
+=       enum Connection:
+=         case Open(socket: Socket)
+-         case Failed(reason: Text)
++         case Failed(reason: Text)
+
+=   label Yesterday
+=   code
+=       enum Connection:
+=         case Open(socket: Socket)
+=         case Failed(reason: Text)
+-         case Closed
++         case Closed
+
+=         case Closed
+- frame
++ frame
+
+-   label Today
++   label Aujourd'hui
+
+=   label Today
+-   code
++   code
+
+=   label Today
+=   code
+-       enum Connection:
++       enum Connection:
+
+=   label Today
+=   code
+=       enum Connection:
+-         case Open(socket: Socket)
++         case Open(socket: Socket)
+
+=   label Today
+=   code
+=       enum Connection:
+=         case Open(socket: Socket)
+-         case Failed(reason: Text)
++         case Failed(reason: Text)
+
+=   label Today
+=   code
+=       enum Connection:
+=         case Open(socket: Socket)
+=         case Failed(reason: Text)
+-         case Closed
++         case Closed
+
+-         case Draining
++         case Draining
+
+=         case Draining
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- Every match on `Connection` that has not considered `Draining` now fails to compile, and
+- the compiler lists them. That is precisely the analysis a careful programmer would
+- otherwise perform from memory, across a codebase they may not have written — done
+- exhaustively, in seconds, on every build.
++ Chaque filtrage sur `Connection` qui n'a pas pris en compte `Draining` échoue désormais à la
++ compilation, et le compilateur les liste. C'est précisément l'analyse qu'un programmeur attentif
++ ferait sinon de mémoire, sur un code qu'il n'a peut-être pas écrit — faite de manière exhaustive,
++ en quelques secondes, à chaque build.
+
+- This is why the warning must be an *error*. As a warning it is advisory, and advisory
+- diagnostics accumulate until nobody reads them; as an error it is a tool that makes
+- adding a case safe.
++ C'est pourquoi l'avertissement doit être une *erreur*. Sous forme d'avertissement, il n'est
++ qu'indicatif, et les diagnostics indicatifs s'accumulent jusqu'à ce que personne ne les lise ;
++ sous forme d'erreur, c'est un outil qui rend sûr l'ajout d'un cas.
+
+- ## Deliberate partiality, marked
++ ## La partialité délibérée, signalée
+
+- Some matches genuinely cannot be exhaustive, usually because the compiler cannot see an
+- invariant the code has already established. Suppressing the warning would hide the
+- accidental cases along with the deliberate one, so the assertion is marked instead:
++ Certains filtrages ne peuvent vraiment pas être exhaustifs, généralement parce que le compilateur
++ ne voit pas un invariant que le code a déjà établi. Supprimer l'avertissement cacherait les cas
++ accidentels en même temps que le cas délibéré ; on marque donc plutôt l'assertion :
+
+= accidental cases along with the deliberate one, so the assertion is marked instead:
+=
+- ```scala fuel
++ ```scala fuel
+
+= accidental cases along with the deliberate one, so the assertion is marked instead:
+=
+= ```scala fuel
+- parse
++ parse
+
+- substitute ???  ...
++ substitute ???  ...
+
+= substitute ???  ...
+- ##
++ ##
+
+- expr.absolve match
++ expr.absolve match
+
+-   case '{ $value: Int } => ???
++   case '{ $value: Int } => ???
+
+=   case '{ $value: Int } => ???
+- ```
++ ```
+
+- `absolve` is Scala's `runtimeChecked` under a name that reads as what it means. It marks
+- one expression, so nothing else is silenced; it is greppable, so every such assertion can
+- be found and reviewed; and it is a claim the writer is making, which is exactly the
+- status such an assertion should have.
++ `absolve` est le `runtimeChecked` de Scala sous un nom qui se lit comme ce qu'il signifie. Il
++ marque une seule expression, donc rien d'autre n'est réduit au silence ; on peut le trouver par
++ grep, donc chaque assertion de ce genre peut être retrouvée et relue ; et c'est une affirmation que
++ fait son auteur, ce qui est exactement le statut qu'une telle assertion doit avoir.
+
+- ## Where totality is not achievable
++ ## Là où la totalité n'est pas atteignable
+
+- Two limits, worth stating.
++ Deux limites, qui méritent d'être énoncées.
+
+- **The world is partial.** Opening a file that exists may still fail — the disk, the
+- permissions, a race with another process. No return type makes that total; the honest
+- response is a typed error, which is totality of the *signature* rather than of the
+- operation.
++ **Le monde est partiel.** Ouvrir un fichier qui existe peut tout de même échouer — le disque, les
++ permissions, une concurrence avec un autre processus. Aucun type de retour ne rend cela total ; la
++ réponse honnête est une erreur typée, qui est la totalité de la *signature* plutôt que de
++ l'opération.
+
+- **Some invariants outrun the type system.** Whether a hostname resolves, whether two
+- independently-validated values are consistent with each other, whether a schema and a
+- document that both parsed actually agree — these are checkable, but not by construction.
+- The discipline is to make the check produce a value that carries its result, so that
+- downstream code inherits the guarantee rather than repeating the check.
++ **Certains invariants dépassent le système de types.** Savoir si un nom d'hôte se résout, si deux
++ valeurs validées indépendamment sont cohérentes entre elles, si un schéma et un document qui ont
++ tous deux été analysés concordent réellement — tout cela est vérifiable, mais pas par
++ construction. La discipline consiste à faire produire à la vérification une valeur qui porte son
++ résultat, afin que le code en aval hérite de la garantie au lieu de répéter la vérification.
+
+- See [impossible states](impossible-states.md) for the companion rule — the two are
+- useless apart, since total transitions between meaningless states preserve nothing worth
+- preserving.
++ Voir [les états impossibles](impossible-states.md) pour la règle compagne — les deux sont inutiles
++ l'une sans l'autre, puisque des transitions totales entre des états dénués de sens ne préservent
++ rien qui vaille la peine d'être préservé.

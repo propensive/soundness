@@ -1,0 +1,1333 @@
+orthant 1 language
+
+- ## Derivation
++ ## Derivazione
+
+- ### About
++ ### Panoramica
+
+- The derived codecs which appear throughout these libraries, such as [JSON](json.md) encoders
+- from case classes, [CSV](csv.md) rows from fields and digests from structures, are all produced
+- by one derivation engine. It generates a [typeclass] instance for any *product*, which is a case
+- class, whose instance combines those of its fields, or any *coproduct*, which is an
+- [enumeration] or sealed trait, whose instance dispatches on the variant. A typeclass author
+- writes the two rules of combination once, and every user-defined type gains an instance for
+- free.
++ I codec derivati che compaiono in tutte queste librerie, come gli encoder [JSON](json.md) dalle
++ case class, le righe [CSV](csv.md) dai campi e i digest dalle strutture, sono tutti prodotti da
++ un unico motore di derivazione. Genera un'istanza di [typeclass] per qualunque *prodotto*, cioè
++ una case class, la cui istanza combina quelle dei suoi campi, o per qualunque *coprodotto*, cioè
++ un'[enumerazione] o un sealed trait, la cui istanza smista in base alla variante. L'autore di una
++ typeclass scrive una sola volta le due regole di combinazione, e ogni tipo definito dall'utente
++ ottiene gratuitamente un'istanza.
+
+- To the user of a typeclass, [derivation] is invisible. Defining a case class is enough. To the
+- author of a typeclass, it is two methods: one which says how fields combine, and one which says
+- how variants are told apart.
++ Per chi usa una typeclass, la [derivazione] è invisibile. Basta definire una case class. Per
++ l'autore di una typeclass, sono due metodi: uno che dice come si combinano i campi, e uno che
++ dice come si distinguono le varianti.
+
+- ### On derivation
++ ### Sulla derivazione
+
+- The instances of most typeclasses over most data types are mechanical. A `Show` for a case class
+- shows each field. An `Eq` compares each field. A JSON encoder encodes each field under its name.
+- Writing them by hand is boilerplate which drifts. Writing a macro for each typeclass needs
+- expertise which most libraries do not have. What is wanted is a statement of the two general
+- rules, that products combine and coproducts choose, from which every concrete instance follows.
++ Le istanze della maggior parte delle typeclass sulla maggior parte dei tipi di dati sono
++ meccaniche. Uno `Show` per una case class mostra ogni campo. Un `Eq` confronta ogni campo. Un
++ encoder JSON codifica ogni campo sotto il suo nome. Scriverle a mano è codice ripetitivo che si
++ disallinea. Scrivere una macro per ogni typeclass richiede competenze che la maggior parte delle
++ librerie non ha. Ciò che si vuole è un enunciato delle due regole generali, che i prodotti
++ combinano e i coprodotti scelgono, da cui segue ogni istanza concreta.
+
+- The engine here, the successor to Magnolia, provides exactly that, as ordinary inheritance and
+- not as macro-writing. Derivation is what makes [small APIs](../../philosophy/small-apis.md)
+- possible: a typeclass needs two rules, not an instance for each type.
++ Il motore qui presente, successore di Magnolia, fornisce esattamente questo, come normale
++ ereditarietà e non come scrittura di macro. La derivazione è ciò che rende possibili le
++ [API piccole](../../philosophy/small-apis.md): una typeclass ha bisogno di due regole, non di
++ un'istanza per ogni tipo.
+
+- Everything comes from the `soundness` package. The second import brings in the `label` of a
+- field, whose name the umbrella shares with a browser element's. The third permits indexing the
+- arrays of fields which a derivation produces, and the fourth chooses a [strategy] for errors:
++ Tutto proviene dal package `soundness`. Il secondo import porta la `label` di un campo, il cui
++ nome il modulo ombrello condivide con quello di un elemento del browser. Il terzo permette di
++ indicizzare gli array di campi che una derivazione produce, e il quarto sceglie una [strategia]
++ per gli errori:
+
+= arrays of fields which a derivation produces, and the fourth chooses a [strategy] for errors:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import wisteria.label
++ import wisteria.label
+
+- import dysasymptotics.linearAccess
++ import dysasymptotics.linearAccess
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- The samples on this page are checked by a compiled test in the library, `wisteria_doccheck.scala`.
+- They are not run here.
++ Gli esempi in questa pagina sono verificati da un test compilato nella libreria,
++ `wisteria_doccheck.scala`. Qui non vengono eseguiti.
+
+- ### Products, sums and typeclasses
++ ### Prodotti, somme e typeclass
+
+- Two words carry most of the weight, *product* and *sum*:
++ Due parole portano la maggior parte del peso, *prodotto* e *somma*:
+
+= Two words carry most of the weight, *product* and *sum*:
+=
+- ```tabular
++ ```tabular
+
+- column  Kind
+- column  A type which is
+- column  For example
+- column  Made of
+- row  product  a fixed sequence of values of other types  a case class, an enumeration case, a tuple, a singleton  *fields*
+- row  sum  a single choice from a fixed set of disjoint types  an enumeration, a sealed trait  *variants*
++ column  Tipo
++ column  Un tipo che è
++ column  Per esempio
++ column  Fatto di
++ row  prodotto  una sequenza fissa di valori di altri tipi  una case class, un caso di enumerazione, una tupla, un singleton  *campi*
++ row  somma  una singola scelta da un insieme fisso di tipi disgiunti  un'enumerazione, un sealed trait  *varianti*
+
+= row  sum  a single choice from a fixed set of disjoint types  an enumeration, a sealed trait  *variants*
+- ```
++ ```
+
+- The fields of a product have fixed types, a canonical order and labels. Products and sums are
+- category-theoretic duals, and so, correspondingly, are fields and variants.
++ I campi di un prodotto hanno tipi fissi, un ordine canonico ed etichette. Prodotti e somme sono
++ duali nel senso della teoria delle categorie, e così, di conseguenza, lo sono campi e varianti.
+
+= category-theoretic duals, and so, correspondingly, are fields and variants.
+=
+- ```scala
++ ```scala
+
+- sealed trait Temporal
++ sealed trait Temporal
+
+- enum Month:
++ enum Month:
+
+-   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
++   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
+
+- case class Date(day: Int, month: Month, year: Int) extends Temporal
++ case class Date(day: Int, month: Month, year: Int) extends Temporal
+
+- case class Time(hour: Int, minute: Int)
++ case class Time(hour: Int, minute: Int)
+
+- case class DateTime(date: Date, time: Time) extends Temporal
++ case class DateTime(date: Date, time: Time) extends Temporal
+
+= case class DateTime(date: Date, time: Time) extends Temporal
+- ```
++ ```
+
+- Here `Temporal` is a sum whose variants are `Date` and `DateTime`. `Date`, `Time` and `DateTime`
+- are products, and `day`, `month` and `year` are the fields of `Date`. `Month` is a sum whose
+- twelve variants are themselves products: singletons, which are products with no fields.
++ Qui `Temporal` è una somma le cui varianti sono `Date` e `DateTime`. `Date`, `Time` e `DateTime`
++ sono prodotti, e `day`, `month` e `year` sono i campi di `Date`. `Month` è una somma le cui
++ dodici varianti sono a loro volta prodotti: singleton, cioè prodotti senza campi.
+
+- Typeclasses divide along a related line. Where the type parameter appears in the *return* type
+- of the abstract method, the typeclass is a *producer*. It makes new instances of that type, and
+- may be covariant. Where the parameter appears in the method's *parameters*, the typeclass is a
+- *consumer*. Existing instances are handed to it, and it may be contravariant. Nothing is used
+- up. The word only says which way the value travels:
++ Le typeclass si dividono lungo una linea affine. Dove il parametro di tipo compare nel tipo di
++ *ritorno* del metodo astratto, la typeclass è un *producer*. Crea nuove istanze di quel tipo, e
++ può essere covariante. Dove il parametro compare nei *parametri* del metodo, la typeclass è un
++ *consumatore*. Le istanze esistenti le vengono consegnate, e può essere controvariante. Nulla
++ viene esaurito. La parola dice solo in quale direzione viaggia il valore:
+
+= up. The word only says which way the value travels:
+=
+- ```scala
++ ```scala
+
+- trait Presenting[value]:
++ trait Presenting[value]:
+
+= trait Presenting[value]:
+-   def present(value: value): Text
++   def present(value: value): Text
+
+- trait Producing[+value]:
++ trait Producing[+value]:
+
+-   def produce(): value
++   def produce(): value
+
+=   def produce(): value
+- ```
++ ```
+
+- The distinction matters because the two derive differently. A consumer folds over the fields of
+- a value it was given. A producer has no value to fold over, and must build one.
++ La distinzione conta perché i due si derivano in modo diverso. Un consumatore esegue un
++ fold sui campi di un valore che ha ricevuto. Un producer non ha alcun valore su cui
++ eseguire il fold, e deve costruirne uno.
+
+- ### Deriving instances of a typeclass
++ ### Derivare le istanze di una typeclass
+
+- A typeclass gains derivation by extending `Derivation`, or `ProductDerivation` where only case
+- classes make sense, and implementing `conjunction` for products and `disjunction` for
+- coproducts. Here is a Show-like typeclass in full, with the extension method which makes it
+- convenient to call:
++ Una typeclass acquisisce la derivazione estendendo `Derivation`, oppure `ProductDerivation`
++ dove hanno senso solo le case class, e implementando `conjunction` per i prodotti e
++ `disjunction` per i coprodotti. Ecco per intero una typeclass simile a Show, con il metodo di
++ estensione che ne rende comoda la chiamata:
+
+= convenient to call:
+=
+- ```scala
++ ```scala
+
+- trait Presentation[value]:
++ trait Presentation[value]:
+
+= trait Presentation[value]:
+-   def present(value: value): Text
++   def present(value: value): Text
+
+- object Presentation extends Derivation[Presentation]:
++ object Presentation extends Derivation[Presentation]:
+
+-   given Presentation[Text] = identity(_)
++   given Presentation[Text] = identity(_)
+
+-   given Presentation[Int] = _.toString.tt
++   given Presentation[Int] = _.toString.tt
+
+-   inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] =
++   inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] =
+
+=   inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] =
+-     value =>
++     value =>
+
+-       fields(value):
++       fields(value):
+
+-         [field] => field => t"$label=${contextual.present(field)}"
++         [field] => field => t"$label=${contextual.present(field)}"
+
+-       . join(t"${typeName[derivation]}(", t", ", t")")
++       . join(t"${typeName[derivation]}(", t", ", t")")
+
+-   inline def disjunction[derivation: SumReflection]: Presentation[derivation] =
++   inline def disjunction[derivation: SumReflection]: Presentation[derivation] =
+
+=   inline def disjunction[derivation: SumReflection]: Presentation[derivation] =
+-     value =>
++     value =>
+
+=     value =>
+-       variant(value):
++       variant(value):
+
+-         [variant <: derivation] => variant => contextual.present(variant)
++         [variant <: derivation] => variant => contextual.present(variant)
+
+=         [variant <: derivation] => variant => contextual.present(variant)
+=
+- extension [value](value: value)
++ extension [value](value: value)
+
+-   def present(using presentation: Presentation[value]): Text = presentation.present(value)
++   def present(using presentation: Presentation[value]): Text = presentation.present(value)
+
+=   def present(using presentation: Presentation[value]): Text = presentation.present(value)
+- ```
++ ```
+
+- `fields` folds over the fields of a product, and gives each one its `label`, its position, and
+- the `contextual` instance of the typeclass for its type. `variant` dispatches on the actual case
+- of a coproduct. That is the whole cost of derivation for a typeclass.
++ `fields` esegue un fold sui campi di un prodotto, e dà a ciascuno la sua `label`, la sua
++ posizione e l'istanza `contextual` della typeclass per il suo tipo. `variant` smista in base al
++ caso effettivo di un coprodotto. Questo è l'intero costo della derivazione per una typeclass.
+
+- `fields` and `variant` are two of a small set of primitives, which the sections below introduce
+- in turn:
++ `fields` e `variant` sono due di un piccolo insieme di primitive, che le sezioni seguenti
++ introducono una per una:
+
+= in turn:
+=
+- ```tabular
++ ```tabular
+
+- column  Primitive
+- column  Used in
+- column  Does
+- row  `fields(value)`  `conjunction`  folds over a product's fields, with their values
+- row  `contexts[derivation]()`  `conjunction`  folds over a product's fields, with no value in hand
+- row  `build[derivation]`  `conjunction`  constructs a product from a value for each field
+- row  `construct`  `conjunction`  constructs a product inside a type constructor, given its `pure` and `bind`
+- row  `dereference`  a `contexts` lambda  extracts the current field from a product
+- row  `variant(value)`  `disjunction`  dispatches on the variant of a value
+- row  `delegate[derivation](label)`  `disjunction`  dispatches to the variant a label names
+- row  `complement(other)`  a `variant` lambda  narrows another value to the same variant, as an `Optional`
+- row  `choice[derivation]`  `disjunction`  says, as the code compiles, whether every variant is a singleton
+- row  `choices[derivation]`  `disjunction`  folds over every variant, with no value in hand
+- row  `singleton[derivation](label)`  `disjunction`  yields the singleton a label names
+- row  `variantLabels[derivation]`  `disjunction`  lists the labels of the variants
++ column  Primitiva
++ column  Usata in
++ column  Fa
++ row  `fields(value)`  `conjunction`  esegue un fold sui campi di un prodotto, con i loro valori
++ row  `contexts[derivation]()`  `conjunction`  esegue un fold sui campi di un prodotto, senza alcun valore a disposizione
++ row  `build[derivation]`  `conjunction`  costruisce un prodotto a partire da un valore per ogni campo
++ row  `construct`  `conjunction`  costruisce un prodotto all'interno di un costruttore di tipo, dati i suoi `pure` e `bind`
++ row  `dereference`  una lambda di `contexts`  estrae il campo corrente da un prodotto
++ row  `variant(value)`  `disjunction`  smista in base alla variante di un valore
++ row  `delegate[derivation](label)`  `disjunction`  smista verso la variante nominata da un'etichetta
++ row  `complement(other)`  una lambda di `variant`  restringe un altro valore alla stessa variante, come `Optional`
++ row  `choice[derivation]`  `disjunction`  dice, durante la compilazione del codice, se ogni variante è un singleton
++ row  `choices[derivation]`  `disjunction`  esegue un fold su ogni variante, senza alcun valore a disposizione
++ row  `singleton[derivation](label)`  `disjunction`  produce il singleton nominato da un'etichetta
++ row  `variantLabels[derivation]`  `disjunction`  elenca le etichette delle varianti
+
+= row  `variantLabels[derivation]`  `disjunction`  lists the labels of the variants
+- ```
++ ```
+
+- The `[field] => field => …` syntax is a *polymorphic lambda*, and it is worth a moment, because it
+- is the one unfamiliar piece. It stands to a polymorphic method exactly as an ordinary lambda
+- stands to an ordinary one. Where the lambda for `def transform(field: Field): Text` is
+- `Field => Text`, the lambda for `def transform[field](field: field): Text` is
+- `[field] => field => Text`.
++ La sintassi `[field] => field => …` è una *lambda polimorfica*, e merita un momento di
++ attenzione, perché è l'unico pezzo poco familiare. Sta a un metodo polimorfico esattamente come
++ una lambda ordinaria sta a un metodo ordinario. Dove la lambda per
++ `def transform(field: Field): Text` è `Field => Text`, la lambda per
++ `def transform[field](field: field): Text` è `[field] => field => Text`.
+
+- It is needed because each field has a different type, and the body knows nothing at all about
+- those types, except the one thing which matters: that two occurrences of `field` name the *same*
+- type. That is enough, because it means the `contextual` instance supplied beside the field is a
+- `Presentation[field]` for precisely this field's type, and can therefore be applied to it. The
+- body of a derivation has no other way to do anything with a value whose type it cannot see.
+- That is also why parametricity makes these bodies nearly write themselves.
++ È necessaria perché ogni campo ha un tipo diverso, e il corpo non sa nulla di quei tipi, tranne
++ l'unica cosa che conta: che due occorrenze di `field` nominano lo *stesso* tipo. Basta questo,
++ perché significa che l'istanza `contextual` fornita accanto al campo è una `Presentation[field]`
++ proprio per il tipo di questo campo, e può quindi essere applicata a esso. Il corpo di una
++ derivazione non ha altro modo di fare qualcosa con un valore di cui non può vedere il tipo. È
++ anche per questo che la parametricità fa sì che questi corpi quasi si scrivano da soli.
+
+- `contexts` is the same fold without a value to fold over, and gives the typeclass instance of
+- each field alone. `typeName`, `tuple` and `singleton` describe the product being derived for,
+- so a derivation can drop the type name for a tuple, or the parentheses for a singleton.
++ `contexts` è lo stesso fold senza un valore su cui eseguirlo, e dà la sola istanza della
++ typeclass di ogni campo. `typeName`, `tuple` e `singleton` descrivono il prodotto per cui si
++ deriva, per cui una derivazione può omettere il nome del tipo per una tupla, o le parentesi per
++ un singleton.
+
+- ### Using a derived instance
++ ### Usare un'istanza derivata
+
+- With the object above in scope, any case class or enumeration has a `Presentation`. It is
+- resolved automatically, or requested explicitly with a `derives` clause:
++ Con l'oggetto precedente nell'ambito, qualunque case class o enumerazione ha una `Presentation`.
++ Viene risolta automaticamente, oppure richiesta esplicitamente con una clausola `derives`:
+
+= resolved automatically, or requested explicitly with a `derives` clause:
+=
+- ```scala fuel
++ ```scala fuel
+
+= resolved automatically, or requested explicitly with a `derives` clause:
+=
+= ```scala fuel
+- parse
++ parse
+
+= resolved automatically, or requested explicitly with a `derives` clause:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- case class Person(name: Text, age: Int) derives Presentation
++ case class Person(name: Text, age: Int) derives Presentation
+
+- val presented: Text = Person(t"Hamlet", 30).present
++ val presented: Text = Person(t"Hamlet", 30).present
+
+= val presented: Text = Person(t"Hamlet", 30).present
+- ```
++ ```
+
+- Here `presented` is `t"Person(name=Hamlet, age=30)"`. Nested structures derive recursively. A
+- case class of case classes needs nothing more.
++ Qui `presented` è `t"Person(name=Hamlet, age=30)"`. Le strutture annidate si derivano
++ ricorsivamente. Una case class di case class non richiede nient'altro.
+
+- ### What a derivation can see
++ ### Che cosa può vedere una derivazione
+
+- Inside `conjunction`, each field carries more than its value, and the type being derived for can
+- be described too:
++ All'interno di `conjunction`, ogni campo porta più del suo valore, e si può descrivere anche il
++ tipo per cui si deriva:
+
+= be described too:
+=
+- ```tabular
++ ```tabular
+
+- column  Value
+- column  Available in
+- column  Gives
+- row  `label`  the lambda of any primitive that visits fields or variants  the field's or variant's name as written
+- row  `index`  the lambda of any primitive that visits fields or variants  its position
+- row  `contextual`  the lambda of any primitive that visits fields or variants  the instance of the typeclass for its type
+- row  `default`  the lambdas of `fields`, `contexts`, `build` and `construct`  the field's declared default, or `Unset`
+- row  `typeName[derivation]`  a derivation  the name of the type being derived for
+- row  `tuple[derivation]`  a derivation  whether that type is a tuple
+- row  `singleton[derivation]`  a derivation  whether that type is a singleton
++ column  Valore
++ column  Disponibile in
++ column  Dà
++ row  `label`  la lambda di qualunque primitiva che visita campi o varianti  il nome del campo o della variante così come è scritto
++ row  `index`  la lambda di qualunque primitiva che visita campi o varianti  la sua posizione
++ row  `contextual`  la lambda di qualunque primitiva che visita campi o varianti  l'istanza della typeclass per il suo tipo
++ row  `default`  le lambda di `fields`, `contexts`, `build` e `construct`  il valore predefinito dichiarato del campo, oppure `Unset`
++ row  `typeName[derivation]`  una derivazione  il nome del tipo per cui si deriva
++ row  `tuple[derivation]`  una derivazione  se quel tipo è una tupla
++ row  `singleton[derivation]`  una derivazione  se quel tipo è un singleton
+
+= row  `singleton[derivation]`  a derivation  whether that type is a singleton
+- ```
++ ```
+
+- A derivation can therefore produce something which mentions the structure, and not only
+- something which folds over it. Here it produces the labels of a product's fields, with no value
+- in hand, through `contexts`. Since derivation composes the instances of a product's fields,
+- every field type needs one, even where it is trivial, as it is for the labels of a `Text` or an
+- `Int`, which have none:
++ Una derivazione può quindi produrre qualcosa che menziona la struttura, e non solo qualcosa che
++ esegue un fold su di essa. Qui produce le etichette dei campi di un prodotto, senza alcun
++ valore a disposizione, tramite `contexts`. Poiché la derivazione compone le istanze dei campi di
++ un prodotto, ogni tipo di campo ne ha bisogno di una, anche dove è banale, come per le etichette
++ di un `Text` o di un `Int`, che non ne hanno:
+
+= `Int`, which have none:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Int`, which have none:
+=
+= ```scala fuel
+- parse
++ parse
+
+= `Int`, which have none:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- trait Labels[value]:
++ trait Labels[value]:
+
+-   def labels: List[Text]
++   def labels: List[Text]
+
+- object Labels extends ProductDerivation[Labels]:
++ object Labels extends ProductDerivation[Labels]:
+
+-   given Labels[Text] = new Labels[Text] { def labels: List[Text] = Nil }
++   given Labels[Text] = new Labels[Text] { def labels: List[Text] = Nil }
+
+-   given Labels[Int] = new Labels[Int] { def labels: List[Text] = Nil }
++   given Labels[Int] = new Labels[Int] { def labels: List[Text] = Nil }
+
+-   inline def conjunction[derivation <: Product: ProductReflection]: Labels[derivation] =
++   inline def conjunction[derivation <: Product: ProductReflection]: Labels[derivation] =
+
+-     val fieldLabels = contexts[derivation]() { [field] => context => label }
++     val fieldLabels = contexts[derivation]() { [field] => context => label }
+
+-     new Labels[derivation]:
++     new Labels[derivation]:
+
+-       def labels: List[Text] = fieldLabels.to[List]
++       def labels: List[Text] = fieldLabels.to[List]
+
+- case class Empty()
++ case class Empty()
+
+- Labels.derived[Person].labels
++ Labels.derived[Person].labels
+
+- Labels.derived[Empty].labels
++ Labels.derived[Empty].labels
+
+= Labels.derived[Empty].labels
+- ```
++ ```
+
+- `Labels.derived[Person].labels` is `List(t"name", t"age")`, and `Labels.derived[Empty].labels`
+- is the empty list. An empty product is a product with no fields, and a single-field product is
+- not a special case. Both derive from the same rule, which is where hand-written instances
+- usually go wrong.
++ `Labels.derived[Person].labels` è `List(t"name", t"age")`, e `Labels.derived[Empty].labels` è
++ la lista vuota. Un prodotto vuoto è un prodotto senza campi, e un prodotto con un solo campo non è
++ un caso speciale. Entrambi derivano dalla stessa regola, ed è proprio qui che le istanze scritte
++ a mano di solito sbagliano.
+
+- Inside `disjunction`, `variant` narrows the value to its actual case, so the body is typed at
+- that case rather than at the sum, and the case's own label is available for a discriminator.
++ All'interno di `disjunction`, `variant` restringe il valore al suo caso effettivo, per cui il
++ corpo è tipizzato su quel caso anziché sulla somma, e l'etichetta propria del caso è disponibile
++ per un discriminatore.
+
+- ### Producing a value rather than consuming one
++ ### Produrre un valore anziché consumarlo
+
+- A producer has no instance to fold over, so instead of `fields` it uses `build`, which constructs
+- a new instance of the product. Its lambda receives the typeclass instance for each field, which
+- is the only thing capable of making a value of a type the body cannot see, and returns the value
+- of that field. Here is a parser of comma-separated fields, in full:
++ Un producer non ha alcuna istanza su cui eseguire un fold, per cui invece di `fields` usa
++ `build`, che costruisce una nuova istanza del prodotto. La sua lambda riceve l'istanza della
++ typeclass per ogni campo, che è l'unica cosa in grado di creare un valore di un tipo che il
++ corpo non può vedere, e restituisce il valore di quel campo. Ecco per intero un parser di campi
++ separati da virgole:
+
+= of that field. Here is a parser of comma-separated fields, in full:
+=
+- ```scala fuel
++ ```scala fuel
+
+= of that field. Here is a parser of comma-separated fields, in full:
+=
+= ```scala fuel
+- parse
++ parse
+
+= of that field. Here is a parser of comma-separated fields, in full:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- trait Parsing[value]:
++ trait Parsing[value]:
+
+-   def parse(text: Text): value
++   def parse(text: Text): value
+
+- object Parsing extends ProductDerivation[Parsing]:
++ object Parsing extends ProductDerivation[Parsing]:
+
+-   given Parsing[Text] = identity(_)
++   given Parsing[Text] = identity(_)
+
+-   given Parsing[Int] = _.s.toInt
++   given Parsing[Int] = _.s.toInt
+
+=
+-   inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
++   inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+
+=   inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+-     text =>
++     text =>
+
+-       val columns = text.cut(t",")
++       val columns = text.cut(t",")
+
+-       build[derivation]:
++       build[derivation]:
+
+-         [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
++         [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
+
+- Parsing.derived[Person].parse(t"Hamlet,30")
++ Parsing.derived[Person].parse(t"Hamlet,30")
+
+= Parsing.derived[Person].parse(t"Hamlet,30")
+- ```
++ ```
+
+- `Parsing.derived[Person].parse(t"Hamlet,30")` is `Person(t"Hamlet", 30)`. `Parsing` is a
+- typeclass of its own, and not the `Readable` which `read` looks for, so
+- `t"Hamlet,30".read[Person]` does not compile. Its instances are reached through `derived`.
++ `Parsing.derived[Person].parse(t"Hamlet,30")` è `Person(t"Hamlet", 30)`. `Parsing` è una
++ typeclass a sé, e non il `Readable` che `read` cerca, per cui `t"Hamlet,30".read[Person]` non
++ compila. Le sue istanze si raggiungono tramite `derived`.
+
+- The counterpart for sums is `delegate`, which takes the label of the variant to build, and
+- dispatches to the instance of that variant. `variant` can read the answer off a value it was
+- given. `delegate` is told which variant to produce, so the label usually comes out of the input,
+- here a `Date:` or `DateTime:` prefix. A label which names no variant raises a `Variant.Error`:
++ La controparte per le somme è `delegate`, che riceve l'etichetta della variante da costruire e
++ smista verso l'istanza di quella variante. `variant` può ricavare la risposta da un valore che
++ ha ricevuto. A `delegate` viene detto quale variante produrre, per cui l'etichetta di solito
++ proviene dall'input, qui un prefisso `Date:` o `DateTime:`. Un'etichetta che non nomina alcuna
++ variante solleva un `Variant.Error`:
+
+= here a `Date:` or `DateTime:` prefix. A label which names no variant raises a `Variant.Error`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= here a `Date:` or `DateTime:` prefix. A label which names no variant raises a `Variant.Error`:
+=
+= ```scala fuel
+- parse
++ parse
+
+= here a `Date:` or `DateTime:` prefix. A label which names no variant raises a `Variant.Error`:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- object ParsingSums extends Derivation[Parsing]:
++ object ParsingSums extends Derivation[Parsing]:
+
+= object ParsingSums extends Derivation[Parsing]:
+-   inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
++   inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+
+-     Parsing.conjunction[derivation]
++     Parsing.conjunction[derivation]
+
+-   inline def disjunction[derivation: SumReflection]: Parsing[derivation] =
++   inline def disjunction[derivation: SumReflection]: Parsing[derivation] =
+
+=   inline def disjunction[derivation: SumReflection]: Parsing[derivation] =
+-     text =>
++     text =>
+
+-       text.cut(t":") match
++       text.cut(t":") match
+
+-         case List(prefix: Text, rest: Text) =>
++         case List(prefix: Text, rest: Text) =>
+
+-           delegate[derivation](prefix):
++           delegate[derivation](prefix):
+
+-             [variant <: derivation] => parsing => parsing.parse(rest)
++             [variant <: derivation] => parsing => parsing.parse(rest)
+
+=             [variant <: derivation] => parsing => parsing.parse(rest)
+- ```
++ ```
+
+- Where the produced value is wrapped in a type constructor, as a parser which returns an
+- `Optional` or a decoder which returns an `Attempt` is, `construct` takes the polymorphic `pure`
+- and `bind` operations for that constructor, and threads the fields through it.
++ Dove il valore prodotto è avvolto in un costruttore di tipo, come lo è per un parser che
++ restituisce un `Optional` o per un decodificatore che restituisce un `Attempt`, `construct`
++ riceve le operazioni polimorfiche `pure` e `bind` per quel costruttore, e fa passare i campi
++ attraverso di esso.
+
+- ### Typeclasses over two values
++ ### Typeclass su due valori
+
+- Some typeclasses take two values of the same type. An equivalence is the obvious one. Folding
+- over the fields of the left value is easy. The corresponding field of the right value is the
+- problem. Doing it by hand would mean building parallel arrays of left fields, right fields and
+- instances, and the moment those values are separated from the lambda which typed them, their
+- types erase, and only casts put them back together.
++ Alcune typeclass ricevono due valori dello stesso tipo. Un'equivalenza è il caso ovvio. Eseguire
++ un fold sui campi del valore di sinistra è facile. Il problema è il campo corrispondente
++ del valore di destra. Farlo a mano significherebbe costruire array paralleli di campi di
++ sinistra, campi di destra e istanze, e nel momento in cui quei valori vengono separati dalla
++ lambda che li tipizzava, i loro tipi vengono cancellati, e solo dei cast li rimettono insieme.
+
+- `dereference` and `complement` avoid that. Inside `contexts`, `dereference` is a function from
+- the product to the current field, typed with that field's type, so the same field can be pulled
+- out of *both* values and handed to the one `contextual` instance. For sums, `complement` does
+- the corresponding job inside `variant`. It retrieves the other value, narrowed to the same case.
+- It returns an [`Optional`](optional-values.md), since the two values need not be the same
+- variant, and if they are not, there is no meaningfully typed value to return:
++ `dereference` e `complement` lo evitano. All'interno di `contexts`, `dereference` è una funzione
++ dal prodotto al campo corrente, tipizzata con il tipo di quel campo, per cui lo stesso campo può
++ essere estratto da *entrambi* i valori e consegnato all'unica istanza `contextual`. Per le somme,
++ `complement` svolge il compito corrispondente all'interno di `variant`. Recupera l'altro valore,
++ ristretto allo stesso caso. Restituisce un [`Optional`](optional-values.md), poiché i due valori
++ non devono necessariamente essere la stessa variante, e se non lo sono, non c'è alcun valore
++ tipizzato in modo significativo da restituire:
+
+= variant, and if they are not, there is no meaningfully typed value to return:
+=
+- ```scala fuel
++ ```scala fuel
+
+= variant, and if they are not, there is no meaningfully typed value to return:
+=
+= ```scala fuel
+- parse
++ parse
+
+= variant, and if they are not, there is no meaningfully typed value to return:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- trait Equivalence[value]:
++ trait Equivalence[value]:
+
+-   def equal(left: value, right: value): Boolean
++   def equal(left: value, right: value): Boolean
+
+- object Equivalence extends Derivation[Equivalence]:
++ object Equivalence extends Derivation[Equivalence]:
+
+-   given Equivalence[Int] = _ == _
++   given Equivalence[Int] = _ == _
+
+-   given Equivalence[Text] = _.lower == _.lower
++   given Equivalence[Text] = _.lower == _.lower
+
+-   inline def conjunction[derivation <: Product: ProductReflection]: Equivalence[derivation] =
++   inline def conjunction[derivation <: Product: ProductReflection]: Equivalence[derivation] =
+
+=   inline def conjunction[derivation <: Product: ProductReflection]: Equivalence[derivation] =
+-     (left, right) =>
++     (left, right) =>
+
+-       contexts[derivation]():
++       contexts[derivation]():
+
+-         [field] => equivalence =>
++         [field] => equivalence =>
+
+-           val extract: derivation => field = dereference
++           val extract: derivation => field = dereference
+
+-           equivalence.equal(extract(left), extract(right))
++           equivalence.equal(extract(left), extract(right))
+
+-       . all { boolean => boolean }
++       . all { boolean => boolean }
+
+-   inline def disjunction[derivation: SumReflection]: Equivalence[derivation] =
++   inline def disjunction[derivation: SumReflection]: Equivalence[derivation] =
+
+=   inline def disjunction[derivation: SumReflection]: Equivalence[derivation] =
+-     (left, right) =>
++     (left, right) =>
+
+-       variant(left):
++       variant(left):
+
+-         [variant <: derivation] => leftValue =>
++         [variant <: derivation] => leftValue =>
+
+-           complement(right).lay(false)(contextual.equal(leftValue, _))
++           complement(right).lay(false)(contextual.equal(leftValue, _))
+
+- Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))
++ Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))
+
+= Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))
+- ```
++ ```
+
+- `Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))` is `true`,
+- since the instance for `Text` ignores case. Different variants compare unequal. The same
+- variant compares through the instance which both share.
++ `Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))` è `true`,
++ poiché l'istanza per `Text` ignora maiuscole e minuscole. Varianti diverse risultano diverse nel
++ confronto. La stessa variante si confronta tramite l'istanza che entrambe condividono.
+
+- ### Enumerations of singletons
++ ### Enumerazioni di singleton
+
+- An enumeration whose cases are all singletons is a straight choice between names, with no data,
+- and it supports things which a general sum does not. `choice` reports, at [compiletime],
+- whether that is the case, so a derivation can restrict itself to such enumerations, and reject
+- the rest with a message of its own:
++ Un'enumerazione i cui casi sono tutti singleton è una semplice scelta tra nomi, senza dati, e
++ supporta cose che una somma generica non supporta. `choice` segnala, a
++ [tempo di compilazione], se è così, per cui una derivazione può limitarsi
++ a tali enumerazioni e rifiutare le altre con un messaggio proprio:
+
+= the rest with a message of its own:
+=
+- ```scala
++ ```scala
+
+- trait Naming[value]:
++ trait Naming[value]:
+
+-   def name(value: value): Text
++   def name(value: value): Text
+
+- object Naming extends Derivation[Naming]:
++ object Naming extends Derivation[Naming]:
+
+-   inline def conjunction[derivation <: Product: ProductReflection]: Naming[derivation] =
++   inline def conjunction[derivation <: Product: ProductReflection]: Naming[derivation] =
+
+-     value => typeName[derivation]
++     value => typeName[derivation]
+
+-   inline def disjunction[derivation: SumReflection]: Naming[derivation] = value =>
++   inline def disjunction[derivation: SumReflection]: Naming[derivation] = value =>
+
+-     inline if choice[derivation] then
++     inline if choice[derivation] then
+
+=     inline if choice[derivation] then
+-       variant(value):
++       variant(value):
+
+-         [variant <: derivation] => arm => t"${typeName[derivation]}.${contextual.name(arm)}"
++         [variant <: derivation] => arm => t"${typeName[derivation]}.${contextual.name(arm)}"
+
+-     else scala.compiletime.error("cannot derive Naming for a sum whose variants carry data")
++     else scala.compiletime.error("cannot derive Naming for a sum whose variants carry data")
+
+- Naming.derived[Month].name(Month.Mar)
++ Naming.derived[Month].name(Month.Mar)
+
+= Naming.derived[Month].name(Month.Mar)
+- ```
++ ```
+
+- `Naming.derived[Month].name(Month.Mar)` is `t"Month.Mar"`. The `inline if` matters. It forces
+- `choice` to be evaluated as the code compiles, so the `scala.compiletime.error` branch is either
+- eliminated or reached, and reaching it fails the build.
++ `Naming.derived[Month].name(Month.Mar)` è `t"Month.Mar"`. L'`inline if` conta. Costringe
++ `choice` a essere valutato durante la compilazione del codice, per cui il ramo
++ `scala.compiletime.error` viene eliminato oppure raggiunto, e raggiungerlo fa fallire la build.
+
+- For such an enumeration, `singleton` turns a label back into the value it names,
+- `variantLabels` lists the labels, and `choices` folds over every variant without needing a value
+- to dispatch on. That is what a derivation which produces a *schema*, rather than an instance,
+- needs.
++ Per un'enumerazione del genere, `singleton` trasforma un'etichetta nel valore che nomina,
++ `variantLabels` elenca le etichette, e `choices` esegue un fold su ogni variante senza
++ bisogno di un valore su cui smistare. È ciò di cui ha bisogno una derivazione che produce uno
++ *schema*, anziché un'istanza.
+
+- ### Default field values
++ ### Valori predefiniti dei campi
+
+- A case class may give its fields default values, and a decoder usually wants them. A field
+- absent from the input should take the default which the author wrote, and not fail. Within the
+- lambdas of `fields`, `contexts` and `build`, a contextual `Default[Optional[field]]` is
+- available, and calling `default` gives an `Optional[field]`: the declared default, or `Unset`
+- where the field has none. Here is a parser which tolerates missing trailing columns:
++ Una case class può dare valori predefiniti ai propri campi, e un decodificatore di solito li
++ vuole. Un campo assente dall'input dovrebbe prendere il valore predefinito scritto dall'autore,
++ e non fallire. All'interno delle lambda di `fields`, `contexts` e `build` è disponibile un
++ `Default[Optional[field]]` contestuale, e chiamare `default` dà un `Optional[field]`: il valore
++ predefinito dichiarato, oppure `Unset` dove il campo non ne ha. Ecco un parser che tollera
++ l'assenza delle colonne finali:
+
+= where the field has none. Here is a parser which tolerates missing trailing columns:
+=
+- ```scala fuel
++ ```scala fuel
+
+= where the field has none. Here is a parser which tolerates missing trailing columns:
+=
+= ```scala fuel
+- parse
++ parse
+
+= parse
+- frame
++ frame
+
+-   label Every column must be present
++   label Ogni colonna deve essere presente
+
+=   label Every column must be present
+-   code
++   code
+
+-       object StrictParsing extends ProductDerivation[Parsing]:
++       object StrictParsing extends ProductDerivation[Parsing]:
+
+=       object StrictParsing extends ProductDerivation[Parsing]:
+-         given Parsing[Text] = identity(_)
++         given Parsing[Text] = identity(_)
+
+=       object StrictParsing extends ProductDerivation[Parsing]:
+=         given Parsing[Text] = identity(_)
+-         given Parsing[Int] = _.s.toInt
++         given Parsing[Int] = _.s.toInt
+
+=       object StrictParsing extends ProductDerivation[Parsing]:
+=         given Parsing[Text] = identity(_)
+=         given Parsing[Int] = _.s.toInt
+=
+-         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
++         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+
+=       object StrictParsing extends ProductDerivation[Parsing]:
+=         given Parsing[Text] = identity(_)
+=         given Parsing[Int] = _.s.toInt
+=
+=         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+-           text =>
++           text =>
+
+=       object StrictParsing extends ProductDerivation[Parsing]:
+=         given Parsing[Text] = identity(_)
+=         given Parsing[Int] = _.s.toInt
+=
+=         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+=           text =>
+-             val columns = text.cut(t",")
++             val columns = text.cut(t",")
+
+=       object StrictParsing extends ProductDerivation[Parsing]:
+=         given Parsing[Text] = identity(_)
+=         given Parsing[Int] = _.s.toInt
+=
+=         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+=           text =>
+=             val columns = text.cut(t",")
+-             build[derivation]:
++             build[derivation]:
+
+-               [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
++               [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
+
+=               [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
+- frame
++ frame
+
+-   label A missing column takes the field's default
++   label Una colonna mancante prende il valore predefinito del campo
+
+=   label A missing column takes the field's default
+-   code
++   code
+
+-       object LenientParsing extends ProductDerivation[Parsing]:
++       object LenientParsing extends ProductDerivation[Parsing]:
+
+=       object LenientParsing extends ProductDerivation[Parsing]:
+-         given Parsing[Text] = identity(_)
++         given Parsing[Text] = identity(_)
+
+=       object LenientParsing extends ProductDerivation[Parsing]:
+=         given Parsing[Text] = identity(_)
+-         given Parsing[Int] = _.s.toInt
++         given Parsing[Int] = _.s.toInt
+
+=       object LenientParsing extends ProductDerivation[Parsing]:
+=         given Parsing[Text] = identity(_)
+=         given Parsing[Int] = _.s.toInt
+=
+-         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
++         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+
+=       object LenientParsing extends ProductDerivation[Parsing]:
+=         given Parsing[Text] = identity(_)
+=         given Parsing[Int] = _.s.toInt
+=
+=         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+-           text =>
++           text =>
+
+=       object LenientParsing extends ProductDerivation[Parsing]:
+=         given Parsing[Text] = identity(_)
+=         given Parsing[Int] = _.s.toInt
+=
+=         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+=           text =>
+-             val columns = text.cut(t",")
++             val columns = text.cut(t",")
+
+=       object LenientParsing extends ProductDerivation[Parsing]:
+=         given Parsing[Text] = identity(_)
+=         given Parsing[Int] = _.s.toInt
+=
+=         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+=           text =>
+=             val columns = text.cut(t",")
+-             build[derivation]:
++             build[derivation]:
+
+-               [field] => parsing =>
++               [field] => parsing =>
+
+-                 columns(Ordinal.zerary(index)).let(parsing.parse(_))
++                 columns(Ordinal.zerary(index)).let(parsing.parse(_))
+
+-                 . or(default.or(panic(m"no column and no default for $label")))
++                 . or(default.or(panic(m"no column and no default for $label")))
+
+-       case class Settings(name: Text, retries: Int = 3)
++       case class Settings(name: Text, retries: Int = 3)
+
+-       LenientParsing.derived[Settings].parse(t"primary")
++       LenientParsing.derived[Settings].parse(t"primary")
+
+=       LenientParsing.derived[Settings].parse(t"primary")
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- `LenientParsing.derived[Settings].parse(t"primary")` is `Settings(t"primary", 3)`.
++ `LenientParsing.derived[Settings].parse(t"primary")` è `Settings(t"primary", 3)`.
+
+- ### Deriving beyond codecs
++ ### Derivare oltre i codec
+
+- Nothing about the engine is specific to encoding. Any typeclass whose instances compose
+- structurally derives the same way, including the arithmetic ones, which combine two values of a
+- product field by field:
++ Nulla nel motore è specifico della codifica. Qualunque typeclass le cui istanze si compongano
++ strutturalmente si deriva allo stesso modo, comprese quelle aritmetiche, che combinano campo per
++ campo due valori di un prodotto:
+
+= product field by field:
+=
+- ```scala
++ ```scala
+
+- import arithmetic.addable
++ import arithmetic.addable
+
+- case class Pair(label: Text, count: Int)
++ case class Pair(label: Text, count: Int)
+
+- val sum: Pair = Pair(t"Rosen", 10) + Pair(t"crantz", 15)
++ val sum: Pair = Pair(t"Rosen", 10) + Pair(t"crantz", 15)
+
+= val sum: Pair = Pair(t"Rosen", 10) + Pair(t"crantz", 15)
+- ```
++ ```
+
+- Here `sum` is `Pair(t"Rosencrantz", 25)`. Addition on `Pair` is addition on each field, so
+- `Text` concatenates while `Int` sums, and no instance is written for `Pair` at all.
+- `Subtractable`, `Multiplicable` and their siblings follow the same rule.
++ Qui `sum` è `Pair(t"Rosencrantz", 25)`. L'addizione su `Pair` è l'addizione su ogni campo, per
++ cui `Text` concatena mentre `Int` somma, e per `Pair` non viene scritta alcuna istanza.
++ `Subtractable`, `Multiplicable` e le loro affini seguono la stessa regola.
+
+- ### When derivation fails
++ ### Quando la derivazione fallisce
+
+- A typeclass may sensibly derive for products but not for coproducts, or the reverse. Extending
+- `ProductDerivation` rather than `Derivation` says so, and applying it to a sum type is then a
+- compile error which names the mismatch, and not a surprise at [runtime]. A type with no `Mirror`
+- at all, such as an ordinary trait or a class which is not a case class, likewise fails at the
+- point of derivation, where the message can say what is missing.
++ Una typeclass può ragionevolmente derivarsi per i prodotti ma non per i coprodotti, o viceversa.
++ Estendere `ProductDerivation` anziché `Derivation` lo dichiara, e applicarla a un tipo somma è
++ allora un errore di compilazione che nomina la discrepanza, e non una sorpresa a [runtime]. Un
++ tipo senza alcun `Mirror`, come un trait ordinario o una classe che non è una case class,
++ fallisce allo stesso modo nel punto della derivazione, dove il messaggio può dire che cosa manca.
+
+- Three failures are common enough to name:
++ Tre fallimenti sono abbastanza comuni da meritare un nome:
+
+= Three failures are common enough to name:
+=
+- ```tabular
++ ```tabular
+
+- column  Symptom
+- column  Usual cause
+- column  Fix
+- row  a long message ending "given instance derived in trait Derivation does not match type…"  a polymorphic lambda's type variable has no upper bound  write `[variant <: derivation]`, not `[variant]`
+- row  a type mismatch against `Product`  `conjunction`'s type parameter lacks its bound  add `<: Product`
+- row  no instance found for a type whose fields look fine  one of *those* fields lacks an instance  compile an explicit call to `derived`, which says which
++ column  Sintomo
++ column  Causa abituale
++ column  Soluzione
++ row  un lungo messaggio che termina con "given instance derived in trait Derivation does not match type…"  la variabile di tipo di una lambda polimorfica non ha un limite superiore  scrivi `[variant <: derivation]`, non `[variant]`
++ row  un errore di tipo rispetto a `Product`  al parametro di tipo di `conjunction` manca il suo limite  aggiungi `<: Product`
++ row  nessuna istanza trovata per un tipo i cui campi sembrano a posto  a uno di *quei* campi manca un'istanza  compila una chiamata esplicita a `derived`, che dice quale
+
+= row  no instance found for a type whose fields look fine  one of *those* fields lacks an instance  compile an explicit call to `derived`, which says which
+- ```
++ ```
+
+- A recursive type is a special case. It cannot be derived in place, because the derivation would
+- have to summon itself part of the way through. Defining the instance on the type's companion,
+- with a `derives` clause, breaks the cycle:
++ Un tipo ricorsivo è un caso speciale. Non può essere derivato sul posto, perché la derivazione
++ dovrebbe evocare sé stessa a metà strada. Definire l'istanza nell'oggetto compagno del tipo, con
++ una clausola `derives`, spezza il ciclo:
+
+= with a `derives` clause, breaks the cycle:
+=
+- ```scala fuel
++ ```scala fuel
+
+= with a `derives` clause, breaks the cycle:
+=
+= ```scala fuel
+- parse
++ parse
+
+= with a `derives` clause, breaks the cycle:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- enum Tree derives Presentation:
++ enum Tree derives Presentation:
+
+-   case Leaf
++   case Leaf
+
+-   case Branch(left: Tree, value: Int, right: Tree)
++   case Branch(left: Tree, value: Int, right: Tree)
+
+- val tree: Text = Tree.Branch(Tree.Leaf, 1, Tree.Leaf).present
++ val tree: Text = Tree.Branch(Tree.Leaf, 1, Tree.Leaf).present
+
+= val tree: Text = Tree.Branch(Tree.Leaf, 1, Tree.Leaf).present
+- ```
++ ```
+
+- Here `tree` is `t"Branch(left=Leaf, value=1, right=Leaf)"`.
++ Qui `tree` è `t"Branch(left=Leaf, value=1, right=Leaf)"`.
+
+- ### Choosing between candidate instances
++ ### Scegliere tra istanze candidate
+
+- A derived instance comes from a `given` inherited from `Derivation`, so it sits at lower
+- priority than any `given` written in the body of the companion. That is usually what is wanted,
+- and occasionally not. Where a derived instance and a hand-written one are truly ambiguous,
+- adjusting priorities tends to resolve one ambiguity by creating another elsewhere.
++ Un'istanza derivata proviene da un `given` ereditato da `Derivation`, per cui ha una priorità
++ più bassa di qualunque `given` scritto nel corpo dell'oggetto compagno. Di solito è ciò che si
++ vuole, e talvolta no. Dove un'istanza derivata e una scritta a mano sono davvero ambigue,
++ regolare le priorità tende a risolvere un'ambiguità creandone un'altra altrove.
+
+- The reliable fix is to make the choice explicit, and not to rank it. Turn the competing `given`s
+- into ordinary methods, and write a single `derived` which selects among them in order, with
+- `scala.compiletime.summonFrom`:
++ La soluzione affidabile è rendere esplicita la scelta, e non classificarla. Trasforma i `given`
++ in concorrenza in metodi ordinari, e scrivi un unico `derived` che sceglie tra di essi in
++ ordine, con `scala.compiletime.summonFrom`:
+
+= `scala.compiletime.summonFrom`:
+=
+- ```scala
++ ```scala
+
+- trait Rendering[value]:
++ trait Rendering[value]:
+
+-   def render(value: value): Text
++   def render(value: value): Text
+
+- object Rendering:
++ object Rendering:
+
+-   inline given derived[Value]: Rendering[Value] = item =>
++   inline given derived[Value]: Rendering[Value] = item =>
+
+-     scala.compiletime.summonFrom:
++     scala.compiletime.summonFrom:
+
+-       case presentation: Presentation[Value] => presentation.present(item)
++       case presentation: Presentation[Value] => presentation.present(item)
+
+-       case given (Value is Showable)         => item.show
++       case given (Value is Showable)         => item.show
+
+-       case _                                 => item.toString.tt
++       case _                                 => item.toString.tt
+
+=       case _                                 => item.toString.tt
+=
+- extension [value](value: value)
++ extension [value](value: value)
+
+-   def render(using rendering: Rendering[value]): Text = rendering.render(value)
++   def render(using rendering: Rendering[value]): Text = rendering.render(value)
+
+=   def render(using rendering: Rendering[value]): Text = rendering.render(value)
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- parse
++ parse
+
+= ```
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val person: Text = Person(t"Hamlet", 30).render
++ val person: Text = Person(t"Hamlet", 30).render
+
+- val number: Text = 3.14.render
++ val number: Text = 3.14.render
+
+= val number: Text = 3.14.render
+- ```
++ ```
+
+- The first goes through `Presentation`, which `Person` derives. The second goes through
+- `Showable`, which `Double` has. Read plainly: use a `Presentation` if one exists; otherwise a
+- `Showable`, brought into scope for the right-hand side; otherwise fall back. The order in the
+- source *is* the priority, which is why this is easier to reason about than a lattice of implicit
+- scopes. The type parameter is capitalized here for a reason. In a `summonFrom` pattern, a
+- lowercase type name would be read as a fresh pattern variable, and not as the given's own
+- parameter.
++ Il primo passa per `Presentation`, che `Person` deriva. Il secondo passa per `Showable`, che
++ `Double` possiede. Letto in modo semplice: usa una `Presentation` se ne esiste una; altrimenti
++ uno `Showable`, portato nell'ambito per il lato destro; altrimenti ripiega. L'ordine nel
++ sorgente *è* la priorità, ed è per questo che è più facile ragionarci rispetto a un reticolo di
++ ambiti impliciti. Il parametro di tipo qui ha l'iniziale maiuscola per un motivo. In un pattern
++ di `summonFrom`, un nome di tipo minuscolo verrebbe letto come una nuova variabile di pattern, e
++ non come il parametro del given stesso.
+
+- The same technique gives derivation without exposing it. Define `conjunction` and `disjunction`
+- on an ordinary object rather than the companion, and call `derived` on it explicitly wherever an
+- instance is wanted, as `ParsingSums` and `LenientParsing` did above. Nothing then reaches
+- implicit search unless it is asked for.
++ La stessa tecnica dà la derivazione senza esporla. Definisci `conjunction` e `disjunction` su un
++ oggetto ordinario anziché sull'oggetto compagno, e chiama esplicitamente `derived` su di esso
++ ovunque serva un'istanza, come hanno fatto sopra `ParsingSums` e `LenientParsing`. Così nulla
++ raggiunge la ricerca implicita a meno che non venga richiesto.
+
+- ### Per-field instances
++ ### Istanze per campo
+
+- Occasionally one field of one type needs a different instance from the default: a special codec
+- for one column, or an override for one path. `specifically` builds such a map of overrides by
+- naming the paths, which are checked against the actual structure of the type:
++ Occasionalmente un campo di un tipo ha bisogno di un'istanza diversa da quella predefinita: un
++ codec speciale per una colonna, o una sostituzione per un percorso. `specifically` costruisce una
++ tale mappa di sostituzioni nominando i percorsi, che vengono verificati rispetto alla struttura
++ effettiva del tipo:
+
+= naming the paths, which are checked against the actual structure of the type:
+=
+- ```scala fuel
++ ```scala fuel
+
+= naming the paths, which are checked against the actual structure of the type:
+=
+= ```scala fuel
+- parse
++ parse
+
+= naming the paths, which are checked against the actual structure of the type:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- case class Play(hero: Person, villain: Person)
++ case class Play(hero: Person, villain: Person)
+
+- val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
++ val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+
+- given playSpecific: (Play is Specific over Json.Encodable) =
++ given playSpecific: (Play is Specific over Json.Encodable) =
+
+-   specifically:
++   specifically:
+
+-     case root.villain.name() => shout
++     case root.villain.name() => shout
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- val encoded: Text = Play(Person(t"Othello", 40), Person(t"Iago", 28)).in[Json].show
++ val encoded: Text = Play(Person(t"Othello", 40), Person(t"Iago", 28)).in[Json].show
+
+= val encoded: Text = Play(Person(t"Othello", 40), Person(t"Iago", 28)).in[Json].show
+- ```
++ ```
+
+- Here `encoded` is `{"hero":{"name":"Othello","age":40},"villain":{"name":"IAGO","age":28}}`. A
+- misspelled path, or an instance of the wrong type for its field, is a compile error. A
+- derivation which supports overrides consults the map at each field it visits, as
+- [JSON](json.md) and [catalogs](catalogs.md) do.
++ Qui `encoded` è `{"hero":{"name":"Othello","age":40},"villain":{"name":"IAGO","age":28}}`. Un
++ percorso scritto male, o un'istanza del tipo sbagliato per il suo campo, è un errore di
++ compilazione. Una derivazione che supporta le sostituzioni consulta la mappa a ogni campo che
++ visita, come fanno [JSON](json.md) e i [cataloghi](catalogs.md).
+
+- ### Related
++ ### Correlati
+
+- - [JSON](json.md), [CSV](csv.md), [XML](xml.md) and the other formats derive their codecs this
+-   way.
+- - [Annotations](annotations.md) describes the `@name` annotation which a derivation reads to
+-   rename a field.
+- - [Catalogs](catalogs.md) and [optics](optics.md) describe `Specific` and the field paths it is
+-   keyed by.
+- - [Metaprogramming](metaprogramming.md) describes the compiletime tools beneath the engine.
+- - [Generic data](generic-data.md) describes a derived codec over structures of any shape.
+- - [Small APIs](../../philosophy/small-apis.md) explains why two rules are better than an instance
+-   for each type.
+- - [Display](display.md) and [numbers](numbers.md) derive their instances for case classes, and [errors](errors.md) describes the diagnosis when a derivation fails.
++ - [JSON](json.md), [CSV](csv.md), [XML](xml.md) e gli altri formati derivano i loro codec in
++   questo modo.
++ - [Annotazioni](annotations.md) descrive l'annotazione `@name` che una derivazione legge per
++   rinominare un campo.
++ - [Cataloghi](catalogs.md) e [ottiche](optics.md) descrivono `Specific` e i percorsi di campo
++   che ne sono le chiavi.
++ - [Metaprogrammazione](metaprogramming.md) descrive gli strumenti a tempo di compilazione sotto
++   il motore.
++ - [Dati generici](generic-data.md) descrive un codec derivato su strutture di qualunque forma.
++ - [API piccole](../../philosophy/small-apis.md) spiega perché due regole sono meglio di
++   un'istanza per ogni tipo.
++ - [Visualizzazione](display.md) e [numeri](numbers.md) derivano le loro istanze per le case class, ed [errori](errors.md) descrive la diagnosi quando una derivazione fallisce.

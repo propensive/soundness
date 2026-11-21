@@ -1,0 +1,1030 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base mosquito
++ base mosquito
+
+- import soundness
++ import soundness
+
+- info   vectors and matrices with their dimensions in their types, generic over any element with arithmetic
++ info   次元を型に持つベクトルと行列。算術を持つ任意の要素に対して汎用的である
+
+- detail
++ detail
+
+-     _Mosquito_ is linear algebra whose shapes are checked as the code compiles. A
+-     `Vector[element, size]` is a fixed number of components, a `Matrix[element, rows,
+-     columns]` a grid, and both carry their dimensions as type arguments: two vectors of
+-     different sizes cannot be added, a matrix product is defined only where the inner
+-     dimensions agree, and `determinant`, `inverse` and `trace` exist only on a square matrix —
+-     each a compile error rather than a runtime shape check. The element type is generic over
+-     anything with the arithmetic an operation needs, resolved through symbolism's typeclasses,
+-     so a vector of `Int`s, of `Double`s, of exact rationals or of typed quantities all work,
+-     and a dot product of lengths is an area because the units multiplied too.
++     _Mosquito_ は、形状がコンパイル時に検査される線形代数である。
++     `Vector[element, size]` は決まった数の成分であり、`Matrix[element, rows, columns]` は格子である。どちらも次元を型引数として持つ。
++     大きさの異なる二つのベクトルは足せず、行列の積は内側の次元が一致する場合にのみ定義され、`determinant`、`inverse`、`trace` は正方行列にのみ存在する。いずれも実行時の形状検査ではなくコンパイルエラーになる。
++     要素型は、演算が必要とする算術を持つものなら何でもよく、それは symbolism の型クラスを通じて解決される。
++     したがって `Int` のベクトルも、`Double` のベクトルも、厳密な有理数のベクトルも、型付きの量のベクトルもすべて動き、長さどうしの内積は単位も掛け合わされるので面積になる。
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import scala.language.experimental.into
++     import scala.language.experimental.into
+
+-     val v = Vector(1, 2, 3)                              // Vector[Int, 3]
++     val v = Vector(1, 2, 3)                              // Vector[Int, 3]
+
+-     val w: Vector[Int, 2] = Vector(1, 3, 4)              // does not compile
++     val w: Vector[Int, 2] = Vector(1, 3, 4)              // does not compile
+
+-     v + Vector(3, 4, 5)                                  // Vector(4, 6, 8)
++     v + Vector(3, 4, 5)                                  // Vector(4, 6, 8)
+
+-     v*2                                                  // Vector(2, 4, 6)
++     v*2                                                  // Vector(2, 4, 6)
+
+-     v.dot(Vector(4, 3, 7))                               // 31
++     v.dot(Vector(4, 3, 7))                               // 31
+
+-     v.cross(Vector(4, 3, 7))                             // Vector(5, 5, -5)
++     v.cross(Vector(4, 3, 7))                             // Vector(5, 5, -5)
+
+-     val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
++     val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+
+-     val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
++     val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
+
+-     m1*m2                                                // Matrix[2, 2]((58, 64), (139, 154))
++     m1*m2                                                // Matrix[2, 2]((58, 64), (139, 154))
+
+-     m1*Vector(7, 8, 9)                                   // Vector(50, 122)
++     m1*Vector(7, 8, 9)                                   // Vector(50, 122)
+
+-     m1*m1                                                // does not compile
++     m1*m1                                                // does not compile
+
+-     Vector(5*Inch, 2*Inch, Inch).dot(Vector(2*Inch, 3*Inch, 6*Inch))   // 22 in²
++     Vector(5*Inch, 2*Inch, Inch).dot(Vector(2*Inch, 3*Inch, 6*Inch))   // 22 in²
+
+-     ```
++     ```
+
+-     None of it boxes. A `Vector[Double, n]` stores a `double[]` (so does a vector of
+-     quantities, which are opaquely `Double`), the arithmetic instances and the accessors are
+-     `inline` and resolve the element's own operation at the expansion site, and a sum of two
+-     `Vector[Double, 3]`s compiles to a loop of `daload`, `dadd` and `dastore`. The price is
+-     that the shapes are literal types: a `Vector[Int, 3]` is built from a tuple of three, a
+-     `Matrix[2, 3]` from two rows of three, and a size which is only known at runtime is
+-     `Vector.take` from a list, giving an `Optional` vector of the size named by the argument's
+-     singleton type.
++     どれもボックス化しない。
++     `Vector[Double, n]` は `double[]` を格納し（不透明な `Double` である量のベクトルも同じである）、算術のインスタンスとアクセサーは `inline` であって要素自身の演算を展開位置で解決する。そして二つの `Vector[Double, 3]` の和は `daload`、`dadd`、`dastore` のループにコンパイルされる。
++     その代償は、形状がリテラル型であることだ。
++     `Vector[Int, 3]` は三つの要素のタプルから、`Matrix[2, 3]` は三つの要素を持つ二つの行から作られ、実行時にしか分からない大きさはリストからの `Vector.take` であって、引数のシングルトン型が示す大きさの `Optional` なベクトルを与える。
+
+-     Three types, all in `mosquito.core` for the JVM, Scala.js and Scala Native:
++     三つの型があり、すべて JVM、Scala.js、Scala Native 向けの `mosquito.core` にある。
+
+-     - `Vector` — construction, element access, `map`, `norm`, `unitary`, `dot`, `cross` (in
+-       three and seven dimensions), and the arithmetic `+`, `-`, unary `-`, `*` and `/` by a
+-       scalar or element-wise by a vector of the same size.
+-     - `Matrix` — construction row by row, `identity`, `zero`, element, row and column
+-       access, `transpose`, `submatrix`, the arithmetic `+`, `-`, unary `-`, `*` and `/` by a
+-       scalar, the matrix and matrix-vector products, and for a square matrix `determinant`,
+-       `trace`, `minor`, `cofactor`, `adjugate`, `inverse`, `solve`, `rank`,
+-       `frobeniusNorm` and (for `Double` elements) `eigenvalues`.
+-     - `Affine` — a 2D affine transformation as a 3×3 matrix, in SVG and PDF's six-number
+-       order, with `transform` and `andThen`.
++     - `Vector` — 構築、要素へのアクセス、`map`、`norm`、`unitary`、`dot`、`cross`（三次元と七次元）、そして算術の `+`、`-`、単項の `-`、スカラーによる、または同じ大きさのベクトルによる要素ごとの `*` と `/`。
++     - `Matrix` — 行ごとの構築、`identity`、`zero`、要素・行・列へのアクセス、`transpose`、`submatrix`、算術の `+`、`-`、単項の `-`、スカラーによる `*` と `/`、行列どうしの積と行列とベクトルの積、そして正方行列では `determinant`、`trace`、`minor`、`cofactor`、`adjugate`、`inverse`、`solve`、`rank`、`frobeniusNorm`、（`Double` の要素では）`eigenvalues`。
++     - `Affine` — 3×3 行列としての二次元アフィン変換。SVG と PDF の六つの数の順序に従い、`transform` と `andThen` を持つ。
+
+-     Everything is exported to the `soundness` umbrella. Arithmetic between a plain number and
+-     a vector or matrix relies on the compiler's `into` conversions, so `import
+-     scala.language.experimental.into` goes alongside `import soundness.*`; showing a vector or
+-     matrix as a bracketed grid needs a `Text is Measurable` given (`import
+-     textMetrics.uniformMetric`); and `Affine`'s `transform` and `andThen` must be imported by
+-     name, `import mosquito.Affine.{andThen, transform}`, because under `import soundness.*`
+-     the same-named generic extensions from other libraries outrank them.
++     すべては `soundness` アンブレラにエクスポートされる。
++     素の数とベクトルや行列との間の算術はコンパイラの `into` 変換に頼るので、`import soundness.*` と並べて `import scala.language.experimental.into` を書く。
++     ベクトルや行列を括弧で囲んだ格子として表示するには `Text is Measurable` の given が要る（`import textMetrics.uniformMetric`）。
++     そして `Affine` の `transform` と `andThen` は `import mosquito.Affine.{andThen, transform}` と名前でインポートしなければならない。`import soundness.*` のもとでは、他のライブラリの同名の汎用的な拡張がそれらより優先されるからである。
+
+- refer mosquito.Vector
++ refer mosquito.Vector
+
+- refer mosquito.Matrix
++ refer mosquito.Matrix
+
+- refer mosquito.Affine
++ refer mosquito.Affine
+
+- entry .Vector   a fixed number of components, the size in the type: `Vector[Int, 3]`
++ entry .Vector   決まった数の成分。大きさは型にある：`Vector[Int, 3]`
+
+= entry .Vector   a fixed number of components, the size in the type: `Vector[Int, 3]`
+-   detail
++   detail
+
+-       `Vector` is the class `mosquito.internal.Vector`, exported here: a hybrid of a `Tuple`,
+-       whose size is known statically, and a collection, whose elements share a type. It is
+-       built from a tuple, whose length becomes the size and whose common element type the
+-       element — `Vector(1, 2, 3)` is a `Vector[Int, 3]`, `Vector(1.0*Metre, 2.0*Metre)` a
+-       `Vector[Quantity[Metres[1]], 2]`, and a one-component vector is `Vector(Mono(42))` — and
+-       its components are stored in an `Array[element]^{}`, `#data`, of the element's own
+-       class, so a vector of `Double`s or of quantities is a `double[]`.
++       `Vector` はここにエクスポートされたクラス `mosquito.internal.Vector` であり、大きさが静的に分かる `Tuple` と、要素が型を共有するコレクションとの混成である。
++       タプルから作られ、その長さが大きさに、その共通の要素型が要素型になる。`Vector(1, 2, 3)` は `Vector[Int, 3]`、`Vector(1.0*Metre, 2.0*Metre)` は `Vector[Quantity[Metres[1]], 2]` であり、一成分のベクトルは `Vector(Mono(42))` である。
++       成分は要素自身のクラスの `Array[element]^{}` である `#data` に格納されるので、`Double` のベクトルや量のベクトルは `double[]` である。
+
+=       class, so a vector of `Double`s or of quantities is a `double[]`.
+=
+-       ```scala
++       ```scala
+
+=       class, so a vector of `Double`s or of quantities is a `double[]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       class, so a vector of `Double`s or of quantities is a `double[]`.
+=
+=       ```scala
+=       import soundness.*
+-       import scala.language.experimental.into
++       import scala.language.experimental.into
+
+=       class, so a vector of `Double`s or of quantities is a `double[]`.
+=
+=       ```scala
+=       import soundness.*
+=       import scala.language.experimental.into
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+-       val v = Vector(3.0, 4.0)
++       val v = Vector(3.0, 4.0)
+
+-       v(0)                          // 3.0
++       v(0)                          // 3.0
+
+-       v.norm                        // 5.0
++       v.norm                        // 5.0
+
+-       v.unitary                     // Vector(0.6, 0.8)
++       v.unitary                     // Vector(0.6, 0.8)
+
+-       v.map(_*2)                    // Vector(6.0, 8.0)
++       v.map(_*2)                    // Vector(6.0, 8.0)
+
+-       v + Vector(1.0, 1.0)          // Vector(4.0, 5.0)
++       v + Vector(1.0, 1.0)          // Vector(4.0, 5.0)
+
+-       v*Vector(2.0, 0.5)            // Vector(6.0, 2.0), element-wise
++       v*Vector(2.0, 0.5)            // Vector(6.0, 2.0), element-wise
+
+-       v/2.0                         // Vector(1.5, 2.0)
++       v/2.0                         // Vector(1.5, 2.0)
+
+-       -v                            // Vector(-3.0, -4.0)
++       -v                            // Vector(-3.0, -4.0)
+
+-       v.dot(Vector(1.0, 1.0))       // 7.0
++       v.dot(Vector(1.0, 1.0))       // 7.0
+
+-       v.list                        // List(3.0, 4.0)
++       v.list                        // List(3.0, 4.0)
+
+-       v.show                        // a column between tall brackets
++       v.show                        // a column between tall brackets
+
+-       v.inspect                     // t"⟨3.0 ∣ 4.0⟩"
++       v.inspect                     // t"⟨3.0 ∣ 4.0⟩"
+
+=       v.inspect                     // t"⟨3.0 ∣ 4.0⟩"
+-       ```
++       ```
+
+-       The arithmetic is by typeclass instance, each `inline` and keyed on the size, so a
+-       mismatch does not compile: `+` and `-` between two vectors of one size (`.addable`,
+-       `.subtractable`), unary `-` (`.negatable`), `*` and `/` by a scalar
+-       (`.scalarMultiplicable`, `.scalarDivisible`) or element-wise by another vector of the
+-       same size (`.vectorMultiplicable`, `.vectorDivisible`). The scalar product of two
+-       vectors is `dot`, not `*`; a scalar goes on the right (`v*2`, not `2*v`); and the
+-       elements decide the result, so adding a vector of feet to a vector of metres gives
+-       metres, and the element-wise product of two vectors of metres is a vector of square
+-       metres. The operations which are not instances — `element`, `apply`, `list`, `iarray`,
+-       `size`, `norm`, `map`, `unitary`, `dot` and `cross` — are extension methods declared
+-       in `mosquito.internal`, available with `import soundness.*`, and each has its page
+-       there.
++       算術は型クラスのインスタンスによる。それぞれ `inline` で大きさをキーとするので、不一致はコンパイルされない。
++       同じ大きさの二つのベクトルの間の `+` と `-`（`.addable`、`.subtractable`）、単項の `-`（`.negatable`）、スカラーによる `*` と `/`（`.scalarMultiplicable`、`.scalarDivisible`）、または同じ大きさの別のベクトルによる要素ごとの `*` と `/`（`.vectorMultiplicable`、`.vectorDivisible`）である。
++       二つのベクトルのスカラー積は `*` ではなく `dot` である。スカラーは右に置く（`2*v` ではなく `v*2`）。そして要素が結果を決めるので、フィートのベクトルにメートルのベクトルを足すとメートルになり、メートルの二つのベクトルの要素ごとの積は平方メートルのベクトルになる。
++       インスタンスでない演算、すなわち `element`、`apply`、`list`、`iarray`、`size`、`norm`、`map`、`unitary`、`dot`、`cross` は `mosquito.internal` で宣言された拡張メソッドであり、`import soundness.*` で使え、それぞれそこにページがある。
+
+-       Two vectors are equal when their components are, whatever their declared element
+-       types; `hashCode` agrees. `toString` is `Vector(1, 2, 3)`.
++       二つのベクトルは、宣言された要素型にかかわらず、成分が等しければ等しい。`hashCode` もそれと一致する。
++       `toString` は `Vector(1, 2, 3)` である。
+
+-       The companion's constructors and instances, and the class's `data`, are declared on
+-       `mosquito.internal.Vector`, where each has its page.
++       コンパニオンのコンストラクターとインスタンス、そしてクラスの `data` は `mosquito.internal.Vector` で宣言されており、それぞれそこにページがある。
+
+=       `mosquito.internal.Vector`, where each has its page.
+-   refer mosquito.Matrix
++   refer mosquito.Matrix
+
+-   refer mosquito.internal
++   refer mosquito.internal
+
+-   refer mosquito.slide
++   refer mosquito.slide
+
+- entry .Matrix   a grid with its row and column counts in its type: `Matrix[Int, 2, 3]`
++ entry .Matrix   行数と列数を型に持つ格子：`Matrix[Int, 2, 3]`
+
+= entry .Matrix   a grid with its row and column counts in its type: `Matrix[Int, 2, 3]`
+-   detail
++   detail
+
+-       A `Matrix[element, rows, columns]` is `#rows` by `#columns` elements stored row-major in
+-       `#elements`, an `Array[element]^{}`. It is written with its shape as type arguments and
+-       its rows as tuples, `Matrix[2, 3]((1, 2, 3), (4, 5, 6))`, the element type inferred
+-       from them; `Matrix.identity[Double, 3]` and `Matrix.zero[Double, 2, 3]` are the
+-       constant matrices. A product is defined only where the shapes agree, and the result's
+-       shape is computed in the type:
++       `Matrix[element, rows, columns]` は `#rows` 行 `#columns` 列の要素であり、`Array[element]^{}` である `#elements` に行優先で格納される。
++       形状を型引数として、行をタプルとして `Matrix[2, 3]((1, 2, 3), (4, 5, 6))` と書き、要素型は行から推論される。`Matrix.identity[Double, 3]` と `Matrix.zero[Double, 2, 3]` は定数の行列である。
++       積は形状が一致する場合にのみ定義され、結果の形状は型の中で計算される。
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A 2×3 matrix, row by row
++         label 2×3 行列。行ごとに
+
+=         label A 2×3 matrix, row by row
+-         code
++         code
+
+-             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))   // Matrix[Int, 2, 3]
++             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))   // Matrix[Int, 2, 3]
+
+=             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))   // Matrix[Int, 2, 3]
+-       frame
++       frame
+
+-         label A 3×2 matrix
++         label 3×2 行列
+
+=         label A 3×2 matrix
+-         code
++         code
+
+=         label A 3×2 matrix
+=         code
+-             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
++             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+
+-             val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))   // Matrix[Int, 3, 2]
++             val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))   // Matrix[Int, 3, 2]
+
+=             val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))   // Matrix[Int, 3, 2]
+-       frame
++       frame
+
+-         label Their product: the inner dimensions agree, so the result is 2×2
++         label その積：内側の次元が一致するので、結果は 2×2 になる
+
+=         label Their product: the inner dimensions agree, so the result is 2×2
+-         code
++         code
+
+=         label Their product: the inner dimensions agree, so the result is 2×2
+=         code
+-             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
++             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+
+=         label Their product: the inner dimensions agree, so the result is 2×2
+=         code
+=             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+-             val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
++             val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
+
+-             m1*m2   // Matrix[2, 2]((58, 64), (139, 154))
++             m1*m2   // Matrix[2, 2]((58, 64), (139, 154))
+
+=             m1*m2   // Matrix[2, 2]((58, 64), (139, 154))
+-       frame
++       frame
+
+-         label In the other order, 3×3
++         label 逆の順序では 3×3
+
+=         label In the other order, 3×3
+-         code
++         code
+
+=         label In the other order, 3×3
+=         code
+-             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
++             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+
+=         label In the other order, 3×3
+=         code
+=             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+-             val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
++             val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
+
+-             m2*m1   // Matrix[3, 3]((39, 54, 69), (49, 68, 87), (59, 82, 105))
++             m2*m1   // Matrix[3, 3]((39, 54, 69), (49, 68, 87), (59, 82, 105))
+
+=             m2*m1   // Matrix[3, 3]((39, 54, 69), (49, 68, 87), (59, 82, 105))
+-       frame
++       frame
+
+-         label A matrix times a vector of the right length
++         label 行列と正しい長さのベクトルの積
+
+=         label A matrix times a vector of the right length
+-         code
++         code
+
+=         label A matrix times a vector of the right length
+=         code
+-             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
++             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+
+-             m1*Vector(7, 8, 9)   // Vector(50, 122)
++             m1*Vector(7, 8, 9)   // Vector(50, 122)
+
+=             m1*Vector(7, 8, 9)   // Vector(50, 122)
+-       frame
++       frame
+
+-         label And a shape mismatch does not compile
++         label そして形状の不一致はコンパイルされない
+
+=         label And a shape mismatch does not compile
+-         code
++         code
+
+=         label And a shape mismatch does not compile
+=         code
+-             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
++             val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+
+-             m1*m1   // does not compile: a 2×3 matrix cannot multiply a 2×3 matrix
++             m1*m1   // does not compile: a 2×3 matrix cannot multiply a 2×3 matrix
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       The arithmetic is by inline typeclass instance: `+` and `-` between matrices of one
+-       shape (`.addable`, `.subtractable`), unary `-` (`.negatable`), `*` and `/` by a scalar
+-       (`.scalarMultiplicable`, `.scalarDivisible`), the matrix product (`.matrixMultiplicable`)
+-       and the matrix-vector product (`.vectorMultiplicable`). `*` between two matrices is
+-       always the matrix product, never element-wise. A square matrix additionally has
+-       `determinant`, `trace`, `minor`, `cofactor`, `adjugate`, `inverse` and `solve` as
+-       extensions on `Matrix[element, n, n]`, and a square matrix of `Double`s has
+-       `eigensystem`, `eigenvalues` and `eigenvectors`. Every operation resolves the element's
+-       arithmetic, so a matrix of quantities adds, and a matrix of `Q32` rationals multiplies
+-       exactly.
++       算術はインラインの型クラスのインスタンスによる。
++       同じ形状の行列の間の `+` と `-`（`.addable`、`.subtractable`）、単項の `-`（`.negatable`）、スカラーによる `*` と `/`（`.scalarMultiplicable`、`.scalarDivisible`）、行列の積（`.matrixMultiplicable`）、行列とベクトルの積（`.vectorMultiplicable`）である。
++       二つの行列の間の `*` は常に行列の積であり、要素ごとの積になることはない。
++       正方行列はさらに `Matrix[element, n, n]` への拡張として `determinant`、`trace`、`minor`、`cofactor`、`adjugate`、`inverse`、`solve` を持ち、`Double` の正方行列は `eigensystem`、`eigenvalues`、`eigenvectors` を持つ。
++       どの演算も要素の算術を解決するので、量の行列は足し算ができ、`Q32` の有理数の行列は厳密に掛け算ができる。
+
+=       exactly.
+=
+-       ```scala
++       ```scala
+
+=       exactly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       exactly.
+=
+=       ```scala
+=       import soundness.*
+-       import scala.language.experimental.into
++       import scala.language.experimental.into
+
+=       exactly.
+=
+=       ```scala
+=       import soundness.*
+=       import scala.language.experimental.into
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+-       val m = Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5))
++       val m = Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5))
+
+-       m(1, 2)                  // -1
++       m(1, 2)                  // -1
+
+-       m.row(0)                 // Vector(2, -3, 1)
++       m.row(0)                 // Vector(2, -3, 1)
+
+-       m.column(2)              // Vector(1, -1, 5)
++       m.column(2)              // Vector(1, -1, 5)
+
+-       m.transpose              // Matrix[Int, 3, 3]
++       m.transpose              // Matrix[Int, 3, 3]
+
+-       m.determinant            // 49
++       m.determinant            // 49
+
+-       m.trace                  // 7
++       m.trace                  // 7
+
+-       m.adjugate               // the transpose of the cofactor matrix
++       m.adjugate               // the transpose of the cofactor matrix
+
+-       m.submatrix(0, 0)        // Matrix[2, 2]((0, -1), (4, 5))
++       m.submatrix(0, 0)        // Matrix[2, 2]((0, -1), (4, 5))
+
+-       -m                       // every element negated
++       -m                       // every element negated
+
+-       m*10                     // every element multiplied
++       m*10                     // every element multiplied
+
+-       m.show                   // a grid between tall brackets
++       m.show                   // a grid between tall brackets
+
+-       m.inspect                // t"⌈2 ∣ -3 ∣ 1 ⫽ 2 ∣ 0 ∣ -1 ⫽ 1 ∣ 4 ∣ 5⌋"
++       m.inspect                // t"⌈2 ∣ -3 ∣ 1 ⫽ 2 ∣ 0 ∣ -1 ⫽ 1 ∣ 4 ∣ 5⌋"
+
+-       Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse   // Matrix[2, 2]((-2.0, 1.0), (1.5, -0.5))
++       Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse   // Matrix[2, 2]((-2.0, 1.0), (1.5, -0.5))
+
+-       Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse   // Unset: singular
++       Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse   // Unset: singular
+
+=       Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse   // Unset: singular
+-       ```
++       ```
+
+-       Two matrices are equal when their elements are, whatever their declared element
+-       types. `toString` is the flat element list, `[1, 2, 3, 4, 5, 6]`.
++       二つの行列は、宣言された要素型にかかわらず、要素が等しければ等しい。
++       `toString` は平らな要素のリスト `[1, 2, 3, 4, 5, 6]` である。
+
+-   refer mosquito.Vector
++   refer mosquito.Vector
+
+-   refer mosquito.Affine
++   refer mosquito.Affine
+
+-   entry .apply   `Matrix[2, 3]((1, 2, 3), (4, 5, 6))`: a matrix from its rows, the shape as type arguments
+-       Transparent inline: the row and column counts are given as type arguments and checked
+-       against the tuple of row tuples — the number of rows must be `Rows`, every row must
+-       have `Columns` elements, and every element must have one type, which becomes the
+-       element type. A matrix of one row is written with `Tuple1`, `Matrix[1, 2](Tuple1((4,
+-       6)))`. A `ClassTag` for the element is found at the call site.
+-   entry .identity   `Matrix.identity[Double, 3]`: the identity matrix of a size
+-       Ones on the diagonal and zeros elsewhere, through the element's `Unital` and `Zeroic`
+-       instances; the size is a type argument with a `ValueOf`. Inline, so the stores are
+-       typed array writes.
+-   entry .zero   `Matrix.zero[Double, 2, 3]`: the zero matrix of a shape
+-       Every element the `Zeroic` zero; the shape is two type arguments with `ValueOf`s.
+-   entry .addable   `m + n` between two matrices of one shape: the elements added pairwise
+-       An inline instance needing `a is Addable by b to result` for the element types and a
+-       `ClassTag[result]`; two `Matrix[Double, 2, 2]`s add in a loop of `dadd`s, and two
+-       matrices of quantities add through the unit-checked sum. Different shapes do not
+-       compile.
+-   entry .subtractable   `m - n` between two matrices of one shape: the elements subtracted pairwise
+-   entry .negatable   `-m`: every element negated
+-       `-Matrix[2, 2]((1, -2), (3, 4))` is `Matrix[2, 2]((-1, 2), (-3, -4))`, and equals
+-       `m*(-1)`.
+-   entry .scalarMultiplicable   `m*scalar`: every element multiplied by the scalar
+-       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*10` is `Matrix[2, 3]((10, 20, 30), (40, 50, 60))`.
+-       The scalar is on the right only. A `Matrix` operand reaches `.matrixMultiplicable`
+-       instead, and a `Vector` operand `.vectorMultiplicable`.
+-   entry .scalarDivisible   `m/scalar`: every element divided by the scalar
+-       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))/2` is `Matrix[2, 3]((0, 1, 1), (2, 2, 3))`: the
+-       elements divide as their type does.
+-   entry .matrixMultiplicable   `m*n`: the matrix product, defined only where the inner dimensions agree
+-       A `Matrix[a, rows, columns]` times a `Matrix[b, columns, rightColumns]` is a
+-       `Matrix[result, rows, rightColumns]`, needing `a is Multiplicable by b to result` and
+-       `result is Addable by result to result`; the column counts must be `ValueOf`s. A
+-       product whose inner dimensions differ does not compile. Never element-wise.
+-   entry .vectorMultiplicable   `m*v`: a matrix times a column vector of length `columns`, a vector of length `rows`
+-       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*Vector(7, 8, 9)` is `Vector(50, 122)`, and
+-       `Matrix.identity[Int, 3]*v` is `v`. A vector of the wrong length does not compile.
+-   entry .inspectable   the debug rendering, on one line: `⌈1 ∣ 2 ⫽ 3 ∣ 4⌋`
+-       Rows separated by `⫽` and elements within a row by `∣`, between corner brackets which
+-       stand in for the tall ones `show` uses; available for any matrix whose element is
+-       `Inspectable`.
+-   entry .showable   renders a matrix as a grid between tall brackets, columns right-aligned
+-       Each row is a line, `⎡ 1 2 ⎤` at the top, `⎣ 3 4 ⎦` at the bottom, `⎪ … ⎪` between; it
+-       needs the element to be `Showable` and a `Text is Measurable` in scope (`import
+-       textMetrics.uniformMetric`) to measure the column widths.
+-   entry .determinant   the determinant of a square matrix, by Laplace expansion
+-       An extension on `Matrix[element, n, n]`, needing the element's `Multiplicable`,
+-       `Addable` and `Subtractable` at its own type: `Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1,
+-       4, 5)).determinant` is 49. Calling it on a non-square matrix does not compile. The
+-       expansion is exponential in `n`, suited to the small matrices whose shapes are written
+-       in types.
+-   entry .trace   the sum of the diagonal of a square matrix
+-       Inline, with the addition resolved at the call site:
+-       `Matrix.identity[Int, 4].trace` is 4.
+-   entry .minor   `m.minor(row, column)`: the determinant of the matrix with that row and column removed
+-   entry .cofactor   `m.cofactor(row, column)`: the minor, with its sign flipped where the row and column indices sum to an odd number
+-       Needs the element's `Zeroic` for the negation.
+-   entry .adjugate   the transpose of the cofactor matrix, defined over any ring
+-       `Matrix[2, 2]((1, 2), (3, 4)).adjugate` is `Matrix[2, 2]((4, -2), (-3, 1))`, and
+-       `m*m.adjugate` is the determinant times the identity. It needs no division, so an
+-       integer matrix has an adjugate where it has no inverse.
+-   entry .inverse   the inverse of a square matrix, or `Unset` if it is singular
+-       The adjugate divided by the determinant, needing the element's `Divisible` as well as
+-       its ring operations: `Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse` is `Matrix[2,
+-       2]((-2.0, 1.0), (1.5, -0.5))`, and a matrix whose determinant is the element's zero
+-       gives `Unset`. Non-square does not compile.
++   entry .apply   `Matrix[2, 3]((1, 2, 3), (4, 5, 6))`：行から作る行列。形状は型引数として与える
++       トランスペアレントインラインである。行数と列数は型引数として与えられ、行のタプルのタプルに対して検査される。行の数は `Rows` でなければならず、どの行も `Columns` 個の要素を持たねばならず、すべての要素は一つの型を持たねばならず、その型が要素型になる。
++       一行の行列は `Tuple1` を使って `Matrix[1, 2](Tuple1((4, 6)))` と書く。
++       要素の `ClassTag` は呼び出し位置で見つけられる。
++   entry .identity   `Matrix.identity[Double, 3]`：ある大きさの単位行列
++       要素の `Unital` と `Zeroic` のインスタンスによって、対角に一、それ以外に零を置く。大きさは `ValueOf` を持つ型引数である。
++       インラインなので、格納は型付きの配列への書き込みになる。
++   entry .zero   `Matrix.zero[Double, 2, 3]`：ある形状の零行列
++       すべての要素が `Zeroic` の零である。形状は `ValueOf` を持つ二つの型引数である。
++   entry .addable   同じ形状の二つの行列の間の `m + n`：要素どうしを足す
++       要素型に対する `a is Addable by b to result` と `ClassTag[result]` を必要とするインラインのインスタンスである。二つの `Matrix[Double, 2, 2]` は `dadd` のループで足され、量の二つの行列は単位を検査する和で足される。
++       形状が異なればコンパイルされない。
++   entry .subtractable   同じ形状の二つの行列の間の `m - n`：要素どうしを引く
++   entry .negatable   `-m`：すべての要素の符号を反転する
++       `-Matrix[2, 2]((1, -2), (3, 4))` は `Matrix[2, 2]((-1, 2), (-3, -4))` であり、`m*(-1)` に等しい。
++   entry .scalarMultiplicable   `m*scalar`：すべての要素にスカラーを掛ける
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*10` は `Matrix[2, 3]((10, 20, 30), (40, 50, 60))` である。
++       スカラーは右にのみ置ける。
++       `Matrix` のオペランドは代わりに `.matrixMultiplicable` に、`Vector` のオペランドは `.vectorMultiplicable` に至る。
++   entry .scalarDivisible   `m/scalar`：すべての要素をスカラーで割る
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))/2` は `Matrix[2, 3]((0, 1, 1), (2, 2, 3))` である。要素はその型の割り方で割られる。
++   entry .matrixMultiplicable   `m*n`：行列の積。内側の次元が一致する場合にのみ定義される
++       `Matrix[a, rows, columns]` と `Matrix[b, columns, rightColumns]` の積は `Matrix[result, rows, rightColumns]` であり、`a is Multiplicable by b to result` と `result is Addable by result to result` を必要とする。列数は `ValueOf` でなければならない。
++       内側の次元が異なる積はコンパイルされない。
++       要素ごとの積になることはない。
++   entry .vectorMultiplicable   `m*v`：行列と長さ `columns` の列ベクトルの積。長さ `rows` のベクトルになる
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*Vector(7, 8, 9)` は `Vector(50, 122)` であり、`Matrix.identity[Int, 3]*v` は `v` である。
++       長さの合わないベクトルはコンパイルされない。
++   entry .inspectable   デバッグ用の一行の表示：`⌈1 ∣ 2 ⫽ 3 ∣ 4⌋`
++       行は `⫽` で、行の中の要素は `∣` で区切られ、`show` が使う背の高い括弧の代わりとなる角括弧で囲まれる。要素が `Inspectable` である任意の行列で使える。
++   entry .showable   行列を背の高い括弧で囲んだ格子として描画する。列は右揃えになる
++       各行が一行になり、上端は `⎡ 1 2 ⎤`、下端は `⎣ 3 4 ⎦`、その間は `⎪ … ⎪` である。
++       要素が `Showable` であること、そして列の幅を測るためにスコープ内に `Text is Measurable` があること（`import textMetrics.uniformMetric`）を必要とする。
++   entry .determinant   正方行列の行列式。ラプラス展開による
++       `Matrix[element, n, n]` への拡張であり、要素自身の型での `Multiplicable`、`Addable`、`Subtractable` を必要とする。`Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5)).determinant` は 49 である。
++       正方でない行列で呼び出すとコンパイルされない。
++       展開は `n` に対して指数的であり、形状を型に書くような小さな行列に向いている。
++   entry .trace   正方行列の対角成分の和
++       インラインであり、加算は呼び出し位置で解決される。
++       `Matrix.identity[Int, 4].trace` は 4 である。
++   entry .minor   `m.minor(row, column)`：その行と列を取り除いた行列の行列式
++   entry .cofactor   `m.cofactor(row, column)`：小行列式。行と列の添字の和が奇数のところでは符号を反転する
++       符号の反転のために要素の `Zeroic` を必要とする。
++   entry .adjugate   余因子行列の転置。任意の環の上で定義される
++       `Matrix[2, 2]((1, 2), (3, 4)).adjugate` は `Matrix[2, 2]((4, -2), (-3, 1))` であり、`m*m.adjugate` は行列式と単位行列の積である。
++       除算を必要としないので、整数の行列は逆行列を持たない場合でも余因子行列を持つ。
++   entry .inverse   正方行列の逆行列。特異なら `Unset`
++       余因子行列を行列式で割ったものであり、要素の環の演算に加えて `Divisible` を必要とする。`Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse` は `Matrix[2, 2]((-2.0, 1.0), (1.5, -0.5))` であり、行列式が要素の零である行列は `Unset` を与える。
++       正方でなければコンパイルされない。
+
+=       gives `Unset`. Non-square does not compile.
+=
+-       ```scala
++       ```scala
+
+=       gives `Unset`. Non-square does not compile.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val m = Matrix[2, 2]((4.0, 7.0), (2.0, 6.0))
++       val m = Matrix[2, 2]((4.0, 7.0), (2.0, 6.0))
+
+-       m.inverse.let(m*_)   // the identity, to rounding
++       m.inverse.let(m*_)   // the identity, to rounding
+
+=       m.inverse.let(m*_)   // the identity, to rounding
+-       ```
++       ```
+
+-   entry .solve   `m.solve(b)`: the `x` with `m*x == b`, by Gaussian elimination, or `Unset` if singular
+-       An extension on a square `Matrix[element, n, n]` taking a `Vector[element, n]`, with
+-       partial pivoting (a zero pivot swaps rows), needing the element's `Zeroic`,
+-       `Subtractable`, `Multiplicable` and `Divisible`: `Matrix[2, 2]((2.0, 1.0), (1.0,
+-       3.0)).solve(Vector(3.0, 4.0))` is `Vector(1.0, 1.0)`.
+-   entry .eigensystem   the eigenvalues and eigenvectors of a symmetric `Double` matrix, or `Unset`
+-       An extension on `Matrix[Double, n, n]`, by Jacobi rotation, which converges only for a
+-       symmetric matrix: the result is `Unset` for a matrix which is not symmetric (to a
+-       tolerance of 10⁻¹²) or which fails to converge, and otherwise a pair of the eigenvalues
+-       as a `Vector[Double, n]` and the eigenvectors as the columns of a `Matrix[Double, n,
+-       n]`, each a unit vector.
+-   entry .eigenvalues   the eigenvalues of a symmetric `Double` matrix, or `Unset`
+-       `Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues` holds 1.0 and 3.0; the first half of
+-       `eigensystem`.
+-   entry .eigenvectors   the eigenvectors of a symmetric `Double` matrix as columns, or `Unset`
+-       The second half of `eigensystem`.
+-   entry #rows   the number of rows, as a value
+-   entry #columns   the number of columns, as a value
+-   entry #elements   the elements, row-major, as a frozen `Array[element]^{}`
+-   entry #apply   `m(row, column)`: one element, zero-based
+-       Inline, so a read from a `Matrix[Double, m, n]` is a `daload`. On an `Affine`, which is
+-       also a matrix, an application to two numbers is this accessor, which is why its
+-       point-transformation is named `transform`.
+-   entry #row   `m.row(i)`: a row as a `Vector[element, columns]`
+-       Inline; copies with typed array access where a `ClassTag` for the element is at the call
+-       site, and reflectively otherwise, so it never asks the caller for one.
+-   entry #column   `m.column(j)`: a column as a `Vector[element, rows]`
+-   entry #transpose   the transpose, a `Matrix[element, columns, rows]`
+-       Needs a `ClassTag` for the element; `m.transpose.transpose == m`.
+-   entry #submatrix   `m.submatrix(row, column)`: the matrix with that row and column removed, one smaller in each dimension
+-       Typed `Matrix[element, rows - 1, columns - 1]`; `Matrix[2, 3](…).submatrix(0, 1)` is a
+-       `Matrix[Int, 1, 2]`.
+-   entry #frobeniusNorm   the square root of the sum of the squares of the elements
+-       Inline, needing the element's `Multiplicable`, `Addable` and `Rootable[2]`:
+-       `Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm` is 5.0.
+-   entry #rank   the rank, by Gaussian elimination
+-       The number of linearly independent rows, needing the element's `Zeroic`,
+-       `Subtractable`, `Multiplicable` and `Divisible`; defined for any shape:
+-       `Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).rank` is 1.
++   entry .solve   `m.solve(b)`：`m*x == b` となる `x`。ガウスの消去法による。特異なら `Unset`
++       正方の `Matrix[element, n, n]` への拡張で、`Vector[element, n]` を取る。部分ピボット選択を行い（零のピボットは行を入れ替える）、要素の `Zeroic`、`Subtractable`、`Multiplicable`、`Divisible` を必要とする。`Matrix[2, 2]((2.0, 1.0), (1.0, 3.0)).solve(Vector(3.0, 4.0))` は `Vector(1.0, 1.0)` である。
++   entry .eigensystem   対称な `Double` 行列の固有値と固有ベクトル。または `Unset`
++       `Matrix[Double, n, n]` への拡張であり、ヤコビ回転による。これは対称行列でしか収束しない。
++       結果は、対称でない（許容誤差 10⁻¹² で）か収束しない行列では `Unset` であり、それ以外では、`Vector[Double, n]` としての固有値と、`Matrix[Double, n, n]` の列としての固有ベクトルの組である。固有ベクトルはそれぞれ単位ベクトルである。
++   entry .eigenvalues   対称な `Double` 行列の固有値。または `Unset`
++       `Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues` は 1.0 と 3.0 を持つ。`eigensystem` の前半である。
++   entry .eigenvectors   対称な `Double` 行列の固有ベクトルを列としたもの。または `Unset`
++       `eigensystem` の後半である。
++   entry #rows   行数。値として
++   entry #columns   列数。値として
++   entry #elements   行優先の要素。凍結済みの `Array[element]^{}` として
++   entry #apply   `m(row, column)`：一つの要素。添字は零から始まる
++       インラインなので、`Matrix[Double, m, n]` からの読み出しは `daload` になる。
++       行列でもある `Affine` では、二つの数への適用はこのアクセサーであり、そのため点の変換は `transform` という名前である。
++   entry #row   `m.row(i)`：一つの行を `Vector[element, columns]` として
++       インラインである。要素の `ClassTag` が呼び出し位置にあれば型付きの配列アクセスで、なければリフレクションでコピーするので、呼び出し側にそれを求めることはない。
++   entry #column   `m.column(j)`：一つの列を `Vector[element, rows]` として
++   entry #transpose   転置。`Matrix[element, columns, rows]`
++       要素の `ClassTag` を必要とする。`m.transpose.transpose == m` である。
++   entry #submatrix   `m.submatrix(row, column)`：その行と列を取り除いた、各次元が一つ小さい行列
++       型は `Matrix[element, rows - 1, columns - 1]` である。`Matrix[2, 3](…).submatrix(0, 1)` は `Matrix[Int, 1, 2]` である。
++   entry #frobeniusNorm   要素の二乗の和の平方根
++       インラインであり、要素の `Multiplicable`、`Addable`、`Rootable[2]` を必要とする。
++       `Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm` は 5.0 である。
++   entry #rank   階数。ガウスの消去法による
++       線形独立な行の数であり、要素の `Zeroic`、`Subtractable`、`Multiplicable`、`Divisible` を必要とする。任意の形状で定義される。
++       `Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).rank` は 1 である。
+
+- entry .Affine   a 2D affine transformation: a 3×3 matrix built from SVG and PDF's six numbers
++ entry .Affine   二次元アフィン変換：SVG と PDF の六つの数から作る 3×3 行列
+
+= entry .Affine   a 2D affine transformation: a 3×3 matrix built from SVG and PDF's six numbers
+-   detail
++   detail
+
+-       `Affine[element]` is an opaque subtype of `Matrix[element, 3, 3]` holding the
+-       homogeneous matrix of a two-dimensional affine transformation, built from the six live
+-       entries in the order SVG's `matrix(a, b, c, d, e, f)` and PDF's `a b c d e f cm` share:
++       `Affine[element]` は `Matrix[element, 3, 3]` の不透明な部分型であり、二次元アフィン変換の同次行列を保持する。SVG の `matrix(a, b, c, d, e, f)` と PDF の `a b c d e f cm` が共有する順序で、六つの可変な成分から作られる。
+
+-           | a c e |
++           | a c e |
+
+-           | b d f |
++           | b d f |
+
+-           | 0 0 1 |
++           | 0 0 1 |
+
+-       acting on column vectors. `transform` applies it to a point and `andThen` composes two,
+-       in six multiplications and twelve respectively rather than the general matrix product's
+-       twenty-seven, with the element arithmetic inlined. Composition order is the one place
+-       the SVG and PDF conventions diverge, so it is a named operation rather than `*`.
++       これは列ベクトルに作用する。
++       `transform` はそれを点に適用し、`andThen` は二つを合成する。一般の行列の積の二十七回ではなく、それぞれ六回と十二回の乗算で行い、要素の算術はインライン化される。
++       合成の順序は SVG と PDF の慣習が分かれる唯一の点なので、`*` ではなく名前のある演算になっている。
+
+=       the SVG and PDF conventions diverge, so it is a named operation rather than `*`.
+=
+-       ```scala
++       ```scala
+
+=       the SVG and PDF conventions diverge, so it is a named operation rather than `*`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import mosquito.Affine.{andThen, transform}
++       import mosquito.Affine.{andThen, transform}
+
+-       val scale = Affine[Double](2.0, 0.0, 0.0, 3.0, 0.0, 0.0)
++       val scale = Affine[Double](2.0, 0.0, 0.0, 3.0, 0.0, 0.0)
+
+-       val shift = Affine[Double](1.0, 0.0, 0.0, 1.0, 5.0, 7.0)
++       val shift = Affine[Double](1.0, 0.0, 0.0, 1.0, 5.0, 7.0)
+
+-       scale.andThen(shift).transform(1.0, 1.0)         // (7.0, 10.0)
++       scale.andThen(shift).transform(1.0, 1.0)         // (7.0, 10.0)
+
+-       scale.andThen(Affine.identity[Double]) == scale   // true
++       scale.andThen(Affine.identity[Double]) == scale   // true
+
+=       scale.andThen(Affine.identity[Double]) == scale   // true
+-       ```
++       ```
+
+-       `transform` and `andThen` must be imported by name under `import soundness.*`: the
+-       umbrella's generic `transform` (savagery's) and `andThen` (on functions) are lexically
+-       in scope there, and a lexical extension outranks the companion's and reports its own
+-       failure rather than falling through. Being a `Matrix`, an `Affine` also has every matrix
+-       operation, including `apply(row, column)`, which is why the point-transformation is not
+-       `apply`.
++       `import soundness.*` のもとでは、`transform` と `andThen` は名前でインポートしなければならない。
++       そこではアンブレラの汎用的な `transform`（savagery のもの）と `andThen`（関数に対するもの）がレキシカルにスコープにあり、レキシカルな拡張はコンパニオンのものより優先され、ほかへ回らずに自分の失敗を報告するからである。
++       `Affine` は `Matrix` なので、`apply(row, column)` を含むすべての行列の演算も持つ。そのため点の変換は `apply` ではない。
+
+=       `apply`.
+-   refer mosquito.Matrix
++   refer mosquito.Matrix
+
+-   entry .apply   `Affine[Double](a, b, c, d, e, f)`: a transformation from its six entries
+-       Needs the element's `Zeroic` and `Unital` for the fixed bottom row and a `ClassTag`.
+-       Not inline, unlike the `Matrix` constructors, so that its result is seen as an `Affine`
+-       at the call site.
+-   entry .identity   `Affine.identity[Double]`: the identity transformation
+-   entry .a   the first entry: the x scale
+-   entry .b   the second entry: the y skew
+-   entry .c   the third entry: the x skew
+-   entry .d   the fourth entry: the y scale
+-   entry .e   the fifth entry: the x translation
+-   entry .f   the sixth entry: the y translation
+-   entry .transform   `affine.transform(x, y)`: the point `(a·x + c·y + e, b·x + d·y + f)`
+-       Inline, needing the element's `Multiplicable` and `Addable` at its own type; an
+-       `Affine[Double]` transforms a point in six `dmul`s and four `dadd`s. Imported by name:
+-       `import mosquito.Affine.transform`.
+-   entry .andThen   `first.andThen(next)`: the transformation applying `first` and then `next`
+-       The column-vector product `next*first`, which is PDF's row-vector `first*next`,
+-       specialised to the six live entries. Needs the element's `Multiplicable`, `Addable`,
+-       `Zeroic`, `Unital` and a `ClassTag`. Imported by name: `import mosquito.Affine.andThen`.
++   entry .apply   `Affine[Double](a, b, c, d, e, f)`：六つの成分から作る変換
++       固定された最下行のために要素の `Zeroic` と `Unital` を、そして `ClassTag` を必要とする。
++       `Matrix` のコンストラクターと違ってインラインではない。これは結果が呼び出し位置で `Affine` として見えるようにするためである。
++   entry .identity   `Affine.identity[Double]`：恒等変換
++   entry .a   第一の成分：x の拡大率
++   entry .b   第二の成分：y のせん断
++   entry .c   第三の成分：x のせん断
++   entry .d   第四の成分：y の拡大率
++   entry .e   第五の成分：x の平行移動
++   entry .f   第六の成分：y の平行移動
++   entry .transform   `affine.transform(x, y)`：点 `(a·x + c·y + e, b·x + d·y + f)`
++       インラインであり、要素自身の型での `Multiplicable` と `Addable` を必要とする。`Affine[Double]` は六回の `dmul` と四回の `dadd` で点を変換する。
++       名前でインポートする：`import mosquito.Affine.transform`。
++   entry .andThen   `first.andThen(next)`：`first` を適用してから `next` を適用する変換
++       列ベクトルでの積 `next*first` であり、これは PDF の行ベクトルでの `first*next` にあたる。六つの可変な成分に特化している。
++       要素の `Multiplicable`、`Addable`、`Zeroic`、`Unital` と `ClassTag` を必要とする。
++       名前でインポートする：`import mosquito.Affine.andThen`。
+
+- entry .slide   `list.slide(n)`: the sliding windows of a list as a lazy `Chain` of `Vector`s of size `n`
+-     An extension on `List[element]` (needing a `ClassTag`): `List(1, 2, 3, 4).slide(2)` is
+-     the chain `Vector(1, 2)`, `Vector(2, 3)`, `Vector(3, 4)`, each a
+-     `Vector[element, n.type]` typed by the argument, built with `Vector.take` and stopping
+-     when fewer than `n` elements remain.
++ entry .slide   `list.slide(n)`：リストのスライディングウィンドウを、大きさ `n` の `Vector` の遅延 `Chain` として
++     `List[element]` への拡張である（`ClassTag` を必要とする）。
++     `List(1, 2, 3, 4).slide(2)` は `Vector(1, 2)`、`Vector(2, 3)`、`Vector(3, 4)` のチェーンであり、それぞれ引数によって型付けされた `Vector[element, n.type]` である。`Vector.take` で作られ、残りの要素が `n` 個より少なくなると止まる。
+
+- entry .internal   the home of the `Vector` class, its extension methods and the inline element arithmetic
++ entry .internal   `Vector` クラス、その拡張メソッド、インラインの要素の算術の置き場所
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that `Vector`'s inline instances can resolve
+-       the element's own operation at their expansion site. `Vector` is exported from here to
+-       the `mosquito` package, and its page there has the full account; its constructors and
+-       instances are documented on this `Vector` entry. The extension methods
+-       on a vector declared here — `element`, `apply`, `list`, `iarray`, `size`, `norm`,
+-       `map`, `unitary`, `dot` and the two `cross` products — are available with
+-       `import soundness.*`.
+-   entry .Vector   the vector class and companion; see `mosquito.Vector`
+-     entry .apply   `Vector(1, 2, 3)`: a vector from a tuple, its size and element type inferred
+-         A transparent inline constructor over any tuple: the size is the tuple's, and the
+-         element type is the type of its components, which must all be the same — `Vector(1,
+-         2.0)` is a compile error, _Cannot prove that Int | Double =:= Int_, rather than a vector
+-         of `AnyVal`. A one-component vector is `Vector(Mono(42))`, since `Vector(42)` would take
+-         42 itself as the tuple. The storage is an array of the element's class, found through a
+-         `ClassTag` at the call site, so a `Vector(2.0, 4.0)` reads and computes with no boxing.
++       直接使うためのものではない。
++       このオブジェクトは、`Vector` のインラインのインスタンスが要素自身の演算を展開位置で解決できるようにするために存在する。
++       `Vector` はここから `mosquito` パッケージにエクスポートされ、詳しい説明はそちらのページにある。そのコンストラクターとインスタンスはこの `Vector` のエントリーで説明する。
++       ここで宣言されたベクトルへの拡張メソッド、すなわち `element`、`apply`、`list`、`iarray`、`size`、`norm`、`map`、`unitary`、`dot`、二つの `cross` の積は、`import soundness.*` で使える。
++   entry .Vector   ベクトルのクラスとコンパニオン。`mosquito.Vector` を参照
++     entry .apply   `Vector(1, 2, 3)`：タプルから作るベクトル。大きさと要素型は推論される
++         任意のタプルに対するトランスペアレントインラインのコンストラクターである。大きさはタプルのものであり、要素型はその成分の型で、成分はすべて同じ型でなければならない。`Vector(1, 2.0)` は `AnyVal` のベクトルではなく、コンパイルエラー _Cannot prove that Int | Double =:= Int_ になる。
++         一成分のベクトルは `Vector(Mono(42))` である。`Vector(42)` では 42 そのものをタプルとして取ってしまうからである。
++         格納先は要素のクラスの配列であり、呼び出し位置の `ClassTag` を通じて見つけられるので、`Vector(2.0, 4.0)` はボックス化なしに読み、計算する。
+
+=         `ClassTag` at the call site, so a `Vector(2.0, 4.0)` reads and computes with no boxing.
+=
+-         ```scala
++         ```scala
+
+=         `ClassTag` at the call site, so a `Vector(2.0, 4.0)` reads and computes with no boxing.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val vector: Vector[Int, 3] = Vector(1, 3, 4)
++         val vector: Vector[Int, 3] = Vector(1, 3, 4)
+
+-         val mono: Vector[Int, 1] = Vector(Mono(42))
++         val mono: Vector[Int, 1] = Vector(Mono(42))
+
+-         val wrong: Vector[Int, 2] = Vector(1, 3, 4)   // does not compile
++         val wrong: Vector[Int, 2] = Vector(1, 3, 4)   // does not compile
+
+=         val wrong: Vector[Int, 2] = Vector(1, 3, 4)   // does not compile
+-         ```
++         ```
+
+-     entry .take   `Vector.take(list, n)`: the first `n` elements of a list as a vector, or `Unset` if there are fewer
+-         The constructor for a size known only at runtime: the result is a
+-         `Vector[element, n.type]`, typed by the argument's singleton type, and `Unset` when the
+-         list is too short. `Vector.take(Nil, 0)` is the empty vector. It needs a `ClassTag` for
+-         the element.
++     entry .take   `Vector.take(list, n)`：リストの最初の `n` 個の要素をベクトルとして。足りなければ `Unset`
++         実行時にしか分からない大きさのためのコンストラクターである。結果は引数のシングルトン型で型付けされた `Vector[element, n.type]` であり、リストが短すぎれば `Unset` である。
++         `Vector.take(Nil, 0)` は空のベクトルである。
++         要素の `ClassTag` を必要とする。
+
+=         the element.
+=
+-         ```scala
++         ```scala
+
+=         the element.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Vector.take(List(1, 2, 3), 3)   // Vector(1, 2, 3)
++         Vector.take(List(1, 2, 3), 3)   // Vector(1, 2, 3)
+
+-         Vector.take(List(1, 2), 3)      // Unset
++         Vector.take(List(1, 2), 3)      // Unset
+
+=         Vector.take(List(1, 2), 3)      // Unset
+-         ```
++         ```
+
+-     entry .addable   `v + w` between two vectors of one size: the elements added pairwise
+-         An inline instance which needs `value is Addable by value2 to result` for the two
+-         element types and a `ClassTag[result]`; the result is a `Vector[result, size]`. The
+-         element addition is resolved at the expansion site, so two `Vector[Double, n]`s add in
+-         a loop of `dadd`s, and two vectors of quantities add through quantitative's unit-checked
+-         sum: `Vector(1.0*Foot, 1.0*Foot) + Vector(3.0*Metre, 4.0*Metre)` is in metres.
+-         Different sizes do not compile.
+-     entry .subtractable   `v - w` between two vectors of one size: the elements subtracted pairwise
+-         As `.addable`, needing `value is Subtractable by value2 to result`.
+-     entry .negatable   `-v`: every element negated
+-         Needs `value is Negatable to result`; `-Vector(1, -2, 3)` is `Vector(-1, 2, -3)`.
+-     entry .scalarMultiplicable   `v*scalar`: every element multiplied by the scalar
+-         Needs `value is Multiplicable by scalar to result`: `Vector(1, 2, 3)*2` is `Vector(2, 4,
+-         6)`, and `Vector(1.0*Metre, 2.0*Metre)*2.0` a vector of metres. The scalar is on the
+-         right only; `2*v` is not defined. A `Vector` operand reaches `.vectorMultiplicable`
+-         instead, since no element multiplies by a vector.
+-     entry .scalarDivisible   `v/scalar`: every element divided by the scalar
+-         Needs `value is Divisible by scalar to result`: `Vector(2.0, 4.0)/2.0` is `Vector(1.0,
+-         2.0)`, and `Vector(7, 8, 9)/2` is `Vector(3, 4, 4)`, integer division as the elements
+-         divide.
+-     entry .vectorMultiplicable   `v*w` between two vectors of one size: the elements multiplied pairwise
+-         The Hadamard product, needing `value is Multiplicable by value2 to result`:
+-         `Vector(1, 2, 3)*Vector(4, 5, 6)` is `Vector(4, 10, 18)`, and two vectors of metres
+-         multiply to a vector of square metres. The scalar product is `dot`. Different sizes do
+-         not compile.
+-     entry .vectorDivisible   `v/w` between two vectors of one size: the elements divided pairwise
+-         `Vector(8, 9)/Vector(2, 3)` is `Vector(4, 3)`.
+-     entry .inspectable   the debug rendering, on one line: `⟨1 ∣ 2 ∣ 3⟩`
+-         Available for any vector whose element is `Inspectable`; the `∣` separator is the one
+-         `Matrix` uses between elements of a row.
+-     entry .showable   renders a vector as a column between tall brackets
+-         `Vector(1, 3, 6).show` is three lines, `⎛ 1 ⎞`, `⎜ 3 ⎟`, `⎝ 6 ⎠`, with the elements
+-         right-aligned to the widest; a two-vector has no middle line, and a one-vector is
+-         `( 42 )`. It needs the element to be `Showable`, the size as a `ValueOf`, and a `Text is
+-         Measurable` in scope (`import textMetrics.uniformMetric`) to measure the elements'
+-         widths.
+-     entry #data   the components, as a frozen `Array[element]^{}` of the element's own class
+-   entry .element   `v.element(i)`: one component, zero-based
+-       Inline, so a read from a `Vector[Double, n]` is a `daload`; no bounds proof is
+-       required, and an index out of range throws.
+-   entry .apply   `v(i)`: one component, zero-based; the same as `element`
+-   entry .list   the components as a `List[element]`
+-   entry .iarray   the components as the frozen `Array[element]^{}` they are stored in
+-   entry .size   the number of components, as a value, from the size in the type
+-   entry .norm   the Euclidean length: the square root of the sum of the squares of the components
+-       Inline, needing the element's `Multiplicable`, `Addable` and `Rootable[2]` back to the
+-       element: `Vector(3.0, 4.0).norm` is 5.0, and a vector of metres has a norm in metres.
+-   entry .map   `v.map(f)`: a vector of the same size with `f` applied to each component
+-       The function is inline, applied in the loop body rather than through a `Function1`, so
+-       a primitive element is not boxed on the way through; it may change the element type
+-       (`Vector(1, 2, 3).map(_.toString)`), given a `ClassTag` for the result.
+-       `Vector(1.0*Metre, 2.0*Metre).map(_*Metre)` is a vector of square metres.
+-   entry .unitary   the unit vector in the same direction, a `Vector[Double, size]`
+-       Each component divided by the `norm`: `Vector(3.0, 4.0).unitary` is `Vector(0.6, 0.8)`.
+-   entry .dot   `v.dot(w)`: the scalar product of two vectors of one size
+-       The sum of the pairwise products, in the type the element's `Multiplicable` gives:
+-       `Vector(1, 2, 3).dot(Vector(4, 3, 7))` is 31, and `Vector(5*Inch, 2*Inch,
+-       Inch).dot(Vector(2*Inch, 3*Inch, 6*Inch))` is 22 square inches. Inline, with the
+-       element arithmetic resolved at the call site. Different sizes do not compile.
+-   entry .cross   `v.cross(w)`: the vector product, in three or seven dimensions
+-       Two overloads, on `Vector[left, 3]` and `Vector[left, 7]` — the only dimensions in
+-       which a vector product exists — each needing the element's `Multiplicable`, `Addable`
+-       and `Subtractable`: `Vector(1, 2, 3).cross(Vector(4, 3, 7))` is `Vector(5, 5, -5)`,
+-       anti-commutative and orthogonal to both operands. The seven-dimensional product follows
+-       the Fano plane's index triples. Any other size does not compile.
++     entry .addable   同じ大きさの二つのベクトルの間の `v + w`：要素どうしを足す
++         二つの要素型に対する `value is Addable by value2 to result` と `ClassTag[result]` を必要とするインラインのインスタンスであり、結果は `Vector[result, size]` である。
++         要素の加算は展開位置で解決されるので、二つの `Vector[Double, n]` は `dadd` のループで足され、量の二つのベクトルは quantitative の単位を検査する和で足される。`Vector(1.0*Foot, 1.0*Foot) + Vector(3.0*Metre, 4.0*Metre)` はメートルになる。
++         大きさが異なればコンパイルされない。
++     entry .subtractable   同じ大きさの二つのベクトルの間の `v - w`：要素どうしを引く
++         `.addable` と同様であり、`value is Subtractable by value2 to result` を必要とする。
++     entry .negatable   `-v`：すべての要素の符号を反転する
++         `value is Negatable to result` を必要とする。`-Vector(1, -2, 3)` は `Vector(-1, 2, -3)` である。
++     entry .scalarMultiplicable   `v*scalar`：すべての要素にスカラーを掛ける
++         `value is Multiplicable by scalar to result` を必要とする。`Vector(1, 2, 3)*2` は `Vector(2, 4, 6)` であり、`Vector(1.0*Metre, 2.0*Metre)*2.0` はメートルのベクトルである。
++         スカラーは右にのみ置ける。`2*v` は定義されていない。
++         `Vector` のオペランドは代わりに `.vectorMultiplicable` に至る。ベクトルを掛けられる要素はないからである。
++     entry .scalarDivisible   `v/scalar`：すべての要素をスカラーで割る
++         `value is Divisible by scalar to result` を必要とする。`Vector(2.0, 4.0)/2.0` は `Vector(1.0, 2.0)` であり、`Vector(7, 8, 9)/2` は `Vector(3, 4, 4)` である。要素の割り方どおりの整数除算である。
++     entry .vectorMultiplicable   同じ大きさの二つのベクトルの間の `v*w`：要素どうしを掛ける
++         アダマール積であり、`value is Multiplicable by value2 to result` を必要とする。
++         `Vector(1, 2, 3)*Vector(4, 5, 6)` は `Vector(4, 10, 18)` であり、メートルの二つのベクトルを掛けると平方メートルのベクトルになる。
++         スカラー積は `dot` である。
++         大きさが異なればコンパイルされない。
++     entry .vectorDivisible   同じ大きさの二つのベクトルの間の `v/w`：要素どうしを割る
++         `Vector(8, 9)/Vector(2, 3)` は `Vector(4, 3)` である。
++     entry .inspectable   デバッグ用の一行の表示：`⟨1 ∣ 2 ∣ 3⟩`
++         要素が `Inspectable` である任意のベクトルで使える。区切りの `∣` は、`Matrix` が行の中の要素の間に使うものと同じである。
++     entry .showable   ベクトルを背の高い括弧で囲んだ列として描画する
++         `Vector(1, 3, 6).show` は `⎛ 1 ⎞`、`⎜ 3 ⎟`、`⎝ 6 ⎠` の三行であり、要素は最も幅の広いものに合わせて右揃えになる。二成分のベクトルには中間の行がなく、一成分のベクトルは `( 42 )` である。
++         要素が `Showable` であること、大きさが `ValueOf` であること、そして要素の幅を測るためにスコープ内に `Text is Measurable` があること（`import textMetrics.uniformMetric`）を必要とする。
++     entry #data   成分。要素自身のクラスの凍結済みの `Array[element]^{}` として
++   entry .element   `v.element(i)`：一つの成分。添字は零から始まる
++       インラインなので、`Vector[Double, n]` からの読み出しは `daload` になる。範囲の証明は要らず、範囲外の添字は例外を投げる。
++   entry .apply   `v(i)`：一つの成分。添字は零から始まる。`element` と同じ
++   entry .list   成分を `List[element]` として
++   entry .iarray   成分を、それが格納されている凍結済みの `Array[element]^{}` として
++   entry .size   成分の数。型の中の大きさから得た値として
++   entry .norm   ユークリッド長：成分の二乗の和の平方根
++       インラインであり、要素に戻る `Multiplicable`、`Addable`、`Rootable[2]` を必要とする。`Vector(3.0, 4.0).norm` は 5.0 であり、メートルのベクトルのノルムはメートルである。
++   entry .map   `v.map(f)`：各成分に `f` を適用した同じ大きさのベクトル
++       関数はインラインであり、`Function1` を通さずにループ本体の中で適用されるので、プリミティブの要素は途中でボックス化されない。結果の `ClassTag` があれば、要素型を変えてもよい（`Vector(1, 2, 3).map(_.toString)`）。
++       `Vector(1.0*Metre, 2.0*Metre).map(_*Metre)` は平方メートルのベクトルである。
++   entry .unitary   同じ向きの単位ベクトル。`Vector[Double, size]`
++       各成分を `norm` で割る。`Vector(3.0, 4.0).unitary` は `Vector(0.6, 0.8)` である。
++   entry .dot   `v.dot(w)`：同じ大きさの二つのベクトルのスカラー積
++       要素どうしの積の和であり、型は要素の `Multiplicable` が与えるものになる。`Vector(1, 2, 3).dot(Vector(4, 3, 7))` は 31 であり、`Vector(5*Inch, 2*Inch, Inch).dot(Vector(2*Inch, 3*Inch, 6*Inch))` は 22 平方インチである。
++       インラインであり、要素の算術は呼び出し位置で解決される。
++       大きさが異なればコンパイルされない。
++   entry .cross   `v.cross(w)`：ベクトル積。三次元または七次元
++       `Vector[left, 3]` と `Vector[left, 7]` に対する二つのオーバーロードがあり（ベクトル積が存在するのはこの次元だけである）、それぞれ要素の `Multiplicable`、`Addable`、`Subtractable` を必要とする。`Vector(1, 2, 3).cross(Vector(4, 3, 7))` は `Vector(5, 5, -5)` であり、反可換で、両方のオペランドに直交する。
++       七次元の積はファノ平面の添字の三つ組に従う。
++       それ以外の大きさはコンパイルされない。

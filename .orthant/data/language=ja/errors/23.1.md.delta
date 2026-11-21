@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.23.1` — `probe` macro reports a type
++ # `↯/s.23.1` — `probe` マクロが型を報告する
+
+- Raised at compile time by Rudiments' `probe` macro, which
+- deliberately halts compilation to report the dealiased, widened
+- type of an expression.
++ 式の、別名を展開し拡大された型を報告するために、意図的にコンパイルを停止させる Rudiments の `probe` マクロによって、コンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- `probe[target]` exists for debugging type inference; it never
+- succeeds — its purpose is to print the type at compile time.
++ `probe[target]` は型推論のデバッグのために存在する。
++ これは決して成功しない。
++ その目的は、コンパイル時に型を表示することである。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.23.1] the type is List[Int]
++ [↯/s.23.1] the type is List[Int]
+
+= [↯/s.23.1] the type is List[Int]
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Remove the `probe` call once you have read the type; do not ship
+- code that contains it.
++ 型を読み終えたら `probe` の呼び出しを取り除く。
++ それを含むコードを出荷してはならない。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/rudiments/src/core/rudiments.internal.scala`
++ - ソース：`lib/rudiments/src/core/rudiments.internal.scala`

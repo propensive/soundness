@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.24.11` — No handler available for the error type
++ # `↯/s.24.11` — Aucun gestionnaire disponible pour le type d'erreur
+
+- Raised at compiletime when fallible code is used with no strategy in scope for the error it
+- raises.
++ Levée à la compilation lorsqu'un code faillible est utilisé sans stratégie en portée pour l'erreur
++ qu'il lève.
+
+- ## Cause
++ ## Cause
+
+- A `raises` clause is discharged by a `Tactic` in scope. Without one, the compiler cannot
+- decide what a failure should do.
++ Une clause `raises` est acquittée par une `Tactic` en portée. Sans elle, le compilateur ne peut
++ pas décider de ce que doit faire un échec.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.24.11] There is no available handler for Io.Error
++ [↯/s.24.11] There is no available handler for Io.Error
+
+= [↯/s.24.11] There is no available handler for Io.Error
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Import a strategy — `strategies.throwUnsafely` while prototyping — or handle the error with
+- `recover`, `safely` or `accrue`. Importing `explainMissingContext` makes the compiler name
+- the imports that would satisfy the search.
++ Importez une stratégie — `strategies.throwUnsafely` pendant le prototypage — ou traitez l'erreur
++ avec `recover`, `safely` ou `accrue`. Importer `explainMissingContext` fait nommer au compilateur
++ les imports qui satisferaient la recherche.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Source : `lib/contingency/src/core/contingency.internal.scala`

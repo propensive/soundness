@@ -1,0 +1,201 @@
+orthant 1 language
+
+- # Soundness error codes
++ # Коды ошибок Soundness
+
+- Every error Soundness numbers carries a stable identifier, its
+- [bolt code](https://github.com/propensive/bolt), of the form `↯/s.m.n` or
+- `↯/s.m.n.v`, where:
++ Каждая ошибка, которой Soundness присваивает номер, несёт стабильный идентификатор, свой
++ [код bolt](https://github.com/propensive/bolt), вида `↯/s.m.n` или
++ `↯/s.m.n.v`, где:
+
+- - `s` is the letter by which bolt codes name Soundness;
+- - `m` is the number of the module the error is in, as [the list of
+-   modules](modules.md) and the `bolt` registry's `s.tel` give it: modules are
+-   numbered in an order in which each comes after those it depends on, as
+-   they stood when each was numbered, and a new module takes the next number;
+- - `n` is the number of the error within its module, the next free one when
+-   the error is written;
+- - `v`, when present, identifies a specific variant of the error (typically
+-   the case of a `Reason` enum).
++ - `s` — буква, которой коды bolt обозначают Soundness;
++ - `m` — номер модуля, в котором находится ошибка, как его дают [список
++   модулей](modules.md) и `s.tel` реестра `bolt`: модули нумеруются в таком
++   порядке, что каждый идёт после тех, от которых он зависит (как они
++   стояли в момент присвоения каждого номера), а новый модуль получает
++   следующий номер;
++ - `n` — номер ошибки внутри её модуля, следующий свободный на момент
++   написания ошибки;
++ - `v`, если присутствует, обозначает конкретный вариант ошибки (обычно
++   кейс перечисления `Reason`).
+
+- An error which is reported on account of another project's carries that
+- error's code after its own: Stratiform's `Tel.Error` for a document the TEL
+- Specification rejects with `↯/t.1.7` is `↯/s.118.1/t.1.7`.
++ Ошибка, о которой сообщается из-за ошибки другого проекта, несёт код той
++ ошибки после своего: `Tel.Error` из Stratiform для документа, который
++ Спецификация TEL отвергает с `↯/t.1.7`, — это `↯/s.118.1/t.1.7`.
+
+- The rendered prefix appears in compile output as `[↯/s.m.n.v]`, coloured if
+- the compiler's `-color` setting is on. In the source, the numbers are the
+- first arguments of `fulminate.Error` and of `halt`: `Error(118, 1,
++ Отображаемый префикс появляется в выводе компиляции как `[↯/s.m.n.v]`, в
++ цвете, если включена настройка компилятора `-color`. В исходном коде номера
++ — это первые аргументы `fulminate.Error` и `halt`: `Error(118, 1,
+
+- reason.number)`.
++ reason.number)`.
+
+- Each error is documented in a markdown file at `<m>.<n>.md`. When an
+- error has variants, every `↯/s.m.n.v` is documented in the same file,
+- under `## Variants`: as a row of a `tabular` table, with the
+- columns `Code`, `Reason`, and whichever of `Meaning`, `Message` (an
+- example), `Resolution` and `Wire code` its variants have; or, when
+- there are five or fewer and each needs an explanation and a resolution
+- of its own, as a `### ↯/s.m.n.v` sub-section, with `**Example.**` and
+- `**Resolution.**` paragraphs. A variant described only by its example
+- message is always a row.
++ Каждая ошибка документирована в markdown-файле `<m>.<n>.md`. Если у
++ ошибки есть варианты, каждый `↯/s.m.n.v` документирован в том же файле
++ под `## Variants`: строкой таблицы `tabular` со столбцами `Code`,
++ `Reason` и теми из `Meaning`, `Message` (пример), `Resolution` и
++ `Wire code`, которые есть у её вариантов; либо, если вариантов пять или
++ меньше и каждому нужны собственные объяснение и решение, — подразделом
++ `### ↯/s.m.n.v` с абзацами `**Example.**` и `**Resolution.**`. Вариант,
++ описанный только примером сообщения, всегда оформляется строкой.
+
+- A code is never reused. When an error is removed, its page stays, marked
+- `(retired)`, saying what became of it, and its number is marked retired in
+- `s.tel`: a reference to the code from an older release still resolves, and
+- the number cannot be allocated again by accident. A retired page says what
+- replaced the code in a `Was` and `Now` table, with a row for the code and
+- for each of its variants that has a successor, even when there is only one.
++ Код никогда не используется повторно. Когда ошибка удаляется, её страница
++ остаётся с пометкой `(retired)` и говорит, что с ней стало, а её номер
++ помечается как выведенный из употребления в `s.tel`: ссылка на код из
++ более старого релиза по-прежнему разрешается, а номер нельзя случайно
++ выделить снова. Страница выведенного из употребления кода говорит, что
++ его заменило, в таблице `Was` и `Now`, со строкой для кода и для каждого
++ из его вариантов, у которого есть преемник, даже если он всего один.
+
+- Every page names the source file its error is raised from. It does not
+- give a line number, since a line number is invalidated by any edit above
+- it and nothing checks that it is still right.
++ Каждая страница называет исходный файл, из которого порождается её ошибка.
++ Номер строки она не указывает, поскольку номер строки становится неверным
++ после любой правки выше него, и ничто не проверяет, что он всё ещё верен.
+
+- ## The `SN-` codes
++ ## Коды `SN-`
+
+- Until Soundness adopted bolt codes, an error was `SN-ddd`, a three-digit
+- number unique across every module. [`sn.md`](sn.md) gives the bolt code of
+- each `SN-` code which was live then. The pages named with three digits
+- (`013.md`) are those of the `SN-` codes retired before then, which never
+- had a bolt code; they are kept so that a reference from an older release
+- still resolves.
++ До перехода Soundness на коды bolt ошибка обозначалась `SN-ddd` —
++ трёхзначным номером, уникальным во всех модулях. [`sn.md`](sn.md) даёт код
++ bolt для каждого кода `SN-`, действовавшего на тот момент. Страницы с
++ трёхзначными именами (`013.md`) — это страницы кодов `SN-`, выведенных из
++ употребления до того, у которых никогда не было кода bolt; они сохранены,
++ чтобы ссылка из более старого релиза по-прежнему разрешалась.
+
+- ## Families
++ ## Семейства
+
+- Some errors are raised by one check against different limits, so each
+- has a page of its own, but they are easiest to compare together.
++ Некоторые ошибки порождаются одной и той же проверкой с разными пределами,
++ поэтому у каждой своя страница, но сравнивать их проще вместе.
+
+- The integer literals of Hypotenuse are checked against the range of
+- their type:
++ Целочисленные литералы Hypotenuse проверяются по диапазону своего типа:
+
+= their type:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Least
+- column  Greatest
+- column  Below the range
+- column  Above the range
++ column  Тип
++ column  Наименьшее
++ column  Наибольшее
++ column  Ниже диапазона
++ column  Выше диапазона
+
+- row  `S8`  -128  127  [`↯/s.27.6`](27.6.md)  [`↯/s.27.13`](27.13.md)
++ row  `S8`  -128  127  [`↯/s.27.6`](27.6.md)  [`↯/s.27.13`](27.13.md)
+
+- row  `S16`  -32768  32767  [`↯/s.27.1`](27.1.md)  [`↯/s.27.7`](27.7.md)
++ row  `S16`  -32768  32767  [`↯/s.27.1`](27.1.md)  [`↯/s.27.7`](27.7.md)
+
+- row  `U8`  0  255  [`↯/s.27.8`](27.8.md)  [`↯/s.27.9`](27.9.md)
++ row  `U8`  0  255  [`↯/s.27.8`](27.8.md)  [`↯/s.27.9`](27.9.md)
+
+- row  `U16`  0  65535  [`↯/s.27.12`](27.12.md)  [`↯/s.27.14`](27.14.md)
++ row  `U16`  0  65535  [`↯/s.27.12`](27.12.md)  [`↯/s.27.14`](27.14.md)
+
+= row  `U16`  0  65535  [`↯/s.27.12`](27.12.md)  [`↯/s.27.14`](27.14.md)
+- ```
++ ```
+
+- The binary and hexadecimal literals of Hypotenuse:
++ Двоичные и шестнадцатеричные литералы Hypotenuse:
+
+= The binary and hexadecimal literals of Hypotenuse:
+=
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Literal
+- column  Rejects
+- row  [`↯/s.27.2`](27.2.md)  `bin"…"`  a character other than `0` or `1`
+- row  [`↯/s.27.5`](27.5.md)  `bin"…"`  a width other than 8, 16, 32 or 64 bits
+- row  [`↯/s.27.3`](27.3.md)  `hex"…"`  an odd number of digits
+- row  [`↯/s.27.4`](27.4.md)  `hex"…"`  a character that is not a hexadecimal digit
++ column  Код
++ column  Литерал
++ column  Отвергает
++ row  [`↯/s.27.2`](27.2.md)  `bin"…"`  символ, отличный от `0` или `1`
++ row  [`↯/s.27.5`](27.5.md)  `bin"…"`  ширину, отличную от 8, 16, 32 или 64 битов
++ row  [`↯/s.27.3`](27.3.md)  `hex"…"`  нечётное число цифр
++ row  [`↯/s.27.4`](27.4.md)  `hex"…"`  символ, не являющийся шестнадцатеричной цифрой
+
+= row  [`↯/s.27.4`](27.4.md)  `hex"…"`  a character that is not a hexadecimal digit
+- ```
++ ```
+
+- The time literals checked by Aviation's `validTime` macro:
++ Литералы времени, проверяемые макросом `validTime` из Aviation:
+
+= The time literals checked by Aviation's `validTime` macro:
+=
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Rejects
+- row  [`↯/s.73.8`](73.8.md)  an argument which is not a literal `Double`
+- row  [`↯/s.73.11`](73.11.md)  a negative time
+- row  [`↯/s.73.1`](73.1.md)  an hour above 12
+- row  [`↯/s.73.2`](73.2.md)  a minute value above 59
+- row  [`↯/s.73.7`](73.7.md)  minutes not written as exactly two digits
++ column  Код
++ column  Отвергает
++ row  [`↯/s.73.8`](73.8.md)  аргумент, не являющийся литералом `Double`
++ row  [`↯/s.73.11`](73.11.md)  отрицательное время
++ row  [`↯/s.73.1`](73.1.md)  час больше 12
++ row  [`↯/s.73.2`](73.2.md)  значение минут больше 59
++ row  [`↯/s.73.7`](73.7.md)  минуты, записанные не ровно двумя цифрами
+
+= row  [`↯/s.73.7`](73.7.md)  minutes not written as exactly two digits
+- ```
++ ```

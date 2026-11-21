@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.42.1` — `Range.Error`
++ # `↯/s.42.1` — `Range.Error`
+
+- Raised when an index falls outside a permitted range.
++ Sollevato quando un indice cade al di fuori di un intervallo consentito.
+
+- ## Cause
++ ## Causa
+
+- Gossamer uses `Range.Error` for index-style access (string
+- slicing, array indexing) when the requested index is not in
++ Gossamer usa `Range.Error` per gli accessi tramite indice (estrazione di
++ sottostringhe, indicizzazione di array) quando l'indice richiesto non è in
+
+- `[from, to]`.
++ `[from, to]`.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.42.1] the index 9 is outside the range 0-5
++ [↯/s.42.1] the index 9 is outside the range 0-5
+
+= [↯/s.42.1] the index 9 is outside the range 0-5
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Bounds-check before indexing, or use an `Optional`-returning
+- accessor.
++ Verificare i limiti prima di indicizzare, oppure usare un accessor che
++ restituisce un `Optional`.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/gossamer/src/core/gossamer.Range.scala`
++ - Sorgente: `lib/gossamer/src/core/gossamer.Range.scala`

@@ -1,0 +1,1217 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base soundness
++ base soundness
+
+- import soundness
++ import soundness
+
+- info   the umbrella package: one `import soundness.*` reaches every Soundness library
++ info   зонтичный пакет: один `import soundness.*` открывает доступ ко всем библиотекам Soundness
+
+- detail
++ detail
+
+-     _Soundness_ is a family of well over a hundred libraries, each in a package of its own
+-     (`gossamer` for text, `galilei` for the filesystem, `jacinta` for JSON, …), and
+-     `soundness` is the package which gathers them. A program writes one wildcard import and
+-     then names whatever it needs, from any library, without knowing which library it came
+-     from:
++     _Soundness_ — это семейство из более чем ста библиотек, каждая в собственном пакете
++     (`gossamer` для текста, `galilei` для файловой системы, `jacinta` для JSON, …), а
++     `soundness` — пакет, который их объединяет. Программа пишет один импорт с подстановкой и
++     затем называет всё, что ей нужно, из любой библиотеки, не зная, из какой библиотеки это
++     пришло:
+
+=     from:
+=
+-     ```scala
++     ```scala
+
+=     from:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import systems.javaBaseSystem
++     import systems.javaBaseSystem
+
+-     val greeting: Text = t"Hello, world".upper
++     val greeting: Text = t"Hello, world".upper
+
+-     val xs: List[Int] = List(3, 1, 2)
++     val xs: List[Int] = List(3, 1, 2)
+
+-     val user: Text = System.properties.user.name()
++     val user: Text = System.properties.user.name()
+
+=     val user: Text = System.properties.user.name()
+-     ```
++     ```
+
+-     The package holds almost nothing of its own. Every library has, in each of its
+-     components, a file named `soundness_<library>_<component>.scala` which `export`s that
+-     component's public names into `package soundness`, so the umbrella grows with the
+-     components on the classpath: a program that depends on `galilei.jvm` sees galilei's
+-     filesystem backends in it, and one that does not, does not. These forwarders are
+-     documented where they are defined, on each library's own page — `Classloader` on
+-     hellenism's, `Json` on jacinta's — and not here. This page documents only what the
+-     umbrella *declares* itself: a handful of hand-written forwarders which an `export`
+-     cannot express, the collection aliases, two annotation types, the catch-all
+-     `explainMissingContext`, and the `repackage` entry point.
++     Собственного содержимого у пакета почти нет. В каждом компоненте каждой библиотеки есть
++     файл с именем `soundness_<library>_<component>.scala`, который `export`-ирует публичные
++     имена этого компонента в `package soundness`, поэтому зонтичный модуль растёт вместе с
++     компонентами на пути классов: программа, зависящая от `galilei.jvm`, видит в нём бэкенды
++     файловой системы galilei, а программа без этой зависимости — не видит. Эти форвардеры
++     документированы там, где они определены, на странице каждой библиотеки — `Classloader` на
++     странице hellenism, `Json` на странице jacinta, — а не здесь. Эта страница документирует
++     только то, что зонтичный модуль *объявляет* сам: несколько написанных вручную форвардеров,
++     которые `export` не может выразить, псевдонимы коллекций, два типа аннотаций, всеобъемлющий
++     `explainMissingContext` и точку входа `repackage`.
+
+-     **Choice packages.** A given which selects an implementation — an error-handling
+-     strategy, a classloader, a codepage, a log format, a filesystem backend — lives in a
+-     small package named for its role: `strategies`, `classloaders`, `codepages`,
+-     `logFormats`, `filesystemBackends`. The umbrella mirrors each as a `package` of the same
+-     name, and blocks of the same name from different libraries merge, so
+-     `soundness.construables` holds the `Construable` givens of jacinta, xylophone,
+-     honeycomb, caesura and a dozen others, and `soundness.wasiApis` those of every library
+-     with a WASI backend. The path through the umbrella and the path through the library are
+-     the same given: `import soundness.monthFormats.englishMonths` and `import
+-     aviation.monthFormats.englishMonths` are interchangeable.
++     **Пакеты выбора.** Given, выбирающий реализацию — стратегию обработки ошибок,
++     загрузчик классов, кодовую страницу, формат журнала, бэкенд файловой системы, — живёт в
++     небольшом пакете, названном по его роли: `strategies`, `classloaders`, `codepages`,
++     `logFormats`, `filesystemBackends`. Зонтичный модуль отражает каждый из них как `package` с
++     тем же именем, а одноимённые блоки из разных библиотек сливаются, так что
++     `soundness.construables` содержит given-экземпляры `Construable` из jacinta, xylophone,
++     honeycomb, caesura и десятка других, а `soundness.wasiApis` — экземпляры всех библиотек с
++     бэкендом WASI. Путь через зонтичный модуль и путь через библиотеку ведут к одному и тому же
++     given: `import soundness.monthFormats.englishMonths` и `import
++     aviation.monthFormats.englishMonths` взаимозаменяемы.
+
+-     A choice-package given is always **imported by name**, because `import strategies.*`
+-     does not import givens: Scala's wildcard selects only ordinary members, and a given
+-     needs its own name or a `given` selector. And a given imported into the lexical scope
+-     outranks any given in a companion object, which is what lets a choice package override
+-     a library's default. `import soundness.*` itself therefore brings no choice into scope —
+-     with one deliberate exception, `explainMissingContext`, which is an old-style `implicit
+-     def` precisely so that the wildcard does include it.
++     Given из пакета выбора всегда **импортируется по имени**, потому что `import strategies.*`
++     не импортирует given-экземпляры: подстановка в Scala выбирает только обычные члены, а для
++     given нужно его собственное имя или селектор `given`. Кроме того, given, импортированный в
++     лексическую область видимости, имеет приоритет над любым given в объекте-компаньоне, и
++     именно это позволяет пакету выбора переопределить умолчание библиотеки. Поэтому сам
++     `import soundness.*` не вносит в область видимости никакого выбора — с одним намеренным
++     исключением, `explainMissingContext`, который объявлен как `implicit
++     def` старого стиля именно для того, чтобы подстановка его включала.
+
+-     **Names left out.** Types and terms live in separate namespaces, so a type `via` and a
+-     method `via` coexist; but two libraries which export one *term* (or one *type*) into
+-     `package soundness` do not overload — the compiler keeps one and silently drops the
+-     other. Each such clash has been ruled on, and the loser is reached through its own
+-     package, where it keeps its name:
++     **Пропущенные имена.** Типы и термы живут в разных пространствах имён, поэтому тип `via` и
++     метод `via` сосуществуют; но две библиотеки, экспортирующие один и тот же *терм* (или один
++     и тот же *тип*) в `package soundness`, не образуют перегрузку — компилятор оставляет один и
++     молча отбрасывает другой. По каждому такому конфликту принято решение, и проигравший
++     доступен через собственный пакет, где сохраняет своё имя:
+
+-     ```tabular
++     ```tabular
+
+-     column  Name
+-     column  In the umbrella
+-     column  Reach the other as
+-     row  `Channel`  perihelion's WebSocket  `anticipation.Channel` (pixel channels)
+-     row  `Completion`, `Completions`  exoskeleton's  `harlequin.Completion`, `prophesy.Completion`
+-     row  `Fragment`  honeycomb's  `harlequin.Fragment`
+-     row  `Descriptor`  embarcadero's OCI  `hallucination.Descriptor`
+-     row  `Diagnostic`  harlequin's  `frontier.Diagnostic`
+-     row  `Message`  fulminate's  `perihelion.Websocket.Message` (a WebSocket frame)
+-     row  `Tag`  honeycomb's HTML tag  `probably.Tag`, `xylophone.Tag`
+-     row  `Attributive`, `Renderable`  honeycomb's  `xylophone.Attributive`, `xylophone.Renderable`
+-     row  `Universe`, `Classfile`  anthology's, mandible's  `degustation.Universe`, `degustation.Classfile`
+-     row  `as`  distillate's decoding  `scintillate.as` (a request body)
+-     row  `teletype`  escapade's rendering  `delicious.teletype`
+-     row  `Kelvin(…)` as an `apply`  rudiments' deindexing `apply`  `import quantitative.*`
++     column  Имя
++     column  В зонтичном модуле
++     column  Другой доступен как
++     row  `Channel`  WebSocket из perihelion  `anticipation.Channel` (каналы пикселей)
++     row  `Completion`, `Completions`  из exoskeleton  `harlequin.Completion`, `prophesy.Completion`
++     row  `Fragment`  из honeycomb  `harlequin.Fragment`
++     row  `Descriptor`  OCI из embarcadero  `hallucination.Descriptor`
++     row  `Diagnostic`  из harlequin  `frontier.Diagnostic`
++     row  `Message`  из fulminate  `perihelion.Websocket.Message` (кадр WebSocket)
++     row  `Tag`  HTML-тег из honeycomb  `probably.Tag`, `xylophone.Tag`
++     row  `Attributive`, `Renderable`  из honeycomb  `xylophone.Attributive`, `xylophone.Renderable`
++     row  `Universe`, `Classfile`  из anthology, из mandible  `degustation.Universe`, `degustation.Classfile`
++     row  `as`  декодирование из distillate  `scintillate.as` (тело запроса)
++     row  `teletype`  отображение из escapade  `delicious.teletype`
++     row  `Kelvin(…)` как `apply`  деиндексирующий `apply` из rudiments  `import quantitative.*`
+
+=     row  `Kelvin(…)` as an `apply`  rudiments' deindexing `apply`  `import quantitative.*`
+-     ```
++     ```
+
+-     A few names are absent for a different reason: an `export` cannot forward them
+-     faithfully. rudiments' `Scribe`/`scribe` and `Surveyor`/`survey`, and zephyrine's
+-     `Region` and `Slate`, are reached from `rudiments` and `zephyrine` directly; perihelion's
+-     `wsClient` and `wsSessional` are imported by name from `perihelion`. A definition
+-     deliberately kept out of the umbrella carries the `unexported` annotation in its source,
+-     and each library's page says which of its names are not exported. The MathML element
+-     types sit inside `Mathml` rather than at the top level, so `import soundness.Mathml.*`
+-     gives the bare element names where MathML is written by hand.
++     Несколько имён отсутствуют по другой причине: `export` не может переслать их точно.
++     `Scribe`/`scribe` и `Surveyor`/`survey` из rudiments, а также `Region` и `Slate` из
++     zephyrine доступны напрямую из `rudiments` и `zephyrine`; `wsClient` и `wsSessional` из
++     perihelion импортируются по имени из `perihelion`. Определение, намеренно не включённое в
++     зонтичный модуль, несёт в исходнике аннотацию `unexported`, и страница каждой библиотеки
++     указывает, какие из её имён не экспортируются. Типы элементов MathML находятся внутри
++     `Mathml`, а не на верхнем уровне, поэтому `import soundness.Mathml.*` даёт голые имена
++     элементов там, где MathML пишется вручную.
+
+-     One shadowing is worth knowing: ambience's `System` is exported, so under `import
+-     soundness.*` a bare `System` is the Soundness one, and the JDK's must be written
+-     `java.lang.System` (for `System.nanoTime`, `System.arraycopy`, …).
++     Одно затенение стоит знать: `System` из ambience экспортируется, поэтому при `import
++     soundness.*` голый `System` — это System из Soundness, а системный класс JDK нужно писать как
++     `java.lang.System` (для `System.nanoTime`, `System.arraycopy`, …).
+
+-     **Why some forwarders are hand-written.** A synthesized `export` forwarder is a plain
+-     method, and some definitions do not survive the trip, so the umbrella re-declares them,
+-     each delegating to its library's original:
++     **Почему некоторые форвардеры написаны вручную.** Синтезированный форвардер `export` — это
++     обычный метод, и некоторые определения не переживают такого переноса, поэтому зонтичный
++     модуль объявляет их заново, и каждое делегирует оригиналу своей библиотеки:
+
+-     - an `export` of an *overloaded* extension forwards only one overload, so `thru`, `till`,
+-       `tabulate` and the interval `each` are declared here, every overload in one
+-       compilation unit;
+-     - an extension whose typeclass evidence is a dependent leading `using` clause — the
+-       deindexing group `apply`, `at`, `defines`, `confine`, `pick`, `unsafeAttested`, with
+-       `define`, `omit`, `keep` and `skip` — needs that clause so that a failed summon
+-       discards the candidate, and a forwarder cannot carry it;
+-     - a forwarder loses a capture-annotated refinement, so zephyrine's `via` and `accepting`,
+-       contingency's `throwUnsafely` and scintillate's four `httpServers` givens are written
+-       out with their capture sets;
+-     - an `export` of an object is a `def`, an unstable prefix through which an opaque type is
+-       transparent, so the collection companions are forwarded as stable `val`s beside
+-       parameterised type aliases (`List`, `Sequence`, `Set`, `Map`, `Chain`);
+-     - an `export` of a case class brings its constructor proxy, a term, so `assign` and
+-       `attribute` are type aliases alone, leaving the term names to anamnesis and galilei.
++     - `export` *перегруженного* расширения пересылает только одну перегрузку, поэтому `thru`,
++       `till`, `tabulate` и интервальный `each` объявлены здесь, все перегрузки в одной единице
++       компиляции;
++     - расширению, чьё свидетельство класса типов — зависимая ведущая клауза
++       `using` (деиндексирующая группа `apply`, `at`, `defines`, `confine`, `pick`,
++       `unsafeAttested`, вместе с `define`, `omit`, `keep` и `skip`), эта клауза нужна для того,
++       чтобы неудачный поиск отбрасывал кандидата, а форвардер не может её нести;
++     - форвардер теряет уточнение с аннотацией захвата, поэтому `via` и `accepting` из
++       zephyrine, `throwUnsafely` из contingency и четыре given-экземпляра `httpServers` из
++       scintillate выписаны вместе со своими множествами захвата;
++     - `export` объекта — это `def`, нестабильный префикс, сквозь который непрозрачный тип
++       прозрачен, поэтому компаньоны коллекций пересылаются как стабильные `val` рядом с
++       параметризованными псевдонимами типов (`List`, `Sequence`, `Set`, `Map`, `Chain`);
++     - `export` case-класса приносит его прокси конструктора, терм, поэтому `assign` и
++       `attribute` — только псевдонимы типов, а имена термов остаются за anamnesis и galilei.
+
+-     **How the documentation is organised.** Each package has its own page, named for it;
+-     a name reached through `soundness` is documented on the page of the package which
+-     defines it, and each library's page says which of its components contribute what,
+-     which choice packages it mirrors into the umbrella, and which givens are imported by
+-     name. This page has an entry for each declaration of the umbrella's own, and for the
+-     two choice packages whose givens are declared here rather than exported.
++     **Как организована документация.** У каждого пакета есть своя страница, названная по нему;
++     имя, доступное через `soundness`, документируется на странице пакета, который его
++     определяет, а страница каждой библиотеки указывает, какие из её компонентов что вносят,
++     какие пакеты выбора она отражает в зонтичный модуль и какие given-экземпляры импортируются по
++     имени. На этой странице есть запись для каждого собственного объявления зонтичного модуля и
++     для двух пакетов выбора, чьи given-экземпляры объявлены здесь, а не экспортированы.
+
+- refer soundness.explainMissingContext
++ refer soundness.explainMissingContext
+
+- refer soundness.strategies
++ refer soundness.strategies
+
+- refer soundness.List
++ refer soundness.List
+
+- refer proscenium.unexported
++ refer proscenium.unexported
+
+- entry .List   the opaque linked list `proscenium.List`, with its companion as a stable value
+-     `type List[+element] = proscenium.List[element]` and `val List = proscenium.List`: the
+-     Soundness list, documented on proscenium's page, as the umbrella names it. The type is
+-     a parameterised alias, since a bare alias of an opaque constructor is not seen through
+-     (`::`, `CanEqual` and the extension methods would treat it as a different `List`); and
+-     the companion is a `val` rather than an `export`ed `def`, since a companion member
+-     selected through a `def` prefix sees the opaque type's right-hand side and exposes the
+-     standard library's whole API. `Nil`, `::` and `#::` are forwarded beside it.
++ entry .List   непрозрачный связный список `proscenium.List` с компаньоном в виде стабильного значения
++     `type List[+element] = proscenium.List[element]` и `val List = proscenium.List`: список
++     Soundness, документированный на странице proscenium, под тем именем, которое ему даёт
++     зонтичный модуль. Тип — параметризованный псевдоним, поскольку сквозь голый псевдоним
++     непрозрачного конструктора не видно (`::`, `CanEqual` и методы-расширения считали бы его
++     другим `List`); а компаньон — `val`, а не `export`-ированный `def`, поскольку член
++     компаньона, выбранный через префикс `def`, видит правую часть непрозрачного типа и
++     раскрывает весь API стандартной библиотеки. Рядом с ним пересылаются `Nil`, `::` и `#::`.
+
+=     standard library's whole API. `Nil`, `::` and `#::` are forwarded beside it.
+=
+-     ```scala
++     ```scala
+
+=     standard library's whole API. `Nil`, `::` and `#::` are forwarded beside it.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val xs: List[Int] = List(1, 2, 3)
++     val xs: List[Int] = List(1, 2, 3)
+
+-     xs.map(_ + 1)
++     xs.map(_ + 1)
+
+=     xs.map(_ + 1)
+-     ```
++     ```
+
+-     A list built from a standard-library collection is `List.from(xs)`, not `xs.to[List]`,
+-     which on a stdlib receiver reaches Scala's own `to` and fails for want of a factory.
++     Список, построенный из коллекции стандартной библиотеки, — это `List.from(xs)`, а не
++     `xs.to[List]`, который на получателе из stdlib доходит до собственного `to` Scala и
++     завершается неудачей из-за отсутствия фабрики.
+
+- entry .Sequence   the opaque indexed sequence `proscenium.Sequence`, with its companion as a stable value
+-     `type Sequence[+element] = proscenium.Sequence[element]` and `val Sequence =
+-     proscenium.Sequence`: an immutable `Vector` behind an opaque type, as proscenium's page
+-     describes it. Forwarded as a parameterised alias and a stable `val` for the reasons
+-     `List` is.
++ entry .Sequence   непрозрачная индексированная последовательность `proscenium.Sequence` с компаньоном в виде стабильного значения
++     `type Sequence[+element] = proscenium.Sequence[element]` и `val Sequence =
++     proscenium.Sequence`: неизменяемый `Vector` за непрозрачным типом, как его описывает
++     страница proscenium. Пересылается как параметризованный псевдоним и стабильный `val` по тем
++     же причинам, что и `List`.
+
+=     `List` is.
+=
+-     ```scala
++     ```scala
+
+=     `List` is.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `List` is.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val xs = Sequence(10, 20, 30)
++     val xs = Sequence(10, 20, 30)
+
+-     xs.pick(Sec) { i => xs(i) + 1 }   // 21
++     xs.pick(Sec) { i => xs(i) + 1 }   // 21
+
+=     xs.pick(Sec) { i => xs(i) + 1 }   // 21
+-     ```
++     ```
+
+- entry .Set   the opaque hash set `proscenium.Set`, with its companion as a stable value
+-     `type Set[element] = proscenium.Set[element]` and `val Set = proscenium.Set`, forwarded
+-     as an alias and a stable `val` for the reasons `List` is. A `Set` is `Reshapable` but has
+-     no stable order, so it does not `sort`.
++ entry .Set   непрозрачное хеш-множество `proscenium.Set` с компаньоном в виде стабильного значения
++     `type Set[element] = proscenium.Set[element]` и `val Set = proscenium.Set`, пересылаются
++     как псевдоним и стабильный `val` по тем же причинам, что и `List`. `Set` реализует
++     `Reshapable`, но не имеет стабильного порядка, поэтому не поддерживает `sort`.
+
+- entry .Map   the opaque hash map `proscenium.Map`, with its companion as a stable value
+-     `type Map[key, +value] = proscenium.Map[key, value]` and `val Map = proscenium.Map`,
+-     forwarded as an alias and a stable `val` for the reasons `List` is. `map.confine(key)`,
+-     `map(key)`, `map.define(key, value)` and `map.omit(key)` are the umbrella's deindexing
+-     extensions.
++ entry .Map   непрозрачный хеш-словарь `proscenium.Map` с компаньоном в виде стабильного значения
++     `type Map[key, +value] = proscenium.Map[key, value]` и `val Map = proscenium.Map`,
++     пересылаются как псевдоним и стабильный `val` по тем же причинам, что и `List`.
++     `map.confine(key)`, `map(key)`, `map.define(key, value)` и `map.omit(key)` — это
++     деиндексирующие расширения зонтичного модуля.
+
+=     extensions.
+=
+-     ```scala
++     ```scala
+
+=     extensions.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     extensions.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val ages = Map(t"Hamlet" -> 30)
++     val ages = Map(t"Hamlet" -> 30)
+
+=     extensions.
+=
+=     ```scala
+=     import soundness.*
+=
+=     val ages = Map(t"Hamlet" -> 30)
+-     ages.confine(t"Hamlet").let(ages(_))   // 30
++     ages.confine(t"Hamlet").let(ages(_))   // 30
+
+=     extensions.
+=
+=     ```scala
+=     import soundness.*
+=
+=     val ages = Map(t"Hamlet" -> 30)
+=     ages.confine(t"Hamlet").let(ages(_))   // 30
+-     ```
++     ```
+
+- entry .Chain   the opaque lazy sequence `proscenium.Chain`, with its companion as a stable value
+-     `type Chain[+element] = proscenium.Chain[element]` and `val Chain = proscenium.Chain`: a
+-     `LazyList` behind an opaque type, forwarded as an alias and a stable `val` for the
+-     reasons `List` is. Its lazy `keep` and `skip` live in its companion, and the umbrella's
+-     own `keep` and `skip` are shaped so that a `Chain` receiver still reaches them.
++ entry .Chain   непрозрачная ленивая последовательность `proscenium.Chain` с компаньоном в виде стабильного значения
++     `type Chain[+element] = proscenium.Chain[element]` и `val Chain = proscenium.Chain`:
++     `LazyList` за непрозрачным типом, пересылается как псевдоним и стабильный `val` по тем же
++     причинам, что и `List`. Его ленивые `keep` и `skip` живут в его компаньоне, а собственные
++     `keep` и `skip` зонтичного модуля устроены так, что получатель `Chain` всё равно до них
++     доходит.
+
+- entry .infer   `infer[context]`: summons a contextual value at the inline expansion site
+-     `transparent inline def infer[context]: context = summonInline[context]`, declared in
+-     the umbrella so that code written against `import soundness.*` has the same spelling
+-     as proscenium's. Inside an inline method, the search happens where the method is
+-     expanded rather than where it is defined; `summon` is the non-inline form.
++ entry .infer   `infer[context]`: призывает контекстное значение в месте встраиваемого раскрытия
++     `transparent inline def infer[context]: context = summonInline[context]`, объявлен в
++     зонтичном модуле, чтобы код, написанный с `import soundness.*`, писал его так же, как в
++     proscenium. Внутри встраиваемого метода поиск происходит там, где метод раскрывается, а не
++     там, где он определён; `summon` — невстраиваемая форма.
+
+- entry .explainMissingContext   explains every failed implicit search, brought in by `import soundness.*`
+-     The umbrella's form of frontier's catch-all `frontier.context.explainMissingContext`. It
+-     is a candidate in every implicit search; when a search fails, the compiler reports a
+-     rendered tree of the candidates tried, what each one required, and which instances on
+-     the classpath would satisfy it, in place of its own terse message. When the search would
+-     succeed without it, it steps aside and contributes nothing, so it never changes which
+-     instance a program uses.
++ entry .explainMissingContext   объясняет каждый неудачный неявный поиск; вносится `import soundness.*`
++     Форма всеобъемлющего `frontier.context.explainMissingContext` из frontier для зонтичного
++     модуля. Он является кандидатом в каждом неявном поиске; когда поиск завершается неудачей,
++     компилятор вместо собственного краткого сообщения выводит отображённое дерево опробованных
++     кандидатов, того, что требовал каждый из них, и того, какие экземпляры на пути классов
++     удовлетворили бы требование. Когда поиск завершился бы успешно и без него, он отходит в
++     сторону и ничего не вносит, поэтому никогда не меняет того, какой экземпляр использует
++     программа.
+
+=     instance a program uses.
+=
+-     ```scala
++     ```scala
+
+=     instance a program uses.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     summon[Char is Concatenable]   // does not compile
++     summon[Char is Concatenable]   // does not compile
+
+=     summon[Char is Concatenable]   // does not compile
+-     ```
++     ```
+
+-     It is an old-style `transparent inline implicit def` rather than a `given`, because a
+-     wildcard import excludes givens and this one must be in scope for anyone who writes
+-     `import soundness.*`. It is annotated `@scala.annotation.internal.diagnostic`, which
+-     the Proscala compiler honours; frontier's page explains its bounds and the shapes of the
+-     tree.
++     Это `transparent inline implicit def` старого стиля, а не `given`, потому что импорт с
++     подстановкой исключает given-экземпляры, а этот должен быть в области видимости у любого,
++     кто пишет `import soundness.*`. Он аннотирован `@scala.annotation.internal.diagnostic`,
++     которую учитывает компилятор Proscala; страница frontier объясняет его границы и формы
++     дерева.
+
+- entry .repackage   the `@main` entry point of burdock's repackager: `java -cp app.jar soundness.repackage`
+-     A command-line entry point, in the `soundness` package so that it can be launched by a
+-     fully-qualified name which every Soundness application carries:
++ entry .repackage   точка входа `@main` перепаковщика burdock: `java -cp app.jar soundness.repackage`
++     Точка входа командной строки в пакете `soundness`, чтобы её можно было запустить по
++     полностью квалифицированному имени, которое есть в каждом приложении Soundness:
+
+-     ```sh
++     ```sh
+
+-     java -cp app.jar:burdock.jar soundness.repackage --github owner/repo
++     java -cp app.jar:burdock.jar soundness.repackage --github owner/repo
+
+=     java -cp app.jar:burdock.jar soundness.repackage --github owner/repo
+-     ```
++     ```
+
+-     It passes its arguments, as a `List[Text]`, to `burdock.repackage`, which rewrites the
+-     running application's JAR in place, externalizing its published dependencies; burdock's
+-     page describes the arguments and the output.
++     Она передаёт свои аргументы как `List[Text]` в `burdock.repackage`, который переписывает
++     JAR работающего приложения на месте, вынося наружу его опубликованные зависимости;
++     страница burdock описывает аргументы и результат.
+
+- entry .assign   the `@assign(layer)` annotation of stratiform, forwarded as a type alone
+-     `type assign = stratiform.assign`: a field annotation which places a case-class field in
+-     a TEL schema layer, as stratiform's page describes it. It is a type alias rather than an
+-     `export`, since exporting the class would also export its constructor proxy, a term
+-     `assign`, which would hide anamnesis's `assign` method; the annotation `@assign(…)` reads
+-     the same either way.
++ entry .assign   аннотация `@assign(layer)` из stratiform, пересылаемая только как тип
++     `type assign = stratiform.assign`: аннотация поля, которая помещает поле case-класса в слой
++     схемы TEL, как описывает страница stratiform. Это псевдоним типа, а не `export`, поскольку
++     экспорт класса экспортировал бы и его прокси конструктора, терм `assign`, который скрыл бы
++     метод `assign` из anamnesis; аннотация `@assign(…)` читается одинаково в обоих случаях.
+
+=     the same either way.
+=
+-     ```scala
++     ```scala
+
+=     the same either way.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object withPhone extends Tel.Layer("with-phone")
++     object withPhone extends Tel.Layer("with-phone")
+
+-     case class Contact(name: Text, @assign(withPhone) phone: Optional[Text])
++     case class Contact(name: Text, @assign(withPhone) phone: Optional[Text])
+
+=     case class Contact(name: Text, @assign(withPhone) phone: Optional[Text])
+-     ```
++     ```
+
+- entry .attribute   the `@attribute` annotation of xylophone, as a type; the term is galilei's
+-     `type attribute = xylophone.Xml.attribute`: the annotation which marks a case-class field
+-     as an XML attribute rather than a child element. It is a type alias rather than an
+-     `export`, because galilei and tarantula already export a *term* named `attribute` into
+-     the umbrella (reading an extended attribute of a path, or an element's attribute), which
+-     the case class's companion would collide with; an annotation needs only the type.
++ entry .attribute   аннотация `@attribute` из xylophone как тип; терм принадлежит galilei
++     `type attribute = xylophone.Xml.attribute`: аннотация, которая помечает поле case-класса
++     как XML-атрибут, а не дочерний элемент. Это псевдоним типа, а не `export`, потому что
++     galilei и tarantula уже экспортируют в зонтичный модуль *терм* с именем `attribute` (чтение
++     расширенного атрибута пути или атрибута элемента), с которым столкнулся бы компаньон
++     case-класса; аннотации нужен только тип.
+
+=     the case class's companion would collide with; an annotation needs only the type.
+=
+-     ```scala
++     ```scala
+
+=     the case class's companion would collide with; an annotation needs only the type.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     case class Book(@attribute isbn: Text, title: Text)
++     case class Book(@attribute isbn: Text, title: Text)
+
+=     case class Book(@attribute isbn: Text, title: Text)
+-     ```
++     ```
+
+- entry .thru   `start thru end`: the interval between two ordinals, end inclusive, confined if both ends are
+-     `Ter thru Sen` is the interval of `Ter`, `Quat`, `Quin` and `Sen`. Two overloads, both
+-     declared in the umbrella: over plain `Ordinal`s the result is a plain `Interval`, and over
+-     two ordinals confined to the same value (`Ordinal in form`) it is an `Interval in form`,
+-     whose every ordinal reads that value totally. They are declared here rather than
+-     exported from denominative because an `export` forwards only one overload, and a plain
+-     `Ordinal` receiver would then be offered the confined one and fail.
++ entry .thru   `start thru end`: интервал между двумя порядковыми номерами, конец включён; ограниченный, если ограничены оба конца
++     `Ter thru Sen` — интервал из `Ter`, `Quat`, `Quin` и `Sen`. Две перегрузки, обе объявлены в
++     зонтичном модуле: для простых `Ordinal` результат — простой `Interval`, а для двух
++     порядковых номеров, ограниченных одним и тем же значением (`Ordinal in form`), — `Interval
++     in form`, каждый порядковый номер которого читает это значение тотально. Они объявлены
++     здесь, а не экспортированы из denominative, потому что `export` пересылает только одну
++     перегрузку, и тогда простому получателю `Ordinal` предлагалась бы ограниченная перегрузка,
++     которая завершалась бы неудачей.
+
+=     `Ordinal` receiver would then be offered the confined one and fail.
+=
+-     ```scala
++     ```scala
+
+=     `Ordinal` receiver would then be offered the confined one and fail.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     (Sec thru Ter).tabulate(_.n1)          // Sequence(2, 3)
++     (Sec thru Ter).tabulate(_.n1)          // Sequence(2, 3)
+
+=     (Sec thru Ter).tabulate(_.n1)          // Sequence(2, 3)
+-     ```
++     ```
+
+- entry .till   `start till end`: the interval between two ordinals, end exclusive, confined if both ends are
+-     `Ter till Sen` is `Ter`, `Quat` and `Quin`; `Sec till Sec` is empty. As with `thru`, the
+-     two overloads — plain and confined — are declared together in the umbrella, because an
+-     `export` would forward only one.
++ entry .till   `start till end`: интервал между двумя порядковыми номерами, конец исключён; ограниченный, если ограничены оба конца
++     `Ter till Sen` — это `Ter`, `Quat` и `Quin`; `Sec till Sec` пуст. Как и для `thru`, обе
++     перегрузки — простая и ограниченная — объявлены вместе в зонтичном модуле, потому что
++     `export` переслал бы только одну.
+
+- entry .tabulate   `xs.tabulate { i => … }`: a `Sequence` of one element per ordinal of a value or interval
+-     The collecting counterpart of `each`: builds a `Sequence` with one element per position,
+-     in order. Three overloads, declared together in the umbrella for the reason `thru` is:
+-     over a `Countable` value the lambda receives `Ordinal in value.type`, so its reads of
+-     the value are bare; over a plain `Interval` it receives a plain `Ordinal`; over an
+-     `Interval in form`, an `Ordinal in form`. Each delegates to `denominative.tabulate`.
++ entry .tabulate   `xs.tabulate { i => … }`: `Sequence` из одного элемента на каждый порядковый номер значения или интервала
++     Собирающий аналог `each`: строит `Sequence` с одним элементом на каждую позицию, по
++     порядку. Три перегрузки, объявленные вместе в зонтичном модуле по той же причине, что и
++     `thru`: для значения `Countable` лямбда получает `Ordinal in value.type`, так что её чтения
++     значения голые; для простого `Interval` она получает простой `Ordinal`; для `Interval in
++     form` — `Ordinal in form`. Каждая делегирует `denominative.tabulate`.
+
+=     `Interval in form`, an `Ordinal in form`. Each delegates to `denominative.tabulate`.
+=
+-     ```scala
++     ```scala
+
+=     `Interval in form`, an `Ordinal in form`. Each delegates to `denominative.tabulate`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `Interval in form`, an `Ordinal in form`. Each delegates to `denominative.tabulate`.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val xs = Sequence(10, 20, 30)
++     val xs = Sequence(10, 20, 30)
+
+-     xs.tabulate { i => xs(i) + i.n0 }   // Sequence(10, 21, 32)
++     xs.tabulate { i => xs(i) + i.n0 }   // Sequence(10, 21, 32)
+
+=     xs.tabulate { i => xs(i) + i.n0 }   // Sequence(10, 21, 32)
+-     ```
++     ```
+
+- entry .each   `interval.each { i => … }`: visits every ordinal of an interval, in order
+-     The umbrella declares the two interval overloads of `each` beside the collection `each`
+-     it exports from rudiments: over a plain `Interval` the lambda receives an `Ordinal`, and
+-     over a confined `Interval in form` it receives `Ordinal in form`, so a read inside is
+-     total. All of them must share one scope — two top-level definitions of one name in
+-     `package soundness` do not overload, and one is silently dropped — and the confined
+-     overload must sit beside the plain one, or the plain one wins for a confined receiver
+-     and strips its brand without an error. The collection form, `xs.each { x => … }`, is
+-     documented on rudiments' page.
++ entry .each   `interval.each { i => … }`: обходит по порядку каждый порядковый номер интервала
++     Зонтичный модуль объявляет две интервальные перегрузки `each` рядом с коллекционным
++     `each`, который он экспортирует из rudiments: для простого `Interval` лямбда получает
++     `Ordinal`, а для ограниченного `Interval in form` — `Ordinal in form`, так что чтение
++     внутри тотально. Все они должны находиться в одной области видимости — два определения
++     верхнего уровня с одним именем в `package soundness` не образуют перегрузку, и одно молча
++     отбрасывается, — а ограниченная перегрузка должна стоять рядом с простой, иначе для
++     ограниченного получателя побеждает простая и без всякой ошибки снимает с него бренд.
++     Коллекционная форма, `xs.each { x => … }`, документирована на странице rudiments.
+
+=     documented on rudiments' page.
+=
+-     ```scala
++     ```scala
+
+=     documented on rudiments' page.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val xs = Sequence(1, 2, 3)
++     val xs = Sequence(1, 2, 3)
+
+-     xs.extent.each { i => assert(xs(i) > 0) }
++     xs.extent.each { i => assert(xs(i) > 0) }
+
+=     xs.extent.each { i => assert(xs(i) > 0) }
+-     ```
++     ```
+
+- entry .apply   `xs(index)`: the element at an index, bare for a confined index and `Optional` otherwise
+-     The universal deindexing read for any value with an `Applicable` instance — the
+-     collections by `Ordinal`, a `Map` by key, a `Text` by `Ordinal` — re-declared here
+-     rather than exported, since its evidence is a dependent leading `using` clause which a
+-     forwarder cannot carry. It delegates inline to `rudiments.apply`, so an index typed
+-     `Operand in xs.type` (from `confine`, `pick`, `each`, …) reads the element bare and any
+-     other index is checked, giving an `Optional`. A second overload reads a frozen array typed
+-     `& Sized[n]` with a literal ordinal, checked against `n` as the code compiles. Rudiments'
+-     page has the full account.
++ entry .apply   `xs(index)`: элемент по индексу, голый для ограниченного индекса и `Optional` в остальных случаях
++     Универсальное деиндексирующее чтение для любого значения с экземпляром `Applicable` —
++     коллекций по `Ordinal`, `Map` по ключу, `Text` по `Ordinal`, — объявленное здесь заново, а
++     не экспортированное, поскольку его свидетельство — зависимая ведущая клауза `using`, которую
++     форвардер не может нести. Оно встраиваемо делегирует `rudiments.apply`, так что индекс типа
++     `Operand in xs.type` (из `confine`, `pick`, `each`, …) читает элемент голым, а любой другой
++     индекс проверяется и даёт `Optional`. Вторая перегрузка читает замороженный массив типа
++     `& Sized[n]` по литеральному порядковому номеру, который проверяется против `n` при
++     компиляции кода. Полное описание — на странице rudiments.
+
+=     page has the full account.
+=
+-     ```scala
++     ```scala
+
+=     page has the full account.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     page has the full account.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val xs = Sequence(10, 20, 30)
++     val xs = Sequence(10, 20, 30)
+
+-     xs(Sec)                             // Optional[Int]: 20
++     xs(Sec)                             // Optional[Int]: 20
+
+-     xs.confine(Sec).let { i => xs(i) }  // the read bare inside
++     xs.confine(Sec).let { i => xs(i) }  // the read bare inside
+
+=     xs.confine(Sec).let { i => xs(i) }  // the read bare inside
+-     ```
++     ```
+
+- entry .at   `xs.at(index)`: the same read as `xs(index)`, bare for a confined index and `Optional` otherwise
+-     Identical to `apply`, re-declared in the umbrella with it and delegating to
+-     `rudiments.at`; kept for code which spells positional access `xs.at(Sec)` and keyed
+-     access `map.at(key)`.
++ entry .at   `xs.at(index)`: то же чтение, что и `xs(index)`, голое для ограниченного индекса и `Optional` в остальных случаях
++     Идентично `apply`, объявлено заново в зонтичном модуле вместе с ним и делегирует
++     `rudiments.at`; сохранено для кода, который записывает позиционный доступ как `xs.at(Sec)`,
++     а доступ по ключу — как `map.at(key)`.
+
+- entry .defines   `xs.defines(index)`: whether an index or key is defined for a value
+-     True when the value's `Applicable` instance contains the index: an ordinal within a
+-     collection's extent, or a key present in a `Map`. Re-declared in the umbrella with the
+-     rest of the deindexing group, with the one-line body duplicated rather than delegated.
++ entry .defines   `xs.defines(index)`: определён ли для значения индекс или ключ
++     Истинно, когда экземпляр `Applicable` значения содержит индекс: порядковый номер в
++     пределах протяжённости коллекции или ключ, присутствующий в `Map`. Объявлено заново в
++     зонтичном модуле вместе с остальной деиндексирующей группой, причём однострочное тело
++     продублировано, а не делегировано.
+
+- entry .confine   `xs.confine(index)`: checks an index against a value and returns it branded to that value
+-     `Unset` if the index is not defined for the value, and otherwise the index itself typed
+-     `Operand in xs.type`, so that a following `xs(i)` is bare and checks nothing again.
+-     Works for keys as well as ordinals. Re-declared in the umbrella with the rest of the
+-     deindexing group.
++ entry .confine   `xs.confine(index)`: проверяет индекс против значения и возвращает его с брендом этого значения
++     `Unset`, если индекс не определён для значения, а иначе сам индекс с типом
++     `Operand in xs.type`, так что последующее `xs(i)` голое и ничего повторно не проверяет.
++     Работает как для ключей, так и для порядковых номеров. Объявлено заново в зонтичном
++     модуле вместе с остальной деиндексирующей группой.
+
+=     deindexing group.
+=
+-     ```scala
++     ```scala
+
+=     deindexing group.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     deindexing group.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val ages = Map(t"Hamlet" -> 30)
++     val ages = Map(t"Hamlet" -> 30)
+
+=     deindexing group.
+=
+=     ```scala
+=     import soundness.*
+=
+=     val ages = Map(t"Hamlet" -> 30)
+-     ages.confine(t"Hamlet").let(ages(_))   // 30
++     ages.confine(t"Hamlet").let(ages(_))   // 30
+
+=     deindexing group.
+=
+=     ```scala
+=     import soundness.*
+=
+=     val ages = Map(t"Hamlet" -> 30)
+=     ages.confine(t"Hamlet").let(ages(_))   // 30
+-     ```
++     ```
+
+- entry .pick   `xs.pick(index) { i => … }`: checks an index and runs a lambda with it confined, or gives `Unset`
+-     The fused form of `confine` and `let`: the lambda receives the index typed `Operand in
+-     xs.type`, so its reads of `xs` are bare, and the result is `Optional`, `Unset` when the
+-     index is not defined. Re-declared in the umbrella with the rest of the deindexing group.
++ entry .pick   `xs.pick(index) { i => … }`: проверяет индекс и запускает лямбду с ограниченным индексом либо даёт `Unset`
++     Слитая форма `confine` и `let`: лямбда получает индекс с типом `Operand in
++     xs.type`, так что её чтения `xs` голые, а результат — `Optional`, `Unset`, если индекс не
++     определён. Объявлено заново в зонтичном модуле вместе с остальной деиндексирующей группой.
+
+=     index is not defined. Re-declared in the umbrella with the rest of the deindexing group.
+=
+-     ```scala
++     ```scala
+
+=     index is not defined. Re-declared in the umbrella with the rest of the deindexing group.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     index is not defined. Re-declared in the umbrella with the rest of the deindexing group.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val xs = Sequence(10, 20, 30)
++     val xs = Sequence(10, 20, 30)
+
+-     xs.pick(Ter) { i => xs(i) + i.n0 }   // 32
++     xs.pick(Ter) { i => xs(i) + i.n0 }   // 32
+
+=     xs.pick(Ter) { i => xs(i) + i.n0 }   // 32
+-     ```
++     ```
+
+- entry .unsafeAttested   brands an index, or an interval, as valid for a value on the caller's word
+-     `xs.unsafeAttested(index)` is `confine` without the check, minting `Operand in xs.type`
+-     directly; `xs.unsafeAttested(index) { i => … }` scopes the attestation to a lambda; and
+-     `interval.unsafeAttested(xs)` brands an `Interval` as `Interval in xs.type`. Every form
+-     takes an erased `Unsafe` token, so the call sits inside `unsafely`, and every call carries
+-     a comment naming the construction which proves the bound. Re-declared in the umbrella
+-     with the rest of the deindexing group.
++ entry .unsafeAttested   наделяет индекс или интервал брендом значения под ответственность вызывающего
++     `xs.unsafeAttested(index)` — это `confine` без проверки, напрямую создающий
++     `Operand in xs.type`; `xs.unsafeAttested(index) { i => … }` ограничивает действие
++     удостоверения лямбдой; а `interval.unsafeAttested(xs)` наделяет `Interval` брендом
++     `Interval in xs.type`. Каждая форма принимает стёртый токен `Unsafe`, поэтому вызов
++     находится внутри `unsafely`, и каждый вызов сопровождается комментарием, называющим
++     конструкцию, которая доказывает границу. Объявлено заново в зонтичном модуле вместе с
++     остальной деиндексирующей группой.
+
+=     with the rest of the deindexing group.
+=
+-     ```scala
++     ```scala
+
+=     with the rest of the deindexing group.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val xs: Sequence[Int] = Sequence(1, 2, 4)
++     val xs: Sequence[Int] = Sequence(1, 2, 4)
+
+-     unsafely:
++     unsafely:
+
+-       // In bounds by construction: the literal above has three elements.
++       // In bounds by construction: the literal above has three elements.
+
+-       xs.unsafeAttested(Sec) { i => xs(i) }   // 2
++       xs.unsafeAttested(Sec) { i => xs(i) }   // 2
+
+=       xs.unsafeAttested(Sec) { i => xs(i) }   // 2
+-     ```
++     ```
+
+- entry .define   `xs.define(index, value)`: a copy of a container with one position or key set
+-     Through the receiver's `Definable` instance: `xs.define(Sec, 9)` on a `Sequence`,
+-     `map.define(key, value)` on a `Map`. Out-of-range ordinals leave the container
+-     unchanged, and an absent key adds an entry. Re-declared in the umbrella because its
+-     evidence is a dependent leading `using` clause.
++ entry .define   `xs.define(index, value)`: копия контейнера с установленной одной позицией или ключом
++     Через экземпляр `Definable` получателя: `xs.define(Sec, 9)` для `Sequence`,
++     `map.define(key, value)` для `Map`. Порядковые номера вне диапазона оставляют контейнер
++     без изменений, а отсутствующий ключ добавляет запись. Объявлено заново в зонтичном модуле,
++     потому что его свидетельство — зависимая ведущая клауза `using`.
+
+=     evidence is a dependent leading `using` clause.
+=
+-     ```scala
++     ```scala
+
+=     evidence is a dependent leading `using` clause.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     Map(t"Hamlet" -> 30).define(t"Ophelia", 25)
++     Map(t"Hamlet" -> 30).define(t"Ophelia", 25)
+
+=     Map(t"Hamlet" -> 30).define(t"Ophelia", 25)
+-     ```
++     ```
+
+- entry .omit   `xs.omit(index)`: a copy of a container without one key or position
+-     Through the receiver's `Omissible` instance: `map.omit(key)` removes an entry, and an
+-     absent key leaves the map as it was. Re-declared in the umbrella because its evidence is
+-     a dependent leading `using` clause.
++ entry .omit   `xs.omit(index)`: копия контейнера без одного ключа или позиции
++     Через экземпляр `Omissible` получателя: `map.omit(key)` удаляет запись, а отсутствующий
++     ключ оставляет словарь как есть. Объявлено заново в зонтичном модуле, потому что его
++     свидетельство — зависимая ведущая клауза `using`.
+
+- entry .keep   the first (or, with `Bidi.Rtl`, the last) `count` elements, or the leading run matching a predicate
+-     `xs.keep(3)` takes three elements, `xs.keep(3, Bidi.Rtl)` the last three, and
+-     `xs.keep(_ < 4)` the leading run that matches — a prefix, not a filter. Shape-preserving
+-     through `Segmentable`, so a `Text` stays a `Text`. Re-declared in the umbrella rather
+-     than exported so that a `Chain` receiver, which has no `Segmentable` instance, discards
+-     this candidate and reaches the lazy `keep` in `Chain`'s companion; a forwarder would
+-     claim the call and fail.
++ entry .keep   первые (или, с `Bidi.Rtl`, последние) `count` элементов либо ведущая серия, удовлетворяющая предикату
++     `xs.keep(3)` берёт три элемента, `xs.keep(3, Bidi.Rtl)` — последние три, а
++     `xs.keep(_ < 4)` — подходящую ведущую серию: префикс, а не фильтр. Сохраняет форму через
++     `Segmentable`, так что `Text` остаётся `Text`. Объявлено заново в зонтичном модуле, а не
++     экспортировано, чтобы получатель `Chain`, у которого нет экземпляра `Segmentable`,
++     отбрасывал этого кандидата и доходил до ленивого `keep` в компаньоне `Chain`; форвардер
++     перехватил бы вызов и завершился бы неудачей.
+
+=     claim the call and fail.
+=
+-     ```scala
++     ```scala
+
+=     claim the call and fail.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"Hello".keep(1, Bidi.Rtl)         // t"o"
++     t"Hello".keep(1, Bidi.Rtl)         // t"o"
+
+-     t"HELLOworld".keep(_.isUpper)      // t"HELLO"
++     t"HELLOworld".keep(_.isUpper)      // t"HELLO"
+
+=     t"HELLOworld".keep(_.isUpper)      // t"HELLO"
+-     ```
++     ```
+
+- entry .skip   all but the first (or, with `Bidi.Rtl`, the last) `count` elements, or all after the leading matching run
+-     The complement of `keep`: `xs.skip(2)` drops two elements, `xs.skip(2, Bidi.Rtl)` the
+-     last two, and `xs.skip(_ == ' ')` the leading run of spaces. Re-declared in the umbrella
+-     for the reason `keep` is, so that a `Chain` reaches its companion's lazy `skip`.
++ entry .skip   все элементы, кроме первых (или, с `Bidi.Rtl`, последних) `count`, либо все после ведущей подходящей серии
++     Дополнение к `keep`: `xs.skip(2)` отбрасывает два элемента, `xs.skip(2, Bidi.Rtl)` —
++     последние два, а `xs.skip(_ == ' ')` — ведущую серию пробелов. Объявлено заново в
++     зонтичном модуле по той же причине, что и `keep`, чтобы `Chain` доходил до ленивого `skip`
++     своего компаньона.
+
+- entry .via   `stream.via(stage)`: a stream pulled through a stage with a `Ductile` instance
+-     The umbrella's hand-written forwarder for zephyrine's pull-composition: consumes the
+-     stream and the stage, and gives a stream of the stage's `Result` type over its
+-     `Transport`, needing a `Buffering`. A synthesized forwarder would lose the dependent
+-     `ductile.Result` refinement under capture checking, so this one is written out and
+-     delegates to `zephyrine.via`; it behaves identically. The *type* `via` (a value computed
+-     in a locale) is cosmopolite's, in the type namespace, and does not clash.
++ entry .via   `stream.via(stage)`: поток данных, протянутый через стадию с экземпляром `Ductile`
++     Написанный вручную форвардер зонтичного модуля для pull-композиции из zephyrine:
++     потребляет поток данных и стадию и даёт поток данных типа `Result` стадии поверх её
++     `Transport`, требуя `Buffering`. Синтезированный форвардер потерял бы при проверке захвата
++     зависимое уточнение `ductile.Result`, поэтому этот выписан явно и делегирует
++     `zephyrine.via`; ведёт он себя идентично. *Тип* `via` (значение, вычисленное в локали)
++     принадлежит cosmopolite, находится в пространстве имён типов и не конфликтует.
+
+=     in a locale) is cosmopolite's, in the type namespace, and does not clash.
+=
+-     ```scala
++     ```scala
+
+=     in a locale) is cosmopolite's, in the type namespace, and does not clash.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     import charsets.utf8Charset
++     import charsets.utf8Charset
+
+-     val bytes: Data = t"The quick brown fox".in[Data]
++     val bytes: Data = t"The quick brown fox".in[Data]
+
+-     bytes.stream.via(summon[Charset]).memoize
++     bytes.stream.via(summon[Charset]).memoize
+
+=     bytes.stream.via(summon[Charset]).memoize
+-     ```
++     ```
+
+- entry .accepting   `intake.accepting(stage)`: an intake pushing through a stage with a `Ductile` instance
+-     The umbrella's hand-written forwarder for zephyrine's push-composition: consumes the
+-     intake and the stage, and gives an intake of the stage's `Operand` type over its
+-     `Upstream`, needing a `Buffering`. Written out rather than exported for the reason `via`
+-     is, and delegating to `zephyrine.accepting`.
++ entry .accepting   `intake.accepting(stage)`: приёмный конец, проталкивающий данные через стадию с экземпляром `Ductile`
++     Написанный вручную форвардер зонтичного модуля для push-композиции из zephyrine:
++     потребляет приёмный конец и стадию и даёт приёмный конец типа `Operand` стадии поверх её
++     `Upstream`, требуя `Buffering`. Выписан явно, а не экспортирован, по той же причине, что и
++     `via`, и делегирует `zephyrine.accepting`.
+
+- entry .dispose   `handle.dispose()`: releases a WIT resource handle, in Wasm-compiled code
+-     An inline extension on `xenophile.Wasm.Handle`, in xenophile's `wasm` component only. It
+-     expands to `WasmInvoke.dispose`, which emits the resource's `[resource-drop]` Component
+-     Model import; like `invoke`, it is plain `inline` so the import materializes at the
+-     Wasm-linked call site downstream. A program should dispose every handle it obtains when
+-     it is done with it, typically in a `finally`.
++ entry .dispose   `handle.dispose()`: освобождает дескриптор ресурса WIT в коде, скомпилированном в Wasm
++     Встраиваемое расширение для `xenophile.Wasm.Handle`, только в компоненте `wasm` из
++     xenophile. Оно раскрывается в `WasmInvoke.dispose`, который порождает импорт Component Model
++     `[resource-drop]` ресурса; как и `invoke`, оно просто `inline`, так что импорт
++     материализуется ниже по цепочке, в месте вызова, связываемом с Wasm. Программа должна
++     освобождать каждый полученный дескриптор, когда он ей больше не нужен, обычно в `finally`.
+
+- entry .threads   the threading models of parasite, each a `Threading` given to import by name
+-     An object of forwarders to `parasite.threads`: `platformThreads`, `virtualThreads`,
+-     `adaptiveThreads`, `pooledThreads` and `javascriptThreads`, documented on parasite's
+-     page. It is an object, not a package, as parasite's own is: its givens are
+-     capabilities, which must live in an object.
++ entry .threads   модели потоков выполнения из parasite, каждая — given `Threading`, импортируемый по имени
++     Объект форвардеров к `parasite.threads`: `platformThreads`, `virtualThreads`,
++     `adaptiveThreads`, `pooledThreads` и `javascriptThreads`, документированные на странице
++     parasite. Это объект, а не пакет, как и собственный объект parasite: его given-экземпляры —
++     возможности, которые должны жить в объекте.
+
+=     capabilities, which must live in an object.
+=
+-     ```scala
++     ```scala
+
+=     capabilities, which must live in an object.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+=     import threads.virtualThreads
+-     ```
++     ```
+
+- entry .supervisors   parasite's global supervisor, as a given to import by name
+-     An object forwarding `parasite.supervisors.globalSupervisor`, the `PlatformSupervisor`
+-     as a `Supervisor` given, for code which needs a supervisor directly rather than a
++ entry .supervisors   глобальный супервизор parasite как given, импортируемый по имени
++     Объект, пересылающий `parasite.supervisors.globalSupervisor`, то есть `PlatformSupervisor`
++     как given `Supervisor`, для кода, которому нужен непосредственно супервизор, а не
+
+-     `Threading`.
++     `Threading`.
+
+- entry .unsupervised   parasite's process-lifetime monitor, for blocking outside any `supervise` scope
+-     An object forwarding `parasite.unsupervised.orphanMonitor`, a `Monitor` which parks the
+-     calling platform thread and supervises nothing: a deliberate escape hatch for daemon
+-     lifecycles and process-lifetime waits. Prefer `supervise` wherever the blocking region
+-     is already scoped.
++ entry .unsupervised   монитор parasite на время жизни процесса, для блокировки вне любой области видимости `supervise`
++     Объект, пересылающий `parasite.unsupervised.orphanMonitor`, — `Monitor`, который паркует
++     вызывающий платформенный поток выполнения и ничего не контролирует: намеренный запасной
++     выход для жизненных циклов демонов и ожиданий длиной в жизнь процесса. Везде, где
++     блокирующая область уже ограничена, предпочитайте `supervise`.
+
+- entry .strategies   the error-handling strategies, merged from every library; `throwUnsafely` is declared here
++ entry .strategies   стратегии обработки ошибок, собранные из всех библиотек; `throwUnsafely` объявлен здесь
+
+= entry .strategies   the error-handling strategies, merged from every library; `throwUnsafely` is declared here
+-   detail
++   detail
+
+-       The umbrella's `strategies` choice package. Its givens are `Tactic`s, which decide
+-       what happens when an error is raised, and each is imported by name, since `import
+-       strategies.*` does not import givens. Most are forwarders to
+-       `contingency.strategies` (`fatalErrors`, `mitigation`, `throwSafely`,
+-       `uncheckedErrors`), documented on contingency's page; `throwUnsafely` alone is
+-       declared here.
++       Пакет выбора `strategies` зонтичного модуля. Его given-экземпляры — это `Tactic`, которые
++       решают, что происходит, когда порождается ошибка, и каждый импортируется по имени,
++       поскольку `import strategies.*` не импортирует given-экземпляры. Большинство из них —
++       форвардеры к `contingency.strategies` (`fatalErrors`, `mitigation`, `throwSafely`,
++       `uncheckedErrors`), документированные на странице contingency; только `throwUnsafely`
++       объявлен здесь.
+
+-       ```scala
++       ```scala
+
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       t"42".as[Int]
++       t"42".as[Int]
+
+=       t"42".as[Int]
+-       ```
++       ```
+
+-   refer contingency.strategies
++   refer contingency.strategies
+
+-   entry .throwUnsafely   throws every error as an ordinary exception, with no capability required
+-       A pure `ThrowTactic[Hazard]^{}` delegating to `contingency.strategies.throwUnsafely`,
+-       so by contravariance it satisfies every `Tactic[error]` at once. It is a delegating
+-       given rather than an export forwarder: a forwarder is a method, and the umbrella name
+-       of a value given would land in the capture set of every `^{tactic}` instance summoned
+-       through it, where a method is not a legal capture reference. Suits scripts and the
+-       outermost layer of a program; a library should state what it raises instead.
++   entry .throwUnsafely   выбрасывает каждую ошибку как обычное исключение, не требуя никакой возможности
++       Чистый `ThrowTactic[Hazard]^{}`, делегирующий `contingency.strategies.throwUnsafely`, так
++       что благодаря контравариантности он удовлетворяет сразу каждому `Tactic[error]`. Это
++       делегирующий given, а не форвардер export: форвардер — это метод, а имя given-значения в
++       зонтичном модуле попало бы в множество захвата каждого экземпляра `^{tactic}`,
++       призванного через него, где метод не является допустимой ссылкой захвата. Подходит для
++       скриптов и самого внешнего слоя программы; библиотеке следует вместо этого указывать, что
++       она порождает.
+
+- entry .httpServers   the HTTP servers of scintillate, each a `Protocolic` given to import by name
++ entry .httpServers   HTTP-серверы из scintillate, каждый — given `Protocolic`, импортируемый по имени
+
+= entry .httpServers   the HTTP servers of scintillate, each a `Protocolic` given to import by name
+-   detail
++   detail
+
+-       The umbrella's `httpServers` choice package: which server answers `tcp"8080".serve[Http]`
+-       is chosen by importing one of these by name. All four are declared here as
+-       hand-written forwarders to `scintillate.httpServers`, because a synthesized export
+-       forwarder loses the givens' capture-annotated refinement types. Each is typed
+-       `scintillate.httpServers.HttpdFor[port]` for a port of 80, 443, 8080 or 8000, captures
+-       the `Tactic[Httpd.Error]` and `Monitor` it is given, and needs a `Probate`, an
+-       `Httpd.Event is Loggable` and a `WebserverErrorPage` in scope.
++       Пакет выбора `httpServers` зонтичного модуля: какой сервер отвечает на
++       `tcp"8080".serve[Http]`, выбирается импортом одного из них по имени. Все четыре объявлены
++       здесь как написанные вручную форвардеры к `scintillate.httpServers`, потому что
++       синтезированный форвардер export теряет типы given-экземпляров с уточнениями, несущими
++       аннотации захвата. Каждый имеет тип `scintillate.httpServers.HttpdFor[port]` для порта 80,
++       443, 8080 или 8000, захватывает переданные ему `Tactic[Httpd.Error]` и `Monitor` и требует
++       в области видимости `Probate`, `Httpd.Event is Loggable` и `WebserverErrorPage`.
+
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+-       import httpServers.soundnessHttpd
++       import httpServers.soundnessHttpd
+
+-       def main(): Unit = supervise:
++       def main(): Unit = supervise:
+
+-         tcp"8080".serve[Http](Http.Response(Http.Ok)(t"served"))
++         tcp"8080".serve[Http](Http.Response(Http.Ok)(t"served"))
+
+=         tcp"8080".serve[Http](Http.Response(Http.Ok)(t"served"))
+-       ```
++       ```
+
+-   refer scintillate.httpServers
++   refer scintillate.httpServers
+
+-   refer scintillate.Httpd
++   refer scintillate.Httpd
+
+-   refer scintillate.SocketServer
++   refer scintillate.SocketServer
+
+-   entry .jdkHttpserver   `Http` served by the JDK's `Httpd` on `localhost`
+-       Forwards `scintillate.httpServers.jdkHttpserver`: the server built on the JDK's
+-       `com.sun.net.httpserver`, bound to the loopback interface only.
+-   entry .jdkHttpserverPublic   `Http` served by the JDK's `Httpd` on every interface
+-       Forwards `scintillate.httpServers.jdkHttpserverPublic`: as `jdkHttpserver`, but bound
+-       to every network interface, so reachable from other machines.
+-   entry .soundnessHttpd   `Http` served by scintillate's own `SocketServer` on `localhost`
+-       Forwards `scintillate.httpServers.soundnessHttpd`: Soundness's own server, which also
+-       speaks HTTP/2 over TLS, bound to the loopback interface only.
+-   entry .soundnessHttpdPublic   `Http` served by scintillate's own `SocketServer` on every interface
+-       Forwards `scintillate.httpServers.soundnessHttpdPublic`: as `soundnessHttpd`, but bound
+-       to every network interface.
++   entry .jdkHttpserver   `Http`, обслуживаемый `Httpd` из JDK на `localhost`
++       Пересылает `scintillate.httpServers.jdkHttpserver`: сервер, построенный на
++       `com.sun.net.httpserver` из JDK и привязанный только к интерфейсу обратной петли.
++   entry .jdkHttpserverPublic   `Http`, обслуживаемый `Httpd` из JDK на всех интерфейсах
++       Пересылает `scintillate.httpServers.jdkHttpserverPublic`: как `jdkHttpserver`, но
++       привязан ко всем сетевым интерфейсам, поэтому доступен с других машин.
++   entry .soundnessHttpd   `Http`, обслуживаемый собственным `SocketServer` из scintillate на `localhost`
++       Пересылает `scintillate.httpServers.soundnessHttpd`: собственный сервер Soundness,
++       который также говорит на HTTP/2 поверх TLS и привязан только к интерфейсу обратной петли.
++   entry .soundnessHttpdPublic   `Http`, обслуживаемый собственным `SocketServer` из scintillate на всех интерфейсах
++       Пересылает `scintillate.httpServers.soundnessHttpdPublic`: как `soundnessHttpd`, но
++       привязан ко всем сетевым интерфейсам.

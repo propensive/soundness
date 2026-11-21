@@ -1,0 +1,1807 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base sedentary
++ base sedentary
+
+- import soundness
++ import soundness
+
+- info   benchmarks, stress tests and profiles: quoted code staged into its own JVM, measured, and reported beside a suite's tests
++ info   ベンチマーク、ストレステスト、プロファイル：クォートされたコードを専用の JVM へステージングし、計測し、スイートのテストと並べて報告する
+
+- detail
++ detail
+
+-     _Sedentary_ measures code rather than checking it. It offers three kinds of measurement,
+-     each written inside a probably `Suite` alongside its tests and reported in the same report,
+-     with the same names, axes and selection:
++     _Sedentary_ はコードを検査するのではなく計測する。
++     3 種類の計測を提供し、いずれも probably の `Suite` の中にテストと並べて書かれ、同じレポートに、同じ名前、軸、選択のもとで報告される。
+
+-     - a `Bench` measures **speed**: how long one operation takes when it is repeated serially,
+-       with its spread, its confidence interval, its allocation per operation and, given an
+-       `OperationSize`, its throughput in bytes or characters per second;
+-     - a `Stress` measures **behaviour under load**: the operation run concurrently on many
+-       workers for a wall-clock window, reporting allocation, peak heap, the live set retained,
+-       garbage collection and latency percentiles as a `Strain`, and optionally sweeping or
+-       searching the worker count for the best sustained throughput (`StressSearch`);
+-     - a `Profile` measures **where the time goes**: the operation run under an in-process JFR
+-       recording, its hottest methods reported as `Hotspots`.
++     - `Bench` は**速度**を計測する。1 つの操作を逐次的に繰り返したときにかかる時間を、そのばらつき、信頼区間、操作あたりのアロケーション、そして `OperationSize` が与えられればバイト毎秒または文字毎秒のスループットとともに求める。
++     - `Stress` は**負荷のもとでの振る舞い**を計測する。操作を多数のワーカーで壁時計上のウィンドウの間並行に実行し、アロケーション、ピークヒープ、保持されたライブセット、ガベージコレクション、レイテンシのパーセンタイルを `Strain` として報告する。任意で、持続的なスループットが最大になるワーカー数を掃引または探索する（`StressSearch`）。
++     - `Profile` は**時間がどこに使われるか**を計測する。操作をプロセス内の JFR 記録のもとで実行し、最も時間を使うメソッドを `Hotspots` として報告する。
+
+-     The body of every measurement is a **quoted expression**, `'{ … }`. It is staged through
+-     superlunary: compiled into a JAR with the code under test, deployed to a `BenchmarkDevice`,
+-     and run in a JVM of its own, with a fixed heap, a chosen collector and, optionally, a
+-     limited number of processors, so that nothing else in the suite — its other tests, the
+-     runner's own allocation, a JIT already warmed by something else — distorts the figure.
++     すべての計測の本体は**クォート式** `'{ … }` である。
++     これは superlunary を通してステージングされる。すなわち、テスト対象のコードとともに JAR へコンパイルされ、`BenchmarkDevice` へデプロイされ、固定のヒープ、選択したコレクター、そして任意で制限されたプロセッサー数を持つ専用の JVM で実行される。
++     こうすることで、スイートの他の要素 — 他のテスト、ランナー自身のアロケーション、別のものによってすでにウォームアップされた JIT — が数値を歪めることはない。
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     import classloaders.threadContextClassloader
++     import classloaders.threadContextClassloader
+
+-     import environments.javaBaseEnvironment
++     import environments.javaBaseEnvironment
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import superlunary.embeddings.automaticEmbedding
++     import superlunary.embeddings.automaticEmbedding
+
+-     import systems.javaBaseSystem
++     import systems.javaBaseSystem
+
+-     import temporaryDirectories.systemTemporaryDirectory
++     import temporaryDirectories.systemTemporaryDirectory
+
+-     import threads.platformThreads
++     import threads.platformThreads
+
+-     given BenchmarkDevice = LocalhostDevice
++     given BenchmarkDevice = LocalhostDevice
+
+-     object Benchmarks extends Suite(m"Arithmetic benchmarks"):
++     object Benchmarks extends Suite(m"Arithmetic benchmarks"):
+
+-       def run(): Unit =
++       def run(): Unit =
+
+-         val bench = Bench()
++         val bench = Bench()
+
+-         val stress = Stress(heap = t"256m")
++         val stress = Stress(heap = t"256m")
+
+-         val profile = Profile()
++         val profile = Profile()
+
+-         bench(m"sum by formula")(target = 1*Second):
++         bench(m"sum by formula")(target = 1*Second):
+
+=         bench(m"sum by formula")(target = 1*Second):
+-           '{1000L*1001L/2L}
++           '{1000L*1001L/2L}
+
+-         stress(m"sum under load")(target = 2*Second, concurrency = 8):
++         stress(m"sum under load")(target = 2*Second, concurrency = 8):
+
+=         stress(m"sum under load")(target = 2*Second, concurrency = 8):
+-           '{1000L*1001L/2L}
++           '{1000L*1001L/2L}
+
+-         profile(m"where a sum spends its time")(target = 5*Second):
++         profile(m"where a sum spends its time")(target = 5*Second):
+
+-           '{(1L to 1000L).foldLeft(0L)(_ + _)}
++           '{(1L to 1000L).foldLeft(0L)(_ + _)}
+
+-     ```
++     ```
+
+-     Each measurement takes its contextual values from the `Suite` it is written in (a
+-     `Runner`, an `Inclusion` for its kind of result, the `Testable` and the `Codepoint`), and
+-     the rest from imports: a `Classloader` and an `Environment` to build the measurement, a
+-     `System`, a `TemporaryDirectory` and a `Stageable` (superlunary's
+-     `embeddings.automaticEmbedding`) to stage it, a `BenchmarkDevice` to run it on, and
+-     tactics for `Compiler.Error` and `Rig.Error`. A `Stress` also needs a parasite `Threading`,
+-     which selects the kind of thread its workers run on.
++     各計測は、コンテキスト値を書かれた場所の `Suite` から（`Runner`、その種類の結果のための `Inclusion`、`Testable`、`Codepoint`）、残りをインポートから受け取る。
++     計測を構築するための `Classloader` と `Environment`、ステージングのための `System`、`TemporaryDirectory`、`Stageable`（superlunary の `embeddings.automaticEmbedding`）、実行先の `BenchmarkDevice`、そして `Compiler.Error` と `Rig.Error` のための戦術である。
++     `Stress` はさらに parasite の `Threading` を必要とし、これがワーカーの実行されるスレッドの種類を選ぶ。
+
+-     A measurement which the runner has not selected is skipped **before** it is staged, so it
+-     costs no compilation and no JVM, and every measurement declares an expected duration from
+-     its metadata, so a host can budget a run before it starts. A host's duration multiplier
+-     (fume's `--scale`) lengthens or shortens every declared target alike.
++     ランナーが選択しなかった計測はステージングされる**前に**スキップされるので、コンパイルも JVM も必要としない。また、すべての計測はメタデータから予想所要時間を宣言するので、ホストは実行前に実行時間の見積もりを立てられる。
++     ホストの所要時間倍率（fume の `--scale`）は、宣言されたすべての目標時間を一様に延長または短縮する。
+
+-     Code in a quoted body is compiled when the measurement is staged, not where it is written,
+-     which has consequences. An inline method which resolves an instance with `summonFrom` or
+-     `summonInline` — a derived decoder, say — sees only the imports written **inside** the
+-     quote, not those at the top of the file: write the import in the body, or bind the
+-     instance to a `val` outside and refer to it. A transparent macro given cannot expand inside
+-     a quote at all, so keep such a call in an ordinary method and call that. Values from
+-     outside the quote are spliced in with `$value` and travel to the measurement JVM through
+-     superlunary's `References`, so cells which differ only in data share one compilation.
++     クォートされた本体の中のコードは、書かれた場所ではなく、計測がステージングされるときにコンパイルされる。これにはいくつかの帰結がある。
++     `summonFrom` や `summonInline` でインスタンスを解決するインラインメソッド — たとえば導出されたデコーダー — は、ファイル先頭のインポートではなく、クォートの**内側**に書かれたインポートしか見ない。インポートを本体の中に書くか、インスタンスを外側の `val` に束縛してそれを参照すること。
++     transparent なマクロの given はクォートの内側ではまったく展開できないので、そのような呼び出しは通常のメソッドに置き、そのメソッドを呼ぶこと。
++     クォートの外側の値は `$value` でスプライスされ、superlunary の `References` を通って計測用の JVM へ渡る。そのため、データだけが異なるセルは 1 回のコンパイルを共有する。
+
+-     The library is one source set, `sedentary.core`, for the JVM only: it needs a JDK 21 or
+-     later (for whole-process allocation accounting), a `java` launcher on the device, and JFR
+-     for `Profile`. Everything is exported to the `soundness` umbrella.
++     このライブラリは JVM 専用の 1 つのソースセット `sedentary.core` から成る。
++     JDK 21 以降（プロセス全体のアロケーション計測のため）、デバイス上の `java` ランチャー、そして `Profile` のための JFR を必要とする。
++     すべては `soundness` アンブレラへエクスポートされる。
+
+- refer sedentary.Bench
++ refer sedentary.Bench
+
+- refer sedentary.Stress
++ refer sedentary.Stress
+
+- refer sedentary.Profile
++ refer sedentary.Profile
+
+- refer sedentary.BenchmarkDevice
++ refer sedentary.BenchmarkDevice
+
+- refer sedentary.OperationSize
++ refer sedentary.OperationSize
+
+- refer probably.Benchmark
++ refer probably.Benchmark
+
+- refer probably.Strain
++ refer probably.Strain
+
+- refer probably.Hotspots
++ refer probably.Hotspots
+
+- refer superlunary.Rig
++ refer superlunary.Rig
+
+- entry .Bench   a benchmark harness: times a quoted operation in its own JVM, singly or across one or two axes
++ entry .Bench   ベンチマークのハーネス：クォートされた操作を専用の JVM で、単独で、または 1 つか 2 つの軸にわたって計時する
+
+= entry .Bench   a benchmark harness: times a quoted operation in its own JVM, singly or across one or two axes
+-   detail
++   detail
+
+-       A `Bench` is a superlunary `Rig` which stages quoted code into a JAR, deploys it to the
+-       `BenchmarkDevice` in scope, and times it there. It is constructed once, usually at the
+-       top of a suite's `run()`, and applied to a name and settings to give a `Bench.Plan`, which
+-       is applied in turn to a quoted body, or spread `over` one or two axes:
++       `Bench` は superlunary の `Rig` であり、クォートされたコードを JAR へステージングし、スコープ内の `BenchmarkDevice` へデプロイし、そこで計時する。
++       通常はスイートの `run()` の先頭で一度構築され、名前と設定に適用されて `Bench.Plan` を返す。これをさらにクォートされた本体に適用するか、1 つか 2 つの軸に `over` で展開する。
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+-       import superlunary.embeddings.automaticEmbedding
++       import superlunary.embeddings.automaticEmbedding
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+=       import systems.javaBaseSystem
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+=       import systems.javaBaseSystem
+=       import temporaryDirectories.systemTemporaryDirectory
+=
+-       given BenchmarkDevice = LocalhostDevice
++       given BenchmarkDevice = LocalhostDevice
+
+-       enum Summation:
++       enum Summation:
+
+-         case Loop, Formula
++         case Loop, Formula
+
+-       object Benchmarks extends Suite(m"Summation benchmarks"):
++       object Benchmarks extends Suite(m"Summation benchmarks"):
+
+=       object Benchmarks extends Suite(m"Summation benchmarks"):
+-         def run(): Unit =
++         def run(): Unit =
+
+-           val bench = Bench()
++           val bench = Bench()
+
+-           bench(m"sum of the first thousand integers")
++           bench(m"sum of the first thousand integers")
+
+-             ( target = 50*Milli(Second), baseline = Summation.Formula )
++             ( target = 50*Milli(Second), baseline = Summation.Formula )
+
+-           . over(Summation):
++           . over(Summation):
+
+-               case Summation.Loop =>
++               case Summation.Loop =>
+
+-                 ' {
++                 ' {
+
+-                     var i = 1L
++                     var i = 1L
+
+-                     var sum = 0L
++                     var sum = 0L
+
+-                     while i <= 1000L do
++                     while i <= 1000L do
+
+-                       sum += i
++                       sum += i
+
+-                       i += 1L
++                       i += 1L
+
+-                     sum
++                     sum
+
+-                   }
++                   }
+
+-               case Summation.Formula =>
++               case Summation.Formula =>
+
+-                 '{1000L*1001L/2L}
++                 '{1000L*1001L/2L}
+
+=                 '{1000L*1001L/2L}
+-       ```
++       ```
+
+-       Each cell is measured in the same way. The body is bound once as a method of its own,
+-       run ten times untimed, and then run in batches of doubling size until one batch takes at
+-       least `target/iterations`; `warmups` full batches follow, adjusting the batch size towards
+-       that duration, and the median of their rates fixes it. Then `iterations` timed batches
+-       run, with a garbage collection requested between each, and the allocation over them is
+-       read from the JVM's thread-allocation counter. Each operation's result is written to a
+-       sink the JIT cannot see through, so a body whose value is unused is not eliminated; a body
+-       which still measures nothing after 2³⁴ repetitions fails, as suspected dead code. The
+-       result of each cell is a probably `Benchmark`: total and mean time, minimum, maximum,
+-       standard deviation, the confidence interval, bytes allocated per operation and, given an
+-       `OperationSize`, the size and rate of an operation.
++       各セルは同じ方法で計測される。
++       本体は独立したメソッドとして一度束縛され、計時せずに 10 回実行され、次に 1 バッチが少なくとも `target/iterations` かかるまで、倍々に大きくなるバッチで実行される。続いて `warmups` 回の完全なバッチがバッチサイズをその時間へ近づけるよう調整し、それらのレートの中央値がバッチサイズを確定する。
++       その後 `iterations` 回の計時バッチが実行され、各バッチの間にガベージコレクションが要求され、その間のアロケーションが JVM のスレッドごとのアロケーションカウンターから読み取られる。
++       各操作の結果は JIT が見通せないシンクへ書き込まれるので、値が使われない本体が除去されることはない。2³⁴ 回繰り返してもなお何も計測されない本体は、デッドコードの疑いとして失敗する。
++       各セルの結果は probably の `Benchmark` である。合計時間と平均時間、最小値、最大値、標準偏差、信頼区間、操作あたりのアロケーションバイト数、そして `OperationSize` が与えられれば操作のサイズとレートを持つ。
+
+-       The constructor's parameters pin the measurement JVM. `heap` sets both `-Xms` and `-Xmx`
+-       (in `-Xmx` syntax, `t"256m"`; the default is a fixed `1g`); `cpus` limits it to that many
+-       processors (see `BenchmarkDevice#invoke` for what that does on each platform); and `gc`
+-       names the collector in `-XX:+Use<gc>GC` syntax (`t"G1"`, `t"Z"`; the default is
+-       `Serial`, whose single-threaded, deterministic pauses suit microbenchmarks). A body which
+-       runs a fiber runtime or many virtual threads should ask for `gc = t"G1"` and a heap sized
+-       to what a rival's own harness used.
++       コンストラクターのパラメーターは計測用の JVM を固定する。
++       `heap` は `-Xms` と `-Xmx` の両方を設定する（`-Xmx` の構文で `t"256m"` と書く。デフォルトは固定の `1g`）。`cpus` はその数のプロセッサーに制限する（各プラットフォームでの動作は `BenchmarkDevice#invoke` を参照）。`gc` は `-XX:+Use<gc>GC` の構文でコレクターを指定する（`t"G1"`、`t"Z"`。デフォルトは `Serial` で、シングルスレッドで決定的な停止はマイクロベンチマークに適している）。
++       ファイバーのランタイムや多数の仮想スレッドを動かす本体は、`gc = t"G1"` と、競合ライブラリ自身のハーネスが使ったのと同じ大きさのヒープを指定すべきである。
+
+-       A `Bench` needs a `Classloader`, an `Environment` and a `BenchmarkDevice` where it is
+-       constructed. Benchmark rows are the ones fume's `--bench` switch selects.
++       `Bench` は構築される場所で `Classloader`、`Environment`、`BenchmarkDevice` を必要とする。
++       ベンチマークの行は、fume の `--bench` スイッチが選択するものである。
+
+=       constructed. Benchmark rows are the ones fume's `--bench` switch selects.
+-   refer sedentary.Bench.Plan
++   refer sedentary.Bench.Plan
+
+=   refer sedentary.Bench.Plan
+-   refer sedentary.BenchmarkDevice
++   refer sedentary.BenchmarkDevice
+
+-   refer sedentary.OperationSize
++   refer sedentary.OperationSize
+
+=   refer sedentary.OperationSize
+-   refer probably.Benchmark
++   refer probably.Benchmark
+
+-   entry .Plan   a named, configured benchmark, awaiting its quoted body or the axes to spread it over
++   entry .Plan   名前と設定を持つベンチマーク。クォートされた本体か、展開先の軸を待っている
+
+=   entry .Plan   a named, configured benchmark, awaiting its quoted body or the axes to spread it over
+-     detail
++     detail
+
+-         A `Plan` is what `Bench#apply` returns: the benchmark's name, tags and settings, with
+-         the `Bench` which will run it. It is used in one of three ways:
++         `Plan` は `Bench#apply` が返すもので、ベンチマークの名前、タグ、設定と、それを実行する `Bench` を持つ。
++         次の 3 通りのいずれかで使われる。
+
+-         - applied directly to a quoted body, `plan('{ … })`, for a single measurement;
+-         - spread `over` one or two axes, with a body which maps each axis value (or pair of
+-           values) to a quoted body, for one measurement per value — rendered as a row of
+-           cells, or a crosstab for two axes;
+-         - given a per-cell `OperationSize` with `sized` first, and then spread `over`.
++         - クォートされた本体に直接適用する（`plan('{ … })`）。1 つの計測になる。
++         - 1 つか 2 つの軸に `over` で展開し、各軸の値（または値の組）をクォートされた本体へ写す本体を与える。値ごとに 1 つの計測になり、セルの行として、2 つの軸ならクロス集計表として描画される。
++         - まず `sized` でセルごとの `OperationSize` を与え、それから `over` で展開する。
+
+-         Watched as a plan grows: a single measurement, then one per implementation, then one
+-         per implementation and input, each cell sized by its input.
++         プランが育っていく様子を見る。1 つの計測、次に実装ごとに 1 つ、次に実装と入力ごとに 1 つで、各セルの大きさはその入力で決まる。
+
+=         per implementation and input, each cell sized by its input.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         per implementation and input, each cell sized by its input.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         typecheck
+-         frame
++         frame
+
+-           label A single measurement
++           label 1 つの計測
+
+=           label A single measurement
+-           code
++           code
+
+-               bench(m"parse a document")(target = 1*Second):
++               bench(m"parse a document")(target = 1*Second):
+
+-                 '{ Parser.parse(Corpus.small) }
++                 '{ Parser.parse(Corpus.small) }
+
+=                 '{ Parser.parse(Corpus.small) }
+-         frame
++         frame
+
+-           label One measurement per implementation, against a baseline
++           label 実装ごとに 1 つの計測、ベースラインと比較
+
+=           label One measurement per implementation, against a baseline
+-           code
++           code
+
+=           label One measurement per implementation, against a baseline
+=           code
+-               bench(m"parse a document")(target = 1*Second, baseline = Implementation.Ours)
++               bench(m"parse a document")(target = 1*Second, baseline = Implementation.Ours)
+
+-               . over(Implementation):
++               . over(Implementation):
+
+-                   case Implementation.Ours  => '{ Parser.parse(Corpus.small) }
++                   case Implementation.Ours  => '{ Parser.parse(Corpus.small) }
+
+-                   case Implementation.Rival => '{ RivalParser.parse(Corpus.small) }
++                   case Implementation.Rival => '{ RivalParser.parse(Corpus.small) }
+
+=                   case Implementation.Rival => '{ RivalParser.parse(Corpus.small) }
+-         frame
++         frame
+
+-           label One per implementation and document, each sized by its document
++           label 実装と文書ごとに 1 つ、各々の大きさは文書で決まる
+
+=           label One per implementation and document, each sized by its document
+-           code
++           code
+
+=           label One per implementation and document, each sized by its document
+=           code
+-               bench(m"parse a document")(target = 1*Second, baseline = Implementation.Ours)
++               bench(m"parse a document")(target = 1*Second, baseline = Implementation.Ours)
+
+-               . sized: (_: Implementation, document: Document) =>
++               . sized: (_: Implementation, document: Document) =>
+
+-                   val size: OperationSize = Corpus.text(document).length*Byte
++                   val size: OperationSize = Corpus.text(document).length*Byte
+
+-                   size
++                   size
+
+-               . over(Axis(Implementation), Axis(Document)):
++               . over(Axis(Implementation), Axis(Document)):
+
+-                   case (Implementation.Ours, document) =>
++                   case (Implementation.Ours, document) =>
+
+=                   case (Implementation.Ours, document) =>
+-                     val text: Text = Corpus.text(document)
++                     val text: Text = Corpus.text(document)
+
+-                     '{ Parser.parse($text) }
++                     '{ Parser.parse($text) }
+
+-                   case (Implementation.Rival, document) =>
++                   case (Implementation.Rival, document) =>
+
+=                   case (Implementation.Rival, document) =>
+-                     val text: Text = Corpus.text(document)
++                     val text: Text = Corpus.text(document)
+
+-                     '{ RivalParser.parse($text) }
++                     '{ RivalParser.parse($text) }
+
+=                     '{ RivalParser.parse($text) }
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         Every cell of a plan is staged and dispatched on its own, but cells whose staged trees
+-         coincide — those differing only in a value spliced in with `$` — share one
+-         compilation, and each distinct implementation compiles once. A value spliced into the
+-         body travels through superlunary's `References`, and is extracted once per run.
+-     entry .Uniaxial   a plan whose cells over one axis are each given their own `OperationSize`
++         プランの各セルは個別にステージングされ送り出されるが、ステージングされた木が一致するセル — `$` でスプライスされた値だけが異なるもの — は 1 回のコンパイルを共有し、異なる実装はそれぞれ一度だけコンパイルされる。
++         本体にスプライスされた値は superlunary の `References` を通って渡され、実行ごとに一度取り出される。
++     entry .Uniaxial   1 つの軸にわたる各セルにそれぞれの `OperationSize` が与えられたプラン
+
+=     entry .Uniaxial   a plan whose cells over one axis are each given their own `OperationSize`
+-       detail
++       detail
+
+-           What `Plan#sized` returns for a function of one value. Its `#over` measures every
+-           defined value of an axis, sizing each cell by `#size`; a cell for which the function
+-           answers `Unset` falls back to the plan's own `operationSize`.
+-       entry #plan   the plan whose settings each cell takes
+-       entry #size   the size of the cell for an axis value, or `Unset` for the plan's own
+-       entry #over   one measurement per defined value of an axis, each sized by `#size`
+-           As `Bench.Plan#over` for one axis. The body is a partial function from the axis value
+-           to a quoted body: a value for which it is not defined is a gap in the row, probed
+-           without staging anything. If the plan has a `baseline` among the axis's values, that
+-           cell is reported as the anchor the others are compared against.
+-     entry .Biaxial   a plan whose crosstab cells are each given their own `OperationSize`
++           1 つの値の関数を渡したときに `Plan#sized` が返すもの。
++           その `#over` は軸の定義済みのすべての値を計測し、各セルの大きさを `#size` で決める。関数が `Unset` を返すセルは、プラン自身の `operationSize` を使う。
++       entry #plan   各セルが設定を受け取るプラン
++       entry #size   軸の値に対するセルのサイズ。プラン自身のものを使うなら `Unset`
++       entry #over   軸の定義済みの値ごとに 1 つの計測。各セルの大きさは `#size` で決まる
++           1 つの軸に対する `Bench.Plan#over` と同じ。
++           本体は軸の値からクォートされた本体への部分関数である。定義されていない値は行の欠けとなり、何もステージングせずに判定される。
++           プランの `baseline` が軸の値の中にあれば、そのセルは他のセルの比較対象となるアンカーとして報告される。
++     entry .Biaxial   クロス集計表の各セルにそれぞれの `OperationSize` が与えられたプラン
+
+=     entry .Biaxial   a plan whose crosstab cells are each given their own `OperationSize`
+-       detail
++       detail
+
+-           What `Plan#sized` returns for a function of two values. Its `#over` measures every
+-           defined combination of two axes, sizing each cell by `#size`, with the plan's own
+-           `operationSize` wherever the function answers `Unset`.
+-       entry #plan   the plan whose settings each cell takes
+-       entry #size   the size of the cell for a pair of axis values, or `Unset` for the plan's own
+-       entry #over   one measurement per defined combination of two axes, each sized by `#size`
+-           As `Bench.Plan#over` for two axes. The body is a partial function from a pair of axis
+-           values to a quoted body, so a combination which makes no sense is left as a gap. A
+-           `baseline` is looked for among the first axis's values, and then the second's.
+-     entry #bench   the `Bench` which stages and runs the plan's measurements
+-     entry #name   the benchmark's name, as a `Message`
+-     entry #tags   the tags which label the benchmark for selection and exclusion, such as `slow`
+-     entry #target   the target measuring time, as a `Long` count of nanoseconds
+-         The `target` given to `Bench#apply`, as the generic duration. It is divided among the
+-         timed batches, and scaled by the runner's duration multiplier before it is used.
+-     entry #operationSize   the size of one operation, for a throughput rate, or `Unset`
+-     entry #iterations   how many timed batches each cell runs: five unless set
+-     entry #warmups   how many full calibration batches precede the timed ones: as many as `#iterations` unless set
+-     entry #confidence   the percentile of the reported confidence interval: 95 unless set
+-     entry #anchor   the axis value whose cell the others are compared against, or `Unset`
+-     entry #comparison   how the other cells are compared with the anchor: a probably `Baseline`
+-         Which statistic is compared (`Min`, `Mean` or `Max`), as a rate or a time, and whether
+-         the comparison is geometric or arithmetic; `Baseline()` compares geometric mean rates.
+-     entry #apply   a single measurement of a quoted body
+-         `plan('{ … })` stages the body, runs it on the plan's device and includes one
+-         `Benchmark` in the report, unless the runner has not selected it, in which case
+-         nothing is staged. The body is a quoted expression of any type, built with superlunary's
+-         `References` and the staging `Quotes` in context.
++           2 つの値の関数を渡したときに `Plan#sized` が返すもの。
++           その `#over` は 2 つの軸の定義済みのすべての組み合わせを計測し、各セルの大きさを `#size` で決める。関数が `Unset` を返すところではプラン自身の `operationSize` を使う。
++       entry #plan   各セルが設定を受け取るプラン
++       entry #size   軸の値の組に対するセルのサイズ。プラン自身のものを使うなら `Unset`
++       entry #over   2 つの軸の定義済みの組み合わせごとに 1 つの計測。各セルの大きさは `#size` で決まる
++           2 つの軸に対する `Bench.Plan#over` と同じ。
++           本体は軸の値の組からクォートされた本体への部分関数なので、意味をなさない組み合わせは欠けとして残される。
++           `baseline` はまず 1 つ目の軸の値の中から、次に 2 つ目の軸の値の中から探される。
++     entry #bench   プランの計測をステージングし実行する `Bench`
++     entry #name   ベンチマークの名前。`Message` として
++     entry #tags   選択と除外のためにベンチマークに付けるタグ。`slow` など
++     entry #target   目標の計測時間。ナノ秒数を表す `Long` として
++         `Bench#apply` に与えた `target` を、汎用の継続時間として表したもの。
++         計時バッチの間で分割され、使われる前にランナーの所要時間倍率で拡大縮小される。
++     entry #operationSize   スループットのレートのための 1 操作のサイズ、または `Unset`
++     entry #iterations   各セルが実行する計時バッチの数：指定しなければ 5
++     entry #warmups   計時バッチの前に行う完全な較正バッチの数：指定しなければ `#iterations` と同じ
++     entry #confidence   報告する信頼区間のパーセンタイル：指定しなければ 95
++     entry #anchor   他のセルの比較対象となるセルの軸の値、または `Unset`
++     entry #comparison   他のセルをアンカーとどう比較するか：probably の `Baseline`
++         どの統計量（`Min`、`Mean`、`Max`）を、レートとして比較するか時間として比較するか、そして比較が幾何的か算術的か。
++         `Baseline()` は幾何平均のレートを比較する。
++     entry #apply   クォートされた本体の 1 つの計測
++         `plan('{ … })` は本体をステージングし、プランのデバイスで実行し、レポートに `Benchmark` を 1 つ含める。ただしランナーが選択しなかった場合は、何もステージングされない。
++         本体は任意の型のクォート式であり、superlunary の `References` とステージングの `Quotes` がコンテキストにある状態で構築される。
+
+=         `References` and the staging `Quotes` in context.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `References` and the staging `Quotes` in context.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `References` and the staging `Quotes` in context.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+-         bench(m"decode directly")(target = 1*Second, operationSize = 1000*Byte):
++         bench(m"decode directly")(target = 1*Second, operationSize = 1000*Byte):
+
+-           '{ Benchmarks.decodeUsersDirect() }
++           '{ Benchmarks.decodeUsersDirect() }
+
+=           '{ Benchmarks.decodeUsersDirect() }
+-         ```
++         ```
+
+-     entry #sized   gives each cell its own `OperationSize`, by its axis value or values
+-         `plan.sized((value: A) => …)` returns a `Bench.Plan.Uniaxial`, and `plan.sized((left:
+-         A, right: B) => …)` a `Bench.Plan.Biaxial`, whose `over` then measures the axes. A
+-         parser measured over documents of different lengths reports each document's size, so
+-         that the cells' rates are comparable where their times are not. A cell for which the
+-         function answers `Unset` uses the plan's `operationSize`. The lambda's parameter types
+-         must be written, so that the overload is chosen.
+-     entry #over   one measurement per defined value of an axis, or per combination of two
+-         `plan.over(axis)(body)` takes an `Axis` (`Axis(t"limit")(1000, 4000)`) and a partial
+-         function from each of its values to a quoted body; `plan.over(first, second)(body)`
+-         takes two axes and a partial function of pairs, and renders a crosstab. An enumeration's
+-         companion may stand for an axis of all its cases — `plan.over(Summation)` — in either
+-         position. A value or pair for which the body is not defined leaves a gap, found without
+-         staging anything, and a cell the runner has not selected is skipped before it is staged.
++     entry #sized   軸の値によって、各セルにそれぞれの `OperationSize` を与える
++         `plan.sized((value: A) => …)` は `Bench.Plan.Uniaxial` を返し、`plan.sized((left: A, right: B) => …)` は `Bench.Plan.Biaxial` を返す。その `over` が軸を計測する。
++         長さの異なる文書に対して計測したパーサーは各文書のサイズを報告するので、時間は比較できなくても、セルのレートは比較できる。
++         関数が `Unset` を返すセルは、プランの `operationSize` を使う。
++         オーバーロードが選ばれるよう、ラムダのパラメーターの型は書かなければならない。
++     entry #over   軸の定義済みの値ごと、または 2 つの軸の組み合わせごとに 1 つの計測
++         `plan.over(axis)(body)` は `Axis`（`Axis(t"limit")(1000, 4000)`）と、その各値からクォートされた本体への部分関数を取る。`plan.over(first, second)(body)` は 2 つの軸と組の部分関数を取り、クロス集計表を描画する。
++         列挙型のコンパニオンは、そのすべてのケースから成る軸の代わりになる — `plan.over(Summation)` — どちらの位置でもよい。
++         本体が定義されていない値や組は欠けを残し、それは何もステージングせずに判明する。ランナーが選択しなかったセルはステージングの前にスキップされる。
+
+=         staging anything, and a cell the runner has not selected is skipped before it is staged.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         staging anything, and a cell the runner has not selected is skipped before it is staged.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         staging anything, and a cell the runner has not selected is skipped before it is staged.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+-         bench(m"count up to a limit")(target = 50*Milli(Second))
++         bench(m"count up to a limit")(target = 50*Milli(Second))
+
+-         . over(Axis(t"limit")(1000, 4000)): limit =>
++         . over(Axis(t"limit")(1000, 4000)): limit =>
+
+-             ' {
++             ' {
+
+-                 var i = 0
++                 var i = 0
+
+-                 while i < $limit do i += 1
++                 while i < $limit do i += 1
+
+-                 i
++                 i
+
+-               }
++               }
+
+=               }
+-         ```
++         ```
+
+-         Here both cells share one compilation, since they differ only in the spliced `limit`.
+-         Every cell shares the plan's `operationSize`; `#sized` gives each its own.
+-   entry .Error   raised when a benchmark device cannot deploy, run or remove a measurement
++         ここでは 2 つのセルはスプライスされた `limit` だけが異なるので、1 回のコンパイルを共有する。
++         すべてのセルはプランの `operationSize` を共有する。`#sized` を使えば各セルにそれぞれのサイズを与えられる。
++   entry .Error   ベンチマークデバイスが計測をデプロイ、実行、削除できないときに発生する
+
+=   entry .Error   raised when a benchmark device cannot deploy, run or remove a measurement
+-     detail
++     detail
+
+-         Error `↯/s.10.1`: _unable to run benchmarks_. Raised by a `BenchmarkDevice` when copying the
+-         staged JAR to the device, launching the measurement JVM, or removing the JAR fails, or
+-         when the measurement JVM exits with a nonzero status. `Bench`, `Stress` and `Profile`
+-         convert it to superlunary's `Rig.Error`, with the reason `Staging` or `Invocation`, so a
+-         suite sees a `Rig.Error`.
++         エラー `↯/s.10.1`：_unable to run benchmarks_。
++         ステージングされた JAR のデバイスへのコピー、計測用 JVM の起動、または JAR の削除に失敗したとき、あるいは計測用 JVM が 0 以外の終了ステータスで終了したときに、`BenchmarkDevice` が発生させる。
++         `Bench`、`Stress`、`Profile` はこれを superlunary の `Rig.Error`（理由は `Staging` または `Invocation`）に変換するので、スイートが目にするのは `Rig.Error` である。
+
+-         `LocalhostDevice` passes the staged input to the measurement JVM as a command-line
+-         argument, so a body which splices in a very large value (a corpus of a megabyte or
+-         more) can exceed the operating system's argument-length limit and fail with this error.
+-   entry #heap   the measurement JVM's fixed heap size, as `-Xmx` text, or `Unset` for `1g`
+-   entry #cpus   how many processors the measurement JVM may use, or `Unset` for all of them
+-   entry #gc   the measurement JVM's collector, as in `-XX:+Use<gc>GC`, or `Unset` for `Serial`
+-   entry #Result   the result type of a staged invocation: the output itself
+-   entry #Form   the form staged inputs and outputs travel in: `Text`
+-   entry #Target   what staging produces: the `Path on Linux` of the deployed JAR
+-   entry #Transport   how spliced values are encoded for the measurement JVM: `Json`
+-   entry #apply   names and configures a benchmark, returning a `Bench.Plan` to apply to a body
+-       `bench(name, tags*)(target, operationSize, iterations, warmups, confidence, baseline,
+-       comparison)`:
++         `LocalhostDevice` はステージングされた入力をコマンドライン引数として計測用 JVM に渡すので、非常に大きな値（1 メガバイト以上のコーパス）をスプライスする本体は、オペレーティングシステムの引数長の上限を超えて、このエラーで失敗することがある。
++   entry #heap   計測用 JVM の固定ヒープサイズ。`-Xmx` 形式のテキストで、`1g` にするなら `Unset`
++   entry #cpus   計測用 JVM が使えるプロセッサー数。すべてを使うなら `Unset`
++   entry #gc   計測用 JVM のコレクター。`-XX:+Use<gc>GC` の形式で、`Serial` にするなら `Unset`
++   entry #Result   ステージングされた呼び出しの結果型：出力そのもの
++   entry #Form   ステージングされた入力と出力が渡される形式：`Text`
++   entry #Target   ステージングが生成するもの：デプロイされた JAR の `Path on Linux`
++   entry #Transport   スプライスされた値を計測用 JVM のためにどうエンコードするか：`Json`
++   entry #apply   ベンチマークに名前と設定を与え、本体に適用する `Bench.Plan` を返す
++       `bench(name, tags*)(target, operationSize, iterations, warmups, confidence, baseline, comparison)`：
+
+-       - `name` is a `Message`, `m"…"`, and `tags` label the benchmark for selection
+-         (`n"slow"`, which needs the tag plane's `Nominative` imported by name:
+-         `import soundness.{nominative, taggingNominative}`);
+-       - `target` is the measuring time, any duration (`1*Second`, `50*Milli(Second)`);
+-       - `operationSize` the size of one operation, usually a quantity such as `4096*Byte`,
+-         converted by `OperationSize.conversion`, for a throughput figure;
+-       - `iterations` the number of timed batches (five by default), and `warmups` the number
+-         of calibration batches (as many as `iterations` by default);
+-       - `confidence` the percentile of the confidence interval: 80, 85, 90, 95 (the default),
+-         96, 97, 98 or 99;
+-       - `baseline` an axis value whose cell anchors a comparison, for a plan spread `over` an
+-         axis, and `comparison` how the comparison is made, a probably `Baseline`.
+-   entry #stage   builds the code under measurement into a JAR and deploys it to the device
+-       Bundles the staged code with superlunary's executor as its entry point, names the JAR by
+-       a fresh UUID, and calls the device's `deploy`. A failure to build or deploy is raised as
+-       a `Rig.Error` with the reason `Staging`. `Bench`, `Stress` and `Profile` all stage the same
+-       way; a suite never calls this itself.
++       - `name` は `Message`（`m"…"`）で、`tags` は選択のためにベンチマークにラベルを付ける（`n"slow"`。これにはタグのプレーンの `Nominative` を名前でインポートする必要がある：`import soundness.{nominative, taggingNominative}`）。
++       - `target` は計測時間で、任意の継続時間（`1*Second`、`50*Milli(Second)`）。
++       - `operationSize` は 1 操作のサイズで、スループットの数値のためのもの。通常は `4096*Byte` のような量で、`OperationSize.conversion` によって変換される。
++       - `iterations` は計時バッチの数（デフォルトは 5）、`warmups` は較正バッチの数（デフォルトは `iterations` と同じ）。
++       - `confidence` は信頼区間のパーセンタイルで、80、85、90、95（デフォルト）、96、97、98、99 のいずれか。
++       - `baseline` は、軸に `over` で展開したプランで比較のアンカーとなるセルの軸の値、`comparison` は比較の方法で、probably の `Baseline`。
++   entry #stage   計測対象のコードを JAR にビルドし、デバイスへデプロイする
++       ステージングされたコードを superlunary のエグゼキューターをエントリーポイントとしてバンドルし、新しい UUID で JAR に名前を付け、デバイスの `deploy` を呼ぶ。
++       ビルドやデプロイの失敗は、理由 `Staging` の `Rig.Error` として発生する。
++       `Bench`、`Stress`、`Profile` はすべて同じ方法でステージングする。スイートがこれを自分で呼ぶことはない。
+
+- entry .Stress   a stress test: a quoted operation run concurrently for a window, reporting memory, GC and latency
++ entry .Stress   ストレステスト：クォートされた操作をウィンドウの間並行に実行し、メモリー、GC、レイテンシを報告する
+
+= entry .Stress   a stress test: a quoted operation run concurrently for a window, reporting memory, GC and latency
+-   detail
++   detail
+
+-       Where a `Bench` times one operation repeated on a single thread, a `Stress` runs the
+-       operation on `concurrency` workers at once, each repeating it until a wall-clock window
+-       closes, and reports what a throughput figure hides, as a probably `Strain`: the worker
+-       count, the operations completed and the time taken, total allocation (and so allocation
+-       per operation), peak heap, the live set retained after a garbage collection, the number
+-       and duration of collections, and the 50th, 90th, 99th and 99.9th percentile latencies
+-       of an operation, from a log-linear histogram accurate to about 3%.
++       `Bench` が 1 つのスレッドで繰り返される 1 つの操作を計時するのに対し、`Stress` は操作を `concurrency` 個のワーカーで同時に実行し、各ワーカーは壁時計上のウィンドウが閉じるまで操作を繰り返す。そして、スループットの数値が覆い隠すものを probably の `Strain` として報告する。
++       すなわち、ワーカー数、完了した操作数とかかった時間、総アロケーション（したがって操作あたりのアロケーション）、ピークヒープ、ガベージコレクション後に保持されたライブセット、コレクションの回数と所要時間、そして約 3% の精度の対数線形ヒストグラムから求めた操作のレイテンシの 50、90、99、99.9 パーセンタイルである。
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+-       import superlunary.embeddings.automaticEmbedding
++       import superlunary.embeddings.automaticEmbedding
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+=       import systems.javaBaseSystem
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       import threads.virtualThreads
+=
+-       given BenchmarkDevice = LocalhostDevice
++       given BenchmarkDevice = LocalhostDevice
+
+-       object Benchmarks extends Suite(m"Hand-off benchmarks"):
++       object Benchmarks extends Suite(m"Hand-off benchmarks"):
+
+=       object Benchmarks extends Suite(m"Hand-off benchmarks"):
+-         def run(): Unit =
++         def run(): Unit =
+
+-           val stress = Stress()
++           val stress = Stress()
+
+-           val constrained = Stress(heap = t"128m")
++           val constrained = Stress(heap = t"128m")
+
+-           stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
++           stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
+
+=           stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
+-             '{ Pipeline.handOff() }
++             '{ Pipeline.handOff() }
+
+-           constrained(m"hand-off in a small heap")(target = 1*Second, sweep = 1024):
++           constrained(m"hand-off in a small heap")(target = 1*Second, sweep = 1024):
+
+=           constrained(m"hand-off in a small heap")(target = 1*Second, sweep = 1024):
+-             '{ Pipeline.handOff() }
++             '{ Pipeline.handOff() }
+
+=             '{ Pipeline.handOff() }
+-       ```
++       ```
+
+-       A single window is one measurement. Three settings of `#apply` turn it into a search
+-       over the worker count, each window's count chosen by a `StressSearch` from the outcome of
+-       the windows before it, and every window reported as a cell on the test's `N` axis, so a
+-       search reads as a curve against `N` in one test rather than as many tests:
++       1 つのウィンドウが 1 つの計測である。
++       `#apply` の 3 つの設定は、これをワーカー数にわたる探索に変える。各ウィンドウのワーカー数は、それ以前のウィンドウの結果から `StressSearch` が選び、すべてのウィンドウはテストの `N` 軸上のセルとして報告される。そのため探索は、多数のテストとしてではなく、1 つのテストの中の `N` に対する曲線として読める。
+
+-       - `sweep` doubles the worker count from `concurrency` (one, by default) up to `sweep`,
+-         stopping early at a window which ran out of memory or spent more than half its time
+-         collecting garbage — so in a constrained heap the last row is the most concurrency
+-         that heap sustains;
+-       - `threshold` and `compliance`, given together, search for **capacity**: the largest
+-         worker count at which at least `compliance` percent of operations complete within
+-         `threshold`, binary-searched to about 12% and then confirmed over a window three times
+-         longer, the confirmed row flagged `sustained`;
+-       - `refine` looks for the **optimum** count rather than a power of two or the largest
+-         compliant count: the smallest whose throughput is within 5% of the best — the peak of
+-         a peaked curve, or the knee of one which flattens out — re-measured over extended
+-         windows and flagged `sustained`.
++       - `sweep` はワーカー数を `concurrency`（デフォルトは 1）から `sweep` まで倍々に増やし、メモリーを使い果たしたウィンドウ、あるいは時間の半分以上をガベージコレクションに費やしたウィンドウで早めに止まる。そのため、制約されたヒープでは、最後の行がそのヒープの持ちこたえる最大の並行度となる。
++       - `threshold` と `compliance` は、ともに与えると**容量**を探索する。すなわち、少なくとも `compliance` パーセントの操作が `threshold` 以内に完了する最大のワーカー数を、約 12% の精度まで二分探索し、その後 3 倍の長さのウィンドウで確認する。確認された行には `sustained` のフラグが付く。
++       - `refine` は、2 のべき乗や条件を満たす最大のワーカー数ではなく、**最適な**ワーカー数を探す。すなわち、スループットが最良の値の 5% 以内にある最小のワーカー数 — 山形の曲線ならその頂点、平らになっていく曲線ならその屈曲点 — を求め、延長したウィンドウで再計測し、`sustained` のフラグを付ける。
+
+-       The workers' threads are the kind the `Threading` in scope forks: under
+-       `threads.virtualThreads`, a high-concurrency measurement multiplexes its workers over the
+-       carrier pool, as a massively concurrent application would. Allocation is still fully
+-       accounted either way. A worker whose operation throws fails its window, reported once
+-       on the standard error, rather than printing a trace per worker.
++       ワーカーのスレッドは、スコープ内の `Threading` がフォークする種類のものである。`threads.virtualThreads` のもとでは、高い並行度の計測は、大規模に並行なアプリケーションと同じく、ワーカーをキャリアのプールの上に多重化する。
++       どちらの場合でもアロケーションは完全に計上される。
++       操作が例外を投げたワーカーはそのウィンドウを失敗させ、それは標準エラーに一度だけ報告される。ワーカーごとにトレースを出力することはない。
+
+-       The constructor's `heap`, `cpus` and `gc` pin the measurement JVM as for `Bench`; a
+-       saturated multi-threaded workload measuring tail latency should select `gc = t"G1"`, so
+-       that the Serial collector's stop-the-world pauses do not dominate the 99th percentile.
+-       Stress rows are selected with fume's `--stress` switch, not `--bench`.
++       コンストラクターの `heap`、`cpus`、`gc` は、`Bench` と同様に計測用の JVM を固定する。テールレイテンシを計測する飽和したマルチスレッドの負荷では、Serial コレクターの stop-the-world の停止が 99 パーセンタイルを支配しないよう、`gc = t"G1"` を選ぶべきである。
++       ストレスの行は、`--bench` ではなく fume の `--stress` スイッチで選択される。
+
+-   refer sedentary.StressSearch
++   refer sedentary.StressSearch
+
+-   refer probably.Strain
++   refer probably.Strain
+
+=   refer probably.Strain
+-   refer sedentary.Bench
++   refer sedentary.Bench
+
+-   entry #heap   the measurement JVM's fixed heap size, as `-Xmx` text, or `Unset` for `1g`
+-   entry #cpus   how many processors the measurement JVM may use, or `Unset` for all of them
+-   entry #gc   the measurement JVM's collector, as in `-XX:+Use<gc>GC`, or `Unset` for `Serial`
+-   entry #Result   the result type of a staged invocation: the output itself
+-   entry #Form   the form staged inputs and outputs travel in: `Text`
+-   entry #Target   what staging produces: the `Path on Linux` of the deployed JAR
+-   entry #Transport   how spliced values are encoded for the measurement JVM: `Json`
+-   entry #apply   runs a stress test of a quoted body: one window, a sweep, a capacity search or a refinement
+-       `stress(name, tags*)(target, concurrency, sweep, threshold, compliance, refine)(body)`:
++   entry #heap   計測用 JVM の固定ヒープサイズ。`-Xmx` 形式のテキストで、`1g` にするなら `Unset`
++   entry #cpus   計測用 JVM が使えるプロセッサー数。すべてを使うなら `Unset`
++   entry #gc   計測用 JVM のコレクター。`-XX:+Use<gc>GC` の形式で、`Serial` にするなら `Unset`
++   entry #Result   ステージングされた呼び出しの結果型：出力そのもの
++   entry #Form   ステージングされた入力と出力が渡される形式：`Text`
++   entry #Target   ステージングが生成するもの：デプロイされた JAR の `Path on Linux`
++   entry #Transport   スプライスされた値を計測用 JVM のためにどうエンコードするか：`Json`
++   entry #apply   クォートされた本体のストレステストを実行する：1 つのウィンドウ、掃引、容量の探索、または最適化
++       `stress(name, tags*)(target, concurrency, sweep, threshold, compliance, refine)(body)`：
+
+-       - `target` is the length of each window, any duration, scaled by the runner's duration
+-         multiplier; `threshold`, a latency criterion rather than a length of time, is not;
+-       - `concurrency` is the worker count, or the first count of a search (one by default);
+-       - `sweep` is the largest worker count a search may reach (1024 for a capacity search
+-         without one);
+-       - `threshold` and `compliance` (a percentage) together set a latency objective; giving
+-         only one of them is a programming error, and panics;
+-       - `refine` searches for the optimum worker count.
++       - `target` は各ウィンドウの長さで、任意の継続時間であり、ランナーの所要時間倍率で拡大縮小される。`threshold` は時間の長さではなくレイテンシの基準なので、拡大縮小されない。
++       - `concurrency` はワーカー数、または探索の最初のワーカー数（デフォルトは 1）。
++       - `sweep` は探索が到達できる最大のワーカー数（指定のない容量の探索では 1024）。
++       - `threshold` と `compliance`（パーセンテージ）はともにレイテンシの目標を設定する。一方だけを与えるのはプログラミングの誤りであり、パニックする。
++       - `refine` は最適なワーカー数を探索する。
+
+-       The body is a quoted expression, as for `Bench.Plan#apply`. The test declares its `N`
+-       axis, bounded by `concurrency` and `sweep`, before anything runs, so a host can offer
+-       `N` constraints in a listing, and its expected duration is one window for a single
+-       measurement and roughly logarithmic in `sweep` for a search. A window which ran out of
+-       memory is not reported; every other window is, including a failed confirmation.
++       本体は `Bench.Plan#apply` と同じくクォート式である。
++       テストは何かを実行する前に、`concurrency` と `sweep` で範囲を定めた `N` 軸を宣言するので、ホストは一覧の中で `N` の制約を提示できる。予想所要時間は、単一の計測ならウィンドウ 1 つ分で、探索なら `sweep` のおおよそ対数に比例する。
++       メモリーを使い果たしたウィンドウは報告されない。それ以外のウィンドウは、失敗した確認も含めてすべて報告される。
+
+=       memory is not reported; every other window is, including a failed confirmation.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       memory is not reported; every other window is, including a failed confirmation.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       memory is not reported; every other window is, including a failed confirmation.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       stress(m"requests within 5 ms")
++       stress(m"requests within 5 ms")
+
+-         ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
++         ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
+
+-         '{ Server.roundtrip() }
++         '{ Server.roundtrip() }
+
+=         '{ Server.roundtrip() }
+-       ```
++       ```
+
+=       ```
+-   entry #stage   builds the code under measurement into a JAR and deploys it to the device
+-       As `Bench#stage`: a failure is a `Rig.Error` with the reason `Staging`.
++   entry #stage   計測対象のコードを JAR にビルドし、デバイスへデプロイする
++       `Bench#stage` と同じ。失敗は理由 `Staging` の `Rig.Error` となる。
+
+- entry .StressSearch   chooses the worker count of each window of a `Stress` search, from the windows before it
++ entry .StressSearch   `Stress` の探索で、各ウィンドウのワーカー数をそれ以前のウィンドウから選ぶ
+
+= entry .StressSearch   chooses the worker count of each window of a `Stress` search, from the windows before it
+-   detail
++   detail
+
+-       The search a `Stress` with `sweep`, `threshold` and `compliance`, or `refine` performs. It
+-       runs inside the measurement JVM, called from the staged loop, but is an ordinary class,
+-       so a search can be tested against a simulated workload without staging anything:
++       `sweep`、`threshold` と `compliance`、または `refine` を指定した `Stress` が行う探索。
++       これは計測用 JVM の中で、ステージングされたループから呼ばれて動作するが、通常のクラスなので、何もステージングせずにシミュレートした負荷に対して探索をテストできる。
+
+=       so a search can be tested against a simulated workload without staging anything:
+=
+-       ```scala
++       ```scala
+
+=       so a search can be tested against a simulated workload without staging anything:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val search = StressSearch(1, 64, false, false)
++       val search = StressSearch(1, 64, false, false)
+
+-       var counts: List[Int] = Nil
++       var counts: List[Int] = Nil
+
+-       while !search.done do
++       while !search.done do
+
+-         counts = counts :+ search.current
++         counts = counts :+ search.current
+
+-         search.record(search.current.toDouble, true, false)
++         search.record(search.current.toDouble, true, false)
+
+-       counts   // List(1, 2, 4, 8, 16, 32, 64)
++       counts   // List(1, 2, 4, 8, 16, 32, 64)
+
+=       counts   // List(1, 2, 4, 8, 16, 32, 64)
+-       ```
++       ```
+
+-       The constructor takes the first worker count, the largest, whether there is a latency
+-       objective (an SLO), and whether to refine. Every search begins with an **ascent**,
+-       doubling the count, landing exactly on the cap even when it is not a power of two:
++       コンストラクターは、最初のワーカー数、最大のワーカー数、レイテンシの目標（SLO）があるかどうか、そして最適化するかどうかを取る。
++       すべての探索は**上昇**から始まる。ワーカー数を倍々に増やし、上限が 2 のべき乗でなくても、ちょうど上限で止まる。
+
+-       - Without an SLO, the ascent is the whole of a plain sweep, stopping at the cap or at a
+-         window which exhausted memory or thrashed. A plain sweep has no winner.
+-       - With an SLO, the ascent stops at the first window which misses the objective, and the
+-         boundary between the largest compliant and the smallest non-compliant count is
+-         binary-searched to about 12%. The largest compliant count is confirmed over an extended
+-         window, stepping down about 12% at a time, up to three times, if the confirmation fails.
+-         If even the first window misses, the search stops there, with no winner.
+-       - With `refine`, after the ascent (and any boundary search) it probes halfway across
+-         the gaps around the fastest feasible count until they are within about 6% — first
+-         the **peak**, then the **knee**, the smallest count within `.Plateau` of the fastest —
+-         and re-measures the knee, the count below it and the peak over extended windows. The
+-         smallest of them within 5% of the fastest re-measurement wins. If the peak's
+-         re-measurement falls more than 5% short, the peak was a lucky window: the
+-         re-measurements replace the first ones and the search starts again, up to `.Restarts`
+-         times. A window which failed or missed the SLO bounds the probing but is never a
+-         candidate.
++       - SLO がなければ、上昇が単純な掃引のすべてであり、上限に達するか、メモリーを使い果たしたかスラッシングしたウィンドウで止まる。単純な掃引には勝者がない。
++       - SLO があれば、上昇は目標を満たさない最初のウィンドウで止まり、条件を満たす最大のワーカー数と満たさない最小のワーカー数の境界を約 12% の精度まで二分探索する。条件を満たす最大のワーカー数は延長したウィンドウで確認され、確認が失敗すれば、約 12% ずつ、最大 3 回まで下げていく。最初のウィンドウさえ目標を満たさなければ、探索はそこで勝者なしに止まる。
++       - `refine` を指定すると、上昇（と境界の探索があればそれ）の後、実行可能な最速のワーカー数の周りの隙間の中間を、隙間が約 6% 以内になるまで調べる — まず**頂点**、次に**屈曲点**、すなわち最速の値から `.Plateau` 以内にある最小のワーカー数 — そして屈曲点、その下のワーカー数、頂点を延長したウィンドウで再計測する。最速の再計測値から 5% 以内にあるもののうち最小のものが勝者となる。頂点の再計測値が 5% を超えて下回れば、その頂点はたまたま良かったウィンドウである。再計測値が最初の値を置き換え、探索は最大 `.Restarts` 回までやり直される。失敗したウィンドウや SLO を満たさなかったウィンドウは調査の範囲を限定するが、候補になることはない。
+
+-   refer sedentary.Stress
++   refer sedentary.Stress
+
+-   entry .MaxProbes   the most windows spent probing around the peak, and again around the knee: 12
+-   entry .Plateau   the fraction of the best throughput within which a count is as good as the best: 0.05
+-   entry .Restarts   how many times a refined search starts again after finding a lucky peak: 2
+-   entry .Phase   the stage a search is in, from its ascent to done
+-       `Ascent` doubles the count; `Boundary` binary-searches the SLO boundary; `Peak` and
+-       `Knee` probe for the optimum in a refined search; `Confirmation` re-measures candidates
+-       over extended windows; `StepDown` retreats about 12% at a time from a failed
+-       confirmation; and `Done` ends the search.
+-   entry #done   whether the search has finished, so no further window should run
+-   entry #current   the worker count the next window should run at
+-   entry #extended   whether the next window is a confirmation, run three times longer than the target
+-   entry #winner   the ordinal of the winning window, counting every recorded window from zero, or -1
+-       A plain sweep, and a search in which no confirmation held, have no winner. A `Stress`
+-       flags the winning window's row `sustained`.
+-   entry #record   records the outcome of the window just run at `#current` workers
+-       `record(throughput, ok, exhausted)`: the window's throughput in operations per
+-       nanosecond; whether it was feasible — no failure, no memory exhaustion, no thrashing,
+-       and within the SLO if there is one; and whether it ran out of memory or thrashed, which
+-       ends a plain sweep's ascent. The search then chooses the next `#current`, or finishes.
++   entry .MaxProbes   頂点の周り、そして屈曲点の周りの調査に費やすウィンドウの最大数：12
++   entry .Plateau   あるワーカー数が最良と同等とみなされる、最良のスループットからの割合：0.05
++   entry .Restarts   たまたま良かった頂点を見つけたとき、最適化する探索がやり直す回数：2
++   entry .Phase   探索の段階。上昇から完了まで
++       `Ascent` はワーカー数を倍々に増やす。`Boundary` は SLO の境界を二分探索する。`Peak` と `Knee` は最適化する探索で最適値を調べる。`Confirmation` は延長したウィンドウで候補を再計測する。`StepDown` は失敗した確認から約 12% ずつ後退する。`Done` は探索を終える。
++   entry #done   探索が終わり、これ以上ウィンドウを実行すべきでないかどうか
++   entry #current   次のウィンドウを実行するワーカー数
++   entry #extended   次のウィンドウが確認であり、目標時間の 3 倍の長さで実行されるかどうか
++   entry #winner   勝者となったウィンドウの序数。記録されたすべてのウィンドウを 0 から数える。勝者がなければ -1
++       単純な掃引、およびどの確認も成立しなかった探索には勝者がない。
++       `Stress` は勝者となったウィンドウの行に `sustained` のフラグを付ける。
++   entry #record   `#current` 個のワーカーで実行したばかりのウィンドウの結果を記録する
++       `record(throughput, ok, exhausted)`：ウィンドウのスループット（ナノ秒あたりの操作数）、それが実行可能だったかどうか — 失敗なし、メモリー枯渇なし、スラッシングなし、そして SLO があればその範囲内 — そして、メモリーを使い果たしたかスラッシングしたかどうか（これは単純な掃引の上昇を終わらせる）。
++       その後、探索は次の `#current` を選ぶか、終了する。
+
+- entry .Profile   a profile: a quoted operation run under JFR, reporting its hottest methods as a histogram
++ entry .Profile   プロファイル：クォートされた操作を JFR のもとで実行し、最も時間を使うメソッドをヒストグラムとして報告する
+
+= entry .Profile   a profile: a quoted operation run under JFR, reporting its hottest methods as a histogram
+-   detail
++   detail
+
+-       Where a `Bench` measures how fast an operation runs and a `Stress` how it scales, a
+-       `Profile` measures where its time goes. The body runs repeatedly on one thread for the
+-       target duration while an in-process JFR recording samples execution every millisecond,
+-       recording native-method samples alongside, so a pipeline bound by native code (zlib, say)
+-       is not invisible. Each sample's top frame — the method actually executing, its **self
+-       time** — is counted, and the hottest methods are reported as a probably `Hotspots`,
+-       rendered as a histogram with methods coloured by package.
++       `Bench` が操作の実行の速さを、`Stress` がそのスケールのしかたを計測するのに対し、`Profile` は時間がどこに使われるかを計測する。
++       本体は目標時間の間 1 つのスレッドで繰り返し実行され、その間プロセス内の JFR 記録が 1 ミリ秒ごとに実行をサンプリングする。ネイティブメソッドのサンプルも並行して記録されるので、ネイティブコード（たとえば zlib）に律速されるパイプラインも見えなくなることはない。
++       各サンプルの最上位のフレーム — 実際に実行中のメソッド、つまりその**自己時間** — が数えられ、最も時間を使うメソッドが probably の `Hotspots` として報告され、メソッドをパッケージごとに色分けしたヒストグラムとして描画される。
+
+=       rendered as a histogram with methods coloured by package.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+-       import superlunary.embeddings.automaticEmbedding
++       import superlunary.embeddings.automaticEmbedding
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+=       import systems.javaBaseSystem
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+=       import systems.javaBaseSystem
+=       import temporaryDirectories.systemTemporaryDirectory
+=
+-       given BenchmarkDevice = LocalhostDevice
++       given BenchmarkDevice = LocalhostDevice
+
+-       object Benchmarks extends Suite(m"Pipeline profiles"):
++       object Benchmarks extends Suite(m"Pipeline profiles"):
+
+=       object Benchmarks extends Suite(m"Pipeline profiles"):
+-         def run(): Unit =
++         def run(): Unit =
+
+-           val profile = Profile()
++           val profile = Profile()
+
+-           profile(m"pipeline hotspots")(target = 5*Second):
++           profile(m"pipeline hotspots")(target = 5*Second):
+
+=           profile(m"pipeline hotspots")(target = 5*Second):
+-             '{ Pipeline.run() }
++             '{ Pipeline.run() }
+
+-           profile(m"pipeline costs, inclusive")(target = 5*Second, frames = 60, inclusive = true):
++           profile(m"pipeline costs, inclusive")(target = 5*Second, frames = 60, inclusive = true):
+
+=           profile(m"pipeline costs, inclusive")(target = 5*Second, frames = 60, inclusive = true):
+-             '{ Pipeline.run() }
++             '{ Pipeline.run() }
+
+=             '{ Pipeline.run() }
+-       ```
++       ```
+
+-       JFR's execution sampler observes only runnable threads, so this is a CPU profile: time
+-       spent parked or waiting does not appear. It samples every thread, though, so the threads
+-       a body spawns are profiled with it. The constructor's `heap` and `cpus` pin the
+-       measurement JVM as for `Bench`; a profile always uses the device's default collector.
+-       Profile rows are selected with fume's `--profile` switch: `--bench` alone does not run
+-       them.
++       JFR の実行サンプラーは実行可能なスレッドだけを観測するので、これは CPU プロファイルである。パークや待機に費やした時間は現れない。
++       ただし、すべてのスレッドをサンプリングするので、本体が生成するスレッドも一緒にプロファイルされる。
++       コンストラクターの `heap` と `cpus` は `Bench` と同様に計測用の JVM を固定する。プロファイルは常にデバイスのデフォルトのコレクターを使う。
++       プロファイルの行は fume の `--profile` スイッチで選択される。`--bench` だけではそれらは実行されない。
+
+-   refer probably.Hotspots
++   refer probably.Hotspots
+
+=   refer probably.Hotspots
+-   refer sedentary.Bench
++   refer sedentary.Bench
+
+-   entry #heap   the measurement JVM's fixed heap size, as `-Xmx` text, or `Unset` for `1g`
+-   entry #cpus   how many processors the measurement JVM may use, or `Unset` for all of them
+-   entry #Result   the result type of a staged invocation: the output itself
+-   entry #Form   the form staged inputs and outputs travel in: `Text`
+-   entry #Target   what staging produces: the `Path on Linux` of the deployed JAR
+-   entry #Transport   how spliced values are encoded for the measurement JVM: `Json`
+-   entry #apply   profiles a quoted body for a target duration, reporting its hottest methods
+-       `profile(name, tags*)(target, frames, inclusive)(body)`: `target` is how long to record
+-       for, any duration, scaled by the runner's duration multiplier; `frames` caps how many
+-       methods are reported (25 by default); and `inclusive` counts a sample for every distinct
+-       method on its stack rather than its top frame alone.
++   entry #heap   計測用 JVM の固定ヒープサイズ。`-Xmx` 形式のテキストで、`1g` にするなら `Unset`
++   entry #cpus   計測用 JVM が使えるプロセッサー数。すべてを使うなら `Unset`
++   entry #Result   ステージングされた呼び出しの結果型：出力そのもの
++   entry #Form   ステージングされた入力と出力が渡される形式：`Text`
++   entry #Target   ステージングが生成するもの：デプロイされた JAR の `Path on Linux`
++   entry #Transport   スプライスされた値を計測用 JVM のためにどうエンコードするか：`Json`
++   entry #apply   クォートされた本体を目標時間の間プロファイルし、最も時間を使うメソッドを報告する
++       `profile(name, tags*)(target, frames, inclusive)(body)`：`target` は記録する長さで、任意の継続時間であり、ランナーの所要時間倍率で拡大縮小される。`frames` は報告するメソッドの数の上限（デフォルトは 25）。`inclusive` は、最上位のフレームだけでなく、スタック上の異なるメソッドそれぞれについてサンプルを数える。
+
+-       An inclusive profile gives each method's share of the time spent in it **or anything it
+-       called**, which finds a cost hidden inside a callee or spread across several — a string
+-       constructor inlined into a generated loop, say — that the self-time histogram attributes
+-       elsewhere. The shares then sum to more than the whole, and the outermost frames show
+-       near 100%. Method and class names are reported in their source form, with compiler
+-       mangling undone.
+-   entry #stage   builds the code under measurement into a JAR and deploys it to the device
+-       As `Bench#stage`: a failure is a `Rig.Error` with the reason `Staging`.
++       包含的なプロファイルは、各メソッドについて、そのメソッド**またはそれが呼んだあらゆるもの**に費やされた時間の割合を示す。これにより、呼び出し先の中に隠れたコストや、複数に分散したコスト — たとえば生成されたループにインライン化された文字列のコンストラクター — のように、自己時間のヒストグラムでは別の場所に帰属されるものが見つかる。
++       このとき割合の合計は全体を超え、最も外側のフレームは 100% 近くを示す。
++       メソッド名とクラス名は、コンパイラによるマングリングを元に戻したソース上の形で報告される。
++   entry #stage   計測対象のコードを JAR にビルドし、デバイスへデプロイする
++       `Bench#stage` と同じ。失敗は理由 `Staging` の `Rig.Error` となる。
+
+- entry .BenchmarkDevice   where a measurement JVM runs: the local machine, or a host reached over SSH
++ entry .BenchmarkDevice   計測用 JVM が動く場所：ローカルマシン、または SSH で到達するホスト
+
+= entry .BenchmarkDevice   where a measurement JVM runs: the local machine, or a host reached over SSH
+-   detail
++   detail
+
+-       A `BenchmarkDevice` deploys a staged JAR, launches a JVM to run it with a given input,
+-       returns its output, and removes the JAR. `Bench`, `Stress` and `Profile` each take one as
+-       a contextual value when they are constructed, so a suite chooses its device once, as a
+-       given:
++       `BenchmarkDevice` は、ステージングされた JAR をデプロイし、与えられた入力でそれを実行する JVM を起動し、その出力を返し、JAR を削除する。
++       `Bench`、`Stress`、`Profile` はそれぞれ構築時にこれをコンテキスト値として受け取るので、スイートはデバイスを given として一度選ぶ。
+
+=       given:
+=
+-       ```scala
++       ```scala
+
+=       given:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       given:
+=
+=       ```scala
+=       import soundness.*
+=
+-       given BenchmarkDevice = LocalhostDevice
++       given BenchmarkDevice = LocalhostDevice
+
+=       given:
+=
+=       ```scala
+=       import soundness.*
+=
+=       given BenchmarkDevice = LocalhostDevice
+-       ```
++       ```
+
+-       `LocalhostDevice` runs the JVM on the local machine; a `NetworkDevice` copies the JAR to
+-       a remote host with `scp` and runs it with `ssh`, and its `session` multiplexes every
+-       operation over one SSH connection. A device on a quiet, dedicated Linux machine gives
+-       the steadiest figures, and is the only kind on which `cpus` pins the process to cores.
+-       Every operation raises `Bench.Error` when it fails.
++       `LocalhostDevice` は JVM をローカルマシンで実行する。`NetworkDevice` は JAR を `scp` でリモートホストへコピーして `ssh` で実行し、その `session` はすべての操作を 1 つの SSH 接続の上に多重化する。
++       静かな専用の Linux マシン上のデバイスが最も安定した数値を出し、`cpus` がプロセスをコアに固定するのもこの種類のデバイスだけである。
++       すべての操作は、失敗すると `Bench.Error` を発生させる。
+
+-       The measurement JVM is launched with a fixed heap (`-Xms` and `-Xmx` both `1g` unless a
+-       `heap` is given), its heap pre-touched, two JIT compiler threads, and the Serial
+-       collector unless a `gc` is given.
++       計測用 JVM は、固定ヒープ（`heap` が与えられなければ `-Xms` と `-Xmx` はどちらも `1g`）、事前にタッチされたヒープ、2 つの JIT コンパイラスレッド、そして `gc` が与えられなければ Serial コレクターで起動される。
+
+-   refer sedentary.LocalhostDevice
++   refer sedentary.LocalhostDevice
+
+=   refer sedentary.LocalhostDevice
+-   refer sedentary.NetworkDevice
++   refer sedentary.NetworkDevice
+
+-   refer sedentary.Bench.Error
++   refer sedentary.Bench.Error
+
+-   entry #deploy   makes a staged JAR available on the device, under a name from its UUID
+-       Raises `Bench.Error` if the JAR cannot be copied there.
+-   entry #invoke   runs a staged JAR in a fresh JVM on the device with one input, and returns its output
+-       `invoke(path, input, heap, cpus, gc)` raises `Bench.Error` if the JVM cannot be launched
+-       or exits with a nonzero status.
++   entry #deploy   ステージングされた JAR を、その UUID に由来する名前でデバイス上で利用可能にする
++       JAR をそこへコピーできなければ `Bench.Error` を発生させる。
++   entry #invoke   ステージングされた JAR をデバイス上の新しい JVM で 1 つの入力とともに実行し、その出力を返す
++       `invoke(path, input, heap, cpus, gc)` は、JVM を起動できないか、JVM が 0 以外の終了ステータスで終了すると `Bench.Error` を発生させる。
+
+-       - `heap` overrides the fixed heap size, in `-Xmx` syntax (`t"256m"`), for both `-Xms`
+-         and `-Xmx`; unset, it is `1g`. A constrained heap shows what a workload sustains in a
+-         small, pinned amount of memory.
+-       - `cpus` limits the JVM to that many processors with `-XX:ActiveProcessorCount`, which
+-         sizes the GC and JIT threads and every pool derived from the available-processor
+-         count. On a Linux `NetworkDevice` the process is additionally pinned to that many
+-         cores with `taskset`; elsewhere, including on a macOS `LocalhostDevice`, platform
+-         threads still schedule across every core, so the limit is advisory.
+-       - `gc` names the collector in `-XX:+Use<gc>GC` syntax (`t"G1"`, `t"Parallel"`, `t"Z"`);
+-         unset, it is `Serial`.
+-   entry #undeploy   removes a staged JAR from the device
+-       Raises `Bench.Error` if the JAR cannot be removed.
++       - `heap` は固定ヒープサイズを `-Xmx` の構文（`t"256m"`）で `-Xms` と `-Xmx` の両方について上書きする。指定しなければ `1g` である。制約されたヒープは、負荷が小さな固定量のメモリーで何を持ちこたえるかを示す。
++       - `cpus` は `-XX:ActiveProcessorCount` で JVM をその数のプロセッサーに制限する。これは GC と JIT のスレッド数、そして利用可能なプロセッサー数から導かれるあらゆるプールの大きさを決める。Linux の `NetworkDevice` では、さらに `taskset` でプロセスをその数のコアに固定する。それ以外、macOS の `LocalhostDevice` を含む環境では、プラットフォームスレッドは依然としてすべてのコアにわたってスケジュールされるので、この制限は勧告的なものである。
++       - `gc` は `-XX:+Use<gc>GC` の構文でコレクターを指定する（`t"G1"`、`t"Parallel"`、`t"Z"`）。指定しなければ `Serial` である。
++   entry #undeploy   ステージングされた JAR をデバイスから削除する
++       JAR を削除できなければ `Bench.Error` を発生させる。
+
+- entry .LocalhostDevice   the benchmark device which runs each measurement JVM on the local machine
++ entry .LocalhostDevice   各計測用 JVM をローカルマシンで実行するベンチマークデバイス
+
+= entry .LocalhostDevice   the benchmark device which runs each measurement JVM on the local machine
+-   detail
++   detail
+
+-       Deploying and removing a JAR are no-ops, since the staged JAR is already on the local
+-       filesystem, and `invoke` launches the `java` on the path directly. The measurement JVM's
+-       standard error is inherited, so its diagnostics — a failed worker's stack trace — appear
+-       as they happen, and cannot fill an undrained pipe and stall the harness.
++       ステージングされた JAR はすでにローカルのファイルシステム上にあるので、JAR のデプロイと削除は何もしない。`invoke` はパス上の `java` を直接起動する。
++       計測用 JVM の標準エラーは継承されるので、その診断 — 失敗したワーカーのスタックトレース — は発生したときに現れ、読み出されないパイプを埋めてハーネスを停止させることはない。
+
+=       as they happen, and cannot fill an undrained pipe and stall the harness.
+=
+-       ```scala
++       ```scala
+
+=       as they happen, and cannot fill an undrained pipe and stall the harness.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       as they happen, and cannot fill an undrained pipe and stall the harness.
+=
+=       ```scala
+=       import soundness.*
+=
+-       given BenchmarkDevice = LocalhostDevice
++       given BenchmarkDevice = LocalhostDevice
+
+=       as they happen, and cannot fill an undrained pipe and stall the harness.
+=
+=       ```scala
+=       import soundness.*
+=
+=       given BenchmarkDevice = LocalhostDevice
+-       ```
++       ```
+
+-       The staged input reaches the JVM as a command-line argument, so a body which splices in
+-       a value of a megabyte or more may exceed the operating system's argument-length limit,
+-       and fail with `Bench.Error`. A `cpus` limit is advisory on macOS, which has no
+-       equivalent of `taskset`.
++       ステージングされた入力はコマンドライン引数として JVM に届くので、1 メガバイト以上の値をスプライスする本体は、オペレーティングシステムの引数長の上限を超えて `Bench.Error` で失敗することがある。
++       macOS には `taskset` に相当するものがないので、そこでは `cpus` の制限は勧告的なものである。
+
+=       equivalent of `taskset`.
+-   refer sedentary.BenchmarkDevice
++   refer sedentary.BenchmarkDevice
+
+-   entry .deploy   does nothing: the staged JAR is already local
+-   entry .invoke   runs the staged JAR with `java` on the local machine and returns its standard output
+-       Raises `Bench.Error` if the JVM cannot be started or exits with a nonzero status. See
+-       `BenchmarkDevice#invoke` for `heap`, `cpus` and `gc`.
+-   entry .undeploy   does nothing: the staged JAR is left where staging wrote it
++   entry .deploy   何もしない：ステージングされた JAR はすでにローカルにある
++   entry .invoke   ステージングされた JAR をローカルマシン上の `java` で実行し、その標準出力を返す
++       JVM を起動できないか、0 以外の終了ステータスで終了すると `Bench.Error` を発生させる。
++       `heap`、`cpus`、`gc` については `BenchmarkDevice#invoke` を参照。
++   entry .undeploy   何もしない：ステージングされた JAR はステージングが書き出した場所に残される
+
+- entry .NetworkDevice   a benchmark device on a remote host, reached as a user over SSH
++ entry .NetworkDevice   リモートホスト上のベンチマークデバイス。あるユーザーとして SSH で到達する
+
+= entry .NetworkDevice   a benchmark device on a remote host, reached as a user over SSH
+-   detail
++   detail
+
+-       `NetworkDevice(user, host)` copies each staged JAR to the user's home directory on
+-       `host` with `scp`, runs it there with `ssh` and `java`, and removes it afterwards. It
+-       relies on the local `ssh` and `scp` commands and the user's SSH configuration and keys:
+-       the connection must authenticate without a prompt.
++       `NetworkDevice(user, host)` は、ステージングされた各 JAR を `scp` で `host` 上のユーザーのホームディレクトリへコピーし、そこで `ssh` と `java` で実行し、その後削除する。
++       ローカルの `ssh` と `scp` コマンド、およびユーザーの SSH の設定と鍵に依存する。接続はプロンプトなしで認証できなければならない。
+
+-       A remote Linux machine is the device to use for figures which must not be disturbed by
+-       the developer's own machine, and the only one on which a `cpus` limit pins the
+-       measurement JVM to cores, with `taskset`. Each operation pays an SSH handshake; a
+-       `session` pays it once:
++       開発者自身のマシンに乱されてはならない数値には、リモートの Linux マシンをデバイスとして使う。また、`cpus` の制限が `taskset` によって計測用 JVM をコアに固定するのも、このデバイスだけである。
++       各操作は SSH のハンドシェイクのコストを払うが、`session` ならそれを一度だけ払う。
+
+=       `session` pays it once:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `session` pays it once:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `session` pays it once:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `session` pays it once:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val device = NetworkDevice(t"bench", host"bench.example.com")
++       val device = NetworkDevice(t"bench", host"bench.example.com")
+
+-       device.session: session ?=>
++       device.session: session ?=>
+
+-         given BenchmarkDevice = session
++         given BenchmarkDevice = session
+
+-         Bench()
++         Bench()
+
+=         Bench()
+-       ```
++       ```
+
+-       The `NetworkDevice.sessional` given, in the companion, makes this possible, and needs a
+-       `Tactic[Bench.Error]` in scope for the opening of the connection.
++       コンパニオンにある `NetworkDevice.sessional` given がこれを可能にし、接続を開くためにスコープ内に `Tactic[Bench.Error]` を必要とする。
+
+-   refer sedentary.NetworkDevice.Session
++   refer sedentary.NetworkDevice.Session
+
+-   refer sedentary.NetworkDeviceSessional
++   refer sedentary.NetworkDeviceSessional
+
+=   refer sedentary.NetworkDeviceSessional
+-   refer sedentary.BenchmarkDevice
++   refer sedentary.BenchmarkDevice
+
+-   entry .sessional   lets `device.session` open one multiplexed SSH connection to a `NetworkDevice`
+-       The `Sessional` instance for `NetworkDevice`, in implicit scope: a
+-       `NetworkDeviceSessional`, built with the `Tactic[Bench.Error]` in scope, which raises if
+-       the master connection cannot be opened.
+-   entry .Session   a benchmark device multiplexing every operation over one OpenSSH ControlMaster connection
++   entry .sessional   `device.session` が `NetworkDevice` への多重化された SSH 接続を 1 つ開けるようにする
++       暗黙のスコープにある `NetworkDevice` の `Sessional` インスタンス。スコープ内の `Tactic[Bench.Error]` で構築された `NetworkDeviceSessional` であり、マスター接続を開けなければエラーを発生させる。
++   entry .Session   すべての操作を 1 つの OpenSSH ControlMaster 接続の上に多重化するベンチマークデバイス
+
+=   entry .Session   a benchmark device multiplexing every operation over one OpenSSH ControlMaster connection
+-     detail
++     detail
+
+-         The device a `NetworkDevice`'s `session` lends to its block. It deploys, runs and
+-         removes JARs on the same host as its `NetworkDevice`, but through the control socket
+-         of a master connection opened once, so no operation pays an SSH handshake of its own.
+-         It is not constructed directly: the session opens the connection, lends the device,
+-         and closes the connection when the block ends, whether it returns or throws.
+-     entry #deploy   copies a staged JAR to the host over the shared connection
+-         Raises `Bench.Error` if the copy fails.
+-     entry #invoke   runs a staged JAR on the host over the shared connection, and returns its output
+-         As `NetworkDevice#invoke`, with no handshake of its own. Raises `Bench.Error`.
+-     entry #undeploy   removes a staged JAR from the host over the shared connection
+-         Raises `Bench.Error` if the removal fails.
+-   entry #user   the user name to log in to the host as
+-   entry #host   the remote host, as a `Hostname`
+-   entry #deploy   copies a staged JAR to the user's home directory on the host, with `scp`
+-       Raises `Bench.Error` if the copy fails.
+-   entry #invoke   runs a staged JAR on the host with `ssh` and `java`, and returns its output
+-       Raises `Bench.Error` if the connection fails or the JVM exits with a nonzero status. On
+-       the host, a `cpus` limit both sets the JVM's processor count and pins the process to
+-       that many cores with `taskset`, so the host must have it. See `BenchmarkDevice#invoke`.
+-   entry #undeploy   removes a staged JAR from the host, with `ssh`
+-       Raises `Bench.Error` if the removal fails.
++         `NetworkDevice` の `session` がそのブロックに貸し出すデバイス。
++         その `NetworkDevice` と同じホスト上で JAR をデプロイ、実行、削除するが、一度だけ開いたマスター接続の制御ソケットを通して行うので、どの操作も自身の SSH ハンドシェイクのコストを払わない。
++         直接構築されることはない。セッションが接続を開き、デバイスを貸し出し、ブロックが終わると、値を返したか例外を投げたかにかかわらず接続を閉じる。
++     entry #deploy   ステージングされた JAR を共有の接続を通してホストへコピーする
++         コピーに失敗すると `Bench.Error` を発生させる。
++     entry #invoke   ステージングされた JAR を共有の接続を通してホスト上で実行し、その出力を返す
++         `NetworkDevice#invoke` と同じだが、自身のハンドシェイクを行わない。
++         `Bench.Error` を発生させる。
++     entry #undeploy   ステージングされた JAR を共有の接続を通してホストから削除する
++         削除に失敗すると `Bench.Error` を発生させる。
++   entry #user   ホストにログインするときのユーザー名
++   entry #host   リモートホスト。`Hostname` として
++   entry #deploy   ステージングされた JAR を `scp` でホスト上のユーザーのホームディレクトリへコピーする
++       コピーに失敗すると `Bench.Error` を発生させる。
++   entry #invoke   ステージングされた JAR を `ssh` と `java` でホスト上で実行し、その出力を返す
++       接続に失敗するか、JVM が 0 以外の終了ステータスで終了すると `Bench.Error` を発生させる。
++       ホスト上では、`cpus` の制限は JVM のプロセッサー数を設定するとともに、`taskset` でプロセスをその数のコアに固定するので、ホストには `taskset` がなければならない。
++       `BenchmarkDevice#invoke` を参照。
++   entry #undeploy   ステージングされた JAR を `ssh` でホストから削除する
++       削除に失敗すると `Bench.Error` を発生させる。
+
+- entry .NetworkDeviceSessional   the `Sessional` instance which opens a scoped SSH session on a `NetworkDevice`
++ entry .NetworkDeviceSessional   `NetworkDevice` 上でスコープ付きの SSH セッションを開く `Sessional` インスタンス
+
+= entry .NetworkDeviceSessional   the `Sessional` instance which opens a scoped SSH session on a `NetworkDevice`
+-   detail
++   detail
+
+-       A named instance class, not usually written by hand: `NetworkDevice.sessional` provides
+-       it, and `device.session` uses it. Its `#session` opens an OpenSSH ControlMaster
+-       connection to the host (authenticated once, with a control socket under `/tmp`), lends a
+-       `NetworkDevice.Session` to the block, and closes the master connection when the block
+-       ends, whether it returns or throws. It takes a `Tactic[Bench.Error]`, which is raised if
+-       the connection cannot be opened; a failure to close it is ignored.
++       名前付きのインスタンスクラスで、通常は手で書くものではない。`NetworkDevice.sessional` がこれを提供し、`device.session` がこれを使う。
++       その `#session` はホストへの OpenSSH ControlMaster 接続を開き（一度だけ認証し、制御ソケットは `/tmp` の下に置く）、`NetworkDevice.Session` をブロックに貸し出し、ブロックが終わると、値を返したか例外を投げたかにかかわらずマスター接続を閉じる。
++       `Tactic[Bench.Error]` を取り、接続を開けなければそれでエラーを発生させる。接続を閉じる際の失敗は無視される。
+
+=       the connection cannot be opened; a failure to close it is ignored.
+-   refer sedentary.NetworkDevice
++   refer sedentary.NetworkDevice
+
+-   entry #Self   the target of a session: `NetworkDevice`
+-   entry #Result   what a session lends its block: a `NetworkDevice.Session`
+-   entry #session   opens a master connection, lends a `NetworkDevice.Session` to the block, and closes it
+-       Called through the `session` extension, `device.session: session ?=> …`, rather than
+-       directly. The block's result may leave the session; the session device itself should
+-       not, since its connection is closed when the block ends.
++   entry #Self   セッションの対象：`NetworkDevice`
++   entry #Result   セッションがブロックに貸し出すもの：`NetworkDevice.Session`
++   entry #session   マスター接続を開き、`NetworkDevice.Session` をブロックに貸し出し、それを閉じる
++       直接ではなく、`session` 拡張メソッドを通して `device.session: session ?=> …` のように呼ぶ。
++       ブロックの結果はセッションの外へ出てよいが、セッションのデバイス自体は出すべきではない。ブロックが終わると接続が閉じられるからである。
+
+- entry .OperationSize   the size of one benchmarked operation, which turns a time into a throughput rate
++ entry .OperationSize   ベンチマークされる 1 操作のサイズ。時間をスループットのレートに変える
+
+= entry .OperationSize   the size of one benchmarked operation, which turns a time into a throughput rate
+-   detail
++   detail
+
+-       A benchmark which processes data reports its rate — megabytes or characters per second
+-       — as well as its time per operation, when it is told how much each operation processes.
+-       The size is usually given as a quantity, which `.conversion` turns into an
+-       `OperationSize`:
++       データを処理するベンチマークは、各操作がどれだけ処理するかを教えられると、操作あたりの時間に加えて、そのレート — メガバイト毎秒や文字毎秒 — を報告する。
++       サイズは通常、量として与えられ、`.conversion` がそれを `OperationSize` に変える。
+
+=       `OperationSize`:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `OperationSize`:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `OperationSize`:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       bench(m"gzip 4 MB")(target = 1*Second, operationSize = 4194304*Byte):
++       bench(m"gzip 4 MB")(target = 1*Second, operationSize = 4194304*Byte):
+
+-         '{ Compression.gzip(Corpus.large) }
++         '{ Compression.gzip(Corpus.large) }
+
+=         '{ Compression.gzip(Corpus.large) }
+-       ```
++       ```
+
+-       The size renders with a metric prefix (`4.2 MB`), and the rate likewise (`MB/s`). Per-cell
+-       sizes are given with `Bench.Plan#sized`, for a benchmark whose cells process different
+-       amounts of data, so that their rates are comparable where their times are not.
++       サイズはメトリック接頭辞付きで描画され（`4.2 MB`）、レートも同様である（`MB/s`）。
++       セルごとのサイズは、セルごとに処理するデータ量が異なるベンチマークのために `Bench.Plan#sized` で与える。こうすれば、時間は比較できなくても、レートは比較できる。
+
+=       amounts of data, so that their rates are comparable where their times are not.
+-   refer sedentary.Bench.Plan
++   refer sedentary.Bench.Plan
+
+=   refer sedentary.Bench.Plan
+-   refer probably.Benchmark
++   refer probably.Benchmark
+
+-   entry .conversion   converts a `Quantity` into an `OperationSize`, for `Bench#apply`'s `operationSize`
+-       Any `Quantity` of a measure converts, with the `Decimalizer` in scope rendering both the
+-       size and, once the mean time is known, the rate, in the quantity's units per second. The
+-       given is `inline`, so the rendering is elaborated where the quantity is passed, with the
+-       caller's unit and prefix givens visible: a non-inline conversion would render `4194304*Byte`
+-       without its unit or prefix.
+-   entry #sizeText   the size of an operation, rendered for reading: `4.2 MB`
+-   entry #rateText   renders the rate, given the mean time of an operation in seconds: `120 MB/s`
+-   entry #value   the size as a number in its base unit (bytes or characters), for charting
++   entry .conversion   `Quantity` を、`Bench#apply` の `operationSize` のための `OperationSize` に変換する
++       任意の測度の `Quantity` が変換でき、スコープ内の `Decimalizer` がサイズと、平均時間がわかった時点でレートとを、その量の単位毎秒で描画する。
++       この given は `inline` なので、描画は量が渡される場所で、呼び出し側の単位と接頭辞の given が見える状態で展開される。インラインでない変換では、`4194304*Byte` が単位や接頭辞なしで描画されてしまう。
++   entry #sizeText   読むために描画した 1 操作のサイズ：`4.2 MB`
++   entry #rateText   1 操作の平均時間（秒）を与えられて、レートを描画する：`120 MB/s`
++   entry #value   チャートのための、基本単位（バイトまたは文字）での数値としてのサイズ

@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `SN-312` — Lambda bracketing (retired)
++ # `SN-312` — Parenthésage des lambdas (retirée)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Cette erreur n'existe plus. La page est conservée pour que le code ne soit pas réutilisé, et
++ pour qu'une référence à celui-ci depuis une version plus ancienne puisse toujours être résolue.
+
+- ## What became of it
++ ## Ce qu'il est devenu
+
+- The Decorum compiler plugin, which raised this error, was extracted from Soundness and
+- is now [Consequent](https://github.com/propensive/consequent), a standalone checker for
+- Consequent Style. The rule survives there under a new identifier, in which the letter
+- names the principle it derives from:
++ Le plugin du compilateur Decorum, qui levait cette erreur, a été extrait de Soundness et est
++ désormais [Consequent](https://github.com/propensive/consequent), un vérificateur autonome du
++ Consequent Style. La règle y subsiste sous un nouvel identifiant, dont la lettre nomme le
++ principe dont elle dérive :
+
+- ```tabular
++ ```tabular
+
+- column  Was
+- column  Now
++ column  Avant
++ column  Désormais
+
+- row  `SN-312`  [`D2`](https://github.com/propensive/consequent/blob/main/doc/rules/D2.md)
++ row  `SN-312`  [`D2`](https://github.com/propensive/consequent/blob/main/doc/rules/D2.md)
+
+- row  `SN-312.1`  [`D2.1`](https://github.com/propensive/consequent/blob/main/doc/rules/D2.md)
++ row  `SN-312.1`  [`D2.1`](https://github.com/propensive/consequent/blob/main/doc/rules/D2.md)
+
+- row  `SN-312.2`  [`D2.2`](https://github.com/propensive/consequent/blob/main/doc/rules/D2.md)
++ row  `SN-312.2`  [`D2.2`](https://github.com/propensive/consequent/blob/main/doc/rules/D2.md)
+
+- row  `SN-312.3`  [`D2.3`](https://github.com/propensive/consequent/blob/main/doc/rules/D2.md)
++ row  `SN-312.3`  [`D2.3`](https://github.com/propensive/consequent/blob/main/doc/rules/D2.md)
+
+- row  `SN-312.4`  [`D2.4`](https://github.com/propensive/consequent/blob/main/doc/rules/D2.md)
++ row  `SN-312.4`  [`D2.4`](https://github.com/propensive/consequent/blob/main/doc/rules/D2.md)
+
+- ```
++ ```

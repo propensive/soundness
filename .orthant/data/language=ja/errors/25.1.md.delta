@@ -1,0 +1,60 @@
+orthant 1 language
+
+- # `↯/s.25.1` — `Number.Error`
++ # `↯/s.25.1` — `Number.Error`
+
+- Raised when Distillate cannot decode a text value into a numeric
+- type.
++ Distillate がテキストの値を数値型にデコードできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Distillate's `Decodable in Text` instances for numeric primitives
+- parse the input via the JDK's number parsers, then range-check
+- against the target type's bounds. The constructor records the
+- offending `text`, the `specializable` (target type), and a
+- `reason: Reason`; the rendered message is `$text is not a valid
+- $specializable because $reason`.
++ 数値のプリミティブに対する Distillate の `Decodable in Text` インスタンスは、JDK の数値パーサーで入力をパースし、それから対象の型の境界に照らして範囲を検査する。
++ コンストラクターは、問題の `text`、`specializable`（対象の型）、`reason: Reason` を記録する。描画されるメッセージは `$text is not a valid $specializable because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.25.1.1` — `Unparseable`
++ ### `↯/s.25.1.1` — `Unparseable`
+
+- The input was not a syntactically valid number for the target
+- type — `Integer.parseInt` (or sibling) threw a
+- `NumberFormatException`.
++ 入力が、対象の型にとって構文的に正しい数値ではなかった。`Integer.parseInt`（またはその兄弟）が `NumberFormatException` を投げた。
+
+- **Example.** `[↯/s.25.1.1] abc is not a valid Int because the input could not be parsed as a number`
++ **例。** `[↯/s.25.1.1] abc is not a valid Int because the input could not be parsed as a number`
+
+- **Resolution.** Sanitise the input before decoding, or guard
+- against non-numeric values.
++ **解決方法。** デコードの前に入力をサニタイズするか、数値でない値に備える。
+
+- ### `↯/s.25.1.2` — `OutOfRange`
++ ### `↯/s.25.1.2` — `OutOfRange`
+
+- The input was a syntactically valid number but fell outside the
+- target type's representable range — currently raised by the
+- `Byte` and `Short` decoders when the integer is outside their
+- bounds.
++ 入力は構文的に正しい数値だったが、対象の型が表せる範囲の外にあった。現在は、整数がその境界の外にあるときに `Byte` と `Short` のデコーダーが発生させる。
+
+- **Example.** `[↯/s.25.1.2]300 is not a valid Byte because the input was outside the target type's representable range`
++ **例。** `[↯/s.25.1.2]300 is not a valid Byte because the input was outside the target type's representable range`
+
+- **Resolution.** Decode into a wider type (e.g. `Int`), or
+- clamp the value before decoding.
++ **解決方法。** より広い型（`Int` など）にデコードするか、デコードの前に値を範囲内に収める。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/distillate/src/core/distillate.Number.scala`
++ - ソース：`lib/distillate/src/core/distillate.Number.scala`

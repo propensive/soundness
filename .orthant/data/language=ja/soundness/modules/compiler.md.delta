@@ -1,0 +1,978 @@
+orthant 1 language
+
+- ## Compilation
++ ## コンパイル
+
+- ### About
++ ### 概要
+
+- The Scala compiler is invoked as a typed API. Sources are supplied as values. Options are typed
+- flags, valid only for the compiler versions which support them. Results, which are diagnostics
+- with their positions, progress, and success or failure, are [streams](streams.md) and values,
+- not console output.
++ Scala コンパイラは型付きの API として呼び出される。
++ ソースは値として与えられる。
++ オプションは型付きのフラグであり、それをサポートするコンパイラのバージョンでのみ有効である。
++ 結果、すなわち位置付きの診断、進捗、成功または失敗は、[ストリーム](streams.md)と値であり、コンソールへの出力ではない。
+
+- This is the machinery beneath [staged execution](staging.md) and the compiletime
+- [benchmarks](../../standards/benchmarking.md), and it serves any tool which compiles Scala on a
+- user's behalf.
++ これは[ステージング実行](staging.md)とコンパイル時の[ベンチマーク](../../standards/benchmarking.md)の下にある仕組みであり、ユーザーに代わって Scala をコンパイルするあらゆるツールに役立つ。
+
+- Compilation is half the job. The output is then *linked* into an artifact: an executable JAR,
+- JavaScript, a WebAssembly component, a native binary or an Android package. The intermediate
+- representation which a compilation emits, and the artifact which a linker produces, are both
+- types. A mismatch between them is a compile error in the tool, and not a failure at link time.
++ コンパイルは仕事の半分である。
++ その出力は次に成果物へと*リンク*される。実行可能な JAR、JavaScript、WebAssembly のコンポーネント、ネイティブバイナリ、Android のパッケージである。
++ コンパイルが出力する中間表現と、リンカーが生成する成果物は、どちらも型である。
++ 両者の不一致はツールのコンパイルエラーであり、リンク時の失敗ではない。
+
+- ### On driving the compiler
++ ### コンパイラを駆動することについて
+
+- The command line of the compiler is stringly typed twice over. Options are strings whose
+- validity depends on the version of the compiler, and diagnostics come back as formatted text to
+- parse again. A build tool, a notebook or a code runner wants the inverse: typed options, checked
+- against the version in use, and structured diagnostics.
++ コンパイラのコマンドラインは、二重に文字列で型付けされている。
++ オプションは文字列で、その有効性はコンパイラのバージョンに依存し、診断は再びパースすべき書式付きのテキストとして返ってくる。
++ ビルドツール、ノートブック、コードランナーが求めるのはその逆である。使用中のバージョンに対して検査される型付きのオプションと、構造化された診断である。
+
+- `Scalac` provides that. It invokes the compiler in the same process, over sources in memory. A
+- compilation described as a value and run by a toolchain is
+- [direct style](../../philosophy/direct-style.md): the build is code, checked like any other code.
++ `Scalac` はそれを提供する。
++ これはメモリー上のソースに対して、同じプロセスの中でコンパイラを呼び出す。
++ 値として記述され、ツールチェーンによって実行されるコンパイルは[ダイレクトスタイル](../../philosophy/direct-style.md)である。ビルドはコードであり、他のあらゆるコードと同じように検査される。
+
+- Everything comes from the `soundness` package:
++ すべては `soundness` パッケージから得られる。
+
+= Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import workingDirectories.javaBaseWorkingDirectory
++ import workingDirectories.javaBaseWorkingDirectory
+
+= import workingDirectories.javaBaseWorkingDirectory
+- ```
++ ```
+
+- The samples on this page run compilers and linkers, so they are compiled but not run.
++ このページのサンプルはコンパイラやリンカーを実行するので、コンパイルはされるが実行はされない。
+
+- ### Configuring a compiler
++ ### コンパイラの設定
+
+- A `Scalac` is parameterized by its language version, and carries its options. Each option is a
+- typed value, usable only at the versions which accept it:
++ `Scalac` は言語のバージョンでパラメーター化され、オプションを持つ。
++ 各オプションは型付きの値であり、それを受け付けるバージョンでのみ使える。
+
+= typed value, usable only at the versions which accept it:
+=
+- ```scala
++ ```scala
+
+- val compiler = Scalac[3.8](List(scalacOptions.experimental, scalacOptions.newSyntax))
++ val compiler = Scalac[3.8](List(scalacOptions.experimental, scalacOptions.newSyntax))
+
+= val compiler = Scalac[3.8](List(scalacOptions.experimental, scalacOptions.newSyntax))
+- ```
++ ```
+
+- The options mirror the compiler's own, for warnings, language features and internal flags, under
+- `scalacOptions`. An option which does not exist at the chosen version is a compile error in the
+- tool, not a complaint from the compiler at [runtime].
++ オプションは警告、言語機能、内部フラグについてのコンパイラ自身のものを、`scalacOptions` の下に写したものである。
++ 選んだバージョンに存在しないオプションはツールのコンパイルエラーであり、[実行時]にコンパイラが出す苦情ではない。
+
+- ### Compiling
++ ### コンパイルする
+
+- Sources are a map from names to content. They are compiled against a [classpath](classpath.md)
+- into an output directory. The returned process exposes its diagnostics and progress as streams,
+- and completes with a result:
++ ソースは名前から内容への写像である。
++ それらは[クラスパス](classpath.md)に対して出力ディレクトリーへコンパイルされる。
++ 返されるプロセスは診断と進捗をストリームとして公開し、結果とともに完了する。
+
+= and completes with a result:
+=
+- ```scala
++ ```scala
+
+= and completes with a result:
+=
+= ```scala
+- supervise:
++ supervise:
+
+-   val process = compiler(classpath)(Map(t"hello.scala" -> source), outputPath)
++   val process = compiler(classpath)(Map(t"hello.scala" -> source), outputPath)
+
+-   val result = process.complete()   // Compiler.Result.Success, Failure, or Crash
++   val result = process.complete()   // Compiler.Result.Success, Failure, or Crash
+
+-   process.notices.each: notice =>
++   process.notices.each: notice =>
+
+-     report(notice.importance, notice.file, notice.message)
++     report(notice.importance, notice.file, notice.message)
+
+-   result
++   result
+
+=   result
+- ```
++ ```
+
+- `complete()` gives a `Compiler.Result`, which is `Success`, `Failure` or `Crash`. Each
+- `Compiler.Notice` carries its importance, which is info, warning or error, its file and its
+- span. A tool can underline the offending code, and need not echo the compiler's output. A crash
+- arrives as a value too, with its [stack trace](stack-traces.md), and the process can be aborted
+- before the compilation ends.
++ `complete()` は `Compiler.Result` を与え、それは `Success`、`Failure`、`Crash` のいずれかである。
++ 各 `Compiler.Notice` は重要度（info、warning、error のいずれか）、ファイル、スパンを持つ。
++ ツールは問題のあるコードに下線を引くことができ、コンパイラの出力をそのまま表示する必要はない。
++ クラッシュも[スタックトレース](stack-traces.md)付きの値として届き、プロセスはコンパイルが終わる前に中断できる。
+
+- ### Semantic diagnostics
++ ### 意味的な診断
+
+- A compiler error message is usually a sentence with types spliced into it. By the time it
+- reaches a tool, those types are just words. Asked for semantic diagnostics, the compiler instead
+- marks each interpolated argument in band, with pickled TASTy for the types among them, and a
+- `Compiler.Notice` keeps that marked-up form beside the plain one.
++ コンパイラのエラーメッセージは、通常は型が埋め込まれた文である。
++ ツールに届くころには、それらの型はただの単語になっている。
++ 意味的な診断を求められると、コンパイラは代わりに埋め込まれた各引数を帯域内でマークし、そのうちの型にはピクルされた TASTy を付ける。そして `Compiler.Notice` は、そのマークアップされた形を素の形の横に保持する。
+
+- The markup parses into a `SemanticMessage`: a typed tree of styled spans, placeholders and types.
+- Each type is unpickled from its TASTy and rendered again through the same machinery which
+- renders types elsewhere, so a type reads as it would in the code, abbreviated against what is
+- imported. A "found `A`, required `B`" message therefore arrives as two types to render, link and
+- compare, and not as a string to parse again.
++ マークアップは `SemanticMessage` へパースされる。スタイル付きのスパン、プレースホルダー、型からなる型付きの木である。
++ 各型は TASTy からアンピクルされ、他の場所で型を描画するのと同じ仕組みを通じて再び描画される。このため型はコードの中と同じように読め、インポートされているものに応じて省略される。
++ したがって「found `A`, required `B`」というメッセージは、再びパースすべき文字列としてではなく、描画し、リンクし、比較するための二つの型として届く。
+
+- ### Universes
++ ### ユニバース
+
+- A compilation emits one intermediate representation, and that choice decides which library
+- artifacts it can link against. The universe is a type parameter of the `Compilation`, so a
+- Scala.js compilation cannot be mistaken for a native one. The compiler flags which each universe
+- needs follow from it, and are not supplied by hand:
++ コンパイルは一つの中間表現を出力し、その選択がどのライブラリの成果物に対してリンクできるかを決める。
++ ユニバースは `Compilation` の型パラメーターなので、Scala.js のコンパイルをネイティブのものと取り違えることはない。
++ 各ユニバースが必要とするコンパイラのフラグはそこから決まり、手で与えるものではない。
+
+= needs follow from it, and are not supplied by hand:
+=
+- ```tabular
++ ```tabular
+
+- column  Universe
+- column  Emits
+- column  Compiler flag
+- column  Runtime libraries on the classpath
+- row  `Toolchain.Universe.Classfile`  JVM classfiles
++ column  ユニバース
++ column  出力するもの
++ column  コンパイラのフラグ
++ column  クラスパス上の実行時ライブラリ
++ row  `Toolchain.Universe.Classfile`  JVM のクラスファイル
+
+- row  `Toolchain.Universe.Sjsir`  Scala.js IR  `-scalajs`  `scalajs-javalib`, `scalajs-library_2.13`, `scalajs-scalalib_2.13`, `scala3-library_sjs1`
++ row  `Toolchain.Universe.Sjsir`  Scala.js IR  `-scalajs`  `scalajs-javalib`, `scalajs-library_2.13`, `scalajs-scalalib_2.13`, `scala3-library_sjs1`
+
+- row  `Toolchain.Universe.Nir`  Scala Native IR  `-Xplugin:` with the `NirPlugin` jar  `scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`
++ row  `Toolchain.Universe.Nir`  Scala Native IR  `NirPlugin` の jar を指定した `-Xplugin:`  `scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`
+
+= row  `Toolchain.Universe.Nir`  Scala Native IR  `-Xplugin:` with the `NirPlugin` jar  `scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`
+- ```
++ ```
+
+- The form with a single type argument targets the classfile universe. `targeting` selects another
+- explicitly:
++ 型引数が一つの形は、クラスファイルのユニバースを対象とする。
++ `targeting` は別のものを明示的に選ぶ。
+
+= explicitly:
+=
+- ```scala
++ ```scala
+
+- val forJs = compiler.targeting[Toolchain.Universe.Sjsir]
++ val forJs = compiler.targeting[Toolchain.Universe.Sjsir]
+
+= val forJs = compiler.targeting[Toolchain.Universe.Sjsir]
+- ```
++ ```
+
+- The runtime libraries are supplied on the classpath like any other. Their absence appears as
+- ordinary compiler diagnostics, and not as a distinct kind of failure. `Toolchain.Universe.Nir`
+- also needs a `NirPlugin` in scope, which is evidence of where the Scala Native compiler plugin
+- lives, since NIR is emitted by a plugin and not by a backend built into the compiler.
++ 実行時ライブラリは、他のものと同じようにクラスパス上に与えられる。
++ それがないことは通常のコンパイラの診断として現れ、別種の失敗としては現れない。
++ `Toolchain.Universe.Nir` はさらに、スコープに `NirPlugin` を必要とする。これは Scala Native のコンパイラプラグインがどこにあるかの証拠である。NIR はコンパイラに組み込まれたバックエンドではなく、プラグインによって出力されるからである。
+
+- ### Producing artifacts
++ ### 成果物の生成
+
+- Universes and application formats are the nodes of a `Toolchain`, a
+- [directed acyclic graph](graphs.md) whose edges are tools. Producing an artifact is a search for
+- a path. `produce` takes what you have, the format you want, and an output location, and runs
+- each tool on the path between them:
++ ユニバースとアプリケーションの形式は `Toolchain` のノードである。`Toolchain` はエッジがツールである[有向非巡回グラフ](graphs.md)である。
++ 成果物の生成は経路の探索である。
++ `produce` は手元にあるもの、欲しい形式、出力先を受け取り、その間の経路上にある各ツールを実行する。
+
+= each tool on the path between them:
+=
+- ```scala
++ ```scala
+
+= each tool on the path between them:
+=
+= ```scala
+- supervise:
++ supervise:
+
+= supervise:
+-   Toolchain(jarEdges()).produce
++   Toolchain(jarEdges()).produce
+
+=   Toolchain(jarEdges()).produce
+-     ( Deliverable.Emission(outputPath, classpath),
++     ( Deliverable.Emission(outputPath, classpath),
+
+=   Toolchain(jarEdges()).produce
+=     ( Deliverable.Emission(outputPath, classpath),
+-       Toolchain.Universe.Classfile,
++       Toolchain.Universe.Classfile,
+
+=     ( Deliverable.Emission(outputPath, classpath),
+=       Toolchain.Universe.Classfile,
+-       Artifact.Jar,
++       Artifact.Jar,
+
+=       Artifact.Jar,
+-       destination,
++       destination,
+
+-       List(jarOptions.name(t"app.jar")),
++       List(jarOptions.name(t"app.jar")),
+
+=       List(jarOptions.name(t"app.jar")),
+-       List(EntryPoint(fqcn"com.example.Main")) )
++       List(EntryPoint(fqcn"com.example.Main")) )
+
+=       List(jarOptions.name(t"app.jar")),
+=       List(EntryPoint(fqcn"com.example.Main")) )
+- ```
++ ```
+
+- Each universe reaches its own set of application formats:
++ 各ユニバースは、それぞれのアプリケーション形式の集合に到達する。
+
+= Each universe reaches its own set of application formats:
+=
+- ```tabular
++ ```tabular
+
+- column  From
+- column  Format
+- column  Artifact
+- row  any universe  `Library`  unlinked output, packaged for downstream assembly
+- row  `Toolchain.Universe.Classfile`  `Artifact.Jar`  an executable JAR
+- row  `Toolchain.Universe.Classfile`  `Shrunk.Jar`  an executable JAR of only what its entry point reaches
+- row  `Toolchain.Universe.Classfile`  `Dex`  an archive of Dalvik bytecode
+- row  `Toolchain.Universe.Classfile`  `Apk`  a complete, signed and aligned Android package
+- row  `Toolchain.Universe.Classfile`  `Xeq`  a bundle runnable straight from a shell
+- row  `Toolchain.Universe.Sjsir`  `Js`  an ECMAScript module, a CommonJS module or a plain script
+- row  `Toolchain.Universe.Sjsir`  `Wasm`  a WebAssembly module with JavaScript glue
+- row  `Toolchain.Universe.Sjsir`  `Wasi`  a standalone component at a stated WASI generation
+- row  `Toolchain.Universe.Sjsir`  `OciImage`  that component, wrapped as an OCI artifact
+- row  `Toolchain.Universe.Nir`  `Artifact.Binary`  a native executable for one target triple
++ column  元
++ column  形式
++ column  成果物
++ row  任意のユニバース  `Library`  後段での組み立てのためにパッケージ化された、リンクされていない出力
++ row  `Toolchain.Universe.Classfile`  `Artifact.Jar`  実行可能な JAR
++ row  `Toolchain.Universe.Classfile`  `Shrunk.Jar`  エントリーポイントが到達するものだけからなる実行可能な JAR
++ row  `Toolchain.Universe.Classfile`  `Dex`  Dalvik バイトコードのアーカイブ
++ row  `Toolchain.Universe.Classfile`  `Apk`  署名と整列を済ませた完全な Android パッケージ
++ row  `Toolchain.Universe.Classfile`  `Xeq`  シェルから直接実行できるバンドル
++ row  `Toolchain.Universe.Sjsir`  `Js`  ECMAScript モジュール、CommonJS モジュール、または素のスクリプト
++ row  `Toolchain.Universe.Sjsir`  `Wasm`  JavaScript のグルーを伴う WebAssembly モジュール
++ row  `Toolchain.Universe.Sjsir`  `Wasi`  指定した WASI の世代の単独のコンポーネント
++ row  `Toolchain.Universe.Sjsir`  `OciImage`  そのコンポーネントを OCI の成果物として包んだもの
++ row  `Toolchain.Universe.Nir`  `Artifact.Binary`  一つのターゲットトリプル向けのネイティブ実行ファイル
+
+= row  `Toolchain.Universe.Nir`  `Artifact.Binary`  a native executable for one target triple
+- ```
++ ```
+
+- The module system of a `Js` node is part of its identity, as the target triple is part of a
+- binary's.
++ ターゲットトリプルがバイナリの同一性の一部であるように、`Js` ノードのモジュールシステムはその同一性の一部である。
+
+- A format several edges away needs no special handling. An `Apk` runs dexing and then packaging,
+- and an `OciImage` links the component and then wraps it, because those are the paths. A build
+- which cannot reach a format says so, with a `NoPath` naming the two formats, and does not fail
+- part of the way through. A setting which configures nothing on the path is rejected before any
+- tool runs.
++ いくつものエッジを隔てた形式にも、特別な扱いは要らない。
++ `Apk` は dex 化を実行してからパッケージ化し、`OciImage` はコンポーネントをリンクしてからそれを包む。それが経路だからである。
++ 形式に到達できないビルドは、二つの形式を名指す `NoPath` でそう告げ、途中で失敗することはない。
++ 経路上の何も設定しない設定は、どのツールも実行される前に拒否される。
+
+- An edge whose tool has prerequisites comes from a provider which demands evidence of them, so an
+- edge whose tooling is absent cannot be built. `sjsEdges.wasi()` needs a probed `WasiToolchain`
+- and a `Wasi.World`, and `nativeEdges()` probes for `clang`.
++ ツールに前提条件があるエッジは、その証拠を要求するプロバイダーから得られるので、ツールが存在しないエッジは構築できない。
++ `sjsEdges.wasi()` は探査済みの `WasiToolchain` と `Wasi.World` を必要とし、`nativeEdges()` は `clang` を探査する。
+
+- The identity of a format is its kind, which is a source, an intermediate representation or an
+- application, and its `id`. Wherever a parameter changes what a user receives, it is part of the
+- `id`, and each parameterization is a distinct node: the module system a JavaScript host imports
+- through, the WASI generation an artifact's ABI follows, the target triple a binary runs on, the
+- delivery mode of a bundle. A binary for `Triple.Arm64MacOs` is as distinct from one for
+- `Triple.X64Linux` as a JAR is from a JavaScript bundle. That they share a linker does not make
+- them interchangeable.
++ 形式の同一性は、その種類（ソース、中間表現、アプリケーションのいずれか）と `id` である。
++ パラメーターがユーザーの受け取るものを変える場合には必ず、それは `id` の一部であり、各パラメーター化は別個のノードである。JavaScript のホストがインポートに使うモジュールシステム、成果物の ABI が従う WASI の世代、バイナリが動作するターゲットトリプル、バンドルの配布モードがそうである。
++ `Triple.Arm64MacOs` 向けのバイナリは、JAR が JavaScript のバンドルと別物であるのと同じだけ、`Triple.X64Linux` 向けのものと別物である。
++ リンカーを共有しているからといって、交換可能にはならない。
+
+- The set of nodes is open. `Artifact`, `Tool` and `Edge` are ordinary public types, so an edge
+- registered for a format which these libraries have never heard of extends the graph. A format
+- can be declared as data, by its kind and name, which is how a registry read at runtime declares
+- one:
++ ノードの集合は開かれている。
++ `Artifact`、`Tool`、`Edge` は通常の公開された型なので、これらのライブラリが聞いたこともない形式に対して登録されたエッジがグラフを拡張する。
++ 形式はその種類と名前によってデータとして宣言できる。実行時に読み込まれるレジストリはこうして形式を宣言する。
+
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+- ##
++ ##
+
+- val proto = Artifact.source(t"proto")
++ val proto = Artifact.source(t"proto")
+
+- val descriptor = Artifact(Artifact.Kind.Ir, t"descriptor")
++ val descriptor = Artifact(Artifact.Kind.Ir, t"descriptor")
+
+= val descriptor = Artifact(Artifact.Kind.Ir, t"descriptor")
+- ```
++ ```
+
+- A declared format is the same node as the built-in format of its kind and name, so
+- `Artifact.ir(t"classfile")` reaches every edge registered for `Toolchain.Universe.Classfile`.
++ 宣言された形式は、同じ種類と名前を持つ組み込みの形式と同じノードなので、`Artifact.ir(t"classfile")` は `Toolchain.Universe.Classfile` に対して登録されたすべてのエッジに到達する。
+
+- ### Deliverables and paths
++ ### 引き渡し物と経路
+
+- The value which flows along a path is a `Deliverable`, and its case says where in the graph it
+- belongs:
++ 経路に沿って流れる値は `Deliverable` であり、そのケースがグラフのどこに属するかを表す。
+
+= belongs:
+=
+- ```tabular
++ ```tabular
+
+- column  Case
+- column  Holds
+- column  Belongs at
+- row  `Deliverable.Sources`  sources  a source node
+- row  `Deliverable.Emission`  an output directory and the classpath it was compiled against  an intermediate representation
+- row  `Deliverable.Product`  a linked or packaged file  an application format
++ column  ケース
++ column  保持するもの
++ column  属する場所
++ row  `Deliverable.Sources`  ソース  ソースのノード
++ row  `Deliverable.Emission`  出力ディレクトリーと、それがコンパイルされたときのクラスパス  中間表現
++ row  `Deliverable.Product`  リンクまたはパッケージ化されたファイル  アプリケーション形式
+
+= row  `Deliverable.Product`  a linked or packaged file  an application format
+- ```
++ ```
+
+- The path itself can be asked for directly, which is how a tool reports what it is about to run:
++ 経路そのものを直接求めることもできる。ツールはこうして、これから実行するものを報告する。
+
+= The path itself can be asked for directly, which is how a tool reports what it is about to run:
+=
+- ```scala
++ ```scala
+
+- val steps = Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Toolchain.Universe.Classfile, Apk).map(_.target.id)
++ val steps = Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Toolchain.Universe.Classfile, Apk).map(_.target.id)
+
+= val steps = Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Toolchain.Universe.Classfile, Apk).map(_.target.id)
+- ```
++ ```
+
+- Here `steps` is `List(t"dex", t"apk")`. The path is the *unique shortest* one. Where none
+- exists, `path` raises `NoPath`. Where two are equally short, it raises `AmbiguousPath`, which is
+- resolved by producing an intermediate format explicitly in a separate step, and not by a
+- tie-break the caller cannot see. Assembly is checked as strictly. `Toolchain` rejects a
+- duplicate edge between the same pair of formats, and rejects a cycle.
++ ここで `steps` は `List(t"dex", t"apk")` である。
++ 経路は*唯一の最短*のものである。
++ 存在しなければ、`path` は `NoPath` を発生させる。
++ 同じ長さのものが二つあれば `AmbiguousPath` を発生させる。これは呼び出し側に見えない決着によってではなく、別の段階で中間形式を明示的に生成することで解決する。
++ 組み立ても同じく厳格に検査される。
++ `Toolchain` は同じ形式の対の間の重複したエッジを拒否し、循環も拒否する。
+
+- Each intermediate product on a path of several stages is written below the destination, under
+- the `id` of its format, and the final product is written to the destination itself. An APK,
+- whose path runs `Classfile → Dex → Apk`, therefore dexes into `dex/` and packages from there.
+- Nothing about that sequence is written into the APK tool.
++ いくつかの段階からなる経路上の各中間生成物は、出力先の下に、その形式の `id` の名前で書き出され、最終生成物は出力先そのものに書き出される。
++ したがって経路が `Classfile → Dex → Apk` である APK は、`dex/` へ dex 化され、そこからパッケージ化される。
++ その手順について、APK のツールには何も書かれていない。
+
+- A staging rig must fold its own running classpath into the JARs it produces. It pairs
+- `Bundler.applicationClasspath`, which is the classpath of the running application, introspected
+- from the classloader which loaded it, with its compiled output:
++ ステージングの仕組みは、自身が実行中のクラスパスを、生成する JAR に取り込まなければならない。
++ そのためには `Bundler.applicationClasspath`（実行中のアプリケーションのクラスパスで、それを読み込んだクラスローダーから調べたもの）を、コンパイルした出力と組み合わせる。
+
+= from the classloader which loaded it, with its compiled output:
+=
+- ```scala
++ ```scala
+
+- def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Linux =
++ def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Linux =
+
+= def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Linux =
+-   Toolchain(jarEdges()).produce
++   Toolchain(jarEdges()).produce
+
+-     ( Deliverable.Emission(out, Bundler.applicationClasspath),
++     ( Deliverable.Emission(out, Bundler.applicationClasspath),
+
+=     ( Deliverable.Emission(out, Bundler.applicationClasspath),
+-       Toolchain.Universe.Classfile,
++       Toolchain.Universe.Classfile,
+
+=     ( Deliverable.Emission(out, Bundler.applicationClasspath),
+=       Toolchain.Universe.Classfile,
+-       Artifact.Jar,
++       Artifact.Jar,
+
+-       out,
++       out,
+
+-       List(jarOptions.name(t"$uuid.jar")),
++       List(jarOptions.name(t"$uuid.jar")),
+
+-       List(EntryPoint(executor)) )
++       List(EntryPoint(executor)) )
+
+=       List(EntryPoint(executor)) )
+- ```
++ ```
+
+- ### Settings
++ ### 設定
+
+- A tool is configured by `Setting`s. A setting is addressed to the formats whose production it
+- configures, and not to a tool directly. `produce` applies each setting, in order, to every edge
+- on the path whose target it applies to. A setting which matches no format on the path raises
+- `InapplicableSetting` before any tool runs.
++ ツールは `Setting` によって設定される。
++ 設定は、それが生成を設定する形式に宛てられ、ツールに直接宛てられるのではない。
++ `produce` は各設定を順に、経路上でそのターゲットに設定が適用されるすべてのエッジに適用する。
++ 経路上のどの形式にも一致しない設定は、どのツールも実行される前に `InapplicableSetting` を発生させる。
+
+- Addressing settings to formats lets one setting configure several stages. An Android API level
+- is a property of the application, but it governs both how D8 desugars and what the manifest
+- declares. So `apkOptions.minApi` applies to `Dex` and `Apk` alike, and dispatches to the
+- configuration type of each node. The other groups of settings are:
++ 設定を形式に宛てることで、一つの設定がいくつもの段階を設定できる。
++ Android の API レベルはアプリケーションの性質だが、D8 がどう脱糖するかと、マニフェストが何を宣言するかの両方を左右する。
++ そこで `apkOptions.minApi` は `Dex` にも `Apk` にも適用され、各ノードの設定の型へとディスパッチされる。
++ その他の設定のグループは次のとおりである。
+
+= configuration type of each node. The other groups of settings are:
+=
+- ```tabular
++ ```tabular
+
+- column  Settings
+- column  Configure
+- column  Apply to
+- row  `linkerOptions.checkIr`, `sourceMaps`, `esVersion.*`, `optimize.*`  the Scala.js linker  every format the Scala.js linker produces
+- row  `nativeOptions.gc.*`  the garbage collector  native binaries
+- row  `nativeOptions.mode.*`  the build mode  native binaries
+- row  `nativeOptions.lto.*`  link-time optimization  native binaries
++ column  設定
++ column  設定する対象
++ column  適用先
++ row  `linkerOptions.checkIr`, `sourceMaps`, `esVersion.*`, `optimize.*`  Scala.js のリンカー  Scala.js のリンカーが生成するすべての形式
++ row  `nativeOptions.gc.*`  ガベージコレクター  ネイティブバイナリ
++ row  `nativeOptions.mode.*`  ビルドモード  ネイティブバイナリ
++ row  `nativeOptions.lto.*`  リンク時最適化  ネイティブバイナリ
+
+= row  `nativeOptions.lto.*`  link-time optimization  native binaries
+- ```
++ ```
+
+- Entry points are ambient along the whole path in the same way, and each tool applies or ignores
+- them as its format demands:
++ エントリーポイントも同じように経路全体にわたってアンビエントであり、各ツールはその形式の要求に応じてそれを適用するか無視する。
+
+= them as its format demands:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Entry points
+- row  `Artifact.Jar`  at most one, recorded as its `Main-Class`
+- row  `Shrunk`  any number, each a root of what is kept
+- row  `Shrunk.Jar`  at most one, recorded as its `Main-Class`
+- row  `Artifact.Binary`  exactly one
+- row  `Apk`  exactly one
+- row  `Js`, `Wasm`, `Wasi`  any number, each run as a module initializer
+- row  `Library`, `Dex`  ignored, since neither records an entry point
++ column  形式
++ column  エントリーポイント
++ row  `Artifact.Jar`  高々一つで、`Main-Class` として記録される
++ row  `Shrunk`  任意の数で、それぞれが保持されるものの根になる
++ row  `Shrunk.Jar`  高々一つで、`Main-Class` として記録される
++ row  `Artifact.Binary`  ちょうど一つ
++ row  `Apk`  ちょうど一つ
++ row  `Js`, `Wasm`, `Wasi`  任意の数で、それぞれモジュールの初期化子として実行される
++ row  `Library`, `Dex`  無視される。どちらもエントリーポイントを記録しないからである
+
+= row  `Library`, `Dex`  ignored, since neither records an entry point
+- ```
++ ```
+
+- ### Shrinking
++ ### 縮小
+
+- An executable JAR made through `jarEdges` holds the whole classpath: every class of every
+- library, whether or not the application can reach it. `shrinkEdges` adds a path which holds only
+- what it can. `Shrunk` is a closed world of classfiles, the classes which the entry points reach
+- and no others, and `Shrunk.Jar` is an executable JAR of one:
++ `jarEdges` で作った実行可能な JAR は、クラスパス全体を保持する。アプリケーションが到達できるかどうかにかかわらず、すべてのライブラリのすべてのクラスである。
++ `shrinkEdges` は、到達できるものだけを保持する経路を加える。
++ `Shrunk` はクラスファイルの閉じた世界、つまりエントリーポイントが到達するクラスだけからなるものであり、`Shrunk.Jar` はそれの実行可能な JAR である。
+
+= and no others, and `Shrunk.Jar` is an executable JAR of one:
+=
+- ```scala
++ ```scala
+
+= and no others, and `Shrunk.Jar` is an executable JAR of one:
+=
+= ```scala
+- supervise:
++ supervise:
+
+-   Toolchain(shrinkEdges(scalac)).produce
++   Toolchain(shrinkEdges(scalac)).produce
+
+=   Toolchain(shrinkEdges(scalac)).produce
+-     ( Deliverable.Emission(outputPath, classpath),
++     ( Deliverable.Emission(outputPath, classpath),
+
+=   Toolchain(shrinkEdges(scalac)).produce
+=     ( Deliverable.Emission(outputPath, classpath),
+-       Toolchain.Universe.Classfile,
++       Toolchain.Universe.Classfile,
+
+-       Shrunk.Jar,
++       Shrunk.Jar,
+
+=       Shrunk.Jar,
+-       destination,
++       destination,
+
+-       List(shrinkOptions.name(t"app.jar")),
++       List(shrinkOptions.name(t"app.jar")),
+
+=       List(shrinkOptions.name(t"app.jar")),
+-       List(EntryPoint(fqcn"com.example.Main")) )
++       List(EntryPoint(fqcn"com.example.Main")) )
+
+=       List(shrinkOptions.name(t"app.jar")),
+=       List(EntryPoint(fqcn"com.example.Main")) )
+- ```
++ ```
+
+- The path is `Classfile → Shrunk → Shrunk.Jar`, so the closed world is written below the
+- destination, under `shrunk/`, and the JAR is packaged from there. `shrinkEdges` takes the
+- `Scalac` which compiled the classes, because it compiles them again.
++ 経路は `Classfile → Shrunk → Shrunk.Jar` なので、閉じた世界は出力先の下の `shrunk/` に書き出され、JAR はそこからパッケージ化される。
++ `shrinkEdges` はクラスをコンパイルした `Scalac` を受け取る。クラスを再びコンパイルするからである。
+
+- A tool which shrinks bytecode must be told about everything the compiler generated: the
+- forwarders a class has for a trait's methods, the bridges, the fields behind a lazy value, the
+- static side of an object. Shrinking here is done earlier, on the TASTy which the compiler wrote
+- beside each class. The classes this compiler compiled are recompiled from it, and the members
+- nothing reaches are taken out after inlining and before the phases which generate any of that,
+- so none of it is generated for a member which is not kept. A unit which nothing reaches is
+- never read, and the macros in it never run.
++ バイトコードを縮小するツールには、コンパイラが生成したすべてのものを教えなければならない。クラスがトレイトのメソッドのために持つフォワーダー、ブリッジ、遅延評価の値の背後にあるフィールド、オブジェクトの静的な側である。
++ ここでの縮小はもっと早い段階で、コンパイラが各クラスの横に書き出した TASTy に対して行われる。
++ このコンパイラがコンパイルしたクラスはそこから再コンパイルされ、何も到達しないメンバーはインライン化の後、それらを生成するフェーズの前に取り除かれるので、保持されないメンバーについてはそのどれも生成されない。
++ 何も到達しないユニットは読まれることがなく、その中のマクロも実行されない。
+
+- Three kinds of class make up the closed world:
++ 閉じた世界は三種類のクラスからなる。
+
+= Three kinds of class make up the closed world:
+=
+- ```tabular
++ ```tabular
+
+- column  Class
+- column  Treatment
+- row  compiled by this compiler, and reached  recompiled from its TASTy, with only the members which are reached
+- row  compiled by this compiler, and named only as a type  written as a shell: a name, its flags and its parents
+- row  any other: Java, Kotlin, the standard library  copied as it is, if bytecode which is kept refers to it
++ column  クラス
++ column  扱い
++ row  このコンパイラがコンパイルし、到達されたもの  TASTy から再コンパイルされ、到達されたメンバーだけを持つ
++ row  このコンパイラがコンパイルし、型としてのみ名指されるもの  殻として書き出される。名前、フラグ、親だけを持つ
++ row  それ以外のもの：Java、Kotlin、標準ライブラリ  保持されるバイトコードがそれを参照していれば、そのままコピーされる
+
+= row  any other: Java, Kotlin, the standard library  copied as it is, if bytecode which is kept refers to it
+- ```
++ ```
+
+- The standard library, and any other library of Scala, is taken a class at a time. A library
+- with no TASTy is taken whole as soon as one class of it is reached, since such a library may
+- load its own classes by name, which no reference in bytecode shows.
++ 標準ライブラリやその他の Scala のライブラリは、クラス単位で取り込まれる。
++ TASTy のないライブラリは、そのクラスの一つに到達した時点で丸ごと取り込まれる。そのようなライブラリは自身のクラスを名前で読み込むことがあり、それはバイトコード中のどの参照にも現れないからである。
+
+- What the analysis cannot see is what is reached by reflection, and it is told with settings:
++ 解析が見ることができないのはリフレクションによって到達されるものであり、それは設定で伝える。
+
+= What the analysis cannot see is what is reached by reflection, and it is told with settings:
+=
+- ```tabular
++ ```tabular
+
+- column  Setting
+- column  Effect
+- row  `shrinkOptions.keep(pattern)`  a class which matches is kept with every member
+- row  `shrinkOptions.pin(pattern)`  a unit whose top-level class matches is copied as it is, with all it refers to
+- row  `shrinkOptions.services(false)`  the implementations which `META-INF/services` files name are no longer entry points
+- row  `shrinkOptions.fine(true)`  a library with no TASTy is taken a class at a time too
+- row  `shrinkOptions.name(name)`  the filename of the JAR
++ column  設定
++ column  効果
++ row  `shrinkOptions.keep(pattern)`  一致するクラスはすべてのメンバーとともに保持される
++ row  `shrinkOptions.pin(pattern)`  最上位のクラスが一致するユニットは、それが参照するものすべてとともにそのままコピーされる
++ row  `shrinkOptions.services(false)`  `META-INF/services` のファイルが名指す実装はエントリーポイントでなくなる
++ row  `shrinkOptions.fine(true)`  TASTy のないライブラリもクラス単位で取り込まれる
++ row  `shrinkOptions.name(name)`  JAR のファイル名
+
+= row  `shrinkOptions.name(name)`  the filename of the JAR
+- ```
++ ```
+
+- In a pattern, `*` stands for part of a name and `**` for any number of packages, so
+- `com.example.plugins.**` matches every class beneath that package. A class named in a literal
+- `Class.forName` call which is reached is kept without being asked for, and so is a member
+- called through a structural type, by its name.
++ パターンでは、`*` は名前の一部を、`**` は任意の数のパッケージを表すので、`com.example.plugins.**` はそのパッケージの下にあるすべてのクラスに一致する。
++ 到達されるリテラルの `Class.forName` 呼び出しで名指されたクラスは、求めなくても保持され、構造的型を通じて名前で呼ばれるメンバーも同様である。
+
+- Outside a toolchain, a `Shrink` does the same to any classpath, and reports what it did:
++ ツールチェーンの外では、`Shrink` が任意のクラスパスに同じことを行い、行ったことを報告する。
+
+= Outside a toolchain, a `Shrink` does the same to any classpath, and reports what it did:
+=
+- ```scala
++ ```scala
+
+- val report = Shrink(keep = List(t"com.example.plugins.**"))(classpath, List(fqcn"com.example.Main"), destination)
++ val report = Shrink(keep = List(t"com.example.plugins.**"))(classpath, List(fqcn"com.example.Main"), destination)
+
+= val report = Shrink(keep = List(t"com.example.plugins.**"))(classpath, List(fqcn"com.example.Main"), destination)
+- ```
++ ```
+
+- Here `report.kept` is the number of classes in the closed world and `report.classes` the number
+- on the classpath, `report.read` is the number of units which were recompiled of the
+- `report.units` which could have been, and `report.why(fqcn"scala.Option")` is the chain of
+- classes, each referring to the one before, which led to a class being kept.
++ ここで `report.kept` は閉じた世界のクラスの数、`report.classes` はクラスパス上のクラスの数である。`report.read` は、再コンパイルされ得た `report.units` のうち実際に再コンパイルされたユニットの数であり、`report.why(fqcn"scala.Option")` は、あるクラスが保持されるに至ったクラスの連鎖で、各クラスがその前のものを参照している。
+
+- A closed world is checked before it is written. A reference from anything kept to a member
+- which was removed is found twice over, in the compiler's trees before any bytecode is generated
+- and in the bytecode afterwards, and raises a `Shrink.Error` naming both ends; what would have
+- been a `NoSuchMethodError` when the application ran is an error when it is built. A unit which
+- cannot be recompiled is pinned, and `report.notes` says why.
++ 閉じた世界は書き出される前に検査される。
++ 保持されたものから取り除かれたメンバーへの参照は二重に検出される。バイトコードが生成される前のコンパイラの木の中と、その後のバイトコードの中である。そして両端を名指す `Shrink.Error` を発生させる。アプリケーションの実行時に `NoSuchMethodError` となったはずのものが、ビルド時のエラーになる。
++ 再コンパイルできないユニットはピン留めされ、`report.notes` がその理由を示す。
+
+- What reflection sees of a class is changed by shrinking it, as it must be. A class which has
+- lost members has another default `serialVersionUID`, so a class whose instances one build
+- writes and another reads should be given one with `@SerialVersionUID`; within one closed world,
+- serialization is unaffected. The classes and methods which reflection lists are those which
+- were kept, and a generic signature may name a class which was not.
++ リフレクションからクラスがどう見えるかは、縮小によって当然変わる。
++ メンバーを失ったクラスは別の既定の `serialVersionUID` を持つので、あるビルドが書き出したインスタンスを別のビルドが読むクラスには、`@SerialVersionUID` で値を与えるべきである。一つの閉じた世界の中では、直列化は影響を受けない。
++ リフレクションが列挙するクラスとメソッドは保持されたものであり、ジェネリックなシグネチャは保持されなかったクラスを名指すことがある。
+
+- Two things are beyond it. Code which is compiled at run time, by a staging compiler, needs the
+- TASTy of everything it refers to, which a closed world does not hold, so the classes it uses
+- must be pinned and their TASTy supplied apart. And the recompilation runs with one set of
+- options for the whole classpath: Soundness's own, with those of the `Scalac` added, though
+- whether each unit was capture-checked is read from its TASTy.
++ 二つのことは縮小の範囲外である。
++ 実行時にステージングのコンパイラがコンパイルするコードは、それが参照するすべてのものの TASTy を必要とするが、閉じた世界はそれを保持しない。そのため、それが使うクラスはピン留めし、その TASTy を別に与えなければならない。
++ また、再コンパイルはクラスパス全体に対して一組のオプションで実行される。Soundness 自身のオプションに `Scalac` のオプションを加えたものである。ただし、各ユニットがキャプチャ検査されたかどうかはその TASTy から読み取られる。
+
+- ### WASI components
++ ### WASI コンポーネント
+
+- A WASI component is a `Wasi(Wasi.Version.Wasip2)`: a component-model `*.wasm` whose imports and
+- exports are described by WIT. It has two prerequisites beyond the linker, and the provider of
+- the edge demands both, so an edge without them cannot be constructed. A `WasiToolchain` is
+- evidence that the native tools which the link shells out to, `wasm-tools` and the scala-wasm
+- fork of `wit-bindgen`, are present, and is obtained only through the probing constructor
+- `WasiToolchain()`. A `Wasi.World` names the directory of WIT packages and the world to link
+- against:
++ WASI コンポーネントは `Wasi(Wasi.Version.Wasip2)` である。インポートとエクスポートが WIT で記述された、コンポーネントモデルの `*.wasm` である。
++ リンカーのほかに二つの前提条件があり、エッジのプロバイダーはその両方を要求するので、それらのないエッジは構築できない。
++ `WasiToolchain` は、リンクが呼び出すネイティブのツール、`wasm-tools` と scala-wasm によるフォークの `wit-bindgen` が存在することの証拠であり、探査を行うコンストラクター `WasiToolchain()` を通じてのみ得られる。
++ `Wasi.World` は WIT パッケージのディレクトリーと、リンクの対象とするワールドを名指す。
+
+= against:
+=
+- ```scala
++ ```scala
+
+- def component(witDirectory: Path on Linux, emission: Deliverable, destination: Path on Linux)
++ def component(witDirectory: Path on Linux, emission: Deliverable, destination: Path on Linux)
+
+- :   Path on Linux =
++ :   Path on Linux =
+
+-   given WasiToolchain = WasiToolchain()
++   given WasiToolchain = WasiToolchain()
+
+-   given Wasi.World = Wasi.World(witDirectory, t"my-world")
++   given Wasi.World = Wasi.World(witDirectory, t"my-world")
+
+-   supervise:
++   supervise:
+
+-     Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())
++     Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())
+
+-     . produce(emission, Toolchain.Universe.Sjsir, OciImage, destination)
++     . produce(emission, Toolchain.Universe.Sjsir, OciImage, destination)
+
+=     . produce(emission, Toolchain.Universe.Sjsir, OciImage, destination)
+- ```
++ ```
+
+- WASI generations are separate nodes, because they determine the ABI of an artifact:
++ WASI の世代は成果物の ABI を決めるので、別個のノードである。
+
+= WASI generations are separate nodes, because they determine the ABI of an artifact:
+=
+- ```tabular
++ ```tabular
+
+- column  Generation
+- column  Interface
+- column  Producible
+- row  `Wasi.Version.Wasip1`  a flat, libc-style syscall interface on core modules  no
+- row  `Wasi.Version.Wasip2`  the component model  yes
+- row  `Wasi.Version.Wasip3`  the component model with native asynchrony  no
++ column  世代
++ column  インターフェース
++ column  生成可能
++ row  `Wasi.Version.Wasip1`  コアモジュール上の、平坦な libc 風のシステムコールインターフェース  いいえ
++ row  `Wasi.Version.Wasip2`  コンポーネントモデル  はい
++ row  `Wasi.Version.Wasip3`  ネイティブの非同期性を持つコンポーネントモデル  いいえ
+
+= row  `Wasi.Version.Wasip3`  the component model with native asynchrony  no
+- ```
++ ```
+
+- Asking for a generation with no edge which produces it raises `NoPath`, and does not silently
+- produce something else.
++ それを生成するエッジがない世代を求めると `NoPath` が発生し、黙って別のものを生成することはない。
+
+- Wrapping a component as an OCI artifact is a further edge, `Wasi(Wasip2) → OciImage`, and not
+- something the component link knows about. The path composes the two. `Js(module)` and `Wasm`
+- need no native tooling at all, since the linker is an ordinary JVM library.
++ コンポーネントを OCI の成果物として包むのはさらに別のエッジ `Wasi(Wasip2) → OciImage` であり、コンポーネントのリンクが知っていることではない。
++ 経路がその二つを組み合わせる。
++ `Js(module)` と `Wasm` はネイティブのツールをまったく必要としない。リンカーは通常の JVM ライブラリだからである。
+
+- ### Native binaries
++ ### ネイティブバイナリ
+
+- The native edges shell out to `clang` and `clang++`. `nativeEdges` probes for them once, and
+- raises `Toolchain.Error` if either is missing. It takes the triples to target, and defaults to
+- the build host's own:
++ ネイティブのエッジは `clang` と `clang++` を呼び出す。
++ `nativeEdges` はそれらを一度だけ探査し、どちらかがなければ `Toolchain.Error` を発生させる。
++ 対象とするトリプルを受け取り、既定ではビルドホスト自身のものになる。
+
+= the build host's own:
+=
+- ```scala
++ ```scala
+
+- def binary(emission: Deliverable, destination: Path on Linux): Path on Linux = supervise:
++ def binary(emission: Deliverable, destination: Path on Linux): Path on Linux = supervise:
+
+-   Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
++   Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
+
+-     ( emission,
++     ( emission,
+
+-       Toolchain.Universe.Nir,
++       Toolchain.Universe.Nir,
+
+-       Artifact.Binary(Triple.X64Linux),
++       Artifact.Binary(Triple.X64Linux),
+
+=       Artifact.Binary(Triple.X64Linux),
+-       destination,
++       destination,
+
+-       List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
++       List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
+
+=       List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
+-       List(EntryPoint(fqcn"com.example.Main")) )
++       List(EntryPoint(fqcn"com.example.Main")) )
+
+=       List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
+=       List(EntryPoint(fqcn"com.example.Main")) )
+- ```
++ ```
+
+- Each triple is its own node, rendered as an LLVM target triple such as `aarch64-apple-darwin` or
+- `x86_64-unknown-linux-gnu`. A target other than the build host needs a C toolchain which can
+- cross-compile to it.
++ 各トリプルはそれぞれ別のノードであり、`aarch64-apple-darwin` や `x86_64-unknown-linux-gnu` のような LLVM のターゲットトリプルとして描画される。
++ ビルドホスト以外のターゲットには、それへクロスコンパイルできる C のツールチェーンが必要である。
+
+- ### Other languages
++ ### 他の言語
+
+- `Javac` compiles Java sources through the same shape of API. A tool which orchestrates
+- compilation does not change idiom from one language to another, and a mixed Scala and Java
+- application links into one artifact.
++ `Javac` は同じ形の API を通じて Java のソースをコンパイルする。
++ コンパイルを統括するツールは言語ごとにイディオムを変えずに済み、Scala と Java が混在するアプリケーションは一つの成果物へリンクされる。
+
+- `Kotlinc` does the same for Kotlin. It is parameterized by the language version it targets, and
+- its options, such as `-Werror`, `-jvm-target` and explicit API mode, are under `kotlincOptions`
+- and checked against the version in the same way:
++ `Kotlinc` は Kotlin に対して同じことを行う。
++ 対象とする言語のバージョンでパラメーター化され、`-Werror`、`-jvm-target`、明示的 API モードのようなオプションは `kotlincOptions` の下にあり、同じようにバージョンに対して検査される。
+
+= and checked against the version in the same way:
+=
+- ```scala
++ ```scala
+
+- def kotlin(kotlinSource: Text, out: Path on Linux): Compiler.Result = supervise:
++ def kotlin(kotlinSource: Text, out: Path on Linux): Compiler.Result = supervise:
+
+-   val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
++   val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
+
+-   val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> kotlinSource), out)
++   val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> kotlinSource), out)
+
+-   process.complete()
++   process.complete()
+
+=   process.complete()
+- ```
++ ```
+
+- The Kotlin compiler reads its sources from disk, so they are written to a scratch directory,
+- which is removed when the compilation ends. A diagnostic still names the source as it was given,
+- not the file it was written to. The Kotlin standard library is never implied. Like every other
+- classpath entry, it is supplied explicitly. The output is classfiles, linkable as any classfile
+- artifact, including a `Dex` or an `Apk`.
++ Kotlin のコンパイラはソースをディスクから読むので、ソースは使い捨てのディレクトリーに書き出され、それはコンパイルが終わると削除される。
++ それでも診断は、書き出されたファイルではなく、与えられたとおりのソースを名指す。
++ Kotlin の標準ライブラリが暗黙に含まれることはない。
++ 他のすべてのクラスパスのエントリーと同じく、明示的に与える。
++ 出力はクラスファイルであり、`Dex` や `Apk` を含め、あらゆるクラスファイルの成果物と同じようにリンクできる。
+
+- As with the Scala compiler behind `Scalac`, the Kotlin compiler itself is a compile-only
+- dependency. A tool which drives it puts `kotlin-compiler-embeddable` on its own runtime
+- classpath, and chooses the version it wants to drive rather than inheriting one.
++ `Scalac` の背後にある Scala コンパイラと同じく、Kotlin のコンパイラ自体はコンパイル時のみの依存である。
++ それを駆動するツールは `kotlin-compiler-embeddable` を自身の実行時のクラスパスに置き、どれかを引き継ぐのではなく、駆動したいバージョンを選ぶ。
+
+- Calling *into* a compiled Kotlin library needs no compilation at all. Its declarations are read
+- from its classfiles, as [foreign interoperability](foreign-interop.md) describes.
++ コンパイル済みの Kotlin のライブラリを*呼び出す*のに、コンパイルはまったく要らない。
++ その宣言は、[外部との相互運用](foreign-interop.md)で説明するとおり、クラスファイルから読み取られる。
+
+- ### Related
++ ### 関連
+
+- - [Staging](staging.md) compiles quoted code with a `Scalac` and runs it elsewhere.
+- - [Classpath](classpath.md) describes the classpaths which a compilation reads and produces.
+- - [Packaging](packaging.md) describes the JAR files and other archives which a toolchain writes.
+- - [Graphs](graphs.md) describes the `Dag` which a `Toolchain` is.
+- - [Foreign interoperability](foreign-interop.md) calls into compiled Kotlin and other
+-   languages.
+- - [Concurrency](concurrency.md) describes `supervise`, which a compilation runs inside.
+- - [Containers](docker.md), [metaprogramming](metaprogramming.md) and [syntax highlighting](syntax-highlighting.md) use the compiler's output and model.
++ - [ステージング](staging.md)は、クォートされたコードを `Scalac` でコンパイルし、別の場所で実行する。
++ - [クラスパス](classpath.md)は、コンパイルが読み込み、生成するクラスパスについて説明する。
++ - [パッケージング](packaging.md)は、ツールチェーンが書き出す JAR ファイルやその他のアーカイブについて説明する。
++ - [グラフ](graphs.md)は、`Toolchain` の実体である `Dag` について説明する。
++ - [外部との相互運用](foreign-interop.md)は、コンパイル済みの Kotlin やその他の言語を呼び出す。
++ - [並行処理](concurrency.md)は、コンパイルがその中で実行される `supervise` について説明する。
++ - [コンテナー](docker.md)、[メタプログラミング](metaprogramming.md)、[構文ハイライト](syntax-highlighting.md)は、コンパイラの出力とモデルを使う。

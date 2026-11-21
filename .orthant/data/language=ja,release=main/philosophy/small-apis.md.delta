@@ -1,0 +1,10 @@
+orthant 1 language
+
+- The first is when an operation genuinely differs. `read` and `load` are two verbs for
+- [XML](/doc/soundness/modules/xml.md), because reading yields the content and loading yields the
+- document with its header — a real distinction, not a variant. Collapsing them would
+- force a flag argument, which is a worse way to say the same thing.
++ 一つ目は、操作が本当に異なる場合である。
++ [XML](/doc/soundness/modules/xml.md) に対して `read` と `load` は二つの動詞である。
++ 読むことは内容をもたらし、ロードすることはヘッダー付きの文書をもたらすからであり、これはバリアントではなく本当の区別である。
++ 両者をまとめるとフラグ引数を強いることになり、それは同じことを言うより悪い方法である。

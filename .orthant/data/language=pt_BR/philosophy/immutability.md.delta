@@ -1,0 +1,278 @@
+orthant 1 language
+
+- # Immutability
++ # Imutabilidade
+
+- Soundness values are immutable: once constructed, a value never changes, and any
+- operation that would alter it instead returns a new value. This removes whole
+- categories of bug — aliasing surprises, data races, and changes felt at a distance —
+- and makes a value safe to share freely across threads and scopes without defensive
+- copying. An immutable value is also easier to reason about, because its meaning is
+- fixed at the moment it is created and cannot be invalidated by code running somewhere
+- else.
++ Os valores do Soundness são imutáveis: depois de construído, um valor nunca muda, e qualquer
++ operação que o alteraria retorna em vez disso um novo valor. Isso elimina categorias inteiras de
++ bugs — surpresas de aliasing, condições de corrida e mudanças sentidas à distância — e torna um
++ valor seguro para compartilhar livremente entre threads e escopos sem cópias defensivas. Um
++ valor imutável também é mais fácil de entender, porque seu significado é fixado no momento em
++ que é criado e não pode ser invalidado por código rodando em outro lugar.
+
+- ## Updating without mutating
++ ## Atualizar sem mutar
+
+- The objection to immutability is always the same: changing one field deep inside a
+- structure means rebuilding every layer above it. That is true, and it is a problem of
+- syntax rather than of semantics — so Soundness solves it with syntax. A
+- [lens](../en/modules/optics.md) takes the update written as an ordinary path assignment and
+- does the rebuilding:
++ A objeção à imutabilidade é sempre a mesma: mudar um campo bem no interior de uma estrutura
++ significa reconstruir cada camada acima dele. Isso é verdade, e é um problema de sintaxe, não de
++ semântica — por isso o Soundness o resolve com sintaxe. Uma
++ [lente](../en/modules/optics.md) recebe a atualização escrita como uma atribuição comum a um
++ caminho e faz a reconstrução:
+
+= does the rebuilding:
+=
+- ```scala fuel
++ ```scala fuel
+
+= does the rebuilding:
+=
+= ```scala fuel
+- parse
++ parse
+
+= does the rebuilding:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- case class Troupe(name: Text, players: List[Person])
++ case class Troupe(name: Text, players: List[Person])
+
+- case class Play(title: Text, troupe: Troupe)
++ case class Play(title: Text, troupe: Troupe)
+
+- play.lens(_.troupe.name = t"The Mechanicals")
++ play.lens(_.troupe.name = t"The Mechanicals")
+
+= play.lens(_.troupe.name = t"The Mechanicals")
+- ```
++ ```
+
+- The result is a new `Play`; the original is untouched and any other reference to it
+- still sees what it saw. Several updates apply together, and ones sharing a prefix
+- rebuild the shared structure once rather than once each:
++ O resultado é uma nova `Play`; a original fica intacta, e qualquer outra referência a ela
++ continua vendo o que via. Várias atualizações são aplicadas juntas, e as que compartilham um
++ prefixo reconstroem a estrutura compartilhada uma vez, e não uma vez cada:
+
+= rebuild the shared structure once rather than once each:
+=
+- ```scala fuel
++ ```scala fuel
+
+= rebuild the shared structure once rather than once each:
+=
+= ```scala fuel
+- parse
++ parse
+
+= rebuild the shared structure once rather than once each:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- play.lens
++ play.lens
+
+-   ( _.troupe.players = Nil,
++   ( _.troupe.players = Nil,
+
+-     _.troupe.name = t"The Mechanicals" )
++     _.troupe.name = t"The Mechanicals" )
+
+=     _.troupe.name = t"The Mechanicals" )
+- ```
++ ```
+
+- The same syntax reaches through collections with `Each` and `Filter`, so "give every
+- player an age of thirty" is one expression rather than a rebuild written by hand.
++ A mesma sintaxe alcança o interior de coleções com `Each` e `Filter`, de modo que “dê a todos
++ os atores a idade de trinta” é uma única expressão, e não uma reconstrução escrita à mão.
+
+- ## Sharing without copying
++ ## Compartilhar sem copiar
+
+- An immutable value needs no defensive copy, because there is nothing to defend against.
+- A `Data` handed to three threads is read by three threads; a parsed document held in a
+- cache cannot be altered by whoever fetched it; a configuration passed to a subsystem
+- cannot come back changed.
++ Um valor imutável não precisa de cópia defensiva, porque não há nada contra o que se defender.
++ Um `Data` entregue a três threads é lido por três threads; um documento analisado guardado em
++ um cache não pode ser alterado por quem o buscou; uma configuração passada a um subsistema não
++ pode voltar alterada.
+
+- That is what makes structural sharing safe. A lens rebuilds only the spine it descends,
+- and every branch it did not touch is *the same object* in the old value and the new one.
+- Immutability is therefore what makes the rebuilding cheap: without it, sharing a
+- sub-structure between two values would be a bug.
++ É isso que torna seguro o compartilhamento estrutural. Uma lente reconstrói apenas a espinha
++ pela qual desce, e cada ramo que ela não tocou é *o mesmo objeto* no valor antigo e no novo. A
++ imutabilidade é, portanto, o que torna a reconstrução barata: sem ela, compartilhar uma
++ subestrutura entre dois valores seria um bug.
+
+- ## Where mutation survives, and why
++ ## Onde a mutação sobrevive, e por quê
+
+- Immutability is a property of values, not a prohibition on the machine. Four places in
+- Soundness are deliberately mutable:
++ A imutabilidade é uma propriedade dos valores, não uma proibição imposta à máquina. Quatro
++ lugares do Soundness são deliberadamente mutáveis:
+
+- ```tabular
++ ```tabular
+
+- column  Place
+- column  Mutates
+- column  Kept safe by
+- row  a builder  a buffer it exclusively owns  nothing observing the intermediate states
+- row  the streaming kernel  a window into a buffer  capture and separation checking
+- row  a `Canvas`  pixels, in place  the `open` block's scope and the `Write` grant
+- row  an atomic cell  one shared machine word  indivisible operations
++ column  Lugar
++ column  Muta
++ column  Mantido seguro por
++ row  um builder  um buffer que só ele possui  nada observar os estados intermediários
++ row  o núcleo de streaming  uma janela para um buffer  verificação de capturas e de separação
++ row  um `Canvas`  pixels, no lugar  o escopo do bloco `open` e a concessão `Write`
++ row  uma célula atômica  uma única palavra de máquina compartilhada  operações indivisíveis
+
+= row  an atomic cell  one shared machine word  indivisible operations
+- ```
++ ```
+
+- The first three are confined.
++ Os três primeiros são confinados.
+
+- A **builder** mutates a buffer it exclusively owns and yields an immutable value at the
+- end. Nothing observes the intermediate states, so nothing depends on them.
++ Um **builder** muta um buffer que só ele possui e produz um valor imutável no fim. Nada observa
++ os estados intermediários, então nada depende deles.
+
+- The **streaming kernel** exposes a mutable window into a buffer, which is precisely what
+- makes it zero-copy. That window belongs to exactly one consumer, and the compiler
+- enforces it: a `Stream` is an exclusive capability, so aliasing one, or letting one
+- escape the scope that owns its source, does not compile. Mutation is permitted here
+- because [capture and separation checking](capture-checking.md) prove that nobody else
+- can see it.
++ O **núcleo de streaming** expõe uma janela mutável para um buffer, que é exatamente o que o
++ torna livre de cópias. Essa janela pertence a exatamente um consumidor, e o compilador garante
++ isso: um `Stream` é uma capability exclusiva, então criar um alias dele, ou deixá-lo escapar do
++ escopo que possui sua origem, não compila. A mutação é permitida aqui porque a
++ [verificação de capturas e de separação](capture-checking.md) prova que mais ninguém pode vê-la.
+
+- A **`Canvas`**, obtained by opening a [raster](../en/modules/images.md) for writing, mutates
+- pixels in place — because generating a large image one pixel-function call at a time is
+- the wrong shape for a drawing algorithm. The mutation is scoped to the `open` block and
+- gated on the `Write` grant, and `snapshot` takes an independent copy for anything that
+- must outlive it.
++ Um **`Canvas`**, obtido ao abrir um [raster](../en/modules/images.md) para escrita, muta pixels
++ no lugar — porque gerar uma imagem grande uma chamada de função de pixel por vez é a forma
++ errada para um algoritmo de desenho. A mutação tem como escopo o bloco `open` e é restrita pela
++ concessão `Write`, e `snapshot` tira uma cópia independente para qualquer coisa que precise
++ sobreviver a ele.
+
+- The pattern is the same in all three: mutation is a local implementation technique with
+- a proof of confinement, never a property of a value that others can see.
++ O padrão é o mesmo nos três: a mutação é uma técnica de implementação local com uma prova de
++ confinamento, nunca uma propriedade de um valor que outros possam ver.
+
+- An **atomic cell** is the exception, and it is worth naming as one rather than hiding.
+- An `Atomic[Int]` or `Atomic.Ref[State]` is deliberately *not* confined: its whole purpose
+- is that two threads see one location, so no aliasing analysis can help and none is
+- attempted. What replaces confinement is a different guarantee. The location is a single
+- machine word, and every operation on it is indivisible, so there is no intermediate state
+- for another thread to observe. The type does not promise that the mutation is invisible;
+- it promises that it cannot be caught half-done.
++ Uma **célula atômica** é a exceção, e vale a pena nomeá-la como tal em vez de escondê-la. Um
++ `Atomic[Int]` ou um `Atomic.Ref[State]` deliberadamente *não* é confinado: todo o seu propósito
++ é que duas threads vejam um mesmo local, então nenhuma análise de aliasing pode ajudar, e
++ nenhuma é tentada. O que substitui o confinamento é uma garantia diferente. O local é uma única
++ palavra de máquina, e toda operação sobre ele é indivisível, então não há estado intermediário
++ para outra thread observar. O tipo não promete que a mutação é invisível; promete que ela não
++ pode ser flagrada pela metade.
+
+- That is why the operations are named for which value they hand back. `count.ere(_ + 1)`
+- yields the value it displaced and `count.since(_ + 1)` the value it installed, so a caller
+- can tell whether it, and not somebody else, made the transition — the question that only
+- arises once mutation is shared, and the one a `var` cannot answer:
++ É por isso que as operações têm o nome do valor que devolvem. `count.ere(_ + 1)` produz o valor
++ que deslocou, e `count.since(_ + 1)` o valor que instalou, de modo que quem chama consegue saber
++ se foi ele, e não outro, quem fez a transição — a pergunta que só surge quando a mutação é
++ compartilhada, e a que uma `var` não consegue responder:
+
+= arises once mutation is shared, and the one a `var` cannot answer:
+=
+- ```scala fuel
++ ```scala fuel
+
+= arises once mutation is shared, and the one a `var` cannot answer:
+=
+= ```scala fuel
+- parse
++ parse
+
+= arises once mutation is shared, and the one a `var` cannot answer:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- if !closed.ere(true) then shutdown()    // true only for the call that closed it
++ if !closed.ere(true) then shutdown()    // true only for the call that closed it
+
+= if !closed.ere(true) then shutdown()    // true only for the call that closed it
+- ```
++ ```
+
+- Shared cells are a low-level tool, and the collection uses them where concurrency is the
+- subject: supervising tasks, accumulating errors across a scope, and the hand-off rings
+- beneath the streaming kernel. They are not how a value is modelled.
++ Células compartilhadas são uma ferramenta de baixo nível, e a coleção de bibliotecas as usa onde
++ a concorrência é o assunto: supervisionar tarefas, acumular erros ao longo de um escopo e os
++ anéis de passagem por baixo do núcleo de streaming. Não é assim que um valor é modelado.
+
+- ## What it costs
++ ## Quanto custa
+
+- Rebuilding is not free. A lens update allocates one object per level it descends, so a
+- tight loop updating a deep structure allocates more than in-place mutation would. Where
+- that matters — and it matters far less often than intuition suggests, since the
+- allocations are young and short-lived — the answer is a builder or a scoped mutable
+- region, not making the value itself mutable.
++ Reconstruir não é de graça. Uma atualização por lente aloca um objeto por nível em que desce,
++ então um laço apertado que atualiza uma estrutura profunda aloca mais do que a mutação no lugar
++ alocaria. Onde isso importa — e importa muito menos vezes do que a intuição sugere, já que as
++ alocações são jovens e de vida curta —, a resposta é um builder ou uma região mutável com
++ escopo, e não tornar o próprio valor mutável.
+
+- The trade is deliberate: pay a little allocation to eliminate a class of bug that is
+- otherwise found only in production, on a Tuesday, under load.
++ A troca é deliberada: pagar um pouco de alocação para eliminar uma classe de bugs que de outra
++ forma só é encontrada em produção, numa terça-feira, sob carga.
+
+- See [impossible states](impossible-states.md) for the related discipline on what a value
+- may be, and [capture checking](capture-checking.md) for how the confined mutations are
+- proved safe.
++ Veja [estados impossíveis](impossible-states.md) para a disciplina relacionada sobre o que um
++ valor pode ser, e [verificação de capturas](capture-checking.md) para como as mutações
++ confinadas são provadas seguras.

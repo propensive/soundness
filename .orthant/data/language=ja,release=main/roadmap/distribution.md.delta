@@ -1,0 +1,25 @@
+orthant 1 language
+
+- The keystone item: `doc/work/migration.md` defines the agent-executable
+- migration-instruction format — what changed, how to detect affected code, the exact rewrite,
+- and how to verify it — and CI enforces that breaking-labelled pull requests carry instructions
+- in that format. Several tracks terminate here: it is what `api-6` flows through and what
+- `tool-5` serves to agents.
++ 要石となる項目である。`doc/work/migration.md` は、エージェントが実行できる移行手順の形式を定める。何が変わったか、影響を受けるコードをどう検出するか、正確な書き換え、そしてそれをどう検証するかである。CI は、破壊的変更のラベルが付いたプルリクエストがその形式の手順を伴うことを強制する。
++ いくつかのトラックがここで終わる。`api-6` が流れ込むのはここであり、`tool-5` がエージェントに提供するのもこれである。
+
+- Done when: `doc/work/migration.md` defines the convention, the release refuses to run without
+- `doc/work/migration/<version>.md`, and a CI check fails any pull request that changes `lib/**/src`
+- without touching the unreleased migration notes. The first two hold: the convention is
+- written, `0.65.0.md` onwards exist, and the `migration` directive in `etc/release` refuses a tag
+- while the version's notes are missing or another version's are unreleased. The pull-request
+- check is what remains: `main.yml` verifies the attestation and nothing else. The convention is
+- not label-based: every material change records itself in the next release's
+- `doc/work/migration/<version>.md`, named after that release from the start.
++ 完了条件：`doc/work/migration.md` が規約を定め、`doc/work/migration/<version>.md` がなければリリースが実行を拒み、`lib/**/src` を変更しながら未リリースの移行ノートに触れないプルリクエストを CI の検査が失敗させること。
++ 最初の二つは満たされている。規約は書かれており、`0.65.0.md` 以降が存在し、`etc/release` の `migration` ディレクティブは、そのバージョンのノートが欠けているか、別のバージョンのノートが未リリースであるあいだはタグを拒む。
++ 残るのはプルリクエストの検査である。`main.yml` は証明を検証するだけで、それ以外は何もしない。
++ 規約はラベルに基づくものではない。実質的な変更はどれも、次のリリースの `doc/work/migration/<version>.md` に自らを記録し、そのファイルは最初からそのリリースにちなんで名付けられる。
+
+-     git grep -c reliquary -- build.mill etc doc/work/soundness/modules | wc -l   # 0
++     git grep -c reliquary -- build.mill etc doc/work/soundness/modules | wc -l   # 0

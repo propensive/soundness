@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.15.2` — `TextEscapes.Error`
++ # `↯/s.15.2` — `TextEscapes.Error`
+
+- Raised by Fulminate when a string-interpolation escape sequence is
+- not valid.
++ Lo lanza Fulminate cuando una secuencia de escape de una interpolación de cadenas no es válida.
+
+- ## Cause
++ ## Causa
+
+- The `m"…"` and similar interpolators support escape sequences
+- (`\n`, `\t`, `\u…`, etc.). When an escape is malformed, the
+- interpolator throws this error with a message describing the
+- specific issue.
++ `m"…"` y otros interpoladores similares admiten secuencias de escape (`\n`, `\t`, `\u…`, etc.).
++ Cuando un escape está mal formado, el interpolador lanza este error con un mensaje que describe el
++ problema concreto.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.15.2] the escape sequence \q is not recognized
++ [↯/s.15.2] the escape sequence \q is not recognized
+
+= [↯/s.15.2] the escape sequence \q is not recognized
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Use a documented escape sequence; for a literal backslash, write
+- `\\`.
++ Usa una secuencia de escape documentada; para una barra invertida literal, escribe `\\`.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/fulminate/src/core/fulminate.TextEscapes.scala`
++ - Fuente: `lib/fulminate/src/core/fulminate.TextEscapes.scala`

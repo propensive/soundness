@@ -1,0 +1,66 @@
+orthant 1 language
+
+- The prose exists in three parallel systems today: the topic guides in `doc/work/soundness/modules/` — the
+- direction of travel, and where the substantial writing happens — the legacy per-module
+- templates in `lib/*/doc/`, inherited from when each module was its own repository, and a
+- separate copy of the philosophy material under `web/res/content/`. Three systems means
+- divergence, and divergence means one of them is lying. This track collapses them to one,
+- completes coverage, and adds the layer that prose cannot provide: generated, searchable API
+- documentation — infrastructure that fluence and LIRA's API-derived versioning also depend on.
+- It ends with the strongest learnability test there is: an agent, given only the documentation,
+- builds and deploys a working application.
++ Oggi la prosa esiste in tre sistemi paralleli: le guide tematiche in `doc/work/soundness/modules/` (la
++ direzione di marcia, e dove avviene la scrittura sostanziale), i vecchi modelli per modulo in
++ `lib/*/doc/`, ereditati da quando ogni modulo era un repository a sé, e una copia separata del
++ materiale di filosofia sotto `web/res/content/`. Tre sistemi significano divergenza, e divergenza
++ significa che uno di essi mente. Questo filone li riduce a uno, completa la copertura, e aggiunge lo
++ strato che la prosa non può fornire: documentazione delle API generata e ricercabile,
++ un'infrastruttura da cui dipendono anche fluence e il versionamento di LIRA derivato dalle API.
++ Termina con la prova di apprendibilità più forte che esista: un agente, con la sola documentazione,
++ costruisce e distribuisce un'applicazione funzionante.
+
+- `doc/work/standards/messages.md` was a self-declared stub, despite the message convention being
+- load-bearing across every module. The standard is now written: register, structure, vocabulary,
+- what a message must not contain, composition through `Communicable`, and log events.
++ `doc/work/standards/messages.md` si dichiarava da sé un abbozzo, nonostante la convenzione dei messaggi
++ sia portante in ogni modulo. Lo standard ora è scritto: registro, struttura, vocabolario, ciò che un
++ messaggio non deve contenere, la composizione tramite `Communicable` e gli eventi di log.
+
+-     grep -c 'Stub' doc/work/standards/messages.md    # 0
++     grep -c 'Stub' doc/work/standards/messages.md    # 0
+
+- Done: #1791 (2026-08-14)
+- Baseline was 92 files of per-module readme boilerplate, and 98 `lib/*/doc/` directories
+- (measured 2026-08-01). The boilerplate predated the monorepo; whatever in `lib/*/doc/` was
+- worth keeping moved into `doc/work/soundness/modules/` topics, and the rest was deleted rather than left to
+- mislead. No `lib/*/doc/` directory remains, and the boilerplate phrase matches nothing.
++ Fatto: #1791 (2026-08-14)
++ La linea di base era di 92 file di readme standard per modulo e 98 directory `lib/*/doc/`
++ (misurati il 2026-08-01). Il testo standard precedeva il monorepo; quanto in `lib/*/doc/` meritava
++ di essere conservato è passato negli argomenti di `doc/work/soundness/modules/`, e il resto è stato cancellato
++ anziché lasciato a trarre in inganno. Non rimane alcuna directory `lib/*/doc/`, e la frase standard
++ non trova più corrispondenze.
+
+- Done: #2306 (2026-10-21)
+- Baseline was 99 topics in `doc/work/soundness/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
++ Fatto: #2306 (2026-10-21)
++ La linea di base era di 99 argomenti in `doc/work/soundness/modules/` e 1 libreria su 144 non coperta (misurati il 2026-09-25; 91 argomenti e 35 non coperte il 2026-08-01); il 2026-10-21 101 argomenti coprono 145 librerie su 145
+
+- Every published module is covered by at least one `doc/work/soundness/modules/` topic, and a coverage script
+- maps modules to topics so orphans are visible: `etc/check-doc-coverage.py`, run by `make
+- build`, exits non-zero on an orphan. The last one, burdock, is covered by `packaging.md`; the
+- `COVERED_BY` entry that named that topic for ziggurat (a library #1973 removed) now names
+- burdock.
++ Ogni modulo pubblicato è coperto da almeno un argomento di `doc/work/soundness/modules/`, e uno script di
++ copertura associa i moduli agli argomenti così che gli orfani siano visibili:
++ `etc/check-doc-coverage.py`, eseguito da `make build`, termina con un codice diverso da zero in
++ presenza di un orfano. L'ultimo, burdock, è coperto da `packaging.md`; la voce `COVERED_BY` che
++ indicava quell'argomento per ziggurat (una libreria rimossa da #1973) ora indica burdock.
+
+- The prose under `web/res/content/` duplicates philosophy material by hand: ten pages, last
+- touched in #801, each an older and shorter copy of a `doc/work/philosophy/` page. The website
+- renders from `doc/` — one source, no parallel copies.
++ La prosa sotto `web/res/content/` duplica a mano il materiale di filosofia: dieci pagine, toccate
++ l'ultima volta in #801, ciascuna una copia più vecchia e più breve di una pagina di
++ `doc/work/philosophy/`. Il sito web viene reso a partire da `doc/`: una sola sorgente, nessuna copia
++ parallela.

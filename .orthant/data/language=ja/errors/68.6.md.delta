@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.68.6` — Companion object has wrong type
++ # `↯/s.68.6` — コンパニオンオブジェクトの型が誤っている
+
+- Raised at compile time by Nomenclature's macro when the companion
+- object referenced does not have the type the macro expects.
++ 参照されたコンパニオンオブジェクトがマクロの期待する型を持たないときに、Nomenclature のマクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- The macro inspects the companion module to read its rule set. A
+- companion of an unexpected type cannot be processed.
++ マクロはコンパニオンのモジュールを調べて、その規則の集合を読む。
++ 予期しない型のコンパニオンは処理できない。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.68.6] The companion object did not have the expected type.
++ [↯/s.68.6] The companion object did not have the expected type.
+
+= [↯/s.68.6] The companion object did not have the expected type.
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- This typically indicates a project-internal misconfiguration;
+- verify the system type's companion follows Nomenclature's
+- conventions.
++ これは典型的には、プロジェクト内部の設定の誤りを示す。
++ システムの型のコンパニオンが Nomenclature の慣例に従っていることを確かめる。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/nomenclature/src/core/nomenclature.protointernal.scala`
++ - ソース：`lib/nomenclature/src/core/nomenclature.protointernal.scala`

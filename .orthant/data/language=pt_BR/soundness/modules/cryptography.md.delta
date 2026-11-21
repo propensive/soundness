@@ -1,0 +1,1369 @@
+orthant 1 language
+
+- ## Cryptography
++ ## Criptografia
+
+- ### About
++ ### Visão geral
+
+- Encryption, signing and message authentication are typed operations. Their *choices* are
+- types too: the algorithm, the size of the key, the mode of a block cipher and its padding are
+- all checked where the code is written. Encrypting with AES-256, in CBC mode, with PKCS7
+- padding, names all four decisions. A combination which the algorithms do not permit, such as a
+- stream mode with a padding, does not compile. The weak algorithms, which are DES, small RSA
+- keys and unauthenticated modes, need an explicit permission in scope before they can be used
+- at all.
++ Cifragem, assinatura e autenticação de mensagens são operações tipadas. Suas *escolhas*
++ também são tipos: o algoritmo, o tamanho da chave, o modo de uma cifra de bloco e seu
++ preenchimento são todos verificados onde o código é escrito. Cifrar com AES-256, em modo CBC,
++ com preenchimento PKCS7, nomeia as quatro decisões. Uma combinação que os algoritmos não
++ permitem, como um modo de stream com preenchimento, não compila. Os algoritmos fracos, que são
++ DES, chaves RSA pequenas e modos sem autenticação, exigem uma permissão explícita em escopo
++ antes de poderem ser usados.
+
+- A key is typed by its cipher. The bytes of a private key can be reached only inside an
+- `uncloak` block, so the places where secret material is used are visible in the structure of
+- the code. Where that material is *stored*, while it is not in use, is an explicit choice as
+- well.
++ Uma chave é tipada por sua cifra. Os bytes de uma chave privada só podem ser alcançados dentro
++ de um bloco `uncloak`, de modo que os lugares em que o material secreto é usado ficam visíveis
++ na estrutura do código. Onde esse material é *armazenado*, enquanto não está em uso, também é
++ uma escolha explícita.
+
+- ### On cryptography
++ ### Sobre criptografia
+
+- Cryptographic APIs traditionally take their parameters as strings, as in
+- `Cipher.getInstance("AES/CBC/PKCS5Padding")`. A misspelled algorithm, or an unsupported
+- combination, is then discovered only at [runtime]. Worse, such an API is neutral about
+- strength. DES and AES are equally easy to reach, and nothing marks the code which quietly uses
+- a broken primitive.
++ As APIs criptográficas tradicionalmente recebem seus parâmetros como strings, como em
++ `Cipher.getInstance("AES/CBC/PKCS5Padding")`. Um algoritmo escrito errado, ou uma combinação
++ não suportada, só é descoberto em [tempo de execução]. Pior, uma API assim é neutra quanto à
++ força. DES e AES são igualmente fáceis de alcançar, e nada marca o código que usa
++ discretamente uma primitiva quebrada.
+
+- Here the choices are typed, and the dangerous ones are gated:
++ Aqui as escolhas são tipadas, e as perigosas são restritas:
+
+- - Modes and paddings are types, and only their legal combinations compile.
+- - A weak algorithm demands a *permit*, so a codebase's acceptance of legacy cryptography is
+-   one import, which can be searched for.
+- - Secret material is a [capability], lent to a block.
++ - Modos e preenchimentos são tipos, e só suas combinações válidas compilam.
++ - Um algoritmo fraco exige uma *autorização*, de modo que a aceitação de criptografia legada
++   por uma base de código é um import, que pode ser procurado.
++ - O material secreto é uma [capability], emprestada a um bloco.
+
+- Everything comes from the `soundness` package. A provider of algorithms is in scope, and the
+- last import lets the samples print their results:
++ Tudo vem do pacote `soundness`. Um provedor de algoritmos está em escopo, e o último import
++ permite que os exemplos imprimam seus resultados:
+
+= last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import soundness.textDecodable
++ import soundness.textDecodable
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- import cloaks.heapCloak
++ import cloaks.heapCloak
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import providers.javaBaseProvider
++ import providers.javaBaseProvider
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import alphabets.hexLowerCase
++ import alphabets.hexLowerCase
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Where secrets are kept
++ ### Onde os segredos são guardados
+
+- There is deliberately no default `Cloak`. Constructing any secret value, whether a password, a
+- symmetric key or a private key, needs one in scope, so the decision about storage is always
+- written down. The package `cloaks` offers four. They differ in where the material rests
+- between uses, and in whether it rests encrypted:
++ Não há, de propósito, nenhum `Cloak` padrão. Construir qualquer valor secreto, seja uma senha,
++ uma chave simétrica ou uma chave privada, exige um em escopo, de modo que a decisão sobre o
++ armazenamento está sempre escrita. O pacote `cloaks` oferece quatro. Eles diferem quanto a
++ onde o material repousa entre os usos, e quanto a se ele repousa cifrado:
+
+= between uses, and in whether it rests encrypted:
+=
+- ```tabular
++ ```tabular
+
+- column  Cloak
++ column  Cloak
+
+- column  At rest, the secret is
+- column  Ephemeral key
+- row  `heapCloak`  cleartext, in a private byte array on the heap
+- row  `offHeapCloak`  cleartext, outside the Java heap
+- row  `veiledHeapCloak`  ciphertext, on the heap  off the heap
+- row  `veiledOffHeapCloak`  ciphertext, outside the Java heap  on the heap
++ column  Em repouso, o segredo está
++ column  Chave efêmera
++ row  `heapCloak`  em texto puro, em um array de bytes privado no heap
++ row  `offHeapCloak`  em texto puro, fora do heap Java
++ row  `veiledHeapCloak`  em texto cifrado, no heap  fora do heap
++ row  `veiledOffHeapCloak`  em texto cifrado, fora do heap Java  no heap
+
+= row  `veiledOffHeapCloak`  ciphertext, outside the Java heap  on the heap
+- ```
++ ```
+
+- Only `heapCloak` is available on Scala.js and Scala Native. No cloak defends against a
+- debugger in the same process. What the stronger ones shrink is the window during which
+- cleartext can be reached from a heap dump or a core file.
++ Só `heapCloak` está disponível no Scala.js e no Scala Native. Nenhum cloak protege contra um
++ depurador no mesmo processo. O que os mais fortes reduzem é a janela durante a qual o texto
++ puro pode ser alcançado a partir de um heap dump ou de um arquivo core.
+
+- ### Symmetric encryption
++ ### Cifragem simétrica
+
+- A symmetric key is generated for its cipher. The algorithm and the size of the key are in the
+- type, and so, optionally, are the mode and the padding. Encryption happens inside the key's
+- `uncloak` block, and the
+- [initialization vector](https://en.wikipedia.org/wiki/Initialization_vector) is supplied
+- explicitly:
++ Uma chave simétrica é gerada para sua cifra. O algoritmo e o tamanho da chave estão no tipo, e
++ também, opcionalmente, o modo e o preenchimento. A cifragem acontece dentro do bloco `uncloak`
++ da chave, e o
++ [vetor de inicialização](https://en.wikipedia.org/wiki/Initialization_vector) é fornecido
++ explicitamente:
+
+= explicitly:
+=
+- ```scala
++ ```scala
+
+- import blockCipherModes.cbc
++ import blockCipherModes.cbc
+
+- import blockCipherPaddings.pkcs7
++ import blockCipherPaddings.pkcs7
+
+- import cryptoPermits.permitUnauthenticatedCrypto
++ import cryptoPermits.permitUnauthenticatedCrypto
+
+- val key = SymmetricKey.generate[Aes[256]]()
++ val key = SymmetricKey.generate[Aes[256]]()
+
+- val decrypted = key.uncloak:
++ val decrypted = key.uncloak:
+
+-   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
++   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+
+=   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+- ```
++ ```
+
+=   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(decrypted)
++ Out.println(decrypted)
+
+= Out.println(decrypted)
+- ```
++ ```
+
+- `uncloak` is a [delimited scope](../../philosophy/delimited-scopes.md). It lends the key to its
+- block, as an `Encryptor` and a `Decryptor` capability, and capture checking confines both.
+- Neither the capability, nor a closure which would use it later, can escape the block. The
+- compiler, not a convention, keeps the use of the key inside its scope. Outside the block there
+- is nothing to encrypt with:
++ `uncloak` é um [escopo delimitado](../../philosophy/delimited-scopes.md). Ele empresta a chave
++ a seu bloco, como uma capability `Encryptor` e uma `Decryptor`, e a verificação de capturas
++ confina ambas. Nem a capability, nem uma closure que a usaria depois, pode escapar do bloco. É
++ o compilador, e não uma convenção, que mantém o uso da chave dentro de seu escopo. Fora do
++ bloco não há nada com que cifrar:
+
+= is nothing to encrypt with:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- t"Hello world".encrypt(InitializationVector.random)
++ t"Hello world".encrypt(InitializationVector.random)
+
+= t"Hello world".encrypt(InitializationVector.random)
+- ```
++ ```
+
+- A [stream](streams.md) is encrypted a chunk at a time, so large data is never assembled in
+- memory. A stream which was encrypted in pieces decrypts as a whole value, and the reverse:
++ Um [stream](streams.md) é cifrado um chunk de cada vez, de modo que dados grandes nunca são
++ montados na memória. Um stream que foi cifrado em pedaços é decifrado como um valor inteiro, e
++ vice-versa:
+
+= memory. A stream which was encrypted in pieces decrypts as a whole value, and the reverse:
+=
+- ```scala
++ ```scala
+
+- val streamed = key.uncloak:
++ val streamed = key.uncloak:
+
+-   t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize.decrypt.as[Text]
++   t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize.decrypt.as[Text]
+
+=   t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize.decrypt.as[Text]
+- ```
++ ```
+
+- Decrypting with the wrong key raises a `Crypto.Error` which names the failure. The mode and
+- padding of AES may also be fixed in the key's type, as in
+- `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`, and a pairing which the
+- specification forbids does not compile.
++ Decifrar com a chave errada lança um `Crypto.Error` que nomeia a falha. O modo e o
++ preenchimento do AES também podem ser fixados no tipo da chave, como em
++ `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`, e uma combinação que a
++ especificação proíbe não compila.
+
+- ### Passwords
++ ### Senhas
+
+- A `Password` is a cloaked secret, like a key, but with no cipher attached. Its cleartext can
+- be reached only inside `uncloak`, as a `Cleartext` capability, and its `show` form never
+- reveals it:
++ Uma `Password` é um segredo com cloak, como uma chave, mas sem cifra associada. Seu texto puro
++ só pode ser alcançado dentro de `uncloak`, como uma capability `Cleartext`, e sua forma
++ `show` nunca o revela:
+
+= reveals it:
+=
+- ```scala
++ ```scala
+
+- val password = Password(t"hunter2")
++ val password = Password(t"hunter2")
+
+= val password = Password(t"hunter2")
+- ```
++ ```
+
+= val password = Password(t"hunter2")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val password = Password(t"hunter2")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val password = Password(t"hunter2")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(password.show)
++ Out.println(password.show)
+
+- Out.println(password.uncloak(String(cleartext.chars).tt))
++ Out.println(password.uncloak(String(cleartext.chars).tt))
+
+= Out.println(password.uncloak(String(cleartext.chars).tt))
+- ```
++ ```
+
+- ### Public-key encryption
++ ### Cifragem de chave pública
+
+- An RSA key pair encrypts toward the public key, and decrypts with the private key:
++ Um par de chaves RSA cifra para a chave pública e decifra com a chave privada:
+
+= An RSA key pair encrypts toward the public key, and decrypts with the private key:
+=
+- ```scala
++ ```scala
+
+- val privateKey = PrivateKey.generate[Rsa[2048]]()
++ val privateKey = PrivateKey.generate[Rsa[2048]]()
+
+- val message = privateKey.public.uncloak:
++ val message = privateKey.public.uncloak:
+
+-   t"secret".encrypt(InitializationVector.random)
++   t"secret".encrypt(InitializationVector.random)
+
+=   t"secret".encrypt(InitializationVector.random)
+- ```
++ ```
+
+=   t"secret".encrypt(InitializationVector.random)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"secret".encrypt(InitializationVector.random)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"secret".encrypt(InitializationVector.random)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(privateKey.uncloak(message.decrypt.as[Text]))
++ Out.println(privateKey.uncloak(message.decrypt.as[Text]))
+
+= Out.println(privateKey.uncloak(message.decrypt.as[Text]))
+- ```
++ ```
+
+- ### Signing
++ ### Assinatura
+
+- Signing runs the other way. The private key signs, and anyone who holds the public key
+- verifies. RSA, DSA, ECDSA and ML-DSA all sign in the same way. ML-DSA is the lattice-based
+- scheme standardized as FIPS 204, for a signature which resists quantum computers. The digest
+- which an RSA or ECDSA signature is computed over is chosen from the package
+- `signatureDigests`:
++ A assinatura funciona no sentido inverso. A chave privada assina, e qualquer um que tenha a
++ chave pública verifica. RSA, DSA, ECDSA e ML-DSA assinam todos da mesma maneira. ML-DSA é o
++ esquema baseado em reticulados padronizado como FIPS 204, para uma assinatura que resiste a
++ computadores quânticos. O digest sobre o qual uma assinatura RSA ou ECDSA é calculada é
++ escolhido no pacote `signatureDigests`:
+
+= `signatureDigests`:
+=
+- ```scala
++ ```scala
+
+- import signatureDigests.sha256Signature
++ import signatureDigests.sha256Signature
+
+- val document = t"an important document"
++ val document = t"an important document"
+
+- val signer = PrivateKey.generate[Ecdsa[256]]()
++ val signer = PrivateKey.generate[Ecdsa[256]]()
+
+- val signature = signer.sign(document)
++ val signature = signer.sign(document)
+
+= val signature = signer.sign(document)
+- ```
++ ```
+
+= val signature = signer.sign(document)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val signature = signer.sign(document)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val signature = signer.sign(document)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(signer.public.verify(document, signature).inspect)
++ Out.println(signer.public.verify(document, signature).inspect)
+
+- Out.println(signer.public.verify(t"a forged document", signature).inspect)
++ Out.println(signer.public.verify(t"a forged document", signature).inspect)
+
+= Out.println(signer.public.verify(t"a forged document", signature).inspect)
+- ```
++ ```
+
+- ### HMAC
++ ### HMAC
+
+- `hmac` authenticates a message under a shared secret, over any of the
+- [hash algorithms](hashing.md#hashing-a-value). The result is written through the usual
+- [base encodings](base-encoding.md):
++ `hmac` autentica uma mensagem sob um segredo compartilhado, com qualquer um dos
++ [algoritmos de hash](hashing.md#hashing-a-value). O resultado é escrito por meio das
++ [codificações de base](base-encoding.md) habituais:
+
+= [base encodings](base-encoding.md):
+=
+- ```scala
++ ```scala
+
+- val secret = t"shared secret".in[Data]
++ val secret = t"shared secret".in[Data]
+
+= val secret = t"shared secret".in[Data]
+- ```
++ ```
+
+= val secret = t"shared secret".in[Data]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val secret = t"shared secret".in[Data]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val secret = t"shared secret".in[Data]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(document.hmac[Sha2[256]](secret).serialize[Hex])
++ Out.println(document.hmac[Sha2[256]](secret).serialize[Hex])
+
+= Out.println(document.hmac[Sha2[256]](secret).serialize[Hex])
+- ```
++ ```
+
+- ### Key agreement and authenticated encryption
++ ### Acordo de chaves e cifragem autenticada
+
+- Two parties who hold each other's public keys can agree on a shared secret, with X25519 or
+- ECDH. The secret is lent to a block, and zeroed afterwards, since a protocol only ever hashes
+- it into session keys:
++ Duas partes que têm as chaves públicas uma da outra podem chegar a um acordo sobre um segredo
++ compartilhado, com X25519 ou ECDH. O segredo é emprestado a um bloco e zerado depois, já que
++ um protocolo só o usa para derivar, por hash, chaves de sessão:
+
+= it into session keys:
+=
+- ```scala
++ ```scala
+
+- val romeo = PrivateKey.generate[X25519]()
++ val romeo = PrivateKey.generate[X25519]()
+
+- val juliet = PrivateKey.generate[X25519]()
++ val juliet = PrivateKey.generate[X25519]()
+
+= val juliet = PrivateKey.generate[X25519]()
+- ```
++ ```
+
+= val juliet = PrivateKey.generate[X25519]()
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val juliet = PrivateKey.generate[X25519]()
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val juliet = PrivateKey.generate[X25519]()
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(romeo.agree(juliet.public) { secret => secret.length }.show)
++ Out.println(romeo.agree(juliet.public) { secret => secret.length }.show)
+
+= Out.println(romeo.agree(juliet.public) { secret => secret.length }.show)
+- ```
++ ```
+
+- What the key agreement produces is then used with an authenticated cipher. AES-GCM seals a
+- message under a *nonce*, which must never repeat under one key, together with associated data
+- which is authenticated but not encrypted. It refuses to open anything which has been tampered
+- with:
++ O que o acordo de chaves produz é então usado com uma cifra autenticada. AES-GCM sela uma
++ mensagem sob um *nonce*, que nunca deve se repetir com a mesma chave, junto com dados
++ associados, que são autenticados mas não cifrados. Ele se recusa a abrir qualquer coisa que
++ tenha sido adulterada:
+
+= with:
+=
+- ```scala
++ ```scala
+
+- val sessionKey = SymmetricKey.generate[AesGcm[256]]()
++ val sessionKey = SymmetricKey.generate[AesGcm[256]]()
+
+- val nonce: Data = Array.fill[Byte](12)(0)
++ val nonce: Data = Array.fill[Byte](12)(0)
+
+- val box = sessionKey.seal(nonce, t"header".bytestream, t"message".bytestream)
++ val box = sessionKey.seal(nonce, t"header".bytestream, t"message".bytestream)
+
+= val box = sessionKey.seal(nonce, t"header".bytestream, t"message".bytestream)
+- ```
++ ```
+
+= val box = sessionKey.seal(nonce, t"header".bytestream, t"message".bytestream)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val box = sessionKey.seal(nonce, t"header".bytestream, t"message".bytestream)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val box = sessionKey.seal(nonce, t"header".bytestream, t"message".bytestream)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sessionKey.unseal(nonce, t"header".bytestream, box).read[Text])
++ Out.println(sessionKey.unseal(nonce, t"header".bytestream, box).read[Text])
+
+= Out.println(sessionKey.unseal(nonce, t"header".bytestream, box).read[Text])
+- ```
++ ```
+
+= Out.println(sessionKey.unseal(nonce, t"header".bytestream, box).read[Text])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(sessionKey.unseal(nonce, t"header".bytestream, box).read[Text])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- sessionKey.unseal(nonce, t"another header".bytestream, box).read[Text]
++ sessionKey.unseal(nonce, t"another header".bytestream, box).read[Text]
+
+= sessionKey.unseal(nonce, t"another header".bytestream, box).read[Text]
+- ```
++ ```
+
+- ### PEM
++ ### PEM
+
+- Keys travel in [PEM](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) form. A public key
+- is exported freely. Exporting a *private* key demands the marker `Divulgence`, which is one
+- more place where handling secret material is deliberate. A `Pem` value has a label and its
+- bytes, and serializes to the familiar armored text:
++ As chaves circulam na forma [PEM](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail). Uma
++ chave pública é exportada livremente. Exportar uma chave *privada* exige o marcador
++ `Divulgence`, que é mais um lugar onde o manuseio de material secreto é deliberado. Um valor
++ `Pem` tem um rótulo e seus bytes, e é serializado no conhecido texto com armadura ASCII:
+
+= bytes, and serializes to the familiar armored text:
+=
+- ```scala
++ ```scala
+
+- val pemText = privateKey.public.pem.serialize
++ val pemText = privateKey.public.pem.serialize
+
+- val privatePem = privateKey.pem(Divulgence)
++ val privatePem = privateKey.pem(Divulgence)
+
+= val privatePem = privateKey.pem(Divulgence)
+- ```
++ ```
+
+= val privatePem = privateKey.pem(Divulgence)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val privatePem = privateKey.pem(Divulgence)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val privatePem = privateKey.pem(Divulgence)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(pemText.cut(t"\n").head)
++ Out.println(pemText.cut(t"\n").head)
+
+- Out.println(pemText.read[Pem].label.inspect)
++ Out.println(pemText.read[Pem].label.inspect)
+
+= Out.println(pemText.read[Pem].label.inspect)
+- ```
++ ```
+
+- PEM is parsed incrementally. A source which holds many blocks, such as a certificate chain or
+- a bundle of keys, gives them one at a time, lazily, and not as one parsed document:
++ O PEM é analisado de forma incremental. Uma origem que contém muitos blocos, como uma cadeia de
++ certificados ou um pacote de chaves, os entrega um de cada vez, de forma preguiçosa, e não como
++ um único documento analisado:
+
+= a bundle of keys, gives them one at a time, lazily, and not as one parsed document:
+=
+- ```scala
++ ```scala
+
+- val chainText = t"$pemText\n$pemText"
++ val chainText = t"$pemText\n$pemText"
+
+= val chainText = t"$pemText\n$pemText"
+- ```
++ ```
+
+= val chainText = t"$pemText\n$pemText"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val chainText = t"$pemText\n$pemText"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val chainText = t"$pemText\n$pemText"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(chainText.read[Chain[Pem]].map(_.label).to[List].inspect)
++ Out.println(chainText.read[Chain[Pem]].map(_.label).to[List].inspect)
+
+= Out.println(chainText.read[Chain[Pem]].map(_.label).to[List].inspect)
+- ```
++ ```
+
+- Text which is not part of a block, such as the `subject=…` lines which OpenSSL writes between
+- certificates, is skipped. A source with no blocks at all reads as an empty sequence, not as an
+- error.
++ O texto que não faz parte de um bloco, como as linhas `subject=…` que o OpenSSL escreve entre
++ certificados, é ignorado. Uma origem sem nenhum bloco é lida como uma sequência vazia, e não
++ como um erro.
+
+- ### Reading keys
++ ### Leitura de chaves
+
+- A key which already exists, in `~/.ssh` or written by `openssl`, is read into a `PrivateKey`
+- of the cipher named, from any of the forms a key file takes:
++ Uma chave que já existe, em `~/.ssh` ou escrita pelo `openssl`, é lida em uma `PrivateKey` da
++ cifra nomeada, a partir de qualquer uma das formas que um arquivo de chave assume:
+
+= of the cipher named, from any of the forms a key file takes:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  PEM label
+- column  Label value
++ column  Forma
++ column  Rótulo PEM
++ column  Valor do rótulo
+
+- row  PKCS#8  `PRIVATE KEY`  `Pem.Label.PrivateKey`
++ row  PKCS#8  `PRIVATE KEY`  `Pem.Label.PrivateKey`
+
+- row  PKCS#1  `RSA PRIVATE KEY`  `Pem.Label.RsaPrivateKey`
++ row  PKCS#1  `RSA PRIVATE KEY`  `Pem.Label.RsaPrivateKey`
+
+- row  SEC1  `EC PRIVATE KEY`  `Pem.Label.EcPrivateKey`
++ row  SEC1  `EC PRIVATE KEY`  `Pem.Label.EcPrivateKey`
+
+- row  OpenSSH's own container  `OPENSSH PRIVATE KEY`  `Pem.Label.OpensshPrivateKey`
++ row  o contêiner próprio do OpenSSH  `OPENSSH PRIVATE KEY`  `Pem.Label.OpensshPrivateKey`
+
+= row  OpenSSH's own container  `OPENSSH PRIVATE KEY`  `Pem.Label.OpensshPrivateKey`
+- ```
++ ```
+
+- A `Cloak` must be in scope, as for any secret:
++ Um `Cloak` deve estar em escopo, como para qualquer segredo:
+
+= A `Cloak` must be in scope, as for any secret:
+=
+- ```scala fuel
++ ```scala fuel
+
+- substitute b3Blbn..bXBsZQE=  ...
++ substitute b3Blbn..bXBsZQE=  ...
+
+= substitute b3Blbn..bXBsZQE=  ...
+- ##
++ ##
+
+- val keyText = t"""-----BEGIN OPENSSH PRIVATE KEY-----
++ val keyText = t"""-----BEGIN OPENSSH PRIVATE KEY-----
+
+- b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
++ b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+
+- QyNTUxOQAAACARh+kfLi/QMMO/o5yyEp0Lt5IoJSSmMjnCpbwie7/sUgAAAJB+g2KdfoNi
++ QyNTUxOQAAACARh+kfLi/QMMO/o5yyEp0Lt5IoJSSmMjnCpbwie7/sUgAAAJB+g2KdfoNi
+
+- nQAAAAtzc2gtZWQyNTUxOQAAACARh+kfLi/QMMO/o5yyEp0Lt5IoJSSmMjnCpbwie7/sUg
++ nQAAAAtzc2gtZWQyNTUxOQAAACARh+kfLi/QMMO/o5yyEp0Lt5IoJSSmMjnCpbwie7/sUg
+
+- AAAEDTzzy05nIC9r9aKtXYNJMgY1F/g5ZiPNyksGUvj8yR6xGH6R8uL9Aww7+jnLISnQu3
++ AAAEDTzzy05nIC9r9aKtXYNJMgY1F/g5ZiPNyksGUvj8yR6xGH6R8uL9Aww7+jnLISnQu3
+
+- kiglJKYyOcKlvCJ7v+xSAAAADHRlc3RAZXhhbXBsZQE=
++ kiglJKYyOcKlvCJ7v+xSAAAADHRlc3RAZXhhbXBsZQE=
+
+- -----END OPENSSH PRIVATE KEY-----"""
++ -----END OPENSSH PRIVATE KEY-----"""
+
+- val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
++ val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
+
+= val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
+- ```
++ ```
+
+= val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sshKey.public.verify(t"message", sshKey.sign(t"message")).inspect)
++ Out.println(sshKey.public.verify(t"message", sshKey.sign(t"message")).inspect)
+
+= Out.println(sshKey.public.verify(t"message", sshKey.sign(t"message")).inspect)
+- ```
++ ```
+
+- The type is checked against the document, and is not assumed from it. The algorithm's
+- identifier, the curve and, for RSA, the size of the modulus must be those of the cipher named,
+- so a 4096-bit key can never be read as a `PrivateKey[Rsa[2048]]`. A key which does not match
+- is a `PrivateKey.Error`, whose reason, `Mismatch`, names what was found:
++ O tipo é verificado contra o documento, e não presumido a partir dele. O identificador do
++ algoritmo, a curva e, para RSA, o tamanho do módulo devem ser os da cifra nomeada, de modo que
++ uma chave de 4096 bits nunca pode ser lida como uma `PrivateKey[Rsa[2048]]`. Uma chave que não
++ corresponde é um `PrivateKey.Error`, cujo motivo, `Mismatch`, nomeia o que foi encontrado:
+
+= is a `PrivateKey.Error`, whose reason, `Mismatch`, names what was found:
+=
+- ```scala fuel
++ ```scala fuel
+
+= is a `PrivateKey.Error`, whose reason, `Mismatch`, names what was found:
+=
+= ```scala fuel
+- run
++ run
+
+= is a `PrivateKey.Error`, whose reason, `Mismatch`, names what was found:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= is a `PrivateKey.Error`, whose reason, `Mismatch`, names what was found:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- keyText.read[PrivateKey[Rsa[2048]] in Pem]
++ keyText.read[PrivateKey[Rsa[2048]] in Pem]
+
+= keyText.read[PrivateKey[Rsa[2048]] in Pem]
+- ```
++ ```
+
+- A key which is protected by a passphrase is reported as `Encrypted`. Reading one is not yet
+- supported.
++ Uma chave protegida por uma frase secreta é relatada como `Encrypted`. A leitura de uma chave
++ assim ainda não é suportada.
+
+- Public keys are read in the same way from `PUBLIC KEY` blocks. They are also read from the
+- single-line form which OpenSSH keeps in `id_*.pub`, `authorized_keys` and `known_hosts`, and
+- `OpenSsh.line` writes that form back:
++ As chaves públicas são lidas da mesma maneira a partir de blocos `PUBLIC KEY`. Também são lidas
++ da forma de uma só linha que o OpenSSH mantém em `id_*.pub`, `authorized_keys` e `known_hosts`,
++ e `OpenSsh.line` escreve essa forma de volta:
+
+= `OpenSsh.line` writes that form back:
+=
+- ```scala fuel
++ ```scala fuel
+
+- substitute AAAAC3..v+xS  ...
++ substitute AAAAC3..v+xS  ...
+
+= substitute AAAAC3..v+xS  ...
+- ##
++ ##
+
+- val line = t"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS test@example"
++ val line = t"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS test@example"
+
+- val sshPublicKey = OpenSsh.publicKey[Ed25519](line)
++ val sshPublicKey = OpenSsh.publicKey[Ed25519](line)
+
+= val sshPublicKey = OpenSsh.publicKey[Ed25519](line)
+- ```
++ ```
+
+= val sshPublicKey = OpenSsh.publicKey[Ed25519](line)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val sshPublicKey = OpenSsh.publicKey[Ed25519](line)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val sshPublicKey = OpenSsh.publicKey[Ed25519](line)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((OpenSsh.line(sshPublicKey, t"test@example") == line).inspect)
++ Out.println((OpenSsh.line(sshPublicKey, t"test@example") == line).inspect)
+
+= Out.println((OpenSsh.line(sshPublicKey, t"test@example") == line).inspect)
+- ```
++ ```
+
+- [SSH](ssh.md) uses these keys to authenticate a connection.
++ O [SSH](ssh.md) usa essas chaves para autenticar uma conexão.
+
+- ### ASN.1 and DER
++ ### ASN.1 e DER
+
+- The structures beneath certificates, keys and signatures are
+- [ASN.1](https://en.wikipedia.org/wiki/ASN.1) values, carried in
+- [DER](https://en.wikipedia.org/wiki/X.690#DER_encoding). An `Asn1` value models that structure
+- directly, as an enumeration of the universal types which certificates use, and `Der` is the
+- encoded form:
++ As estruturas sob certificados, chaves e assinaturas são valores
++ [ASN.1](https://en.wikipedia.org/wiki/ASN.1), transportados em
++ [DER](https://en.wikipedia.org/wiki/X.690#DER_encoding). Um valor `Asn1` modela essa estrutura
++ diretamente, como uma enumeração dos tipos universais que os certificados usam, e `Der` é a
++ forma codificada:
+
+= encoded form:
+=
+- ```scala
++ ```scala
+
+- val value = Asn1.Sequence(List(Asn1.Integer(BigInt(1)), Asn1.Utf8String(t"hello")))
++ val value = Asn1.Sequence(List(Asn1.Integer(BigInt(1)), Asn1.Utf8String(t"hello")))
+
+- val bytes = value.in[Der]
++ val bytes = value.in[Der]
+
+= val bytes = value.in[Der]
+- ```
++ ```
+
+= val bytes = value.in[Der]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val bytes = value.in[Der]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val bytes = value.in[Der]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((bytes.as[Asn1] == value).inspect)
++ Out.println((bytes.as[Asn1] == value).inspect)
+
+= Out.println((bytes.as[Asn1] == value).inspect)
+- ```
++ ```
+
+- DER is canonical, so a document has exactly one valid encoding, and the codec enforces that in
+- both directions. Each departure from it raises an `Asn1.Error`, whose reason names the fault,
+- and the offset of the byte at which it was found. Among them:
++ O DER é canônico, então um documento tem exatamente uma codificação válida, e o codec impõe
++ isso nos dois sentidos. Cada desvio dela lança um `Asn1.Error`, cujo motivo nomeia a falha, e o
++ offset do byte em que ela foi encontrada. Entre eles:
+
+= and the offset of the byte at which it was found. Among them:
+=
+- ```tabular
++ ```tabular
+
+- column  Fault
+- column  Reason
+- row  an overlong length  `NonMinimalLength`
+- row  a non-minimal integer  `NonMinimalInteger`
+- row  an unsorted `SET`  `UnsortedSet`
+- row  an indefinite length  `IndefiniteLength`
+- row  trailing bytes  `Trailing`
++ column  Falha
++ column  Motivo
++ row  um comprimento longo demais  `NonMinimalLength`
++ row  um inteiro não mínimo  `NonMinimalInteger`
++ row  um `SET` não ordenado  `UnsortedSet`
++ row  um comprimento indefinido  `IndefiniteLength`
++ row  bytes excedentes  `Trailing`
+
+= row  trailing bytes  `Trailing`
+- ```
++ ```
+
+- Decoding never fails for want of a type. A tag which this layer does not model, such as
+- `T61String`, `BMPString`, `ENUMERATED` or an implicitly tagged value, decodes to
+- `Asn1.Unknown`, which holds its content bytes verbatim. Decoding and encoding again therefore
+- reproduce the original bytes exactly. Verifying a signature over a certificate's
+- `TBSCertificate` depends on that property: a structure can be taken apart, inspected and put
+- back together without disturbing the bytes which the signature covers.
++ A decodificação nunca falha por falta de um tipo. Uma tag que esta camada não modela, como
++ `T61String`, `BMPString`, `ENUMERATED` ou um valor com tag implícita, é decodificada como
++ `Asn1.Unknown`, que guarda seus bytes de conteúdo literalmente. Decodificar e codificar de novo
++ reproduz, portanto, exatamente os bytes originais. Verificar uma assinatura sobre o
++ `TBSCertificate` de um certificado depende dessa propriedade: uma estrutura pode ser
++ desmontada, inspecionada e remontada sem perturbar os bytes que a assinatura cobre.
+
+- ### Certificates
++ ### Certificados
+
+- An [X.509](https://en.wikipedia.org/wiki/X.509) certificate binds a public key to a
+- *distinguished name*, for a period of validity, and is signed by its issuer. A self-signed
+- certificate is the kind which a development server, or a private certificate authority,
+- needs. It is generated from a subject, a private key, a [period](time.md) of validity and a
+- serial number, with the `dNSName` alternatives which a TLS client will check:
++ Um certificado [X.509](https://en.wikipedia.org/wiki/X.509) vincula uma chave pública a um
++ *nome distinto*, por um período de validade, e é assinado por seu emissor. Um certificado
++ autoassinado é o tipo de que precisa um servidor de desenvolvimento, ou uma autoridade
++ certificadora privada. Ele é gerado a partir de um sujeito, uma chave privada, um
++ [período](time.md) de validade e um número de série, com as alternativas `dNSName` que um
++ cliente TLS verificará:
+
+= serial number, with the `dNSName` alternatives which a TLS client will check:
+=
+- ```scala
++ ```scala
+
+- import chronometries.unixChronometry
++ import chronometries.unixChronometry
+
+- val subject = Distinguished(commonName = t"example.com", organization = t"Example", country = t"GB")
++ val subject = Distinguished(commonName = t"example.com", organization = t"Example", country = t"GB")
+
+- val validity = Instant(1_700_000_000_000L) ~ Instant(1_900_000_000_000L)
++ val validity = Instant(1_700_000_000_000L) ~ Instant(1_900_000_000_000L)
+
+- val certificate =
++ val certificate =
+
+-   Certificate.selfSigned(subject, privateKey, validity, BigInt(1), alternatives = List(t"example.com"))
++   Certificate.selfSigned(subject, privateKey, validity, BigInt(1), alternatives = List(t"example.com"))
+
+=   Certificate.selfSigned(subject, privateKey, validity, BigInt(1), alternatives = List(t"example.com"))
+- ```
++ ```
+
+=   Certificate.selfSigned(subject, privateKey, validity, BigInt(1), alternatives = List(t"example.com"))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   Certificate.selfSigned(subject, privateKey, validity, BigInt(1), alternatives = List(t"example.com"))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   Certificate.selfSigned(subject, privateKey, validity, BigInt(1), alternatives = List(t"example.com"))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(certificate.pem.serialize.cut(t"\n").head)
++ Out.println(certificate.pem.serialize.cut(t"\n").head)
+
+- Out.println(certificate.verify(privateKey.public).inspect)
++ Out.println(certificate.verify(privateKey.public).inspect)
+
+= Out.println(certificate.verify(privateKey.public).inspect)
+- ```
++ ```
+
+- A certificate is an `Asn1` value underneath, so its fields can be read through the same
+- structure. `authority = true` marks a certificate as one which may sign others. `verify`
+- checks the signature against the issuer's public key, which for a self-signed certificate is
+- its own.
++ Um certificado é, por baixo, um valor `Asn1`, então seus campos podem ser lidos pela mesma
++ estrutura. `authority = true` marca um certificado como um que pode assinar outros. `verify`
++ verifica a assinatura contra a chave pública do emissor, que, para um certificado
++ autoassinado, é a sua própria.
+
+- An ML-DSA key signs a certificate in the same way, with the algorithm identifiers of
+- FIPS 204. But a TLS implementation may not be able to complete a handshake with a
+- post-quantum key, and the JDK's cannot. A service whose identity is an ML-DSA key therefore
+- has that key *issue* a certificate over a classical key which it can present. It presents
+- that certificate together with the ML-DSA key's own self-signed certificate, and a peer which
+- knows the ML-DSA key verifies the leaf against it:
++ Uma chave ML-DSA assina um certificado da mesma maneira, com os identificadores de algoritmo
++ do FIPS 204. Mas uma implementação de TLS pode não conseguir concluir um handshake com uma
++ chave pós-quântica, e a do JDK não consegue. Um serviço cuja identidade é uma chave ML-DSA faz,
++ portanto, essa chave *emitir* um certificado sobre uma chave clássica que ele pode apresentar.
++ Ele apresenta esse certificado junto com o próprio certificado autoassinado da chave ML-DSA, e
++ um par que conhece a chave ML-DSA verifica a folha contra ele:
+
+= knows the ML-DSA key verifies the leaf against it:
+=
+- ```scala
++ ```scala
+
+- val swarmKey = PrivateKey.generate[MlDsa[65]]()
++ val swarmKey = PrivateKey.generate[MlDsa[65]]()
+
+- val tlsKey = PrivateKey.generate[Ecdsa[256]]()
++ val tlsKey = PrivateKey.generate[Ecdsa[256]]()
+
+- val identity = Distinguished(commonName = t"swarm.example.com")
++ val identity = Distinguished(commonName = t"swarm.example.com")
+
+- val root = Certificate.selfSigned(identity, swarmKey, validity, BigInt(1), authority = true)
++ val root = Certificate.selfSigned(identity, swarmKey, validity, BigInt(1), authority = true)
+
+- val leaf =
++ val leaf =
+
+-   Certificate.issued(subject, tlsKey.public, identity, swarmKey, validity, BigInt(2), alternatives = List(t"example.com"))
++   Certificate.issued(subject, tlsKey.public, identity, swarmKey, validity, BigInt(2), alternatives = List(t"example.com"))
+
+=   Certificate.issued(subject, tlsKey.public, identity, swarmKey, validity, BigInt(2), alternatives = List(t"example.com"))
+- ```
++ ```
+
+=   Certificate.issued(subject, tlsKey.public, identity, swarmKey, validity, BigInt(2), alternatives = List(t"example.com"))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   Certificate.issued(subject, tlsKey.public, identity, swarmKey, validity, BigInt(2), alternatives = List(t"example.com"))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   Certificate.issued(subject, tlsKey.public, identity, swarmKey, validity, BigInt(2), alternatives = List(t"example.com"))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(leaf.verify(swarmKey.public).inspect)
++ Out.println(leaf.verify(swarmKey.public).inspect)
+
+- Out.println(root.verify(swarmKey.public).inspect)
++ Out.println(root.verify(swarmKey.public).inspect)
+
+- Out.println(leaf.verify(privateKey.public).inspect)
++ Out.println(leaf.verify(privateKey.public).inspect)
+
+= Out.println(leaf.verify(privateKey.public).inspect)
+- ```
++ ```
+
+- An issued certificate carries an authority key identifier, which names the key that signed
+- it. That is how a verifier finds the root in a chain. An
+- [HTTP server](http-server.md) presents such a certificate over TLS.
++ Um certificado emitido carrega um identificador de chave da autoridade, que nomeia a chave que
++ o assinou. É assim que um verificador encontra a raiz em uma cadeia. Um
++ [servidor HTTP](http-server.md) apresenta um certificado assim por TLS.
+
+- ### Keystores
++ ### Keystores
+
+- A [PKCS#12](https://en.wikipedia.org/wiki/PKCS_12) keystore is opened for the duration of a
+- scope. The password is given as an opaque `Password`, so its cleartext is reached only
+- through the scoped `Cleartext` capability, and the character array which the platform needs
+- is zeroed once the store is loaded. Inside the scope, `keystore` is the open store:
++ Um keystore [PKCS#12](https://en.wikipedia.org/wiki/PKCS_12) é aberto durante um escopo. A
++ senha é dada como uma `Password` opaca, de modo que seu texto puro só é alcançado pela
++ capability `Cleartext` com escopo, e o array de caracteres de que a plataforma precisa é zerado
++ assim que o repositório é carregado. Dentro do escopo, `keystore` é o repositório aberto:
+
+= is zeroed once the store is loaded. Inside the scope, `keystore` is the open store:
+=
+- ```scala
++ ```scala
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- val storePath = temporaryDirectory[Path on Linux] / "cryptography" / "store.p12"
++ val storePath = temporaryDirectory[Path on Linux] / "cryptography" / "store.p12"
+
+- def readAliases(): List[Text] =
++ def readAliases(): List[Text] =
+
+-   storePath.open[Keystore](Password(t"sesame")):
++   storePath.open[Keystore](Password(t"sesame")):
+
+-     val server = keystore.certificate(t"server")
++     val server = keystore.certificate(t"server")
+
+-     keystore.aliases
++     keystore.aliases
+
+=     keystore.aliases
+- ```
++ ```
+
+- An alias which the store does not hold gives `Unset`. A wrong password and a corrupt store
+- are deliberately indistinguishable: both are `Unreadable` in the `Keystore.Error`. Telling
+- them apart would tell someone who was guessing which of the two had gone wrong.
++ Um alias que o repositório não contém dá `Unset`. Uma senha errada e um repositório corrompido
++ são, de propósito, indistinguíveis: ambos são `Unreadable` no `Keystore.Error`. Distingui-los
++ diria a quem estivesse tentando adivinhar qual dos dois deu errado.
+
+- ### Weak algorithms
++ ### Algoritmos fracos
+
+- Encrypting with DES, RC2, 1024-bit RSA, ECB mode, or any unauthenticated block cipher, needs a
+- permission from the package `cryptoPermits` in scope. These are the same
+- [permits](hashing.md#weak-algorithms) which gate MD5 and SHA-1. Accepting legacy cryptography
+- is thus an explicit decision which can be audited, not a default. The permits nest, and
+- `permitDisallowedCrypto` includes every other:
++ Cifrar com DES, RC2, RSA de 1024 bits, modo ECB, ou qualquer cifra de bloco sem autenticação,
++ exige uma permissão do pacote `cryptoPermits` em escopo. São as mesmas
++ [autorizações](hashing.md#weak-algorithms) que restringem MD5 e SHA-1. Aceitar criptografia
++ legada é, assim, uma decisão explícita que pode ser auditada, e não um padrão. As autorizações
++ se aninham, e `permitDisallowedCrypto` inclui todas as outras:
+
+= `permitDisallowedCrypto` includes every other:
+=
+- ```tabular
++ ```tabular
+
+- column  Algorithm
+- column  Permitted by
+- row  any block cipher, which is unauthenticated  `permitUnauthenticatedCrypto`
+- row  Triple-DES  `permitDeprecatedCrypto`; to decrypt or verify only, `permitLegacyCrypto`
+- row  DSA  `permitDisallowedCrypto`; to verify only, `permitLegacyCrypto`
++ column  Algoritmo
++ column  Autorizado por
++ row  qualquer cifra de bloco, que não tem autenticação  `permitUnauthenticatedCrypto`
++ row  Triple-DES  `permitDeprecatedCrypto`; só para decifrar ou verificar, `permitLegacyCrypto`
++ row  DSA  `permitDisallowedCrypto`; só para verificar, `permitLegacyCrypto`
+
+- row  DES, RC2, Blowfish  `permitDisallowedCrypto`
++ row  DES, RC2, Blowfish  `permitDisallowedCrypto`
+
+- row  1024-bit RSA  `permitDisallowedCrypto`
+- row  ECB mode  `permitDisallowedCrypto`
++ row  RSA de 1024 bits  `permitDisallowedCrypto`
++ row  modo ECB  `permitDisallowedCrypto`
+
+= row  ECB mode  `permitDisallowedCrypto`
+- ```
++ ```
+
+- Across the algorithms, these are the operations which each supports, and the permit it needs:
++ Entre os algoritmos, estas são as operações que cada um suporta, e a autorização de que
++ precisa:
+
+= Across the algorithms, these are the operations which each supports, and the permit it needs:
+=
+- ```tabular
++ ```tabular
+
+- column  Algorithm
+- column  Operations
+- column  Permit
+- row  `Aes[128 | 192 | 256]`  encrypt, decrypt  `permitUnauthenticatedCrypto`
+- row  `TripleDes[112 | 168]`  encrypt, decrypt  `permitDeprecatedCrypto`
+- row  `Des`, `Rc2[40 | 64 | 128]`, `Blowfish[128 | 256 | 448]`  encrypt, decrypt  `permitDisallowedCrypto`
+- row  `AesGcm[128 | 256]`, `ChaCha20Poly1305`  seal, unseal
+- row  `Rsa[2048 | 3072 | 4096]`  encrypt, decrypt, sign, verify
+- row  `Rsa[1024]`  encrypt, decrypt, sign, verify  `permitDisallowedCrypto`
+- row  `Dsa[512 | 1024 | 2048 | 3072]`  sign, verify  `permitDisallowedCrypto`
+- row  `Ecdsa[256 | 384 | 521]`, `Ed25519`, `MlDsa[44 | 65 | 87]`  sign, verify
+- row  `X25519`, `Ecdh[256 | 384 | 521]`  agree
++ column  Algoritmo
++ column  Operações
++ column  Autorização
++ row  `Aes[128 | 192 | 256]`  cifrar, decifrar  `permitUnauthenticatedCrypto`
++ row  `TripleDes[112 | 168]`  cifrar, decifrar  `permitDeprecatedCrypto`
++ row  `Des`, `Rc2[40 | 64 | 128]`, `Blowfish[128 | 256 | 448]`  cifrar, decifrar  `permitDisallowedCrypto`
++ row  `AesGcm[128 | 256]`, `ChaCha20Poly1305`  selar, abrir
++ row  `Rsa[2048 | 3072 | 4096]`  cifrar, decifrar, assinar, verificar
++ row  `Rsa[1024]`  cifrar, decifrar, assinar, verificar  `permitDisallowedCrypto`
++ row  `Dsa[512 | 1024 | 2048 | 3072]`  assinar, verificar  `permitDisallowedCrypto`
++ row  `Ecdsa[256 | 384 | 521]`, `Ed25519`, `MlDsa[44 | 65 | 87]`  assinar, verificar
++ row  `X25519`, `Ecdh[256 | 384 | 521]`  acordar
+
+= row  `X25519`, `Ecdh[256 | 384 | 521]`  agree
+- ```
++ ```
+
+- ### Related
++ ### Relacionados
+
+- - [Daemons](daemons.md), [Git](git.md), [OAuth](oauth.md), [PDF](pdf.md), [randomness](randomness.md) and [sockets](sockets.md) sign, encrypt and secure with these keys.
++ - [Daemons](daemons.md), [Git](git.md), [OAuth](oauth.md), [PDF](pdf.md),
++   [aleatoriedade](randomness.md) e [sockets](sockets.md) assinam, cifram e protegem com essas
++   chaves.

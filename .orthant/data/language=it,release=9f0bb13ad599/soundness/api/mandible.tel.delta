@@ -1,0 +1,93 @@
+orthant 1 language
+
+-       A `Classfile` is one `.class` file, parsed when it is made through the JDK's
+-       `java.lang.classfile` API; bytes the JDK rejects raise `Classfile.Error`, so each way
+-       of making one needs a `Tactic[Classfile.Error]` in scope. It is found on the classpath by name or by type, through
+-       the `Classloader` given in scope, or read from any source of bytes — a file, a resource,
+-       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
++       Un `Classfile` è un file `.class`, analizzato quando viene creato attraverso l'API
++       `java.lang.classfile` del JDK; i byte che il JDK rifiuta sollevano `Classfile.Error`,
++       quindi ogni modo di crearne uno richiede una `Tactic[Classfile.Error]` nell'ambito. Si
++       trova sul classpath per nome o per tipo, attraverso il `Classloader` given nell'ambito,
++       oppure si legge da qualsiasi sorgente di byte — un file, una risorsa, uno stream — con
++       `read[Classfile]`, poiché è `Aggregable by Data`.
+
+=       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       A `Classfile` holds no capability: it is parsed at construction, so the value may be
+-       kept, shared and passed freely.
++       Un `Classfile` non detiene alcuna capability: viene analizzato alla costruzione, quindi il
++       valore si può conservare, condividere e passare liberamente.
+
+-   entry .Error   raised when a class file cannot be read
+-       Error `↯/s.88.2`: _there was an error reading the classfile_. Raised by `Classfile(data)`,
+-       `Classfile(name)`, `Classfile[type]` and `read[Classfile]` when the header, constant
+-       pool, attributes or method table do not parse. A class the classloader does not have
+-       is still `Unset`, not an error. A method's code is decoded only by `Method#bytecode`,
+-       which raises the same error if the code does not decode.
+-   entry .aggregable   reads a `Classfile` from any stream of bytes, as `read[Classfile]`
+-       The `Aggregable by Data` given which lets a file, a classpath resource or any other
+-       `Readable` source be read as a class file: the whole stream is collected into one `Data`
+-       and parsed, raising `Classfile.Error` if it is not a class file.
++   entry .Error   sollevato quando un class file non può essere letto
++       Errore `↯/s.88.2`: _there was an error reading the classfile_. Sollevato da
++       `Classfile(data)`, `Classfile(name)`, `Classfile[type]` e `read[Classfile]` quando
++       l'intestazione, il constant pool, gli attributi o la tabella dei metodi non si
++       analizzano. Una classe che il classloader non ha resta `Unset`, non un errore. Il codice
++       di un metodo viene decodificato solo da `Method#bytecode`, che solleva lo stesso errore se
++       il codice non si decodifica.
++   entry .aggregable   legge un `Classfile` da qualsiasi stream di byte, come `read[Classfile]`
++       Il given `Aggregable by Data` che permette di leggere come class file un file, una
++       risorsa del classpath o qualsiasi altra sorgente `Readable`: l'intero stream viene
++       raccolto in un unico `Data` e analizzato, sollevando `Classfile.Error` se non è un class
++       file.
+
+-   entry .apply   the class file of some bytes, or of a resource name or a type through the `Classloader` in scope
+-       `Classfile(data)` parses the bytes of a class file. `Classfile(name)` reads the classpath resource at `name` — a JVM internal name with its
+-       extension, `scala/Option.class` — through the `Classloader` given in scope, and
+-       `Classfile[T]` finds the class of `T` by its `ClassTag` and reads the resource its
+-       binary name denotes, so a nested class resolves to `Outer$Nested.class`. Both give
+-       `Unset` when the classloader has no such resource. All three raise `Classfile.Error`
+-       for bytes which do not parse.
++   entry .apply   il class file di alcuni byte, o di un nome di risorsa o di un tipo attraverso il `Classloader` nell'ambito
++       `Classfile(data)` analizza i byte di un class file. `Classfile(name)` legge la risorsa
++       del classpath in `name` — un nome interno della JVM con la sua estensione,
++       `scala/Option.class` — attraverso il `Classloader` given nell'ambito, e `Classfile[T]`
++       trova la classe di `T` tramite il suo `ClassTag` e legge la risorsa denotata dal suo nome
++       binario, così una classe annidata si risolve in `Outer$Nested.class`. Entrambi danno
++       `Unset` quando il classloader non ha tale risorsa. Tutti e tre sollevano
++       `Classfile.Error` per byte che non si analizzano.
+
+-     entry #name   the method's name as the class file spells it
+-         The compiled name, not the source name: a constructor is `<init>`, an operator such as
+-         `+` is `$plus`, and a lambda body is `$anonfun$…`. `StackTrace.rewrite` in digression
+-         turns such a name back toward its source spelling.
+-     entry #bytecode   the method's `Code` attribute decoded to a `Bytecode`, or `Unset` for an abstract method
+-         Needs a `Tactic[Classfile.Error]`, raised if the code attribute is malformed.
+-         Decodes every instruction of the method to a `Bytecode.Opcode`, resolving branch
+-         targets to byte offsets, and threads a simulation of the operand stack through them:
+-         the stack after each instruction is computed by `Bytecode.Opcode#transform`, and reset
+-         at every label from the method's `StackMapTable` frames, so the stack at a branch
+-         target is what the verifier records, not what the fall-through path left. Line
+-         numbers from the `LineNumberTable` are attached to the first instruction of each line.
+-         A method with no code — abstract or native — gives `Unset`.
++     entry #name   il nome del metodo come lo scrive il class file
++         Il nome compilato, non il nome nel sorgente: un costruttore è `<init>`, un operatore
++         come `+` è `$plus`, e il corpo di una lambda è `$anonfun$…`. `StackTrace.rewrite` in
++         digression riporta un tale nome verso la sua grafia nel sorgente.
++     entry #bytecode   l'attributo `Code` del metodo decodificato in un `Bytecode`, o `Unset` per un metodo astratto
++         Richiede una `Tactic[Classfile.Error]`: l'errore viene sollevato se l'attributo del codice è malformato.
++         Decodifica ogni istruzione del metodo in un `Bytecode.Opcode`, risolvendo i target dei
++         salti in offset di byte, e fa passare attraverso di esse una simulazione dello stack
++         degli operandi: lo stack dopo ogni istruzione è calcolato da
++         `Bytecode.Opcode#transform`, e reimpostato a ogni etichetta dai frame della
++         `StackMapTable` del metodo, così lo stack al target di un salto è ciò che registra il
++         verificatore, non ciò che ha lasciato il percorso che vi ricade. I numeri di riga della
++         `LineNumberTable` vengono attaccati alla prima istruzione di ogni riga. Un metodo senza
++         codice — astratto o nativo — dà `Unset`.

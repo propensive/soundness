@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.24.9` — Pattern not exhaustive
++ # `↯/s.24.9` — El patrón no es exhaustivo
+
+- Raised by Contingency's pattern-analysis macro when a partial
+- function does not cover every possible error type.
++ Lo lanza la macro de análisis de patrones de Contingency cuando una función parcial no cubre
++ todos los tipos de error posibles.
+
+- ## Cause
++ ## Causa
+
+- `mitigate`/`recover` patterns must cover every error variant that
+- can flow into them. When a case is missing, this halt fires.
++ Los patrones de `mitigate`/`recover` deben cubrir todas las variantes de error que pueden llegar
++ a ellos. Cuando falta un caso, se produce esta detención.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.24.9] the pattern is not exhaustive
++ [↯/s.24.9] the pattern is not exhaustive
+
+= [↯/s.24.9] the pattern is not exhaustive
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Add the missing case(s), or use a wildcard fallback.
++ Añade el caso o los casos que faltan, o usa un comodín como alternativa.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Código fuente: `lib/contingency/src/core/contingency.internal.scala`

@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.27.3` — Hexadecimal literal has an odd number of digits
++ # `↯/s.27.3` — 16 進リテラルの桁数が奇数である
+
+- Raised at compiletime when a hexadecimal literal does not have an even number of digits.
++ 16 進リテラルの桁数が偶数でないときに、コンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- Each byte is two hexadecimal digits, so an odd count leaves one digit that names no whole
+- byte.
++ 各バイトは 16 進数の 2 桁なので、桁数が奇数だと、完全なバイトを表さない桁が一つ残る。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.27.3] a hexadecimal value must have an even number of digits
++ [↯/s.27.3] a hexadecimal value must have an even number of digits
+
+= [↯/s.27.3] a hexadecimal value must have an even number of digits
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Add a leading zero to the digit that stands alone.
++ 単独で残っている桁の前にゼロを加える。
+
+- ## See also
++ ## 関連項目
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - そのほかの 2 進および 16 進リテラルのエラー：[ファミリー](README.md#families)
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

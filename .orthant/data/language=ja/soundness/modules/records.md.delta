@@ -1,0 +1,596 @@
+orthant 1 language
+
+- ## Records
++ ## レコード
+
+- ### About
++ ### 概要
+
+- The shape of some data is defined outside the program: by a database table, a JSON Schema or a
+- configuration format. The program should still read its fields with static types.
++ データの形がプログラムの外で定義されていることがある。データベースのテーブル、JSON Schema、設定ファイルの形式などである。それでもプログラムはそのフィールドを静的な型で読むべきである。
+
+- A `Record` is a value whose fields come from such an external *specification*, which is read as
+- the code compiles. So `record.name` typechecks as `Text`, and `record.nope` does not compile,
+- and no class is written by hand to mirror the schema.
++ `Record` は、そのような外部の *仕様* からフィールドを得る値であり、仕様はコードのコンパイル時に読まれる。
++ そのため `record.name` は `Text` として型検査され、`record.nope` はコンパイルされず、スキーマを写し取るクラスを手で書く必要はない。
+
+- The [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) and [TEL](tel.md) *providers*
+- are built on this. A JSON Schema, an XML Schema or a TEL schema document produces typed records.
+- So does the response schema of an operation, through `record()` in the [OpenAPI](openapi.md)
+- client. Any source of schemas which a program can read at [compiletime] can do the same.
++ [JSON](json.md#typed-records-from-a-schema)、[XML](xml.md)、[TEL](tel.md) の *プロバイダー* はこの上に作られている。
++ JSON Schema、XML Schema、TEL のスキーマ文書は型付きのレコードを生成する。
++ [OpenAPI](openapi.md) クライアントの `record()` を通じて、操作のレスポンスのスキーマも同様である。
++ プログラムが[コンパイル時]に読めるスキーマの源であれば、どれでも同じことができる。
+
+- ### On external schemas
++ ### 外部スキーマについて
+
+- When the authoritative shape of the data lives elsewhere, a case class written by hand is a
+- copy, and copies drift. The schema gains a field, the class does not, and the mismatch appears
+- at [runtime]. The usual alternative is to read fields dynamically, by string. That gives up
+- checking altogether.
++ データの正式な形が別の場所にあるとき、手で書いたケースクラスはその写しであり、写しはずれていく。
++ スキーマにフィールドが増えてもクラスは増えず、その不一致は[実行時]に現れる。
++ よくある代替策はフィールドを文字列で動的に読むことだが、それでは検査をまったく諦めることになる。
+
+- A `Record` avoids both. The schema is read once, as the program compiles. Scala's
+- [structural types](https://docs.scala-lang.org/scala3/book/types-structural.html) then build
+- the exact interface of the record from it, with every field at the type which the schema
+- declares. The schema cannot drift from the code, because the types in the code *are* the
+- schema's. This is [safety by construction](../../philosophy/safety-by-construction.md), with no
+- class to maintain.
++ `Record` はそのどちらも避ける。
++ スキーマはプログラムのコンパイル時に一度読まれる。
++ そして Scala の [構造的型](https://docs.scala-lang.org/scala3/book/types-structural.html) が、そこからレコードの正確なインターフェースを、すべてのフィールドをスキーマが宣言する型で組み立てる。
++ コードの中の型がスキーマの型 *そのもの* なので、スキーマがコードからずれることはありえない。
++ これは [構成による安全性](../../philosophy/safety-by-construction.md) であり、保守すべきクラスはない。
+
+- Everything comes from the `soundness` package. The other imports choose an encoding, and a
+- [strategy](errors.md#choosing-a-strategy) for errors:
++ すべては `soundness` パッケージから来る。
++ その他のインポートは、エンコーディングと、エラーのための [戦略](errors.md#choosing-a-strategy) を選ぶ。
+
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- ### Using records
++ ### レコードを使う
+
+- A provider object holds a schema. This one is a `Json.Provider`, built from a JSON Schema
+- document. In a real program it is declared in a file of its own, for the reason which
+- [compilation order](#compilation-order) explains. For the same reason, the samples on this page
+- are checked but not run:
++ プロバイダーオブジェクトはスキーマを保持する。
++ ここでは JSON Schema 文書から作られた `Json.Provider` である。
++ 実際のプログラムでは、[コンパイルの順序](#compilation-order) で説明する理由により、これは専用のファイルで宣言する。
++ 同じ理由で、このページのサンプルは検査されるが実行はされない。
+
+= are checked but not run:
+=
+- ```scala fuel
++ ```scala fuel
+
+= are checked but not run:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= are checked but not run:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- object Catalogue extends Json.Provider(t"""{
++ object Catalogue extends Json.Provider(t"""{
+
+-   "type": "object",
++   "type": "object",
+
+-   "required": ["name", "children"],
++   "required": ["name", "children"],
+
+-   "properties": {
++   "properties": {
+
+-     "name": { "type": "string" },
++     "name": { "type": "string" },
+
+-     "age": { "type": "integer" },
++     "age": { "type": "integer" },
+
+-     "children": {
++     "children": {
+
+-       "type": "array",
++       "type": "array",
+
+-       "items": {
++       "items": {
+
+-         "type": "object",
++         "type": "object",
+
+-         "required": ["weight"],
++         "required": ["weight"],
+
+-         "properties": { "weight": { "type": "number", "minimum": 0 } }
++         "properties": { "weight": { "type": "number", "minimum": 0 } }
+
+-       }
++       }
+
+-     }
++     }
+
+-   }
++   }
+
+- }""".read[Json])
++ }""".read[Json])
+
+- val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
++ val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
+
+= val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
+- ```
++ ```
+
+- The `record` method of the provider turns raw data into a typed record. Each field has the type
+- which the schema gives it. `name` is a string in the schema, so it is a `Text`. `weight` is a
+- number, so it is a `Double`. The schema does not require `age`, so it is an
+- [`Optional[Int]`](optional-values.md):
++ プロバイダーの `record` メソッドは生のデータを型付きのレコードに変える。
++ 各フィールドはスキーマが与える型を持つ。
++ `name` はスキーマで文字列なので `Text` である。
++ `weight` は数値なので `Double` である。
++ スキーマは `age` を必須としていないので、それは [`Optional[Int]`](optional-values.md) である。
+
+= [`Optional[Int]`](optional-values.md):
+=
+- ```scala fuel
++ ```scala fuel
+
+= [`Optional[Int]`](optional-values.md):
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [`Optional[Int]`](optional-values.md):
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val record = Catalogue.record(input)
++ val record = Catalogue.record(input)
+
+- val name: Text = record.name
++ val name: Text = record.name
+
+- val weight: Optional[Double] = record.children.head.let(_.weight)
++ val weight: Optional[Double] = record.children.head.let(_.weight)
+
+- val age: Optional[Int] = record.age
++ val age: Optional[Int] = record.age
+
+= val age: Optional[Int] = record.age
+- ```
++ ```
+
+- The schema has no field called `nope`, so `record.nope` does not compile.
++ スキーマには `nope` というフィールドがないので、`record.nope` はコンパイルされない。
+
+- A nested object becomes a nested record, and an array becomes a list. Every access is checked
+- against the specification. A class written by hand would give the same guarantee, but there is
+- no class.
++ 入れ子のオブジェクトは入れ子のレコードになり、配列はリストになる。
++ すべてのアクセスは仕様に照らして検査される。
++ 手で書いたクラスでも同じ保証は得られるが、ここにはクラスがない。
+
+- ### Tuples instead of records
++ ### レコードの代わりにタプル
+
+- The same provider can produce a
+- [named tuple](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html)
+- instead of a record, through `tuple`, the twin of `record`.
++ 同じプロバイダーは、`record` の双子である `tuple` を通じて、レコードの代わりに [名前付きタプル](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html) を生成できる。
+
+- For the schema above, `Catalogue.tuple(input)` has the type
+- `(name: Text, age: Optional[Int], children: List[(weight: Double)])`. It has one element for
+- each field, named as the schema names it, in the order of the schema. Nested objects become
+- nested named tuples, and arrays become lists of them.
++ 上のスキーマでは、`Catalogue.tuple(input)` は `(name: Text, age: Optional[Int], children: List[(weight: Double)])` という型を持つ。
++ フィールドごとにひとつの要素を持ち、スキーマが付けた名前で、スキーマの順に並ぶ。
++ 入れ子のオブジェクトは入れ子の名前付きタプルになり、配列はそのリストになる。
+
+- A named tuple is read by name, like a record. It is also an ordinary tuple, so it is taken apart
+- by position, and converts to its unnamed form:
++ 名前付きタプルはレコードと同じく名前で読める。
++ 普通のタプルでもあるので、位置によって分解でき、名前のない形に変換できる。
+
+= by position, and converts to its unnamed form:
+=
+- ```scala fuel
++ ```scala fuel
+
+= by position, and converts to its unnamed form:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= by position, and converts to its unnamed form:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val tuple = Catalogue.tuple(input)
++ val tuple = Catalogue.tuple(input)
+
+- val name: Text = tuple.name
++ val name: Text = tuple.name
+
+- val (first, second, third) = tuple
++ val (first, second, third) = tuple
+
+- val plain: (Text, Optional[Int], List[(weight: Double)]) = tuple.toTuple
++ val plain: (Text, Optional[Int], List[(weight: Double)]) = tuple.toTuple
+
+= val plain: (Text, Optional[Int], List[(weight: Double)]) = tuple.toTuple
+- ```
++ ```
+
+- #### Eager and lazy
++ #### 正格と遅延
+
+- The two forms differ in *when* the data is read.
++ 二つの形は、データを *いつ* 読むかが異なる。
+
+- A record is lazy. It holds the raw data, and each access reads and converts its field afresh. A
+- malformed field is noticed only when that field is read, and a field read twice is converted
+- twice.
++ レコードは遅延的である。
++ 生のデータを保持し、アクセスのたびにそのフィールドを改めて読み、変換する。
++ 不正なフィールドはそのフィールドを読んだときにだけ気づかれ、二度読まれたフィールドは二度変換される。
+
+- A tuple is eager. Every field is read once, when the tuple is built, and the tuple holds the
+- converted values. A malformed field fails the construction of the tuple, whether or not the
+- program ever reads it.
++ タプルは正格である。
++ すべてのフィールドはタプルが組み立てられるときに一度だけ読まれ、タプルは変換済みの値を保持する。
++ 不正なフィールドは、プログラムがそれを読むかどうかにかかわらず、タプルの構築を失敗させる。
+
+- This changes the types of the fields. Reading any field can fail: a required value may be
+- absent, a value may be of the wrong kind, or it may break a constraint of the schema. It fails
+- with the specification's own error, such as `Json.Provider.Error`, through the [tactic] of the
+- code which reads it.
++ これはフィールドの型を変える。
++ どのフィールドの読み取りも失敗しうる。必須の値が存在しないかもしれず、値の種類が誤っているかもしれず、スキーマの制約に反しているかもしれない。
++ 失敗は `Json.Provider.Error` のような仕様自身のエラーとして、それを読むコードの [戦術] を通じて起こる。
+
+- In a record, a field has the type `Record.Field[Int, Json.Provider.Error]`. That is a context
+- function over the tactic, applied wherever the field is selected, so each access needs a handler
+- in scope. In a tuple, a failure can happen only during construction. The type of the element is
+- plainly `Int`, and the handler must be in scope where the tuple is built.
++ レコードでは、フィールドは `Record.Field[Int, Json.Provider.Error]` という型を持つ。
++ これは戦術に対するコンテキスト関数であり、フィールドが選択されるところで適用されるので、アクセスのたびにスコープにハンドラが必要である。
++ タプルでは、失敗は構築の間にしか起こりえない。
++ 要素の型は単に `Int` であり、ハンドラはタプルを組み立てる場所のスコープになければならない。
+
+- Since every failure goes through the caller's tactic, a reader chooses how to meet it. One field
+- can be wrapped in `attempt` or `recover`. A whole record can be read with `validate` and
+- `track`, with a `venture` for each field, which collects every problem in a document and reports
+- them together. [Errors](errors.md) describes these.
++ すべての失敗は呼び出し側の戦術を通るので、読む側がそれにどう対処するかを選ぶ。
++ ひとつのフィールドは `attempt` や `recover` で包める。
++ レコード全体は、フィールドごとに `venture` を使って `validate` と `track` で読むことができ、そうすれば文書の中のすべての問題を集めてまとめて報告する。
++ これらは [エラー](errors.md) で説明している。
+
+- In summary:
++ まとめると次のとおりである。
+
+= In summary:
+=
+- ```tabular
++ ```tabular
+
+- column  Aspect
+- column  Record
+- column  Tuple
+- row  Data is read  at each field access  once, when the tuple is built
+- row  A malformed field fails  when it is accessed  the construction
+- row  A field of schema type integer has type  `Record.Field[Int, Json.Provider.Error]`  `Int`
+- row  The `Tactic` must be in scope  wherever a field is selected  where the tuple is built
+- row  Destructures positionally  no  yes
++ column  観点
++ column  レコード
++ column  タプル
++ row  データを読むのは  フィールドへのアクセスのたび  タプルの構築時に一度
++ row  不正なフィールドが失敗させるのは  それにアクセスしたとき  構築
++ row  スキーマの型が integer のフィールドの型  `Record.Field[Int, Json.Provider.Error]`  `Int`
++ row  `Tactic` がスコープになければならない場所  フィールドを選択するすべての場所  タプルを組み立てる場所
++ row  位置による分解  できない  できる
+
+= row  Destructures positionally  no  yes
+- ```
++ ```
+
+- ### Defining a specification
++ ### 仕様を定義する
+
+- A new source of schemas plugs in by implementing `Specification`. Such an implementation is a
+- *provider*. The source might be the table definitions of a database, an XML Schema, or a
+- proprietary format.
++ 新しいスキーマの源は、`Specification` を実装することで組み込める。
++ そのような実装が *プロバイダー* である。
++ 源は、データベースのテーブル定義、XML Schema、独自の形式などでありうる。
+
+- A provider supplies the names and types of the fields as an ordered list of `Member` values. The
+- elements of a tuple follow that order. It also supplies primitive operations over the underlying
+- data:
++ プロバイダーはフィールドの名前と型を `Member` 値の順序付きリストとして与える。
++ タプルの要素はその順序に従う。
++ また、内部のデータに対する基本操作も与える。
+
+= data:
+=
+- ```tabular
++ ```tabular
+
+- column  Hook
+- column  Default
+- column  Supplies
+- row  `access`  none: must be implemented  a named field's value, fetched from a value
+- row  `absent`  none: must be implemented  whether a fetched value stands for a missing field
+- row  `repeated`  none: must be implemented  every value of a field which occurs many times
+- row  `required`  returns the value as it is  the value of a field read under `One`; overridden to fail when it is absent
+- row  `entries`  fails  a keyed field's values by name
+- row  `kind`  fails  the kind of a value, by which a union chooses its alternative
+- row  `elements`  fails  the elements of a value which is itself a sequence
+- row  `pairs`  fails  the named values of a value which is itself a dictionary
+- row  `unoffered`  fails  the failure for a value of a kind no alternative of a union offers
++ column  フック
++ column  デフォルト
++ column  提供するもの
++ row  `access`  なし：実装しなければならない  値から取り出した、名前付きフィールドの値
++ row  `absent`  なし：実装しなければならない  取り出した値が存在しないフィールドを表すかどうか
++ row  `repeated`  なし：実装しなければならない  何度も現れるフィールドのすべての値
++ row  `required`  値をそのまま返す  `One` のもとで読むフィールドの値。存在しないときに失敗するようオーバーライドする
++ row  `entries`  失敗する  キー付きフィールドの値を名前で
++ row  `kind`  失敗する  ユニオンが代替を選ぶための値の種類
++ row  `elements`  失敗する  それ自体が列である値の要素
++ row  `pairs`  失敗する  それ自体が辞書である値の名前付きの値
++ row  `unoffered`  失敗する  ユニオンのどの代替も提供しない種類の値に対する失敗
+
+= row  `unoffered`  fails  the failure for a value of a kind no alternative of a union offers
+- ```
++ ```
+
+- The values of a repeated field are the elements of a JSON array, say. In a format which repeats
+- a field, they are every sibling with the field's keyword. A format which has unions or
+- dictionaries provides `entries`, `kind`, `elements` and `pairs`. One which does not leaves their
+- defaults.
++ 繰り返されるフィールドの値は、たとえば JSON 配列の要素である。
++ フィールドを繰り返す形式では、そのフィールドのキーワードを持つすべての兄弟である。
++ ユニオンや辞書を持つ形式は `entries`、`kind`、`elements`、`pairs` を提供する。
++ 持たない形式はそれらのデフォルトのままにする。
+
+- A `Member` is one of three things. A `Value` names the scalar type which the schema declared. A
+- `Record` holds further members. A `Union` holds alternatives, each keyed by the *kind* of value
+- which selects it. Every member carries a `Multiplicity`:
++ `Member` は三つのもののいずれかである。
++ `Value` はスキーマが宣言したスカラー型を示す。
++ `Record` はさらにメンバーを保持する。
++ `Union` は代替を保持し、それぞれはそれを選ぶ値の *種類* をキーとする。
++ すべてのメンバーは `Multiplicity` を持つ。
+
+= which selects it. Every member carries a `Multiplicity`:
+=
+- ```tabular
++ ```tabular
+
+- column  Multiplicity
+- column  Reads as
+- column  Through
+- row  `One`  the value  `access`, then `required`
+- row  `Optional`  an `Optional`, `Unset` where `absent`  `access` and `absent`
+- row  `Many`  a `List`  `repeated`
+- row  `Keyed`  a `Map[Text, _]`  `entries`
+- row  `Series`  the provider's own collection  `series`
++ column  多重度
++ column  読んだ結果
++ column  経由するもの
++ row  `One`  値  `access`、続いて `required`
++ row  `Optional`  `Optional`。`absent` のところでは `Unset`  `access` と `absent`
++ row  `Many`  `List`  `repeated`
++ row  `Keyed`  `Map[Text, _]`  `entries`
++ row  `Series`  プロバイダー独自のコレクション  `series`
+
+= row  `Series`  the provider's own collection  `series`
+- ```
++ ```
+
+- The provider says nothing more about optionality or repetition. The macro applies the
+- multiplicity itself. An alternative of a union may carry its own, so a union with a single
+- alternative nests one multiplicity inside another.
++ プロバイダーは、省略可能性や繰り返しについてそれ以上何も言わない。
++ 多重度はマクロ自身が適用する。
++ ユニオンの代替は独自の多重度を持てるので、代替がひとつのユニオンでは、ひとつの多重度が別の多重度の中に入れ子になる。
+
+- A provider names the error which its fields fail with as its `Failure` type. The primitives
+- which can fail are `access`, `repeated`, `required`, `entries`, `elements`, `pairs` and
+- `unoffered`, and each takes the tactic for that error.
++ プロバイダーは、そのフィールドが失敗するときのエラーを `Failure` 型として示す。
++ 失敗しうる基本操作は `access`、`repeated`、`required`、`entries`、`elements`、`pairs`、`unoffered` であり、それぞれがそのエラーの戦術を受け取る。
+
+- One [typeclass] completes the picture. There is an `Intensional` instance for each scalar type
+- name which the schema can declare. It says which Scala type the name becomes, and how to read a
+- single value of it. There are three ways to make one:
++ ひとつの [型クラス] が全体を完成させる。
++ スキーマが宣言できるスカラー型の名前ごとに、`Intensional` インスタンスがある。
++ それは、その名前がどの Scala の型になるか、そしてその値をひとつどう読むかを示す。
++ 作り方は三つある。
+
+= single value of it. There are three ways to make one:
+=
+- ```tabular
++ ```tabular
+
+- column  Constructor
+- column  From
+- row  `Intensional(accessor)`  a function of the value
+- row  `Intensional.parametric`  a function of the value and the member's parameters, for a type such as a bounded integer
+- row  `Intensional.Reading`  a function of the value, its parameters and a `Tactic`, for a reading which can fail
++ column  コンストラクター
++ column  元になるもの
++ row  `Intensional(accessor)`  値の関数
++ row  `Intensional.parametric`  値とメンバーのパラメーターの関数。範囲付きの整数のような型のため
++ row  `Intensional.Reading`  値、そのパラメーター、`Tactic` の関数。失敗しうる読み取りのため
+
+= row  `Intensional.Reading`  a function of the value, its parameters and a `Tactic`, for a reading which can fail
+- ```
++ ```
+
+- A reading may fail: the value may be of the wrong kind, or outside its bounds, or a string which
+- does not match its pattern. Such a reading is an `Intensional.Fallible`, whose `transform` takes
+- the tactic for its `Error`. That `Error` must be the provider's `Failure`, or a subtype of it,
+- so that every field fails in one way. An instance which raises anything else is a compile error.
++ 読み取りは失敗しうる。値の種類が誤っているかもしれず、範囲外かもしれず、パターンに一致しない文字列かもしれない。
++ そのような読み取りは `Intensional.Fallible` であり、その `transform` は自身の `Error` の戦術を受け取る。
++ その `Error` はプロバイダーの `Failure` か、その部分型でなければならない。そうすれば、すべてのフィールドが同じ仕方で失敗する。
++ それ以外のものを発生させるインスタンスはコンパイルエラーになる。
+
+- The instances live in the companion of the provider, so they are found without an import. A
+- provider over XML, for instance, would fetch a child element by its label, find a field absent
+- where no such child exists, and repeat over every child with the label.
++ インスタンスはプロバイダーのコンパニオンにあるので、インポートなしで見つかる。
++ たとえば XML に対するプロバイダーなら、子要素をラベルで取り出し、そのような子がなければフィールドが存在しないとみなし、そのラベルを持つすべての子について繰り返すだろう。
+
+- Some sources are not in the values which are read from them. A record over a file which is
+- mapped into memory holds only where to look, and the file itself is open for a while, and
+- closed. A provider for such a source names a `Context`, and makes its records with
+- `Specification.recordWith`, giving the type of the context each is to be read in. A member of
+- such a record is read only where a value of that type is [given], beside its tactic, so a
+- record cannot be read once its source has gone, and the type may say which of several sources
+- a record came from. The provider's `accessWith`, `repeatedWith` and `entriesWith` are given the
+- context, and stand for `access`, `repeated` and `entries`.
++ 源の中には、そこから読む値の中にないものもある。
++ メモリーにマップされたファイルに対するレコードは、どこを見ればよいかだけを保持し、ファイル自体はしばらくの間開かれ、そして閉じられる。
++ そのような源に対するプロバイダーは `Context` を示し、`Specification.recordWith` でレコードを作り、各レコードを読むときのコンテキストの型を与える。
++ そのようなレコードのメンバーは、その型の値が戦術と並んで [given] である場所でのみ読めるので、源がなくなった後にレコードを読むことはできず、型によってレコードが複数の源のどれから来たかを示すこともできる。
++ プロバイダーの `accessWith`、`repeatedWith`、`entriesWith` はコンテキストを与えられ、`access`、`repeated`、`entries` の代わりになる。
+
+- A `Series` is for such a provider too. It reads as the provider's `Series` type, a collection
+- of its own, which `series` makes from a function which reads one element. The collection reads
+- an element when it is asked for one, in the context it is then given, so a field of a hundred
+- thousand records costs nothing until one is looked up.
++ `Series` もそのようなプロバイダーのためのものである。
++ それはプロバイダーの `Series` 型、すなわち独自のコレクションとして読まれ、`series` が要素をひとつ読む関数からそれを作る。
++ コレクションは要素を求められたときに、そのとき与えられるコンテキストでそれを読むので、十万件のレコードのフィールドも、どれかが参照されるまでは何のコストもかからない。
+
+- Every specification object gets `record` and `tuple` from `Specification` itself. Nothing need
+- be declared in the object beyond its schema. Both methods are `transparent inline`. They are
+- expanded where they are called, with the specification object known, so the macro can find that
+- object by its type and evaluate its `fields`.
++ すべての仕様オブジェクトは、`Specification` 自体から `record` と `tuple` を得る。
++ オブジェクトの中では、スキーマ以外に何も宣言する必要はない。
++ どちらのメソッドも `transparent inline` である。
++ 仕様オブジェクトがわかっている状態で呼び出し箇所で展開されるので、マクロはそのオブジェクトを型から見つけ、その `fields` を評価できる。
+
+- The declared return type of `record` is `Record`. What a call actually has is a *structural
+- refinement* of it. For a schema of three fields, it is a type such as this:
++ `record` の宣言上の戻り値の型は `Record` である。
++ 呼び出しが実際に持つのは、その *構造的な細分化* である。
++ 三つのフィールドを持つスキーマでは、次のような型になる。
+
+= refinement* of it. For a schema of three fields, it is a type such as this:
+=
+- ```scala fuel
++ ```scala fuel
+
+= refinement* of it. For a schema of three fields, it is a type such as this:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= refinement* of it. For a schema of three fields, it is a type such as this:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- type Person = Record { def age: Double; def name: Text; def employed: Boolean }
++ type Person = Record { def age: Double; def name: Text; def employed: Boolean }
+
+= type Person = Record { def age: Double; def name: Text; def employed: Boolean }
+- ```
++ ```
+
+- Only a transparent method lets that more precise type reach the place where it is called.
++ そのより精密な型が呼び出し箇所に届くのは、transparent なメソッドの場合だけである。
+
+- ### Compilation order
++ ### コンパイルの順序
+
+- The schema object must be in a *different file* from the code which calls its `record` method.
++ スキーマオブジェクトは、その `record` メソッドを呼ぶコードとは *別のファイル* になければならない。
+
+- The macro runs while the calling code compiles. It evaluates the schema object as a runtime
+- value, by reading the JSON Schema document or querying the database. So that object must already
+- be compiled. Scala guarantees this order for a macro and its use, provided they are in separate
+- files with no cycle between them. If they are in one file, the schema is not yet available when
+- the macro needs it.
++ マクロは呼び出し側のコードのコンパイル中に実行される。
++ マクロはスキーマオブジェクトを実行時の値として評価し、JSON Schema 文書を読んだり、データベースに問い合わせたりする。
++ そのため、そのオブジェクトはすでにコンパイルされていなければならない。
++ Scala は、マクロとその使用が循環のない別々のファイルにある限り、この順序を保証する。
++ 同じファイルにあると、マクロが必要とするときにスキーマはまだ利用できない。
+
+- This is also what makes the pattern a type provider, in the sense of F#. The compiler consults
+- the authoritative schema, and the types which the program is checked against are built from it.
++ これはまた、このパターンを F# でいう意味での型プロバイダーにするものでもある。
++ コンパイラは正式なスキーマを参照し、プログラムの検査に使われる型はそこから組み立てられる。
+
+- ### Related
++ ### 関連
+
+- - [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) and [TEL](tel.md) each describe
+-   the provider for their own schema language.
+- - [OpenAPI](openapi.md) builds records from the response schemas of an API.
+- - [Errors](errors.md) describes `attempt`, `recover`, `validate` and `track`, which meet the
+-   failure of a field.
+- - [Optional values](optional-values.md) describes the type of a field which the schema does not
+-   require.
+- - [Metaprogramming](metaprogramming.md) describes the macros which a provider relies on.
+- - [Catalogs](catalogs.md), [databases](database.md) and [tables](tables.md) work with the fields of a record by name.
++ - [JSON](json.md#typed-records-from-a-schema)、[XML](xml.md)、[TEL](tel.md) は、それぞれ自身のスキーマ言語のプロバイダーを説明している。
++ - [OpenAPI](openapi.md) は API のレスポンスのスキーマからレコードを組み立てる。
++ - [エラー](errors.md) は、フィールドの失敗に対処する `attempt`、`recover`、`validate`、`track` を説明している。
++ - [オプショナルな値](optional-values.md) は、スキーマが必須としていないフィールドの型を説明している。
++ - [メタプログラミング](metaprogramming.md) は、プロバイダーが依存するマクロを説明している。
++ - [カタログ](catalogs.md)、[データベース](database.md)、[テーブル](tables.md) は、レコードのフィールドを名前で扱う。

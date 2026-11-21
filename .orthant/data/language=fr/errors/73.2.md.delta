@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.73.2` — Time literal: minute value above 59
++ # `↯/s.73.2` — Littéral horaire : valeur des minutes supérieure à 59
+
+- Raised by Aviation's `validTime` macro when a time literal's minute
+- component is 60 or more.
++ Levée par la macro `validTime` d'Aviation lorsque la composante des minutes d'un littéral
++ horaire vaut 60 ou plus.
+
+- ## Cause
++ ## Cause
+
+- The macro decodes literal `Double` values into a `Clockface`. The
+- fractional part is interpreted as two minute digits; a value of 60
+- or more is invalid.
++ La macro décode des valeurs `Double` littérales en un `Clockface`. La partie fractionnaire est
++ interprétée comme deux chiffres de minutes ; une valeur de 60 ou plus est invalide.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.73.2] a time cannot have a minute value above 59
++ [↯/s.73.2] a time cannot have a minute value above 59
+
+= [↯/s.73.2] a time cannot have a minute value above 59
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Use a minute value 0–59 in the literal.
++ Utilisez dans le littéral une valeur de minutes comprise entre 0 et 59.
+
+- ## See also
++ ## Voir aussi
+
+- - The other time literal errors: [Families](README.md#families)
+- - Source: `lib/aviation/src/core/aviation.internal.scala`
++ - Les autres erreurs de littéraux horaires : [Familles](README.md#families)
++ - Source : `lib/aviation/src/core/aviation.internal.scala`

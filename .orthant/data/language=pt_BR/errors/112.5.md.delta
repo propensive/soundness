@@ -1,0 +1,97 @@
+orthant 1 language
+
+- # `↯/s.112.5` — `Sse.Error`
++ # `↯/s.112.5` — `Sse.Error`
+
+- Raised when Obligatory cannot parse a server-sent event.
++ Lançado quando o Obligatory não consegue analisar um server-sent event.
+
+- ## Cause
++ ## Causa
+
+- SSE messages are framed as `field: value` lines, with `field`
+- restricted to `event`, `data`, `id`, or `retry`. The `SseSource`
+- class also enforces a replay-buffer capacity. When any of these
+- expectations is violated, this error is raised. The constructor
+- takes a `reason: Reason`; the rendered message is `the
++ As mensagens SSE são enquadradas como linhas `field: value`, com `field`
++ restrito a `event`, `data`, `id` ou `retry`. A classe `SseSource`
++ também impõe uma capacidade ao buffer de reprodução. Quando alguma dessas
++ expectativas é violada, este erro é lançado. O construtor
++ recebe um `reason: Reason`; a mensagem renderizada é `the
+
+- server-sent event was not valid because $reason`.
++ server-sent event was not valid because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.112.5.1` — `MalformedField`
++ ### `↯/s.112.5.1` — `MalformedField`
+
+- A line in the SSE stream did not contain the required `:`
+- separator between field name and value.
++ Uma linha do stream SSE não continha o separador `:` obrigatório
++ entre o nome do campo e o valor.
+
+- **Example.** `[↯/s.112.5.1] the server-sent event was not valid because a line did not contain the expected field: value separator`
++ **Exemplo.** `[↯/s.112.5.1] the server-sent event was not valid because a line did not contain the expected field: value separator`
+
+- **Resolution.** Verify the producer is emitting valid SSE frames;
+- each non-empty line must contain a colon.
++ **Resolução.** Verifique se o produtor emite frames SSE válidos;
++ toda linha não vazia deve conter dois-pontos.
+
+- ### `↯/s.112.5.2` — `UnknownField`
++ ### `↯/s.112.5.2` — `UnknownField`
+
+- A field name other than `event`, `data`, `id`, or `retry` was
+- encountered.
++ Foi encontrado um nome de campo diferente de `event`, `data`, `id` ou
++ `retry`.
+
+- **Example.** `[↯/s.112.5.2] the server-sent event was not valid because the field name was not one of event, data, id, or retry`
++ **Exemplo.** `[↯/s.112.5.2] the server-sent event was not valid because the field name was not one of event, data, id, or retry`
+
+- **Resolution.** Strip non-standard fields before parsing; or extend
+- the parser to accept the field.
++ **Resolução.** Remova os campos não padronizados antes da análise, ou estenda
++ o parser para aceitar o campo.
+
+- ### `↯/s.112.5.3` — `BadRetryValue`
++ ### `↯/s.112.5.3` — `BadRetryValue`
+
+- The `retry` field's value was not a parseable integer.
++ O valor do campo `retry` não era um inteiro analisável.
+
+- **Example.** `[↯/s.112.5.3] the server-sent event was not valid because the retry field value could not be parsed as an integer`
++ **Exemplo.** `[↯/s.112.5.3] the server-sent event was not valid because the retry field value could not be parsed as an integer`
+
+- **Resolution.** The `retry` value must be a plain decimal integer
+- (milliseconds).
++ **Resolução.** O valor de `retry` deve ser um inteiro decimal simples
++ (em milissegundos).
+
+- ### `↯/s.112.5.4` — `CapacityExceeded`
++ ### `↯/s.112.5.4` — `CapacityExceeded`
+
+- The replay range requested from `SseSource.stream(start)` was
+- larger than the source's circular buffer capacity, so older events
+- have been overwritten.
++ O intervalo de reprodução pedido a `SseSource.stream(start)` era
++ maior que a capacidade do buffer circular da origem, de modo que eventos mais antigos
++ já foram sobrescritos.
+
+- **Example.** `[↯/s.112.5.4] the server-sent event was not valid because the requested replay range exceeded the source buffer capacity`
++ **Exemplo.** `[↯/s.112.5.4] the server-sent event was not valid because the requested replay range exceeded the source buffer capacity`
+
+- **Resolution.** Increase the source's `capacity`, or request a more
+- recent `start` index.
++ **Resolução.** Aumente a `capacity` da origem, ou peça um índice `start`
++ mais recente.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/obligatory/src/json/obligatory.Sse.scala`
++ - Código-fonte: `lib/obligatory/src/json/obligatory.Sse.scala`

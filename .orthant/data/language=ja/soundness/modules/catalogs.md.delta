@@ -1,0 +1,381 @@
+orthant 1 language
+
+- ## Catalogs
++ ## カタログ
+
+- ### About
++ ### 概要
+
+- A *catalog* holds one value for every field of a type. That means not only its immediate
+- fields, but every field which can be reached through them, and the whole value itself. Each
+- value is computed by one function, applied to the value of the field.
++ *カタログ*は、ある型のすべてのフィールドについて一つずつ値を保持する。
++ これは直接のフィールドだけでなく、それらを通じて到達できるすべてのフィールドと、値全体そのものを含む。
++ 各値は一つの関数をフィールドの値に適用して計算される。
+
+- The entries are addressed by the *path* of the field, as `villain.name` and not `name`. A path
+- is written as a selection through a proxy of the type, so a path which does not exist is a
+- compile error. A catalog is built once and read many times, and two catalogs over the same
+- type combine entry by entry.
++ エントリーは `name` ではなく `villain.name` のように、フィールドの*パス*によって指定される。
++ パスは型のプロキシを通じた選択として書かれるので、存在しないパスはコンパイルエラーになる。
++ カタログは一度構築されて何度も読まれ、同じ型に対する二つのカタログはエントリーごとに結合できる。
+
+- Catalogs sit between [optics](optics.md), which walk a path to update what lies at its end,
+- and [records](records.md), whose fields come from a schema outside the program. A catalog
+- walks no path, and reads no schema. It is the structure of a type, flattened into values,
+- and indexed by the paths which the type itself defines.
++ カタログは、パスをたどってその先にあるものを更新する[オプティクス](optics.md)と、フィールドがプログラムの外にあるスキーマから来る[レコード](records.md)との中間に位置する。
++ カタログはパスをたどらず、スキーマも読まない。
++ それは型の構造を値へと平らにし、型自身が定義するパスで索引付けしたものである。
+
+- ### On a value for every field
++ ### すべてのフィールドに対する値について
+
+- Some things naturally belong to each field: how wide a column should be, what label a field
+- is shown under, whether it is redacted in a log. A map from the name of a field to a value
+- is the usual answer, and it has two weaknesses. Two fields of the same name, at different
+- depths, such as the `name` of a `hero` and of a `villain`, collide, so the key must become a
+- path. And a path which is written as text is checked by nobody: a misspelled key is found
+- when a lookup comes back empty.
++ フィールドごとに自然に属するものがある。
++ 列の幅をどれだけにするか、フィールドをどのラベルの下に表示するか、ログで伏せ字にするかどうか、といったものである。
++ フィールド名から値へのマップがよくある答えであり、それには二つの弱点がある。
++ `hero` の `name` と `villain` の `name` のように、異なる深さにある同名の二つのフィールドは衝突するので、キーはパスにならざるをえない。
++ そしてテキストとして書かれたパスは誰にも検査されない。
++ 綴りを誤ったキーは、検索が空で返ってきたときに見つかる。
+
+- A catalog takes the type as the authority on which fields exist. Its entries are laid out
+- from the structure of the type at [compiletime]. A lookup names its entry through a proxy of
+- the same structure, so the compiler sees the path, and rejects one which the type does not
+- have.
++ カタログは、どのフィールドが存在するかについて型を権威とみなす。
++ そのエントリーは[コンパイル時]に型の構造から配置される。
++ 検索は同じ構造のプロキシを通じてエントリーを名指しするので、コンパイラはパスを見て、型が持たないパスを拒否する。
+
+- Everything comes from the `soundness` package. The last import lets the samples print their
+- results:
++ すべては `soundness` パッケージから得られる。
++ 最後のインポートは、サンプルが結果を出力できるようにするものである：
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Building a catalog
++ ### カタログの構築
+
+- `catalog` takes a value and a polymorphic function. It applies the function to the value,
+- and to every field within it, depth first. The function must accept a field of any type, so
+- what it can do with one is what any value supports. Here each entry is the field's textual
+- form:
++ `catalog` は値と多相関数を受け取る。
++ それは関数を値と、その中のすべてのフィールドに、深さ優先で適用する。
++ 関数はあらゆる型のフィールドを受け付けなければならないので、それに対してできることは、あらゆる値がサポートすることである。
++ ここでは各エントリーはフィールドのテキスト形式である：
+
+= form:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- case class Play(hero: Person, villain: Person)
++ case class Play(hero: Person, villain: Person)
+
+- val play = Play(Person(t"Othello", 40), Person(t"Iago", 28))
++ val play = Play(Person(t"Othello", 40), Person(t"Iago", 28))
+
+- val labels: Catalog[Play, Text] = catalog(play)([field] => (field: field) => field.toString.tt)
++ val labels: Catalog[Play, Text] = catalog(play)([field] => (field: field) => field.toString.tt)
+
+= val labels: Catalog[Play, Text] = catalog(play)([field] => (field: field) => field.toString.tt)
+- ```
++ ```
+
+= val labels: Catalog[Play, Text] = catalog(play)([field] => (field: field) => field.toString.tt)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val labels: Catalog[Play, Text] = catalog(play)([field] => (field: field) => field.toString.tt)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val labels: Catalog[Play, Text] = catalog(play)([field] => (field: field) => field.toString.tt)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(labels.size.show)
++ Out.println(labels.size.show)
+
+= Out.println(labels.size.show)
+- ```
++ ```
+
+- There are seven entries: the whole `Play`, then `hero`, `hero.name`, `hero.age`, `villain`,
+- `villain.name` and `villain.age`. The first entry is for the whole value. After it come the
+- fields, in the order in which they are declared, each followed by its own fields.
++ エントリーは七つある。
++ `Play` 全体、次に `hero`、`hero.name`、`hero.age`、`villain`、`villain.name`、`villain.age` である。
++ 最初のエントリーは値全体のものである。
++ その後に、宣言された順にフィールドが続き、各フィールドの後にはそれ自身のフィールドが続く。
+
+- A `Catalog[Play, Text]` is indexed by the structure of `Play`, and holds a `Text` at every
+- position. The type parameter for the key is what lets two catalogs over the same type be
+- combined, and what checks every path which is used to read one.
+- [Derivation](derivation.md#what-a-derivation-can-see) explains the polymorphic function.
++ `Catalog[Play, Text]` は `Play` の構造で索引付けされ、すべての位置に `Text` を保持する。
++ キーの型パラメーターがあるからこそ、同じ型に対する二つのカタログを結合でき、カタログを読むのに使うすべてのパスが検査される。
++ 多相関数については[導出](derivation.md#what-a-derivation-can-see)で説明している。
+
+- ### Addressing an entry
++ ### エントリーの指定
+
+- A catalog is read with a path, written as selections on a proxy of the key type. The proxy
+- has no fields of its own. Each selection is resolved at compiletime, into the index of the
+- entry which it names:
++ カタログは、キー型のプロキシに対する選択として書かれたパスで読む。
++ プロキシ自身はフィールドを持たない。
++ 各選択はコンパイル時に、それが名指すエントリーの索引へと解決される：
+
+= entry which it names:
+=
+- ```scala
++ ```scala
+
+- val villainName: Text = labels(proxy ?=> proxy.villain.name)
++ val villainName: Text = labels(proxy ?=> proxy.villain.name)
+
+- val wholeHero: Text = labels(proxy ?=> proxy.hero)
++ val wholeHero: Text = labels(proxy ?=> proxy.hero)
+
+- val wholePlay: Text = labels(proxy ?=> proxy)
++ val wholePlay: Text = labels(proxy ?=> proxy)
+
+= val wholePlay: Text = labels(proxy ?=> proxy)
+- ```
++ ```
+
+- The first is the label of the villain's name, the second is the entry for the whole `hero`
+- field, and the third is the entry for the whole `Play`.
++ 一つ目は悪役の名前のラベル、二つ目は `hero` フィールド全体のエントリー、三つ目は `Play` 全体のエントリーである。
+
+- A selection which the type does not have is reported where it is written:
++ 型が持たない選択は、それが書かれた場所で報告される：
+
+= A selection which the type does not have is reported where it is written:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- labels(proxy ?=> proxy.villain.title)
++ labels(proxy ?=> proxy.villain.title)
+
+= labels(proxy ?=> proxy.villain.title)
+- ```
++ ```
+
+- The path is the position of the field, not its name. `hero.name` and `villain.name` are
+- therefore distinct entries, and there is no string anywhere to misspell. The proxy is
+- provided for the catalog's key type, and the accessor only has to navigate it.
++ パスはフィールドの名前ではなく位置である。
++ したがって `hero.name` と `villain.name` は別のエントリーであり、綴りを誤りうる文字列はどこにもない。
++ プロキシはカタログのキー型に対して提供され、アクセサーはそれをたどるだけでよい。
+
+- ### Transforming a catalog
++ ### カタログの変換
+
+- `map` applies a function to every entry. It gives a catalog over the same type, with a new
+- type of value, and the same paths address the new entries:
++ `map` はすべてのエントリーに関数を適用する。
++ それは同じ型に対する、新しい値の型を持つカタログを与え、同じパスが新しいエントリーを指定する：
+
+= type of value, and the same paths address the new entries:
+=
+- ```scala
++ ```scala
+
+- val widths: Catalog[Play, Int] = labels.map(_.length)
++ val widths: Catalog[Play, Int] = labels.map(_.length)
+
+= val widths: Catalog[Play, Int] = labels.map(_.length)
+- ```
++ ```
+
+= val widths: Catalog[Play, Int] = labels.map(_.length)
+= ```
+=
+- ```scala
++ ```scala
+
+- val nameWidth: Int = widths(proxy ?=> proxy.villain.name)
++ val nameWidth: Int = widths(proxy ?=> proxy.villain.name)
+
+- val ageWidth: Int = widths(proxy ?=> proxy.hero.age)
++ val ageWidth: Int = widths(proxy ?=> proxy.hero.age)
+
+= val ageWidth: Int = widths(proxy ?=> proxy.hero.age)
+- ```
++ ```
+
+- The structure is fixed by the key type, so nothing about the paths changes under `map`. A
+- path which was valid on `labels` is valid on `widths`.
++ 構造はキー型によって固定されているので、`map` によってパスについては何も変わらない。
++ `labels` で有効だったパスは `widths` でも有効である。
+
+- ### Combining catalogs
++ ### カタログの結合
+
+- `braid` joins two catalogs over the same key type, entry by entry, with a function of both
+- values. The compiler ensures that the catalogs share a key, so their entries align, position
+- for position, without any matching of names:
++ `braid` は同じキー型に対する二つのカタログを、両方の値を受け取る関数で、エントリーごとに結合する。
++ コンパイラはカタログがキーを共有することを保証するので、それらのエントリーは名前の照合なしに位置ごとに揃う：
+
+= for position, without any matching of names:
+=
+- ```scala
++ ```scala
+
+- val cells: Catalog[Play, Text] = labels.braid(widths)((label, width) => t"$label ($width)")
++ val cells: Catalog[Play, Text] = labels.braid(widths)((label, width) => t"$label ($width)")
+
+= val cells: Catalog[Play, Text] = labels.braid(widths)((label, width) => t"$label ($width)")
+- ```
++ ```
+
+= val cells: Catalog[Play, Text] = labels.braid(widths)((label, width) => t"$label ($width)")
+= ```
+=
+- ```scala
++ ```scala
+
+- val cell: Text = cells(proxy ?=> proxy.villain.name)
++ val cell: Text = cells(proxy ?=> proxy.villain.name)
+
+= val cell: Text = cells(proxy ?=> proxy.villain.name)
+- ```
++ ```
+
+- This is how a table of settings for each field is assembled: a catalog of labels, a catalog
+- of widths, and a catalog of whichever other property matters, built separately and braided
+- together, each addressed by the same paths. [Tables](tables.md) lays out the result.
++ フィールドごとの設定の表はこのように組み立てる。
++ ラベルのカタログ、幅のカタログ、そのほか必要な性質のカタログを別々に構築して編み合わせ、それぞれを同じパスで指定する。
++ [表](tables.md)はその結果をレイアウトする。
+
+- ### The same paths in derivation
++ ### 導出における同じパス
+
+- The proxy which addresses a catalog also names a path where no catalog is involved. A
+- `Specific` maps paths of a type to [typeclass] instances. A derived instance consults it as
+- it visits each field, so the behavior of one field can be overridden by its path, not by
+- its type:
++ カタログを指定するプロキシは、カタログが関わらない場面でもパスを名指す。
++ `Specific` は型のパスを[型クラス]のインスタンスへ対応付ける。
++ 導出されたインスタンスは各フィールドを訪れるときにそれを参照するので、あるフィールドの動作をその型ではなくパスによって上書きできる：
+
+= its type:
+=
+- ```scala
++ ```scala
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
++ val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+
+= val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+- ```
++ ```
+
+= val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- locally:
++ locally:
+
+-   given (Play is Specific over Json.Encodable) =
++   given (Play is Specific over Json.Encodable) =
+
+-     specifically:
++     specifically:
+
+-       case root.villain.name() => shout
++       case root.villain.name() => shout
+
+-   Out.println(play.in[Json].show)
++   Out.println(play.in[Json].show)
+
+=   Out.println(play.in[Json].show)
+- ```
++ ```
+
+- Each case names a path through `root`. Its value must be an instance for the type at that
+- path, which is `Text` here, or the definition does not compile, and an unknown path is
+- rejected likewise. [Optics](optics.md) introduces `Specific` beside the lenses which use the
+- same syntax for paths, and [JSON](json.md#overriding-one-fields-encoder) shows it overriding
+- the encoder of one field.
++ 各ケースは `root` を通じてパスを名指す。
++ その値はそのパスにある型、ここでは `Text` のインスタンスでなければならず、そうでなければ定義はコンパイルされず、未知のパスも同様に拒否される。
++ [オプティクス](optics.md)は、パスに同じ構文を使うレンズとともに `Specific` を紹介しており、[JSON](json.md#overriding-one-fields-encoder) は一つのフィールドのエンコーダーを上書きする例を示している。
+
+- ### Related
++ ### 関連
+
+- - [Internationalization](internationalization.md) keeps its translations in a catalog.
++ - [国際化](internationalization.md)は翻訳をカタログに保持する。

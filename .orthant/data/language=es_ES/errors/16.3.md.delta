@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.16.3` — Value exceeds its upper bound
++ # `↯/s.16.3` — El valor supera su cota superior
+
+- Raised at compiletime when a literal is greater than the maximum its bounded type permits.
++ Se lanza en tiempo de compilación cuando un literal es mayor que el máximo que permite su tipo
++ acotado.
+
+- ## Cause
++ ## Causa
+
+- A bounded numeric type carries its range in its type, so a literal outside the range is
+- rejected where it is written.
++ Un tipo numérico acotado lleva su rango en su tipo, así que un literal fuera del rango se rechaza
++ allí donde se escribe.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.16.3] the value 1.5 is greater than the upper bound for this value, 1.0
++ [↯/s.16.3] the value 1.5 is greater than the upper bound for this value, 1.0
+
+= [↯/s.16.3] the value 1.5 is greater than the upper bound for this value, 1.0
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Use a value within the range, or widen the type's bounds.
++ Usa un valor dentro del rango, o amplía las cotas del tipo.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/cardinality/src/core/cardinality.internal.scala`
++ - Código fuente: `lib/cardinality/src/core/cardinality.internal.scala`

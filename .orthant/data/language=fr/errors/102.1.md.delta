@@ -1,0 +1,62 @@
+orthant 1 language
+
+- # `↯/s.102.1` — `Discovery.Error`
++ # `↯/s.102.1` — `Discovery.Error`
+
+- Raised when DNS-SD service discovery (`syndesis`) cannot advertise, browse or resolve, or when
+- a service, instance or TXT value is not valid.
++ Levée lorsque la découverte de services DNS-SD (`syndesis`) ne peut pas annoncer, parcourir ou
++ résoudre, ou lorsqu'un service, une instance ou une valeur TXT n'est pas valide.
+
+- ## Cause
++ ## Cause
+
+- `Discovery.Service`, `Discovery.Instance` and `Discovery.Txt` validate their parts on
+- construction; an advertisement probes for its name and gives up after too many conflicts; a
+- resolution waits for the instance's records within a timeout; and a backend must be able to
+- start. The message is `service discovery failed because $reason`.
++ `Discovery.Service`, `Discovery.Instance` et `Discovery.Txt` valident leurs parties à la
++ construction ; une annonce sonde son nom et abandonne après trop de conflits ; une résolution
++ attend les enregistrements de l'instance dans un délai imparti ; et un backend doit pouvoir
++ démarrer. Le message est `service discovery failed because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Meaning
++ column  Raison
++ column  Signification
+
+- column  Message
++ column  Message
+
+- column  Resolution
+- row  `↯/s.102.1.1`  `Conflict`  Another host kept claiming every name tried for an advertisement, through the renaming limit.  `[↯/s.102.1.1] service discovery failed because the name Hamlet._fury._tcp.local could not be claimed after repeated conflicts`  Choose a distinct instance name, or stop the other advertiser.
+- row  `↯/s.102.1.2`  `Timeout`  An instance's SRV, TXT or address records did not arrive within the resolution's timeout.  `[↯/s.102.1.2] service discovery failed because the instance Hamlet._fury._tcp.local did not resolve before the timeout`  The instance may have left the network; browse again, or lengthen the timeout.
+- row  `↯/s.102.1.3`  `InvalidName`  An instance label is empty, or a label or name exceeds the DNS limits (63 octets to a label, 255 to a name).  `[↯/s.102.1.3] service discovery failed because the name is not a valid DNS-SD name`  Shorten the label; it may contain any UTF-8, including dots and spaces.
+- row  `↯/s.102.1.4`  `InvalidTxt`  A TXT key is empty, not printable ASCII, or contains `=`; or a `key=value` pair exceeds 255 octets.  `[↯/s.102.1.4] service discovery failed because the TXT entry a=b is not valid`  Keys are short printable ASCII names; put the `=` in the value, and split long values across keys.
+- row  `↯/s.102.1.5`  `InvalidService`  A service name is empty, longer than fifteen characters, or begins with the underscore that the DNS form adds.  `[↯/s.102.1.5] service discovery failed because the service name _fury is not valid`  Give the registered service name without its underscore: `fury`, not `_fury`.
+- row  `↯/s.102.1.6`  `Unavailable`  The backend could not start: the socket responder found no multicast-capable interface, or could not join the mDNS group.  `[↯/s.102.1.6] service discovery failed because no service discovery backend could be started`  Check the host's network interfaces, and that port 5353 can be bound with reuse.
++ column  Résolution
++ row  `↯/s.102.1.1`  `Conflict`  Un autre hôte a continué de revendiquer chaque nom essayé pour une annonce, jusqu'à la limite de renommage.  `[↯/s.102.1.1] service discovery failed because the name Hamlet._fury._tcp.local could not be claimed after repeated conflicts`  Choisissez un nom d'instance distinct, ou arrêtez l'autre annonceur.
++ row  `↯/s.102.1.2`  `Timeout`  Les enregistrements SRV, TXT ou d'adresse d'une instance ne sont pas arrivés dans le délai de la résolution.  `[↯/s.102.1.2] service discovery failed because the instance Hamlet._fury._tcp.local did not resolve before the timeout`  L'instance a peut-être quitté le réseau ; parcourez de nouveau, ou allongez le délai.
++ row  `↯/s.102.1.3`  `InvalidName`  Un label d'instance est vide, ou un label ou un nom dépasse les limites DNS (63 octets par label, 255 par nom).  `[↯/s.102.1.3] service discovery failed because the name is not a valid DNS-SD name`  Raccourcissez le label ; il peut contenir n'importe quel UTF-8, y compris des points et des espaces.
++ row  `↯/s.102.1.4`  `InvalidTxt`  Une clé TXT est vide, n'est pas en ASCII imprimable ou contient `=` ; ou une paire `key=value` dépasse 255 octets.  `[↯/s.102.1.4] service discovery failed because the TXT entry a=b is not valid`  Les clés sont de courts noms en ASCII imprimable ; placez le `=` dans la valeur, et répartissez les longues valeurs sur plusieurs clés.
++ row  `↯/s.102.1.5`  `InvalidService`  Un nom de service est vide, dépasse quinze caractères, ou commence par le tiret bas qu'ajoute la forme DNS.  `[↯/s.102.1.5] service discovery failed because the service name _fury is not valid`  Donnez le nom de service enregistré sans son tiret bas : `fury`, et non `_fury`.
++ row  `↯/s.102.1.6`  `Unavailable`  Le backend n'a pas pu démarrer : le répondeur à sockets n'a trouvé aucune interface capable de multidiffusion, ou n'a pas pu rejoindre le groupe mDNS.  `[↯/s.102.1.6] service discovery failed because no service discovery backend could be started`  Vérifiez les interfaces réseau de l'hôte, et que le port 5353 peut être lié avec réutilisation.
+
+- ```
++ ```
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/syndesis/src/core/syndesis.Discovery.scala`
++ - Source : `lib/syndesis/src/core/syndesis.Discovery.scala`

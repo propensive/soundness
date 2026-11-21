@@ -1,0 +1,270 @@
+orthant 1 language
+
+- # Composability
++ # Composabilidade
+
+- Soundness is built to compose: small pieces combine into larger ones without special
+- cases, and the combination behaves as the parts lead one to expect. APIs are designed
+- so that the result of one operation is the input to the next, types combine to describe
+- richer types, and capabilities nest within capabilities. Composability is what lets a
+- small, consistent set of parts cover an enormous range of uses, and it is treated as a
+- deliberate design constraint rather than a property hoped for after the fact.
++ O Soundness é construído para se compor: peças pequenas se combinam em peças maiores sem casos
++ especiais, e a combinação se comporta como as partes levam a esperar. As APIs são projetadas para
++ que o resultado de uma operação seja a entrada da próxima, os tipos se combinam para descrever
++ tipos mais ricos, e as capabilities se aninham dentro de capabilities. A composabilidade é o que
++ permite que um conjunto pequeno e consistente de partes cubra uma enorme variedade de usos, e ela
++ é tratada como uma restrição de design deliberada, e não como uma propriedade que se espera obter
++ depois do fato.
+
+- ## Values compose
++ ## Os valores se compõem
+
+- A [stream](../en/modules/streams.md) pipeline is the clearest case. Each stage takes a
+- stream and yields a stream, so stages chain without adapters and in any order that makes
+- sense:
++ Uma pipeline de [streams](../en/modules/streams.md) é o caso mais claro. Cada estágio recebe um
++ stream e produz um stream, de modo que os estágios se encadeiam sem adaptadores e em qualquer
++ ordem que faça sentido:
+
+= sense:
+=
+- ```scala fuel
++ ```scala fuel
+
+= sense:
+=
+= ```scala fuel
+- parse
++ parse
+
+= sense:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- file.stream.decompress[Gzip].via(decoder).records
++ file.stream.decompress[Gzip].via(decoder).records
+
+= file.stream.decompress[Gzip].via(decoder).records
+- ```
++ ```
+
+- Nothing in that line is special-cased for its neighbours. Decompression does not know it
+- is reading from a file; the decoder does not know its input was compressed. Because each
+- stage is a value, the chain can be assembled at runtime, held in a variable, or built by
+- a function that decides which stages a particular job needs.
++ Nada nessa linha tem tratamento especial para os vizinhos. A descompressão não sabe que está lendo
++ de um arquivo; o decodificador não sabe que sua entrada estava comprimida. Como cada estágio é um
++ valor, a cadeia pode ser montada em tempo de execução, guardada em uma variável ou construída por
++ uma função que decide de quais estágios um trabalho específico precisa.
+
+- ## Types compose
++ ## Os tipos se compõem
+
+- An [infix type](infix-types.md) adds one clause without nesting a bracket, so a precise
+- type is built up the way an English description is:
++ Um [tipo infixo](infix-types.md) acrescenta uma cláusula sem aninhar um colchete, de modo que um
++ tipo preciso é construído do mesmo jeito que uma descrição em inglês:
+
+= type is built up the way an English description is:
+=
+- ```scala fuel
++ ```scala fuel
+
+= type is built up the way an English description is:
+=
+= ```scala fuel
+- parse
++ parse
+
+= type is built up the way an English description is:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- Path on Linux
++ Path on Linux
+
+- Raster by Rgba in Png
++ Raster by Rgba in Png
+
+- Text is Decodable in Json
++ Text is Decodable in Json
+
+- Html.Element of "ul" over "li" in Whatwg
++ Html.Element of "ul" over "li" in Whatwg
+
+= Html.Element of "ul" over "li" in Whatwg
+- ```
++ ```
+
+- Each preposition means the same thing wherever it appears, so a reader who has understood
+- one such type reads the next by analogy. The alternative — `Element["ul", "li", Whatwg]` —
+- carries the same information and tells the reader nothing about which parameter is which.
++ Cada preposição significa a mesma coisa onde quer que apareça, então um leitor que entendeu um
++ tipo desses lê o próximo por analogia. A alternativa — `Element["ul", "li", Whatwg]` — carrega a
++ mesma informação e não diz ao leitor nada sobre qual parâmetro é qual.
+
+- ## Capabilities compose
++ ## As capabilities se compõem
+
+- Two capabilities in scope are two capabilities; there is no combined type to construct
+- and no ordering to choose. Fallible, asynchronous and logging code compose by being
+- written next to each other:
++ Duas capabilities no escopo são duas capabilities; não há tipo combinado a construir nem ordem a
++ escolher. Código falível, assíncrono e com logging se compõe por ser escrito lado a lado:
+
+= written next to each other:
+=
+- ```scala fuel
++ ```scala fuel
+
+= written next to each other:
+=
+= ```scala fuel
+- parse
++ parse
+
+= written next to each other:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- supervise:
++ supervise:
+
+-   recover:
++   recover:
+
+-     case error: HttpError => fallback
++     case error: HttpError => fallback
+
+-   . protect:
++   . protect:
+
+-       async(url"https://example.com/".fetch().receive[Text])
++       async(url"https://example.com/".fetch().receive[Text])
+
+=       async(url"https://example.com/".fetch().receive[Text])
+- ```
++ ```
+
+- This is the property that [direct style](direct-style.md) exists to preserve. Under a
+- monadic encoding the same combination requires a transformer stack, and the order in
+- which the effects are stacked becomes a decision with consequences. Here it is not a
+- decision at all.
++ Esta é a propriedade que o [estilo direto](direct-style.md) existe para preservar. Sob uma
++ codificação monádica, a mesma combinação exige uma pilha de transformers, e a ordem em que os
++ efeitos são empilhados torna-se uma decisão com consequências. Aqui não é decisão alguma.
+
+- ## Scopes compose
++ ## Os escopos se compõem
+
+- Because a capability is introduced by a block, and blocks nest, resource lifetimes nest:
++ Como uma capability é introduzida por um bloco, e os blocos se aninham, os tempos de vida dos
++ recursos se aninham:
+
+= Because a capability is introduced by a block, and blocks nest, resource lifetimes nest:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Because a capability is introduced by a block, and blocks nest, resource lifetimes nest:
+=
+= ```scala fuel
+- parse
++ parse
+
+= Because a capability is introduced by a block, and blocks nest, resource lifetimes nest:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- archive.open[Zip](): zip ?=>
++ archive.open[Zip](): zip ?=>
+
+-   target.open[File](Write): handle ?=>
++   target.open[File](Write): handle ?=>
+
+-     handle.write(zip.entries.head.stream)
++     handle.write(zip.entries.head.stream)
+
+=     handle.write(zip.entries.head.stream)
+- ```
++ ```
+
+- The inner scope sees both capabilities; each is withdrawn at its own boundary, in the
+- right order, whether the block completes or fails. Adding a third resource adds a line
+- rather than restructuring the other two — and [capture checking](capture-checking.md)
+- proves that nothing escapes outward.
++ O escopo interno vê as duas capabilities; cada uma é retirada em sua própria fronteira, na ordem
++ certa, quer o bloco termine, quer falhe. Acrescentar um terceiro recurso acrescenta uma linha, em
++ vez de reestruturar os outros dois — e a [verificação de capturas](capture-checking.md) prova que
++ nada escapa para fora.
+
+- ## The constraint this places on design
++ ## A restrição que isso impõe ao design
+
+- Composability is easy to describe and hard to keep, because the pressure against it is
+- always local. Every special case, every "convenience" overload that takes the pair rather
+- than the parts, every operation that works only when called first — each is a small
+- convenience that removes a combination someone else needed.
++ A composabilidade é fácil de descrever e difícil de manter, porque a pressão contra ela é sempre
++ local. Cada caso especial, cada sobrecarga de "conveniência" que recebe o par em vez das partes,
++ cada operação que só funciona quando chamada primeiro — cada uma é uma pequena conveniência que
++ remove uma combinação de que outra pessoa precisava.
+
+- Three rules follow, and they are why some Soundness APIs look more austere than they
+- might:
++ Daí seguem três regras, e é por causa delas que algumas APIs do Soundness parecem mais austeras do
++ que poderiam:
+
+- **Return the type you accept.** An operation that takes a stream returns a stream, so it
+- can sit in the middle of a chain rather than only at the end.
++ **Retorne o tipo que você aceita.** Uma operação que recebe um stream retorna um stream, de modo
++ que pode ficar no meio de uma cadeia, e não só no fim.
+
+- **Do not fuse what the caller can combine.** There is no `readAndDecompress`, because
+- `stream.decompress[Gzip].read[Text]` already exists and the fused version would have to
+- be repeated for every pair.
++ **Não funda o que quem chama pode combinar.** Não há `readAndDecompress`, porque
++ `stream.decompress[Gzip].read[Text]` já existe e a versão fundida teria de ser repetida para cada
++ par.
+
+- **Make the general case the only case.** If an operation works for `List` but not for a
+- stream, the abstraction is wrong — which is why the operations are defined over
+- typeclasses rather than over concrete types.
++ **Faça do caso geral o único caso.** Se uma operação funciona para `List` mas não para um stream,
++ a abstração está errada — e é por isso que as operações são definidas sobre classes de tipos, e
++ não sobre tipos concretos.
+
+- ## What it costs
++ ## Quanto custa
+
+- A composable API is less immediately convenient than a fused one. `dir.archive[Tar]().gzip`
+- is two calls where `tarGzip(dir)` would be one, and a reader who wanted exactly the fused
+- operation pays a small tax for the generality they did not need.
++ Uma API composável é menos conveniente de imediato do que uma fundida.
++ `dir.archive[Tar]().gzip` são duas chamadas onde `tarGzip(dir)` seria uma, e um leitor que queria
++ exatamente a operação fundida paga um pequeno imposto pela generalidade de que não precisava.
+
+- That tax is accepted because it is bounded and the alternative is not: fused operations
+- multiply combinatorially, and each one added is a place where the general path and the
+- shortcut can drift apart.
++ Esse imposto é aceito porque é limitado, e a alternativa não é: as operações fundidas se
++ multiplicam combinatoriamente, e cada uma acrescentada é um lugar onde o caminho geral e o atalho
++ podem se afastar um do outro.
+
+- See [small APIs](small-apis.md) for the vocabulary this keeps small, and
+- [decoupling](decoupling.md) for how independent modules manage to compose at all.
++ Veja [APIs pequenas](small-apis.md) para o vocabulário que isso mantém pequeno, e
++ [desacoplamento](decoupling.md) para como módulos independentes conseguem, afinal, se compor.

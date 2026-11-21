@@ -1,0 +1,3518 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base ethereal
++ base ethereal
+
+- import soundness
++ import soundness
+
+- info   daemonized command-line applications: one warm JVM serving every invocation through a native launcher
++ info   демонизированные приложения командной строки: одна прогретая JVM обслуживает каждый вызов через нативный лаунчер
+
+- detail
++ detail
+
+-     _Ethereal_ turns a command-line application into a **daemon**: a JVM which starts on the
+-     first invocation and stays resident, so that every later invocation is dispatched to it by
+-     a small native **launcher** and returns at native-tool speed, with the JVM's startup cost
+-     and its just-in-time compiler's warm-up paid once rather than on every run. The
+-     application's code is the same as a plain CLI's: the body of an `application` block,
+-     wrapped in `cli` instead.
++     _Ethereal_ превращает приложение командной строки в **демона**: JVM, которая запускается
++     при первом вызове и остаётся резидентной, так что каждый последующий вызов передаётся ей
++     небольшим нативным **лаунчером** и завершается со скоростью нативного инструмента, а цена
++     запуска JVM и прогрева её JIT-компилятора платится один раз, а не при каждом запуске. Код
++     приложения тот же, что и у обычного CLI: тело блока `application`, обёрнутое вместо этого в
++     `cli`.
+
+=     wrapped in `cli` instead.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     wrapped in `cli` instead.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     wrapped in `cli` instead.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     wrapped in `cli` instead.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+=     wrapped in `cli` instead.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+-     import backstops.stackTraceBackstop
++     import backstops.stackTraceBackstop
+
+=     wrapped in `cli` instead.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+-     import executives.completionsExecutive
++     import executives.completionsExecutive
+
+=     wrapped in `cli` instead.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+=     import executives.completionsExecutive
+-     import interpreters.posixInterpreter
++     import interpreters.posixInterpreter
+
+=     wrapped in `cli` instead.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+=     import executives.completionsExecutive
+=     import interpreters.posixInterpreter
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+=     wrapped in `cli` instead.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+=     import executives.completionsExecutive
+=     import interpreters.posixInterpreter
+=     import threads.virtualThreads
+=
+-     @main
++     @main
+
+=     wrapped in `cli` instead.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+=     import executives.completionsExecutive
+=     import interpreters.posixInterpreter
+=     import threads.virtualThreads
+=
+=     @main
+-     def mytool(): Unit = cli:
++     def mytool(): Unit = cli:
+
+=     wrapped in `cli` instead.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+=     import executives.completionsExecutive
+=     import interpreters.posixInterpreter
+=     import threads.virtualThreads
+=
+=     @main
+=     def mytool(): Unit = cli:
+-       execute:
++       execute:
+
+-         Out.println(t"Hello world")
++         Out.println(t"Hello world")
+
+=         Out.println(t"Hello world")
+-         Exit.Ok
++         Exit.Ok
+
+=         Out.println(t"Hello world")
+=         Exit.Ok
+-     ```
++     ```
+
+-     What differs is the process model. A plain `application` is one process per invocation,
+-     and its arguments, environment, working directory, standard streams and signals are the
+-     process's own. Under `cli`, one process — the daemon — serves many invocations at once,
+-     and *none* of those things is global: each invocation arrives on its own connection, with
+-     its own arguments, its own `Environment`, its own working directory, its own stdin, stdout
+-     and stderr, its own exit status and its own signals, all forwarded by the launcher and
+-     all read through the same `arguments`, `Out`, `Err`, `Exit`, `trap` and `Environment` as a
+-     plain application uses. Scala's own `println` writes to the daemon's `System.out`, which
+-     reaches no user: output goes through `Out` and `Err`, which resolve the invocation's
+-     `Stdio`, and a library that writes `System.out` is redirected with `Stdio.divert`, which
+-     follows the thread and the tasks spawned under it rather than the JVM.
++     Различается модель процессов. Обычное `application` — это один процесс на вызов, и его
++     аргументы, окружение, рабочий каталог, стандартные потоки данных и сигналы принадлежат
++     самому процессу. При `cli` один процесс — демон — обслуживает много вызовов одновременно, и
++     *ничто* из этого не глобально: каждый вызов приходит по собственному соединению, со своими
++     аргументами, своим `Environment`, своим рабочим каталогом, своими stdin, stdout и stderr,
++     своим кодом завершения и своими сигналами, которые все пересылаются лаунчером и все
++     читаются через те же `arguments`, `Out`, `Err`, `Exit`, `trap` и `Environment`, что
++     использует обычное приложение. Собственный `println` Scala пишет в `System.out` демона,
++     который не доходит ни до одного пользователя: вывод идёт через `Out` и `Err`, которые
++     разрешают `Stdio` вызова, а библиотека, пишущая в `System.out`, перенаправляется через
++     `Stdio.divert`, который следует за потоком выполнения и порождёнными под ним задачами, а
++     не за JVM.
+
+-     The launcher is the Rust runner published by `propensive/xek`
+-     (`curl -fsSL https://propensive.dev/xek | sh` installs it), and `xek build mytool.jar`
+-     joins the platform's stub, a configuration record and the application JAR into one
+-     executable. An invocation of that executable is one connection to the daemon over a
+-     Unix domain socket, carrying BinTEL documents of the `ethereal-launcher` TEL schema
+-     (`Launcher.schemaText`, the resource `ethereal/ethereal-launcher.tel`): an `init`
+-     document with the invocation's arguments, environment, working directory, user, terminal
+-     flags and descriptors, then `data` chunks of every stream under per-stream credit,
+-     `signal`/`signal-ack`, `mode`, `run`/`exited` and `closed`, until the daemon's
+-     `exit-status` ends the session. Every document carries the schema's 33-byte signature, so
+-     a launcher and a daemon built against different contracts refuse each other at the first
+-     document rather than misread each other; `Launcher.Message` is the enum which mirrors the
+-     schema, and `Launcher.encode`/`Launcher.decode` its codec.
++     Лаунчер — это раннер на Rust, публикуемый `propensive/xek`
++     (`curl -fsSL https://propensive.dev/xek | sh` устанавливает его), а `xek build mytool.jar`
++     объединяет заглушку платформы, запись конфигурации и JAR приложения в один исполняемый
++     файл. Вызов этого исполняемого файла — это одно соединение с демоном через сокет домена
++     Unix, несущее документы BinTEL по TEL-схеме `ethereal-launcher` (`Launcher.schemaText`,
++     ресурс `ethereal/ethereal-launcher.tel`): документ `init` с аргументами вызова,
++     окружением, рабочим каталогом, пользователем, флагами терминала и файловыми дескрипторами,
++     затем чанки `data` каждого потока данных под кредитом для каждого потока, `signal`/`signal-ack`,
++     `mode`, `run`/`exited` и `closed`, пока `exit-status` демона не завершит сессию. Каждый
++     документ несёт 33-байтовую сигнатуру схемы, поэтому лаунчер и демон, собранные по разным
++     контрактам, отвергают друг друга на первом же документе, а не читают друг друга неверно;
++     `Launcher.Message` — это перечисление, отражающее схему, а `Launcher.encode`/`Launcher.decode`
++     — её кодек.
+
+-     The **daemon** is started by the launcher with a sanitized environment of its own, in `/`,
+-     under umask `077`, so that nothing about the daemon's state depends on who happened to
+-     start it: code which reads `environments.javaBaseEnvironment` or
+-     `workingDirectories.javaBaseWorkingDirectory` sees that state, not the invocation's. The
+-     invocation's own environment and working directory are the givens
+-     `environments.daemonClientEnvironment` and `workingDirectories.daemonClientWorkingDirectory`
+-     (imported by name — `import soundness.*` imports no givens), and the environment the
+-     daemon was itself launched with is `DaemonEnvironment`, the given
+-     `environments.daemonEnvironment`. The daemon keeps its state under
+-     `$XDG_RUNTIME_DIR/<name>/` (or the state home): a `socket`, a `pid` file, a `build` file
+-     recording the launcher it was started from and an `acceptance` file naming the schema it
+-     speaks; it logs `DaemonLogEvent`s to syslog under `ethereal`, retires itself after six
+-     idle hours, when a state file is removed, when its launcher is rebuilt, or when asked, and
+-     the built-in `'{admin}'` subcommand reports its pid (`pid`), ends it (`kill`) or drains it
+-     (`shutdown`: no further invocation is served, those in flight finish, then it exits). Set
+-     `ETHEREAL_DEBUG=1` in the shell to make the launcher trace what it does to stderr.
++     **Демон** запускается лаунчером с собственным очищенным окружением, в `/`, с umask `077`,
++     чтобы ничто в состоянии демона не зависело от того, кто случайно его запустил: код, который
++     читает `environments.javaBaseEnvironment` или
++     `workingDirectories.javaBaseWorkingDirectory`, видит это состояние, а не состояние вызова.
++     Собственные окружение и рабочий каталог вызова — это given
++     `environments.daemonClientEnvironment` и `workingDirectories.daemonClientWorkingDirectory`
++     (импортируемые по имени — `import soundness.*` не импортирует given), а окружение, с
++     которым был запущен сам демон, — это `DaemonEnvironment`, given
++     `environments.daemonEnvironment`. Демон хранит своё состояние в
++     `$XDG_RUNTIME_DIR/<name>/` (или в каталоге состояния): `socket`, файл `pid`, файл `build`,
++     записывающий лаунчер, из которого он был запущен, и файл `acceptance`, называющий схему, на
++     которой он говорит; он логирует `DaemonLogEvent` в syslog под именем `ethereal`, уходит на
++     покой после шести часов простоя, когда удаляется файл состояния, когда его лаунчер
++     пересобирается или когда его об этом просят, а встроенная подкоманда `'{admin}'` сообщает
++     его pid (`pid`), завершает его (`kill`) или сворачивает его работу (`shutdown`: новые
++     вызовы не обслуживаются, текущие завершаются, затем он выходит). Установите в оболочке
++     `ETHEREAL_DEBUG=1`, чтобы лаунчер трассировал свои действия в stderr.
+
+-     Inside the block, `resident` is the invocation's handle on the daemon, a `Resident`: which
+-     streams are terminals (`cliInput`, `cliOutput`, `cliError`), the name the executable was
+-     invoked as, the umask, the terminal's live size, a typed message `bus` between concurrent
+-     invocations, `cooked` and `concealed` blocks which ask the launcher for canonical terminal
+-     mode, `terminal` to run an editor or `sudo` on the client's terminal, and `retire()` to
+-     drain the daemon. `Installer.install` copies the executable onto the `PATH`, and `Upgrade`
+-     stages a signed replacement which the launcher verifies and swaps into place at the start
+-     of the next invocation, leaving the running daemon's clients undisturbed.
++     Внутри блока `resident` — это дескриптор вызова для демона, `Resident`: какие потоки данных
++     являются терминалами (`cliInput`, `cliOutput`, `cliError`), имя, под которым был вызван
++     исполняемый файл, umask, живой размер терминала, типизированная шина сообщений `bus` между
++     одновременными вызовами, блоки `cooked` и `concealed`, которые просят у лаунчера
++     канонический режим терминала, `terminal` для запуска редактора или `sudo` на терминале
++     клиента и `retire()` для сворачивания работы демона. `Installer.install` копирует
++     исполняемый файл в `PATH`, а `Upgrade` подготавливает подписанную замену, которую лаунчер
++     проверяет и подставляет на место в начале следующего вызова, не тревожа клиентов
++     работающего демона.
+
+-     The library is one source set, `ethereal.core`, for the JVM; it builds on `exoskeleton`
+-     (the CLI machinery: `Cli`, `Executive`, `arguments`, `execute`, `Help`), `coaxial` (the
+-     domain socket), `stratiform` (the BinTEL protocol), `surveillance` (watching the state
+-     files), `galilei`, `guillotine`, `profanity` and `turbulence`. A second source set,
+-     `ethereal.example`, holds the `run` and `fixture` entry points the tests and the tutorial
+-     use. Everything is exported to the `soundness` umbrella, and the `environments` and
+-     `workingDirectories` choice packages merge with the umbrella's own.
++     Библиотека — это один набор исходников, `ethereal.core`, для JVM; она строится на
++     `exoskeleton` (механизм CLI: `Cli`, `Executive`, `arguments`, `execute`, `Help`), `coaxial`
++     (сокет домена), `stratiform` (протокол BinTEL), `surveillance` (наблюдение за файлами
++     состояния), `galilei`, `guillotine`, `profanity` и `turbulence`. Второй набор исходников,
++     `ethereal.example`, содержит точки входа `run` и `fixture`, которые используют тесты и
++     учебник. Всё экспортируется в зонтичный модуль `soundness`, а пакеты выбора `environments`
++     и `workingDirectories` сливаются с собственными пакетами зонтичного модуля.
+
+- refer ethereal.cli
++ refer ethereal.cli
+
+- refer ethereal.Resident
++ refer ethereal.Resident
+
+- refer ethereal.Launcher
++ refer ethereal.Launcher
+
+- refer ethereal.Upgrade
++ refer ethereal.Upgrade
+
+- refer ethereal.DaemonLogEvent
++ refer ethereal.DaemonLogEvent
+
+- entry .cli   runs the body as a daemon: one resident JVM, serving each launcher invocation on its own connection
++ entry .cli   выполняет тело как демон: одна резидентная JVM, обслуживающая каждый вызов лаунчера по собственному соединению
+
+= entry .cli   runs the body as a daemon: one resident JVM, serving each launcher invocation on its own connection
+-   detail
++   detail
+
+-       `cli` is the daemonized counterpart of `application`: the same body, the same
+-       completions structure and the same `execute`, `arguments`, `Out` and `Exit`, but run by a
+-       process which stays resident and serves every invocation of the executable until it
+-       retires. It takes no arguments of its own — the launcher forwards the invocation's
+-       arguments, environment, working directory, standard streams, terminal size and signals —
+-       and the block runs once per client connection, with the invocation's `Resident over bus`,
+-       the executive's `Interface` (the `Cli`), its `Environment` and a `Monitor` as contextual
+-       values, so `resident`, `arguments`, `execute`, `Environment[Text](t"HOME")` and `task` all
+-       resolve inside it.
++       `cli` — демонизированный аналог `application`: то же тело, та же структура автодополнений
++       и те же `execute`, `arguments`, `Out` и `Exit`, но выполняемые процессом, который остаётся
++       резидентным и обслуживает каждый вызов исполняемого файла, пока не уйдёт на покой. Он не
++       принимает собственных аргументов — лаунчер пересылает аргументы вызова, окружение,
++       рабочий каталог, стандартные потоки данных, размер терминала и сигналы, — а блок
++       выполняется один раз на каждое клиентское соединение с `Resident over bus` вызова,
++       `Interface` исполнителя (`Cli`), его `Environment` и `Monitor` в качестве контекстных
++       значений, поэтому `resident`, `arguments`, `execute`, `Environment[Text](t"HOME")` и `task`
++       все разрешаются внутри него.
+
+=       resolve inside it.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       resolve inside it.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       typecheck
+-       frame
++       frame
+
+-         label A plain command-line application
++         label Обычное приложение командной строки
+
+=         label A plain command-line application
+-         code
++         code
+
+=         label A plain command-line application
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A plain command-line application
+=         code
+=             import soundness.*
+=
+-             import backstops.stackTraceBackstop
++             import backstops.stackTraceBackstop
+
+=         label A plain command-line application
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+-             import executives.completionsExecutive
++             import executives.completionsExecutive
+
+=         label A plain command-line application
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+-             import interpreters.posixInterpreter
++             import interpreters.posixInterpreter
+
+=         label A plain command-line application
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+-             import threads.virtualThreads
++             import threads.virtualThreads
+
+=         label A plain command-line application
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+=             import threads.virtualThreads
+=
+-             @main
++             @main
+
+-             def mytool(): Unit = application:
++             def mytool(): Unit = application:
+
+=             def mytool(): Unit = application:
+-               execute:
++               execute:
+
+=             def mytool(): Unit = application:
+=               execute:
+-                 Out.println(t"Hello world")
++                 Out.println(t"Hello world")
+
+=             def mytool(): Unit = application:
+=               execute:
+=                 Out.println(t"Hello world")
+-                 Exit.Ok
++                 Exit.Ok
+
+=             def mytool(): Unit = application:
+=               execute:
+=                 Out.println(t"Hello world")
+=                 Exit.Ok
+-       frame
++       frame
+
+-         label The same body, resident: `cli` in place of `application`
++         label То же тело, резидентное: `cli` вместо `application`
+
+=         label The same body, resident: `cli` in place of `application`
+-         code
++         code
+
+=         label The same body, resident: `cli` in place of `application`
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label The same body, resident: `cli` in place of `application`
+=         code
+=             import soundness.*
+=
+-             import backstops.stackTraceBackstop
++             import backstops.stackTraceBackstop
+
+=         label The same body, resident: `cli` in place of `application`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+-             import executives.completionsExecutive
++             import executives.completionsExecutive
+
+=         label The same body, resident: `cli` in place of `application`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+-             import interpreters.posixInterpreter
++             import interpreters.posixInterpreter
+
+=         label The same body, resident: `cli` in place of `application`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+-             import threads.virtualThreads
++             import threads.virtualThreads
+
+=         label The same body, resident: `cli` in place of `application`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+=             import threads.virtualThreads
+=
+-             @main
++             @main
+
+=         label The same body, resident: `cli` in place of `application`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+=             import threads.virtualThreads
+=
+=             @main
+-             def mytool(): Unit = cli:
++             def mytool(): Unit = cli:
+
+=         label The same body, resident: `cli` in place of `application`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+=             import threads.virtualThreads
+=
+=             @main
+=             def mytool(): Unit = cli:
+-               execute:
++               execute:
+
+=             def mytool(): Unit = cli:
+=               execute:
+-                 Out.println(t"Hello world")
++                 Out.println(t"Hello world")
+
+=             def mytool(): Unit = cli:
+=               execute:
+=                 Out.println(t"Hello world")
+-                 Exit.Ok
++                 Exit.Ok
+
+=             def mytool(): Unit = cli:
+=               execute:
+=                 Out.println(t"Hello world")
+=                 Exit.Ok
+-       frame
++       frame
+
+-         label What the invocation knows about its client, through `resident`
++         label Что вызов знает о своём клиенте, через `resident`
+
+=         label What the invocation knows about its client, through `resident`
+-         code
++         code
+
+=         label What the invocation knows about its client, through `resident`
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label What the invocation knows about its client, through `resident`
+=         code
+=             import soundness.*
+=
+-             import backstops.stackTraceBackstop
++             import backstops.stackTraceBackstop
+
+=         label What the invocation knows about its client, through `resident`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+-             import executives.completionsExecutive
++             import executives.completionsExecutive
+
+=         label What the invocation knows about its client, through `resident`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+-             import interpreters.posixInterpreter
++             import interpreters.posixInterpreter
+
+=         label What the invocation knows about its client, through `resident`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+-             import threads.virtualThreads
++             import threads.virtualThreads
+
+=         label What the invocation knows about its client, through `resident`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+=             import threads.virtualThreads
+=
+-             @main
++             @main
+
+=         label What the invocation knows about its client, through `resident`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+=             import threads.virtualThreads
+=
+=             @main
+-             def mytool(): Unit = cli:
++             def mytool(): Unit = cli:
+
+=         label What the invocation knows about its client, through `resident`
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+=             import threads.virtualThreads
+=
+=             @main
+=             def mytool(): Unit = cli:
+-               execute:
++               execute:
+
+-                 if resident.cliOutput == Terminus.Terminal
++                 if resident.cliOutput == Terminus.Terminal
+
+-                 then Out.println(t"Hello, ${resident.invokedAs.or(t"world")}")
++                 then Out.println(t"Hello, ${resident.invokedAs.or(t"world")}")
+
+-                 else Out.println(t"Hello world")
++                 else Out.println(t"Hello world")
+
+=                 else Out.println(t"Hello world")
+-                 Exit.Ok
++                 Exit.Ok
+
+=                 else Out.println(t"Hello world")
+=                 Exit.Ok
+-       frame
++       frame
+
+-         label A typed bus between the daemon's concurrent invocations
++         label Типизированная шина между одновременными вызовами демона
+
+=         label A typed bus between the daemon's concurrent invocations
+-         code
++         code
+
+=         label A typed bus between the daemon's concurrent invocations
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A typed bus between the daemon's concurrent invocations
+=         code
+=             import soundness.*
+=
+-             import backstops.stackTraceBackstop
++             import backstops.stackTraceBackstop
+
+=         label A typed bus between the daemon's concurrent invocations
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+-             import executives.completionsExecutive
++             import executives.completionsExecutive
+
+=         label A typed bus between the daemon's concurrent invocations
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+-             import interpreters.posixInterpreter
++             import interpreters.posixInterpreter
+
+=         label A typed bus between the daemon's concurrent invocations
+=         code
+=             import soundness.*
+=
+=             import backstops.stackTraceBackstop
+=             import executives.completionsExecutive
+=             import interpreters.posixInterpreter
+-             import threads.virtualThreads
++             import threads.virtualThreads
+
+-             enum Message:
++             enum Message:
+
+-               case ConfigChanged
++               case ConfigChanged
+
+=               case ConfigChanged
+=
+-             @main
++             @main
+
+-             def mytool(): Unit = cli[Message]:
++             def mytool(): Unit = cli[Message]:
+
+=             def mytool(): Unit = cli[Message]:
+-               execute:
++               execute:
+
+-                 resident.broadcast(Message.ConfigChanged)
++                 resident.broadcast(Message.ConfigChanged)
+
+=                 resident.broadcast(Message.ConfigChanged)
+-                 Out.println(t"Hello world")
++                 Out.println(t"Hello world")
+
+=                 resident.broadcast(Message.ConfigChanged)
+=                 Out.println(t"Hello world")
+-                 Exit.Ok
++                 Exit.Ok
+
+=                 Exit.Ok
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       The type argument `bus` is the type of the messages the daemon's invocations exchange
+-       through `resident.bus` and `resident.broadcast`; it is `Matchable` and left unapplied
+-       for a daemon which exchanges none. The contextual values `cli` needs are the same as
+-       `application`'s — an `Executive` (`executives.completionsExecutive` for tab completions,
+-       the only executive which can produce `resident.help()`'s tree), an `Interpreter`, a
+-       `Threading` and a `Backstop` — plus a `Watcher`, with which it watches its state files
+-       (the default comes from `Watcher`'s companion). The block runs on the connection's task,
+-       so it may capture only *durable* capabilities — the daemon's monitor, logger and standard
+-       streams; an exclusive resource is opened and owned inside the block.
++       Аргумент типа `bus` — это тип сообщений, которыми вызовы демона обмениваются через
++       `resident.bus` и `resident.broadcast`; он `Matchable` и не указывается для демона, который
++       ничем не обменивается. Контекстные значения, нужные `cli`, те же, что у `application`, —
++       `Executive` (`executives.completionsExecutive` для автодополнения, единственный
++       исполнитель, способный построить дерево `resident.help()`), `Interpreter`, `Threading` и
++       `Backstop`, — плюс `Watcher`, с помощью которого он наблюдает за своими файлами состояния
++       (значение по умолчанию берётся из компаньона `Watcher`). Блок выполняется в задаче
++       соединения, поэтому может захватывать только *долговечные* возможности — монитор, логгер
++       и стандартные потоки данных демона; исключительный ресурс открывается внутри блока и
++       принадлежит ему.
+
+-       The first invocation starts the daemon: the launcher starts the JVM with the properties
+-       `ethereal.name` (the executable's name), `ethereal.script` (its path),
+-       `ethereal.user.id`/`ethereal.user.name`, `ethereal.startTime`, `build.id` and
+-       `ethereal.environment=stdin`, and `cli` reads `DaemonEnvironment` from its standard
+-       input, writes its `acceptance` file, binds the socket, writes the `build` and `pid`
+-       files (the launcher waits for them before connecting) and starts a task which watches
+-       them and the launcher itself, so that a deleted state file or a rewritten executable
+-       ends the daemon promptly rather than leaving it serving broken no-ops. A JVM run
+-       without a launcher — `java -jar mytool.jar` — has no `ethereal.name`, prints _This
+-       application must be invoked through its XEK launcher_ with the `xek build` line to run,
+-       and exits with status 1.
++       Первый вызов запускает демона: лаунчер запускает JVM со свойствами `ethereal.name` (имя
++       исполняемого файла), `ethereal.script` (его путь), `ethereal.user.id`/`ethereal.user.name`,
++       `ethereal.startTime`, `build.id` и `ethereal.environment=stdin`, а `cli` читает
++       `DaemonEnvironment` из своего стандартного ввода, записывает свой файл `acceptance`,
++       привязывает сокет, записывает файлы `build` и `pid` (лаунчер ждёт их перед подключением)
++       и запускает задачу, которая наблюдает за ними и за самим лаунчером, так что удалённый файл
++       состояния или переписанный исполняемый файл быстро завершают демона, а не оставляют его
++       обслуживать сломанные пустые вызовы. JVM, запущенная без лаунчера — `java -jar
++       mytool.jar`, — не имеет `ethereal.name`, печатает _This application must be invoked
++       through its XEK launcher_ вместе со строкой `xek build`, которую нужно выполнить, и
++       завершается с кодом 1.
+
+-       Each connection then opens with one `Launcher.Message`: an `Init` starts a `Session`
+-       and runs the block with a `Resident` built for it; `Shutdown` drains the daemon;
+-       `Verify` answers whether the launcher file still has the content the daemon was started
+-       from, and drains it if not; a document of another schema is logged as
+-       `DaemonLogEvent.ProtocolMismatch` and the connection closed, and a peer who is not the
+-       socket's owner, or an `Init` from another user, is refused (`PeerRefused`). An
+-       invocation which arrives while the daemon is draining is refused with exit status 2.
++       Затем каждое соединение открывается одним `Launcher.Message`: `Init` начинает `Session` и
++       выполняет блок с построенным для неё `Resident`; `Shutdown` сворачивает работу демона;
++       `Verify` отвечает, сохранил ли файл лаунчера то содержимое, из которого был запущен демон,
++       и если нет — сворачивает его работу; документ другой схемы логируется как
++       `DaemonLogEvent.ProtocolMismatch`, и соединение закрывается, а партнёр, не являющийся
++       владельцем сокета, или `Init` от другого пользователя отвергаются (`PeerRefused`). Вызов,
++       пришедший, пока демон сворачивает работу, отвергается с кодом завершения 2.
+
+-       Whatever the block does, the session ends with an exit status: an `Egress.Error` (a
+-       write to a stream whose reader has gone, `mytool | head -1` once `head` has exited)
+-       ends the invocation with status 141, as `SIGPIPE` would end a process; any other
+-       throwable — a `java.lang.Error` included — is logged as `DaemonLogEvent.Failure` and
+-       given to the `Backstop`, which reports it on the invocation's stderr and chooses the
+-       status. The daemon retires after six idle hours (`DaemonLogEvent.IdleTimeout`), and a
+-       drain — from `'{admin}' shutdown`, a stale verdict or `resident.retire()` — waits for the
+-       invocations in flight and at most thirty seconds, then exits. Arguments and environment
+-       entries which are not valid UTF-8 arrive with U+FFFD in place of the offending bytes,
+-       as the JVM itself would deliver them, and their original bytes are `resident.rawArgument`
+-       and `resident.rawEnvironment`.
++       Что бы ни делал блок, сессия заканчивается кодом завершения: `Egress.Error` (запись в
++       поток данных, читатель которого ушёл, — `mytool | head -1` после выхода `head`) завершает
++       вызов с кодом 141, как `SIGPIPE` завершил бы процесс; любой другой throwable — включая
++       `java.lang.Error` — логируется как `DaemonLogEvent.Failure` и передаётся `Backstop`,
++       который сообщает о нём в stderr вызова и выбирает код. Демон уходит на покой после шести
++       часов простоя (`DaemonLogEvent.IdleTimeout`), а сворачивание работы — по
++       `'{admin}' shutdown`, по вердикту об устаревании или по `resident.retire()` — ждёт текущих
++       вызовов не более тридцати секунд, затем завершается. Аргументы и элементы окружения, не
++       являющиеся корректным UTF-8, приходят с U+FFFD на месте недопустимых байтов, как их
++       доставила бы сама JVM, а их исходные байты доступны через `resident.rawArgument` и
++       `resident.rawEnvironment`.
+
+=       and `resident.rawEnvironment`.
+-   refer ethereal.resident
++   refer ethereal.resident
+
+=   refer ethereal.resident
+-   refer ethereal.Resident
++   refer ethereal.Resident
+
+=   refer ethereal.Resident
+-   refer ethereal.Launcher
++   refer ethereal.Launcher
+
+-   refer ethereal.DaemonLogEvent
++   refer ethereal.DaemonLogEvent
+
+-   refer ethereal.Egress
++   refer ethereal.Egress
+
+- entry .resident   the invocation's `Resident`, the handle on the daemon serving it, inside a `cli` block
+-     `resident` summons the `Resident over bus` which `cli` provides for the current
+-     invocation, so that `resident.cliInput`, `resident.invokedAs`, `resident.cooked`,
+-     `resident.broadcast` and the rest read naturally inside the block. It is a capability, so
+-     the result retains it: it cannot be stored past the invocation or passed to another.
++ entry .resident   `Resident` вызова, дескриптор обслуживающего его демона, внутри блока `cli`
++     `resident` призывает `Resident over bus`, который `cli` предоставляет для текущего вызова,
++     чтобы `resident.cliInput`, `resident.invokedAs`, `resident.cooked`, `resident.broadcast` и
++     остальное естественно читались внутри блока. Это возможность, поэтому результат удерживает
++     её: его нельзя сохранить дольше вызова или передать другому вызову.
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+-     import backstops.stackTraceBackstop
++     import backstops.stackTraceBackstop
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+-     import executives.completionsExecutive
++     import executives.completionsExecutive
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+=     import executives.completionsExecutive
+-     import interpreters.posixInterpreter
++     import interpreters.posixInterpreter
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+=     import executives.completionsExecutive
+=     import interpreters.posixInterpreter
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+=     import executives.completionsExecutive
+=     import interpreters.posixInterpreter
+=     import threads.virtualThreads
+=
+-     @main
++     @main
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+=     import executives.completionsExecutive
+=     import interpreters.posixInterpreter
+=     import threads.virtualThreads
+=
+=     @main
+-     def mytool(): Unit = cli:
++     def mytool(): Unit = cli:
+
+=     the result retains it: it cannot be stored past the invocation or passed to another.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=
+=     import backstops.stackTraceBackstop
+=     import executives.completionsExecutive
+=     import interpreters.posixInterpreter
+=     import threads.virtualThreads
+=
+=     @main
+=     def mytool(): Unit = cli:
+-       execute:
++       execute:
+
+-         Out.println(t"served by the daemon ${resident.pid.value.show}, started from ${resident.executable.encode}")
++         Out.println(t"served by the daemon ${resident.pid.value.show}, started from ${resident.executable.encode}")
+
+=         Out.println(t"served by the daemon ${resident.pid.value.show}, started from ${resident.executable.encode}")
+-         Exit.Ok
++         Exit.Ok
+
+=         Out.println(t"served by the daemon ${resident.pid.value.show}, started from ${resident.executable.encode}")
+=         Exit.Ok
+-     ```
++     ```
+
+- entry .Resident   an invocation's handle on the daemon: what the launcher told it about the client, and the daemon's controls
++ entry .Resident   дескриптор вызова для демона: что лаунчер сообщил ему о клиенте, и средства управления демоном
+
+= entry .Resident   an invocation's handle on the daemon: what the launcher told it about the client, and the daemon's controls
+-   detail
++   detail
+
+-       A `Resident` is the capability `cli` builds for each invocation and `resident` summons
+-       inside the block. It holds everything the daemon knows about the client — which it can
+-       only know from the launcher's `init` document, since the daemon holds a socket and not
+-       the client's process — together with the daemon's own controls: a typed message bus
+-       between concurrent invocations, the terminal-mode and run-on-terminal requests which
+-       travel back over the session, and `retire()`, which drains the daemon.
++       `Resident` — это возможность, которую `cli` строит для каждого вызова, а `resident`
++       призывает внутри блока. Она содержит всё, что демон знает о клиенте, — а знать он может
++       только из документа `init` лаунчера, поскольку у демона есть сокет, а не процесс клиента, —
++       вместе с собственными средствами управления демона: типизированной шиной сообщений между
++       одновременными вызовами, запросами режима терминала и запуска на терминале, которые
++       передаются обратно по сессии, и `retire()`, который сворачивает работу демона.
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+-       import backstops.stackTraceBackstop
++       import backstops.stackTraceBackstop
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+-       import executives.completionsExecutive
++       import executives.completionsExecutive
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+-       import interpreters.posixInterpreter
++       import interpreters.posixInterpreter
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+=       import threads.virtualThreads
+=
+-       @main
++       @main
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+=       import threads.virtualThreads
+=
+=       @main
+-       def mytool(): Unit = cli:
++       def mytool(): Unit = cli:
+
+=       travel back over the session, and `retire()`, which drains the daemon.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+=       import threads.virtualThreads
+=
+=       @main
+=       def mytool(): Unit = cli:
+-         execute:
++         execute:
+
+-           resident.invokedAs.let(_.cut(t"/").last) match
++           resident.invokedAs.let(_.cut(t"/").last) match
+
+-             case t"gunzip" => Out.println(t"decompressing")
++             case t"gunzip" => Out.println(t"decompressing")
+
+-             case _         => Out.println(t"compressing")
++             case _         => Out.println(t"compressing")
+
+-           resident.windowSize.let:
++           resident.windowSize.let:
+
+-             case (columns, rows) =>
++             case (columns, rows) =>
+
+-               Out.println(t"a terminal of $columns×$rows")
++               Out.println(t"a terminal of $columns×$rows")
+
+=               Out.println(t"a terminal of $columns×$rows")
+=
+-           Exit.Ok
++           Exit.Ok
+
+=               Out.println(t"a terminal of $columns×$rows")
+=
+=           Exit.Ok
+-       ```
++       ```
+
+-       It is an `Entrypoint` (`#script`, `#executable`, `#retire`), a `Umask.Provider` (its
+-       `#umask` is what the filesystem library applies to whatever the invocation creates) and
+-       a `Fdtable.Provider` (its `#fdtable` is how `/dev/stdin` or `/dev/fd/63` from
+-       `mytool <(…)` opens the *client's* descriptor, carried over the session, rather than the
+-       daemon's own). The type member `#Transport` is the bus's message type, written
+-       `Resident over Message`; the type `cli[Message]` provides. As an exclusive capability it
+-       cannot be stored past the invocation.
++       Это `Entrypoint` (`#script`, `#executable`, `#retire`), `Umask.Provider` (её `#umask` —
++       это то, что библиотека файловой системы применяет ко всему, что создаёт вызов) и
++       `Fdtable.Provider` (её `#fdtable` — это то, как `/dev/stdin` или `/dev/fd/63` из
++       `mytool <(…)` открывает файловый дескриптор *клиента*, передаваемый по сессии, а не
++       собственный дескриптор демона). Член-тип `#Transport` — это тип сообщений шины,
++       записываемый как `Resident over Message`; этот тип предоставляет `cli[Message]`. Как
++       исключительную возможность её нельзя сохранить дольше вызова.
+
+-       Most of its constructor parameters are public `val`s the daemon fills in from the `init`
+-       document; the thunks among them (`#shutdown`, `#helpThunk`, `#setMode`, `#run`,
+-       `#sizeThunk`) are the raw hooks behind `#retire`, `#help`, `#cooked`, `#terminal` and
+-       `#windowSize`, which are the methods to call.
++       Большинство параметров её конструктора — публичные `val`, которые демон заполняет из
++       документа `init`; функции-thunk среди них (`#shutdown`, `#helpThunk`, `#setMode`, `#run`,
++       `#sizeThunk`) — это сырые хуки, стоящие за `#retire`, `#help`, `#cooked`, `#terminal` и
++       `#windowSize`, которые и следует вызывать.
+
+=       `#windowSize`, which are the methods to call.
+-   refer ethereal.cli
++   refer ethereal.cli
+
+=   refer ethereal.cli
+-   refer ethereal.resident
++   refer ethereal.resident
+
+-   refer ethereal.Terminus
++   refer ethereal.Terminus
+
+-   refer ethereal.Tty
++   refer ethereal.Tty
+
+-   entry #Transport   the type of the messages this daemon's invocations exchange over the bus
+-       Abstract, bounded by `Matchable`, and fixed by the type argument to `cli`: inside
+-       `cli[Message]` the resident is a `Resident over Message`, so `#broadcast` takes a
+-       `Message` and `#bus` yields them. A daemon with no type argument exchanges nothing.
+-   entry #bus   the messages broadcast by the daemon's other invocations, as they arrive
+-       A `Chain[Transport]` which grows as other invocations call `#broadcast`: reading it
+-       blocks until the next message. An invocation's own broadcasts are not delivered to it.
++   entry #Transport   тип сообщений, которыми вызовы этого демона обмениваются по шине
++       Абстрактный, ограниченный `Matchable` и фиксируемый аргументом типа `cli`: внутри
++       `cli[Message]` resident — это `Resident over Message`, поэтому `#broadcast` принимает
++       `Message`, а `#bus` выдаёт их. Демон без аргумента типа ничем не обменивается.
++   entry #bus   сообщения, рассылаемые другими вызовами демона, по мере их поступления
++       `Chain[Transport]`, который растёт по мере того, как другие вызовы вызывают `#broadcast`:
++       чтение блокируется до следующего сообщения. Собственные рассылки вызова ему не
++       доставляются.
+
+=       blocks until the next message. An invocation's own broadcasts are not delivered to it.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       blocks until the next message. An invocation's own broadcasts are not delivered to it.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       blocks until the next message. An invocation's own broadcasts are not delivered to it.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       blocks until the next message. An invocation's own broadcasts are not delivered to it.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       blocks until the next message. An invocation's own broadcasts are not delivered to it.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+-       import backstops.stackTraceBackstop
++       import backstops.stackTraceBackstop
+
+=       blocks until the next message. An invocation's own broadcasts are not delivered to it.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+-       import executives.completionsExecutive
++       import executives.completionsExecutive
+
+=       blocks until the next message. An invocation's own broadcasts are not delivered to it.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+-       import interpreters.posixInterpreter
++       import interpreters.posixInterpreter
+
+=       blocks until the next message. An invocation's own broadcasts are not delivered to it.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+-       enum Message:
++       enum Message:
+
+-         case ConfigChanged
++         case ConfigChanged
+
+=         case ConfigChanged
+=
+-       @main
++       @main
+
+-       def watch(): Unit = cli[Message]:
++       def watch(): Unit = cli[Message]:
+
+=       def watch(): Unit = cli[Message]:
+-         execute:
++         execute:
+
+-           resident.bus.each:
++           resident.bus.each:
+
+-             case Message.ConfigChanged => Out.println(t"another invocation changed the configuration")
++             case Message.ConfigChanged => Out.println(t"another invocation changed the configuration")
+
+=             case Message.ConfigChanged => Out.println(t"another invocation changed the configuration")
+=
+-           Exit.Ok
++           Exit.Ok
+
+=             case Message.ConfigChanged => Out.println(t"another invocation changed the configuration")
+=
+=           Exit.Ok
+-       ```
++       ```
+
+-   entry #broadcast   sends a message to every other invocation of the daemon
+-       Delivers the message to the `#bus` of every invocation currently connected except the
+-       sender's. This is how a running `watch` learns that another invocation just changed the
+-       configuration.
+-   entry #retire   asks the daemon to go once this invocation has finished
+-       The daemon stops accepting invocations, lets those in flight finish (for at most thirty
+-       seconds), and exits; the next invocation starts a fresh daemon. The `'{admin}' shutdown`
+-       subcommand does the same from the shell. It overrides `Entrypoint#retire`, which does
+-       nothing for a plain application, so a tool written against `Entrypoint` works under
+-       both.
+-   entry #shutdown   the thunk `#retire` calls: the daemon's drain
+-   entry #pid   the client process's pid, as the launcher reported it
+-       The pid of the *launcher* process serving the user's shell, not the daemon's; it keys
+-       the daemon's table of connected clients, and `DaemonLogEvent.Init` and `CloseConnection`
+-       carry it.
+-   entry #cliInput   whether the client's stdin is a terminal or a pipe
+-       A `Terminus`: `Terminal` when the launcher reported stdin attached to a terminal, `Pipe`
+-       otherwise. The daemon cannot tell for itself — its streams are the launcher's socket —
+-       so this is the launcher's report and nothing else. `#cooked` and `#concealed` are no-ops
+-       unless this is `Terminal`.
+-   entry #cliOutput   whether the client's stdout is a terminal or a pipe
+-       Reported separately from stdin, since they genuinely differ: `mytool > file` run from a
+-       terminal has stdin on the terminal and stdout on a file. When stdout is not a terminal
+-       the invocation's `Termcap` has no width, so nothing wraps.
+-   entry #cliError   whether the client's stderr is a terminal or a pipe
+-   entry #executable   the path of the launcher executable the invocation ran
+-       The `script` field of the `init` document, as a `Path on Local`: the canonical path of
+-       the executable. `Installer.install` copies this file onto the `PATH`.
+-   entry #script   the executable's name, as the daemon was given it
+-       The `ethereal.name` property the launcher starts the daemon with: the command's name,
+-       which also names the daemon's state directory and its data directory.
+-   entry #startTime   when the daemon started, in epoch milliseconds
+-       From the `ethereal.startTime` property, or the JVM's clock when there is no launcher.
+-       `#started` and `#uptime` read it as typed values.
+-   entry #helpThunk   the thunk behind `#help`: the executive's help tree, or `Unset`
+-   entry #setMode   the hook behind `#cooked` and `#concealed`: asks the launcher for a `Tty` mode
+-       Sends a `Launcher.Message.Mode` over the session. Only the launcher can change the
+-       client's terminal, and a launcher whose stdin is not a terminal it owns ignores the
+-       request. Prefer `#cooked` and `#concealed`, which restore raw mode afterwards.
+-   entry #run   the hook behind `#terminal`: a command, its arguments and a directory, to the status it ended with
+-   entry #invokedAs   the name the executable was invoked by: `argv[0]` as the caller supplied it
+-       `Unset` under a launcher which did not report it. One executable installed under
+-       several names by symbolic links can dispatch on this, while every alias shares one warm
+-       daemon; the path is as the caller wrote it, so take its last segment for the bare name.
+-   entry #sizeThunk   the thunk behind `#windowSize`: the terminal's size as last measured
+-   entry #umask   the invocation's file-creation mask, if the launcher reported it
+-       A galilei `Umask`, parsed from the octal `umask` field of the `init` document. Through
+-       `Umask.Provider` the filesystem library applies it to whatever the invocation creates,
+-       so a file made by the daemon has the mode the client's shell would have given it, not
+-       the daemon's own `077`.
+-   entry #fdtable   the client's descriptor table, for paths which name a descriptor
+-       An `Fdtable` the filesystem library consults before it opens anything: `/dev/stdin`,
+-       `/dev/stdout`, `/dev/stderr`, `/dev/fd/N` and `/proc/self/fd/N` name the *client's*
+-       descriptors — the session's own streams for 0, 1 and 2; a regular file behind a
+-       descriptor by its real path; a pipe such as `mytool <(…)` carried as a stream once the
+-       launcher is asked for it — and a descriptor the client did not advertise names nothing,
+-       whatever the daemon's own table holds at that number. `Unset` without a launcher.
+-   entry #raws   the native bytes of each argument, environment entry or working directory whose text lost something
+-       The `Launcher.Raw` records of the `init` document: empty in the ordinary case, where
+-       every value was valid UTF-8. `#rawArgument`, `#rawEnvironment` and
+-       `#rawWorkingDirectory` look them up.
+-   entry #windowSize   the client terminal's size as (columns, rows), as the launcher last measured it
+-       Measured at connection and again with every `WINCH` and `CONT`, so it is live; the
+-       invocation's `Termcap` reads the same measurement, so tables and wrapped text fit the
+-       terminal as it is now. `Unset` when the client's stdout is not a terminal, or no size
+-       was reported.
+-   entry #cooked   runs a block with the client's terminal in canonical mode, with echo
+-       The launcher puts the terminal into raw mode before it connects, so that keypresses can
+-       be forwarded to an interactive session; that is wrong for a command which just wants a
+-       line of input, since there is no echo and Backspace arrives as a byte inside the line.
+-       `cooked` asks the launcher for canonical mode for the duration of the block — the
+-       terminal driver then provides echo and line editing — and restores raw mode afterwards,
+-       in a `finally`. A no-op when `#cliInput` is not a terminal, and silently ineffective
+-       under a launcher too old to offer the control channel.
++   entry #broadcast   отправляет сообщение каждому другому вызову демона
++       Доставляет сообщение в `#bus` каждого подключённого в данный момент вызова, кроме
++       отправителя. Так работающий `watch` узнаёт, что другой вызов только что изменил
++       конфигурацию.
++   entry #retire   просит демона уйти, как только этот вызов завершится
++       Демон перестаёт принимать вызовы, даёт текущим завершиться (не более чем за тридцать
++       секунд) и выходит; следующий вызов запускает нового демона. Подкоманда
++       `'{admin}' shutdown` делает то же самое из оболочки. Переопределяет `Entrypoint#retire`,
++       который для обычного приложения ничего не делает, поэтому инструмент, написанный для
++       `Entrypoint`, работает в обоих случаях.
++   entry #shutdown   функция-thunk, которую вызывает `#retire`: сворачивание работы демона
++   entry #pid   pid клиентского процесса, как его сообщил лаунчер
++       Pid процесса *лаунчера*, обслуживающего оболочку пользователя, а не демона; он служит
++       ключом в таблице подключённых клиентов демона, и его несут `DaemonLogEvent.Init` и
++       `CloseConnection`.
++   entry #cliInput   является ли stdin клиента терминалом или каналом
++       `Terminus`: `Terminal`, когда лаунчер сообщил, что stdin подключён к терминалу, и `Pipe` в
++       противном случае. Сам демон этого определить не может — его потоки данных — это сокет
++       лаунчера, — поэтому это сообщение лаунчера и ничего более. `#cooked` и `#concealed` ничего
++       не делают, если здесь не `Terminal`.
++   entry #cliOutput   является ли stdout клиента терминалом или каналом
++       Сообщается отдельно от stdin, поскольку они действительно различаются: у `mytool > file`,
++       запущенного из терминала, stdin на терминале, а stdout в файле. Когда stdout не терминал,
++       у `Termcap` вызова нет ширины, поэтому ничего не переносится.
++   entry #cliError   является ли stderr клиента терминалом или каналом
++   entry #executable   путь к исполняемому файлу лаунчера, который запустил вызов
++       Поле `script` документа `init` в виде `Path on Local`: канонический путь исполняемого
++       файла. `Installer.install` копирует этот файл в `PATH`.
++   entry #script   имя исполняемого файла, в том виде, в каком его получил демон
++       Свойство `ethereal.name`, с которым лаунчер запускает демона: имя команды, которое также
++       даёт имя каталогу состояния демона и его каталогу данных.
++   entry #startTime   когда запустился демон, в миллисекундах от эпохи
++       Из свойства `ethereal.startTime` или из часов JVM, когда лаунчера нет. `#started` и
++       `#uptime` читают его как типизированные значения.
++   entry #helpThunk   функция-thunk, стоящая за `#help`: дерево справки исполнителя или `Unset`
++   entry #setMode   хук, стоящий за `#cooked` и `#concealed`: просит у лаунчера режим `Tty`
++       Отправляет `Launcher.Message.Mode` по сессии. Только лаунчер может изменить терминал
++       клиента, а лаунчер, у которого stdin — не принадлежащий ему терминал, игнорирует запрос.
++       Предпочитайте `#cooked` и `#concealed`, которые затем восстанавливают сырой режим.
++   entry #run   хук, стоящий за `#terminal`: команда, её аргументы и каталог — в код, с которым она завершилась
++   entry #invokedAs   имя, под которым был вызван исполняемый файл: `argv[0]` в том виде, в каком его передал вызывающий
++       `Unset` под лаунчером, который его не сообщил. Один исполняемый файл, установленный под
++       несколькими именами через символические ссылки, может выбирать поведение по нему, при
++       этом все псевдонимы разделяют один прогретый демон; путь такой, каким его написал
++       вызывающий, поэтому для голого имени берите его последний сегмент.
++   entry #sizeThunk   функция-thunk, стоящая за `#windowSize`: размер терминала по последнему измерению
++   entry #umask   маска создания файлов вызова, если лаунчер её сообщил
++       `Umask` из galilei, разобранная из восьмеричного поля `umask` документа `init`. Через
++       `Umask.Provider` библиотека файловой системы применяет её ко всему, что создаёт вызов, так
++       что файл, созданный демоном, получает тот режим, который дала бы ему оболочка клиента, а
++       не собственный `077` демона.
++   entry #fdtable   таблица файловых дескрипторов клиента, для путей, называющих дескриптор
++       `Fdtable`, к которой библиотека файловой системы обращается, прежде чем что-либо открыть:
++       `/dev/stdin`, `/dev/stdout`, `/dev/stderr`, `/dev/fd/N` и `/proc/self/fd/N` называют
++       дескрипторы *клиента* — собственные потоки данных сессии для 0, 1 и 2; обычный файл за
++       дескриптором — по его настоящему пути; канал, например `mytool <(…)`, — передаваемый как
++       поток данных, когда его запросят у лаунчера, — а дескриптор, который клиент не объявил,
++       не называет ничего, что бы ни содержала под этим номером собственная таблица демона.
++       `Unset` без лаунчера.
++   entry #raws   нативные байты каждого аргумента, элемента окружения или рабочего каталога, текст которых что-то потерял
++       Записи `Launcher.Raw` документа `init`: пусто в обычном случае, когда каждое значение было
++       корректным UTF-8. `#rawArgument`, `#rawEnvironment` и `#rawWorkingDirectory` ищут в них.
++   entry #windowSize   размер терминала клиента в виде (столбцы, строки), по последнему измерению лаунчера
++       Измеряется при подключении и снова при каждом `WINCH` и `CONT`, поэтому он живой;
++       `Termcap` вызова читает то же измерение, поэтому таблицы и перенесённый текст подходят к
++       терминалу таким, каков он сейчас. `Unset`, когда stdout клиента не терминал или размер не
++       был сообщён.
++   entry #cooked   выполняет блок с терминалом клиента в каноническом режиме, с эхом
++       Лаунчер переводит терминал в сырой режим перед подключением, чтобы нажатия клавиш можно
++       было пересылать интерактивной сессии; для команды, которой нужна всего лишь строка ввода,
++       это неправильно, поскольку эха нет, а Backspace приходит как байт внутри строки. `cooked`
++       просит у лаунчера канонический режим на время блока — тогда эхо и редактирование строки
++       обеспечивает драйвер терминала — и затем восстанавливает сырой режим в `finally`. Ничего
++       не делает, когда `#cliInput` не терминал, и молча не действует под слишком старым
++       лаунчером, который не предлагает управляющего канала.
+
+=       under a launcher too old to offer the control channel.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       under a launcher too old to offer the control channel.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       under a launcher too old to offer the control channel.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       under a launcher too old to offer the control channel.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       under a launcher too old to offer the control channel.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+-       import backstops.stackTraceBackstop
++       import backstops.stackTraceBackstop
+
+=       under a launcher too old to offer the control channel.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+-       import executives.completionsExecutive
++       import executives.completionsExecutive
+
+=       under a launcher too old to offer the control channel.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+-       import interpreters.posixInterpreter
++       import interpreters.posixInterpreter
+
+=       under a launcher too old to offer the control channel.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       under a launcher too old to offer the control channel.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+=       import threads.virtualThreads
+=
+-       @main
++       @main
+
+-       def ask(): Unit = cli:
++       def ask(): Unit = cli:
+
+=       def ask(): Unit = cli:
+-         execute:
++         execute:
+
+-           val name = resident.cooked:
++           val name = resident.cooked:
+
+-             Out.println(t"Name?")
++             Out.println(t"Name?")
+
+-             java.io.BufferedReader(java.io.InputStreamReader(summon[Stdio].in)).readLine().nn.tt
++             java.io.BufferedReader(java.io.InputStreamReader(summon[Stdio].in)).readLine().nn.tt
+
+-           Out.println(t"Hello, $name")
++           Out.println(t"Hello, $name")
+
+=           Out.println(t"Hello, $name")
+-           Exit.Ok
++           Exit.Ok
+
+=           Out.println(t"Hello, $name")
+=           Exit.Ok
+-       ```
++       ```
+
+-   entry #concealed   runs a block in canonical mode with nothing echoed: how a password is read
+-       As `#cooked`, with the terminal driver's line editing but no echo, for the duration of
+-       the block; raw mode is restored afterwards. A no-op when stdin is not a terminal.
+-   entry #terminal   runs a command on the client's terminal, and gives the status it ended with
+-       For an editor, a pager, `ssh` or `sudo`: programs which need the terminal, which the
+-       daemon's process, detached from any terminal, cannot reach. The launcher stops
+-       forwarding the terminal's input and holds the invocation's output, restores the
+-       terminal's saved state, runs the command with the client's environment and standard
+-       streams — in `pwd` if given — and, when it ends, puts the terminal back and reports
+-       the status: the exit code, 128 plus the signal it died of, or 127 if it could not be
+-       run, which is also the answer when the client's stdin is not a terminal. One command
+-       runs at a time. Its output goes to the terminal, not the invocation; to capture a
+-       program's output, run it in this process with `sh"…".exec`.
++   entry #concealed   выполняет блок в каноническом режиме без эха: так читается пароль
++       Как `#cooked`, с редактированием строки драйвером терминала, но без эха, на время блока;
++       затем восстанавливается сырой режим. Ничего не делает, когда stdin не терминал.
++   entry #terminal   выполняет команду на терминале клиента и возвращает код, с которым она завершилась
++       Для редактора, пейджера, `ssh` или `sudo`: программ, которым нужен терминал, а процесс
++       демона, отсоединённый от любого терминала, до него не дотягивается. Лаунчер прекращает
++       пересылать ввод терминала и придерживает вывод вызова, восстанавливает сохранённое
++       состояние терминала, выполняет команду с окружением и стандартными потоками данных
++       клиента — в `pwd`, если он задан, — а когда она заканчивается, возвращает терминал на
++       место и сообщает код: код выхода, 128 плюс сигнал, от которого она погибла, или 127, если
++       её не удалось запустить, — это же ответ, когда stdin клиента не терминал. Одновременно
++       выполняется одна команда. Её вывод идёт на терминал, а не в вызов; чтобы перехватить
++       вывод программы, выполните её в этом процессе через `sh"…".exec`.
+
+=       program's output, run it in this process with `sh"…".exec`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       program's output, run it in this process with `sh"…".exec`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       program's output, run it in this process with `sh"…".exec`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       program's output, run it in this process with `sh"…".exec`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       program's output, run it in this process with `sh"…".exec`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+-       import backstops.stackTraceBackstop
++       import backstops.stackTraceBackstop
+
+=       program's output, run it in this process with `sh"…".exec`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+-       import executives.completionsExecutive
++       import executives.completionsExecutive
+
+=       program's output, run it in this process with `sh"…".exec`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+-       import interpreters.posixInterpreter
++       import interpreters.posixInterpreter
+
+=       program's output, run it in this process with `sh"…".exec`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       program's output, run it in this process with `sh"…".exec`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+=       import threads.virtualThreads
+=
+-       @main
++       @main
+
+-       def edit(): Unit = cli:
++       def edit(): Unit = cli:
+
+=       def edit(): Unit = cli:
+-         execute:
++         execute:
+
+-           val status: Int = resident.terminal(t"vi", List(t"-R", t"notes.txt"))
++           val status: Int = resident.terminal(t"vi", List(t"-R", t"notes.txt"))
+
+-           if status == 0 then Exit.Ok else Exit.Fail(status)
++           if status == 0 then Exit.Ok else Exit.Fail(status)
+
+=           if status == 0 then Exit.Ok else Exit.Fail(status)
+-       ```
++       ```
+
+-   entry #rawArgument   the operating system's own bytes of the argument at an index, where its text lost something
+-       An argument which is not valid UTF-8 reaches `arguments` with U+FFFD in place of the
+-       offending bytes, as the JVM would deliver it; this gives the bytes as given — on Unix
+-       the bytes themselves, on Windows the UTF-16 code units, little-endian — for the
+-       argument at `index`, counted from 0. `Unset` for an argument its text carries exactly,
+-       which is the ordinary case, so a caller falls back to the text.
+-   entry #rawEnvironment   the operating system's own bytes of the environment entry (`NAME=value`) at an index
+-       As `#rawArgument`, for the entry at `index` of the environment the launcher forwarded;
+-       `Unset` for an entry whose text is exact.
+-   entry #rawWorkingDirectory   the working directory's bytes, where its text could not carry them
+-   entry #help   the structured help tree for this command, from the completions executive
+-       Generated lazily and memoized by the daemon: the application's pure portion is re-run
+-       in tab-completion mode to discover its subcommand and flag tree. Only
+-       `executives.completionsExecutive` can produce the tree; under another executive this
+-       is a root `Help` with the command's name and nothing beneath it.
+-   entry #localHelp   the help tree narrowed to the subcommands this invocation has matched so far
+-       Needs the invocation's `Cli`: `help().local(cli.matches)`, so that a section of the
+-       application documents only itself, falling back to the full tree when nothing has
+-       been matched or the matched path is absent from it.
+-   entry #buildId   the build id of the executable the daemon was started from; zero without a launcher
+-       The 64-bit `build.id` property the launcher passes (xek's `--build-id`), or a
+-       `build.id` classpath resource when there is no launcher, or zero. Compare it with the
+-       build id of a release on offer before staging an `Upgrade`.
+-   entry #started   when the daemon started, as any instant type made from epoch milliseconds
+-       `resident.started[Instant]`, for any `Instantiable across Instants from Long`.
+-   entry #uptime   how long the daemon has been running, as any duration type made from nanoseconds
+-       `resident.uptime[Duration]`, for any `Instantiable across Durations from Long`; never
+-       negative.
++   entry #rawArgument   собственные байты операционной системы для аргумента по индексу, если его текст что-то потерял
++       Аргумент, не являющийся корректным UTF-8, попадает в `arguments` с U+FFFD на месте
++       недопустимых байтов, как доставила бы его JVM; здесь же даются байты в исходном виде — в
++       Unix сами байты, в Windows кодовые единицы UTF-16 в порядке little-endian — для аргумента
++       с номером `index`, считая от 0. `Unset` для аргумента, текст которого передаёт его точно,
++       что и есть обычный случай, поэтому вызывающий код откатывается к тексту.
++   entry #rawEnvironment   собственные байты операционной системы для элемента окружения (`NAME=value`) по индексу
++       Как `#rawArgument`, для элемента с номером `index` окружения, пересланного лаунчером;
++       `Unset` для элемента, текст которого точен.
++   entry #rawWorkingDirectory   байты рабочего каталога, если его текст не смог их передать
++   entry #help   структурированное дерево справки для этой команды, от исполнителя автодополнения
++       Генерируется лениво и запоминается демоном: чистая часть приложения перезапускается в
++       режиме автодополнения, чтобы обнаружить дерево его подкоманд и флагов. Только
++       `executives.completionsExecutive` может построить это дерево; при другом исполнителе это
++       корневой `Help` с именем команды и ничем под ним.
++   entry #localHelp   дерево справки, суженное до подкоманд, которые этот вызов уже сопоставил
++       Нужен `Cli` вызова: `help().local(cli.matches)`, чтобы раздел приложения документировал
++       только себя, откатываясь к полному дереву, когда ничего не сопоставлено или сопоставленный
++       путь в нём отсутствует.
++   entry #buildId   идентификатор сборки исполняемого файла, из которого запущен демон; ноль без лаунчера
++       64-битное свойство `build.id`, которое передаёт лаунчер (`--build-id` у xek), или ресурс
++       пути классов `build.id`, когда лаунчера нет, или ноль. Сравните его с идентификатором
++       сборки предлагаемого выпуска, прежде чем подготавливать `Upgrade`.
++   entry #started   когда запустился демон, в виде любого типа момента времени, строящегося из миллисекунд от эпохи
++       `resident.started[Instant]`, для любого `Instantiable across Instants from Long`.
++   entry #uptime   как долго работает демон, в виде любого типа длительности, строящегося из наносекунд
++       `resident.uptime[Duration]`, для любого `Instantiable across Durations from Long`;
++       никогда не отрицательно.
+
+- entry .Launcher   the launcher-to-daemon protocol: the `ethereal-launcher` TEL schema, its messages and their BinTEL codec
++ entry .Launcher   протокол между лаунчером и демоном: TEL-схема `ethereal-launcher`, её сообщения и их кодек BinTEL
+
+= entry .Launcher   the launcher-to-daemon protocol: the `ethereal-launcher` TEL schema, its messages and their BinTEL codec
+-   detail
++   detail
+
+-       `Launcher` is the contract between an Ethereal launcher — the Rust runner published by
+-       `propensive/xek` — and its daemon. An invocation is one connection: it opens with an
+-       `init` document and then carries, in both directions, the documents of a session —
+-       `data` chunks of every stream, `end`, `credit`, `open`, `signal`/`signal-ack`, `mode`,
+-       `run`/`exited` and `closed` — until the daemon's `exit-status` ends it; `verify` and
+-       `shutdown` are asked on short connections of their own. The TEL schema is the
+-       specification: its text is the resource `ethereal/ethereal-launcher.tel` in ethereal's
+-       own jar, byte for byte xek's `spec/ethereal-launcher.tel`, and `.Message` mirrors it
+-       variant for variant. Each document on the wire is one framed BinTEL document — magic,
+-       length, the schema's 33-byte `.signature`, body — and both sides compare the signature
+-       before reading a field, so a launcher and a daemon built against different schemas
+-       refuse each other at the first document (`DaemonLogEvent.ProtocolMismatch`) rather than
+-       misread fields. The daemon reads from an untrusted peer, so a declared length over
+-       `.maximumLength` is refused before it is acted on.
++       `Launcher` — это контракт между лаунчером Ethereal — раннером на Rust, публикуемым
++       `propensive/xek`, — и его демоном. Вызов — это одно соединение: оно открывается
++       документом `init`, а затем переносит в обоих направлениях документы сессии — чанки `data`
++       каждого потока данных, `end`, `credit`, `open`, `signal`/`signal-ack`, `mode`,
++       `run`/`exited` и `closed`, — пока `exit-status` демона его не завершит; `verify` и
++       `shutdown` запрашиваются по собственным коротким соединениям. TEL-схема и есть
++       спецификация: её текст — ресурс `ethereal/ethereal-launcher.tel` в собственном jar
++       ethereal, байт в байт совпадающий с `spec/ethereal-launcher.tel` из xek, а `.Message`
++       отражает её вариант за вариантом. Каждый документ в передаваемых данных — это один
++       кадрированный документ BinTEL: магическое число, длина, 33-байтовая `.signature` схемы,
++       тело, — и обе стороны сравнивают сигнатуру, прежде чем прочитать хоть одно поле, поэтому
++       лаунчер и демон, собранные по разным схемам, отвергают друг друга на первом же документе
++       (`DaemonLogEvent.ProtocolMismatch`), а не читают поля неверно. Демон читает данные от
++       недоверенного партнёра, поэтому объявленная длина больше `.maximumLength` отвергается
++       прежде, чем по ней что-либо будет сделано.
+
+=       `.maximumLength` is refused before it is acted on.
+=
+-       ```scala
++       ```scala
+
+=       `.maximumLength` is refused before it is acted on.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val frame: Data = Launcher.encode(Launcher.Message.ExitStatus(42))
++       val frame: Data = Launcher.encode(Launcher.Message.ExitStatus(42))
+
+-       Launcher.decode(frame)   // Launcher.Message.ExitStatus(42)
++       Launcher.decode(frame)   // Launcher.Message.ExitStatus(42)
+
+-       Launcher.signature.length   // 33
++       Launcher.signature.length   // 33
+
+=       Launcher.signature.length   // 33
+-       ```
++       ```
+
+-       An application never speaks the protocol itself: `cli` and `Session` do. The object is
+-       public so that a tool which drives a daemon directly, or a test which pins the wire
+-       bytes against the runner's, can build and read the same documents.
++       Приложение никогда не говорит на протоколе само: это делают `cli` и `Session`. Объект
++       публичен, чтобы инструмент, управляющий демоном напрямую, или тест, сверяющий
++       передаваемые байты с байтами раннера, могли строить и читать те же документы.
+
+=       bytes against the runner's, can build and read the same documents.
+-   refer ethereal.cli
++   refer ethereal.cli
+
+-   refer ethereal.Session
++   refer ethereal.Session
+
+-   entry .schemaText   the text of the `ethereal-launcher` TEL schema, read from ethereal's own jar
+-       The resource `ethereal/ethereal-launcher.tel`, read once through ethereal's own
+-       classloader (`Classloader[Launcher.type]`), so the first thread to need it may carry
+-       any context classloader. Its absence is a packaging error and throws.
+-   entry .schema   the parsed and validated `Tels` schema the codec encodes against
+-       Parsed once from `.schemaText`; a malformed schema is a programming error, not a runtime
+-       condition.
+-   entry .signature   the schema's 33-byte palimpsest signature, carried by every document
+-       Compared byte for byte on receipt: `.decode` gives `Unset` for a document carrying
+-       another signature. The daemon also writes it into its `acceptance` state file, for a
+-       launcher to consult before it connects.
+-   entry .maximumLength   the longest document the daemon will read: one mebibyte
+-       A declared length beyond it makes `.readDocument` give `Unset` without reading the body.
+-       A chunk is at most `.maximumChunk`, and an invocation's environment and arguments fit
+-       comfortably.
+-   entry .maximumChunk   the most bytes one `data` document carries: 65536
+-       Also the credit each stream opens with in each direction (`Session.window`).
+-   entry .encode   a message as one framed BinTEL document
+-       Magic, length varint, `.signature`, body. A `Data` message is framed by hand, its bytes
+-       going straight into the frame with no BASE-256 text in between, since every chunk of
+-       every stream passes this way. Cannot fail: the elements are built against the
+-       library's own schema.
+-   entry .decode   the message a framed document carries, or `Unset`
+-       `Unset` when the document is malformed, carries another schema's signature, or does
+-       not fit `.Message`; a `Data` document is read by hand, as `.encode` writes it.
++   entry .schemaText   текст TEL-схемы `ethereal-launcher`, прочитанный из собственного jar ethereal
++       Ресурс `ethereal/ethereal-launcher.tel`, читаемый один раз через собственный загрузчик
++       классов ethereal (`Classloader[Launcher.type]`), поэтому первый нуждающийся в нём поток
++       выполнения может нести любой контекстный загрузчик классов. Его отсутствие — ошибка
++       упаковки, и оно приводит к исключению.
++   entry .schema   разобранная и проверенная схема `Tels`, по которой кодирует кодек
++       Разбирается один раз из `.schemaText`; некорректная схема — это ошибка программирования,
++       а не условие времени выполнения.
++   entry .signature   33-байтовая сигнатура palimpsest схемы, которую несёт каждый документ
++       Сравнивается байт в байт при получении: `.decode` даёт `Unset` для документа, несущего
++       другую сигнатуру. Демон также записывает её в свой файл состояния `acceptance`, чтобы
++       лаунчер мог свериться с ней перед подключением.
++   entry .maximumLength   самый длинный документ, который прочтёт демон: один мебибайт
++       Объявленная длина сверх неё заставляет `.readDocument` дать `Unset`, не читая тела. Чанк —
++       не более `.maximumChunk`, а окружение и аргументы вызова помещаются с запасом.
++   entry .maximumChunk   наибольшее число байтов, которое несёт один документ `data`: 65536
++       Это также кредит, с которым открывается каждый поток данных в каждом направлении
++       (`Session.window`).
++   entry .encode   сообщение в виде одного кадрированного документа BinTEL
++       Магическое число, varint длины, `.signature`, тело. Сообщение `Data` кадрируется вручную:
++       его байты идут прямо в кадр без промежуточного текста BASE-256, поскольку этим путём
++       проходит каждый чанк каждого потока данных. Не может завершиться неудачей: элементы
++       строятся по собственной схеме библиотеки.
++   entry .decode   сообщение, которое несёт кадрированный документ, или `Unset`
++       `Unset`, когда документ некорректен, несёт сигнатуру другой схемы или не подходит к
++       `.Message`; документ `Data` читается вручную, так же как его пишет `.encode`.
+
+=       not fit `.Message`; a `Data` document is read by hand, as `.encode` writes it.
+=
+-       ```scala
++       ```scala
+
+=       not fit `.Message`; a `Data` document is read by hand, as `.encode` writes it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Launcher.decode(Launcher.encode(Launcher.Message.Mode(true, true)))   // Launcher.Message.Mode(true, true)
++       Launcher.decode(Launcher.encode(Launcher.Message.Mode(true, true)))   // Launcher.Message.Mode(true, true)
+
+=       Launcher.decode(Launcher.encode(Launcher.Message.Mode(true, true)))   // Launcher.Message.Mode(true, true)
+-       ```
++       ```
+
+-   entry .readDocument   reads exactly one framed document from a `java.io.InputStream`
+-       Reads the four-byte magic, the length varint and then the declared number of bytes,
+-       leaving whatever follows unread, and gives the whole frame for `.decode`. `Unset` at
+-       end of input, on a malformed header, on a length over `.maximumLength`, or when the
+-       stream ends before the declared length.
+-   entry .Descriptor   a file descriptor the client holds, as the `init` document advertises it
++   entry .readDocument   читает ровно один кадрированный документ из `java.io.InputStream`
++       Читает четырёхбайтовое магическое число, varint длины и затем объявленное число байтов,
++       оставляя всё последующее непрочитанным, и отдаёт весь кадр для `.decode`. `Unset` в конце
++       ввода, при некорректном заголовке, при длине больше `.maximumLength` или когда поток данных
++       заканчивается раньше объявленной длины.
++   entry .Descriptor   файловый дескриптор, который держит клиент, как его объявляет документ `init`
+
+=   entry .Descriptor   a file descriptor the client holds, as the `init` document advertises it
+-     detail
++     detail
+
+-         The client's descriptors are numbered as the client sees them (0, 1 and 2 among
+-         them), each with its direction, its kind and, for a regular file, the real path the
+-         daemon may open directly; anything else is reached by opening the descriptor as a
+-         stream named by its number, with a `Launcher.Message.Open`. `Resident#fdtable`
+-         consults these.
+-     entry #fd   the descriptor's number, as the client holds it
+-     entry #direction   `r`, `w` or `rw`, as the descriptor was opened
+-     entry #kind   `file`, `pipe`, `tty`, `socket` or `other`
+-     entry #path   the real path, for a regular file; `Unset` otherwise
+-   entry .Raw   a value of the `init` document as the operating system gave it, where its text lost something
++         Дескрипторы клиента нумеруются так, как их видит клиент (включая 0, 1 и 2), каждый со
++         своим направлением, своим видом и, для обычного файла, настоящим путём, который демон
++         может открыть напрямую; ко всему остальному обращаются, открывая дескриптор как поток
++         данных, названный его номером, через `Launcher.Message.Open`. К ним обращается
++         `Resident#fdtable`.
++     entry #fd   номер дескриптора, как его держит клиент
++     entry #direction   `r`, `w` или `rw`, как был открыт дескриптор
++     entry #kind   `file`, `pipe`, `tty`, `socket` или `other`
++     entry #path   настоящий путь для обычного файла; иначе `Unset`
++   entry .Raw   значение документа `init` в том виде, в каком его дала операционная система, если его текст что-то потерял
+
+=   entry .Raw   a value of the `init` document as the operating system gave it, where its text lost something
+-     detail
++     detail
+
+-         An argument or environment entry which is not valid UTF-8 (or on Windows holds an
+-         unpaired surrogate), or the working directory, is sent as text with U+FFFD in place
+-         of what could not be carried, and again as a `Raw`: the platform's own bytes — bytes
+-         on Unix, UTF-16 code units, little-endian, on Windows. `Resident#rawArgument`,
+-         `Resident#rawEnvironment` and `Resident#rawWorkingDirectory` look them up.
+-     entry #kind   `argument`, `environment` or `pwd`
+-     entry #index   the position among the arguments or environment entries, from 0; `Unset` for `pwd`
+-     entry #bytes   the platform's own bytes of the value
+-   entry .Message   the documents of the protocol, one case per variant of the schema
++         Аргумент или элемент окружения, не являющийся корректным UTF-8 (или в Windows
++         содержащий непарный суррогат), либо рабочий каталог отправляется как текст с U+FFFD на
++         месте того, что не удалось передать, и ещё раз как `Raw`: собственные байты платформы —
++         байты в Unix, кодовые единицы UTF-16 в порядке little-endian в Windows.
++         `Resident#rawArgument`, `Resident#rawEnvironment` и `Resident#rawWorkingDirectory` ищут
++         их.
++     entry #kind   `argument`, `environment` или `pwd`
++     entry #index   позиция среди аргументов или элементов окружения, начиная с 0; `Unset` для `pwd`
++     entry #bytes   собственные байты значения на платформе
++   entry .Message   документы протокола, по одному кейсу на вариант схемы
+
+=   entry .Message   the documents of the protocol, one case per variant of the schema
+-     detail
++     detail
+
+-         The fifteen variants of the schema's root `select`, in its order, so that each case's
+-         index is its variant index on the wire. The launcher sends `Init`, `Data`, `End`,
+-         `Credit`, `Signal`, `Closed`, `Exited`, `Verify` and `Shutdown`; the daemon sends
+-         `Data`, `End`, `Credit`, `Open`, `SignalAck`, `Mode`, `Closed`, `Run`, `ExitStatus`
+-         and `Verdict`. `Verify` and `Shutdown` carry no fields.
++         Пятнадцать вариантов корневого `select` схемы, в её порядке, так что индекс каждого
++         кейса — это индекс его варианта в передаваемых данных. Лаунчер отправляет `Init`, `Data`,
++         `End`, `Credit`, `Signal`, `Closed`, `Exited`, `Verify` и `Shutdown`; демон отправляет
++         `Data`, `End`, `Credit`, `Open`, `SignalAck`, `Mode`, `Closed`, `Run`, `ExitStatus` и
++         `Verdict`. `Verify` и `Shutdown` не несут полей.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         val messages: List[Launcher.Message] =
++         val messages: List[Launcher.Message] =
+
+-           List
++           List
+
+-             ( Launcher.Message.Data(t"stdout", t"hello".in[Data]),
++             ( Launcher.Message.Data(t"stdout", t"hello".in[Data]),
+
+-               Launcher.Message.Credit(t"stdin", 65536L),
++               Launcher.Message.Credit(t"stdin", 65536L),
+
+-               Launcher.Message.Signal(t"WINCH", 80, 24),
++               Launcher.Message.Signal(t"WINCH", 80, 24),
+
+-               Launcher.Message.Mode(canonical = true, echo = false),
++               Launcher.Message.Mode(canonical = true, echo = false),
+
+-               Launcher.Message.ExitStatus(0) )
++               Launcher.Message.ExitStatus(0) )
+
+-         messages.map(Launcher.encode).map(Launcher.decode)
++         messages.map(Launcher.encode).map(Launcher.decode)
+
+-         ```
++         ```
+
+-         `Verify` asks, on a connection of its own, whether the launcher file the daemon
+-         started from still has the content it remembers (sent when the file's mtime disagrees
+-         with the daemon's `build` file); the daemon answers with a `Verdict` and, if stale,
+-         drains itself so that the launcher's fresh daemon can take its place. `Shutdown` asks
+-         the daemon to accept no further invocations, let those in flight finish, and end; it
+-         is not answered.
+-     entry .Init   a new invocation, opening the session which carries it
++         `Verify` спрашивает по собственному соединению, сохранил ли файл лаунчера, из которого
++         запустился демон, запомненное демоном содержимое (отправляется, когда mtime файла
++         расходится с файлом `build` демона); демон отвечает `Verdict` и, если файл устарел,
++         сворачивает свою работу, чтобы его место мог занять новый демон лаунчера. `Shutdown`
++         просит демона не принимать новых вызовов, дать текущим завершиться и закончить работу;
++         на него не отвечают.
++     entry .Init   новый вызов, открывающий переносящую его сессию
+
+=     entry .Init   a new invocation, opening the session which carries it
+-       detail
++       detail
+
+-           The first document of every invocation's connection. The three tty flags say which
+-           of the client's streams are attached to a terminal, which the daemon cannot
+-           determine for itself; the user is the platform's identifier (numeric on Unix, a SID
+-           on Windows), and an `Init` from a user other than the daemon's own is refused with
+-           exit status 2. A daemon which is draining refuses it the same way.
+-       entry #pid   the client process's pid
+-       entry #uid   the platform's identifier for the user: numeric on Unix, a SID on Windows
+-       entry #username   the user's login name
+-       entry #script   the canonical path of the executable
+-       entry #pwd   the invocation's working directory
+-       entry #stdinTty   whether the client's stdin is a terminal
+-       entry #stdoutTty   whether the client's stdout is a terminal
+-       entry #stderrTty   whether the client's stderr is a terminal
+-       entry #arguments   the invocation's arguments, as text
+-       entry #environment   the invocation's environment, each entry as `NAME=value`
+-       entry #invokedAs   `argv[0]` as the caller supplied it, for a multi-call binary to dispatch on
+-       entry #umask   the invocation's umask, in octal, if reported
+-       entry #columns   the terminal's width when stdout is a terminal
+-       entry #rows   the terminal's height when stdout is a terminal
+-       entry #inputCodepage   the Windows console's input code page, if any
+-       entry #outputCodepage   the Windows console's output code page, if any
+-       entry #descriptors   the descriptors the client holds, which the daemon may open as streams
+-       entry #raws   the values whose text form lost something, as the operating system gave them
+-     entry .Data   one chunk of a stream, of at most `Launcher.maximumChunk` bytes
++           Первый документ соединения каждого вызова. Три флага tty говорят, какие из потоков
++           данных клиента подключены к терминалу, чего демон сам определить не может;
++           пользователь — это идентификатор платформы (числовой в Unix, SID в Windows), и `Init`
++           от пользователя, отличного от собственного пользователя демона, отвергается с кодом
++           завершения 2. Демон, сворачивающий работу, отвергает его так же.
++       entry #pid   pid клиентского процесса
++       entry #uid   идентификатор пользователя на платформе: числовой в Unix, SID в Windows
++       entry #username   имя пользователя для входа в систему
++       entry #script   канонический путь исполняемого файла
++       entry #pwd   рабочий каталог вызова
++       entry #stdinTty   является ли stdin клиента терминалом
++       entry #stdoutTty   является ли stdout клиента терминалом
++       entry #stderrTty   является ли stderr клиента терминалом
++       entry #arguments   аргументы вызова в виде текста
++       entry #environment   окружение вызова, каждый элемент в виде `NAME=value`
++       entry #invokedAs   `argv[0]` в том виде, в каком его передал вызывающий, для выбора поведения многоимённым исполняемым файлом
++       entry #umask   umask вызова в восьмеричном виде, если сообщён
++       entry #columns   ширина терминала, когда stdout — терминал
++       entry #rows   высота терминала, когда stdout — терминал
++       entry #inputCodepage   кодовая страница ввода консоли Windows, если есть
++       entry #outputCodepage   кодовая страница вывода консоли Windows, если есть
++       entry #descriptors   дескрипторы, которые держит клиент и которые демон может открыть как потоки данных
++       entry #raws   значения, текстовая форма которых что-то потеряла, в том виде, в каком их дала операционная система
++     entry .Data   один чанк потока данных, не более `Launcher.maximumChunk` байтов
+
+=     entry .Data   one chunk of a stream, of at most `Launcher.maximumChunk` bytes
+-       detail
++       detail
+
+-           Sent in both directions. The stream is `stdin`, `stdout`, `stderr` or the number of
+-           an open descriptor, and a sender never has more bytes outstanding on a stream than
+-           the credit it holds for it.
+-       entry #stream   `stdin`, `stdout`, `stderr` or a descriptor's number
+-       entry #bytes   the chunk's bytes
+-     entry .End   the named stream has ended, after every chunk sent before it
++           Отправляется в обоих направлениях. Поток данных — это `stdin`, `stdout`, `stderr` или
++           номер открытого дескриптора, и у отправителя никогда не бывает неподтверждённых байтов
++           в потоке больше, чем кредит, которым он для него располагает.
++       entry #stream   `stdin`, `stdout`, `stderr` или номер дескриптора
++       entry #bytes   байты чанка
++     entry .End   названный поток данных закончился, после каждого чанка, отправленного до этого
+
+=     entry .End   the named stream has ended, after every chunk sent before it
+-       detail
++       detail
+
+-           End-of-file for the daemon's reader of stdin or of a descriptor opened to read, or
+-           the daemon's close of a descriptor opened to write. Nothing more is sent on the
+-           stream.
+-       entry #stream   the stream which has ended
+-     entry .Credit   the receiver of a stream can take this many more bytes of it
++           Конец файла для читателя stdin демона или дескриптора, открытого для чтения, либо
++           закрытие демоном дескриптора, открытого для записи. По этому потоку данных больше
++           ничего не отправляется.
++       entry #stream   закончившийся поток данных
++     entry .Credit   получатель потока данных может принять ещё столько его байтов
+
+=     entry .Credit   the receiver of a stream can take this many more bytes of it
+-       detail
++       detail
+
+-           Flow control: each stream opens with 65536 bytes of credit in each direction, and a
+-           receiver grants more as it consumes, in halves of the window rather than per chunk.
+-           A producer whose client is slow to drain stalls only its own stream, so
+-           `mytool | less`, paused, still receives a signal.
+-       entry #stream   the stream the credit is for
+-       entry #bytes   how many more bytes may be sent, in addition to any credit granted before
+-     entry .Open   asks the launcher to start carrying a descriptor the client advertised
++           Управление потоком: каждый поток данных открывается с кредитом в 65536 байтов в каждом
++           направлении, и получатель выдаёт ещё по мере потребления, половинами окна, а не на
++           каждый чанк. Производитель, клиент которого медленно вычерпывает данные, задерживает
++           только собственный поток данных, поэтому приостановленный `mytool | less` всё равно
++           получает сигнал.
++       entry #stream   поток данных, к которому относится кредит
++       entry #bytes   сколько ещё байтов можно отправить, сверх ранее выданного кредита
++     entry .Open   просит лаунчер начать передавать дескриптор, объявленный клиентом
+
+=     entry .Open   asks the launcher to start carrying a descriptor the client advertised
+-       detail
++       detail
+
+-           Sent by the daemon when the invocation opens `/dev/fd/N`: as `Data` documents from
+-           the client if the descriptor was opened to read, or by writing `Data` documents the
+-           daemon sends if opened to write. Not answered; the stream simply begins. A
+-           descriptor the daemon did not advertise, or opens again while open, is ignored.
+-       entry #stream   the descriptor's number
+-     entry .Signal   a signal the client received, or a Windows console control event
++           Отправляется демоном, когда вызов открывает `/dev/fd/N`: в виде документов `Data` от
++           клиента, если дескриптор открыт для чтения, или путём записи документов `Data`,
++           которые отправляет демон, если он открыт для записи. Ответа нет; поток данных просто
++           начинается. Дескриптор, который демон не объявлял или открывает повторно, пока он
++           открыт, игнорируется.
++       entry #stream   номер дескриптора
++     entry .Signal   сигнал, полученный клиентом, или управляющее событие консоли Windows
+
+=     entry .Signal   a signal the client received, or a Windows console control event
+-       detail
++       detail
+
+-           Named without its `SIG` prefix. `WINCH` and `CONT` carry the terminal's current
+-           size; a Windows close, logoff or shutdown carries the milliseconds the system allows
+-           before it ends the client regardless. The daemon dispatches it to the invocation's
+-           traps as a profanity `Signal` and answers with `SignalAck`; the launcher sends no
+-           further signal until it has the answer.
+-       entry #name   the signal's name without its `SIG` prefix, or the Windows event
+-       entry #columns   the terminal's width, with `WINCH` and `CONT`
+-       entry #rows   the terminal's height, with `WINCH` and `CONT`
+-       entry #deadline   the milliseconds a Windows close, logoff or shutdown allows
+-     entry .SignalAck   whether the invocation accepted the signal last sent
++           Называется без префикса `SIG`. `WINCH` и `CONT` несут текущий размер терминала;
++           закрытие, выход из системы или завершение работы Windows несут число миллисекунд,
++           которое система даёт, прежде чем завершить клиента в любом случае. Демон передаёт его
++           ловушкам вызова как `Signal` из profanity и отвечает `SignalAck`; лаунчер не
++           отправляет следующего сигнала, пока не получит ответ.
++       entry #name   имя сигнала без префикса `SIG` или событие Windows
++       entry #columns   ширина терминала, с `WINCH` и `CONT`
++       entry #rows   высота терминала, с `WINCH` и `CONT`
++       entry #deadline   миллисекунды, которые даёт закрытие, выход из системы или завершение работы Windows
++     entry .SignalAck   принял ли вызов последний отправленный сигнал
+
+=     entry .SignalAck   whether the invocation accepted the signal last sent
+-       detail
++       detail
+
+-           `accept` is true when a trap answered `SignalResponse.Accept`; false — a trap which
+-           rejected or deferred it, no trap, or a trap too slow to answer — lets the launcher
+-           fall back to the operating system's default for the signal.
+-       entry #accept   whether the invocation accepted the signal
+-     entry .Mode   asks the launcher to put the client's terminal into canonical or raw mode
++           `accept` истинно, когда ловушка ответила `SignalResponse.Accept`; ложь — ловушка,
++           которая отвергла или отложила его, отсутствие ловушки или ловушка, слишком медленно
++           ответившая, — позволяет лаунчеру откатиться к поведению операционной системы по
++           умолчанию для этого сигнала.
++       entry #accept   принял ли вызов сигнал
++     entry .Mode   просит лаунчер перевести терминал клиента в канонический или сырой режим
+
+=     entry .Mode   asks the launcher to put the client's terminal into canonical or raw mode
+-       detail
++       detail
+
+-           `canonical` asks for cooked mode, with echo if `echo` is also set; canonical
+-           without echo is how a password is read; neither flag is raw mode. The launcher
+-           answers nothing, and leaves a terminal it does not own as it is.
+-           `Resident#cooked` and `Resident#concealed` send it.
+-       entry #canonical   cooked mode, or raw when false
+-       entry #echo   whether the terminal echoes what is typed
+-     entry .Closed   the named stream has lost its reader
++           `canonical` запрашивает канонический режим, с эхом, если задано также `echo`;
++           канонический режим без эха — это то, как читается пароль; ни одного флага — сырой
++           режим. Лаунчер ничего не отвечает и оставляет как есть терминал, которым не владеет.
++           Его отправляют `Resident#cooked` и `Resident#concealed`.
++       entry #canonical   канонический режим или, если ложь, сырой
++       entry #echo   отображает ли терминал набираемое эхом
++     entry .Closed   названный поток данных потерял своего читателя
+
+=     entry .Closed   the named stream has lost its reader
+-       detail
++       detail
+
+-           From the launcher: the client's stdout or stderr, or a descriptor opened to write,
+-           could not be written; the invocation's further writes to that stream raise
+-           `Egress.Error`, as a broken pipe would. From the daemon: the invocation closed a
+-           descriptor it opened to read before reading it to its end, and the launcher stops
+-           carrying it.
+-       entry #stream   the stream whose reader is gone
+-     entry .ExitStatus   the invocation's exit status, ending the session
++           От лаунчера: в stdout или stderr клиента либо в дескриптор, открытый для записи, не
++           удалось записать; дальнейшие записи вызова в этот поток данных порождают
++           `Egress.Error`, как это сделал бы разорванный канал. От демона: вызов закрыл
++           дескриптор, открытый им для чтения, не дочитав его до конца, и лаунчер прекращает его
++           передавать.
++       entry #stream   поток данных, читатель которого ушёл
++     entry .ExitStatus   код завершения вызова, завершающий сессию
+
+=     entry .ExitStatus   the invocation's exit status, ending the session
+-       detail
++       detail
+
+-           The last document the daemon writes, after every chunk of every stream; the
+-           connection closes once the launcher has it.
+-       entry #code   the exit status
+-     entry .Verdict   the daemon's answer to `Verify`: whether its launcher file is unchanged
++           Последний документ, который пишет демон, после каждого чанка каждого потока данных;
++           соединение закрывается, как только лаунчер его получает.
++       entry #code   код завершения
++     entry .Verdict   ответ демона на `Verify`: не изменился ли файл его лаунчера
+
+=     entry .Verdict   the daemon's answer to `Verify`: whether its launcher file is unchanged
+-       detail
++       detail
+
+-           `fresh` when the launcher file's content is what the daemon was started from (a
+-           metadata-only change such as `touch`, which the daemon remembers so the hash is not
+-           repeated); otherwise the daemon drains itself and the launcher, awaiting its death,
+-           starts a fresh one.
+-       entry #fresh   whether the launcher file still has the content the daemon remembers
+-     entry .Run   asks the launcher to run a command on the client's terminal
++           `fresh`, когда содержимое файла лаунчера — то, из которого был запущен демон
++           (изменение только метаданных, например `touch`, демон запоминает, чтобы не повторять
++           вычисление хеша); в противном случае демон сворачивает свою работу, а лаунчер, дождавшись
++           его завершения, запускает новый.
++       entry #fresh   сохранил ли файл лаунчера то содержимое, которое помнит демон
++     entry .Run   просит лаунчер выполнить команду на терминале клиента
+
+=     entry .Run   asks the launcher to run a command on the client's terminal
+-       detail
++       detail
+
+-           For an editor, a pager, `ssh` or `sudo`. The launcher stops carrying the terminal's
+-           input, holds the invocation's output, restores the terminal's saved state, runs the
+-           command with the client's environment and streams — in `pwd`, if given — and
+-           answers with `Exited` when it ends. A client whose stdin is not a terminal it owns
+-           answers `Exited(127)` at once. `Resident#terminal` sends it.
+-       entry #command   the command to run
+-       entry #arguments   its arguments
+-       entry #pwd   the directory to run it in, if not the invocation's
+-     entry .Exited   the status the command the daemon asked to run ended with
++           Для редактора, пейджера, `ssh` или `sudo`. Лаунчер прекращает передавать ввод
++           терминала, придерживает вывод вызова, восстанавливает сохранённое состояние терминала,
++           выполняет команду с окружением и потоками данных клиента — в `pwd`, если он задан, — и
++           отвечает `Exited`, когда она заканчивается. Клиент, у которого stdin — не
++           принадлежащий ему терминал, сразу отвечает `Exited(127)`. Его отправляет
++           `Resident#terminal`.
++       entry #command   команда для выполнения
++       entry #arguments   её аргументы
++       entry #pwd   каталог, в котором её выполнить, если не каталог вызова
++     entry .Exited   код, с которым завершилась команда, которую демон попросил выполнить
+
+=     entry .Exited   the status the command the daemon asked to run ended with
+-       detail
++       detail
+
+-           The exit code, 128 plus the signal it died of, or 127 if the command could not be
+-           run.
+-       entry #code   the status
++           Код выхода, 128 плюс сигнал, от которого она погибла, или 127, если команду не удалось
++           запустить.
++       entry #code   код
+
+- entry .Session   the daemon's half of an invocation's session: one connection, a reader thread and a writer thread
++ entry .Session   половина сессии вызова на стороне демона: одно соединение, поток выполнения читателя и поток выполнения писателя
+
+= entry .Session   the daemon's half of an invocation's session: one connection, a reader thread and a writer thread
+-   hidden
++   hidden
+
+= entry .Session   the daemon's half of an invocation's session: one connection, a reader thread and a writer thread
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `cli` makes one per `Init` and the invocation's `Stdio` is built on
+-       its streams. It carries every stream of the invocation as `Launcher.Message.Data`
+-       documents under per-stream credit, with the control traffic in between: the reader
+-       never waits on anything but the socket — it deposits each chunk with its stream, acts
+-       on each control document at once, and hands a signal to a thread of its own, since a
+-       trap may sleep — and the writer is the only thread which writes the connection, control
+-       documents ahead of data. A stream's producer waits for credit outside any lock, so a
+-       stream the client is slow to drain stalls only its own producer. Its companion holds
+-       the protocol's figures, `.window` and `.chunk`, and `.governed`, which says which of a
+-       process's own descriptor paths name a descriptor.
++       Не для прямого использования: `cli` создаёт по одной на каждый `Init`, и `Stdio` вызова
++       строится на её потоках данных. Она переносит каждый поток данных вызова в виде документов
++       `Launcher.Message.Data` под кредитом для каждого потока, с управляющим трафиком между
++       ними: читатель никогда не ждёт ничего, кроме сокета, — он кладёт каждый чанк в его поток
++       данных, сразу обрабатывает каждый управляющий документ и передаёт сигнал собственному
++       потоку выполнения, поскольку ловушка может заснуть, — а писатель — единственный поток
++       выполнения, который пишет в соединение, причём управляющие документы идут раньше данных.
++       Производитель потока данных ждёт кредита вне каких-либо блокировок, поэтому поток данных,
++       который клиент медленно вычерпывает, задерживает только собственного производителя. Её
++       компаньон содержит числовые параметры протокола, `.window` и `.chunk`, а также
++       `.governed`, который говорит, какие из собственных путей дескрипторов процесса называют
++       дескриптор.
+
+=       process's own descriptor paths name a descriptor.
+-   refer ethereal.Launcher
++   refer ethereal.Launcher
+
+-   entry .window   the credit each stream opens with in each direction: 65536 bytes
+-   entry .chunk   the most bytes one `data` document carries: `Launcher.maximumChunk`
+-   entry .governed   the descriptor number a path such as `/dev/stdin` or `/dev/fd/63` names, if it names one
+-       `/dev/stdin`, `/dev/stdout` and `/dev/stderr` are 0, 1 and 2; `/dev/fd/N` and
+-       `/proc/self/fd/N` are `N`, for a decimal of fewer than eight digits; any other path
+-       is `Unset`. Any such path is the client's table to answer for, whether or not the
+-       client holds the descriptor, so the daemon's own table is never reached through it.
+-   entry #send   queues a control document for the writer, ahead of any data
+-   entry #finish   ends the session from this side: `exit-status` behind everything queued before it
+-   entry #awaitWritten   waits for the writer's queue to drain after `#finish`, so the status reaches the launcher
+-   entry #stdin   the invocation's stdin, a `SessionInput` fed by the launcher's `data` documents
+-   entry #stdout   the invocation's stdout, a `SessionOutput` sent under credit
+-   entry #stderr   the invocation's stderr, a `SessionOutput` sent under credit
+-   entry #windowSize   the client terminal's size as the launcher last measured it, as an `Atomic.Ref`
+-   entry #terminal   runs a command on the client's terminal with a `Run` document, and waits for `Exited`
+-       One at a time; 127 if the launcher is gone or never answers.
+-   entry #start   starts the writer and reader threads
+-   entry #fdtable   the client's descriptors as an `Fdtable`, consulted for `/dev/stdin`-style paths
++   entry .window   кредит, с которым каждый поток данных открывается в каждом направлении: 65536 байтов
++   entry .chunk   наибольшее число байтов, которое несёт один документ `data`: `Launcher.maximumChunk`
++   entry .governed   номер дескриптора, который называет путь вроде `/dev/stdin` или `/dev/fd/63`, если называет
++       `/dev/stdin`, `/dev/stdout` и `/dev/stderr` — это 0, 1 и 2; `/dev/fd/N` и
++       `/proc/self/fd/N` — это `N` для десятичного числа менее чем из восьми цифр; любой другой
++       путь — `Unset`. За любой такой путь отвечает таблица клиента, держит ли клиент этот
++       дескриптор или нет, поэтому собственная таблица демона через него никогда не достигается.
++   entry #send   ставит управляющий документ в очередь писателя, перед любыми данными
++   entry #finish   завершает сессию с этой стороны: `exit-status` после всего, что было поставлено в очередь раньше
++   entry #awaitWritten   ждёт, пока очередь писателя опустеет после `#finish`, чтобы код завершения дошёл до лаунчера
++   entry #stdin   stdin вызова, `SessionInput`, питаемый документами `data` лаунчера
++   entry #stdout   stdout вызова, `SessionOutput`, отправляемый под кредитом
++   entry #stderr   stderr вызова, `SessionOutput`, отправляемый под кредитом
++   entry #windowSize   размер терминала клиента по последнему измерению лаунчера, в виде `Atomic.Ref`
++   entry #terminal   выполняет команду на терминале клиента документом `Run` и ждёт `Exited`
++       По одной за раз; 127, если лаунчер ушёл или так и не ответил.
++   entry #start   запускает потоки выполнения писателя и читателя
++   entry #fdtable   дескрипторы клиента в виде `Fdtable`, к которой обращаются для путей вида `/dev/stdin`
+
+- entry .SessionInput   the chunks of one stream the launcher sends, as a `java.io.InputStream`
++ entry .SessionInput   чанки одного потока данных, отправляемые лаунчером, в виде `java.io.InputStream`
+
+= entry .SessionInput   the chunks of one stream the launcher sends, as a `java.io.InputStream`
+-   hidden
++   hidden
+
+= entry .SessionInput   the chunks of one stream the launcher sends, as a `java.io.InputStream`
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the stream behind an invocation's stdin, or a descriptor opened to
+-       read. Chunks are deposited by the session's reader with `#push` and taken by whatever
+-       reads the invocation's stdin; the stream grants the launcher more credit in halves of
+-       the window as it consumes, so no more of the client's input is taken than the
+-       invocation asked for.
+-   entry #push   deposits a chunk; ignored once the stream has ended
+-   entry #end   marks the stream ended: a read past the deposited chunks gives end-of-file
+-   entry #isEnded   whether the launcher has sent `end` for the stream
+-   entry #read   blocks until a chunk is available or the stream has ended
+-   entry #available   the bytes deposited and not yet read
++       Не для прямого использования: поток данных, стоящий за stdin вызова или дескриптором,
++       открытым для чтения. Чанки кладёт читатель сессии через `#push`, а забирает тот, кто
++       читает stdin вызова; поток данных выдаёт лаунчеру дополнительный кредит половинами окна
++       по мере потребления, так что ввода клиента забирается не больше, чем запросил вызов.
++   entry #push   кладёт чанк; игнорируется, если поток данных уже закончился
++   entry #end   помечает поток данных закончившимся: чтение после положенных чанков даёт конец файла
++   entry #isEnded   отправил ли лаунчер `end` для этого потока данных
++   entry #read   блокируется, пока не появится чанк или поток данных не закончится
++   entry #available   байты, которые положены и ещё не прочитаны
+
+- entry .SessionOutput   a stream the daemon sends, buffered up to a chunk and sent under credit
++ entry .SessionOutput   поток данных, который отправляет демон, буферизуемый до чанка и отправляемый под кредит
+
+= entry .SessionOutput   a stream the daemon sends, buffered up to a chunk and sent under credit
+-   hidden
++   hidden
+
+= entry .SessionOutput   a stream the daemon sends, buffered up to a chunk and sent under credit
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the stream behind an invocation's stdout or stderr, or a descriptor
+-       opened to write. Bytes are buffered up to `Session.chunk` and sent on `flush` — which
+-       the invocation's `PrintStream`s do after every write — or when full, each chunk once
+-       the launcher has granted credit for it. Once the launcher reports the stream closed, or
+-       is gone, a write raises `Egress.Error`.
+-   entry #severed   set once the stream's reader at the client is gone: every later write raises `Egress.Error`
+-   entry #write   buffers bytes, flushing each full chunk
+-   entry #flush   sends the buffered bytes as chunks, waiting for credit on each
+-   entry #close   flushes; the connection is closed by the session, not the stream
++       Не для прямого использования: поток данных, стоящий за stdout или stderr вызова или за файловым
++       дескриптором, открытым на запись. Байты буферизуются до `Session.chunk` и отправляются
++       по `flush` — который `PrintStream` вызова выполняет после каждой записи — или при
++       заполнении, каждый чанк — как только лаунчер выдал на него кредит. Как только лаунчер
++       сообщает, что поток данных закрыт, или исчезает, запись порождает `Egress.Error`.
++   entry #severed   устанавливается, когда читающий поток данных на стороне клиента исчез: каждая последующая запись порождает `Egress.Error`
++   entry #write   буферизует байты, сбрасывая каждый полный чанк
++   entry #flush   отправляет буферизованные байты чанками, ожидая кредита на каждый
++   entry #close   сбрасывает буфер; соединение закрывает сессия, а не поток данных
+
+- entry .Client   what the daemon keeps of an invocation outside its session: its bus and its `Cli`
++ entry .Client   то, что демон хранит о вызове вне его сессии: его шину и его `Cli`
+
+= entry .Client   what the daemon keeps of an invocation outside its session: its bus and its `Cli`
+-   hidden
++   hidden
+
+= entry .Client   what the daemon keeps of an invocation outside its session: its bus and its `Cli`
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the daemon's record of a connected client, keyed by the client's
+-       pid, which holds the client's place on the message bus and the promise of its `Cli`,
+-       which the session's signal dispatch may need before the invocation has made it.
+-       `Client[bus](pid)` makes one whose `Topic` is the bus's message type.
+-   entry .apply   a client record for a pid, typed to the daemon's bus
+-   entry #pid   the client process's pid
+-   entry #Topic   the bus's message type
+-   entry #invocation   the promise of the invocation's `Cli`, completed once the invocation has made it
+-   entry #bus   the relay the client's broadcasts from other invocations arrive on
+-   entry #receive   delivers a message broadcast by another invocation
++       Не для прямого использования: запись демона о подключённом клиенте с ключом по pid
++       клиента, которая хранит место клиента на шине сообщений и promise его `Cli`, который
++       может понадобиться диспетчеризации сигналов сессии ещё до того, как вызов его создал.
++       `Client[bus](pid)` создаёт запись, `Topic` которой — тип сообщений шины.
++   entry .apply   запись клиента для pid, типизированная шиной демона
++   entry #pid   pid процесса клиента
++   entry #Topic   тип сообщений шины
++   entry #invocation   promise `Cli` вызова, завершаемый, как только вызов его создал
++   entry #bus   ретранслятор, по которому приходят широковещательные сообщения клиенту от других вызовов
++   entry #receive   доставляет сообщение, разосланное другим вызовом
+
+- entry .DaemonEnvironment   the environment the daemon was launched with, as the launcher sent it
++ entry .DaemonEnvironment   окружение, с которым был запущен демон, в том виде, в каком его отправил лаунчер
+
+= entry .DaemonEnvironment   the environment the daemon was launched with, as the launcher sent it
+-   detail
++   detail
+
+-       The launcher starts a daemon with a sanitized environment of its own — only `PATH`,
+-       `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`, `TZ`, `TMPDIR`, the `XDG_*` base
+-       directories, the JVM's option variables and `ETHEREAL_DEBUG` — so that the daemon's
+-       state does not depend on who happened to start it, and sends the environment it was
+-       itself started with on the daemon's standard input, each entry `NAME=value` ended by a
+-       NUL byte, as the property `ethereal.environment=stdin` announces. `DaemonEnvironment`
+-       is that environment, held in memory and never written anywhere; without the property
+-       (an older launcher, or a JVM run directly) it is the JVM's own environment, which is
+-       then the launching one.
++       Лаунчер запускает демона с собственным очищенным окружением — только `PATH`, `HOME`,
++       `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`, `TZ`, `TMPDIR`, базовые каталоги `XDG_*`,
++       переменные параметров JVM и `ETHEREAL_DEBUG`, — чтобы состояние демона не зависело от
++       того, кто его случайно запустил, и отправляет окружение, с которым был запущен сам, на
++       стандартный ввод демона, каждую запись в виде `NAME=value`, завершённую байтом NUL, о чём
++       сообщает свойство `ethereal.environment=stdin`. `DaemonEnvironment` — это окружение,
++       хранимое в памяти и никуда не записываемое; без этого свойства (у старого лаунчера или
++       при прямом запуске JVM) это собственное окружение JVM, которое тогда и является
++       окружением запуска.
+
+-       Few things want this rather than the *invocation's* environment, which arrives with
+-       each invocation and is the `Environment` given inside a `cli` block (and the choice
+-       `environments.daemonClientEnvironment`); it is chosen explicitly, as the given
+-       `environments.daemonEnvironment`, imported by name.
++       Немногим нужно именно оно, а не окружение *вызова*, которое приходит с каждым вызовом и
++       является given `Environment` внутри блока `cli` (и выбором
++       `environments.daemonClientEnvironment`); оно выбирается явно, как given
++       `environments.daemonEnvironment`, импортируемый по имени.
+
+=       `environments.daemonEnvironment`, imported by name.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `environments.daemonEnvironment`, imported by name.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `environments.daemonEnvironment`, imported by name.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `environments.daemonEnvironment`, imported by name.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       import environments.daemonEnvironment
++       import environments.daemonEnvironment
+
+-       safely(Environment.home[Text])
++       safely(Environment.home[Text])
+
+=       safely(Environment.home[Text])
+-       ```
++       ```
+
+=       ```
+-   refer ethereal.cli
++   refer ethereal.cli
+
+-   refer ethereal.LazyEnvironment
++   refer ethereal.LazyEnvironment
+
+-   entry .capture   reads the environment the launcher sent, if it has not been read already
+-       `cli` calls it as the daemon starts, before the socket is bound: the launcher sends the
+-       environment only while it waits for the socket to appear, and the daemon's standard
+-       input is read to its end.
+-   entry .variable   the value of one variable, or `Unset`
+-   entry .entries   every variable, as a `Map`
++   entry .capture   читает окружение, отправленное лаунчером, если оно ещё не прочитано
++       `cli` вызывает его при запуске демона, до привязки сокета: лаунчер отправляет окружение
++       только пока ждёт появления сокета, а стандартный ввод демона читается до конца.
++   entry .variable   значение одной переменной или `Unset`
++   entry .entries   все переменные в виде `Map`
+
+- entry .LazyEnvironment   an `Environment` over a list of `NAME=value` entries, parsed on first use
++ entry .LazyEnvironment   `Environment` над списком записей `NAME=value`, разбираемых при первом использовании
+
+= entry .LazyEnvironment   an `Environment` over a list of `NAME=value` entries, parsed on first use
+-   detail
++   detail
+
+-       The `Environment` of an invocation inside a `cli` block: the entries the launcher
+-       forwarded in the `init` document, split on the first `=` when the environment is first
+-       consulted (an entry with no `=` is dropped). It is what the given
+-       `environments.daemonClientEnvironment` resolves to, and what `Environment[Text](name)`
+-       reads inside the block.
++       `Environment` вызова внутри блока `cli`: записи, которые лаунчер переслал в документе
++       `init`, разделяемые по первому `=` при первом обращении к окружению (запись без `=`
++       отбрасывается). Именно в него разрешается given `environments.daemonClientEnvironment`,
++       и именно его читает `Environment[Text](name)` внутри блока.
+
+=       reads inside the block.
+=
+-       ```scala
++       ```scala
+
+=       reads inside the block.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val environment: Environment = LazyEnvironment(List(t"HOME=/home/hamlet", t"SHELL=/bin/zsh"))
++       val environment: Environment = LazyEnvironment(List(t"HOME=/home/hamlet", t"SHELL=/bin/zsh"))
+
+-       environment.variable(t"HOME")   // t"/home/hamlet"
++       environment.variable(t"HOME")   // t"/home/hamlet"
+
+=       environment.variable(t"HOME")   // t"/home/hamlet"
+-       ```
++       ```
+
+-   entry #variable   the value of one variable, or `Unset`
+-   entry #entries   every variable, as a `Map`
++   entry #variable   значение одной переменной или `Unset`
++   entry #entries   все переменные в виде `Map`
+
+- entry .DaemonLogEvent   what the daemon logs to syslog as it serves, drains and retires
++ entry .DaemonLogEvent   то, что демон записывает в syslog, пока обслуживает, сворачивает работу и уходит на покой
+
+= entry .DaemonLogEvent   what the daemon logs to syslog as it serves, drains and retires
+-   detail
++   detail
+
+-       Every event the daemon logs under the `ethereal` syslog identity, each tagged with the
+-       `Log` category it belongs to (`Log.Process`, `Log.Network`, `Log.Protocol`,
+-       `Log.Filesystem`, `Log.Scheduler` or `Log.Runtime`). The companion gives the
+-       `Communicable` which renders each as a message and the `Message transcribes
+-       DaemonLogEvent` which lets a logger take them, both in implicit scope.
++       Все события, которые демон записывает в журнал под идентификатором syslog `ethereal`,
++       каждое с пометкой категории `Log`, к которой оно относится (`Log.Process`,
++       `Log.Network`, `Log.Protocol`, `Log.Filesystem`, `Log.Scheduler` или `Log.Runtime`).
++       Объект-компаньон даёт `Communicable`, который отображает каждое событие как сообщение,
++       и `Message transcribes DaemonLogEvent`, позволяющий логгеру принимать их, — оба в
++       неявной области видимости.
+
+-       The singleton cases: `Shutdown` (shutting down); `Termination` (terminating the client
+-       connection: the launcher was rewritten or a stale verdict given, logged as a warning
+-       before the daemon exits); `IdleTimeout` (shutting down after six idle hours);
+-       `NewCli` (instantiating a new CLI, at `fine`); `UnrecognizedMessage` (a document that
+-       is not a launcher message, or one which belongs inside a session arriving outside
+-       one); `ProtocolMismatch` (a document of another launcher protocol schema: a launcher
+-       built against a different contract); and `Draining` (accepting no further invocations;
+-       exiting when those in flight end). `Installer.install` logs `WriteExecutable`, and
+-       `cli` logs the rest.
++       Кейсы-синглтоны: `Shutdown` (завершение работы); `Termination` (разрыв соединения с
++       клиентом: лаунчер был перезаписан или вынесен вердикт об устаревании; записывается как
++       предупреждение перед выходом демона); `IdleTimeout` (завершение работы после шести
++       часов простоя); `NewCli` (создание нового CLI, на уровне `fine`);
++       `UnrecognizedMessage` (документ, который не является сообщением лаунчера, или
++       сообщение, место которому внутри сессии, пришедшее вне её); `ProtocolMismatch`
++       (документ другой схемы протокола лаунчера: лаунчер, собранный под другой контракт); и
++       `Draining` (новые вызовы не принимаются; выход, когда завершатся текущие).
++       `Installer.install` записывает `WriteExecutable`, а `cli` — остальные.
+
+=       `cli` logs the rest.
+-   refer ethereal.cli
++   refer ethereal.cli
+
+-   entry .transcribable   lets a `Logger` take daemon events as `Message`s
+-   entry .communicable   renders each event as a message
+-   entry .WriteExecutable   the installer is writing the executable: _writing the executable to `location`_
+-     entry #location   the path being written
+-   entry .Failure   an invocation threw: _the invocation failed: `error`_
++   entry .transcribable   позволяет `Logger` принимать события демона как `Message`
++   entry .communicable   отображает каждое событие как сообщение
++   entry .WriteExecutable   установщик записывает исполняемый файл: _writing the executable to `location`_
++     entry #location   записываемый путь
++   entry .Failure   вызов выбросил исключение: _the invocation failed: `error`_
+
+=   entry .Failure   an invocation threw: _the invocation failed: `error`_
+-     detail
++     detail
+
+-         Logged as a failure before the throwable is given to the `Backstop`, which reports
+-         it on the invocation's stderr and chooses the exit status.
+-     entry #error   the throwable, rendered as text
+-   entry .ReceivedSignal   the launcher forwarded a signal: _received signal `signal`_
+-     entry #signal   the `UnixSignal` or `WindowsSignal` received
+-   entry .CloseConnection   an invocation ended: _closing the connection from `pid`_
+-     entry #pid   the client's pid
+-   entry .Init   an invocation began: _initialising `pid`_
+-     entry #pid   the client's pid
+-   entry .PeerRefused   a connection from another user was refused: _refusing a connection from another user: `user`_
++         Записывается как сбой до того, как throwable передаётся `Backstop`, который сообщает
++         о нём в stderr вызова и выбирает код завершения.
++     entry #error   throwable, отображённый как текст
++   entry .ReceivedSignal   лаунчер переслал сигнал: _received signal `signal`_
++     entry #signal   полученный `UnixSignal` или `WindowsSignal`
++   entry .CloseConnection   вызов завершился: _closing the connection from `pid`_
++     entry #pid   pid клиента
++   entry .Init   вызов начался: _initialising `pid`_
++     entry #pid   pid клиента
++   entry .PeerRefused   соединение от другого пользователя отклонено: _refusing a connection from another user: `user`_
+
+=   entry .PeerRefused   a connection from another user was refused: _refusing a connection from another user: `user`_
+-     detail
++     detail
+
+-         The socket admits only its owner: a peer whose kernel-reported user is not the
+-         daemon's, or an `Init` claiming another user id, is refused without being read.
+-     entry #user   the peer's user
+-   entry .Refused   an invocation arrived while the daemon was draining: _refusing invocation `pid`: the daemon is shutting down_
+-     entry #pid   the client's pid
+-   entry .Closed   a stream's reader at the client has gone: _the invocation's `stream` has no reader_
+-     entry #stream   `stdout`, `stderr` or a descriptor's number
++         Сокет допускает только своего владельца: партнёр, чей пользователь по данным ядра не
++         совпадает с пользователем демона, или `Init`, заявляющий другой идентификатор
++         пользователя, отклоняется без чтения.
++     entry #user   пользователь партнёра
++   entry .Refused   вызов пришёл, пока демон сворачивал работу: _refusing invocation `pid`: the daemon is shutting down_
++     entry #pid   pid клиента
++   entry .Closed   читающий поток данных на стороне клиента исчез: _the invocation's `stream` has no reader_
++     entry #stream   `stdout`, `stderr` или номер файлового дескриптора
+
+- entry .Egress   an invocation's stdout or stderr: a stream which fails once the launcher reports its reader gone
++ entry .Egress   stdout или stderr вызова: поток данных, который отказывает, как только лаунчер сообщает об исчезновении читающего
+
+= entry .Egress   an invocation's stdout or stderr: a stream which fails once the launcher reports its reader gone
+-   detail
++   detail
+
+-       The `java.io.OutputStream` behind an invocation's `Out` and `Err`: it delegates to the
+-       session's stream until the launcher sends `closed` for it — `mytool | head -1`, once
+-       `head` has exited — after which every write raises `.Error`, so that a program which
+-       writes until it cannot ends, as it would were it writing a pipe. `cli` catches the
+-       error and ends the invocation with status 141, as `SIGPIPE` would end a process (128
+-       plus 13), without consulting the `Backstop`, which would write to the same stream.
++       `java.io.OutputStream`, стоящий за `Out` и `Err` вызова: он делегирует потоку данных
++       сессии, пока лаунчер не пришлёт для него `closed` — `mytool | head -1`, после того как
++       `head` завершился, — после чего каждая запись порождает `.Error`, так что программа,
++       которая пишет, пока может, завершается, как завершилась бы при записи в канал. `cli`
++       перехватывает ошибку и завершает вызов с кодом 141, как `SIGPIPE` завершил бы процесс
++       (128 плюс 13), не обращаясь к `Backstop`, который писал бы в тот же поток данных.
+
+=       plus 13), without consulting the `Backstop`, which would write to the same stream.
+-   refer ethereal.cli
++   refer ethereal.cli
+
+-   entry .Error   raised by a write to an invocation's stdout or stderr whose reader has gone
++   entry .Error   порождается записью в stdout или stderr вызова, читающий которого исчез
+
+=   entry .Error   raised by a write to an invocation's stdout or stderr whose reader has gone
+-     detail
++     detail
+
+-         _the invocation's `stream` has no reader_: the daemon's equivalent of the `EPIPE` a
+-         process writing a pipe would get. It is deliberately not an `IOException`, which
+-         `java.io.PrintStream` would swallow: it must reach the invocation, which `cli` ends
+-         with exit status 141. An invocation which wants to survive the loss of its output
+-         catches it as `case error: Egress.Error`.
+-     entry #stream   `stdout` or `stderr`
+-   entry #write   writes to the underlying stream, or raises `Egress.Error` once the reader is gone
++         _the invocation's `stream` has no reader_: аналог `EPIPE`, который получил бы
++         процесс, пишущий в канал, у демона. Это намеренно не `IOException`, которое
++         проглотил бы `java.io.PrintStream`: оно должно дойти до вызова, который `cli`
++         завершает с кодом завершения 141. Вызов, который хочет пережить потерю своего вывода,
++         перехватывает его как `case error: Egress.Error`.
++     entry #stream   `stdout` или `stderr`
++   entry #write   пишет в нижележащий поток данных или порождает `Egress.Error`, как только читающий исчез
+
+- entry .Installer   copies the running executable onto the `PATH`, from inside the daemon
++ entry .Installer   копирует работающий исполняемый файл в `PATH` изнутри демона
+
+= entry .Installer   copies the running executable onto the `PATH`, from inside the daemon
+-   detail
++   detail
+
+-       An application built with `xek build` is one file — the native launcher stub, a
+-       configuration record and the JAR — and `Installer.install` puts a copy of it where the
+-       shell will find it: the first writable directory on the `PATH`, preferring the XDG
+-       `bin` directory, `/usr/local/bin` and `/usr/bin`, or a `target` of the caller's
+-       choosing. It is what the built-in `'{admin}' install` subcommand runs, and an
+-       application may offer it under a name of its own.
++       Приложение, собранное с помощью `xek build`, — это один файл: нативная заглушка
++       лаунчера, запись конфигурации и JAR, — а `Installer.install` кладёт его копию туда, где
++       её найдёт оболочка: в первый доступный для записи каталог из `PATH`, предпочитая каталог
++       XDG `bin`, `/usr/local/bin` и `/usr/bin`, или в `target`, выбранный вызывающим. Именно
++       это выполняет встроенная подкоманда `'{admin}' install`, и приложение может предложить
++       то же под собственным именем.
+
+=       application may offer it under a name of its own.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       application may offer it under a name of its own.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       application may offer it under a name of its own.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       application may offer it under a name of its own.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       application may offer it under a name of its own.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import environments.daemonClientEnvironment
++       import environments.daemonClientEnvironment
+
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       import logging.silentLogging
+=
+-       import backstops.stackTraceBackstop
++       import backstops.stackTraceBackstop
+
+=       import logging.silentLogging
+=
+=       import backstops.stackTraceBackstop
+-       import executives.completionsExecutive
++       import executives.completionsExecutive
+
+=       import logging.silentLogging
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+-       import interpreters.posixInterpreter
++       import interpreters.posixInterpreter
+
+=       import logging.silentLogging
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       import logging.silentLogging
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+=       import threads.virtualThreads
+=
+-       @main
++       @main
+
+=       import logging.silentLogging
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+=       import threads.virtualThreads
+=
+=       @main
+-       def mytool(): Unit = cli:
++       def mytool(): Unit = cli:
+
+-         arguments match
++         arguments match
+
+-           case Argument("install") :: Nil =>
++           case Argument("install") :: Nil =>
+
+-             execute:
++             execute:
+
+-               recover:
++               recover:
+
+-                 case Install.Error(reason) =>
++                 case Install.Error(reason) =>
+
+-                   Err.println(m"could not install: $reason")
++                   Err.println(m"could not install: $reason")
+
+-                   Exit.Fail(1)
++                   Exit.Fail(1)
+
+-               . protect:
++               . protect:
+
+-                   Out.println(Installer.install().communicate)
++                   Out.println(Installer.install().communicate)
+
+-                   Exit.Ok
++                   Exit.Ok
+
+-           case _ =>
++           case _ =>
+
+-             execute(Exit.Ok)
++             execute(Exit.Ok)
+
+=             execute(Exit.Ok)
+-       ```
++       ```
+
+-       The copy omits the launcher's embedded payload (the runner stubs for other platforms,
+-       whose sizes the launcher passes as `ethereal.payloadSize` and `ethereal.jarSize`) and
+-       rebases the JAR's ZIP64 locator to its new offset, so the installed file is a plain
+-       launcher for the platform it runs on. It is written to a hidden sibling and renamed
+-       over the target, which gives the target a fresh inode: on macOS the code-signing
+-       cache is per-vnode, and overwriting a previously-executed binary's content in place
+-       poisons it so that every later exec is killed with `SIGKILL` — the same trap awaits a
+-       `cp new old` over an installed launcher by hand; use `mv`, or remove it first.
++       Копия не включает встроенную полезную нагрузку лаунчера (заглушки раннера для других
++       платформ, размеры которых лаунчер передаёт как `ethereal.payloadSize` и
++       `ethereal.jarSize`) и переносит локатор ZIP64 в JAR на новое смещение, так что
++       установленный файл — простой лаунчер для платформы, на которой он работает. Он
++       записывается в скрытый соседний файл и переименовывается поверх целевого, что даёт
++       целевому файлу новый inode: в macOS кеш подписи кода хранится для каждого vnode, и
++       перезапись содержимого ранее исполнявшегося бинарного файла на месте отравляет его, так
++       что каждый последующий exec убивается `SIGKILL`, — та же ловушка ждёт при ручном
++       `cp new old` поверх установленного лаунчера; используйте `mv` или сначала удалите его.
+
+=       `cp new old` over an installed launcher by hand; use `mv`, or remove it first.
+-   refer ethereal.Resident
++   refer ethereal.Resident
+
+-   entry .Result   what `Installer.install` did
++   entry .Result   что сделал `Installer.install`
+
+=   entry .Result   what `Installer.install` did
+-     detail
++     detail
+
+-         `Installed(script, path)` — _The `script` command was installed to `path`._;
++         `Installed(script, path)` — _The `script` command was installed to `path`._;
+
+-         `AlreadyOnPath(script, path)` — _The `script` command is already installed at
++         `AlreadyOnPath(script, path)` — _The `script` command is already installed at
+
+-         `path`._, when `command -v` already resolves the name to the running executable and
+-         `force` was not given; and `PathNotWritable` — _No directory on the PATH environment
+-         variable was writable_, when the temporary file could not be created. The
+-         companion's `Communicable` renders each as a message.
+-     entry .communicable   renders a result as a message
+-     entry .AlreadyOnPath   the command already resolves to the running executable
+-       entry #script   the command's name
+-       entry #path   the path it is installed at
+-     entry .Installed   the executable was copied to a directory on the `PATH`
+-       entry #script   the command's name
+-       entry #path   the path it was installed to
+-   entry .candidateTargets   the writable directories on the `PATH`, best first
+-       Every existing, writable directory of the `PATH` variable (read from the `Environment`
+-       in scope — the invocation's, inside a `cli` block), ordered with the XDG `bin`
+-       directory first, then `/usr/local/bin`, `/usr/bin`, `/usr/local/sbin`, `/opt/bin` and
+-       `/bin`, and any other in `PATH` order after them. Needs a `Resident`, a `System`, a
+-       `Tactic[Install.Error]` (raised with reason `Environment` for an unreadable `PATH` or
+-       an invalid path in it, or `Io` for a filesystem failure) and a `DaemonLogEvent is
+-       Loggable`.
+-   entry .install   installs the running executable onto the `PATH`, or to a chosen directory
+-       `install(force, target)`: `target` is the directory to install into, by default the
+-       first of `.candidateTargets`; `force` installs even when the command already resolves
+-       to the running executable. Needs a `Resident` (for `executable` and `script`), the
+-       `Environment` to read `PATH` from, an `Effectful` (it is a side effect on the
+-       filesystem), `Diagnostics`, a `Tactic[Install.Error]` and a `DaemonLogEvent is
+-       Loggable`, and logs `DaemonLogEvent.WriteExecutable` as it writes. `Install.Error` is
+-       raised with reason `Environment` when the name, path, `PATH` or the launcher's size
+-       properties cannot be read, and `Io` when the copy, the ZIP rebase or the rename
+-       fails.
++         `path`._, когда `command -v` уже разрешает имя в работающий исполняемый файл, а
++         `force` не задан; и `PathNotWritable` — _No directory on the PATH environment
++         variable was writable_, когда не удалось создать временный файл. `Communicable`
++         объекта-компаньона отображает каждый результат как сообщение.
++     entry .communicable   отображает результат как сообщение
++     entry .AlreadyOnPath   команда уже разрешается в работающий исполняемый файл
++       entry #script   имя команды
++       entry #path   путь, по которому она установлена
++     entry .Installed   исполняемый файл скопирован в каталог из `PATH`
++       entry #script   имя команды
++       entry #path   путь, по которому она была установлена
++   entry .candidateTargets   доступные для записи каталоги из `PATH`, лучшие первыми
++       Все существующие и доступные для записи каталоги переменной `PATH` (читаемой из
++       `Environment` в области видимости — внутри блока `cli` это окружение вызова),
++       упорядоченные так: сначала каталог XDG `bin`, затем `/usr/local/bin`, `/usr/bin`,
++       `/usr/local/sbin`, `/opt/bin` и `/bin`, а после них все прочие в порядке `PATH`. Требует
++       `Resident`, `System`, `Tactic[Install.Error]` (порождаемой с причиной `Environment` для
++       нечитаемого `PATH` или недопустимого пути в нём либо `Io` для сбоя файловой системы) и
++       `DaemonLogEvent is Loggable`.
++   entry .install   устанавливает работающий исполняемый файл в `PATH` или в выбранный каталог
++       `install(force, target)`: `target` — каталог для установки, по умолчанию первый из
++       `.candidateTargets`; `force` устанавливает, даже когда команда уже разрешается в
++       работающий исполняемый файл. Требует `Resident` (для `executable` и `script`),
++       `Environment`, из которого читается `PATH`, `Effectful` (это побочный эффект в файловой
++       системе), `Diagnostics`, `Tactic[Install.Error]` и `DaemonLogEvent is Loggable`, а при
++       записи записывает в журнал `DaemonLogEvent.WriteExecutable`. `Install.Error` порождается
++       с причиной `Environment`, когда не удаётся прочитать имя, путь, `PATH` или свойства
++       размеров лаунчера, и `Io`, когда не удаются копирование, перенос ZIP или переименование.
+
+- entry .Upgrade   stages a signed replacement executable for the launcher to verify and apply
++ entry .Upgrade   размещает подписанный исполняемый файл на замену, чтобы лаунчер проверил и применил его
+
+= entry .Upgrade   stages a signed replacement executable for the launcher to verify and apply
+-   detail
++   detail
+
+-       Self-upgrade, from the daemon's side. An application stages the bytes of a complete
+-       signed executable — a release built with `xek build --build-id … --public-key …
+-       --app-id …` and signed with `xek sign` — as `.pending` in its data directory
+-       (`$XDG_DATA_HOME/<name>/`, or `~/.local/share/<name>/`; `%LOCALAPPDATA%\<name>\` on
+-       Windows), and the launcher does the rest at the start of the command's **next**
+-       invocation: it verifies the candidate against the keys and application identifier in
+-       the *running* executable's record, requires its build id to be newer, swaps it into
+-       place, keeps the replaced executable beside it, re-execs, and records what it did in
+-       `.upgrade-result`. Its staleness check then displaces the running daemon by itself, so
+-       nothing here exits or respawns anything and the clients the daemon is serving carry
+-       on undisturbed. The Scala side verifies nothing: verification happens in the launcher,
+-       before the JVM starts, so no application code sits on the trust boundary.
++       Самообновление со стороны демона. Приложение размещает байты полного подписанного
++       исполняемого файла — релиза, собранного с помощью `xek build --build-id … --public-key …
++       --app-id …` и подписанного с помощью `xek sign`, — как `.pending` в своём каталоге
++       данных (`$XDG_DATA_HOME/<name>/` или `~/.local/share/<name>/`; `%LOCALAPPDATA%\<name>\`
++       в Windows), а остальное лаунчер делает в начале **следующего** вызова команды: проверяет
++       кандидата по ключам и идентификатору приложения в записи *работающего* исполняемого
++       файла, требует, чтобы его идентификатор сборки был новее, ставит его на место, оставляет
++       заменённый исполняемый файл рядом, выполняет re-exec и записывает сделанное в
++       `.upgrade-result`. Затем его проверка на устаревание сама вытесняет работающего демона,
++       так что здесь ничто не завершается и ничего не перезапускает, а клиенты, которых
++       обслуживает демон, продолжают работу без помех. Сторона Scala ничего не проверяет:
++       проверка происходит в лаунчере, до запуска JVM, так что никакой код приложения не
++       находится на границе доверия.
+
+=       before the JVM starts, so no application code sits on the trust boundary.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       before the JVM starts, so no application code sits on the trust boundary.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       before the JVM starts, so no application code sits on the trust boundary.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       before the JVM starts, so no application code sits on the trust boundary.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       before the JVM starts, so no application code sits on the trust boundary.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import environments.daemonClientEnvironment
++       import environments.daemonClientEnvironment
+
+=       before the JVM starts, so no application code sits on the trust boundary.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import environments.daemonClientEnvironment
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+-       import internetAccess.online
++       import internetAccess.online
+
+-       import httpBackends.javaNetHttp
++       import httpBackends.javaNetHttp
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       def upgrade(): Text raises Upgrade.Error =
++       def upgrade(): Text raises Upgrade.Error =
+
+-         if !Upgrade.enabled then t"this build cannot be upgraded"
++         if !Upgrade.enabled then t"this build cannot be upgraded"
+
+-         else if Upgrade.pending then t"the upgrade will be applied the next time the command is run"
++         else if Upgrade.pending then t"the upgrade will be applied the next time the command is run"
+
+-         else
++         else
+
+-           Upgrade.stage(url"https://releases.example.com/myapp.signed".fetch())
++           Upgrade.stage(url"https://releases.example.com/myapp.signed".fetch())
+
+-           t"the upgrade will be applied the next time the command is run"
++           t"the upgrade will be applied the next time the command is run"
+
+=           t"the upgrade will be applied the next time the command is run"
+-       ```
++       ```
+
+-       Every method needs an `Environment` and a `System` (the invocation's environment,
+-       `environments.daemonClientEnvironment`, inside a `cli` block) to find the data
+-       directory and the `ethereal.name` property. `.outcome` reads what the launcher did with
+-       the last candidate, and `.acknowledge` clears it so that each outcome is reported once;
+-       `.enabled` says whether the running executable's launcher would accept a signed
+-       candidate at all, and `Resident#buildId` is the running build's identifier, to compare
+-       with a release on offer.
++       Каждому методу нужны `Environment` и `System` (внутри блока `cli` — окружение вызова,
++       `environments.daemonClientEnvironment`), чтобы найти каталог данных и свойство
++       `ethereal.name`. `.outcome` читает, что лаунчер сделал с последним кандидатом, а
++       `.acknowledge` очищает это, чтобы о каждом исходе сообщалось один раз; `.enabled`
++       говорит, принял бы лаунчер работающего исполняемого файла подписанного кандидата вообще,
++       а `Resident#buildId` — идентификатор работающей сборки, для сравнения с предлагаемым
++       релизом.
+
+=       with a release on offer.
+-   refer ethereal.Resident
++   refer ethereal.Resident
+
+=   refer ethereal.Resident
+-   refer ethereal.cli
++   refer ethereal.cli
+
+-   entry .stage   writes a candidate executable as `.pending`, for the launcher to apply next time
+-       Takes any source which is `Readable to Data` — a file, an HTTP response, a stream —
+-       reads it whole, writes it to a temporary file beside `.pending` and renames it into
+-       place, so a launcher starting concurrently never reads a partial candidate. It returns
+-       normally: the upgrade takes effect the next time the command is run, which the
+-       application should tell the user. Raises `Upgrade.Error` with reason
+-       `CannotResolveName` when the daemon was not given its name by a launcher,
+-       `CannotWritePending` when the data directory or the file cannot be written, and
+-       `CannotReadSource` when the source cannot be read.
+-   entry .pending   whether a staged candidate is waiting for the launcher
+-       Whether `.pending` exists in the data directory; false when the directory cannot be
+-       resolved.
+-   entry .outcome   what the launcher last did with a staged candidate, until acknowledged
+-       Reads `.upgrade-result` from the data directory: the result word, the candidate's and
+-       the previous executable's build ids and when it happened. `Unset` when there is no
+-       record, it cannot be read, or it names an outcome this version does not know.
++   entry .stage   записывает исполняемый файл-кандидат как `.pending`, чтобы лаунчер применил его в следующий раз
++       Принимает любой источник, который `Readable to Data`, — файл, HTTP-ответ, поток данных, —
++       читает его целиком, записывает во временный файл рядом с `.pending` и переименовывает на
++       место, так что одновременно запускающийся лаунчер никогда не прочитает частичного
++       кандидата. Возвращает управление обычным образом: обновление вступает в силу при
++       следующем запуске команды, о чём приложению следует сказать пользователю. Порождает
++       `Upgrade.Error` с причиной `CannotResolveName`, когда лаунчер не сообщил демону его имя,
++       `CannotWritePending`, когда нельзя записать каталог данных или файл, и
++       `CannotReadSource`, когда нельзя прочитать источник.
++   entry .pending   ждёт ли лаунчера размещённый кандидат
++       Существует ли `.pending` в каталоге данных; false, когда каталог не удаётся определить.
++   entry .outcome   что лаунчер в последний раз сделал с размещённым кандидатом, до подтверждения
++       Читает `.upgrade-result` из каталога данных: слово результата, идентификаторы сборки
++       кандидата и предыдущего исполняемого файла и момент, когда это произошло. `Unset`, когда
++       записи нет, её нельзя прочитать или она называет исход, неизвестный этой версии.
+
+=       record, it cannot be read, or it names an outcome this version does not know.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       record, it cannot be read, or it names an outcome this version does not know.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       record, it cannot be read, or it names an outcome this version does not know.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       record, it cannot be read, or it names an outcome this version does not know.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       record, it cannot be read, or it names an outcome this version does not know.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import environments.daemonClientEnvironment
++       import environments.daemonClientEnvironment
+
+=       record, it cannot be read, or it names an outcome this version does not know.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import environments.daemonClientEnvironment
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       def report(): Optional[Message] =
++       def report(): Optional[Message] =
+
+-         Upgrade.outcome.let: outcome =>
++         Upgrade.outcome.let: outcome =>
+
+-           Upgrade.acknowledge()
++           Upgrade.acknowledge()
+
+-           m"${outcome.result} (build ${outcome.candidate.show})"
++           m"${outcome.result} (build ${outcome.candidate.show})"
+
+=           m"${outcome.result} (build ${outcome.candidate.show})"
+-       ```
++       ```
+
+-   entry .acknowledge   forgets the last outcome, so that an application reports each one once
+-       Removes `.upgrade-result`; a failure to do so is ignored.
+-   entry .enabled   whether the running executable's launcher would accept a signed upgrade at all
+-       The `ethereal.upgradable` property the launcher sets: false for an executable built
+-       without a release key and application identifier — a development build, whose launcher
+-       refuses every candidate — and false when the property is absent (an older launcher, or
+-       no launcher). Needs a `System`.
+-   entry .Outcome   what the launcher did with a staged candidate: the result, the build ids and when
++   entry .acknowledge   забывает последний исход, чтобы приложение сообщало о каждом один раз
++       Удаляет `.upgrade-result`; неудача при этом игнорируется.
++   entry .enabled   принял бы лаунчер работающего исполняемого файла подписанное обновление вообще
++       Свойство `ethereal.upgradable`, которое устанавливает лаунчер: false для исполняемого
++       файла, собранного без ключа релиза и идентификатора приложения, — сборки для
++       разработки, лаунчер которой отвергает любого кандидата, — и false, когда свойства нет
++       (старый лаунчер или его отсутствие). Требует `System`.
++   entry .Outcome   что лаунчер сделал с размещённым кандидатом: результат, идентификаторы сборки и время
+
+=   entry .Outcome   what the launcher did with a staged candidate: the result, the build ids and when
+-     detail
++     detail
+
+-         Read back by `Upgrade.outcome` from the record the launcher writes. `candidate` is
+-         the staged executable's build id (zero if it had no record) and `previous` that of
+-         the executable which checked it, so a report can say which build replaced which.
+-     entry .Result   the launcher's verdict on a candidate
++         Считывается обратно `Upgrade.outcome` из записи, которую делает лаунчер. `candidate`
++         — идентификатор сборки размещённого исполняемого файла (ноль, если у него не было
++         записи), а `previous` — идентификатор исполняемого файла, который его проверял, так что
++         отчёт может сказать, какая сборка заменила какую.
++     entry .Result   вердикт лаунчера о кандидате
+
+=     entry .Result   the launcher's verdict on a candidate
+-       detail
++       detail
+
+-           `Applied` — _the upgrade was applied_; `Disabled` — _the running executable does
++           `Applied` — _the upgrade was applied_; `Disabled` — _the running executable does
+
+-           not accept upgrades_ (no key or application id built in); `NoRecord` — _the
+-           candidate is not an XEK executable_; `WrongApplication` — _the candidate was built
+-           for another application_, even if signed with the same key; `BadSignature` — _the
+-           candidate's signature does not verify_, which an unsigned or tampered file gives;
+-           `NotNewer` — _the candidate is not newer than the running executable_, unless the
+-           release was signed with `--allow-downgrade`; `SwapFailed` — _the candidate could
+-           not be swapped into place_. A release signed with the recovery key is applied as
+-           one signed with the release key is.
+-       entry .communicable   renders each result as a message
+-       entry .parse   the result the launcher's word names, or `Unset` for a word this version does not know
++           not accept upgrades_ (ключ или идентификатор приложения не встроены); `NoRecord` —
++           _the candidate is not an XEK executable_; `WrongApplication` — _the candidate was
++           built for another application_, даже если он подписан тем же ключом;
++           `BadSignature` — _the candidate's signature does not verify_, что даёт
++           неподписанный или подделанный файл; `NotNewer` — _the candidate is not newer than
++           the running executable_, если только релиз не подписан с `--allow-downgrade`;
++           `SwapFailed` — _the candidate could not be swapped into place_. Релиз, подписанный
++           ключом восстановления, применяется так же, как подписанный ключом релиза.
++       entry .communicable   отображает каждый результат как сообщение
++       entry .parse   результат, который называет слово лаунчера, или `Unset` для слова, неизвестного этой версии
+
+-           `applied`, `disabled`, `no-record`, `wrong-application`, `bad-signature`,
++           `applied`, `disabled`, `no-record`, `wrong-application`, `bad-signature`,
+
+-           `not-newer` and `swap-failed`.
+-     entry #result   the launcher's verdict
+-     entry #candidate   the staged executable's build id, or zero if it had no record
+-     entry #previous   the build id of the executable which checked the candidate
+-     entry #time   when it happened, in epoch milliseconds
+-     entry #when   when it happened, as any instant type made from epoch milliseconds
+-         `outcome.when[Instant]`, for any `Instantiable across Instants from Long`.
+-   entry .Error   raised when a candidate cannot be staged
++           `not-newer` и `swap-failed`.
++     entry #result   вердикт лаунчера
++     entry #candidate   идентификатор сборки размещённого исполняемого файла или ноль, если у него не было записи
++     entry #previous   идентификатор сборки исполняемого файла, который проверял кандидата
++     entry #time   когда это произошло, в миллисекундах от начала эпохи
++     entry #when   когда это произошло, в виде любого типа мгновения, построенного из миллисекунд от начала эпохи
++         `outcome.when[Instant]` — для любого `Instantiable across Instants from Long`.
++   entry .Error   порождается, когда кандидата не удаётся разместить
+
+=   entry .Error   raised when a candidate cannot be staged
+-     detail
++     detail
+
+-         Error `↯/s.140.1`: _could not stage the upgrade because `reason`_, raised by `Upgrade.stage`.
+-         The reason is a `Clarification`, so the full code is `↯/s.140.1.1` to `↯/s.140.1.3`:
+-         `CannotReadSource` (1) — _the upgrade source could not be read_; `CannotWritePending`
+-         (2) — _the .pending file could not be written_; `CannotResolveName` (3) — _the
+-         running application's name is not available_, which is the case for a JVM run
+-         without a launcher.
+-     entry .Reason   why the candidate could not be staged
++         Ошибка `↯/s.140.1`: _could not stage the upgrade because `reason`_, порождаемая
++         `Upgrade.stage`. Причина — это `Clarification`, поэтому полный код — от `↯/s.140.1.1`
++         до `↯/s.140.1.3`: `CannotReadSource` (1) — _the upgrade source could not be read_;
++         `CannotWritePending` (2) — _the .pending file could not be written_;
++         `CannotResolveName` (3) — _the running application's name is not available_, что
++         бывает с JVM, запущенной без лаунчера.
++     entry .Reason   почему кандидата не удалось разместить
+
+=     entry .Reason   why the candidate could not be staged
+-       detail
++       detail
+
+-           `CannotReadSource`, `CannotWritePending` or `CannotResolveName`, numbered 1 to 3;
+-           the companion's `Communicable` renders each.
+-       entry .communicable   renders each reason as a message
+-       entry #number   the reason's number within error `↯/s.140.1`
+-     entry #reason   why the candidate could not be staged
++           `CannotReadSource`, `CannotWritePending` или `CannotResolveName`, пронумерованные
++           от 1 до 3; `Communicable` объекта-компаньона отображает каждую.
++       entry .communicable   отображает каждую причину как сообщение
++       entry #number   номер причины в ошибке `↯/s.140.1`
++     entry #reason   почему кандидата не удалось разместить
+
+- entry .Terminus   what one of the client's standard streams is attached to: a terminal or a pipe
++ entry .Terminus   к чему подключён один из стандартных потоков данных клиента: к терминалу или к каналу
+
+= entry .Terminus   what one of the client's standard streams is attached to: a terminal or a pipe
+-   detail
++   detail
+
+-       `Terminal` or `Pipe`. The daemon cannot tell for itself — its streams are the
+-       launcher's socket, not the client's terminal — so each of `Resident#cliInput`,
+-       `Resident#cliOutput` and `Resident#cliError` is whatever the launcher reported in the
+-       `init` document, and the three genuinely differ: `mytool > file` run from a terminal
+-       has stdin on the terminal and stdout on a file. A file, a socket or the null device
+-       counts as `Pipe`. It encodes to and decodes from the lowercase text `terminal` and
+-       `pipe`.
++       `Terminal` или `Pipe`. Демон не может определить это сам — его потоки данных — это
++       сокет лаунчера, а не терминал клиента, — поэтому каждый из `Resident#cliInput`,
++       `Resident#cliOutput` и `Resident#cliError` — это то, что лаунчер сообщил в документе
++       `init`, и все три действительно различаются: у `mytool > file`, запущенного из
++       терминала, stdin на терминале, а stdout — в файле. Файл, сокет или нулевое устройство
++       считаются `Pipe`. Кодируется в текст в нижнем регистре `terminal` и `pipe` и
++       декодируется из него.
+
+=       `pipe`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `pipe`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `pipe`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `pipe`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       `pipe`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+-       import backstops.stackTraceBackstop
++       import backstops.stackTraceBackstop
+
+=       `pipe`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+-       import executives.completionsExecutive
++       import executives.completionsExecutive
+
+=       `pipe`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+-       import interpreters.posixInterpreter
++       import interpreters.posixInterpreter
+
+=       `pipe`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       `pipe`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+=       import threads.virtualThreads
+=
+-       @main
++       @main
+
+=       `pipe`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+=       import threads.virtualThreads
+=
+=       @main
+-       def mytool(): Unit = cli:
++       def mytool(): Unit = cli:
+
+=       `pipe`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=
+=       import backstops.stackTraceBackstop
+=       import executives.completionsExecutive
+=       import interpreters.posixInterpreter
+=       import threads.virtualThreads
+=
+=       @main
+=       def mytool(): Unit = cli:
+-         execute:
++         execute:
+
+-           resident.cliOutput match
++           resident.cliOutput match
+
+-             case Terminus.Terminal => Out.println(e"$Bold(a terminal)")
++             case Terminus.Terminal => Out.println(e"$Bold(a terminal)")
+
+-             case Terminus.Pipe     => Out.println(t"a pipe")
++             case Terminus.Pipe     => Out.println(t"a pipe")
+
+=             case Terminus.Pipe     => Out.println(t"a pipe")
+=
+-           Exit.Ok
++           Exit.Ok
+
+=             case Terminus.Pipe     => Out.println(t"a pipe")
+=
+=           Exit.Ok
+-       ```
++       ```
+
+=       ```
+-   refer ethereal.Resident
++   refer ethereal.Resident
+
+-   entry .decoder   reads `terminal` or `pipe` (in any case) as a `Terminus`
+-   entry .encodable   writes a `Terminus` as `terminal` or `pipe`
++   entry .decoder   читает `terminal` или `pipe` (в любом регистре) как `Terminus`
++   entry .encodable   записывает `Terminus` как `terminal` или `pipe`
+
+- entry .Tty   the mode asked of the client's terminal: raw, canonical with echo, or canonical without
++ entry .Tty   режим, запрашиваемый у терминала клиента: сырой, канонический с эхом или канонический без него
+
+= entry .Tty   the mode asked of the client's terminal: raw, canonical with echo, or canonical without
+-   detail
++   detail
+
+-       The launcher raw-modes a terminal stdin before it connects, so that individual
+-       keypresses can be forwarded to an interactive session. A command which wants ordinary
+-       line input asks, over the session, for `Canonical` — the terminal driver then provides
+-       echo and line editing itself — or for `Concealed`, canonical mode with nothing echoed,
+-       which is how a password is read; `Raw` puts it back. `Resident#cooked` and
+-       `Resident#concealed` make the requests and restore `Raw` afterwards; `#canonical` and
+-       `#echo` are the two flags of the `Launcher.Message.Mode` document each becomes.
++       Лаунчер переводит терминальный stdin в сырой режим перед подключением, чтобы отдельные
++       нажатия клавиш можно было пересылать интерактивной сессии. Команда, которой нужен
++       обычный построчный ввод, запрашивает через сессию `Canonical` — тогда эхо и
++       редактирование строки обеспечивает сам драйвер терминала — или `Concealed`,
++       канонический режим без эха, в котором читается пароль; `Raw` возвращает прежнее
++       состояние. `Resident#cooked` и `Resident#concealed` делают эти запросы и затем
++       восстанавливают `Raw`; `#canonical` и `#echo` — два флага документа
++       `Launcher.Message.Mode`, в который превращается каждый из них.
+
+=       `#echo` are the two flags of the `Launcher.Message.Mode` document each becomes.
+-   refer ethereal.Resident
++   refer ethereal.Resident
+
+-   entry #canonical   whether the mode is cooked: true for `Canonical` and `Concealed`
+-   entry #echo   whether the terminal echoes what is typed: true only for `Canonical`
++   entry #canonical   канонический ли режим: true для `Canonical` и `Concealed`
++   entry #echo   выводит ли терминал эхо набираемого: true только для `Canonical`
+
+- entry .Transcoder   re-encodes a Windows console's input from its code page to UTF-8, a character at a time
+-     A `java.io.InputStream` over another, decoding bytes in the console's input code page
+-     (which the `init` document reports as `inputCodepage`, when it is not 65001, UTF-8) and
+-     delivering their UTF-8 encoding, so that the rest of the daemon reads the invocation's
+-     input as UTF-8. It reads one character at a time — a surrogate pair as one — so that no
+-     more of the client's input is taken from the connection than the invocation asked for.
+-     `cli` wraps the session's stdin in one when the code page calls for it; `available()`
+-     is the pending bytes of the last character, and `close()` closes the underlying reader.
++ entry .Transcoder   перекодирует ввод консоли Windows из её кодовой страницы в UTF-8, по символу за раз
++     `java.io.InputStream` над другим потоком, который декодирует байты в кодовой странице
++     ввода консоли (её документ `init` сообщает как `inputCodepage`, когда это не 65001, то
++     есть не UTF-8) и выдаёт их кодировку в UTF-8, так что остальной демон читает ввод вызова
++     как UTF-8. Он читает по одному символу за раз — суррогатную пару как один символ, — чтобы
++     из соединения бралось не больше ввода клиента, чем запросил вызов. `cli` оборачивает в
++     него stdin сессии, когда этого требует кодовая страница; `available()` — оставшиеся байты
++     последнего символа, а `close()` закрывает нижележащий читающий поток.

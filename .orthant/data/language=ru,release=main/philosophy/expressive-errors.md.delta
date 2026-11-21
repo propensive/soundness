@@ -1,0 +1,10 @@
+orthant 1 language
+
+- The numbers are the error's identity. An error type has a bolt code — the number
+- of its module and its own within the module — and each reason a number within it, and every code has a page in `doc/work/errors` explaining
+- the cause and the usual remedies — so `↯/s.100.2` in a user's report can be looked up rather
+- than guessed at.
++ Номера — это идентичность ошибки. У типа ошибки есть bolt-код — номер его модуля и его
++ собственный номер внутри модуля, — а у каждой причины есть номер внутри него, и для каждого кода
++ есть страница в `doc/work/errors`, объясняющая причину и обычные способы исправления, — поэтому
++ `↯/s.100.2` в отчёте пользователя можно найти, а не угадывать.

@@ -1,0 +1,75 @@
+orthant 1 language
+
+- # Machine-readable index of roadmap items. One `item` record per item across the
+- # nine track files in doc/work/roadmap/. This file is the single source of status:
+- # the prose files never claim completion; they link here.
++ # Índice legível por máquina dos itens do roadmap. Um registro `item` por item, ao longo dos
++ # nove arquivos de trilha em doc/work/roadmap/. Este arquivo é a única fonte do status:
++ # os arquivos em prosa nunca declaram conclusão; eles apontam para cá.
+
+-   baseline  1669 while loops, 993 readUnchecked, 514 charAt in lib core (2026-10-21, after #2274 made the frozen Array the only immutable array; 1606, 476, 507 on 2026-09-25)
+-   criterion  no collection exposes a partial indexed apply (issue #1666); every remaining while is a shape doc/work/standards/loops.md sanctions, with a comment naming its invariant
++   baseline  1669 laços while, 993 readUnchecked, 514 charAt no core de lib (2026-10-21, depois que #2274 fez do Array congelado o único array imutável; 1606, 476, 507 em 2026-09-25)
++   criterion  nenhuma coleção expõe um apply indexado parcial (issue #1666); cada while restante tem uma forma que doc/work/standards/loops.md sanciona, com um comentário que nomeia seu invariante
+
+-   criterion  doc/work/standards/capabilities.md exists, defines every tag the census recognises, and rep/DECISIONS.md's recipe sections link to it
++   criterion  doc/work/standards/capabilities.md existe, define cada tag que o censo reconhece, e as seções de receitas de rep/DECISIONS.md apontam para ele
+
+-   baseline  104 of 145 rows build for JavaScript, 108 for Native, 34 JavaScript exclusions with reasons; etc/check-compatibility.py regenerates and checks the file in make build (2026-10-21; 101 of 144 on 2026-09-25; 94 of 132 on 2026-08-01)
+-   criterion  CI regenerates etc/compatibility.tsv, fails on divergence, and no exclusion lacks a reason
++   baseline  104 de 145 linhas compilam para JavaScript, 108 para Native, 34 exclusões de JavaScript com motivos; etc/check-compatibility.py regenera e verifica o arquivo em make build (2026-10-21; 101 de 144 em 2026-09-25; 94 de 132 em 2026-08-01)
++   criterion  a CI regenera etc/compatibility.tsv, falha em caso de divergência, e nenhuma exclusão carece de motivo
+
+-   criterion  every exclusion reason in etc/compatibility.tsv is inherent; a reason-vocabulary check enforces it in CI
++   criterion  todo motivo de exclusão em etc/compatibility.tsv é inerente; uma verificação de vocabulário de motivos o impõe na CI
+
+-   baseline  4 renamed names still at top level; 61 prefix families with 210 names plus 216 singletons listed (2026-09-25)
+-   criterion  the rename table in etc/api-nesting-proposal.md is fully applied, and the 'Remaining names by prefix family' section of etc/api-reduction-candidates.md lists no name outside 'Reviewed items which should not be moved'
++   baseline  4 nomes renomeados ainda no nível superior; 61 famílias de prefixos com 210 nomes, mais 216 nomes isolados listados (2026-09-25)
++   criterion  a tabela de renomeações em etc/api-nesting-proposal.md está totalmente aplicada, e a seção 'Remaining names by prefix family' de etc/api-reduction-candidates.md não lista nenhum nome fora de 'Reviewed items which should not be moved'
+
+-   baseline  3 C2 abbreviations listed (2026-09-25)
+-   criterion  the C2 section of etc/api-reduction-candidates.md is empty (C3 and C3b were superseded by etc/api-nesting-proposal.md and closed with it)
++   baseline  3 abreviações C2 listadas (2026-09-25)
++   criterion  a seção C2 de etc/api-reduction-candidates.md está vazia (C3 e C3b foram substituídas por etc/api-nesting-proposal.md e fechadas com ele)
+
+-   criterion  etc/api-reduction-candidates.md no longer exists
++   criterion  etc/api-reduction-candidates.md não existe mais
+
+-   baseline  0 names exported by two libraries; 19 of 22 high-confidence R8 rows done; Tag/Renderable still @unexported (2026-11-12, later; 6 names, 2 @unexported homonyms, ~110 R8 candidates earlier the same day)
+-   criterion  no name is exported by more than one library, no @unexported dodges a clash, and every row of the R8 tables in etc/api-nesting-proposal.md is applied or reviewed-kept
++   baseline  0 nomes exportados por duas bibliotecas; 19 de 22 linhas R8 de alta confiança concluídas; Tag/Renderable ainda @unexported (2026-11-12, mais tarde; 6 nomes, 2 homônimos @unexported, ~110 candidatos R8 mais cedo no mesmo dia)
++   criterion  nenhum nome é exportado por mais de uma biblioteca, nenhum @unexported esquiva um conflito, e cada linha das tabelas R8 em etc/api-nesting-proposal.md está aplicada ou foi revisada e mantida
+
+-   criterion  grep -c 'Stub' doc/work/standards/messages.md == 0
++   criterion  grep -c 'Stub' doc/work/standards/messages.md == 0
+
+-   baseline  101 topics in doc/work/soundness/modules/; 145 of 145 libraries covered (2026-10-21; 1 of 144 uncovered on 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
+-   criterion  python3 etc/check-doc-coverage.py reports every library covered and exits 0
++   baseline  101 tópicos em doc/work/soundness/modules/; 145 de 145 bibliotecas cobertas (2026-10-21; 1 de 144 sem cobertura em 2026-09-25; 91 tópicos e 35 sem cobertura em 2026-08-01)
++   criterion  python3 etc/check-doc-coverage.py relata todas as bibliotecas cobertas e sai com 0
+
+-   baseline  the scripted DAP suite breaks, steps and inspects values through their Inspectable instances; topic doc/work/soundness/modules/debugging.md (2026-10-21; objects inspected as JVM class names and no topic on 2026-09-25)
+-   criterion  scripted DAP session (breakpoint, step, inspect with Soundness-rendered values) passes against a running application in CI
++   baseline  a suíte DAP roteirizada para em breakpoints, avança e inspeciona valores por meio de suas instâncias Inspectable; tópico doc/work/soundness/modules/debugging.md (2026-10-21; objetos inspecionados como nomes de classes da JVM e nenhum tópico em 2026-09-25)
++   criterion  uma sessão DAP roteirizada (breakpoint, passo, inspeção com valores renderizados por Soundness) passa contra uma aplicação em execução na CI
+
+-   baseline  doc/work/migration.md and 0.65.0.md–0.73.0.md exist; the migration directive in etc/release gates the release; no pull-request check (2026-10-21; notes to 0.68.0 on 2026-09-25)
+-   criterion  doc/work/migration.md exists; the release (the migration directive in etc/release) refuses to tag without doc/work/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching the unreleased doc/work/migration/<version>.md
++   baseline  doc/work/migration.md e 0.65.0.md–0.73.0.md existem; a diretiva de migração em etc/release condiciona a release; nenhuma verificação de pull request (2026-10-21; notas até 0.68.0 em 2026-09-25)
++   criterion  doc/work/migration.md existe; a release (a diretiva de migração em etc/release) se recusa a criar a tag sem doc/work/migration/<version>.md; uma verificação de CI reprova todo pull request que altera lib/**/src sem tocar no doc/work/migration/<version>.md ainda não lançado
+
+-   baseline  lib/reliquary (7387 lines) plus anthology.lira, degustation.lira, mandible.lira, xenophile.lira and their tests (2026-09-25)
+-   criterion  lib/reliquary is absent, no lib/*/src/lira directory remains, and build.mill, etc/ and doc/work/soundness/modules do not mention reliquary
++   baseline  lib/reliquary (7387 linhas) mais anthology.lira, degustation.lira, mandible.lira, xenophile.lira e seus testes (2026-09-25)
++   criterion  lib/reliquary não existe, não resta nenhum diretório lib/*/src/lira, e build.mill, etc/ e doc/work/soundness/modules não mencionam reliquary
+
+-   status done
+-   done  #2530 (2026-11-20)
+-   baseline  lib/sigillate: Jws, Jwe, Jwk and Jwt, with `http` and `server` components; 95 tests, taking their vectors from RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 and RFC 8037; `↯/s.147.1`; doc/work/soundness/modules/jose.md (2026-11-20)
++   status done
++   done  #2530 (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk e Jwt, com os componentes `http` e `server`; 95 testes, que tomam os seus vetores das RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 e RFC 8037; `↯/s.147.1`; doc/work/soundness/modules/jose.md (2026-11-20)
+
+-   baseline  lib/chatelaine: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/work/soundness/modules/webauthn.md (2026-11-20)
++   baseline  lib/chatelaine: WebAuthn.registration/register e authentication/authenticate, atestação `none` e `packed`, com um componente `server`; as cerimônias de registro e de autenticação dos vetores de teste da especificação do W3C (§16.2–16.11) passam, assim como cerimônias roteirizadas contra um autenticador em software nos fontes de teste; nenhum autenticador virtual de navegador foi acionado; `↯/s.148.1`; doc/work/soundness/modules/webauthn.md (2026-11-20)

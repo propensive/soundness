@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.24.13` — Wildcard in pattern type extraction
++ # `↯/s.24.13` — Carattere jolly nell'estrazione del tipo di un pattern
+
+- Raised by Contingency's pattern-type extractor when a wildcard
+- pattern is encountered where a concrete type was needed.
++ Sollevato dall'estrattore dei tipi dei pattern di Contingency quando incontra un pattern jolly dove
++ serviva un tipo concreto.
+
+- ## Cause
++ ## Causa
+
+- A wildcard `_` pattern carries no type information that the
+- extractor can use to register a recovered case.
++ Un pattern jolly `_` non porta alcuna informazione di tipo che l'estrattore possa usare per
++ registrare un caso recuperato.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.24.13] wildcard
++ [↯/s.24.13] wildcard
+
+= [↯/s.24.13] wildcard
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Replace the wildcard with a typed pattern (e.g. `error: SomeError`).
++ Sostituire il carattere jolly con un pattern tipizzato (per esempio `error: SomeError`).
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Sorgente: `lib/contingency/src/core/contingency.internal.scala`

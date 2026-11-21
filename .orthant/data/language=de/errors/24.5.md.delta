@@ -1,0 +1,51 @@
+orthant 1 language
+
+- # `↯/s.24.5` — `Errors`
++ # `↯/s.24.5` — `Errors`
+
+- Raised when several errors must be reported together, keyed by name.
++ Wird ausgelöst, wenn mehrere Fehler gemeinsam gemeldet werden müssen, nach Namen geschlüsselt.
+
+- ## Cause
++ ## Ursache
+
+- `Errors` aggregates multiple `Error` instances into a single
+- exception, each tagged with a `Text` key. It is used in places
+- where validation collects every problem before failing — for
+- example multi-field form validation.
++ `Errors` fasst mehrere `Error`-Instanzen zu einer einzigen Exception zusammen, jede mit einem
++ `Text`-Schlüssel versehen. Es wird dort verwendet, wo eine Validierung jedes Problem sammelt,
++ bevor sie fehlschlägt — zum Beispiel bei der Validierung eines Formulars mit mehreren Feldern.
+
+- ## Example message
++ ## Beispielmeldung
+
+- The message is composed from the formatted contents of the
+- underlying error map, e.g.:
++ Die Meldung wird aus dem formatierten Inhalt der zugrunde liegenden Fehler-Map zusammengesetzt,
++ z. B.:
+
+=
+- ```
++ ```
+
+- [↯/s.24.5] name: the value was not set; email: the email address is not valid because the at-symbol is missing
++ [↯/s.24.5] name: the value was not set; email: the email address is not valid because the at-symbol is missing
+
+= [↯/s.24.5] name: the value was not set; email: the email address is not valid because the at-symbol is missing
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Inspect the underlying map (`Errors.errorMap`) to handle each error
+- individually.
++ Untersuchen Sie die zugrunde liegende Map (`Errors.errorMap`), um jeden Fehler einzeln zu
++ behandeln.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/contingency/src/core/contingency.Errors.scala`
++ - Quelle: `lib/contingency/src/core/contingency.Errors.scala`

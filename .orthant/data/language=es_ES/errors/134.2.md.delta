@@ -1,0 +1,58 @@
+orthant 1 language
+
+- # `↯/s.134.2` — `YamlPath.Error`
++ # `↯/s.134.2` — `YamlPath.Error`
+
+- Raised when a YAML path expression is malformed.
++ Se lanza cuando una expresión de ruta YAML está mal formada.
+
+- ## Cause
++ ## Causa
+
+- A YAML path names a location within a document. Its syntax is checked when written as a
+- literal and when parsed at runtime, by the same parser.
++ Una ruta YAML nombra una ubicación dentro de un documento. Su sintaxis se comprueba, con el mismo
++ analizador, cuando se escribe como literal y cuando se analiza en tiempo de ejecución.
+
+- ## Variants
+- (`↯/s.134.2.1`, `UnknownDocument`, was retired when `YamlPath` lost its never-populated document URL
+- and `YamlPath.Registry`; the remaining numbers are unchanged.)
++ ## Variantes
++ (`↯/s.134.2.1`, `UnknownDocument`, se retiró cuando `YamlPath` perdió su URL de documento, que nunca
++ se llegaba a rellenar, y `YamlPath.Registry`; los números restantes no cambian.)
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+- row  `↯/s.134.2.2`  `ExpectedHash`  `[↯/s.134.2.2] a YAML path must begin with '#'`
++ row  `↯/s.134.2.2`  `ExpectedHash`  `[↯/s.134.2.2] a YAML path must begin with '#'`
+
+- row  `↯/s.134.2.3`  `ExpectedSlash`  `[↯/s.134.2.3] a YAML path fragment must begin with '/'`
++ row  `↯/s.134.2.3`  `ExpectedSlash`  `[↯/s.134.2.3] a YAML path fragment must begin with '/'`
+
+- row  `↯/s.134.2.4`  `BadEscape`  `[↯/s.134.2.4] a '~' in a YAML path must be followed by '0' or '1'`
++ row  `↯/s.134.2.4`  `BadEscape`  `[↯/s.134.2.4] a '~' in a YAML path must be followed by '0' or '1'`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- The reason names the character or construct at fault. A path must begin at the root, and
+- each step must be a key or an index.
++ El motivo nombra el carácter o la construcción que falla. Una ruta debe empezar en la raíz, y cada
++ paso debe ser una clave o un índice.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/ypsiloid/src/core/ypsiloid.YamlPath.scala`
++ - Fuente: `lib/ypsiloid/src/core/ypsiloid.YamlPath.scala`

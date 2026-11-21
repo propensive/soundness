@@ -1,0 +1,405 @@
+orthant 1 language
+
+- ## Markdown
++ ## Markdown
+
+- ### About
++ ### Visão geral
+
+- [Markdown](https://commonmark.org/) is the plain-text format for prose in readmes, comments
+- and documentation. It is parsed, following the CommonMark specification, into a typed tree.
+- The tree keeps content at the level of blocks, such as headings, paragraphs and lists,
+- distinct from the inline content within them, such as emphasis, links and code spans. From
+- that tree, HTML is produced, the Markdown is written back out, or styled output is produced
+- for a terminal.
++ O [Markdown](https://commonmark.org/) é o formato de texto puro para a prosa de readmes,
++ comentários e documentação. Ele é analisado, segundo a especificação CommonMark, em uma árvore
++ tipada. A árvore mantém o conteúdo em nível de blocos, como títulos, parágrafos e listas,
++ separado do conteúdo inline dentro deles, como ênfase, links e trechos de código. A partir dessa
++ árvore, produz-se HTML, escreve-se o Markdown de volta, ou produz-se saída com estilo para um
++ terminal.
+
+- Block content and inline content are different types. A `Markdown of Layout`, which is a
+- whole document, and a `Markdown of Prose`, which is a run of inline content, cannot be
+- confused. Each becomes the kind of [HTML](html.md#precise-types) which is valid in its
+- place: flow content for the one, and phrasing content for the other.
++ Conteúdo de bloco e conteúdo inline são tipos diferentes. Um `Markdown of Layout`, que é um
++ documento inteiro, e um `Markdown of Prose`, que é uma sequência de conteúdo inline, não podem
++ ser confundidos. Cada um se torna a categoria de [HTML](html.md#precise-types) que é válida no
++ seu lugar: conteúdo de fluxo para um, e conteúdo fraseado para o outro.
+
+- ### On Markdown
++ ### Sobre o Markdown
+
+- Markdown has two levels, which a single untyped tree tends to blur. A paragraph, and the
+- emphasis inside it, are not interchangeable. A heading may contain a link, but a link may
+- not contain a heading. A representation which treats every node alike lets such nonsense be
+- built, and leaves the check to whatever consumes the tree.
++ O Markdown tem dois níveis, que uma única árvore sem tipos tende a borrar. Um parágrafo e a
++ ênfase dentro dele não são intercambiáveis. Um título pode conter um link, mas um link não pode
++ conter um título. Uma representação que trata todos os nós da mesma forma permite construir
++ esse tipo de absurdo, e deixa a verificação para quem quer que consuma a árvore.
+
+- Here the levels are kept apart in the types. The structure of blocks is the enumeration
+- `Layout`, the structure of inline content is the enumeration `Prose`, and the type of a
+- document records which it holds. Parsing gives a complete CommonMark tree, and converting it
+- to HTML gives exactly the content which each node may be. A document which is parsed to a
+- typed tree, and not converted straight to HTML, is what makes it
+- [composable](../../philosophy/composability.md) with the rest of a program.
++ Aqui os níveis são mantidos separados nos tipos. A estrutura dos blocos é a enumeração `Layout`,
++ a estrutura do conteúdo inline é a enumeração `Prose`, e o tipo de um documento registra qual
++ delas ele contém. A análise dá uma árvore CommonMark completa, e convertê-la em HTML dá
++ exatamente o conteúdo que cada nó pode ser. Um documento analisado em uma árvore tipada, e não
++ convertido diretamente em HTML, é o que o torna
++ [componível](../../philosophy/composability.md) com o resto de um programa.
+
+- Everything comes from the `soundness` package. The last import lets the samples print their
+- results:
++ Tudo vem do pacote `soundness`. O último import permite que os exemplos imprimam seus
++ resultados:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Parsing
++ ### Análise
+
+- `Parser.parse` reads Markdown text into a document, which is a `Markdown of Layout`:
++ `Parser.parse` lê texto Markdown em um documento, que é um `Markdown of Layout`:
+
+= `Parser.parse` reads Markdown text into a document, which is a `Markdown of Layout`:
+=
+- ```scala
++ ```scala
+
+- val document = Parser.parse(t"# Title\n\nSome **bold** text.")
++ val document = Parser.parse(t"# Title\n\nSome **bold** text.")
+
+= val document = Parser.parse(t"# Title\n\nSome **bold** text.")
+- ```
++ ```
+
+- Markdown is also parsed incrementally, from a [stream](streams.md), reading lines as they
+- arrive, without holding the source. Only the tree is retained, and the raw text of each
+- paragraph, which is parsed later. A long document is therefore parsed without ever being
+- held whole:
++ O Markdown também é analisado de forma incremental, a partir de um [stream](streams.md), lendo
++ as linhas à medida que chegam, sem reter a origem. Só a árvore é retida, e o texto cru de cada
++ parágrafo, que é analisado depois. Um documento longo é, portanto, analisado sem nunca ser
++ mantido inteiro:
+
+= held whole:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- val readme = t"# Readme\n\nThe first paragraph.\n\nThe second."
++ val readme = t"# Readme\n\nThe first paragraph.\n\nThe second."
+
+= val readme = t"# Readme\n\nThe first paragraph.\n\nThe second."
+- ```
++ ```
+
+= val readme = t"# Readme\n\nThe first paragraph.\n\nThe second."
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val readme = t"# Readme\n\nThe first paragraph.\n\nThe second."
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val readme = t"# Readme\n\nThe first paragraph.\n\nThe second."
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Parser.parse(readme.stream).children.size.show)
++ Out.println(Parser.parse(readme.stream).children.size.show)
+
+- Out.println(readme.read[Markdown of Layout].children.size.show)
++ Out.println(readme.read[Markdown of Layout].children.size.show)
+
+= Out.println(readme.read[Markdown of Layout].children.size.show)
+- ```
++ ```
+
+- The whole CommonMark conformance suite passes through the streaming entry, a character at a
+- time, so a document which is split at any point parses to the same tree as the whole text.
++ Toda a suíte de conformidade do CommonMark passa pela entrada de streaming, um caractere por
++ vez, de modo que um documento dividido em qualquer ponto é analisado na mesma árvore que o texto
++ inteiro.
+
+- ### Rendering to HTML
++ ### Renderização em HTML
+
+- `html` converts a parsed document to HTML, and `show` writes the result as text. A document
+- of blocks becomes flow content, and the inline content within it becomes phrasing content,
+- so the output is well-formed by construction:
++ `html` converte um documento analisado em HTML, e `show` escreve o resultado como texto. Um
++ documento de blocos se torna conteúdo de fluxo, e o conteúdo inline dentro dele se torna
++ conteúdo fraseado, de modo que a saída é bem formada por construção:
+
+= so the output is well-formed by construction:
+=
+- ```scala fuel
++ ```scala fuel
+
+= so the output is well-formed by construction:
+=
+= ```scala fuel
+- run
++ run
+
+= so the output is well-formed by construction:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(document.html.show)
++ Out.println(document.html.show)
+
+= Out.println(document.html.show)
+- ```
++ ```
+
+- ### The syntax tree
++ ### A árvore sintática
+
+- The `children` of a document are `Layout` nodes, and each has its inline content as `Prose`.
+- A document can therefore be inspected, or transformed, by matching on the tree:
++ Os `children` de um documento são nós `Layout`, e cada um tem seu conteúdo inline como `Prose`.
++ Um documento pode, portanto, ser inspecionado, ou transformado, por casamento sobre a árvore:
+
+= A document can therefore be inspected, or transformed, by matching on the tree:
+=
+- ```scala
++ ```scala
+
+- val heading = document.children.head match
++ val heading = document.children.head match
+
+-   case Layout.Heading(_, level, Prose.Textual(text)) => (level, text)
++   case Layout.Heading(_, level, Prose.Textual(text)) => (level, text)
+
+-   case _                                             => (0, t"")
++   case _                                             => (0, t"")
+
+=   case _                                             => (0, t"")
+- ```
++ ```
+
+=   case _                                             => (0, t"")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                                             => (0, t"")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                                             => (0, t"")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(heading.inspect)
++ Out.println(heading.inspect)
+
+= Out.println(heading.inspect)
+- ```
++ ```
+
+- The block nodes are the cases of `Layout`, and each has the line on which it starts:
++ Os nós de bloco são os casos de `Layout`, e cada um tem a linha em que começa:
+
+= The block nodes are the cases of `Layout`, and each has the line on which it starts:
+=
+- ```tabular
++ ```tabular
+
+- column  Layout
++ column  Layout
+
+- column  Is
+- row  `Heading`  a heading, with its level from 1 to 6
+- row  `Paragraph`  a paragraph
+- row  `BlockQuote`  a block quote
+- row  `OrderedList`  an ordered list
+- row  `BulletList`  a bullet list
+- row  `CodeBlock`  a code block, with its info string
+- row  `ThematicBreak`  a thematic break
+- row  `HtmlBlock`  a block of raw HTML
++ column  É
++ row  `Heading`  um título, com seu nível de 1 a 6
++ row  `Paragraph`  um parágrafo
++ row  `BlockQuote`  uma citação em bloco
++ row  `OrderedList`  uma lista ordenada
++ row  `BulletList`  uma lista com marcadores
++ row  `CodeBlock`  um bloco de código, com sua info string
++ row  `ThematicBreak`  uma quebra temática
++ row  `HtmlBlock`  um bloco de HTML cru
+
+= row  `HtmlBlock`  a block of raw HTML
+- ```
++ ```
+
+- The inline nodes are the cases of `Prose`:
++ Os nós inline são os casos de `Prose`:
+
+= The inline nodes are the cases of `Prose`:
+=
+- ```tabular
++ ```tabular
+
+- column  Prose
++ column  Prose
+
+- column  Is
+- row  `Textual`  plain text
+- row  `Emphasis`  emphasis
+- row  `Strong`  strong emphasis
+- row  `Code`  a code span
+- row  `Link`  a link, with its destination and optional title
+- row  `Image`  an image, with its destination and optional title
+- row  `Softbreak`  a soft line break
+- row  `Linebreak`  a hard line break
+- row  `HtmlInline`  inline raw HTML
++ column  É
++ row  `Textual`  texto simples
++ row  `Emphasis`  ênfase
++ row  `Strong`  ênfase forte
++ row  `Code`  um trecho de código
++ row  `Link`  um link, com seu destino e título opcional
++ row  `Image`  uma imagem, com seu destino e título opcional
++ row  `Softbreak`  uma quebra de linha suave
++ row  `Linebreak`  uma quebra de linha forçada
++ row  `HtmlInline`  HTML cru inline
+
+= row  `HtmlInline`  inline raw HTML
+- ```
++ ```
+
+- ### Writing Markdown back
++ ### Escrevendo o Markdown de volta
+
+- `show` writes a document back as CommonMark text. A choice of formatting in scope can wrap
+- the output to a width in columns, to generate Markdown which is readable:
++ `show` escreve um documento de volta como texto CommonMark. Uma escolha de formatação no escopo
++ pode quebrar a saída em uma largura em colunas, para gerar Markdown legível:
+
+= the output to a width in columns, to generate Markdown which is readable:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the output to a width in columns, to generate Markdown which is readable:
+=
+= ```scala fuel
+- run
++ run
+
+= the output to a width in columns, to generate Markdown which is readable:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- locally:
++ locally:
+
+-   given formatting: Markdown.Formatting = Markdown.Formatting.bounded(80)
++   given formatting: Markdown.Formatting = Markdown.Formatting.bounded(80)
+
+-   Out.println(document.show)
++   Out.println(document.show)
+
+=   Out.println(document.show)
+- ```
++ ```
+
+- ### Terminal output
++ ### Saída no terminal
+
+- `terminal` converts a document to [styled terminal text](terminal.md#styled-text). Headings,
+- emphasis and code become ANSI styling, for display in a console at a given width:
++ `terminal` converte um documento em [texto de terminal com estilo](terminal.md#styled-text).
++ Títulos, ênfase e código viram estilos ANSI, para exibição em um console com uma largura dada:
+
+= emphasis and code become ANSI styling, for display in a console at a given width:
+=
+- ```scala fuel
++ ```scala fuel
+
+= emphasis and code become ANSI styling, for display in a console at a given width:
+=
+= ```scala fuel
+- run
++ run
+
+= emphasis and code become ANSI styling, for display in a console at a given width:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(document.terminal(width = 80))
++ Out.println(document.terminal(width = 80))
+
+= Out.println(document.terminal(width = 80))
+- ```
++ ```
+
+- ### Related
++ ### Relacionados
+
+- - [HTML](html.md) describes the HTML which a document converts to.
+- - [Terminal](terminal.md) describes the styled text of the terminal form.
+- - [Syntax highlighting](syntax-highlighting.md) colors the code in a code block.
+- - [Errors](errors.md#defining-an-error) describes messages, which can be written as
++ - [HTML](html.md) descreve o HTML em que um documento é convertido.
++ - [Terminal](terminal.md) descreve o texto com estilo da forma para terminal.
++ - [Realce de sintaxe](syntax-highlighting.md) colore o código em um bloco de código.
++ - [Erros](errors.md#defining-an-error) descreve as mensagens, que podem ser escritas em
+
+-   Markdown.
++   Markdown.
+
+- - [Web pages](pages.md) hold rendered Markdown as their content.
++ - [Páginas web](pages.md) contêm Markdown renderizado como seu conteúdo.

@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.87.1` — Query parameter type mismatch
++ # `↯/s.87.1` — Tipo incompatível em parâmetro de consulta
+
+- Raised at compiletime when a named query parameter is given a value of the wrong type.
++ Lançado em tempo de compilação quando um parâmetro de consulta nomeado recebe um valor do tipo
++ errado.
+
+- ## Cause
++ ## Causa
+
+- Legerdemain builds query strings from named arguments, checking each value against the type
+- the parameter was declared to take.
++ O Legerdemain constrói strings de consulta a partir de argumentos nomeados, verificando cada
++ valor contra o tipo que o parâmetro foi declarado para receber.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.87.1] the parameter <key> takes values of <type>
++ [↯/s.87.1] the parameter <key> takes values of <type>
+
+= [↯/s.87.1] the parameter <key> takes values of <type>
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Supply a value of the declared type, or change the parameter's declaration.
++ Forneça um valor do tipo declarado, ou altere a declaração do parâmetro.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/legerdemain/src/query/legerdemain.internal.scala`
++ - Código-fonte: `lib/legerdemain/src/query/legerdemain.internal.scala`

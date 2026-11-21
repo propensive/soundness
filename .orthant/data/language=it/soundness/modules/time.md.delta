@@ -1,0 +1,3416 @@
+orthant 1 language
+
+- ## Time
++ ## Time
+
+- ### About
++ ### Panoramica
+
+- Time is represented and manipulated in all its forms: dates on a calendar, times on a clock,
+- absolute instants on a physical timeline, the spans between them, the time zones which connect
+- human time to physical time, and the rules by which events recur.
++ Il tempo viene rappresentato e manipolato in tutte le sue forme: date su un calendario, ore su
++ un orologio, istanti assoluti su una scala temporale fisica, gli intervalli tra
++ di essi, i fusi orari che collegano il tempo umano al tempo fisico, e le regole con cui gli
++ eventi si ripetono.
+
+- Wherever a value can be known when the code is written, it is checked at [compiletime]. A date
+- which cannot exist, or a time zone which was never defined, is a compile error, not a surprise
+- at [runtime]. That is [safety by construction](../../philosophy/safety-by-construction.md),
+- applied to a domain in which almost every value has a rule.
++ Ovunque un valore si possa conoscere quando si scrive il codice, viene verificato a
++ [tempo di compilazione]. Una data che non può esistere, o un fuso orario mai definito, è un
++ errore di compilazione, non una sorpresa a [runtime]. È la
++ [sicurezza per costruzione](../../philosophy/safety-by-construction.md), applicata a un dominio
++ in cui quasi ogni valore ha una regola.
+
+- ### On time
++ ### Sul tempo
+
+- Time looks simple, and is not.
++ Il tempo sembra semplice, e non lo è.
+
+- A physical instant, such as the striking of a bell or the arrival of a photon, can be ordered
+- before or after another, and measured against a regular reference. That much is unambiguous,
+- *provided that the two happen in the same place*. Events at a distance are only
+- [partially ordered](https://en.wikipedia.org/wiki/Special_relativity), related to one another
+- through the speed of light, and not by a universal clock.
++ Un istante fisico, come il rintocco di una campana o l'arrivo di un fotone, si può ordinare
++ prima o dopo un altro, e misurare rispetto a un riferimento regolare. Fin qui non c'è
++ ambiguità, *purché i due avvengano nello stesso luogo*. Gli eventi a distanza sono solo
++ [parzialmente ordinati](https://en.wikipedia.org/wiki/Special_relativity), legati l'uno
++ all'altro dalla velocità della luce, e non da un orologio universale.
+
+- Everything which people build on top of it is less certain still. Calendars divide the year
+- into months of unequal length, weeks which ignore months entirely, and days which are
+- themselves divided in ways which are
+- [not decimal](https://en.wikipedia.org/wiki/12-hour_clock), and were
+- [negotiated over history](https://en.wikipedia.org/wiki/Thirty_Days_Hath_September). The
+- twelves and sixties are
+- [highly composite numbers](https://en.wikipedia.org/wiki/Highly_composite_number), chosen
+- because they divide well, long before anything needed to be divided by ten.
++ Tutto ciò che le persone costruiscono sopra di esso è ancora meno certo. I calendari dividono
++ l'anno in mesi di lunghezza disuguale, settimane che ignorano del tutto i mesi, e giorni a loro
++ volta divisi in modi
++ [non decimali](https://en.wikipedia.org/wiki/12-hour_clock), e
++ [negoziati nel corso della storia](https://en.wikipedia.org/wiki/Thirty_Days_Hath_September).
++ I dodici e i sessanta sono
++ [numeri altamente composti](https://en.wikipedia.org/wiki/Highly_composite_number), scelti
++ perché si dividono bene, molto prima che qualcosa dovesse essere diviso per dieci.
+
+- The relationship between physical time and civil time is worse again:
++ Il rapporto tra tempo fisico e tempo civile è ancora peggiore:
+
+- - The length of a day drifts as the Earth's rotation changes, so civil time is corrected with
+-   [leap seconds](https://en.wikipedia.org/wiki/Leap_second), which cannot be predicted years
+-   ahead.
+- - A single reading of a wall clock can name two distinct instants, or none at all, when
+-   [daylight-saving time](https://en.wikipedia.org/wiki/Daylight_saving_time) shifts the
+-   clocks.
+- - The same moment has different labels in different places, and which labels apply has
+-   depended, at times, on the outcome of wars.
++ - La durata di un giorno varia al mutare della rotazione terrestre, quindi il tempo civile si
++   corregge con i [secondi intercalari](https://en.wikipedia.org/wiki/Leap_second), che non si
++   possono prevedere con anni di anticipo.
++ - Una singola lettura di un orologio locale può nominare due istanti distinti, o nessuno,
++   quando l'[ora legale](https://en.wikipedia.org/wiki/Daylight_saving_time) sposta gli
++   orologi.
++ - Lo stesso momento ha etichette diverse in luoghi diversi, e quali etichette si applichino è
++   dipeso, a volte, dall'esito delle guerre.
+
+- As much of this as can be made systematic is made systematic, by encoding the distinctions in
+- types. A date knows which calendar it belongs to. An instant knows which timeline it is
+- measured on. A moment knows its zone. And the awkward cases are resolved by policies which are
+- chosen in context, and are not left to chance: a 31st which some months lack, a 29th of
+- February which most years lack, and a clock reading which falls in a daylight-saving gap.
++ Quanto di tutto ciò si può rendere sistematico viene reso sistematico, codificando le
++ distinzioni nei tipi. Una data sa a quale calendario appartiene. Un istante sa su quale scala
++ temporale è misurato. Un momento conosce il suo fuso. E i casi scomodi vengono risolti da
++ politiche scelte nel contesto, e non lasciate al caso: un 31 che alcuni mesi non hanno, un 29
++ febbraio che la maggior parte degli anni non ha, e una lettura dell'orologio che cade in un
++ salto dell'ora legale.
+
+- The sections below begin with the everyday types, and build toward the rare ones:
++ Le sezioni seguenti iniziano dai tipi di uso quotidiano, e procedono verso quelli rari:
+
+= The sections below begin with the everyday types, and build toward the rare ones:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Represents
+- row  `Date`  a day on a calendar
+- row  `Clockface`  a time of day
+- row  `Timestamp`  a date with a time of day
+- row  `Month`  a month of the year, `Jan` to `Dec`
+- row  `Year`  a calendar year
+- row  `Monthstamp`  a month of a particular year
+- row  `Anniversary`  a month and a day, recurring every year
+- row  `Duration`  a physical quantity of seconds
+- row  `Timespan`  a calendar quantity: years, months, weeks, days, hours, minutes
+- row  `Period`  a half-open interval between two points
+- row  `Instant`  a moment in physical time, on a timeline
+- row  `Timezone`  a place's rules for civil time
+- row  `Moment`  a timestamp anchored to a zone
+- row  `Recurrence`  an event repeating at a fixed interval
+- row  `Rrule`  an event repeating by a calendar pattern
++ column  Tipo
++ column  Rappresenta
++ row  `Date`  un giorno su un calendario
++ row  `Clockface`  un'ora del giorno
++ row  `Timestamp`  una data con un'ora del giorno
++ row  `Month`  un mese dell'anno, da `Jan` a `Dec`
++ row  `Year`  un anno di calendario
++ row  `Monthstamp`  un mese di un anno particolare
++ row  `Anniversary`  un mese e un giorno, che ricorrono ogni anno
++ row  `Duration`  una grandezza fisica di secondi
++ row  `Timespan`  una grandezza di calendario: anni, mesi, settimane, giorni, ore, minuti
++ row  `Period`  un intervallo semiaperto tra due punti
++ row  `Instant`  un momento nel tempo fisico, su una scala temporale
++ row  `Timezone`  le regole di un luogo per il tempo civile
++ row  `Moment`  un timestamp ancorato a un fuso
++ row  `Recurrence`  un evento che si ripete a intervallo fisso
++ row  `Rrule`  un evento che si ripete secondo uno schema di calendario
+
+= row  `Rrule`  an event repeating by a calendar pattern
+- ```
++ ```
+
+- Everything comes from the `soundness` package:
++ Tutto proviene dal package `soundness`:
+
+= Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+= import soundness.*
+- ```
++ ```
+
+- Several further choices are made by import:
++ Diverse altre scelte si fanno con un import:
+
+= Several further choices are made by import:
+=
+- ```scala
++ ```scala
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import chronometries.unixChronometry
++ import chronometries.unixChronometry
+
+- import soundness.{tsInterpolator, recInterpolator}
++ import soundness.{tsInterpolator, recInterpolator}
+
+- import calendars.gregorianCalendar
++ import calendars.gregorianCalendar
+
+- import dateFormats.iso8601DateFormat
++ import dateFormats.iso8601DateFormat
+
+- import timeFormats.iso8601TimeFormat
++ import timeFormats.iso8601TimeFormat
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Import
++ column  Import
+
+- column  Decides
+- row  `strategies.throwUnsafely`  that an error, such as text which is not a date, is thrown as an exception; [Errors](errors.md#choosing-a-strategy) has the other strategies
+- row  `chronometries.unixChronometry`  that the current time is read from the Unix clock
+- row  `calendars.gregorianCalendar`  the calendar which a date literal, and date arithmetic, are read in; [Calendars](#calendars) has the others
+- row  `dateFormats`, `timeFormats`  how a date and a time are written out; [Formatting dates and times](#formatting-dates-and-times) has the others
+- row  `stdios`, `termcapDefinitions`  where the samples print their results
++ column  Decide
++ row  `strategies.throwUnsafely`  che un errore, come un testo che non è una data, viene lanciato come eccezione; [Errori](errors.md#choosing-a-strategy) ha le altre strategie
++ row  `chronometries.unixChronometry`  che l'ora corrente viene letta dall'orologio Unix
++ row  `calendars.gregorianCalendar`  il calendario in cui si leggono un letterale di data e l'aritmetica sulle date; [Calendari](#calendars) ha gli altri
++ row  `dateFormats`, `timeFormats`  come si scrivono una data e un'ora; [Formattare date e orari](#formatting-dates-and-times) ha gli altri
++ row  `stdios`, `termcapDefinitions`  dove gli esempi stampano i loro risultati
+
+= row  `stdios`, `termcapDefinitions`  where the samples print their results
+- ```
++ ```
+
+- ### Dates
++ ### Date
+
+- A date is written as a year, an abbreviated month and a day, joined by hyphens:
++ Una data si scrive come anno, mese abbreviato e giorno, uniti da trattini:
+
+= A date is written as a year, an abbreviated month and a day, joined by hyphens:
+=
+- ```scala
++ ```scala
+
+- val date = 2024-Jan-15
++ val date = 2024-Jan-15
+
+= val date = 2024-Jan-15
+- ```
++ ```
+
+- This is not a string to be parsed at runtime. It is a literal which the compiler understands,
+- and an impossible date does not compile. The thirtieth of February, the thirty-first of April,
+- and the twenty-ninth of February in a year which is not a leap year, are all rejected before
+- the program runs:
++ Non è una stringa da analizzare a runtime. È un letterale che il compilatore comprende, e una
++ data impossibile non compila. Il trenta febbraio, il trentuno aprile e il ventinove febbraio di
++ un anno non bisestile vengono tutti rifiutati prima che il programma venga eseguito:
+
+= the program runs:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the program runs:
+=
+= ```scala fuel
+- compile
++ compile
+
+= the program runs:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= the program runs:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- 2012-Feb-30
++ 2012-Feb-30
+
+= 2012-Feb-30
+- ```
++ ```
+
+= 2012-Feb-30
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= 2012-Feb-30
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= 2012-Feb-30
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= 2012-Feb-30
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- 2012-Apr-31
++ 2012-Apr-31
+
+= 2012-Apr-31
+- ```
++ ```
+
+= 2012-Apr-31
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= 2012-Apr-31
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= 2012-Apr-31
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= 2012-Apr-31
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- 2011-Feb-29
++ 2011-Feb-29
+
+= 2011-Feb-29
+- ```
++ ```
+
+- Catching these mistakes at compiletime, instead of trusting a date to be valid because it
+- parsed, is the recurring habit which shapes the whole design.
++ Intercettare questi errori a tempo di compilazione, invece di fidarsi che una data sia valida
++ perché è stata analizzata, è l'abitudine ricorrente che dà forma all'intero design.
+
+- A date is read from text with [`as`](decoding.md#decoding-a-value). The `ts` [interpolator]
+- does the same for a literal which is known at compiletime, and validates its digits just as
+- the hyphenated form does:
++ Una data si legge da testo con [`as`](decoding.md#decoding-a-value). L'[interpolatore] `ts` fa
++ lo stesso per un letterale noto a tempo di compilazione, e ne valida le cifre proprio come fa
++ la forma con i trattini:
+
+= the hyphenated form does:
+=
+- ```scala
++ ```scala
+
+- val parsed = t"2011-12-13".as[Date]
++ val parsed = t"2011-12-13".as[Date]
+
+- val literal = ts"2024-12-31"
++ val literal = ts"2024-12-31"
+
+= val literal = ts"2024-12-31"
+- ```
++ ```
+
+= val literal = ts"2024-12-31"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val literal = ts"2024-12-31"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val literal = ts"2024-12-31"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(date.show)
++ Out.println(date.show)
+
+- Out.println(parsed.show)
++ Out.println(parsed.show)
+
+= Out.println(parsed.show)
+- ```
++ ```
+
+- Text which is not a date raises an error:
++ Un testo che non è una data solleva un errore:
+
+= Text which is not a date raises an error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Text which is not a date raises an error:
+=
+= ```scala fuel
+- run
++ run
+
+= Text which is not a date raises an error:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= Text which is not a date raises an error:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"2011-02-30".as[Date]
++ t"2011-02-30".as[Date]
+
+= t"2011-02-30".as[Date]
+- ```
++ ```
+
+- The fields of a date are read back as a year, a month and a day. A date also knows its day of
+- the week, and its position in the year. Dates compare, and shift by whole days:
++ I campi di una data si rileggono come anno, mese e giorno. Una data conosce anche il proprio
++ giorno della settimana e la propria posizione nell'anno. Le date si confrontano, e si spostano
++ di giorni interi:
+
+= the week, and its position in the year. Dates compare, and shift by whole days:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the week, and its position in the year. Dates compare, and shift by whole days:
+=
+= ```scala fuel
+- run
++ run
+
+= the week, and its position in the year. Dates compare, and shift by whole days:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((2016-Jul-11).year.inspect)
++ Out.println((2016-Jul-11).year.inspect)
+
+- Out.println((2016-Jul-11).month.inspect)
++ Out.println((2016-Jul-11).month.inspect)
+
+- Out.println((2024-Jan-1).weekday.inspect)
++ Out.println((2024-Jan-1).weekday.inspect)
+
+- Out.println((2024-Dec-31).yearDay.show)
++ Out.println((2024-Dec-31).yearDay.show)
+
+- Out.println(((2024-Jan-1) < (2024-Jan-2)).inspect)
++ Out.println(((2024-Jan-1) < (2024-Jan-2)).inspect)
+
+- Out.println((2024-Jan-1).addDays(31).show)
++ Out.println((2024-Jan-1).addDays(31).show)
+
+= Out.println((2024-Jan-1).addDays(31).show)
+- ```
++ ```
+
+- A `Date` is a `Timestamp` with a precision of one day. The two are distinguished by a type
+- parameter, not by a separate class, so a date may be used wherever a timestamp is expected.
++ Una `Date` è un `Timestamp` con una precisione di un giorno. I due si distinguono per un
++ parametro di tipo, non per una classe separata, quindi una data si può usare ovunque ci si
++ aspetti un timestamp.
+
+- ### Times of day
++ ### Ore del giorno
+
+- A time of day is a `Clockface`, given as hours, minutes and seconds:
++ Un'ora del giorno è un `Clockface`, dato come ore, minuti e secondi:
+
+= A time of day is a `Clockface`, given as hours, minutes and seconds:
+=
+- ```scala
++ ```scala
+
+- val time = Clockface(14, 30, 59)
++ val time = Clockface(14, 30, 59)
+
+= val time = Clockface(14, 30, 59)
+- ```
++ ```
+
+- For the common case of an exact minute, a time can be written as a number, with `am` or `pm`
+- attached. The minutes always take two digits:
++ Per il caso comune di un minuto esatto, un'ora si può scrivere come numero, con `am` o `pm`
++ attaccato. I minuti prendono sempre due cifre:
+
+= attached. The minutes always take two digits:
+=
+- ```scala fuel
++ ```scala fuel
+
+= attached. The minutes always take two digits:
+=
+= ```scala fuel
+- run
++ run
+
+= attached. The minutes always take two digits:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(time.show)
++ Out.println(time.show)
+
+- Out.println(2.01.am.show)
++ Out.println(2.01.am.show)
+
+- Out.println(7.25.pm.show)
++ Out.println(7.25.pm.show)
+
+- Out.println(12.00.pm.show)
++ Out.println(12.00.pm.show)
+
+- Out.println(12.00.am.show)
++ Out.println(12.00.am.show)
+
+= Out.println(12.00.am.show)
+- ```
++ ```
+
+- These literals are checked too. An hour above twelve does not compile:
++ Anche questi letterali vengono verificati. Un'ora superiore a dodici non compila:
+
+= These literals are checked too. An hour above twelve does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= These literals are checked too. An hour above twelve does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= These literals are checked too. An hour above twelve does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= These literals are checked too. An hour above twelve does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- 13.00.am
++ 13.00.am
+
+= 13.00.am
+- ```
++ ```
+
+- ### Timestamps
++ ### Timestamp
+
+- A `Timestamp` pairs a date with a time of day. The `on` operator joins the two, and reads
+- naturally, from clock to calendar:
++ Un `Timestamp` accoppia una data a un'ora del giorno. L'operatore `on` unisce le due cose, e si
++ legge in modo naturale, dall'orologio al calendario:
+
+= naturally, from clock to calendar:
+=
+- ```scala
++ ```scala
+
+- val appointment = 5.25.pm on 2018-Aug-11
++ val appointment = 5.25.pm on 2018-Aug-11
+
+= val appointment = 5.25.pm on 2018-Aug-11
+- ```
++ ```
+
+- A timestamp can also be built directly, parsed from text, or written as a `ts` literal:
++ Un timestamp si può anche costruire direttamente, analizzare da testo o scrivere come
++ letterale `ts`:
+
+= A timestamp can also be built directly, parsed from text, or written as a `ts` literal:
+=
+- ```scala
++ ```scala
+
+- val built = Timestamp(2023-May-28, Clockface(14, 30, 59))
++ val built = Timestamp(2023-May-28, Clockface(14, 30, 59))
+
+- val decoded = t"2024-01-15T14:30:59".as[Timestamp]
++ val decoded = t"2024-01-15T14:30:59".as[Timestamp]
+
+- val written = ts"2023-05-28T14:30:59"
++ val written = ts"2023-05-28T14:30:59"
+
+= val written = ts"2023-05-28T14:30:59"
+- ```
++ ```
+
+= val written = ts"2023-05-28T14:30:59"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val written = ts"2023-05-28T14:30:59"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val written = ts"2023-05-28T14:30:59"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(appointment.inspect)
++ Out.println(appointment.inspect)
+
+- Out.println(decoded.inspect)
++ Out.println(decoded.inspect)
+
+= Out.println(decoded.inspect)
+- ```
++ ```
+
+- Its fields are read back individually:
++ I suoi campi si rileggono singolarmente:
+
+= Its fields are read back individually:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Its fields are read back individually:
+=
+= ```scala fuel
+- run
++ run
+
+= Its fields are read back individually:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(built.month.inspect)
++ Out.println(built.month.inspect)
+
+- Out.println(built.hour.show)
++ Out.println(built.hour.show)
+
+- Out.println(built.minute.show)
++ Out.println(built.minute.show)
+
+- Out.println(built.second.show)
++ Out.println(built.second.show)
+
+= Out.println(built.second.show)
+- ```
++ ```
+
+- Subtracting one timestamp from another gives the span between them, broken down into days,
+- hours, minutes and seconds:
++ Sottrarre un timestamp da un altro dà l'intervallo tra i due, scomposto in giorni, ore, minuti
++ e secondi:
+
+= hours, minutes and seconds:
+=
+- ```scala
++ ```scala
+
+- val a = Timestamp(2024-Jan-10, Clockface(8, 0, 0))
++ val a = Timestamp(2024-Jan-10, Clockface(8, 0, 0))
+
+- val b = Timestamp(2024-Jan-12, Clockface(11, 30, 15))
++ val b = Timestamp(2024-Jan-12, Clockface(11, 30, 15))
+
+- val elapsed = b - a
++ val elapsed = b - a
+
+= val elapsed = b - a
+- ```
++ ```
+
+= val elapsed = b - a
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val elapsed = b - a
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val elapsed = b - a
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(elapsed.days.show)
++ Out.println(elapsed.days.show)
+
+- Out.println(elapsed.hours.show)
++ Out.println(elapsed.hours.show)
+
+- Out.println(elapsed.minutes.show)
++ Out.println(elapsed.minutes.show)
+
+= Out.println(elapsed.minutes.show)
+- ```
++ ```
+
+- ### Months, years and anniversaries
++ ### Mesi, anni e anniversari
+
+- The months are an enumeration, from `Jan` to `Dec`. A month converts to and from its text and
+- its number, and the whole set is available as a list:
++ I mesi sono un'enumerazione, da `Jan` a `Dec`. Un mese si converte da e verso il suo testo e il
++ suo numero, e l'intero insieme è disponibile come lista:
+
+= its number, and the whole set is available as a list:
+=
+- ```scala fuel
++ ```scala fuel
+
+= its number, and the whole set is available as a list:
+=
+= ```scala fuel
+- run
++ run
+
+= its number, and the whole set is available as a list:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Month(t"Jan").inspect)
++ Out.println(Month(t"Jan").inspect)
+
+- Out.println(Month(7).inspect)
++ Out.println(Month(7).inspect)
+
+- Out.println(Dec.numerical.show)
++ Out.println(Dec.numerical.show)
+
+= Out.println(Dec.numerical.show)
+- ```
++ ```
+
+- A `Year` wraps a calendar year. Years add and subtract whole numbers, compare with each other,
+- and are parsed from text:
++ Uno `Year` avvolge un anno di calendario. Agli anni si sommano e si sottraggono numeri interi,
++ si confrontano tra loro e si analizzano da testo:
+
+= and are parsed from text:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and are parsed from text:
+=
+= ```scala fuel
+- run
++ run
+
+= and are parsed from text:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Year(2024) + 5).inspect)
++ Out.println((Year(2024) + 5).inspect)
+
+- Out.println((Year(1999) < Year(2000)).inspect)
++ Out.println((Year(1999) < Year(2000)).inspect)
+
+- Out.println(t"2024".as[Year].inspect)
++ Out.println(t"2024".as[Year].inspect)
+
+= Out.println(t"2024".as[Year].inspect)
+- ```
++ ```
+
+- A year and a month together form a `Monthstamp`, written with `-`. Subtracting a day from one
+- gives a date. Adding months and years moves it through the calendar, and rolls across the
+- boundaries of years as needed:
++ Un anno e un mese insieme formano un `Monthstamp`, scritto con `-`. Sottrarre un giorno da uno
++ di essi dà una data. Aggiungere mesi e anni lo sposta lungo il calendario, e scavalca i confini
++ degli anni quando serve:
+
+= boundaries of years as needed:
+=
+- ```scala
++ ```scala
+
+- val month = 2024 - Jan
++ val month = 2024 - Jan
+
+= val month = 2024 - Jan
+- ```
++ ```
+
+= val month = 2024 - Jan
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val month = 2024 - Jan
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val month = 2024 - Jan
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(((2024 - Feb) - 29).show)
++ Out.println(((2024 - Feb) - 29).show)
+
+- Out.println(((2024 - Nov) + 3*Month).inspect)
++ Out.println(((2024 - Nov) + 3*Month).inspect)
+
+- Out.println(((2024 - Jun) + 1*Year).inspect)
++ Out.println(((2024 - Jun) + 1*Year).inspect)
+
+= Out.println(((2024 - Jun) + 1*Year).inspect)
+- ```
++ ```
+
+- A month and a day, with no year, form an `Anniversary`: a birthday, or a holiday, which recurs
+- every year. Applying it to a year gives that year's date:
++ Un mese e un giorno, senza anno, formano un `Anniversary`: un compleanno, o una festività, che
++ ricorre ogni anno. Applicarlo a un anno dà la data di quell'anno:
+
+= every year. Applying it to a year gives that year's date:
+=
+- ```scala
++ ```scala
+
+- val birthday = Mar - 14
++ val birthday = Mar - 14
+
+= val birthday = Mar - 14
+- ```
++ ```
+
+- The twenty-ninth of February has no counterpart in most years, so applying such an anniversary
+- needs a policy for the missing day. The policy is a [given], selected by what is in scope, and
+- is not passed at each call. Rounding down lands on the twenty-eighth, and rounding up lands on
+- the first of March:
++ Il ventinove febbraio non ha corrispondente nella maggior parte degli anni, quindi applicare un
++ anniversario del genere richiede una politica per il giorno mancante. La politica è un [given],
++ scelto da ciò che è nell'ambito, e non viene passata a ogni chiamata. Arrotondare per difetto
++ porta al ventotto, e arrotondare per eccesso porta al primo marzo:
+
+= the first of March:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the first of March:
+=
+= ```scala fuel
+- run
++ run
+
+= the first of March:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= the first of March:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   given leapDay: Anniversary.NonexistentLeapDay = nonexistentLeapDays.roundDownLeapDay
++   given leapDay: Anniversary.NonexistentLeapDay = nonexistentLeapDays.roundDownLeapDay
+
+-   Out.println((Feb - 29)(Year(2023)).show)
++   Out.println((Feb - 29)(Year(2023)).show)
+
+-   Out.println((Feb - 29)(Year(2024)).show)
++   Out.println((Feb - 29)(Year(2024)).show)
+
+=   Out.println((Feb - 29)(Year(2024)).show)
+- ```
++ ```
+
+- A leap year is unaffected.
++ Un anno bisestile non ne è toccato.
+
+- ### Durations and timespans
++ ### Durate e durate di calendario
+
+- A firm line is drawn between two kinds of elapsed time, and the distinction is deliberate.
++ Si traccia una linea netta tra due generi di tempo trascorso, e la distinzione è voluta.
+
+- A `Duration` is a physical quantity of seconds, the same everywhere and always. A `Timespan`
+- is a quantity on the calendar, of years, months, weeks, days, hours and minutes. Its meaning
+- depends on where it is anchored, because a month is not a fixed number of seconds, and a
+- calendar day is not always twenty-four hours. Keeping the two apart in the types stops a
+- number of months from ever being mistaken for a number of seconds:
++ Una `Duration` è una grandezza fisica di secondi, la stessa ovunque e sempre. Un `Timespan` è
++ una grandezza sul calendario, di anni, mesi, settimane, giorni, ore e minuti. Il suo
++ significato dipende da dove è ancorato, perché un mese non è un numero fisso di secondi, e un
++ giorno di calendario non dura sempre ventiquattro ore. Tenere separati i due nei tipi impedisce
++ che un numero di mesi venga mai scambiato per un numero di secondi:
+
+= number of months from ever being mistaken for a number of seconds:
+=
+- ```tabular
++ ```tabular
+
+- column  Aspect
++ column  Aspetto
+
+- column  `Duration`
++ column  `Duration`
+
+- column  `Timespan`
++ column  `Timespan`
+
+- row  Measures  seconds  years, months, weeks, days, hours and minutes
+- row  Means  the same everywhere and always  what its anchor makes of it
+- row  Written  `Duration(1000L)`, from milliseconds  `2*Year + 3*Month`
+- row  As text  a compact form such as `1h 0m 5s`, with `compactDurationFormat`  an ISO 8601 duration such as `P1Y2M3DT4H5M6S`
++ row  Misura  secondi  anni, mesi, settimane, giorni, ore e minuti
++ row  Significa  la stessa cosa ovunque e sempre  ciò che ne fa il suo ancoraggio
++ row  Si scrive  `Duration(1000L)`, da millisecondi  `2*Year + 3*Month`
++ row  Come testo  una forma compatta come `1h 0m 5s`, con `compactDurationFormat`  una durata ISO 8601 come `P1Y2M3DT4H5M6S`
+
+= row  As text  a compact form such as `1h 0m 5s`, with `compactDurationFormat`  an ISO 8601 duration such as `P1Y2M3DT4H5M6S`
+- ```
++ ```
+
+- A duration is a [quantity](quantities.md) of seconds. One which is constructed from
+- milliseconds reports its length in seconds:
++ Una durata è una [grandezza](quantities.md) di secondi. Una costruita da millisecondi riporta la
++ sua lunghezza in secondi:
+
+= milliseconds reports its length in seconds:
+=
+- ```scala fuel
++ ```scala fuel
+
+= milliseconds reports its length in seconds:
+=
+= ```scala fuel
+- run
++ run
+
+= milliseconds reports its length in seconds:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Duration(1000L).value.inspect)
++ Out.println(Duration(1000L).value.inspect)
+
+= Out.println(Duration(1000L).value.inspect)
+- ```
++ ```
+
+- A timespan is built by multiplying a number by a unit, and several units combine into one
+- span. Its components are read back by name:
++ Una durata di calendario si costruisce moltiplicando un numero per un'unità, e più unità si
++ combinano in un unico intervallo. Le sue componenti si rileggono per nome:
+
+= span. Its components are read back by name:
+=
+- ```scala
++ ```scala
+
+- val span = 2*Year + 3*Month + 14*Day
++ val span = 2*Year + 3*Month + 14*Day
+
+= val span = 2*Year + 3*Month + 14*Day
+- ```
++ ```
+
+= val span = 2*Year + 3*Month + 14*Day
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val span = 2*Year + 3*Month + 14*Day
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val span = 2*Year + 3*Month + 14*Day
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(span.years.show)
++ Out.println(span.years.show)
+
+- Out.println(span.months.show)
++ Out.println(span.months.show)
+
+- Out.println(span.days.show)
++ Out.println(span.days.show)
+
+= Out.println(span.days.show)
+- ```
++ ```
+
+- A timespan is encoded as an
+- [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations), and is parsed back
+- from one. The `dur` interpolator writes such a duration as a checked literal:
++ Una durata di calendario si codifica come
++ [durata ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations), e si analizza a partire
++ da una di esse. L'interpolatore `dur` scrive una tale durata come letterale verificato:
+
+= from one. The `dur` interpolator writes such a duration as a checked literal:
+=
+- ```scala
++ ```scala
+
+- val precise = Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5,
++ val precise = Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5,
+
+-     seconds = Quantity(6.0))
++     seconds = Quantity(6.0))
+
+- val fromText = t"P1Y2M3DT4H5M6S".as[Timespan]
++ val fromText = t"P1Y2M3DT4H5M6S".as[Timespan]
+
+- val fromLiteral = dur"P1Y2M3DT4H5M6S"
++ val fromLiteral = dur"P1Y2M3DT4H5M6S"
+
+= val fromLiteral = dur"P1Y2M3DT4H5M6S"
+- ```
++ ```
+
+= val fromLiteral = dur"P1Y2M3DT4H5M6S"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val fromLiteral = dur"P1Y2M3DT4H5M6S"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val fromLiteral = dur"P1Y2M3DT4H5M6S"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(precise.encode)
++ Out.println(precise.encode)
+
+= Out.println(precise.encode)
+- ```
++ ```
+
+- #### Compact durations
++ #### Durate compatte
+
+- A tool reads a duration from a [flag](cli.md), and shows one in a report, and both have a
+- compact form. With `durationDecodables.compactDurationDecodable` in scope, a number followed by
+- a unit is decoded to a `Duration`:
++ Uno strumento legge una durata da una [flag](cli.md), e ne mostra una in un report, ed entrambe
++ le cose hanno una forma compatta. Con `durationDecodables.compactDurationDecodable`
++ nell'ambito, un numero seguito da un'unità si decodifica in una `Duration`:
+
+= a unit is decoded to a `Duration`:
+=
+- ```tabular
++ ```tabular
+
+- column  Suffix
+- column  Unit
+- column  Example
+- row  `ms`  milliseconds  `250ms`
+- row  `s`  seconds  `30s`
+- row  `m`  minutes  `30m`
+- row  `h`  hours  `1.5h`
+- row  `d`  days  `2d`
+- row  none  seconds  `90`
++ column  Suffisso
++ column  Unità
++ column  Esempio
++ row  `ms`  millisecondi  `250ms`
++ row  `s`  secondi  `30s`
++ row  `m`  minuti  `30m`
++ row  `h`  ore  `1.5h`
++ row  `d`  giorni  `2d`
++ row  nessuno  secondi  `90`
+
+= row  none  seconds  `90`
+- ```
++ ```
+
+- Anything else, such as a negative number or a word, raises a `Duration.Error`. With
+- `durationFormats.compactDurationFormat`, a duration is shown as its coarsest unit, followed by
+- every unit down to seconds, so that a column of them lines up. Below a second, it is shown as
+- milliseconds alone:
++ Qualsiasi altra cosa, come un numero negativo o una parola, solleva un `Duration.Error`. Con
++ `durationFormats.compactDurationFormat`, una durata si mostra nella sua unità più grossolana,
++ seguita da ogni unità fino ai secondi, così che una colonna di durate risulti allineata. Sotto
++ il secondo, si mostra solo in millisecondi:
+
+= milliseconds alone:
+=
+- ```scala
++ ```scala
+
+- import durationDecodables.compactDurationDecodable
++ import durationDecodables.compactDurationDecodable
+
+- import durationFormats.compactDurationFormat
++ import durationFormats.compactDurationFormat
+
+= import durationFormats.compactDurationFormat
+- ```
++ ```
+
+= import durationFormats.compactDurationFormat
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import durationFormats.compactDurationFormat
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import durationFormats.compactDurationFormat
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"1.5h".as[Duration].value.inspect)
++ Out.println(t"1.5h".as[Duration].value.inspect)
+
+- Out.println(Duration(3605000L).show)
++ Out.println(Duration(3605000L).show)
+
+- Out.println(Duration(420L).show)
++ Out.println(Duration(420L).show)
+
+= Out.println(Duration(420L).show)
+- ```
++ ```
+
+= Out.println(Duration(420L).show)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(Duration(420L).show)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"soon".as[Duration]
++ t"soon".as[Duration]
+
+= t"soon".as[Duration]
+- ```
++ ```
+
+- ### Arithmetic on dates
++ ### Aritmetica sulle date
+
+- Adding a span to a date moves it forward. Days and weeks are regular. They need no policy,
+- because a week is always seven days:
++ Aggiungere un intervallo a una data la sposta in avanti. Giorni e settimane sono regolari. Non
++ richiedono una politica, perché una settimana è sempre di sette giorni:
+
+= because a week is always seven days:
+=
+- ```scala fuel
++ ```scala fuel
+
+= because a week is always seven days:
+=
+= ```scala fuel
+- run
++ run
+
+= because a week is always seven days:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((2024-Jan-1 + 3*Day).show)
++ Out.println((2024-Jan-1 + 3*Day).show)
+
+- Out.println((2024-Jan-1 + 2*Week).show)
++ Out.println((2024-Jan-1 + 2*Week).show)
+
+= Out.println((2024-Jan-1 + 2*Week).show)
+- ```
++ ```
+
+- Months and years are irregular. Adding a month to the thirty-first of January asks for a
+- thirty-first of February, which does not exist, so the result depends on a policy. No policy
+- is picked silently. Without one in scope, the addition does not compile:
++ Mesi e anni sono irregolari. Aggiungere un mese al trentuno gennaio chiede un trentuno
++ febbraio, che non esiste, quindi il risultato dipende da una politica. Nessuna politica viene
++ scelta in silenzio. Senza una politica nell'ambito, l'addizione non compila:
+
+= is picked silently. Without one in scope, the addition does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= is picked silently. Without one in scope, the addition does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= is picked silently. Without one in scope, the addition does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= is picked silently. Without one in scope, the addition does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- 2024-Jan-31 + 1*Month
++ 2024-Jan-31 + 1*Month
+
+= 2024-Jan-31 + 1*Month
+- ```
++ ```
+
+- The policy is a given, which the calling code must supply. *Clamping* lands on the last valid
+- day, and *overflowing* spills into the next month:
++ La politica è un given, che il codice chiamante deve fornire. Il *clamping* porta all'ultimo
++ giorno valido, e l'*overflow* sconfina nel mese successivo:
+
+= day, and *overflowing* spills into the next month:
+=
+- ```scala fuel
++ ```scala fuel
+
+= day, and *overflowing* spills into the next month:
+=
+= ```scala fuel
+- run
++ run
+
+= day, and *overflowing* spills into the next month:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= day, and *overflowing* spills into the next month:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+= locally:
+-   import monthEnds.clampMonthEnd
++   import monthEnds.clampMonthEnd
+
+=   import monthEnds.clampMonthEnd
+=
+-   Out.println((2024-Jan-31 + 1*Month).show)
++   Out.println((2024-Jan-31 + 1*Month).show)
+
+=   import monthEnds.clampMonthEnd
+=
+=   Out.println((2024-Jan-31 + 1*Month).show)
+-   Out.println((2024-Feb-29 + 1*Year).show)
++   Out.println((2024-Feb-29 + 1*Year).show)
+
+=
+- locally:
++ locally:
+
+-   import monthEnds.overflowMonthEnd
++   import monthEnds.overflowMonthEnd
+
+=   import monthEnds.overflowMonthEnd
+=
+-   Out.println((2024-Jan-31 + 1*Month).show)
++   Out.println((2024-Jan-31 + 1*Month).show)
+
+=   import monthEnds.overflowMonthEnd
+=
+=   Out.println((2024-Jan-31 + 1*Month).show)
+-   Out.println((2024-Feb-29 + 1*Year).show)
++   Out.println((2024-Feb-29 + 1*Year).show)
+
+=   Out.println((2024-Feb-29 + 1*Year).show)
+- ```
++ ```
+
+- Subtracting one date from another counts the days between them:
++ Sottrarre una data da un'altra conta i giorni tra le due:
+
+= Subtracting one date from another counts the days between them:
+=
+- ```scala
++ ```scala
+
+- val gap = 2018-Nov-19 - (2017-Sep-1)
++ val gap = 2018-Nov-19 - (2017-Sep-1)
+
+= val gap = 2018-Nov-19 - (2017-Sep-1)
+- ```
++ ```
+
+- The days of the week can be counted across a range, which answers questions such as how many
+- Saturdays fall in a month:
++ I giorni della settimana si possono contare su un intervallo, il che risponde a domande come
++ quanti sabati cadono in un mese:
+
+= Saturdays fall in a month:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Saturdays fall in a month:
+=
+= ```scala fuel
+- run
++ run
+
+= Saturdays fall in a month:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Weekday.count(2025-Mar-1, 2025-Apr-1, Sat).show)
++ Out.println(Weekday.count(2025-Mar-1, 2025-Apr-1, Sat).show)
+
+= Out.println(Weekday.count(2025-Mar-1, 2025-Apr-1, Sat).show)
+- ```
++ ```
+
+- Arithmetic in working days skips weekends and holidays. It needs to know which days form the
+- week, which is a `Hebdomad`, and which dates are holidays. Both are supplied from context:
++ L'aritmetica in giorni lavorativi salta i fine settimana e le festività. Ha bisogno di sapere
++ quali giorni formano la settimana, cioè un `Hebdomad`, e quali date sono festive. Entrambi
++ vengono forniti dal contesto:
+
+= week, which is a `Hebdomad`, and which dates are holidays. Both are supplied from context:
+=
+- ```scala fuel
++ ```scala fuel
+
+= week, which is a `Hebdomad`, and which dates are holidays. Both are supplied from context:
+=
+= ```scala fuel
+- run
++ run
+
+= week, which is a `Hebdomad`, and which dates are holidays. Both are supplied from context:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= week, which is a `Hebdomad`, and which dates are holidays. Both are supplied from context:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import hebdomads.europeanHebdomad
++   import hebdomads.europeanHebdomad
+
+-   given holidays: Holidays = Holidays(List
++   given holidays: Holidays = Holidays(List
+
+-     ( Holiday(2025-Dec-25, t"Christmas Day"),
++     ( Holiday(2025-Dec-25, t"Christmas Day"),
+
+-       Holiday(2025-Dec-26, t"Boxing Day") ))
++       Holiday(2025-Dec-26, t"Boxing Day") ))
+
+-   Out.println((2025-Aug-11 + WorkingDays(5)).show)
++   Out.println((2025-Aug-11 + WorkingDays(5)).show)
+
+-   Out.println((2025-Dec-24 + WorkingDays(1)).show)
++   Out.println((2025-Dec-24 + WorkingDays(1)).show)
+
+=   Out.println((2025-Dec-24 + WorkingDays(1)).show)
+- ```
++ ```
+
+- The first skips a weekend, and the second skips the two holidays and the weekend which
+- follows them.
++ La prima salta un fine settimana, e la seconda salta le due festività e il fine settimana che
++ le segue.
+
+- ### Instants
++ ### Istanti
+
+- An instant is a moment in physical time, with no reference to any calendar or clock. An
+- `Instant` is measured along a timeline, and the timeline is part of its type. The `Unix`
+- timeline, which is POSIX time, counts milliseconds from the
+- [Unix epoch](https://en.wikipedia.org/wiki/Unix_time), the start of 1970:
++ Un istante è un momento nel tempo fisico, senza riferimento ad alcun calendario o orologio. Un
++ `Instant` è misurato lungo una scala temporale, e la scala temporale fa parte del suo tipo. La
++ scala temporale `Unix`, che è il tempo POSIX, conta i millisecondi dall'
++ [epoch Unix](https://en.wikipedia.org/wiki/Unix_time), l'inizio del 1970:
+
+= [Unix epoch](https://en.wikipedia.org/wiki/Unix_time), the start of 1970:
+=
+- ```scala
++ ```scala
+
+- val epoch = Instant(0L)
++ val epoch = Instant(0L)
+
+= val epoch = Instant(0L)
+- ```
++ ```
+
+- The current instant comes from a clock in scope:
++ L'istante corrente proviene da un orologio nell'ambito:
+
+= The current instant comes from a clock in scope:
+=
+- ```tabular
++ ```tabular
+
+- column  Call
+- column  Reads
+- column  Needs
+- row  `now()`  the wall clock, as an `Instant over Unix`  a `Clock`
+- row  `today()`  the current date  a `Clock`, a calendar and a `Timezone`
+- row  `monotonic()`  a high-resolution elapsed-time counter, as an `Instant over Monotonic`  a `MonotonicClock`
++ column  Chiamata
++ column  Legge
++ column  Richiede
++ row  `now()`  l'orologio locale, come `Instant over Unix`  un `Clock`
++ row  `today()`  la data corrente  un `Clock`, un calendario e un `Timezone`
++ row  `monotonic()`  un contatore di tempo trascorso ad alta risoluzione, come `Instant over Monotonic`  un `MonotonicClock`
+
+= row  `monotonic()`  a high-resolution elapsed-time counter, as an `Instant over Monotonic`  a `MonotonicClock`
+- ```
++ ```
+
+- The clock is itself a given. Supplying a fixed one makes time deterministic, which is what
+- [tests](testing.md) want:
++ L'orologio è esso stesso un given. Fornirne uno fisso rende il tempo deterministico, ed è ciò
++ che vogliono i [test](testing.md):
+
+= [tests](testing.md) want:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [tests](testing.md) want:
+=
+= ```scala fuel
+- run
++ run
+
+= [tests](testing.md) want:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= [tests](testing.md) want:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   given clock: Clock = Clock.fixed(Instant(99999L))
++   given clock: Clock = Clock.fixed(Instant(99999L))
+
+-   Out.println(now().inspect)
++   Out.println(now().inspect)
+
+=   Out.println(now().inspect)
+- ```
++ ```
+
+- Instants move by physical quantities, and one subtracted from another gives a duration, in
+- seconds:
++ Gli istanti si spostano di grandezze fisiche, e uno sottratto da un altro dà una durata, in
++ secondi:
+
+= seconds:
+=
+- ```scala fuel
++ ```scala fuel
+
+= seconds:
+=
+= ```scala fuel
+- run
++ run
+
+= seconds:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Instant(0L) + 1*Hour).inspect)
++ Out.println((Instant(0L) + 1*Hour).inspect)
+
+- Out.println((Instant(3600000L) - Instant(0L)).inspect)
++ Out.println((Instant(3600000L) - Instant(0L)).inspect)
+
+= Out.println((Instant(3600000L) - Instant(0L)).inspect)
+- ```
++ ```
+
+- ### Periods
++ ### Periodi
+
+- Two points of the same kind bound a `Period`, written with `~`. A period is a half-open
+- interval: its start is included, and its finish is not. Consecutive periods therefore tile a
+- timeline, without overlapping where they meet.
++ Due punti dello stesso genere delimitano un `Period`, scritto con `~`. Un periodo è un
++ intervallo semiaperto: il suo inizio è incluso, e la sua fine no. Periodi consecutivi coprono
++ quindi una scala temporale senza sovrapporsi dove si incontrano.
+
+- A period reports its duration, and tests whether a point lies within it:
++ Un periodo riporta la sua durata, e verifica se un punto vi è contenuto:
+
+= A period reports its duration, and tests whether a point lies within it:
+=
+- ```scala
++ ```scala
+
+- val period = Instant(0L) ~ Instant(3_600_000L)
++ val period = Instant(0L) ~ Instant(3_600_000L)
+
+= val period = Instant(0L) ~ Instant(3_600_000L)
+- ```
++ ```
+
+= val period = Instant(0L) ~ Instant(3_600_000L)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val period = Instant(0L) ~ Instant(3_600_000L)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val period = Instant(0L) ~ Instant(3_600_000L)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(period.duration.value.inspect)
++ Out.println(period.duration.value.inspect)
+
+- Out.println(period.has(Instant(0L)).inspect)
++ Out.println(period.has(Instant(0L)).inspect)
+
+- Out.println(period.has(Instant(3_600_000L)).inspect)
++ Out.println(period.has(Instant(3_600_000L)).inspect)
+
+= Out.println(period.has(Instant(3_600_000L)).inspect)
+- ```
++ ```
+
+- Periods also intersect and unite.
++ I periodi si possono anche intersecare e unire.
+
+- `by` walks a period at a step, and gives each point. `segments` divides it into sub-periods
+- instead of points, which is what a view of a calendar needs, or a report divided into
+- buckets. A step which does not divide the period evenly drops the remainder by default, or
+- keeps it as a short final segment on request:
++ `by` percorre un periodo con un passo, e dà ogni punto. `segments` lo divide invece in
++ sottoperiodi anziché in punti, che è ciò che serve a una vista di calendario, o a un report
++ diviso in fasce. Un passo che non divide il periodo in parti uguali scarta il resto per
++ impostazione predefinita, o, se richiesto, lo conserva come breve segmento finale:
+
+= keeps it as a short final segment on request:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+= import dysasymptotics.linearSize
+- ```
++ ```
+
+= import dysasymptotics.linearSize
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import dysasymptotics.linearSize
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import dysasymptotics.linearSize
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(period.by(15*Minute).to[List].size.show)
++ Out.println(period.by(15*Minute).to[List].size.show)
+
+- Out.println(period.segments(15*Minute).size.show)
++ Out.println(period.segments(15*Minute).size.show)
+
+- Out.println(period.segments(25*Minute, partial = true).size.show)
++ Out.println(period.segments(25*Minute, partial = true).size.show)
+
+- Out.println(Period(2024-Jan-1, 2024-Jan-5).by(1*Day).map(_.show).to[List].join(t", "))
++ Out.println(Period(2024-Jan-1, 2024-Jan-5).by(1*Day).map(_.show).to[List].join(t", "))
+
+= Out.println(Period(2024-Jan-1, 2024-Jan-5).by(1*Day).map(_.show).to[List].join(t", "))
+- ```
++ ```
+
+- The sampling is lazy, so a range which spans years costs nothing until its values are
+- demanded:
++ Il campionamento è pigro, quindi un intervallo che si estende per anni non costa nulla finché
++ i suoi valori non vengono richiesti:
+
+= demanded:
+=
+- ```scala fuel
++ ```scala fuel
+
+= demanded:
+=
+= ```scala fuel
+- run
++ run
+
+= demanded:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Period(2024-Jan-1, 2030-Jan-1).by(1*Day).keep(3).map(_.show).to[List].join(t", "))
++ Out.println(Period(2024-Jan-1, 2030-Jan-1).by(1*Day).keep(3).map(_.show).to[List].join(t", "))
+
+= Out.println(Period(2024-Jan-1, 2030-Jan-1).by(1*Day).keep(3).map(_.show).to[List].join(t", "))
+- ```
++ ```
+
+- A period is generic in the type of its points. The same operations serve instants, dates and
+- timestamps, with the step given in whatever units that kind of point moves by.
++ Un periodo è generico nel tipo dei suoi punti. Le stesse operazioni servono per istanti, date e
++ timestamp, con il passo dato in qualunque unità si sposti quel genere di punto.
+
+- ### Time zones and moments
++ ### Fusi orari e momenti
+
+- A time zone names a place's rules for civil time. The `tz` interpolator checks, at
+- compiletime, that the name exists in the
+- [time-zone database](https://en.wikipedia.org/wiki/Tz_database). A misspelled zone therefore
+- never reaches a running program:
++ Un fuso orario nomina le regole di un luogo per il tempo civile. L'interpolatore `tz` verifica,
++ a tempo di compilazione, che il nome esista nel
++ [database dei fusi orari](https://en.wikipedia.org/wiki/Tz_database). Un fuso scritto male non
++ raggiunge quindi mai un programma in esecuzione:
+
+= never reaches a running program:
+=
+- ```scala
++ ```scala
+
+- val london = tz"Europe/London"
++ val london = tz"Europe/London"
+
+= val london = tz"Europe/London"
+- ```
++ ```
+
+= val london = tz"Europe/London"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val london = tz"Europe/London"
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= val london = tz"Europe/London"
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= val london = tz"Europe/London"
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- tz"NotARealZone"
++ tz"NotARealZone"
+
+= tz"NotARealZone"
+- ```
++ ```
+
+- A `Moment` is a timestamp anchored to a zone: a reading of a wall clock, somewhere in
+- particular. `instant` resolves it to physical time, and `in` places any instant into a zone:
++ Un `Moment` è un timestamp ancorato a un fuso: una lettura di un orologio locale, in un luogo
++ preciso. `instant` lo risolve in tempo fisico, e `in` colloca qualsiasi istante in un fuso:
+
+= particular. `instant` resolves it to physical time, and `in` places any instant into a zone:
+=
+- ```scala
++ ```scala
+
+- val moment = Moment(2024-Jan-1, Clockface(1, 0, 0), tz"UTC")
++ val moment = Moment(2024-Jan-1, Clockface(1, 0, 0), tz"UTC")
+
+= val moment = Moment(2024-Jan-1, Clockface(1, 0, 0), tz"UTC")
+- ```
++ ```
+
+= val moment = Moment(2024-Jan-1, Clockface(1, 0, 0), tz"UTC")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val moment = Moment(2024-Jan-1, Clockface(1, 0, 0), tz"UTC")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val moment = Moment(2024-Jan-1, Clockface(1, 0, 0), tz"UTC")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(moment.instant.inspect)
++ Out.println(moment.instant.inspect)
+
+- Out.println(Instant(0L).in(tz"UTC").date.show)
++ Out.println(Instant(0L).in(tz"UTC").date.show)
+
+= Out.println(Instant(0L).in(tz"UTC").date.show)
+- ```
++ ```
+
+- A zone's offset changes with the season. The same instant reads as one hour later in London
+- in summer than in winter, because British Summer Time is in force:
++ L'offset di un fuso cambia con la stagione. Lo stesso istante si legge a Londra un'ora più
++ tardi d'estate che d'inverno, perché è in vigore la British Summer Time:
+
+= in summer than in winter, because British Summer Time is in force:
+=
+- ```scala
++ ```scala
+
+- import instantDecodables.iso8601InstantDecodable
++ import instantDecodables.iso8601InstantDecodable
+
+- val summer = t"2024-07-15T12:00:00Z".as[Instant over Unix]
++ val summer = t"2024-07-15T12:00:00Z".as[Instant over Unix]
+
+= val summer = t"2024-07-15T12:00:00Z".as[Instant over Unix]
+- ```
++ ```
+
+= val summer = t"2024-07-15T12:00:00Z".as[Instant over Unix]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val summer = t"2024-07-15T12:00:00Z".as[Instant over Unix]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val summer = t"2024-07-15T12:00:00Z".as[Instant over Unix]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summer.in(london).time.show)
++ Out.println(summer.in(london).time.show)
+
+- Out.println(summer.in(tz"UTC").time.show)
++ Out.println(summer.in(tz"UTC").time.show)
+
+= Out.println(summer.in(tz"UTC").time.show)
+- ```
++ ```
+
+- #### Daylight-saving transitions
++ #### Passaggi dell'ora legale
+
+- Daylight-saving transitions make some readings of a wall clock ambiguous, and others
+- impossible. Neither case is papered over:
++ I passaggi dell'ora legale rendono ambigue alcune letture di un orologio locale, e altre
++ impossibili. Nessuno dei due casi viene nascosto:
+
+= impossible. Neither case is papered over:
+=
+- ```tabular
++ ```tabular
+
+- column  Transition
+- column  A reading in it
+- column  By default
+- column  Otherwise
+- row  clocks spring forward  falls in a *gap*, and never happens  is pushed forward  `gapPolicies.pushBackwardGapPolicy` pushes it backward; `gapPolicies.rejectGapPolicy` raises a `Moment.Error`
+- row  clocks fall back  falls in an *overlap*, and names two instants  is the first occurrence  `Occurrence.Second` names the later one
++ column  Passaggio
++ column  Una lettura al suo interno
++ column  Per impostazione predefinita
++ column  Altrimenti
++ row  gli orologi vanno avanti  cade in un *salto*, e non avviene mai  viene spinta in avanti  `gapPolicies.pushBackwardGapPolicy` la spinge indietro; `gapPolicies.rejectGapPolicy` solleva un `Moment.Error`
++ row  gli orologi tornano indietro  cade in una *sovrapposizione*, e nomina due istanti  è la prima occorrenza  `Occurrence.Second` nomina la successiva
+
+= row  clocks fall back  falls in an *overlap*, and names two instants  is the first occurrence  `Occurrence.Second` names the later one
+- ```
++ ```
+
+- A moment in the gap is pushed forward by default. On 31 March 2024, London's clocks went from
+- 01:00 straight to 02:00, so 01:30 never happened:
++ Un momento nel salto viene spinto in avanti per impostazione predefinita. Il 31 marzo 2024 gli
++ orologi di Londra sono passati dalle 01:00 direttamente alle 02:00, quindi le 01:30 non sono
++ mai esistite:
+
+= 01:00 straight to 02:00, so 01:30 never happened:
+=
+- ```scala
++ ```scala
+
+- val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), london)
++ val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), london)
+
+= val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), london)
+- ```
++ ```
+
+= val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), london)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), london)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), london)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(spring.instant.in(london).time.show)
++ Out.println(spring.instant.in(london).time.show)
+
+= Out.println(spring.instant.in(london).time.show)
+- ```
++ ```
+
+- With the rejecting policy, the same reading is an error:
++ Con la politica di rifiuto, la stessa lettura è un errore:
+
+= With the rejecting policy, the same reading is an error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= With the rejecting policy, the same reading is an error:
+=
+= ```scala fuel
+- run
++ run
+
+= With the rejecting policy, the same reading is an error:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= With the rejecting policy, the same reading is an error:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+= errors show
+= ##
+- locally:
++ locally:
+
+-   import gapPolicies.rejectGapPolicy
++   import gapPolicies.rejectGapPolicy
+
+-   Moment(2024-Mar-31, Clockface(1, 30, 0), london).instant
++   Moment(2024-Mar-31, Clockface(1, 30, 0), london).instant
+
+=   Moment(2024-Mar-31, Clockface(1, 30, 0), london).instant
+- ```
++ ```
+
+- When the clocks go back, an hour repeats. The two instants which a reading in the overlap
+- names are an hour apart:
++ Quando gli orologi tornano indietro, un'ora si ripete. I due istanti che una lettura nella
++ sovrapposizione nomina sono a un'ora di distanza:
+
+= names are an hour apart:
+=
+- ```scala
++ ```scala
+
+- val clock = Clockface(1, 30, 0)
++ val clock = Clockface(1, 30, 0)
+
+- val earlier = Moment(2024-Oct-27, clock, london)
++ val earlier = Moment(2024-Oct-27, clock, london)
+
+- val later = Moment(2024-Oct-27, clock, london, Occurrence.Second)
++ val later = Moment(2024-Oct-27, clock, london, Occurrence.Second)
+
+= val later = Moment(2024-Oct-27, clock, london, Occurrence.Second)
+- ```
++ ```
+
+= val later = Moment(2024-Oct-27, clock, london, Occurrence.Second)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val later = Moment(2024-Oct-27, clock, london, Occurrence.Second)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val later = Moment(2024-Oct-27, clock, london, Occurrence.Second)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((later.instant.long - earlier.instant.long).show)
++ Out.println((later.instant.long - earlier.instant.long).show)
+
+= Out.println((later.instant.long - earlier.instant.long).show)
+- ```
++ ```
+
+- ### The zone database
++ ### Il database dei fusi
+
+- The rules behind all of this come from the [tz database](https://www.iana.org/time-zones). Its
+- source files are parsed directly, and are not reached through a platform's API. The parser
+- understands the format's own vocabulary: `Rule` lines, with day specifications such as
+- `Sun>=8`, `Zone` lines, with their offsets and formats, and `Link` aliases. A database which
+- is newer than the platform's own can therefore be loaded, which matters when a government
+- changes its rules at short notice:
++ Le regole dietro tutto questo provengono dal [database tz](https://www.iana.org/time-zones). I
++ suoi file sorgente vengono analizzati direttamente, e non raggiunti tramite l'API di una
++ piattaforma. Il parser comprende il vocabolario proprio del formato: righe `Rule`, con
++ specifiche di giorno come `Sun>=8`, righe `Zone`, con i loro offset e formati, e alias `Link`.
++ Si può quindi caricare un database più recente di quello della piattaforma, il che conta quando
++ un governo cambia le sue regole con poco preavviso:
+
+= changes its rules at short notice:
+=
+- ```scala
++ ```scala
+
+- val lines = Chain(t"Zone\tAmerica/Nowhere\t-5:00\t-\tEST")
++ val lines = Chain(t"Zone\tAmerica/Nowhere\t-5:00\t-\tEST")
+
+- val zones = Tzdb.parse(t"northamerica", lines)
++ val zones = Tzdb.parse(t"northamerica", lines)
+
+= val zones = Tzdb.parse(t"northamerica", lines)
+- ```
++ ```
+
+- A file which does not exist, or a line which the format does not permit, raises a
+- `Tzdb.Error` which names the fault. It never silently produces a zone with the wrong rules.
++ Un file che non esiste, o una riga che il formato non consente, solleva un `Tzdb.Error` che
++ nomina il difetto. Non produce mai in silenzio un fuso con le regole sbagliate.
+
+- ### Calendars
++ ### Calendari
+
+- The dates so far have been Gregorian, which is the modern civil default. Many other calendars
+- are supported, and a date literal is interpreted by whichever calendar is in scope. The same
+- written date can name a different day under a different calendar, which shows in its
+- [Julian day number](https://en.wikipedia.org/wiki/Julian_day):
++ Le date viste finora erano gregoriane, che è il valore predefinito civile moderno. Sono
++ supportati molti altri calendari, e un letterale di data viene interpretato dal calendario
++ nell'ambito. La stessa data scritta può nominare un giorno diverso sotto un calendario
++ diverso, il che si vede nel suo
++ [numero di giorno giuliano](https://en.wikipedia.org/wiki/Julian_day):
+
+= [Julian day number](https://en.wikipedia.org/wiki/Julian_day):
+=
+- ```scala
++ ```scala
+
+- val gregorian = { import calendars.gregorianCalendar; (1900-Mar-10).jdn }
++ val gregorian = { import calendars.gregorianCalendar; (1900-Mar-10).jdn }
+
+- val julian = { import calendars.julianCalendar; (1900-Mar-10).jdn }
++ val julian = { import calendars.julianCalendar; (1900-Mar-10).jdn }
+
+= val julian = { import calendars.julianCalendar; (1900-Mar-10).jdn }
+- ```
++ ```
+
+= val julian = { import calendars.julianCalendar; (1900-Mar-10).jdn }
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val julian = { import calendars.julianCalendar; (1900-Mar-10).jdn }
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val julian = { import calendars.julianCalendar; (1900-Mar-10).jdn }
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((gregorian == julian).inspect)
++ Out.println((gregorian == julian).inspect)
+
+= Out.println((gregorian == julian).inspect)
+- ```
++ ```
+
+- A calendar reads the year, month and day of a date in its own terms. Converting a Gregorian
+- date into the [Coptic](https://en.wikipedia.org/wiki/Coptic_calendar) calendar reveals an
+- entirely different year and month:
++ Un calendario legge l'anno, il mese e il giorno di una data nei propri termini. Convertire una
++ data gregoriana nel calendario [copto](https://en.wikipedia.org/wiki/Coptic_calendar) rivela un
++ anno e un mese del tutto diversi:
+
+= entirely different year and month:
+=
+- ```scala
++ ```scala
+
+- val millennium = 2000-Jan-1
++ val millennium = 2000-Jan-1
+
+- val coptic = calendars.copticCalendar
++ val coptic = calendars.copticCalendar
+
+= val coptic = calendars.copticCalendar
+- ```
++ ```
+
+= val coptic = calendars.copticCalendar
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val coptic = calendars.copticCalendar
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val coptic = calendars.copticCalendar
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(coptic.annual(millennium)().show)
++ Out.println(coptic.annual(millennium)().show)
+
+- Out.println(coptic.mensual(millennium).inspect)
++ Out.println(coptic.mensual(millennium).inspect)
+
+- Out.println(coptic.diurnal(millennium)().show)
++ Out.println(coptic.diurnal(millennium)().show)
+
+= Out.println(coptic.diurnal(millennium)().show)
+- ```
++ ```
+
+- The other calendars follow the same shape. Each is a given in the package `calendars`:
++ Gli altri calendari seguono la stessa forma. Ciascuno è un given nel package `calendars`:
+
+= The other calendars follow the same shape. Each is a given in the package `calendars`:
+=
+- ```tabular
++ ```tabular
+
+- column  Calendar
++ column  Calendario
+
+- column  Given
++ column  Given
+
+- column  Months
+- row  Gregorian  `gregorianCalendar`  `Jan` to `Dec`
+- row  Julian  `julianCalendar`  `Jan` to `Dec`
+- row  Coptic  `copticCalendar`  `CopticMonth`
+- row  Ethiopian  `ethiopianCalendar`  `EthiopianMonth`
+- row  Islamic  `islamicCalendar`  `IslamicMonth`
+- row  Persian  `persianCalendar`  `PersianMonth`
+- row  Hebrew  `hebrewCalendar`  `HebrewMonth`
+- row  Indian national  `indianCalendar`  `IndianMonth`
+- row  French Republican  `frenchRepublicanCalendar`  `FrenchRepublicanMonth`
+- row  Buddhist  `buddhistCalendar`  Gregorian, with years offset by 543
+- row  Minguo  `minguoCalendar`  Gregorian, with years offset by -1911
+- row  Ordinal  `ordinalCalendar`  none: a year and a day of the year
++ column  Mesi
++ row  Gregoriano  `gregorianCalendar`  da `Jan` a `Dec`
++ row  Giuliano  `julianCalendar`  da `Jan` a `Dec`
++ row  Copto  `copticCalendar`  `CopticMonth`
++ row  Etiopico  `ethiopianCalendar`  `EthiopianMonth`
++ row  Islamico  `islamicCalendar`  `IslamicMonth`
++ row  Persiano  `persianCalendar`  `PersianMonth`
++ row  Ebraico  `hebrewCalendar`  `HebrewMonth`
++ row  Nazionale indiano  `indianCalendar`  `IndianMonth`
++ row  Repubblicano francese  `frenchRepublicanCalendar`  `FrenchRepublicanMonth`
++ row  Buddista  `buddhistCalendar`  gregoriani, con gli anni sfalsati di 543
++ row  Minguo  `minguoCalendar`  gregoriani, con gli anni sfalsati di -1911
++ row  Ordinale  `ordinalCalendar`  nessuno: un anno e un giorno dell'anno
+
+= row  Ordinal  `ordinalCalendar`  none: a year and a day of the year
+- ```
++ ```
+
+- A calendar formats a date with its own names for the months:
++ Un calendario formatta una data con i propri nomi dei mesi:
+
+= A calendar formats a date with its own names for the months:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A calendar formats a date with its own names for the months:
+=
+= ```scala fuel
+- run
++ run
+
+= A calendar formats a date with its own names for the months:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= A calendar formats a date with its own names for the months:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import calendars.islamicCalendar
++   import calendars.islamicCalendar
+
+-   Out.println(islamicCalendar.format(Date(Year(1445), IslamicMonth.Ramadan, Day(15))))
++   Out.println(islamicCalendar.format(Date(Year(1445), IslamicMonth.Ramadan, Day(15))))
+
+=   Out.println(islamicCalendar.format(Date(Year(1445), IslamicMonth.Ramadan, Day(15))))
+- ```
++ ```
+
+- When one calendar replaced another, the change left a gap of dates which never occurred. A
+- `Regime` models such a change. It applies the old calendar before the switch, and the new one
+- after it, and rejects dates which fall in the gap, at compiletime when the date is a literal.
+- The package `calendars` provides the papal and the British changes from the Julian calendar to
+- the Gregorian, as `papalCutover` and `britishCutover`. Under the papal one, 4 October 1582 was
+- followed directly by 15 October, and the days between do not exist:
++ Quando un calendario ne ha sostituito un altro, il cambiamento ha lasciato un vuoto di date mai
++ esistite. Un `Regime` modella un tale cambiamento. Applica il vecchio calendario prima del
++ passaggio e il nuovo dopo, e rifiuta le date che cadono nel vuoto, a tempo di compilazione
++ quando la data è un letterale. Il package `calendars` fornisce i passaggi papale e britannico
++ dal calendario giuliano al gregoriano, come `papalCutover` e `britishCutover`. Con quello
++ papale, al 4 ottobre 1582 seguì direttamente il 15 ottobre, e i giorni intermedi non esistono:
+
+= followed directly by 15 October, and the days between do not exist:
+=
+- ```scala
++ ```scala
+
+- val cutover: Regime = calendars.papalCutover
++ val cutover: Regime = calendars.papalCutover
+
+= val cutover: Regime = calendars.papalCutover
+- ```
++ ```
+
+- Dates also have an ordinal form, which is the number of the day within its year, and an
+- [ISO week-date](https://en.wikipedia.org/wiki/ISO_week_date) form, in which a date belongs to
+- a year numbered by weeks, which need not match its calendar year. The first day of 2000 falls
+- in the last week of 1999:
++ Le date hanno anche una forma ordinale, che è il numero del giorno all'interno del suo anno, e
++ una forma di [data settimanale ISO](https://en.wikipedia.org/wiki/ISO_week_date), in cui una data
++ appartiene a un anno numerato per settimane, che non deve per forza coincidere con il suo anno
++ di calendario. Il primo giorno del 2000 cade nell'ultima settimana del 1999:
+
+= in the last week of 1999:
+=
+- ```scala fuel
++ ```scala fuel
+
+= in the last week of 1999:
+=
+= ```scala fuel
+- run
++ run
+
+= in the last week of 1999:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= in the last week of 1999:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import calendars.gregorianCalendar
++   import calendars.gregorianCalendar
+
+-   Out.println(WeekDate.weekYear(2000-Jan-1)().show)
++   Out.println(WeekDate.weekYear(2000-Jan-1)().show)
+
+-   Out.println(WeekDate.weekOfYear(2000-Jan-1).show)
++   Out.println(WeekDate.weekOfYear(2000-Jan-1).show)
+
+=   Out.println(WeekDate.weekOfYear(2000-Jan-1).show)
+- ```
++ ```
+
+- ### Recurrences
++ ### Ricorrenze
+
+- A recurrence describes an event which repeats at a fixed interval. In its
+- [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Repeating_intervals) form it is a start, a
+- period, and an optional number of repetitions. Its occurrences form a lazy
+- [chain](collections.md#lazy-chains):
++ Una ricorrenza descrive un evento che si ripete a intervallo fisso. Nella sua forma
++ [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Repeating_intervals) è un inizio, un periodo
++ e un numero facoltativo di ripetizioni. Le sue occorrenze formano una
++ [catena pigra](collections.md#lazy-chains):
+
+= [chain](collections.md#lazy-chains):
+=
+- ```scala
++ ```scala
+
+- def dates(chain: Chain[Date]): Text = chain.map(_.show).to[List].join(t", ")
++ def dates(chain: Chain[Date]): Text = chain.map(_.show).to[List].join(t", ")
+
+= def dates(chain: Chain[Date]): Text = chain.map(_.show).to[List].join(t", ")
+- ```
++ ```
+
+= def dates(chain: Chain[Date]): Text = chain.map(_.show).to[List].join(t", ")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= def dates(chain: Chain[Date]): Text = chain.map(_.show).to[List].join(t", ")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= def dates(chain: Chain[Date]): Text = chain.map(_.show).to[List].join(t", ")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dates(Recurrence(2024-Jan-1, 1*Day, 3).occurrences))
++ Out.println(dates(Recurrence(2024-Jan-1, 1*Day, 3).occurrences))
+
+= Out.println(dates(Recurrence(2024-Jan-1, 1*Day, 3).occurrences))
+- ```
++ ```
+
+- A recurrence with no number of repetitions runs forever, so it is consumed with a bound:
+- every occurrence up to a date, or those which fall within a window:
++ Una ricorrenza senza numero di ripetizioni prosegue all'infinito, quindi si consuma con un
++ limite: ogni occorrenza fino a una data, o quelle che cadono entro una finestra:
+
+= every occurrence up to a date, or those which fall within a window:
+=
+- ```scala fuel
++ ```scala fuel
+
+= every occurrence up to a date, or those which fall within a window:
+=
+= ```scala fuel
+- run
++ run
+
+= every occurrence up to a date, or those which fall within a window:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dates(Recurrence(2024-Jan-1, 1*Week).until(2024-Jan-22)))
++ Out.println(dates(Recurrence(2024-Jan-1, 1*Week).until(2024-Jan-22)))
+
+- Out.println(dates(Recurrence(2024-Jan-1, 1*Week).within(Period(2024-Jan-5, 2024-Jan-20))))
++ Out.println(dates(Recurrence(2024-Jan-1, 1*Week).within(Period(2024-Jan-5, 2024-Jan-20))))
+
+= Out.println(dates(Recurrence(2024-Jan-1, 1*Week).within(Period(2024-Jan-5, 2024-Jan-20))))
+- ```
++ ```
+
+- A recurrence is encoded to its ISO 8601 form, and decoded from it, and the `rec` interpolator
+- writes one as a checked literal:
++ Una ricorrenza si codifica nella sua forma ISO 8601, e se ne decodifica, e l'interpolatore
++ `rec` ne scrive una come letterale verificato:
+
+= writes one as a checked literal:
+=
+- ```scala
++ ```scala
+
+- val monthly =
++ val monthly =
+
+= val monthly =
+-   import monthEnds.clampMonthEnd
++   import monthEnds.clampMonthEnd
+
+-   val recurrence: Recurrence of Date by (Timespan of Month.type) = rec"R3/2024-01-01/P1M"
++   val recurrence: Recurrence of Date by (Timespan of Month.type) = rec"R3/2024-01-01/P1M"
+
+-   recurrence.occurrences
++   recurrence.occurrences
+
+=   recurrence.occurrences
+- ```
++ ```
+
+=   recurrence.occurrences
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   recurrence.occurrences
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   recurrence.occurrences
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Recurrence(2024-Jan-1, 1*Day, 5).encode)
++ Out.println(Recurrence(2024-Jan-1, 1*Day, 5).encode)
+
+- Out.println(dates(monthly))
++ Out.println(dates(monthly))
+
+= Out.println(dates(monthly))
+- ```
++ ```
+
+- ### Recurrence rules
++ ### Regole di ricorrenza
+
+- The patterns on the calendar which most software needs do not fit a fixed interval: "the
+- third Monday of every month", "the last Friday", "the fourth Thursday of November". These are
+- described by a recurrence rule, modeled on the `RRULE` of
+- [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10), from iCalendar. A
+- rule has a start, a frequency, and optional fields which select within each period:
++ Gli schemi di calendario di cui ha bisogno la maggior parte del software non rientrano in un
++ intervallo fisso: «il terzo lunedì di ogni mese», «l'ultimo venerdì», «il quarto giovedì di
++ novembre». Questi si descrivono con una regola di ricorrenza, modellata sulla `RRULE` di
++ [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10), da iCalendar. Una
++ regola ha un inizio, una frequenza e campi facoltativi che selezionano all'interno di ogni
++ periodo:
+
+= rule has a start, a frequency, and optional fields which select within each period:
+=
+- ```tabular
++ ```tabular
+
+- column  Field
+- column  Type
+- column  Default
+- column  Gives
+- row  `start`  the point type  none  the first point, whose fields the occurrences take by default
+- row  `frequency`  `Frequency`  none  `Secondly`, `Minutely`, `Hourly`, `Daily`, `Weekly`, `Monthly` or `Yearly`
+- row  `interval`  `Int`  `1`  how many periods of the frequency each step spans
+- row  `count`  `Optional[Int]`  `Unset`  how many occurrences there are
+- row  `until`  `Optional` point  `Unset`  the point the occurrences end at
+- row  `byMonth`  `List[Month]`  `Nil`  the months selected
+- row  `byMonthDay`  `List[Int]`  `Nil`  the days of the month selected
+- row  `byDay`  `List[WeekdayOrdinal]`  `Nil`  the weekdays selected, optionally by ordinal
+- row  `byYearDay`  `List[Int]`  `Nil`  the days of the year selected
+- row  `byWeekNo`  `List[Int]`  `Nil`  the weeks of the year selected
+- row  `byHour`, `byMinute`, `bySecond`  `List[Int]`  `Nil`  the hours, minutes and seconds selected
+- row  `bySetPos`  `List[Int]`  `Nil`  positions within each period's expansion
+- row  `weekStart`  `Weekday`  `Mon`  the first day of the week
++ column  Campo
++ column  Tipo
++ column  Predefinito
++ column  Dà
++ row  `start`  il tipo di punto  nessuno  il primo punto, i cui campi le occorrenze assumono per impostazione predefinita
++ row  `frequency`  `Frequency`  nessuno  `Secondly`, `Minutely`, `Hourly`, `Daily`, `Weekly`, `Monthly` o `Yearly`
++ row  `interval`  `Int`  `1`  quanti periodi della frequenza abbraccia ogni passo
++ row  `count`  `Optional[Int]`  `Unset`  quante occorrenze ci sono
++ row  `until`  punto `Optional`  `Unset`  il punto in cui finiscono le occorrenze
++ row  `byMonth`  `List[Month]`  `Nil`  i mesi selezionati
++ row  `byMonthDay`  `List[Int]`  `Nil`  i giorni del mese selezionati
++ row  `byDay`  `List[WeekdayOrdinal]`  `Nil`  i giorni della settimana selezionati, eventualmente per ordinale
++ row  `byYearDay`  `List[Int]`  `Nil`  i giorni dell'anno selezionati
++ row  `byWeekNo`  `List[Int]`  `Nil`  le settimane dell'anno selezionate
++ row  `byHour`, `byMinute`, `bySecond`  `List[Int]`  `Nil`  le ore, i minuti e i secondi selezionati
++ row  `bySetPos`  `List[Int]`  `Nil`  posizioni all'interno dell'espansione di ogni periodo
++ row  `weekStart`  `Weekday`  `Mon`  il primo giorno della settimana
+
+= row  `weekStart`  `Weekday`  `Mon`  the first day of the week
+- ```
++ ```
+
+- The simplest rule repeats at its frequency, and takes the day from its start:
++ La regola più semplice si ripete alla sua frequenza, e prende il giorno dal suo inizio:
+
+= The simplest rule repeats at its frequency, and takes the day from its start:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The simplest rule repeats at its frequency, and takes the day from its start:
+=
+= ```scala fuel
+- run
++ run
+
+= The simplest rule repeats at its frequency, and takes the day from its start:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dates(Rrule(2024-Jan-15, Frequency.Monthly, count = 4).occurrences))
++ Out.println(dates(Rrule(2024-Jan-15, Frequency.Monthly, count = 4).occurrences))
+
+= Out.println(dates(Rrule(2024-Jan-15, Frequency.Monthly, count = 4).occurrences))
+- ```
++ ```
+
+- The field `byDay` selects days of the week, optionally by their position in the period. The
+- third Monday of a month is `WeekdayOrdinal(Mon, 3)`. The last Friday counts back from the end,
+- with `-1`:
++ Il campo `byDay` seleziona giorni della settimana, eventualmente per la loro posizione nel
++ periodo. Il terzo lunedì di un mese è `WeekdayOrdinal(Mon, 3)`. L'ultimo venerdì si conta a
++ ritroso dalla fine, con `-1`:
+
+= with `-1`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= with `-1`:
+=
+= ```scala fuel
+- run
++ run
+
+= with `-1`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dates(Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3)), count = 2).occurrences))
++ Out.println(dates(Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3)), count = 2).occurrences))
+
+- Out.println(dates(Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Fri, -1)), count = 2).occurrences))
++ Out.println(dates(Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Fri, -1)), count = 2).occurrences))
+
+= Out.println(dates(Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Fri, -1)), count = 2).occurrences))
+- ```
++ ```
+
+- Fields combine. The fourth Thursday of November is a yearly rule, narrowed to one month and
+- one day of the week:
++ I campi si combinano. Il quarto giovedì di novembre è una regola annuale, ristretta a un mese e
++ a un giorno della settimana:
+
+= one day of the week:
+=
+- ```scala fuel
++ ```scala fuel
+
+= one day of the week:
+=
+= ```scala fuel
+- run
++ run
+
+= one day of the week:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dates(Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
++ Out.println(dates(Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
+
+-     byDay = List(WeekdayOrdinal(Thu, 4)), count = 2).occurrences))
++     byDay = List(WeekdayOrdinal(Thu, 4)), count = 2).occurrences))
+
+=     byDay = List(WeekdayOrdinal(Thu, 4)), count = 2).occurrences))
+- ```
++ ```
+
+- A frequency can have an interval, such as every second week, or every third day. A rule can
+- also run weekly across several days of the week:
++ Una frequenza può avere un intervallo, come ogni due settimane, o ogni tre giorni. Una regola
++ può anche ripetersi ogni settimana su più giorni della settimana:
+
+= also run weekly across several days of the week:
+=
+- ```scala fuel
++ ```scala fuel
+
+= also run weekly across several days of the week:
+=
+= ```scala fuel
+- run
++ run
+
+= also run weekly across several days of the week:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dates(Rrule(2024-Jan-1, Frequency.Weekly, interval = 2, count = 3).occurrences))
++ Out.println(dates(Rrule(2024-Jan-1, Frequency.Weekly, interval = 2, count = 3).occurrences))
+
+- Out.println(dates(Rrule(2024-Jan-1, Frequency.Weekly, byDay = List(WeekdayOrdinal(Mon),
++ Out.println(dates(Rrule(2024-Jan-1, Frequency.Weekly, byDay = List(WeekdayOrdinal(Mon),
+
+-     WeekdayOrdinal(Wed), WeekdayOrdinal(Fri)), count = 4).occurrences))
++     WeekdayOrdinal(Wed), WeekdayOrdinal(Fri)), count = 4).occurrences))
+
+=     WeekdayOrdinal(Wed), WeekdayOrdinal(Fri)), count = 4).occurrences))
+- ```
++ ```
+
+- The field `bySetPos` picks by position from the dates which each period expands to. "The last
+- working day of the month" is the last of the candidates from Monday to Friday:
++ Il campo `bySetPos` sceglie per posizione tra le date in cui si espande ogni periodo. «L'ultimo
++ giorno lavorativo del mese» è l'ultimo dei candidati dal lunedì al venerdì:
+
+= working day of the month" is the last of the candidates from Monday to Friday:
+=
+- ```scala fuel
++ ```scala fuel
+
+= working day of the month" is the last of the candidates from Monday to Friday:
+=
+= ```scala fuel
+- run
++ run
+
+= working day of the month" is the last of the candidates from Monday to Friday:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dates(Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon),
++ Out.println(dates(Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon),
+
+-     WeekdayOrdinal(Tue), WeekdayOrdinal(Wed), WeekdayOrdinal(Thu),
++     WeekdayOrdinal(Tue), WeekdayOrdinal(Wed), WeekdayOrdinal(Thu),
+
+-     WeekdayOrdinal(Fri)), bySetPos = List(-1), count = 2).occurrences))
++     WeekdayOrdinal(Fri)), bySetPos = List(-1), count = 2).occurrences))
+
+=     WeekdayOrdinal(Fri)), bySetPos = List(-1), count = 2).occurrences))
+- ```
++ ```
+
+- Frequencies below a day apply to timestamps, in which `byHour` and `byMinute` expand within
+- each day. This rule gives nine o'clock and five o'clock each day:
++ Le frequenze inferiori al giorno si applicano ai timestamp, in cui `byHour` e `byMinute` si
++ espandono all'interno di ogni giorno. Questa regola dà le nove e le cinque di ogni giorno:
+
+= each day. This rule gives nine o'clock and five o'clock each day:
+=
+- ```scala
++ ```scala
+
+- val shifts = Rrule(Timestamp(2024-Jan-1, Clockface(0, 0, 0)), Frequency.Daily,
++ val shifts = Rrule(Timestamp(2024-Jan-1, Clockface(0, 0, 0)), Frequency.Daily,
+
+-     byHour = List(9, 17), count = 3).occurrences
++     byHour = List(9, 17), count = 3).occurrences
+
+=     byHour = List(9, 17), count = 3).occurrences
+- ```
++ ```
+
+- A rule is written as an RFC 5545 string, and is parsed back from one:
++ Una regola si scrive come stringa RFC 5545, e si analizza a partire da una di esse:
+
+= A rule is written as an RFC 5545 string, and is parsed back from one:
+=
+- ```scala
++ ```scala
+
+- val lastFridays: Chain[Date] = Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences
++ val lastFridays: Chain[Date] = Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences
+
+= val lastFridays: Chain[Date] = Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences
+- ```
++ ```
+
+= val lastFridays: Chain[Date] = Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val lastFridays: Chain[Date] = Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val lastFridays: Chain[Date] = Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Rrule(2024-Jan-1, Frequency.Monthly, interval = 2, count = 10,
++ Out.println(Rrule(2024-Jan-1, Frequency.Monthly, interval = 2, count = 10,
+
+-     byDay = List(WeekdayOrdinal(Mon, 3))).encode)
++     byDay = List(WeekdayOrdinal(Mon, 3))).encode)
+
+- Out.println(dates(lastFridays.keep(2)))
++ Out.println(dates(lastFridays.keep(2)))
+
+= Out.println(dates(lastFridays.keep(2)))
+- ```
++ ```
+
+- Several rules, and individual dates, combine into a `RecurrenceSet`. It merges its sources
+- into one ascending sequence, adds explicit dates, and removes exceptions:
++ Più regole, e singole date, si combinano in un `RecurrenceSet`. Esso fonde le sue sorgenti in
++ un'unica sequenza crescente, aggiunge date esplicite e rimuove le eccezioni:
+
+= into one ascending sequence, adds explicit dates, and removes exceptions:
+=
+- ```scala
++ ```scala
+
+- val weekly = Rrule(2024-Jan-1, Frequency.Weekly, count = 4)
++ val weekly = Rrule(2024-Jan-1, Frequency.Weekly, count = 4)
+
+= val weekly = Rrule(2024-Jan-1, Frequency.Weekly, count = 4)
+- ```
++ ```
+
+= val weekly = Rrule(2024-Jan-1, Frequency.Weekly, count = 4)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val weekly = Rrule(2024-Jan-1, Frequency.Weekly, count = 4)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val weekly = Rrule(2024-Jan-1, Frequency.Weekly, count = 4)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dates(RecurrenceSet(include = List(weekly.occurrences), rdates = List(2024-Jan-10),
++ Out.println(dates(RecurrenceSet(include = List(weekly.occurrences), rdates = List(2024-Jan-10),
+
+-     exdates = List(2024-Jan-15)).occurrences))
++     exdates = List(2024-Jan-15)).occurrences))
+
+=     exdates = List(2024-Jan-15)).occurrences))
+- ```
++ ```
+
+- ### Describing recurrences
++ ### Descrivere le ricorrenze
+
+- A rule, a recurrence or a timespan describes itself in words. The description is localized,
+- and the language is enforced by the types. It needs a `Locale` in scope, and the names of the
+- months and of the days of the week for that language, or it does not compile:
++ Una regola, una ricorrenza o una durata di calendario descrive sé stessa a parole. La
++ descrizione è localizzata, e la lingua è imposta dai tipi. Richiede un `Locale` nell'ambito, e i
++ nomi dei mesi e dei giorni della settimana per quella lingua, altrimenti non compila:
+
+= months and of the days of the week for that language, or it does not compile:
+=
+- ```scala
++ ```scala
+
+- val english =
++ val english =
+
+-   import monthFormats.englishMonths
++   import monthFormats.englishMonths
+
+-   import weekdays.englishWeekdays
++   import weekdays.englishWeekdays
+
+=   import weekdays.englishWeekdays
+-   given locale: Locale[en] = Locale(en)
++   given locale: Locale[en] = Locale(en)
+
+-   Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
++   Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
+
+-       byDay = List(WeekdayOrdinal(Thu, 4))).show
++       byDay = List(WeekdayOrdinal(Thu, 4))).show
+
+=       byDay = List(WeekdayOrdinal(Thu, 4))).show
+- ```
++ ```
+
+- Another language follows from a different locale, and its names:
++ Un'altra lingua deriva da un locale diverso, e dai suoi nomi:
+
+= Another language follows from a different locale, and its names:
+=
+- ```scala
++ ```scala
+
+- val french =
++ val french =
+
+-   import monthFormats.frenchMonths
++   import monthFormats.frenchMonths
+
+-   import weekdays.frenchWeekdays
++   import weekdays.frenchWeekdays
+
+-   given locale: Locale[fr] = Locale(fr)
++   given locale: Locale[fr] = Locale(fr)
+
+-   Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
++   Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+
+=   Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+- ```
++ ```
+
+=   Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(english)
++ Out.println(english)
+
+- Out.println(french)
++ Out.println(french)
+
+= Out.println(french)
+- ```
++ ```
+
+- A timespan describes itself relative to now, and reads forward or backward according to its
+- sign:
++ Una durata di calendario descrive sé stessa rispetto al momento attuale, e si legge in avanti o
++ all'indietro secondo il suo segno:
+
+= sign:
+=
+- ```scala fuel
++ ```scala fuel
+
+= sign:
+=
+= ```scala fuel
+- run
++ run
+
+= sign:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= sign:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import timespanFormats.englishRelativeTimespan
++   import timespanFormats.englishRelativeTimespan
+
+=   import timespanFormats.englishRelativeTimespan
+-   given locale: Locale[en] = Locale(en)
++   given locale: Locale[en] = Locale(en)
+
+-   Out.println(Timespan(minutes = 18).show)
++   Out.println(Timespan(minutes = 18).show)
+
+-   Out.println(Timespan(minutes = -8).show)
++   Out.println(Timespan(minutes = -8).show)
+
+-   Out.println(Timespan().show)
++   Out.println(Timespan().show)
+
+=   Out.println(Timespan().show)
+- ```
++ ```
+
+- [Internationalization](internationalization.md) describes locales.
++ [Internazionalizzazione](internationalization.md) descrive i locale.
+
+- ### Formatting dates and times
++ ### Formattare date e orari
+
+- A date or a time is displayed through a chosen format. Importing one of the named formats
+- fixes the convention for a whole scope:
++ Una data o un'ora si mostra tramite un formato scelto. Importare uno dei formati con nome fissa
++ la convenzione per un intero ambito:
+
+= fixes the convention for a whole scope:
+=
+- ```scala
++ ```scala
+
+- val april = 2025-Apr-7
++ val april = 2025-Apr-7
+
+- val afternoon = Clockface(14, 30, 59)
++ val afternoon = Clockface(14, 30, 59)
+
+= val afternoon = Clockface(14, 30, 59)
+- ```
++ ```
+
+= val afternoon = Clockface(14, 30, 59)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val afternoon = Clockface(14, 30, 59)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val afternoon = Clockface(14, 30, 59)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println({ import dateFormats.iso8601DateFormat; april.show })
++ Out.println({ import dateFormats.iso8601DateFormat; april.show })
+
+- Out.println({ import dateFormats.americanDateFormat; april.show })
++ Out.println({ import dateFormats.americanDateFormat; april.show })
+
+- Out.println({ import dateFormats.europeanDateFormat; april.show })
++ Out.println({ import dateFormats.europeanDateFormat; april.show })
+
+= Out.println({ import dateFormats.europeanDateFormat; april.show })
+- ```
++ ```
+
+- Times offer the same range, from the twenty-four-hour form to the twelve-hour form:
++ Gli orari offrono la stessa gamma, dalla forma a ventiquattro ore a quella a dodici ore:
+
+= Times offer the same range, from the twenty-four-hour form to the twelve-hour form:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Times offer the same range, from the twenty-four-hour form to the twelve-hour form:
+=
+= ```scala fuel
+- run
++ run
+
+= Times offer the same range, from the twenty-four-hour form to the twelve-hour form:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println({ import timeFormats.militaryTimeFormat; afternoon.show })
++ Out.println({ import timeFormats.militaryTimeFormat; afternoon.show })
+
+- Out.println({ import timeFormats.civilianTimeFormat; afternoon.show })
++ Out.println({ import timeFormats.civilianTimeFormat; afternoon.show })
+
+- Out.println({ import timeFormats.railwayTimeFormat; afternoon.show })
++ Out.println({ import timeFormats.railwayTimeFormat; afternoon.show })
+
+= Out.println({ import timeFormats.railwayTimeFormat; afternoon.show })
+- ```
++ ```
+
+- For finer control, a format is composed from independent choices, each brought in on its own:
+- the order of the fields, the separator between them, the width of each number, and the length
+- of the year. Assembling a format from independent pieces, instead of choosing from a fixed
+- menu, lets an unusual convention be expressed without a formatter written for it:
++ Per un controllo più fine, un formato si compone da scelte indipendenti, ciascuna introdotta per
++ conto suo: l'ordine dei campi, il separatore tra di essi, la larghezza di ogni numero e la
++ lunghezza dell'anno. Assemblare un formato da pezzi indipendenti, invece di scegliere da un menu
++ fisso, permette di esprimere una convenzione insolita senza scrivere un formattatore apposta:
+
+= menu, lets an unusual convention be expressed without a formatter written for it:
+=
+- ```scala
++ ```scala
+
+- import dateEndianness.bigEndian
++ import dateEndianness.bigEndian
+
+- import dateNumerics.variableWidthDateNumerics
++ import dateNumerics.variableWidthDateNumerics
+
+- import dateSeparators.hyphenDateSeparator
++ import dateSeparators.hyphenDateSeparator
+
+- import yearFormats.fullYears
++ import yearFormats.fullYears
+
+= import yearFormats.fullYears
+- ```
++ ```
+
+- Together these four give a date with the year first, hyphens between the fields, numbers
+- without leading zeros, and all four digits of the year. A named format in scope, such as
+- `iso8601DateFormat`, takes precedence over a composed one.
++ Insieme, questi quattro danno una data con l'anno per primo, trattini tra i campi, numeri senza
++ zeri iniziali e tutte e quattro le cifre dell'anno. Un formato con nome nell'ambito, come
++ `iso8601DateFormat`, ha la precedenza su uno composto.
+
+- ### Leap seconds and atomic time
++ ### Secondi intercalari e tempo atomico
+
+- Civil time and physical time disagree by a whole number of seconds, and the number grows.
+- Since 1972, [leap seconds](https://en.wikipedia.org/wiki/Leap_second) have been inserted into
+- [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time), to keep clocks aligned with
+- the Earth's slowing rotation. A `Unix` instant ignores them, so the elapsed seconds between
+- two `Unix` instants can be short by the leap seconds which fell between them.
++ Tempo civile e tempo fisico differiscono di un numero intero di secondi, e il numero cresce. Dal
++ 1972, i [secondi intercalari](https://en.wikipedia.org/wiki/Leap_second) vengono inseriti nel
++ [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time), per mantenere gli orologi
++ allineati con la rotazione terrestre che rallenta. Un istante `Unix` li ignora, quindi i secondi
++ trascorsi tra due istanti `Unix` possono essere meno del dovuto di tanti quanti sono i secondi
++ intercalari caduti tra di essi.
+
+- Each insertion is a correction. It is decided from observations of the small variations in
+- the Earth's rotation over the preceding months, and is made to preserve one invariant: that
+- solar noon at the Greenwich Meridian, when the sun is highest, stays within a second of the
+- moment when a clock reads 12:00:00. That is the whole reason the discontinuities exist, and
+- why they cannot be predicted years in advance.
++ Ogni inserimento è una correzione. Si decide in base alle osservazioni delle piccole variazioni
++ della rotazione terrestre nei mesi precedenti, e si fa per preservare un invariante: che il
++ mezzogiorno solare sul meridiano di Greenwich, quando il sole è più alto, resti entro un secondo
++ dal momento in cui un orologio segna 12:00:00. È questa l'unica ragione per cui esistono le
++ discontinuità, e per cui non si possono prevedere con anni di anticipo.
+
+- [International Atomic Time](https://en.wikipedia.org/wiki/International_Atomic_Time) (TAI) has
+- no such discontinuities. `over[Tai]` converts a `Unix` instant to the TAI timeline, which
+- accounts for the leap seconds which had accumulated by that instant. Converting back gives the
+- original instant exactly:
++ Il [Tempo Atomico Internazionale](https://en.wikipedia.org/wiki/International_Atomic_Time)
++ (TAI) non ha tali discontinuità. `over[Tai]` converte un istante `Unix` nella scala temporale
++ TAI, che tiene conto dei secondi intercalari accumulati fino a quell'istante. Riconvertire dà
++ esattamente l'istante originale:
+
+= original instant exactly:
+=
+- ```scala
++ ```scala
+
+- val instant = t"2017-06-15T00:00:00Z".as[Instant over Unix]
++ val instant = t"2017-06-15T00:00:00Z".as[Instant over Unix]
+
+= val instant = t"2017-06-15T00:00:00Z".as[Instant over Unix]
+- ```
++ ```
+
+= val instant = t"2017-06-15T00:00:00Z".as[Instant over Unix]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val instant = t"2017-06-15T00:00:00Z".as[Instant over Unix]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val instant = t"2017-06-15T00:00:00Z".as[Instant over Unix]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((instant.over[Tai].over[Unix] == instant).inspect)
++ Out.println((instant.over[Tai].over[Unix] == instant).inspect)
+
+= Out.println((instant.over[Tai].over[Unix] == instant).inspect)
+- ```
++ ```
+
+- The timelines are distinct types, so subtracting an instant on one from an instant on the
+- other is a compile error. A whole class of bugs, which are wrong by the leap seconds, simply
+- cannot be written:
++ Le scale temporali sono tipi distinti, quindi sottrarre un istante dell'una da un istante
++ dell'altra è un errore di compilazione. Un'intera classe di bug, sbagliati di tanti secondi
++ quanti sono i secondi intercalari, semplicemente non si può scrivere:
+
+= cannot be written:
+=
+- ```scala fuel
++ ```scala fuel
+
+= cannot be written:
+=
+= ```scala fuel
+- compile
++ compile
+
+= cannot be written:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= cannot be written:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Instant(0L).over[Tai] - Instant(0L)
++ Instant(0L).over[Tai] - Instant(0L)
+
+= Instant(0L).over[Tai] - Instant(0L)
+- ```
++ ```
+
+- By default, arithmetic on moments is lenient. It works in civil time, and steps over leap
+- seconds as though they were not there. Choosing the exact mode counts them. Adding two hours
+- across the leap second at the end of 2016 then lands one second short of the lenient answer:
++ Per impostazione predefinita, l'aritmetica sui momenti è permissiva. Lavora nel tempo civile, e
++ scavalca i secondi intercalari come se non ci fossero. Scegliere la modalità esatta li conta.
++ Aggiungere due ore attraverso il secondo intercalare alla fine del 2016 porta allora a un secondo
++ in meno rispetto alla risposta permissiva:
+
+= across the leap second at the end of 2016 then lands one second short of the lenient answer:
+=
+- ```scala fuel
++ ```scala fuel
+
+= across the leap second at the end of 2016 then lands one second short of the lenient answer:
+=
+= ```scala fuel
+- run
++ run
+
+= across the leap second at the end of 2016 then lands one second short of the lenient answer:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val start = Moment(2016-Dec-31, Clockface(23, 0, 0), tz"UTC")
++ val start = Moment(2016-Dec-31, Clockface(23, 0, 0), tz"UTC")
+
+- val lenient = (start + 2*Hour).instant
++ val lenient = (start + 2*Hour).instant
+
+- val exact =
++ val exact =
+
+-   import leapModes.exactLeapMode
++   import leapModes.exactLeapMode
+
+-   (start + 2*Hour).instant
++   (start + 2*Hour).instant
+
+- Out.println((lenient.long - exact.long).show)
++ Out.println((lenient.long - exact.long).show)
+
+= Out.println((lenient.long - exact.long).show)
+- ```
++ ```
+
+- A leap second itself is the rare reading `23:59:60`. A `ts` literal with a zone accepts it,
+- marks the moment as having an inserted second, and resolves it to the second which follows:
++ Un secondo intercalare in sé è la rara lettura `23:59:60`. Un letterale `ts` con un fuso la
++ accetta, contrassegna il momento come dotato di un secondo inserito, e lo risolve nel secondo
++ che segue:
+
+= marks the moment as having an inserted second, and resolves it to the second which follows:
+=
+- ```scala
++ ```scala
+
+- val inserted = ts"2016-12-31T23:59:60Z"
++ val inserted = ts"2016-12-31T23:59:60Z"
+
+= val inserted = ts"2016-12-31T23:59:60Z"
+- ```
++ ```
+
+= val inserted = ts"2016-12-31T23:59:60Z"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val inserted = ts"2016-12-31T23:59:60Z"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val inserted = ts"2016-12-31T23:59:60Z"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(inserted.leap.inspect)
++ Out.println(inserted.leap.inspect)
+
+= Out.println(inserted.leap.inspect)
+- ```
++ ```
+
+- ### Related
++ ### Correlati
+
+- - [Quantities](quantities.md) describes the physical units which a `Duration` is measured in.
+- - [JSON](json.md#dates-and-times) encodes instants and durations.
+- - [Decoding](decoding.md) reads a date from a command-line argument or a configuration file.
+- - [Concurrency](concurrency.md) waits for a duration, and sets timeouts.
+- - [Internationalization](internationalization.md) covers the locales used to describe
+-   recurrences.
+- - [Caching](caching.md), [charts](charts.md), [cryptography](cryptography.md), [gauges](gauges.md), [numbers](numbers.md) and [foreign interoperability](foreign-interop.md) measure, plot, stamp and convert times.
++ - [Grandezze](quantities.md) descrive le unità fisiche in cui si misura una `Duration`.
++ - [JSON](json.md#dates-and-times) codifica istanti e durate.
++ - [Decodifica](decoding.md) legge una data da un argomento della riga di comando o da un file di
++   configurazione.
++ - [Concorrenza](concurrency.md) attende per una durata, e imposta i timeout.
++ - [Internazionalizzazione](internationalization.md) tratta i locale usati per descrivere le
++   ricorrenze.
++ - [Caching](caching.md), [grafici](charts.md), [crittografia](cryptography.md), [indicatori](gauges.md), [numeri](numbers.md) e [interoperabilità con l'esterno](foreign-interop.md) misurano, tracciano, marcano e convertono i tempi.

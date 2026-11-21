@@ -1,0 +1,63 @@
+orthant 1 language
+
+- # `↯/s.146.1` — `Shrink.Error`
++ # `↯/s.146.1` — `Shrink.Error`
+
+- Raised when a classpath cannot be shrunk to the closed world its entry points reach.
++ Lançado quando um classpath não pode ser reduzido ao mundo fechado que seus pontos de entrada alcançam.
+
+- ## Cause
++ ## Causa
+
+- Shrinking recompiles the classes of a classpath from their TASTy, without the members nothing
+- reaches, and then follows the references of the bytecode which results to decide which other
+- classes go with them. This error covers a closed world which would not be sound, and the
+- shrinker terminating abnormally.
++ A redução recompila as classes de um classpath a partir do seu TASTy, sem os membros que nada
++ alcança, e depois segue as referências do bytecode resultante para decidir que outras classes
++ vão junto. Este erro cobre um mundo fechado que não seria correto e o redutor terminando de
++ forma anormal.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.146.1.1` — `Unsound`
++ ### `↯/s.146.1.1` — `Unsound`
+
+- **Example.** `[↯/s.146.1.1] the classpath could not be shrunk because a problem was found: example.Main refers to render()Ljava/lang/String; of example.Page, which was removed`
++ **Exemplo.** `[↯/s.146.1.1] the classpath could not be shrunk because a problem was found: example.Main refers to render()Ljava/lang/String; of example.Page, which was removed`
+
+- Something which was kept refers to something which was not. The reason carries every such
+- reference, as `problems`: each was found either in the compiler's trees, before any bytecode
+- was generated, or in the bytecode afterwards. It also covers a unit which could not be
+- recompiled and could not be pinned in its place, with the compiler's own errors as the
+- problems.
++ Algo que foi mantido faz referência a algo que não foi. O motivo carrega todas essas
++ referências, como `problems`: cada uma foi encontrada ou nas árvores do compilador, antes de
++ qualquer bytecode ser gerado, ou no bytecode, depois. O erro cobre também uma unidade que não
++ pôde ser recompilada nem fixada no lugar, tendo como problemas os erros do próprio compilador.
+
+- **Resolution.** A reference which only reflection makes is not one the analysis can find: keep
+- the class it reaches, with `Shrink`'s `keep` or `shrinkOptions.keep`. A reference the analysis
+- should have found is a fault in it; pinning the unit which makes the reference, with `pin` or
+- `shrinkOptions.pin`, copies that unit as it was, and keeps everything it refers to.
++ **Resolução.** Uma referência que só a reflexão faz não é algo que a análise consiga encontrar:
++ mantenha a classe que ela alcança, com o `keep` de `Shrink` ou `shrinkOptions.keep`. Uma
++ referência que a análise deveria ter encontrado é uma falha da análise; fixar a unidade que faz
++ a referência, com `pin` ou `shrinkOptions.pin`, copia essa unidade tal como estava e mantém tudo
++ aquilo a que ela faz referência.
+
+- ### `↯/s.146.1.2` — `Failed`
++ ### `↯/s.146.1.2` — `Failed`
+
+- **Example.** `[↯/s.146.1.2] the classpath could not be shrunk because the shrinker terminated abnormally`
++ **Exemplo.** `[↯/s.146.1.2] the classpath could not be shrunk because the shrinker terminated abnormally`
+
+- The reason carries the stack trace.
++ O motivo carrega o stack trace.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/abscission/src/core/abscission.Shrink.scala`
++ - Código-fonte: `lib/abscission/src/core/abscission.Shrink.scala`

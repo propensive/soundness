@@ -1,0 +1,75 @@
+orthant 1 language
+
+- # `↯/s.100.4` — `EmailAddress.Error`
++ # `↯/s.100.4` — `EmailAddress.Error`
+
+- Raised when a value cannot be parsed as a valid email address.
++ Levée lorsqu'une valeur ne peut pas être analysée comme une adresse électronique valide.
+
+- ## Cause
++ ## Cause
+
+- Urticose validates email addresses against the syntax rules in
+- RFC 5321 / 5322 (with practical relaxations). The message is `the
++ Urticose valide les adresses électroniques d'après les règles de syntaxe des
++ RFC 5321 / 5322 (avec des assouplissements pratiques). Le message est `the
+
+- email address is not valid because $reason`.
++ email address is not valid because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Meaning
++ column  Raison
++ column  Signification
+
+- column  Message
++ column  Message
+
+- column  Resolution
+- row  `↯/s.100.4.1`  `Empty`  The value is empty.  `[↯/s.100.4.1] the email address is not valid because it is empty`  Provide a non-empty address.
+- row  `↯/s.100.4.2`  `InvalidDomain`  The domain part is neither a valid hostname nor a valid IP literal.  `[↯/s.100.4.2] the email address is not valid because the domain is not a valid hostname: the character _ is not allowed in a hostname`  Correct the domain syntax; consult the inner `HostnameError`/`IpAddress.Error` variant for specifics.
+- row  `↯/s.100.4.3`  `LongLocalPart`  The local part exceeds 64 characters.  `[↯/s.100.4.3] the email address is not valid because the local part is more than 64 characters long`  Shorten the local part to at most 64 characters.
+- row  `↯/s.100.4.4`  `TerminalPeriod`  The local part ends in a period.  `[↯/s.100.4.4] the email address is not valid because the local part ends in a period, which is not allowed`  Remove the trailing period.
+- row  `↯/s.100.4.5`  `SuccessivePeriods`  The local part contains two adjacent periods.  `[↯/s.100.4.5] the email address is not valid because the local part contains two adjacent periods`  Remove one of the periods, or quote the local part if successive periods are required.
+- row  `↯/s.100.4.6`  `InitialPeriod`  The local part starts with a period.  `[↯/s.100.4.6] the email address is not valid because the local part starts with a period, which is not allowed`  Remove the leading period.
+- row  `↯/s.100.4.7`  `UnescapedQuote`  A double-quote in the local part was not escaped.  `[↯/s.100.4.7] the email address is not valid because the local part contains a quote character which is not escaped`  Either escape the quote with a backslash or use a properly quoted local part.
+- row  `↯/s.100.4.8`  `UnclosedQuote`  The quoted local part has no closing quote.  `[↯/s.100.4.8] the email address is not valid because the quoted local part has no closing quote`  Add the missing `"`.
+- row  `↯/s.100.4.9`  `MissingDomain`  The address has no domain part.  `[↯/s.100.4.9] the email address is not valid because the domain is missing`  Append `@` followed by the domain.
+- row  `↯/s.100.4.10`  `MissingAtSymbol`  The address contains no `@`.  `[↯/s.100.4.10] the email address is not valid because the at-symbol is missing`  Insert `@` between the local part and the domain.
+- row  `↯/s.100.4.11`  `UnclosedIpAddress`  The domain begins with `[` but does not end with `]`.  `[↯/s.100.4.11] the email address is not valid because the domain begins with [ but does not end with ]`  Close the IP-literal with `]`.
+- row  `↯/s.100.4.12`  `InvalidChar`  The local part contains a character that is not allowed.  `[↯/s.100.4.12] the email address is not valid because the local part contains the character > which is not allowed`  Remove the offending character or quote the local part to permit it.
++ column  Résolution
++ row  `↯/s.100.4.1`  `Empty`  La valeur est vide.  `[↯/s.100.4.1] the email address is not valid because it is empty`  Fournissez une adresse non vide.
++ row  `↯/s.100.4.2`  `InvalidDomain`  La partie domaine n'est ni un nom d'hôte valide ni un littéral IP valide.  `[↯/s.100.4.2] the email address is not valid because the domain is not a valid hostname: the character _ is not allowed in a hostname`  Corrigez la syntaxe du domaine ; consultez la variante interne `HostnameError`/`IpAddress.Error` pour les détails.
++ row  `↯/s.100.4.3`  `LongLocalPart`  La partie locale dépasse 64 caractères.  `[↯/s.100.4.3] the email address is not valid because the local part is more than 64 characters long`  Raccourcissez la partie locale à 64 caractères au plus.
++ row  `↯/s.100.4.4`  `TerminalPeriod`  La partie locale se termine par un point.  `[↯/s.100.4.4] the email address is not valid because the local part ends in a period, which is not allowed`  Supprimez le point final.
++ row  `↯/s.100.4.5`  `SuccessivePeriods`  La partie locale contient deux points adjacents.  `[↯/s.100.4.5] the email address is not valid because the local part contains two adjacent periods`  Supprimez l'un des points, ou mettez la partie locale entre guillemets si des points successifs sont nécessaires.
++ row  `↯/s.100.4.6`  `InitialPeriod`  La partie locale commence par un point.  `[↯/s.100.4.6] the email address is not valid because the local part starts with a period, which is not allowed`  Supprimez le point initial.
++ row  `↯/s.100.4.7`  `UnescapedQuote`  Un guillemet double dans la partie locale n'a pas été échappé.  `[↯/s.100.4.7] the email address is not valid because the local part contains a quote character which is not escaped`  Échappez le guillemet avec une barre oblique inverse, ou utilisez une partie locale correctement mise entre guillemets.
++ row  `↯/s.100.4.8`  `UnclosedQuote`  La partie locale entre guillemets n'a pas de guillemet fermant.  `[↯/s.100.4.8] the email address is not valid because the quoted local part has no closing quote`  Ajoutez le `"` manquant.
++ row  `↯/s.100.4.9`  `MissingDomain`  L'adresse n'a pas de partie domaine.  `[↯/s.100.4.9] the email address is not valid because the domain is missing`  Ajoutez `@` suivi du domaine.
++ row  `↯/s.100.4.10`  `MissingAtSymbol`  L'adresse ne contient pas de `@`.  `[↯/s.100.4.10] the email address is not valid because the at-symbol is missing`  Insérez `@` entre la partie locale et le domaine.
++ row  `↯/s.100.4.11`  `UnclosedIpAddress`  Le domaine commence par `[` mais ne se termine pas par `]`.  `[↯/s.100.4.11] the email address is not valid because the domain begins with [ but does not end with ]`  Fermez le littéral IP avec `]`.
++ row  `↯/s.100.4.12`  `InvalidChar`  La partie locale contient un caractère qui n'est pas autorisé.  `[↯/s.100.4.12] the email address is not valid because the local part contains the character > which is not allowed`  Supprimez le caractère fautif, ou mettez la partie locale entre guillemets pour l'autoriser.
+
+- ```
++ ```
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/urticose/src/core/urticose.EmailAddress.scala`
+- - `↯/s.100.10` — hostname validation
+- - `↯/s.100.2` — IP-address validation
++ - Source : `lib/urticose/src/core/urticose.EmailAddress.scala`
++ - `↯/s.100.10` — validation des noms d'hôte
++ - `↯/s.100.2` — validation des adresses IP

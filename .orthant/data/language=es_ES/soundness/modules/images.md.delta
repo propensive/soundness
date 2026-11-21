@@ -1,0 +1,522 @@
+orthant 1 language
+
+- ## Images
++ ## Imágenes
+
+- ### About
++ ### Descripción
+
+- Raster images, which are PNG, JPEG, WebP, GIF and BMP, read into a `Raster` value with the
+- format in its type, just as [audio](audio.md) carries its format. A `Raster in Png` and a
+- `Raster in Jpeg` are distinct types, and converting between them is one method. The image itself
+- is an [immutable] grid of pixels. Each pixel is read as a typed [color](colors.md), and
+- cropping, flipping and rotation produce new images.
++ Las imágenes ráster, que son PNG, JPEG, WebP, GIF y BMP, se leen como un valor `Raster` con el
++ formato en su tipo, igual que el [audio](audio.md) lleva su formato. Un `Raster in Png` y un
++ `Raster in Jpeg` son tipos distintos, y convertir uno en otro es un solo método. La imagen en sí
++ es una cuadrícula [inmutable] de píxeles. Cada píxel se lee como un [color](colors.md) tipado, y el
++ recorte, el volteo y la rotación producen imágenes nuevas.
+
+- A raster may also carry its *pixel layout* in its type: how many bits each channel occupies, and
+- in what order. A pixel is then read with a single shift and mask, computed as the code compiles
+- rather than dispatched at [runtime]. Every codec is implemented directly, so images read and
+- write on every platform, not only on the JVM.
++ Un ráster también puede llevar en su tipo su *disposición de píxeles*: cuántos bits ocupa cada
++ canal, y en qué orden. Entonces un píxel se lee con un solo desplazamiento y una máscara,
++ calculados al compilar el código en lugar de despacharse en [tiempo de ejecución]. Todos los
++ códecs están implementados directamente, así que las imágenes se leen y se escriben en todas las
++ plataformas, no solo en la JVM.
+
+- ### On raster images
++ ### Sobre las imágenes ráster
+
+- The imaging API of the JVM reads any format into a mutable `BufferedImage` and forgets which
+- format it was, and leaves encoding decisions and pixel formats to flag-driven calls. For the
+- common tasks, which are to read an image, ask its size, look at its pixels, convert its format
+- and write it back, that machinery is mostly ceremony, and the mutability makes an image unsafe
+- to share.
++ La API de imágenes de la JVM lee cualquier formato en un `BufferedImage` mutable y olvida qué
++ formato era, y deja las decisiones de codificación y los formatos de píxel a llamadas gobernadas
++ por indicadores. Para las tareas comunes, que son leer una imagen, preguntar su tamaño, mirar sus
++ píxeles, convertir su formato y volver a escribirla, esa maquinaria es sobre todo ceremonia, y la
++ mutabilidad hace que no sea seguro compartir una imagen.
+
+- A `Raster` is immutable and knows its format. Reading names the format expected, so a JPEG
+- posing as a PNG is a typed error, not a null. Pixels come back as colors, ready for the color
+- operations. Writing is the same polymorphic reading-as-bytes used by every other format. A
+- raster whose format and color model are in its type follows
+- [safety by construction](../../philosophy/safety-by-construction.md): a conversion which cannot be
+- done cannot be written.
++ Un `Raster` es inmutable y conoce su formato. Al leer se nombra el formato esperado, de modo que
++ un JPEG que se hace pasar por PNG es un error tipado, no un null. Los píxeles se devuelven como
++ colores, listos para las operaciones de color. Escribir es la misma lectura polimórfica como
++ bytes que usan todos los demás formatos. Un ráster cuyo formato y cuyo modelo de color están en su
++ tipo sigue la [seguridad por construcción](../../philosophy/safety-by-construction.md): una
++ conversión que no puede hacerse no puede escribirse.
+
+- Everything comes from the `soundness` package. The other imports choose a [strategy] for errors,
+- and let the samples print their results:
++ Todo procede del paquete `soundness`. Las demás importaciones eligen una [estrategia] para los
++ errores y permiten que los ejemplos impriman sus resultados:
+
+= and let the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Reading
++ ### Lectura
+
+- A source of bytes reads as a raster of a named format. These bytes are a complete PNG, a
+- two-by-one image whose left pixel is red and whose right pixel is blue. It is small enough to
+- write down:
++ Una fuente de bytes se lee como un ráster de un formato nombrado. Estos bytes son un PNG completo,
++ una imagen de dos por uno cuyo píxel izquierdo es rojo y cuyo píxel derecho es azul. Es lo bastante
++ pequeña para escribirla:
+
+= write down:
+=
+- ```scala
++ ```scala
+
+- val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
++ val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+
+-                  0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
++                  0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+
+- val image = data.read[Raster in Png]
++ val image = data.read[Raster in Png]
+
+= val image = data.read[Raster in Png]
+- ```
++ ```
+
+= val image = data.read[Raster in Png]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val image = data.read[Raster in Png]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val image = data.read[Raster in Png]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(image.width.show)
++ Out.println(image.width.show)
+
+- Out.println(image.height.show)
++ Out.println(image.height.show)
+
+- Out.println(image.landscape.inspect)
++ Out.println(image.landscape.inspect)
+
+= Out.println(image.landscape.inspect)
+- ```
++ ```
+
+- Bytes which are not in the named format raise a `Raster.Error`, which names the format that
+- failed:
++ Los bytes que no están en el formato nombrado lanzan un `Raster.Error`, que nombra el formato que
++ falló:
+
+= failed:
+=
+- ```scala fuel
++ ```scala fuel
+
+= failed:
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- data.read[Raster in Jpeg]
++ data.read[Raster in Jpeg]
+
+= data.read[Raster in Jpeg]
+- ```
++ ```
+
+- ### Pixels
++ ### Píxeles
+
+- Applying an image to coordinates reads a pixel as a `Chroma`, a color with byte channels, which
+- connects the image to all the [color](colors.md) machinery:
++ Aplicar una imagen a unas coordenadas lee un píxel como un `Chroma`, un color con canales de un
++ byte, que conecta la imagen con toda la maquinaria de [color](colors.md):
+
+= connects the image to all the [color](colors.md) machinery:
+=
+- ```scala fuel
++ ```scala fuel
+
+= connects the image to all the [color](colors.md) machinery:
+=
+= ```scala fuel
+- run
++ run
+
+= connects the image to all the [color](colors.md) machinery:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(image(0, 0).red.show)
++ Out.println(image(0, 0).red.show)
+
+- Out.println(image(0, 0).blue.show)
++ Out.println(image(0, 0).blue.show)
+
+- Out.println(image(1, 0).blue.show)
++ Out.println(image(1, 0).blue.show)
+
+= Out.println(image(1, 0).blue.show)
+- ```
++ ```
+
+- An image is also *built* from a pixel function, which is how test images and generated graphics
+- are made:
++ Una imagen también se *construye* a partir de una función de píxeles, que es como se crean las
++ imágenes de prueba y los gráficos generados:
+
+= are made:
+=
+- ```scala
++ ```scala
+
+- val gradient = Raster(256, 1)((x, y) => Chroma(x, 0, 255 - x))
++ val gradient = Raster(256, 1)((x, y) => Chroma(x, 0, 255 - x))
+
+= val gradient = Raster(256, 1)((x, y) => Chroma(x, 0, 255 - x))
+- ```
++ ```
+
+= val gradient = Raster(256, 1)((x, y) => Chroma(x, 0, 255 - x))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val gradient = Raster(256, 1)((x, y) => Chroma(x, 0, 255 - x))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val gradient = Raster(256, 1)((x, y) => Chroma(x, 0, 255 - x))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(gradient(0, 0).blue.show)
++ Out.println(gradient(0, 0).blue.show)
+
+- Out.println(gradient(255, 0).blue.show)
++ Out.println(gradient(255, 0).blue.show)
+
+= Out.println(gradient(255, 0).blue.show)
+- ```
++ ```
+
+- ### Pixel layouts
++ ### Disposiciones de píxeles
+
+- A layout is a tuple of channel types, most significant first. `(Red[10], Green[12], Blue[10])`
+- is exactly the packing of a 32-bit RGB pixel, and `Rgba` names the familiar eight-bit one. A
+- raster built with a layout gives typed access, and `pixel` compiles to one constant shift and
+- mask:
++ Una disposición es una tupla de tipos de canal, empezando por el más significativo.
++ `(Red[10], Green[12], Blue[10])` es exactamente el empaquetado de un píxel RGB de 32 bits, y
++ `Rgba` nombra el conocido de ocho bits. Un ráster construido con una disposición da acceso tipado,
++ y `pixel` se compila a un único desplazamiento constante y una máscara:
+
+= mask:
+=
+- ```scala
++ ```scala
+
+- val raster = Raster[Rgba](2, 2): (x, y) =>
++ val raster = Raster[Rgba](2, 2): (x, y) =>
+
+-   Pixel[Rgba](Srgb(x.toDouble, y.toDouble, 1.0))
++   Pixel[Rgba](Srgb(x.toDouble, y.toDouble, 1.0))
+
+=   Pixel[Rgba](Srgb(x.toDouble, y.toDouble, 1.0))
+- ```
++ ```
+
+=   Pixel[Rgba](Srgb(x.toDouble, y.toDouble, 1.0))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   Pixel[Rgba](Srgb(x.toDouble, y.toDouble, 1.0))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   Pixel[Rgba](Srgb(x.toDouble, y.toDouble, 1.0))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(raster.pixel(1, 0).red.show)
++ Out.println(raster.pixel(1, 0).red.show)
+
+- Out.println(raster.pixel(1, 0).alpha.show)
++ Out.println(raster.pixel(1, 0).alpha.show)
+
+= Out.println(raster.pixel(1, 0).alpha.show)
+- ```
++ ```
+
+- `repack` converts between layouts. It adds a fully opaque alpha channel where the target has
+- one, and scales the channels where their depths differ. Repacking to the layout which a raster
+- already has returns the same raster. A `descriptor` reports the layout at runtime, for the
+- operations which must work whatever it is.
++ `repack` convierte entre disposiciones. Añade un canal alfa totalmente opaco donde el destino lo
++ tiene, y escala los canales donde sus profundidades difieren. Reempaquetar a la disposición que ya
++ tiene un ráster devuelve el mismo ráster. Un `descriptor` informa de la disposición en tiempo de
++ ejecución, para las operaciones que deben funcionar sea cual sea.
+
+- ### Canvases
++ ### Lienzos
+
+- A `Raster` is immutable, and generating one pixel at a time through `Raster(w, h)(…)` is not
+- always the shape which a drawing algorithm wants. Opening a raster as a `Canvas` gives a scoped
+- handle over its buffer instead. Any canvas reads. Only one opened with the `Write` grant may be
+- written to, and the write mutates in place:
++ Un `Raster` es inmutable, y generarlo píxel a píxel mediante `Raster(w, h)(…)` no siempre es la
++ forma que quiere un algoritmo de dibujo. Abrir un ráster como `Canvas` da en su lugar un
++ descriptor con ámbito sobre su búfer. Cualquier lienzo permite leer. Solo uno abierto con la
++ concesión `Write` permite escribir, y la escritura modifica en su sitio:
+
+= written to, and the write mutates in place:
+=
+- ```scala
++ ```scala
+
+- import soundness.canvasOpenable
++ import soundness.canvasOpenable
+
+- raster.open[Canvas](Read & Write): canvas ?=>
++ raster.open[Canvas](Read & Write): canvas ?=>
+
+-   canvas(0, 0) = Pixel[Rgba](Srgb(1.0, 0.0, 0.0))
++   canvas(0, 0) = Pixel[Rgba](Srgb(1.0, 0.0, 0.0))
+
+=   canvas(0, 0) = Pixel[Rgba](Srgb(1.0, 0.0, 0.0))
+- ```
++ ```
+
+- `snapshot` takes an independent copy, so a derived image is unaffected by later writes.
++ `snapshot` toma una copia independiente, de modo que una imagen derivada no se ve afectada por
++ escrituras posteriores.
+
+- ### Transforming
++ ### Transformación
+
+- Cropping, flipping and quarter-turn rotation each produce a new image:
++ El recorte, el volteo y la rotación por cuartos de vuelta producen cada uno una imagen nueva:
+
+= Cropping, flipping and quarter-turn rotation each produce a new image:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Cropping, flipping and quarter-turn rotation each produce a new image:
+=
+= ```scala fuel
+- run
++ run
+
+= Cropping, flipping and quarter-turn rotation each produce a new image:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(image.crop(right = 1).width.show)
++ Out.println(image.crop(right = 1).width.show)
+
+- Out.println(image.flipX(0, 0).blue.show)
++ Out.println(image.flipX(0, 0).blue.show)
+
+- Out.println(image.rotate(90).height.show)
++ Out.println(image.rotate(90).height.show)
+
+= Out.println(image.rotate(90).height.show)
+- ```
++ ```
+
+- The argument of `rotate` admits only `90`, `180` or `270`. A rotation which would need
+- resampling is not quietly approximated:
++ El argumento de `rotate` solo admite `90`, `180` o `270`. Una rotación que requeriría remuestreo
++ no se aproxima en silencio:
+
+= resampling is not quietly approximated:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- image.rotate(45)
++ image.rotate(45)
+
+= image.rotate(45)
+- ```
++ ```
+
+- ### Converting and writing
++ ### Conversión y escritura
+
+- `to` re-expresses an image in another format, and reading it as `Data` produces the encoded
+- bytes, symmetrically with reading:
++ `to` vuelve a expresar una imagen en otro formato, y leerla como `Data` produce los bytes
++ codificados, de forma simétrica a la lectura:
+
+= bytes, symmetrically with reading:
+=
+- ```scala fuel
++ ```scala fuel
+
+= bytes, symmetrically with reading:
+=
+= ```scala fuel
+- run
++ run
+
+= bytes, symmetrically with reading:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val jpegBytes = image.to[Jpeg].read[Data]
++ val jpegBytes = image.to[Jpeg].read[Data]
+
+- val webpBytes = image.to[Webp].read[Data]
++ val webpBytes = image.to[Webp].read[Data]
+
+- Out.println(webpBytes.read[Raster in Webp](1, 0).blue.show)
++ Out.println(webpBytes.read[Raster in Webp](1, 0).blue.show)
+
+= Out.println(webpBytes.read[Raster in Webp](1, 0).blue.show)
+- ```
++ ```
+
+- The codecs are written directly against the formats:
++ Los códecs están escritos directamente sobre los formatos:
+
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Reads
+- column  Writes
+- column  On the JVM
+- row  PNG  every color type, bit depths 1 to 16, all five filters, Adam7 interlacing  8-bit truecolor, with alpha when the layout has it  `javax.imageio`
+- row  JPEG  baseline and progressive, grayscale, YCbCr and CMYK  baseline  `javax.imageio`
+- row  WebP  lossy VP8, lossless VP8L and extended VP8X  lossless VP8L  the pure codec
+- row  GIF  GIF87a and GIF89a, first frame only  one GIF89a frame of at most 256 colors  `javax.imageio`
+- row  BMP  1- to 32-bit, `BI_RGB` or `BI_BITFIELDS`, no run-length encoding  24-bit `BI_RGB`  `javax.imageio`
++ column  Formato
++ column  Lee
++ column  Escribe
++ column  En la JVM
++ row  PNG  todos los tipos de color, profundidades de bits de 1 a 16, los cinco filtros, entrelazado Adam7  color verdadero de 8 bits, con alfa cuando la disposición lo tiene  `javax.imageio`
++ row  JPEG  baseline y progresivo, escala de grises, YCbCr y CMYK  baseline  `javax.imageio`
++ row  WebP  VP8 con pérdida, VP8L sin pérdida y VP8X extendido  VP8L sin pérdida  el códec puro
++ row  GIF  GIF87a y GIF89a, solo el primer fotograma  un fotograma GIF89a de 256 colores como máximo  `javax.imageio`
++ row  BMP  de 1 a 32 bits, `BI_RGB` o `BI_BITFIELDS`, sin codificación por longitud de racha  `BI_RGB` de 24 bits  `javax.imageio`
+
+= row  BMP  1- to 32-bit, `BI_RGB` or `BI_BITFIELDS`, no run-length encoding  24-bit `BI_RGB`  `javax.imageio`
+- ```
++ ```
+
+- A backend seam picks between each codec and the platform's own imaging library, where one
+- exists, so the same code converts an image on the JVM, in a browser, and inside a WebAssembly
+- component.
++ Una costura de backend elige entre cada códec y la propia biblioteca de imágenes de la plataforma,
++ donde existe, de modo que el mismo código convierte una imagen en la JVM, en un navegador y dentro
++ de un componente WebAssembly.
+
+- ### Related
++ ### Relacionado
+
+- - [Colors](colors.md) describes `Chroma`, `Srgb` and the operations on a pixel's color.
+- - [Audio](audio.md) carries its format in its type in the same way.
+- - [Binary data](binary-data.md) describes `hex"…"` and the `Data` which encoded images are.
+- - [SVG](svg.md) describes vector graphics, which have no pixels until they are rendered.
+- - [Media types](media-types.md) names the formats.
+- - [Web automation](web-automation.md) captures a screenshot as a `Raster in Png`.
+- - [Filesystem](filesystem.md) describes the files which images are read from and written to.
++ - [Colores](colors.md) describe `Chroma`, `Srgb` y las operaciones sobre el color de un píxel.
++ - [Audio](audio.md) lleva su formato en su tipo de la misma forma.
++ - [Datos binarios](binary-data.md) describe `hex"…"` y el `Data` que son las imágenes codificadas.
++ - [SVG](svg.md) describe los gráficos vectoriales, que no tienen píxeles hasta que se representan.
++ - [Tipos de medio](media-types.md) nombra los formatos.
++ - [Automatización web](web-automation.md) captura una pantalla como `Raster in Png`.
++ - [Sistema de ficheros](filesystem.md) describe los ficheros de los que se leen las imágenes y en los que se escriben.

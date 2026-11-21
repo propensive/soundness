@@ -1,0 +1,12 @@
+orthant 1 language
+
+-       An enumeration of `NetForward` (shown `→`, from `-->`), `BothDirections` (`⇄`, from
+-       `<=>`), `Equilibrium` (`⇋`, from `<~>`), `Stoichiometric` (`=`, from `===`) and
+-       `Resonance` (`↔`, from `<->`). Which arrow a chemist writes carries meaning, and an
+-       equation keeps it.
+-   entry .showable   shows a reaction as its arrow
++       Una enumeración de `NetForward` (que se muestra `→`, de `-->`), `BothDirections` (`⇄`, de
++       `<=>`), `Equilibrium` (`⇋`, de `<~>`), `Stoichiometric` (`=`, de `===`) y `Resonance`
++       (`↔`, de `<->`). La flecha que escribe un químico tiene significado, y una ecuación la
++       conserva.
++   entry .showable   muestra una reacción como su flecha

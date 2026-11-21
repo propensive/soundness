@@ -1,0 +1,107 @@
+orthant 1 language
+
+- # `↯/s.33.1` — `Motif.Error`
++ # `↯/s.33.1` — `Motif.Error`
+
+- Raised when Praxinoscope cannot compile a regular expression to its RE2
+- form, or when an analysis over compiled expressions cannot complete.
+- Each variant pinpoints the problem.
++ Se lanza cuando Praxinoscope no puede compilar una expresión regular a su forma RE2, o cuando no
++ puede completarse un análisis sobre expresiones compiladas. Cada variante señala con precisión el
++ problema.
+
+- ## Cause
++ ## Causa
+
+- Praxinoscope parses the RE2 regular-expression syntax: a strict subset
+- of common regex syntax which excludes every construct that would break
+- the linear-time matching guarantee. When the parser cannot accept the
+- input, it raises a `Motif.Error` carrying the character `index` at
+- which the problem was detected and a `Reason` explaining what was
+- wrong. The constructed message is `the regular expression could not be
+- compiled because $reason at $index`. Two further variants
+- (`BudgetExceeded` and `Unverifiable`) arise not from parsing but from
+- the containment analysis (`subsumes`/`intersects`), whose worst case
+- is exponential and therefore budgeted.
++ Praxinoscope analiza la sintaxis de expresiones regulares de RE2: un subconjunto estricto de la
++ sintaxis habitual de las expresiones regulares que excluye toda construcción que rompería la
++ garantía de coincidencia en tiempo lineal. Cuando el analizador no puede aceptar la entrada, lanza
++ un `Motif.Error` que lleva el `index` del carácter en el que se detectó el problema y un `Reason`
++ que explica qué estaba mal. El mensaje construido es `the regular expression could not be
++ compiled because $reason at $index`. Otras dos variantes (`BudgetExceeded` y `Unverifiable`) no
++ surgen del análisis sintáctico sino del análisis de contención (`subsumes`/`intersects`), cuyo
++ peor caso es exponencial y que, por tanto, tiene un presupuesto.
+
+- ## Variants
+- The budget that `↯/s.33.1.18` reports covers the product of every program
+- being explored, so the `subsumes` form taking a list of candidates — which
+- decides `L(⋂candidates) ⊆ L(cover)` over the candidates' product automaton —
+- can exhaust it on patterns that would each be decided comfortably on their own.
++ ## Variantes
++ El presupuesto que notifica `↯/s.33.1.18` abarca el producto de todos los programas que se
++ exploran, así que la forma de `subsumes` que toma una lista de candidatos —que decide
++ `L(⋂candidates) ⊆ L(cover)` sobre el autómata producto de los candidatos— puede agotarlo con
++ patrones que, por separado, se decidirían holgadamente.
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Resolution
+- row  `↯/s.33.1.1`  `UnclosedGroup`  A group was opened with `(` but never closed with `)`.  Add the missing `)`, or escape the `(` if a literal parenthesis is intended.
+- row  `↯/s.33.1.2`  `NotInGroup`  A `)` was encountered with no corresponding `(`.  Add the missing `(`, escape the `)` if it should be literal, or remove the stray closing parenthesis.
+- row  `↯/s.33.1.3`  `UnexpectedChar`  A character was found which does not belong at this position, such as a quantifier with nothing to repeat, or a stray character in a repetition range.  Review the pattern around the reported index.
+- row  `↯/s.33.1.4`  `BadRepetition`  A repetition range `{n,m}` has `m < n`.  Swap the bounds, or use `{n,}` if no upper bound is needed.
+- row  `↯/s.33.1.5`  `IncompleteRepetition`  A repetition range was opened with `{` but never closed with `}`.  Add the missing `}`.
+- row  `↯/s.33.1.6`  `EmptyCharClass`  A character class `[…]` contained no characters.  Add at least one character to the class, or remove the empty `[]`.
+- row  `↯/s.33.1.7`  `UnclosedClass`  A character class was opened with `[` but never closed with `]`.  Add the missing `]`, or escape the `[` if a literal bracket is intended.
+- row  `↯/s.33.1.8`  `UnclosedEscape`  The pattern ends with a `\` that has nothing to escape.  Either remove the trailing backslash or escape the character that should follow it.
+- row  `↯/s.33.1.9`  `InvalidEscape`  An escape sequence has no assigned meaning in RE2 syntax, such as an escaped alphanumeric character with no special interpretation, a malformed `\x` hexadecimal escape, or a Unicode property escape (`\p{…}`), which is not yet supported.  Remove the backslash if the character was meant literally, or correct the escape sequence.
+- row  `↯/s.33.1.10`  `InvertedRange`  A character-class range `[a-b]` has an end lower than its start.  Swap the ends of the range.
+- row  `↯/s.33.1.11`  `Backreference`  The pattern contains a backreference (`\1`…`\9` or `\k<…>`). Backreferences make matching NP-hard, so RE2 syntax excludes them by design.  Restructure the pattern without backreferences, or use the JVM regex backend, which supports them.
+- row  `↯/s.33.1.12`  `Lookaround`  The pattern contains lookahead (`(?=…)`, `(?!…)`) or lookbehind (`(?<=…)`, `(?<!…)`), which RE2 syntax excludes by design.  Restructure the pattern, or use the JVM regex backend, which supports lookaround.
+- row  `↯/s.33.1.13`  `PossessiveQuantifier`  The pattern contains a possessive quantifier (`*+`, `++`, `?+` or `{n,m}+`). Possessive matching is a backtracking-control device, and RE2's matching never backtracks, so the construct is meaningless here.  Use the plain greedy quantifier.
+- row  `↯/s.33.1.14`  `AtomicGroup`  The pattern contains an atomic group (`(?>…)`), which, like possessive quantifiers, controls backtracking and has no meaning in RE2 matching.  Use a plain group.
+- row  `↯/s.33.1.15`  `UnsupportedGroup`  The pattern uses a group syntax which is not supported, such as a named group (`(?<name>…)` or `(?P<name>…)`).  Use a plain capturing group.
+- row  `↯/s.33.1.16`  `Flag`  The pattern contains inline flags (`(?i)`, `(?m)`, `(?s)`, …), which are not yet supported.  Express the intent directly in the pattern, for example `[Aa]` in place of a case-insensitivity flag.
+- row  `↯/s.33.1.17`  `RepetitionTooLarge`  A repetition bound in `{n,m}` exceeds 1000, the same limit RE2 imposes, since bounded repetitions are compiled by expansion.  Use an unbounded quantifier, or restructure the pattern.
+- row  `↯/s.33.1.18`  `BudgetExceeded`  A containment analysis (`subsumes` or `intersects`) explored more states than its budget allows. Containment of regular languages is decidable but worst-case exponential.  Simplify one or both patterns, or reduce the number of candidates in an intersection.
+- row  `↯/s.33.1.19`  `Unverifiable`  A containment analysis was attempted on a pattern containing a construct the analysis cannot model: a word boundary (`\b` or `\B`), or a line anchor under the `m` flag, both of which depend on the symbols surrounding a position rather than on the position alone.  Remove the boundary from the patterns being compared.
+- row  `↯/s.33.1.20`  `InvalidPosixClass`  A `[[:name:]]` character class named something outside the POSIX set (`alnum`, `alpha`, `ascii`, `blank`, `cntrl`, `digit`, `graph`, `lower`, `print`, `punct`, `space`, `upper`, `word`, `xdigit`).  Correct the class name. Note that `[:name:]` outside a surrounding character class is an ordinary class of those characters, not a POSIX class.
+- row  `↯/s.33.1.21`  `UnknownUnicodeClass`  A `\p{…}` or `\P{…}` escape named neither a Unicode general category (`L`, `Lu`, `Nd`, …) nor a script (`Greek`, `Han`, …).  Correct the class name. Script names are the Unicode ones, spelled as RE2 spells them — `\p{Greek}`, not Java's `\p{IsGreek}`.
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Solución
++ row  `↯/s.33.1.1`  `UnclosedGroup`  Se abrió un grupo con `(` pero nunca se cerró con `)`.  Añade el `)` que falta, o escapa el `(` si se pretende un paréntesis literal.
++ row  `↯/s.33.1.2`  `NotInGroup`  Se encontró un `)` sin su `(` correspondiente.  Añade el `(` que falta, escapa el `)` si debe ser literal, o elimina el paréntesis de cierre sobrante.
++ row  `↯/s.33.1.3`  `UnexpectedChar`  Se encontró un carácter que no corresponde a esa posición, como un cuantificador sin nada que repetir, o un carácter sobrante en un rango de repetición.  Revisa el patrón en torno al índice notificado.
++ row  `↯/s.33.1.4`  `BadRepetition`  Un rango de repetición `{n,m}` tiene `m < n`.  Intercambia las cotas, o usa `{n,}` si no se necesita cota superior.
++ row  `↯/s.33.1.5`  `IncompleteRepetition`  Se abrió un rango de repetición con `{` pero nunca se cerró con `}`.  Añade el `}` que falta.
++ row  `↯/s.33.1.6`  `EmptyCharClass`  Una clase de caracteres `[…]` no contenía ningún carácter.  Añade al menos un carácter a la clase, o elimina el `[]` vacío.
++ row  `↯/s.33.1.7`  `UnclosedClass`  Se abrió una clase de caracteres con `[` pero nunca se cerró con `]`.  Añade el `]` que falta, o escapa el `[` si se pretende un corchete literal.
++ row  `↯/s.33.1.8`  `UnclosedEscape`  El patrón termina con una `\` que no tiene nada que escapar.  Elimina la barra invertida final o escapa el carácter que debería seguirla.
++ row  `↯/s.33.1.9`  `InvalidEscape`  Una secuencia de escape no tiene significado asignado en la sintaxis de RE2, como un carácter alfanumérico escapado sin interpretación especial, un escape hexadecimal `\x` mal formado o un escape de propiedad Unicode (`\p{…}`), que aún no está soportado.  Quita la barra invertida si el carácter se pretendía literal, o corrige la secuencia de escape.
++ row  `↯/s.33.1.10`  `InvertedRange`  Un rango de clase de caracteres `[a-b]` tiene un final menor que su inicio.  Intercambia los extremos del rango.
++ row  `↯/s.33.1.11`  `Backreference`  El patrón contiene una retrorreferencia (`\1`…`\9` o `\k<…>`). Las retrorreferencias hacen que la coincidencia sea NP-difícil, así que la sintaxis de RE2 las excluye por diseño.  Reestructura el patrón sin retrorreferencias, o usa el backend de expresiones regulares de la JVM, que las soporta.
++ row  `↯/s.33.1.12`  `Lookaround`  El patrón contiene una aserción de anticipación (`(?=…)`, `(?!…)`) o de retrospección (`(?<=…)`, `(?<!…)`), que la sintaxis de RE2 excluye por diseño.  Reestructura el patrón, o usa el backend de expresiones regulares de la JVM, que soporta las aserciones de anticipación y retrospección.
++ row  `↯/s.33.1.13`  `PossessiveQuantifier`  El patrón contiene un cuantificador posesivo (`*+`, `++`, `?+` o `{n,m}+`). La coincidencia posesiva es un mecanismo de control de la vuelta atrás, y la coincidencia de RE2 nunca vuelve atrás, así que la construcción carece aquí de sentido.  Usa el cuantificador voraz simple.
++ row  `↯/s.33.1.14`  `AtomicGroup`  El patrón contiene un grupo atómico (`(?>…)`), que, como los cuantificadores posesivos, controla la vuelta atrás y no tiene sentido en la coincidencia de RE2.  Usa un grupo simple.
++ row  `↯/s.33.1.15`  `UnsupportedGroup`  El patrón usa una sintaxis de grupo no soportada, como un grupo con nombre (`(?<name>…)` o `(?P<name>…)`).  Usa un grupo de captura simple.
++ row  `↯/s.33.1.16`  `Flag`  El patrón contiene indicadores en línea (`(?i)`, `(?m)`, `(?s)`, …), que aún no están soportados.  Expresa la intención directamente en el patrón, por ejemplo `[Aa]` en lugar de un indicador de insensibilidad a mayúsculas.
++ row  `↯/s.33.1.17`  `RepetitionTooLarge`  Una cota de repetición en `{n,m}` supera 1000, el mismo límite que impone RE2, ya que las repeticiones acotadas se compilan por expansión.  Usa un cuantificador no acotado, o reestructura el patrón.
++ row  `↯/s.33.1.18`  `BudgetExceeded`  Un análisis de contención (`subsumes` o `intersects`) exploró más estados de los que permite su presupuesto. La contención de lenguajes regulares es decidible pero exponencial en el peor caso.  Simplifica uno o ambos patrones, o reduce el número de candidatos de una intersección.
++ row  `↯/s.33.1.19`  `Unverifiable`  Se intentó un análisis de contención sobre un patrón con una construcción que el análisis no puede modelar: un límite de palabra (`\b` o `\B`), o un ancla de línea con el indicador `m`, que dependen ambos de los símbolos que rodean una posición y no solo de la posición.  Elimina el límite de los patrones que se comparan.
++ row  `↯/s.33.1.20`  `InvalidPosixClass`  Una clase de caracteres `[[:name:]]` nombraba algo fuera del conjunto POSIX (`alnum`, `alpha`, `ascii`, `blank`, `cntrl`, `digit`, `graph`, `lower`, `print`, `punct`, `space`, `upper`, `word`, `xdigit`).  Corrige el nombre de la clase. Ten en cuenta que `[:name:]` fuera de una clase de caracteres envolvente es una clase corriente de esos caracteres, no una clase POSIX.
++ row  `↯/s.33.1.21`  `UnknownUnicodeClass`  Un escape `\p{…}` o `\P{…}` no nombraba ni una categoría general de Unicode (`L`, `Lu`, `Nd`, …) ni un sistema de escritura (`Greek`, `Han`, …).  Corrige el nombre de la clase. Los nombres de sistemas de escritura son los de Unicode, escritos como los escribe RE2: `\p{Greek}`, no el `\p{IsGreek}` de Java.
+
+- ```
++ ```
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/praxinoscope/src/core/praxinoscope.Motif.scala`
++ - Código fuente: `lib/praxinoscope/src/core/praxinoscope.Motif.scala`

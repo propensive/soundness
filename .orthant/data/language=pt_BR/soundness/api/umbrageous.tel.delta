@@ -1,0 +1,140 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base umbrageous
++ base umbrageous
+
+- import soundness
++ import soundness
+
+- info   a compiler plugin which shades packages, moving their declarations beneath a new prefix as they compile
++ info   um plugin do compilador que faz shading de pacotes, movendo suas declarações para baixo de um novo prefixo à medida que são compiladas
+
+- detail
++ detail
+
+-     _Umbrageous_ relocates ("shades") packages at compile time. Given a mapping from a package
+-     to a new prefix, every declaration of that package, and of its subpackages, is compiled as
+-     if it had been written beneath the prefix, so that two versions of a library, or a library
+-     and a copy vendored into another, can live on one classpath without their classes
+-     colliding. Unlike a bytecode shading tool, it works on the source as it is parsed, so the
+-     shaded names are what the typer, the TASTy and every later phase see.
++     _Umbrageous_ realoca pacotes (faz “shading”) em tempo de compilação. Dado um mapeamento de um
++     pacote para um novo prefixo, toda declaração desse pacote, e de seus subpacotes, é compilada
++     como se tivesse sido escrita sob o prefixo, de modo que duas versões de uma biblioteca, ou uma
++     biblioteca e uma cópia embutida em outra, podem conviver em um classpath sem que suas classes
++     colidam. Ao contrário de uma ferramenta de shading de bytecode, ele trabalha sobre o código-fonte
++     à medida que é analisado, então os nomes com shading são o que o typer, o TASTy e todas as fases
++     posteriores veem.
+
+-     The plugin is enabled by passing its jar to the compiler as `-Xplugin:<path to the
+-     umbrageous plugin jar>` (the jar's `plugin.properties` names `umbrageous.ShaderPlugin`),
+-     and each mapping as a plugin option of the form `<package>:<new-prefix>`:
++     O plugin é ativado passando seu jar ao compilador como `-Xplugin:<path to the
++     umbrageous plugin jar>` (o `plugin.properties` do jar nomeia `umbrageous.ShaderPlugin`), e cada
++     mapeamento como uma opção do plugin na forma `<package>:<new-prefix>`:
+
+-     ```text
++     ```text
+
+-     -Xplugin:umbrageous-plugin.jar
++     -Xplugin:umbrageous-plugin.jar
+
+-     -P:umbrageous:testing:shaded.v1
++     -P:umbrageous:testing:shaded.v1
+
+-     ```
++     ```
+
+-     With that mapping, a source declaring `package testing.globe` compiles to
+-     `shaded.v1.testing.globe`. For each source it rewrites three things:
++     Com esse mapeamento, um arquivo-fonte que declara `package testing.globe` é compilado como
++     `shaded.v1.testing.globe`. Para cada arquivo-fonte, ele reescreve três coisas:
+
+-     - a `package` clause whose name is a mapped package, or within one, is moved beneath the
+-       prefix; where several mappings match, the longest package wins;
+-     - every `package` clause gains a wildcard import of each mapping's prefix (except the
+-       mapping which moved that clause), so `import testing.globe.*` in another package
+-       still resolves, now to the shaded package;
+-     - a fully-qualified reference `_root_.testing.…` to a mapped package is redirected to
+-       `_root_.shaded.v1.testing.…`.
++     - uma cláusula `package` cujo nome é um pacote mapeado, ou que está dentro de um, é movida para
++       baixo do prefixo; quando vários mapeamentos casam, vence o pacote mais longo;
++     - toda cláusula `package` ganha um import curinga do prefixo de cada mapeamento (exceto o do
++       mapeamento que moveu essa cláusula), de modo que `import testing.globe.*` em outro pacote
++       continua a ser resolvido, agora para o pacote com shading;
++     - uma referência totalmente qualificada `_root_.testing.…` a um pacote mapeado é redirecionada
++       para `_root_.shaded.v1.testing.…`.
+
+-     An option which is not of the form `<package>:<new-prefix>` is reported as a warning and
+-     ignored. The prefix may contain dots.
++     Uma opção que não está na forma `<package>:<new-prefix>` é relatada como aviso e ignorada. O
++     prefixo pode conter pontos.
+
+-     The library is the single JVM-only source set `umbrageous.plugin`, depending on the Scala
+-     compiler and nothing of Soundness's. It is published as a standalone artifact rather than
+-     in a Soundness bundle, since a `-Xplugin` jar must declare exactly one plugin. Its two
+-     classes are exported to the `soundness` umbrella, though no program needs them at run time.
++     A biblioteca é o único source set, apenas para JVM, `umbrageous.plugin`, que depende do
++     compilador Scala e de nada de Soundness. Ela é publicada como um artefato independente, e não em
++     um pacote de distribuição de Soundness, pois um jar de `-Xplugin` deve declarar exatamente um
++     plugin. Suas duas classes são exportadas para o guarda-chuva `soundness`, embora nenhum programa
++     precise delas em tempo de execução.
+
+- refer umbrageous.ShaderPlugin
++ refer umbrageous.ShaderPlugin
+
+- refer umbrageous.Shader
++ refer umbrageous.Shader
+
+- entry .ShaderPlugin   the compiler plugin class, named in umbrageous's `plugin.properties`
++ entry .ShaderPlugin   a classe do plugin do compilador, nomeada no `plugin.properties` de umbrageous
+
+= entry .ShaderPlugin   the compiler plugin class, named in umbrageous's `plugin.properties`
+-   detail
++   detail
+
+-       The `StandardPlugin` the compiler instantiates when umbrageous's jar is passed with
+-       `-Xplugin:`. It installs a single phase, `Shader`, handing it the plugin's options, each
+-       of which is a mapping `<package>:<new-prefix>` given as `-P:umbrageous:<package>:<new-prefix>`.
+-       It is not used directly.
++       O `StandardPlugin` que o compilador instancia quando o jar de umbrageous é passado com
++       `-Xplugin:`. Ele instala uma única fase, `Shader`, entregando-lhe as opções do plugin, cada
++       uma das quais é um mapeamento `<package>:<new-prefix>` dado como
++       `-P:umbrageous:<package>:<new-prefix>`. Não é usado diretamente.
+
+-   refer umbrageous.Shader
++   refer umbrageous.Shader
+
+-   entry #name   the plugin's name, `umbrageous`, by which its options are addressed
++   entry #name   o nome do plugin, `umbrageous`, pelo qual suas opções são endereçadas
+
+- entry .Shader   the plugin phase which moves mapped packages beneath their prefixes, after parsing
++ entry .Shader   a fase do plugin que move os pacotes mapeados para baixo de seus prefixos, após a análise
+
+= entry .Shader   the plugin phase which moves mapped packages beneath their prefixes, after parsing
+-   detail
++   detail
+
+-       A phase named `shade`, running after `parser` and before `typer`, over the untyped tree
+-       of each compilation unit. It is constructed by `ShaderPlugin` with the plugin's options,
+-       and parses each as a `<package>:<new-prefix>` mapping, warning about and skipping any
+-       other. It then rewrites each `package` clause of a mapped package beneath its prefix,
+-       adds a wildcard import of every other mapping's prefix to each `package` clause, and
+-       redirects each `_root_`-qualified reference into a mapped package. It is not used
+-       directly.
++       Uma fase chamada `shade`, que roda depois de `parser` e antes de `typer`, sobre a árvore não
++       tipada de cada unidade de compilação. Ela é construída por `ShaderPlugin` com as opções do
++       plugin, e analisa cada uma como um mapeamento `<package>:<new-prefix>`, emitindo um aviso
++       sobre qualquer outra e ignorando-a. Em seguida, reescreve cada cláusula `package` de um pacote
++       mapeado para baixo de seu prefixo, acrescenta a cada cláusula `package` um import curinga do
++       prefixo de todos os outros mapeamentos, e redireciona cada referência qualificada com `_root_`
++       para dentro de um pacote mapeado. Não é usada diretamente.
+
+-   refer umbrageous.ShaderPlugin
++   refer umbrageous.ShaderPlugin
+
+-   entry #phaseName   the phase's name, `shade`
++   entry #phaseName   o nome da fase, `shade`

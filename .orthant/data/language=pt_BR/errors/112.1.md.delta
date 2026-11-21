@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.112.1` — RPC method must have one parameter list
++ # `↯/s.112.1` — Um método RPC deve ter uma lista de parâmetros
+
+- Raised at compile time by Obligatory's `rpc` macro when a method
+- signature has more than one parameter list (or none).
++ Lançado em tempo de compilação pela macro `rpc` do Obligatory quando a assinatura de um
++ método tem mais de uma lista de parâmetros (ou nenhuma).
+
+- ## Cause
++ ## Causa
+
+- JSON-RPC methods are mapped to Scala methods with exactly one
+- parameter list — the one carrying the request fields.
++ Métodos JSON-RPC são mapeados para métodos Scala com exatamente uma
++ lista de parâmetros — a que carrega os campos da requisição.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.112.1] the method recite must have exactly one parameter list
++ [↯/s.112.1] the method recite must have exactly one parameter list
+
+= [↯/s.112.1] the method recite must have exactly one parameter list
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Restructure the method to take exactly one parameter list.
++ Reestruture o método para que receba exatamente uma lista de parâmetros.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/obligatory/src/json/obligatory.internal.scala`
++ - Código-fonte: `lib/obligatory/src/json/obligatory.internal.scala`

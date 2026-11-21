@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.60.2` — `Parse.Error`
++ # `↯/s.60.2` — `Parse.Error`
+
+- Raised when Zephyrine cannot parse a value of a registered format.
++ Zephyrine が、登録された形式の値をパースできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- `Parse.Error` is a generic format-parsing error. It carries the
+- `Format` being parsed, the `Position` at which the parser was
+- located, and the `Issue` reported by the format-specific parser.
++ `Parse.Error` は、形式のパースに関する汎用的なエラーである。
++ これは、パースしていた `Format`、パーサーがいた `Position`、そして形式に固有のパーサーが報告した `Issue` を運ぶ。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.60.2] the JSON was not valid at offset 12 because an unexpected character was found
++ [↯/s.60.2] the JSON was not valid at offset 12 because an unexpected character was found
+
+= [↯/s.60.2] the JSON was not valid at offset 12 because an unexpected character was found
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Use the embedded `Position` and `Issue` to locate and correct the
+- problem in the input.
++ 埋め込まれた `Position` と `Issue` を使って、入力中の問題の場所を突き止め、修正する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/zephyrine/src/core/zephyrine.Parse.scala`
++ - ソース：`lib/zephyrine/src/core/zephyrine.Parse.scala`

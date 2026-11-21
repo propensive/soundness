@@ -1,0 +1,86 @@
+orthant 1 language
+
+- # `↯/s.28.1` — `Permutation.Error`
++ # `↯/s.28.1` — `Permutation.Error`
+
+- Raised when Metamorphose cannot construct a permutation from the
+- arguments supplied.
++ Порождается, когда Metamorphose не может построить перестановку из
++ переданных аргументов.
+
+- ## Cause
++ ## Причина
+
+- Permutations in Metamorphose are built from an index sequence over a
+- positional base. The error variants flag the four ways the indices can
+- be inconsistent with the requested base or input length. The message
+- is `could not construct permutation because $reason`.
++ Перестановки в Metamorphose строятся из последовательности индексов в
++ позиционной системе счисления. Варианты ошибки отмечают четыре способа, которыми индексы
++ могут не согласовываться с запрошенным основанием или длиной входа. Сообщение —
++ `could not construct permutation because $reason`.
+
+- ## Variants
++ ## Варианты
+
+- ### `↯/s.28.1.1` — `BaseRange`
++ ### `↯/s.28.1.1` — `BaseRange`
+
+- A positional value is greater than or equal to its base.
++ Позиционное значение больше своего основания или равно ему.
+
+- **Example.** `[↯/s.28.1.1] could not construct permutation because the value 5 is too large for its positional base 4`
++ **Пример.** `[↯/s.28.1.1] could not construct permutation because the value 5 is too large for its positional base 4`
+
+- **Resolution.** Either reduce the offending value or increase the
+- base of the permutation.
++ **Решение.** Уменьшите недопустимое значение или увеличьте основание
++ перестановки.
+
+- ### `↯/s.28.1.2` — `DuplicateIndex`
++ ### `↯/s.28.1.2` — `DuplicateIndex`
+
+- The same index appears at two distinct positions, which would map two
+- inputs to the same output.
++ Один и тот же индекс встречается в двух разных позициях, что отобразило бы два
++ входа в один и тот же выход.
+
+- **Example.** `[↯/s.28.1.2] could not construct permutation because the index 3 was duplicated at 5`
++ **Пример.** `[↯/s.28.1.2] could not construct permutation because the index 3 was duplicated at 5`
+
+- **Resolution.** Each index must appear exactly once; deduplicate the
+- input.
++ **Решение.** Каждый индекс должен встречаться ровно один раз; удалите дубликаты из
++ входа.
+
+- ### `↯/s.28.1.3` — `InvalidIndex`
++ ### `↯/s.28.1.3` — `InvalidIndex`
+
+- An index is outside the valid range `0..max`.
++ Индекс вне допустимого диапазона `0..max`.
+
+- **Example.** `[↯/s.28.1.3] could not construct permutation because the index appears, but every index should be in the range 0-7`
++ **Пример.** `[↯/s.28.1.3] could not construct permutation because the index appears, but every index should be in the range 0-7`
+
+- **Resolution.** Use only indices within the size of the permutation.
++ **Решение.** Используйте только индексы в пределах размера перестановки.
+
+- ### `↯/s.28.1.4` — `TooShort`
++ ### `↯/s.28.1.4` — `TooShort`
+
+- The input has fewer elements than the permutation requires.
++ Во входе меньше элементов, чем требует перестановка.
+
+- **Example.** `[↯/s.28.1.4] could not construct permutation because the input, of size 3, is too short for the permutation of size 5`
++ **Пример.** `[↯/s.28.1.4] could not construct permutation because the input, of size 3, is too short for the permutation of size 5`
+
+- **Resolution.** Supply an input at least as long as the permutation
+- size, or build a smaller permutation.
++ **Решение.** Передайте вход не короче размера перестановки
++ или постройте перестановку меньшего размера.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/metamorphose/src/core/metamorphose.Permutation.scala`
++ - Исходник: `lib/metamorphose/src/core/metamorphose.Permutation.scala`

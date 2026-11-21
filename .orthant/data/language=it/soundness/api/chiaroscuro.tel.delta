@@ -1,0 +1,1001 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base chiaroscuro
++ base chiaroscuro
+
+- import soundness
++ import soundness
+
+- info   structural comparison of two values: decomposition into fields and elements, and a juxtaposition of the differences
++ info   confronto strutturale di due valori: scomposizione in campi ed elementi, e una giustapposizione delle differenze
+
+- detail
++ detail
+
+-     _Chiaroscuro_ is the contrast behind a failed assertion. Where a test framework would
+-     print "expected X but found Y" as two `toString`s and leave the reader to diff them by
+-     eye, it **decomposes** both values — case classes into fields, collections into aligned
+-     elements, optionals into presence or absence, text into characters — and **juxtaposes**
+-     the two decompositions, so the report is a tree with the differing leaves marked: an age
+-     which differs by two, a list with one element substituted, a text with the changed
+-     characters banded.
++     _Chiaroscuro_ è il contrasto dietro un'asserzione fallita. Dove un framework di test
++     stamperebbe «expected X but found Y» come due `toString` lasciando al lettore il compito di
++     confrontarli a occhio, Chiaroscuro **scompone** entrambi i valori (le case class in campi, le
++     collezioni in elementi allineati, gli opzionali in presenza o assenza, il testo in
++     caratteri) e **giustappone** le due scomposizioni, così il resoconto è un albero con le
++     foglie diverse marcate: un'età che differisce di due, una lista con un elemento sostituito,
++     un testo con i caratteri modificati evidenziati a bande.
+
+=     characters banded.
+=
+-     ```scala
++     ```scala
+
+=     characters banded.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+-     Person(t"Lear", 80).decompose
++     Person(t"Lear", 80).decompose
+
+-     Person(t"Lear", 80).contrast(Person(t"Lear", 82))
++     Person(t"Lear", 80).contrast(Person(t"Lear", 82))
+
+-     // Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Lear"), t"age" -> Different(t"80", t"82", t"+2")), t"Person(Lear,80)", t"Person(Lear,82)")
++     // Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Lear"), t"age" -> Different(t"80", t"82", t"+2")), t"Person(Lear,80)", t"Person(Lear,82)")
+
+=     // Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Lear"), t"age" -> Different(t"80", t"82", t"+2")), t"Person(Lear,80)", t"Person(Lear,82)")
+-     ```
++     ```
+
+-     Three typeclasses do the work. `Decomposable` turns a value into a `Decomposition` — a
+-     `Primitive` leaf, a `Product` of named fields, a `Sequence` of elements or a `Sum`
+-     wrapping its variant — and is derived for any case class, enum, collection or optional,
+-     with every remaining leaf rendered through `Inspectable`, so a failure shows exactly what
+-     `.inspect` shows. `Contrastable` turns two values into a `Juxtaposition` — `Same`,
+-     `Different` (with an optional difference such as `+2`) or a `Collation` of labelled
+-     children — and is derived likewise, with hand-written foundations for numbers (which
+-     report the signed difference), sets (which report what each side has alone), exceptions
+-     and text. Sequences are aligned through dissonance's diff, so an insertion shows as an
+-     insertion rather than as every later element differing, and a changed element as one
+-     substitution broken down to the field which changed. `Similarity` is the pluggable notion
+-     of "similar enough to pair up" for that refinement.
++     Tre typeclass fanno il lavoro. `Decomposable` trasforma un valore in una `Decomposition`
++     (una foglia `Primitive`, un `Product` di campi con nome, una `Sequence` di elementi o una
++     `Sum` che avvolge la sua variante) ed è derivata per qualsiasi case class, enum, collezione
++     od opzionale, con ogni foglia rimanente resa tramite `Inspectable`, così un fallimento mostra
++     esattamente ciò che mostra `.inspect`. `Contrastable` trasforma due valori in una
++     `Juxtaposition` (`Same`, `Different`, con una differenza opzionale come `+2`, oppure una
++     `Collation` di figli etichettati) ed è derivata allo stesso modo, con fondamenta scritte a
++     mano per i numeri (che riportano la differenza con segno), gli insiemi (che riportano ciò che
++     ha solo ciascun lato), le eccezioni e il testo. Le sequenze vengono allineate tramite il diff
++     di dissonance, così un inserimento appare come un inserimento anziché come la differenza di
++     tutti gli elementi successivi, e un elemento modificato come una sola sostituzione scomposta
++     fino al campo che è cambiato. `Similarity` è la nozione intercambiabile di «abbastanza simili
++     da essere accoppiati» per questo affinamento.
+
+-     The probably test framework's diagnosis engine calls `contrast` on the two sides of a
+-     failed equality, when a host asks for one, records the `Juxtaposition` as a `Verdict.Detail.Compare`, and flattens it to
+-     `TestEvent.CompareRow`s for a host; `Harness#capture` records a `decompose`d value.
++     Il motore di diagnosi del framework di test probably chiama `contrast` sui due lati di
++     un'uguaglianza fallita, quando un host ne chiede una, registra la `Juxtaposition` come
++     `Verdict.Detail.Compare` e la appiattisce in `TestEvent.CompareRow` per un host;
++     `Harness#capture` registra un valore passato per `decompose`.
+
+-     The library has two components. `chiaroscuro.core` (JVM, Scala.js and Scala Native) is
+-     the typeclasses and the two trees; `chiaroscuro.render` adds `JuxtapositionPalette` and
+-     the `teletypeables.juxtapositionTeletype` given, which renders a `Juxtaposition` as a
+-     styled table of differences for a terminal. Everything is exported to the `soundness`
+-     umbrella; the `teletypeables` choice package merges with the umbrella's own, and its
+-     given is imported by name, since `import soundness.*` does not import givens — and
+-     escapade renders any `Showable` value unstyled, so a call site which forgets the import
+-     prints the enum's text rather than failing to compile.
++     La libreria ha due componenti. `chiaroscuro.core` (JVM, Scala.js e Scala Native) contiene le
++     typeclass e i due alberi; `chiaroscuro.render` aggiunge `JuxtapositionPalette` e il given
++     `teletypeables.juxtapositionTeletype`, che rende una `Juxtaposition` come una tabella di
++     differenze con stile per un terminale. Tutto è esportato nel modulo ombrello `soundness`; il
++     package di scelta `teletypeables` si fonde con quello dell'ombrello, e il suo given si importa
++     per nome, poiché `import soundness.*` non importa i given; ed escapade rende senza stile
++     qualsiasi valore `Showable`, quindi un punto di chiamata che dimentica l'import stampa il
++     testo dell'enum anziché non compilare.
+
+- refer chiaroscuro.Contrastable
++ refer chiaroscuro.Contrastable
+
+- refer chiaroscuro.Decomposable
++ refer chiaroscuro.Decomposable
+
+- refer chiaroscuro.Juxtaposition
++ refer chiaroscuro.Juxtaposition
+
+- refer chiaroscuro.Decomposition
++ refer chiaroscuro.Decomposition
+
+- refer probably.Test
++ refer probably.Test
+
+- entry .decompose   `value.decompose`: the value as a `Decomposition`, through its `Decomposable`
+-     An extension on any value with a `Decomposable`, which is derived for nearly everything:
+-     `24.decompose` is `Decomposition.Primitive(t"Int", t"24", 24)`, and a case class is a
+-     `Decomposition.Product` of its fields.
++ entry .decompose   `value.decompose`: il valore come `Decomposition`, tramite il suo `Decomposable`
++     Un'estensione su qualsiasi valore con un `Decomposable`, che è derivato per quasi tutto:
++     `24.decompose` è `Decomposition.Primitive(t"Int", t"24", 24)`, e una case class è un
++     `Decomposition.Product` dei suoi campi.
+
+=     `Decomposition.Product` of its fields.
+=
+-     ```scala
++     ```scala
+
+=     `Decomposition.Product` of its fields.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val x: Optional[Int] = 12
++     val x: Optional[Int] = 12
+
+-     x.decompose   // Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Int", t"12", 12), 12)
++     x.decompose   // Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Int", t"12", 12), 12)
+
+-     List('a', 'b').decompose
++     List('a', 'b').decompose
+
+=     List('a', 'b').decompose
+-     ```
++     ```
+
+- entry .contrast   `left.contrast(right)`: the two values juxtaposed, through their `Contrastable`
+-     An extension on any value with a `Contrastable`, derived for case classes, enums,
+-     collections and anything `Decomposable` or `Showable`. The left value is the expected
+-     one, the right the observed one, which is how a failed assertion's rendering labels
+-     them. Equal values give `Juxtaposition.Same`.
++ entry .contrast   `left.contrast(right)`: i due valori giustapposti, tramite il loro `Contrastable`
++     Un'estensione su qualsiasi valore con un `Contrastable`, derivato per case class, enum,
++     collezioni e qualsiasi cosa sia `Decomposable` o `Showable`. Il valore a sinistra è quello
++     atteso, quello a destra quello osservato, ed è così che li etichetta la resa di
++     un'asserzione fallita. Valori uguali danno `Juxtaposition.Same`.
+
+=     them. Equal values give `Juxtaposition.Same`.
+=
+-     ```scala
++     ```scala
+
+=     them. Equal values give `Juxtaposition.Same`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     24.contrast(24)
++     24.contrast(24)
+
+-     t"alpha".contrast(t"alphb")
++     t"alpha".contrast(t"alphb")
+
+-     List(1, 2, 3).contrast(List(1, 3))
++     List(1, 2, 3).contrast(List(1, 3))
+
+=     List(1, 2, 3).contrast(List(1, 3))
+-     ```
++     ```
+
+- entry .Contrastable   how two values of a type are juxtaposed into a `Juxtaposition` of their differences
++ entry .Contrastable   come due valori di un tipo vengono giustapposti in una `Juxtaposition` delle loro differenze
+
+= entry .Contrastable   how two values of a type are juxtaposed into a `Juxtaposition` of their differences
+-   detail
++   detail
+
+-       The typeclass behind `contrast`. Its `.derived` given resolves in this order: a
+-       `Contrastable.Foundation` for the type (the hand-written instances for numbers, sets,
+-       exceptions, text and `Decomposition` itself); a case-class derivation, which
+-       juxtaposes field by field into a `Collation` labelled by field name; an enum
+-       derivation, which juxtaposes the two variants' decompositions; and otherwise the
+-       juxtaposition of the two values' `Decomposition`s, which is what collections,
+-       optionals and nested structures use. A type with only a `Showable` falls to
+-       `Foundation.showable`: `Same` when equal, `Different` of the two shown texts otherwise.
++       La typeclass dietro `contrast`. Il suo given `.derived` si risolve in quest'ordine: un
++       `Contrastable.Foundation` per il tipo (le istanze scritte a mano per numeri, insiemi,
++       eccezioni, testo e `Decomposition` stessa); una derivazione di case class, che giustappone
++       campo per campo in una `Collation` etichettata dal nome del campo; una derivazione di enum,
++       che giustappone le scomposizioni delle due varianti; e altrimenti la giustapposizione delle
++       `Decomposition` dei due valori, che è ciò che usano collezioni, opzionali e strutture
++       annidate. Un tipo che ha solo uno `Showable` ricade su `Foundation.showable`: `Same` quando
++       sono uguali, altrimenti `Different` dei due testi mostrati.
+
+=       `Foundation.showable`: `Same` when equal, `Different` of the two shown texts otherwise.
+=
+-       ```scala
++       ```scala
+
+=       `Foundation.showable`: `Same` when equal, `Different` of the two shown texts otherwise.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Foundation.showable`: `Same` when equal, `Different` of the two shown texts otherwise.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       case class Play(title: Text, hero: Person, cast: List[Person])
++       case class Play(title: Text, hero: Person, cast: List[Person])
+
+-       val expected = Play(t"Othello", Person(t"Othello", 49), List(Person(t"Iago", 28), Person(t"Æmilia", 32)))
++       val expected = Play(t"Othello", Person(t"Othello", 49), List(Person(t"Iago", 28), Person(t"Æmilia", 32)))
+
+-       val observed = Play(t"Othello", Person(t"Othello", 43), List(Person(t"Emilia", 32), Person(t"Iago", 28)))
++       val observed = Play(t"Othello", Person(t"Othello", 43), List(Person(t"Emilia", 32), Person(t"Iago", 28)))
+
+-       expected.contrast(observed)
++       expected.contrast(observed)
+
+=       expected.contrast(observed)
+-       ```
++       ```
+
+-       A `Contrastable` is a pure typeclass; `#contramap` makes one for another type from a
+-       function into this one.
++       Un `Contrastable` è una typeclass pura; `#contramap` ne crea uno per un altro tipo a partire
++       da una funzione verso questo.
+
+=       function into this one.
+-   refer chiaroscuro.contrast
++   refer chiaroscuro.contrast
+
+=   refer chiaroscuro.contrast
+-   refer chiaroscuro.Juxtaposition
++   refer chiaroscuro.Juxtaposition
+
+=   refer chiaroscuro.Juxtaposition
+-   refer chiaroscuro.Decomposable
++   refer chiaroscuro.Decomposable
+
+-   entry .derived   the inline given which derives a `Contrastable` for any type, in implicit scope
+-       Foundation first, then product, then sum, then by decomposition.
+-   entry .Derivation   the wisteria derivation of `Contrastable` for products and sums
++   entry .derived   il given inline che deriva un `Contrastable` per qualsiasi tipo, nell'ambito implicito
++       Prima le fondamenta, poi il prodotto, poi la somma, poi la scomposizione.
++   entry .Derivation   la derivazione wisteria di `Contrastable` per prodotti e somme
+
+=   entry .Derivation   the wisteria derivation of `Contrastable` for products and sums
+-     detail
++     detail
+
+-         A `Derivable[Contrastable]`: `conjunction` juxtaposes a case class field by field
+-         into a `Collation` (or `Same` of the shown value when the two are equal), and
+-         `disjunction` an enum by its variants' decompositions. Reached through `.derived`
+-         rather than called directly.
+-     entry .conjunction   a case class, field by field
+-     entry .disjunction   an enum, by its variants
+-   entry .Foundation   the hand-written instances, and the trait an instance of the caller's own extends
++         Un `Derivable[Contrastable]`: `conjunction` giustappone una case class campo per campo in
++         una `Collation` (oppure `Same` del valore mostrato quando i due sono uguali), e
++         `disjunction` un enum tramite le scomposizioni delle sue varianti. Si raggiunge tramite
++         `.derived` anziché chiamarla direttamente.
++     entry .conjunction   una case class, campo per campo
++     entry .disjunction   un enum, tramite le sue varianti
++   entry .Foundation   le istanze scritte a mano, e il trait che estende un'istanza propria del chiamante
+
+=   entry .Foundation   the hand-written instances, and the trait an instance of the caller's own extends
+-     detail
++     detail
+
+-         `Contrastable.Foundation` as a **trait** is a `Contrastable` with the one abstract
+-         method `#juxtaposition`; `.derived` tries a `Foundation` before any derivation, so a
+-         type whose contrast should not be structural (a type with an identity, or a number
+-         with a meaningful difference) provides one in its companion. As an **object** it
+-         holds the standard foundations, each in implicit scope, and inherits the
+-         lowest-priority `showable` from `Contrastable.Protofoundation`.
++         `Contrastable.Foundation` come **trait** è un `Contrastable` con l'unico metodo astratto
++         `#juxtaposition`; `.derived` prova un `Foundation` prima di qualsiasi derivazione, così un
++         tipo il cui contrasto non dovrebbe essere strutturale (un tipo con un'identità, o un
++         numero con una differenza significativa) ne fornisce uno nel suo oggetto compagno. Come
++         **oggetto** contiene le fondamenta standard, ciascuna nell'ambito implicito, ed eredita lo
++         `showable` a priorità più bassa da `Contrastable.Protofoundation`.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         3.contrast(5)        // Juxtaposition.Different(t"3", t"5", t"+2")
++         3.contrast(5)        // Juxtaposition.Different(t"3", t"5", t"+2")
+
+-         1.5.contrast(1.25)
++         1.5.contrast(1.25)
+
+-         Set(1, 2, 3).contrast(Set(2, 3, 4))
++         Set(1, 2, 3).contrast(Set(2, 3, 4))
+
+-         ```
++         ```
+
+-     entry .decomposition   two `Decomposition`s, juxtaposed structurally
+-     entry .int   two `Int`s: `Same`, or `Different` with the signed difference
+-     entry .short   two `Short`s, as `.int`
+-     entry .byte   two `Byte`s, as `.int`
+-     entry .long   two `Long`s: `Same`, or `Different` with the signed difference, `+2` or `-3`
+-     entry .float   two `Float`s, as `.double`
+-     entry .double   two `Double`s: `Different` with the signed difference to four significant figures
+-         Both sides are shown to enough decimal places to tell them apart; the difference is
+-         shown with a plus sign when positive.
+-     entry .set   two `Set`s of a `Showable` element: what each side has alone
+-         The difference reads `+{4}` for elements only on the right, `-{1}` for those only on
+-         the left, or `-{1}╱+{4}` for both, with sets of more than five elements elided.
+-     entry .exception   two `Exception`s: the same when their classes and messages are
+-     entry .string   two `String`s, as `.text`
+-     entry .text   two `Text`s, character by character
+-         The characters are aligned with dissonance's diff, so an insertion or deletion is
+-         shown as one rather than as every later character differing; the result is a
+-         `Collation` named `Text` whose children are single characters, which the terminal
+-         renderer shows as two banded lines.
+-     entry #juxtaposition   the juxtaposition of two values
+-   entry .Protofoundation   the base of `Foundation`'s companion, holding the lowest-priority `showable` given
++     entry .decomposition   due `Decomposition`, giustapposte strutturalmente
++     entry .int   due `Int`: `Same`, oppure `Different` con la differenza con segno
++     entry .short   due `Short`, come `.int`
++     entry .byte   due `Byte`, come `.int`
++     entry .long   due `Long`: `Same`, oppure `Different` con la differenza con segno, `+2` o `-3`
++     entry .float   due `Float`, come `.double`
++     entry .double   due `Double`: `Different` con la differenza con segno a quattro cifre significative
++         Entrambi i lati sono mostrati con abbastanza cifre decimali da distinguerli; la
++         differenza è mostrata con il segno più quando è positiva.
++     entry .set   due `Set` di un elemento `Showable`: ciò che ha solo ciascun lato
++         La differenza si legge `+{4}` per gli elementi presenti solo a destra, `-{1}` per quelli
++         presenti solo a sinistra, oppure `-{1}╱+{4}` per entrambi, con gli insiemi di più di
++         cinque elementi abbreviati.
++     entry .exception   due `Exception`: uguali quando lo sono le loro classi e i loro messaggi
++     entry .string   due `String`, come `.text`
++     entry .text   due `Text`, carattere per carattere
++         I caratteri vengono allineati con il diff di dissonance, così un inserimento o una
++         cancellazione appare come tale anziché come la differenza di tutti i caratteri
++         successivi; il risultato è una `Collation` chiamata `Text` i cui figli sono singoli
++         caratteri, che il renderer del terminale mostra come due righe a bande.
++     entry #juxtaposition   la giustapposizione di due valori
++   entry .Protofoundation   la base dell'oggetto compagno di `Foundation`, che contiene il given `showable` a priorità più bassa
+
+=   entry .Protofoundation   the base of `Foundation`'s companion, holding the lowest-priority `showable` given
+-     detail
++     detail
+
+-         `Contrastable.Foundation` inherits `showable` from here, so every foundation outranks it.
+-     entry #showable   any `Showable` type: `Same` when equal, `Different` of the two shown texts
+-   entry .nothing   a `Contrastable` which reports every pair as `Same`, showing the left value's decomposition
+-       Inline; needs a `Decomposable` for the type. For a position which requires a
+-       `Contrastable` but has nothing to compare.
+-   entry .juxtaposition   juxtaposes two `Decomposition`s of any shape, with a type name for the result
+-       Equal references are `Same`; two `Primitive`s are `Different` by their texts; two
+-       `Sequence`s are aligned by `.comparison`; two `Product`s are a `Collation` over the
+-       union of their field names, a field absent on one side compared against a blank; two
+-       `Sum`s compare their variants (naming both types, `Circle/Square`, when they differ);
+-       and two decompositions of different shapes are `Different` by kind,
++         `Contrastable.Foundation` eredita `showable` da qui, quindi ogni fondamenta lo supera.
++     entry #showable   qualsiasi tipo `Showable`: `Same` quando sono uguali, `Different` dei due testi mostrati
++   entry .nothing   un `Contrastable` che riporta ogni coppia come `Same`, mostrando la scomposizione del valore a sinistra
++       Inline; richiede un `Decomposable` per il tipo. Per una posizione che richiede un
++       `Contrastable` ma non ha nulla da confrontare.
++   entry .juxtaposition   giustappone due `Decomposition` di qualsiasi forma, con un nome di tipo per il risultato
++       I riferimenti uguali sono `Same`; due `Primitive` sono `Different` per i loro testi; due
++       `Sequence` vengono allineate da `.comparison`; due `Product` sono una `Collation`
++       sull'unione dei nomi dei loro campi, con un campo assente su un lato confrontato con un
++       vuoto; due `Sum` confrontano le loro varianti (nominando entrambi i tipi, `Circle/Square`,
++       quando differiscono); e due scomposizioni di forme diverse sono `Different` per genere,
+
+-       `<product>`/`<sequence>`.
++       `<product>`/`<sequence>`.
+
+-   entry .comparison   aligns two arrays of decompositions with a diff, as a `Collation` of labelled rows
+-       Each row is labelled by its indices: `3` for an element at the same index on both
+-       sides, `³╱₂` (superscript left, subscript right) when the indices differ, ` ╱₂` for an
+-       insertion, `³╱ ` for a deletion. A substituted element is juxtaposed recursively, so a
+-       record with one changed field shows as that field's difference. The diff is
+-       dissonance's `rdiff` with a window of ten.
+-   entry #juxtaposition   the juxtaposition of two values of the type
+-   entry #contramap   a `Contrastable` for another type, by mapping it to this one
++   entry .comparison   allinea due array di scomposizioni con un diff, come una `Collation` di righe etichettate
++       Ogni riga è etichettata dai suoi indici: `3` per un elemento allo stesso indice su
++       entrambi i lati, `³╱₂` (apice a sinistra, pedice a destra) quando gli indici differiscono,
++       ` ╱₂` per un inserimento, `³╱ ` per una cancellazione. Un elemento sostituito viene
++       giustapposto ricorsivamente, così un record con un solo campo modificato appare come la
++       differenza di quel campo. Il diff è `rdiff` di dissonance con una finestra di dieci.
++   entry #juxtaposition   la giustapposizione di due valori del tipo
++   entry #contramap   un `Contrastable` per un altro tipo, ottenuto associandolo a questo
+
+- entry .Decomposable   how a value is taken apart into a `Decomposition` for display
++ entry .Decomposable   come un valore viene smontato in una `Decomposition` per la visualizzazione
+
+= entry .Decomposable   how a value is taken apart into a `Decomposition` for display
+-   detail
++   detail
+
+-       The typeclass behind `decompose`, and the one `Harness#capture` and the assertion
+-       macros use to render both sides of a failure. Its `derived` given resolves in order: a
+-       `Decomposable.Base` for the type (`Text`, `Int`, `String`, `Decomposition`); a
+-       case-class derivation into a `Product` of named fields; an enum derivation into a
+-       `Sum`; `Any`, `AnyRef` and `Matchable` as an `Any` leaf; an `Optional` as a `Sum`
+-       named `Optional` of the value or an `Unset` leaf shown as `∅`; and every remaining
+-       leaf through `Inspectable`, whose own derivation always succeeds, so a `Char` renders
+-       `'a'`, a `Double` is not rounded by a `Decimalizer` in scope, and a type with neither
+-       falls to `Inspectable`'s marked `toString`. The companion's `.list`, `.sequence` and
+-       `.frozenArray` decompose collections element by element. The companion inherits
+-       `derived`, `primitive`, `any` and `Derivation` from `Decomposable2`, and `fallback` from
+-       `Decomposable3`.
++       La typeclass dietro `decompose`, e quella che `Harness#capture` e le macro di asserzione
++       usano per rendere entrambi i lati di un fallimento. Il suo given `derived` si risolve in
++       ordine: un `Decomposable.Base` per il tipo (`Text`, `Int`, `String`, `Decomposition`); una
++       derivazione di case class in un `Product` di campi con nome; una derivazione di enum in una
++       `Sum`; `Any`, `AnyRef` e `Matchable` come foglia `Any`; un `Optional` come `Sum` chiamata
++       `Optional` del valore, oppure una foglia `Unset` mostrata come `∅`; e ogni foglia rimanente
++       tramite `Inspectable`, la cui derivazione riesce sempre, così un `Char` si rende come
++       `'a'`, un `Double` non viene arrotondato da un `Decimalizer` nell'ambito, e un tipo privo di
++       entrambi ricade sul `toString` marcato di `Inspectable`. `.list`, `.sequence` e
++       `.frozenArray` dell'oggetto compagno scompongono le collezioni elemento per elemento.
++       L'oggetto compagno eredita `derived`, `primitive`, `any` e `Derivation` da
++       `Decomposable2`, e `fallback` da `Decomposable3`.
+
+=       `Decomposable3`.
+=
+-       ```scala
++       ```scala
+
+=       `Decomposable3`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Decomposable3`.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       Person(t"Iago", 28).decompose
++       Person(t"Iago", 28).decompose
+
+-       // Decomposition.Product(t"Person", Map(t"name" -> Primitive(t"Text", t"Iago", t"Iago"), t"age" -> Primitive(t"Int", t"28", 28)), Person(t"Iago", 28))
++       // Decomposition.Product(t"Person", Map(t"name" -> Primitive(t"Text", t"Iago", t"Iago"), t"age" -> Primitive(t"Int", t"28", 28)), Person(t"Iago", 28))
+
+-       val x: Optional[Int] = Unset
++       val x: Optional[Int] = Unset
+
+-       x.decompose   // Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Unset", t"∅", Unset), Unset)
++       x.decompose   // Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Unset", t"∅", Unset), Unset)
+
+=       x.decompose   // Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Unset", t"∅", Unset), Unset)
+-       ```
++       ```
+
+-       Decomposition renders leaves through `Inspectable`, not `Showable`: a test failure is
+-       read by a programmer, so it should show what `.inspect` shows, and a type whose
+-       `Showable` and `Inspectable` disagree decomposes as the latter.
++       La scomposizione rende le foglie tramite `Inspectable`, non `Showable`: un fallimento di
++       test viene letto da un programmatore, quindi dovrebbe mostrare ciò che mostra `.inspect`, e
++       un tipo i cui `Showable` e `Inspectable` non concordano si scompone secondo il secondo.
+
+-   refer chiaroscuro.decompose
++   refer chiaroscuro.decompose
+
+-   refer chiaroscuro.Decomposition
++   refer chiaroscuro.Decomposition
+
+-   refer spectacular.Inspectable
++   refer spectacular.Inspectable
+
+-   entry .Base   the hand-written leaf instances, and the trait an instance of the caller's own extends
++   entry .Base   le istanze foglia scritte a mano, e il trait che estende un'istanza propria del chiamante
+
+=   entry .Base   the hand-written leaf instances, and the trait an instance of the caller's own extends
+-     detail
++     detail
+
+-         `Decomposable.Base` as a **trait** is a `Decomposable` which `derived` tries before
+-         any derivation; as an **object** it holds the standard leaves.
+-     entry .text   `Text` as a `Primitive` named `Text`
+-     entry .int   `Int` as a `Primitive` named `Int`
+-     entry .string   `String` as a `Primitive` named `String`
+-     entry .decomposition   a `Decomposition` as itself
+-     entry #decomposition   the decomposition of a value
+-   entry .list   any `List` of a decomposable element, as a `Sequence` named `List`
+-   entry .sequence   any `Sequence` of a decomposable element, as a `Sequence` named `Sequence`
+-   entry .frozenArray   a frozen `Array[element]^{}` of a decomposable element, as a `Sequence` named `Array`
+-   entry #decomposition   the decomposition of a value
++         `Decomposable.Base` come **trait** è un `Decomposable` che `derived` prova prima di
++         qualsiasi derivazione; come **oggetto** contiene le foglie standard.
++     entry .text   `Text` come `Primitive` chiamato `Text`
++     entry .int   `Int` come `Primitive` chiamato `Int`
++     entry .string   `String` come `Primitive` chiamato `String`
++     entry .decomposition   una `Decomposition` come sé stessa
++     entry #decomposition   la scomposizione di un valore
++   entry .list   qualsiasi `List` di un elemento scomponibile, come `Sequence` chiamata `List`
++   entry .sequence   qualsiasi `Sequence` di un elemento scomponibile, come `Sequence` chiamata `Sequence`
++   entry .frozenArray   un `Array[element]^{}` congelato di un elemento scomponibile, come `Sequence` chiamata `Array`
++   entry #decomposition   la scomposizione di un valore
+
+- entry .Decomposable2   the base trait of `Decomposable`'s companion which holds `derived`, `primitive`, `any` and `Derivation`
++ entry .Decomposable2   il trait base dell'oggetto compagno di `Decomposable` che contiene `derived`, `primitive`, `any` e `Derivation`
+
+= entry .Decomposable2   the base trait of `Decomposable`'s companion which holds `derived`, `primitive`, `any` and `Derivation`
+-   hidden
++   hidden
+
+= entry .Decomposable2   the base trait of `Decomposable`'s companion which holds `derived`, `primitive`, `any` and `Derivation`
+=   hidden
+-   detail
++   detail
+
+-       A priority layer: its members are reached as `Decomposable.derived`,
+-       `Decomposable.primitive`, `Decomposable.any` and `Decomposable.Derivation`, which the
+-       companion inherits from here.
+-   entry #derived   the inline given which derives a `Decomposable` for any type, in implicit scope
+-       Reached as `Decomposable.derived`. Base, then product, then sum, then `Any`, then
+-       `Optional`, then `Inspectable`.
+-   entry #primitive   a `Decomposable` which renders every value as a `Primitive` of the given type name, by `toString`
+-   entry #any   a `Decomposable` which renders every value as a `Primitive` named `Any`, by `toString`
+-       What the assertion macros use when no better instance is derivable for a test's result
+-       type.
+-   entry #Derivation   the wisteria derivation of `Decomposable` for products and sums
+-     entry .conjunction   a case class as a `Product` of its fields, by label
+-     entry .disjunction   an enum as a `Sum` of its variant's decomposition
++       Uno strato di priorità: i suoi membri si raggiungono come `Decomposable.derived`,
++       `Decomposable.primitive`, `Decomposable.any` e `Decomposable.Derivation`, che l'oggetto
++       compagno eredita da qui.
++   entry #derived   il given inline che deriva un `Decomposable` per qualsiasi tipo, nell'ambito implicito
++       Si raggiunge come `Decomposable.derived`. Prima la base, poi il prodotto, poi la somma,
++       poi `Any`, poi `Optional`, poi `Inspectable`.
++   entry #primitive   un `Decomposable` che rende ogni valore come `Primitive` del nome di tipo dato, tramite `toString`
++   entry #any   un `Decomposable` che rende ogni valore come `Primitive` chiamato `Any`, tramite `toString`
++       Ciò che usano le macro di asserzione quando non si può derivare un'istanza migliore per
++       il tipo del risultato di un test.
++   entry #Derivation   la derivazione wisteria di `Decomposable` per prodotti e somme
++     entry .conjunction   una case class come `Product` dei suoi campi, per etichetta
++     entry .disjunction   un enum come `Sum` della scomposizione della sua variante
+
+- entry .Decomposable3   the lowest priority layer of `Decomposable`'s companion, holding `fallback`
++ entry .Decomposable3   lo strato a priorità più bassa dell'oggetto compagno di `Decomposable`, che contiene `fallback`
+
+= entry .Decomposable3   the lowest priority layer of `Decomposable`'s companion, holding `fallback`
+-   hidden
++   hidden
+
+= entry .Decomposable3   the lowest priority layer of `Decomposable`'s companion, holding `fallback`
+=   hidden
+-   detail
++   detail
+
+-       Reached as `Decomposable.fallback`, which the companion inherits from here.
+-   entry #fallback   the lowest-priority given: a `Primitive` named `Any` by `toString`, for any type
++       Si raggiunge come `Decomposable.fallback`, che l'oggetto compagno eredita da qui.
++   entry #fallback   il given a priorità più bassa: un `Primitive` chiamato `Any` tramite `toString`, per qualsiasi tipo
+
+- entry .Decomposition   a value taken apart for display: a leaf, a product of fields, a sequence or a sum
++ entry .Decomposition   un valore smontato per la visualizzazione: una foglia, un prodotto di campi, una sequenza o una somma
+
+= entry .Decomposition   a value taken apart for display: a leaf, a product of fields, a sequence or a sum
+-   detail
++   detail
+
+-       The four cases: `Primitive(typeName, value, ref)` is a leaf with its rendered text;
+-       `Product(name, values, ref)` a case class with its fields by label; `Sequence(name,
+-       values, ref)` a collection's elements; and `Sum(name, value, ref)` an enum or
+-       `Optional` wrapping its variant. Each keeps the original value as `#ref`, which
+-       `Contrastable.juxtaposition` compares first, so equal references are `Same` without a
+-       walk. `#text` renders the tree over several lines, indented; `#short` is a one-line
+-       summary (`[..3..]` for a sequence, the type name for a product); and `.inspectable`
+-       makes `inspect` the same as `#text`.
++       I quattro casi: `Primitive(typeName, value, ref)` è una foglia con il suo testo reso;
++       `Product(name, values, ref)` una case class con i suoi campi per etichetta;
++       `Sequence(name, values, ref)` gli elementi di una collezione; e `Sum(name, value, ref)` un
++       enum o un `Optional` che avvolge la sua variante. Ciascuno conserva il valore originale
++       come `#ref`, che `Contrastable.juxtaposition` confronta per primo, così riferimenti uguali
++       sono `Same` senza alcuna visita. `#text` rende l'albero su più righe, indentato; `#short` è
++       un riassunto su una riga (`[..3..]` per una sequenza, il nome del tipo per un prodotto); e
++       `.inspectable` rende `inspect` uguale a `#text`.
+
+=       makes `inspect` the same as `#text`.
+-   refer chiaroscuro.Decomposable
++   refer chiaroscuro.Decomposable
+
+=   refer chiaroscuro.Decomposable
+-   refer chiaroscuro.Juxtaposition
++   refer chiaroscuro.Juxtaposition
+
+-   entry .apply   a `Decomposition` from an optional one, with an `Unset` leaf for absence
+-   entry .inspectable   renders a decomposition as its `#text`
+-       Hand-written rather than derived: the derived instance's anonymous class is rejected
+-       by the Scala.js pipeline.
+-   entry #ref   the original value
+-   entry #text   the tree rendered over several lines, each level indented by two spaces
+-       A product's fields appear as `name:` with their values beneath; a sequence's elements
+-       are numbered from zero; a sum shows as `Name.` before its variant.
+-   entry #text2   a one-line rendering: `Name(field: value, …)`, `[a, b]`, `Name:value`
+-   entry #short   a one-line summary: a leaf's text, `[..n..]` for a sequence, the name of a product
+-   entry #multiline   appends the multi-line rendering to the `TextBuilder` in scope, at an indent
++   entry .apply   una `Decomposition` a partire da una opzionale, con una foglia `Unset` per l'assenza
++   entry .inspectable   rende una scomposizione come il suo `#text`
++       Scritto a mano anziché derivato: la classe anonima dell'istanza derivata viene rifiutata
++       dalla pipeline di Scala.js.
++   entry #ref   il valore originale
++   entry #text   l'albero reso su più righe, con ogni livello indentato di due spazi
++       I campi di un prodotto appaiono come `name:` con i loro valori sotto; gli elementi di una
++       sequenza sono numerati da zero; una somma appare come `Name.` prima della sua variante.
++   entry #text2   una resa su una riga: `Name(field: value, …)`, `[a, b]`, `Name:value`
++   entry #short   un riassunto su una riga: il testo di una foglia, `[..n..]` per una sequenza, il nome di un prodotto
++   entry #multiline   aggiunge la resa su più righe al `TextBuilder` nell'ambito, a un dato rientro
+
+- entry .Juxtaposition   the result of comparing two values: the same, different, or a collation of labelled differences
++ entry .Juxtaposition   il risultato del confronto di due valori: uguali, diversi, o una collazione di differenze etichettate
+
+= entry .Juxtaposition   the result of comparing two values: the same, different, or a collation of labelled differences
+-   detail
++   detail
+
+-       `Same(value)` is one text for both sides; `Different(left, right, difference)` has the
+-       expected text, the observed text and an optional summary of the difference (`+2`,
+-       `-{1}╱+{4}`); `Collation(typeName, comparison, left, right)` is a labelled list of
+-       child juxtapositions — field names for a product, index labels for a sequence, one
+-       per character for text — with the two sides' whole texts. A collation whose children
+-       are all single characters is a text comparison, which the terminal renderer shows as
+-       two banded lines rather than as a table.
++       `Same(value)` è un unico testo per entrambi i lati; `Different(left, right, difference)` ha
++       il testo atteso, il testo osservato e un riassunto opzionale della differenza (`+2`,
++       `-{1}╱+{4}`); `Collation(typeName, comparison, left, right)` è una lista etichettata di
++       giustapposizioni figlie (nomi di campo per un prodotto, etichette di indice per una
++       sequenza, una per carattere per il testo) con i testi interi dei due lati. Una collazione i
++       cui figli sono tutti singoli caratteri è un confronto di testo, che il renderer del
++       terminale mostra come due righe a bande anziché come una tabella.
+
+=       two banded lines rather than as a table.
+=
+-       ```scala
++       ```scala
+
+=       two banded lines rather than as a table.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       t"alpha".contrast(t"alphb") match
++       t"alpha".contrast(t"alphb") match
+
+-         case Juxtaposition.Collation(name, comparison, left, right) => name
++         case Juxtaposition.Collation(name, comparison, left, right) => name
+
+-         case Juxtaposition.Different(left, right, _)                 => t"different"
++         case Juxtaposition.Different(left, right, _)                 => t"different"
+
+-         case Juxtaposition.Same(_)                                   => t"same"
++         case Juxtaposition.Same(_)                                   => t"same"
+
+=         case Juxtaposition.Same(_)                                   => t"same"
+-       ```
++       ```
+
+-       The probably framework flattens a juxtaposition to `TestEvent.CompareRow`s, pre-order
+-       with depth, for a host; `teletypeables.juxtapositionTeletype` renders one for a
+-       terminal.
++       Il framework probably appiattisce una giustapposizione in `TestEvent.CompareRow`, in
++       pre-ordine con la profondità, per un host; `teletypeables.juxtapositionTeletype` ne rende
++       una per un terminale.
+
+=       terminal.
+-   refer chiaroscuro.contrast
++   refer chiaroscuro.contrast
+
+=   refer chiaroscuro.contrast
+-   refer chiaroscuro.Contrastable
++   refer chiaroscuro.Contrastable
+
+-   refer chiaroscuro.JuxtapositionPalette
++   refer chiaroscuro.JuxtapositionPalette
+
+-   entry #singleChar   whether both sides are at most one character: the shape of a text comparison's children
+-   entry #leftWidth   the expected side's width in characters, summed over a collation's children
+-   entry #rightWidth   the observed side's width in characters, summed over a collation's children
++   entry #singleChar   se entrambi i lati sono lunghi al massimo un carattere: la forma dei figli di un confronto di testo
++   entry #leftWidth   la larghezza in caratteri del lato atteso, sommata sui figli di una collazione
++   entry #rightWidth   la larghezza in caratteri del lato osservato, sommata sui figli di una collazione
+
+- entry .Similarity   whether two values are similar enough to be shown as one substitution rather than a deletion and an insertion
++ entry .Similarity   se due valori sono abbastanza simili da essere mostrati come una sola sostituzione anziché come una cancellazione e un inserimento
+
+= entry .Similarity   whether two values are similar enough to be shown as one substitution rather than a deletion and an insertion
+-   detail
++   detail
+
+-       Comparison alone can only say *same* or *different*, so a raw diff of two sequences
+-       reports a changed element as a deletion beside an unrelated insertion. `Similarity`
+-       is the typeclass for the refinement which pairs a removed element with an added one —
+-       a record with the same identifier and a changed field — so that the two are shown as
+-       one substitution broken down to the field which changed. It is contravariant, so an
+-       instance for a supertype serves its subtypes; `.generic` is equality.
++       Il solo confronto può dire soltanto *uguale* o *diverso*, quindi un diff grezzo di due
++       sequenze riporta un elemento modificato come una cancellazione accanto a un inserimento
++       non correlato. `Similarity` è la typeclass per l'affinamento che accoppia un elemento
++       rimosso con uno aggiunto (un record con lo stesso identificatore e un campo modificato),
++       così che i due appaiano come una sola sostituzione scomposta fino al campo che è cambiato.
++       È controvariante, quindi un'istanza per un supertipo serve i suoi sottotipi; `.generic` è
++       l'uguaglianza.
+
+=       instance for a supertype serves its subtypes; `.generic` is equality.
+-   refer chiaroscuro.Contrastable
++   refer chiaroscuro.Contrastable
+
+-   entry .generic   the given for any type: similar when equal
+-   entry #similar   whether two values are similar
++   entry .generic   il given per qualsiasi tipo: simili quando uguali
++   entry #similar   se due valori sono simili
+
+- entry .JuxtapositionPalette   the colours a rendered juxtaposition uses, in sRGB
++ entry .JuxtapositionPalette   i colori che usa una giustapposizione resa, in sRGB
+
+= entry .JuxtapositionPalette   the colours a rendered juxtaposition uses, in sRGB
+-   detail
++   detail
+
+-       A `Palette` (iridescence) with the roles a difference table needs: `#unaccented` for
+-       rules and margins, `#informative` for unchanged values, `#subdued` for de-emphasis,
+-       `#positive` for the expected side and `#negative` for the observed side, besides the
+-       inherited `foreground` and `background`. A real trait rather than a structural
+-       refinement, since structural selection needs runtime reflection, which Scala Native
+-       lacks. The `teletypeables.juxtapositionTeletype` given takes one as a contextual
+-       parameter; the probably framework no longer renders, so a host supplies its own.
++       Una `Palette` (iridescence) con i ruoli di cui ha bisogno una tabella di differenze:
++       `#unaccented` per linee e margini, `#informative` per i valori invariati, `#subdued` per
++       attenuare, `#positive` per il lato atteso e `#negative` per il lato osservato, oltre a
++       `foreground` e `background` ereditati. È un trait vero e proprio anziché un raffinamento
++       strutturale, poiché la selezione strutturale richiede la reflection a runtime, che manca
++       in Scala Native. Il given `teletypeables.juxtapositionTeletype` ne prende uno come
++       parametro contestuale; il framework probably non esegue più la resa, quindi un host
++       fornisce il proprio.
+
+=       parameter; the probably framework no longer renders, so a host supplies its own.
+=
+-       ```scala
++       ```scala
+
+=       parameter; the probably framework no longer renders, so a host supplies its own.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       given palette: JuxtapositionPalette = new JuxtapositionPalette:
++       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+
+=       import soundness.*
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+-         def background: Color in Srgb  = WebColors.Black
++         def background: Color in Srgb  = WebColors.Black
+
+=       import soundness.*
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+-         def foreground: Color in Srgb  = WebColors.White
++         def foreground: Color in Srgb  = WebColors.White
+
+=       import soundness.*
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+=         def foreground: Color in Srgb  = WebColors.White
+-         def unaccented: Color in Srgb  = WebColors.DimGray
++         def unaccented: Color in Srgb  = WebColors.DimGray
+
+=       import soundness.*
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+=         def foreground: Color in Srgb  = WebColors.White
+=         def unaccented: Color in Srgb  = WebColors.DimGray
+-         def informative: Color in Srgb = WebColors.Silver
++         def informative: Color in Srgb = WebColors.Silver
+
+=       import soundness.*
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+=         def foreground: Color in Srgb  = WebColors.White
+=         def unaccented: Color in Srgb  = WebColors.DimGray
+=         def informative: Color in Srgb = WebColors.Silver
+-         def subdued: Color in Srgb     = WebColors.DimGray
++         def subdued: Color in Srgb     = WebColors.DimGray
+
+=       import soundness.*
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+=         def foreground: Color in Srgb  = WebColors.White
+=         def unaccented: Color in Srgb  = WebColors.DimGray
+=         def informative: Color in Srgb = WebColors.Silver
+=         def subdued: Color in Srgb     = WebColors.DimGray
+-         def positive: Color in Srgb    = WebColors.LimeGreen
++         def positive: Color in Srgb    = WebColors.LimeGreen
+
+=       import soundness.*
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+=         def foreground: Color in Srgb  = WebColors.White
+=         def unaccented: Color in Srgb  = WebColors.DimGray
+=         def informative: Color in Srgb = WebColors.Silver
+=         def subdued: Color in Srgb     = WebColors.DimGray
+=         def positive: Color in Srgb    = WebColors.LimeGreen
+-         def negative: Color in Srgb    = WebColors.Red
++         def negative: Color in Srgb    = WebColors.Red
+
+=         def negative: Color in Srgb    = WebColors.Red
+-       ```
++       ```
+
+-   refer chiaroscuro.teletypeables
++   refer chiaroscuro.teletypeables
+
+-   entry #Form   the colour form: `Srgb`
+-   entry #unaccented   rules, margins and the border of a table
+-   entry #informative   values which are the same on both sides
+-   entry #subdued   de-emphasised text
+-   entry #positive   the expected side
+-   entry #negative   the observed side
++   entry #Form   la forma del colore: `Srgb`
++   entry #unaccented   le linee, i margini e il bordo di una tabella
++   entry #informative   i valori che sono uguali su entrambi i lati
++   entry #subdued   il testo attenuato
++   entry #positive   il lato atteso
++   entry #negative   il lato osservato
+
+- entry .teletypeables   the terminal rendering of a `Juxtaposition`, a given to import by name
++ entry .teletypeables   la resa per terminale di una `Juxtaposition`, un given da importare per nome
+
+= entry .teletypeables   the terminal rendering of a `Juxtaposition`, a given to import by name
+-   detail
++   detail
+
+-       In `chiaroscuro.render`. The given is not in `Juxtaposition`'s implicit scope, and
+-       escapade renders any `Showable` value unstyled, so a call site which fails to import
+-       it degrades silently — printing `Collation(Text,List(…))` — rather than failing to
+-       compile.
++       In `chiaroscuro.render`. Il given non si trova nell'ambito implicito di `Juxtaposition`, ed
++       escapade rende senza stile qualsiasi valore `Showable`, quindi un punto di chiamata che non
++       lo importa degrada in silenzio, stampando `Collation(Text,List(…))`, anziché non compilare.
+
+=       compile.
+=
+-       ```scala
++       ```scala
+
+=       compile.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import teletypeables.juxtapositionTeletype
++       import teletypeables.juxtapositionTeletype
+
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+-       given charMeasurable: Char is Measurable = _.toString.tt.metrics
++       given charMeasurable: Char is Measurable = _.toString.tt.metrics
+
+=       given charMeasurable: Char is Measurable = _.toString.tt.metrics
+=
+-       given palette: JuxtapositionPalette = new JuxtapositionPalette:
++       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+
+=       given charMeasurable: Char is Measurable = _.toString.tt.metrics
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+-         def background: Color in Srgb  = WebColors.Black
++         def background: Color in Srgb  = WebColors.Black
+
+=       given charMeasurable: Char is Measurable = _.toString.tt.metrics
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+-         def foreground: Color in Srgb  = WebColors.White
++         def foreground: Color in Srgb  = WebColors.White
+
+=       given charMeasurable: Char is Measurable = _.toString.tt.metrics
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+=         def foreground: Color in Srgb  = WebColors.White
+-         def unaccented: Color in Srgb  = WebColors.DimGray
++         def unaccented: Color in Srgb  = WebColors.DimGray
+
+=       given charMeasurable: Char is Measurable = _.toString.tt.metrics
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+=         def foreground: Color in Srgb  = WebColors.White
+=         def unaccented: Color in Srgb  = WebColors.DimGray
+-         def informative: Color in Srgb = WebColors.Silver
++         def informative: Color in Srgb = WebColors.Silver
+
+=       given charMeasurable: Char is Measurable = _.toString.tt.metrics
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+=         def foreground: Color in Srgb  = WebColors.White
+=         def unaccented: Color in Srgb  = WebColors.DimGray
+=         def informative: Color in Srgb = WebColors.Silver
+-         def subdued: Color in Srgb     = WebColors.DimGray
++         def subdued: Color in Srgb     = WebColors.DimGray
+
+=       given charMeasurable: Char is Measurable = _.toString.tt.metrics
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+=         def foreground: Color in Srgb  = WebColors.White
+=         def unaccented: Color in Srgb  = WebColors.DimGray
+=         def informative: Color in Srgb = WebColors.Silver
+=         def subdued: Color in Srgb     = WebColors.DimGray
+-         def positive: Color in Srgb    = WebColors.LimeGreen
++         def positive: Color in Srgb    = WebColors.LimeGreen
+
+=       given charMeasurable: Char is Measurable = _.toString.tt.metrics
+=
+=       given palette: JuxtapositionPalette = new JuxtapositionPalette:
+=         def background: Color in Srgb  = WebColors.Black
+=         def foreground: Color in Srgb  = WebColors.White
+=         def unaccented: Color in Srgb  = WebColors.DimGray
+=         def informative: Color in Srgb = WebColors.Silver
+=         def subdued: Color in Srgb     = WebColors.DimGray
+=         def positive: Color in Srgb    = WebColors.LimeGreen
+-         def negative: Color in Srgb    = WebColors.Red
++         def negative: Color in Srgb    = WebColors.Red
+
+-       24.contrast(24).teletype.plain                // t"The value 24 was expected"
++       24.contrast(24).teletype.plain                // t"The value 24 was expected"
+
+-       t"alpha".contrast(t"alphb").teletype.plain
++       t"alpha".contrast(t"alphb").teletype.plain
+
+=       t"alpha".contrast(t"alphb").teletype.plain
+-       ```
++       ```
+
+-   entry .juxtapositionTeletype   renders a `Juxtaposition` as styled terminal text
+-       Needs a `Text is Measurable` (for column widths) and a `JuxtapositionPalette`. A
+-       `Same` renders as _The value `v` was expected_; a `Different` as _The result `right`
+-       did not equal `left`_; a `Collation` of single characters as two banded lines, the
+-       expected above the observed with differing characters highlighted and character
+-       offsets in the margins, wrapped at 110 columns; and any other `Collation` as a table
+-       with the tree of labels, an `Expected` column, an `Observed` column and a `Details`
+-       column holding each difference (or the Levenshtein distance of two differing texts).
++   entry .juxtapositionTeletype   rende una `Juxtaposition` come testo per terminale con stile
++       Richiede un `Text is Measurable` (per le larghezze delle colonne) e una
++       `JuxtapositionPalette`. Un `Same` si rende come _The value `v` was expected_; un
++       `Different` come _The result `right` did not equal `left`_; una `Collation` di singoli
++       caratteri come due righe a bande, quella attesa sopra quella osservata, con i caratteri
++       diversi evidenziati e gli offset dei caratteri nei margini, andando a capo a 110 colonne;
++       e qualsiasi altra `Collation` come una tabella con l'albero delle etichette, una colonna
++       `Expected`, una colonna `Observed` e una colonna `Details` che contiene ciascuna
++       differenza (o la distanza di Levenshtein di due testi diversi).

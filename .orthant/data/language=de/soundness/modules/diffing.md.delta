@@ -1,0 +1,590 @@
+orthant 1 language
+
+- ## Diffing
++ ## Diffs
+
+- ### About
++ ### Überblick
+
+- A [diff](https://en.wikipedia.org/wiki/Diff) describes how one sequence becomes another. `diff`
+- takes two sequences and returns a `Diff`: an [immutable] value which lists the insertions, the
+- deletions and the unchanged elements that connect them.
++ Ein [Diff](https://en.wikipedia.org/wiki/Diff) beschreibt, wie aus einer Folge eine andere
++ wird. `diff` nimmt zwei Folgen und gibt einen `Diff` zurück: einen [unveränderlichen][unveränderlich]
++ Wert, der die Einfügungen, die Löschungen und die unveränderten Elemente auflistet, die sie
++ verbinden.
+
+- A diff can be applied to the original as a patch, or inverted. It can be written in the familiar
+- unix format and read back. It can also be refined into an *aligned* diff, which pairs each
+- deletion with the insertion that replaced it.
++ Ein Diff lässt sich als Patch auf das Original anwenden oder umkehren. Er lässt sich im
++ vertrauten Unix-Format schreiben und wieder einlesen. Außerdem lässt er sich zu einem
++ *ausgerichteten* Diff verfeinern, der jede Löschung mit der Einfügung paart, die sie ersetzt hat.
+
+- ### On differences
++ ### Über Unterschiede
+
+- Version control, synchronization and test output all depend on diffs. They are usually met as
+- text: the output of a tool, read by eye or picked apart with a regular expression.
++ Versionsverwaltung, Synchronisierung und Testausgaben hängen alle von Diffs ab. Gewöhnlich
++ begegnet man ihnen als Text: als Ausgabe eines Tools, mit dem Auge gelesen oder mit einem
++ regulären Ausdruck zerlegt.
+
+- But a diff is data. It is a precise, minimal edit script, computed by
+- [Myers' algorithm](http://www.xmailserver.org/diff2.pdf), and it is useful wherever two versions
+- of any sequence must be reconciled. Here it is a value over elements of any type, not only lines
+- of text, and the caller may replace equality with a looser test of similarity.
++ Ein Diff ist jedoch Daten. Er ist ein präzises, minimales Bearbeitungsskript, berechnet mit dem
++ [Algorithmus von Myers](http://www.xmailserver.org/diff2.pdf), und er ist überall nützlich, wo
++ zwei Versionen einer beliebigen Folge abgeglichen werden müssen. Hier ist er ein Wert über
++ Elemente beliebigen Typs, nicht nur über Textzeilen, und der Aufrufer kann Gleichheit durch
++ einen lockereren Ähnlichkeitstest ersetzen.
+
+- Everything comes from the `soundness` package. The second import chooses a
+- [strategy](errors.md#choosing-a-strategy) for errors, and the third lets the samples print their
+- results:
++ Alles stammt aus dem Paket `soundness`. Der zweite Import wählt eine
++ [Strategie](errors.md#choosing-a-strategy) für Fehler, und der dritte lässt die Beispiele ihre
++ Ergebnisse ausgeben:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- import Diff.{Del, Ins, Par, Sub}
++ import Diff.{Del, Ins, Par, Sub}
+
+= import Diff.{Del, Ins, Par, Sub}
+- ```
++ ```
+
+- ### Computing a diff
++ ### Einen Diff berechnen
+
+- `diff` compares two sequences, and returns the edit script:
++ `diff` vergleicht zwei Folgen und gibt das Bearbeitungsskript zurück:
+
+= `diff` compares two sequences, and returns the edit script:
+=
+- ```scala
++ ```scala
+
+- val letters = diff(Sequence('A', 'C'), Sequence('A', 'B', 'C'))
++ val letters = diff(Sequence('A', 'C'), Sequence('A', 'B', 'C'))
+
+= val letters = diff(Sequence('A', 'C'), Sequence('A', 'B', 'C'))
+- ```
++ ```
+
+- Each edit is an insertion (`Diff.Ins`), a deletion (`Diff.Del`) or an unchanged element
+- (`Diff.Par`), and holds its position in the left sequence, the right sequence, or both. The edits
+- of a `Diff` are an ordinary sequence, which a pattern match takes apart:
++ Jede Bearbeitung ist eine Einfügung (`Diff.Ins`), eine Löschung (`Diff.Del`) oder ein
++ unverändertes Element (`Diff.Par`) und enthält ihre Position in der linken Folge, der rechten
++ Folge oder in beiden. Die Bearbeitungen eines `Diff` sind eine gewöhnliche Folge, die ein
++ Musterabgleich zerlegt:
+
+= of a `Diff` are an ordinary sequence, which a pattern match takes apart:
+=
+- ```scala fuel
++ ```scala fuel
+
+= of a `Diff` are an ordinary sequence, which a pattern match takes apart:
+=
+= ```scala fuel
+- run
++ run
+
+= of a `Diff` are an ordinary sequence, which a pattern match takes apart:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- letters.edits.each:
++ letters.edits.each:
+
+-   case Par(left, right, value) => Out.println(t"  ${value.inspect}  left $left, right $right")
++   case Par(left, right, value) => Out.println(t"  ${value.inspect}  left $left, right $right")
+
+-   case Ins(right, value)       => Out.println(t"+ ${value.inspect}  right $right")
++   case Ins(right, value)       => Out.println(t"+ ${value.inspect}  right $right")
+
+-   case Del(left, value)        => Out.println(t"- ${value.inspect}  left $left")
++   case Del(left, value)        => Out.println(t"- ${value.inspect}  left $left")
+
+=   case Del(left, value)        => Out.println(t"- ${value.inspect}  left $left")
+- ```
++ ```
+
+- `A` and `C` are in both sequences, and `B` was inserted at position 1 of the right one. The
+- value of a `Par` or a `Del` is an [optional] value, since a diff need not carry the elements it
+- keeps or removes.
++ `A` und `C` sind in beiden Folgen, und `B` wurde an Position 1 der rechten eingefügt. Der Wert
++ eines `Par` oder eines `Del` ist ein [optionaler][optional] Wert, da ein Diff die Elemente, die
++ er behält oder entfernt, nicht mitführen muss.
+
+- The script is minimal: it holds the fewest insertions and deletions which turn the left sequence
+- into the right. The elements may be characters, lines of text, or records. A third argument to
+- `diff` replaces equality with a comparison of the caller's choosing.
++ Das Skript ist minimal: Es enthält die wenigsten Einfügungen und Löschungen, die die linke Folge
++ in die rechte überführen. Die Elemente können Zeichen, Textzeilen oder Datensätze sein. Ein
++ drittes Argument von `diff` ersetzt Gleichheit durch einen Vergleich nach Wahl des Aufrufers.
+
+- ### Applying a patch
++ ### Einen Patch anwenden
+
+- A diff applied to the original sequence gives the target. A difference computed once can
+- therefore be sent elsewhere and replayed:
++ Ein auf die ursprüngliche Folge angewendeter Diff ergibt das Ziel. Ein einmal berechneter
++ Unterschied lässt sich daher anderswohin senden und dort erneut abspielen:
+
+= therefore be sent elsewhere and replayed:
+=
+- ```scala
++ ```scala
+
+- val original = List(t"Macbeth", t"Duncan", t"Banquo")
++ val original = List(t"Macbeth", t"Duncan", t"Banquo")
+
+- val revised = List(t"Macbeth", t"Malcolm", t"Macduff", t"Banquo")
++ val revised = List(t"Macbeth", t"Malcolm", t"Macduff", t"Banquo")
+
+- val changes = diff
++ val changes = diff
+
+-   ( Sequence(t"Macbeth", t"Duncan", t"Banquo"),
++   ( Sequence(t"Macbeth", t"Duncan", t"Banquo"),
+
+-     Sequence(t"Macbeth", t"Malcolm", t"Macduff", t"Banquo") )
++     Sequence(t"Macbeth", t"Malcolm", t"Macduff", t"Banquo") )
+
+=     Sequence(t"Macbeth", t"Malcolm", t"Macduff", t"Banquo") )
+- ```
++ ```
+
+=     Sequence(t"Macbeth", t"Malcolm", t"Macduff", t"Banquo") )
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=     Sequence(t"Macbeth", t"Malcolm", t"Macduff", t"Banquo") )
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=     Sequence(t"Macbeth", t"Malcolm", t"Macduff", t"Banquo") )
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- changes.patch(original).each(Out.println(_))
++ changes.patch(original).each(Out.println(_))
+
+= changes.patch(original).each(Out.println(_))
+- ```
++ ```
+
+- `flip` inverts a diff. Each insertion becomes a deletion, and each deletion an insertion, so
+- the patch which went forward becomes the patch which goes back.
++ `flip` kehrt einen Diff um. Jede Einfügung wird zu einer Löschung und jede Löschung zu einer
++ Einfügung, sodass der Patch, der vorwärts ging, zu dem Patch wird, der zurückgeht.
+
+- ### Aligned differences
++ ### Ausgerichtete Unterschiede
+
+- A plain diff reports a changed element as a deletion and an insertion. For display, and for
+- comparing records, it is more useful to *pair* the two, and to see the new element as a
+- modification of the old.
++ Ein einfacher Diff meldet ein geändertes Element als Löschung und Einfügung. Für die Anzeige und
++ für den Vergleich von Datensätzen ist es nützlicher, die beiden zu *paaren* und das neue Element
++ als Änderung des alten zu sehen.
+
+- `rdiff` does this. It takes a predicate which says whether two elements are similar, and gives
+- `Sub` entries where a deletion and an insertion match. Here two words are similar when their
+- [edit distance](text.md) is small:
++ `rdiff` tut dies. Es nimmt ein Prädikat, das angibt, ob zwei Elemente ähnlich sind, und liefert
++ `Sub`-Einträge, wo eine Löschung und eine Einfügung zusammenpassen. Hier sind zwei Wörter
++ ähnlich, wenn ihr [Bearbeitungsabstand](text.md) klein ist:
+
+= [edit distance](text.md) is small:
+=
+- ```scala
++ ```scala
+
+- import proximities.levenshteinProximity
++ import proximities.levenshteinProximity
+
+- import caseSensitivity.caseSensitive
++ import caseSensitivity.caseSensitive
+
+- val italian = Sequence(t"zero", t"uno", t"due", t"tre")
++ val italian = Sequence(t"zero", t"uno", t"due", t"tre")
+
+- val spanish = Sequence(t"cero", t"uno", t"dos", t"tres")
++ val spanish = Sequence(t"cero", t"uno", t"dos", t"tres")
+
+= val spanish = Sequence(t"cero", t"uno", t"dos", t"tres")
+- ```
++ ```
+
+= val spanish = Sequence(t"cero", t"uno", t"dos", t"tres")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val spanish = Sequence(t"cero", t"uno", t"dos", t"tres")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val spanish = Sequence(t"cero", t"uno", t"dos", t"tres")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- diff(italian, spanish).rdiff(_.proximity(_) < 4).changes.each:
++ diff(italian, spanish).rdiff(_.proximity(_) < 4).changes.each:
+
+-   case Sub(_, _, left, right) => Out.println(t"~ ${left.inspect} became ${right.inspect}")
++   case Sub(_, _, left, right) => Out.println(t"~ ${left.inspect} became ${right.inspect}")
+
+-   case Par(_, _, value)       => Out.println(t"  ${value.inspect}")
++   case Par(_, _, value)       => Out.println(t"  ${value.inspect}")
+
+-   case Ins(_, value)          => Out.println(t"+ ${value.inspect}")
++   case Ins(_, value)          => Out.println(t"+ ${value.inspect}")
+
+-   case Del(_, value)          => Out.println(t"- ${value.inspect}")
++   case Del(_, value)          => Out.println(t"- ${value.inspect}")
+
+=   case Del(_, value)          => Out.println(t"- ${value.inspect}")
+- ```
++ ```
+
+- Similar words pair as substitutions. Only an element which is really new, or really gone, would
+- remain as an insertion or a deletion.
++ Ähnliche Wörter werden als Ersetzungen gepaart. Nur ein Element, das wirklich neu oder wirklich
++ verschwunden ist, bliebe als Einfügung oder Löschung bestehen.
+
+- Between them, `diff` and `rdiff` produce four kinds of edit:
++ Zusammen erzeugen `diff` und `rdiff` vier Arten von Bearbeitungen:
+
+- ```tabular
++ ```tabular
+
+- column  Edit
+- column  Records
+- column  Positions
++ column  Bearbeitung
++ column  Hält fest
++ column  Positionen
+
+- column  In
++ column  In
+
+- row  `Ins`  an element of the right sequence only  right  `Diff`, `RDiff`
+- row  `Del`  an element of the left sequence only  left  `Diff`, `RDiff`
+- row  `Par`  an element common to both  left and right  `Diff`, `RDiff`
+- row  `Sub`  a left element paired with its right replacement  left and right  `RDiff` only
++ row  `Ins`  ein Element nur der rechten Folge  rechts  `Diff`, `RDiff`
++ row  `Del`  ein Element nur der linken Folge  links  `Diff`, `RDiff`
++ row  `Par`  ein Element, das beiden gemeinsam ist  links und rechts  `Diff`, `RDiff`
++ row  `Sub`  ein linkes Element, gepaart mit seinem rechten Ersatz  links und rechts  nur `RDiff`
+
+= row  `Sub`  a left element paired with its right replacement  left and right  `RDiff` only
+- ```
++ ```
+
+- Pairing is done within each changed *region*, and only where a region holds at least one
+- deletion and at least one insertion, since only there is a substitution possible. Within such a
+- region, the order in which deletions and insertions are applied does not change the result. That
+- leaves the algorithm free to pair some of them, and to arrange the rest around the pairs.
++ Gepaart wird innerhalb jedes geänderten *Bereichs*, und nur dort, wo ein Bereich mindestens eine
++ Löschung und mindestens eine Einfügung enthält, da nur dort eine Ersetzung möglich ist.
++ Innerhalb eines solchen Bereichs ändert die Reihenfolge, in der Löschungen und Einfügungen
++ angewendet werden, das Ergebnis nicht. Das lässt dem Algorithmus die Freiheit, einige davon zu
++ paaren und die übrigen um die Paare herum anzuordnen.
+
+- A second parameter, `subSize`, covers the case where similarity is the wrong test. A short
+- region with equal numbers of insertions and deletions becomes substitutions whatever the
+- predicate says. By default this applies to a region with one of each. At that size the
+- correspondence is obvious, even when the two values have nothing in common as text.
++ Ein zweiter Parameter, `subSize`, deckt den Fall ab, in dem Ähnlichkeit der falsche Test ist.
++ Ein kurzer Bereich mit gleich vielen Einfügungen und Löschungen wird zu Ersetzungen, was immer
++ das Prädikat sagt. Standardmäßig gilt dies für einen Bereich mit je einer davon. Bei dieser
++ Größe ist die Entsprechung offensichtlich, selbst wenn die beiden Werte als Text nichts
++ gemeinsam haben.
+
+- ### The unix format
++ ### Das Unix-Format
+
+- A diff of text is written in the conventional format with `serialize`:
++ Ein Diff von Text wird mit `serialize` im herkömmlichen Format geschrieben:
+
+= A diff of text is written in the conventional format with `serialize`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A diff of text is written in the conventional format with `serialize`:
+=
+= ```scala fuel
+- run
++ run
+
+= A diff of text is written in the conventional format with `serialize`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- changes.serialize.each(Out.println(_))
++ changes.serialize.each(Out.println(_))
+
+= changes.serialize.each(Out.println(_))
+- ```
++ ```
+
+- The same format is read back into a `Diff`, so a patch file is readable data:
++ Dasselbe Format wird wieder in einen `Diff` eingelesen, sodass eine Patch-Datei lesbare Daten
++ ist:
+
+= The same format is read back into a `Diff`, so a patch file is readable data:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The same format is read back into a `Diff`, so a patch file is readable data:
+=
+= ```scala fuel
+- run
++ run
+
+= The same format is read back into a `Diff`, so a patch file is readable data:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val patch: Chain[Text] = changes.serialize
++ val patch: Chain[Text] = changes.serialize
+
+- patch.read[Diff[Text]].patch(original).each(Out.println(_))
++ patch.read[Diff[Text]].patch(original).each(Out.println(_))
+
+= patch.read[Diff[Text]].patch(original).each(Out.println(_))
+- ```
++ ```
+
+- ### Redrafts
++ ### Redrafts
+
+- The unix format is exact. A patch must state its context and its line numbers correctly, or it
+- does not apply. That suits a version-control system. It does not suit a person, or a
+- [language model](llm.md), proposing an edit in prose.
++ Das Unix-Format ist exakt. Ein Patch muss seinen Kontext und seine Zeilennummern korrekt
++ angeben, sonst lässt er sich nicht anwenden. Das passt zu einem Versionsverwaltungssystem. Es
++ passt nicht zu einem Menschen oder einem [Sprachmodell](llm.md), das eine Bearbeitung in Prosa
++ vorschlägt.
+
+- A *redraft* is the forgiving form. It states only the lines to remove and the lines to add.
+- Unchanged lines are left out, and the redraft finds where its lines belong:
++ Ein *Redraft* ist die nachsichtige Form. Er gibt nur die zu entfernenden und die
++ hinzuzufügenden Zeilen an. Unveränderte Zeilen werden weggelassen, und der Redraft findet
++ selbst, wohin seine Zeilen gehören:
+
+= Unchanged lines are left out, and the redraft finds where its lines belong:
+=
+- ```scala
++ ```scala
+
+- val source = Sequence(t"line1", t"line2", t"line3")
++ val source = Sequence(t"line1", t"line2", t"line3")
+
+= val source = Sequence(t"line1", t"line2", t"line3")
+- ```
++ ```
+
+= val source = Sequence(t"line1", t"line2", t"line3")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val source = Sequence(t"line1", t"line2", t"line3")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val source = Sequence(t"line1", t"line2", t"line3")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Redraft.parse(Chain(t"- line2", t"+ new line 2a")).patch(source).each(Out.println(_))
++ Redraft.parse(Chain(t"- line2", t"+ new line 2a")).patch(source).each(Out.println(_))
+
+= Redraft.parse(Chain(t"- line2", t"+ new line 2a")).patch(source).each(Out.println(_))
+- ```
++ ```
+
+- An addition with no context goes at the start:
++ Eine Hinzufügung ohne Kontext kommt an den Anfang:
+
+= An addition with no context goes at the start:
+=
+- ```scala fuel
++ ```scala fuel
+
+= An addition with no context goes at the start:
+=
+= ```scala fuel
+- run
++ run
+
+= An addition with no context goes at the start:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Redraft.parse(Chain(t"+ line0")).patch(source).each(Out.println(_))
++ Redraft.parse(Chain(t"+ line0")).patch(source).each(Out.println(_))
+
+= Redraft.parse(Chain(t"+ line0")).patch(source).each(Out.println(_))
+- ```
++ ```
+
+- A redraft may name a line which is not in the source at all. That is reported as an error, and
+- the edit is not applied by guesswork:
++ Ein Redraft kann eine Zeile nennen, die gar nicht in der Quelle steht. Das wird als Fehler
++ gemeldet, und die Bearbeitung wird nicht auf gut Glück angewendet:
+
+= the edit is not applied by guesswork:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the edit is not applied by guesswork:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- Redraft.parse(Chain(t"- line9", t"+ line10")).patch(source)
++ Redraft.parse(Chain(t"- line9", t"+ line10")).patch(source)
+
+= Redraft.parse(Chain(t"- line9", t"+ line10")).patch(source)
+- ```
++ ```
+
+- ### Evolution
++ ### Evolution
+
+- A diff compares two versions. An *evolution* follows each element through many. A value which is
+- in the first version and the last is recognized as the same value, even if it disappeared and
+- came back in between:
++ Ein Diff vergleicht zwei Versionen. Eine *Evolution* verfolgt jedes Element durch viele. Ein
++ Wert, der in der ersten und in der letzten Version vorkommt, wird als derselbe Wert erkannt,
++ selbst wenn er zwischendurch verschwunden und wiedergekehrt ist:
+
+= came back in between:
+=
+- ```scala
++ ```scala
+
+- val versions = List(List('d', 'o', 'g'), List('c', 'a', 't'), List('d', 'o', 'g'))
++ val versions = List(List('d', 'o', 'g'), List('c', 'a', 't'), List('d', 'o', 'g'))
+
+- val evolution = evolve(versions)
++ val evolution = evolve(versions)
+
+= val evolution = evolve(versions)
+- ```
++ ```
+
+- Each version is addressed by an ordinal, and is reconstructed exactly as it was:
++ Jede Version wird über eine Ordinalzahl angesprochen und genau so rekonstruiert, wie sie war:
+
+= Each version is addressed by an ordinal, and is reconstructed exactly as it was:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Each version is addressed by an ordinal, and is reconstructed exactly as it was:
+=
+= ```scala fuel
+- run
++ run
+
+= Each version is addressed by an ordinal, and is reconstructed exactly as it was:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(evolution(Ter).inspect)
++ Out.println(evolution(Ter).inspect)
+
+= Out.println(evolution(Ter).inspect)
+- ```
++ ```
+
+- This is the structure which a document history, an undo stack or a series of drafts needs.
++ Dies ist die Struktur, die eine Dokumenthistorie, ein Undo-Stapel oder eine Reihe von Entwürfen
++ braucht.
+
+- ### Related
++ ### Verwandte Themen
+
+- - [Text](text.md) describes `proximity`, the edit distance used above to decide similarity.
+- - [Testing](testing.md) shows a diff when two compared values are not equal.
+- - [Git](git.md) works with the diffs of a repository.
+- - [Collections](collections.md) describes `Sequence`, `Chain` and ordinals such as `Ter`.
+- - [Immutability](../../philosophy/immutability.md) explains why a diff is a value.
++ - [Text](text.md) beschreibt `proximity`, den oben zur Bestimmung der Ähnlichkeit verwendeten
++   Bearbeitungsabstand.
++ - [Testen](testing.md) zeigt einen Diff, wenn zwei verglichene Werte nicht gleich sind.
++ - [Git](git.md) arbeitet mit den Diffs eines Repositorys.
++ - [Collections](collections.md) beschreibt `Sequence`, `Chain` und Ordinalzahlen wie `Ter`.
++ - [Unveränderlichkeit](../../philosophy/immutability.md) erklärt, warum ein Diff ein Wert ist.

@@ -1,0 +1,866 @@
+orthant 1 language
+
+- ## Daemons
++ ## Daemons
+
+- ### About
++ ### Visão geral
+
+- A command-line tool on the JVM pays the JVM's startup cost on every invocation, and loses
+- the optimization which the just-in-time compiler had built up. That makes even a fast
+- program feel slow at the shell.
++ Uma ferramenta de linha de comando na JVM paga o custo de inicialização da JVM a cada
++ invocação e perde a otimização que o compilador just-in-time tinha acumulado. Isso faz até um
++ programa rápido parecer lento no shell.
+
+- Making the application resident removes the cost. The first invocation starts a daemon.
+- Every later one is dispatched to the running process by a small native launcher, with its
+- arguments, environment, working directory, standard streams and signals all forwarded
+- faithfully.
++ Tornar a aplicação residente elimina o custo. A primeira invocação inicia um daemon. Cada
++ invocação seguinte é despachada para o processo em execução por um pequeno launcher nativo,
++ com seus argumentos, ambiente, diretório de trabalho, streams padrão e sinais, todos
++ encaminhados fielmente.
+
+- The change costs one word. The body of a
+- [command-line application](cli.md) which is wrapped in `cli`, instead of in `application`,
+- becomes a daemon. Packaging produces a single self-contained executable, which is the native
+- launcher with the application inside, and the launcher can verify and apply signed upgrades
+- of itself.
++ A mudança custa uma palavra. O corpo de uma
++ [aplicação de linha de comando](cli.md) envolvido em `cli`, em vez de `application`, se torna
++ um daemon. O empacotamento produz um único executável autocontido, que é o launcher nativo com
++ a aplicação dentro, e o launcher pode verificar e aplicar upgrades assinados de si mesmo.
+
+- ### On daemonized applications
++ ### Sobre aplicações em daemon
+
+- The idea is old. Nailgun kept a JVM warm for exactly this reason. But the details decide
+- whether it can be trusted. Each invocation must behave *exactly* as a fresh process would:
+- with its own environment and working directory, its own standard input and exit code, and
+- with Ctrl-C reaching the right invocation, and not the daemon. And the daemon must manage
+- itself: starting on demand, shutting down when it is idle, and surviving upgrades.
++ A ideia é antiga. O Nailgun mantinha uma JVM aquecida exatamente por esse motivo. Mas são os
++ detalhes que decidem se é possível confiar nela. Cada invocação deve se comportar *exatamente*
++ como um processo novo se comportaria: com seu próprio ambiente e diretório de trabalho, sua
++ própria entrada padrão e código de saída, e com o Ctrl-C chegando à invocação certa, e não ao
++ daemon. E o daemon deve gerenciar a si mesmo: iniciar sob demanda, encerrar quando estiver
++ ocioso e sobreviver a upgrades.
+
+- Here those details are handled in a native launcher for each platform, and in a protocol
+- over a Unix domain [socket](sockets.md). The Scala application simply runs, with many
+- invocations at once, each with its own faithful context. A daemon which serves each
+- invocation against that invocation's own environment is
+- [declarative context](../../philosophy/declarative-context.md) taken seriously: nothing about
+- the caller is global.
++ Aqui esses detalhes são tratados em um launcher nativo para cada plataforma e em um protocolo
++ sobre um [socket](sockets.md) de domínio Unix. A aplicação Scala simplesmente executa, com
++ muitas invocações ao mesmo tempo, cada uma com seu próprio contexto fiel. Um daemon que atende
++ cada invocação com o próprio ambiente dessa invocação é o
++ [contexto declarativo](../../philosophy/declarative-context.md) levado a sério: nada sobre quem
++ chama é global.
+
+- The protocol is a [TEL](tel.md#bintel) schema, `ethereal-launcher`, whose text is
+- `Launcher.schemaText`. Every connection which the launcher opens begins with one BinTEL
+- document of that schema: an invocation with its arguments and environment, a signal, or a
+- request for an exit status. The daemon answers in kind. Both sides check the schema's
+- signature before reading a field, so a launcher and a daemon which were built against
+- different contracts refuse each other, instead of misreading each other.
++ O protocolo é um schema [TEL](tel.md#bintel), `ethereal-launcher`, cujo texto é
++ `Launcher.schemaText`. Toda conexão que o launcher abre começa com um documento BinTEL desse
++ schema: uma invocação com seus argumentos e ambiente, um sinal ou uma requisição de status de
++ saída. O daemon responde da mesma forma. Os dois lados verificam a assinatura do schema antes
++ de ler qualquer campo, então um launcher e um daemon construídos com contratos diferentes se
++ recusam mutuamente, em vez de se interpretarem errado.
+
+- Everything comes from the `soundness` package, beside the imports which a command-line
+- application needs:
++ Tudo vem do pacote `soundness`, além dos imports de que uma aplicação de linha de comando
++ precisa:
+
+= application needs:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import backstops.stackTraceBackstop
++ import backstops.stackTraceBackstop
+
+- import executives.completionsExecutive
++ import executives.completionsExecutive
+
+- import interpreters.posixInterpreter
++ import interpreters.posixInterpreter
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+= import threads.virtualThreads
+- ```
++ ```
+
+- The samples on this page define whole programs, so they are compiled but not run.
++ Os exemplos desta página definem programas inteiros, então são compilados, mas não executados.
+
+- ### A daemon application
++ ### Uma aplicação daemon
+
+- `cli` is the daemonized counterpart of `application`. It has the same body, and the same
+- structure for [completions](cli.md#tab-completions), and runs resident:
++ `cli` é a contraparte em daemon de `application`. Tem o mesmo corpo e a mesma estrutura para
++ [sugestões de conclusão](cli.md#tab-completions), e executa como residente:
+
+= structure for [completions](cli.md#tab-completions), and runs resident:
+=
+- ```scala
++ ```scala
+
+- @main
++ @main
+
+- def mytool(): Unit = cli:
++ def mytool(): Unit = cli:
+
+= def mytool(): Unit = cli:
+-   execute:
++   execute:
+
+-     Out.println(t"Hello world")
++     Out.println(t"Hello world")
+
+=     Out.println(t"Hello world")
+-     Exit.Ok
++     Exit.Ok
+
+=     Out.println(t"Hello world")
+=     Exit.Ok
+- ```
++ ```
+
+- `cli` takes no arguments. The launcher forwards them, with the environment, working
+- directory and standard streams of the shell which invoked it, and the body sees them through
+- the same `arguments`, `Out` and `Exit` as an ordinary application.
++ `cli` não recebe argumentos. O launcher os encaminha, com o ambiente, o diretório de trabalho
++ e os streams padrão do shell que o invocou, e o corpo os vê pelos mesmos `arguments`, `Out` e
++ `Exit` de uma aplicação comum.
+
+- The first run starts the daemon. Later runs connect to it, and return at the speed of a
+- native tool. Tab completions gain the most: each request for completions is an invocation,
+- and a resident process answers in milliseconds.
++ A primeira execução inicia o daemon. As execuções seguintes se conectam a ele e retornam na
++ velocidade de uma ferramenta nativa. A conclusão com tab é a que mais ganha: cada requisição de
++ sugestões é uma invocação, e um processo residente responde em milissegundos.
+
+- #### Output
++ #### Saída
+
+- Output must go through `Out` and `Err`. Scala's own `println` writes to the JVM's global
+- `System.out`, which belongs to the *daemon* process, not to any client, so whatever it
+- prints reaches no user, and is ordinarily lost. `Out` and `Err` resolve the
+- [`Stdio`](streams.md#standard-streams) of the current invocation, which is the client's.
++ A saída deve passar por `Out` e `Err`. O próprio `println` do Scala escreve no `System.out`
++ global da JVM, que pertence ao processo do *daemon*, não a algum cliente, então o que ele
++ imprime não chega a nenhum usuário e normalmente se perde. `Out` e `Err` resolvem o
++ [`Stdio`](streams.md#standard-streams) da invocação atual, que é o do cliente.
+
+- When the reader of that stream goes away, as in `mytool | head -1` once `head` has exited,
+- the launcher says so. The invocation's next write to the stream raises an `Egress.Error`,
+- which ends the invocation with status 141, as `SIGPIPE` would end a process writing to a
+- pipe.
++ Quando o leitor desse stream vai embora, como em `mytool | head -1` depois que `head` termina,
++ o launcher avisa. A próxima escrita da invocação no stream lança um `Egress.Error`, que encerra
++ a invocação com status 141, como `SIGPIPE` encerraria um processo que escreve em um pipe.
+
+- Code which cannot be changed, such as a library which prints to `System.out`, is redirected
+- with `Stdio.divert`. The diversion belongs to a *thread*, not to the JVM. It follows the
+- thread on which it is made, the threads which are started under it, and every task which is
+- spawned within it, so a daemon may divert around several clients at once, without their
+- output crossing.
++ Código que não pode ser alterado, como uma biblioteca que imprime em `System.out`, é
++ redirecionado com `Stdio.divert`. O desvio pertence a uma *thread*, não à JVM. Ele acompanha a
++ thread em que é feito, as threads iniciadas sob ela e toda tarefa criada dentro dele, então um
++ daemon pode desviar a saída de vários clientes ao mesmo tempo, sem que ela se cruze.
+
+- Arguments and the values of environment variables arrive as text. A sequence of bytes in
+- either which is not valid UTF-8 is delivered with U+FFFD in its place. That is the
+- substitution which the JVM itself makes for its own arguments, so an application sees what it
+- would have seen if it were run directly.
++ Os argumentos e os valores das variáveis de ambiente chegam como texto. Uma sequência de bytes
++ em qualquer um deles que não seja UTF-8 válido é entregue com U+FFFD em seu lugar. Essa é a
++ substituição que a própria JVM faz para seus argumentos, então uma aplicação vê o que teria
++ visto se fosse executada diretamente.
+
+- ### What the invocation knows about its client
++ ### O que a invocação sabe sobre seu cliente
+
+- The daemon holds a socket, not the client's process, so everything which it knows about the
+- invocation is what the launcher told it. The invocation's `resident`, a `Resident`, is its
+- handle on the daemon, and is where that knowledge is read:
++ O daemon mantém um socket, não o processo do cliente, então tudo o que ele sabe sobre a
++ invocação é o que o launcher lhe contou. O `resident` da invocação, um `Resident`, é seu handle
++ sobre o daemon, e é onde esse conhecimento é lido:
+
+= handle on the daemon, and is where that knowledge is read:
+=
+- ```tabular
++ ```tabular
+
+- column  Member
+- column  Is
+- row  `resident.cliInput`, `cliOutput`, `cliError`  whether each standard stream is a `Terminus.Terminal` or a `Terminus.Pipe`
+- row  `resident.invokedAs`  the name the executable was invoked by: `argv[0]` as the caller supplied it
+- row  `resident.umask`  the invocation's file-creation mask
+- row  `resident.windowSize`  the client terminal's size, measured when the invocation began and on every resize
+- row  `resident.buildId`  the running build's identifier
++ column  Membro
++ column  É
++ row  `resident.cliInput`, `cliOutput`, `cliError`  se cada stream padrão é um `Terminus.Terminal` ou um `Terminus.Pipe`
++ row  `resident.invokedAs`  o nome pelo qual o executável foi invocado: `argv[0]` tal como quem chama o forneceu
++ row  `resident.umask`  a máscara de criação de arquivos da invocação
++ row  `resident.windowSize`  o tamanho do terminal do cliente, medido quando a invocação começou e a cada redimensionamento
++ row  `resident.buildId`  o identificador do build em execução
+
+= row  `resident.buildId`  the running build's identifier
+- ```
++ ```
+
+- One executable which is installed under several names, by symbolic links, can therefore
+- dispatch on `invokedAs`, while every alias shares one warm daemon:
++ Um único executável instalado sob vários nomes, por links simbólicos, pode portanto despachar
++ por `invokedAs`, enquanto todos os aliases compartilham um único daemon aquecido:
+
+= dispatch on `invokedAs`, while every alias shares one warm daemon:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- def multicall(): Unit = cli:
++ def multicall(): Unit = cli:
+
+= def multicall(): Unit = cli:
+-   execute:
++   execute:
+
+-     resident.invokedAs.let(_.cut(t"/").last) match
++     resident.invokedAs.let(_.cut(t"/").last) match
+
+-       case t"gunzip" => Out.println(t"decompressing")
++       case t"gunzip" => Out.println(t"decompressing")
+
+-       case _         => Out.println(t"compressing")
++       case _         => Out.println(t"compressing")
+
+=       case _         => Out.println(t"compressing")
+-     Exit.Ok
++     Exit.Ok
+
+=       case _         => Out.println(t"compressing")
+=     Exit.Ok
+- ```
++ ```
+
+- The [filesystem](filesystem.md#creation-masks) applies `umask` to whatever the invocation
+- creates. The invocation's `Termcap` reads the same measurement as `windowSize`, so
+- [tables](tables.md) and wrapped text fit the terminal as it is now.
++ O [sistema de arquivos](filesystem.md#creation-masks) aplica `umask` a tudo o que a invocação
++ cria. O `Termcap` da invocação lê a mesma medida que `windowSize`, então
++ [tabelas](tables.md) e texto com quebra de linha se ajustam ao terminal como ele está agora.
+
+- ### Signals and shutdown
++ ### Sinais e encerramento
+
+- An invocation traps the signals which it cares about, and the response reaches the code of
+- that invocation, not the shared process. A trap sees a `Signal`: the interrupt itself, and
+- whatever the launcher attached to it. That is the terminal's new size, with `WINCH` and
+- `CONT`. On Windows, it is the time which the system allows after an event of closing, logging
+- off or shutting down, before it ends the client regardless:
++ Uma invocação faz trap dos sinais que lhe interessam, e a resposta chega ao código dessa
++ invocação, não ao processo compartilhado. Um trap vê um `Signal`: a própria interrupção e o que
++ quer que o launcher tenha anexado a ela. Isso é o novo tamanho do terminal, com `WINCH` e
++ `CONT`. No Windows, é o tempo que o sistema concede após um evento de fechamento, logoff ou
++ desligamento, antes de encerrar o cliente de qualquer forma:
+
+= off or shutting down, before it ends the client regardless:
+=
+- ```scala
++ ```scala
+
+- def longRunningWork(): Exit = Exit.Ok
++ def longRunningWork(): Exit = Exit.Ok
+
+- def watch(): Unit = cli:
++ def watch(): Unit = cli:
+
+= def watch(): Unit = cli:
+-   execute:
++   execute:
+
+-     trap:
++     trap:
+
+-       case Signal(Interrupt.Winch, columns, rows, _) =>
++       case Signal(Interrupt.Winch, columns, rows, _) =>
+
+-         Out.println(t"now ${columns.or(0)}×${rows.or(0)}")
++         Out.println(t"now ${columns.or(0)}×${rows.or(0)}")
+
+=         Out.println(t"now ${columns.or(0)}×${rows.or(0)}")
+-         SignalResponse.Accept
++         SignalResponse.Accept
+
+-       case Signal(WindowsSignal.Close, _, _, deadline) =>
++       case Signal(WindowsSignal.Close, _, _, deadline) =>
+
+=       case Signal(WindowsSignal.Close, _, _, deadline) =>
+-         SignalResponse.Accept
++         SignalResponse.Accept
+
+-       case Signal(_: UnixSignal, _, _, _) =>
++       case Signal(_: UnixSignal, _, _, _) =>
+
+=       case Signal(_: UnixSignal, _, _, _) =>
+-         SignalResponse.Accept
++         SignalResponse.Accept
+
+-     longRunningWork()
++     longRunningWork()
+
+=     longRunningWork()
+- ```
++ ```
+
+- The daemon retires itself after six idle hours, or when its state files are removed, or on
+- demand, through the built-in `'{admin}'` subcommand:
++ O daemon se aposenta após seis horas ocioso, ou quando seus arquivos de estado são removidos,
++ ou sob demanda, pelo subcomando embutido `'{admin}'`:
+
+= demand, through the built-in `'{admin}'` subcommand:
+=
+- ```tabular
++ ```tabular
+
+- column  Subcommand
+- column  Effect
+- row  `pid`  reports the daemon's pid
+- row  `kill`  ends the daemon at once
+- row  `shutdown`  serves no further invocation, lets those in flight finish, then exits
++ column  Subcomando
++ column  Efeito
++ row  `pid`  informa o pid do daemon
++ row  `kill`  encerra o daemon imediatamente
++ row  `shutdown`  não atende mais nenhuma invocação, deixa as que estão em andamento terminarem e então sai
+
+= row  `shutdown`  serves no further invocation, lets those in flight finish, then exits
+- ```
++ ```
+
+- A warm JVM which is held for a command that is rarely run can therefore be reclaimed,
+- without finding its pid. An executable which has been rebuilt displaces its daemon in the
+- same way as `shutdown`.
++ Uma JVM aquecida mantida para um comando raramente executado pode portanto ser recuperada, sem
++ precisar descobrir seu pid. Um executável que foi reconstruído desloca seu daemon da mesma
++ forma que `shutdown`.
+
+- ### Asking for a cooked terminal
++ ### Pedindo um terminal em modo canônico
+
+- The launcher puts the terminal into raw mode before it connects, so that keypresses can be
+- forwarded to an interactive [terminal session](terminal.md#keyboard-input). That is wrong
+- for a command which just wants a line of input. Without the terminal driver's help there is
+- no echo, and Backspace arrives as a literal byte inside the line. `cooked` asks the launcher
+- for canonical mode for the duration of a block, and raw mode is restored afterwards:
++ O launcher coloca o terminal em modo raw antes de se conectar, para que os pressionamentos de
++ tecla possam ser encaminhados a uma [sessão de terminal](terminal.md#keyboard-input)
++ interativa. Isso é errado para um comando que só quer uma linha de entrada. Sem a ajuda do
++ driver do terminal, não há eco, e o Backspace chega como um byte literal dentro da linha.
++ `cooked` pede ao launcher o modo canônico durante um bloco, e o modo raw é restaurado depois:
+
+= for canonical mode for the duration of a block, and raw mode is restored afterwards:
+=
+- ```scala
++ ```scala
+
+- def ask(): Unit = cli:
++ def ask(): Unit = cli:
+
+= def ask(): Unit = cli:
+-   execute:
++   execute:
+
+-     val name = resident.cooked:
++     val name = resident.cooked:
+
+-       Out.println(t"Name?")
++       Out.println(t"Name?")
+
+-       java.io.BufferedReader(java.io.InputStreamReader(summon[Stdio].in)).readLine().nn.tt
++       java.io.BufferedReader(java.io.InputStreamReader(summon[Stdio].in)).readLine().nn.tt
+
+-     Out.println(t"Hello, $name")
++     Out.println(t"Hello, $name")
+
+=     Out.println(t"Hello, $name")
+-     Exit.Ok
++     Exit.Ok
+
+=     Out.println(t"Hello, $name")
+=     Exit.Ok
+- ```
++ ```
+
+- Echo and line editing then come from the terminal driver itself. A launcher with no such
+- channel, such as a pipe or an older launcher, lets the request expire harmlessly.
++ O eco e a edição de linha passam então a vir do próprio driver do terminal. Um launcher sem
++ esse canal, como um pipe ou um launcher mais antigo, deixa a requisição expirar sem causar dano.
+
+- ### The message bus
++ ### O barramento de mensagens
+
+- Concurrent invocations of one daemon share a typed *bus*. An invocation broadcasts a
+- message, and others observe the stream. That is how "the running watch command notices that
+- another invocation just changed the configuration" is expressed. The type of message is the
+- type argument to `cli`, so every invocation of the daemon agrees on what can be sent:
++ Invocações concorrentes de um mesmo daemon compartilham um *barramento* tipado. Uma invocação
++ transmite uma mensagem, e as outras observam o stream. É assim que se expressa “o comando de
++ observação em execução percebe que outra invocação acabou de mudar a configuração”. O tipo da
++ mensagem é o argumento de tipo de `cli`, então todas as invocações do daemon concordam sobre o
++ que pode ser enviado:
+
+= type argument to `cli`, so every invocation of the daemon agrees on what can be sent:
+=
+- ```scala
++ ```scala
+
+- enum Notice:
++ enum Notice:
+
+-   case ConfigChanged
++   case ConfigChanged
+
+- def configure(): Unit = cli[Notice]:
++ def configure(): Unit = cli[Notice]:
+
+= def configure(): Unit = cli[Notice]:
+-   execute:
++   execute:
+
+-     resident.broadcast(Notice.ConfigChanged)
++     resident.broadcast(Notice.ConfigChanged)
+
+-     resident.bus.each:
++     resident.bus.each:
+
+-       case Notice.ConfigChanged => Out.println(t"another invocation changed the configuration")
++       case Notice.ConfigChanged => Out.println(t"another invocation changed the configuration")
+
+=       case Notice.ConfigChanged => Out.println(t"another invocation changed the configuration")
+-     Exit.Ok
++     Exit.Ok
+
+=       case Notice.ConfigChanged => Out.println(t"another invocation changed the configuration")
+=     Exit.Ok
+- ```
++ ```
+
+- ### Packaging
++ ### Empacotamento
+
+- The distributable is assembled by the builder `xek`. It is published, with the launchers,
+- from [propensive/xek](https://github.com/propensive/xek), and is installed with
+- `curl -fsSL https://propensive.dev/xek | sh`. It joins the platform's native launcher, a
+- small configuration record and the application's JAR into one executable file:
++ O distribuível é montado pelo builder `xek`. Ele é publicado, com os launchers, a partir de
++ [propensive/xek](https://github.com/propensive/xek), e é instalado com
++ `curl -fsSL https://propensive.dev/xek | sh`. Ele junta o launcher nativo da plataforma, um
++ pequeno registro de configuração e o JAR da aplicação em um único arquivo executável:
+
+= small configuration record and the application's JAR into one executable file:
+=
+- ```sh
++ ```sh
+
+- xek build mytool.jar
++ xek build mytool.jar
+
+= xek build mytool.jar
+- ```
++ ```
+
+- That writes `mytool`, for the platform on which `xek` runs.
+- `xek build -p linux-x64 -p windows-x64 mytool.jar` builds for other platforms.
+- `xek build --polyglot mytool.jar` builds one file for all of them, which runs in `sh`, and
+- in PowerShell and `cmd.exe` once it is renamed, and unpacks the right launcher where it
+- runs. The flags which this page uses are:
++ Isso escreve `mytool`, para a plataforma em que `xek` executa.
++ `xek build -p linux-x64 -p windows-x64 mytool.jar` constrói para outras plataformas.
++ `xek build --polyglot mytool.jar` constrói um único arquivo para todas elas, que executa em
++ `sh`, e no PowerShell e no `cmd.exe` depois de renomeado, e descompacta o launcher certo onde
++ executa. As flags que esta página usa são:
+
+= runs. The flags which this page uses are:
+=
+- ```tabular
++ ```tabular
+
+- column  Command
++ column  Comando
+
+- column  Flag
++ column  Flag
+
+- column  Effect
+- row  `xek build`  `-p` *platform*  builds for that platform; repeatable
+- row  `xek build`  `--polyglot`  builds one file for every platform
+- row  `xek build`  `--build-id` *n*  bakes in the build identifier, which must increase from release to release
+- row  `xek build`  `--public-key` *file*  bakes in the release key
+- row  `xek build`  `--recovery-key` *file*  bakes in the recovery key
+- row  `xek build`  `--app-id` *id*  bakes in the application identifier
+- row  `xek keygen`  `--out` *prefix*  writes `<prefix>.seed` and `<prefix>.pub`
+- row  `xek sign`  `--key` *seed*  signs with that key
+- row  `xek sign`  `--in` *file*, `--out` *file*  names the binary to sign and the signed result
+- row  `xek sign`  `--allow-downgrade`  permits the candidate to replace a newer build
+- row  `xek sign`  `--foreign-key`  permits signing with a key the binary does not carry
++ column  Efeito
++ row  `xek build`  `-p` *plataforma*  constrói para essa plataforma; pode ser repetida
++ row  `xek build`  `--polyglot`  constrói um único arquivo para todas as plataformas
++ row  `xek build`  `--build-id` *n*  embute o identificador de build, que deve aumentar de uma versão para a seguinte
++ row  `xek build`  `--public-key` *arquivo*  embute a chave de release
++ row  `xek build`  `--recovery-key` *arquivo*  embute a chave de recuperação
++ row  `xek build`  `--app-id` *id*  embute o identificador da aplicação
++ row  `xek keygen`  `--out` *prefixo*  escreve `<prefix>.seed` e `<prefix>.pub`
++ row  `xek sign`  `--key` *semente*  assina com essa chave
++ row  `xek sign`  `--in` *arquivo*, `--out` *arquivo*  nomeia o binário a assinar e o resultado assinado
++ row  `xek sign`  `--allow-downgrade`  permite que o candidato substitua um build mais recente
++ row  `xek sign`  `--foreign-key`  permite assinar com uma chave que o binário não contém
+
+= row  `xek sign`  `--foreign-key`  permits signing with a key the binary does not carry
+- ```
++ ```
+
+- `xek --help` lists the rest.
++ `xek --help` lista o resto.
+
+- The launcher finds or fetches a suitable JVM, and starts the daemon when none is running.
+- Where a public key was built in, it accepts only signed binaries when the application
+- [upgrades itself](https://en.wikipedia.org/wiki/Digital_signature) in place.
+- [Packaging](packaging.md) covers the other forms of distributable.
++ O launcher encontra ou baixa uma JVM adequada e inicia o daemon quando nenhum está em execução.
++ Quando uma chave pública foi embutida, ele aceita apenas binários assinados quando a aplicação
++ [faz upgrade de si mesma](https://en.wikipedia.org/wiki/Digital_signature) no lugar.
++ [Empacotamento](packaging.md) cobre as outras formas de distribuível.
+
+- ### Signing a release
++ ### Assinando uma release
+
+- An application can ship with a public key and an application identifier built in. The
+- launcher uses them to verify any candidate upgrade, before swapping it into place.
+- Verification happens in the launcher, before the JVM starts, so no Scala code in the running
+- application sits on the boundary of trust.
++ Uma aplicação pode ser distribuída com uma chave pública e um identificador de aplicação
++ embutidos. O launcher os usa para verificar qualquer candidato a upgrade, antes de colocá-lo
++ no lugar. A verificação acontece no launcher, antes de a JVM iniciar, então nenhum código Scala
++ da aplicação em execução fica na fronteira de confiança.
+
+- `xek` also signs releases. Its signing subcommands need Java 24 or later. It generates a
+- pair of keys:
++ `xek` também assina releases. Seus subcomandos de assinatura precisam do Java 24 ou posterior.
++ Ele gera um par de chaves:
+
+= pair of keys:
+=
+- ```sh
++ ```sh
+
+- xek keygen --out release-keys/myapp
++ xek keygen --out release-keys/myapp
+
+- xek keygen --out release-keys/myapp-recovery
++ xek keygen --out release-keys/myapp-recovery
+
+= xek keygen --out release-keys/myapp-recovery
+- ```
++ ```
+
+- Each writes a seed for a signing key, of 32 bytes, as `<prefix>.seed`, and an ML-DSA-44
+- public key, of 1312 bytes, as `<prefix>.pub`. **The seeds belong offline**, and the recovery
+- seed most of all. Anyone who holds the release seed can ship a binary which users' launchers
+- will accept. The recovery key exists so that losing or leaking the release seed does not
+- strand every installation. [Cryptography](cryptography.md#signing) describes ML-DSA
+- signatures.
++ Cada comando escreve uma semente para uma chave de assinatura, de 32 bytes, como
++ `<prefix>.seed`, e uma chave pública ML-DSA-44, de 1312 bytes, como `<prefix>.pub`. **As
++ sementes devem ficar offline**, e a semente de recuperação mais do que todas. Qualquer um que
++ tenha a semente de release pode distribuir um binário que os launchers dos usuários vão aceitar.
++ A chave de recuperação existe para que perder ou vazar a semente de release não deixe todas as
++ instalações desamparadas. [Criptografia](cryptography.md#signing) descreve as assinaturas
++ ML-DSA.
+
+- Each release is then built and signed, in two steps. The build bakes in a build identifier,
+- both public keys, and the application's identifier:
++ Cada release é então construída e assinada, em dois passos. O build embute um identificador de
++ build, as duas chaves públicas e o identificador da aplicação:
+
+= both public keys, and the application's identifier:
+=
+- ```sh
++ ```sh
+
+- xek build --build-id 42 --public-key release-keys/myapp.pub \
++ xek build --build-id 42 --public-key release-keys/myapp.pub \
+
+-   --recovery-key release-keys/myapp-recovery.pub --app-id example/myapp \
++   --recovery-key release-keys/myapp-recovery.pub --app-id example/myapp \
+
+-   dist/myapp.jar dist/myapp
++   dist/myapp.jar dist/myapp
+
+=   dist/myapp.jar dist/myapp
+- ```
++ ```
+
+- `--build-id` is a 64-bit number which must increase from release to release. The launcher
+- rejects a candidate which is not newer than itself. A candidate which was built for another
+- application identifier is rejected, even when it is signed with the same key. Omitting
+- `--public-key` and `--app-id` produces a binary whose launcher rejects *every* upgrade,
+- which is the right default for a local build, where the upgrade path is never exercised.
++ `--build-id` é um número de 64 bits que deve aumentar de uma release para a seguinte. O
++ launcher rejeita um candidato que não seja mais novo que ele mesmo. Um candidato construído
++ para outro identificador de aplicação é rejeitado, mesmo quando assinado com a mesma chave.
++ Omitir `--public-key` e `--app-id` produz um binário cujo launcher rejeita *todo* upgrade, que
++ é o padrão certo para um build local, onde o caminho de upgrade nunca é exercitado.
+
+- Signing then produces the file to distribute:
++ A assinatura então produz o arquivo a distribuir:
+
+= Signing then produces the file to distribute:
+=
+- ```sh
++ ```sh
+
+- xek sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
++ xek sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
+
+= xek sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
+- ```
++ ```
+
+- That output is at once a valid executable and a valid candidate for upgrade.
++ Essa saída é ao mesmo tempo um executável válido e um candidato válido a upgrade.
+
+- #### Staging an upgrade
++ #### Preparando um upgrade
+
+- The application stages a candidate by passing `Upgrade.stage` any source of bytes: a file,
+- an [HTTP response](http-client.md), a [stream](streams.md). It writes the candidate as
+- `<name>/.pending`, in the application's data directory, and returns. The launcher verifies
+- it at the start of the next invocation, swaps it into place, and starts a new daemon in
+- place of the old one, so nothing is interrupted:
++ A aplicação prepara um candidato passando a `Upgrade.stage` qualquer origem de bytes: um
++ arquivo, uma [resposta HTTP](http-client.md), um [stream](streams.md). Ela escreve o candidato
++ como `<name>/.pending`, no diretório de dados da aplicação, e retorna. O launcher o verifica no
++ início da próxima invocação, coloca-o no lugar e inicia um novo daemon no lugar do antigo, então
++ nada é interrompido:
+
+= place of the old one, so nothing is interrupted:
+=
+- ```scala
++ ```scala
+
+= place of the old one, so nothing is interrupted:
+=
+= ```scala
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+= place of the old one, so nothing is interrupted:
+=
+= ```scala
+= import environments.javaBaseEnvironment
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- def upgrade(): Text raises Upgrade.Error =
++ def upgrade(): Text raises Upgrade.Error =
+
+-   if !Upgrade.enabled then t"this build cannot be upgraded"
++   if !Upgrade.enabled then t"this build cannot be upgraded"
+
+-   else if Upgrade.pending then t"the upgrade will be applied the next time the command is run"
++   else if Upgrade.pending then t"the upgrade will be applied the next time the command is run"
+
+-   else
++   else
+
+-     Upgrade.stage(url"https://releases.example.com/myapp.signed".fetch())
++     Upgrade.stage(url"https://releases.example.com/myapp.signed".fetch())
+
+-     t"the upgrade will be applied the next time the command is run"
++     t"the upgrade will be applied the next time the command is run"
+
+=     t"the upgrade will be applied the next time the command is run"
+- ```
++ ```
+
+- `Upgrade.enabled` is false in a build with no key, or no application identifier, whose
+- launcher would refuse any candidate. `resident.buildId` is the identifier of the running
+- build, to compare with that of a release on offer.
++ `Upgrade.enabled` é falso em um build sem chave, ou sem identificador de aplicação, cujo
++ launcher recusaria qualquer candidato. `resident.buildId` é o identificador do build em
++ execução, para comparar com o de uma release oferecida.
+
+- The launcher records what it did with a candidate, and `Upgrade.outcome` reads the record
+- back: the `result`, the build identifiers `candidate` and `previous`, and `when` it
+- happened. The result is one of:
++ O launcher registra o que fez com um candidato, e `Upgrade.outcome` lê esse registro de volta:
++ o `result`, os identificadores de build `candidate` e `previous`, e `when` aconteceu. O
++ resultado é um destes:
+
+= happened. The result is one of:
+=
+- ```tabular
++ ```tabular
+
+- column  Result
+- column  Meaning
+- row  `Applied`  the upgrade was applied
+- row  `Disabled`  the running executable does not accept upgrades
+- row  `NoRecord`  the candidate is not an XEK executable
+- row  `WrongApplication`  the candidate was built for another application
+- row  `BadSignature`  the candidate's signature does not verify
+- row  `NotNewer`  the candidate is not newer than the running executable
+- row  `SwapFailed`  the candidate could not be swapped into place
++ column  Resultado
++ column  Significado
++ row  `Applied`  o upgrade foi aplicado
++ row  `Disabled`  o executável em execução não aceita upgrades
++ row  `NoRecord`  o candidato não é um executável XEK
++ row  `WrongApplication`  o candidato foi construído para outra aplicação
++ row  `BadSignature`  a assinatura do candidato não é verificada
++ row  `NotNewer`  o candidato não é mais novo que o executável em execução
++ row  `SwapFailed`  o candidato não pôde ser colocado no lugar
+
+= row  `SwapFailed`  the candidate could not be swapped into place
+- ```
++ ```
+
+- `Upgrade.acknowledge()` clears the record, so that each outcome is reported once:
++ `Upgrade.acknowledge()` limpa o registro, para que cada resultado seja informado uma única vez:
+
+= `Upgrade.acknowledge()` clears the record, so that each outcome is reported once:
+=
+- ```scala
++ ```scala
+
+= `Upgrade.acknowledge()` clears the record, so that each outcome is reported once:
+=
+= ```scala
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+= `Upgrade.acknowledge()` clears the record, so that each outcome is reported once:
+=
+= ```scala
+= import environments.javaBaseEnvironment
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- def report(): Optional[Message] =
++ def report(): Optional[Message] =
+
+-   Upgrade.outcome.let: outcome =>
++   Upgrade.outcome.let: outcome =>
+
+-     Upgrade.acknowledge()
++     Upgrade.acknowledge()
+
+-     m"${outcome.result} (build ${outcome.candidate.show})"
++     m"${outcome.result} (build ${outcome.candidate.show})"
+
+=     m"${outcome.result} (build ${outcome.candidate.show})"
+- ```
++ ```
+
+- #### What the signature covers
++ #### O que a assinatura cobre
+
+- What the signature covers is chosen so that each part of it defeats a specific attack:
++ O que a assinatura cobre é escolhido para que cada uma de suas partes impeça um ataque
++ específico:
+
+= What the signature covers is chosen so that each part of it defeats a specific attack:
+=
+- ```tabular
++ ```tabular
+
+- column  Signed part
+- column  Prevents
+- row  the launcher's own code  tampering with the launcher
+- row  the bundled JAR  tampering with the application
+- row  the build identifier  replaying an older, legitimately-signed release
+- row  the application identifier  installing another application's release in its place
+- row  the flag byte permitting a downgrade  turning it on after the fact
+- row  the keys themselves  substituting a different release key into an otherwise-legitimate binary
++ column  Parte assinada
++ column  Impede
++ row  o próprio código do launcher  adulterar o launcher
++ row  o JAR incluído  adulterar a aplicação
++ row  o identificador de build  reaplicar uma release mais antiga, assinada legitimamente
++ row  o identificador da aplicação  instalar a release de outra aplicação em seu lugar
++ row  o byte de flag que permite um downgrade  ativá-lo depois do fato
++ row  as próprias chaves  substituir a chave de release por outra em um binário de resto legítimo
+
+= row  the keys themselves  substituting a different release key into an otherwise-legitimate binary
+- ```
++ ```
+
+- A deliberate rollback, such as shipping 42 over a broken 43, is signed with
+- `--allow-downgrade`, which sets that flag inside the signed payload.
++ Um rollback deliberado, como distribuir a 42 por cima de uma 43 defeituosa, é assinado com
++ `--allow-downgrade`, que define essa flag dentro do payload assinado.
+
+- The keys which a candidate is checked against are always those of the *running* binary, so
+- rotation of keys works as a chain. A release which is signed with the old key may carry a
+- new key as its `--public-key`, after which releases are signed with the new one. `xek sign`
+- asks for `--foreign-key` to sign with a key which the binary does not carry, since that is
+- otherwise almost always a mistake. A release which is signed with the recovery key is
+- accepted too, and may replace either key.
++ As chaves contra as quais um candidato é verificado são sempre as do binário *em execução*,
++ então a rotação de chaves funciona como uma cadeia. Uma release assinada com a chave antiga pode
++ levar uma nova chave como sua `--public-key`, e a partir daí as releases são assinadas com a
++ nova. `xek sign` exige `--foreign-key` para assinar com uma chave que o binário não contém, já
++ que, fora isso, quase sempre é um engano. Uma release assinada com a chave de recuperação também
++ é aceita e pode substituir qualquer uma das chaves.
+
+- ### Related
++ ### Relacionados
+
+- - [Command-line applications](cli.md) describes the body which `cli` runs.
+- - [Environment](environment.md#overriding-for-a-block) explains how each invocation sees its
+-   own environment.
+- - [Concurrency](concurrency.md) runs the invocations side by side.
+- - [Packaging](packaging.md) builds other kinds of distributable.
+- - [HTTP server](http-server.md), [LSP](lsp.md), [processes](processes.md) and [service discovery](service-discovery.md) describe what a daemon serves, launches and advertises.
++ - [Aplicações de linha de comando](cli.md) descreve o corpo que `cli` executa.
++ - [Ambiente](environment.md#overriding-for-a-block) explica como cada invocação vê seu próprio
++   ambiente.
++ - [Concorrência](concurrency.md) executa as invocações lado a lado.
++ - [Empacotamento](packaging.md) constrói outros tipos de distribuível.
++ - [Servidor HTTP](http-server.md), [LSP](lsp.md), [processos](processes.md) e [descoberta de serviços](service-discovery.md) descrevem o que um daemon serve, inicia e anuncia.

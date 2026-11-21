@@ -1,0 +1,1035 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base cartouche
++ base cartouche
+
+- import soundness
++ import soundness
+
+- info   label placement: finds a position for every piece of text on a picture, clear of the rest
++ info   размещение меток: находит для каждого фрагмента текста на изображении позицию, свободную от остального
+
+- detail
++ detail
+
+-     _Cartouche_ decides where each label on a picture goes. Text is set beside the thing it
+-     names — a note by a point, a name by a town, a percentage in a wedge — and when two things
+-     are close their labels collide. Cartouche takes every label (a `Caption`: its measured
+-     size, the point it describes, and the sides it may lie on), together with everything on the
+-     page that text must not cover (each an `Obstacle`), and finds a `Caption.Position` for each
+-     one. Charts use it for their labels; a map would use it for its place names. The engine sees
+-     only geometry, in a y-down frame as SVG has it: whoever draws the text measures it.
++     _Cartouche_ решает, где располагается каждая метка на изображении. Текст ставится рядом с
++     тем, что он называет, — примечание у точки, название у города, процент в секторе, — и когда
++     две вещи находятся близко, их метки сталкиваются. Cartouche принимает каждую метку
++     (`Caption`: её измеренный размер, точку, которую она описывает, и стороны, на которых она
++     может лежать) вместе со всем на странице, что текст не должен закрывать (каждое — это
++     `Obstacle`), и находит `Caption.Position` для каждой. Диаграммы используют его для своих
++     меток; карта использовала бы его для названий мест. Движок видит только геометрию, в системе
++     координат с осью y, направленной вниз, как в SVG: текст измеряет тот, кто его рисует.
+
+-     The code which builds a picture knows what each label says but not where the others will
+-     end up, so `arrange` runs that code twice. The first run records each `position`, `avoid`
+-     and `canvas` call and answers every `position` provisionally; the `Arranger` in scope then
+-     solves the whole arrangement; and the second run answers each `position` with its solved
+-     place. The value of `arrange` is that of the second run.
++     Код, строящий изображение, знает, что говорит каждая метка, но не знает, где окажутся
++     остальные, поэтому `arrange` выполняет этот код дважды. Первый прогон записывает каждый вызов
++     `position`, `avoid` и `canvas` и отвечает на каждый `position` предварительно; затем
++     `Arranger` в области видимости вычисляет всю расстановку; а второй прогон отвечает на каждый
++     `position` его вычисленным местом. Значение `arrange` — это значение второго прогона.
+
+=     place. The value of `arrange` is that of the second run.
+=
+-     ```scala
++     ```scala
+
+=     place. The value of `arrange` is that of the second run.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val picture = arrange:
++     val picture = arrange:
+
+-       val first = position(60.0, 12.0, 100.0, 100.0)
++       val first = position(60.0, 12.0, 100.0, 100.0)
+
+-       val second = position(60.0, 12.0, 100.0, 100.0)
++       val second = position(60.0, 12.0, 100.0, 100.0)
+
+-       (first.attachment, second.attachment)   // (East, West)
++       (first.attachment, second.attachment)   // (East, West)
+
+=       (first.attachment, second.attachment)   // (East, West)
+-     ```
++     ```
+
+-     The body must therefore be **repeatable**: the same `position` calls in the same order each
+-     time, with nothing done that should not happen twice. A counter that numbers the labels
+-     belongs inside the body, where it starts again with the second run.
++     Поэтому тело должно быть **повторяемым**: каждый раз те же вызовы `position` в том же
++     порядке, и ничего такого, что не должно происходить дважды. Счётчику, который нумерует
++     метки, место внутри тела, где он начинается заново со вторым прогоном.
+
+-     Which algorithm arranges is the `Arranger` in scope: the greedy default, from `Arranger`'s
+-     companion, or one imported by name from the `arrangers` package (`import soundness.*` does
+-     not import givens), or a configured `Arranger.Greedy` or `Arranger.Annealing` bound as a
+-     local given.
++     Каким алгоритмом выполняется расстановка, определяет `Arranger` в области видимости: жадный
++     по умолчанию, из компаньона `Arranger`, или импортированный по имени из пакета `arrangers`
++     (`import soundness.*` не импортирует given-экземпляры), или настроенный `Arranger.Greedy`
++     либо `Arranger.Annealing`, привязанный как локальный given-экземпляр.
+
+-     The library has one source set, `cartouche.core`, which compiles for every platform.
+-     Everything is exported to the `soundness` umbrella, and the `arrangers` choice package
+-     merges with the umbrella's own.
++     У библиотеки один набор исходников, `cartouche.core`, который компилируется для всех
++     платформ. Всё экспортируется в зонтичный модуль `soundness`, а пакет выбора `arrangers`
++     сливается с собственным пакетом зонтичного модуля.
+
+- refer cartouche.arrange
++ refer cartouche.arrange
+
+- refer cartouche.position
++ refer cartouche.position
+
+- refer cartouche.Caption
++ refer cartouche.Caption
+
+- refer cartouche.Obstacle
++ refer cartouche.Obstacle
+
+- refer cartouche.Arranger
++ refer cartouche.Arranger
+
+- entry .arrange   runs a picture-building body twice, answering its `position` calls with an arrangement
++ entry .arrange   выполняет тело, строящее изображение, дважды, отвечая на его вызовы `position` расстановкой
+
+= entry .arrange   runs a picture-building body twice, answering its `position` calls with an arrangement
+-   detail
++   detail
+
+-       `arrange(body)` runs `body` once with a recording `Arranger.Pass`, in which every
+-       `position` answers with `Caption.provisional` — the label where it was asked for, on its
+-       first-choice side — and every `avoid` and `canvas` is noted; that run's result is
+-       discarded. The `Arranger` in scope then places all the recorded captions against the
+-       recorded obstacles and canvas, and the body is run again, each `position` call answered
+-       by its solved `Caption.Position`, matched to the first run's calls by their order. The
+-       second run's result is `arrange`'s.
++       `arrange(body)` выполняет `body` один раз с записывающим `Arranger.Pass`, в котором
++       каждый `position` отвечает `Caption.provisional` — метка там, где её запросили, на
++       стороне первого выбора, — а каждый `avoid` и `canvas` отмечается; результат этого
++       прогона отбрасывается. Затем `Arranger` в области видимости размещает все записанные
++       подписи относительно записанных препятствий и холста, и тело выполняется снова,
++       причём на каждый вызов `position` отвечает его вычисленный `Caption.Position`,
++       сопоставленный с вызовами первого прогона по их порядку. Результат второго прогона — это
++       результат `arrange`.
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Nothing in the way: the label lies to the east
++         label Ничто не мешает: метка лежит к востоку
+
+=         label Nothing in the way: the label lies to the east
+-         code
++         code
+
+=         label Nothing in the way: the label lies to the east
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Nothing in the way: the label lies to the east
+=         code
+=             import soundness.*
+=
+-             arrange:
++             arrange:
+
+-               position(60.0, 12.0, 100.0, 100.0, reach = 40.0).attachment   // East
++               position(60.0, 12.0, 100.0, 100.0, reach = 40.0).attachment   // East
+
+=               position(60.0, 12.0, 100.0, 100.0, reach = 40.0).attachment   // East
+-       frame
++       frame
+
+-         label A box to the east: the label moves to the west
++         label Прямоугольник к востоку: метка перемещается на запад
+
+=         label A box to the east: the label moves to the west
+-         code
++         code
+
+=         label A box to the east: the label moves to the west
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A box to the east: the label moves to the west
+=         code
+=             import soundness.*
+=
+-             arrange:
++             arrange:
+
+-               avoid(Obstacle.Box(100.0, 90.0, 40.0, 20.0))
++               avoid(Obstacle.Box(100.0, 90.0, 40.0, 20.0))
+
+-               position(60.0, 12.0, 100.0, 100.0, reach = 40.0).attachment   // West
++               position(60.0, 12.0, 100.0, 100.0, reach = 40.0).attachment   // West
+
+=               position(60.0, 12.0, 100.0, 100.0, reach = 40.0).attachment   // West
+-       frame
++       frame
+
+-         label Only south allowed, and blocked: the label is displaced, with a leader
++         label Разрешён только юг, и он заблокирован: метка сдвигается, с выноской
+
+=         label Only south allowed, and blocked: the label is displaced, with a leader
+-         code
++         code
+
+=         label Only south allowed, and blocked: the label is displaced, with a leader
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Only south allowed, and blocked: the label is displaced, with a leader
+=         code
+=             import soundness.*
+=
+-             arrange:
++             arrange:
+
+-               avoid(Obstacle.Box(0.0, 0.0, 200.0, 110.0))
++               avoid(Obstacle.Box(0.0, 0.0, 200.0, 110.0))
+
+-               position(60.0, 12.0, 100.0, 100.0,
++               position(60.0, 12.0, 100.0, 100.0,
+
+-                   attachments = List(Caption.Attachment.South), reach = 40.0).leader
++                   attachments = List(Caption.Attachment.South), reach = 40.0).leader
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       The body must make the same calls in the same order in both runs and have no other
+-       effects. A second-run call that the first did not make, or one with a different caption,
+-       is answered provisionally and recorded as `Arranger.Pass#diverged`.
++       Тело должно делать одни и те же вызовы в одном и том же порядке в обоих прогонах и не
++       иметь других эффектов. Вызов второго прогона, которого не было в первом, или вызов с
++       другой подписью получает предварительный ответ и записывается как
++       `Arranger.Pass#diverged`.
+
+=       is answered provisionally and recorded as `Arranger.Pass#diverged`.
+-   refer cartouche.position
++   refer cartouche.position
+
+=   refer cartouche.position
+-   refer cartouche.avoid
++   refer cartouche.avoid
+
+=   refer cartouche.position
+=   refer cartouche.avoid
+-   refer cartouche.canvas
++   refer cartouche.canvas
+
+-   refer cartouche.Arranger
++   refer cartouche.Arranger
+
+- entry .position   asks for a place for a label, inside an `arrange` body
+-     Needs the `Arranger.Pass` which `arrange` provides. It takes a `Caption`, or the caption's
+-     parts directly: `width` and `height` (the measured label), `x` and `y` (the target point),
+-     and optionally `attachments` (the sides it may lie on, best first; by default
+-     `Caption.Attachment.compass`), `standoff`, `reach`, `padding`, `priority` and `fallback`,
+-     each as `Caption` describes. In the first run of the body the answer is provisional; in the
+-     second it is the solved `Caption.Position`.
++ entry .position   запрашивает место для метки внутри тела `arrange`
++     Нужен `Arranger.Pass`, который предоставляет `arrange`. Принимает `Caption` или
++     непосредственно его части: `width` и `height` (измеренная метка), `x` и `y` (целевая
++     точка) и необязательно `attachments` (стороны, на которых она может лежать, лучшие первыми;
++     по умолчанию `Caption.Attachment.compass`), `standoff`, `reach`, `padding`, `priority` и
++     `fallback`, каждый — как описывает `Caption`. В первом прогоне тела ответ предварительный;
++     во втором это вычисленный `Caption.Position`.
+
+=     second it is the solved `Caption.Position`.
+=
+-     ```scala
++     ```scala
+
+=     second it is the solved `Caption.Position`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val caption = Caption(60.0, 12.0, 100.0, 100.0, standoff = 4.0, reach = 24.0)
++     val caption = Caption(60.0, 12.0, 100.0, 100.0, standoff = 4.0, reach = 24.0)
+
+-     val placed: Caption.Position = arrange(position(caption))
++     val placed: Caption.Position = arrange(position(caption))
+
+=     val placed: Caption.Position = arrange(position(caption))
+-     ```
++     ```
+
+- entry .avoid   declares obstacles no label may be set over, inside an `arrange` body
+-     Takes any number of `Obstacle`s — a `Obstacle.Box` for a bar or legend, an `Obstacle.Line`
+-     for each segment of a plotted line, an `Obstacle.Disc` for a marker — and adds them to the
+-     arrangement. Needs the `Arranger.Pass` which `arrange` provides; only the first run's calls
+-     count.
++ entry .avoid   объявляет препятствия, поверх которых нельзя ставить метку, внутри тела `arrange`
++     Принимает любое количество `Obstacle` — `Obstacle.Box` для столбца или легенды,
++     `Obstacle.Line` для каждого отрезка нарисованной линии, `Obstacle.Disc` для маркера — и
++     добавляет их в расстановку. Нужен `Arranger.Pass`, который предоставляет `arrange`;
++     учитываются только вызовы первого прогона.
+
+=     count.
+=
+-     ```scala
++     ```scala
+
+=     count.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     count.
+=
+=     ```scala
+=     import soundness.*
+=
+-     arrange:
++     arrange:
+
+-       avoid(Obstacle.Line(0.0, 100.0, 300.0, 100.0), Obstacle.Disc(100.0, 100.0, 3.0))
++       avoid(Obstacle.Line(0.0, 100.0, 300.0, 100.0), Obstacle.Disc(100.0, 100.0, 3.0))
+
+-       position(60.0, 12.0, 100.0, 100.0)
++       position(60.0, 12.0, 100.0, 100.0)
+
+=       position(60.0, 12.0, 100.0, 100.0)
+-     ```
++     ```
+
+- entry .canvas   declares the area labels must stay within, inside an `arrange` body
+-     Takes an `Obstacle.Box`; a label's area outside it counts as a collision. Without a canvas
+-     the page is unbounded, and if the body declares more than one, the last wins.
++ entry .canvas   объявляет область, в пределах которой должны оставаться метки, внутри тела `arrange`
++     Принимает `Obstacle.Box`; площадь метки вне его считается столкновением. Без холста
++     страница не ограничена, а если тело объявляет больше одного, побеждает последний.
+
+=     the page is unbounded, and if the body declares more than one, the last wins.
+=
+-     ```scala
++     ```scala
+
+=     the page is unbounded, and if the body declares more than one, the last wins.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     the page is unbounded, and if the body declares more than one, the last wins.
+=
+=     ```scala
+=     import soundness.*
+=
+-     arrange:
++     arrange:
+
+-       canvas(Obstacle.Box(0.0, 0.0, 120.0, 120.0))
++       canvas(Obstacle.Box(0.0, 0.0, 120.0, 120.0))
+
+-       position(60.0, 12.0, 110.0, 100.0).attachment   // West: east would run off the edge
++       position(60.0, 12.0, 110.0, 100.0).attachment   // West: east would run off the edge
+
+=       position(60.0, 12.0, 110.0, 100.0).attachment   // West: east would run off the edge
+-     ```
++     ```
+
+- entry .Caption   a request to place a label: its size, the point it describes, and how it may be set
++ entry .Caption   запрос на размещение метки: её размер, точка, которую она описывает, и то, как её можно поставить
+
+= entry .Caption   a request to place a label: its size, the point it describes, and how it may be set
+-   detail
++   detail
+
+-       A case class of the geometry of one label. `width` and `height` are its measured size;
+-       `x` and `y` the target it describes. `attachments` lists the sides of the target it may
+-       lie on, best first (by default `Caption.Attachment.compass`); a caption with none is
+-       treated as one which may lie to the east. `standoff` is the gap between the target and the
+-       label's near edge, for a label beside a marker rather than on its centre. `reach` is how
+-       far the label's anchor may be moved from its target when every side is blocked; the
+-       default, zero, pins it. `padding` is clearance demanded around the label. Captions with a
+-       higher `priority` are placed first, and so keep their targets. `fallback` says what
+-       becomes of a label which collides wherever it is put.
++       Case-класс с геометрией одной метки. `width` и `height` — её измеренный размер; `x` и
++       `y` — цель, которую она описывает. `attachments` перечисляет стороны цели, на которых она
++       может лежать, лучшие первыми (по умолчанию `Caption.Attachment.compass`); подпись без
++       сторон считается допускающей положение к востоку. `standoff` — зазор между целью и
++       ближним краем метки, для метки рядом с маркером, а не на его центре. `reach` — насколько
++       далеко якорь метки может быть сдвинут от цели, когда заблокирована каждая сторона;
++       значение по умолчанию, ноль, его закрепляет. `padding` — требуемый зазор вокруг метки.
++       Подписи с более высоким `priority` размещаются первыми и поэтому сохраняют свои цели.
++       `fallback` говорит, что становится с меткой, которая сталкивается, куда бы её ни
++       поставили.
+
+=       becomes of a label which collides wherever it is put.
+=
+-       ```scala
++       ```scala
+
+=       becomes of a label which collides wherever it is put.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val note = Caption(60.0, 12.0, 100.0, 100.0, standoff = 4.0, reach = 24.0, priority = 1,
++       val note = Caption(60.0, 12.0, 100.0, 100.0, standoff = 4.0, reach = 24.0, priority = 1,
+
+-           fallback = Caption.Fallback.Hide)
++           fallback = Caption.Fallback.Hide)
+
+=           fallback = Caption.Fallback.Hide)
+-       ```
++       ```
+
+-       A caption with one side and no reach is placed exactly where it asks, whatever is there,
+-       and everything after it steers around it: that is how a chart's tick labels and legend
+-       hold still while its point labels move.
++       Подпись с одной стороной и без запаса сдвига размещается точно там, где просит, что бы там
++       ни было, и всё, что идёт после неё, её обходит: так метки делений и легенда диаграммы
++       остаются на месте, пока метки её точек перемещаются.
+
+-   refer cartouche.Caption.Position
++   refer cartouche.Caption.Position
+
+-   refer cartouche.Caption.Attachment
++   refer cartouche.Caption.Attachment
+
+=   refer cartouche.Caption.Attachment
+-   refer cartouche.position
++   refer cartouche.position
+
+-   entry #width   the label's measured width
+-   entry #height   the label's measured height
+-   entry #x   the horizontal coordinate of the target the label describes
+-   entry #y   the vertical coordinate of the target, increasing downwards
+-   entry #attachments   the sides of the target the label may lie on, best first
+-   entry #standoff   the gap between the target and the label's near edge
+-   entry #reach   how far the label may be moved from its target when every side is blocked
+-   entry #padding   the clearance demanded around the label's box
+-   entry #priority   the placement order: a higher priority is placed earlier and keeps its target
+-   entry #fallback   whether a label which collides everywhere is drawn anyway or hidden
+-   entry #sides   the sides to try: `#attachments`, or `East` alone if that is empty
+-   entry #anchor   the label's anchor point on one side of its target, displaced by an offset
+-       `caption.anchor(attachment, dx, dy)` is the target moved by (`dx`, `dy`) and then by
+-       `#standoff` in the direction of the attachment.
+-   entry #footprint   the box the label occupies when anchored at a point on one side
+-       `Obstacle.Box.around` with the caption's size.
+-   entry .provisional   the answer before arrangement: the label at its target, on its first side
+-       What every `position` call receives in the first run of an `arrange` body, and what a
+-       call that diverges from the first run receives in the second.
+-   entry .Attachment   which side of its target a label lies on: the eight compass points or `Center`
++   entry #width   измеренная ширина метки
++   entry #height   измеренная высота метки
++   entry #x   горизонтальная координата цели, которую описывает метка
++   entry #y   вертикальная координата цели, возрастающая вниз
++   entry #attachments   стороны цели, на которых может лежать метка, лучшие первыми
++   entry #standoff   зазор между целью и ближним краем метки
++   entry #reach   насколько далеко метку можно сдвинуть от цели, когда заблокирована каждая сторона
++   entry #padding   требуемый зазор вокруг прямоугольника метки
++   entry #priority   порядок размещения: более высокий приоритет размещается раньше и сохраняет свою цель
++   entry #fallback   рисуется ли всё равно или скрывается метка, которая сталкивается везде
++   entry #sides   стороны, которые нужно попробовать: `#attachments` или один `East`, если он пуст
++   entry #anchor   якорная точка метки на одной стороне её цели, сдвинутая на смещение
++       `caption.anchor(attachment, dx, dy)` — это цель, сдвинутая на (`dx`, `dy`), а затем на
++       `#standoff` в направлении стороны.
++   entry #footprint   прямоугольник, который занимает метка, когда её якорь стоит в точке на одной стороне
++       `Obstacle.Box.around` с размером подписи.
++   entry .provisional   ответ до расстановки: метка у своей цели, на своей первой стороне
++       То, что получает каждый вызов `position` в первом прогоне тела `arrange`, и то, что
++       получает во втором вызов, расходящийся с первым прогоном.
++   entry .Attachment   с какой стороны цели лежит метка: восемь сторон света или `Center`
+
+=   entry .Attachment   which side of its target a label lies on: the eight compass points or `Center`
+-     detail
++     detail
+
+-         An enum, in a y-down frame, so `North` is above the target. Its cases are `North`,
+-         `Northeast`, `East`, `Southeast`, `South`, `Southwest`, `West`, `Northwest` and
+-         `Center`. The anchor of a label is its edge nearest the target: for `East` the middle
+-         of its left edge, for `North` the middle of its bottom edge, for `Center` its centre, so
+-         a renderer derives its own alignment from the attachment (an SVG `text` element's
+-         `text-anchor` and `dominant-baseline`).
++         Перечисление в системе координат с осью y вниз, поэтому `North` находится над целью.
++         Его кейсы — `North`, `Northeast`, `East`, `Southeast`, `South`, `Southwest`, `West`,
++         `Northwest` и `Center`. Якорь метки — её край, ближайший к цели: для `East` — середина
++         её левого края, для `North` — середина нижнего края, для `Center` — её центр, поэтому
++         отрисовщик выводит собственное выравнивание из стороны (`text-anchor` и
++         `dominant-baseline` элемента SVG `text`).
+
+=         `text-anchor` and `dominant-baseline`).
+=
+-         ```scala
++         ```scala
+
+=         `text-anchor` and `dominant-baseline`).
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         arrange:
++         arrange:
+
+-           position(60.0, 12.0, 100.0, 100.0, attachments = Caption.Attachment.cardinal)
++           position(60.0, 12.0, 100.0, 100.0, attachments = Caption.Attachment.cardinal)
+
+=           position(60.0, 12.0, 100.0, 100.0, attachments = Caption.Attachment.cardinal)
+-         ```
++         ```
+
+-     entry .compass   the cartographic preference: east, west, the four diagonals, then north and south
+-     entry .cardinal   east, west, north and south, in that order
+-     entry #dx   the horizontal unit offset from the target to the label's near edge: -1, 0 or 1
+-     entry #dy   the vertical unit offset from the target to the label's near edge: -1, 0 or 1
+-   entry .Fallback   what becomes of a label which overlaps something wherever it is put
+-       An enum of two cases. `Overlap`, the default, draws the label at the position where it
+-       overlaps least. `Hide` does not draw it: its `Caption.Position#visible` is `false`, the
+-       body draws nothing for it, and it blocks nothing for the labels placed after it.
++     entry .compass   картографическое предпочтение: восток, запад, четыре диагонали, затем север и юг
++     entry .cardinal   восток, запад, север и юг, в этом порядке
++     entry #dx   горизонтальное единичное смещение от цели к ближнему краю метки: -1, 0 или 1
++     entry #dy   вертикальное единичное смещение от цели к ближнему краю метки: -1, 0 или 1
++   entry .Fallback   что становится с меткой, которая перекрывает что-то, куда бы её ни поставили
++       Перечисление из двух кейсов. `Overlap`, значение по умолчанию, рисует метку в позиции,
++       где она перекрывает меньше всего. `Hide` её не рисует: её `Caption.Position#visible`
++       равно `false`, тело ничего для неё не рисует, и она ничего не блокирует для меток,
++       размещаемых после неё.
+
+=       body draws nothing for it, and it blocks nothing for the labels placed after it.
+=
+-       ```scala
++       ```scala
+
+=       body draws nothing for it, and it blocks nothing for the labels placed after it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val hidden = arrange:
++       val hidden = arrange:
+
+-         avoid(Obstacle.Box(0.0, 0.0, 300.0, 300.0))
++         avoid(Obstacle.Box(0.0, 0.0, 300.0, 300.0))
+
+-         position(60.0, 12.0, 100.0, 100.0, fallback = Caption.Fallback.Hide)
++         position(60.0, 12.0, 100.0, 100.0, fallback = Caption.Fallback.Hide)
+
+-       hidden.visible   // false
++       hidden.visible   // false
+
+=       hidden.visible   // false
+-       ```
++       ```
+
+-   entry .Leader   a line from a displaced label's edge back to the target it describes
++   entry .Leader   линия от края сдвинутой метки обратно к цели, которую она описывает
+
+=   entry .Leader   a line from a displaced label's edge back to the target it describes
+-     detail
++     detail
+
+-         Drawn for a label moved further from its target than the arranger's leader threshold.
+-         It runs from the nearest point on the label's box to the target. Later labels avoid a
+-         leader as they avoid the label it belongs to; a leader may cross a fixed obstacle, since
+-         pointing past a marker to the target is what it is for, but not another label.
+-     entry #x1   the horizontal coordinate of the end on the label's edge
+-     entry #y1   the vertical coordinate of the end on the label's edge
+-     entry #x2   the horizontal coordinate of the end at the target
+-     entry #y2   the vertical coordinate of the end at the target
+-   entry .Position   the arranged place of a label: anchor point, side, footprint, leader and visibility
++         Рисуется для метки, сдвинутой от своей цели дальше, чем порог выноски расстановщика.
++         Она идёт от ближайшей точки прямоугольника метки к цели. Последующие метки обходят
++         выноску так же, как обходят метку, которой она принадлежит; выноска может пересекать
++         фиксированное препятствие, поскольку указывать мимо маркера на цель — это и есть её
++         назначение, но не другую метку.
++     entry #x1   горизонтальная координата конца на краю метки
++     entry #y1   вертикальная координата конца на краю метки
++     entry #x2   горизонтальная координата конца у цели
++     entry #y2   вертикальная координата конца у цели
++   entry .Position   место метки после расстановки: якорная точка, сторона, занимаемый прямоугольник, выноска и видимость
+
+=   entry .Position   the arranged place of a label: anchor point, side, footprint, leader and visibility
+-     detail
++     detail
+
+-         What `position` answers. The text is set at (`#x`, `#y`) with the alignment its
+-         `#attachment` implies, occupying `#box`; `#leader` is the line to draw back to the
+-         target, if the label was displaced far enough to need one; and `#visible` is `false`
+-         for a `Caption.Fallback.Hide` label which could not be placed clear.
++         То, чем отвечает `position`. Текст ставится в (`#x`, `#y`) с выравниванием, которое
++         подразумевает его `#attachment`, и занимает `#box`; `#leader` — линия, которую нужно
++         провести обратно к цели, если метка была сдвинута достаточно далеко, чтобы она
++         понадобилась; а `#visible` равно `false` для метки `Caption.Fallback.Hide`, которую не
++         удалось разместить без помех.
+
+=         for a `Caption.Fallback.Hide` label which could not be placed clear.
+=
+-         ```scala
++         ```scala
+
+=         for a `Caption.Fallback.Hide` label which could not be placed clear.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val placed = arrange(position(60.0, 12.0, 100.0, 100.0))
++         val placed = arrange(position(60.0, 12.0, 100.0, 100.0))
+
+-         (placed.x, placed.y, placed.attachment, placed.leader, placed.visible)
++         (placed.x, placed.y, placed.attachment, placed.leader, placed.visible)
+
+=         (placed.x, placed.y, placed.attachment, placed.leader, placed.visible)
+-         ```
++         ```
+
+-     entry #x   the horizontal coordinate of the label's anchor point
+-     entry #y   the vertical coordinate of the label's anchor point
+-     entry #attachment   the side of the target the label lies on, from which its alignment follows
+-     entry #box   the box the label occupies
+-     entry #leader   the leader line to draw back to the target, or `Unset` if none is needed
+-     entry #visible   whether the label is to be drawn at all
++     entry #x   горизонтальная координата якорной точки метки
++     entry #y   вертикальная координата якорной точки метки
++     entry #attachment   сторона цели, на которой лежит метка, из неё следует выравнивание
++     entry #box   прямоугольник, который занимает метка
++     entry #leader   выноска, которую нужно провести обратно к цели, или `Unset`, если она не нужна
++     entry #visible   нужно ли вообще рисовать метку
+
+- entry .Obstacle   something no label may be set over: a box, a stroked line or a disc
++ entry .Obstacle   то, поверх чего нельзя ставить метку: прямоугольник, обведённая линия или круг
+
+= entry .Obstacle   something no label may be set over: a box, a stroked line or a disc
+-   detail
++   detail
+
+-       A sealed trait of three shapes, each of which answers `#overlap` — how much of a box it
+-       covers, in area units. The answer is exactly zero when the two are disjoint, and its
+-       magnitude only ranks candidate positions against each other, so a disc's is an estimate.
+-       Obstacles are declared in an `arrange` body with `avoid`, and the canvas with `canvas`;
+-       each placed label's footprint and leader become obstacles for the labels after it.
++       Запечатанный трейт из трёх форм, каждая из которых отвечает на `#overlap` — какую часть
++       прямоугольника она закрывает, в единицах площади. Ответ равен ровно нулю, когда они не
++       пересекаются, а его величина лишь ранжирует позиции-кандидаты друг относительно друга,
++       поэтому для круга это оценка. Препятствия объявляются в теле `arrange` через `avoid`, а
++       холст — через `canvas`; занимаемый прямоугольник и выноска каждой размещённой метки
++       становятся препятствиями для меток после неё.
+
+=       each placed label's footprint and leader become obstacles for the labels after it.
+-   refer cartouche.avoid
++   refer cartouche.avoid
+
+=       each placed label's footprint and leader become obstacles for the labels after it.
+=   refer cartouche.avoid
+-   refer cartouche.canvas
++   refer cartouche.canvas
+
+-   entry #overlap   how much of a box this obstacle covers: zero exactly when they are disjoint
+-   entry .Box   an axis-aligned rectangle in a y-down frame: a bar, a legend, a label's footprint
++   entry #overlap   какую часть прямоугольника закрывает это препятствие: ноль ровно тогда, когда они не пересекаются
++   entry .Box   прямоугольник, выровненный по осям, в системе координат с осью y вниз: столбец, легенда, занимаемая меткой область
+
+=   entry .Box   an axis-aligned rectangle in a y-down frame: a bar, a legend, a label's footprint
+-     detail
++     detail
+
+-         Given by its `#left` and `#top` edges and its `#width` and `#height`. As an obstacle,
+-         its overlap with another box is the area they share.
++         Задаётся своими краями `#left` и `#top` и своими `#width` и `#height`. Как
++         препятствие, его перекрытие с другим прямоугольником — это их общая площадь.
+
+=         its overlap with another box is the area they share.
+=
+-         ```scala
++         ```scala
+
+=         its overlap with another box is the area they share.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val box = Obstacle.Box(10.0, 20.0, 40.0, 10.0)
++         val box = Obstacle.Box(10.0, 20.0, 40.0, 10.0)
+
+-         (box.right, box.bottom, box.overlap(Obstacle.Box(30.0, 25.0, 40.0, 10.0)))   // (50.0, 30.0, 100.0)
++         (box.right, box.bottom, box.overlap(Obstacle.Box(30.0, 25.0, 40.0, 10.0)))   // (50.0, 30.0, 100.0)
+
+=         (box.right, box.bottom, box.overlap(Obstacle.Box(30.0, 25.0, 40.0, 10.0)))   // (50.0, 30.0, 100.0)
+-         ```
++         ```
+
+-     entry .around   the footprint of a label anchored at a point on one side of its target
+-         `Obstacle.Box.around(x, y, width, height, attachment)`: for `East` the anchor is the
+-         box's left-middle, for `North` its bottom-centre, for `Center` its centre.
+-     entry #left   the box's left edge
+-     entry #top   the box's top edge
+-     entry #width   the box's width
+-     entry #height   the box's height
+-     entry #right   the box's right edge
+-     entry #bottom   the box's bottom edge
+-     entry #area   the box's area
+-     entry #centerX   the horizontal coordinate of the box's centre
+-     entry #centerY   the vertical coordinate of the box's centre
+-     entry #pad   the box grown by an amount on every side
+-     entry #excess   how much of this box's area lies outside another box, such as the canvas
+-     entry #contains   whether a point lies in the box, edges included
+-     entry #nearest   the point on the box's perimeter nearest a given point, where a leader meets it
+-   entry .Line   a stroked segment: one edge of a plotted polyline, or a leader
++     entry .around   занимаемый прямоугольник метки, якорь которой стоит в точке на одной стороне её цели
++         `Obstacle.Box.around(x, y, width, height, attachment)`: для `East` якорь — середина
++         левого края прямоугольника, для `North` — середина нижнего края, для `Center` — его
++         центр.
++     entry #left   левый край прямоугольника
++     entry #top   верхний край прямоугольника
++     entry #width   ширина прямоугольника
++     entry #height   высота прямоугольника
++     entry #right   правый край прямоугольника
++     entry #bottom   нижний край прямоугольника
++     entry #area   площадь прямоугольника
++     entry #centerX   горизонтальная координата центра прямоугольника
++     entry #centerY   вертикальная координата центра прямоугольника
++     entry #pad   прямоугольник, увеличенный на величину с каждой стороны
++     entry #excess   какая часть площади этого прямоугольника лежит вне другого прямоугольника, например холста
++     entry #contains   лежит ли точка в прямоугольнике, включая края
++     entry #nearest   точка на периметре прямоугольника, ближайшая к данной точке, где его встречает выноска
++   entry .Line   обведённый отрезок: одно ребро нарисованной ломаной или выноска
+
+=   entry .Line   a stroked segment: one edge of a plotted polyline, or a leader
+-     detail
++     detail
+
+-         From (`#x1`, `#y1`) to (`#x2`, `#y2`), with a stroke `#width` defaulting to 1. Its
+-         overlap with a box is the length of the segment inside the box, found by Liang–Barsky
+-         clipping, times its width, so a label may not touch it. A polyline is avoided as its
+-         segments.
+-     entry #x1   the horizontal coordinate of the segment's start
+-     entry #y1   the vertical coordinate of the segment's start
+-     entry #x2   the horizontal coordinate of the segment's end
+-     entry #y2   the vertical coordinate of the segment's end
+-     entry #width   the stroke width, by which the clipped length is multiplied
+-     entry #length   the segment's length
+-   entry .Disc   a filled circle, such as a scatter plot's marker
++         От (`#x1`, `#y1`) до (`#x2`, `#y2`), с толщиной обводки `#width`, по умолчанию 1. Его
++         перекрытие с прямоугольником — это длина части отрезка внутри прямоугольника,
++         найденная отсечением Лианга — Барски, умноженная на его толщину, поэтому метка не может
++         его касаться. Ломаная обходится как совокупность её отрезков.
++     entry #x1   горизонтальная координата начала отрезка
++     entry #y1   вертикальная координата начала отрезка
++     entry #x2   горизонтальная координата конца отрезка
++     entry #y2   вертикальная координата конца отрезка
++     entry #width   толщина обводки, на которую умножается отсечённая длина
++     entry #length   длина отрезка
++   entry .Disc   закрашенный круг, например маркер точечной диаграммы
+
+=   entry .Disc   a filled circle, such as a scatter plot's marker
+-     detail
++     detail
+
+-         Centred at (`#x`, `#y`). A box is clear of it exactly when the box's nearest point is
+-         at least `#radius` from the centre; otherwise the overlap is estimated as the box's
+-         overlap with the disc's bounding square, scaled by π/4.
+-     entry #x   the horizontal coordinate of the centre
+-     entry #y   the vertical coordinate of the centre
+-     entry #radius   the disc's radius
++         С центром в (`#x`, `#y`). Прямоугольник свободен от него ровно тогда, когда ближайшая
++         точка прямоугольника находится от центра не ближе чем на `#radius`; иначе перекрытие
++         оценивается как перекрытие прямоугольника с описанным квадратом круга, умноженное на
++         π/4.
++     entry #x   горизонтальная координата центра
++     entry #y   вертикальная координата центра
++     entry #radius   радиус круга
+
+- entry .Arranger   an algorithm which finds a position for every caption, given everything else on the page
++ entry .Arranger   алгоритм, который находит позицию для каждой подписи с учётом всего остального на странице
+
+= entry .Arranger   an algorithm which finds a position for every caption, given everything else on the page
+-   detail
++   detail
+
+-       A single-method trait: `#arrange` takes the captions, the obstacles and the optional
+-       canvas, and answers with a `Caption.Position` for each caption, in the captions' order.
+-       `arrange` uses the one in scope: `.greedy`, from the companion, unless another is
+-       imported from the `arrangers` package or bound as a local given.
++       Трейт с одним методом: `#arrange` принимает подписи, препятствия и необязательный холст
++       и отвечает `Caption.Position` для каждой подписи, в порядке подписей. `arrange`
++       использует тот, что в области видимости: `.greedy` из компаньона, если только другой не
++       импортирован из пакета `arrangers` или не привязан как локальный given-экземпляр.
+
+=       imported from the `arrangers` package or bound as a local given.
+=
+-       ```scala
++       ```scala
+
+=       imported from the `arrangers` package or bound as a local given.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Arranger = Arranger.Greedy(step = 2.0, rings = 12)
++       given Arranger = Arranger.Greedy(step = 2.0, rings = 12)
+
+=       given Arranger = Arranger.Greedy(step = 2.0, rings = 12)
+=
+-       arrange:
++       arrange:
+
+=       given Arranger = Arranger.Greedy(step = 2.0, rings = 12)
+=
+=       arrange:
+-         position(60.0, 12.0, 100.0, 100.0, reach = 20.0)
++         position(60.0, 12.0, 100.0, 100.0, reach = 20.0)
+
+=         position(60.0, 12.0, 100.0, 100.0, reach = 20.0)
+-       ```
++       ```
+
+-       Both built-in arrangers try a finite list of candidates for each caption, least
+-       displaced first: each side at the target, then each side at each of eight directions one
+-       `step` away, then two steps, and so on out to the caption's `reach` or `rings` steps.
+-       A candidate's collision is the area of its padded footprint under each fixed obstacle,
+-       each placed label and each placed leader, plus its area outside the canvas and the length
+-       of its own leader across placed labels.
++       Оба встроенных расстановщика пробуют для каждой подписи конечный список кандидатов,
++       начиная с наименее сдвинутых: каждую сторону у цели, затем каждую сторону в каждом из
++       восьми направлений на расстоянии одного `step`, затем двух шагов и так далее, вплоть до
++       `reach` подписи или `rings` шагов. Столкновение кандидата — это площадь его занимаемого
++       прямоугольника с учётом зазора под каждым фиксированным препятствием, каждой размещённой
++       меткой и каждой размещённой выноской плюс его площадь вне холста и длина его собственной
++       выноски поперёк размещённых меток.
+
+-   refer cartouche.arrangers
++   refer cartouche.arrangers
+
+-   refer cartouche.arrange
++   refer cartouche.arrange
+
+-   entry #arrange   positions for the captions, in their order, given the obstacles and canvas
+-   entry .greedy   the default arranger: `Arranger.Greedy()` with its default parameters
+-       In implicit scope, so `arrange` needs no import; a given imported from `arrangers` or
+-       declared locally takes precedence.
+-   entry .Pass   one run of an `arrange` body: records requests in the first, answers in the second
++   entry #arrange   позиции для подписей, в их порядке, с учётом препятствий и холста
++   entry .greedy   расстановщик по умолчанию: `Arranger.Greedy()` с параметрами по умолчанию
++       Находится в неявной области видимости, поэтому `arrange` не нужен импорт;
++       given-экземпляр, импортированный из `arrangers` или объявленный локально, имеет
++       приоритет.
++   entry .Pass   один прогон тела `arrange`: в первом записывает запросы, во втором отвечает
+
+=   entry .Pass   one run of an `arrange` body: records requests in the first, answers in the second
+-     detail
++     detail
+
+-         The contextual value `arrange` provides to its body, and which `position`, `avoid`
+-         and `canvas` need. It is mutable and made by `arrange` for one run, never shared, and
+-         cannot be constructed elsewhere.
+-     entry #solved   whether this is the second run, whose answers are the solved positions
+-     entry #diverged   whether the second run asked for something the first did not
+-         A call beyond those recorded, or one whose caption differs from the first run's at the
+-         same position in the order, is answered provisionally and sets this flag: the body was
+-         not repeatable.
+-   entry .Greedy   places each caption in priority order at its best spot given those already placed
++         Контекстное значение, которое `arrange` предоставляет своему телу и которое нужно
++         `position`, `avoid` и `canvas`. Оно изменяемое, создаётся `arrange` для одного
++         прогона, никогда не разделяется и не может быть создано в другом месте.
++     entry #solved   второй ли это прогон, ответы которого — вычисленные позиции
++     entry #diverged   запросил ли второй прогон что-то, чего не запрашивал первый
++         Вызов сверх записанных или вызов, подпись которого отличается от подписи первого
++         прогона на той же позиции в порядке, получает предварительный ответ и устанавливает
++         этот флаг: тело не было повторяемым.
++   entry .Greedy   размещает каждую подпись в порядке приоритета в лучшем месте с учётом уже размещённых
+
+=   entry .Greedy   places each caption in priority order at its best spot given those already placed
+-     detail
++     detail
+
+-         Each caption, highest `priority` first and otherwise in order, takes the least
+-         displaced candidate clear of everything placed before it, or the least colliding one
+-         if none is clear. Deterministic, and bounded by the number of candidates: at most
+-         1 + 8 × `rings` per side. A caption placed early is never moved to make room for one
+-         placed later, which on a dense picture can leave collisions a different order would
+-         have avoided; `Arranger.Annealing` addresses that.
++         Каждая подпись — сначала с наивысшим `priority`, а в остальном по порядку — занимает
++         наименее сдвинутого кандидата, свободного от всего, что было размещено до неё, или
++         наименее сталкивающегося, если свободного нет. Детерминирован и ограничен количеством
++         кандидатов: не более 1 + 8 × `rings` на сторону. Подпись, размещённая рано, никогда не
++         сдвигается, чтобы освободить место для размещённой позже, что на плотном изображении
++         может оставить столкновения, которых другой порядок позволил бы избежать; эту проблему
++         решает `Arranger.Annealing`.
+
+-         The parameters: `step` (default 4) is the distance between rings of candidates,
+-         `rings` (default 8) how many rings out to search, `leaderThreshold` (default 6) the
+-         displacement beyond which a leader is drawn, and `leaderWidth` (default 1) the stroke a
+-         leader is given as an obstacle.
+-     entry #step   the distance between successive rings of candidate positions
+-     entry #rings   how many rings of candidates to search, before the caption's reach
+-     entry #leaderThreshold   the displacement beyond which a label gets a leader
+-     entry #leaderWidth   the stroke width of a leader, as an obstacle to other labels
+-     entry #arrange   places the captions greedily, hiding those which collide and ask to hide
+-   entry .Annealing   refines the greedy arrangement by simulated annealing, from a fixed seed
++         Параметры: `step` (по умолчанию 4) — расстояние между кольцами кандидатов, `rings` (по
++         умолчанию 8) — сколько колец просматривать, `leaderThreshold` (по умолчанию 6) — сдвиг,
++         за пределами которого рисуется выноска, и `leaderWidth` (по умолчанию 1) — толщина
++         обводки, которую получает выноска как препятствие.
++     entry #step   расстояние между последовательными кольцами позиций-кандидатов
++     entry #rings   сколько колец кандидатов просматривать, в пределах сдвига подписи
++     entry #leaderThreshold   сдвиг, за пределами которого метка получает выноску
++     entry #leaderWidth   толщина обводки выноски как препятствия для других меток
++     entry #arrange   размещает подписи жадно, скрывая те, которые сталкиваются и просят себя скрыть
++   entry .Annealing   уточняет жадную расстановку методом имитации отжига, от фиксированного начального значения
+
+=   entry .Annealing   refines the greedy arrangement by simulated annealing, from a fixed seed
+-     detail
++     detail
+
+-         Starts from the greedy arrangement, then repeatedly moves a random caption to a random
+-         one of its candidates, accepting a move that lowers the total collision and weighted
+-         displacement, and one that raises it with a probability that falls as the temperature
+-         cools. Unlike the greedy sweep, a caption placed early can be moved to make room for one
+-         placed later. The random moves are drawn from `seed` through capricious, so the same
+-         input arranges the same way every time, and `iterations` bounds the work exactly.
+-         Captions that still collide and ask to hide are hidden, least important first.
++         Начинает с жадной расстановки, затем многократно перемещает случайную подпись в
++         случайного из её кандидатов, принимая ход, который уменьшает суммарное столкновение и
++         взвешенный сдвиг, и ход, который его увеличивает, — с вероятностью, падающей по мере
++         остывания температуры. В отличие от жадного прохода, подпись, размещённая рано, может
++         быть сдвинута, чтобы освободить место для размещённой позже. Случайные ходы берутся из
++         `seed` через capricious, поэтому одни и те же входные данные каждый раз расставляются
++         одинаково, а `iterations` точно ограничивает объём работы. Подписи, которые всё ещё
++         сталкиваются и просят себя скрыть, скрываются, начиная с наименее важных.
+
+=         Captions that still collide and ask to hide are hidden, least important first.
+=
+-         ```scala
++         ```scala
+
+=         Captions that still collide and ask to hide are hidden, least important first.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given Arranger = Arranger.Annealing(seed = Seed(42L), iterations = 10000)
++         given Arranger = Arranger.Annealing(seed = Seed(42L), iterations = 10000)
+
+=         given Arranger = Arranger.Annealing(seed = Seed(42L), iterations = 10000)
+-         ```
++         ```
+
+-         Parameters, with their defaults: `seed` (`Seed(0L)`), `iterations` (4000),
+-         `temperature` (1.0), `cooling` (0.995, the factor applied each move),
+-         `displacementWeight` (0.05, how much displacement counts against collision), and
+-         `step`, `rings`, `leaderThreshold` and `leaderWidth` as for `Arranger.Greedy`.
+-     entry #seed   the seed the random moves are drawn from
+-     entry #iterations   the exact number of moves to try
+-     entry #temperature   the starting temperature, scaling how readily a worse move is accepted
+-     entry #cooling   the factor the temperature is multiplied by after each move
+-     entry #step   the distance between successive rings of candidate positions
+-     entry #rings   how many rings of candidates to search, before the caption's reach
+-     entry #leaderThreshold   the displacement beyond which a label gets a leader
+-     entry #leaderWidth   the stroke width of a leader, as an obstacle to other labels
+-     entry #displacementWeight   how heavily a label's distance from its target counts against it
+-     entry #arrange   anneals the arrangement from the greedy start, then hides what must hide
++         Параметры со значениями по умолчанию: `seed` (`Seed(0L)`), `iterations` (4000),
++         `temperature` (1.0), `cooling` (0.995, множитель, применяемый на каждом ходе),
++         `displacementWeight` (0.05, насколько сдвиг учитывается против столкновения), а также
++         `step`, `rings`, `leaderThreshold` и `leaderWidth`, как для `Arranger.Greedy`.
++     entry #seed   начальное значение, из которого берутся случайные ходы
++     entry #iterations   точное количество ходов, которые нужно попробовать
++     entry #temperature   начальная температура, определяющая, насколько охотно принимается худший ход
++     entry #cooling   множитель, на который умножается температура после каждого хода
++     entry #step   расстояние между последовательными кольцами позиций-кандидатов
++     entry #rings   сколько колец кандидатов просматривать, в пределах сдвига подписи
++     entry #leaderThreshold   сдвиг, за пределами которого метка получает выноску
++     entry #leaderWidth   толщина обводки выноски как препятствия для других меток
++     entry #displacementWeight   насколько сильно расстояние метки от цели учитывается против неё
++     entry #arrange   выполняет отжиг расстановки от жадного начала, затем скрывает то, что должно быть скрыто
+
+- entry .arrangers   the built-in arrangers, each a given to import by name
++ entry .arrangers   встроенные расстановщики, каждый — given-экземпляр для импорта по имени
+
+= entry .arrangers   the built-in arrangers, each a given to import by name
+-   detail
++   detail
+
+-       The `Arranger` in scope decides how `arrange` places labels. `Arranger`'s companion
+-       supplies the greedy one by default; importing one of these by name, or binding a
+-       configured `Arranger.Greedy` or `Arranger.Annealing` as a local given, overrides it.
+-       `import soundness.*` does not import givens, so each is imported by name.
++       `Arranger` в области видимости решает, как `arrange` размещает метки. Компаньон
++       `Arranger` по умолчанию предоставляет жадный; импорт одного из этих по имени или привязка
++       настроенного `Arranger.Greedy` либо `Arranger.Annealing` как локального given-экземпляра
++       его переопределяет. `import soundness.*` не импортирует given-экземпляры, поэтому каждый
++       импортируется по имени.
+
+=       `import soundness.*` does not import givens, so each is imported by name.
+=
+-       ```scala
++       ```scala
+
+=       `import soundness.*` does not import givens, so each is imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import arrangers.annealingArranger
++       import arrangers.annealingArranger
+
+=       import arrangers.annealingArranger
+=
+-       arrange:
++       arrange:
+
+=       import arrangers.annealingArranger
+=
+=       arrange:
+-         position(60.0, 12.0, 100.0, 100.0, reach = 20.0)
++         position(60.0, 12.0, 100.0, 100.0, reach = 20.0)
+
+-         position(60.0, 12.0, 102.0, 101.0, reach = 20.0)
++         position(60.0, 12.0, 102.0, 101.0, reach = 20.0)
+
+-         position(60.0, 12.0, 98.0, 99.0, reach = 20.0)
++         position(60.0, 12.0, 98.0, 99.0, reach = 20.0)
+
+=         position(60.0, 12.0, 98.0, 99.0, reach = 20.0)
+-       ```
++       ```
+
+-   entry .greedyArranger   `Arranger.Greedy()`: deterministic, priority-ordered, never revisits a label
+-   entry .annealingArranger   `Arranger.Annealing()`: simulated annealing from the greedy start, seed 0
++   entry .greedyArranger   `Arranger.Greedy()`: детерминированный, упорядоченный по приоритету, никогда не возвращается к метке
++   entry .annealingArranger   `Arranger.Annealing()`: имитация отжига от жадного начала, начальное значение 0

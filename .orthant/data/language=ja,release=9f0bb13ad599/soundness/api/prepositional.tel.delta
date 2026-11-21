@@ -1,0 +1,11 @@
+orthant 1 language
+
+-       A *plane* is the space a value lives on: a filesystem for a path (`Path on Linux`,
+-       `Path on Classpath`), a classloader's search space, or the nodes a graph is drawn
+-       over. A typeclass or a value type extends `Planar` so that `on` can name the plane,
+-       and galilei's filesystem policies (`CreateParents`, `DeleteRecursively`)
+-       are `Planar` so that one policy is chosen per filesystem.
+-   entry #Plane   the space, such as a filesystem or a classpath, a value is located on
++       *プレーン*とは、値が存在する空間である：パスにとってのファイルシステム（`Path on Linux`、`Path on Classpath`）、クラスローダーの探索空間、あるいはグラフが描かれるノード。
++       型クラスや値の型は、`on` でプレーンを名指せるように `Planar` を継承する。galilei のファイルシステムのポリシー（`CreateParents`、`DeleteRecursively`）は、ファイルシステムごとに一つのポリシーが選ばれるように `Planar` である。
++   entry #Plane   ファイルシステムやクラスパスなど、値が位置する空間

@@ -1,0 +1,251 @@
+orthant 1 language
+
+- # Naming
++ # Nomenclatura
+
+- Names in Soundness are chosen with care, because a well-named thing reads correctly and
+- a badly-named one obscures every line that uses it. Methods, types, and contextual
+- values are named so that the expressions they form read as natural language, and
+- consistent conventions mean a name carries the same meaning wherever it appears. Good
+- naming is inseparable from making code read like [elegant prose](elegant-prose.md): the
+- right name in the right place removes the need for a comment to explain it.
++ Os nomes no Soundness são escolhidos com cuidado, porque uma coisa bem nomeada se lê corretamente e
++ uma mal nomeada obscurece cada linha que a usa. Métodos, tipos e valores contextuais são nomeados
++ para que as expressões que formam se leiam como linguagem natural, e convenções consistentes fazem
++ com que um nome carregue o mesmo significado onde quer que apareça. Uma boa nomenclatura é
++ inseparável de fazer o código se ler como [prosa elegante](elegant-prose.md): o nome certo no
++ lugar certo dispensa um comentário para explicá-lo.
+
+- Names are also unique across the whole of Soundness. Every public type has one meaning
+- in the `soundness` namespace: there is one `Path`, one `Message`, one `Error`, and a
+- module needing a distinct concept coins a distinct name — `Teletype`, not another
+- `String`; `GitHash`, not another `Hash`. Uniqueness is what makes the umbrella import
+- possible: `import soundness.*` never forces a choice between two things called the same,
+- a bare name in documentation or an error message is unambiguous, and moving code between
+- modules never silently changes which `Path` it means. Where the same word genuinely
+- suits two things, one of them is renamed rather than qualified forever.
++ Os nomes também são únicos em todo o Soundness. Todo tipo público tem um único significado no
++ espaço de nomes `soundness`: há um `Path`, um `Message`, um `Error`, e um módulo que precisa de um
++ conceito distinto cunha um nome distinto — `Teletype`, não outra `String`; `GitHash`, não outro
++ `Hash`. A unicidade é o que torna possível o import guarda-chuva: `import soundness.*` nunca força
++ uma escolha entre duas coisas com o mesmo nome, um nome simples numa documentação ou numa mensagem
++ de erro é inequívoco, e mover código entre módulos nunca muda silenciosamente qual `Path` ele quer
++ dizer. Onde a mesma palavra realmente convém a duas coisas, uma delas é renomeada em vez de
++ qualificada para sempre.
+
+- Descriptiveness extends to the smallest names. Type parameters are words, not letters:
+- a method is generic over `element`, `format`, `duration` or `plane` — never `A`, `B`,
+- `T` — so a signature reads as a sentence about the kinds of thing involved, and its
+- constraint clauses (`element: Encodable in Json`) read as statements about them. The
+- convention costs a few characters per declaration and repays them at every reading,
+- which is the trade naming should always make.
++ O caráter descritivo se estende aos menores nomes. Parâmetros de tipo são palavras, não letras: um
++ método é genérico sobre `element`, `format`, `duration` ou `plane` — nunca `A`, `B`, `T` — de modo
++ que uma assinatura se lê como uma frase sobre os tipos de coisa envolvidos, e suas cláusulas de
++ restrição (`element: Encodable in Json`) se leem como afirmações sobre eles. A convenção custa
++ alguns caracteres por declaração e os devolve a cada leitura, que é a troca que a nomenclatura
++ sempre deveria fazer.
+
+- ## Names that form phrases
++ ## Nomes que formam frases
+
+- A name is chosen for how it reads *in position*, not in isolation. The test is whether
+- the resulting expression can be read aloud:
++ Um nome é escolhido pelo modo como se lê *em posição*, não isoladamente. O teste é se a expressão
++ resultante pode ser lida em voz alta:
+
+= the resulting expression can be read aloud:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the resulting expression can be read aloud:
+=
+= ```scala fuel
+- parse
++ parse
+
+= the resulting expression can be read aloud:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- 5.25.pm on 2018-Aug-11
++ 5.25.pm on 2018-Aug-11
+
+- key.uncloak(message.decrypt.as[Text])
++ key.uncloak(message.decrypt.as[Text])
+
+- worktree.merge(GitBranch(t"feature"), ff = FastForward.Never)
++ worktree.merge(GitBranch(t"feature"), ff = FastForward.Never)
+
+- path.open[Directory](Read & Exclusive)
++ path.open[Directory](Read & Exclusive)
+
+= path.open[Directory](Read & Exclusive)
+- ```
++ ```
+
+- `on` joins a time to a date because that is the English preposition; `uncloak` says what
+- happens to a secret; `Read & Exclusive` reads as the mode it names. None would be
+- improved by a more literal name, and several would be worse: `combineTimeAndDate` says
+- less than `on` and reads far worse.
++ `on` junta um horário a uma data porque essa é a preposição inglesa; `uncloak` diz o que acontece
++ com um segredo; `Read & Exclusive` se lê como o modo que nomeia. Nenhum seria melhorado por um nome
++ mais literal, e vários ficariam piores: `combineTimeAndDate` diz menos que `on` e se lê muito pior.
+
+- The same applies to contextual values, which are named for what they *select* rather
+- than for their type, since the import is what a reader sees:
++ O mesmo vale para os valores contextuais, que são nomeados pelo que *selecionam* e não pelo seu
++ tipo, já que o import é o que o leitor vê:
+
+= than for their type, since the import is what a reader sees:
+=
+- ```scala fuel
++ ```scala fuel
+
+= than for their type, since the import is what a reader sees:
+=
+= ```scala fuel
+- parse
++ parse
+
+= than for their type, since the import is what a reader sees:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import dateFormats.iso8601DateFormat
++ import dateFormats.iso8601DateFormat
+
+- import probates.cancelProbate
++ import probates.cancelProbate
+
+= import probates.cancelProbate
+- ```
++ ```
+
+- Someone encountering `import strategies.throwUnsafely` in unfamiliar code learns something about
+- that code from the import line alone.
++ Quem encontra `import strategies.throwUnsafely` num código desconhecido aprende algo sobre esse
++ código apenas pela linha do import.
+
+- ## Type parameters as words
++ ## Parâmetros de tipo como palavras
+
+- The convention is easiest to judge by comparison, on one signature written in the
+- conventional style and in the Soundness style:
++ A convenção é mais fácil de julgar por comparação, numa mesma assinatura escrita no estilo
++ convencional e no estilo do Soundness:
+
+= conventional style and in the Soundness style:
+=
+- ```scala fuel
++ ```scala fuel
+
+= conventional style and in the Soundness style:
+=
+= ```scala fuel
+- parse
++ parse
+
+- alternative Conventional
++ alternative Conventional
+
+= alternative Conventional
+-   code
++   code
+
+-       def read[T](using R: Readable[S, T]): T
++       def read[T](using R: Readable[S, T]): T
+
+- alternative Soundness
++ alternative Soundness
+
+= alternative Soundness
+-   code
++   code
+
+-       def read[result](using readable: value is Readable to result): result
++       def read[result](using readable: value is Readable to result): result
+
+=       def read[result](using readable: value is Readable to result): result
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- The Soundness version says what the pieces *are*: `result` is what is produced, `value` what it is
+- read from, and the constraint clause reads as a claim about them. No key is needed to
+- decode the letters, and there is no room for the mental slip where `T` in one signature
+- means something different from `T` in the next.
++ A versão do Soundness diz o que as peças *são*: `result` é o que é produzido, `value` aquilo de que
++ é lido, e a cláusula de restrição se lê como uma afirmação sobre eles. Nenhuma chave é necessária
++ para decifrar as letras, e não há espaço para o lapso mental em que `T` numa assinatura significa
++ algo diferente de `T` na seguinte.
+
+- ## Uniqueness is enforced, not aspired to
++ ## A unicidade é imposta, não almejada
+
+- Name uniqueness is not merely a convention that reviewers watch for. Because every module
+- re-exports into one `soundness` namespace, a clash is a compile error in the umbrella
+- module — so a collision is discovered when it is introduced, not when a user meets it.
++ A unicidade dos nomes não é apenas uma convenção que os revisores vigiam. Como todo módulo
++ reexporta para um único espaço de nomes `soundness`, um conflito é um erro de compilação no módulo
++ guarda-chuva — de modo que uma colisão é descoberta quando é introduzida, e não quando um usuário
++ a encontra.
+
+- The consequences appear in the repository's history as deliberate renames: aviation's
+- `Posix` timeline became `Unix` to free `soundness.Posix` for the filesystem plane;
+- `Transmitter`, `Trust` and `enumerate` were renamed when they collided; MathML's element
+- types were nested inside `Mathml` rather than shadowing the general names. Each was
+- churn, accepted because the alternative — two meanings for one word, qualified forever —
+- is a permanent tax on every reader.
++ As consequências aparecem no histórico do repositório como renomeações deliberadas: a linha do
++ tempo `Posix` do aviation virou `Unix` para liberar `soundness.Posix` para o plano do sistema de
++ arquivos; `Transmitter`, `Trust` e `enumerate` foram renomeados quando colidiram; os tipos de
++ elemento do MathML foram aninhados dentro de `Mathml` em vez de sombrear os nomes gerais. Cada uma
++ foi uma agitação, aceita porque a alternativa — dois significados para uma palavra, qualificados
++ para sempre — é um imposto permanente sobre cada leitor.
+
+- ## What it costs
++ ## Quanto custa
+
+- **Renaming is disruptive.** A collision found late means changing a published name and
+- breaking downstream code. The policy accepts that, on the grounds that the alternative
+- compounds.
++ **Renomear é disruptivo.** Uma colisão descoberta tarde significa mudar um nome publicado e quebrar
++ código dependente. A política aceita isso, com base em que a alternativa se acumula.
+
+- **Good names are hard to find.** `Teletype` for styled terminal text took thought that
+- `AnsiString` would not have, and the search is not always successful on the first
+- attempt.
++ **Bons nomes são difíceis de encontrar.** `Teletype`, para texto de terminal com estilo, exigiu uma
++ reflexão que `AnsiString` não teria exigido, e a busca nem sempre tem sucesso na primeira
++ tentativa.
+
+- **A namespace of unique names has many names in it.** `import soundness.*` brings in a
+- great deal, and a name that looks free may not be — which is the direct price of the
+- umbrella import, and why a new module's names are checked against the whole before it is
+- added.
++ **Um espaço de nomes de nomes únicos tem muitos nomes.** `import soundness.*` traz muita coisa, e um
++ nome que parece livre pode não estar — que é o preço direto do import guarda-chuva, e a razão pela
++ qual os nomes de um novo módulo são verificados contra o todo antes de ele ser adicionado.
+
+- See [elegant prose](elegant-prose.md) for what the naming is in service of, and
+- [small APIs](small-apis.md) for why there are fewer names to choose than there might be.
++ Veja [prosa elegante](elegant-prose.md) para aquilo a que a nomenclatura serve, e
++ [APIs pequenas](small-apis.md) para entender por que há menos nomes a escolher do que poderia
++ haver.

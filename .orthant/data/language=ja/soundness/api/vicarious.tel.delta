@@ -1,0 +1,875 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base vicarious
++ base vicarious
+
+- import soundness
++ import soundness
+
+- info   values indexed by the field paths of a type, addressed through a compile-time-checked proxy
++ info   型のフィールドパスで索引付けした値。コンパイル時に検査されるプロキシを通じて指し示す
+
+- detail
++ detail
+
+-     _Vicarious_ treats the structure of a case class — every field reachable from it, at any
+-     depth, and the whole value itself — as a fixed set of **paths**, `opponent.name` rather than
+-     `name`, and lets code name those paths through a **proxy**: a stand-in value of the type
+-     with no fields of its own, on which each selection is resolved as the code compiles into the
+-     index of the path it names. A path the type does not have is a compile error, so no path is
+-     ever written as text.
++     _Vicarious_ は、ケースクラスの構造（どの深さであれそこから到達できるすべてのフィールドと、値全体そのもの）を、`name` ではなく `opponent.name` のような**パス**の固定された集合として扱い、コードがそれらのパスを**プロキシ**を通じて名指せるようにする。
++     プロキシはその型の代役となる値で、自身のフィールドは持たず、その上の各選択は、コードのコンパイル時に、それが名指すパスの索引へと解決される。
++     型が持たないパスはコンパイルエラーなので、パスがテキストとして書かれることはない。
+
+-     Two structures are built on the proxy. A `Catalog[Key, Value]` holds one `Value` for every
+-     path of `Key`, computed by one function from a value of `Key`, read by path, transformed
+-     with `map` and combined entry by entry with `braid`. A `Specific` maps some paths of a type
+-     to typeclass instances, for a derivation (`wisteria`'s, and so `jacinta`'s, `stratiform`'s
+-     and the other codecs') to use at exactly those paths in place of the instance for the
+-     field's type.
++     プロキシの上に二つの構造が作られている。
++     `Catalog[Key, Value]` は `Key` のすべてのパスに一つずつ `Value` を保持する。それは `Key` の値から一つの関数で計算され、パスで読み、`map` で変換し、`braid` でエントリーごとに組み合わせる。
++     `Specific` はある型のいくつかのパスを型クラスのインスタンスに対応付け、導出（`wisteria` の導出、したがって `jacinta`、`stratiform` などのコーデックの導出）が、ちょうどそれらのパスで、フィールドの型に対するインスタンスの代わりに使えるようにする。
+
+=     field's type.
+=
+-     ```scala
++     ```scala
+
+=     field's type.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     field's type.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+=     field's type.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Person(name: Text, age: Int)
+-     case class Duel(challenger: Person, opponent: Person)
++     case class Duel(challenger: Person, opponent: Person)
+
+=     field's type.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Person(name: Text, age: Int)
+=     case class Duel(challenger: Person, opponent: Person)
+=
+-     val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
++     val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+
+=     field's type.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Person(name: Text, age: Int)
+=     case class Duel(challenger: Person, opponent: Person)
+=
+=     val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+-     val labels: Catalog[Duel, Text] = catalog(duel)([field] => (field: field) => field.toString.tt)
++     val labels: Catalog[Duel, Text] = catalog(duel)([field] => (field: field) => field.toString.tt)
+
+-     labels(proxy ?=> proxy.opponent.name)    // t"Hamlet"
++     labels(proxy ?=> proxy.opponent.name)    // t"Hamlet"
+
+-     labels(proxy ?=> proxy.opponent.title)   // does not compile
++     labels(proxy ?=> proxy.opponent.title)   // does not compile
+
+=     labels(proxy ?=> proxy.opponent.title)   // does not compile
+-     ```
++     ```
+
+-     Paths are flattened depth-first with the root first: for `Duel` they are the whole `Duel`,
+-     `challenger`, `challenger.name`, `challenger.age`, `opponent`, `opponent.name` and
+-     `opponent.age`, so a catalog over `Duel` has seven entries, and two catalogs over the same key
+-     align position for position.
++     パスは根を先頭に深さ優先で平坦化される。
++     `Duel` については、`Duel` 全体、`challenger`、`challenger.name`、`challenger.age`、`opponent`、`opponent.name`、`opponent.age` なので、`Duel` に対するカタログは七つのエントリーを持ち、同じキーに対する二つのカタログは位置ごとに揃う。
+
+-     The library has a single source set, `vicarious.core`. `Catalog`, `catalog`, `Proxy`,
+-     `Specific`, `root` and `specifically` are exported to the `soundness` umbrella; the
+-     `Proxy` given is in its companion, in implicit scope, so nothing is imported by name.
++     ライブラリには一つのソースセット `vicarious.core` がある。
++     `Catalog`、`catalog`、`Proxy`、`Specific`、`root`、`specifically` は `soundness` アンブレラにエクスポートされる。`Proxy` の given はそのコンパニオンにあって暗黙のスコープにあるので、名前でインポートするものはない。
+
+- refer vicarious.Catalog
++ refer vicarious.Catalog
+
+- refer vicarious.catalog
++ refer vicarious.catalog
+
+- refer vicarious.Proxy
++ refer vicarious.Proxy
+
+- refer vicarious.Specific
++ refer vicarious.Specific
+
+- refer vicarious.specifically
++ refer vicarious.specifically
+
+- entry .catalog   builds a `Catalog` by applying one polymorphic function to a value and to every field within it
+-     `catalog(value)(lambda)` is a macro which walks the case-class structure of `value`'s type
+-     as the code compiles, and applies `lambda` — a pure polymorphic function `[field] =>
+-     (field: field) -> result` — to the whole value and then to each field, depth-first, in
+-     declaration order. The function must accept a field of any type, so it may do with one only
+-     what every value supports. A `ClassTag` for the result type is needed, since the entries are
+-     held in an array.
++ entry .catalog   一つの多相関数を値とその中のすべてのフィールドに適用して `Catalog` を作る
++     `catalog(value)(lambda)` はマクロであり、コードのコンパイル時に `value` の型のケースクラス構造をたどり、`lambda`（純粋な多相関数 `[field] => (field: field) -> result`）を値全体に、それから各フィールドに、深さ優先で宣言の順に適用する。
++     関数は任意の型のフィールドを受け入れなければならないので、フィールドに対しては、すべての値がサポートすることしかできない。
++     エントリーは配列に保持されるので、結果の型に対する `ClassTag` が必要である。
+
+=     held in an array.
+=
+-     ```scala
++     ```scala
+
+=     held in an array.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     held in an array.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+=     held in an array.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Person(name: Text, age: Int)
+-     case class Duel(challenger: Person, opponent: Person)
++     case class Duel(challenger: Person, opponent: Person)
+
+=     held in an array.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Person(name: Text, age: Int)
+=     case class Duel(challenger: Person, opponent: Person)
+=
+-     val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
++     val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+
+=     held in an array.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Person(name: Text, age: Int)
+=     case class Duel(challenger: Person, opponent: Person)
+=
+=     val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+-     val labels: Catalog[Duel, Text] = catalog(duel)([field] => (field: field) => field.toString.tt)
++     val labels: Catalog[Duel, Text] = catalog(duel)([field] => (field: field) => field.toString.tt)
+
+-     labels.size   // 7: the whole Duel, challenger, challenger.name, challenger.age,
++     labels.size   // 7: the whole Duel, challenger, challenger.name, challenger.age,
+
+-                   //    opponent, opponent.name, opponent.age
++                   //    opponent, opponent.name, opponent.age
+
+=                   //    opponent, opponent.name, opponent.age
+-     ```
++     ```
+
+- entry .Catalog   one value for every field path of a key type, read by a path checked as the code compiles
++ entry .Catalog   キーの型のすべてのフィールドパスに一つずつ値を持ち、コンパイル時に検査されるパスで読む
+
+= entry .Catalog   one value for every field path of a key type, read by a path checked as the code compiles
+-   detail
++   detail
+
+-       A `Catalog[Key, Value]` holds a `Value` at each position of `Key`'s flattened structure —
+-       the whole value first, then every field depth-first — in `#values`. It is built with
+-       `catalog`, read with `#apply` and a path written through a proxy, transformed with `#map`,
+-       overridden at named paths with `.brush`, and combined with another catalog over the same
+-       key with `#braid`. The key type is what makes two catalogs combinable and what checks
+-       every path used to read one.
++       `Catalog[Key, Value]` は、`Key` の平坦化された構造の各位置（最初に値全体、次にすべてのフィールドを深さ優先で）に `Value` を一つずつ、`#values` に保持する。
++       `catalog` で作り、`#apply` とプロキシを通じて書いたパスで読み、`#map` で変換し、`.brush` で名指したパスを上書きし、`#braid` で同じキーに対する別のカタログと組み合わせる。
++       キーの型こそが、二つのカタログを組み合わせ可能にし、カタログを読むのに使うすべてのパスを検査するものである。
+
+=       every path used to read one.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A catalog of the label of every field
++         label すべてのフィールドのラベルのカタログ
+
+=         label A catalog of the label of every field
+-         code
++         code
+
+=         label A catalog of the label of every field
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A catalog of the label of every field
+=         code
+=             import soundness.*
+=
+-             case class Person(name: Text, age: Int)
++             case class Person(name: Text, age: Int)
+
+=         label A catalog of the label of every field
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+-             case class Duel(challenger: Person, opponent: Person)
++             case class Duel(challenger: Person, opponent: Person)
+
+=         label A catalog of the label of every field
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+=             case class Duel(challenger: Person, opponent: Person)
+=
+-             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
++             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+
+=         label A catalog of the label of every field
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+=             case class Duel(challenger: Person, opponent: Person)
+=
+=             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+-             val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
++             val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
+
+-             labels(proxy ?=> proxy.opponent.name)   // t"Hamlet"
++             labels(proxy ?=> proxy.opponent.name)   // t"Hamlet"
+
+=             labels(proxy ?=> proxy.opponent.name)   // t"Hamlet"
+-       frame
++       frame
+
+-         label Mapped to a catalog of widths, addressed by the same paths
++         label 幅のカタログに写したもの。同じパスで指し示す
+
+=         label Mapped to a catalog of widths, addressed by the same paths
+-         code
++         code
+
+=         label Mapped to a catalog of widths, addressed by the same paths
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Mapped to a catalog of widths, addressed by the same paths
+=         code
+=             import soundness.*
+=
+-             case class Person(name: Text, age: Int)
++             case class Person(name: Text, age: Int)
+
+=         label Mapped to a catalog of widths, addressed by the same paths
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+-             case class Duel(challenger: Person, opponent: Person)
++             case class Duel(challenger: Person, opponent: Person)
+
+=         label Mapped to a catalog of widths, addressed by the same paths
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+=             case class Duel(challenger: Person, opponent: Person)
+=
+-             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
++             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+
+=         label Mapped to a catalog of widths, addressed by the same paths
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+=             case class Duel(challenger: Person, opponent: Person)
+=
+=             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+-             val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
++             val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
+
+=         label Mapped to a catalog of widths, addressed by the same paths
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+=             case class Duel(challenger: Person, opponent: Person)
+=
+=             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+=             val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
+-             val widths: Catalog[Duel, Int] = labels.map(_.length)
++             val widths: Catalog[Duel, Int] = labels.map(_.length)
+
+-             widths(proxy ?=> proxy.opponent.name)   // 6
++             widths(proxy ?=> proxy.opponent.name)   // 6
+
+=             widths(proxy ?=> proxy.opponent.name)   // 6
+-       frame
++       frame
+
+-         label Braided with the labels, entry by entry
++         label ラベルとエントリーごとに編み合わせたもの
+
+=         label Braided with the labels, entry by entry
+-         code
++         code
+
+=         label Braided with the labels, entry by entry
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Braided with the labels, entry by entry
+=         code
+=             import soundness.*
+=
+-             case class Person(name: Text, age: Int)
++             case class Person(name: Text, age: Int)
+
+=         label Braided with the labels, entry by entry
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+-             case class Duel(challenger: Person, opponent: Person)
++             case class Duel(challenger: Person, opponent: Person)
+
+=         label Braided with the labels, entry by entry
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+=             case class Duel(challenger: Person, opponent: Person)
+=
+-             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
++             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+
+=         label Braided with the labels, entry by entry
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+=             case class Duel(challenger: Person, opponent: Person)
+=
+=             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+-             val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
++             val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
+
+=         label Braided with the labels, entry by entry
+=         code
+=             import soundness.*
+=
+=             case class Person(name: Text, age: Int)
+=             case class Duel(challenger: Person, opponent: Person)
+=
+=             val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+=             val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
+-             val widths: Catalog[Duel, Int] = labels.map(_.length)
++             val widths: Catalog[Duel, Int] = labels.map(_.length)
+
+-             val cells = labels.braid(widths)((label, width) => t"$label ($width)")
++             val cells = labels.braid(widths)((label, width) => t"$label ($width)")
+
+-             cells(proxy ?=> proxy.opponent.name)   // t"Hamlet (6)"
++             cells(proxy ?=> proxy.opponent.name)   // t"Hamlet (6)"
+
+=             cells(proxy ?=> proxy.opponent.name)   // t"Hamlet (6)"
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       This is how a table of per-field settings is assembled: catalogs of labels, widths and
+-       whatever else matters, built separately and braided together, each addressed by the same
+-       paths. A `Catalog` is `Findable`.
++       フィールドごとの設定の表はこのようにして組み立てる。ラベル、幅、その他必要なもののカタログを別々に作り、編み合わせ、それぞれを同じパスで指し示す。
++       `Catalog` は `Findable` である。
+
+-   refer vicarious.catalog
++   refer vicarious.catalog
+
+-   refer vicarious.Proxy
++   refer vicarious.Proxy
+
+-   entry .brush   a copy of a catalog with the entries at some paths replaced, by a partial function of paths
+-       An extension on any `Catalog`, needing the derived `Proxy` for the key type. The argument
+-       is a context function from the proxy to a partial function over proxies: each `case` names
+-       a path, as a pattern on the proxy, and gives its new value; every path not matched keeps
+-       its entry.
++   entry .brush   いくつかのパスのエントリーを、パスの部分関数によって置き換えたカタログのコピー
++       任意の `Catalog` に対する拡張で、キーの型に対する導出された `Proxy` を必要とする。
++       引数は、プロキシから、プロキシに対する部分関数へのコンテキスト関数である。各 `case` はプロキシに対するパターンとしてパスを名指し、その新しい値を与える。マッチしなかったすべてのパスはそのエントリーを保つ。
+
+=       its entry.
+=
+-       ```scala
++       ```scala
+
+=       its entry.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       its entry.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       its entry.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Person(name: Text, age: Int)
+-       case class Duel(challenger: Person, opponent: Person)
++       case class Duel(challenger: Person, opponent: Person)
+
+=       its entry.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Person(name: Text, age: Int)
+=       case class Duel(challenger: Person, opponent: Person)
+=
+-       val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
++       val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+
+=       its entry.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Person(name: Text, age: Int)
+=       case class Duel(challenger: Person, opponent: Person)
+=
+=       val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+-       val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
++       val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
+
+-       val redacted = labels.brush(proxy ?=> { case proxy.opponent.name() => t"(withheld)" })
++       val redacted = labels.brush(proxy ?=> { case proxy.opponent.name() => t"(withheld)" })
+
+=       val redacted = labels.brush(proxy ?=> { case proxy.opponent.name() => t"(withheld)" })
+-       ```
++       ```
+
+-   entry #values   the entries, one per path, the whole value first and then each field depth-first
+-   entry #size   the number of entries: one for the whole value and one for each field at any depth
+-   entry #apply   the entry at a path, written as selections on a proxy of the key type
+-       `catalog(proxy ?=> proxy.opponent.name)` resolves the path as the code compiles into the index
+-       of its entry; `proxy ?=> proxy` is the entry for the whole value, and a field the type does
+-       not have is a compile error. `challenger.name` and `opponent.name` are different entries,
+-       since a path is a position, not a name.
+-   entry #map   a catalog over the same key with a function applied to every entry
+-       The paths are unchanged, so any path valid on this catalog is valid on the result. A
+-       `ClassTag` for the new value type is needed.
+-   entry #braid   combines two catalogs over the same key, entry by entry, with a function of both values
+-       `left.braid(right)(lambda)` needs no matching of names: catalogs over the same key align
+-       position for position. A `ClassTag` for the result type is needed.
+-   entry #tie   evaluates a block with this catalog and its key's proxy in context, so a path reads its entry
+-       Inside the block, the catalog is a contextual value, so `proxy.opponent.name()` — a path
+-       followed by `()`, which is `Proxy#apply` — reads that path's entry directly; several paths
+-       may be read in one expression.
++   entry #values   エントリー。パスごとに一つで、最初に値全体、次に各フィールドを深さ優先で並べる
++   entry #size   エントリーの数：値全体に一つ、どの深さであれ各フィールドに一つ
++   entry #apply   キーの型のプロキシ上の選択として書いたパスにあるエントリー
++       `catalog(proxy ?=> proxy.opponent.name)` は、コードのコンパイル時にパスをそのエントリーの索引へと解決する。`proxy ?=> proxy` は値全体のエントリーであり、型が持たないフィールドはコンパイルエラーになる。
++       パスは名前ではなく位置なので、`challenger.name` と `opponent.name` は別のエントリーである。
++   entry #map   すべてのエントリーに関数を適用した、同じキーに対するカタログ
++       パスは変わらないので、このカタログで有効なパスはすべて結果でも有効である。
++       新しい値の型に対する `ClassTag` が必要である。
++   entry #braid   同じキーに対する二つのカタログを、両方の値の関数でエントリーごとに組み合わせる
++       `left.braid(right)(lambda)` は名前の照合を必要としない。同じキーに対するカタログは位置ごとに揃う。
++       結果の型に対する `ClassTag` が必要である。
++   entry #tie   このカタログとそのキーのプロキシをコンテキストに置いてブロックを評価し、パスがそのエントリーを読めるようにする
++       ブロックの中ではカタログがコンテキスト値なので、`proxy.opponent.name()`（パスの後に `()` を付けたもので、`Proxy#apply` である）はそのパスのエントリーを直接読む。一つの式で複数のパスを読める。
+
+=       may be read in one expression.
+=
+-       ```scala
++       ```scala
+
+=       may be read in one expression.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       may be read in one expression.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       may be read in one expression.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Person(name: Text, age: Int)
+-       case class Duel(challenger: Person, opponent: Person)
++       case class Duel(challenger: Person, opponent: Person)
+
+=       may be read in one expression.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Person(name: Text, age: Int)
+=       case class Duel(challenger: Person, opponent: Person)
+=
+-       val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
++       val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+
+=       may be read in one expression.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Person(name: Text, age: Int)
+=       case class Duel(challenger: Person, opponent: Person)
+=
+=       val duel = Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30))
+-       val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
++       val labels = catalog(duel)([field] => (field: field) => field.toString.tt)
+
+-       labels.tie((catalog, proxy) ?=> t"${proxy.challenger.name()} and ${proxy.opponent.name()}")
++       labels.tie((catalog, proxy) ?=> t"${proxy.challenger.name()} and ${proxy.opponent.name()}")
+
+=       labels.tie((catalog, proxy) ?=> t"${proxy.challenger.name()} and ${proxy.opponent.name()}")
+-       ```
++       ```
+
+- entry .Proxy   a stand-in for a value of a key type, whose field selections are resolved to path indices as the code compiles
++ entry .Proxy   キーの型の値の代役。そのフィールドの選択は、コードのコンパイル時にパスの索引へと解決される
+
+= entry .Proxy   a stand-in for a value of a key type, whose field selections are resolved to path indices as the code compiles
+-   detail
++   detail
+
+-       A `Proxy[Key, Value, Ordinal]` stands at one path of `Key`: `Ordinal` is that path's index
+-       as a literal type (`0` for the root), and `#id` the same index at runtime. Selecting a
+-       field on a proxy (`proxy.opponent.name`) is a `selectDynamic` macro which looks the extended
+-       path up in `Key`'s flattened structure and gives the proxy for it, so a field the type does
+-       not have is a compile error, _vicarious: `opponent.title` is not a valid field path_.
++       `Proxy[Key, Value, Ordinal]` は `Key` の一つのパスに立つ。`Ordinal` はそのパスの索引をリテラル型としたもの（根は `0`）であり、`#id` は実行時の同じ索引である。
++       プロキシのフィールドを選択すること（`proxy.opponent.name`）は `selectDynamic` マクロであり、延長したパスを `Key` の平坦化された構造の中で探し、そのプロキシを与える。そのため、型が持たないフィールドはコンパイルエラー _vicarious: `opponent.title` is not a valid field path_ になる。
+
+-       The root proxy for a key type is `.derived`, in implicit scope; `Catalog#apply` and
+-       `Catalog#tie` provide it, and `specifically` provides one as `root`. A proxy is used three
+-       ways: as an address (`Catalog#apply`), to read an entry from a catalog in context
+-       (`#apply`), and as an extractor in a pattern (`#unapply`), which is how `specifically` and
+-       `.brush` name paths in their `case`s. A `Proxy` is `Findable`.
++       キーの型に対する根のプロキシは暗黙のスコープにある `.derived` である。`Catalog#apply` と `Catalog#tie` がそれを提供し、`specifically` は一つを `root` として提供する。
++       プロキシには三つの使い方がある。アドレスとして（`Catalog#apply`）、コンテキスト内のカタログからエントリーを読むために（`#apply`）、そしてパターンの中の抽出子として（`#unapply`）である。最後のものは、`specifically` と `.brush` がその `case` でパスを名指す方法である。
++       `Proxy` は `Findable` である。
+
+-   refer vicarious.Catalog
++   refer vicarious.Catalog
+
+=   refer vicarious.Catalog
+-   refer vicarious.specifically
++   refer vicarious.specifically
+
+-   entry .derived   the root proxy for a key type, refined with its fields' proxies so that selections type-check
+-       A `transparent inline given` macro, in implicit scope: its type is `Proxy[Key, Value, 0]`
+-       refined with a member for each field, recursively, each a proxy whose `Ordinal` is that
+-       field's path index.
+-   entry #selectDynamic   the proxy for a field of this proxy's path, or a compile error if there is none
+-       Called by a selection such as `proxy.opponent`; not written directly.
+-   entry #id   the index of this proxy's path in its key type's flattened structure, the root being `0`
+-   entry #apply   the entry at this proxy's path in the `Catalog` in context
+-       `proxy.opponent.name()` needs a `Catalog[Key, Value]` as a contextual value, as `Catalog#tie`
+-       provides.
+-   entry #unapply   matches a proxy for the same path, so that a path can be a `case` pattern
+-       `case root.opponent.name() =>` matches exactly the proxy whose `#id` is that of
+-       `opponent.name`.
++   entry .derived   キーの型に対する根のプロキシ。選択が型検査を通るよう、フィールドのプロキシで細分化されている
++       暗黙のスコープにある `transparent inline given` のマクロである。その型は、各フィールドに対するメンバーで再帰的に細分化された `Proxy[Key, Value, 0]` であり、各メンバーは `Ordinal` がそのフィールドのパスの索引であるプロキシである。
++   entry #selectDynamic   このプロキシのパスのフィールドに対するプロキシ。存在しなければコンパイルエラー
++       `proxy.opponent` のような選択によって呼ばれる。直接は書かない。
++   entry #id   キーの型の平坦化された構造におけるこのプロキシのパスの索引。根は `0`
++   entry #apply   コンテキスト内の `Catalog` における、このプロキシのパスのエントリー
++       `proxy.opponent.name()` は、`Catalog#tie` が提供するように、`Catalog[Key, Value]` をコンテキスト値として必要とする。
++   entry #unapply   同じパスのプロキシにマッチし、パスを `case` のパターンにできるようにする
++       `case root.opponent.name() =>` は、`#id` が `opponent.name` のものであるプロキシにちょうどマッチする。
+
+- entry .Specific   typeclass instances for named field paths of a type, for a derivation to use there
++ entry .Specific   型の名指したフィールドパスに対する型クラスのインスタンス。導出がそこで使うためのもの
+
+= entry .Specific   typeclass instances for named field paths of a type, for a derivation to use there
+-   detail
++   detail
+
+-       `Key is Specific over Typeclass` records exceptions to a generic derivation: for some
+-       field paths of `Key`, the instance to use at that exact path rather than the one the
+-       field's type would resolve to. A given in scope changes every field of a type at once; a
+-       `Specific` changes one path and nowhere else. It is built with `specifically`, which
+-       checks each path and each instance's type as the code compiles, and is consulted by
+-       `wisteria`'s derivations, and so by the codecs derived through them.
++       `Key is Specific over Typeclass` は汎用の導出に対する例外を記録する。`Key` のいくつかのフィールドパスについて、フィールドの型が解決されるインスタンスではなく、そのパスでちょうど使うインスタンスである。
++       スコープ内の given はある型のすべてのフィールドを一度に変えるが、`Specific` は一つのパスだけを変え、他のどこも変えない。
++       コードのコンパイル時に各パスと各インスタンスの型を検査する `specifically` で作られ、`wisteria` の導出が、したがってそれを通じて導出されるコーデックが参照する。
+
+=       `wisteria`'s derivations, and so by the codecs derived through them.
+=
+-       ```scala
++       ```scala
+
+=       `wisteria`'s derivations, and so by the codecs derived through them.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import formatting.compactJsonFormatting
++       import formatting.compactJsonFormatting
+
+=       import formatting.compactJsonFormatting
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       import formatting.compactJsonFormatting
+=
+=       case class Person(name: Text, age: Int)
+-       case class Duel(challenger: Person, opponent: Person)
++       case class Duel(challenger: Person, opponent: Person)
+
+-       val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
++       val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+
+-       given (Duel is Specific over Json.Encodable) =
++       given (Duel is Specific over Json.Encodable) =
+
+-         specifically:
++         specifically:
+
+-           case root.opponent.name() => shout
++           case root.opponent.name() => shout
+
+-       Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30)).in[Json].show
++       Duel(Person(t"Laertes", 25), Person(t"Hamlet", 30)).in[Json].show
+
+-       // t"""{"challenger":{"name":"Laertes","age":25},"opponent":{"name":"HAMLET","age":30}}"""
++       // t"""{"challenger":{"name":"Laertes","age":25},"opponent":{"name":"HAMLET","age":30}}"""
+
+=       // t"""{"challenger":{"name":"Laertes","age":25},"opponent":{"name":"HAMLET","age":30}}"""
+-       ```
++       ```
+
+-       A `Specific` whose `#Transport` is for a different typeclass is ignored by a derivation.
++       `#Transport` が別の型クラスに対するものである `Specific` は、導出に無視される。
+
+=       A `Specific` whose `#Transport` is for a different typeclass is ignored by a derivation.
+-   refer vicarious.specifically
++   refer vicarious.specifically
+
+-   refer vicarious.root
++   refer vicarious.root
+
+-   entry .Cases   the partial function of field-path cases `specifically` reads: proxy patterns to instances
+-       `Specific.Cases[Key]` is `PartialFunction[Proxy[Key, Any, Nat], Any]`. `specifically`
+-       reads its `case`s from the tree as the code compiles; the function itself is never run.
+-   entry #Self   the key type whose field paths are overridden
+-   entry #Transport   the typeclass the overriding instances are for, such as `Json.Encodable`
+-   entry #instances   each overridden dotted path (`"opponent.name"`), with its instance, type-erased
+-       The derivation reads an instance from this map and re-types it at the field it visits.
++   entry .Cases   `specifically` が読むフィールドパスのケースの部分関数：プロキシのパターンからインスタンスへ
++       `Specific.Cases[Key]` は `PartialFunction[Proxy[Key, Any, Nat], Any]` である。
++       `specifically` はコードのコンパイル時にツリーからその `case` を読む。関数そのものが実行されることはない。
++   entry #Self   フィールドパスが上書きされるキーの型
++   entry #Transport   上書きするインスタンスが対象とする型クラス。`Json.Encodable` など
++   entry #instances   上書きした各ドット区切りのパス（`"opponent.name"`）と、型が消去されたそのインスタンス
++       導出はこのマップからインスタンスを読み、訪れたフィールドで型を付け直す。
+
+=       The derivation reads an instance from this map and re-types it at the field it visits.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+-       duelSpecific.instances.keys   // Set("opponent.name", "challenger.name")
++       duelSpecific.instances.keys   // Set("opponent.name", "challenger.name")
+
+=       duelSpecific.instances.keys   // Set("opponent.name", "challenger.name")
+-       ```
++       ```
+
+- entry .specifically   builds a `Specific` from `case` patterns naming field paths through `root`
+-     `specifically { case root.opponent.name() => instance; … }` is a macro whose `Key` and
+-     `Typeclass` come from the expected type (`Duel is Specific over Json.Encodable`). For each
+-     `case`, the proxy pattern gives the path, and the instance must be a `Typeclass` for the type
+-     at that path, or the definition does not compile, _vicarious: the instance for this path is
+-     not a …_; an unknown path is likewise a compile error.
++ entry .specifically   `root` を通じてフィールドパスを名指す `case` パターンから `Specific` を作る
++     `specifically { case root.opponent.name() => instance; … }` はマクロであり、その `Key` と `Typeclass` は期待される型（`Duel is Specific over Json.Encodable`）から来る。
++     各 `case` について、プロキシのパターンがパスを与え、インスタンスはそのパスの型に対する `Typeclass` でなければならない。そうでなければ定義はコンパイルされず、_vicarious: the instance for this path is not a …_ となる。未知のパスも同様にコンパイルエラーである。
+
+=     not a …_; an unknown path is likewise a compile error.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     not a …_; an unknown path is likewise a compile error.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     not a …_; an unknown path is likewise a compile error.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+-     val custom: Duel is Specific over (Codec in Json) =
++     val custom: Duel is Specific over (Codec in Json) =
+
+=     val custom: Duel is Specific over (Codec in Json) =
+-       specifically:
++       specifically:
+
+-         case root.opponent.name() => nameCodec
++         case root.opponent.name() => nameCodec
+
+-         case root.challenger.age()  => ageCodec
++         case root.challenger.age()  => ageCodec
+
+=         case root.challenger.age()  => ageCodec
+-     ```
++     ```
+
+-     A path ending at a collection takes an instance for the collection, so re-deriving it there
+-     under a local given re-encodes its elements in that one place:
++     コレクションで終わるパスはコレクションに対するインスタンスを取るので、そこでローカルな given のもとで導出し直すと、その一か所でだけ要素のエンコードが変わる。
+
+=     under a local given re-encodes its elements in that one place:
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     under a local given re-encodes its elements in that one place:
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     under a local given re-encodes its elements in that one place:
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+-     given (Troupe is Specific over Json.Encodable) =
++     given (Troupe is Specific over Json.Encodable) =
+
+=     given (Troupe is Specific over Json.Encodable) =
+-       specifically:
++       specifically:
+
+-         case root.players() =>
++         case root.players() =>
+
+-           given Person is Json.Encodable = nameOnly
++           given Person is Json.Encodable = nameOnly
+
+-           summon[List[Person] is Json.Encodable]
++           summon[List[Person] is Json.Encodable]
+
+=           summon[List[Person] is Json.Encodable]
+-     ```
++     ```
+
+- entry .root   the root proxy inside `specifically`'s cases, from which every path is selected
+-     Resolves to the proxy which `specifically` provides as a contextual value tagged `"root"`, so
+-     `case root.opponent.name() =>` needs no binder. Outside a `specifically` block there is no such
+-     value, and `root` does not compile.
++ entry .root   `specifically` のケースの中の根のプロキシ。すべてのパスはここから選択される
++     `specifically` が `"root"` とタグ付けしたコンテキスト値として提供するプロキシに解決されるので、`case root.opponent.name() =>` は束縛子を必要としない。
++     `specifically` ブロックの外にはそのような値はなく、`root` はコンパイルされない。
+
+- entry .internal   the macros behind `catalog`, `Proxy` and `specifically`
++ entry .internal   `catalog`、`Proxy`、`specifically` の背後にあるマクロ
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `catalog`, `Proxy.derived`, `Proxy#selectDynamic` and `specifically`
+-       splice these. The path helpers flatten a case class's fields depth-first with the root,
+-       `""`, at index 0.
+-   entry .catalog   builds a `Catalog` from a value and a polymorphic function
+-   entry .fieldNames   the dotted paths of a product's fields, depth-first, under a prefix
+-   entry .paths   every flattened path of a product, with the root path `""` first
+-   entry .fieldReprs   the type at every flattened path of a product, aligned with `.paths`
+-   entry .dereference   resolves a field selection on a proxy to the proxy for the extended path
+-   entry .specific   builds a `Specific` from the `case`s of a partial function of paths
+-   entry .proxy   builds the refined root proxy for a key type
++       直接使うためのものではない。`catalog`、`Proxy.derived`、`Proxy#selectDynamic`、`specifically` がこれらをスプライスする。
++       パスの補助関数は、ケースクラスのフィールドを、根 `""` を索引 0 として深さ優先で平坦化する。
++   entry .catalog   値と多相関数から `Catalog` を作る
++   entry .fieldNames   接頭辞の下での、直積のフィールドのドット区切りのパス。深さ優先
++   entry .paths   直積の平坦化されたすべてのパス。根のパス `""` が先頭
++   entry .fieldReprs   直積の平坦化された各パスにある型。`.paths` と揃う
++   entry .dereference   プロキシ上のフィールドの選択を、延長したパスのプロキシへと解決する
++   entry .specific   パスの部分関数の `case` から `Specific` を作る
++   entry .proxy   キーの型に対する細分化された根のプロキシを作る

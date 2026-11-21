@@ -1,0 +1,77 @@
+orthant 1 language
+
+- # `↯/s.121.1` — `Rig.Error`
++ # `↯/s.121.1` — `Rig.Error`
+
+- Raised when Superlunary cannot move a value across the boundary into or
+- out of a `Rig` — the classloader in which staged code is compiled and run.
++ Superlunary が、`Rig`、つまりステージングされたコードがコンパイルされ実行されるクラスローダーとの境界を越えて、値を出し入れできないときに発生する。
+
+- This is a failure of *marshalling*, not of the staged code itself: the
+- value could not be written into the rig's `Transport` (`Json` or `Pojo`),
+- or could not be read back out of it. A failure to compile the staged tree
+- is `Compiler.Error`, which `Rig.dispatch` declares alongside this one.
++ これはステージングされたコードそのものの失敗ではなく、*マーシャリング*の失敗である。
++ 値をリグの `Transport`（`Json` または `Pojo`）に書き込めなかったか、そこから読み戻せなかったのである。
++ ステージングされたツリーのコンパイルの失敗は `Compiler.Error` であり、`Rig.dispatch` はこのエラーと並べてそれを宣言している。
+
+- ## Cause
++ ## 原因
+
+- Superlunary marshals a call to a remote process and reads the result
+- back. Any failure in serialising the call, deserialising the result,
+- or otherwise transporting it produces this error. The message is
+- `failed to perform a remote operation because $reason`.
++ Superlunary は、リモートのプロセスへの呼び出しをマーシャリングし、結果を読み戻す。
++ 呼び出しの直列化、結果の逆直列化、その他の受け渡しのいずれかに失敗すると、このエラーが生じる。
++ メッセージは `failed to perform a remote operation because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.121.1.1` — `Serialization`
++ ### `↯/s.121.1.1` — `Serialization`
+
+- The output (the call or its arguments) could not be serialised for
+- transmission.
++ 出力（呼び出しまたはその引数）を送信のために直列化できなかった。
+
+- **Example.** `[↯/s.121.1.1] failed to perform a remote operation because the output could not be serialized`
++ **例。** `[↯/s.121.1.1] failed to perform a remote operation because the output could not be serialized`
+
+- **Resolution.** Confirm that all argument types have the necessary
+- encoders/decoders in scope and produce well-formed bytes.
++ **解決方法。** すべての引数の型に必要なエンコーダーとデコーダーがスコープにあり、それらが正しい形式のバイト列を生成することを確かめる。
+
+- ### `↯/s.121.1.2` — `Deserialization`
++ ### `↯/s.121.1.2` — `Deserialization`
+
+- The response from the remote could not be deserialised.
++ リモートからの応答を逆直列化できなかった。
+
+- **Example.** `[↯/s.121.1.2] failed to perform a remote operation because the input could not be deserialized`
++ **例。** `[↯/s.121.1.2] failed to perform a remote operation because the input could not be deserialized`
+
+- **Resolution.** Verify the remote is producing the expected payload
+- shape; mismatched schemas between client and server are the typical
+- cause.
++ **解決方法。** リモートが期待どおりの形のペイロードを生成していることを確かめる。
++ 典型的な原因は、クライアントとサーバーの間のスキーマの不一致である。
+
+- ### `↯/s.121.1.3` — `Unknown`
++ ### `↯/s.121.1.3` — `Unknown`
+
+- The cause does not match either of the more specific variants.
++ 原因が、より具体的なバリアントのどちらにも当てはまらない。
+
+- **Example.** `[↯/s.121.1.3] failed to perform a remote operation because of an unknown reason`
++ **例。** `[↯/s.121.1.3] failed to perform a remote operation because of an unknown reason`
+
+- **Resolution.** Inspect logs and any cause chain.
++ **解決方法。** ログと、原因の連鎖があればそれを調べる。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/superlunary/src/core/superlunary.Rig.scala`
++ - ソース：`lib/superlunary/src/core/superlunary.Rig.scala`

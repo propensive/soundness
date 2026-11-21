@@ -1,0 +1,67 @@
+orthant 1 language
+
+- # Migration notes
++ # Notas de migração
+
+- Soundness moves quickly and renames, moves and reshapes its API between releases. Downstream
+- code is expected to be upgraded by an LLM agent rather than by hand, so from the 0.64.0
+- release onwards every release ships a machine-oriented record of what changed.
++ O Soundness avança rapidamente e renomeia, move e remodela sua API entre versões. Espera-se que
++ o código dependente seja atualizado por um agente LLM, e não à mão, então, a partir da versão
++ 0.64.0, toda versão é publicada com um registro orientado a máquinas do que mudou.
+
+- ## How it works
++ ## Como funciona
+
+- - The changes since the last release accumulate in `doc/migration/<version>.md`, named from
+-   the start after the release they will be part of (for example `doc/migration/0.71.0.md`
+-   after Soundness 0.70.0). Every PR that makes a material change to the public API or
+-   observable behaviour adds an entry to it; the first such change after a release creates it.
+- - Tagging the release publishes the file as it stands, so no change has to merge first. The
+-   release refuses to run while `<version>.md` is missing, or while another version's notes are
+-   unreleased, so the notes cannot be skipped or stranded under the wrong version. Released
+-   files are not edited afterwards except to correct mistakes.
+- - The result is one file per release, each describing exactly the changes between the
+-   previous release and that one.
++ - As mudanças desde a última versão se acumulam em `doc/migration/<version>.md`, nomeado desde o
++   início com a versão de que farão parte (por exemplo, `doc/migration/0.71.0.md` depois do
++   Soundness 0.70.0). Todo PR que faz uma mudança material na API pública ou no comportamento
++   observável acrescenta uma entrada a ele; a primeira mudança desse tipo depois de uma versão o
++   cria.
++ - Criar a tag da versão publica o arquivo tal como está, então nenhuma mudança precisa ser
++   incorporada antes. A publicação se recusa a rodar enquanto `<version>.md` estiver faltando, ou
++   enquanto as notas de outra versão não tiverem sido publicadas, de modo que as notas não podem
++   ser puladas nem ficar presas sob a versão errada. Arquivos publicados não são editados depois,
++   exceto para corrigir erros.
++ - O resultado é um arquivo por versão, cada um descrevendo exatamente as mudanças entre a versão
++   anterior e aquela.
+
+- ## Upgrading downstream code
++ ## Atualização do código dependente
+
+- To upgrade a project from version `A` to version `B`, instruct an LLM agent to read every file
+- `doc/migration/<v>.md` with `A < v <= B`, in ascending version order, and to apply the changes
+- each one describes to the project's code. For example, moving from 0.64.0 to 0.67.0 means
+- reading `0.65.0.md`, `0.66.0.md` and `0.67.0.md`, in that order.
++ Para atualizar um projeto da versão `A` para a versão `B`, instrua um agente LLM a ler todo
++ arquivo `doc/migration/<v>.md` com `A < v <= B`, em ordem crescente de versão, e a aplicar ao
++ código do projeto as mudanças que cada um descreve. Por exemplo, passar de 0.64.0 para 0.67.0
++ significa ler `0.65.0.md`, `0.66.0.md` e `0.67.0.md`, nessa ordem.
+
+- ## What the files contain
++ ## O que os arquivos contêm
+
+- The files are written for an intelligent LLM, not for people. They are precise, dense and
+- complete: every rename, move, signature change, removal, changed default and changed
+- behaviour that a consumer of a Soundness library could observe. They say *what* changed,
+- with fully-qualified old and new names and exact semantics, and leave working out *how* to
+- adapt a particular codebase to the agent reading them, except where the adaptation is not
+- deducible from the change itself. `AGENTS.md` at the repository root specifies the format
+- and the rules for maintaining them.
++ Os arquivos são escritos para um LLM inteligente, e não para pessoas. Eles são precisos, densos
++ e completos: toda renomeação, mudança de lugar, mudança de assinatura, remoção, valor padrão
++ alterado e comportamento alterado que um consumidor de uma biblioteca Soundness poderia observar.
++ Eles dizem *o que* mudou, com os nomes antigos e novos totalmente qualificados e a semântica
++ exata, e deixam para o agente que os lê descobrir *como* adaptar um código específico, exceto
++ quando a adaptação não pode ser deduzida da própria mudança. O `AGENTS.md` na raiz do repositório
++ especifica o formato e as regras para mantê-los.

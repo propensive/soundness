@@ -1,0 +1,58 @@
+orthant 1 language
+
+- # `↯/s.118.10` — `Tel.Provider.Error`
++ # `↯/s.118.10` — `Tel.Provider.Error`
+
+- Raised when a TEL document does not conform to the schema a `Tel.Provider` reads it by.
++ Sollevato quando un documento TEL non è conforme allo schema con cui un `Tel.Provider` lo legge.
+
+- ## Cause
++ ## Causa
+
+- Stratiform's `Tel.Provider` reads a document through its schema as a record's fields are read,
+- and reports each mismatch through the `Tactic` of the code reading the field, so that a
+- validating reader can collect them all. The message is `the TEL did not conform to its schema
+- because $reason`.
++ Il `Tel.Provider` di Stratiform legge un documento attraverso il suo schema man mano che i campi
++ di un record vengono letti, e segnala ogni discrepanza tramite la `Tactic` del codice che legge il
++ campo, così che un lettore che valida possa raccoglierle tutte. Il messaggio è `the TEL did not
++ conform to its schema because $reason`.
+
+- ## Variants
++ ## Varianti
+
+- ### `↯/s.118.10.1` — `Absent`
++ ### `↯/s.118.10.1` — `Absent`
+
+- A field the schema requires is missing from the document.
++ Dal documento manca un campo che lo schema richiede.
+
+- **Example.** `[↯/s.118.10.1] the TEL did not conform to its schema because the field first-name is required`
++ **Esempio.** `[↯/s.118.10.1] the TEL did not conform to its schema because the field first-name is required`
+
+- **Resolution.** Add the field, or make it optional in the schema.
++ **Soluzione.** Aggiungere il campo, o renderlo opzionale nello schema.
+
+- ### `↯/s.118.10.2` — `NotSigil`
++ ### `↯/s.118.10.2` — `NotSigil`
+
+- A field read by the `Sigil` validator holds an atom of more than one character.
++ Un campo letto dal validatore `Sigil` contiene un atomo di più di un carattere.
+
+- **Example.** `[↯/s.118.10.2] the TEL did not conform to its schema because the value ab is not a single character`
++ **Esempio.** `[↯/s.118.10.2] the TEL did not conform to its schema because the value ab is not a single character`
+
+- **Resolution.** Give the field a single character.
++ **Soluzione.** Dare al campo un solo carattere.
+
+- ## See also
++ ## Vedi anche
+
+- - [`↯/s.106.3` — `Json.Provider.Error`](106.3.md)
++ - [`↯/s.106.3` — `Json.Provider.Error`](106.3.md)
+
+- - [`↯/s.128.4` — `Xml.Provider.Error`](128.4.md)
++ - [`↯/s.128.4` — `Xml.Provider.Error`](128.4.md)
+
+- - Source: `lib/stratiform/src/core/stratiform.Tel4.scala`
++ - Sorgente: `lib/stratiform/src/core/stratiform.Tel4.scala`

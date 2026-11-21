@@ -1,0 +1,1486 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base gesticulate
++ base gesticulate
+
+- import soundness
++ import soundness
+
+- info   media types as structured values, checked against the IANA registry as the code compiles, and multipart bodies
++ info   медиатипы как структурированные значения, проверяемые по реестру IANA во время компиляции кода, и составные тела
+
+- detail
++ detail
+
+-     _Gesticulate_ represents a [media type](https://www.iana.org/assignments/media-types/) —
+-     `application/json`, `text/html; charset=UTF-8`, `image/svg+xml` — as a `MediaType` with a
+-     typed group, subtype, suffixes and parameters, in place of a string whose misspelling a
+-     browser silently mishandles. The `media"…"` interpolator checks a literal against a copy of
+-     IANA's registry while the code compiles, so `media"application/jsom"` is a compile error
+-     with the registered name it probably meant; text met at runtime is parsed with
+-     `as[MediaType]`, which raises `MediaType.Error` naming what was wrong.
++     _Gesticulate_ представляет [медиатип](https://www.iana.org/assignments/media-types/) —
++     `application/json`, `text/html; charset=UTF-8`, `image/svg+xml` — как `MediaType` с
++     типизированными группой, подтипом, суффиксами и параметрами вместо строки, с опечаткой в
++     которой браузер молча поступит неправильно. Интерполятор `media"…"` проверяет литерал по
++     копии реестра IANA во время компиляции кода, так что `media"application/jsom"` — ошибка
++     компиляции с указанием зарегистрированного имени, которое, вероятно, имелось в виду; текст,
++     встреченный во время выполнения, разбирается с помощью `as[MediaType]`, который порождает
++     `MediaType.Error` с указанием того, что было не так.
+
+=     `as[MediaType]`, which raises `MediaType.Error` naming what was wrong.
+=
+-     ```scala
++     ```scala
+
+=     `as[MediaType]`, which raises `MediaType.Error` naming what was wrong.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val json: MediaType = media"application/json"
++     val json: MediaType = media"application/json"
+
+-     val html: MediaType = media"text/html"(charset = t"UTF-8")
++     val html: MediaType = media"text/html"(charset = t"UTF-8")
+
+-     html.show                                            // t"text/html; charset=UTF-8"
++     html.show                                            // t"text/html; charset=UTF-8"
+
+-     t"image/svg+xml".as[MediaType].suffixes              // List(Media.Suffix.Xml)
++     t"image/svg+xml".as[MediaType].suffixes              // List(Media.Suffix.Xml)
+
+-     t"application/json; charset=UTF-8".as[MediaType].at(t"charset")   // t"UTF-8"
++     t"application/json; charset=UTF-8".as[MediaType].at(t"charset")   // t"UTF-8"
+
+=     t"application/json; charset=UTF-8".as[MediaType].at(t"charset")   // t"UTF-8"
+-     ```
++     ```
+
+-     Around the type are three further pieces. The `Media` typeclass gives a *type* its media
+-     type — text is `text/plain`, anything with a filename guesses from its extension through
+-     `Extensions` — which is how an HTTP response, a served file or an attachment labels itself
+-     without re-stating what it is, and `ascribe` pairs any byte source with an explicit media
+-     type as a `Content`. The `Construable` typeclass maps a media type, as a singleton string,
+-     to the Scala type a body of that type is read as and written from, so that an HTTP client
+-     can construe a response by its `Content-Type`: each mapping is a given in the
+-     `construables` choice package, imported by name. And `Multipart` parses the
+-     `multipart/form-data` format of file uploads into typed `Multipart.Part`s, incrementally, each
+-     part's body lent from the input as it is read.
++     Вокруг этого типа есть ещё три части. Класс типов `Media` даёт *типу* его медиатип — текст
++     имеет тип `text/plain`, всё, у чего есть имя файла, угадывает его по расширению через
++     `Extensions`, — и именно так HTTP-ответ, отдаваемый файл или вложение помечают себя, не
++     повторяя, чем они являются, а `ascribe` объединяет любой источник байтов с явным медиатипом
++     в `Content`. Класс типов `Construable` отображает медиатип, заданный как синглтон-тип
++     строки, в тип Scala, как который читается и из которого записывается тело этого типа, так
++     что HTTP-клиент может интерпретировать ответ по его `Content-Type`: каждое отображение —
++     это given в пакете выбора `construables`, импортируемый по имени. А `Multipart` разбирает
++     формат загрузки файлов `multipart/form-data` в типизированные `Multipart.Part`
++     инкрементально, причём тело каждой части предоставляется на время из входных данных по
++     мере чтения.
+
+-     The library is one source set, `gesticulate.core`, which compiles for the JVM, Scala.js
+-     and Scala Native; the registry the `media"…"` check consults is compiled into the library
+-     at build time, so the check needs no network and no classpath resource. Everything is
+-     exported to the `soundness` umbrella, and the `construables` choice package merges with
+-     the umbrella's own, which gathers the mappings every format library declares —
+-     `jsonConstruable`, `xmlConstruable`, `pngConstruable`, … — so a user writes
+-     `import soundness.*` and then imports the construables they want by name.
++     Библиотека — это один набор исходников, `gesticulate.core`, который компилируется для JVM,
++     Scala.js и Scala Native; реестр, к которому обращается проверка `media"…"`, встраивается в
++     библиотеку во время сборки, так что проверке не нужны ни сеть, ни ресурс на пути классов.
++     Всё экспортируется в зонтичный модуль `soundness`, а пакет выбора `construables`
++     объединяется с собственным пакетом зонтичного модуля, который собирает отображения,
++     объявляемые каждой библиотекой форматов, — `jsonConstruable`, `xmlConstruable`,
++     `pngConstruable`, … — так что пользователь пишет `import soundness.*`, а затем импортирует
++     нужные ему construable-экземпляры по имени.
+
+- refer gesticulate.MediaType
++ refer gesticulate.MediaType
+
+- refer gesticulate.Media
++ refer gesticulate.Media
+
+- refer gesticulate.Multipart
++ refer gesticulate.Multipart
+
+- refer gesticulate.Construable
++ refer gesticulate.Construable
+
+- entry .MediaType   a media type as a value: its group, subtype, suffixes and parameters
++ entry .MediaType   медиатип как значение: его группа, подтип, суффиксы и параметры
+
+= entry .MediaType   a media type as a value: its group, subtype, suffixes and parameters
+-   detail
++   detail
+
+-       A `MediaType` is the four parts RFC 2046 defines, each typed: `#group` is one of the
+-       eleven top-level types (`Media.Group`), `#subtype` is registered, vendor, personal or
+-       experimental (`Media.Subtype`), `#suffixes` are the `+xml`, `+json`, `+zip` structured
+-       syntax suffixes (`Media.Suffix`), and `#parameters` are the `key=value` pairs, of which
+-       `charset` is much the most common. It is written as `media"…"`, checked as the code
+-       compiles, or parsed from text with `as[MediaType]` (the `.decodable` given) or matched
+-       with `.unapply`.
++       `MediaType` — это четыре части, определённые в RFC 2046, каждая типизирована: `#group` —
++       один из одиннадцати типов верхнего уровня (`Media.Group`), `#subtype` — зарегистрированный,
++       вендорский, персональный или экспериментальный (`Media.Subtype`), `#suffixes` — суффиксы
++       структурированного синтаксиса `+xml`, `+json`, `+zip` (`Media.Suffix`), а `#parameters` —
++       пары `key=value`, из которых `charset` встречается намного чаще прочих. Медиатип
++       записывается как `media"…"` с проверкой во время компиляции кода, разбирается из текста
++       с помощью `as[MediaType]` (given `.decodable`) или сопоставляется через `.unapply`.
+
+=       with `.unapply`.
+=
+-       ```scala
++       ```scala
+
+=       with `.unapply`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val mediaType = t"application/json; charset=UTF-8".as[MediaType]
++       val mediaType = t"application/json; charset=UTF-8".as[MediaType]
+
+-       mediaType.group               // Media.Group.Application
++       mediaType.group               // Media.Group.Application
+
+-       mediaType.subtype             // Media.Subtype.Standard(t"json")
++       mediaType.subtype             // Media.Subtype.Standard(t"json")
+
+-       mediaType.basic               // t"application/json"
++       mediaType.basic               // t"application/json"
+
+-       mediaType.base                // media"application/json"
++       mediaType.base                // media"application/json"
+
+-       mediaType.at(t"charset")      // t"UTF-8"
++       mediaType.at(t"charset")      // t"UTF-8"
+
+-       media"text/html"(charset = t"UTF-8").show   // t"text/html; charset=UTF-8"
++       media"text/html"(charset = t"UTF-8").show   // t"text/html; charset=UTF-8"
+
+=       media"text/html"(charset = t"UTF-8").show   // t"text/html; charset=UTF-8"
+-       ```
++       ```
+
+-       A media type shows as it is written on the wire (`.showable`, `.encodable`), with each
+-       parameter as `; key=value`, and inspects as the source which would make it,
+-       `media"text/html; charset=UTF-8"`. Two media types are equal when their parts are, so a
+-       `Content-Type` with parameters compares unequal to its `media"…"` literal: compare `#base`
+-       or `#basic` when the parameters do not matter.
++       Медиатип показывается так, как он записывается в передаваемых данных (`.showable`,
++       `.encodable`), с каждым параметром в виде `; key=value`, а при инспекции — как исходный
++       код, который бы его создал, `media"text/html; charset=UTF-8"`. Два медиатипа равны, когда
++       равны их части, поэтому `Content-Type` с параметрами не равен своему литералу
++       `media"…"`: сравнивайте `#base` или `#basic`, когда параметры не важны.
+
+-   refer gesticulate.media
++   refer gesticulate.media
+
+=   refer gesticulate.media
+-   refer gesticulate.Media
++   refer gesticulate.Media
+
+=   refer gesticulate.Media
+-   refer gesticulate.Extensions
++   refer gesticulate.Extensions
+
+-   entry .inspectable   a debug rendering as the literal which would make it: `media"text/html"`
+-   entry .showable   renders a media type as it is written: `type/subtype+suffix; key=value`
+-       The group and subtype in lower case, each suffix with its `+`, then each parameter as
+-       `; key=value`. What `.encodable` and the `inspectable` rendering are built on, and what
+-       a `Content-Type` header carries: a media type with a `charset` or `boundary` parameter
+-       keeps it here, where `#basic` would drop it.
+-   entry .encodable   `MediaType is Encodable in Text`, as `.showable` renders it
+-   entry .decodable   `text.as[MediaType]`: parses text as a media type, raising `MediaType.Error`
+-       The given which lets any text be decoded as a `MediaType`, through `Media.parse`. It
+-       needs a `Tactic[MediaType.Error]` in scope, which it retains, so the instance is typed
+-       `(MediaType is Decodable in Text)^{tactic}`. The parse accepts the registered, `vnd.`,
+-       `prs.`, `x-` and `x.` subtype forms, hyphenated suffixes (`json-seq`), and parameters
+-       separated by `;` with surrounding whitespace trimmed, and does not consult the registry:
+-       an unregistered standard subtype parses, where the `media"…"` literal would not compile.
+-   entry .unapply   matches text which parses as a media type, as an `Option`
+-       `MediaType.unapply(t"text/plain")` is `Some(mediaType)`, and `None` for text which is
+-       not a media type, so `case MediaType(mediaType) =>` matches a header's value without a
+-       tactic in scope.
+-   entry .interpolable   the given behind the `media"…"` interpolator
+-       The `Interpolable` whose `interpolate` is the macro: it validates the one literal part
+-       against the registry and the parser at expansion time and splices the parsed value. A
+-       user writes `media"…"` rather than touching this.
+-   entry .Error   raised when text is not a media type
++   entry .inspectable   отладочное отображение в виде литерала, который бы его создал: `media"text/html"`
++   entry .showable   отображает медиатип так, как он записывается: `type/subtype+suffix; key=value`
++       Группа и подтип в нижнем регистре, каждый суффикс со своим `+`, затем каждый параметр в
++       виде `; key=value`. На этом построены `.encodable` и отображение `inspectable`, и это то,
++       что несёт заголовок `Content-Type`: медиатип с параметром `charset` или `boundary`
++       сохраняет его здесь, тогда как `#basic` его отбросил бы.
++   entry .encodable   `MediaType is Encodable in Text`, как его отображает `.showable`
++   entry .decodable   `text.as[MediaType]`: разбирает текст как медиатип, порождая `MediaType.Error`
++       Given, позволяющий декодировать любой текст как `MediaType` через `Media.parse`. Ему
++       нужен `Tactic[MediaType.Error]` в области видимости, который он удерживает, поэтому
++       экземпляр имеет тип `(MediaType is Decodable in Text)^{tactic}`. Разбор принимает
++       зарегистрированные формы подтипов, а также формы `vnd.`, `prs.`, `x-` и `x.`, суффиксы с
++       дефисом (`json-seq`) и параметры, разделённые `;`, с обрезкой окружающих пробелов, и не
++       обращается к реестру: незарегистрированный стандартный подтип разбирается, тогда как
++       литерал `media"…"` не скомпилировался бы.
++   entry .unapply   сопоставляет текст, который разбирается как медиатип, в виде `Option`
++       `MediaType.unapply(t"text/plain")` — это `Some(mediaType)`, а для текста, не являющегося
++       медиатипом, — `None`, так что `case MediaType(mediaType) =>` сопоставляет значение
++       заголовка без тактики в области видимости.
++   entry .interpolable   given, стоящий за интерполятором `media"…"`
++       `Interpolable`, чей `interpolate` — это макрос: он проверяет единственную литеральную
++       часть по реестру и парсером во время раскрытия и вставляет разобранное значение.
++       Пользователь пишет `media"…"`, а не обращается к этому напрямую.
++   entry .Error   порождается, когда текст не является медиатипом
+
+=   entry .Error   raised when text is not a media type
+-     detail
++     detail
+
+-         Error `↯/s.81.1`: _the value `value` is not a valid media type; `reason`_. Raised through a
+-         `Tactic[MediaType.Error]` by `Media.parse`, and so by `as[MediaType]`, and reported as
+-         a compile error by `media"…"`. The `.Reason` says what was wrong, and its number is the
+-         error's sub-number (353.1 to 353.5).
++         Ошибка `↯/s.81.1`: _the value `value` is not a valid media type; `reason`_. Порождается
++         через `Tactic[MediaType.Error]` функцией `Media.parse`, а значит, и `as[MediaType]`, и
++         сообщается как ошибка компиляции литералом `media"…"`. `.Reason` говорит, что было не
++         так, а его номер — это подномер ошибки (от 353.1 до 353.5).
+
+=         error's sub-number (353.1 to 353.5).
+=
+-         ```scala
++         ```scala
+
+=         error's sub-number (353.1 to 353.5).
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-         capture[MediaType.Error](t"applicationjson".as[MediaType]).reason
++         capture[MediaType.Error](t"applicationjson".as[MediaType]).reason
+
+-         // MediaType.Error.Reason.NotOneSlash
++         // MediaType.Error.Reason.NotOneSlash
+
+=         // MediaType.Error.Reason.NotOneSlash
+-         ```
++         ```
+
+-     entry .Reason   why text was not a media type
++     entry .Reason   почему текст не является медиатипом
+
+=     entry .Reason   why text was not a media type
+-       detail
++       detail
+
+-           Each has a `number` and a `message`:
++           У каждой причины есть `number` и `message`:
+
+=
+-           ```tabular
++           ```tabular
+
+=
+=           ```tabular
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
++           column  Кейс
++           column  Код
++           column  Сообщение
++           column  Примечание
+
+-           row  `NotOneSlash`  1  _a media type should always contain exactly one '/' character_
++           row  `NotOneSlash`  1  _a media type should always contain exactly one '/' character_
+
+-           row  `MissingParam`  2  _a terminal ';' suggests that a parameter is missing_  also for a parameter with no `=`
++           row  `MissingParam`  2  _a terminal ';' suggests that a parameter is missing_  также для параметра без `=`
+
+-           row  `InvalidGroup`  3  _the type must be one of: application, audio, … or haptics_
++           row  `InvalidGroup`  3  _the type must be one of: application, audio, … or haptics_
+
+-           row  `InvalidChar(char)`  4  _the character '`char`' is not allowed_  whitespace, a control character, or one of the `tspecials`
+-           row  `InvalidSuffix(suffix)`  5  _the suffix '`suffix`' is not recognized_  not one of `Media.Suffix`'s cases
++           row  `InvalidChar(char)`  4  _the character '`char`' is not allowed_  пробельный символ, управляющий символ или один из `tspecials`
++           row  `InvalidSuffix(suffix)`  5  _the suffix '`suffix`' is not recognized_  не один из кейсов `Media.Suffix`
+
+=           row  `InvalidSuffix(suffix)`  5  _the suffix '`suffix`' is not recognized_  not one of `Media.Suffix`'s cases
+-           ```
++           ```
+
+-       entry #number   the reason's number, `1` to `5`, which is the error's sub-number
+-       entry #message   the reason as a sentence
+-     entry #value   the text which was not a media type
+-     entry #reason   why it was not
+-   entry #group   the top-level type: `Media.Group.Application`, `Text`, `Image`, …
+-       Called `group` rather than `type` only because `type` is a Scala keyword.
+-   entry #subtype   the subtype, as `Media.Subtype.Standard`, `Vendor`, `Personal` or `X`
+-       Which of the four trees a subtype is in is part of the value, not a matter of reading
+-       its prefix: `t"application/vnd.api+json".as[MediaType].subtype` is
++       entry #number   номер причины, от `1` до `5`, — подномер ошибки
++       entry #message   причина в виде предложения
++     entry #value   текст, который не является медиатипом
++     entry #reason   почему он им не является
++   entry #group   тип верхнего уровня: `Media.Group.Application`, `Text`, `Image`, …
++       Называется `group`, а не `type`, только потому, что `type` — ключевое слово Scala.
++   entry #subtype   подтип в виде `Media.Subtype.Standard`, `Vendor`, `Personal` или `X`
++       То, к какому из четырёх деревьев относится подтип, является частью значения, а не
++       вопросом чтения его префикса: `t"application/vnd.api+json".as[MediaType].subtype` — это
+
+-       `Media.Subtype.Vendor(t"api")`.
++       `Media.Subtype.Vendor(t"api")`.
+
+-   entry #suffixes   the structured syntax suffixes, in order, as `Media.Suffix`es
+-       `List(Media.Suffix.Xml)` for `image/svg+xml`; `Nil` for most media types. A suffix
+-       carries meaning — `svg+xml` is XML — which is why it is a typed part rather than a
+-       character of the subtype.
+-   entry #parameters   the `key=value` parameters, in order, as pairs of text
+-       `charset`, `boundary`, `version`, …. `#at` looks one up by name; `apply` with named
+-       arguments adds some.
+-   entry #basic   the media type without its parameters, as text: `application/json`
+-       The group, subtype and suffixes rendered; what a `Content-Type` is matched by when its
+-       `charset` or `boundary` should not take part in the comparison.
+-   entry #base   the media type without its parameters, as a `MediaType`
+-       `contentType.base == media"multipart/form-data"` is the comparison a request handler
+-       makes before reading the `boundary` parameter.
+-   entry #at   the value of a named parameter, or `Unset`
+-       `mediaType.at(t"charset")`; the first parameter of that name if there are several.
+-   entry #applyDynamicNamed   `mediaType(charset = t"UTF-8")`: the media type with parameters added
+-       The `Dynamic` application which lets parameters be written as named arguments:
+-       `media"text/html"(charset = t"UTF-8")`. Each argument's name is the parameter's key and
+-       its `Text` value the parameter's value, appended after any existing parameters.
++   entry #suffixes   суффиксы структурированного синтаксиса по порядку, как `Media.Suffix`
++       `List(Media.Suffix.Xml)` для `image/svg+xml`; `Nil` для большинства медиатипов. Суффикс
++       несёт смысл — `svg+xml` является XML, — поэтому он типизированная часть, а не символ
++       подтипа.
++   entry #parameters   параметры `key=value` по порядку, как пары текстов
++       `charset`, `boundary`, `version`, …. `#at` ищет параметр по имени; `apply` с
++       именованными аргументами добавляет новые.
++   entry #basic   медиатип без параметров, как текст: `application/json`
++       Отображённые группа, подтип и суффиксы; то, по чему сопоставляется `Content-Type`, когда
++       его `charset` или `boundary` не должны участвовать в сравнении.
++   entry #base   медиатип без параметров, как `MediaType`
++       `contentType.base == media"multipart/form-data"` — сравнение, которое выполняет
++       обработчик запроса перед чтением параметра `boundary`.
++   entry #at   значение именованного параметра или `Unset`
++       `mediaType.at(t"charset")`; если параметров с этим именем несколько — первый из них.
++   entry #applyDynamicNamed   `mediaType(charset = t"UTF-8")`: медиатип с добавленными параметрами
++       Применение `Dynamic`, позволяющее записывать параметры как именованные аргументы:
++       `media"text/html"(charset = t"UTF-8")`. Имя каждого аргумента — ключ параметра, а его
++       значение `Text` — значение параметра; они добавляются после уже имеющихся параметров.
+
+- entry .media   the `media"…"` interpolator: a media type literal, checked against the registry as the code compiles
+-     `media"application/json"` is a `MediaType`, checked while the code compiles: the group
+-     must be one of the eleven top-level types, the subtype must contain no forbidden
+-     character, and a subtype in the standard tree — not `vnd.`, `prs.`, `x-` or `x.` — must be
+-     in IANA's registry, or the literal is a compile error naming the nearest registered type,
+-     _application/jsom is not a registered media type; did you mean application/json?_. The
+-     suffixes and parameters are then parsed exactly as `as[MediaType]` parses them, so an
+-     unknown suffix or a dangling `;` is a compile error too.
++ entry .media   интерполятор `media"…"`: литерал медиатипа, проверяемый по реестру во время компиляции кода
++     `media"application/json"` — это `MediaType`, проверяемый во время компиляции кода: группа
++     должна быть одним из одиннадцати типов верхнего уровня, подтип не должен содержать
++     запрещённых символов, а подтип в стандартном дереве — не `vnd.`, `prs.`, `x-` или `x.` —
++     должен быть в реестре IANA, иначе литерал — ошибка компиляции с указанием ближайшего
++     зарегистрированного типа, _application/jsom is not a registered media type; did you mean
++     application/json?_. Затем суффиксы и параметры разбираются в точности так, как их разбирает
++     `as[MediaType]`, так что неизвестный суффикс или висящая `;` — тоже ошибка компиляции.
+
+=     unknown suffix or a dangling `;` is a compile error too.
+=
+-     ```scala
++     ```scala
+
+=     unknown suffix or a dangling `;` is a compile error too.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     media"application/json"
++     media"application/json"
+
+-     media"application/epub+zip"
++     media"application/epub+zip"
+
+-     media"application/vnd.example.widget+json"   // vendor types are not looked up
++     media"application/vnd.example.widget+json"   // vendor types are not looked up
+
+-     media"text/html"(charset = t"UTF-8")
++     media"text/html"(charset = t"UTF-8")
+
+-     media"application/jsom"                      // does not compile
++     media"application/jsom"                      // does not compile
+
+=     media"application/jsom"                      // does not compile
+-     ```
++     ```
+
+-     The registry is a copy of IANA's published list compiled into the library at build time,
+-     so the check needs no network. The interpolator takes no `$`-substitutions, since the
+-     literal is checked at compile time; a media type known only at runtime is parsed with
+-     `as[MediaType]`, which does not consult the registry.
++     Реестр — это копия опубликованного IANA списка, встроенная в библиотеку во время сборки,
++     поэтому проверке не нужна сеть. Интерполятор не принимает подстановок `$`, поскольку
++     литерал проверяется во время компиляции; медиатип, известный только во время выполнения,
++     разбирается с помощью `as[MediaType]`, который не обращается к реестру.
+
+- entry .Media   a type's own media type, and the grammar of media types: groups, subtypes, suffixes
++ entry .Media   собственный медиатип типа и грамматика медиатипов: группы, подтипы, суффиксы
+
+= entry .Media   a type's own media type, and the grammar of media types: groups, subtypes, suffixes
+-   detail
++   detail
+
+-       As a **typeclass**, `Media` gives a type its media type: a value which `is Media` has
+-       `#mediaType`, which is how an HTTP response, a served file or an attachment labels
+-       itself without anyone re-stating what it is. `Text` is `text/plain` (`.text`); anything
+-       `Nominable` — a file, a path, a named asset — guesses from the extension of its name
+-       (`.nominable`, through `Extensions.guess`); and the format libraries each declare their
+-       own (`Json is Media`, `Html is Media`, …) in their companions.
++       Как **класс типов** `Media` даёт типу его медиатип: у значения, которое `is Media`, есть
++       `#mediaType`, и именно так HTTP-ответ, отдаваемый файл или вложение помечают себя, не
++       требуя ни от кого повторять, чем они являются. `Text` — это `text/plain` (`.text`); всё
++       `Nominable` — файл, путь, именованный ресурс — угадывает тип по расширению своего имени
++       (`.nominable`, через `Extensions.guess`); а библиотеки форматов объявляют каждая свой
++       (`Json is Media`, `Html is Media`, …) в своих объектах-компаньонах.
+
+=       own (`Json is Media`, `Html is Media`, …) in their companions.
+=
+-       ```scala
++       ```scala
+
+=       own (`Json is Media`, `Html is Media`, …) in their companions.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       t"hello".mediaType   // media"text/plain"
++       t"hello".mediaType   // media"text/plain"
+
+-       case class Upload(name: Text)
++       case class Upload(name: Text)
+
+-       given Upload is Media:
++       given Upload is Media:
+
+-         extension (upload: Upload) def mediaType: MediaType = media"application/octet-stream"
++         extension (upload: Upload) def mediaType: MediaType = media"application/octet-stream"
+
+=         extension (upload: Upload) def mediaType: MediaType = media"application/octet-stream"
+-       ```
++       ```
+
+-       As an **object**, `Media` holds the grammar: the enumerations `.Group`, `.Subtype` and
+-       `.Suffix` of which a `MediaType` is made, and `.parse`, the parser behind
+-       `as[MediaType]`, `MediaType.unapply` and `media"…"`.
++       Как **объект** `Media` содержит грамматику: перечисления `.Group`, `.Subtype` и
++       `.Suffix`, из которых состоит `MediaType`, и `.parse` — парсер, стоящий за
++       `as[MediaType]`, `MediaType.unapply` и `media"…"`.
+
+=       `as[MediaType]`, `MediaType.unapply` and `media"…"`.
+-   refer gesticulate.MediaType
++   refer gesticulate.MediaType
+
+=   refer gesticulate.MediaType
+-   refer gesticulate.Extensions
++   refer gesticulate.Extensions
+
+=   refer gesticulate.Extensions
+-   refer gesticulate.ascribe
++   refer gesticulate.ascribe
+
+-   entry .text   `Text is Media`: `text/plain`
++   entry .text   `Text is Media`: `text/plain`
+
+-       In implicit scope, so plain text served or attached is labelled `text/plain` with no
+-       import.
+-   entry .nominable   anything `Nominable` is `Media`, by the extension of its name
+-       The given which gives a named thing — a file, a path, an asset — a media type guessed
+-       from the text after the last `.` of its name, through `Extensions.guess`:
+-       `report.pdf` is `application/pdf`, and a name with an unknown or no extension is
++       Находится в неявной области видимости, так что простой текст, отдаваемый или
++       прикладываемый, помечается как `text/plain` без импорта.
++   entry .nominable   всё `Nominable` является `Media` по расширению своего имени
++       Given, дающий именованной вещи — файлу, пути, ресурсу — медиатип, угаданный по тексту
++       после последней `.` в её имени, через `Extensions.guess`: `report.pdf` — это
++       `application/pdf`, а имя с неизвестным расширением или без него — это
+
+-       `application/octet-stream`.
++       `application/octet-stream`.
+
+-   entry .Group   the top-level type: one of exactly eleven
++   entry .Group   тип верхнего уровня: один из ровно одиннадцати
+
+=   entry .Group   the top-level type: one of exactly eleven
+-     detail
++     detail
+
+-         `Application`, `Audio`, `Image`, `Message`, `Multipart`, `Text`, `Video`, `Font`,
++         `Application`, `Audio`, `Image`, `Message`, `Multipart`, `Text`, `Video`, `Font`,
+
+-         `Example`, `Model` and `Haptics` — the top-level types IANA registers, with `Haptics`
+-         the newest (RFC 9695). `#name` is the lower-case form written in a media type, and a
+-         group shows and inspects as that (`.showable`, `.inspectable`).
+-         Text with any other group fails to parse with `MediaType.Error.Reason.InvalidGroup`.
+-     entry .inspectable   a debug rendering as the group in lower case: `application`
+-     entry .showable   renders a group as written in a media type: `application`
+-     entry #name   the group in lower case, as written in a media type
+-   entry .Subtype   a subtype, and which of the four registration trees it is in
++         `Example`, `Model` и `Haptics` — типы верхнего уровня, регистрируемые IANA, из которых
++         `Haptics` — самый новый (RFC 9695). `#name` — форма в нижнем регистре, записываемая в
++         медиатипе, и группа так и показывается, и так же выглядит при инспекции (`.showable`,
++         `.inspectable`). Текст с любой другой группой не разбирается и даёт
++         `MediaType.Error.Reason.InvalidGroup`.
++     entry .inspectable   отладочное отображение группы в нижнем регистре: `application`
++     entry .showable   отображает группу так, как она записывается в медиатипе: `application`
++     entry #name   группа в нижнем регистре, как она записывается в медиатипе
++   entry .Subtype   подтип и то, к какому из четырёх деревьев регистрации он относится
+
+=   entry .Subtype   a subtype, and which of the four registration trees it is in
+-     detail
++     detail
+
+-         `Standard(value)` is a subtype in the standards tree, registered with IANA
+-         (`json`, `html`); `Vendor(value)` is `vnd.value`, a vendor's own; `Personal(value)` is
+-         `prs.value`, a person's own; and `X(value)` is `x-value`, the old experimental prefix
+-         (`x.value` parses to the same). The tree is part of the value, so a match on
+-         `Media.Subtype.Vendor(_)` finds vendor types without inspecting a prefix. `#name`
+-         renders the subtype with its prefix, and the parser accepts each prefix in turn.
+-     entry .showable   renders a subtype as written: `vnd.api`, `prs.thing`, `x-tar`
+-     entry #name   the subtype with its tree's prefix, as written in a media type
+-   entry .Suffix   a structured syntax suffix: `+xml`, `+json`, `+zip`, …
++         `Standard(value)` — подтип в стандартном дереве, зарегистрированный в IANA (`json`,
++         `html`); `Vendor(value)` — это `vnd.value`, собственный подтип вендора;
++         `Personal(value)` — это `prs.value`, собственный подтип частного лица; а `X(value)` —
++         это `x-value`, старый экспериментальный префикс (`x.value` разбирается так же). Дерево
++         является частью значения, поэтому сопоставление с `Media.Subtype.Vendor(_)` находит
++         вендорские типы без проверки префикса. `#name` отображает подтип с его префиксом, а
++         парсер принимает каждый из префиксов по очереди.
++     entry .showable   отображает подтип так, как он записывается: `vnd.api`, `prs.thing`, `x-tar`
++     entry #name   подтип с префиксом его дерева, как он записывается в медиатипе
++   entry .Suffix   суффикс структурированного синтаксиса: `+xml`, `+json`, `+zip`, …
+
+=   entry .Suffix   a structured syntax suffix: `+xml`, `+json`, `+zip`, …
+-     detail
++     detail
+
+-         The suffixes IANA registers: `Xml`, `Json`, `Ber`, `Cbor`, `Der`, `FastInfoset`,
+-         `Wbxml`, `Zip`, `Tlv`, `JsonSeq`, `Sqlite3`, `Jwt`, `Gzip`, `CborSeq` and `Zstd`. A
+-         media type may carry several, in order (`application/thing+xml+gzip`). `#name` is the
+-         registered form written in a media type — `json-seq`, `fastinfoset` — and the parser
+-         reads that form back case-insensitively; a suffix not in this list fails to parse with
+-         `MediaType.Error.Reason.InvalidSuffix`.
+-     entry .showable   renders a suffix as written in a media type: `json-seq`, not `JsonSeq`
+-     entry #name   the suffix in its registered spelling, as written after the `+`
+-   entry .unsafeParse   parses a literal the `media"…"` macro has already checked
+-       For the interpolator's expansion, which re-parses at runtime text verified at compile
+-       time, and so takes the `Unsafe` token in place of a tactic. Not for application code:
+-       use `as[MediaType]` or `MediaType.unapply`.
+-   entry .parse   parses text as a media type, raising `MediaType.Error` for what is wrong
+-       The parser behind `as[MediaType]`, `MediaType.unapply` and `media"…"`. It splits on
+-       `;` for parameters (trimming whitespace), on `/` for the group, and on `+` for suffixes;
+-       the group must be a `Media.Group` (case-insensitively), each suffix a `Media.Suffix` by
+-       its kebab-case name, and each parameter a `key=value`. Needs a `Tactic[MediaType.Error]`.
+-       A `MissingParam` or `NotOneSlash` fault is *raised* rather than aborting, so under a
+-       tolerant tactic the parse continues with a best guess (`text` as the group, the
+-       parameter dropped); the others abort.
+-   entry #mediaType   the media type of a value whose type `is Media`
+-       The extension every `Media` instance provides: `t"hello".mediaType`,
++         Суффиксы, регистрируемые IANA: `Xml`, `Json`, `Ber`, `Cbor`, `Der`, `FastInfoset`,
++         `Wbxml`, `Zip`, `Tlv`, `JsonSeq`, `Sqlite3`, `Jwt`, `Gzip`, `CborSeq` и `Zstd`.
++         Медиатип может нести несколько суффиксов по порядку (`application/thing+xml+gzip`).
++         `#name` — зарегистрированная форма, записываемая в медиатипе, — `json-seq`,
++         `fastinfoset`, — и парсер читает эту форму обратно без учёта регистра; суффикс не из
++         этого списка не разбирается и даёт `MediaType.Error.Reason.InvalidSuffix`.
++     entry .showable   отображает суффикс так, как он записывается в медиатипе: `json-seq`, а не `JsonSeq`
++     entry #name   суффикс в его зарегистрированном написании, как он записывается после `+`
++   entry .unsafeParse   разбирает литерал, уже проверенный макросом `media"…"`
++       Для раскрытия интерполятора, которое во время выполнения повторно разбирает текст,
++       проверенный во время компиляции, и поэтому принимает маркер `Unsafe` вместо тактики. Не
++       для прикладного кода: используйте `as[MediaType]` или `MediaType.unapply`.
++   entry .parse   разбирает текст как медиатип, порождая `MediaType.Error` для того, что не так
++       Парсер, стоящий за `as[MediaType]`, `MediaType.unapply` и `media"…"`. Он разбивает текст
++       по `;` на параметры (обрезая пробелы), по `/` для группы и по `+` для суффиксов; группа
++       должна быть `Media.Group` (без учёта регистра), каждый суффикс — `Media.Suffix` по его
++       имени в kebab-case, а каждый параметр — `key=value`. Требует `Tactic[MediaType.Error]`.
++       Неисправность `MissingParam` или `NotOneSlash` *порождается*, а не прерывает работу,
++       поэтому при терпимой тактике разбор продолжается с наилучшей догадкой (`text` в качестве
++       группы, параметр отброшен); остальные прерывают работу.
++   entry #mediaType   медиатип значения, тип которого `is Media`
++       Расширение, которое предоставляет каждый экземпляр `Media`: `t"hello".mediaType`,
+
+-       `path.mediaType`, `json.mediaType`.
++       `path.mediaType`, `json.mediaType`.
+
+- entry .ascribe   `value.ascribe(mediaType)`: any byte source paired with an explicit media type, as a `Content`
+-     An extension on any value which `is Streamable by Data over Credit` — a `Data`, a file, a
+-     stream — whose bytes are read as a `Chain[Data]` and paired with the given media type.
+-     For bytes with no intrinsic media type, where `Media` would have nothing to go on. Needs
+-     a `Buffering` in scope.
++ entry .ascribe   `value.ascribe(mediaType)`: любой источник байтов вместе с явным медиатипом в виде `Content`
++     Расширение для любого значения, которое `is Streamable by Data over Credit`, — `Data`,
++     файла, потока данных, — байты которого читаются как `Chain[Data]` и объединяются с данным
++     медиатипом. Для байтов без собственного медиатипа, где `Media` не на что опереться.
++     Требует `Buffering` в области видимости.
+
+=     a `Buffering` in scope.
+=
+-     ```scala
++     ```scala
+
+=     a `Buffering` in scope.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     val data: Data = t"raw bytes".in[Data]
++     val data: Data = t"raw bytes".in[Data]
+
+-     val content: Content = data.ascribe(media"application/octet-stream")
++     val content: Content = data.ascribe(media"application/octet-stream")
+
+-     content.media             // media"application/octet-stream"
++     content.media             // media"application/octet-stream"
+
+-     content.named(t"raw.bin")   // an Asset
++     content.named(t"raw.bin")   // an Asset
+
+=     content.named(t"raw.bin")   // an Asset
+-     ```
++     ```
+
+- entry .Content   bytes together with their media type
++ entry .Content   байты вместе с их медиатипом
+
+= entry .Content   bytes together with their media type
+-   detail
++   detail
+
+-       A `Content` is a `#stream` of bytes and the `#media` type which says what they mean:
+-       what `ascribe` produces, and what an HTTP response or an attachment is built from when
+-       the bytes carry no media type of their own. `#named` adds a name, making an `Asset`.
++       `Content` — это поток байтов `#stream` и медиатип `#media`, который говорит, что они
++       означают: то, что производит `ascribe`, и то, из чего строится HTTP-ответ или вложение,
++       когда у байтов нет собственного медиатипа. `#named` добавляет имя, создавая `Asset`.
+
+=       the bytes carry no media type of their own. `#named` adds a name, making an `Asset`.
+-   refer gesticulate.ascribe
++   refer gesticulate.ascribe
+
+-   refer gesticulate.Asset
++   refer gesticulate.Asset
+
+-   entry #media   the media type of the bytes
+-   entry #stream   the bytes, as a chain of chunks
+-   entry #named   the content with a name, as an `Asset`
++   entry #media   медиатип байтов
++   entry #stream   байты в виде цепочки чанков
++   entry #named   содержимое с именем в виде `Asset`
+
+- entry .Asset   a named stream of bytes with its media type: an attachment, a served file
++ entry .Asset   именованный поток байтов с его медиатипом: вложение, отдаваемый файл
+
+= entry .Asset   a named stream of bytes with its media type: an attachment, a served file
+-   detail
++   detail
+
+-       An `Asset` is a `Content` with a `#name`: the three things an email attachment or a
+-       file in a multipart upload needs. `Asset(name, value)` makes one from any value which
+-       `is Media` and `is Streamable by Data over Credit`, taking the media type from the
+-       value's own `Media` instance; `Content#named` makes one from explicit content.
++       `Asset` — это `Content` с `#name`: три вещи, которые нужны вложению электронного письма
++       или файлу в составной загрузке. `Asset(name, value)` создаёт его из любого значения,
++       которое `is Media` и `is Streamable by Data over Credit`, беря медиатип из собственного
++       экземпляра `Media` значения; `Content#named` создаёт его из явного содержимого.
+
+=       value's own `Media` instance; `Content#named` makes one from explicit content.
+=
+-       ```scala
++       ```scala
+
+=       value's own `Media` instance; `Content#named` makes one from explicit content.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       value's own `Media` instance; `Content#named` makes one from explicit content.
+=
+=       ```scala
+=       import soundness.*
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+-       val asset: Asset = Asset(t"notes.txt", t"some text")
++       val asset: Asset = Asset(t"notes.txt", t"some text")
+
+-       asset.media   // media"text/plain", from `Media.text`
++       asset.media   // media"text/plain", from `Media.text`
+
+=       asset.media   // media"text/plain", from `Media.text`
+-       ```
++       ```
+
+-   refer gesticulate.Content
++   refer gesticulate.Content
+
+-   entry .apply   an asset from a name and any value which `is Media` and is streamable as bytes
+-       The media type comes from the value's `Media` instance and the bytes from its
+-       `Streamable`, read whole into a chain of chunks. For bytes with no `Media` of their own, use
+-       `data.ascribe(mediaType).named(name)` instead.
+-   entry #name   the asset's name, such as a filename
+-   entry #media   the asset's media type
+-   entry #stream   the asset's bytes, as a chain of chunks
++   entry .apply   ресурс из имени и любого значения, которое `is Media` и может передаваться потоком как байты
++       Медиатип берётся из экземпляра `Media` значения, а байты — из его `Streamable` и
++       читаются целиком в цепочку чанков. Для байтов без собственного `Media` используйте
++       вместо этого `data.ascribe(mediaType).named(name)`.
++   entry #name   имя ресурса, например имя файла
++   entry #media   медиатип ресурса
++   entry #stream   байты ресурса в виде цепочки чанков
+
+- entry .Extensions   the media types of file extensions, for guessing from a filename
++ entry .Extensions   медиатипы расширений файлов, для угадывания по имени файла
+
+= entry .Extensions   the media types of file extensions, for guessing from a filename
+-   detail
++   detail
+
+-       A table of some eighty common extensions — `png`, `json`, `pdf`, `docx`, `woff2`, … —
+-       and the media type each conventionally means, with `.guess` for the lookup. It is what
+-       `Media.nominable` uses to label a file by its name.
++       Таблица примерно восьмидесяти распространённых расширений — `png`, `json`, `pdf`,
++       `docx`, `woff2`, … — и медиатипа, который каждое из них условно означает, с `.guess`
++       для поиска. Именно это использует `Media.nominable`, чтобы пометить файл по его имени.
+
+=       `Media.nominable` uses to label a file by its name.
+=
+-       ```scala
++       ```scala
+
+=       `Media.nominable` uses to label a file by its name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Extensions.guess(t"png")      // media"image/png"
++       Extensions.guess(t"png")      // media"image/png"
+
+-       Extensions.guess(t"wobble")   // media"application/octet-stream"
++       Extensions.guess(t"wobble")   // media"application/octet-stream"
+
+=       Extensions.guess(t"wobble")   // media"application/octet-stream"
+-       ```
++       ```
+
+=       ```
+-   refer gesticulate.Media
++   refer gesticulate.Media
+
+-   entry .guess   the media type for an extension, or `application/octet-stream` for an unknown one
+-       The extension is given without its dot, in lower case: `t"svg"`, not `t".SVG"`.
+-   entry .mediaTypes   the table itself, from extension to media type
+-       A `Map[Text, MediaType]`, for a program which wants to add to it or enumerate it.
++   entry .guess   медиатип для расширения или `application/octet-stream` для неизвестного
++       Расширение задаётся без точки, в нижнем регистре: `t"svg"`, а не `t".SVG"`.
++   entry .mediaTypes   сама таблица — из расширения в медиатип
++       `Map[Text, MediaType]` для программы, которая хочет дополнить её или перечислить.
+
+- entry .Multipart   a `multipart/form-data` body parsed into its parts, each lent from the input as it is read
++ entry .Multipart   тело `multipart/form-data`, разобранное на части, каждая из которых предоставляется на время из входных данных по мере чтения
+
+= entry .Multipart   a `multipart/form-data` body parsed into its parts, each lent from the input as it is read
+-   detail
++   detail
+
+-       The format of a file upload: a body of parts separated by a boundary line, each with
+-       its own headers — a `Content-Disposition` giving the field's name and filename, perhaps
+-       a `Content-Type` — and a body. `Multipart.parse` reads one incrementally from any
+-       source of bytes, so a large upload streams rather than accumulating, and gives a
+-       `Multipart` whose `#parts` are a lazy `Chain[Part]`; `#at` finds a part by its field
+-       name.
++       Формат загрузки файла: тело из частей, разделённых строкой-границей, у каждой из
++       которых свои заголовки — `Content-Disposition` с именем поля и именем файла, возможно,
++       `Content-Type` — и тело. `Multipart.parse` инкрементально читает такое тело из любого
++       источника байтов, так что большая загрузка передаётся потоком, а не накапливается, и
++       даёт `Multipart`, чьи `#parts` — ленивая `Chain[Part]`; `#at` находит часть по имени
++       её поля.
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A body begins with the boundary line
++         label Тело начинается со строки-границы
+
+=         label A body begins with the boundary line
+-         code
++         code
+
+-             import soundness.*
++             import soundness.*
+
+-             import codepages.utf8Codepage
++             import codepages.utf8Codepage
+
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=
+-             val body =
++             val body =
+
+=             val body =
+-               t"--xyz\r\n"
++               t"--xyz\r\n"
+
+=             val body =
+=               t"--xyz\r\n"
+-       frame
++       frame
+
+-         label A part has headers, a blank line and a body, and the boundary line follows it
++         label У части есть заголовки, пустая строка и тело, а за ней следует строка-граница
+
+=         label A part has headers, a blank line and a body, and the boundary line follows it
+-         code
++         code
+
+=         label A part has headers, a blank line and a body, and the boundary line follows it
+=         code
+-             val body =
++             val body =
+
+=         label A part has headers, a blank line and a body, and the boundary line follows it
+=         code
+=             val body =
+-               t"--xyz\r\n" +
++               t"--xyz\r\n" +
+
+=         label A part has headers, a blank line and a body, and the boundary line follows it
+=         code
+=             val body =
+=               t"--xyz\r\n" +
+-               t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
++               t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+
+=         label A part has headers, a blank line and a body, and the boundary line follows it
+=         code
+=             val body =
+=               t"--xyz\r\n" +
+=               t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+-               t"Content-Type: image/png\r\n" +
++               t"Content-Type: image/png\r\n" +
+
+=         label A part has headers, a blank line and a body, and the boundary line follows it
+=         code
+=             val body =
+=               t"--xyz\r\n" +
+=               t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+=               t"Content-Type: image/png\r\n" +
+-               t"\r\n" +
++               t"\r\n" +
+
+=         label A part has headers, a blank line and a body, and the boundary line follows it
+=         code
+=             val body =
+=               t"--xyz\r\n" +
+=               t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+=               t"Content-Type: image/png\r\n" +
+=               t"\r\n" +
+-               t"pixels\r\n" +
++               t"pixels\r\n" +
+
+=               t"pixels\r\n" +
+-               t"--xyz\r\n"
++               t"--xyz\r\n"
+
+=               t"pixels\r\n" +
+=               t"--xyz\r\n"
+-       frame
++       frame
+
+-         label A second part, and the closing boundary with its trailing `--`
++         label Вторая часть и закрывающая граница с завершающими `--`
+
+=         label A second part, and the closing boundary with its trailing `--`
+-         code
++         code
+
+=         label A second part, and the closing boundary with its trailing `--`
+=         code
+-             val body =
++             val body =
+
+=         label A second part, and the closing boundary with its trailing `--`
+=         code
+=             val body =
+-               t"--xyz\r\n" +
++               t"--xyz\r\n" +
+
+=         label A second part, and the closing boundary with its trailing `--`
+=         code
+=             val body =
+=               t"--xyz\r\n" +
+-               t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
++               t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+
+=         label A second part, and the closing boundary with its trailing `--`
+=         code
+=             val body =
+=               t"--xyz\r\n" +
+=               t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+-               t"Content-Type: image/png\r\n" +
++               t"Content-Type: image/png\r\n" +
+
+=         label A second part, and the closing boundary with its trailing `--`
+=         code
+=             val body =
+=               t"--xyz\r\n" +
+=               t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+=               t"Content-Type: image/png\r\n" +
+-               t"\r\n" +
++               t"\r\n" +
+
+=         label A second part, and the closing boundary with its trailing `--`
+=         code
+=             val body =
+=               t"--xyz\r\n" +
+=               t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+=               t"Content-Type: image/png\r\n" +
+=               t"\r\n" +
+-               t"pixels\r\n" +
++               t"pixels\r\n" +
+
+=               t"pixels\r\n" +
+-               t"--xyz\r\n" +
++               t"--xyz\r\n" +
+
+-               t"Content-Disposition: form-data; name=\"caption\"\r\n" +
++               t"Content-Disposition: form-data; name=\"caption\"\r\n" +
+
+=               t"Content-Disposition: form-data; name=\"caption\"\r\n" +
+-               t"\r\n" +
++               t"\r\n" +
+
+-               t"Me, at the beach\r\n" +
++               t"Me, at the beach\r\n" +
+
+-               t"--xyz--\r\n"
++               t"--xyz--\r\n"
+
+=               t"--xyz--\r\n"
+-       frame
++       frame
+
+-         label Parsed, the parts are typed
++         label После разбора части типизированы
+
+=         label Parsed, the parts are typed
+-         code
++         code
+
+-             val upload = Multipart.parse(Chain(body.in[Data]))
++             val upload = Multipart.parse(Chain(body.in[Data]))
+
+-             upload.at(t"avatar").let(_.filename)                 // t"me.png"
++             upload.at(t"avatar").let(_.filename)                 // t"me.png"
+
+-             upload.at(t"avatar").let(_.headers.at(t"Content-Type"))   // t"image/png"
++             upload.at(t"avatar").let(_.headers.at(t"Content-Type"))   // t"image/png"
+
+-             upload.parts.map(_.read[Data].utf8)                  // Chain(t"pixels", t"Me, at the beach")
++             upload.parts.map(_.read[Data].utf8)                  // Chain(t"pixels", t"Me, at the beach")
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       A part's body is **lent** from the input, zero-copy, for as long as that part is the
+-       current one: read it (`part.read[Data]`, or `part.body()` for the stream) before moving
+-       on to the next part, because forcing the next part skips whatever remained of this one,
+-       after which it reads as empty. A `Chain` memoises, so `parts.size` followed by
+-       `parts.head.let(_.read[Data])` reads nothing. Bodies are found by a bulk search for the
+-       delimiter, so a 100 KB binary body arrives as a few large regions whatever the chunking
+-       of the input, and a body may be read in pieces, each `body()` continuing where the last
+-       stopped.
++       Тело части **предоставляется на время** из входных данных без копирования — до тех
++       пор, пока эта часть является текущей: прочитайте его (`part.read[Data]` или
++       `part.body()` для потока данных), прежде чем переходить к следующей части, потому что
++       вычисление следующей части пропускает всё, что осталось от этой, после чего она
++       читается как пустая. `Chain` запоминает значения, поэтому `parts.size`, за которым
++       следует `parts.head.let(_.read[Data])`, ничего не прочитает. Тела находятся массовым
++       поиском разделителя, так что двоичное тело размером 100 КБ приходит несколькими
++       крупными областями независимо от разбиения входных данных на чанки, а тело можно
++       читать частями: каждый `body()` продолжает с того места, где остановился предыдущий.
+
+-       A malformed body raises `Multipart.Error` with a `.Error.Reason`; scintillate's
+-       `Acceptable.multipart` reads a request's `Content-Type` for the boundary and parses the
+-       request body with this.
++       Некорректное тело порождает `Multipart.Error` с `.Error.Reason`; `Acceptable.multipart`
++       из scintillate читает из `Content-Type` запроса границу и разбирает с помощью этого
++       тело запроса.
+
+-   refer gesticulate.Multipart.Part
++   refer gesticulate.Multipart.Part
+
+=   refer gesticulate.Multipart.Part
+-   refer gesticulate.MediaType
++   refer gesticulate.MediaType
+
+-   entry .Disposition   how a part is meant to be presented: `Inline`, `Attachment` or `FormData`
+-       The token of the part's `Content-Disposition` header. A form upload's parts are
+-       `FormData`; `Inline` and `Attachment` are the dispositions of a message's parts. A
+-       token other than these fails the parse with `Multipart.Error.Reason.BadDisposition`.
+-   entry .parse   parses a multipart body from any source of bytes, lending each part as it is reached
+-       `Multipart.parse(input)` takes any value which `is Streamable by Data over Credit` — a
+-       `Chain[Data]`, a request body, a file — and reads the boundary from its first line
+-       (`--boundary`), so the boundary need not be known in advance; the second parameter,
+-       `boundary`, is accepted for a caller which has it from a `Content-Type` header but is
+-       not consulted. It needs a `Tactic[Multipart.Error]`, which the result retains (a part's
+-       body raises a cut-short read through it), and raises `Multipart.Error` at the first
+-       malformed byte: `Expected(char)` for a boundary or line ending that is not there,
+-       `BadDisposition` for an unreadable `Content-Disposition`. Headers are read as ASCII; a
+-       part with no `Content-Disposition` is `FormData` with no name.
++   entry .Disposition   как часть предполагается представлять: `Inline`, `Attachment` или `FormData`
++       Токен заголовка `Content-Disposition` части. Части загрузки формы — это `FormData`;
++       `Inline` и `Attachment` — это расположения частей сообщения. Любой другой токен
++       приводит к неудаче разбора с `Multipart.Error.Reason.BadDisposition`.
++   entry .parse   разбирает составное тело из любого источника байтов, предоставляя каждую часть на время по мере её достижения
++       `Multipart.parse(input)` принимает любое значение, которое
++       `is Streamable by Data over Credit`, — `Chain[Data]`, тело запроса, файл — и читает
++       границу из его первой строки (`--boundary`), так что границу не нужно знать заранее;
++       второй параметр, `boundary`, принимается для вызывающего кода, который получил её из
++       заголовка `Content-Type`, но не используется. Требует `Tactic[Multipart.Error]`,
++       которую результат удерживает (тело части порождает через неё ошибку прерванного
++       чтения), и порождает `Multipart.Error` на первом некорректном байте: `Expected(char)`
++       для отсутствующей границы или конца строки, `BadDisposition` для нечитаемого
++       `Content-Disposition`. Заголовки читаются как ASCII; часть без `Content-Disposition` —
++       это `FormData` без имени.
+
+=       part with no `Content-Disposition` is `FormData` with no name.
+=
+-       ```scala
++       ```scala
+
+=       part with no `Content-Disposition` is `FormData` with no name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       part with no `Content-Disposition` is `FormData` with no name.
+=
+=       ```scala
+=       import soundness.*
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+-       capture[Multipart.Error](Multipart.parse(Chain[Data]())).reason   // Expected('-')
++       capture[Multipart.Error](Multipart.parse(Chain[Data]())).reason   // Expected('-')
+
+=       capture[Multipart.Error](Multipart.parse(Chain[Data]())).reason   // Expected('-')
+-       ```
++       ```
+
+-   entry .Error   raised when a multipart body cannot be read
++   entry .Error   порождается, когда составное тело невозможно прочитать
+
+=   entry .Error   raised when a multipart body cannot be read
+-     detail
++     detail
+
+-         Error `↯/s.81.2`: _multipart data could not be read because `reason`_. Raised through a
+-         `Tactic[Multipart.Error]` by `Multipart.parse` as it reaches the fault, which, since
+-         the parts are read lazily, may be while a later part is forced rather than at the
+-         call. The `.Reason`'s number is the error's sub-number (937.1 to 937.6).
+-     entry .Reason   why a multipart body could not be read
++         Ошибка `↯/s.81.2`: _multipart data could not be read because `reason`_. Порождается
++         через `Tactic[Multipart.Error]` функцией `Multipart.parse`, когда она доходит до
++         неисправности, что, поскольку части читаются лениво, может произойти при вычислении
++         более поздней части, а не во время вызова. Номер `.Reason` — это подномер ошибки (от
++         937.1 до 937.6).
++     entry .Reason   почему составное тело невозможно прочитать
+
+=     entry .Reason   why a multipart body could not be read
+-       detail
++       detail
+
+=       detail
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
+-           row  `Expected(char)`  1  _the character '`char`' was expected_  a boundary without its `--`, a header line or a boundary line without its `\r\n`, a header without `: `
++           column  Кейс
++           column  Код
++           column  Сообщение
++           column  Примечание
++           row  `Expected(char)`  1  _the character '`char`' was expected_  граница без `--`, строка заголовка или строка-граница без `\r\n`, заголовок без `: `
+
+-           row  `StreamContinues`  2  _the stream continues beyond the last part_
++           row  `StreamContinues`  2  _the stream continues beyond the last part_
+
+-           row  `BadBoundaryEnding`  3  _unexpected content followed the boundary_
++           row  `BadBoundaryEnding`  3  _unexpected content followed the boundary_
+
+-           row  `MediaType`  4  _the media type is invalid_  raised by scintillate's `Acceptable.multipart` for a request whose `Content-Type` is not `multipart/form-data` with a `boundary`
++           row  `MediaType`  4  _the media type is invalid_  порождается `Acceptable.multipart` из scintillate для запроса, `Content-Type` которого не является `multipart/form-data` с `boundary`
+
+-           row  `BadDisposition`  5  _the `Content-Disposition` header has the wrong format_
++           row  `BadDisposition`  5  _the `Content-Disposition` header has the wrong format_
+
+-           row  `Truncated`  6  _the body ended before its closing boundary_  which `Acceptable.multipart` raises for a request body cut short
++           row  `Truncated`  6  _the body ended before its closing boundary_  порождается `Acceptable.multipart` для прерванного тела запроса
+
+=           row  `Truncated`  6  _the body ended before its closing boundary_  which `Acceptable.multipart` raises for a request body cut short
+-           ```
++           ```
+
+-       entry #number   the reason's number, `1` to `6`, which is the error's sub-number
+-     entry .communicable   renders each reason as its message
+-     entry #reason   why the body could not be read
+-   entry #parts   the parts, in order, as a lazy chain
+-       Each part is parsed as the chain is forced, and forcing a part's successor skips and
+-       closes the part's body. The chain memoises, so it may be traversed more than once, but
+-       a body may be read only while its part is the latest forced.
+-   entry #at   the part with a field name, or `Unset`
+-       `upload.at(t"avatar")` finds the first part whose `Content-Disposition` names the
+-       field. Finding it forces every part up to it, and so closes the bodies of the parts
+-       before it.
++       entry #number   номер причины, от `1` до `6`, — подномер ошибки
++     entry .communicable   отображает каждую причину в виде её сообщения
++     entry #reason   почему тело невозможно прочитать
++   entry #parts   части по порядку в виде ленивой цепочки
++       Каждая часть разбирается по мере вычисления цепочки, а вычисление следующей части
++       пропускает и закрывает тело текущей. Цепочка запоминает значения, поэтому её можно
++       обходить больше одного раза, но тело можно читать, только пока его часть — последняя
++       вычисленная.
++   entry #at   часть с данным именем поля или `Unset`
++       `upload.at(t"avatar")` находит первую часть, `Content-Disposition` которой называет это
++       поле. Поиск вычисляет все части до неё и тем самым закрывает тела предшествующих частей.
+
+-   entry .Part   one part of a multipart body: its disposition, headers, name, filename and lent body
++   entry .Part   одна часть составного тела: её расположение, заголовки, имя, имя файла и предоставленное на время тело
+
+=   entry .Part   one part of a multipart body: its disposition, headers, name, filename and lent body
+-     detail
++     detail
+
+-         A `Part` is what `Multipart.parse` yields for each section of the body: the
+-         `#disposition` and the `#name` and `#filename` parameters from its `Content-Disposition`
+-         header, all of its `#headers` by name, and its `#body`, a `Spring[Data]` lent from the
+-         input. A part `is Streamable by Data over Credit` (`.streamable`), so its body is read
+-         with the usual verbs — `part.read[Data]`, `part.read[Text]` with a `Charset` in scope,
+-         or `part.body()` for the stream itself.
++         `Part` — это то, что `Multipart.parse` выдаёт для каждого раздела тела: `#disposition`
++         и параметры `#name` и `#filename` из её заголовка `Content-Disposition`, все её
++         `#headers` по имени и её `#body` — `Spring[Data]`, предоставленный на время из входных
++         данных. Часть `is Streamable by Data over Credit` (`.streamable`), поэтому её тело
++         читается обычными глаголами — `part.read[Data]`, `part.read[Text]` с `Charset` в
++         области видимости или `part.body()` для самого потока данных.
+
+=         or `part.body()` for the stream itself.
+=
+-         ```scala
++         ```scala
+
+=         or `part.body()` for the stream itself.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import codepages.utf8Codepage
++         import codepages.utf8Codepage
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val body =
++         val body =
+
+-           t"--xyz\r\n" +
++           t"--xyz\r\n" +
+
+-           t"Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n" +
++           t"Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n" +
+
+-           t"Content-Type: text/plain\r\n" +
++           t"Content-Type: text/plain\r\n" +
+
+-           t"\r\n" +
++           t"\r\n" +
+
+-           t"file content\r\n" +
++           t"file content\r\n" +
+
+-           t"--xyz--\r\n"
++           t"--xyz--\r\n"
+
+-         val part: Optional[Multipart.Part] = Multipart.parse(Chain(body.in[Data])).parts.head
++         val part: Optional[Multipart.Part] = Multipart.parse(Chain(body.in[Data])).parts.head
+
+-         part.let(_.filename)                     // t"hello.txt"
++         part.let(_.filename)                     // t"hello.txt"
+
+-         part.let(_.disposition)                  // Multipart.Disposition.FormData
++         part.let(_.disposition)                  // Multipart.Disposition.FormData
+
+-         part.let(_.headers.at(t"Content-Type"))  // t"text/plain"
++         part.let(_.headers.at(t"Content-Type"))  // t"text/plain"
+
+-         part.let(_.read[Data].utf8)              // t"file content"
++         part.let(_.read[Data].utf8)              // t"file content"
+
+=         part.let(_.read[Data].utf8)              // t"file content"
+-         ```
++         ```
+
+-         The body is zero-copy: it is readable until the next part is forced, which skips
+-         whatever remains of it, after which it reads as empty. Each `body()` continues from
+-         wherever the previous read stopped, so a body may be taken in two pieces, but it cannot
+-         be read twice: a part whose body is wanted later must be read into a `Data` first.
++         Тело не копируется: его можно читать, пока не вычислена следующая часть, что
++         пропускает всё, что от него осталось, после чего оно читается как пустое. Каждый
++         `body()` продолжает с того места, где остановилось предыдущее чтение, так что тело
++         можно взять двумя частями, но нельзя прочитать дважды: часть, тело которой понадобится
++         позже, нужно сначала прочитать в `Data`.
+
+-     refer gesticulate.Multipart
++     refer gesticulate.Multipart
+
+-     entry .streamable   `Part is Streamable by Data over Credit`: a part's body, for `read[Data]` and the other stream verbs
+-         In implicit scope. It needs a `Tactic[Truncation.Error]`, which the instance retains,
+-         for a body whose input ends before the closing boundary.
+-     entry #disposition   `Inline`, `Attachment` or `FormData`, or `Unset` if the part had no `Content-Disposition`
+-     entry #headers   every header of the part, by name as written
+-         Header names are matched exactly as they appear in the body, `Content-Type` and not
+-         `content-type`.
+-     entry #name   the field name from the `Content-Disposition` header, or `Unset`
+-     entry #filename   the filename from the `Content-Disposition` header, or `Unset`
+-         Present for a file field of a form; absent for a text field.
+-     entry #body   the part's bytes, lent from the input: `body()` is the stream
+-         A `Spring[Data]`: `body()` gives the `Stream[Data] over Credit` from wherever the
+-         previous read stopped, and needs a `Tactic[Truncation.Error]`. It reads as empty once
+-         the next part has been forced.
++     entry .streamable   `Part is Streamable by Data over Credit`: тело части для `read[Data]` и других глаголов потоков данных
++         Находится в неявной области видимости. Требует `Tactic[Truncation.Error]`, которую
++         экземпляр удерживает, — для тела, входные данные которого заканчиваются до
++         закрывающей границы.
++     entry #disposition   `Inline`, `Attachment` или `FormData` либо `Unset`, если у части не было `Content-Disposition`
++     entry #headers   все заголовки части по имени, как оно записано
++         Имена заголовков сопоставляются в точности так, как они записаны в теле: `Content-Type`,
++         а не `content-type`.
++     entry #name   имя поля из заголовка `Content-Disposition` или `Unset`
++     entry #filename   имя файла из заголовка `Content-Disposition` или `Unset`
++         Присутствует для файлового поля формы; отсутствует для текстового поля.
++     entry #body   байты части, предоставленные на время из входных данных: `body()` — это поток данных
++         `Spring[Data]`: `body()` даёт `Stream[Data] over Credit` с того места, где
++         остановилось предыдущее чтение, и требует `Tactic[Truncation.Error]`. После
++         вычисления следующей части читается как пустое.
+
+- entry .Construable   the Scala type a media type is read as and written from, for an HTTP client's use
++ entry .Construable   тип Scala, как который читается и из которого записывается медиатип, для использования HTTP-клиентом
+
+= entry .Construable   the Scala type a media type is read as and written from, for an HTTP client's use
+-   detail
++   detail
+
+-       `("image/png" is Construable to (Raster in Png))` says that a body of `image/png` is
+-       read as, and written from, a `Raster in Png`. The `Self` is the media type without its
+-       parameters, as a singleton string type, so that a client which learns a media type from
+-       a specification — an OpenAPI document, say — can ask, as the code compiles, what to
+-       construe a response of that type as. The trait itself carries no operations: the result
+-       type's own `Aggregable` reads the body and its `Postable` writes one. `Construable()`
+-       makes an instance, with the two types as arguments.
+-       Its `Result`, the Scala type a body of that media type is read as and written from, is
+-       inherited from `prepositional.Resultant`.
++       `("image/png" is Construable to (Raster in Png))` говорит, что тело `image/png`
++       читается как `Raster in Png` и записывается из него. `Self` — это медиатип без
++       параметров в виде синглтон-типа строки, так что клиент, узнающий медиатип из
++       спецификации — например, из документа OpenAPI, — может во время компиляции кода
++       спросить, как что интерпретировать ответ этого типа. Сам трейт не несёт никаких
++       операций: тело читает собственный `Aggregable` типа результата, а записывает его
++       `Postable`. `Construable()` создаёт экземпляр с двумя типами в качестве аргументов.
++       Его `Result` — тип Scala, как который читается и из которого записывается тело этого
++       медиатипа, — унаследован от `prepositional.Resultant`.
+
+-       Each mapping is a given in the `construables` choice package, imported by name, so
+-       nothing is construed without a deliberate choice: this library declares
+-       `plainTextConstruable` and `octetStreamConstruable`, and each format library declares
+-       its own — `jsonConstruable` in jacinta's HTTP module, `xmlConstruable` and
+-       `textXmlConstruable` in xylophone's, `pngConstruable` in hallucination's, and so on —
+-       all merged into the umbrella's `construables` package. Without the right one in scope, a
+-       client which reads responses by their `Content-Type` falls back to the raw body.
++       Каждое отображение — это given в пакете выбора `construables`, импортируемый по имени,
++       так что ничто не интерпретируется без осознанного выбора: эта библиотека объявляет
++       `plainTextConstruable` и `octetStreamConstruable`, а каждая библиотека форматов
++       объявляет свои — `jsonConstruable` в HTTP-модуле jacinta, `xmlConstruable` и
++       `textXmlConstruable` в модуле xylophone, `pngConstruable` в модуле hallucination и так
++       далее, — и все они объединены в пакете `construables` зонтичного модуля. Без нужного
++       отображения в области видимости клиент, читающий ответы по их `Content-Type`,
++       возвращается к сырому телу.
+
+=       client which reads responses by their `Content-Type` falls back to the raw body.
+=
+-       ```scala
++       ```scala
+
+=       client which reads responses by their `Content-Type` falls back to the raw body.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import construables.plainTextConstruable
++       import construables.plainTextConstruable
+
+-       summon["text/plain" is Construable to Text]
++       summon["text/plain" is Construable to Text]
+
+=       summon["text/plain" is Construable to Text]
+-       ```
++       ```
+
+-   refer gesticulate.construables
++   refer gesticulate.construables
+
+=   refer gesticulate.construables
+-   refer gesticulate.MediaType
++   refer gesticulate.MediaType
+
+-   entry .Bound   a `Construable` with its media type and result fixed as type arguments
++   entry .Bound   `Construable` с медиатипом и результатом, зафиксированными как аргументы типа
+
+=   entry .Bound   a `Construable` with its media type and result fixed as type arguments
+-     detail
++     detail
+
+-         `Construable.Bound[media, result]` is the class `Construable()` instantiates: a
+-         `Construable` whose `Self` is `media` and `Result` is `result`.
+-     entry #Self   the media type, as a singleton string
+-     entry #Result   the Scala type the media type is construed as
+-   entry .apply   `Construable[media, result]()`: a mapping from a media type literal to a type
+-       Written with the `is … to …` syntax as a given's type, the type arguments are inferred:
++         `Construable.Bound[media, result]` — класс, экземпляр которого создаёт
++         `Construable()`: `Construable`, у которого `Self` — это `media`, а `Result` — `result`.
++     entry #Self   медиатип в виде синглтон-типа строки
++     entry #Result   тип Scala, как который интерпретируется медиатип
++   entry .apply   `Construable[media, result]()`: отображение из литерала медиатипа в тип
++       Когда это записано синтаксисом `is … to …` как тип given, аргументы типа выводятся:
+
+-       `given csvConstruable: ("text/csv" is Construable to Sheet) = Construable()`.
++       `given csvConstruable: ("text/csv" is Construable to Sheet) = Construable()`.
+
+-   entry #Self   the media type, without parameters, as a singleton string type
++   entry #Self   медиатип без параметров в виде синглтон-типа строки
+
+- entry .construables   the mappings from media types to Scala types, each a given to import by name
++ entry .construables   отображения из медиатипов в типы Scala, каждое — given для импорта по имени
+
+= entry .construables   the mappings from media types to Scala types, each a given to import by name
+-   detail
++   detail
+
+-       Which type a body of some media type is construed as is a `Construable` given in scope,
+-       and `import soundness.*` brings none of these in: each is imported by name. This package
+-       holds the two mappings which need no format library, and the umbrella's `construables`
+-       package merges them with every format library's own.
++       То, как что интерпретируется тело некоторого медиатипа, определяется given `Construable`
++       в области видимости, и `import soundness.*` не вводит ни одного из них: каждый
++       импортируется по имени. Этот пакет содержит два отображения, которым не нужна
++       библиотека форматов, а пакет `construables` зонтичного модуля объединяет их с
++       собственными отображениями каждой библиотеки форматов.
+
+=       package merges them with every format library's own.
+=
+-       ```scala
++       ```scala
+
+=       package merges them with every format library's own.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import construables.{plainTextConstruable, octetStreamConstruable}
++       import construables.{plainTextConstruable, octetStreamConstruable}
+
+=       import construables.{plainTextConstruable, octetStreamConstruable}
+-       ```
++       ```
+
+-   entry .plainTextConstruable   `text/plain` is construed as `Text`
+-       Reading the body as text needs a `Charset` in scope, and writing one a `Codepage`.
+-   entry .octetStreamConstruable   `application/octet-stream` is construed as `Data`
++   entry .plainTextConstruable   `text/plain` интерпретируется как `Text`
++       Чтение тела как текста требует `Charset` в области видимости, а запись — `Codepage`.
++   entry .octetStreamConstruable   `application/octet-stream` интерпретируется как `Data`
+
+- entry .internal   the macro behind `media"…"` and its registry check
++ entry .internal   макрос, стоящий за `media"…"`, и его проверка по реестру
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the macro has a stable home, and is kept
+-       self-contained so that it can run at expansion time.
+-   entry .validateLiteral   checks a media type literal's group, subtype characters and registration, as a message or `Unset`
+-       The compile-time check: the group must be one of the eleven, the subtype's segments
+-       must contain no forbidden character, and a standard-tree subtype must be in the
+-       registry, else a message naming the nearest registered type by Levenshtein distance.
+-       Suffixes and parameters are left to the parser.
+-   entry .mediaInterpolator   the macro: validates the one literal part and splices the parsed media type
+-       Halts for a literal with substitutions, for a `validateLiteral` message, or for a
+-       `MediaType.Error` from the parser.
++       Не для прямого использования: объект существует, чтобы у макроса было стабильное место,
++       и остаётся самодостаточным, чтобы его можно было выполнить во время раскрытия.
++   entry .validateLiteral   проверяет группу литерала медиатипа, символы подтипа и регистрацию, возвращая сообщение или `Unset`
++       Проверка во время компиляции: группа должна быть одной из одиннадцати, сегменты подтипа
++       не должны содержать запрещённых символов, а подтип стандартного дерева должен быть в
++       реестре, иначе возвращается сообщение с ближайшим зарегистрированным типом по расстоянию
++       Левенштейна. Суффиксы и параметры оставлены парсеру.
++   entry .mediaInterpolator   макрос: проверяет единственную литеральную часть и вставляет разобранный медиатип
++       Останавливается для литерала с подстановками, для сообщения `validateLiteral` или для
++       `MediaType.Error` от парсера.

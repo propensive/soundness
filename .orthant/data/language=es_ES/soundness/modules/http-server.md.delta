@@ -1,0 +1,576 @@
+orthant 1 language
+
+- ## HTTP Server
++ ## Servidor HTTP
+
+- ### About
++ ### Descripción
+
+- An HTTP server is a handler: a function from a request to a response, served on a port. One
+- is run with a single expression. The handler reads the request which is in scope, matches on
+- its method and path, and returns a typed response, whose `Content-Type` follows from the
+- value it carries.
++ Un servidor HTTP es un manejador: una función de una petición a una respuesta, servida en un
++ puerto. Se pone en marcha con una sola expresión. El manejador lee la petición que está en el
++ ámbito, hace coincidencia de patrones sobre su método y su ruta, y devuelve una respuesta con
++ tipo, cuyo `Content-Type` se deduce del valor que lleva.
+
+- The server speaks modern HTTP/1.1, with keep-alive, pipelining, chunked bodies, TLS,
+- `100-continue` and protocol upgrades, on a virtual thread for each connection. It speaks
+- HTTP/2 on any connection whose TLS handshake negotiates it.
++ El servidor habla HTTP/1.1 moderno, con keep-alive, pipelining, cuerpos fragmentados, TLS,
++ `100-continue` y cambios de protocolo, en un hilo virtual por cada conexión. Habla HTTP/2 en
++ cualquier conexión cuyo handshake TLS lo negocie.
+
+- Two neighboring protocols sit above HTTP/1.1.
+- [WebSockets](https://en.wikipedia.org/wiki/WebSocket) upgrade a request into a stream of
+- messages, which is handled as a state machine. HTTP/2 carries many requests over one
+- connection, for browsers and for the protocols in the style of gRPC which require it.
++ Dos protocolos vecinos se sitúan por encima de HTTP/1.1.
++ Los [WebSockets](https://en.wikipedia.org/wiki/WebSocket) convierten una petición en un flujo de
++ mensajes, que se trata como una máquina de estados. HTTP/2 lleva muchas peticiones por una sola
++ conexión, para los navegadores y para los protocolos al estilo de gRPC que lo exigen.
+
+- ### On serving HTTP
++ ### Sobre servir HTTP
+
+- Server frameworks tend to arrive as inversion of control: DSLs for routing, controller
+- classes, annotation processors, and a runtime which calls the application, instead of the
+- reverse. The protocol underneath is simpler than the frameworks suggest. A request arrives,
+- and a response is computed. A typed language can express that directly, with routing as
+- ordinary pattern matching, and content negotiation as [typeclasses][typeclass].
++ Los frameworks de servidor suelen llegar como inversión de control: DSLs para el enrutamiento,
++ clases controladoras, procesadores de anotaciones y un entorno de ejecución que llama a la
++ aplicación, en lugar de lo contrario. El protocolo que hay debajo es más sencillo de lo que
++ sugieren los frameworks. Llega una petición y se calcula una respuesta. Un lenguaje con tipos
++ puede expresarlo directamente, con el enrutamiento como una coincidencia de patrones corriente,
++ y la negociación de contenido como [clases de tipos][clase de tipos].
+
+- Here a handler is a block of code, and everything else is values. A handler which states what
+- it needs, and what it may fail with, has an
+- [honest signature](../../philosophy/honest-signatures.md), and that is why a server can be tested
+- without a socket.
++ Aquí un manejador es un bloque de código, y todo lo demás son valores. Un manejador que declara
++ lo que necesita, y con qué puede fallar, tiene una
++ [signatura honesta](../../philosophy/honest-signatures.md), y por eso un servidor se puede probar
++ sin un socket.
+
+- Everything comes from the `soundness` package. The [concurrency](concurrency.md) context
+- which a server runs under is in scope:
++ Todo viene del paquete `soundness`. El contexto de [concurrencia](concurrency.md) bajo el que
++ se ejecuta un servidor está en el ámbito:
+
+= which a server runs under is in scope:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import webserverErrorPages.minimalErrorPage
++ import webserverErrorPages.minimalErrorPage
+
+= import webserverErrorPages.minimalErrorPage
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  Decides
+- row  `threads.virtualThreads`, `probates.awaitProbate`  how the server's tasks run, and what happens to them when their scope ends
+- row  `webserverErrorPages.minimalErrorPage`  what a client is sent when a handler fails
+- row  `logging.silentLogging`  that requests are not logged; [Logging](logging.md) has the alternatives
+- row  `formatting.compactJsonFormatting`  how a JSON body is written
+- row  `charsets`, `codepages`, `textSanitizers`  how bytes become text, and text becomes bytes
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception
++ column  Importación
++ column  Decide
++ row  `threads.virtualThreads`, `probates.awaitProbate`  cómo se ejecutan las tareas del servidor, y qué les ocurre cuando termina su ámbito
++ row  `webserverErrorPages.minimalErrorPage`  qué se envía a un cliente cuando falla un manejador
++ row  `logging.silentLogging`  que las peticiones no se registran; [Registro](logging.md) tiene las alternativas
++ row  `formatting.compactJsonFormatting`  cómo se escribe un cuerpo JSON
++ row  `charsets`, `codepages`, `textSanitizers`  cómo los bytes se convierten en texto, y el texto en bytes
++ row  `strategies.throwUnsafely`  que un error se lanza como excepción
+
+= row  `strategies.throwUnsafely`  that an error is thrown as an exception
+- ```
++ ```
+
+- The samples on this page bind a port, so they are compiled but not run.
++ Los ejemplos de esta página ligan un puerto, así que se compilan pero no se ejecutan.
+
+- ### A server
++ ### Un servidor
+
+- `SocketServer` listens on a port, and runs the handler for each request. The port is bound
+- when `handle` is called, and the service which `handle` returns stops the server when it is
+- canceled. The service runs on tasks of the enclosing `supervise`, so the block lasts as long
+- as the server does.
++ `SocketServer` escucha en un puerto y ejecuta el manejador para cada petición. El puerto se liga
++ cuando se llama a `handle`, y el servicio que devuelve `handle` detiene el servidor cuando se
++ cancela. El servicio se ejecuta en tareas del `supervise` que lo rodea, así que el bloque dura
++ lo mismo que el servidor.
+
+- Within the handler, `request` is the current request, with its method, target, headers,
+- cookies and body. Routing is therefore a `match`:
++ Dentro del manejador, `request` es la petición actual, con su método, su destino, sus
++ cabeceras, sus cookies y su cuerpo. Por tanto, el enrutamiento es un `match`:
+
+- ```scala fuel
++ ```scala fuel
+
+= ```scala fuel
+- frame
++ frame
+
+-   label One response to every request
++   label Una respuesta para cada petición
+
+=   label One response to every request
+-   code
++   code
+
+-       def hello(): Unit = supervise:
++       def hello(): Unit = supervise:
+
+-         val server = SocketServer(8080).handle:
++         val server = SocketServer(8080).handle:
+
+-           Http.Response(Http.Ok)(t"Hello, world!")
++           Http.Response(Http.Ok)(t"Hello, world!")
+
+=           Http.Response(Http.Ok)(t"Hello, world!")
+- frame
++ frame
+
+-   label Routed on the request's target
++   label Enrutado según el destino de la petición
+
+=   label Routed on the request's target
+-   code
++   code
+
+-       val homePage = t"<h1>Welcome</h1>"
++       val homePage = t"<h1>Welcome</h1>"
+
+-       def routed(): Unit = supervise:
++       def routed(): Unit = supervise:
+
+-         SocketServer(8080).handle:
++         SocketServer(8080).handle:
+
+-           request.target match
++           request.target match
+
+-             case t"/"       => Http.Response(Http.Ok)(homePage)
++             case t"/"       => Http.Response(Http.Ok)(homePage)
+
+-             case t"/status" => Http.Response(Http.Ok)(t"OK")
++             case t"/status" => Http.Response(Http.Ok)(t"OK")
+
+-             case _          => Http.Response(Http.NotFound)(t"No such page")
++             case _          => Http.Response(Http.NotFound)(t"No such page")
+
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- ### Responses
++ ### Respuestas
+
+- `Http.Response` takes a status, headers as named arguments, and a body. The body may be of any
+- type with a `Servable` instance, such as text, bytes, [HTML](html.md) or [JSON](json.md). The
+- instance supplies the media type, so what is served, and how it is labeled, cannot disagree:
++ `Http.Response` recibe un estado, cabeceras como argumentos con nombre, y un cuerpo. El cuerpo
++ puede ser de cualquier tipo con una instancia de `Servable`, como texto, bytes, [HTML](html.md)
++ o [JSON](json.md). La instancia proporciona el tipo de medio, así que lo que se sirve, y cómo se
++ rotula, no pueden discrepar:
+
+= instance supplies the media type, so what is served, and how it is labeled, cannot disagree:
+=
+- ```scala
++ ```scala
+
+- val status = Http.Response(Http.Ok, cacheControl = t"no-cache")(t"""{"status": "ok"}""".read[Json])
++ val status = Http.Response(Http.Ok, cacheControl = t"no-cache")(t"""{"status": "ok"}""".read[Json])
+
+- val moved = Http.Response(Http.Found, location = t"/elsewhere")()
++ val moved = Http.Response(Http.Found, location = t"/elsewhere")()
+
+= val moved = Http.Response(Http.Found, location = t"/elsewhere")()
+- ```
++ ```
+
+- The headers are checked as they are for a [request](http-client.md#headers): a header's value
+- must have the type which that header takes.
++ Las cabeceras se comprueban como en una [petición](http-client.md#headers): el valor de una
++ cabecera debe tener el tipo que recibe esa cabecera.
+
+- This is the `Content-Type` which each kind of body is served with:
++ Este es el `Content-Type` con el que se sirve cada clase de cuerpo:
+
+= This is the `Content-Type` which each kind of body is served with:
+=
+- ```tabular
++ ```tabular
+
+- column  Body
++ column  Cuerpo
+
+- column  `Content-Type`
++ column  `Content-Type`
+
+- row  `Text`  `text/plain`
++ row  `Text`  `text/plain`
+
+- row  `Data`  `application/octet-stream`
++ row  `Data`  `application/octet-stream`
+
+- row  `Document[Html]`  `text/html; charset=UTF-8`
++ row  `Document[Html]`  `text/html; charset=UTF-8`
+
+- row  `Json`  `application/json; charset=UTF-8`
++ row  `Json`  `application/json; charset=UTF-8`
+
+- row  `Xml`  `application/xml; charset=UTF-8`
++ row  `Xml`  `application/xml; charset=UTF-8`
+
+- row  `Yaml`  `application/yaml; charset=UTF-8`
++ row  `Yaml`  `application/yaml; charset=UTF-8`
+
+- row  `Tel`  `application/vnd.tel`
++ row  `Tel`  `application/vnd.tel`
+
+- row  `Cbor`  `application/cbor`
++ row  `Cbor`  `application/cbor`
+
+- row  `Protobuf`  `application/protobuf`
++ row  `Protobuf`  `application/protobuf`
+
+- row  `Chain[Sse]`  `text/event-stream`
++ row  `Chain[Sse]`  `text/event-stream`
+
+- row  any other type with a `Media` instance  the media type it declares
++ row  cualquier otro tipo con una instancia de `Media`  el tipo de medio que declara
+
+= row  any other type with a `Media` instance  the media type it declares
+- ```
++ ```
+
+- The instances for the format types are in the package `servables`.
+- [Media types](media-types.md#types-that-know-their-media-type) describes how a type of one's
+- own declares a media type.
++ Las instancias para los tipos de formato están en el paquete `servables`.
++ [Tipos de medio](media-types.md#types-that-know-their-media-type) describe cómo declara un tipo
++ de medio un tipo propio.
+
+- `Redirect`, `NotFound` and `NoCache` wrap content in the common shapes of response. The body
+- of a request is read as a typed value with `as`, whether it is a
+- [multipart](media-types.md#multipart) upload or a [form submission](forms.md#submissions).
+- `basicAuth` guards a response behind credentials, and [OAuth](oauth.md#in-a-web-application)
+- guards one behind a token.
++ `Redirect`, `NotFound` y `NoCache` envuelven el contenido en las formas habituales de
++ respuesta. El cuerpo de una petición se lee como un valor con tipo mediante `as`, tanto si es
++ una subida [multipart](media-types.md#multipart) como un
++ [envío de formulario](forms.md#submissions). `basicAuth` protege una respuesta tras unas
++ credenciales, y [OAuth](oauth.md#in-a-web-application) la protege tras un token.
+
+- ### Request and response bodies
++ ### Cuerpos de petición y de respuesta
+
+- The body of a request is a [stream](streams.md), not a block of bytes which must arrive before
+- the handler runs. A large upload is consumed as it is received, and the body of a response is
+- framed from its stream a block at a time, so neither is held in memory.
++ El cuerpo de una petición es un [flujo](streams.md), no un bloque de bytes que deba llegar antes
++ de que se ejecute el manejador. Una subida grande se consume a medida que se recibe, y el cuerpo
++ de una respuesta se entrama a partir de su flujo bloque a bloque, así que ninguno de los dos se
++ retiene en memoria.
+
+- The body belongs to the handler's scope. It is the connection's, and the connection ends. A
+- handler which wants to keep a body past its response therefore reads it into memory
+- explicitly, with `memoize`.
++ El cuerpo pertenece al ámbito del manejador. Es de la conexión, y la conexión termina. Por
++ tanto, un manejador que quiera conservar un cuerpo más allá de su respuesta lo lee en memoria de
++ forma explícita, con `memoize`.
+
+- ### WebSockets
++ ### WebSockets
+
+- A request is upgraded to a WebSocket by returning a `webSocket` handler, which treats the
+- connection as a state machine. Each incoming message produces a reply, a change of state, or
+- the end of the conversation. Messages are typed: raw frames, text, or any type carried over
+- JSON.
++ Una petición se convierte en un WebSocket devolviendo un manejador `webSocket`, que trata la
++ conexión como una máquina de estados. Cada mensaje entrante produce una respuesta, un cambio de
++ estado o el final de la conversación. Los mensajes tienen tipo: tramas en bruto, texto o
++ cualquier tipo transportado sobre JSON.
+
+= JSON.
+=
+- ```scala
++ ```scala
+
+- case class Ping(value: Int)
++ case class Ping(value: Int)
+
+- def pinger(): Unit = supervise:
++ def pinger(): Unit = supervise:
+
+= def pinger(): Unit = supervise:
+-   SocketServer(8080).handle:
++   SocketServer(8080).handle:
+
+-     webSocket(): (ping: Ping over Json) =>
++     webSocket(): (ping: Ping over Json) =>
+
+-       Control.Reply(Ping(ping.value + 1).over[Json], ())
++       Control.Reply(Ping(ping.value + 1).over[Json], ())
+
+=       Control.Reply(Ping(ping.value + 1).over[Json], ())
+- ```
++ ```
+
+- A handler answers each message with a `Control`:
++ Un manejador responde a cada mensaje con un `Control`:
+
+= A handler answers each message with a `Control`:
+=
+- ```tabular
++ ```tabular
+
+- column  Answer
+- column  Sends a message
+- column  Then
+- row  `Control.Reply(message, state)`  yes  carries on
+- row  `Control.Continue(state)`  no  carries on
+- row  `Control.Conclude(message, state)`  yes  closes
+- row  `Control.Terminate`  no  closes at once
++ column  Respuesta
++ column  Envía un mensaje
++ column  Después
++ row  `Control.Reply(message, state)`  sí  continúa
++ row  `Control.Continue(state)`  no  continúa
++ row  `Control.Conclude(message, state)`  sí  cierra
++ row  `Control.Terminate`  no  cierra de inmediato
+
+= row  `Control.Terminate`  no  closes at once
+- ```
++ ```
+
+- The handler's state, which is `()` here, is passed from one message to the next. Where a
+- state is optional, and is left out, the previous one carries over.
++ El estado del manejador, que aquí es `()`, se pasa de un mensaje al siguiente. Cuando un estado
++ es opcional, y se omite, se mantiene el anterior.
+
+- The implementation handles the protocol's sharp edges: masking, fragmentation, ping and pong,
+- validation of UTF-8, and close codes. It conforms to the
+- [Autobahn](https://github.com/crossbario/autobahn-testsuite) test suite.
++ La implementación resuelve los puntos delicados del protocolo: el enmascaramiento, la
++ fragmentación, el ping y el pong, la validación de UTF-8 y los códigos de cierre. Cumple la
++ suite de pruebas [Autobahn](https://github.com/crossbario/autobahn-testsuite).
+
+- ### HTTP/2
++ ### HTTP/2
+
+- A listening socket with TLS offers `h2`, and then `http/1.1`, by ALPN. The protocol which a
+- connection speaks follows from how it arrives:
++ Un socket de escucha con TLS ofrece `h2`, y después `http/1.1`, mediante ALPN. El protocolo que
++ habla una conexión se deduce de cómo llega:
+
+= connection speaks follows from how it arrives:
+=
+- ```tabular
++ ```tabular
+
+- column  Connection
+- column  Protocol
+- row  cleartext, to a `SocketServer`  HTTP/1.1
+- row  TLS, negotiating `h2`  HTTP/2
+- row  TLS, negotiating `http/1.1` or nothing  HTTP/1.1
+- row  cleartext h2c with prior knowledge, over an `Http2.Endpoint`  HTTP/2
++ column  Conexión
++ column  Protocolo
++ row  en claro, a un `SocketServer`  HTTP/1.1
++ row  TLS, negociando `h2`  HTTP/2
++ row  TLS, negociando `http/1.1` o nada  HTTP/1.1
++ row  h2c en claro con conocimiento previo, sobre un `Http2.Endpoint`  HTTP/2
+
+= row  cleartext h2c with prior knowledge, over an `Http2.Endpoint`  HTTP/2
+- ```
++ ```
+
+- The handler's contract is unchanged, so an existing application serves HTTP/2 with no
+- alteration:
++ El contrato del manejador no cambia, así que una aplicación existente sirve HTTP/2 sin ninguna
++ modificación:
+
+= alteration:
+=
+- ```scala
++ ```scala
+
+- def secure(context: javax.net.ssl.SSLContext): Unit = supervise:
++ def secure(context: javax.net.ssl.SSLContext): Unit = supervise:
+
+-   SocketServer(8443, ssl = context).handle:
++   SocketServer(8443, ssl = context).handle:
+
+-     Http.Response(Http.Ok)(t"Hello over h2!")
++     Http.Response(Http.Ok)(t"Hello over h2!")
+
+=     Http.Response(Http.Ok)(t"Hello over h2!")
+- ```
++ ```
+
+- Each stream which a client initiates is handled on a virtual thread of its own, so the
+- requests which share one connection run concurrently. The engine implements flow control,
+- trailers, and full [HPACK](https://datatracker.ietf.org/doc/html/rfc7541) compression of
+- headers. It tolerates the types of frame which it does not act on, such as `PRIORITY`,
+- `PUSH_PROMISE` and extensions, and does not fail the connection.
+- [Streams](streams.md#tuning-backpressure) describes how its flow control applies
+- backpressure.
++ Cada flujo que inicia un cliente se trata en un hilo virtual propio, así que las peticiones que
++ comparten una conexión se ejecutan de forma concurrente. El motor implementa el control de
++ flujo, los tráileres y la compresión completa de cabeceras
++ [HPACK](https://datatracker.ietf.org/doc/html/rfc7541). Tolera los tipos de trama sobre los que
++ no actúa, como `PRIORITY`, `PUSH_PROMISE` y las extensiones, y no hace fallar la conexión.
++ [Flujos](streams.md#tuning-backpressure) describe cómo aplica contrapresión su control de flujo.
+
+- Cleartext h2c with prior knowledge is the flavor used between services. It is spoken over an
+- `Http2.Endpoint`, which is also a transport for the [HTTP client](http-client.md), and which
+- carries the [gRPC](rpc.md) support built on top of it.
++ El h2c en claro con conocimiento previo es la variante que se usa entre servicios. Se habla
++ sobre un `Http2.Endpoint`, que es también un transporte para el
++ [cliente HTTP](http-client.md), y que lleva el soporte de [gRPC](rpc.md) construido encima.
+
+- ### Front-ends
++ ### Front-ends
+
+- Cleartext HTTP/1.1 connections are served by one of two front-ends. The choice is made by a
+- `Frontend` given, in scope when `handle` is called:
++ Las conexiones HTTP/1.1 en claro las sirve uno de dos front-ends. La elección la hace un given
++ `Frontend`, en el ámbito cuando se llama a `handle`:
+
+= `Frontend` given, in scope when `handle` is called:
+=
+- ```tabular
++ ```tabular
+
+- column  Front-end
++ column  Front-end
+
+- column  Runs a handler
+- column  A blocking handler stalls
+- row  `frontends.threadPerConnectionFrontend`, the default  on its connection's virtual thread  only its own connection
+- row  `frontends.reactiveFrontend`  inline on one of a fixed fleet of selector threads  every connection on that loop
++ column  Ejecuta un manejador
++ column  Un manejador que se bloquea detiene
++ row  `frontends.threadPerConnectionFrontend`, el predeterminado  en el hilo virtual de su conexión  solo su propia conexión
++ row  `frontends.reactiveFrontend`  en línea, en uno de un grupo fijo de hilos selectores  todas las conexiones de ese bucle
+
+= row  `frontends.reactiveFrontend`  inline on one of a fixed fleet of selector threads  every connection on that loop
+- ```
++ ```
+
+- On the default front-end, a handler may block: on a [database](database.md), on a file, or on
+- another service. The reactive front-end is an event loop, in which each selector thread
+- serves a batch of ready connections each time it wakes:
++ Con el front-end predeterminado, un manejador puede bloquearse: en una
++ [base de datos](database.md), en un fichero o en otro servicio. El front-end reactivo es un
++ bucle de eventos, en el que cada hilo selector sirve un lote de conexiones listas cada vez que
++ se despierta:
+
+= serves a batch of ready connections each time it wakes:
+=
+- ```scala
++ ```scala
+
+- import frontends.reactiveFrontend
++ import frontends.reactiveFrontend
+
+- def reactive(): Unit = supervise:
++ def reactive(): Unit = supervise:
+
+= def reactive(): Unit = supervise:
+-   SocketServer(8080).handle:
++   SocketServer(8080).handle:
+
+-     Http.Response(Http.Ok)(t"Hello, world!")
++     Http.Response(Http.Ok)(t"Hello, world!")
+
+=     Http.Response(Http.Ok)(t"Hello, world!")
+- ```
++ ```
+
+- The reactive front-end serves small requests at about one and a half times the rate of the
+- default, and allocates less for each request, because nothing is scheduled for each request.
+- On a loopback benchmark it is level with Netty and Undertow.
++ El front-end reactivo sirve peticiones pequeñas a aproximadamente vez y media el ritmo del
++ predeterminado, y reserva menos memoria por petición, porque no se planifica nada por cada
++ petición. En un benchmark sobre loopback está a la par con Netty y Undertow.
+
+- The price is its contract. A handler which blocks stalls every connection on that loop. The
+- reactive front-end therefore suits handlers which compute their response from what they
+- already have, or which hand off to other tasks and answer from memory. Requests which the loop
+- cannot serve inline are handed to a virtual thread, and served by the default path: chunked
+- or oversized bodies, `Expect: 100-continue`, and protocol upgrades. A WebSocket handler
+- therefore works under either front-end.
++ El precio es su contrato. Un manejador que se bloquea detiene todas las conexiones de ese bucle.
++ Por tanto, el front-end reactivo conviene a los manejadores que calculan su respuesta a partir
++ de lo que ya tienen, o que delegan en otras tareas y responden desde la memoria. Las peticiones
++ que el bucle no puede servir en línea se pasan a un hilo virtual y se sirven por el camino
++ predeterminado: cuerpos fragmentados o demasiado grandes, `Expect: 100-continue` y cambios de
++ protocolo. Por tanto, un manejador de WebSocket funciona con cualquiera de los dos front-ends.
+
+- ### Related
++ ### Relacionado
+
+- - [HTTP client](http-client.md) makes requests with the same vocabulary of methods, statuses
+-   and headers.
+- - [HTML](html.md) and [JSON](json.md#json-over-http) describe the bodies most often served.
+- - [Forms](forms.md) renders an HTML form and reads its submission.
+- - [Sockets](sockets.md) is the layer beneath.
+- - [Daemons](daemons.md) keeps a server running as a service.
+- - [MCP](mcp.md), [web pages](pages.md), [patterns](patterns.md) and [cryptography](cryptography.md) describe what a server hosts, matches and secures.
++ - [Cliente HTTP](http-client.md) hace peticiones con el mismo vocabulario de métodos, estados y
++   cabeceras.
++ - [HTML](html.md) y [JSON](json.md#json-over-http) describen los cuerpos que más se sirven.
++ - [Formularios](forms.md) representa un formulario HTML y lee su envío.
++ - [Sockets](sockets.md) es la capa de debajo.
++ - [Demonios](daemons.md) mantiene un servidor en marcha como servicio.
++ - [MCP](mcp.md), [páginas web](pages.md), [patrones](patterns.md) y [criptografía](cryptography.md) describen lo que un servidor aloja, compara y protege.

@@ -1,5 +1,5 @@
 format 1
-tree doc
+tree doc/work
 axis
   name language
   kind language
@@ -8,6 +8,38 @@ axis
     name en
   value
     name fr
+    parent en
+    translation true
+  value
+    name de
+    parent en
+    translation true
+  value
+    name ja
+    parent en
+    translation true
+  value
+    name ru
+    parent en
+    translation true
+  value
+    name es/ES
+    parent en
+    translation true
+  value
+    name pt/BR
+    parent en
+    translation true
+  value
+    name it
+    parent en
+    translation true
+  value
+    name zh
+    parent en
+    translation true
+  value
+    name pl
     parent en
     translation true
 axis

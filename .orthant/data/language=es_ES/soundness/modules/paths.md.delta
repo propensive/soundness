@@ -1,0 +1,547 @@
+orthant 1 language
+
+- ## Paths
++ ## Rutas
+
+- ### About
++ ### Descripción
+
+- A path is a sequence of names which leads through a hierarchy, and the facts about a path are
+- kept in its type:
++ Una ruta es una secuencia de nombres que recorre una jerarquía, y los hechos sobre una ruta se
++ guardan en su tipo:
+
+- - An absolute path is a `Path`, rooted on some value.
+- - A relative path is a `Relative`: a number of steps up, followed by a descent.
+- - Both are typed by the *platform* they belong to, so a `Path on Linux` and a `Path on Windows`
+-   are distinct types. The `on` clause is one of the
+-   [infix types](../../philosophy/infix-types.md) used throughout.
++ - Una ruta absoluta es un `Path`, con raíz en algún valor.
++ - Una ruta relativa es un `Relative`: un número de pasos hacia arriba, seguido de un descenso.
++ - Ambas se tipan según la *plataforma* a la que pertenecen, así que un `Path on Linux` y un
++   `Path on Windows` son tipos distintos. La cláusula `on` es uno de los
++   [tipos infijos](../../philosophy/infix-types.md) que se usan por todas partes.
+
+- The elements of a path which is built in source code are known to the compiler. Arithmetic on
+- paths, such as descending, ascending, and finding the route from one path to another, is
+- therefore checked at [compiletime].
++ El compilador conoce los elementos de una ruta construida en el código fuente. Por eso la
++ aritmética sobre rutas, como descender, ascender y encontrar el camino de una ruta a otra, se
++ comprueba en [tiempo de compilación].
+
+- These are abstract paths. They are about the *shape* of a path, not about a file on a disk.
+- The same machinery underlies filesystem paths, URLs and any other hierarchy. Reading and
+- writing actual files is the business of the [filesystem](filesystem.md).
++ Son rutas abstractas. Tratan de la *forma* de una ruta, no de un fichero en un disco. La misma
++ maquinaria subyace a las rutas del sistema de ficheros, a las URL y a cualquier otra jerarquía.
++ Leer y escribir ficheros reales es asunto del [sistema de ficheros](filesystem.md).
+
+- ### On paths
++ ### Sobre las rutas
+
+- A path raises three questions: is it absolute or relative, which platform is it for, and does
+- this `..` climb above the root? In most libraries, none of the answers is in the type. A path
+- is a string, or a class which erases the distinctions. A mistake, such as joining two absolute
+- paths, taking the parent of a root, or mixing a Windows path into a POSIX one, is found at
+- [runtime], if at all.
++ Una ruta plantea tres preguntas: ¿es absoluta o relativa?, ¿para qué plataforma es?, ¿y este
++ `..` sube por encima de la raíz? En la mayoría de las bibliotecas, ninguna de las respuestas está
++ en el tipo. Una ruta es una cadena, o una clase que borra las distinciones. Un error, como unir
++ dos rutas absolutas, tomar el padre de una raíz o mezclar una ruta de Windows en una POSIX, se
++ descubre en [tiempo de ejecución], si es que se descubre.
+
+- Here each distinction is recorded in the type. Absolute and relative paths are different
+- types, so one cannot be mistaken for the other. The platform is a type parameter, so its
+- separators and rules travel with the path. And where a path's elements are known, they are
+- known to the compiler, which computes the result of joining two paths, or of finding the route
+- between them, statically.
++ Aquí cada distinción queda registrada en el tipo. Las rutas absolutas y las relativas son tipos
++ distintos, así que no puede confundirse una con otra. La plataforma es un parámetro de tipo, así
++ que sus separadores y sus reglas viajan con la ruta. Y donde se conocen los elementos de una ruta,
++ los conoce el compilador, que calcula estáticamente el resultado de unir dos rutas o de encontrar
++ el camino entre ellas.
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception,
+- and the last import lets them print their results:
++ Todo procede del paquete `soundness`. Los ejemplos lanzan cualquier error como una excepción, y la
++ última importación les permite imprimir sus resultados:
+
+= and the last import lets them print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Building a path
++ ### Construir una ruta
+
+- A path is written with a handful of symbols, each described below:
++ Una ruta se escribe con un puñado de símbolos, cada uno descrito más abajo:
+
+- ```tabular
++ ```tabular
+
+- column  Symbol
+- column  Means
+- row  `%`  the POSIX filesystem root
+- row  `Drive('C')`  the root of a Windows drive
+- row  `/`  a step down, to a named child
+- row  `?`  the current location, from which a relative path starts
+- row  `^`  a step up
+- row  `+`  a relative path applied to an absolute one
+- row  `/:`  in a pattern, a name peeled from the front
++ column  Símbolo
++ column  Significa
++ row  `%`  la raíz del sistema de ficheros POSIX
++ row  `Drive('C')`  la raíz de una unidad de Windows
++ row  `/`  un paso hacia abajo, a un hijo con nombre
++ row  `?`  la ubicación actual, desde la que parte una ruta relativa
++ row  `^`  un paso hacia arriba
++ row  `+`  una ruta relativa aplicada a una absoluta
++ row  `/:`  en un patrón, un nombre extraído del principio
+
+= row  `/:`  in a pattern, a name peeled from the front
+- ```
++ ```
+
+- An absolute path descends from a root with `/`. The root `%` is the root of a POSIX
+- filesystem, and a Windows path descends from a `Drive`:
++ Una ruta absoluta desciende desde una raíz con `/`. La raíz `%` es la raíz de un sistema de
++ ficheros POSIX, y una ruta de Windows desciende desde un `Drive`:
+
+= filesystem, and a Windows path descends from a `Drive`:
+=
+- ```scala
++ ```scala
+
+- val work = % / "home" / "work"
++ val work = % / "home" / "work"
+
+- val windows = Drive('C') / "Windows"
++ val windows = Drive('C') / "Windows"
+
+= val windows = Drive('C') / "Windows"
+- ```
++ ```
+
+= val windows = Drive('C') / "Windows"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val windows = Drive('C') / "Windows"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val windows = Drive('C') / "Windows"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(work.inspect)
++ Out.println(work.inspect)
+
+- Out.println(windows.inspect)
++ Out.println(windows.inspect)
+
+= Out.println(windows.inspect)
+- ```
++ ```
+
+- The `p"…"` [interpolator] writes a path literally, and checks it at compiletime. It resolves
+- the literal as a POSIX or a Windows path, by its shape:
++ El [interpolador] `p"…"` escribe una ruta de forma literal, y la comprueba en tiempo de
++ compilación. Resuelve el literal como una ruta POSIX o de Windows, según su forma:
+
+= the literal as a POSIX or a Windows path, by its shape:
+=
+- ```scala
++ ```scala
+
+- val data = p"/home/user/data.csv"
++ val data = p"/home/user/data.csv"
+
+- val system = p"""C:\Windows\System32\file.txt"""
++ val system = p"""C:\Windows\System32\file.txt"""
+
+= val system = p"""C:\Windows\System32\file.txt"""
+- ```
++ ```
+
+- The elements of a literal are part of its type, with the last element first:
+- `data` is a `Path of ("data.csv", "user", "home") on Posix`. A path built with `/` likewise
+- carries each element it was given.
++ Los elementos de un literal forman parte de su tipo, con el último elemento primero: `data` es un
++ `Path of ("data.csv", "user", "home") on Posix`. Una ruta construida con `/` también lleva cada
++ elemento que recibió.
+
+- ### Relative paths
++ ### Rutas relativas
+
+- A relative path is built from `?`, the current location, and `^`, a step upward, followed by a
+- descent. Adding a relative path to an absolute one applies the ascent, and then the descent,
+- to give a new absolute path:
++ Una ruta relativa se construye a partir de `?`, la ubicación actual, y de `^`, un paso hacia
++ arriba, seguidos de un descenso. Sumar una ruta relativa a una absoluta aplica el ascenso y
++ después el descenso, y da una nueva ruta absoluta:
+
+= to give a new absolute path:
+=
+- ```scala
++ ```scala
+
+- val up = ? / ^ / "sibling"
++ val up = ? / ^ / "sibling"
+
+= val up = ? / ^ / "sibling"
+- ```
++ ```
+
+= val up = ? / ^ / "sibling"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val up = ? / ^ / "sibling"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val up = ? / ^ / "sibling"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((work + up).inspect)
++ Out.println((work + up).inspect)
+
+= Out.println((work + up).inspect)
+- ```
++ ```
+
+- ### Platforms
++ ### Plataformas
+
+- A path built with `/` is at first neutral between platforms. `on` binds it to a platform, and
+- checks each element against that platform's rules, which reject a name containing a slash, or
+- a reserved name:
++ Una ruta construida con `/` es, en principio, neutral entre plataformas. `on` la vincula a una
++ plataforma, y comprueba cada elemento contra las reglas de esa plataforma, que rechazan un nombre
++ que contiene una barra, o un nombre reservado:
+
+= a reserved name:
+=
+- ```scala
++ ```scala
+
+- val linux: Path on Linux = (% / "home" / "work").on[Linux]
++ val linux: Path on Linux = (% / "home" / "work").on[Linux]
+
+= val linux: Path on Linux = (% / "home" / "work").on[Linux]
+- ```
++ ```
+
+- `Linux`, `Posix`, `MacOs` and `Windows` are the platforms, and `Local` is whichever of them the
+- running machine uses. [Names](names.md) describes how each platform's rules for an element
+- are stated and checked.
++ `Linux`, `Posix`, `MacOs` y `Windows` son las plataformas, y `Local` es la que use la máquina en
++ la que se ejecuta el programa. [Nombres](names.md) describe cómo se enuncian y se comprueban las
++ reglas de cada plataforma para un elemento.
+
+- ### Between two paths
++ ### Entre dos rutas
+
+- `toward` computes the relative path from one location to another, and `conjunction` finds
+- their closest common ancestor:
++ `toward` calcula la ruta relativa de una ubicación a otra, y `conjunction` encuentra su ancestro
++ común más cercano:
+
+= their closest common ancestor:
+=
+- ```scala
++ ```scala
+
+- val a = % / "home" / "work" / "data"
++ val a = % / "home" / "work" / "data"
+
+- val b = % / "home" / "work" / "more"
++ val b = % / "home" / "work" / "more"
+
+= val b = % / "home" / "work" / "more"
+- ```
++ ```
+
+= val b = % / "home" / "work" / "more"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val b = % / "home" / "work" / "more"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val b = % / "home" / "work" / "more"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(a.toward(b).inspect)
++ Out.println(a.toward(b).inspect)
+
+- Out.println(a.conjunction(b).inspect)
++ Out.println(a.conjunction(b).inspect)
+
+= Out.println(a.conjunction(b).inspect)
+- ```
++ ```
+
+- ### Text and paths
++ ### Texto y rutas
+
+- `encode` writes a path as text. `as` parses text to a path, naming the platform whose rules
+- apply:
++ `encode` escribe una ruta como texto. `as` analiza un texto para obtener una ruta, nombrando la
++ plataforma cuyas reglas se aplican:
+
+= apply:
+=
+- ```scala fuel
++ ```scala fuel
+
+= apply:
+=
+= ```scala fuel
+- run
++ run
+
+= apply:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Drive('D') / "Verona").encode)
++ Out.println((Drive('D') / "Verona").encode)
+
+- Out.println(t"/home/work".as[Path on Linux].encode)
++ Out.println(t"/home/work".as[Path on Linux].encode)
+
+= Out.println(t"/home/work".as[Path on Linux].encode)
+- ```
++ ```
+
+- Text which breaks the platform's rules is not a path, and does not
+- [decode](decoding.md#decoding-a-value):
++ Un texto que incumple las reglas de la plataforma no es una ruta, y no se
++ [decodifica](decoding.md#decoding-a-value):
+
+= [decode](decoding.md#decoding-a-value):
+=
+- ```scala fuel
++ ```scala fuel
+
+= [decode](decoding.md#decoding-a-value):
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- t"home/work".as[Path on Linux]
++ t"home/work".as[Path on Linux]
+
+= t"home/work".as[Path on Linux]
+- ```
++ ```
+
+- ### Deconstructing
++ ### Descomponer
+
+- A path is matched in a pattern with the extractor `/:`, which peels names from the front. A
+- path can therefore be taken apart as readily as it is built:
++ Una ruta se hace coincidir en un patrón con el extractor `/:`, que extrae nombres del principio.
++ Por eso una ruta puede descomponerse con la misma facilidad con que se construye:
+
+= path can therefore be taken apart as readily as it is built:
+=
+- ```scala
++ ```scala
+
+- val path = t"/home/work".as[Path on Linux under %.type]
++ val path = t"/home/work".as[Path on Linux under %.type]
+
+- val remainder = path match
++ val remainder = path match
+
+-   case root /: t"home" /: rest => rest
++   case root /: t"home" /: rest => rest
+
+-   case _                       => path.relative
++   case _                       => path.relative
+
+=   case _                       => path.relative
+- ```
++ ```
+
+=   case _                       => path.relative
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                       => path.relative
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                       => path.relative
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(remainder.inspect)
++ Out.println(remainder.inspect)
+
+= Out.println(remainder.inspect)
+- ```
++ ```
+
+- The root is matched too. That matters where a platform has more than one root, such as a
+- Windows drive letter or a UNC share, since the root is part of what a path *is*, and not a
+- prefix of its text.
++ También se hace coincidir la raíz. Eso importa donde una plataforma tiene más de una raíz, como
++ una letra de unidad de Windows o un recurso compartido UNC, ya que la raíz forma parte de lo que
++ una ruta *es*, y no es un prefijo de su texto.
+
+- ### Paths in the type
++ ### Rutas en el tipo
+
+- A path's element names may be carried in its type, so that a path which is known at
+- compiletime is known precisely:
++ Los nombres de los elementos de una ruta pueden ir en su tipo, de modo que una ruta que se conoce
++ en tiempo de compilación se conoce con precisión:
+
+= compiletime is known precisely:
+=
+- ```scala
++ ```scala
+
+- val exact: Path of ("capulet", "verona") = % / "verona" / "capulet"
++ val exact: Path of ("capulet", "verona") = % / "verona" / "capulet"
+
+= val exact: Path of ("capulet", "verona") = % / "verona" / "capulet"
+- ```
++ ```
+
+- The names appear innermost first, which matches how the path is constructed. A path which is
+- built entirely from literals therefore has a type which describes exactly where it points.
+- That is what lets a [classpath](classpath.md) resource, or a file relative to a project, be
+- checked as the code compiles. A path whose elements do not match the type it is given does
+- not compile:
++ Los nombres aparecen del más interno al más externo, lo que coincide con cómo se construye la
++ ruta. Por eso una ruta construida enteramente a partir de literales tiene un tipo que describe
++ exactamente adónde apunta. Eso es lo que permite comprobar mientras se compila el código un
++ recurso del [classpath](classpath.md), o un fichero relativo a un proyecto. Una ruta cuyos
++ elementos no coinciden con el tipo que se le da no compila:
+
+= not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- val wrong: Path of ("capulet", "verona") = % / "verona" / "montague"
++ val wrong: Path of ("capulet", "verona") = % / "verona" / "montague"
+
+= val wrong: Path of ("capulet", "verona") = % / "verona" / "montague"
+- ```
++ ```
+
+- Where the elements are not known, as for a path built from text at runtime, or one read from
+- a [filesystem](filesystem.md) listing, the type simply says `Path on Linux`, and the operations
+- are the same.
++ Donde no se conocen los elementos, como en una ruta construida a partir de texto en tiempo de
++ ejecución, o leída de un listado del [sistema de ficheros](filesystem.md), el tipo simplemente
++ dice `Path on Linux`, y las operaciones son las mismas.
+
+- ### What a relative path knows
++ ### Lo que sabe una ruta relativa
+
+- A relative path carries its platform too, so a `Relative on Linux` cannot be applied to a
+- Windows path. It also carries how far up it reaches, in its `Relation`. A relative path which
+- would ascend above a root can therefore be rejected where it is written, instead of resolving
+- to nowhere at runtime.
++ Una ruta relativa también lleva su plataforma, así que un `Relative on Linux` no puede aplicarse a
++ una ruta de Windows. También lleva, en su `Relation`, hasta dónde llega hacia arriba. Por eso una
++ ruta relativa que ascendería por encima de una raíz puede rechazarse donde se escribe, en lugar de
++ resolverse a ninguna parte en tiempo de ejecución.
+
+- ### Related
++ ### Relacionado
+
+- - [Filesystem](filesystem.md) reads, writes and lists the files which paths name.
+- - [Network addresses](network-addresses.md#urls) describes URLs, which have paths of their
+-   own.
+- - [Classpath](classpath.md) names resources by path.
+- - [Names](names.md) checks the elements of a path against a platform's rules.
++ - [Sistema de ficheros](filesystem.md) lee, escribe y lista los ficheros que nombran las rutas.
++ - [Direcciones de red](network-addresses.md#urls) describe las URL, que tienen sus propias rutas.
++ - [Classpath](classpath.md) nombra recursos por su ruta.
++ - [Nombres](names.md) comprueba los elementos de una ruta contra las reglas de una plataforma.

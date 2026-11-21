@@ -1,0 +1,735 @@
+orthant 1 language
+
+- ## Logging
++ ## ロギング
+
+- ### About
++ ### 概要
+
+- Logging is typed. A method which logs says so in its return type, with the infix type
+- `logs`, and emits a value of a typed event, not a string. Instead of returning `Long`, it
+- returns `Long logs Backup.Event`.
++ ロギングは型付けされている。
++ ログを出力するメソッドは、中置型 `logs` を使って戻り値の型でそう述べ、文字列ではなく型付きのイベントの値を出力する。
++ `Long` を返す代わりに、`Long logs Backup.Event` を返す。
+
+- A logger which is placed in the caller's scope receives those events, and writes them
+- somewhere: a terminal, a file, or the system log. With no logger in scope, logging is
+- silent, and costs nothing, so declaring that a method logs imposes no obligation on the code
+- which calls it. A `logs` clause is an
+- [honest signature](../../philosophy/honest-signatures.md): it states what the method actually
+- emits, so a caller knows what there is to route.
++ 呼び出し側のスコープに置かれたロガーがそれらのイベントを受け取り、端末、ファイル、システムログなどのどこかに書き出す。
++ スコープにロガーがなければロギングは何もせず、コストもかからない。そのため、メソッドがログを出力すると宣言しても、それを呼び出すコードには何の義務も課されない。
++ `logs` 節は [正直なシグネチャ](../../philosophy/honest-signatures.md) である。それはメソッドが実際に何を出力するかを述べるので、呼び出し側は振り分けるべきものが何かを知っている。
+
+- A logger is an ordinary [contextual value]. Several can be in scope at once, and every event
+- goes to each of them. Each logger has its own threshold of severity, its own format and its
+- own destination. The decision of where logs go, and in what detail, belongs to the
+- application, not to the libraries which it uses. Choosing that by what is in scope is
+- [declarative context](../../philosophy/declarative-context.md).
++ ロガーは通常の [コンテキスト値] である。
++ いくつも同時にスコープに置くことができ、すべてのイベントはそのそれぞれに届く。
++ 各ロガーは独自の重大度のしきい値、独自の形式、独自の宛先を持つ。
++ ログがどこへ行き、どれだけ詳しく書かれるかの決定は、アプリケーションに属し、アプリケーションが使うライブラリには属さない。
++ それをスコープにあるもので選ぶことが、[宣言的なコンテキスト](../../philosophy/declarative-context.md) である。
+
+- ### On logging
++ ### ロギングについて
+
+- Most logging is typed as strings, and is always on. A log statement formats its message
+- eagerly, whether or not anything will read it. The cost of building the string is paid even
+- when the level is disabled, so careful code guards every statement with a check of the
+- level. The message itself is an opaque string, so whatever receives it cannot reformat it,
+- filter on its contents, or redact a field which it did not know was there.
++ ほとんどのロギングは文字列として型付けされ、常に有効である。
++ ログ文は、何かがそれを読むかどうかにかかわらず、メッセージを先行して整形する。
++ レベルが無効になっていても文字列を組み立てるコストは払われるので、注意深いコードはすべての文をレベルの検査で守る。
++ メッセージ自体は不透明な文字列なので、それを受け取るものは何であれ、それを整形し直したり、その内容でフィルターしたり、そこにあると知らなかったフィールドを墨消ししたりできない。
+
+- Here the three concerns are separate:
++ ここでは三つの関心事が分かれている。
+
+- - A method states *that* it logs, and *what* it logs, in its type.
+- - The event which it emits has typed fields, not formatted text.
+- - *Where* the event goes, and *how* it is written, is decided by the loggers in scope.
++ - メソッドは、ログを出力する*こと*と、*何を*出力するかを、その型で述べる。
++ - それが出力するイベントは、整形されたテキストではなく型付きのフィールドを持つ。
++ - イベントが*どこへ*行き、*どのように*書かれるかは、スコープにあるロガーが決める。
+
+- The argument to a log call is passed by name, and is evaluated only if some logger will
+- record it. A disabled statement evaluates nothing, so log calls can be written freely,
+- without guards. When no logger is in scope at all, the machinery compiles away to nothing.
++ ログ呼び出しの引数は名前渡しであり、どれかのロガーがそれを記録する場合にのみ評価される。
++ 無効になっている文は何も評価しないので、ログ呼び出しはガードなしで自由に書ける。
++ スコープにロガーがまったくないとき、その仕組みはコンパイルによって消えてなくなる。
+
+- Everything comes from the `soundness` package. A program which logs also needs a format,
+- somewhere to write, and the [concurrency](concurrency.md) context which a logger writes
+- under:
++ すべては `soundness` パッケージから来る。
++ ログを出力するプログラムには、形式、書き込む場所、そしてロガーが書き込むときの [並行性](concurrency.md) のコンテキストも必要である。
+
+= under:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import logFormats.ansiTimestampedLogFormat
++ import logFormats.ansiTimestampedLogFormat
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import termcapDefinitions.xterm256Termcap
++ import termcapDefinitions.xterm256Termcap
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import writables.outTeletypeWritable
++ import writables.outTeletypeWritable
+
+- given palette: LogPalette = new Palette:
++ given palette: LogPalette = new Palette:
+
+-   type Form = Srgb
++   type Form = Srgb
+
+-   def background: Color in Srgb  = WebColors.Black
++   def background: Color in Srgb  = WebColors.Black
+
+-   def foreground: Color in Srgb  = WebColors.White
++   def foreground: Color in Srgb  = WebColors.White
+
+-   def error: Color in Srgb       = WebColors.Red
++   def error: Color in Srgb       = WebColors.Red
+
+-   def warning: Color in Srgb     = WebColors.Orange
++   def warning: Color in Srgb     = WebColors.Orange
+
+-   def informative: Color in Srgb = WebColors.SteelBlue
++   def informative: Color in Srgb = WebColors.SteelBlue
+
+-   def subdued: Color in Srgb     = WebColors.DimGray
++   def subdued: Color in Srgb     = WebColors.DimGray
+
+=   def subdued: Color in Srgb     = WebColors.DimGray
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Import or given
+- column  Decides
+- row  `logFormats.ansiTimestampedLogFormat`  how an event is written: here, with color, for a terminal
+- row  the `LogPalette`  the colors which that format uses
+- row  `writables.outTeletypeWritable`  that standard output can be written to as styled text
+- row  `stdios`, `termcapDefinitions`  where standard output goes, and what the terminal can display
+- row  `threads`, `probates`  how the logger's background task runs
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception
++ column  インポートまたは given
++ column  決めること
++ row  `logFormats.ansiTimestampedLogFormat`  イベントの書き方。ここでは端末向けに色付きで書く
++ row  `LogPalette`  その形式が使う色
++ row  `writables.outTeletypeWritable`  標準出力にスタイル付きのテキストとして書き込めること
++ row  `stdios`, `termcapDefinitions`  標準出力の行き先と、端末が表示できるもの
++ row  `threads`, `probates`  ロガーのバックグラウンドタスクの走り方
++ row  `strategies.throwUnsafely`  エラーを例外として投げること
+
+= row  `strategies.throwUnsafely`  that an error is thrown as an exception
+- ```
++ ```
+
+- ### Setting up a logger
++ ### ロガーを設定する
+
+- A `Logger` writes events to a destination. Placing one in scope, as a [given], makes it the
+- destination for everything which is logged within that scope. Its two type parameters say
+- which events it accepts, with `Any` for all of them, and the form in which they are written.
+- A logger which writes to standard output is enough to see log output:
++ `Logger` はイベントを宛先に書き込む。
++ それを [given] としてスコープに置くと、そのスコープ内でログに出力されるすべてのものの宛先になる。
++ その二つの型パラメーターは、どのイベントを受け付けるか（すべてなら `Any`）と、それらがどの形で書かれるかを示す。
++ ログ出力を見るには、標準出力に書き込むロガーで十分である。
+
+= A logger which writes to standard output is enough to see log output:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A logger which writes to standard output is enough to see log output:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A logger which writes to standard output is enough to see log output:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= A logger which writes to standard output is enough to see log output:
+=
+= ```scala fuel
+= typecheck
+= ##
+- supervise:
++ supervise:
+
+= A logger which writes to standard output is enough to see log output:
+=
+= ```scala fuel
+= typecheck
+= ##
+= supervise:
+-   given logger: Logger[Any, Message] = Logger(Out)
++   given logger: Logger[Any, Message] = Logger(Out)
+
+-   Log.info(m"the logger is in scope")
++   Log.info(m"the logger is in scope")
+
+=   Log.info(m"the logger is in scope")
+- ```
++ ```
+
+- The message is written to standard output, with a timestamp.
++ メッセージはタイムスタンプ付きで標準出力に書き込まれる。
+
+- Narrowing the first parameter filters by kind. A `Logger[Http.Event, Message]` receives HTTP
+- events, and nothing else, so the events of one library can be routed, or silenced,
+- independently of the rest.
++ 最初のパラメーターを狭めると種類によってフィルターされる。
++ `Logger[Http.Event, Message]` は HTTP のイベントを受け取り、それ以外は何も受け取らないので、一つのライブラリのイベントを残りとは独立に振り分けたり、黙らせたりできる。
+
+- `Logger` runs its writes on a background thread, so it needs the concurrency context which
+- `supervise` provides. The format in scope decides how an event is written. Each format is
+- imported from the package `logFormats`:
++ `Logger` はバックグラウンドのスレッドで書き込みを行うので、`supervise` が提供する並行性のコンテキストを必要とする。
++ イベントがどのように書かれるかは、スコープにある形式が決める。
++ 各形式はパッケージ `logFormats` からインポートする。
+
+= imported from the package `logFormats`:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Renders
+- column  For
+- row  `ansiTimestampedLogFormat`  a dimmed timestamp and the level on a colored ground  a terminal
+- row  `timestampedLogFormat`  the timestamp and level as text  a plain-text destination, such as a file
+- row  `untimestampedLogFormat`  the level as text, with no timestamp  a plain-text destination
++ column  形式
++ column  描画するもの
++ column  用途
++ row  `ansiTimestampedLogFormat`  薄く表示したタイムスタンプと、色付きの地に置いたレベル  端末
++ row  `timestampedLogFormat`  テキストとしてのタイムスタンプとレベル  ファイルのようなプレーンテキストの宛先
++ row  `untimestampedLogFormat`  タイムスタンプなしの、テキストとしてのレベル  プレーンテキストの宛先
+
+= row  `untimestampedLogFormat`  the level as text, with no timestamp  a plain-text destination
+- ```
++ ```
+
+- A threshold drops everything below a chosen level:
++ しきい値は、選んだレベルより下のすべてを捨てる。
+
+= A threshold drops everything below a chosen level:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A threshold drops everything below a chosen level:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A threshold drops everything below a chosen level:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= A threshold drops everything below a chosen level:
+=
+= ```scala fuel
+= typecheck
+= ##
+- supervise:
++ supervise:
+
+-   given logger: Logger[Any, Message] = Logger(Out, level = Log.Level.Warn)
++   given logger: Logger[Any, Message] = Logger(Out, level = Log.Level.Warn)
+
+-   Log.info(m"not written")
++   Log.info(m"not written")
+
+-   Log.warn(m"written")
++   Log.warn(m"written")
+
+=   Log.warn(m"written")
+- ```
++ ```
+
+- ### Logging a message
++ ### メッセージをログに出力する
+
+- The simplest thing to log is a message, written with the
+- [`m"…"` interpolator](errors.md#defining-an-error). That suits the code of an application,
+- where the author controls both the logging and the reading. A library should instead define
+- a dedicated [event type](#event-types), so that its events stay structured, and can be
+- filtered. Four methods log a message, each at a level:
++ ログに出力する最も単純なものはメッセージであり、[`m"…"` 補間子](errors.md#defining-an-error) で書く。
++ それは、作者がロギングと読み取りの両方を管理するアプリケーションのコードに向いている。
++ ライブラリはそうではなく専用の [イベント型](#event-types) を定義すべきであり、そうすればそのイベントは構造化されたままで、フィルターできる。
++ 四つのメソッドが、それぞれ一つのレベルでメッセージをログに出力する。
+
+= filtered. Four methods log a message, each at a level:
+=
+- ```scala
++ ```scala
+
+- def report(remote: Text, path: Text): Unit =
++ def report(remote: Text, path: Text): Unit =
+
+-   Log.fine(m"starting...")
++   Log.fine(m"starting...")
+
+-   Log.info(m"connected to $remote")
++   Log.info(m"connected to $remote")
+
+-   Log.warn(m"retrying after timeout")
++   Log.warn(m"retrying after timeout")
+
+-   Log.fail(m"could not open $path")
++   Log.fail(m"could not open $path")
+
+=   Log.fail(m"could not open $path")
+- ```
++ ```
+
+- Without a logger in scope, `report` compiles, and logs nothing. A message is `Loggable` by
+- default, so a method which logs only messages needs no declaration.
++ スコープにロガーがなくても `report` はコンパイルされ、何もログに出力しない。
++ メッセージはデフォルトで `Loggable` なので、メッセージだけをログに出力するメソッドには宣言が要らない。
+
+- ### Levels
++ ### レベル
+
+- A level reflects frequency and severity together. `Fine` is normally switched off, so it can
+- be verbose. `Fail` is used sparingly.
++ レベルは頻度と重大度を合わせて反映する。
++ `Fine` は通常は無効なので、冗長でかまわない。
++ `Fail` は控えめに使う。
+
+= be verbose. `Fail` is used sparingly.
+=
+- ```tabular
++ ```tabular
+
+- column  Level
+- column  Method
+- column  For
+- column  Such as
+- row  `Fine`  `Log.fine`  high-frequency, per-unit detail useful only while debugging  each frame, each packet, each file opened
+- row  `Info`  `Log.info`  one line per significant operation or lifecycle milestone  a connection established, a server now listening, a download finished
+- row  `Warn`  `Log.warn`  a recoverable or unexpected-but-handled condition  a forced kill, a connection reset, a fallback taken
+- row  `Fail`  `Log.fail`  an operation that failed unrecoverably, emitted alongside the error being raised
++ column  レベル
++ column  メソッド
++ column  用途
++ column  例
++ row  `Fine`  `Log.fine`  デバッグ中にだけ役立つ、高頻度の単位ごとの詳細  各フレーム、各パケット、開いた各ファイル
++ row  `Info`  `Log.info`  重要な操作やライフサイクルの節目ごとに一行  接続の確立、サーバーの待ち受け開始、ダウンロードの完了
++ row  `Warn`  `Log.warn`  回復可能な状況、あるいは予期しないが処理された状況  強制終了、接続のリセット、代替の採用
++ row  `Fail`  `Log.fail`  回復不能に失敗した操作。発生させるエラーと並べて出力する
+
+= row  `Fail`  `Log.fail`  an operation that failed unrecoverably, emitted alongside the error being raised
+- ```
++ ```
+
+- ### Event types
++ ### イベント型
+
+- An event is an [enumeration] whose cases hold the relevant values as typed fields. It is
+- paired with a `Communicable` instance in its companion, which maps each case to a message.
+- Keeping the values typed, instead of formatting them in advance, lets each logger write them
+- in its own way:
++ イベントは、関連する値を型付きのフィールドとして保持するケースを持つ [列挙型] である。
++ それはコンパニオンにある `Communicable` インスタンスと組になり、そのインスタンスが各ケースをメッセージに対応付ける。
++ 値を前もって整形せずに型付きのまま保つことで、各ロガーが独自の方法でそれを書ける。
+
+= in its own way:
+=
+- ```scala
++ ```scala
+
+- object Backup:
++ object Backup:
+
+-   enum Event:
++   enum Event:
+
+-     case Started(source: Text)
++     case Started(source: Text)
+
+-     case Copied(source: Text, bytes: Long)
++     case Copied(source: Text, bytes: Long)
+
+-     case Failed(source: Text)
++     case Failed(source: Text)
+
+-   object Event:
++   object Event:
+
+-     given communicable: (Event is Communicable) =
++     given communicable: (Event is Communicable) =
+
+-       case Started(source)       => m"backing up $source"
++       case Started(source)       => m"backing up $source"
+
+-       case Copied(source, bytes) => m"copied $source ($bytes bytes)"
++       case Copied(source, bytes) => m"copied $source ($bytes bytes)"
+
+-       case Failed(source)        => m"could not back up $source"
++       case Failed(source)        => m"could not back up $source"
+
+=       case Failed(source)        => m"could not back up $source"
+- ```
++ ```
+
+- ### Declaring that a method logs
++ ### メソッドがログを出力すると宣言する
+
+- A method opts into logging by naming its event type in its return type, with `logs`. It then
+- logs the event by value, at the point where the side effect happens:
++ メソッドは、戻り値の型で `logs` を使ってイベント型を名指しすることで、ロギングを選択する。
++ そして副作用が起こる地点で、イベントを値としてログに出力する。
+
+= logs the event by value, at the point where the side effect happens:
+=
+- ```scala
++ ```scala
+
+- def backup(source: Text): Long logs Backup.Event =
++ def backup(source: Text): Long logs Backup.Event =
+
+-   Log.info(Backup.Event.Started(source))
++   Log.info(Backup.Event.Started(source))
+
+-   val bytes = source.length.toLong
++   val bytes = source.length.toLong
+
+-   Log.info(Backup.Event.Copied(source, bytes))
++   Log.info(Backup.Event.Copied(source, bytes))
+
+-   bytes
++   bytes
+
+=   bytes
+- ```
++ ```
+
+- The requirement propagates. A method which calls `backup` must itself admit `Backup.Event`,
+- either by declaring it, or by having a logger for it in scope. A method which logs more than
+- one kind of event chains the declarations, as in `Unit logs Http.Event logs Exec.Event`.
++ この要件は伝播する。
++ `backup` を呼び出すメソッドは、それ自身が `Backup.Event` を認めなければならない。それを宣言するか、スコープにそのためのロガーを持つかのどちらかである。
++ 複数の種類のイベントをログに出力するメソッドは、`Unit logs Http.Event logs Exec.Event` のように宣言を連ねる。
+
+- A library which builds on another's work reuses its events, and does not duplicate them.
+- *Transcribing* one event into a case of another passes the wrapped event through unchanged.
+- So a library which schedules backups reuses the backup events:
++ 他のライブラリの仕事の上に作られたライブラリは、そのイベントを再利用し、複製しない。
++ あるイベントを別のイベントのケースに*転記する*と、包まれたイベントはそのまま通される。
++ そのためバックアップを予定するライブラリはバックアップのイベントを再利用する。
+
+= So a library which schedules backups reuses the backup events:
+=
+- ```scala
++ ```scala
+
+- enum Schedule:
++ enum Schedule:
+
+-   case Ran(event: Backup.Event)
++   case Ran(event: Backup.Event)
+
+-   case Skipped(reason: Text)
++   case Skipped(reason: Text)
+
+- object Schedule:
++ object Schedule:
+
+-   given communicable: (Schedule is Communicable) =
++   given communicable: (Schedule is Communicable) =
+
+-     case Ran(event)       => m"scheduled: ${event.communicate}"
++     case Ran(event)       => m"scheduled: ${event.communicate}"
+
+-     case Skipped(reason)  => m"skipped: $reason"
++     case Skipped(reason)  => m"skipped: $reason"
+
+- given transcription: (Schedule transcribes Backup.Event) = Schedule.Ran(_)
++ given transcription: (Schedule transcribes Backup.Event) = Schedule.Ran(_)
+
+- def nightly(): Unit logs Schedule =
++ def nightly(): Unit logs Schedule =
+
+-   backup(t"/home")
++   backup(t"/home")
+
+-   Log.info(Schedule.Skipped(t"nothing else to do"))
++   Log.info(Schedule.Skipped(t"nothing else to do"))
+
+=   Log.info(Schedule.Skipped(t"nothing else to do"))
+- ```
++ ```
+
+- With the transcription in scope, the events of `backup` are accepted by the declaration of
+- `nightly`, wrapped as `Schedule.Ran`, and a logger for `Schedule` sees both.
++ 転記がスコープにあれば、`backup` のイベントは `Schedule.Ran` として包まれて `nightly` の宣言に受け付けられ、`Schedule` のためのロガーは両方を見る。
+
+- ### Cost when disabled
++ ### 無効なときのコスト
+
+- The argument to every `Log` method is taken by name, and the level is checked before the
+- argument is evaluated. When no logger accepts an event at its level, which includes the case
+- where no logger is in scope at all, the event is never constructed, and its fields are never
+- evaluated. A disabled log statement therefore costs nothing, and log calls need no guard.
++ すべての `Log` メソッドの引数は名前渡しで取られ、引数が評価される前にレベルが検査される。
++ どのロガーもそのレベルのイベントを受け付けないとき（スコープにロガーがまったくない場合も含む）、イベントは構築されず、そのフィールドが評価されることもない。
++ したがって無効なログ文はコストがかからず、ログ呼び出しにはガードが要らない。
+
+- This is why an event should hold its original typed values, and leave formatting to its
+- `Communicable`: the formatting happens only if the event is actually recorded. The exception
+- is a value whose formatting depends on context which is available only where it is logged.
+- That should be formatted there, into the event. The formatting still runs only when the
+- event is logged, because the argument is passed by name.
++ これが、イベントが元の型付きの値を保持し、整形をその `Communicable` に任せるべき理由である。整形はイベントが実際に記録される場合にのみ行われる。
++ 例外は、ログに出力する場所でしか得られないコンテキストに整形が依存する値である。
++ それはその場所で整形してイベントに入れるべきである。
++ 引数は名前渡しなので、その整形もイベントがログに出力されるときにのみ実行される。
+
+- ### Routing to several places
++ ### 複数の場所に振り分ける
+
+- A logger is just a contextual value, so more than one can be in scope, and an event reaches
+- every one. Two loggers, one to a file and one to the terminal, both receive each event, and
+- each applies its own threshold. The file can keep the detail of `Fine`, while the terminal
+- shows only `Warn` and `Fail`.
++ ロガーは単なるコンテキスト値なので、いくつもスコープに置くことができ、イベントはそのすべてに届く。
++ ファイルへのロガーと端末へのロガーの二つは、どちらも各イベントを受け取り、それぞれが独自のしきい値を適用する。
++ ファイルは `Fine` の詳細まで残し、端末は `Warn` と `Fail` だけを表示できる。
+
+- The file is written as text, so its logger imports the text format. That import is nearer,
+- so it takes precedence over the terminal format which was imported above:
++ ファイルはテキストとして書かれるので、そのロガーはテキストの形式をインポートする。
++ そのインポートのほうが近いので、上でインポートした端末の形式より優先される。
+
+= so it takes precedence over the terminal format which was imported above:
+=
+- ```scala fuel
++ ```scala fuel
+
+= so it takes precedence over the terminal format which was imported above:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= so it takes precedence over the terminal format which was imported above:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- val logFile = temporaryDirectory[Path on Linux] / "logging" / "app.log"
++ val logFile = temporaryDirectory[Path on Linux] / "logging" / "app.log"
+
+- logFile.create[File](CreateFlag.Parents)
++ logFile.create[File](CreateFlag.Parents)
+
+=
+- supervise:
++ supervise:
+
+-   given fileLog: Logger[Any, Message] =
++   given fileLog: Logger[Any, Message] =
+
+-     import logFormats.timestampedLogFormat
++     import logFormats.timestampedLogFormat
+
+-     Logger(logFile, level = Log.Level.Fine)
++     Logger(logFile, level = Log.Level.Fine)
+
+-   given terminalLog: Logger[Any, Message] = Logger(Out, level = Log.Level.Warn)
++   given terminalLog: Logger[Any, Message] = Logger(Out, level = Log.Level.Warn)
+
+-   Log.fine(m"only the file sees this")
++   Log.fine(m"only the file sees this")
+
+-   Log.warn(m"both see this")
++   Log.warn(m"both see this")
+
+=   Log.warn(m"both see this")
+- ```
++ ```
+
+- The first message reaches only the file, and the second reaches both.
+- [Filesystem](filesystem.md) describes the path which the file logger writes to.
++ 一つ目のメッセージはファイルだけに届き、二つ目は両方に届く。
++ [ファイルシステム](filesystem.md) は、ファイルのロガーが書き込むパスを説明している。
+
+- ### Silencing
++ ### 黙らせる
+
+- A single block can be run with one kind of event suppressed, whatever loggers are in scope,
+- with `mute`:
++ `mute` を使うと、スコープにどんなロガーがあっても、一つのブロックを一つの種類のイベントを抑止して実行できる。
+
+= with `mute`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= with `mute`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= with `mute`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= with `mute`:
+=
+= ```scala fuel
+= typecheck
+= ##
+- supervise:
++ supervise:
+
+= with `mute`:
+=
+= ```scala fuel
+= typecheck
+= ##
+= supervise:
+-   given logger: Logger[Any, Message] = Logger(Out)
++   given logger: Logger[Any, Message] = Logger(Out)
+
+-   mute[Backup.Event]:
++   mute[Backup.Event]:
+
+-     backup(t"/var")
++     backup(t"/var")
+
+=     backup(t"/var")
+- ```
++ ```
+
+- Importing `logging.silentLogging` suppresses all logging for a whole file, which is useful
+- where a dependency logs, and its output is not wanted. The tutorials for the
+- [HTTP client](http-client.md) and [processes](processes.md) import it for that reason.
++ `logging.silentLogging` をインポートすると、ファイル全体ですべてのロギングが抑止される。これは依存先がログを出力し、その出力が望まれない場合に便利である。
++ [HTTP クライアント](http-client.md) と [プロセス](processes.md) のチュートリアルは、その理由でこれをインポートしている。
+
+- ### Writing good logs
++ ### よいログを書く
+
+- Log only side effects which can be observed, and which take time or can fail: operations on
+- the network, the filesystem, processes and external services. Pure work in memory, such as
+- hashing, parsing or arithmetic, produces no log output, however expensive it is.
++ 観察でき、時間がかかるか失敗しうる副作用だけをログに出力する。ネットワーク、ファイルシステム、プロセス、外部サービスに対する操作である。
++ ハッシュ計算、パース、算術のようなメモリー内の純粋な処理は、どれほど高くついてもログ出力を生まない。
+
+- A message should be specific:
++ メッセージは具体的であるべきである。
+
+- - Name the resource which it concerns: an address and port, a path, a process id, a URL.
+- - Give quantities when that is cheap: counts of bytes, elapsed milliseconds, status codes.
+- - Never log secrets: credentials, tokens, cookies, key material, or the whole body of a
+-   request or a response. Log a redaction, a size or a short preview instead.
++ - 関係するリソースを名指しする。アドレスとポート、パス、プロセス ID、URL などである。
++ - 手軽に得られるなら量を示す。バイト数、経過ミリ秒数、ステータスコードなどである。
++ - 秘密は決してログに出力しない。資格情報、トークン、クッキー、鍵の素材、リクエストやレスポンスの本文全体である。代わりに墨消ししたもの、大きさ、短いプレビューをログに出力する。
+
+- Messages are in lower case, terse, in the present tense, and have no trailing period. They
+- substitute the relevant context:
++ メッセージは小文字で、簡潔で、現在時制で書き、末尾にピリオドを付けない。
++ それらは関連するコンテキストを埋め込む。
+
+= substitute the relevant context:
+=
+- ```scala
++ ```scala
+
+- def describe(remote: Text, path: Text, url: Text, size: Long, elapsed: Long): List[Message] = List
++ def describe(remote: Text, path: Text, url: Text, size: Long, elapsed: Long): List[Message] = List
+
+-   ( m"connected to $remote",
++   ( m"connected to $remote",
+
+-     m"opened $path for reading",
++     m"opened $path for reading",
+
+-     m"downloaded $url ($size bytes in ${elapsed}ms)" )
++     m"downloaded $url ($size bytes in ${elapsed}ms)" )
+
+=     m"downloaded $url ($size bytes in ${elapsed}ms)" )
+- ```
++ ```
+
+- A message which says only that something happened, such as `m"a failure occurred"`, is not
+- enough. Name what failed, and include its identifier.
++ `m"a failure occurred"` のように、何かが起こったことしか述べないメッセージでは足りない。
++ 何が失敗したかを名指しし、その識別子を含める。
+
+- ### Related
++ ### 関連
+
+- - [Errors](errors.md#defining-an-error) describes the messages which events are written as.
+- - [Terminal](terminal.md#styled-text) describes the styled text which a terminal logger
+-   writes.
+- - [Concurrency](concurrency.md) describes `supervise`, which a logger runs under.
+- - [Stack traces](stack-traces.md) presents the trace of an error which is logged.
+- - [HTTP server](http-server.md), [service discovery](service-discovery.md) and [metaprogramming](metaprogramming.md) log their events through the sinks in scope.
++ - [エラー](errors.md#defining-an-error) は、イベントがそれとして書かれるメッセージを説明する。
++ - [端末](terminal.md#styled-text) は、端末のロガーが書くスタイル付きのテキストを説明する。
++ - [並行性](concurrency.md) は、ロガーがその下で走る `supervise` を説明する。
++ - [スタックトレース](stack-traces.md) は、ログに出力されたエラーのトレースを示す。
++ - [HTTP サーバー](http-server.md)、[サービスディスカバリー](service-discovery.md)、[メタプログラミング](metaprogramming.md) は、スコープにあるシンクを通じてイベントをログに出力する。

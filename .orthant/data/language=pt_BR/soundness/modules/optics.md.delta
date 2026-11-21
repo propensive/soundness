@@ -1,0 +1,654 @@
+orthant 1 language
+
+- ## Optics
++ ## Óticas
+
+- ### About
++ ### Visão geral
+
+- Changing a value deep inside an [immutable] structure ordinarily means rebuilding every layer
+- above it by hand, with nested calls to `copy` which grow with the depth of the data. A
+- [lens](https://en.wikipedia.org/wiki/Bidirectional_transformation) does the rebuilding instead.
++ Mudar um valor bem no interior de uma estrutura [imutável] normalmente significa reconstruir à
++ mão cada camada acima dele, com chamadas aninhadas a `copy` que crescem com a profundidade dos
++ dados. Uma [lente](https://en.wikipedia.org/wiki/Bidirectional_transformation) faz a
++ reconstrução no seu lugar.
+
+- The `lens` method takes an update written as a plain assignment to a path, such as
+- `_.opening.name = t"Act One"`, and returns the new structure. Optics such as `Each` and
+- `Filter` carry a path through the elements of a collection, so one assignment can update many
+- values.
++ O método `lens` recebe uma atualização escrita como uma simples atribuição a um caminho, como
++ `_.opening.name = t"Act One"`, e retorna a nova estrutura. Óticas como `Each` e `Filter` levam um
++ caminho através dos elementos de uma coleção, de modo que uma única atribuição pode atualizar
++ muitos valores.
+
+- The same syntax updates the dynamic data formats: [JSON](json.md), [XML](xml.md),
+- [YAML](yaml.md) and [CBOR](cbor.md). A deep update looks the same whether the structure is a
+- case class or a parsed document.
++ A mesma sintaxe atualiza os formatos de dados dinâmicos: [JSON](json.md), [XML](xml.md),
++ [YAML](yaml.md) e [CBOR](cbor.md). Uma atualização profunda tem a mesma cara seja a estrutura
++ uma case class ou um documento analisado.
+
+- ### On immutable updates
++ ### Sobre atualizações imutáveis
+
+- An immutable value is safe to share, and awkward to change. Replacing one field three levels
+- down means copying three enclosing values, and naming every field on the way. Functional lenses
+- solve this, but classically with ceremony: a lens value declared for each field, composed with
+- operators, and applied with `get` and `set`. Many programs give up, and mutate.
++ Um valor imutável é seguro de compartilhar, e incômodo de mudar. Substituir um campo três níveis
++ abaixo significa copiar três valores envolventes e nomear cada campo pelo caminho. As lentes
++ funcionais resolvem isso, mas classicamente com cerimônia: um valor de lente declarado para cada
++ campo, composto com operadores e aplicado com `get` e `set`. Muitos programas desistem e
++ recorrem à mutação.
+
+- Here the lenses are generated from the types, and hidden behind the syntax which the update
+- would have had anyway: a path and an assignment. This is what makes
+- [immutability](../../philosophy/immutability.md) practical.
++ Aqui as lentes são geradas a partir dos tipos e escondidas atrás da sintaxe que a atualização
++ teria de qualquer forma: um caminho e uma atribuição. É isso que torna a
++ [imutabilidade](../../philosophy/immutability.md) prática.
+
+- Everything comes from the `soundness` package. The second import chooses a
+- [strategy](errors.md#choosing-a-strategy) for errors, and the third lets the samples print their
+- results:
++ Tudo vem do pacote `soundness`. O segundo import escolhe uma
++ [estratégia](errors.md#choosing-a-strategy) para os erros, e o terceiro permite que os exemplos
++ imprimam seus resultados:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Updating a field
++ ### Atualizar um campo
+
+- The samples update one small structure:
++ Os exemplos atualizam uma pequena estrutura:
+
+= The samples update one small structure:
+=
+- ```scala
++ ```scala
+
+- case class Scene(place: Text, number: Int)
++ case class Scene(place: Text, number: Int)
+
+- case class Act(name: Text, scenes: List[Scene])
++ case class Act(name: Text, scenes: List[Scene])
+
+- case class Play(opening: Act, title: Text)
++ case class Play(opening: Act, title: Text)
+
+- val play = Play(Act(t"Act I", List(Scene(t"A heath", 1), Scene(t"Forres", 2))), t"Macbeth")
++ val play = Play(Act(t"Act I", List(Scene(t"A heath", 1), Scene(t"Forres", 2))), t"Macbeth")
+
+= val play = Play(Act(t"Act I", List(Scene(t"A heath", 1), Scene(t"Forres", 2))), t"Macbeth")
+- ```
++ ```
+
+- `lens` applies an update to a value. The update is a path which ends in an assignment. The
+- result is a new `Play`, in which only the name of the opening act is different:
++ `lens` aplica uma atualização a um valor. A atualização é um caminho que termina em uma
++ atribuição. O resultado é uma nova `Play`, em que apenas o nome do primeiro ato é diferente:
+
+= result is a new `Play`, in which only the name of the opening act is different:
+=
+- ```scala fuel
++ ```scala fuel
+
+= result is a new `Play`, in which only the name of the opening act is different:
+=
+= ```scala fuel
+- run
++ run
+
+= result is a new `Play`, in which only the name of the opening act is different:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(play.lens(_.opening.name = t"Act One").inspect)
++ Out.println(play.lens(_.opening.name = t"Act One").inspect)
+
+= Out.println(play.lens(_.opening.name = t"Act One").inspect)
+- ```
++ ```
+
+- The original is untouched:
++ O original fica intacto:
+
+= The original is untouched:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The original is untouched:
+=
+= ```scala fuel
+- run
++ run
+
+= The original is untouched:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(play.opening.name)
++ Out.println(play.opening.name)
+
+= Out.println(play.opening.name)
+- ```
++ ```
+
+- Several updates are applied together. Updates which share a prefix rebuild the shared structure
+- only once:
++ Várias atualizações são aplicadas juntas. Atualizações que compartilham um prefixo reconstroem a
++ estrutura compartilhada uma única vez:
+
+= only once:
+=
+- ```scala fuel
++ ```scala fuel
+
+= only once:
+=
+= ```scala fuel
+- run
++ run
+
+= only once:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val renamed = play.lens
++ val renamed = play.lens
+
+-   ( _.opening.name = t"Act One",
++   ( _.opening.name = t"Act One",
+
+-     _.title = t"The Tragedy of Macbeth" )
++     _.title = t"The Tragedy of Macbeth" )
+
+- Out.println(renamed.inspect)
++ Out.println(renamed.inspect)
+
+= Out.println(renamed.inspect)
+- ```
++ ```
+
+- A path is checked against the types as the code compiles. A field which does not exist is a
+- compile error:
++ Um caminho é verificado contra os tipos enquanto o código compila. Um campo que não existe é um
++ erro de compilação:
+
+= compile error:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- play.lens(_.opening.epilogue = t"Exeunt")
++ play.lens(_.opening.epilogue = t"Exeunt")
+
+= play.lens(_.opening.epilogue = t"Exeunt")
+- ```
++ ```
+
+- ### Reaching into collections
++ ### Entrar em coleções
+
+- A path is a chain of steps, and a step in parentheses goes into a collection:
++ Um caminho é uma cadeia de passos, e um passo entre parênteses entra em uma coleção:
+
+= A path is a chain of steps, and a step in parentheses goes into a collection:
+=
+- ```tabular
++ ```tabular
+
+- column  Step
+- column  Selects
+- row  a field name, as in `_.opening`  that field
+- row  `(Prim)`, or any ordinal  one element
+- row  `(Each)`  every element
+- row  `(key)`  the value at a key, in a `Map`
+- row  `(Filter[T](predicate))`  the elements matching a predicate
++ column  Passo
++ column  Seleciona
++ row  um nome de campo, como em `_.opening`  esse campo
++ row  `(Prim)`, ou qualquer ordinal  um elemento
++ row  `(Each)`  todos os elementos
++ row  `(key)`  o valor em uma chave, em um `Map`
++ row  `(Filter[T](predicate))`  os elementos que satisfazem um predicado
+
+= row  `(Filter[T](predicate))`  the elements matching a predicate
+- ```
++ ```
+
+- An ordinal such as `Prim` selects one element:
++ Um ordinal como `Prim` seleciona um elemento:
+
+= An ordinal such as `Prim` selects one element:
+=
+- ```scala fuel
++ ```scala fuel
+
+= An ordinal such as `Prim` selects one element:
+=
+= ```scala fuel
+- run
++ run
+
+= An ordinal such as `Prim` selects one element:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(play.lens(_.opening.scenes(Prim).place = t"A desert place").opening.scenes.inspect)
++ Out.println(play.lens(_.opening.scenes(Prim).place = t"A desert place").opening.scenes.inspect)
+
+= Out.println(play.lens(_.opening.scenes(Prim).place = t"A desert place").opening.scenes.inspect)
+- ```
++ ```
+
+- `Each` selects every element:
++ `Each` seleciona todos os elementos:
+
+= `Each` selects every element:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Each` selects every element:
+=
+= ```scala fuel
+- run
++ run
+
+= `Each` selects every element:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(play.lens(_.opening.scenes(Each).number = 0).opening.scenes.inspect)
++ Out.println(play.lens(_.opening.scenes(Each).number = 0).opening.scenes.inspect)
+
+= Out.println(play.lens(_.opening.scenes(Each).number = 0).opening.scenes.inspect)
+- ```
++ ```
+
+- `Filter` selects the elements which satisfy a predicate:
++ `Filter` seleciona os elementos que satisfazem um predicado:
+
+= `Filter` selects the elements which satisfy a predicate:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Filter` selects the elements which satisfy a predicate:
+=
+= ```scala fuel
+- run
++ run
+
+= `Filter` selects the elements which satisfy a predicate:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val updated = play.lens(_.opening.scenes(Filter[Scene](_.number > 1)).number = 0)
++ val updated = play.lens(_.opening.scenes(Filter[Scene](_.number > 1)).number = 0)
+
+- Out.println(updated.opening.scenes.inspect)
++ Out.println(updated.opening.scenes.inspect)
+
+= Out.println(updated.opening.scenes.inspect)
+- ```
++ ```
+
+- ### Updating from the old value
++ ### Atualizar a partir do valor antigo
+
+- Within an assignment, `prior` is the value being replaced. An update can therefore modify a
+- value, and need not replace it outright:
++ Dentro de uma atribuição, `prior` é o valor sendo substituído. Uma atualização pode, portanto,
++ modificar um valor, e não precisa substituí-lo por completo:
+
+= value, and need not replace it outright:
+=
+- ```scala fuel
++ ```scala fuel
+
+= value, and need not replace it outright:
+=
+= ```scala fuel
+- run
++ run
+
+= value, and need not replace it outright:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(play.lens(_.opening.scenes(Each).place = t"$prior!").opening.scenes.inspect)
++ Out.println(play.lens(_.opening.scenes(Each).place = t"$prior!").opening.scenes.inspect)
+
+= Out.println(play.lens(_.opening.scenes(Each).place = t"$prior!").opening.scenes.inspect)
+- ```
++ ```
+
+- ### Documents too
++ ### Documentos também
+
+- The dynamic formats define the same optics over their own structures. A parsed document is
+- updated with the same syntax:
++ Os formatos dinâmicos definem as mesmas óticas sobre suas próprias estruturas. Um documento
++ analisado é atualizado com a mesma sintaxe:
+
+= updated with the same syntax:
+=
+- ```scala
++ ```scala
+
+- import dynamicAccess.dynamicJson, conversions.encodableToJson
++ import dynamicAccess.dynamicJson, conversions.encodableToJson
+
+- import optics.{jsonLens, jsonEachOptical}
++ import optics.{jsonLens, jsonEachOptical}
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- val json = play.in[Json]
++ val json = play.in[Json]
+
+= val json = play.in[Json]
+- ```
++ ```
+
+= val json = play.in[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val json = play.in[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val json = play.in[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(json.lens(_.opening.name = t"Act One").show)
++ Out.println(json.lens(_.opening.name = t"Act One").show)
+
+- Out.println(json.lens(_.opening.scenes(Each).place = t"Dunsinane").show)
++ Out.println(json.lens(_.opening.scenes(Each).place = t"Dunsinane").show)
+
+= Out.println(json.lens(_.opening.scenes(Each).place = t"Dunsinane").show)
+- ```
++ ```
+
+- The `conversions` import lets a plain encodable value, such as a `Text`, an `Int` or a case
+- class, stand for the format's own value on the right of the `=`. Each format exports its own
+- conversion. Its optics are either imported from `optics`, or found in its companion with no
+- import:
++ O import de `conversions` permite que um valor codificável simples, como um `Text`, um `Int` ou
++ uma case class, faça as vezes do valor próprio do formato à direita do `=`. Cada formato exporta
++ sua própria conversão. Suas óticas são importadas de `optics` ou encontradas em seu objeto
++ companheiro sem import:
+
+= import:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Conversion
+- column  Optics
++ column  Formato
++ column  Conversão
++ column  Óticas
+
+- row  JSON  `conversions.encodableToJson`  `optics.jsonLens`, `jsonOrdinalOptical`, `jsonEachOptical`, `jsonFilterOptical`
++ row  JSON  `conversions.encodableToJson`  `optics.jsonLens`, `jsonOrdinalOptical`, `jsonEachOptical`, `jsonFilterOptical`
+
+- row  TEL  `conversions.encodableToTel`  `optics.telLens`, `telOrdinalOptical`, `telEachOptical`
++ row  TEL  `conversions.encodableToTel`  `optics.telLens`, `telOrdinalOptical`, `telEachOptical`
+
+- row  [XML](xml.md)  none: it lives on the `Xml` companion  `optics.xmlLens`, `xmlOrdinalOptical`, `xmlEachOptical`
+- row  YAML  `conversions.encodableToYaml`  in the `Yaml` companion
+- row  CBOR  `conversions.encodableToCbor`  in the `Cbor` companion
+- row  Protobuf  `conversions.encodableToProtobuf`  in the `Protobuf` companion, by field number
++ row  [XML](xml.md)  nenhuma: ela fica no objeto companheiro `Xml`  `optics.xmlLens`, `xmlOrdinalOptical`, `xmlEachOptical`
++ row  YAML  `conversions.encodableToYaml`  no objeto companheiro `Yaml`
++ row  CBOR  `conversions.encodableToCbor`  no objeto companheiro `Cbor`
++ row  Protobuf  `conversions.encodableToProtobuf`  no objeto companheiro `Protobuf`, por número de campo
+
+= row  Protobuf  `conversions.encodableToProtobuf`  in the `Protobuf` companion, by field number
+- ```
++ ```
+
+- An `Xml` lens assignment therefore takes a plain encodable value with no conversion import at
+- all.
++ Uma atribuição de lente em `Xml` recebe, portanto, um valor codificável simples sem nenhum
++ import de conversão.
+
+- ### Lenses as values
++ ### Lentes como valores
+
+- Underneath the syntax, a lens is an ordinary value: a getter and a setter. It can be summoned,
+- passed around and composed, for the cases where the access itself is the abstraction:
++ Por baixo da sintaxe, uma lente é um valor comum: um getter e um setter. Ela pode ser convocada,
++ passada adiante e composta, para os casos em que o próprio acesso é a abstração:
+
+= passed around and composed, for the cases where the access itself is the abstraction:
+=
+- ```scala
++ ```scala
+
+- val nameLens = summon["name" is Lens from Act]
++ val nameLens = summon["name" is Lens from Act]
+
+= val nameLens = summon["name" is Lens from Act]
+- ```
++ ```
+
+= val nameLens = summon["name" is Lens from Act]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val nameLens = summon["name" is Lens from Act]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val nameLens = summon["name" is Lens from Act]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(nameLens.modify(play.opening)(_.upper).inspect)
++ Out.println(nameLens.modify(play.opening)(_.upper).inspect)
+
+= Out.println(nameLens.modify(play.opening)(_.upper).inspect)
+- ```
++ ```
+
+- Two lenses `compose` into one, so a path can be assembled from parts which are held separately:
+- a lens onto a field, and a lens into what that field contains, joined into a lens which reaches
+- all the way through. Where the whole path is known in one place, the syntax above says it more
+- directly.
++ Duas lentes se combinam em uma com `compose`, de modo que um caminho pode ser montado a partir
++ de partes guardadas separadamente: uma lente sobre um campo e uma lente para dentro do que esse
++ campo contém, unidas em uma lente que chega até o fim. Quando o caminho inteiro é conhecido em
++ um único lugar, a sintaxe acima o diz de forma mais direta.
+
+- ### Naming paths without traversing them
++ ### Nomear caminhos sem percorrê-los
+
+- The path syntax which writes an update can also name a position without going there. A
+- `Specific` maps paths to values. This is how a derived [typeclass] is overridden at one field,
+- and not for a whole type:
++ A sintaxe de caminhos que escreve uma atualização também pode nomear uma posição sem ir até lá.
++ Um `Specific` mapeia caminhos para valores. É assim que uma [classe de tipos] derivada é
++ sobrescrita em um único campo, e não para um tipo inteiro:
+
+= and not for a whole type:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and not for a whole type:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= and not for a whole type:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- case class Duel(challenger: Person, opponent: Person)
++ case class Duel(challenger: Person, opponent: Person)
+
+- val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
++ val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+
+- val duelSpecific: Duel is Specific over Json.Encodable =
++ val duelSpecific: Duel is Specific over Json.Encodable =
+
+-   specifically:
++   specifically:
+
+-     case root.opponent.name() => shout
++     case root.opponent.name() => shout
+
+-     case root.challenger.name() => shout
++     case root.challenger.name() => shout
+
+=     case root.challenger.name() => shout
+- ```
++ ```
+
+- The paths are checked against the structure of the type as the code compiles, so a misspelled
+- field is a compile error. Each value must also have the right type for the field it names. The
+- result is an ordinary map from each path to its value, which a [derivation] consults as it
+- visits each field:
++ Os caminhos são verificados contra a estrutura do tipo enquanto o código compila, então um campo
++ escrito errado é um erro de compilação. Cada valor também precisa ter o tipo certo para o campo
++ que nomeia. O resultado é um mapa comum de cada caminho para seu valor, que uma [derivação]
++ consulta ao visitar cada campo:
+
+= visits each field:
+=
+- ```scala fuel
++ ```scala fuel
+
+= visits each field:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= visits each field:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- duelSpecific.instances.keys
++ duelSpecific.instances.keys
+
+= duelSpecific.instances.keys
+- ```
++ ```
+
+- The per-field encoder override for [JSON](json.md) is built on this. The
+- mechanism is not specific to codecs: any typeclass whose derivation consults a `Specific` can be
+- overridden in the same way.
++ A sobrescrita de encoder por campo para [JSON](json.md) é construída sobre isso. O mecanismo não
++ é específico dos codecs: qualquer classe de tipos cuja derivação consulte um `Specific` pode ser
++ sobrescrita da mesma forma.
+
+- ### Related
++ ### Relacionados
+
+- - [JSON](json.md), [XML](xml.md), [YAML](yaml.md), [CBOR](cbor.md), [TEL](tel.md) and
+-   [Protobuf](protobuf.md) describe the documents which the same lens syntax updates.
+- - [Catalogs](catalogs.md) uses the same field paths to look up values by position.
+- - [Collections](collections.md) describes ordinals such as `Prim`.
+- - [Derivation](derivation.md) explains how a typeclass instance is generated from a type's
+-   structure.
+- - [Immutability](../../philosophy/immutability.md) explains why values are not changed in place.
+- - [Annotations](annotations.md) finds an annotated field and offers a lens onto it.
++ - [JSON](json.md), [XML](xml.md), [YAML](yaml.md), [CBOR](cbor.md), [TEL](tel.md) e
++   [Protobuf](protobuf.md) descrevem os documentos que a mesma sintaxe de lentes atualiza.
++ - [Catálogos](catalogs.md) usa os mesmos caminhos de campos para procurar valores por posição.
++ - [Coleções](collections.md) descreve ordinais como `Prim`.
++ - [Derivação](derivation.md) explica como uma instância de classe de tipos é gerada a partir da
++   estrutura de um tipo.
++ - [Imutabilidade](../../philosophy/immutability.md) explica por que os valores não são alterados
++   no lugar.
++ - [Anotações](annotations.md) encontra um campo anotado e oferece uma lente sobre ele.

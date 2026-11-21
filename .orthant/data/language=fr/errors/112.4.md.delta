@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.112.4` — Missing `Monitor` instance
++ # `↯/s.112.4` — Instance de `Monitor` manquante
+
+- Raised at compile time by Obligatory's `rpc` macro when no
+- contextual `Monitor` instance is available.
++ Levée à la compilation par la macro `rpc` d'Obligatory lorsqu'aucune instance contextuelle de
++ `Monitor` n'est disponible.
+
+- ## Cause
++ ## Cause
+
+- The macro requires a `Monitor` to schedule and supervise async
+- work.
++ La macro exige un `Monitor` pour planifier et superviser le travail asynchrone.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.112.4] a contextual `Monitor` instance is required
++ [↯/s.112.4] a contextual `Monitor` instance is required
+
+= [↯/s.112.4] a contextual `Monitor` instance is required
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Bring a `Monitor` into scope at the call site (e.g. via `Daemon`).
++ Introduisez un `Monitor` dans la portée au site d'appel (par exemple au moyen de `Daemon`).
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/obligatory/src/json/obligatory.internal.scala`
++ - Source : `lib/obligatory/src/json/obligatory.internal.scala`

@@ -1,0 +1,6 @@
+orthant 1 language
+
+-     entry .BrightWhite   SGR 97
+-   entry .background   the sixteen background colours, SGR 40–47 and 100–107, each reset by SGR 49
++     entry .BrightWhite   SGR 97
++   entry .background   as dezesseis cores de fundo, SGR 40–47 e 100–107, cada uma restaurada por SGR 49

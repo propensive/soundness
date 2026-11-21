@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.84.2` — `Pid.Error`
++ # `↯/s.84.2` — `Pid.Error`
+
+- Raised when an operation references a process by PID and that
+- process is not running.
++ Se lanza cuando una operación hace referencia a un proceso por su PID y ese proceso no se está
++ ejecutando.
+
+- ## Cause
++ ## Causa
+
+- Sending a signal or otherwise interacting with a missing PID — for
+- example because the process has already exited — produces this
+- error.
++ Enviar una señal, o interactuar de cualquier otro modo, con un PID inexistente —por ejemplo,
++ porque el proceso ya ha terminado— produce este error.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.84.2] the process with PID 4242 is not running
++ [↯/s.84.2] the process with PID 4242 is not running
+
+= [↯/s.84.2] the process with PID 4242 is not running
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Check the process is still alive (e.g. with `ps`) before
+- interacting; handle the error if races are possible.
++ Comprueba que el proceso sigue vivo (por ejemplo, con `ps`) antes de interactuar con él; gestiona
++ el error si son posibles las condiciones de carrera.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/guillotine/src/core/guillotine.Pid.scala`
++ - Fuente: `lib/guillotine/src/core/guillotine.Pid.scala`

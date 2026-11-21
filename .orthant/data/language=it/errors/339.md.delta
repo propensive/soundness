@@ -1,0 +1,21 @@
+orthant 1 language
+
+- # `SN-339` — `PositionalError` (retired)
++ # `SN-339` — `PositionalError` (ritirato)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Questo errore non esiste più. La pagina è conservata perché il codice non venga riusato, e perché
++ un riferimento a esso da una release precedente si possa ancora risolvere.
+
+- ## What became of it
++ ## Che fine ha fatto
+
+- Contextual's `Interpolator` API, which raised this error, was replaced by the
+- `Interpolable` typeclass and the `interpolation[…]` entry point. An interpolator now
+- reports a parse failure through its own error type, positioned by the `origins` the
+- macro is given, so there is no shared positional error to document.
++ L'API `Interpolator` di Contextual, che sollevava questo errore, è stata sostituita dalla
++ typeclass `Interpolable` e dal punto di ingresso `interpolation[…]`. Un interpolatore ora
++ segnala un errore di parsing tramite il proprio tipo di errore, posizionato dalle `origins` che
++ la macro riceve, quindi non c'è alcun errore posizionale condiviso da documentare.

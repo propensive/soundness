@@ -1,0 +1,535 @@
+orthant 1 language
+
+- # Changes since 0.72.0
++ # 0.72.0 以降の変更
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.72.0 to the next release. Each entry states precisely what changed; see `AGENTS.md` for the
+- format. Entries are grouped by module, most-recently-added last within a module.
++ このファイルは、Soundness のライブラリを利用するコードを 0.72.0 から次のリリースへ更新するために、LLM エージェントが読むものである。
++ 各エントリーは何が変わったかを正確に述べる。
++ 形式については `AGENTS.md` を参照のこと。
++ エントリーはモジュールごとにまとめられ、モジュール内では最も新しく追加されたものが最後に来る。
+
+- ## zephyrine
++ ## zephyrine
+
+- - New: `zephyrine.Cursor.Snapshot[medium, operand]`, an inline trait (Scala 3.10,
+-   `-language:experimental.inlineTraits` is needed only by zephyrine, not by a consumer) that a
+-   fast parser over a `Cursor[medium, {}]` extends to get the parser-local snapshot of the
+-   cursor's buffer that jacinta, xylophone, stratiform, ypsiloid, honeycomb, locomotion and
+-   breviloquence previously each wrote out by hand: the fields `cells: scala.Array[operand]`
+-   (a `byte[]` for `Snapshot[Data, Byte]`, a `char[]` for `Snapshot[Text, Char]`), `pos`,
+-   `bufEnd`, `base`, `lineationPos` and `cursor0: AnyRef` (the cursor, re-pointed at each
+-   reset), the accessor `cursor`, and `syncTo()`, `syncFrom()`, `more`, `moreSlow()`, `peek`,
+-   `advance()`, `position`, `reconcileLineation()`, `reconcileUtf8()` and `reconcileUtf16()`.
+-   A parser extending it must be a `caps.Stateful` class and implement the two abstract hooks
+-   `protected update def reconcile(): Unit` (called before every refill) and `protected update
+-   def resynced(): Unit` (called after every `syncFrom()`), as `()` where it has nothing to do.
+-   It must not override any other member: an inline trait's own calls to a member the
+-   receiver overrides bind to the trait's copy, not to the override. No existing API changed.
+- - `zephyrine.Cursor` extension methods `peek: Datum` and `expect[error <: Hazard](target: Char)
+-   (failure)(using Tactic[error])`, previously defined twice, as `@targetName("peekByte")`/
+-   `("peekChar")` and `("expectByte")`/`("expectChar")` extensions on `Cursor[Data, cap]` and
+-   `Cursor[Text, cap]`, are now one definition each, on `Cursor[data, cap]` with an additional
+-   `(using data is Addressable)` clause on the extension (resolved from the medium's companion,
+-   so no import changes), selecting the byte or char read by the medium's `Operand`. Call
+-   sites are unchanged; a cursor over any other medium gets a compile-time error from `peek`,
+-   where it previously had no `peek` at all. (#2279)
+- - `zephyrine.Cursor#seek(target: addressable.Operand): Boolean` is no longer `inline`
+-   (a plain `update def`); same semantics, and it now compares bytes and chars without
+-   boxing. (#2279)
++ - 新規：`zephyrine.Cursor.Snapshot[medium, operand]`。インライントレイトであり（Scala 3.10。`-language:experimental.inlineTraits` が必要なのは zephyrine だけで、利用者には要らない）、`Cursor[medium, {}]` の上の高速なパーサーはこれを継承して、jacinta、xylophone、stratiform、ypsiloid、honeycomb、locomotion、breviloquence がそれまでそれぞれ手で書いていた、カーソルのバッファーのパーサーローカルなスナップショットを得る。持つのはフィールド `cells: scala.Array[operand]`（`Snapshot[Data, Byte]` では `byte[]`、`Snapshot[Text, Char]` では `char[]`）、`pos`、`bufEnd`、`base`、`lineationPos`、`cursor0: AnyRef`（カーソル。リセットのたびに指し直される）、アクセサー `cursor`、そして `syncTo()`、`syncFrom()`、`more`、`moreSlow()`、`peek`、`advance()`、`position`、`reconcileLineation()`、`reconcileUtf8()`、`reconcileUtf16()` である。これを継承するパーサーは `caps.Stateful` なクラスでなければならず、二つの抽象フック `protected update def reconcile(): Unit`（各リフィルの前に呼ばれる）と `protected update def resynced(): Unit`（各 `syncFrom()` の後に呼ばれる）を、何もすることがなければ `()` として実装しなければならない。それ以外のメンバーをオーバーライドしてはならない。インライントレイト自身からの、レシーバがオーバーライドするメンバーの呼び出しは、オーバーライドではなくトレイトのコピーに束縛されるからである。既存の API は変わっていない。
++ - `zephyrine.Cursor` の拡張メソッド `peek: Datum` と `expect[error <: Hazard](target: Char) (failure)(using Tactic[error])` は、それまで `Cursor[Data, cap]` と `Cursor[Text, cap]` の上の `@targetName("peekByte")`/`("peekChar")` と `("expectByte")`/`("expectChar")` の拡張として二回ずつ定義されていたが、それぞれ一つの定義になった。定義は `Cursor[data, cap]` の上にあり、拡張に `(using data is Addressable)` 節が追加され（メディアのコンパニオンから解決されるので、インポートは変わらない）、メディアの `Operand` によってバイトを読むか文字を読むかを選ぶ。呼び出し箇所は変わらない。他のメディアの上のカーソルは、それまで `peek` をまったく持たなかったが、今は `peek` からコンパイル時エラーを得る。(#2279)
++ - `zephyrine.Cursor#seek(target: addressable.Operand): Boolean` は `inline` ではなくなった（プレーンな `update def`）。意味は同じで、バイトと文字をボックス化せずに比較するようになった。(#2279)
+
+- ## baroque
++ ## baroque
+
+- - `baroque.Complex[component]` is no longer a case class but a `sealed abstract class` with two
+-   final subclasses in its companion, chosen by the component's runtime class:
+-   `Complex.Doubles[component](real: Double, imaginary: Double)` for any component that is a
+-   `Double` underneath (`Double` itself, a quantity, an `F64` — anything with `Underlying[_,
+-   Double]` evidence), and `Complex.Boxed[component](real: component, imaginary: component)`
+-   otherwise. `Complex(real, imaginary)`, `complex.real`, `complex.imaginary`, `argument`,
+-   `modulus`, `sqrt`, `unary_~`, equality, hashing, `toString` (`Complex(1.0, 2.0)`) and every
+-   typeclass instance are unchanged in use, and `case Complex(real, imaginary)` still matches.
+-   Gone are the case-class extras: `copy`, `Product` membership (`productElement`,
+-   `productArity`) and `Complex.curried`/`tupled`. The constructor, accessors and arithmetic
+-   instances are `inline`: `c + d`, `c*d`, `c/d`, `-c` and `c*2.0` on `Complex[Double]`s compile to
+-   primitive arithmetic with one allocation of two unboxed fields per result, where each
+-   previously allocated an object and two boxed doubles and unboxed them on every read. The
+-   arithmetic instances' result types are now type parameters inferred through their `using`
+-   clauses rather than the parameters' `Result` members; summoning them by name as values still
+-   works. (#2286)
++ - `baroque.Complex[component]` はケースクラスではなくなり、`sealed abstract class` となって、そのコンパニオンにある二つの final なサブクラスのどちらかが、コンポーネントの実行時のクラスによって選ばれる。下層が `Double` であるコンポーネント（`Double` 自身、量、`F64` など、`Underlying[_, Double]` の証拠を持つもの）には `Complex.Doubles[component](real: Double, imaginary: Double)`、それ以外には `Complex.Boxed[component](real: component, imaginary: component)` である。`Complex(real, imaginary)`、`complex.real`、`complex.imaginary`、`argument`、`modulus`、`sqrt`、`unary_~`、等価性、ハッシュ、`toString`（`Complex(1.0, 2.0)`）、およびすべての型クラスのインスタンスは使い方が変わらず、`case Complex(real, imaginary)` もなおマッチする。ケースクラスの付属物はなくなった：`copy`、`Product` への所属（`productElement`、`productArity`）、`Complex.curried`/`tupled`。コンストラクター、アクセサー、算術のインスタンスは `inline` である。`Complex[Double]` に対する `c + d`、`c*d`、`c/d`、`-c`、`c*2.0` は、結果ごとにボックス化されていない二つのフィールドのアロケーション一回を伴うプリミティブの算術にコンパイルされる。それまではそれぞれがオブジェクトとボックス化された二つの double をアロケートし、読むたびにアンボックス化していた。算術のインスタンスの結果型は、パラメーターの `Result` メンバーではなく、その `using` 節を通して推論される型パラメーターになった。名前で値として召喚することは引き続きできる。(#2286)
+
+- ## hypotenuse
++ ## hypotenuse
+
+- - The arithmetic instances of `Q64` and `Q32` (`addable`, `subtractable`, `multiplicable`,
+-   `divisible`, `negatable`, and the `Double`/`Int`/`Long`-operand `multiplicable…`/`divisible…`
+-   variants) are `inline given`s with `inline def` operations, so a use that reaches one at its
+-   own type — symbolism's operators, mosquito's and baroque's inline instances — performs the
+-   `Long` arithmetic with no instance call and no boxing: `Vector[Q64, n] + Vector[Q64, n]` is a
+-   loop of `laload`/`lastore` around the rational sum. Types and names are unchanged;
+-   `negatable` is a structural instance rather than a lambda. (#2287)
++ - `Q64` と `Q32` の算術のインスタンス（`addable`、`subtractable`、`multiplicable`、`divisible`、`negatable`、および `Double`/`Int`/`Long` をオペランドとする `multiplicable…`/`divisible…` のバリアント）は、`inline def` の操作を持つ `inline given` になった。そのため、自身の型でこれに到達する使用（symbolism の演算子、mosquito と baroque のインラインのインスタンス）は、インスタンスの呼び出しもボックス化もなしに `Long` の算術を行う。`Vector[Q64, n] + Vector[Q64, n]` は、有理数の和を囲む `laload`/`lastore` のループになる。型と名前は変わらない。`negatable` はラムダではなく構造的なインスタンスである。(#2287)
+
+- ## mosquito
++ ## mosquito
+
+- - `mosquito.Vector[value, size]` now stores its elements in an `Array[value]^{}` (a `double[]`
+-   for a `Vector[Double, 3]`, likewise for a quantity, whose opaque type erases to `Double`)
+-   rather than an `Array[Any]^{}` of boxed elements, so `Vector#data` has that type and
+-   `Vector#iarray` no longer takes a `ClassTag`. `Vector.apply(tuple)` therefore takes a `using
+-   ClassTag[Tuple.Union[tuple.type]]`: a tuple of mixed element types, which has none, is
+-   rejected where it was previously accepted. `Vector.take[element: ClassTag]`,
+-   `Vector#map[left2: ClassTag]` and `List#slide[element: ClassTag]` gained the bound. The
+-   3-vector `cross` is typed `Vector[subtraction.Result, 3]` and the 7-vector `cross`
+-   `Vector[multiplication.Result, 7]` — the types of the values they always held (the same
+-   types as before for every primitive) — and each takes a `ClassTag` of that result. (#2285)
+- - The arithmetic instances of `Vector` and `Matrix` (`addable`, `subtractable`, `negatable`,
+-   `scalarMultiplicable`, `scalarDivisible`, `matrixMultiplicable`, `vectorMultiplicable`) are
+-   `inline given`s with `inline def` operations, which resolve the element arithmetic at the call
+-   site (an `AddOp`/`MulOp`/… first, else the `Addable`/… instance at its own type), so `v + w`,
+-   `m*n`, `m*2.0`, `v.dot(w)` and `v.norm` on `Double` elements compile to loops of
+-   `daload`/`dadd`/`dmul`/`dastore` with no boxing. `Vector`'s `negatable` and `vectorMultiplicable`
+-   take a `ClassTag[result]`; `dot` and `norm` are `inline`. Code that summoned one of these
+-   instances by name as a value still can. (#2285)
++ - `mosquito.Vector[value, size]` は、要素をボックス化された要素の `Array[Any]^{}` ではなく `Array[value]^{}`（`Vector[Double, 3]` では `double[]`。不透明型が `Double` に消去される量でも同様）に格納するようになった。そのため `Vector#data` はその型を持ち、`Vector#iarray` は `ClassTag` を取らなくなった。したがって `Vector.apply(tuple)` は `using ClassTag[Tuple.Union[tuple.type]]` を取る。要素の型が混在したタプルにはそれがないので、それまで受け入れられていたところで拒否される。`Vector.take[element: ClassTag]`、`Vector#map[left2: ClassTag]`、`List#slide[element: ClassTag]` にはこの境界が加わった。3 次元ベクトルの `cross` は `Vector[subtraction.Result, 3]`、7 次元ベクトルの `cross` は `Vector[multiplication.Result, 7]` と型付けされ（これらは常に保持していた値の型であり、どのプリミティブでも以前と同じ型である）、それぞれその結果の `ClassTag` を取る。(#2285)
++ - `Vector` と `Matrix` の算術のインスタンス（`addable`、`subtractable`、`negatable`、`scalarMultiplicable`、`scalarDivisible`、`matrixMultiplicable`、`vectorMultiplicable`）は、`inline def` の操作を持つ `inline given` になった。これらは要素の算術を呼び出し箇所で解決する（まず `AddOp`/`MulOp`/…、なければ自身の型での `Addable`/… のインスタンス）ので、`Double` の要素に対する `v + w`、`m*n`、`m*2.0`、`v.dot(w)`、`v.norm` は、ボックス化のない `daload`/`dadd`/`dmul`/`dastore` のループにコンパイルされる。`Vector` の `negatable` と `vectorMultiplicable` は `ClassTag[result]` を取る。`dot` と `norm` は `inline` である。これらのインスタンスの一つを名前で値として召喚していたコードは、引き続きそうできる。(#2285)
+
+- ## rudiments
++ ## rudiments
+
+- - New: `rudiments.Scroll[element]` (in the `concordance` module, like `Scribe`), a growable array
+-   appended to and indexed by position — the unboxed replacement for `scala.collection.mutable.
+-   ArrayBuffer[Int|Long|Byte|…]`, whose backing store holds boxed elements. `Scroll[Int]()`
+-   (optionally with a capacity), then `append(value)`, `append(other: Scroll[element])`,
+-   `append(array, from, count)`, `apply(index: Int)`, `update(index: Int, value)`, `length`,
+-   `isEmpty`, `last`, `retract(count)` (forgets the last `count` elements), `clear()` and
+-   `freeze: Array[element]^{}` (an exact-size frozen copy). Indices are plain `Int`s checked
+-   against `length`. Not exported by the `soundness` umbrella (as `Scribe` is not); it is reached
+-   through `import rudiments.*`. jacinta, xylophone and ypsiloid's position-index buffers,
+-   jacinta's BCD number buffers, turbulence's `StreamOutputStream`, escapade's style stacks,
+-   exegesis's line index and facsimile's `Gathering` now use it. (#2283)
++ - 新規：`rudiments.Scroll[element]`（`Scribe` と同じく `concordance` モジュールにある）。末尾に追加し、位置でインデックスする伸長可能な配列であり、格納先がボックス化された要素を持つ `scala.collection.mutable. ArrayBuffer[Int|Long|Byte|…]` に代わる、ボックス化しないものである。`Scroll[Int]()`（容量を指定してもよい）の後に、`append(value)`、`append(other: Scroll[element])`、`append(array, from, count)`、`apply(index: Int)`、`update(index: Int, value)`、`length`、`isEmpty`、`last`、`retract(count)`（最後の `count` 個の要素を忘れる）、`clear()`、`freeze: Array[element]^{}`（ちょうどの大きさの凍結済みのコピー）を使う。インデックスは `length` に照らして検査されるプレーンな `Int` である。`soundness` アンブレラからはエクスポートされず（`Scribe` も同様）、`import rudiments.*` で到達する。jacinta、xylophone、ypsiloid の位置のインデックスのバッファー、jacinta の BCD の数のバッファー、turbulence の `StreamOutputStream`、escapade のスタイルのスタック、exegesis の行のインデックス、facsimile の `Gathering` は、これを使うようになった。(#2283)
+
+- ## symbolism
++ ## symbolism
+
+- - The primitive arithmetic instances in `symbolism.Addable`, `Subtractable`, `Multiplicable`,
+-   `Divisible` and `Negatable` (`double`, `float`, `long`, `int`, `short`, `byte`, and the mixed
+-   `int2`/`int3`/`double2`/`float2`/`float3`/`long2`/`short2`/`byte2`) keep their names but are
+-   now `inline given`s typed by singleton objects — `Addable.DoubleAddition.type`,
+-   `Subtractable.IntSubtraction.type`, `Divisible.FloatDoubleDivision.type`, `Negatable.LongNegation.type`
+-   and so on — whose `add`/`subtract`/`multiply`/`divide`/`negate` are `inline def`s. Code that
+-   summons `Double is Addable by Double to Double` still gets them; code that named the given's
+-   previous type (`val a: Double is Addable by Double to Double = Addable.double`) still compiles
+-   by widening. Inline code that reaches one through symbolism's `+`, `-`, `*`, `/` or `unary_-`
+-   now compiles to the primitive instruction instead of a boxed `Function2` call. (#2282)
++ - `symbolism.Addable`、`Subtractable`、`Multiplicable`、`Divisible`、`Negatable` にあるプリミティブの算術のインスタンス（`double`、`float`、`long`、`int`、`short`、`byte`、および混在型の `int2`/`int3`/`double2`/`float2`/`float3`/`long2`/`short2`/`byte2`）は、名前はそのままだが、シングルトンオブジェクトで型付けされる `inline given` になった。型は `Addable.DoubleAddition.type`、`Subtractable.IntSubtraction.type`、`Divisible.FloatDoubleDivision.type`、`Negatable.LongNegation.type` などであり、その `add`/`subtract`/`multiply`/`divide`/`negate` は `inline def` である。`Double is Addable by Double to Double` を召喚するコードは引き続きそれらを得る。given の以前の型を名指していたコード（`val a: Double is Addable by Double to Double = Addable.double`）も、拡大によって引き続きコンパイルされる。symbolism の `+`、`-`、`*`、`/`、`unary_-` を通してこれに到達するインラインのコードは、ボックス化された `Function2` の呼び出しではなく、プリミティブの命令にコンパイルされるようになった。(#2282)
+
+- ## enigmatic
++ ## enigmatic
+
+- - New cipher `enigmatic.Ed25519` (RFC 8032; `Cipher & Signing`, `Size = 256`, no size parameter,
+-   no `Signature.Digest`), reached through the JDK provider's new structural member
+-   `def ed25519: Crypto.SignatureScheme`; `Ed25519 is SignatureAlgorithm` (x509) lets a certificate
+-   be signed with it. Additive. (#2243)
+- - Existing private keys can now be read. `PrivateKey[cipher]` has `Decodable in Der` (PKCS#8
+-   `PrivateKeyInfo`) and `Decodable in Pem` (labels `PRIVATE KEY`, `RSA PRIVATE KEY`, `EC PRIVATE
+-   KEY`, `OPENSSH PRIVATE KEY`) givens for every `cipher` with a `KeyAlgorithm` (Rsa, Ecdsa,
+-   Ed25519, MlDsa, Dsa), each needing a `Cloak^` and `Tactic[PrivateKey.Error]`: write
+-   `text.read[PrivateKey[Ed25519] in Pem]`, `pem.as[PrivateKey[Rsa[2048]]]` or
+-   `der.as[PrivateKey[Rsa[2048]]]`. The document's algorithm, curve and size are checked against
+-   `cipher`; a `PrivateKey.Error` has reason `Malformed(detail)`, `Mismatch(expected, found)`,
+-   `Encrypted` (passphrase-protected keys are not yet read), `Unsupported(detail)` or
+-   `PublicKeyAbsent` (an EC, Ed25519 or ML-DSA PKCS#8 key written without its optional public key).
+-   Additive. (#2243)
+- - `PublicKey[cipher]` likewise has `Decodable in Der` (SubjectPublicKeyInfo) and `Decodable in Pem`
+-   (`PUBLIC KEY`, `RSA PUBLIC KEY`) givens raising `PublicKey.Error` (`Malformed`, `Mismatch`,
+-   `Unsupported`). New `enigmatic.OpenSsh` reads OpenSSH's single-line public-key form with
+-   `OpenSsh.publicKey[cipher](line: Text): PublicKey[cipher]` and writes it with
+-   `OpenSsh.line(key: PublicKey[cipher], comment: Optional[Text] = Unset): Optional[Text]`. Additive.
+-   (#2243)
+- - New typeclass `enigmatic.KeyAlgorithm` (`cipher is KeyAlgorithm`: `name`, `sshName`,
+-   `conforms(algorithm: Asn1, material: KeyAlgorithm.Material)`), with givens in each cipher's
+-   companion; and `enigmatic.Pkcs8`/`enigmatic.Spki` helpers for the two key-document shapes.
+-   Additive. (#2243)
+- - New key-agreement ciphers `enigmatic.X25519` (RFC 7748, `Size = 256`) and `enigmatic.Ecdh[256 | 384
+-   | 521]` (NIST curves, the same key documents as `Ecdsa`), both `Cipher & Agreeing`, where the new
+-   `enigmatic.Agreeing` has `agree(privateKey: Data, publicKey: Data): Data`. They are reached through
+-   the JDK provider's new structural members `x25519: Crypto.KeyAgreement` and `ecdh:
+-   Crypto.KeyAgreement` (new trait: `generateKeyPair`, `privateToPublic`, `agree`). Use them as
+-   `privateKey.agree(peer: PublicKey[cipher])(block: Data => result)`: the shared secret is lent to
+-   the block and zeroed afterwards. Additive. (#2243)
+- - New AEAD cipher `enigmatic.AesGcm[128 | 256]` (`Cipher & Symmetric & Authenticated`; 12-byte
+-   nonce, 16-byte tag), where the new `enigmatic.Authenticated` has `nonceSize`, `tagSize`,
+-   `seal(key, nonce, associated, plaintext): Data` and `unseal(key, nonce, associated, ciphertext):
+-   Optional[Data]`, reached through the JDK provider's new structural member `aesGcm: Crypto.Aead`
+-   (new trait: `generateKey`, `seal`, `unseal`). Use it as `symmetricKey.seal(nonce, associated,
+-   plaintext): Data` and `symmetricKey.unseal(nonce, associated, ciphertext): Data` raising
+-   `Crypto.Error` with the new reason `Crypto.Error.Reason.BadTag` on a tag failure. No `Permit` is
+-   needed: an AEAD cipher is not `Unauthenticated`. Additive. (#2243)
+- - New `enigmatic.ChaCha20` (`Cipher & Symmetric & Keystream`, where the new `enigmatic.Keystream`
+-   has `nonceSize` and `xor(key, nonce, counter, data): Data`), used as `symmetricKey.xor(nonce,
+-   counter, data)`, and `enigmatic.ChaCha20Poly1305` (RFC 8439 AEAD, `Authenticated`, used with
+-   `seal`/`unseal` like `AesGcm`); both via the JDK provider's new structural members `chaCha20:
+-   Crypto.StreamCipher` (new trait: `generateKey`, `xor`) and `chaCha20Poly1305: Crypto.Aead`.
+-   New `enigmatic.Poly1305.mac(key: Data, message: Data): Data`, a pure-Scala one-time
+-   authenticator, for constructions such as OpenSSH's `chacha20-poly1305@openssh.com` that use it
+-   apart from ChaCha20. Additive. (#2243)
+- - `enigmatic.KeyAlgorithm` gained `algorithm: Optional[Asn1]`, the type's `AlgorithmIdentifier`
+-   (`Unset` for DSA), and `PublicKey` gained `PublicKey.raw[cipher](bits: Data):
+-   Optional[PublicKey[cipher]]` and `PublicKey#raw: Optional[Data]`, converting between a key
+-   document and the raw key a wire protocol carries (32 bytes for X25519/Ed25519, an uncompressed
+-   point for EC). Additive. (#2243)
+- - `enigmatic.Pem.Label` gained the case `OpensshPrivateKey` (`OPENSSH PRIVATE KEY`), which
+-   previously parsed as `Proprietary(t"OPENSSH PRIVATE KEY")`; a match on the `Proprietary` form
+-   must use the new case. `Pem.aggregableIn` (the `text.read[value in Pem]` lifting over a
+-   `Decodable in Der`) moved to the parent trait `enigmatic.Pem2`, so that the new
+-   `Pem.aggregableInPem`, over a `Decodable in Pem`, outranks it; `summon`ing it by name must use
+-   `Pem.aggregableIn` still (inherited), so no change is expected. (#2243)
+- - `enigmatic` decryption paths now map provider failures through one function. `Data#decrypt`
+-   (`enigmatic_uncloak.scala`) is unchanged in which exceptions it maps; the streaming
+-   `BlockCipher#decrypt(stream, key)` previously mapped only `javax.crypto.BadPaddingException`
+-   (→ `Crypto.Error.Reason.BadPadding`) and `IllegalBlockSizeException` (→ `IllegalBlockSize`),
+-   rethrowing anything else, and now also maps `java.security.InvalidKeyException` (→ `InvalidKey`)
+-   and any other `java.security.GeneralSecurityException` (→ `IoFailure`) to a `Crypto.Error`, as
+-   the whole-value form always did; code catching those JDK exceptions around a streaming decrypt
+-   must handle `Crypto.Error` instead. `Crypto.javaBaseCrypto` on Scala Native, whose members all
+-   panicked, now forwards `random`, `aes`, `hmac`, `aesGcm`, `chaCha20`, `chaCha20Poly1305`,
+-   `x25519` and `ed25519` to the pure-Scala `enigmatic.SoundnessCrypto`; `rsa`, `rsaSignature`,
+-   `ecdsa` and the legacy ciphers still panic. (#2305)
++ - 新しい暗号方式 `enigmatic.Ed25519`（RFC 8032。`Cipher & Signing`、`Size = 256`、サイズのパラメーターなし、`Signature.Digest` なし）。JDK のプロバイダーの新しい構造的メンバー `def ed25519: Crypto.SignatureScheme` を通して到達する。`Ed25519 is SignatureAlgorithm`（x509）により、証明書をこれで署名できる。追加のみ。(#2243)
++ - 既存の秘密鍵を読めるようになった。`PrivateKey[cipher]` は、`KeyAlgorithm` を持つすべての `cipher`（Rsa、Ecdsa、Ed25519、MlDsa、Dsa）に対して `Decodable in Der`（PKCS#8 の `PrivateKeyInfo`）と `Decodable in Pem`（ラベル `PRIVATE KEY`、`RSA PRIVATE KEY`、`EC PRIVATE KEY`、`OPENSSH PRIVATE KEY`）の given を持ち、それぞれ `Cloak^` と `Tactic[PrivateKey.Error]` を必要とする。`text.read[PrivateKey[Ed25519] in Pem]`、`pem.as[PrivateKey[Rsa[2048]]]`、`der.as[PrivateKey[Rsa[2048]]]` と書く。文書のアルゴリズム、曲線、サイズは `cipher` に照らして検査される。`PrivateKey.Error` の理由は `Malformed(detail)`、`Mismatch(expected, found)`、`Encrypted`（パスフレーズで保護された鍵はまだ読めない）、`Unsupported(detail)`、`PublicKeyAbsent`（省略可能な公開鍵なしで書かれた EC、Ed25519、ML-DSA の PKCS#8 の鍵）のいずれかである。追加のみ。(#2243)
++ - `PublicKey[cipher]` も同様に、`PublicKey.Error`（`Malformed`、`Mismatch`、`Unsupported`）を発生させる `Decodable in Der`（SubjectPublicKeyInfo）と `Decodable in Pem`（`PUBLIC KEY`、`RSA PUBLIC KEY`）の given を持つ。新しい `enigmatic.OpenSsh` は、OpenSSH の 1 行の公開鍵の形を `OpenSsh.publicKey[cipher](line: Text): PublicKey[cipher]` で読み、`OpenSsh.line(key: PublicKey[cipher], comment: Optional[Text] = Unset): Optional[Text]` で書く。追加のみ。(#2243)
++ - 新しい型クラス `enigmatic.KeyAlgorithm`（`cipher is KeyAlgorithm`：`name`、`sshName`、`conforms(algorithm: Asn1, material: KeyAlgorithm.Material)`）。given は各暗号方式のコンパニオンにある。また、二つの鍵文書の形のためのヘルパー `enigmatic.Pkcs8`/`enigmatic.Spki`。追加のみ。(#2243)
++ - 新しい鍵合意の暗号方式 `enigmatic.X25519`（RFC 7748、`Size = 256`）と `enigmatic.Ecdh[256 | 384 | 521]`（NIST の曲線。鍵文書は `Ecdsa` と同じ）。どちらも `Cipher & Agreeing` であり、新しい `enigmatic.Agreeing` は `agree(privateKey: Data, publicKey: Data): Data` を持つ。JDK のプロバイダーの新しい構造的メンバー `x25519: Crypto.KeyAgreement` と `ecdh: Crypto.KeyAgreement`（新しいトレイト：`generateKeyPair`、`privateToPublic`、`agree`）を通して到達する。`privateKey.agree(peer: PublicKey[cipher])(block: Data => result)` として使う。共有の秘密はブロックに貸し出され、その後ゼロで埋められる。追加のみ。(#2243)
++ - 新しい AEAD の暗号方式 `enigmatic.AesGcm[128 | 256]`（`Cipher & Symmetric & Authenticated`。12 バイトのノンス、16 バイトのタグ）。新しい `enigmatic.Authenticated` は `nonceSize`、`tagSize`、`seal(key, nonce, associated, plaintext): Data`、`unseal(key, nonce, associated, ciphertext): Optional[Data]` を持ち、JDK のプロバイダーの新しい構造的メンバー `aesGcm: Crypto.Aead`（新しいトレイト：`generateKey`、`seal`、`unseal`）を通して到達する。`symmetricKey.seal(nonce, associated, plaintext): Data` と `symmetricKey.unseal(nonce, associated, ciphertext): Data` として使い、後者はタグの検証に失敗すると新しい理由 `Crypto.Error.Reason.BadTag` を持つ `Crypto.Error` を発生させる。AEAD の暗号方式は `Unauthenticated` ではないので、`Permit` は要らない。追加のみ。(#2243)
++ - 新しい `enigmatic.ChaCha20`（`Cipher & Symmetric & Keystream`。新しい `enigmatic.Keystream` は `nonceSize` と `xor(key, nonce, counter, data): Data` を持つ）。`symmetricKey.xor(nonce, counter, data)` として使う。また `enigmatic.ChaCha20Poly1305`（RFC 8439 の AEAD。`Authenticated` であり、`AesGcm` と同じく `seal`/`unseal` で使う）。どちらも JDK のプロバイダーの新しい構造的メンバー `chaCha20: Crypto.StreamCipher`（新しいトレイト：`generateKey`、`xor`）と `chaCha20Poly1305: Crypto.Aead` を通す。新しい `enigmatic.Poly1305.mac(key: Data, message: Data): Data` は純粋な Scala によるワンタイムの認証子であり、OpenSSH の `chacha20-poly1305@openssh.com` のように ChaCha20 とは別にそれを使う構成のためのものである。追加のみ。(#2243)
++ - `enigmatic.KeyAlgorithm` に `algorithm: Optional[Asn1]`、つまりその型の `AlgorithmIdentifier`（DSA では `Unset`）が加わり、`PublicKey` に `PublicKey.raw[cipher](bits: Data): Optional[PublicKey[cipher]]` と `PublicKey#raw: Optional[Data]` が加わった。これらは鍵文書と、ワイヤプロトコルが運ぶ生の鍵（X25519/Ed25519 では 32 バイト、EC では非圧縮の点）との間で変換する。追加のみ。(#2243)
++ - `enigmatic.Pem.Label` にケース `OpensshPrivateKey`（`OPENSSH PRIVATE KEY`）が加わった。これはそれまで `Proprietary(t"OPENSSH PRIVATE KEY")` としてパースされていた。`Proprietary` の形に対するマッチは新しいケースを使わなければならない。`Pem.aggregableIn`（`Decodable in Der` の上の `text.read[value in Pem]` の持ち上げ）は親トレイト `enigmatic.Pem2` に移った。これは、`Decodable in Pem` の上の新しい `Pem.aggregableInPem` がそれより優先されるようにするためである。名前で `summon` する場合も引き続き（継承された）`Pem.aggregableIn` を使えばよいので、変更は要らないはずである。(#2243)
++ - `enigmatic` の復号の経路は、プロバイダーの失敗を一つの関数で対応付けるようになった。`Data#decrypt`（`enigmatic_uncloak.scala`）は、どの例外を対応付けるかについて変わらない。ストリーミングの `BlockCipher#decrypt(stream, key)` は、それまで `javax.crypto.BadPaddingException`（→ `Crypto.Error.Reason.BadPadding`）と `IllegalBlockSizeException`（→ `IllegalBlockSize`）だけを対応付け、それ以外は投げ直していたが、値全体の形が常にそうしていたように、`java.security.InvalidKeyException`（→ `InvalidKey`）とそれ以外の `java.security.GeneralSecurityException`（→ `IoFailure`）も `Crypto.Error` に対応付けるようになった。ストリーミングの復号の周りでそれらの JDK の例外を捕捉しているコードは、代わりに `Crypto.Error` を処理しなければならない。Scala Native の `Crypto.javaBaseCrypto` は、それまですべてのメンバーがパニックしていたが、`random`、`aes`、`hmac`、`aesGcm`、`chaCha20`、`chaCha20Poly1305`、`x25519`、`ed25519` を純粋な Scala の `enigmatic.SoundnessCrypto` に転送するようになった。`rsa`、`rsaSignature`、`ecdsa`、およびレガシーの暗号方式は引き続きパニックする。(#2305)
+
+- ## telekinesis
++ ## telekinesis
+
+- - `telekinesis.httpBackends.soundnessHttp` (the `Http.Backend` over coaxial's sockets) moved
+-   from the `telekinesis-jvm` module to the new `telekinesis-sockets` module, which cross-compiles
+-   to Scala Native (published as `telekinesis-sockets_native0.5_3`); `telekinesis-jvm` depends on
+-   it, so a consumer of `telekinesis-jvm` or of the `soundness` umbrella sees no change. Its
+-   `https` exchange is now platform-split: on the JVM it is unchanged (ALPN offering `h2` then
+-   `http/1.1`, driven by `Http2` or the HTTP/1.1 codec); on Scala Native it is one HTTP/1.1
+-   exchange over coaxial's OpenSSL `SecureEndpoint`, sent with `Connection: close`. The helpers
+-   `repackage` and `sequentialFetch` moved with it (`private[telekinesis]`). (#2308)
++ - `telekinesis.httpBackends.soundnessHttp`（coaxial のソケットの上の `Http.Backend`）は、`telekinesis-jvm` モジュールから、Scala Native にクロスコンパイルされる新しい `telekinesis-sockets` モジュール（`telekinesis-sockets_native0.5_3` として公開される）に移った。`telekinesis-jvm` はこれに依存するので、`telekinesis-jvm` や `soundness` アンブレラの利用者には変化はない。その `https` のやり取りはプラットフォームごとに分かれるようになった。JVM では変わらない（ALPN で `h2`、次に `http/1.1` を提示し、`Http2` または HTTP/1.1 のコーデックで駆動する）。Scala Native では、coaxial の OpenSSL による `SecureEndpoint` の上の HTTP/1.1 のやり取り一回であり、`Connection: close` を付けて送られる。ヘルパー `repackage` と `sequentialFetch` も一緒に移った（`private[telekinesis]`）。(#2308)
+
+- ## hellenism
++ ## hellenism
+
+- - `hellenism.Classpath#classloader(delegation, parent)`, `Classpath#services[service]`,
+-   `Classpath.Entry#javaUrl` and `internal.ClassRef#classpathEntry` are now extension methods
+-   (same names and signatures, defined at the top level of package `hellenism` and exported to
+-   `soundness`) in the JVM/Scala.js `core-jvm` source set, rather than members; call sites are
+-   unchanged, but a `summon`/eta-expansion by member name must use the extension. They are absent
+-   on Scala Native, to which `hellenism.core` now cross-compiles. `Classpath.servicesFor[service]
+-   (classpath, cls)` and `Classpath.Entry.apply(url: java.net.URL)` are removed from the public
+-   API (both were JVM plumbing: the former backs `services`, the latter `LocalClasspath`), and
+-   `Classpath.delegatingClassloader` moved to the private `hellenism.Loaders`. (#2310)
++ - `hellenism.Classpath#classloader(delegation, parent)`、`Classpath#services[service]`、`Classpath.Entry#javaUrl`、`internal.ClassRef#classpathEntry` は、メンバーではなく、JVM/Scala.js の `core-jvm` ソースセットにある拡張メソッド（名前とシグネチャは同じで、パッケージ `hellenism` のトップレベルで定義され、`soundness` にエクスポートされる）になった。呼び出し箇所は変わらないが、メンバー名による `summon` やイータ展開は拡張を使わなければならない。これらは、`hellenism.core` がクロスコンパイルされるようになった Scala Native にはない。`Classpath.servicesFor[service] (classpath, cls)` と `Classpath.Entry.apply(url: java.net.URL)` は公開 API から削除され（どちらも JVM の配管であり、前者は `services` を、後者は `LocalClasspath` を支えていた）、`Classpath.delegatingClassloader` は非公開の `hellenism.Loaders` に移った。(#2310)
+
+- - `LocalClasspath(path)`, the one-argument constructor taking any path (`Abstractable across
+-   Paths to Text`), is now `LocalClasspath.of(path)`: with a single `Classpath.Entry.Jar` or
+-   `Classpath.Entry.Directory` — itself a path — `LocalClasspath(entry)` was ambiguous between
+-   that overload and the entries' varargs `apply`, which now resolves alone. The varargs
+-   `apply`, `of(classloader)` and `classpath + path` are unchanged.
++ - 任意のパス（`Abstractable across Paths to Text`）を取る 1 引数のコンストラクター `LocalClasspath(path)` は、`LocalClasspath.of(path)` になった。それ自体がパスである単一の `Classpath.Entry.Jar` または `Classpath.Entry.Directory` に対して、`LocalClasspath(entry)` はそのオーバーロードとエントリーの可変長引数の `apply` との間で曖昧だった。後者は今や単独で解決される。可変長引数の `apply`、`of(classloader)`、`classpath + path` は変わらない。
+
+- ## coaxial
++ ## coaxial
+
+- - On Scala Native only: `Multicast` subscriptions (`coaxial.socketBackends.scalaNativeSockets`)
+-   send to the group once, by the kernel's default multicast route, rather than once per joined
+-   interface as the JVM backend does, and `Socket.Option.MulticastLoop` and `MulticastHops` are
+-   not applied (the kernel defaults: loopback on, one hop) — Scala Native's javalib declares
+-   `DatagramSocket.setOption` without implementing it. Receiving, `sendTo` and `leave` are as on
+-   the JVM. UDP binds on Scala Native now pass an explicit wildcard address: the javalib's
+-   `InetSocketAddress(port)` leaves the host name null and `bind` rejected it, so `listenUdp`
+-   previously threw `IllegalArgumentException` there. (#2312)
++ - Scala Native でのみ：`Multicast` の購読（`coaxial.socketBackends.scalaNativeSockets`）は、JVM のバックエンドのように参加したインターフェースごとに一回ではなく、カーネルのデフォルトのマルチキャストの経路でグループに一回送る。また `Socket.Option.MulticastLoop` と `MulticastHops` は適用されない（カーネルのデフォルト：ループバックは有効、ホップは一つ）。Scala Native の javalib は `DatagramSocket.setOption` を宣言しているが実装していないからである。受信、`sendTo`、`leave` は JVM と同じである。Scala Native での UDP のバインドは、明示的なワイルドカードのアドレスを渡すようになった。javalib の `InetSocketAddress(port)` はホスト名を null のままにし、`bind` がそれを拒否していたので、`listenUdp` はそれまでそこで `IllegalArgumentException` を投げていた。(#2312)
+
+- ## guillotine
++ ## guillotine
+
+- - `guillotine.Command#escape` now quotes an embedded single quote correctly, as `'\''`; it used
+-   to leave it unescaped, so a `Command` whose argument contained one re-parsed as several
+-   arguments. A caller that compensated by pre-escaping quotes must stop. (#2243)
+- - On Scala Native, `Command#pty` now runs the command on a real pseudo-terminal (the Native
+-   `PtyProcess`, over `posix_openpt`/`posix_spawn`/`poll`), where it previously raised
+-   `Exec.Error`; `OnTerminal.Job#resize`, `mode` and `mode_=` work there as on the JVM. (#2312)
++ - `guillotine.Command#escape` は、埋め込まれた単一引用符を `'\''` として正しく引用するようになった。以前はエスケープせずに残していたので、引数に単一引用符を含む `Command` は複数の引数として再パースされていた。引用符を前もってエスケープして補っていた呼び出し側は、それをやめなければならない。(#2243)
++ - Scala Native では、`Command#pty` はコマンドを本物の疑似端末の上で実行するようになった（`posix_openpt`/`posix_spawn`/`poll` の上の Native の `PtyProcess`）。それまでは `Exec.Error` を発生させていた。`OnTerminal.Job#resize`、`mode`、`mode_=` は JVM と同じくそこでも動く。(#2312)
+
+- ## octogenarian
++ ## octogenarian
+
+- - New component `octogenarian.sshNative` (bundle `tool`): remote repositories over susurration,
+-   the native SSH client, with no `ssh` binary. `gitTransports.soundnessSsh` is the given
+-   `Transport` (demanding `Online`, `Socket.Backend`, `Ssh.Provider`, `Ssh.Algorithms`,
+-   `Ssh.HostKeys`, `Ssh.Credentials`, `Hash in Sha2[256]` and `Diagnostics`), and `SshNative()` the
+-   class; it accepts the same `ssh://[user@]host[:port]/path` and `[user@]host:path` URLs as
+-   `gitTransports.sshCommand`, which remains. One SSH connection serves every exchange with a peer,
+-   and stays open as long as the peer. Additive. (#2243)
+- - `octogenarian.SshCommand.Address` and `SshCommand.parse` moved to the `native` component as
+-   `octogenarian.SshAddress(user, host, port, path)` and `SshAddress.parse(url)`, so both SSH
+-   transports share them. Replace `SshCommand.Address` with `SshAddress` and `SshCommand.parse`
+-   with `SshAddress.parse`. (#2243)
++ - 新しいコンポーネント `octogenarian.sshNative`（バンドル `tool`）：ネイティブの SSH クライアントである susurration の上のリモートリポジトリであり、`ssh` バイナリを必要としない。`gitTransports.soundnessSsh` が given の `Transport`（`Online`、`Socket.Backend`、`Ssh.Provider`、`Ssh.Algorithms`、`Ssh.HostKeys`、`Ssh.Credentials`、`Hash in Sha2[256]`、`Diagnostics` を要求する）であり、`SshNative()` がそのクラスである。引き続き残る `gitTransports.sshCommand` と同じ `ssh://[user@]host[:port]/path` と `[user@]host:path` の URL を受け付ける。一つの SSH 接続がピアとのすべてのやり取りを担い、ピアがある限り開いたままである。追加のみ。(#2243)
++ - `octogenarian.SshCommand.Address` と `SshCommand.parse` は、両方の SSH のトランスポートが共有できるよう、`native` コンポーネントに `octogenarian.SshAddress(user, host, port, path)` と `SshAddress.parse(url)` として移った。`SshCommand.Address` を `SshAddress` に、`SshCommand.parse` を `SshAddress.parse` に置き換える。(#2243)
+
+- ## susurration
++ ## susurration
+
+- - New library `susurration` (the SSH-2 client; bundle `web`), with `susurration.Wire` (the RFC
+-   4251 wire encoding: `Wire.Reader(data)` with `byte`, `boolean`, `uint32`, `uint64`, `string`,
+-   `bytes(count)`, `text`, `mpint`, `names`, `rest`, `end`, raising `Wire.Error`; `Wire.Writer()`
+-   with the same fields and `data`), `susurration.KnownHosts` (`KnownHosts(text)`, `lookup(host,
+-   port)`, `verify(host, port, keyType, keyBlob): KnownHosts.Verdict` of `Known`, `Unknown`,
+-   `Changed` or `Revoked`; patterns, negation, `[host]:port`, hashed entries and markers) and
+-   `susurration.SshConfig` (`SshConfig(text).resolve(host): SshConfig.Resolution(hostName, user,
+-   port, identityFiles)`; `Host` blocks with `HostName`, `User`, `Port` and `IdentityFile`).
+-   Additive. (#2243)
+- - `susurration.Transport(duplex: Duplex, hostname: Text, port: Int)(using Ssh.Provider,
+-   Ssh.Algorithms, Ssh.HostKeys, Hash in Sha2[256])` is the SSH transport layer (RFC 4253) over a
+-   coaxial `Duplex`: `connect()` does the identification exchange and key exchange (`curve25519-
+-   sha256`, `ecdh-sha2-nistp256`; host keys `ssh-ed25519`, `ecdsa-sha2-nistp256`, `rsa-sha2-512`,
+-   `rsa-sha2-256`; ciphers `chacha20-poly1305@openssh.com`, `aes256-gcm@openssh.com`,
+-   `aes128-gcm@openssh.com`), then `send(payload)`, `receive(): Data`, `expect(message)`,
+-   `service(name)` and `disconnect()` move encrypted packets; `sessionId`, `negotiated` and
+-   `serverVersion` describe the session. `susurration.Ssh` holds `Ssh.Version`, `Ssh.Message`
+-   numbers, `Ssh.Algorithms` (the preference lists, with a `default` given), `Ssh.HostKeys` (the
+-   host-key policy: a given from a `KnownHosts`, `trustOnFirstUse(known)`, `insecurelyAcceptAll`)
+-   and `Ssh.Error` (`Malformed`, `Unexpected`, `NoCommonAlgorithm`, `HostKeyRejected`,
+-   `BadSignature`, `Disconnected`, `ClosedConnection`, `Integrity`, `ServiceRefused`). Re-keying is
+-   not yet performed. Additive. (#2243)
+- - `Transport#authenticate(user: Text, signers: List[Signer])` performs public-key authentication
+-   (RFC 4252) with the first accepted signer, requesting `ssh-userauth` itself; it raises
+-   `Ssh.Error` with the new reason `Unauthenticated(methods)`, or `Agent(detail)` for an agent
+-   failure. `susurration.Signer` (`algorithm`, `blob`, `sign(data): Data`, the full signature blob)
+-   is made with `Signer(key: PrivateKey[cipher]^)` for a cipher with a `susurration.Identity`
+-   instance (`Ed25519`, `Ecdsa[256|384|521]`, `Rsa[2048|3072|4096]`, which sign as `ssh-ed25519`,
+-   `ecdsa-sha2-nistp*` and `rsa-sha2-256`), or obtained from an ssh-agent with
+-   `Agent(socketPath).identities()`, which signs through the agent. `Transport#receive` now raises
+-   `Unexpected(3)` on `SSH_MSG_UNIMPLEMENTED` rather than skipping it. Additive. (#2243)
+- - `enigmatic.OpenSsh.blob(key: PublicKey[cipher]): Optional[Data]` is the wire form of a public
+-   key, which `OpenSsh.line` now builds on. Additive. (#2243)
+- - The umbrella reaches susurration's classes as members of `Ssh`: `Ssh.Transport`,
+-   `Ssh.Channel`, `Ssh.Session`, `Ssh.Signer`, `Ssh.Identity` and `Ssh.Agent` (type aliases and
+-   companion values), since other libraries export `Transport`, `Channel`, `Session`, `Agent` and
+-   `Identity`; within `package susurration` the bare names are unchanged. `Ssh.Credentials`
+-   (`user(host): Optional[Text]`, `signers(host, user): List[Signer]`; `Ssh.Credentials(signers*)`
+-   and `Ssh.Credentials.agent(socket)`) supplies identities to a transport given only a URL.
+-   Additive. (#2243)
+- - The connection protocol (RFC 4254): `susurration.Session(transport)` opens session channels —
+-   `exec(command, input = Data(), environment = Nil): Session.Result(stdout, stderr, status)` runs
+-   a command to completion, `channel(block: Channel => result)` lends a `susurration.Channel`
+-   (`env`, `exec`, `write`, `eof`, `next(): Optional[Channel.Event]`, `stdout(): Chain[Data]`
+-   lazily, `stderr`, `exitStatus`, `close`), and `close()` disconnects. `Ssh.Endpoint(host, port,
+-   user, signers)` is `Sessional to Session^` (given `Online`, `Socket.Backend`, the provider,
+-   algorithms, host-key policy, `Hash in Sha2[256]`, `Tactic[Ssh.Error]` and `Diagnostics`), so
+-   `endpoint.session: ssh ?=> ssh.exec(t"uname")` connects, verifies, authenticates and runs;
+-   `Endpoint#resolved(config: SshConfig)` applies `~/.ssh/config`. `exec` on both takes any
+-   `command: Ssh.Invocable` — a `Text` run as written, or a guillotine `Command` quoted argument
+-   by argument (`ssh.exec(sh"git log -1 $$branch")`); susurration now depends on guillotine. New reasons `ChannelRefused`
+-   and `RequestRefused`. `Transport`, `Session` and `Channel` are plain classes driven by one
+-   thread (not `caps.Mutable`): their methods are no longer `update` methods, so a `Transport`
+-   needs no `^`. Additive. (#2243)
++ - 新しいライブラリ `susurration`（SSH-2 のクライアント。バンドル `web`）。`susurration.Wire`（RFC 4251 のワイヤのエンコーディング：`byte`、`boolean`、`uint32`、`uint64`、`string`、`bytes(count)`、`text`、`mpint`、`names`、`rest`、`end` を持ち `Wire.Error` を発生させる `Wire.Reader(data)`、同じフィールドと `data` を持つ `Wire.Writer()`）、`susurration.KnownHosts`（`KnownHosts(text)`、`lookup(host, port)`、`verify(host, port, keyType, keyBlob): KnownHosts.Verdict`（`Known`、`Unknown`、`Changed`、`Revoked` のいずれか）。パターン、否定、`[host]:port`、ハッシュ化されたエントリー、マーカーを扱う）、`susurration.SshConfig`（`SshConfig(text).resolve(host): SshConfig.Resolution(hostName, user, port, identityFiles)`。`HostName`、`User`、`Port`、`IdentityFile` を持つ `Host` ブロック）を持つ。追加のみ。(#2243)
++ - `susurration.Transport(duplex: Duplex, hostname: Text, port: Int)(using Ssh.Provider, Ssh.Algorithms, Ssh.HostKeys, Hash in Sha2[256])` は、coaxial の `Duplex` の上の SSH のトランスポート層（RFC 4253）である。`connect()` が識別文字列の交換と鍵交換（`curve25519- sha256`、`ecdh-sha2-nistp256`。ホスト鍵は `ssh-ed25519`、`ecdsa-sha2-nistp256`、`rsa-sha2-512`、`rsa-sha2-256`。暗号は `chacha20-poly1305@openssh.com`、`aes256-gcm@openssh.com`、`aes128-gcm@openssh.com`）を行い、その後 `send(payload)`、`receive(): Data`、`expect(message)`、`service(name)`、`disconnect()` が暗号化されたパケットを運ぶ。`sessionId`、`negotiated`、`serverVersion` がセッションを記述する。`susurration.Ssh` は、`Ssh.Version`、`Ssh.Message` の番号、`Ssh.Algorithms`（優先順位のリスト。`default` の given を持つ）、`Ssh.HostKeys`（ホスト鍵のポリシー：`KnownHosts` からの given、`trustOnFirstUse(known)`、`insecurelyAcceptAll`）、`Ssh.Error`（`Malformed`、`Unexpected`、`NoCommonAlgorithm`、`HostKeyRejected`、`BadSignature`、`Disconnected`、`ClosedConnection`、`Integrity`、`ServiceRefused`）を持つ。再鍵交換はまだ行われない。追加のみ。(#2243)
++ - `Transport#authenticate(user: Text, signers: List[Signer])` は、最初に受け入れられた署名者で公開鍵認証（RFC 4252）を行い、`ssh-userauth` を自ら要求する。新しい理由 `Unauthenticated(methods)`、またはエージェントの失敗に対しては `Agent(detail)` を持つ `Ssh.Error` を発生させる。`susurration.Signer`（`algorithm`、`blob`、署名の blob 全体を返す `sign(data): Data`）は、`susurration.Identity` インスタンスを持つ暗号方式（`ssh-ed25519`、`ecdsa-sha2-nistp*`、`rsa-sha2-256` として署名する `Ed25519`、`Ecdsa[256|384|521]`、`Rsa[2048|3072|4096]`）に対して `Signer(key: PrivateKey[cipher]^)` で作るか、エージェントを通して署名する `Agent(socketPath).identities()` で ssh-agent から得る。`Transport#receive` は `SSH_MSG_UNIMPLEMENTED` を読み飛ばすのではなく、`Unexpected(3)` を発生させるようになった。追加のみ。(#2243)
++ - `enigmatic.OpenSsh.blob(key: PublicKey[cipher]): Optional[Data]` は公開鍵のワイヤ形式であり、`OpenSsh.line` はこれの上に築かれるようになった。追加のみ。(#2243)
++ - 他のライブラリが `Transport`、`Channel`、`Session`、`Agent`、`Identity` をエクスポートするので、アンブレラは susurration のクラスに `Ssh` のメンバーとして到達する：`Ssh.Transport`、`Ssh.Channel`、`Ssh.Session`、`Ssh.Signer`、`Ssh.Identity`、`Ssh.Agent`（型の別名とコンパニオンの値）。`package susurration` の中では裸の名前は変わらない。`Ssh.Credentials`（`user(host): Optional[Text]`、`signers(host, user): List[Signer]`。`Ssh.Credentials(signers*)` と `Ssh.Credentials.agent(socket)`）は、URL だけを与えられたトランスポートに ID を供給する。追加のみ。(#2243)
++ - 接続プロトコル（RFC 4254）：`susurration.Session(transport)` はセッションのチャンネルを開く。`exec(command, input = Data(), environment = Nil): Session.Result(stdout, stderr, status)` はコマンドを完了まで実行し、`channel(block: Channel => result)` は `susurration.Channel`（`env`、`exec`、`write`、`eof`、`next(): Optional[Channel.Event]`、遅延評価の `stdout(): Chain[Data]`、`stderr`、`exitStatus`、`close`）を貸し出し、`close()` は切断する。`Ssh.Endpoint(host, port, user, signers)` は（`Online`、`Socket.Backend`、プロバイダー、アルゴリズム、ホスト鍵のポリシー、`Hash in Sha2[256]`、`Tactic[Ssh.Error]`、`Diagnostics` が与えられれば）`Sessional to Session^` なので、`endpoint.session: ssh ?=> ssh.exec(t"uname")` は接続し、検証し、認証し、実行する。`Endpoint#resolved(config: SshConfig)` は `~/.ssh/config` を適用する。両者の `exec` は任意の `command: Ssh.Invocable` を取る。そのまま実行される `Text`、または引数ごとに引用される guillotine の `Command`（`ssh.exec(sh"git log -1 $$branch")`）である。susurration は guillotine に依存するようになった。新しい理由 `ChannelRefused` と `RequestRefused`。`Transport`、`Session`、`Channel` は一つのスレッドで駆動されるプレーンなクラスであり（`caps.Mutable` ではない）、そのメソッドはもはや `update` メソッドではないので、`Transport` に `^` は要らない。追加のみ。(#2243)
+
+- ## wisteria
++ ## wisteria
+
+- - The `field` type that `wisteria.ProductDerivation.Methods#build`, `wisteria.ProductDerivation.Methods#construct`, `wisteria.ProductDerivation.Methods#contexts`
+-   and `wisteria.ProductDerivation.Methods#fields` bind for their lambdas (and `constructMonadic` for the constructed tuple) now
+-   keeps the field's capture annotation: a field declared `values: Array[Long]^{}` binds `field`
+-   as `Array[Long]^{}` where it previously bound the bare `Array[Long]`. A derived typeclass
+-   instance over a product with a frozen-array field (`Array[element]^{}`) therefore now
+-   compiles in a capture-checked (`-language:experimental.captureChecking` with separation
+-   checking) module, where it previously failed with a capture error or crashed the checker; the
+-   "known limitation" recorded under `## locomotion` in `0.72.0.md` (#2248) no longer applies.
+-   Derivations over fields with no capture annotation are unchanged. (#2292)
++ - `wisteria.ProductDerivation.Methods#build`、`wisteria.ProductDerivation.Methods#construct`、`wisteria.ProductDerivation.Methods#contexts`、`wisteria.ProductDerivation.Methods#fields` がそのラムダのために束縛する `field` 型（および構築されるタプルに対する `constructMonadic`）は、フィールドのキャプチャアノテーションを保つようになった。`values: Array[Long]^{}` と宣言されたフィールドは、それまで裸の `Array[Long]` として束縛していた `field` を `Array[Long]^{}` として束縛する。そのため、凍結済みの配列のフィールド（`Array[element]^{}`）を持つ直積に対する導出された型クラスのインスタンスは、キャプチャ検査される（分離検査付きの `-language:experimental.captureChecking`）モジュールでコンパイルされるようになった。それまではキャプチャのエラーで失敗するか、検査器をクラッシュさせていた。`0.72.0.md` の `## locomotion` の下に記録された「既知の制限」（#2248）はもはや当てはまらない。キャプチャアノテーションのないフィールドに対する導出は変わらない。(#2292)
+
+- ## caesura
++ ## caesura
+
+- - `import codecs.direct` now also selects the direct DSV parser: under it, `read[Foo in Dsv]`,
+-   `read[List[Foo] in Dsv]` and `rowsOf[Foo]` resolve `Foo is caesura.Dsv.Parsable` for every
+-   product type `Foo` through the new blanket given `caesura.Dsv.Parsable2#generated` (equivalent
+-   to `Dsv.Parsable.derived[Foo]`), where previously only a type with a `Dsv.Parsable` instance of
+-   its own took that path and every other product was decoded through `Decodable in Dsv`. Results
+-   are the same, but the direct parser reads each field through `Dsv.Field` (any `Decodable in
+-   Text`, `Optional` of one, or a product of such fields), so a product with a field whose only
+-   instance is `Decodable in Dsv` now fails to compile under `import codecs.direct`; declare no
+-   mode, or `import codecs.derived`, for such a type. `import codecs.derived` now overrides a
+-   `Dsv.Parsable` in scope for `read[Foo in Dsv]` (not for `read[List[Foo] in Dsv]`, which has no
+-   derived counterpart), as it does for the other formats. (#2251)
++ - `import codecs.direct` は直接の DSV パーサーも選ぶようになった。そのもとでは、`read[Foo in Dsv]`、`read[List[Foo] in Dsv]`、`rowsOf[Foo]` は、すべての直積型 `Foo` に対して、新しい包括的な given `caesura.Dsv.Parsable2#generated`（`Dsv.Parsable.derived[Foo]` と等価）を通して `Foo is caesura.Dsv.Parsable` を解決する。それまでは、独自の `Dsv.Parsable` インスタンスを持つ型だけがその経路を通り、それ以外のすべての直積は `Decodable in Dsv` を通してデコードされていた。結果は同じだが、直接のパーサーは各フィールドを `Dsv.Field`（任意の `Decodable in Text`、その `Optional`、またはそのようなフィールドの直積）を通して読むので、唯一のインスタンスが `Decodable in Dsv` であるフィールドを持つ直積は、`import codecs.direct` のもとではコンパイルに失敗するようになった。そのような型にはモードを宣言しないか、`import codecs.derived` とする。`import codecs.derived` は、他の形式と同様に、`read[Foo in Dsv]` に対してスコープにある `Dsv.Parsable` をオーバーライドするようになった（導出の対応物を持たない `read[List[Foo] in Dsv]` に対してはしない）。(#2251)
+
+- ## caduceus
++ ## caduceus
+
+- - `couriers.resendCourier` now declares its result as `Courier { type Result = Resend.Receipt }`
+-   rather than a bare `Courier`, so `courier.send(…)` under it is a `Resend.Receipt` at the use
+-   site, where it was previously inferred as the opaque `?.Result` and could not be ascribed.
++ - `couriers.resendCourier` は、その結果を裸の `Courier` ではなく `Courier { type Result = Resend.Receipt }` と宣言するようになった。そのため、そのもとでの `courier.send(…)` は使用箇所で `Resend.Receipt` である。それまでは不透明な `?.Result` と推論され、型を指定できなかった。
+
+- ## frontier
++ ## frontier
+
+- - The explanation of a missing given (`explainMissingContext`) is now bounded: a chain of
+-   candidates deeper than six, or more than 256 implicit searches in one explanation, is
+-   reported as missing rather than followed. An explanation in a large scope — a REPL session
+-   with every import of a long tutorial, say — previously ran for hours. The report is the same
+-   for every chain within the bound.
++ - 欠けている given の説明（`explainMissingContext`）に上限が設けられた。深さが 6 を超える候補の連鎖、または一つの説明で 256 回を超える暗黙の探索は、たどられるのではなく欠けているものとして報告される。大きなスコープでの説明（たとえば長いチュートリアルのすべてのインポートを持つ REPL のセッション）は、それまで何時間も走っていた。上限内のすべての連鎖について、報告は同じである。
+
+- - Changed output formatting of the catch-all's tree (`frontier.context.explainMissingContext`,
+-   `soundness.explainMissingContext`): a `scala.util.NotGiven[X]` requirement — a `using`
+-   parameter of a tried candidate or of a proposed classpath given, including the parameter of a
+-   `proscenium.prohibits` given — now renders as `⊘ prohibits X` instead of
+-   `✗ requires NotGiven[X]`; when an `X` is in scope the node has one child, `✓ found X (<given>)`,
+-   naming the given that supplied it, and when none is it has no child and the label `(absent)`.
+-   A candidate of context-function type (`Choice prohibits Policy`, i.e.
+-   `NotGiven[Policy] ?=> Choice`) is now listed as `▪ candidate <given>`, where it was
+-   `▪ candidate ContextFunction1.apply` requiring `ContextFunction1.scala$ContextFunction1$$T1`.
+-   A top-level `summon[NotGiven[X]]` is unchanged (no tree; the compiler's own message).
+-   Code that matches on the message text for `requires` and `NotGiven` must be updated.
+-   (#2307)
++ - 包括的な説明の木（`frontier.context.explainMissingContext`、`soundness.explainMissingContext`）の出力の書式が変わった。`scala.util.NotGiven[X]` の要求（試された候補または提案されたクラスパス上の given の `using` パラメーターで、`proscenium.prohibits` の given のパラメーターを含む）は、`✗ requires NotGiven[X]` ではなく `⊘ prohibits X` と描画されるようになった。スコープに `X` があるときは、ノードはそれを供給した given を名指す子 `✓ found X (<given>)` を一つ持ち、ないときは子を持たずラベル `(absent)` を持つ。コンテキスト関数型の候補（`Choice prohibits Policy`、つまり `NotGiven[Policy] ?=> Choice`）は `▪ candidate <given>` として列挙されるようになった。それまでは `ContextFunction1.scala$ContextFunction1$$T1` を要求する `▪ candidate ContextFunction1.apply` だった。トップレベルの `summon[NotGiven[X]]` は変わらない（木はなく、コンパイラ自身のメッセージ）。`requires` と `NotGiven` のメッセージのテキストにマッチするコードは更新しなければならない。(#2307)
+
+- ## hyperbole
++ ## hyperbole
+
+- - Changed dependency of `hyperbole.tasty` (`Tasty.parse`, `Tasty.File`, `Tasty.Definition`): it
+-   now reads TASTy through `org.scala-lang:tasty-core_3` — a runtime dependency of the module, so
+-   it is resolved transitively — instead of the compiler's `TastyUnpickler`, and the compiler
+-   (`scala3-compiler_3`) is no longer needed on the runtime classpath to call `Tasty.parse`. Code
+-   that added the compiler to its classpath only for this can drop it. No API change: the model
+-   types and `Tasty.parse(data: Data): Optional[Tasty.File]` are unchanged. Names derived by the
+-   compiler render as before (`prefix.name`, `name$1`, `method$default$2`, `super$name`, …),
+-   except signed names, which now render as the name they sign rather than
+-   `name[with sig …]`; a stack-frame resolution never saw those, since the reader only reads a
+-   name at a definition, a package or the source-file attribute.
+- - New: `hyperbole.tasty` is published for Scala.js (`hyperbole-tasty_sjs1_3`) and Scala Native
+-   (`hyperbole-tasty_native0.5_3`) from this release, so `Tasty.parse` can run in a browser, under
+-   Wasm or in a native binary; it needs Proscala 1.0.4, whose `tasty-core_sjs1_3` and
+-   `tasty-core_native0.5_3` it depends on. `hyperbole.core` and `hyperbole.stacks` stay JVM-only.
++ - `hyperbole.tasty`（`Tasty.parse`、`Tasty.File`、`Tasty.Definition`）の依存関係が変わった。コンパイラの `TastyUnpickler` ではなく `org.scala-lang:tasty-core_3`（モジュールの実行時の依存関係なので、推移的に解決される）を通して TASTy を読むようになり、`Tasty.parse` を呼ぶためにコンパイラ（`scala3-compiler_3`）を実行時のクラスパスに置く必要はなくなった。このためだけにコンパイラをクラスパスに加えていたコードは、それを外せる。API の変更はない。モデルの型と `Tasty.parse(data: Data): Optional[Tasty.File]` は変わらない。コンパイラが導出した名前は以前と同じに描画される（`prefix.name`、`name$1`、`method$default$2`、`super$name`、…）。ただし署名付きの名前は例外で、`name[with sig …]` ではなく、それが署名する名前として描画されるようになった。リーダーは定義、パッケージ、ソースファイルの属性においてのみ名前を読むので、スタックフレームの解決がそれらを見ることはなかった。
++ - 新規：`hyperbole.tasty` は、このリリースから Scala.js（`hyperbole-tasty_sjs1_3`）と Scala Native（`hyperbole-tasty_native0.5_3`）向けに公開されるので、`Tasty.parse` をブラウザで、Wasm のもとで、あるいはネイティブのバイナリで実行できる。これには Proscala 1.0.4 が必要であり、その `tasty-core_sjs1_3` と `tasty-core_native0.5_3` に依存する。`hyperbole.core` と `hyperbole.stacks` は JVM 専用のままである。
+
+- ## degustation
++ ## degustation
+
+- - `degustation.Inspection.atomize(tastyFiles: List[Text], classpath: List[Text]): List[ScalaAtom]
+-   raises Inspection.Error` keeps its signature but no longer runs the Scala compiler: it reads the
+-   files with `tasty-core` and resolves them against the classpath itself (the new
+-   `degustation.tasty` component, `Degustation.atomize(files: List[(Text, Data)], dependencies:
+-   ClassSource): List[ScalaAtom]`, which `degustation.core` now depends on). `scala3-compiler_3`
+-   and `scala3-tasty-inspector_3` are no longer needed on the classpath to call it. The classpath
+-   entries must be directories or jars; the JDK's classes are read through the platform class
+-   loader. A `*.tasty` file outside every classpath directory is placed by the package it declares.
+-   Atoms are byte-identical to the compiler-driven ones except: constructor-proxy `apply`
+-   forwarders for an exported alias of a companionless class are always emitted (the compiler
+-   emitted them order-dependently); capture annotations (`@retains`, `@retainsCap`,
+-   `@retainsByName`) are stripped, and aliases they decorate expanded, uniformly, where the
+-   compiler's output depended on whether a file read earlier carried a `captureChecking` import;
+-   modules on which the compiler's unpickler crashed now atomize. `Inspection.Error.Reason.
+-   InspectionFailed` now reports an unreadable file or malformed classfile rather than a
+-   compiler error. The discipline these atoms implement is `tasty/2` (lira `spec/tasty.md`).
+- - `degustation.Inspection.atomize(tastyFiles: List[Text], classpath: List[Text])` now also takes
+-   `(using FilesystemBackend on galilei.Linux)`: files and classpath directories are read through
+-   galilei's filesystem backend and jars through zeppelin, instead of `java.nio` and
+-   `java.util.zip`. Call sites need a backend in scope (`import filesystemBackends.javaBaseFilesystem`
+-   on the JVM, `filesystemBackends.scalaNativeFilesystem` on Native). Each `Text` must parse as an
+-   absolute Linux path; a malformed path, an unreadable file or a malformed jar now raises
+-   `Inspection.Error` with `Reason.InspectionFailed`. `degustation.core` is now published for Scala
+-   Native (`degustation-core_native0.5_3`); there, the JDK's own classes are not read from a running
+-   JVM and must be on `classpath` as a jar.
+- - `degustation.Atomizer` (the compiler-reflection atomizer) removed from `degustation.core`; it
+-   lives on in the test suite as the oracle the differential tests compare against. The
+-   `soundness` export of `Atomizer` is removed.
+- - `degustation.ScalaAtom` and `degustation.ScalaReference` moved from `degustation.core` to
+-   `degustation.tasty` (same package, same definitions; `degustation-tasty` is a dependency of
+-   `degustation-core`, so nothing changes for consumers of `core`). `degustation.tasty` is
+-   published for the JVM, Scala.js and Scala Native.
++ - `degustation.Inspection.atomize(tastyFiles: List[Text], classpath: List[Text]): List[ScalaAtom] raises Inspection.Error` はシグネチャを保つが、もはや Scala コンパイラを実行しない。`tasty-core` でファイルを読み、自らクラスパスに照らして解決する（新しい `degustation.tasty` コンポーネントの `Degustation.atomize(files: List[(Text, Data)], dependencies: ClassSource): List[ScalaAtom]`。`degustation.core` はこれに依存するようになった）。これを呼ぶために `scala3-compiler_3` と `scala3-tasty-inspector_3` をクラスパスに置く必要はなくなった。クラスパスのエントリーはディレクトリか jar でなければならない。JDK のクラスはプラットフォームのクラスローダーを通して読まれる。どのクラスパスのディレクトリにも入っていない `*.tasty` ファイルは、それが宣言するパッケージによって配置される。アトムはコンパイラ駆動のものとバイト単位で同一だが、次の点が異なる。コンパニオンのないクラスのエクスポートされた別名に対するコンストラクタープロキシの `apply` フォワーダーは常に出力される（コンパイラは順序に依存してそれを出力していた）。キャプチャアノテーション（`@retains`、`@retainsCap`、`@retainsByName`）は一律に取り除かれ、それらが修飾する別名は展開される。コンパイラの出力は、先に読まれたファイルが `captureChecking` のインポートを持っていたかどうかに依存していた。コンパイラのアンピクラーがクラッシュしていたモジュールも、アトム化されるようになった。`Inspection.Error.Reason. InspectionFailed` は、コンパイラのエラーではなく、読めないファイルや不正なクラスファイルを報告するようになった。これらのアトムが実装する規律は `tasty/2`（lira の `spec/tasty.md`）である。
++ - `degustation.Inspection.atomize(tastyFiles: List[Text], classpath: List[Text])` は `(using FilesystemBackend on galilei.Linux)` も取るようになった。ファイルとクラスパスのディレクトリは `java.nio` ではなく galilei のファイルシステムのバックエンドを通して、jar は `java.util.zip` ではなく zeppelin を通して読まれる。呼び出し箇所にはスコープにバックエンドが必要である（JVM では `import filesystemBackends.javaBaseFilesystem`、Native では `filesystemBackends.scalaNativeFilesystem`）。各 `Text` は絶対的な Linux のパスとしてパースできなければならない。不正なパス、読めないファイル、不正な jar は、`Reason.InspectionFailed` を持つ `Inspection.Error` を発生させるようになった。`degustation.core` は Scala Native 向け（`degustation-core_native0.5_3`）にも公開されるようになった。そこでは JDK 自身のクラスは実行中の JVM から読まれないので、jar として `classpath` に置かなければならない。
++ - `degustation.Atomizer`（コンパイラのリフレクションによるアトム化器）は `degustation.core` から削除された。これは、差分テストが比較する基準としてテストスイートの中に残る。`Atomizer` の `soundness` によるエクスポートは削除された。
++ - `degustation.ScalaAtom` と `degustation.ScalaReference` は、`degustation.core` から `degustation.tasty` に移った（パッケージも定義も同じ。`degustation-tasty` は `degustation-core` の依存先なので、`core` の利用者には何も変わらない）。`degustation.tasty` は JVM、Scala.js、Scala Native 向けに公開される。
+
+- ## zeppelin
++ ## zeppelin
+
+- - `zeppelin.Zipfile.read[path: Abstractable across Paths to Text](path: path)` is now
+-   `Zipfile.read[plane: Filesystem](path: Path on plane)(using FilesystemBackend on plane,
+-   Tactic[galilei.Io.Error])`: the file is read through galilei's filesystem backend instead of
+-   `java.nio`. A call passing a `Path on Linux` (or any `Path on plane`) compiles unchanged where a
+-   backend is in scope (`import filesystemBackends.javaBaseFilesystem` on the JVM,
+-   `filesystemBackends.scalaNativeFilesystem` on Native); a call passing a `Text` or other
+-   non-`Path` value must convert it to a `Path` first. A failure to open or read the file now
+-   raises `galilei.Io.Error` rather than throwing a Java exception. `Zipfile.read(data: Data)` is
+-   unchanged.
+- - `zeppelin.Zipfile.rebase(path, delta)` takes `path: Path on plane` with the same two context
+-   parameters as `read`, and writes through the backend.
+- - `path.open[Zip]()` and `path.open[Jar]()` likewise require `path` to be a `Path on plane`, a
+-   `FilesystemBackend on plane` and a `Tactic[galilei.Io.Error]` in scope; the givens are now
+-   `Zip.openable: [plane: Filesystem, path <: Path on plane] => (FilesystemBackend on plane,
+-   Tactic[Zip.Error], Tactic[Io.Error]) => Zip.Openable[plane, path]` and the corresponding
+-   `Jar.openable` (`Jar.JarOpenable[plane, path]`). `data.open[Zip]()` and `data.open[Jar]()` are
+-   unchanged.
+- - Modification times are now recorded in UTC: `Zip.Entry.at(ref, content, modified)` and
+-   `path.archive[Zip]()` encode `modified` as the DOS date and time in UTC, where they previously
+-   used the JVM's default time zone. An instant before 1980 is now recorded as 00:00:00 on
+-   1 January 1980 (previously the year was clamped to 1980 while the month and day were kept).
+-   Code comparing an entry's `dosDate`/`dosTime` with local time must convert from UTC.
+- - Deflation now uses pneumatic's pure-Scala deflater, which has a single compression level:
+-   `Zip.Compression.Deflate(0)` now stores the entry (`Zip.Method.Stored`), and every other level
+-   deflates identically, so deflated payloads differ byte-for-byte from those the JDK produced at
+-   the same level. Archives remain readable by every ZIP reader; `crc32` values are unchanged.
+- - `zeppelin.core` no longer depends on `galilei.jvm` (it depends on `galilei.core`), and is now
+-   published for Scala.js and Scala Native. A JVM consumer that reached galilei's JVM backend
+-   (`filesystemBackends.javaBaseFilesystem`) only through `zeppelin` must add the `galilei-jvm`
+-   module itself.
++ - `zeppelin.Zipfile.read[path: Abstractable across Paths to Text](path: path)` は `Zipfile.read[plane: Filesystem](path: Path on plane)(using FilesystemBackend on plane, Tactic[galilei.Io.Error])` になった。ファイルは `java.nio` ではなく galilei のファイルシステムのバックエンドを通して読まれる。`Path on Linux`（または任意の `Path on plane`）を渡す呼び出しは、スコープにバックエンドがあれば（JVM では `import filesystemBackends.javaBaseFilesystem`、Native では `filesystemBackends.scalaNativeFilesystem`）そのままコンパイルされる。`Text` などの `Path` でない値を渡す呼び出しは、先にそれを `Path` に変換しなければならない。ファイルを開いたり読んだりするのに失敗すると、Java の例外を投げるのではなく `galilei.Io.Error` を発生させるようになった。`Zipfile.read(data: Data)` は変わらない。
++ - `zeppelin.Zipfile.rebase(path, delta)` は `read` と同じ二つのコンテキストパラメーターとともに `path: Path on plane` を取り、バックエンドを通して書く。
++ - `path.open[Zip]()` と `path.open[Jar]()` も同様に、`path` が `Path on plane` であること、およびスコープに `FilesystemBackend on plane` と `Tactic[galilei.Io.Error]` があることを要求する。given は `Zip.openable: [plane: Filesystem, path <: Path on plane] => (FilesystemBackend on plane, Tactic[Zip.Error], Tactic[Io.Error]) => Zip.Openable[plane, path]` と、対応する `Jar.openable`（`Jar.JarOpenable[plane, path]`）になった。`data.open[Zip]()` と `data.open[Jar]()` は変わらない。
++ - 更新時刻は UTC で記録されるようになった。`Zip.Entry.at(ref, content, modified)` と `path.archive[Zip]()` は `modified` を UTC の DOS の日付と時刻としてエンコードする。それまでは JVM のデフォルトのタイムゾーンを使っていた。1980 年より前の時点は 1980 年 1 月 1 日 00:00:00 として記録されるようになった（それまでは年を 1980 に切り詰め、月と日は保っていた）。エントリーの `dosDate`/`dosTime` を地方時と比較するコードは、UTC から変換しなければならない。
++ - 圧縮には pneumatic の純粋な Scala による deflater を使うようになった。これは圧縮レベルを一つしか持たない。`Zip.Compression.Deflate(0)` はエントリーを格納するようになり（`Zip.Method.Stored`）、それ以外のすべてのレベルは同じに圧縮するので、圧縮されたペイロードは、JDK が同じレベルで生成したものとバイト単位で異なる。アーカイブはどの ZIP のリーダーでも引き続き読める。`crc32` の値は変わらない。
++ - `zeppelin.core` は `galilei.jvm` に依存しなくなり（`galilei.core` に依存する）、Scala.js と Scala Native 向けにも公開されるようになった。galilei の JVM のバックエンド（`filesystemBackends.javaBaseFilesystem`）に `zeppelin` を通してのみ到達していた JVM の利用者は、`galilei-jvm` モジュールを自ら加えなければならない。
+
+- ## tasseomancy
++ ## tasseomancy
+
+- - New: `Doughnut()`, a chart kind drawing an acyclicity `Dag[node]` as concentric bands, one per
+-   rank of the graph from the nodes depending on nothing outward, each node a sector of its band
+-   proportional to its size and filled clockwise as far as it is complete. It needs the new
+-   typeclasses `node is Sized` (`size(node): Double`) and `node is Progressive`
+-   (`completion(node): Double`, from `0.0` to `1.0`), both exported from `soundness`; a doughnut
+-   is revised with a new `Dag` of progressed nodes, and its fit survives any graph of the same
+-   shape and sizes. The drawing's parts are `rank-N` groups of `sector-N` and `sector-N-rest`
+-   paths; `Doughnut.Style` adds `hole` (shared with `Pie.Style`), `sectorGap`, `bandGap`,
+-   `shade(x, y, base)` (a sector's colour from its position), `sector(...)` and `remainder(...)`,
+-   and `Chart.Standard` has the new fields `sectorGap: Double
+-   = 2.0` and `bandGap: Double = 2.0` (both in pixels) and extends `Doughnut.Style`. `tasseomancy.core` now
+-   depends on `acyclicity.core`, which a consumer declaring Soundness modules individually must
+-   add. (#2309)
++ - 新規：`Doughnut()`。acyclicity の `Dag[node]` を同心の帯として描くチャートの種類であり、何にも依存しないノードから外向きに、グラフの階層ごとに一つの帯を描く。各ノードはその帯の扇形であり、その大きさに比例し、完了した分だけ時計回りに塗られる。新しい型クラス `node is Sized`（`size(node): Double`）と `node is Progressive`（`0.0` から `1.0` までの `completion(node): Double`）が必要で、どちらも `soundness` からエクスポートされる。ドーナツは進捗したノードの新しい `Dag` で改訂され、その適合は同じ形と大きさの任意のグラフに対して保たれる。描画の部分は、`sector-N` と `sector-N-rest` のパスからなる `rank-N` のグループである。`Doughnut.Style` は `hole`（`Pie.Style` と共有）、`sectorGap`、`bandGap`、`shade(x, y, base)`（位置から決まる扇形の色）、`sector(...)`、`remainder(...)` を加え、`Chart.Standard` は新しいフィールド `sectorGap: Double = 2.0` と `bandGap: Double = 2.0`（どちらもピクセル単位）を持ち、`Doughnut.Style` を継承する。`tasseomancy.core` は `acyclicity.core` に依存するようになったので、Soundness のモジュールを個別に宣言する利用者はそれを加えなければならない。(#2309)

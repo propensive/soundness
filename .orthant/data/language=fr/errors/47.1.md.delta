@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.47.1` — `Uuid.Error`
++ # `↯/s.47.1` — `Uuid.Error`
+
+- Raised when a value cannot be parsed as a valid UUID.
++ Levée lorsqu'une valeur ne peut pas être analysée comme un UUID valide.
+
+- ## Cause
++ ## Cause
+
+- Inimitable parses UUIDs as 32 hex digits in `8-4-4-4-12` form.
+- Anything else is rejected.
++ Inimitable analyse les UUID comme 32 chiffres hexadécimaux sous la forme `8-4-4-4-12`. Tout le
++ reste est rejeté.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.47.1] xyz is not a valid UUID
++ [↯/s.47.1] xyz is not a valid UUID
+
+= [↯/s.47.1] xyz is not a valid UUID
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Use a syntactically correct UUID, e.g.
+- `550e8400-e29b-41d4-a716-446655440000`.
++ Utilisez un UUID syntaxiquement correct, par exemple `550e8400-e29b-41d4-a716-446655440000`.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/inimitable/src/core/inimitable.Uuid.scala`
++ - Source : `lib/inimitable/src/core/inimitable.Uuid.scala`

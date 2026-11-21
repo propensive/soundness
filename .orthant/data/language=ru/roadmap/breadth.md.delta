@@ -1,0 +1,146 @@
+orthant 1 language
+
+- # Standards Breadth
++ # Широта стандартов
+
+- Soundness implements standards rather than inventing alternatives to them, and the shelf is
+- already long: HTTP/2, WebSocket, TLS, CBOR, Protocol Buffers, tar, zip, xz, PDF, TrueType,
+- X.509, COSE, iCalendar, OAuth 2, OpenAPI, LSP, MCP and dozens more, with RFC citations in the
+- code. But batteries-included is judged by what a production team reaches for and fails to
+- find. This track is a fixed target list, drained in order of how often that reach happens.
++ Soundness реализует стандарты, а не изобретает им альтернативы, и полка уже длинная: HTTP/2,
++ WebSocket, TLS, CBOR, Protocol Buffers, tar, zip, xz, PDF, TrueType, X.509, COSE, iCalendar,
++ OAuth 2, OpenAPI, LSP, MCP и ещё десятки, со ссылками на RFC в коде. Но о принципе «всё
++ включено» судят по тому, что команда в продакшене ищет и не находит. Это направление —
++ фиксированный список целей, который разбирается в порядке того, как часто возникает такой поиск.
+
+- The list is deliberately closed: five standards, chosen because each completes a story the
+- platform already tells. JOSE/JWT is the largest hole — token-based authentication is ubiquitous,
+- and the neighbouring pieces (COSE, OAuth 2, X.509) already exist. TOML is table stakes for
+- interoperating with the wider tooling world. WebAuthn completes web authentication.
+- QUIC/HTTP-3 and IMAP round out transport and mail. Only the first three sit inside the
+- production-readiness gate; the rest lie beyond it. A row is complete
+- when its module ships with tests, error pages and a topic guide — the same bar as every other
+- module, because a battery that is undocumented or partial is not included, merely present.
++ Список намеренно закрыт: пять стандартов, выбранных потому, что каждый завершает историю,
++ которую платформа уже рассказывает. JOSE/JWT — самая большая дыра: аутентификация на основе
++ токенов повсеместна, а соседние части (COSE, OAuth 2, X.509) уже существуют. TOML — минимальное
++ требование для взаимодействия с более широким миром инструментов. WebAuthn завершает
++ веб-аутентификацию. QUIC/HTTP-3 и IMAP дополняют транспорт и почту. Только первые три находятся
++ внутри шлюза готовности к продакшену; остальные лежат за его пределами. Строка завершена, когда
++ её модуль поставляется с тестами, страницами ошибок и тематическим руководством, — та же планка,
++ что и для любого другого модуля, потому что недокументированная или неполная батарейка не
++ включена, а лишь присутствует.
+
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Standard
+- column  Horizon
+- column  In the gate
+- row  brd-1  JOSE: JWS, JWE, JWK, JWT (RFC 7515–7519)  near  yes
+- row  brd-2  TOML  near  yes
+- row  brd-3  WebAuthn  mid  yes
+- row  brd-4  QUIC and HTTP/3 (RFC 9000, RFC 9114)  long  no
+- row  brd-5  IMAP (RFC 9051)  long  no
++ column  Пункт
++ column  Стандарт
++ column  Горизонт
++ column  В шлюзе
++ row  brd-1  JOSE: JWS, JWE, JWK, JWT (RFC 7515–7519)  ближний  да
++ row  brd-2  TOML  ближний  да
++ row  brd-3  WebAuthn  средний  да
++ row  brd-4  QUIC и HTTP/3 (RFC 9000, RFC 9114)  дальний  нет
++ row  brd-5  IMAP (RFC 9051)  дальний  нет
+
+- ```
++ ```
+
+- ## brd-1: JOSE
++ ## brd-1: JOSE
+
+= ## brd-1: JOSE
+=
+- Horizon: near
++ Горизонт: ближний
+
+- Signed and encrypted tokens: JWS, JWE, JWK and JWT, building on the primitives enigmatic
+- already provides, alongside its COSE support.
++ Подписанные и зашифрованные токены: JWS, JWE, JWK и JWT, построенные на примитивах, которые
++ enigmatic уже предоставляет, рядом с его поддержкой COSE.
+
+- Done when: the module ships with tests, error pages and a `doc/modules/` topic, and
+- round-trips the RFC 7515/7516 example vectors.
++ Готово, когда: модуль поставляется с тестами, страницами ошибок и темой в `doc/modules/` и
++ проходит круговой путь на примерах векторов из RFC 7515/7516.
+
+- ## brd-2: TOML
++ ## brd-2: TOML
+
+= ## brd-2: TOML
+=
+- Horizon: near
++ Горизонт: ближний
+
+- The configuration format the wider tooling world speaks. Soundness configures itself with TEL;
+- it still reads what others write.
++ Формат конфигурации, на котором говорит более широкий мир инструментов. Soundness
++ конфигурирует себя с помощью TEL; но он всё же читает то, что пишут другие.
+
+- Done when: the module ships with tests, error pages and a `doc/modules/` topic, and
+- passes the standard TOML compliance suite.
++ Готово, когда: модуль поставляется с тестами, страницами ошибок и темой в `doc/modules/` и
++ проходит стандартный набор тестов на соответствие TOML.
+
+- ## brd-3: WebAuthn
++ ## brd-3: WebAuthn
+
+- Horizon: mid
+- Needs: brd-1
++ Горизонт: средний
++ Зависит от: brd-1
+
+- Passwordless authentication for the web stack, completing the story OAuth 2 and JOSE begin.
+- The COSE support it depends on already exists.
++ Беспарольная аутентификация для веб-стека, завершающая историю, которую начинают OAuth 2 и
++ JOSE. Поддержка COSE, от которой она зависит, уже существует.
+
+- Done when: the module ships with tests, error pages and a `doc/modules/` topic, and a
+- scripted registration-and-assertion ceremony passes against a reference authenticator.
++ Готово, когда: модуль поставляется с тестами, страницами ошибок и темой в `doc/modules/`, а
++ сценарий церемонии регистрации и подтверждения проходит с эталонным аутентификатором.
+
+- ## brd-4: QUIC and HTTP/3
++ ## brd-4: QUIC и HTTP/3
+
+= ## brd-4: QUIC and HTTP/3
+=
+- Horizon: long
++ Горизонт: дальний
+
+- The transport successor. HTTP/2 and HPACK are already native; QUIC extends the same treatment
+- below them.
++ Преемник транспорта. HTTP/2 и HPACK уже реализованы нативно; QUIC распространяет тот же подход
++ на уровень ниже них.
+
+- Done when: the module ships with tests, error pages and a `doc/modules/` topic, and
+- interoperates with a reference HTTP/3 server and client.
++ Готово, когда: модуль поставляется с тестами, страницами ошибок и темой в `doc/modules/` и
++ взаимодействует с эталонными сервером и клиентом HTTP/3.
+
+- ## brd-5: IMAP
++ ## brd-5: IMAP
+
+= ## brd-5: IMAP
+=
+- Horizon: long
++ Горизонт: дальний
+
+- Mail retrieval, completing what caduceus's SMTP support begins.
++ Получение почты, завершающее то, что начинает поддержка SMTP в caduceus.
+
+- Done when: the module ships with tests, error pages and a `doc/modules/` topic, and a
+- scripted session passes against a reference IMAP server.
++ Готово, когда: модуль поставляется с тестами, страницами ошибок и темой в `doc/modules/`, а
++ сценарий сессии проходит с эталонным сервером IMAP.

@@ -1,0 +1,90 @@
+orthant 1 language
+
+-       The queue and the writer daemon belong to the **call site** and the destination: every
+-       `Logger` built at the same source position for an equal destination shares one, so a
+-       given re-evaluated on each summon does not start a new thread each time, and a helper
+-       which builds `Logger(path)` for different paths from one line gets a queue for each.
+-   entry #accepts   whether the logger records events at a level: at or above its threshold
+-   entry #submit   queues a transcribed event for formatting and writing, at a level and timestamp
+-       Called by `Loggable.fanOut` once `#accepts` and `admits` have passed; the event is
+-       formatted on the calling thread and its record queued for the writer daemon. Not
+-       usually called directly.
++       La coda e il demone di scrittura appartengono al **punto di chiamata** e alla destinazione:
++       ogni `Logger` costruito nella stessa posizione del sorgente per una destinazione uguale ne
++       condivide uno, così che un given rivalutato a ogni evocazione non avvii ogni volta un nuovo
++       thread, e un helper che costruisce `Logger(path)` per percorsi diversi da un'unica riga
++       ottiene una coda per ciascuno.
++   entry #accepts   se il logger registra gli eventi di un livello: a un livello pari o superiore alla sua soglia
++   entry #submit   accoda un evento trascritto per la formattazione e la scrittura, a un livello e con un timestamp
++       Chiamato da `Loggable.fanOut` una volta superati `#accepts` e `admits`; l'evento viene
++       formattato sul thread chiamante e il suo record accodato per il demone di scrittura. Di
++       solito non si chiama direttamente.
+
+- entry .dateFormat   the date and time pattern of the timestamped formats: `2026-Nov-04 09:30:00.250`
+-     A `java.time.format.DateTimeFormatter` for `yyyy-MMM-dd HH:mm:ss.SSS` in the JVM's
+-     default time zone, used by `timestampedLogFormat` and `ansiTimestampedLogFormat`. It is
+-     immutable, so it is safe to use from several threads.
++ entry .dateFormat   lo schema di data e ora dei formati con timestamp: `2026-Nov-04 09:30:00.250`
++     Un `java.time.format.DateTimeFormatter` per `yyyy-MMM-dd HH:mm:ss.SSS` nel fuso orario
++     predefinito della JVM, usato da `timestampedLogFormat` e `ansiTimestampedLogFormat`. È
++     immutabile, quindi può essere usato in sicurezza da più thread.
+
+-       `timestampedLogFormat` and `untimestampedLogFormat` format any `Communicable` value,
+-       `ansiTimestampedLogFormat` and `googleCloudPlatformLogFormat` only a `Message`, which a
+-       `Logger[…, Message]` transcribes every event to. `textLevelLogFormat` and
+-       `teletypeableLogFormat`, which render a `Log.Level`, are used by the others.
+-   entry .timestampedLogFormat   a line of text: date and time, the level in brackets, and the message
+-       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`, ending with a newline, for
+-       any `Communicable` event, with the timestamp formatted by `dateFormat`.
+-   entry .untimestampedLogFormat   a line of text: the level in brackets, and the message
+-       `[INFO] server listening on 8080`, ending with a newline, for any `Communicable`
+-       event. Suits a destination which adds its own timestamp, such as `Syslog`.
+-   entry .textLevelLogFormat   renders a `Log.Level` as `FINE`, `INFO`, `WARN` or `FAIL`
+-       The `Showable` for `Log.Level` the text formats interpolate.
+-   entry .ansiTimestampedLogFormat   a teletype: dimmed date and time, the level on a coloured ground, `>` and the message
+-       A `Message is Inscribable in Teletype`, for terminals, in `eucalyptus.ansi`. It needs a
+-       `LogPalette` in scope for its colours. Messages are cut into lines of at most 76
+-       characters, and each continuation line is indented to align under the first line's
+-       message. With `Out` as the destination it also needs `writables.outTeletypeWritable`
+-       and a `Stdio`.
++       `timestampedLogFormat` e `untimestampedLogFormat` formattano qualsiasi valore
++       `Communicable`, `ansiTimestampedLogFormat` e `googleCloudPlatformLogFormat` solo un
++       `Message`, in cui un `Logger[…, Message]` trascrive ogni evento. `textLevelLogFormat` e
++       `teletypeableLogFormat`, che rendono un `Log.Level`, sono usati dagli altri.
++   entry .timestampedLogFormat   una riga di testo: data e ora, il livello tra parentesi quadre, e il messaggio
++       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`, terminata da un a capo, per
++       qualsiasi evento `Communicable`, con il timestamp formattato da `dateFormat`.
++   entry .untimestampedLogFormat   una riga di testo: il livello tra parentesi quadre, e il messaggio
++       `[INFO] server listening on 8080`, terminata da un a capo, per qualsiasi evento
++       `Communicable`. Adatto a una destinazione che aggiunge il proprio timestamp, come `Syslog`.
++   entry .textLevelLogFormat   rende un `Log.Level` come `FINE`, `INFO`, `WARN` o `FAIL`
++       Lo `Showable` per `Log.Level` che i formati di testo interpolano.
++   entry .ansiTimestampedLogFormat   un teletype: data e ora attenuate, il livello su uno sfondo colorato, `>` e il messaggio
++       Un `Message is Inscribable in Teletype`, per i terminali, in `eucalyptus.ansi`. Ha bisogno
++       di una `LogPalette` nell'ambito per i suoi colori. I messaggi vengono divisi in righe di al
++       massimo 76 caratteri, e ogni riga di continuazione è indentata per allinearsi sotto il
++       messaggio della prima riga. Con `Out` come destinazione ha bisogno anche di
++       `writables.outTeletypeWritable` e di uno `Stdio`.
+
+-       Each record ends with a newline.
+-   entry .teletypeableLogFormat   renders a `Log.Level` as a bold label on the `LogPalette` colour for its level
+-       The `Teletypeable` for `Log.Level` that `ansiTimestampedLogFormat` uses, in
+-       `eucalyptus.ansi`. It needs a `LogPalette`.
+-   entry .googleCloudPlatformLogFormat   one compact JSON object per event, with `severity` and `message`
+-       A `Message is Inscribable in Text`, in `eucalyptus.gcp`, which writes
+-       `{"severity":"WARNING","message":"…"}`, the structured form Google Cloud's logging
+-       agent reads from a container's standard output. The levels map to `DEBUG`, `INFO`,
+-       `WARNING` and `ERROR`; the message is its plain text, without styling. No timestamp is
+-       written, as the agent records its own. Each record ends with a newline: one object
+-       per line.
++       Ogni record termina con un a capo.
++   entry .teletypeableLogFormat   rende un `Log.Level` come etichetta in grassetto sul colore della `LogPalette` per il suo livello
++       Il `Teletypeable` per `Log.Level` che usa `ansiTimestampedLogFormat`, in
++       `eucalyptus.ansi`. Ha bisogno di una `LogPalette`.
++   entry .googleCloudPlatformLogFormat   un oggetto JSON compatto per evento, con `severity` e `message`
++       Un `Message is Inscribable in Text`, in `eucalyptus.gcp`, che scrive
++       `{"severity":"WARNING","message":"…"}`, la forma strutturata che l'agente di logging di
++       Google Cloud legge dallo standard output di un container. I livelli corrispondono a
++       `DEBUG`, `INFO`, `WARNING` ed `ERROR`; il messaggio è il suo testo semplice, senza stile.
++       Non viene scritto alcun timestamp, poiché l'agente registra il proprio. Ogni record termina
++       con un a capo: un oggetto per riga.

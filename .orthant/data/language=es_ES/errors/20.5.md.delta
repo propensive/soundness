@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.20.5` — Type is abstract
++ # `↯/s.20.5` — El tipo es abstracto
+
+- Raised at compile time by Vacuous's `concrete` macro when the type
+- is abstract.
++ Lo lanza en tiempo de compilación la macro `concrete` de Vacuous cuando el tipo es abstracto.
+
+- ## Cause
++ ## Causa
+
+- The macro provides evidence that a type is concrete (i.e. it is
+- not an abstract type member or unbounded type parameter). When the
+- type is abstract, the macro halts.
++ La macro proporciona evidencia de que un tipo es concreto (es decir, de que no es un miembro de
++ tipo abstracto ni un parámetro de tipo sin cota). Cuando el tipo es abstracto, la macro se
++ detiene.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.20.5] type T is abstract
++ [↯/s.20.5] type T is abstract
+
+= [↯/s.20.5] type T is abstract
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Use a concrete type at the call site, or pass evidence of
+- concreteness.
++ Usa un tipo concreto en el punto de llamada, o pasa evidencia de que es concreto.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/vacuous/src/core/vacuous.internal.scala`
++ - Fuente: `lib/vacuous/src/core/vacuous.internal.scala`

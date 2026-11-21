@@ -1,0 +1,78 @@
+orthant 1 language
+
+- # `↯/s.124.1` — `Mcp.Error`
++ # `↯/s.124.1` — `Mcp.Error`
+
+- Raised when an MCP (Model Context Protocol) operation fails.
++ Lançado quando uma operação MCP (Model Context Protocol) falha.
+
+- ## Cause
++ ## Causa
+
+- Synesthesia's MCP runtime dispatches incoming requests to
+- user-defined tools, prompts, and resources. When dispatch or
+- parameter binding fails, this error is raised. The constructor
+- takes a `reason: Reason`; the rendered message is `the MCP
+- operation failed because $reason`.
++ O tempo de execução MCP do Synesthesia despacha as requisições recebidas para ferramentas,
++ prompts e recursos definidos pelo usuário. Quando o despacho ou o vínculo dos parâmetros falha,
++ este erro é lançado. O construtor recebe um `reason: Reason`; a mensagem renderizada é
++ `the MCP operation failed because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.124.1.1` — `UnknownMethod`
++ ### `↯/s.124.1.1` — `UnknownMethod`
+
+- The method name in the request did not match any registered tool
+- or prompt — the wildcard fallback in the generated dispatcher.
++ O nome do método na requisição não correspondeu a nenhuma ferramenta ou prompt registrado: é o
++ fallback curinga no dispatcher gerado.
+
+- **Example.** `[↯/s.124.1.1] the MCP operation failed because the method name does not match any registered tool or prompt`
++ **Exemplo.** `[↯/s.124.1.1] the MCP operation failed because the method name does not match any registered tool or prompt`
+
+- **Resolution.** Verify the method name matches one declared on the
+- server interface; check for typos or case mismatch.
++ **Resolução.** Verifique se o nome do método corresponde a um dos declarados na interface do
++ servidor; procure erros de digitação ou diferenças de caixa.
+
+- ### `↯/s.124.1.2` — `UnknownResource`
++ ### `↯/s.124.1.2` — `UnknownResource`
+
+- The URI in a resource request did not match any of the URI
+- patterns declared by the server interface.
++ O URI em uma requisição de recurso não correspondeu a nenhum dos padrões de URI declarados pela
++ interface do servidor.
+
+- **Example.** `[↯/s.124.1.2] the MCP operation failed because the URI does not match any registered resource`
++ **Exemplo.** `[↯/s.124.1.2] the MCP operation failed because the URI does not match any registered resource`
+
+- **Resolution.** Confirm the URI matches one of the patterns
+- declared with `@resource(...)` on the interface.
++ **Resolução.** Confirme que o URI corresponde a um dos padrões declarados com `@resource(...)`
++ na interface.
+
+- ### `↯/s.124.1.3` — `MissingParameter`
++ ### `↯/s.124.1.3` — `MissingParameter`
+
+- A required parameter for a tool method was not present in the
+- input map of the request.
++ Um parâmetro obrigatório de um método de ferramenta não estava presente no mapa de entrada da
++ requisição.
+
+- **Example.** `[↯/s.124.1.3] the MCP operation failed because a required parameter was not present in the input`
++ **Exemplo.** `[↯/s.124.1.3] the MCP operation failed because a required parameter was not present in the input`
+
+- **Resolution.** Send all required parameters in the JSON-RPC
+- arguments object, or mark the parameter as optional in the server
+- interface.
++ **Resolução.** Envie todos os parâmetros obrigatórios no objeto de argumentos JSON-RPC, ou
++ marque o parâmetro como opcional na interface do servidor.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/synesthesia/src/core/synesthesia.Mcp.scala`
++ - Código-fonte: `lib/synesthesia/src/core/synesthesia.Mcp.scala`

@@ -1,13 +1,22 @@
 orthant 1 release
 
 - The prose exists in three parallel systems today: the topic guides in `doc/en/modules/` — the
-+ The prose exists in three parallel systems today: the topic guides in `doc/soundness/modules/` — the
++ The prose exists in three parallel systems today: the topic guides in `doc/work/soundness/modules/` — the
+
+- `doc/standards/messages.md` was a self-declared stub, despite the message convention being
++ `doc/work/standards/messages.md` was a self-declared stub, despite the message convention being
+
+-     grep -c 'Stub' doc/standards/messages.md    # 0
++     grep -c 'Stub' doc/work/standards/messages.md    # 0
 
 - worth keeping moved into `doc/modules/` topics, and the rest was deleted rather than left to
-+ worth keeping moved into `doc/soundness/modules/` topics, and the rest was deleted rather than left to
++ worth keeping moved into `doc/work/soundness/modules/` topics, and the rest was deleted rather than left to
 
 - Baseline was 99 topics in `doc/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
-+ Baseline was 99 topics in `doc/soundness/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
++ Baseline was 99 topics in `doc/work/soundness/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
 
 - Every published module is covered by at least one `doc/modules/` topic, and a coverage script
-+ Every published module is covered by at least one `doc/soundness/modules/` topic, and a coverage script
++ Every published module is covered by at least one `doc/work/soundness/modules/` topic, and a coverage script
+
+- touched in #801, each an older and shorter copy of a `doc/philosophy/` page. The website
++ touched in #801, each an older and shorter copy of a `doc/work/philosophy/` page. The website

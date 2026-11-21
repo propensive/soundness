@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.60.3` — `Structural.Error`
++ # `↯/s.60.3` — `Structural.Error`
+
+- Raised when a record of fixed layout is read from fewer bytes than its layout needs.
++ 固定レイアウトのレコードを、そのレイアウトが必要とするより少ないバイトから読もうとしたときに発生する。
+
+- ## Cause
++ ## 原因
+
+- `unpack` checks the whole record against the bytes it is reading before it loads any field.
+- The error is raised when `width` bytes are not there at `offset`: the offset is negative, or
+- the record (or the repeated section of records) would run past the `size` of the data or
+- expanse.
++ `unpack` は、どのフィールドを読み込むよりも前に、レコード全体を読み取り対象のバイトに照らして検査する。
++ `offset` の位置に `width` バイトがないとき、このエラーが発生する。
++ オフセットが負であるか、レコード（または繰り返されるレコードの区間）がデータまたはエクスパンスの `size` を越えてしまう場合である。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.60.3] a record of 12 bytes cannot be read at offset 4 of 12 bytes
++ [↯/s.60.3] a record of 12 bytes cannot be read at offset 4 of 12 bytes
+
+= [↯/s.60.3] a record of 12 bytes cannot be read at offset 4 of 12 bytes
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Check the offset against the format's specification, and that the input is complete. A file
+- which is shorter than its own headers claim is truncated or is not in the format expected.
++ オフセットをその形式の仕様に照らして確かめ、入力が完全であることを確かめる。
++ 自身のヘッダーが主張するより短いファイルは、途中で切れているか、期待される形式ではない。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/zephyrine/src/layout/zephyrine.Structural.scala`
++ - ソース：`lib/zephyrine/src/layout/zephyrine.Structural.scala`

@@ -1,0 +1,2307 @@
+orthant 1 language
+
+- # Module Boundaries
++ # Frontières des modules
+
+- Soundness has 134 libraries, and every one is meant to have a single, nameable purpose. As
+- modules have grown, each has accreted code that was needed for it to compile but no longer
+- belongs in it, and the dependency graph records that accretion: the critical path through the
+- build is nineteen modules deep, the test framework sits in the closure of the units library,
+- and the same algorithms — CRC-32, canonical Huffman coding, varints, bit-level I/O — are
+- implemented in up to six places. This track (issue #1640) restores the boundaries: every
+- module states its purpose and contains only code serving it; repetition is removed; hard
+- dependencies are severed with anticipation-style typeclass interfaces or integration
+- submodules wherever a lightweight interface suffices; and the build gets shallower and wider.
++ Soundness compte 134 bibliothèques, et chacune doit avoir un objectif unique, que l'on peut
++ nommer. À mesure que les modules ont grandi, chacun a accumulé du code qui lui était nécessaire
++ pour compiler mais qui n'y a plus sa place, et le graphe des dépendances garde la trace de cette
++ accumulation : le chemin critique du build est profond de dix-neuf modules, le framework de test
++ se trouve dans la clôture de la bibliothèque d'unités, et les mêmes algorithmes — CRC-32, codage
++ de Huffman canonique, varints, E/S au niveau du bit — sont implémentés jusqu'à six fois. Ce
++ chantier (issue #1640) rétablit les frontières : chaque module énonce son objectif et ne contient
++ que du code qui le sert ; les répétitions sont supprimées ; les dépendances fortes sont coupées
++ par des interfaces de classes de types dans le style d'anticipation ou par des sous-modules
++ d'intégration, partout où une interface légère suffit ; et le build devient moins profond et plus
++ large.
+
+- The constraint throughout is that **semantics and behaviour do not change**. Code may be
+- rewritten, moved, split and joined, but every leg must leave observable behaviour identical,
+- independently pass `make attest`, and keep the benchmarks compiling (`make build`). This
+- document was produced by a full audit of the codebase (2026-08); file and line references are
+- snapshots from that audit and must be re-verified at implementation time.
++ La contrainte, tout du long, est que **la sémantique et le comportement ne changent pas**. Le
++ code peut être réécrit, déplacé, scindé et réuni, mais chaque étape doit laisser le comportement
++ observable identique, passer `make attest` de façon indépendante et laisser les benchmarks
++ compiler (`make build`). Ce document est issu d'un audit complet du code (2026-08) ; les
++ références de fichiers et de lignes sont des instantanés de cet audit et doivent être revérifiées
++ au moment de l'implémentation.
+
+- The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
++ Les éléments du chantier, avec leurs horizons et leurs dépendances fortes ;
++ [`status.tel`](status.tel) indique où en est chacun :
+
+= The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+=
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Title
++ column  Élément
++ column  Titre
+
+- column  Horizon
++ column  Horizon
+
+- column  Needs
+- row  mod-1  dead edges and dead code  near
+- row  mod-2  one-given integration submodules  near
+- row  mod-3  module splits  near → mid
+- row  mod-4  per-codec and per-format splits  mid
+- row  mod-5  algorithm deduplication  mid  mod-4
+- row  mod-6  the staged-derivation kernel  mid → long
+- row  mod-7  stretch goals  long
+- row  mod-8  dead edges, round two — and the misdeclarations they hide  near
+- row  mod-9  the critical-path head  near
+- row  mod-10  the spine givens  near
++ column  Prérequis
++ row  mod-1  arêtes mortes et code mort  proche
++ row  mod-2  sous-modules d'intégration à un seul given  proche
++ row  mod-3  scissions de modules  proche → moyen
++ row  mod-4  scissions par codec et par format  moyen
++ row  mod-5  déduplication des algorithmes  moyen  mod-4
++ row  mod-6  le noyau de dérivation par mise en étapes  moyen → lointain
++ row  mod-7  objectifs ambitieux  lointain
++ row  mod-8  arêtes mortes, deuxième passe — et les déclarations erronées qu'elles cachent  proche
++ row  mod-9  la tête du chemin critique  proche
++ row  mod-10  les givens de la colonne vertébrale  proche
+
+= row  mod-10  the spine givens  near
+- ```
++ ```
+
+- ## The measured baseline (2026-08)
++ ## La référence mesurée (2026-08)
+
+- The critical path is 19 modules deep: exegesis → obligatory.json → jacinta.schema →
++ Le chemin critique est profond de 19 modules : exegesis → obligatory.json → jacinta.schema →
+
+- telekinesis.jvm → telekinesis.core → legerdemain → honeycomb → urticose.url → escapade →
++ telekinesis.jvm → telekinesis.core → legerdemain → honeycomb → urticose.url → escapade →
+
+- escritoire → polysyllabic → gossamer → hypotenuse → cardinality → fulminate →
++ escritoire → polysyllabic → gossamer → hypotenuse → cardinality → fulminate →
+
+- anticipation.http → anticipation.codec → anticipation.text → symbolism.
++ anticipation.http → anticipation.codec → anticipation.text → symbolism.
+
+- The modules with the highest fan-in:
++ Les modules dont le nombre de dépendants est le plus élevé :
+
+= The modules with the highest fan-in:
+=
+- ```tabular
++ ```tabular
+
+= The modules with the highest fan-in:
+=
+= ```tabular
+- column  Module
++ column  Module
+
+- column  Dependents
++ column  Dépendants
+
+- row  gossamer  31
++ row  gossamer  31
+
+- row  hypotenuse  12
++ row  hypotenuse  12
+
+- row  contingency  11
++ row  contingency  11
+
+- row  jacinta  10
++ row  jacinta  10
+
+- row  fulminate  10
++ row  fulminate  10
+
+- row  hellenism  10
++ row  hellenism  10
+
+- row  xenophile.wit  10
++ row  xenophile.wit  10
+
+= row  xenophile.wit  10
+- ```
++ ```
+
+- The largest modules:
++ Les plus gros modules :
+
+= The largest modules:
+=
+- ```tabular
++ ```tabular
+
+= The largest modules:
+=
+= ```tabular
+- column  Module
++ column  Module
+
+- column  Lines
+- column  Dependencies
++ column  Lignes
++ column  Dépendances
+
+- row  stratiform  16.7k  14
++ row  stratiform  16.7k  14
+
+- row  xenophile  11.8k
++ row  xenophile  11.8k
+
+- row  jacinta  11.1k
++ row  jacinta  11.1k
+
+- row  pneumatic  10.9k
++ row  pneumatic  10.9k
+
+- row  hallucination  9.9k
++ row  hallucination  9.9k
+
+- row  xylophone  8.3k
++ row  xylophone  8.3k
+
+- row  aviation  7.6k
++ row  aviation  7.6k
+
+- row  ypsiloid  7.5k  15
++ row  ypsiloid  7.5k  15
+
+= row  ypsiloid  7.5k  15
+- ```
++ ```
+
+- ## Mechanics that apply to every leg
++ ## Mécanismes qui s'appliquent à chaque étape
+
+- - A new component means: a `build.mill` object, a `lib/<name>/src/<sub>/` directory, a
+-   `soundness_<lib>_<sub>.scala` export file, and membership in **exactly one** bundle;
+-   `./mill groupCheck.validate` enforces this. A new library additionally needs an
+-   `allLibraries` entry. Since #1744 the bundle is the unit of publication and each bundle
+-   derives its POM dependencies from its closure, so a component in no bundle is not published
+-   at all, and a component in two is packaged twice; `groupCheck.excluded` no longer lists
+-   interface modules, holding only the three standalone compiler plugins. Prefer the bundle
+-   that already owns the component's siblings (all `anticipation.*` are in `base`), and check
+-   that a new cross-bundle edge is one the graph already has.
+- - When a definition moves between components, its line in the old `soundness_*.scala` export
+-   file must be deleted **in the same commit** — duplicate toplevel exports resolve silently
+-   by classpath order.
+- - `scalaJs`/`scalaNative` flags must match the new dependency closure. Splitting a
+-   JVM-only tail off a module may let the remainder *gain* platforms (e.g. facsimile.core can
+-   drop `scalaJs = false` once its filesystem layer splits out); such gains change the
+-   `soundness.js`/`soundness.native` aggregates and are made deliberately.
+- - The `*.wasi` components (turbulence.wasi, capricious.wasi, …) supply alternative backends;
+-   any restructure of Stdio or entropy must retarget them and keep `soundness.wasi` green.
+- - `bench.model` depends on all six `*.staged` modules, and benchmarks are invisible to
+-   `soundness.all`; run `make build` after every leg.
+- - A given moved out of a companion object leaves implicit scope, requiring a downstream
+-   import sweep; a given moved *into* the subject type's companion re-enters implicit scope
+-   (preferred for edge inversions — no sweep needed).
+- - Verification per leg: `make attest` and `make build`; legs touching staged derivation or
+-   format parsers also run `make bench` for the affected format — performance parity is part
+-   of behaviour preservation.
++ - Un nouveau composant implique : un objet `build.mill`, un répertoire `lib/<name>/src/<sub>/`,
++   un fichier d'exports `soundness_<lib>_<sub>.scala`, et l'appartenance à **exactement un** lot ;
++   `./mill groupCheck.validate` le vérifie. Une nouvelle bibliothèque requiert en outre une entrée
++   dans `allLibraries`. Depuis #1744, le lot est l'unité de publication et chaque lot dérive les
++   dépendances de son POM de sa clôture : un composant qui n'appartient à aucun lot n'est donc pas
++   publié du tout, et un composant qui appartient à deux lots est empaqueté deux fois ;
++   `groupCheck.excluded` ne liste plus les modules d'interface et ne contient que les trois
++   plugins de compilateur autonomes. On préfère le lot qui possède déjà les composants frères
++   (tous les `anticipation.*` sont dans `base`), et on vérifie qu'une nouvelle arête entre lots
++   est une arête que le graphe possède déjà.
++ - Lorsqu'une définition passe d'un composant à un autre, sa ligne dans l'ancien fichier d'exports
++   `soundness_*.scala` doit être supprimée **dans le même commit** — des exports de premier niveau
++   en double se résolvent silencieusement selon l'ordre du classpath.
++ - Les options `scalaJs`/`scalaNative` doivent correspondre à la nouvelle clôture des
++   dépendances. Détacher d'un module une partie réservée à la JVM peut permettre au reste de
++   *gagner* des plateformes (par exemple, facsimile.core peut abandonner `scalaJs = false` une fois
++   sa couche de système de fichiers séparée) ; ces gains modifient les agrégats
++   `soundness.js`/`soundness.native` et sont faits délibérément.
++ - Les composants `*.wasi` (turbulence.wasi, capricious.wasi, …) fournissent des backends
++   alternatifs ; toute restructuration de Stdio ou de l'entropie doit les recibler et garder
++   `soundness.wasi` au vert.
++ - `bench.model` dépend des six modules `*.staged`, et les benchmarks sont invisibles pour
++   `soundness.all` ; lancez `make build` après chaque étape.
++ - Un given sorti d'un objet compagnon quitte la portée implicite, ce qui exige un balayage des
++   imports en aval ; un given déplacé *dans* le compagnon du type sujet réintègre la portée
++   implicite (solution préférée pour les inversions d'arêtes — aucun balayage nécessaire).
++ - Vérification à chaque étape : `make attest` et `make build` ; les étapes qui touchent à la
++   dérivation par mise en étapes ou aux analyseurs de formats lancent aussi `make bench` pour le
++   format concerné — la parité de performance fait partie de la préservation du comportement.
+
+- ## Corrections established during the audit
++ ## Corrections établies pendant l'audit
+
+- 1. "cordillera" was a package inside `telekinesis.http2`, not a library; dedup items citing
+-    it are telekinesis.http2 items. The package has since been renamed to `telekinesis`, so
+-    the distinction no longer arises.
+- 2. murmuration is half-wired: listed in `groupCheck.disabledLibraries` and absent from
+-    `allLibraries`, yet `rudiments.core` already depends on `murmuration.core`. Any move into
+-    murmuration needs a registration decision first.
+- 3. scintillate re-derives chunked-transfer detection twice with a latent discrepancy
+-    (`== t"chunked"` vs `.contains(t"chunked")`); header-parsing consolidation must preserve
+-    this bug-for-bug or fix it with explicit sign-off.
+- 4. tarantula's `screenshot(): Raster in Png` is public API; the hallucination sever keeps
+-    the decoded method (in an integration submodule) and adds a raw-`Data` variant — the
+-    existing return type never changes.
+- 5. gossamer genuinely uses kaleidoscope but only reaches it transitively; the dependency
+-    should be declared when the dead ones are dropped.
++ 1. « cordillera » était un package à l'intérieur de `telekinesis.http2`, et non une
++    bibliothèque ; les éléments de déduplication qui le citent sont des éléments de
++    telekinesis.http2. Le package a depuis été renommé `telekinesis`, si bien que la distinction ne
++    se pose plus.
++ 2. murmuration n'est câblée qu'à moitié : elle figure dans `groupCheck.disabledLibraries` et est
++    absente de `allLibraries`, alors que `rudiments.core` dépend déjà de `murmuration.core`. Tout
++    déplacement vers murmuration exige d'abord une décision sur son enregistrement.
++ 3. scintillate redérive deux fois la détection du transfert par morceaux, avec une divergence
++    latente (`== t"chunked"` contre `.contains(t"chunked")`) ; la consolidation de l'analyse des
++    en-têtes doit préserver ce bogue à l'identique, ou le corriger avec une validation explicite.
++ 4. `screenshot(): Raster in Png` de tarantula est une API publique ; la coupure vers
++    hallucination garde la méthode décodée (dans un sous-module d'intégration) et ajoute une
++    variante en `Data` brut — le type de retour existant ne change jamais.
++ 5. gossamer utilise réellement kaleidoscope, mais ne l'atteint que de façon transitive ; la
++    dépendance doit être déclarée lorsque les dépendances mortes sont retirées.
+
+- ## mod-1: dead edges and dead code
++ ## mod-1 : arêtes mortes et code mort
+
+= ## mod-1: dead edges and dead code
+=
+- Horizon: near
+- Done: #1746 (2026-08-08)
++ Horizon : proche
++ Terminé : #1746 (2026-08-08)
+
+- Build edges that exist but are unused, and interface types nothing consumes. One PR, no code
+- motion beyond deletions:
++ Des arêtes de build qui existent mais ne servent pas, et des types d'interface que rien ne
++ consomme. Une seule PR, sans autre déplacement de code que des suppressions :
+
+- - fulminate.core: `anticipation.http` → `anticipation.text` (http is unused; the dep existed
+-   only to reach text transitively — and since fulminate's fan-in is effectively the whole
+-   repo, this removes anticipation.codec/generic from the global minimum closure).
+- - urticose.url: drop `anticipation.html`. xylophone.core: `urticose.core` moves to
+-   xylophone.test. gossamer.core: drop mercator (test-only) and contextual (the `t"…"`
+-   interpolator is a bare macro), declare kaleidoscope. turbulence.core: drop stenography.
+-   rudiments.core: drop `anticipation.http` (verify `anticipation.path` while there).
+- - Delete zero-consumer anticipation types: `Legible` (src/text), `HtmlContent` and `Sgml`
+-   (src/html), with their export lines.
++ - fulminate.core : `anticipation.http` → `anticipation.text` (http ne sert pas ; la dépendance
++   n'existait que pour atteindre text de façon transitive — et comme fulminate a pour dépendants
++   pratiquement tout le dépôt, cela retire anticipation.codec/generic de la clôture minimale
++   globale).
++ - urticose.url : retirer `anticipation.html`. xylophone.core : `urticose.core` passe dans
++   xylophone.test. gossamer.core : retirer mercator (utilisé seulement en test) et contextual
++   (l'interpolateur `t"…"` est une simple macro), déclarer kaleidoscope. turbulence.core :
++   retirer stenography. rudiments.core : retirer `anticipation.http` (vérifier
++   `anticipation.path` au passage).
++ - Supprimer les types d'anticipation sans consommateur : `Legible` (src/text), `HtmlContent` et
++   `Sgml` (src/html), avec leurs lignes d'export.
+
+- Done when: each dropped edge is verified unused by grep, the deletions compile, and
+- `make attest` passes.
++ Terminé lorsque : chaque arête retirée est vérifiée inutilisée par grep, les suppressions
++ compilent, et `make attest` passe.
+
+- ## mod-2: one-given integration submodules
++ ## mod-2 : sous-modules d'intégration à un seul given
+
+= ## mod-2: one-given integration submodules
+=
+- Horizon: near
+- Done: #1746 (2026-08-08)
++ Horizon : proche
++ Terminé : #1746 (2026-08-08)
+
+- Dependencies that exist to carry a single given instance (or one small file) move into
+- integration submodules, following the established template of `jacinta.time`,
+- `eucalyptus.ansi` and `hallucination.ansi`. Legs are mutually independent except where
+- noted.
++ Les dépendances qui n'existent que pour porter une seule instance de given (ou un petit fichier)
++ passent dans des sous-modules d'intégration, selon le modèle établi par `jacinta.time`,
++ `eucalyptus.ansi` et `hallucination.ansi`. Les étapes sont indépendantes les unes des autres,
++ sauf mention contraire.
+
+- - **urticose.ansi**: the `Url is Teletypeable` given (urticose.Url.scala:61) and
+-   `UrlPalette` move to a new `urticose.ansi` (deps: urticose.url, escapade.core). Cuts
+-   escapade and iridescence out of the closure of every URL, JSON and YAML user. Trap: the
+-   generic fallback `given showable: [value: Showable] => value is Teletypeable`
+-   (escapade.Teletypeable.scala:68) means a call site that misses the new import still
+-   compiles and silently renders unstyled — export the given from the `soundness` toplevel,
+-   sweep internal `e"…"` interpolations of URLs, and add a styling-assertion test.
+- - **honeycomb → anticipation.url**: the specific `HttpUrl is Attributive to Whatwg.Url`
+-   given (honeycomb.Attributive.scala:67) is behaviourally identical to the generic given at
+-   :64 (which routes through `Url`'s `abstractable = _.show`). Add a rendering test proving
+-   identical output, delete :67, and swap honeycomb.core's dep from urticose.url to
+-   anticipation.url.
+- - **anticipation.check** (since moved to `hypotenuse.check`, package `hypotenuse`, because its
+-   `Commensurable` bound made it depend on hypotenuse anyway): a new anticipation submodule (in the `base` bundle with its
+-   siblings) holding probably's `Checkable` typeclass; probably.core re-exports it, and
+-   quantitative.core swaps its probably.core dep for anticipation.check (the macro sites are
+-   quantitative.internal.scala:208 and protointernal.scala:790). This frees ~40 modules —
+-   abacist, aviation and everything above them — from the test framework's closure.
+- - **chiaroscuro split**: `chiaroscuro.core` keeps Contrastable/Decomposable/Similarity; a
+-   new `chiaroscuro.render` takes Juxtaposition.scala and with it the escapade, escritoire
+-   and dendrology deps. probably.core depends on both, so its behaviour is unchanged, but
+-   everything needing only structural contrast escapes the rendering stack.
+- - **escapade decomposition**: a new `digression.ansi` takes the StackTrace/frame/method
+-   Teletypeable givens, the stack-trace palette and the `graphical` given
+-   (escapade.Teletypeable.scala:75–213), cutting escritoire, digression, anticipation.gfx
+-   and (verify) iridescence from escapade.core; the Stdio-writable givens
+-   (escapade.Teletype.scala:71–79, 134 — escapade's only turbulence use) move to
+-   `escapade.io`. escapade.core ends as csi + gossamer + anticipation.url: genuinely
+-   ANSI-shaped. The same silent-fallback trap as urticose.ansi applies.
+- - **fulminate.print**: `Message is Printable` (fulminate.Message.scala:46, which ignores
+-   its termcap) moves out of Message's companion into `fulminate.print`, cutting
+-   anticipation.print from fulminate.core. Sweep the Printable-over-Message summon sites and
+-   verify interaction with escapade's opt-in `displayableTypes.messagePrintable` competitor.
+- - **tarantula.image**: per correction 4; tarantula.core drops hallucination (and its
+-   gesticulate/pneumatic.flate/iridescence closure) from browser automation.
+- - **spectacular inversions** (after the escapade leg): `Uuid is Showable` moves into Uuid's
+-   companion in inimitable; `StackTrace is Showable` into StackTrace's companion in
+-   digression; each move flips the build edge in the same commit (spectacular loses the dep;
+-   the leaf gains spectacular.core — verified acyclic). Companion-to-companion moves
+-   preserve implicit scope, so no import sweep. The `typeRepr`/`meta` givens do **not**
+-   move: compiler-owned types have no companion to host them, and losing implicit scope
+-   would silently change `summonFrom` fallthrough in spectacular.Inspectable.scala:241.
++ - **urticose.ansi** : le given `Url is Teletypeable` (urticose.Url.scala:61) et `UrlPalette`
++   passent dans un nouveau `urticose.ansi` (dépendances : urticose.url, escapade.core). Cela retire
++   escapade et iridescence de la clôture de tout utilisateur d'URL, de JSON et de YAML. Piège : le
++   given générique de repli `given showable: [value: Showable] => value is Teletypeable`
++   (escapade.Teletypeable.scala:68) fait qu'un site d'appel qui oublie le nouvel import compile
++   quand même et s'affiche silencieusement sans style — exportez le given depuis le premier niveau
++   de `soundness`, balayez les interpolations `e"…"` internes d'URL, et ajoutez un test qui vérifie
++   le style.
++ - **honeycomb → anticipation.url** : le given spécifique `HttpUrl is Attributive to Whatwg.Url`
++   (honeycomb.Attributive.scala:67) se comporte exactement comme le given générique de la ligne
++   :64 (qui passe par `abstractable = _.show` de `Url`). Ajoutez un test de rendu qui prouve que la
++   sortie est identique, supprimez :67, et remplacez la dépendance de honeycomb.core vers
++   urticose.url par anticipation.url.
++ - **anticipation.check** (depuis déplacé vers `hypotenuse.check`, package `hypotenuse`, car sa
++   borne `Commensurable` le faisait de toute façon dépendre de hypotenuse) : un nouveau
++   sous-module d'anticipation (dans le lot `base` avec ses frères) qui contient la classe de types
++   `Checkable` de probably ; probably.core la réexporte, et quantitative.core remplace sa
++   dépendance vers probably.core par anticipation.check (les sites de macro sont
++   quantitative.internal.scala:208 et protointernal.scala:790). Cela libère ~40 modules — abacist,
++   aviation et tout ce qui se trouve au-dessus d'eux — de la clôture du framework de test.
++ - **scission de chiaroscuro** : `chiaroscuro.core` garde Contrastable/Decomposable/Similarity ;
++   un nouveau `chiaroscuro.render` prend Juxtaposition.scala, et avec lui les dépendances vers
++   escapade, escritoire et dendrology. probably.core dépend des deux, donc son comportement ne
++   change pas, mais tout ce qui n'a besoin que du contraste structurel échappe à la pile de rendu.
++ - **décomposition d'escapade** : un nouveau `digression.ansi` prend les givens Teletypeable de
++   StackTrace, des trames et des méthodes, la palette des traces de pile et le given `graphical`
++   (escapade.Teletypeable.scala:75–213), ce qui retire escritoire, digression, anticipation.gfx et
++   (à vérifier) iridescence d'escapade.core ; les givens d'écriture sur Stdio
++   (escapade.Teletype.scala:71–79, 134 — le seul usage de turbulence par escapade) passent dans
++   `escapade.io`. escapade.core se réduit à csi + gossamer + anticipation.url : réellement en forme
++   d'ANSI. Le même piège du repli silencieux que pour urticose.ansi s'applique.
++ - **fulminate.print** : `Message is Printable` (fulminate.Message.scala:46, qui ignore son
++   termcap) sort du compagnon de Message pour aller dans `fulminate.print`, ce qui retire
++   anticipation.print de fulminate.core. Balayez les sites qui invoquent Printable sur Message et
++   vérifiez l'interaction avec le concurrent optionnel d'escapade,
++   `displayableTypes.messagePrintable`.
++ - **tarantula.image** : selon la correction 4 ; tarantula.core retire hallucination (et sa
++   clôture gesticulate/pneumatic.flate/iridescence) de l'automatisation du navigateur.
++ - **inversions de spectacular** (après l'étape d'escapade) : `Uuid is Showable` passe dans le
++   compagnon de Uuid dans inimitable ; `StackTrace is Showable` dans le compagnon de StackTrace
++   dans digression ; chaque déplacement inverse l'arête de build dans le même commit (spectacular
++   perd la dépendance ; la feuille gagne spectacular.core — acyclicité vérifiée). Les
++   déplacements de compagnon à compagnon préservent la portée implicite, donc aucun balayage des
++   imports. Les givens `typeRepr`/`meta` ne bougent **pas** : les types qui appartiennent au
++   compilateur n'ont pas de compagnon pour les accueillir, et perdre la portée implicite changerait
++   silencieusement le passage au cas suivant de `summonFrom` dans
++   spectacular.Inspectable.scala:241.
+
+- Recorded as correct-as-is, so they are not re-litigated: fulminate → anticipation.log and
+- gigantism (Communicable extends Transcribable is the deliberate design, and
+- anticipation.log's closure is inside fulminate's once mod-1 lands); escapade →
+- anticipation.url/gfx; hellenism's deps; xylophone → serpentine (XPath genuinely reuses the
+- path algebra); stratiform's fourteen core deps (all used, all lightweight; only the
+- panopticon givens move, in mod-3).
++ Consignés comme corrects en l'état, pour ne pas être remis en cause : fulminate →
++ anticipation.log et gigantism (Communicable étend Transcribable, c'est la conception voulue, et
++ la clôture d'anticipation.log est incluse dans celle de fulminate une fois mod-1 intégré) ;
++ escapade → anticipation.url/gfx ; les dépendances de hellenism ; xylophone → serpentine (XPath
++ réutilise réellement l'algèbre des chemins) ; les quatorze dépendances du cœur de stratiform
++ (toutes utilisées, toutes légères ; seuls les givens de panopticon bougent, dans mod-3).
+
+- Done when: each listed edge is cut, the new submodules are bundled, and no downstream module
+- regains the severed closure transitively.
++ Terminé lorsque : chaque arête listée est coupée, les nouveaux sous-modules appartiennent à un
++ lot, et aucun module en aval ne retrouve de façon transitive la clôture coupée.
+
+- ## mod-3: module splits
++ ## mod-3 : scissions de modules
+
+- Horizon: near–mid
++ Horizon : proche–moyen
+
+- - **legerdemain.query** — the biggest critical-path win: telekinesis uses legerdemain only
+-   for the `Query` type, and legerdemain's HTML-widget code is what needs honeycomb. `Query`
+-   splits into a honeycomb-free `legerdemain.query`; telekinesis.core retargets it, cutting
+-   the whole HTML/XML stack off the HTTP-client path. Check platform flags: query becomes
+-   fully cross-platform.
+- - **ethereal.dist** — **blocked as specified; needs a design decision before it is attempted
+-   again.** The intent was to split Runners, Assembler, Installer and Upgrade (the
+-   download/verify/package/self-update toolchain) from the daemon, taking telekinesis.jvm,
+-   urticose.url, gastronomy and zeppelin with them. On inspection the daemon and the toolchain
+-   are not separable along that line: `cli` (ethereal_core.scala:88) spans the rest of the file
+-   and *is* the daemon, and its `name` resolution recovers from a missing `ethereal.name`
+-   property by running the whole build-an-executable path, which calls `Runners.version`,
+-   `Runners.download`, `Assembler.PublicKeyLength` and `Assembler.assemble`. So core cannot shed
+-   Runners or Assembler, and those two need all four heavy dependencies between them; moving
+-   only Installer and Upgrade (which core does not reference) cuts nothing, since they need only
+-   zeppelin, which Assembler needs anyway. Putting `cli` in the new component instead would
+-   leave `core` holding little but the daemon's supporting types, and the two real external
+-   consumers — anthology.xeq (`Runners`) and ziggurat.packager (`Assembler`) — would take the
+-   new component regardless, so the split would buy nothing for them either. Doing this properly
+-   means extracting the build-an-executable branch behind an interface that `ethereal.dist`
+-   supplies, which changes how that path is reached and so crosses the no-semantic-change line.
+-   The `quantitative.units` observation does stand on its own: there is one such literal, not
+-   two — `val idleTimeout = Quantity[Hours[1]](6.0)` at ethereal_core.scala:266 — and
+-   `Long is Abstractable across Durations to Long` would replace it exactly.
+- - **ypsiloid de-jacinta**: `Bcd` (jacinta.internal.scala:284+, an opaque over
+-   `IArray[Double]`) moves to **hypotenuse**, severing ypsiloid → jacinta — a YAML library
+-   depending on a JSON library is the single most wrong edge in the graph. YamlPath (the sole
+-   importer of serpentine, urticose, beneficence and symbolism in ypsiloid) moves to
++ - **legerdemain.query** — le plus gros gain sur le chemin critique : telekinesis n'utilise
++   legerdemain que pour le type `Query`, et c'est le code des widgets HTML de legerdemain qui a
++   besoin de honeycomb. `Query` est détaché dans un `legerdemain.query` sans honeycomb ;
++   telekinesis.core le recible, ce qui coupe toute la pile HTML/XML du chemin du client HTTP.
++   Vérifiez les options de plateforme : query devient entièrement multiplateforme.
++ - **ethereal.dist** — **bloqué tel que spécifié ; une décision de conception est nécessaire avant
++   de le retenter.** L'intention était de séparer du démon Runners, Assembler, Installer et Upgrade
++   (la toolchain de téléchargement, de vérification, d'empaquetage et d'auto-mise à jour), en
++   emportant avec eux telekinesis.jvm, urticose.url, gastronomy et zeppelin. À l'examen, le démon et
++   la toolchain ne sont pas séparables selon cette ligne : `cli` (ethereal_core.scala:88) couvre le
++   reste du fichier et *est* le démon, et sa résolution de `name` se rattrape d'une propriété
++   `ethereal.name` manquante en exécutant tout le chemin de construction d'un exécutable, qui
++   appelle `Runners.version`, `Runners.download`, `Assembler.PublicKeyLength` et
++   `Assembler.assemble`. Le cœur ne peut donc pas se défaire de Runners ni d'Assembler, et ces deux
++   là ont besoin, à eux deux, des quatre dépendances lourdes ; ne déplacer qu'Installer et Upgrade
++   (que le cœur ne référence pas) ne coupe rien, puisqu'ils n'ont besoin que de zeppelin, dont
++   Assembler a besoin de toute façon. Mettre plutôt `cli` dans le nouveau composant laisserait à
++   `core` guère plus que les types de support du démon, et les deux vrais consommateurs externes —
++   anthology.xeq (`Runners`) et ziggurat.packager (`Assembler`) — prendraient de toute façon le
++   nouveau composant, si bien que la scission ne leur apporterait rien non plus. Bien faire les
++   choses signifie extraire la branche de construction d'un exécutable derrière une interface que
++   fournit `ethereal.dist`, ce qui change la façon dont ce chemin est atteint et franchit donc la
++   ligne de l'absence de changement sémantique. L'observation sur `quantitative.units` tient à elle
++   seule : il n'y a qu'un seul littéral de ce genre, et non deux — `val idleTimeout =
++   Quantity[Hours[1]](6.0)` à ethereal_core.scala:266 — et `Long is Abstractable across Durations
++   to Long` le remplacerait exactement.
++ - **ypsiloid sans jacinta** : `Bcd` (jacinta.internal.scala:284+, un type opaque sur
++   `IArray[Double]`) passe dans **hypotenuse**, ce qui coupe ypsiloid → jacinta — une bibliothèque
++   YAML qui dépend d'une bibliothèque JSON est l'arête la plus fausse de tout le graphe. YamlPath
++   (le seul module d'ypsiloid qui importe serpentine, urticose, beneficence et symbolism) passe dans
+
+-   `ypsiloid.pointer`.
++   `ypsiloid.pointer`.
+
+-   **Done.** The 351-line `Bcd` block moves to `hypotenuse.Bcd`, and ypsiloid no longer has
+-   jacinta on its compile classpath at all.
++   **Terminé.** Le bloc `Bcd` de 351 lignes passe dans `hypotenuse.Bcd`, et ypsiloid n'a plus du
++   tout jacinta sur son classpath de compilation.
+
+-   The earlier attempt failed because it tried to preserve the capture behaviour `Bcd`'s
+-   constructors had been *inferred* to have inside `object internal`, where every result carried
+-   a fresh `any.rd` capability that jacinta's parser laundered away with `unsafeAssumePure`.
+-   Declaring that explicitly fixed jacinta and broke ypsiloid, and vice versa. The resolution is
+-   that `Bcd` is simply a pure value — it is an opaque alias for an immutable `IArray[Double]` —
+-   so the constructors return it pure, every `unsafeAssumePure` around them disappears, and the
+-   one genuinely impure step, adopting a freshly-built mutable array, is discharged once by
+-   `Bcd.adopt` in the companion instead of at each call site.
++   La tentative précédente avait échoué parce qu'elle cherchait à préserver le comportement de
++   capture que l'on avait *inféré* pour les constructeurs de `Bcd` à l'intérieur de
++   `object internal`, où chaque résultat portait une capacité fraîche `any.rd` que l'analyseur
++   de jacinta blanchissait avec `unsafeAssumePure`. Le déclarer explicitement réparait jacinta et
++   cassait ypsiloid, et inversement. La solution est que `Bcd` est tout simplement une valeur pure —
++   c'est un alias opaque pour un `IArray[Double]` immuable — donc les constructeurs la renvoient
++   pure, tous les `unsafeAssumePure` qui les entouraient disparaissent, et la seule étape réellement
++   impure, l'adoption d'un tableau mutable fraîchement construit, est prise en charge une fois pour
++   toutes par `Bcd.adopt` dans le compagnon, au lieu de l'être à chaque site d'appel.
+
+-   Two traps worth recording. `Bcd.fromContent15` was `private[jacinta]` and its only caller,
+-   `jacinta.Json.Parser`, is now in another library, so it is public — the one access widening
+-   the move requires. And re-exporting the type (`export hypotenuse.Bcd` in package `jacinta`)
+-   is *not* equivalent to importing it: the alias does not carry the companion's implicit scope,
+-   so `bcd.toLong` and `bcd.toDouble` stopped resolving until the files that use them imported
+-   `hypotenuse.Bcd` directly.
++   Deux pièges méritent d'être consignés. `Bcd.fromContent15` était `private[jacinta]` et son seul
++   appelant, `jacinta.Json.Parser`, se trouve désormais dans une autre bibliothèque : il est donc
++   public — le seul élargissement d'accès qu'exige le déplacement. Et réexporter le type
++   (`export hypotenuse.Bcd` dans le package `jacinta`) n'équivaut *pas* à l'importer : l'alias
++   n'emporte pas la portée implicite du compagnon, si bien que `bcd.toLong` et `bcd.toDouble` ont
++   cessé de se résoudre jusqu'à ce que les fichiers qui les utilisent importent directement
++   `hypotenuse.Bcd`.
+
+-   The YamlPath half of this leg is independent of `Bcd`, and is **also blocked**, for the
+-   reason that blocked ethereal.dist: YamlPath is indeed the sole importer of serpentine,
+-   urticose, beneficence and symbolism in ypsiloid, but `ypsiloid.core` uses it pervasively —
+-   `Yaml.Focus` carries a `pointer: YamlPath`, there is a `Yaml is Positionable by YamlPath`
+-   given, and the `yp"…"` interpolator and its macro are in core — so it cannot move to a
+-   component above core, and moving it below core would leave core's dependency closure
+-   unchanged. Cutting those four dependencies means separating the Yaml AST from its pointer
+-   type, which is a much larger change than this leg described.
+- - **jacinta.optics and JsonPointer de-URL-ing** (after the ypsiloid leg; public API, so the
+-   largest care): the panopticon lens givens leave jacinta.Json.scala for `jacinta.optics`;
+-   JsonPointer's document-registry key changes from `HttpUrl` to Text or
+-   `Abstractable across Urls`, with the concrete HttpUrl conveniences in `jacinta.url` and
+-   jacinta.schema keeping URL-flavoured lookup through it. The RFC 6901 pointer core (also
+-   hand-rolled in ypsiloid.YamlPath and apoplexy.internal) is shared as part of this leg.
+- - **stratiform splits** (two PRs): (a) `stratiform.base256` is a general binary-to-text
+-   codec and moves into **monotonous** (extending `Serializable` to non-ASCII alphabets);
+-   stratiform.binary and revolution retarget; bitumen's hand-rolled `decodeOctal` adopts
+-   monotonous.Octal; the turbulence-facing givens move to `stratiform.io`.
++   La moitié YamlPath de cette étape est indépendante de `Bcd`, et elle est **bloquée elle aussi**,
++   pour la raison qui a bloqué ethereal.dist : YamlPath est bien le seul module d'ypsiloid qui
++   importe serpentine, urticose, beneficence et symbolism, mais `ypsiloid.core` l'utilise partout —
++   `Yaml.Focus` porte un `pointer: YamlPath`, il existe un given `Yaml is Positionable by YamlPath`,
++   et l'interpolateur `yp"…"` et sa macro sont dans le cœur —, il ne peut donc pas passer dans un
++   composant au-dessus du cœur, et le placer sous le cœur laisserait inchangée la clôture des
++   dépendances du cœur. Couper ces quatre dépendances exige de séparer l'AST Yaml de son type de
++   pointeur, ce qui est un changement bien plus important que celui que décrivait cette étape.
++ - **jacinta.optics et JsonPointer sans URL** (après l'étape d'ypsiloid ; API publique, donc avec
++   le plus grand soin) : les givens de lentilles de panopticon quittent jacinta.Json.scala pour
++   `jacinta.optics` ; la clé du registre de documents de JsonPointer passe de `HttpUrl` à Text ou à
++   `Abstractable across Urls`, les facilités concrètes sur HttpUrl allant dans `jacinta.url`, par
++   lequel jacinta.schema conserve une recherche orientée URL. Le cœur des pointeurs RFC 6901 (codé
++   aussi à la main dans ypsiloid.YamlPath et apoplexy.internal) est partagé dans le cadre de cette
++   étape.
++ - **scissions de stratiform** (deux PR) : (a) `stratiform.base256` est un codec général du
++   binaire vers le texte et passe dans **monotonous** (en étendant `Serializable` aux alphabets non
++   ASCII) ; stratiform.binary et revolution sont reciblés ; le `decodeOctal` codé à la main de
++   bitumen adopte monotonous.Octal ; les givens tournés vers turbulence passent dans
++   `stratiform.io`.
+
+-   **(a) is mod-5 work, not a module split, and the parenthesis is the whole job.**
+-   `monotonous.Alphabet` is not itself ASCII-bound — it derives bits per character as
+-   `log2(chars.length)`, which gives 8 for a 256-character alphabet — but
+-   `Serializable.base` is: it precomputes `Array.tabulate(1 << bits)(alphabet(_).toByte)`, an
+-   ASCII *byte* lookup table, and its comment states the invariant plainly ("Every alphabet
+-   character is ASCII, so decoding the output as Latin-1 yields identical text"), which is what
+-   lets it build the result from Latin-1 bytes with no per-character boxing. `Base256`'s alphabet
+-   is emphatically not ASCII (`ḀḁЂЃĄą…`), so `char.toByte` would truncate every character in it.
+-   Integrating the codec therefore means changing monotonous's documented fast path, which is
+-   performance-sensitive and belongs with mod-5's codec work, gated on equivalence tests against
+-   the present `Base256.encode`/`decode` and on the benchmarks. It also moves 13 consumer files
+-   in stratiform and reliquary from `Base256.encode(data)` to the `serialize`/`deserialize`
+-   vocabulary. A verbatim relocation of `Base256` into package `monotonous` would churn those
+-   same 13 files without achieving the unification, so it is the worst of both options and was
+-   not done. (b) the
+-   presentation-preserving editing layer (Mutation, Revision, TelHandle, ~1,607 lines, plus
+-   the telOpenable givens) becomes `stratiform.editing`, cutting aperture; the lens givens
+-   (Tel2.scala:107–137) become `stratiform.optics`, cutting panopticon; the schema layer
+-   (Tels.scala, Tels2.scala) becomes `stratiform.schema`, mirroring jacinta.schema's bundle
+-   placement.
++   **(a) relève de mod-5, et non d'une scission de module, et la parenthèse est tout le travail.**
++   `monotonous.Alphabet` n'est pas lui-même lié à l'ASCII — il calcule le nombre de bits par
++   caractère comme `log2(chars.length)`, ce qui donne 8 pour un alphabet de 256 caractères — mais
++   `Serializable.base` l'est : il précalcule `Array.tabulate(1 << bits)(alphabet(_).toByte)`, une
++   table de correspondance d'*octets* ASCII, et son commentaire énonce clairement l'invariant
++   (« Every alphabet character is ASCII, so decoding the output as Latin-1 yields identical
++   text »), ce qui lui permet de construire le résultat à partir d'octets Latin-1 sans boxing
++   par caractère. L'alphabet de `Base256` n'est résolument pas de l'ASCII (`ḀḁЂЃĄą…`), donc
++   `char.toByte` tronquerait chacun de ses caractères. Intégrer le codec implique donc de modifier
++   le chemin rapide documenté de monotonous, qui est sensible aux performances et relève du travail
++   de mod-5 sur les codecs, conditionné à des tests d'équivalence avec les actuels
++   `Base256.encode`/`decode` et aux benchmarks. Cela fait aussi passer 13 fichiers consommateurs de
++   stratiform et de reliquary de `Base256.encode(data)` au vocabulaire `serialize`/`deserialize`.
++   Un simple transfert de `Base256` dans le package `monotonous` remanierait ces mêmes 13 fichiers
++   sans réaliser l'unification : c'est donc la pire des deux options, et il n'a pas été fait. (b)
++   la couche d'édition qui préserve la présentation (Mutation, Revision, TelHandle, ~1 607 lignes,
++   plus les givens telOpenable) devient `stratiform.editing`, ce qui coupe aperture ; les givens de
++   lentilles (Tel2.scala:107–137) deviennent `stratiform.optics`, ce qui coupe panopticon ; la
++   couche de schéma (Tels.scala, Tels2.scala) devient `stratiform.schema`, à l'image du placement
++   de jacinta.schema dans son lot.
+
+-   **Status:** `stratiform.optics` is **done** — the three lens/optic givens were members of
+-   `trait Tel2` (and so inherited into `Tel`'s implicit scope) and are now toplevel givens
+-   `telLens`, `telOrdinalOptical` and `telEachOptical`, cutting panopticon from stratiform.core.
+-   `Tel` is a plain class, not a `Product`, so panopticon's generic `deref` lens cannot silently
+-   substitute for a missing import.
++   **État :** `stratiform.optics` est **terminé** — les trois givens de lentilles et d'optiques
++   étaient des membres de `trait Tel2` (et donc hérités dans la portée implicite de `Tel`) ; ce sont
++   désormais les givens de premier niveau `telLens`, `telOrdinalOptical` et `telEachOptical`, ce
++   qui coupe panopticon de stratiform.core. `Tel` est une simple classe, et non un `Product`, donc
++   la lentille générique `deref` de panopticon ne peut pas remplacer silencieusement un import
++   manquant.
+
+-   `stratiform.schema` is **blocked**: `Tel.scala` has 51 code references to `Tels` — `assign`,
+-   `resolveType`, `keywordMap` and friends — so the schema layer is woven into the core AST and
+-   cannot move above it. Unlike jacinta, whose core does not use its schema, stratiform's does.
++   `stratiform.schema` est **bloqué** : `Tel.scala` contient 51 références de code à `Tels` —
++   `assign`, `resolveType`, `keywordMap` et compagnie —, la couche de schéma est donc tissée dans
++   l'AST du cœur et ne peut pas passer au-dessus de lui. Contrairement à jacinta, dont le cœur
++   n'utilise pas le schéma, celui de stratiform l'utilise.
+
+-   `stratiform.editing` is **partly analysed and not attempted**. A useful finding: `Tel.scala`'s
+-   `import aperture.*` is dead — the file references nothing from it — so the aperture edge rests
+-   entirely on `TelHandle.scala` plus two `Openable` givens. Those two are the obstacle: `Tel`'s
+-   `telOpenable` (Tel.scala:83) deliberately outranks `Tel2`'s `telViewOpenable` (Tel2.scala:100)
+-   because a given in the object beats one inherited from the trait, and that is what makes a
+-   writable source resolve to the write-back instance. Flattening both into toplevel givens in a
+-   new component destroys the ordering and makes them ambiguous for a source that is both
+-   `Readable` and `Writable`. Doing this leg means reconstructing the object-extends-trait
+-   layering inside `stratiform.editing`, deliberately, with a test that pins which instance a
+-   read-write source selects.
+- - **turbulence.stdio** — the concrete answer to "turbulence needs a clearer purpose":
+-   *streams* and *the standard streams* are different modules. Verified: Stdio, In, Out
+-   and Err never touch the streaming algebra (they import only java.io, anticipation.print,
+-   rudiments and beneficence). They move to a module **below** turbulence
+-   (`Component(anticipation.print, rudiments.core, beneficence.core)`, ~290 lines including
+-   the `stdios` givens); turbulence.wasi retargets the new module, which is exactly what it
+-   exists to substitute. The `Stdio` and `stdios` toplevel exports move in the same commit.
+-   **Done**, with corrections. The predicted six stdio-only consumers were wrong: camouflage
+-   names no stdio type at all, dendrology and escritoire never had turbulence on their
+-   classpath, and burdock, probably and ultimatum reach the streaming algebra genuinely,
+-   through zeppelin, eucalyptus and profanity respectively — retargeting them changes nothing.
+-   Enumerating every component that *declares* turbulence.core and uses no streaming name gives
+-   exactly two: `pneumatic.core` and `dendrology.demo`. Retargeting pneumatic.core (which also
+-   had to declare the contingency and zephyrine it was getting through turbulence) takes its
+-   compile classpath from 42 modules to 23, dropping turbulence.core, parasite, capricious and
+-   hieroglyph.
++   `stratiform.editing` est **partiellement analysé et non tenté**. Une constatation utile :
++   l'`import aperture.*` de `Tel.scala` est mort — le fichier n'y référence rien —, l'arête vers
++   aperture repose donc entièrement sur `TelHandle.scala` et deux givens `Openable`. Ce sont ces
++   deux-là qui font obstacle : le `telOpenable` de `Tel` (Tel.scala:83) l'emporte délibérément sur
++   le `telViewOpenable` de `Tel2` (Tel2.scala:100), parce qu'un given de l'objet l'emporte sur un
++   given hérité du trait, et c'est ce qui fait qu'une source accessible en écriture se résout vers
++   l'instance à réécriture. Les aplatir tous deux en givens de premier niveau dans un nouveau
++   composant détruit cet ordre et les rend ambigus pour une source à la fois `Readable` et
++   `Writable`. Réaliser cette étape implique de reconstruire, délibérément, la stratification
++   objet-qui-étend-un-trait à l'intérieur de `stratiform.editing`, avec un test qui fixe l'instance
++   que sélectionne une source en lecture-écriture.
++ - **turbulence.stdio** — la réponse concrète à « turbulence a besoin d'un objectif plus clair » :
++   les *flux* et *les flux standard* sont des modules différents. Vérifié : Stdio, In, Out et Err
++   ne touchent jamais à l'algèbre des flux (ils n'importent que java.io, anticipation.print,
++   rudiments et beneficence). Ils passent dans un module **sous** turbulence
++   (`Component(anticipation.print, rudiments.core, beneficence.core)`, ~290 lignes en comptant les
++   givens `stdios`) ; turbulence.wasi recible le nouveau module, qui est exactement ce qu'il existe
++   pour remplacer. Les exports de premier niveau `Stdio` et `stdios` sont déplacés dans le même
++   commit. **Terminé**, avec des corrections. Les six consommateurs prévus, qui n'utiliseraient que
++   stdio, étaient faux : camouflage ne nomme aucun type de stdio, dendrology et escritoire n'ont
++   jamais eu turbulence sur leur classpath, et burdock, probably et ultimatum atteignent réellement
++   l'algèbre des flux, via zeppelin, eucalyptus et profanity respectivement — les recibler ne change
++   rien. Énumérer tous les composants qui *déclarent* turbulence.core sans utiliser aucun nom lié
++   aux flux en donne exactement deux : `pneumatic.core` et `dendrology.demo`. Recibler
++   pneumatic.core (qui a aussi dû déclarer contingency et zephyrine, qu'il obtenait via turbulence)
++   fait passer son classpath de compilation de 42 modules à 23, en retirant turbulence.core,
++   parasite, capricious et hieroglyph.
+
+-   Two sub-items are **deferred, and need a decision**: `shred` cannot simply move to
+-   turbulence's test scope, because zephyrine's tests use it too and reach it transitively
+-   through probably; its natural home is `capricious` (it is a random-data generator over
+-   zephyrine's `Chain`), which would mean capricious depending on zephyrine. Until it moves,
+-   turbulence.core keeps its capricious dependency. `Document`/`Documentary` still want to move
+-   to a new `anticipation.document`; their consumers are wider than "format modules" (caduceus,
+-   exegesis and archimedes among them), so that is its own leg.
+- - **rudiments slimming** — the widest sweep in the programme; keep it purely mechanical.
+-   The confined-indexing cluster (Scribe, Grouping, Lattice, Surveyor, Deindex, Segmentable,
+-   Populated, ~730 lines, all sitting directly on denominative — the shape that ypsiloid,
+-   stratiform, facsimile and escapade converged on) becomes a new library (placeholder name
+-   **`concordance`**) between denominative and rudiments. Mutex, Counter
+-   and Loop (JVM concurrency) move to parasite; Exit to imperial or ambience;
+-   DecimalConverter to gossamer (rejoining Decimalizer, and cutting beneficence); Bijection
+-   to murmuration once correction 2 is decided.
++   Deux sous-éléments sont **reportés, et demandent une décision** : `shred` ne peut pas
++   simplement passer dans la portée de test de turbulence, car les tests de zephyrine l'utilisent
++   aussi et l'atteignent de façon transitive via probably ; sa place naturelle est `capricious`
++   (c'est un générateur de données aléatoires sur le `Chain` de zephyrine), ce qui ferait dépendre
++   capricious de zephyrine. Tant qu'il n'a pas bougé, turbulence.core garde sa dépendance vers
++   capricious. `Document`/`Documentary` doivent toujours passer dans un nouveau
++   `anticipation.document` ; leurs consommateurs dépassent les « modules de formats » (caduceus,
++   exegesis et archimedes en font partie), c'est donc une étape à part entière.
++ - **amincissement de rudiments** — le balayage le plus large du programme ; il doit rester
++   purement mécanique. Le groupe de l'indexation confinée (Scribe, Grouping, Lattice, Surveyor,
++   Deindex, Segmentable, Populated, ~730 lignes, tous posés directement sur denominative — la forme
++   vers laquelle ypsiloid, stratiform, facsimile et escapade ont convergé) devient une nouvelle
++   bibliothèque (nom provisoire **`concordance`**) entre denominative et rudiments. Mutex, Counter
++   et Loop (concurrence sur la JVM) passent dans parasite ; Exit dans imperial ou ambience ;
++   DecimalConverter dans gossamer (où il rejoint Decimalizer, et cela coupe beneficence) ;
++   Bijection dans murmuration une fois la correction 2 tranchée.
+
+-   The `concordance` extraction is **done**, with one decision worth keeping: its sources keep
+-   `package rudiments`. Repackaging was tried first and abandoned — `Deindex`'s `apply`, `at`
+-   and `prim` extensions are the tree's indexing vocabulary, so a new package forces an import
+-   into nearly every file that indexes anything; the cascade reached sixty-odd components over
+-   six rounds and was still spreading. Keeping the package made the split invisible: no source
+-   file changed at all. `Bijection` went with the cluster rather than to murmuration, because
+-   its only consumer is `Deindex.bijection` and it needs denominative, which murmuration lacks.
++   L'extraction de `concordance` est **terminée**, avec une décision qui mérite d'être gardée : ses
++   sources conservent `package rudiments`. Un changement de package a d'abord été tenté puis
++   abandonné — les extensions `apply`, `at` et `prim` de `Deindex` constituent le vocabulaire
++   d'indexation de l'arborescence, donc un nouveau package impose un import dans presque tous les
++   fichiers qui indexent quoi que ce soit ; la cascade a atteint une soixantaine de composants en
++   six passes et continuait de s'étendre. Garder le package a rendu la scission invisible : aucun
++   fichier source n'a changé. `Bijection` est parti avec le groupe plutôt que dans murmuration,
++   car son seul consommateur est `Deindex.bijection` et il a besoin de denominative, que
++   murmuration n'a pas.
+
+-   The **remaining re-homings cannot be done as specified**, and the reason is structural rather
+-   than a matter of effort: each proposed home sits *above* a module that already uses the code.
+-   Approved for doing, attempted, and found blocked:
++   Les **autres relocalisations ne peuvent pas être faites telles que spécifiées**, et la raison
++   est structurelle, non une question d'effort : chaque emplacement proposé se trouve *au-dessus*
++   d'un module qui utilise déjà le code. Approuvées, tentées, et trouvées bloquées :
+
+=   Approved for doing, attempted, and found blocked:
+=
+-   ```tabular
++   ```tabular
+
+-   column  Utility
+-   column  Proposed home
+-   column  Outcome
+-   column  Because
+-   row  `Loop`  parasite  a cycle  `fulminate.internal` and `wisteria.internal` use `loop`, and parasite depends on both transitively (parasite → digression → spectacular → wisteria; fulminate likewise)
+-   row  `Exit`  imperial or ambience  a cycle  `contingency.Fatal` uses `Exit`, and imperial depends on contingency
+-   row  `DecimalConverter`  gossamer  a cycle  `spectacular.Showable` uses it, and gossamer depends on spectacular
+-   row  `Mutex`  parasite  possible, but harmful  `turbulence.Out` and `turbulence.Err` use it, so `turbulence.stdio` would grow from 16 modules to at least 37
+-   row  `Counter`  parasite  deleted  it had no users, and `rudiments.Atomic` supersedes it
++   column  Utilitaire
++   column  Emplacement proposé
++   column  Résultat
++   column  Parce que
++   row  `Loop`  parasite  un cycle  `fulminate.internal` et `wisteria.internal` utilisent `loop`, et parasite dépend des deux de façon transitive (parasite → digression → spectacular → wisteria ; de même pour fulminate)
++   row  `Exit`  imperial ou ambience  un cycle  `contingency.Fatal` utilise `Exit`, et imperial dépend de contingency
++   row  `DecimalConverter`  gossamer  un cycle  `spectacular.Showable` l'utilise, et gossamer dépend de spectacular
++   row  `Mutex`  parasite  possible, mais nuisible  `turbulence.Out` et `turbulence.Err` l'utilisent, donc `turbulence.stdio` passerait de 16 modules à au moins 37
++   row  `Counter`  parasite  supprimé  il n'avait aucun utilisateur, et `rudiments.Atomic` le remplace
+
+=   row  `Counter`  parasite  deleted  it had no users, and `rudiments.Atomic` supersedes it
+-   ```
++   ```
+
+-   `turbulence.stdio` is the deliberately minimal component this track created, and parasite's
+-   closure is 37 modules, so moving `Mutex` would undo most of what splitting the standard
+-   streams off achieved. `Counter` had no users inside rudiments or out — the only other
+-   `Counter` in the tree is `ultimatum.Reckoning.Counter`, an unrelated nested enum — and
+-   `Atomic[Int]` with `ere(_ + 1)` is `getAndIncrement`, so it was removed rather than re-homed.
++   `turbulence.stdio` est le composant délibérément minimal que ce chantier a créé, et la clôture
++   de parasite compte 37 modules : déplacer `Mutex` annulerait donc l'essentiel de ce qu'a apporté
++   la séparation des flux standard. `Counter` n'avait aucun utilisateur, ni dans rudiments ni
++   ailleurs — le seul autre `Counter` de l'arborescence est `ultimatum.Reckoning.Counter`, une
++   énumération imbriquée sans rapport — et `Atomic[Int]` avec `ere(_ + 1)` équivaut à
++   `getAndIncrement` : il a donc été supprimé plutôt que relocalisé.
+
+-   So rudiments holds these utilities precisely *because* they are used from below the topics
+-   they belong to. Re-homing them by subject means first moving their low-level consumers, which
+-   is a much larger change than this item describes. The earlier measurement stands too: none of
+-   these moves would shrink any closure.
++   rudiments contient donc ces utilitaires précisément *parce qu'ils* sont utilisés par du code situé
++   en dessous des sujets auxquels ils appartiennent. Les relocaliser par sujet implique d'abord de
++   déplacer leurs consommateurs de bas niveau, ce qui est un changement bien plus important que
++   celui que décrit cet élément. La mesure antérieure tient aussi : aucun de ces déplacements ne
++   réduirait une quelconque clôture.
+
+- - **gossamer.lexicon**: Dictionary.scala (434 lines) moves to a submodule; check overlap
+-   with nomenclature.lexicon first.
++ - **gossamer.lexicon** : Dictionary.scala (434 lignes) passe dans un sous-module ; vérifier
++   d'abord le recouvrement avec nomenclature.lexicon.
+
+- Progress on 2026-09-25, leg by leg:
++ Avancement au 2026-09-25, étape par étape :
+
+= Progress on 2026-09-25, leg by leg:
+=
+- ```tabular
++ ```tabular
+
+- column  Leg
+- column  State
+- row  legerdemain.query  landed
+- row  the hypotenuse.Bcd de-jacinta  landed
+- row  jacinta.optics  landed
+- row  stratiform.optics  landed
+- row  turbulence.stdio  landed
+- row  concordance  landed
+- row  gossamer.lexicon  landed
+- row  ethereal.dist  blocked, as recorded above
+- row  ypsiloid.pointer  blocked, as recorded above
+- row  stratiform.schema  blocked, as recorded above
+- row  jacinta.url  not landed: `JsonPointer` is still keyed by `HttpUrl`
+- row  stratiform.editing  not landed
+- row  the stratiform.base256 move to monotonous  not landed
++ column  Étape
++ column  État
++ row  legerdemain.query  intégrée
++ row  la sortie de jacinta via hypotenuse.Bcd  intégrée
++ row  jacinta.optics  intégrée
++ row  stratiform.optics  intégrée
++ row  turbulence.stdio  intégrée
++ row  concordance  intégrée
++ row  gossamer.lexicon  intégrée
++ row  ethereal.dist  bloquée, comme consigné plus haut
++ row  ypsiloid.pointer  bloquée, comme consigné plus haut
++ row  stratiform.schema  bloquée, comme consigné plus haut
++ row  jacinta.url  non intégrée : `JsonPointer` a toujours `HttpUrl` pour clé
++ row  stratiform.editing  non intégrée
++ row  le passage de stratiform.base256 dans monotonous  non intégré
+
+= row  the stratiform.base256 move to monotonous  not landed
+- ```
++ ```
+
+- Done when: each split module is bundled and its parent's dependency list contains only edges
+- its remaining code uses.
++ Terminé lorsque : chaque module scindé appartient à un lot, et la liste des dépendances de son
++ parent ne contient que les arêtes qu'utilise le code qui lui reste.
+
+- ## mod-4: per-codec and per-format splits
++ ## mod-4 : scissions par codec et par format
+
+- Horizon: mid — ordered: pneumatic, then hallucination, then facsimile.
+- Done: #1748, #1756 (2026-08-09) — the facsimile legs recorded below as blocked are not part of the criterion.
++ Horizon : moyen — dans l'ordre : pneumatic, puis hallucination, puis facsimile.
++ Terminé : #1748, #1756 (2026-08-09) — les étapes de facsimile consignées plus bas comme bloquées ne font pas partie du critère.
+
+- - **pneumatic per-codec**: `pneumatic.{brotli,lzma,lzw}` alongside the existing `flate`;
+-   BrotliDictionaryData (1,761 lines of pure tables) rides with brotli instead of taxing
+-   every consumer. telekinesis.http2, galilei, zeppelin, facsimile and hallucination then
+-   pick only flate (+lzw).
+- - **hallucination per-format**: five codecs share a ~890-line core; they become
+-   `hallucination.{jpeg,png,gif,webp,bmp}`, with `hallucination.aperture` for
+-   CanvasHandle/RasterOpenable; the gesticulate media-type descriptors follow their formats;
+-   pneumatic.flate moves to the png component; tarantula.image retargets png. Deduplication
+-   (Crc32, GifLzw) waits for mod-5 — split first, dedup second, one purpose per PR.
++ - **pneumatic par codec** : `pneumatic.{brotli,lzma,lzw}` à côté du `flate` existant ;
++   BrotliDictionaryData (1 761 lignes de tables pures) accompagne brotli au lieu de peser sur
++   chaque consommateur. telekinesis.http2, galilei, zeppelin, facsimile et hallucination ne
++   prennent alors que flate (+lzw).
++ - **hallucination par format** : cinq codecs partagent un cœur de ~890 lignes ; ils deviennent
++   `hallucination.{jpeg,png,gif,webp,bmp}`, avec `hallucination.aperture` pour
++   CanvasHandle/RasterOpenable ; les descripteurs de types de médias de gesticulate suivent leurs
++   formats ; pneumatic.flate passe dans le composant png ; tarantula.image recible png. La
++   déduplication (Crc32, GifLzw) attend mod-5 — scinder d'abord, dédupliquer ensuite, un objectif
++   par PR.
+
+-   The core-size estimate is right: the files that stay come to ~880 lines. The
+-   aperture component is **done**, though named `hallucination.canvas` — a component named
+-   `aperture` nested inside `object hallucination` shadows the `aperture` library it depends on,
+-   and mill's build file resolves the inner name first. `Canvas`'s `openable` given travelled
+-   with `CanvasHandle` and `RasterOpenable`, which emptied `Canvas`'s companion, so the companion
+-   is gone and `Canvas` is now just the form phantom.
++   L'estimation de la taille du cœur est juste : les fichiers qui restent totalisent ~880 lignes.
++   Le composant aperture est **terminé**, mais sous le nom `hallucination.canvas` — un composant
++   nommé `aperture` imbriqué dans `object hallucination` masque la bibliothèque `aperture` dont il
++   dépend, et le fichier de build de mill résout d'abord le nom intérieur. Le given `openable` de
++   `Canvas` est parti avec `CanvasHandle` et `RasterOpenable`, ce qui a vidé le compagnon de
++   `Canvas` : le compagnon a donc disparu, et `Canvas` n'est plus qu'un fantôme de forme.
+
+-   **Done, as a redesign of the backend rather than a move of files.** `Rasterizable` is now the
+-   codec interface, not just a descriptor: it carries `decode`, `encode` and `sniff` alongside
+-   `name`, `mediaType` and `alpha`, and each format supplies its own instance from its own
+-   component. The central `RasterBackend` is gone.
++   **Terminé, sous la forme d'une refonte du backend plutôt que d'un déplacement de fichiers.**
++   `Rasterizable` est désormais l'interface du codec, et non plus un simple descripteur : il porte
++   `decode`, `encode` et `sniff` à côté de `name`, `mediaType` et `alpha`, et chaque format fournit
++   sa propre instance depuis son propre composant. Le `RasterBackend` central a disparu.
+
+-   Each format now chooses its own implementation per platform, using the `-jvm`/`-native`
+-   source-directory pattern:
++   Chaque format choisit désormais sa propre implémentation selon la plateforme, en suivant le
++   modèle des répertoires de sources `-jvm`/`-native` :
+
+=   source-directory pattern:
+=
+-   ```tabular
++   ```tabular
+
+-   column  Format
++   column  Format
+
+-   column  Decodes on the JVM through
+-   column  On Scala.js and WASI through
+-   row  PNG  `javax.imageio`  its pure codec
+-   row  JPEG  `javax.imageio`  its pure codec
+-   row  GIF  `javax.imageio`  its pure codec
+-   row  BMP  `javax.imageio`  its pure codec
+-   row  WebP  its pure codec  its pure codec
++   column  Décode sur la JVM via
++   column  Sur Scala.js et WASI via
++   row  PNG  `javax.imageio`  son codec pur
++   row  JPEG  `javax.imageio`  son codec pur
++   row  GIF  `javax.imageio`  son codec pur
++   row  BMP  `javax.imageio`  son codec pur
++   row  WebP  son codec pur  son codec pur
+
+=   row  WebP  its pure codec  its pure codec
+-   ```
++   ```
+
+-   WebP uses its pure codec everywhere because no standard JRE ships a WebP reader. That dissolves what looked like a core policy —
+-   it was only a policy because core was making the choice. The pure codecs stay in each
+-   component's shared directory, so they are still compiled and still differentially tested
+-   against ImageIO on the JVM.
++   WebP utilise partout son codec pur, car aucun JRE standard ne fournit de lecteur WebP. Cela
++   dissout ce qui ressemblait à une politique du cœur — ce n'était une politique que parce que le
++   cœur faisait le choix. Les codecs purs restent dans le répertoire partagé de chaque composant :
++   ils sont donc toujours compilés et toujours testés par comparaison avec ImageIO sur la JVM.
+
+-   Sniffing takes its candidates explicitly: `Raster(data)` and the `Aggregable` given now require
+-   a `RasterFormats`, which lists the formats the caller has linked. `hallucination.formats`
+-   depends on all five and supplies every format, so "decode anything" remains one import.
+-   Supplying an alternative codec, or adding a new format, is now an ordinary given in a new
+-   component; nothing in core changes.
++   La détection de format reçoit ses candidats explicitement : `Raster(data)` et le given
++   `Aggregable` exigent désormais un `RasterFormats`, qui liste les formats que l'appelant a liés.
++   `hallucination.formats` dépend des cinq et fournit tous les formats, si bien que « tout
++   décoder » reste un seul import. Fournir un codec alternatif, ou ajouter un nouveau format, est
++   désormais un given ordinaire dans un nouveau composant ; rien ne change dans le cœur.
+
+-   The resulting sizes:
++   Les tailles qui en résultent :
+
+=   The resulting sizes:
+=
+-   ```tabular
++   ```tabular
+
+-   column  Component
+-   column  Lines
++   column  Composant
++   column  Lignes
+
+-   row  core  1,055
++   row  core  1,055
+
+-   row  webp  4,817
++   row  webp  4,817
+
+-   row  jpeg  2,767
++   row  jpeg  2,767
+
+-   row  gif  607
++   row  gif  607
+
+-   row  png  525
++   row  png  525
+
+-   row  bmp  327
++   row  bmp  327
+
+=   row  bmp  327
+-   ```
++   ```
+
+-   Core includes `Quantization`, which GIF's palette encoder shares with JPEG and which therefore
+-   stayed.
+-   tarantula's screenshot decoder now sees `hallucination.core` and `hallucination.png` only.
+- - **facsimile splits**: Ascii85 moves to monotonous; Rc4 to enigmatic; Predictor (PNG/TIFF
+-   row filters, duplicating PngCodec logic) to the png component or pneumatic;
+-   `facsimile.crypto` takes Guard (cutting enigmatic and gastronomy from core);
+-   `facsimile.file` takes PdfFile (cutting galilei and ambience, and letting core drop
+-   `scalaJs = false`); `facsimile.fonts` takes the ~900-line phoenicia-facing font
+-   machinery. aviation stays with PdfInfo or rides with the file component.
++   Le cœur comprend `Quantization`, que l'encodeur de palette de GIF partage avec JPEG et qui est
++   donc resté.
++   Le décodeur de captures d'écran de tarantula ne voit plus que `hallucination.core` et
++   `hallucination.png`.
++ - **scissions de facsimile** : Ascii85 passe dans monotonous ; Rc4 dans enigmatic ; Predictor
++   (filtres de lignes PNG/TIFF, qui dupliquent la logique de PngCodec) dans le composant png ou
++   dans pneumatic ; `facsimile.crypto` prend Guard (ce qui retire enigmatic et gastronomy du
++   cœur) ; `facsimile.file` prend PdfFile (ce qui retire galilei et ambience, et permet au cœur
++   d'abandonner `scalaJs = false`) ; `facsimile.fonts` prend la mécanique de polices de ~900 lignes
++   tournée vers phoenicia. aviation reste avec PdfInfo ou accompagne le composant de fichiers.
+
+-   Mapping each heavy dependency to the files that import it gives:
++   Associer chaque dépendance lourde aux fichiers qui l'importent donne :
+
+=   Mapping each heavy dependency to the files that import it gives:
+=
+-   ```tabular
++   ```tabular
+
+-   column  Dependency
+-   column  Imported by
++   column  Dépendance
++   column  Importée par
+
+-   row  enigmatic  Guard, Pdf, PdfFile
++   row  enigmatic  Guard, Pdf, PdfFile
+
+-   row  gastronomy  FontEmbedder, Guard
++   row  gastronomy  FontEmbedder, Guard
+
+-   row  galilei and ambience  PdfFile alone
++   row  galilei et ambience  PdfFile seul
+
+-   row  phoenicia  FontEmbedder, PdfFont, facsimile_editing
++   row  phoenicia  FontEmbedder, PdfFont, facsimile_editing
+
+-   row  aviation  PdfInfo
++   row  aviation  PdfInfo
+
+=   row  aviation  PdfInfo
+-   ```
++   ```
+
+-   **`facsimile.file` is done**, and takes galilei and ambience with it: facsimile.core's compile
+-   classpath drops from 67 modules to 62. `PdfFile` appeared in `Pdf` only as three `Openable`
+-   givens, which moved with it as `pdfPathOpenable`, `pdfDataOpenable` and `pdfCreatable`. Their
+-   comment recorded that they were "anchored here — the form's companion — so `path.open[Pdf]()`
+-   … resolve with no import", so this knowingly trades that ergonomics away; `Openable` has no
+-   fallback, so a call site that forgets the import fails to compile.
++   **`facsimile.file` est terminé**, et emporte galilei et ambience : le classpath de compilation de
++   facsimile.core passe de 67 modules à 62. `PdfFile` n'apparaissait dans `Pdf` que sous la forme
++   de trois givens `Openable`, qui sont partis avec lui sous les noms `pdfPathOpenable`,
++   `pdfDataOpenable` et `pdfCreatable`. Leur commentaire indiquait qu'ils étaient « anchored here —
++   the form's companion — so `path.open[Pdf]()` … resolve with no import » : on renonce donc
++   sciemment à cette ergonomie ; `Openable` n'a pas de repli, donc un site d'appel qui oublie
++   l'import ne compile pas.
+
+-   Core keeps `scalaJs = false`, contrary to the roadmap: the reason was two things, memory-mapped
+-   reads *and* JCE, and only the first left with `PdfFile`. `enigmatic` stays because `Pdf` itself
+-   uses it.
++   Le cœur garde `scalaJs = false`, contrairement à la feuille de route : la raison tenait à deux
++   choses, les lectures en mémoire mappée *et* JCE, et seule la première est partie avec `PdfFile`.
++   `enigmatic` reste, car `Pdf` lui-même l'utilise.
+
+-   **`facsimile.crypto` and `facsimile.fonts` are blocked**, both because `Pdf` and the page model
+-   depend on what they would take. Encryption is woven into `Pdf`: `guard` is a private var of
+-   type `Optional[Guard]`, `decryptStrings` takes a `Guard`, and `Guard.Method` drives
+-   `cryptMethod`. Fonts are woven into the page model: `Page.fonts` returns `Map[Text, PdfFont]`,
+-   `TextExtractor.extract` takes one, and `TextRun` has a `font: PdfFont` field. `FontEmbedder`
+-   alone may be separable, which would cut gastronomy only if `Guard` moved too — so the two are
+-   coupled. Ascii85, Rc4 and Predictor are mod-5 deduplication items rather than splits, and
+-   Ascii85 in particular cannot use `monotonous.Serializable.base`, whose bit-packing assumes a
+-   power-of-two alphabet; base-85 is not one.
++   **`facsimile.crypto` et `facsimile.fonts` sont bloqués**, tous deux parce que `Pdf` et le modèle
++   de page dépendent de ce qu'ils prendraient. Le chiffrement est tissé dans `Pdf` : `guard` est une
++   variable privée de type `Optional[Guard]`, `decryptStrings` prend un `Guard`, et `Guard.Method`
++   pilote `cryptMethod`. Les polices sont tissées dans le modèle de page : `Page.fonts` renvoie
++   `Map[Text, PdfFont]`, `TextExtractor.extract` en prend une, et `TextRun` a un champ
++   `font: PdfFont`. `FontEmbedder` seul est peut-être séparable, ce qui ne couperait gastronomy que
++   si `Guard` bougeait aussi — les deux sont donc couplés. Ascii85, Rc4 et Predictor sont des
++   éléments de déduplication de mod-5 plutôt que des scissions, et Ascii85 en particulier ne peut
++   pas utiliser `monotonous.Serializable.base`, dont le regroupement de bits suppose un alphabet
++   dont la taille est une puissance de deux ; la base 85 n'en est pas une.
+
+- Done when: a consumer of one format no longer compiles the others' code, and platform flags
+- reflect the new closures.
++ Terminé lorsque : un consommateur d'un format ne compile plus le code des autres, et les options
++ de plateforme reflètent les nouvelles clôtures.
+
+- ## mod-5: algorithm deduplication
++ ## mod-5 : déduplication des algorithmes
+
+- Horizon: mid — after mod-4, so nothing moves twice.
++ Horizon : moyen — après mod-4, pour que rien ne soit déplacé deux fois.
+
+- - **A binary-primitives library** (**`corpuscular`**, now created): varints/LEB128 (seeded from
+-   stratiform.Varint), big-/little-endian accessors and a back-patchable byte builder (seeded
+-   from hallucination.Binary), bit readers/writers in LSB- and MSB-first variants, and a
+-   canonical-Huffman table builder (seeded from pneumatic.BrotliDecoder's, the cleanest of four).
+-   It lands with tests replicating every donor's edge cases *before* any consumer migrates.
++ - **Une bibliothèque de primitives binaires** (**`corpuscular`**, désormais créée) : varints/LEB128
++   (amorcés à partir de stratiform.Varint), accesseurs gros-boutistes et petit-boutistes et un
++   constructeur d'octets corrigeable a posteriori (amorcés à partir de hallucination.Binary),
++   lecteurs et écrivains de bits en variantes LSB d'abord et MSB d'abord, et un constructeur de
++   tables de Huffman canoniques (amorcé à partir de celui de pneumatic.BrotliDecoder, le plus
++   propre des quatre). Elle arrive avec des tests qui reproduisent tous les cas limites de chaque
++   donneur *avant* qu'un consommateur ne migre.
+
+-   **The varints are not shareable as the roadmap assumes.** `stratiform.Varint.decode` and
+-   locomotion's `ProtobufParser` are not the same function with cosmetic differences:
++   **Les varints ne sont pas partageables comme le suppose la feuille de route.**
++   `stratiform.Varint.decode` et le `ProtobufParser` de locomotion ne sont pas la même fonction aux
++   différences cosmétiques près :
+
+=   locomotion's `ProtobufParser` are not the same function with cosmetic differences:
+=
+-   ```tabular
++   ```tabular
+
+-   column  Aspect
++   column  Aspect
+
+-   column  stratiform
++   column  stratiform
+
+-   column  locomotion
++   column  locomotion
+
+-   row  a long encoding  aborts when `shift >= 64`  tolerates `shift` up to 70 and *discards* bits above 63 (`if shift < 64 then result |= …`)
+-   row  the result  an allocated `Decoded(value, offset)`  mutates the parser's `pos` field, allocating nothing
+-   row  errors  `VarintError`  `ProtobufError`, carrying a position
++   row  un encodage long  abandonne lorsque `shift >= 64`  tolère `shift` jusqu'à 70 et *écarte* les bits au-delà de 63 (`if shift < 64 then result |= …`)
++   row  le résultat  un `Decoded(value, offset)` alloué  modifie le champ `pos` de l'analyseur, sans rien allouer
++   row  les erreurs  `VarintError`  `ProtobufError`, qui porte une position
+
+=   row  errors  `VarintError`  `ProtobufError`, carrying a position
+-   ```
++   ```
+
+-   Discarding the high bits is protobuf's rule for non-canonical encodings, so unifying the two
+-   changes one or the other's behaviour on malformed input; a shared decoder either allocates in
+-   protobuf's hot loop or needs a cursor-style API that no donor currently has; and the positions
+-   are part of protobuf's diagnostics.
++   Écarter les bits de poids fort est la règle de protobuf pour les encodages non canoniques : unifier
++   les deux change donc le comportement de l'un ou de l'autre sur une entrée malformée ; un
++   décodeur partagé soit alloue dans la boucle critique de protobuf, soit exige une API de style
++   curseur qu'aucun donneur ne possède actuellement ; et les positions font partie des diagnostics
++   de protobuf.
+
+-   The *encoders* are closer, and `size`/`write` may still be worth sharing. What is genuinely
+-   duplicated is **inside locomotion**: `ProtobufParser` has the same decode loop twice,
+-   differing only in whether it bounds against `data.length` or `boundary`. That is a local
+-   refactor, parameterising the bound — worth doing, but it is a hot loop, so it wants
+-   `make bench` for protobuf either side of the change rather than being done on sight.
+- - **Checksums into ~~gastronomy~~ `corpuscular`**: a fast non-`Digestion` CRC-32/CRC-64/Adler-32
+-   API. **Done** (2026-10-21): `corpuscular_core.scala` holds the only `Crc32`, `Crc64` and
+-   `Adler32` table generation in `lib/`, and every former donor reads them from there; zeppelin
+-   keeps `java.util.zip.CRC32`, as decided below. The Huffman builders and the varint loops are
+-   all still in their donors, and corpuscular has neither:
++   Les *encodeurs* sont plus proches, et `size`/`write` valent peut-être encore d'être partagés. Ce
++   qui est réellement dupliqué l'est **à l'intérieur de locomotion** : `ProtobufParser` contient
++   deux fois la même boucle de décodage, qui ne diffère que par sa borne, `data.length` ou
++   `boundary`. C'est une refactorisation locale, qui paramètre la borne — elle vaut d'être faite,
++   mais c'est une boucle critique : elle demande un `make bench` pour protobuf avant et après le
++   changement, plutôt que d'être faite à vue.
++ - **Sommes de contrôle dans ~~gastronomy~~ `corpuscular`** : une API rapide CRC-32/CRC-64/Adler-32
++   hors `Digestion`. **Terminé** (2026-10-21) : `corpuscular_core.scala` contient la seule
++   génération des tables `Crc32`, `Crc64` et `Adler32` de `lib/`, et tous les anciens donneurs les
++   y lisent ; zeppelin garde `java.util.zip.CRC32`, comme décidé plus bas. Les constructeurs de
++   Huffman et les boucles de varints sont tous encore chez leurs donneurs, et corpuscular n'a ni
++   les uns ni les autres :
+
+=   all still in their donors, and corpuscular has neither:
+=
+-   ```tabular
++   ```tabular
+
+-   column  Algorithm
+-   column  Still held by
+-   row  Huffman builders, decode side (five)  pneumatic's Inflater and Brotli, hallucination's WebP and JPEG, telekinesis's HPACK
+-   row  Huffman builders, encode side  four
+-   row  varint loops  stratiform, locomotion's three, rudiments' `Scribe`, degustation, ethereal's launcher, gastronomy's multihash, pneumatic's XZ container, octogenarian's packfiles
++   column  Algorithme
++   column  Encore détenu par
++   row  constructeurs de Huffman, côté décodage (cinq)  l'Inflater et Brotli de pneumatic, WebP et JPEG d'hallucination, HPACK de telekinesis
++   row  constructeurs de Huffman, côté encodage  quatre
++   row  boucles de varints  stratiform, les trois de locomotion, le `Scribe` de rudiments, degustation, le lanceur d'ethereal, le multihash de gastronomy, le conteneur XZ de pneumatic, les packfiles d'octogenarian
+
+=   row  varint loops  stratiform, locomotion's three, rudiments' `Scribe`, degustation, ethereal's launcher, gastronomy's multihash, pneumatic's XZ container, octogenarian's packfiles
+-   ```
++   ```
+
+-   Not gastronomy: `gastronomy.core` sits on 45 modules where `pneumatic.core` sits on 24, and
+-   neither pneumatic nor hallucination depends on gastronomy, so putting fast checksums there
+-   would nearly double their closures to save a table and a loop. `corpuscular` sits below them
+-   on `anticipation.codec` alone.
++   Pas gastronomy : `gastronomy.core` repose sur 45 modules, là où `pneumatic.core` repose sur 24,
++   et ni pneumatic ni hallucination ne dépendent de gastronomy, donc y placer des sommes de
++   contrôle rapides doublerait presque leurs clôtures pour économiser une table et une boucle.
++   `corpuscular` se trouve sous eux, sur `anticipation.codec` seul.
+
+-   The count of "four hand-rolled CRC-32s" needs correcting in both directions. There are five
+-   implementations of three algorithms:
++   Le décompte de « quatre CRC-32 codés à la main » doit être corrigé dans les deux sens. Il y a
++   cinq implémentations de trois algorithmes :
+
+=   implementations of three algorithms:
+=
+-   ```tabular
++   ```tabular
+
+-   column  Implementation
+-   column  Algorithm
+-   column  Form
+-   row  pneumatic's `Crc32`  CRC-32  streaming, a JZlib port
+-   row  pneumatic's `Adler32`  Adler-32  streaming, a JZlib port
+-   row  pneumatic's `Crc64`  CRC-64  in the XZ layer
+-   row  hallucination's `Crc32`  CRC-32  one-shot
+-   row  zeppelin's `crc32`  CRC-32  delegates to `java.util.zip.CRC32`
++   column  Implémentation
++   column  Algorithme
++   column  Forme
++   row  le `Crc32` de pneumatic  CRC-32  en flux, un portage de JZlib
++   row  l'`Adler32` de pneumatic  Adler-32  en flux, un portage de JZlib
++   row  le `Crc64` de pneumatic  CRC-64  dans la couche XZ
++   row  le `Crc32` d'hallucination  CRC-32  en une passe
++   row  le `crc32` de zeppelin  CRC-32  délègue à `java.util.zip.CRC32`
+
+=   row  zeppelin's `crc32`  CRC-32  delegates to `java.util.zip.CRC32`
+-   ```
++   ```
+
+-   But **two CRC-32s should not be deduplicated at all**: zeppelin's, which delegates to
+-   `java.util.zip.CRC32`, and gastronomy's `Digestion` CRC-32, which likewise goes through
+-   `JavaBaseHashing`. Both are JVM intrinsics; replacing them with a table-driven Scala loop
+-   would be a performance regression for no benefit. The same is true of pneumatic on the JVM,
+-   whose `FlateBackend` uses `JavaCrc32`; its pure `Crc32` is the JS/native path only.
++   Mais **deux CRC-32 ne doivent pas du tout être dédupliqués** : celui de zeppelin, qui délègue à
++   `java.util.zip.CRC32`, et le CRC-32 `Digestion` de gastronomy, qui passe lui aussi par
++   `JavaBaseHashing`. Ce sont tous deux des intrinsèques de la JVM ; les remplacer par une boucle
++   Scala pilotée par une table serait une régression de performance sans aucun bénéfice. Il en va de
++   même de pneumatic sur la JVM, dont le `FlateBackend` utilise `JavaCrc32` ; son `Crc32` pur n'est
++   que le chemin JS/natif.
+
+-   That asymmetry is itself worth resolving, and is recorded here as an open decision. pneumatic
+-   picks its checksum per platform — `flate-jvm` supplies `JavaCrc32`, `flate-native` the pure
+-   one — whereas zeppelin and gastronomy reach for `java.util.zip` unconditionally. For zeppelin
+-   that choice is part of why it is pinned to the JVM (`scalaJs = false`, "zip archives
+-   (`java.util.zip`, `galilei`)"): a ZIP library that cross-compiled would need the pure
+-   checksum, which `corpuscular` now provides. So the wiring is possible, and pneumatic's
+-   `<name>-jvm`/`<name>-native` source-directory split is the precedent for it. The decision is
+-   whether to adopt it — either make the platform choice consistent everywhere, or state plainly
+-   which libraries are JVM-only by design and stop paying for the abstraction elsewhere.
++   Cette asymétrie mérite elle-même d'être résolue, et elle est consignée ici comme une décision
++   ouverte. pneumatic choisit sa somme de contrôle selon la plateforme — `flate-jvm` fournit
++   `JavaCrc32`, `flate-native` la version pure —, alors que zeppelin et gastronomy recourent à
++   `java.util.zip` sans condition. Pour zeppelin, ce choix explique en partie qu'il soit cantonné à
++   la JVM (`scalaJs = false`, « zip archives (`java.util.zip`, `galilei`) ») : une bibliothèque ZIP
++   multiplateforme aurait besoin de la somme de contrôle pure, que `corpuscular` fournit désormais.
++   Le câblage est donc possible, et la séparation des répertoires de sources
++   `<name>-jvm`/`<name>-native` de pneumatic en est le précédent. La décision porte sur son
++   adoption — soit rendre le choix de plateforme cohérent partout, soit indiquer clairement quelles
++   bibliothèques sont réservées à la JVM par conception, et cesser de payer l'abstraction ailleurs.
+
+-   **pneumatic's migration is done**, and the capture discipline it needed turned out to be
+-   three small things rather than a rewrite. `FlateChecksum` is now a `caps.Mutable` trait with
+-   `update def` methods, matching XzCheck's checkers and `corpuscular`'s. Making that compile
+-   required: declaring the fields that hold one as `FlateChecksum^` (a plain `val` hides the
+-   freshness, so the reference is read-only and no update method may be called on it), the same
+-   on the `crc32()` factories in both flate backends, and marking two reads in `Inflater`
+-   separate by hand — `window` and `adler` are both reached through `this`, which the separation
+-   checker rejects even though `update` takes its buffer read-only and keeps no reference to it.
++   **La migration de pneumatic est terminée**, et la discipline de capture qu'elle exigeait s'est
++   révélée tenir en trois petites choses plutôt qu'en une réécriture. `FlateChecksum` est désormais
++   un trait `caps.Mutable` doté de méthodes `update def`, comme les vérificateurs de XzCheck et ceux
++   de `corpuscular`. Pour que cela compile, il a fallu : déclarer `FlateChecksum^` les champs qui en
++   contiennent un (un simple `val` cache la fraîcheur, si bien que la référence est en lecture seule
++   et qu'aucune méthode de mise à jour ne peut y être appelée), faire de même sur les fabriques
++   `crc32()` des deux backends flate, et marquer à la main deux lectures dans `Inflater` comme
++   séparées — `window` et `adler` sont tous deux atteints via `this`, ce que le contrôleur de
++   séparation rejette, alors même qu'`update` prend son tampon en lecture seule et n'en garde
++   aucune référence.
+
+-   The build comment claiming pneumatic was "compiled with capture checking (not separation
+-   checking)" because "the faithfully-ported, aliasing-heavy zlib machinery does not (yet)
+-   satisfy the stricter ruleset" was stale: `settings.sep` applies both, and had been applied to
+-   this module all along. It is corrected.
+- - **Consumer migration** onto the binary-primitives library, split by consumer:
++   Le commentaire du build qui affirmait que pneumatic était « compiled with capture checking (not
++   separation checking) » parce que « the faithfully-ported, aliasing-heavy zlib machinery does not
++   (yet) satisfy the stricter ruleset » était périmé : `settings.sep` applique les deux, et
++   s'appliquait à ce module depuis le début. Il est corrigé.
++ - **Migration des consommateurs** vers la bibliothèque de primitives binaires, découpée par
++   consommateur :
+
+= - **Consumer migration** onto the binary-primitives library, split by consumer:
+=
+-   ```tabular
++   ```tabular
+
+-   column  Batch
+-   column  Consumers
+-   row  (a)  pneumatic and hallucination codecs
+-   row  (b)  telekinesis.http2's Hpack and FrameReader
+-   row  (c)  stratiform, locomotion (which has two internal varint copies), mandible, breviloquence, phoenicia, anthology and zeppelin
++   column  Lot
++   column  Consommateurs
++   row  (a)  les codecs de pneumatic et d'hallucination
++   row  (b)  Hpack et FrameReader de telekinesis.http2
++   row  (c)  stratiform, locomotion (qui a deux copies internes de varints), mandible, breviloquence, phoenicia, anthology et zeppelin
+
+=   row  (c)  stratiform, locomotion (which has two internal varint copies), mandible, breviloquence, phoenicia, anthology and zeppelin
+-   ```
++   ```
+
+- - **Remaining dedups**: the JSON string-escaping routine (jacinta.Json.scala:1247–1279,
+-   copied verbatim into ypsiloid) becomes a gossamer-level helper; a CSI tokenizer in
+-   escapade.csi replaces yossarian.Pty's and profanity.Keyboard's private escape-sequence
+-   state machines (yossarian's tests are the gate); a `SecureEntropy` capability in
+-   capricious replaces the direct `SecureRandom`/`UUID.randomUUID` uses in perihelion,
+-   enigmatic and inimitable (restoring wasi parity) — **needs a decision; see below**; telekinesis
+-   exports its byte-level header-block scanner for obligatory.ContentLength and scintillate
+-   (correction 3 applies).
++ - **Dédoublonnages restants** : la routine d'échappement des chaînes JSON
++   (jacinta.Json.scala:1247–1279, copiée telle quelle dans ypsiloid) devient un utilitaire au
++   niveau de gossamer ; un analyseur lexical CSI dans escapade.csi remplace les automates privés
++   de séquences d'échappement de yossarian.Pty et de profanity.Keyboard (les tests de yossarian
++   servent de contrôle) ; une capacité `SecureEntropy` dans capricious remplace les usages
++   directs de `SecureRandom`/`UUID.randomUUID` dans perihelion, enigmatic et inimitable (ce qui
++   rétablit la parité avec wasi) — **une décision est nécessaire ; voir plus bas** ; telekinesis
++   exporte son analyseur de blocs d'en-têtes au niveau de l'octet pour obligatory.ContentLength et
++   scintillate (la correction 3 s'applique).
+
+-   **The first two of these premises fail on inspection.**
++   **Les deux premières de ces prémisses tombent à l'examen.**
+
+-   The string escaper is *not* verbatim. jacinta names seven escapes (quote, backslash,
+-   backspace, formfeed, newline, return, tab); ypsiloid names five, omitting backspace and
+-   formfeed, which its `c < ' '` branch then emits as six-character unicode references instead --
+-   valid YAML, different bytes. ypsiloid also wraps the whole routine in `if plainSafe(string)`,
+-   because YAML may emit an unquoted plain scalar and JSON may not. What is genuinely shared is
+-   about twelve lines of sliding-window loop and an `escape` helper; the differences are precisely
+-   the parts that matter. Sharing it means parameterising over the escape table, in two hot
+-   serialisers, for twelve lines. (Whether ypsiloid's omission is deliberate is worth asking.)
++   L'échappement des chaînes n'est *pas* copié tel quel. jacinta nomme sept échappements
++   (guillemet, barre oblique inverse, retour arrière, saut de page, saut de ligne, retour chariot,
++   tabulation) ; ypsiloid en nomme cinq, en omettant le retour arrière et le saut de page, que sa
++   branche `c < ' '` émet alors sous forme de références unicode de six caractères --
++   du YAML valide, des octets différents. ypsiloid enveloppe aussi toute la routine dans
++   `if plainSafe(string)`, car YAML peut émettre un scalaire simple sans guillemets, ce que JSON ne
++   peut pas. Ce qui est réellement partagé, c'est une douzaine de lignes de boucle à fenêtre
++   glissante et un utilitaire `escape` ; les différences sont précisément les parties qui comptent.
++   Le partager implique de le paramétrer par la table d'échappements, dans deux sérialiseurs
++   critiques, pour douze lignes. (Il vaut la peine de se demander si l'omission d'ypsiloid est
++   délibérée.)
+
+-   The CSI item is not a deduplication at all: `escapade.csi` is a *writer* -- `cuu`, `cud`, `sgr`
+-   and friends generate sequences -- and contains no parser, so this means writing a tokenizer,
+-   not moving one. The two consumers then differ in the ways that make a tokenizer hard to share:
+-   yossarian parses a complete buffer with a pure state machine and *raises* `Pty.Error` on
+-   malformed input, as a terminal emulator must; profanity reads a live TTY where the parse is
+-   entangled with timing -- its `Lookahead` exists to decide whether a bare ESC is the Escape key
+-   or the start of a sequence split across a packet boundary -- and it degrades to
+-   `Keypress.Escape` rather than failing, because a user may type anything. A shared tokenizer
+-   would have to abstract over both the input model and the error policy.
++   L'élément CSI n'est pas du tout une déduplication : `escapade.csi` est un *écrivain* -- `cuu`,
++   `cud`, `sgr` et compagnie génèrent des séquences -- et ne contient aucun analyseur : il s'agit
++   donc d'écrire un analyseur lexical, non d'en déplacer un. Les deux consommateurs diffèrent
++   ensuite précisément là où un analyseur lexical est difficile à partager : yossarian analyse un
++   tampon complet avec un automate pur et *lève* `Pty.Error` sur une entrée malformée, comme doit le
++   faire un émulateur de terminal ; profanity lit un TTY en direct, où l'analyse est mêlée à des
++   questions de temps -- son `Lookahead` existe pour décider si un ESC isolé est la touche Échap ou
++   le début d'une séquence coupée par une frontière de paquet -- et il se rabat sur
++   `Keypress.Escape` plutôt que d'échouer, car un utilisateur peut taper n'importe quoi. Un
++   analyseur lexical partagé devrait faire abstraction à la fois du modèle d'entrée et de la
++   politique d'erreurs.
+
+- **SecureEntropy.** The list of sites needs correcting before this is attempted. enigmatic's
+- `SecureRandom` uses are all in `core-jvm`, its JVM backend, alongside a `core-native` twin and an
+- OpenSSL provider — that is the platform-backend pattern working as intended, not a parity gap, and
+- they should stay. perihelion is `scalaJs = false`, so its per-connection `SecureRandom` for
+- WebSocket masking keys is JVM-only by construction. The real site is inimitable's `Uuid.apply()`,
+- which calls `ju.UUID.randomUUID()` in a library that cross-compiles to every platform.
++ **SecureEntropy.** La liste des sites doit être corrigée avant de s'y attaquer. Les usages de
++ `SecureRandom` par enigmatic sont tous dans `core-jvm`, son backend JVM, à côté d'un jumeau
++ `core-native` et d'un fournisseur OpenSSL — c'est le modèle des backends par plateforme qui
++ fonctionne comme prévu, non un écart de parité, et ils doivent rester. perihelion est en
++ `scalaJs = false`, donc son `SecureRandom` par connexion pour les clés de masquage WebSocket est
++ réservé à la JVM par construction. Le vrai site est `Uuid.apply()` d'inimitable, qui appelle
++ `ju.UUID.randomUUID()` dans une bibliothèque compilée pour toutes les plateformes.
+
+- capricious is a viable home — `capricious.core` cross-compiles (the `scalaNative = false` is on
+- `capricious.wasi`), and capricious already has exactly the right precedent: a `wasi` component
+- supplying a `Randomization` backed by a `wasi:random/random` import.
++ capricious est un emplacement viable — `capricious.core` est multiplateforme (le
++ `scalaNative = false` est sur `capricious.wasi`), et capricious possède déjà exactement le bon
++ précédent : un composant `wasi` qui fournit une `Randomization` adossée à un import
++ `wasi:random/random`.
+
+- What makes this a decision rather than a change is the shape. `Uuid()` has around 28 call sites
+- across the tree, so `def apply()(using SecureEntropy)` is a public API change requiring the
+- capability in scope everywhere. The alternative is `core-jvm`/`core-native` backends inside
+- inimitable, as galilei and pneumatic do, which fixes parity with no API change. Choosing between
+- them depends on whether `java.util.UUID.randomUUID` is actually deficient on JS, Native and WASI —
+- it compiles on all of them, so this is a question about entropy quality, and wants measuring on
+- those platforms rather than assuming.
++ Ce qui en fait une décision plutôt qu'un changement, c'est la forme. `Uuid()` a environ 28 sites
++ d'appel dans l'arborescence, donc `def apply()(using SecureEntropy)` est un changement d'API
++ publique qui exige la capacité dans la portée partout. L'alternative est d'avoir des backends
++ `core-jvm`/`core-native` dans inimitable, comme le font galilei et pneumatic, ce qui rétablit la
++ parité sans changer l'API. Le choix entre les deux dépend de la question de savoir si
++ `java.util.UUID.randomUUID` est réellement déficient sur JS, Native et WASI — il compile sur
++ toutes ces plateformes, c'est donc une question de qualité de l'entropie, qui demande à être
++ mesurée sur ces plateformes plutôt que supposée.
+
+- Progress (2026-09-25): the CRC and Adler tables are one implementation, in corpuscular —
+- pneumatic, XZ's CRC-64 (#2043), gastronomy's Soundness hashing and hallucination's PNG codec
+- delegate to it, and the two JVM-intrinsic users stay by design. corpuscular has no Huffman
+- builder or varint yet: four Huffman decode-table builders (Brotli, Inflater, WebP, JPEG) plus
+- the encoders' trees and HPACK's own table remain, and around sixteen varint loops —
+- stratiform's five, locomotion's four, seven copies of `uvarint` across the xenophile, mandible
+- and degustation atomizers, and gastronomy's multihash.
++ Avancement (2026-09-25) : les tables CRC et Adler n'ont plus qu'une implémentation, dans
++ corpuscular — pneumatic, le CRC-64 de XZ (#2043), le hachage Soundness de gastronomy et le codec
++ PNG d'hallucination lui délèguent, et les deux utilisateurs d'intrinsèques de la JVM restent tels
++ quels par conception. corpuscular n'a pas encore de constructeur de Huffman ni de varint : il
++ reste quatre constructeurs de tables de décodage de Huffman (Brotli, Inflater, WebP, JPEG), plus
++ les arbres des encodeurs et la table propre à HPACK, ainsi qu'environ seize boucles de varints —
++ les cinq de stratiform, les quatre de locomotion, sept copies de `uvarint` dans les atomiseurs
++ de xenophile, mandible et degustation, et le multihash de gastronomy.
+
+- Done when: each algorithm has exactly one implementation, verified by grep for the
+- signature patterns (CRC tables, Huffman builders, varint loops).
++ Terminé lorsque : chaque algorithme a exactement une implémentation, vérifiée par grep sur les
++ motifs de signature (tables CRC, constructeurs de Huffman, boucles de varints).
+
+- ## mod-6: the staged-derivation kernel
++ ## mod-6 : le noyau de dérivation par mise en étapes
+
+- Horizon: mid–long
++ Horizon : moyen–lointain
+
+- The six staged-derivation engines (jacinta, breviloquence, locomotion, xylophone,
+- stratiform.staged, stratiform.binaryStaged — ~7,400 lines) share a verbatim-identical
+- expansion-time environment: macroClassloader, currentOutputDirectory, definedInCurrentRun,
+- innerClasspath, the TypeShape transport, `summonViaStaging` and the cache — ~250–300 lines
+- per engine, and prescience.internal.scala already holds the proto-version they all copied.
++ Les six moteurs de dérivation par mise en étapes (jacinta, breviloquence, locomotion,
++ xylophone, stratiform.staged, stratiform.binaryStaged — ~7 400 lignes) partagent un environnement
++ de temps d'expansion strictement identique : macroClassloader, currentOutputDirectory,
++ definedInCurrentRun, innerClasspath, le transport de TypeShape, `summonViaStaging` et le cache —
++ ~250–300 lignes par moteur, et prescience.internal.scala contient déjà la proto-version qu'ils ont
++ tous copiée.
+
+- A new `prescience.staged` (bundled alongside its siblings) provides that kernel
+- once, parameterised by the format trait's `Class` (`TypeRepr.typeConstructorOf` instead of a
+- static `TypeRepr.of`). The format-specific generators, `fieldSeam` inline methods,
+- `Inlinable` traits and the six `XxxReader` classes **stay in their format packages**: the
+- generators quote `private[jacinta]`-style `rawParser`/`rawTactic` members, which a quote
+- written outside the package cannot name, and that capability seal is load-bearing. Expected
+- dedup: ~1,600–1,800 lines.
++ Un nouveau `prescience.staged` (placé dans un lot avec ses frères) fournit ce noyau une seule
++ fois, paramétré par la `Class` du trait de format (`TypeRepr.typeConstructorOf` au lieu d'un
++ `TypeRepr.of` statique). Les générateurs propres à chaque format, les méthodes inline
++ `fieldSeam`, les traits `Inlinable` et les six classes `XxxReader` **restent dans leurs packages
++ de format** : les générateurs citent des membres `rawParser`/`rawTactic` de style
++ `private[jacinta]`, qu'une quote écrite hors du package ne peut pas nommer, et ce sceau de
++ capacité est porteur de charge. Déduplication attendue : ~1 600–1 800 lignes.
+
+- Migration is one format per PR — xylophone, locomotion, jacinta, breviloquence, then
+- stratiform (staged and binaryStaged together) — each verified with `make attest`,
+- `make build` and `make bench` for that format.
++ La migration se fait à raison d'un format par PR — xylophone, locomotion, jacinta, breviloquence,
++ puis stratiform (staged et binaryStaged ensemble) — chacune vérifiée par `make attest`,
++ `make build` et `make bench` pour ce format.
+
+- Progress (2026-10-21): none. All six engines still define `macroClassloader`,
+- `currentOutputDirectory`, `definedInCurrentRun` and `innerClasspath` — four of them now in a
+- `*.InlinableStager.scala` (216–265 lines each), stratiform's two in `stagedInternal.scala` and
+- `bintelInternal.scala` (which also keep `summonViaStaging`) — prescience's proto-copy makes a
+- seventh, and `prescience.staged` does not exist.
++ Avancement (2026-10-21) : aucun. Les six moteurs définissent encore tous `macroClassloader`,
++ `currentOutputDirectory`, `definedInCurrentRun` et `innerClasspath` — quatre d'entre eux désormais
++ dans un `*.InlinableStager.scala` (216 à 265 lignes chacun), les deux de stratiform dans
++ `stagedInternal.scala` et `bintelInternal.scala` (qui gardent aussi `summonViaStaging`) — la
++ proto-copie de prescience en fait un septième, et `prescience.staged` n'existe pas.
+
+- Done when: no `*.staged` module contains its own copy of the expansion environment, and the
+- benchmark corpus shows performance parity per format.
++ Terminé lorsque : aucun module `*.staged` ne contient sa propre copie de l'environnement
++ d'expansion, et le corpus de benchmarks montre la parité de performance pour chaque format.
+
+- ## mod-7: stretch goals
++ ## mod-7 : objectifs ambitieux
+
+- Horizon: long — each requires explicit approval before starting, because each crosses the
+- no-semantic-change line or carries real regression risk.
++ Horizon : lointain — chacun requiert une approbation explicite avant de commencer, car chacun
++ franchit la ligne de l'absence de changement sémantique ou comporte un risque réel de régression.
+
+- - **Full staged-engine unification** (beyond the mod-6 kernel): requires unsealing
+-   `rawParser`/`rawTactic` (an API and capability-seal change) and abstracting
+-   `Expr[Reader]` over capability-classed types across module boundaries, where known
+-   cc-in-quotes pickling hazards live. Potential further ~4,000-line dedup.
+- - **A shared document-AST substrate for jacinta and ypsiloid** (placeholder name
+-   **`palimpsest`**): the `Array[Any]` node layout, PositionIndex, NumberMode, parser pool
+-   and descriptor layout that ypsiloid mirrors from jacinta. Audit blockers: ypsiloid's
+-   identity-sensitive `arrayPad` sentinel (compared with `eq`), deliberately divergent
+-   descriptor layouts, and hot-parser performance risk. If approved: extract from jacinta
+-   verbatim with jacinta delegating (bench-compared), then retarget ypsiloid separately.
+- - ~~**Folding anticipation.html**~~ Done: `anticipation.html` and `GenericHtmlAttribute` were
+-   deleted outright once its only two consumers (gesticulate, telekinesis) turned out to have no
+-   consumers of their own.
++ - **Unification complète du moteur par mise en étapes** (au-delà du noyau de mod-6) : elle
++   requiert de desceller `rawParser`/`rawTactic` (un changement d'API et de sceau de capacité) et
++   d'abstraire `Expr[Reader]` sur des types classés comme capacités par-delà les frontières de
++   modules, là où se trouvent des risques connus de sérialisation du contrôle des captures dans les
++   quotes. Déduplication supplémentaire potentielle d'environ 4 000 lignes.
++ - **Un substrat d'AST de document partagé pour jacinta et ypsiloid** (nom provisoire
++   **`palimpsest`**) : la disposition des nœuds `Array[Any]`, PositionIndex, NumberMode, le pool
++   d'analyseurs et la disposition des descripteurs qu'ypsiloid reproduit depuis jacinta. Obstacles
++   relevés par l'audit : la sentinelle `arrayPad` d'ypsiloid, sensible à l'identité (comparée avec
++   `eq`), des dispositions de descripteurs volontairement divergentes, et un risque de performance
++   sur les analyseurs critiques. Si l'élément est approuvé : extraire de jacinta tel quel, jacinta
++   déléguant (comparaison par benchmark), puis recibler ypsiloid séparément.
++ - ~~**Intégrer anticipation.html**~~ Terminé : `anticipation.html` et `GenericHtmlAttribute` ont
++   été supprimés purement et simplement, une fois établi que leurs deux seuls consommateurs
++   (gesticulate, telekinesis) n'avaient eux-mêmes aucun consommateur.
+
+- ## Rejected, with reasons — recorded so they are not re-litigated
++ ## Rejetés, avec leurs raisons — consignés pour ne pas être rediscutés
+
+- - Inverting fulminate ↔ anticipation.log: the current direction is deliberate
+-   (`Communicable extends Transcribable` lets `Loggable.fanOut` log any error without
+-   anticipation naming `Message`), and the edge is cheap after mod-1.
+- - Moving spectacular's `typeRepr`/`meta` givens: no companion can host them, and the loss
+-   of implicit scope silently changes `summonFrom` fallthrough.
+- - Sharing the six `XxxReader` classes: only ~15 lines are common, and the
+-   `private[pkg]` seal is load-bearing.
+- - Merging zephyrine into turbulence, redrawing the gossamer/hieroglyph boundary, or merging
+-   proscenium/rudiments/vacuous: audited clean — the layering is real.
++ - Inverser fulminate ↔ anticipation.log : la direction actuelle est délibérée
++   (`Communicable extends Transcribable` permet à `Loggable.fanOut` de journaliser n'importe quelle
++   erreur sans qu'anticipation nomme `Message`), et l'arête est peu coûteuse après mod-1.
++ - Déplacer les givens `typeRepr`/`meta` de spectacular : aucun compagnon ne peut les accueillir,
++   et la perte de la portée implicite modifie sans bruit le passage au cas suivant de `summonFrom`.
++ - Partager les six classes `XxxReader` : seules une quinzaine de lignes sont communes, et le
++   sceau `private[pkg]` est porteur.
++ - Fusionner zephyrine dans turbulence, retracer la frontière entre gossamer et hieroglyph, ou
++   fusionner proscenium/rudiments/vacuous : l'audit les a trouvés sains — la stratification est
++   réelle.
+
+- ## Shape and expected outcomes
++ ## Forme et résultats attendus
+
+- Five PRs, one per phase: mod-1 and mod-2 together, then mod-3, mod-4, mod-5 and mod-6 each
+- on their own. The legs within a phase remain individually verifiable — each must leave the
+- tree compiling and behaviour unchanged — but they are batched into one reviewable change
+- rather than one PR apiece. Within a PR the independent tracks may be done in any order: the
+- escapade chain (urticose.ansi → escapade decomposition → spectacular inversions);
+- anticipation.check + chiaroscuro; legerdemain.query; ethereal.dist; the ypsiloid → jacinta
+- chain; the stratiform splits; turbulence.stdio → rudiments; the pneumatic → hallucination →
+- facsimile → dedup chain; and the staged kernel. mod-7 stays out until separately approved.
++ Cinq PR, une par phase : mod-1 et mod-2 ensemble, puis mod-3, mod-4, mod-5 et mod-6 chacune
++ séparément. Les étapes d'une phase restent vérifiables individuellement — chacune doit laisser
++ l'arborescence compilable et le comportement inchangé — mais elles sont regroupées en une seule
++ modification révisable plutôt qu'en une PR chacune. Au sein d'une PR, les pistes indépendantes
++ peuvent être menées dans n'importe quel ordre : la chaîne d'escapade (urticose.ansi →
++ décomposition d'escapade → inversions de spectacular) ; anticipation.check + chiaroscuro ;
++ legerdemain.query ; ethereal.dist ; la chaîne ypsiloid → jacinta ; les scissions de
++ stratiform ; turbulence.stdio → rudiments ; la chaîne pneumatic → hallucination → facsimile →
++ déduplication ; et le noyau par mise en étapes. mod-7 reste à l'écart tant qu'il n'est pas
++ approuvé séparément.
+
+- Expected outcomes:
++ Résultats attendus :
+
+= Expected outcomes:
+=
+- ```tabular
++ ```tabular
+
+- column  Outcome
+- column  Measure
+- row  the critical path shortens  at three choke points: legerdemain.query, urticose.ansi, the escapade slimming
+- row  the test framework leaves the closure of  ~40 modules
+- row  duplicated algorithms disappear  ~2,500 lines in mod-5, ~1,700 in mod-6
++ column  Résultat
++ column  Mesure
++ row  le chemin critique se raccourcit  à trois points d'étranglement : legerdemain.query, urticose.ansi, l'allègement d'escapade
++ row  le framework de test sort de la clôture de  ~40 modules
++ row  les algorithmes dupliqués disparaissent  ~2 500 lignes dans mod-5, ~1 700 dans mod-6
+
+= row  duplicated algorithms disappear  ~2,500 lines in mod-5, ~1,700 in mod-6
+- ```
++ ```
+
+- Rudiments and turbulence — the two modules the issue singles out — also get crisp,
+- one-sentence purposes: "extension-method utilities on core types" and "the pull-streaming
+- algebra", with the standard streams, concurrency primitives, process exit and confined
+- indexing each living where they belong.
++ Rudiments et turbulence — les deux modules que l'issue cible en particulier — reçoivent aussi
++ des raisons d'être nettes, en une phrase : « des utilitaires sous forme de méthodes d'extension
++ sur les types de base » et « l'algèbre du streaming par extraction », les flux standard, les
++ primitives de concurrence, la sortie du processus et l'indexation confinée trouvant chacun leur
++ place.
+
+- # The second audit (2026-08-09)
++ # Le deuxième audit (2026-08-09)
+
+- With mod-1 through mod-5 landed (or blocked with recorded reasons), the graph was re-measured
+- at the tip of `modularity/decided-items` and swept again. Method: the component graph was
+- parsed out of `build.mill` and depth, fan-in and closure computed per *component* (the first
+- baseline counted libraries, so the two depth figures are not comparable); every declared
+- dependency whose package name never appears in the consumer's sources was flagged; and each
+- flag was then verified by hand against the dependency's `soundness_*.scala` export file (for
+- toplevel names usable without naming the package) and against implicit scope (givens in the
+- companions of mentioned types). File and line references are snapshots from this audit and
+- must be re-verified at implementation time. A grep verdict is evidence, not proof: the
+- definitive check for every removal below is compiling the component (and its dependents)
+- without the edge.
++ Une fois mod-1 à mod-5 intégrés (ou bloqués, avec des raisons consignées), le graphe a été
++ remesuré à la pointe de `modularity/decided-items` et passé à nouveau au crible. Méthode : le
++ graphe des composants a été extrait de `build.mill`, et la profondeur, le nombre de dépendants et
++ la clôture ont été calculés par *composant* (la première référence comptait des bibliothèques, de
++ sorte que les deux chiffres de profondeur ne sont pas comparables) ; chaque dépendance déclarée
++ dont le nom de package n'apparaît jamais dans les sources du consommateur a été signalée ; et
++ chaque signalement a ensuite été vérifié à la main par rapport au fichier d'exports
++ `soundness_*.scala` de la dépendance (pour les noms de premier niveau utilisables sans nommer le
++ package) et par rapport à la portée implicite (les givens dans les compagnons des types
++ mentionnés). Les références de fichiers et de lignes sont des instantanés de cet audit et doivent
++ être revérifiées au moment de l'implémentation. Un verdict de grep est un indice, non une
++ preuve : la vérification définitive de chaque suppression ci-dessous consiste à compiler le
++ composant (et ses dépendants) sans l'arête.
+
+- ## The re-measured baseline
++ ## La référence remesurée
+
+- The critical path is 27 components deep: exegesis.core → obligatory.json → hyperbole.core →
+- harlequin.ansi → harlequin.core → hellenism.jvm → galilei.jvm → galilei.core →
++ Le chemin critique est profond de 27 composants : exegesis.core → obligatory.json →
++ hyperbole.core → harlequin.ansi → harlequin.core → hellenism.jvm → galilei.jvm → galilei.core →
+
+- turbulence.core → parasite.core → nomenclature.core → gossamer.core → distillate.core →
++ turbulence.core → parasite.core → nomenclature.core → gossamer.core → distillate.core →
+
+- digression.core → iridescence.core → geodesy.angle → hypotenuse.core → contingency.core →
++ digression.core → iridescence.core → geodesy.angle → hypotenuse.core → contingency.core →
+
+- rudiments.core → concordance.core → denominative.core → vacuous.core → fulminate.core →
++ rudiments.core → concordance.core → denominative.core → vacuous.core → fulminate.core →
+
+- anticipation.log → anticipation.text → symbolism.core → prepositional.core.
++ anticipation.log → anticipation.text → symbolism.core → prepositional.core.
+
+- The components with the highest fan-in, and those with the largest closures:
++ Les composants qui ont le plus de dépendants, et ceux dont la clôture est la plus grande :
+
+= The components with the highest fan-in, and those with the largest closures:
+=
+- ```tabular
++ ```tabular
+
+- column  Component
+- column  Fan-in
++ column  Composant
++ column  Dépendants
+
+- row  gossamer.core  44
++ row  gossamer.core  44
+
+- row  turbulence.core  31
++ row  turbulence.core  31
+
+- row  hypotenuse.core  23
++ row  hypotenuse.core  23
+
+- row  hellenism.core  18
++ row  hellenism.core  18
+
+- row  zephyrine.core  18
++ row  zephyrine.core  18
+
+- row  prepositional.core  16
++ row  prepositional.core  16
+
+- row  contingency.core  16
++ row  contingency.core  16
+
+= row  contingency.core  16
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Component
+- column  Closure (components)
++ column  Composant
++ column  Clôture (composants)
+
+- row  exegesis.core  99
++ row  exegesis.core  99
+
+- row  anthology.xeq  94
++ row  anthology.xeq  94
+
+- row  burdock.core  90
++ row  burdock.core  90
+
+- row  ziggurat.packager  89
++ row  ziggurat.packager  89
+
+- row  ethereal.core  87
++ row  ethereal.core  87
+
+= row  ethereal.core  87
+- ```
++ ```
+
+- Simulating every leg below applied at once gives:
++ La simulation de l'application simultanée de toutes les étapes ci-dessous donne :
+
+= Simulating every leg below applied at once gives:
+=
+- ```tabular
++ ```tabular
+
+- column  Measure
+- column  Measured
+- column  Simulated
+- row  critical path  27  23
+- row  exegesis.core's closure  99  59
++ column  Mesure
++ column  Mesuré
++ column  Simulé
++ row  chemin critique  27  23
++ row  clôture d'exegesis.core  99  59
+
+= row  exegesis.core's closure  99  59
+- row
++ row
+
+-   cell  gossamer.core's closure
++   cell  clôture de gossamer.core
+
+=   cell  gossamer.core's closure
+-   cell
++   cell
+
+-   cell  23
++   cell  23
+
+=   cell  23
+- row
++ row
+
+-   cell  pneumatic.core's closure
++   cell  clôture de pneumatic.core
+
+=   cell  pneumatic.core's closure
+-   cell
++   cell
+
+-   cell  21
++   cell  21
+
+=   cell  21
+- ```
++ ```
+
+- The residual spine is anthology → hellenism.jvm → galilei → turbulence → parasite →
+- nomenclature → gossamer → the foundations, whose one hard link is recorded at the end.
++ La colonne vertébrale résiduelle est anthology → hellenism.jvm → galilei → turbulence →
++ parasite → nomenclature → gossamer → les fondations, dont le seul lien dur est consigné à la fin.
+
+- Both ends of the measured path turned out to be soft: the head (exegesis/obligatory down to
+- harlequin) is held together largely by dead edges, and the tail below gossamer hangs on a
+- handful of relocatable givens.
++ Les deux extrémités du chemin mesuré se sont révélées souples : la tête (d'exegesis/obligatory
++ jusqu'à harlequin) tient en grande partie par des arêtes mortes, et la queue sous gossamer repose
++ sur une poignée de givens déplaçables.
+
+- ## mod-8: dead edges, round two — and the misdeclarations they hide
++ ## mod-8 : arêtes mortes, deuxième passe — et les déclarations erronées qu'elles cachent
+
+- Horizon: near. One PR, deletions and dependency-list corrections only.
+- Done: #1758 (2026-08-10)
++ Horizon : proche. Une PR, uniquement des suppressions et des corrections de listes de dépendances.
++ Terminé : #1758 (2026-08-10)
+
+- The scan surfaced two things the first audit's mod-1 did not: a second round of genuinely
+- dead edges, and — more urgent — components using dependencies they never declared, reaching
+- them through *someone else's* dead edge. The misdeclarations are correctness debt (one
+- classpath reorder from a build break) and go first, in the same PR:
++ L'analyse a fait apparaître deux choses que le mod-1 du premier audit n'avait pas vues : une
++ deuxième série d'arêtes réellement mortes, et — plus urgent — des composants qui utilisent des
++ dépendances qu'ils n'ont jamais déclarées, et qui les atteignent par l'arête morte *d'un autre*.
++ Les déclarations erronées sont une dette de correction (un réordonnancement du classpath suffit à
++ casser le build) et passent en premier, dans la même PR :
+
+- - **hallucination.png** uses `corpuscular.Crc32.checksum`
+-   (hallucination.PngCodec.scala:84, 360) but declares only `core`, whose own corpuscular
+-   edge is otherwise dead. Move the `corpuscular.core` declaration from core to png.
+- - **obligatory.grpc** imports spectacular (obligatory.Grpc.scala:44,
+-   obligatory.GrpcChannel.scala:47) without declaring it, reaching it through
+-   locomotion.core's dead spectacular edge. Declare it before that edge is cut.
+- - **ziggurat.packager** uses `digest[Sha2[256]]` (ziggurat.Packager.scala:133) with
+-   gastronomy undeclared, currently supplied via telekinesis.jvm → coaxial.jvm. Declare it.
++ - **hallucination.png** utilise `corpuscular.Crc32.checksum`
++   (hallucination.PngCodec.scala:84, 360) mais ne déclare que `core`, dont l'arête vers
++   corpuscular est par ailleurs morte. Déplacer la déclaration de `corpuscular.core` de core vers
++   png.
++ - **obligatory.grpc** importe spectacular (obligatory.Grpc.scala:44,
++   obligatory.GrpcChannel.scala:47) sans le déclarer, et l'atteint par l'arête morte de
++   locomotion.core vers spectacular. Le déclarer avant que cette arête soit coupée.
++ - **ziggurat.packager** utilise `digest[Sha2[256]]` (ziggurat.Packager.scala:133) sans déclarer
++   gastronomy, qui lui parvient actuellement par telekinesis.jvm → coaxial.jvm. Le déclarer.
+
+- **Conduit edges** — name-dead, but the sole supplier of a module the consumer genuinely
+- imports. These are misdeclared dependency lists, not cuttable edges: declare what is really
+- used, and then decide per case whether the conduit drops:
++ **Arêtes de transit** — mortes au regard des noms, mais seules à fournir un module que le
++ consommateur importe réellement. Ce sont des listes de dépendances mal déclarées, non des arêtes
++ à couper : déclarer ce qui est réellement utilisé, puis décider au cas par cas si l'arête de
++ transit disparaît :
+
+= used, and then decide per case whether the conduit drops:
+=
+- ```tabular
++ ```tabular
+
+- column  Conduit edge
+- column  Sole supplier of
+- column  Note
+- row  breviloquence.core → urticose.url  gossamer.core  its sources import gossamer, spectacular, distillate and wisteria, none declared
++ column  Arête de transit
++ column  Seule à fournir
++ column  Remarque
++ row  breviloquence.core → urticose.url  gossamer.core  ses sources importent gossamer, spectacular, distillate et wisteria, dont aucun n'est déclaré
+
+- row  revolution.core → serpentine.core  gossamer.core
++ row  revolution.core → serpentine.core  gossamer.core
+
+- row  serpentine.core → ambience.core  anticipation.path and anticipation.print  the `textPath` given in anticipation_serpentine_core.scala needs `Paths`
+- row  profanity.core → eucalyptus.core  turbulence.core and parasite.core
+- row  profanity.core → frontier.core  escapade.core  profanity's declared escapade.csi does not contain `Teletype`
+- row  honeycomb.core → xylophone.core  typonym.core, adversaria.core and wisteria.core  all imported by honeycomb
++ row  serpentine.core → ambience.core  anticipation.path et anticipation.print  le given `textPath` d'anticipation_serpentine_core.scala a besoin de `Paths`
++ row  profanity.core → eucalyptus.core  turbulence.core et parasite.core
++ row  profanity.core → frontier.core  escapade.core  l'escapade.csi déclaré par profanity ne contient pas `Teletype`
++ row  honeycomb.core → xylophone.core  typonym.core, adversaria.core et wisteria.core  tous importés par honeycomb
+
+= row  honeycomb.core → xylophone.core  typonym.core, adversaria.core and wisteria.core  all imported by honeycomb
+- ```
++ ```
+
+- **Confirmed dead** (no exported name used, no implicit-scope route, closure re-supplied by
+- other declared deps):
++ **Mortes, confirmé** (aucun nom exporté utilisé, aucun chemin par la portée implicite, clôture
++ fournie à nouveau par d'autres dépendances déclarées) :
+
+= other declared deps):
+=
+- ```tabular
++ ```tabular
+
+- column  Component
+- column  Dead edge to
+- column  Note
++ column  Composant
++ column  Arête morte vers
++ column  Remarque
+
+- row  hypotenuse.core  cardinality.core
++ row  hypotenuse.core  cardinality.core
+
+- row  iridescence.core  contextual.core
++ row  iridescence.core  contextual.core
+
+- row  zephyrine.core  hypotenuse.core  verify anticipation.opaque still arrives
++ row  zephyrine.core  hypotenuse.core  vérifier qu'anticipation.opaque arrive toujours
+
+- row  pneumatic.core  contingency.core
++ row  pneumatic.core  contingency.core
+
+- row  enigmatic.asn1  gossamer.core
++ row  enigmatic.asn1  gossamer.core
+
+- row  facsimile.core  eucalyptus.core
++ row  facsimile.core  eucalyptus.core
+
+- row  probably.core  eucalyptus.core
++ row  probably.core  eucalyptus.core
+
+- row  profanity.core  diuretic.core
++ row  profanity.core  diuretic.core
+
+- row  tarantula.core  diuretic.core, gastronomy.core
++ row  tarantula.core  diuretic.core, gastronomy.core
+
+- row  burdock.core  gastronomy.core
++ row  burdock.core  gastronomy.core
+
+- row  apoplexy.core  legerdemain.core  it reaches legerdemain.query through telekinesis.core, which is all it needs
++ row  apoplexy.core  legerdemain.core  il atteint legerdemain.query par telekinesis.core, ce qui lui suffit
+
+- row  denominative.core  fulminate.core
++ row  denominative.core  fulminate.core
+
+- row  contextual.core  rudiments.core
++ row  contextual.core  rudiments.core
+
+- row  degustation.core  rudiments.core
++ row  degustation.core  rudiments.core
+
+- row  polyvinyl.core  rudiments.core
++ row  polyvinyl.core  rudiments.core
+
+- row  coaxial.core  frontier.core
++ row  coaxial.core  frontier.core
+
+- row  punctuation.core  frontier.core
++ row  punctuation.core  frontier.core
+
+- row  austronesian.core  hellenism.core
++ row  austronesian.core  hellenism.core
+
+- row  locomotion.core  spectacular.core
++ row  locomotion.core  spectacular.core
+
+- row  typonym.core  anticipation.text
++ row  typonym.core  anticipation.text
+
+- row  vexillology.core  hypotenuse.core
++ row  vexillology.core  hypotenuse.core
+
+- row  yossarian.core  iridescence.core
++ row  yossarian.core  iridescence.core
+
+- row  xenophile.js  gossamer.core
++ row  xenophile.js  gossamer.core
+
+- row  ziggurat.core  gastronomy.core
++ row  ziggurat.core  gastronomy.core
+
+- row  ziggurat.packager  guillotine.core
++ row  ziggurat.packager  guillotine.core
+
+- row  telekinesis.http2  hypotenuse.core
++ row  telekinesis.http2  hypotenuse.core
+
+- row  legerdemain.query  anamnesis.core
++ row  legerdemain.query  anamnesis.core
+
+- row  stratiform.base256  gossamer.core, vacuous.core
++ row  stratiform.base256  gossamer.core, vacuous.core
+
+- row  embarcadero.containerd  coaxial.core  redundant: re-supplied via telekinesis.http2 → coaxial.jvm
++ row  embarcadero.containerd  coaxial.core  redondante : fournie à nouveau par telekinesis.http2 → coaxial.jvm
+
+- row  surveillance.core  eucalyptus.core
++ row  surveillance.core  eucalyptus.core
+
+- row  prescience.core  fulminate.core, gossamer.core
++ row  prescience.core  fulminate.core, gossamer.core
+
+= row  prescience.core  fulminate.core, gossamer.core
+- ```
++ ```
+
+- Two scan traps, recorded so the next sweep does not repeat them: telekinesis.http2's
+- sources used to live in `package cordillera`, so a package-name grep called the edge dead
+- when it was genuinely used (embarcadero.containerd imports it) — that package is now
+- `telekinesis`, but a component whose package differs from its library will trip the same
+- wire; and components with
+- `override def sources` pull in sibling directories the per-component scan misses —
+- enigmatic.core → aperture.core looked dead but is used in `core-jvm`
++ Deux pièges de l'analyse, consignés pour que la prochaine passe ne les reproduise pas : les
++ sources de telekinesis.http2 se trouvaient auparavant dans `package cordillera`, si bien qu'un
++ grep sur le nom de package déclarait l'arête morte alors qu'elle était réellement utilisée
++ (embarcadero.containerd l'importe) — ce package est désormais `telekinesis`, mais un composant
++ dont le package diffère de sa bibliothèque tombera dans le même piège ; et les composants dotés
++ d'un `override def sources` incluent des répertoires frères que l'analyse par composant ne voit
++ pas — enigmatic.core → aperture.core semblait morte mais est utilisée dans `core-jvm`
+
+- (enigmatic.Keystore.scala).
++ (enigmatic.Keystore.scala).
+
+- Done when: each misdeclaration is fixed, each dead edge is deleted, and every affected
+- component and its dependents compile (`make attest`, `make build`).
++ Terminé lorsque : chaque déclaration erronée est corrigée, chaque arête morte est supprimée, et
++ chaque composant affecté ainsi que ses dépendants compilent (`make attest`, `make build`).
+
+- ## mod-9: the critical-path head
++ ## mod-9 : la tête du chemin critique
+
+- Done: #1759 (2026-08-10) — `harlequin.scala` remains a separately-approved design item.
+- Horizon: near. The chain exegesis → obligatory.json → hyperbole → harlequin → anthology is
+- held together by dead edges at its top links; severing them detaches the LSP and JSON-RPC
+- stack from the compiler stack entirely.
++ Terminé : #1759 (2026-08-10) — `harlequin.scala` reste un élément de conception à approuver
++ séparément.
++ Horizon : proche. La chaîne exegesis → obligatory.json → hyperbole → harlequin → anthology tient
++ par des arêtes mortes à ses maillons supérieurs ; les rompre détache entièrement la pile LSP et
++ JSON-RPC de la pile du compilateur.
+
+- - **obligatory.json** drops scintillate.server, hyperbole.core and revolution.core — all
+-   three dead. obligatory.json is a JSON-RPC peer plus SSE codec: it never serves HTTP
+-   (its `Servable` is telekinesis's, reached via jacinta.http; `httpBackends.javaNetHttp`
+-   comes from telekinesis.jvm via jacinta.schema), never introspects TASTy, and never touches
+-   a manifest. The hyperbole edge is what put the whole harlequin/anthology stack under
+-   exegesis; deleting it collapses the measured deepest path. (eucalyptus.core is genuinely
+-   used — obligatory.JsonRpc.scala:42.)
+- - **exegesis.core** → ethereal.core and → exoskeleton.completions move to **exegesis.demo**,
+-   their only real consumer (exegesis_demoserver.scala:38–53, exegesis_demoproxy.scala:39–59;
+-   nothing under src/core references either). ethereal was the stated reason for exegesis's
+-   `scalaJs = false` (build.mill), so core may gain a platform — a deliberate flag change per
+-   the mod-mechanics rules, gated on obligatory.json's own closure.
+- - **hyperbole.core** retargets harlequin.ansi → harlequin.core plus escapade.core. Nothing
+-   in hyperbole names `ScalaSyntaxPalette` or `syntaxHighlighting` (harlequin.ansi's entire
+-   content, and package-scoped, so it cannot be reached through implicit scope); what
+-   hyperbole uses is `SourceCode`/`Scala.highlight` (hyperbole.internal.scala:85, 93) and
+-   escapade directly (TastySymbol.scala:36, TastyTree.scala:39). escritoire and
+-   dendrology.tree are genuinely used and stay.
+- - **mandible.core** replaces its hyperbole.core dep with the four modules it actually
+-   imports — anthology.scala (mandible_core.scala:68), hellenism.jvm
+-   (mandible.Classfile.scala:43), escritoire.core (mandible.Bytecode.scala:48–57) and
+-   escapade.core. hyperbole was a conduit; nothing in mandible uses it.
+- - **perihelion.core** replaces scintillate.server with telekinesis.core (only `Servable`,
+-   `Http` and friends are used — perihelion.Websocket.scala:201–202; telekinesis.http2 and
+-   hellenism.core, which rode along, are unused) and drops eucalyptus.core outright (logging
+-   goes through anticipation's `Log`, perihelion.WebsocketEvent.scala:35).
++ - **obligatory.json** abandonne scintillate.server, hyperbole.core et revolution.core — tous
++   trois morts. obligatory.json est un pair JSON-RPC doublé d'un codec SSE : il ne sert jamais de
++   HTTP (son `Servable` est celui de telekinesis, atteint par jacinta.http ;
++   `httpBackends.javaNetHttp` vient de telekinesis.jvm par jacinta.schema), n'examine jamais de
++   TASTy et ne touche jamais à un manifeste. C'est l'arête vers hyperbole qui plaçait toute la
++   pile harlequin/anthology sous exegesis ; la supprimer effondre le chemin le plus profond mesuré.
++   (eucalyptus.core est réellement utilisé — obligatory.JsonRpc.scala:42.)
++ - Les arêtes **exegesis.core** → ethereal.core et → exoskeleton.completions passent dans
++   **exegesis.demo**, leur seul consommateur réel (exegesis_demoserver.scala:38–53,
++   exegesis_demoproxy.scala:39–59 ; rien sous src/core ne fait référence à l'un ou l'autre).
++   ethereal était la raison invoquée pour le `scalaJs = false` d'exegesis (build.mill), de sorte
++   que core peut gagner une plateforme — un changement d'option délibéré selon les règles des
++   mécanismes de mod, conditionné par la clôture propre d'obligatory.json.
++ - **hyperbole.core** recible harlequin.ansi → harlequin.core plus escapade.core. Rien dans
++   hyperbole ne nomme `ScalaSyntaxPalette` ni `syntaxHighlighting` (tout le contenu
++   d'harlequin.ansi, et à portée de package, si bien qu'on ne peut pas l'atteindre par la portée
++   implicite) ; ce qu'hyperbole utilise, c'est `SourceCode`/`Scala.highlight`
++   (hyperbole.internal.scala:85, 93) et escapade directement (TastySymbol.scala:36,
++   TastyTree.scala:39). escritoire et dendrology.tree sont réellement utilisés et restent.
++ - **mandible.core** remplace sa dépendance à hyperbole.core par les quatre modules qu'il importe
++   réellement — anthology.scala (mandible_core.scala:68), hellenism.jvm
++   (mandible.Classfile.scala:43), escritoire.core (mandible.Bytecode.scala:48–57) et
++   escapade.core. hyperbole servait de transit ; rien dans mandible ne l'utilise.
++ - **perihelion.core** remplace scintillate.server par telekinesis.core (seuls `Servable`, `Http`
++   et leurs voisins sont utilisés — perihelion.Websocket.scala:201–202 ; telekinesis.http2 et
++   hellenism.core, qui suivaient, sont inutilisés) et abandonne purement et simplement
++   eucalyptus.core (la journalisation passe par le `Log` d'anticipation,
++   perihelion.WebsocketEvent.scala:35).
+
+- **harlequin.scala (design item, approval needed before starting).** Scalac/LocalClasspath
+- usage in harlequin is confined to `Highlight`, `Diagnostic` (which needs only
+- anthology.core's `Importance`) and ~300 lines of `SourceCode`
+- (harlequin.SourceCode.scala:376–689: `resolveTypes`, `frontend`, the completion machinery).
+- A `harlequin.scala` component would free harlequin.core — and with it harlequin.md and every
+- Markdown-rendering consumer — from anthology.scala, hellenism.jvm and galilei.jvm. It would
+- *not* free them from the scala3-compiler jar itself: the tokenizer imports
+- `dotty.tools.dotc.parsing` directly (harlequin.SourceCode.scala:41–46). The blocker to
+- design around: `SourceCode.apply` takes `using Highlight` and pattern-matches on its
+- `scalac`/`classpath` fields (harlequin.SourceCode.scala:73–90), so `Highlight` must be
+- abstracted into a resolver interface that `harlequin.scala` supplies, with the tokenized
+- path as core's default. Also cheap and independent: harlequin.core's explicit hellenism.jvm
+- dep is already implied by anthology.scala → anthology.core.
++ **harlequin.scala (élément de conception, approbation nécessaire avant de commencer).**
++ L'utilisation de Scalac/LocalClasspath dans harlequin se limite à `Highlight`, `Diagnostic` (qui
++ n'a besoin que de l'`Importance` d'anthology.core) et environ 300 lignes de `SourceCode`
++ (harlequin.SourceCode.scala:376–689 : `resolveTypes`, `frontend`, la machinerie de complétion).
++ Un composant `harlequin.scala` libérerait harlequin.core — et avec lui harlequin.md et tout
++ consommateur qui rend du Markdown — d'anthology.scala, hellenism.jvm et galilei.jvm. Il ne les
++ libérerait *pas* du jar scala3-compiler lui-même : l'analyseur lexical importe
++ `dotty.tools.dotc.parsing` directement (harlequin.SourceCode.scala:41–46). L'obstacle autour
++ duquel concevoir : `SourceCode.apply` prend `using Highlight` et filtre par motif sur ses champs
++ `scalac`/`classpath` (harlequin.SourceCode.scala:73–90), de sorte que `Highlight` doit être
++ abstrait en une interface de résolution que `harlequin.scala` fournit, le chemin par analyse
++ lexicale étant le comportement par défaut de core. Également peu coûteux et indépendant : la
++ dépendance explicite de harlequin.core à hellenism.jvm est déjà impliquée par anthology.scala →
++ anthology.core.
+
+- Done when: exegesis.core's closure contains no compiler-stack module, and the deepest chain
+- through obligatory.json ends at jacinta.
++ Terminé lorsque : la clôture d'exegesis.core ne contient aucun module de la pile du compilateur,
++ et la chaîne la plus profonde passant par obligatory.json s'arrête à jacinta.
+
+- ## mod-10: the spine givens
++ ## mod-10 : les givens de la colonne vertébrale
+
+- Horizon: near. gossamer.core has fan-in 44, so everything below it taxes nearly the whole
+- tree — and what sits below it hangs on single-digit numbers of givens. These are mod-2-style
+- integration-submodule moves, with the same traps mod-2 recorded: a given moved out of a
+- companion (or out of the package's toplevel) leaves implicit scope, so each move needs a
+- downstream import sweep, a `soundness`-toplevel export, and where a silent generic fallback
+- exists, a test pinning the resolved instance. The legs, each detailed below:
++ Horizon : proche. gossamer.core a 44 dépendants, si bien que tout ce qui se trouve en dessous pèse
++ sur presque toute l'arborescence — et ce qui se trouve en dessous repose sur des nombres de givens
++ à un seul chiffre. Ce sont des déplacements vers des sous-modules d'intégration à la manière de
++ mod-2, avec les mêmes pièges que mod-2 a consignés : un given sorti d'un compagnon (ou du premier
++ niveau du package) quitte la portée implicite, de sorte que chaque déplacement requiert un
++ balayage des imports en aval, un export au premier niveau de `soundness` et, là où existe un
++ repli générique silencieux, un test qui fixe l'instance résolue. Les étapes, chacune détaillée
++ ci-dessous :
+
+= exists, a test pinning the resolved instance. The legs, each detailed below:
+=
+- ```tabular
++ ```tabular
+
+- column  Edge
+- column  Held by
+- column  Remedy
+- row  gossamer.core → distillate.core  `textDecodable` and the four `enumIdentification` givens  a `gossamer.codec`-style submodule
+- row  distillate.core → digression.core  the `fqcn` Decodable  inverted into a digression-side component
+- row  distillate.core → inimitable.core  the `uuid` Decodable  the same inversion
+- row  distillate.core → wisteria.core  `VariantError`  the error class relocated where both can see it
+- row  digression.core → iridescence.core  `StackTrace.Palette`, `hex` and `defaultPalette`  moved to digression.ansi
+- row  digression.core → spectacular.core  the `showable` given and one `show` call  a `digression.show`, ranked last
+- row  parasite.core → mercator.core  `Monad[Task]`  a `parasite.monad` component
+- row  turbulence.core → capricious.core  the deferred `shred` item  mod-3's open decision on its home
++ column  Arête
++ column  Tenue par
++ column  Remède
++ row  gossamer.core → distillate.core  `textDecodable` et les quatre givens `enumIdentification`  un sous-module à la manière de `gossamer.codec`
++ row  distillate.core → digression.core  le Decodable `fqcn`  inversé dans un composant du côté de digression
++ row  distillate.core → inimitable.core  le Decodable `uuid`  la même inversion
++ row  distillate.core → wisteria.core  `VariantError`  la classe d'erreur déplacée là où les deux la voient
++ row  digression.core → iridescence.core  `StackTrace.Palette`, `hex` et `defaultPalette`  déplacés dans digression.ansi
++ row  digression.core → spectacular.core  le given `showable` et un appel à `show`  un `digression.show`, classé en dernier
++ row  parasite.core → mercator.core  `MonadTask`  un composant `parasite.monad`
++ row  turbulence.core → capricious.core  l'élément `shred` différé  la décision en suspens de mod-3 sur sa place
+
+= row  turbulence.core → capricious.core  the deferred `shred` item  mod-3's open decision on its home
+- ```
++ ```
+
+- - **gossamer.core → distillate.core** rests on five givens in one file: `textDecodable`
+-   (gossamer_core.scala:124) and the four `enumIdentification` case-style `Identifiable`
+-   givens (gossamer_core.scala:614–625) — the latter already opt-in behind an explicit
+-   import, so relocation costs their users nothing. Move them to a `gossamer.codec`-style
+-   submodule. Cutting this single edge is worth three levels of critical path (it removes
+-   distillate → digression → iridescence → geodesy.angle from under the fan-in-44 node).
+- - **distillate.core → digression.core** is one two-line given (`fqcn` Decodable,
+-   distillate.Decodable.scala:62). Invert it: `Fqcn` is digression's type, so the given
+-   belongs in a digression-side component that depends on distillate.
+- - **distillate.core → inimitable.core** is the identical shape (`uuid` Decodable,
+-   distillate.Decodable.scala:64) and takes the identical inversion.
+- - **distillate.core → wisteria.core** uses only `VariantError` as the error type of the
+-   `enumeration` given (distillate.Decodable.scala:108–114). Relocate the error class (a
+-   plain fulminate `Error` in wisteria.VariantError.scala) to a component both can see;
+-   the `enumeration` given itself stays in companion scope. Note wisteria remains in the
+-   closure via spectacular.core regardless — this cut is for distillate's own dependents.
+- - **digression.core → iridescence.core** is `StackTrace.Palette`, `hex` and
+-   `defaultPalette` (digression.StackTrace.scala:135–163), ~30 lines of pure colour. They
+-   move to **digression.ansi**, which gains iridescence.core; both existing consumers
+-   (digression_ansi.scala, probably.AnsiRenderer.scala:137, 355) are already downstream of
+-   it. This severs iridescence → geodesy.angle from the spine in one move.
+- - **digression.core → spectacular.core** is one given (`showable`,
+-   digression.StackTrace.scala:111–133) plus one `.show` on an `Int` (line 128, trivially
+-   `int.toString.tt`). Movable to a `digression.show`, but rank it below the others: the given
+-   sits in `StackTrace`'s companion, so moving it costs implicit-scope resolution for every
+-   downstream `stackTrace.show`, and spectacular's own closure (stenography, wisteria) is
+-   modules the spine keeps anyway.
+- - **parasite.core → mercator.core** is one given, `Monad[Task]`
+-   (parasite.Task.scala:90–99). A `parasite.monad` component severs it; the caveat is the
+-   usual one (for-comprehensions over `Task` currently resolve import-free from the
+-   companion).
+- - **turbulence.core → capricious.core** is confirmed to be exactly the deferred `shred`
+-   item (turbulence_core.scala:319–324) and nothing else; mod-3's open decision on `shred`'s
+-   home is unchanged, only now it is the whole of the edge.
++ - **gossamer.core → distillate.core** repose sur cinq givens dans un seul fichier :
++   `textDecodable` (gossamer_core.scala:124) et les quatre givens `Identifiable` de casse
++   `enumIdentification` (gossamer_core.scala:614–625) — ces derniers étant déjà optionnels,
++   derrière un import explicite, leur déplacement ne coûte rien à leurs utilisateurs. Les déplacer
++   dans un sous-module à la manière de `gossamer.codec`. Couper cette seule arête vaut trois
++   niveaux de chemin critique (cela retire distillate → digression → iridescence → geodesy.angle
++   de sous le nœud à 44 dépendants).
++ - **distillate.core → digression.core** est un seul given de deux lignes (le Decodable `fqcn`,
++   distillate.Decodable.scala:62). L'inverser : `Fqcn` est le type de digression, donc le given a
++   sa place dans un composant du côté de digression qui dépend de distillate.
++ - **distillate.core → inimitable.core** a exactement la même forme (le Decodable `uuid`,
++   distillate.Decodable.scala:64) et reçoit exactement la même inversion.
++ - **distillate.core → wisteria.core** n'utilise que `VariantError` comme type d'erreur du given
++   `enumeration` (distillate.Decodable.scala:108–114). Déplacer la classe d'erreur (une simple
++   `Error` de fulminate dans wisteria.VariantError.scala) vers un composant que les deux voient ;
++   le given `enumeration` lui-même reste dans la portée du compagnon. À noter : wisteria reste
++   quoi qu'il en soit dans la clôture par spectacular.core — cette coupure vaut pour les propres
++   dépendants de distillate.
++ - **digression.core → iridescence.core**, ce sont `StackTrace.Palette`, `hex` et
++   `defaultPalette` (digression.StackTrace.scala:135–163), une trentaine de lignes de pure
++   couleur. Ils passent dans **digression.ansi**, qui gagne iridescence.core ; les deux
++   consommateurs existants (digression_ansi.scala, probably.AnsiRenderer.scala:137, 355) sont
++   déjà en aval. Cela détache d'un seul coup iridescence → geodesy.angle de la colonne vertébrale.
++ - **digression.core → spectacular.core**, c'est un given (`showable`,
++   digression.StackTrace.scala:111–133) plus un `.show` sur un `Int` (ligne 128, trivialement
++   `int.toString.tt`). Déplaçable dans un `digression.show`, mais à classer après les autres : le
++   given se trouve dans le compagnon de `StackTrace`, de sorte que le déplacer coûte la résolution
++   par portée implicite pour chaque `stackTrace.show` en aval, et la clôture propre de spectacular
++   (stenography, wisteria) est faite de modules que la colonne vertébrale conserve de toute façon.
++ - **parasite.core → mercator.core**, c'est un given, `Monad[Task]`
++   (parasite.Task.scala:90–99). Un composant `parasite.monad` rompt l'arête ; la réserve est la
++   réserve habituelle (les for-comprehensions sur `Task` se résolvent actuellement sans import,
++   depuis le compagnon).
++ - **turbulence.core → capricious.core**, c'est, comme confirmé, exactement l'élément `shred`
++   différé (turbulence_core.scala:319–324) et rien d'autre ; la décision en suspens de mod-3 sur
++   la place de `shred` est inchangée, si ce n'est qu'elle constitue désormais toute l'arête.
+
+- **Acquitted in the second audit, so they are not re-litigated:**
++ **Acquittées lors du deuxième audit, pour ne pas être rediscutées :**
+
+= **Acquitted in the second audit, so they are not re-litigated:**
+=
+- ```tabular
++ ```tabular
+
+- column  Edge
+- column  Kept because
+- row  gossamer.core → kaleidoscope.core  `Scanner` is inside the interpolator macro expansion (gossamer.internal.scala:239–292), and kaleidoscope's own closure is contingency alone
+- row  digression.core → contingency.core  `raises` is in `Fqcn.apply`'s signature
+- row  parasite.core → anticipation.time  ~17 signature sites, and the dep is depth-2 with no text stack — free
+- row  iridescence.core → geodesy.angle  `Angle` is in `Hsl`/`Hsv`'s public fields, and iridescence already depends on hypotenuse directly, so the edge adds one shallow node
+- row  turbulence.core → anticipation.http  three sites, but the `import zephyrine.{stream as _, *}` shadowing arrangement in turbulence.Streamable.scala:48–50 depends on `HttpStreams.Body.stream` being a same-module sibling, and the dep is depth-3 and off the spine — not worth the friction
++ column  Arête
++ column  Conservée parce que
++ row  gossamer.core → kaleidoscope.core  `Scanner` se trouve dans l'expansion de la macro de l'interpolateur (gossamer.internal.scala:239–292), et la clôture propre de kaleidoscope se réduit à contingency
++ row  digression.core → contingency.core  `raises` figure dans la signature de `Fqcn.apply`
++ row  parasite.core → anticipation.time  ~17 sites dans des signatures, et la dépendance est de profondeur 2 sans pile de texte — gratuite
++ row  iridescence.core → geodesy.angle  `Angle` figure dans les champs publics de `Hsl`/`Hsv`, et iridescence dépend déjà directement d'hypotenuse, si bien que l'arête n'ajoute qu'un nœud peu profond
++ row  turbulence.core → anticipation.http  trois sites, mais l'arrangement de masquage `import zephyrine.{stream as _, *}` de turbulence.Streamable.scala:48–50 suppose que `HttpStreams.Body.stream` est un voisin du même module, et la dépendance est de profondeur 3 et hors de la colonne vertébrale — cela ne vaut pas la friction
+
+= row  turbulence.core → anticipation.http  three sites, but the `import zephyrine.{stream as _, *}` shadowing arrangement in turbulence.Streamable.scala:48–50 depends on `HttpStreams.Body.stream` being a same-module sibling, and the dep is depth-3 and off the spine — not worth the friction
+- ```
++ ```
+
+- **The one hard edge: parasite.core → nomenclature.core → gossamer.core.** `Name[Async]` is
+- in the public signatures of `task` (parasite_core.scala:150), `Task.apply`, `Monitor` and
+- both platform supervisors (~20 sites), and `Async is Nominative under Rules`
+- (parasite.Async.scala:47) puts nomenclature in the implicit machinery. There is no
+- relocation that severs this: the choice is between validated names and `Text` in the
+- concurrency API, which is a design decision of mod-7 class. Until it is made, gossamer and
+- everything beneath it remain in the closure of parasite, turbulence, and most of the tree.
+- After mod-8/9/10, this is the residual spine's only soft point.
++ **La seule arête dure : parasite.core → nomenclature.core → gossamer.core.** `Name[Async]`
++ figure dans les signatures publiques de `task` (parasite_core.scala:150), `Task.apply`, `Monitor`
++ et des deux superviseurs de plateforme (une vingtaine de sites), et `Async is Nominative under
++ Rules` (parasite.Async.scala:47) place nomenclature dans la machinerie implicite. Aucun
++ déplacement ne rompt cela : le choix se fait entre des noms validés et du `Text` dans l'API de
++ concurrence, ce qui est une décision de conception de la classe de mod-7. Tant qu'elle n'est pas
++ prise, gossamer et tout ce qui se trouve en dessous restent dans la clôture de parasite, de
++ turbulence et de la majeure partie de l'arborescence. Après mod-8/9/10, c'est le seul point
++ souple de la colonne vertébrale résiduelle.
+
+- Done when: `parasite.core` declares no `mercator.core` edge and `turbulence.core` no
+- `capricious.core` edge, and `gossamer.core`'s closure holds no more than 23 components. The
+- gossamer, distillate and digression legs landed in #1760 (2026-08-10). The turbulence edge is
+- gone: `turbulence.core` no longer lists `capricious.core`, and `shred` takes its chunk size as
+- a by-name `Int` (2026-10-21). The parasite leg is what remains — `parasite.core` still declares
+- `mercator.core` for the `Monad[Task]` given — and `gossamer.core`'s closure counts 26 by a walk
+- of `build.mill` (including the implicit `beneficence.core` and `proscenium.core`): distillate,
+- wisteria, kaleidoscope and spectacular are all still in it.
++ Terminé lorsque : `parasite.core` ne déclare aucune arête vers `mercator.core` ni
++ `turbulence.core` vers `capricious.core`, et la clôture de `gossamer.core` ne contient pas plus de
++ 23 composants. Les étapes de gossamer, distillate et digression ont été intégrées dans #1760
++ (2026-08-10). L'arête de turbulence a disparu : `turbulence.core` ne liste plus
++ `capricious.core`, et `shred` prend la taille de ses morceaux sous la forme d'un `Int` par nom
++ (2026-10-21). Reste l'étape de parasite — `parasite.core` déclare toujours `mercator.core` pour
++ le given `Monad[Task]` — et la clôture de `gossamer.core` compte 26 composants selon un parcours
++ de `build.mill` (en incluant les implicites `beneficence.core` et `proscenium.core`) :
++ distillate, wisteria, kaleidoscope et spectacular s'y trouvent toujours.
+
+- ## Second-audit shape
++ ## Forme du deuxième audit
+
+- Three PRs: mod-8 (misdeclarations first, then the dead edges), mod-9 (the critical-path
+- head, including the cheap retargets; harlequin.scala stays out until its design is
+- approved), mod-10 (the spine givens, one integration submodule per leg, each with its
+- import sweep and pinning tests). The expected outcomes are the simulated figures in [the
+- re-measured baseline](#the-re-measured-baseline), with the remaining depth concentrated in the
+- one genuinely open question, parasite's validated task names.
++ Trois PR : mod-8 (les déclarations erronées d'abord, puis les arêtes mortes), mod-9 (la tête du
++ chemin critique, y compris les reciblages peu coûteux ; harlequin.scala reste à l'écart tant que
++ sa conception n'est pas approuvée), mod-10 (les givens de la colonne vertébrale, un sous-module
++ d'intégration par étape, chacun avec son balayage des imports et ses tests de fixation). Les
++ résultats attendus sont les chiffres simulés de [la référence
++ remesurée](#the-re-measured-baseline), la profondeur restante se concentrant dans la seule
++ question réellement ouverte, les noms de tâches validés de parasite.

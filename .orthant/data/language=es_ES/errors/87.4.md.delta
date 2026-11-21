@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.87.4` — Missing `Parametric` value
++ # `↯/s.87.4` — Falta un valor `Parametric`
+
+- Raised at compile time by Legerdemain's `query` macro when no
+- contextual `Parametric` instance is available for the inferred key
+- type.
++ Lo lanza en tiempo de compilación la macro `query` de Legerdemain cuando no hay disponible ninguna
++ instancia contextual de `Parametric` para el tipo de clave inferido.
+
+- ## Cause
++ ## Causa
+
+- The macro requires a `Parametric` typeclass instance to encode the
+- key into a query string. If none is in scope, the macro halts.
++ La macro necesita una instancia de la clase de tipos `Parametric` para codificar la clave en una
++ cadena de consulta. Si no hay ninguna en el ámbito, la macro se detiene.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.87.4] could not find a contextual Parametric value for sonnet
++ [↯/s.87.4] could not find a contextual Parametric value for sonnet
+
+= [↯/s.87.4] could not find a contextual Parametric value for sonnet
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Bring an appropriate `given Parametric` into scope, or change the
+- key type to one that has a `Parametric` instance.
++ Trae al ámbito un `given Parametric` adecuado, o cambia el tipo de la clave por uno que tenga una
++ instancia de `Parametric`.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/legerdemain/src/query/legerdemain.internal.scala`
++ - Fuente: `lib/legerdemain/src/query/legerdemain.internal.scala`

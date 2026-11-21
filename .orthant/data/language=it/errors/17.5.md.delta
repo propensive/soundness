@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.17.5` — Missing `Functor` for monad derivation
++ # `↯/s.17.5` — `Functor` mancante per la derivazione della monade
+
+- Raised at compile time by Mercator's `monad` macro when no
+- `Functor` instance can be summoned for the type.
++ Sollevato a tempo di compilazione dalla macro `monad` di Mercator quando non si può evocare alcuna
++ istanza di `Functor` per il tipo.
+
+- ## Cause
++ ## Causa
+
+- Mercator's `Monad` derivation depends on an underlying `Functor`
+- instance.
++ La derivazione di `Monad` di Mercator dipende da un'istanza sottostante di `Functor`.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.17.5] could not find Functor value for Play
++ [↯/s.17.5] could not find Functor value for Play
+
+= [↯/s.17.5] could not find Functor value for Play
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Bring or derive a `Functor` instance first.
++ Portare nell'ambito o derivare prima un'istanza di `Functor`.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/mercator/src/core/mercator.internal.scala`
++ - Sorgente: `lib/mercator/src/core/mercator.internal.scala`

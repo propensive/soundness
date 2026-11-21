@@ -1,0 +1,1023 @@
+orthant 1 language
+
+- ## Testing
++ ## Тестирование
+
+- ### About
++ ### Обзор
+
+- A test is a value. It names what it verifies, and produces a value, and an assertion states
+- what must hold of that value. Around that core sit two capabilities which most frameworks
+- lack.
++ Тест — это значение. Он называет то, что проверяет, и вырабатывает значение, а утверждение
++ формулирует, что должно быть верно для этого значения. Вокруг этого ядра расположены две
++ возможности, которых нет у большинства фреймворков.
+
+- When an assertion of equality fails, the report is not two `toString`s. It is a structural
+- *contrast*: a diff of the expected value and the observed one, aligned field by field and
+- element by element, with the actual differences highlighted.
++ Когда утверждение о равенстве не выполняется, отчёт — это не два `toString`. Это структурный
++ *контраст*: diff ожидаемого и наблюдаемого значений, выровненный поле за полем и элемент за
++ элементом, с подсветкой фактических различий.
+
+- And tests can assert that code *does not compile*. So many checks are made at [compiletime]
+- that this matters: a block which should be rejected is captured, and its compile errors
+- become values to inspect. Testing that something is impossible is what a library built on
+- [correctness](../../philosophy/correctness.md) most needs to do.
++ Кроме того, тесты могут утверждать, что код *не компилируется*. Во [время компиляции] делается
++ так много проверок, что это важно: блок, который должен быть отвергнут, перехватывается, а его
++ ошибки компиляции становятся значениями, которые можно инспектировать. Проверка того, что
++ что-то невозможно, — это то, что больше всего нужно библиотеке, построенной на
++ [корректности](../../philosophy/correctness.md).
+
+- ### On testing
++ ### О тестировании
+
+- The real product of a test framework is its output on failure. "Expected X but found Y",
+- printed as two long strings, leaves the reader to find the difference by eye.
++ Настоящий продукт тестового фреймворка — его вывод при неудаче. «Ожидалось X, но найдено Y»,
++ напечатанное как две длинные строки, оставляет читателю искать различие на глаз.
+
+- And in a codebase whose invariants live in the type system, half of what needs to be
+- verified is precisely that certain code cannot be written. An ordinary test cannot express
+- that at all, since it would have to compile first.
++ А в кодовой базе, инварианты которой живут в системе типов, половина того, что нужно проверить,
++ — это как раз то, что определённый код невозможно написать. Обычный тест вообще не может этого
++ выразить, поскольку ему сначала пришлось бы скомпилироваться.
+
+- Both are addressed here. Failures are shown as structured comparisons, and compile errors
+- are subjects for tests in their own right. Everything comes from the `soundness` package:
++ Обе задачи решены здесь. Неудачи показываются как структурированные сравнения, а ошибки
++ компиляции сами по себе становятся предметом тестов. Всё берётся из пакета `soundness`:
+
+= are subjects for tests in their own right. Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- The samples on this page declare tests, which a test runner would run, so they are compiled
+- but not run here.
++ Примеры на этой странице объявляют тесты, которые выполнил бы раннер тестов, поэтому здесь они
++ компилируются, но не выполняются.
+
+- ### Suites and tests
++ ### Наборы тестов и тесты
+
+- A suite implements `run()`. A test wraps the expression under scrutiny, and asserts on its
+- value, and `suite` groups related tests:
++ Набор тестов реализует `run()`. Тест оборачивает исследуемое выражение и делает утверждение о
++ его значении, а `suite` группирует связанные тесты:
+
+= value, and `suite` groups related tests:
+=
+- ```scala
++ ```scala
+
+- object Tests extends Suite(m"Parser tests"):
++ object Tests extends Suite(m"Parser tests"):
+
+-   def run(): Unit =
++   def run(): Unit =
+
+-     suite(m"Numbers"):
++     suite(m"Numbers"):
+
+-       test(m"a decimal integer parses"):
++       test(m"a decimal integer parses"):
+
+-         t"42".as[Int]
++         t"42".as[Int]
+
+-       . assert(_ == 42)
++       . assert(_ == 42)
+
+=       . assert(_ == 42)
+- ```
++ ```
+
+- A test ends in one of three assertions:
++ Тест заканчивается одним из трёх утверждений:
+
+= A test ends in one of three assertions:
+=
+- ```tabular
++ ```tabular
+
+- column  Assertion
+- column  Asserts
+- column  Returns
+- row  `assert`  a predicate holds of the value  nothing
+- row  `check`  a predicate holds of the value  the value, for chaining further work on it
+- row  `matches`  the value fits a pattern  nothing
++ column  Утверждение
++ column  Утверждает
++ column  Возвращает
++ row  `assert`  для значения выполняется предикат  ничего
++ row  `check`  для значения выполняется предикат  значение, чтобы продолжить работу с ним по цепочке
++ row  `matches`  значение соответствует образцу  ничего
+
+= row  `matches`  the value fits a pattern  nothing
+- ```
++ ```
+
+- A test which *should* pass, but is known not to yet, is written like any other, inside an
+- `aspirationally` block. Every assertion within it is recorded as an aspiration. It neither
+- fails the build, nor is forgotten, and it is reported distinctly once it starts to pass.
++ Тест, который *должен* проходить, но, как известно, пока не проходит, пишется как любой
++ другой, внутри блока `aspirationally`. Каждое утверждение в нём записывается как устремление.
++ Оно не валит сборку и не забывается, а когда начинает проходить, о нём сообщается отдельно.
+
+= fails the build, nor is forgotten, and it is reported distinctly once it starts to pass.
+=
+- ```scala
++ ```scala
+
+- aspirationally:
++ aspirationally:
+
+-   test(m"a hexadecimal integer parses"):
++   test(m"a hexadecimal integer parses"):
+
+-     t"0x2a".as[Int]
++     t"0x2a".as[Int]
+
+-   . assert(_ == 42)
++   . assert(_ == 42)
+
+=   . assert(_ == 42)
+- ```
++ ```
+
+- Approximate comparison is built in, for the numeric cases where exact equality is wrong:
++ Приближённое сравнение встроено — для числовых случаев, где точное равенство неуместно:
+
+= Approximate comparison is built in, for the numeric cases where exact equality is wrong:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- val results = List(0.01, -0.02, 0.015)
++ val results = List(0.01, -0.02, 0.015)
+
+- test(m"the mean converges"):
++ test(m"the mean converges"):
+
+-   results.total/results.size
++   results.total/results.size
+
+- . assert(_ === 0.0 +/- 0.02)
++ . assert(_ === 0.0 +/- 0.02)
+
+= . assert(_ === 0.0 +/- 0.02)
+- ```
++ ```
+
+- A test may also have a *moniker*: an identifier, checked at compiletime, which names it
+- stably. A selection, or a chart, can then address the test even after its description has
+- been reworded:
++ У теста может также быть *моникер*: идентификатор, проверяемый во время компиляции, который
++ стабильно его называет. Тогда выборка или диаграмма может обращаться к тесту даже после того,
++ как его описание переформулировано:
+
+= been reworded:
+=
+- ```scala
++ ```scala
+
+- import soundness.nominative
++ import soundness.nominative
+
+- test(n"square", m"square a number")(3*3).assert(_ == 9)
++ test(n"square", m"square a number")(3*3).assert(_ == 9)
+
+= test(n"square", m"square a number")(3*3).assert(_ == 9)
+- ```
++ ```
+
+- ### Where a test belongs
++ ### Где находится тест
+
+- A suite has a title and an *id*. The id is what a selection, and a path, know the suite by.
+- It is either given, as a string literal before the title, or derived from the title, as its
+- letters and digits in lower case, with a `-` for each run of anything else. The first of
+- these suites is run with `fume run parser`, and the second with `fume run parser-tests`:
++ У набора тестов есть заголовок и *идентификатор*. Именно по идентификатору набор знают выборка
++ и путь. Он либо задаётся строковым литералом перед заголовком, либо выводится из заголовка: его
++ буквы и цифры в нижнем регистре, с `-` вместо каждой серии любых других символов. Первый из
++ этих наборов запускается командой `fume run parser`, а второй — `fume run parser-tests`:
+
+= these suites is run with `fume run parser`, and the second with `fume run parser-tests`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= these suites is run with `fume run parser`, and the second with `fume run parser-tests`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= these suites is run with `fume run parser`, and the second with `fume run parser-tests`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- object Tests extends Suite("parser", m"Parser tests")
++ object Tests extends Suite("parser", m"Parser tests")
+
+- object ParserTests extends Suite(m"Parser tests")
++ object ParserTests extends Suite(m"Parser tests")
+
+= object ParserTests extends Suite(m"Parser tests")
+- ```
++ ```
+
+- Soundness's own suites always give an id, which names what the library is for, and not the
+- library itself, as [the testing standard](../../standards/testing.md) sets out.
++ Собственные наборы тестов Soundness всегда задают идентификатор, который называет то, для чего
++ предназначена библиотека, а не саму библиотеку, как изложено в
++ [стандарте тестирования](../../standards/testing.md).
+
+- An id which is given is also a *type*. Within the body of
+- `Suite("parser", m"Parser tests")`, the [contextual value] which `test` and `suite` take is
+- a `Testable of "parser"`, and each `suite` block passes the same type on. The compiler
+- therefore knows, of every test which it compiles, which suite it is declared for, and it
+- refuses a `test` which is declared for none.
++ Заданный идентификатор является также *типом*. В теле `Suite("parser", m"Parser tests")`
++ [контекстное значение], которое принимают `test` и `suite`, имеет тип `Testable of "parser"`, и
++ каждый блок `suite` передаёт тот же тип дальше. Поэтому компилятор знает о каждом
++ компилируемом тесте, для какого набора он объявлен, и отвергает `test`, не объявленный ни для
++ какого.
+
+- Tests which are written in a method of their own name the suite, by its id, in the method's
+- signature, as the second version shows:
++ Тесты, написанные в отдельном методе, называют набор по его идентификатору в сигнатуре метода,
++ как показывает вторая версия:
+
+= signature, as the second version shows:
+=
+- ```scala fuel
++ ```scala fuel
+
+- alternative Inline
++ alternative Inline
+
+= alternative Inline
+-   code
++   code
+
+-       object Tests extends Suite(m"Parser tests"):
++       object Tests extends Suite(m"Parser tests"):
+
+=       object Tests extends Suite(m"Parser tests"):
+-         def run(): Unit =
++         def run(): Unit =
+
+-           suite(m"Numbers"):
++           suite(m"Numbers"):
+
+-             test(m"a decimal integer parses"):
++             test(m"a decimal integer parses"):
+
+-               t"42".as[Int]
++               t"42".as[Int]
+
+-             . assert(_ == 42)
++             . assert(_ == 42)
+
+- alternative In a method
++ alternative In a method
+
+= alternative In a method
+-   code
++   code
+
+-       object Tests extends Suite("parser", m"Parser tests"):
++       object Tests extends Suite("parser", m"Parser tests"):
+
+=       object Tests extends Suite("parser", m"Parser tests"):
+-         def run(): Unit =
++         def run(): Unit =
+
+-           suite(m"Numbers")(numbers())
++           suite(m"Numbers")(numbers())
+
+-         def numbers()(using Testable of "parser"): Unit =
++         def numbers()(using Testable of "parser"): Unit =
+
+-           test(m"a decimal integer parses"):
++           test(m"a decimal integer parses"):
+
+-             t"42".as[Int]
++             t"42".as[Int]
+
+-           . assert(_ == 42)
++           . assert(_ == 42)
+
+=           . assert(_ == 42)
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- A suite whose id is derived has no literal to name it by. Its tests are written in its
+- body, or in a method which is generic in the suite, with
++ У набора тестов с выведенным идентификатором нет литерала, которым его можно назвать. Его тесты
++ пишутся в его теле или в методе, обобщённом по набору, с
+
+- `[topic <: Label](using Testable of topic)`.
++ `[topic <: Label](using Testable of topic)`.
+
+- A compiler plugin reads this from the typed code, and writes an index of the tests beside
+- the index of suites, in `META-INF/probably/tests`: every test's place in the hierarchy, its
+- kind, its moniker, its tags and where it is declared. A tool can therefore list the tests on
+- a classpath, complete their names, and arrange them into suites, without running anything. A
+- listing which is made by running a suite, by contrast, executes every statement around its
+- tests.
++ Плагин компилятора считывает это из типизированного кода и записывает индекс тестов рядом с
++ индексом наборов, в `META-INF/probably/tests`: место каждого теста в иерархии, его вид, его
++ моникер, его теги и место объявления. Поэтому инструмент может перечислить тесты на пути
++ классов, дополнять их имена и упорядочивать их по наборам, ничего не запуская. Список же,
++ получаемый запуском набора, напротив, выполняет каждую инструкцию вокруг его тестов.
+
+- Some tests cannot be known in that way: one for each file of a corpus, say, or tests which
+- are run on a `Runner` of the program's own, and belong to no suite at all. They are declared
+- inside an `impromptu` block. It admits `test` and `suite` as a `Suite` does, at the position
+- of the surrounding suite, if there is one, but leaves them out of the index. A tool learns
+- of them as they run.
++ Некоторые тесты так узнать нельзя: например, по одному на каждый файл корпуса или тесты,
++ которые выполняются собственным `Runner` программы и вообще не принадлежат никакому набору.
++ Они объявляются внутри блока `impromptu`. Он допускает `test` и `suite`, как это делает
++ `Suite`, в позиции окружающего набора, если он есть, но не включает их в индекс. Инструмент
++ узнаёт о них по мере их выполнения.
+
+= of them as they run.
+=
+- ```scala
++ ```scala
+
+- impromptu:
++ impromptu:
+
+-   List(t"1", t"22", t"333").each: digits =>
++   List(t"1", t"22", t"333").each: digits =>
+
+-     test(m"$digits parses")(digits.as[Int]).assert(_ > 0)
++     test(m"$digits parses")(digits.as[Int]).assert(_ > 0)
+
+=     test(m"$digits parses")(digits.as[Int]).assert(_ > 0)
+- ```
++ ```
+
+- A test with a computed name which is *not* in an `impromptu` block is still indexed, by the
+- fixed parts of its name.
++ Тест с вычисляемым именем, который *не* находится в блоке `impromptu`, всё равно
++ индексируется — по фиксированным частям своего имени.
+
+- ### Spreading a test over axes
++ ### Развёртка теста по осям
+
+- A test is a name, and zero or more *axes*. Given an axis, the body runs once for each value,
+- and each verdict is recorded at that coordinate. One test therefore covers a family of
+- cases, without becoming a loop whose failures all report the same name:
++ Тест — это имя и ноль или более *осей*. При заданной оси тело выполняется по одному разу для
++ каждого значения, и каждый вердикт записывается в соответствующей координате. Поэтому один тест
++ покрывает целое семейство случаев, не превращаясь в цикл, все неудачи которого сообщают одно и
++ то же имя:
+
+= cases, without becoming a loop whose failures all report the same name:
+=
+- ```scala
++ ```scala
+
+- test(m"double every value").over(Axis(t"n")(1, 2, 3, 4)): n =>
++ test(m"double every value").over(Axis(t"n")(1, 2, 3, 4)): n =>
+
+-   n*2
++   n*2
+
+- . assert((n, result) => result == n*2)
++ . assert((n, result) => result == n*2)
+
+= . assert((n, result) => result == n*2)
+- ```
++ ```
+
+- The companion of an [enumeration] is an axis in its own right, and needs no list of values:
++ Компаньон [перечисления][перечисление] сам по себе является осью и не требует списка значений:
+
+= The companion of an [enumeration] is an axis in its own right, and needs no list of values:
+=
+- ```scala
++ ```scala
+
+- enum Codec:
++ enum Codec:
+
+-   case Binary, Textual, Compressed
++   case Binary, Textual, Compressed
+
+- test(m"enum companions form axes").over(Codec): codec =>
++ test(m"enum companions form axes").over(Codec): codec =>
+
+-   codec.ordinal
++   codec.ordinal
+
+- . assert((codec, ordinal) => ordinal >= 0 && ordinal < 3)
++ . assert((codec, ordinal) => ordinal >= 0 && ordinal < 3)
+
+= . assert((codec, ordinal) => ordinal >= 0 && ordinal < 3)
+- ```
++ ```
+
+- Two axes spread a test over a grid, which is shown as a table with one axis along each
+- side. A body which is partial leaves gaps, which appear as empty positions, not as failures.
+- That is an honest way to say that a combination does not apply:
++ Две оси развёртывают тест по сетке, которая показывается как таблица с одной осью вдоль
++ каждой стороны. Частичное тело оставляет пропуски, которые выглядят как пустые позиции, а не
++ как неудачи. Это честный способ сказать, что сочетание неприменимо:
+
+= That is an honest way to say that a combination does not apply:
+=
+- ```scala
++ ```scala
+
+- test(m"biaxial spread with a gap").over(Axis(t"x")(1, 2, 3), Axis(t"y")(10, 20)):
++ test(m"biaxial spread with a gap").over(Axis(t"x")(1, 2, 3), Axis(t"y")(10, 20)):
+
+-   case (x, y) if x + y != 23 => x*y
++   case (x, y) if x + y != 23 => x*y
+
+- . assert((x, y, result) => result == x*y)
++ . assert((x, y, result) => result == x*y)
+
+= . assert((x, y, result) => result == x*y)
+- ```
++ ```
+
+- The assertion sees the values of the axes beside the result, so a predicate can depend on
+- where it is in the grid.
++ Утверждение видит значения осей рядом с результатом, так что предикат может зависеть от того,
++ где в сетке он находится.
+
+- ### Failure as a contrast
++ ### Неудача как контраст
+
+- When an assertion of equality fails, the two values are *decomposed*, with case classes
+- broken into fields, and collections into aligned elements, and are set side by side. The
+- report shows the tree, with the differing leaves marked: an age which differs by two, a list
+- with one element substituted, a text with the changed characters highlighted. Sequences are
+- aligned through the same [diffing](diffing.md) which is used elsewhere, so an insertion
+- shows as an insertion, and not as every later element "differing".
++ Когда утверждение о равенстве не выполняется, два значения *раскладываются*: case-классы — на
++ поля, коллекции — на выровненные элементы, — и ставятся рядом. Отчёт показывает дерево с
++ помеченными различающимися листьями: возраст, отличающийся на два, список с одним заменённым
++ элементом, текст с подсвеченными изменёнными символами. Последовательности выравниваются тем
++ же [вычислением различий](diffing.md), что используется и в других местах, так что вставка
++ показывается как вставка, а не как «различие» каждого последующего элемента.
+
+- Comparison alone can say only *same* or *different*. A raw diff of two sequences therefore
+- reports a changed element as a deletion beside an unrelated insertion, and stops there. The
+- report goes further. Within each region of differences, it asks whether an element which was
+- removed and an element which was added are *similar*: a board member with the same role but
+- a different name, or a record with the same identifier and a changed field. Where they are,
+- the two are shown as one substitution, broken down to the field which changed, and not as
+- two unrelated entries which the reader must pair up.
++ Само по себе сравнение может сказать только *одинаково* или *различно*. Поэтому сырой diff двух
++ последовательностей сообщает об изменённом элементе как об удалении рядом с несвязанной
++ вставкой — и на этом останавливается. Отчёт идёт дальше. Внутри каждой области различий он
++ спрашивает, *похожи* ли удалённый и добавленный элементы: член правления с той же ролью, но
++ другим именем, или запись с тем же идентификатором и изменённым полем. Если похожи, они
++ показываются как одна замена, разобранная до изменившегося поля, а не как две несвязанные
++ записи, которые читателю приходится сопоставлять самому.
+
+- ### Diagnosing a failure
++ ### Диагностика неудачи
+
+- Nothing about how a failure will be shown is decided when a test is compiled. Most
+- assertions pass, so working out how to render each one's value, on every compilation, would
+- be paid for thousands of times to serve the few which fail. An assertion records only where
+- its predicate is written.
++ Ничего из того, как будет показана неудача, не решается при компиляции теста. Большинство
++ утверждений проходят, поэтому выяснение того, как отображать значение каждого из них при каждой
++ компиляции, оплачивалось бы тысячи раз ради немногих неудачных. Утверждение записывает только
++ то, где написан его предикат.
+
+- When a predicate fails, the runner reads it back from the compiled suite, and evaluates it
+- once more on the value which failed, recording each intermediate value on the way. The
+- test's body is not run again. For a predicate such as `x => x*2 < 9 && x*y > 4`, with `x`
+- and `y` both 2, the report is the tree of its subexpressions:
++ Когда предикат не выполняется, раннер считывает его обратно из скомпилированного набора тестов
++ и ещё раз вычисляет на значении, на котором произошла неудача, записывая по пути каждое
++ промежуточное значение. Тело теста повторно не выполняется. Для предиката вроде
++ `x => x*2 < 9 && x*y > 4`, где `x` и `y` оба равны 2, отчёт — это дерево его подвыражений:
+
+=
+- ```
++ ```
+
+- x*2 < 9 && x*y > 4   false
++ x*2 < 9 && x*y > 4   false
+
+- x*2 < 9              true
++ x*2 < 9              true
+
+- x*2                  4
++ x*2                  4
+
+- x                    2
++ x                    2
+
+-            x*y > 4   false
++            x*y > 4   false
+
+-            x*y       4
++            x*y       4
+
+-            x         2
++            x         2
+
+-              y       2
++              y       2
+
+=              y       2
+- ```
++ ```
+
+- This is what makes a failing property legible: the counterexample is shown together with
+- everything that was computed from it. A predicate which is an equality is also shown as a
+- contrast of its two sides.
++ Именно это делает неудачное свойство понятным: контрпример показывается вместе со всем, что из
++ него было вычислено. Предикат, являющийся равенством, показывается также как контраст двух его
++ сторон.
+
+- Each value is rendered by whichever instance is found for its type at that moment, an
+- `Inspectable` or a `Showable`. A suite supplies one in the type's companion, by an import
+- above the assertion, or as a given of the object which the suite is written in, and need
+- not know whether a runner will ask for it. A suite is asked for a diagnosis with the
+- selection term `--diagnose=dissect,contrast,inspect`.
++ Каждое значение отображается тем экземпляром, который в этот момент найден для его типа, —
++ `Inspectable` или `Showable`. Набор тестов предоставляет его в компаньоне типа, импортом над
++ утверждением или как given объекта, в котором написан набор, и ему не нужно знать, запросит ли
++ его раннер. Диагностику у набора тестов запрашивают термом выборки
++ `--diagnose=dissect,contrast,inspect`.
+
+- ### Asserting that code does not compile
++ ### Утверждение о том, что код не компилируется
+
+- `demilitarize` compiles the code which it encloses and, instead of failing the build,
+- delivers the compile errors as values:
++ `demilitarize` компилирует заключённый в него код и вместо того, чтобы валить сборку,
++ выдаёт ошибки компиляции в виде значений:
+
+= delivers the compile errors as values:
+=
+- ```scala fuel
++ ```scala fuel
+
+= delivers the compile errors as values:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= delivers the compile errors as values:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- test(m"a malformed version literal is rejected"):
++ test(m"a malformed version literal is rejected"):
+
+-   demilitarize:
++   demilitarize:
+
+-     v"1.2"
++     v"1.2"
+
+-   . map(_.message)
++   . map(_.message)
+
+- . assert(!_.nil)
++ . assert(!_.nil)
+
+= . assert(!_.nil)
+- ```
++ ```
+
+- This is how Soundness's own guarantees are tested: that adding amounts in the wrong
+- [currency](money.md#arithmetic), an invalid literal, or an undeclared relation, really does
+- fail to compile. Any project which builds invariants into types needs the same. The
+- *impossibility* is the feature, and this makes it testable.
++ Так тестируются собственные гарантии Soundness: что сложение сумм в неправильной
++ [валюте](money.md#arithmetic), некорректный литерал или необъявленное отношение действительно
++ не компилируются. Любому проекту, встраивающему инварианты в типы, нужно то же самое.
++ *Невозможность* и есть функция, и это делает её тестируемой.
+
+- It works through a compiler plugin, and knowing roughly how is useful when it misbehaves.
+- The plugin runs after parsing, but before typechecking. When it finds a `demilitarize` block
+- in the untyped code, it starts a *separate* compilation of the same file, on the same
+- classpath, but without the plugin, and expects it to fail. The errors which fall inside the
+- block are captured. In the main compilation, they are replaced by code which constructs the
+- corresponding `CompileError` values. Typechecking then sees only those constructions, and
+- never the erroneous code, so the build succeeds, so long as nothing outside a `demilitarize`
+- block is wrong.
++ Это работает через плагин компилятора, и примерное понимание того, как именно, полезно, когда
++ что-то идёт не так. Плагин выполняется после разбора, но до проверки типов. Найдя блок
++ `demilitarize` в нетипизированном коде, он запускает *отдельную* компиляцию того же файла, на
++ том же пути классов, но без плагина, и ожидает, что она завершится неудачей. Ошибки, попадающие
++ внутрь блока, перехватываются. В основной компиляции они заменяются кодом, строящим
++ соответствующие значения `CompileError`. Затем проверка типов видит только эти построения и
++ никогда — ошибочный код, так что сборка завершается успешно, если только ничего не ошибочно
++ вне блока `demilitarize`.
+
+- One consequence is worth knowing. An error in an early phase of the compiler can stop later
+- phases from running, so errors which would have come from those phases go uncaptured on the
+- first pass. The plugin runs the compilation again as many times as are needed, removing more
+- of the offending code each time, until the later phases are reached. That is why a file with
+- several `demilitarize` blocks compiles more slowly than its size suggests.
++ Одно следствие стоит знать. Ошибка на ранней фазе компилятора может помешать выполнению более
++ поздних фаз, поэтому ошибки, которые пришли бы из этих фаз, при первом проходе не
++ перехватываются. Плагин повторяет компиляцию столько раз, сколько нужно, каждый раз удаляя
++ больше ошибочного кода, пока не будут достигнуты поздние фазы. Поэтому файл с несколькими
++ блоками `demilitarize` компилируется медленнее, чем подсказывает его размер.
+
+- ### Measuring, not just asserting
++ ### Измерять, а не только утверждать
+
+- A test need not end in a verdict. Three further kinds record measurements:
++ Тест не обязан заканчиваться вердиктом. Ещё три вида записывают измерения:
+
+= A test need not end in a verdict. Three further kinds record measurements:
+=
+- ```tabular
++ ```tabular
+
+- column  Kind
+- column  Records
+- row  `test`  a verdict
+- row  `Bench`  speed
+- row  `Stress`  allocation per operation, peak heap, and the live set under sustained concurrency
+- row  `Profile`  the hottest methods by self time, from JFR execution samples
++ column  Вид
++ column  Записывает
++ row  `test`  вердикт
++ row  `Bench`  скорость
++ row  `Stress`  выделение памяти на операцию, пик кучи и живое множество при устойчивой конкурентной нагрузке
++ row  `Profile`  самые горячие методы по собственному времени, из сэмплов выполнения JFR
+
+= row  `Profile`  the hottest methods by self time, from JFR execution samples
+- ```
++ ```
+
+- All four land in the same report: a name, its axes, and a sparse map of cells, whose figures
+- come from one closed set. Every kind is therefore displayed in the same way, and charted in
+- the same way.
++ Все четыре попадают в один и тот же отчёт: имя, его оси и разреженное отображение ячеек,
++ показатели которых берутся из одного замкнутого множества. Поэтому каждый вид отображается
++ одинаково и одинаково строится на диаграммах.
+
+- Every measurement is compiled and run on a `BenchmarkDevice`, which is the local machine
+- here. It needs a system, a temporary directory to work in, and an embedding for the values
+- which it carries, all in scope. A `Decimalizer` formats its sizes and rates:
++ Каждое измерение компилируется и выполняется на `BenchmarkDevice`, которым здесь является
++ локальная машина. Ему нужны система, временный каталог для работы и встраивание для
++ переносимых им значений — всё в области видимости. `Decimalizer` форматирует его размеры и
++ скорости:
+
+= which it carries, all in scope. A `Decimalizer` formats its sizes and rates:
+=
+- ```scala
++ ```scala
+
+- import embeddings.automaticEmbedding
++ import embeddings.automaticEmbedding
+
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import temporaryDirectories.systemTemporaryDirectory
++ import temporaryDirectories.systemTemporaryDirectory
+
+- given device: BenchmarkDevice = LocalhostDevice
++ given device: BenchmarkDevice = LocalhostDevice
+
+- given decimalizer: Decimalizer = Decimalizer(2)
++ given decimalizer: Decimalizer = Decimalizer(2)
+
+= given decimalizer: Decimalizer = Decimalizer(2)
+- ```
++ ```
+
+- A `Bench` measures speed. Its body is a quoted expression, which is [staged](staging.md),
+- and dispatched in a JVM of its own, so that the measurement is not distorted by the rest of
+- the suite:
++ `Bench` измеряет скорость. Его тело — цитированное выражение, которое
++ [стадируется](staging.md) и запускается в отдельной JVM, чтобы остальная часть набора тестов не
++ искажала измерение:
+
+= the suite:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the suite:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= the suite:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val bench = Bench()
++ val bench = Bench()
+
+- bench(m"decode directly")(target = 1*Second, operationSize = 1000*Byte):
++ bench(m"decode directly")(target = 1*Second, operationSize = 1000*Byte):
+
+-   '{ Benchmarks.decodeUsersDirect() }
++   '{ Benchmarks.decodeUsersDirect() }
+
+=   '{ Benchmarks.decodeUsersDirect() }
+- ```
++ ```
+
+- A `Stress` measures what a figure for throughput hides. It runs for a target of elapsed
+- time, at a stated concurrency, and may be given a constrained heap, or a limit on CPU, so a
+- design can be shown to hold up where it matters:
++ `Stress` измеряет то, что скрывает показатель пропускной способности. Он работает в течение
++ целевого времени при заданной конкурентности, и ему можно дать ограниченную кучу или лимит на
++ CPU, чтобы показать, что дизайн выдерживает нагрузку там, где это важно:
+
+= design can be shown to hold up where it matters:
+=
+- ```scala fuel
++ ```scala fuel
+
+= design can be shown to hold up where it matters:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= design can be shown to hold up where it matters:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- val stress = Stress()
++ val stress = Stress()
+
+- val constrained = Stress(heap = t"128m")
++ val constrained = Stress(heap = t"128m")
+
+- stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
++ stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
+
+-   '{ Benchmarks.handOff() }
++   '{ Benchmarks.handOff() }
+
+=   '{ Benchmarks.handOff() }
+- ```
++ ```
+
+- A `Profile` answers where the time went. It gives a histogram of the hottest methods,
+- colored by package:
++ `Profile` отвечает на вопрос, куда ушло время. Он даёт гистограмму самых горячих методов,
++ раскрашенную по пакетам:
+
+= colored by package:
+=
+- ```scala fuel
++ ```scala fuel
+
+= colored by package:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= colored by package:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val profile = Profile()
++ val profile = Profile()
+
+- profile(m"pipeline hotspots")(target = 5*Second):
++ profile(m"pipeline hotspots")(target = 5*Second):
+
+-   '{ Benchmarks.pipeline() }
++   '{ Benchmarks.pipeline() }
+
+=   '{ Benchmarks.pipeline() }
+- ```
++ ```
+
+- Benchmarks spread over axes as tests do. One program is staged for each distinct
+- implementation, and each cell is dispatched in a JVM of its own. A baseline anchors one
+- value of an axis, and the rest are shown relative to it. A stress *sweep* records its steps
+- as coordinates on an axis of a single test, not as a family of tests with different names.
+- [Charts](charts.md) draws the results.
++ Бенчмарки развёртываются по осям так же, как тесты. Для каждой отдельной реализации
++ стадируется одна программа, а каждая ячейка запускается в отдельной JVM. Базовая линия
++ закрепляет одно значение оси, а остальные показываются относительно неё. *Перебор* в `Stress`
++ записывает свои шаги как координаты на оси одного теста, а не как семейство тестов с разными
++ именами. Результаты рисует [Charts](charts.md).
+
+- ### Running and selecting
++ ### Запуск и выборка
+
+- A `Suite` is not a main class. A compiler plugin records every `Suite` object in the index
+- `META-INF/services/probably.Suite` of the jar which it compiles. The runner,
+- [fume](https://github.com/propensive/fume), discovers suites from that index on a built
+- classpath, runs each one in its own process, and displays the stream of `TestEvent`s which a
+- suite emits: live progress on a terminal, plain output in CI, each failure with its
+- contrast, and a nonzero exit status if any test failed. That is all that a build needs to
+- gate on.
++ `Suite` — не главный класс. Плагин компилятора записывает каждый объект `Suite` в индекс
++ `META-INF/services/probably.Suite` компилируемого им jar-файла. Раннер,
++ [fume](https://github.com/propensive/fume), находит наборы тестов по этому индексу на собранном
++ пути классов, запускает каждый в отдельном процессе и отображает поток `TestEvent`, которые
++ испускает набор: живой прогресс в терминале, простой вывод в CI, каждую неудачу с её контрастом
++ и ненулевой код завершения, если какой-либо тест не прошёл. Это всё, на что сборке нужно
++ опираться.
+
+- A project names its classpath once, in `.pyrocosm/fume/config.tel`, so a bare `fume run`
+- runs everything. `fume list`, and the completion of test names in a shell, read the index of
+- tests, and so run nothing.
++ Проект один раз называет свой путь классов в `.pyrocosm/fume/config.tel`, так что голый
++ `fume run` запускает всё. `fume list` и автодополнение имён тестов в оболочке читают индекс
++ тестов и потому ничего не запускают.
+
+- fume also accepts terms of selection, so a subset can be run without editing the code:
++ fume также принимает термы выборки, так что подмножество можно запустить, не правя код:
+
+= fume also accepts terms of selection, so a subset can be run without editing the code:
+=
+- ```tabular
++ ```tabular
+
+- column  Term
+- column  Selects
+- column  Combines by
+- row  a hash  the test with that hash  union
+- row  a moniker, such as `square`  the test with that moniker  union
+- row  a name glob, such as `'parser*'`  the tests whose names match  union
+- row  `--test`, `--bench`, `--stress`, `--profile`  the tests of that kind  intersection
+- row  an axis constraint, such as `parser=jacinta` or `'N<32'`  the cells matching it  intersection
++ column  Терм
++ column  Выбирает
++ column  Объединяется через
++ row  хеш  тест с этим хешем  объединение
++ row  моникер, например `square`  тест с этим моникером  объединение
++ row  glob-шаблон имени, например `'parser*'`  тесты, имена которых ему соответствуют  объединение
++ row  `--test`, `--bench`, `--stress`, `--profile`  тесты этого вида  пересечение
++ row  ограничение оси, например `parser=jacinta` или `'N<32'`  соответствующие ему ячейки  пересечение
+
+= row  an axis constraint, such as `parser=jacinta` or `'N<32'`  the cells matching it  intersection
+- ```
++ ```
+
+- Terms which identify tests are united with each other, and the rest are intersected with
+- that union:
++ Термы, идентифицирующие тесты, объединяются друг с другом, а остальные пересекаются с этим
++ объединением:
+
+- ```sh
++ ```sh
+
+- fume run square 'parser*'
++ fume run square 'parser*'
+
+- fume run --bench
++ fume run --bench
+
+- fume run parser=jacinta 'N<32'
++ fume run parser=jacinta 'N<32'
+
+- fume list
++ fume list
+
+= fume list
+- ```
++ ```
+
+- The first selects by moniker and then by a glob on names, the second runs only the
+- benchmarks, the third runs only the cells which match the constraints on the axes, and the
+- last lists what matches, and runs nothing. Assertions which are not selected never execute,
+- and benchmark cells which are not selected are skipped, so a selection costs only what it
+- runs.
++ Первая команда выбирает по моникеру, а затем по glob-шаблону имён, вторая запускает только
++ бенчмарки, третья запускает только ячейки, соответствующие ограничениям на оси, а последняя
++ перечисляет то, что подходит, и ничего не запускает. Невыбранные утверждения никогда не
++ выполняются, а невыбранные ячейки бенчмарков пропускаются, так что выборка стоит ровно столько,
++ сколько она запускает.
+
+- A suite is not a main class, but an entry point for plain `java`, for CI, or for a host
+- which is too old to read the jar's schema of events, is one line.
+- `Suite.main(arguments, Tests)` runs the suites named, prints a line for each completed test,
+- its details and a summary, and exits with their status:
++ Набор тестов — не главный класс, но точка входа для простого `java`, для CI или для хоста,
++ слишком старого, чтобы читать схему событий jar-файла, — это одна строка.
++ `Suite.main(arguments, Tests)` запускает названные наборы, печатает по строке на каждый
++ завершённый тест, его подробности и сводку и завершается с их кодом:
+
+= its details and a summary, and exits with their status:
+=
+- ```tabular
++ ```tabular
+
+- column  Status
+- column  Means
+- row  `0`  every test passed
+- row  `1`  a test failed
+- row  `2`  a suite threw
++ column  Код
++ column  Означает
++ row  `0`  все тесты прошли
++ row  `1`  какой-то тест не прошёл
++ row  `2`  набор тестов выбросил исключение
+
+= row  `2`  a suite threw
+- ```
++ ```
+
+- `Suite.run` is the same, without exiting, for a host of its own.
++ `Suite.run` делает то же самое, но без завершения, для собственного хоста.
+
+- <!-- doccheck: skip -->
++ <!-- doccheck: skip -->
+
+= <!-- doccheck: skip -->
+- ```scala
++ ```scala
+
+- object Tests extends Suite("parser", m"Parser tests"):
++ object Tests extends Suite("parser", m"Parser tests"):
+
+-   def main(arguments: scala.Array[String]): Unit = Suite.main(arguments, Tests)
++   def main(arguments: scala.Array[String]): Unit = Suite.main(arguments, Tests)
+
+-   def run(): Unit = ()
++   def run(): Unit = ()
+
+=   def run(): Unit = ()
+- ```
++ ```
+
+- ### Related
++ ### Связанное
+
+- - [Errors](errors.md#inspecting-a-failure-directly) describes `capture`, which a test uses to
+-   assert that code fails in the right way.
+- - [Diffing](diffing.md) computes the differences which a contrast shows.
+- - [Randomness](randomness.md#reproducing-a-run) generates reproducible test data.
+- - [Terminal emulation](terminal-emulator.md) tests what a terminal program displays.
+- - [Environment](environment.md#overriding-for-a-block) gives a test a fixed environment.
+- - [Browser DOM](dom.md), [web automation](web-automation.md), [time](time.md) and [stack traces](stack-traces.md) describe what tests drive, control and report.
++ - [Ошибки](errors.md#inspecting-a-failure-directly) описывают `capture`, с помощью которого тест
++   утверждает, что код завершается неудачей правильным образом.
++ - [Вычисление различий](diffing.md) вычисляет различия, которые показывает контраст.
++ - [Случайность](randomness.md#reproducing-a-run) порождает воспроизводимые тестовые данные.
++ - [Эмуляция терминала](terminal-emulator.md) тестирует то, что отображает терминальная программа.
++ - [Окружение](environment.md#overriding-for-a-block) даёт тесту фиксированное окружение.
++ - [DOM браузера](dom.md), [веб-автоматизация](web-automation.md), [время](time.md) и [трассировки стека](stack-traces.md) описывают то, что тесты приводят в действие, контролируют и о чём сообщают.

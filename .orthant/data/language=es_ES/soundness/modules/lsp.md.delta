@@ -1,0 +1,878 @@
+orthant 1 language
+
+- ## Language Server Protocol
++ ## Language Server Protocol
+
+- ### About
++ ### Descripción
+
+- A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) server is
+- one call to `Lsp.listen`. Its block registers a handler for each feature which the server
+- provides, and the server then serves over standard input and output. The protocol underneath,
+- with its JSON-RPC messages, their length-prefixed framing, the bookkeeping of open documents and
+- the capabilities announced to the editor, is handled. The code which remains is the logic of
+- the language.
++ Un servidor del [Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
++ es una sola llamada a `Lsp.listen`. Su bloque registra un manejador para cada característica que
++ proporciona el servidor, y después el servidor atiende por la entrada y la salida estándar. Del
++ protocolo subyacente se ocupa la biblioteca: sus mensajes JSON-RPC, su entramado con prefijo de
++ longitud, el control de los documentos abiertos y las prestaciones que se anuncian al editor. El
++ código que queda es la lógica del lenguaje.
+
+- The vocabulary of the protocol is modeled as ordinary types. A `Position` is a line and a
+- character. A `Range` is two positions. A `Diagnostic` is a range with a severity and a message.
+- A hover response, a completion list and a set of document symbols each have their type. A
+- handler receives these as typed values and returns them as typed values, never as JSON
+- assembled by hand.
++ El vocabulario del protocolo se modela con tipos ordinarios. Una `Position` es una línea y un
++ carácter. Un `Range` son dos posiciones. Un `Diagnostic` es un rango con una gravedad y un
++ mensaje. Una respuesta de hover, una lista de compleciones y un conjunto de símbolos de documento
++ tienen cada uno su tipo. Un manejador los recibe como valores tipados y los devuelve como valores
++ tipados, nunca como JSON montado a mano.
+
+- ### On the protocol
++ ### Sobre el protocolo
+
+- An editor which understands LSP can use the server of any language, and a language which
+- provides a server works in any such editor. That leverage is why the protocol exists. It is also
+- why the protocol is large: dozens of request and notification types, each with its own JSON
+- shape, exchanged over a framed stream. Implementing it by hand means marshaling JSON and
+- tracking the versions of documents, which is work with nothing to do with the language being
+- served.
++ Un editor que entiende LSP puede usar el servidor de cualquier lenguaje, y un lenguaje que
++ proporciona un servidor funciona en cualquier editor así. Esa ventaja es la razón de ser del
++ protocolo. También es la razón de que sea grande: decenas de tipos de petición y de
++ notificación, cada uno con su propia forma JSON, intercambiados por un flujo entramado.
++ Implementarlo a mano supone serializar JSON y llevar la cuenta de las versiones de los
++ documentos, un trabajo que no tiene nada que ver con el lenguaje al que se da servicio.
+
+- That work is done once here. Each message type is a Scala type with a derived JSON codec. Each
+- request is dispatched to the matching registered handler. The open documents are tracked, with
+- incremental edits applied. What is left to write is the part specific to a language: what a
+- hover shows, which completions to offer, which diagnostics to report. Declaring the methods of
+- a server as typed handlers keeps the implementation
+- [honest](../../philosophy/honest-signatures.md) about what it supports.
++ Aquí ese trabajo se hace una sola vez. Cada tipo de mensaje es un tipo de Scala con un códec
++ JSON derivado. Cada petición se despacha al manejador registrado que le corresponde. Se lleva
++ el control de los documentos abiertos, aplicando las ediciones incrementales. Lo que queda por
++ escribir es la parte específica de un lenguaje: qué muestra un hover, qué compleciones ofrecer,
++ qué diagnósticos informar. Declarar los métodos de un servidor como manejadores tipados mantiene
++ la implementación [honesta](../../philosophy/honest-signatures.md) sobre lo que admite.
+
+- Everything comes from the `soundness` package. The LSP vocabulary itself, which is the handler
+- registration, the ambient document and the protocol types, comes from `Lsp`, imported inside
+- the server's own object, where it takes precedence over any name the umbrella exports:
++ Todo procede del paquete `soundness`. El propio vocabulario de LSP, es decir, el registro de
++ manejadores, el documento ambiental y los tipos del protocolo, procede de `Lsp`, que se importa
++ dentro del propio objeto del servidor, donde prevalece sobre cualquier nombre que exporte el
++ paraguas:
+
+= the server's own object, where it takes precedence over any name the umbrella exports:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import backstops.stackTraceBackstop
++ import backstops.stackTraceBackstop
+
+- import executives.completionsExecutive
++ import executives.completionsExecutive
+
+- import interpreters.posixInterpreter
++ import interpreters.posixInterpreter
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.basicTermcap
++ import termcapDefinitions.basicTermcap
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import workingDirectories.javaBaseWorkingDirectory
++ import workingDirectories.javaBaseWorkingDirectory
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+= import environments.javaBaseEnvironment
+- ```
++ ```
+
+- The samples on this page serve or launch language servers, so they are compiled but not run.
++ Los ejemplos de esta página sirven o lanzan servidores de lenguaje, así que se compilan pero no
++ se ejecutan.
+
+- ### Defining a server
++ ### Definir un servidor
+
+- A server registers its features in the block given to `Lsp.listen`. There is no record of
+- capabilities to maintain. Each capability is advertised to the editor exactly when its handler
+- is registered, so the declaration can never disagree with the implementation. An option which a
+- capability needs beyond its presence, such as completion trigger characters or a legend for
+- semantic tokens, is a parameter of the registration.
++ Un servidor registra sus características en el bloque que se pasa a `Lsp.listen`. No hay ningún
++ registro de prestaciones que mantener. Cada prestación se anuncia al editor exactamente cuando se
++ registra su manejador, de modo que la declaración nunca puede discrepar de la implementación. Una
++ opción que una prestación necesita además de su presencia, como los caracteres que disparan la
++ compleción o una leyenda para los tokens semánticos, es un parámetro del registro.
+
+- Inside a handler, the context of the request is ambient, so no URIs or parameters are threaded
+- by hand:
++ Dentro de un manejador, el contexto de la petición es ambiental, así que no hay que pasar a mano
++ URIs ni parámetros:
+
+= by hand:
+=
+- ```tabular
++ ```tabular
+
+- column  Name
+- column  Is
+- row  `document`  a live view of the document the request concerns: its text, line access, position/offset conversion and the word under a position
+- row  `workspace`  the other open documents, and what the editor reported at initialization
+- row  `client`  the channel back to the editor
+- row  `position`, `range`, `newName`, …  the request's payload
++ column  Nombre
++ column  Es
++ row  `document`  una vista viva del documento al que se refiere la petición: su texto, el acceso por líneas, la conversión entre posición y desplazamiento y la palabra bajo una posición
++ row  `workspace`  los demás documentos abiertos, y lo que el editor comunicó en la inicialización
++ row  `client`  el canal de vuelta al editor
++ row  `position`, `range`, `newName`, …  la carga útil de la petición
+
+= row  `position`, `range`, `newName`, …  the request's payload
+- ```
++ ```
+
+- Here is a whole server, with its `main` in the resident-daemon idiom described below:
++ Este es un servidor completo, con su `main` en el estilo de demonio residente que se describe más
++ adelante:
+
+= Here is a whole server, with its `main` in the resident-daemon idiom described below:
+=
+- ```scala
++ ```scala
+
+- object DemoServer:
++ object DemoServer:
+
+= object DemoServer:
+-   import Lsp.*
++   import Lsp.*
+
+= object DemoServer:
+=   import Lsp.*
+=
+-   def main(args: Array[Text]): Unit = cli:
++   def main(args: Array[Text]): Unit = cli:
+
+= object DemoServer:
+=   import Lsp.*
+=
+=   def main(args: Array[Text]): Unit = cli:
+-     execute:
++     execute:
+
+= object DemoServer:
+=   import Lsp.*
+=
+=   def main(args: Array[Text]): Unit = cli:
+=     execute:
+-       supervise:
++       supervise:
+
+-         Lsp.listen(t"Demo", t"0.1.0"):
++         Lsp.listen(t"Demo", t"0.1.0"):
+
+-           hover:
++           hover:
+
+-             document.word(position).let: word =>
++             document.word(position).let: word =>
+
+-               Hover(MarkupContent(value = t"**$word**"))
++               Hover(MarkupContent(value = t"**$word**"))
+
+-           complete():
++           complete():
+
+-             CompletionList
++             CompletionList
+
+-               ( items = List
++               ( items = List
+
+-                   ( CompletionItem(label = t"alpha", kind = CompletionItemKind.Keyword),
++                   ( CompletionItem(label = t"alpha", kind = CompletionItemKind.Keyword),
+
+-                     CompletionItem(label = t"beta",  kind = CompletionItemKind.Keyword) ) )
++                     CompletionItem(label = t"beta",  kind = CompletionItemKind.Keyword) ) )
+
+-           opened:
++           opened:
+
+-             client.publishDiagnostics
++             client.publishDiagnostics
+
+-               ( document.uri,
++               ( document.uri,
+
+-                 List
++                 List
+
+-                   ( Diagnostic
++                   ( Diagnostic
+
+-                       ( range    = document.fullRange,
++                       ( range    = document.fullRange,
+
+-                         severity = DiagnosticSeverity.Warning,
++                         severity = DiagnosticSeverity.Warning,
+
+-                         message  = t"a diagnostic for the whole document" ) ) )
++                         message  = t"a diagnostic for the whole document" ) ) )
+
+-           command(t"demo.run"):
++           command(t"demo.run"):
+
+-             raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, t"nothing to run"))
++             raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, t"nothing to run"))
+
+-             Unset
++             Unset
+
+=             Unset
+-       Exit.Ok
++       Exit.Ok
+
+=             Unset
+=       Exit.Ok
+- ```
++ ```
+
+- The fragments which follow each belong inside such a `listen` block.
++ Los fragmentos que siguen van cada uno dentro de un bloque `listen` como este.
+
+- Registrations exist for the full surface of the protocol. Definitions, references, document
+- symbols, formatting, renaming, code actions, signature help, folding, semantic tokens, call and
+- type hierarchies, workspace symbols, file operations and the `*/resolve` family all follow the
+- same shape: the payload is ambient, and a typed result comes out.
++ Hay registros para toda la superficie del protocolo. Definiciones, referencias, símbolos de
++ documento, formateo, renombrado, acciones de código, ayuda de signatura, plegado, tokens
++ semánticos, jerarquías de llamadas y de tipos, símbolos del espacio de trabajo, operaciones con
++ ficheros y la familia `*/resolve` siguen todos la misma forma: la carga útil es ambiental, y sale
++ un resultado tipado.
+
+- ### Documents and diagnostics
++ ### Documentos y diagnósticos
+
+- The server tracks each open document as the editor reports it, and applies incremental changes
+- at the protocol's UTF-16 offsets. The lifecycle is observed by registering `opened`, `changed`,
+- `saved` and `closed` handlers, each of which sees the current state of the document. From any
+- handler, `client` is the channel back to the editor. That is how a server pushes diagnostics,
+- which are errors and warnings, rather than waiting to be asked, as the `opened` registration
+- above does:
++ El servidor lleva el control de cada documento abierto según lo comunica el editor, y aplica los
++ cambios incrementales en los desplazamientos UTF-16 del protocolo. El ciclo de vida se observa
++ registrando los manejadores `opened`, `changed`, `saved` y `closed`, cada uno de los cuales ve el
++ estado actual del documento. Desde cualquier manejador, `client` es el canal de vuelta al editor.
++ Así es como un servidor envía diagnósticos, es decir, errores y advertencias, sin esperar a que se
++ los pidan, como hace el registro `opened` de arriba:
+
+= above does:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- object DiagnosingServer:
++ object DiagnosingServer:
+
+= object DiagnosingServer:
+-   import Lsp.*
++   import Lsp.*
+
+= object DiagnosingServer:
+=   import Lsp.*
+=
+-   def serve(): Unit = supervise:
++   def serve(): Unit = supervise:
+
+-     Lsp.listen(t"Diagnosing", t"0.1.0"):
++     Lsp.listen(t"Diagnosing", t"0.1.0"):
+
+-       opened:
++       opened:
+
+-         client.publishDiagnostics
++         client.publishDiagnostics
+
+-           ( document.uri,
++           ( document.uri,
+
+-             List
++             List
+
+-               ( Diagnostic
++               ( Diagnostic
+
+-                   ( range    = document.fullRange,
++                   ( range    = document.fullRange,
+
+-                     severity = DiagnosticSeverity.Warning,
++                     severity = DiagnosticSeverity.Warning,
+
+-                     message  = t"a diagnostic for the whole document" ) ) )
++                     message  = t"a diagnostic for the whole document" ) ) )
+
+=                     message  = t"a diagnostic for the whole document" ) ) )
+- ```
++ ```
+
+- `client` also carries `showMessage` and `logMessage`, for notices shown to the user and lines
+- written to the editor's log.
++ `client` también ofrece `showMessage` y `logMessage`, para avisos que se muestran al usuario y
++ líneas que se escriben en el registro del editor.
+
+- ### Observing the traffic
++ ### Observar el tráfico
+
+- The standard output of a server is reserved for the wire protocol, so the server cannot print a
+- record of what it is exchanging. `Lsp.listen` takes an optional observer instead. It sees each
+- message as the JSON body it was carried as: inbound before it is parsed, so a message which
+- fails to decode is observed too, and outbound before it is framed:
++ La salida estándar de un servidor está reservada para el protocolo de transmisión, así que el
++ servidor no puede imprimir una traza de lo que intercambia. En su lugar, `Lsp.listen` admite un
++ observador opcional. Este ve cada mensaje como el cuerpo JSON en el que viajó: los entrantes,
++ antes de analizarse, de modo que también se observa un mensaje que no se consigue decodificar, y
++ los salientes, antes de entramarse:
+
+= fails to decode is observed too, and outbound before it is framed:
+=
+- ```scala
++ ```scala
+
+- val observer = new Lsp.Observer:
++ val observer = new Lsp.Observer:
+
+-   def received(message: Text): Unit = Err.println(t"recv $message")
++   def received(message: Text): Unit = Err.println(t"recv $message")
+
+-   def sent(message: Text): Unit = Err.println(t"send $message")
++   def sent(message: Text): Unit = Err.println(t"send $message")
+
+=   def sent(message: Text): Unit = Err.println(t"send $message")
+- ```
++ ```
+
+- Passing it as `Lsp.listen(t"Demo", t"0.1.0", observer)` traces the exchange on standard error.
++ Pasarlo como `Lsp.listen(t"Demo", t"0.1.0", observer)` traza el intercambio por la salida de
++ error estándar.
+
+- What the observer does with a message is the server's own concern. It might stream it to a
+- second process, write it to a trace file, or do nothing at all. Omitting the parameter observes
+- nothing.
++ Lo que haga el observador con un mensaje es asunto del propio servidor. Puede enviarlo a un
++ segundo proceso, escribirlo en un fichero de traza o no hacer nada. Si se omite el parámetro, no
++ se observa nada.
+
+- ### Reporting errors
++ ### Informar de errores
+
+- A handler which cannot answer raises a typed fault, and continues, as the `demo.run` command
+- above does with `Lsp.Error(Lsp.Error.Reason.RequestFailed, t"nothing to run")`.
++ Un manejador que no puede responder lanza un fallo tipado y continúa, como hace la orden
++ `demo.run` de arriba con `Lsp.Error(Lsp.Error.Reason.RequestFailed, t"nothing to run")`.
+
+- A raised fault pre-empts the result of the handler. For a request, it becomes a JSON-RPC error
+- response, with the wire code of the reason and the id of the request. For a notification,
+- which may not be answered, it is reported through `window/logMessage`. A request for a document
+- which is not open, and a command which was never registered, are answered the same way.
++ Un fallo lanzado sustituye al resultado del manejador. Para una petición, se convierte en una
++ respuesta de error JSON-RPC, con el código de transmisión del motivo y el id de la petición. Para
++ una notificación, que no admite respuesta, se comunica mediante `window/logMessage`. Una petición
++ sobre un documento que no está abierto y una orden que nunca se registró se responden de la misma
++ manera.
+
+- ### Talking to a server
++ ### Hablar con un servidor
+
+- The same vocabulary reads in the other direction. `Lsp.Server` describes a language server which
+- this process can speak to: a command to launch, or a pair of streams already connected to one.
+- `session` opens the channel, lends a connection for the duration of a block, and disposes of
+- both afterwards. A connection cannot escape the block, so it can never outlive the server which
+- answers it:
++ El mismo vocabulario se lee en la dirección contraria. `Lsp.Server` describe un servidor de
++ lenguaje con el que este proceso puede hablar: una orden que lanzar, o un par de flujos ya
++ conectados a uno. `session` abre el canal, presta una conexión durante un bloque y después se
++ deshace de ambos. Una conexión no puede escapar del bloque, así que nunca puede sobrevivir al
++ servidor que le responde:
+
+= answers it:
+=
+- ```scala
++ ```scala
+
+- def query(source: Text): Optional[Lsp.Hover] = supervise:
++ def query(source: Text): Optional[Lsp.Hover] = supervise:
+
+-   Lsp.Server(sh"rust-analyzer").session: server ?=>
++   Lsp.Server(sh"rust-analyzer").session: server ?=>
+
+-     server.initialize(root = t"file:///project")
++     server.initialize(root = t"file:///project")
+
+-     server.initialized()
++     server.initialized()
+
+-     server.open(t"file:///project/src/main.rs", t"rust", source)
++     server.open(t"file:///project/src/main.rs", t"rust", source)
+
+-     server.hover(t"file:///project/src/main.rs", Lsp.Position(10, 4))
++     server.hover(t"file:///project/src/main.rs", Lsp.Position(10, 4))
+
+=     server.hover(t"file:///project/src/main.rs", Lsp.Position(10, 4))
+- ```
++ ```
+
+- Requests return the same types which the handlers of a server return: `Optional[Hover]`,
+- `CompletionList`, `List[Location]`. Notifications, which are `open`, `edit`, `save` and
+- `close`, return nothing. An error response from the server is raised as an `Lsp.Error` which
+- carries the reason its wire code names, and is not awaited forever. Requests are answered on a
+- task of their own, so several may be in flight at once, and may come back in any order.
++ Las peticiones devuelven los mismos tipos que devuelven los manejadores de un servidor:
++ `Optional[Hover]`, `CompletionList`, `List[Location]`. Las notificaciones, que son `open`,
++ `edit`, `save` y `close`, no devuelven nada. Una respuesta de error del servidor se lanza como un
++ `Lsp.Error` que lleva el motivo que nombra su código de transmisión, y no se espera
++ indefinidamente. Las peticiones se responden en una tarea propia, de modo que puede haber varias
++ en curso a la vez, y pueden volver en cualquier orden.
+
+- What a server says unbidden, such as diagnostics, window messages and progress, reaches an
+- `Lsp.Listener`. Its methods all default to doing nothing, so a client implements only what it
+- acts on. A listener is supplied contextually:
++ Lo que un servidor dice sin que se le pida, como diagnósticos, mensajes de ventana y progreso,
++ llega a un `Lsp.Listener`. Todos sus métodos no hacen nada por defecto, así que un cliente
++ implementa solo aquello sobre lo que actúa. El oyente se proporciona de forma contextual:
+
+= acts on. A listener is supplied contextually:
+=
+- ```scala
++ ```scala
+
+- given diagnostics: Lsp.Listener = new Lsp.Listener:
++ given diagnostics: Lsp.Listener = new Lsp.Listener:
+
+-   override def diagnostics(uri: Text, version: Optional[Int], reports: List[Lsp.Diagnostic])
++   override def diagnostics(uri: Text, version: Optional[Int], reports: List[Lsp.Diagnostic])
+
+-   :   Unit =
++   :   Unit =
+
+-     reports.each { report => Err.println(t"$uri: ${report.message}") }
++     reports.each { report => Err.println(t"$uri: ${report.message}") }
+
+=     reports.each { report => Err.println(t"$uri: ${report.message}") }
+- ```
++ ```
+
+- ### Proxying a server
++ ### Hacer de proxy de un servidor
+
+- A proxy is both halves at once. It serves an editor over its own standard input and output,
+- while it holds a session with a real language server. It forwards everything between them, and
+- amends what it chooses to. `Lsp.proxy` runs that exchange, and its block registers the
+- amendments:
++ Un proxy es las dos mitades a la vez. Sirve a un editor por su propia entrada y salida estándar,
++ mientras mantiene una sesión con un servidor de lenguaje real. Reenvía todo lo que circula entre
++ ellos y modifica lo que decide modificar. `Lsp.proxy` ejecuta ese intercambio, y su bloque
++ registra las modificaciones:
+
+= amendments:
+=
+- ```scala
++ ```scala
+
+- object DemoProxy:
++ object DemoProxy:
+
+= object DemoProxy:
+-   import Lsp.*
++   import Lsp.*
+
+= object DemoProxy:
+=   import Lsp.*
+=
+-   def main(args: Array[Text]): Unit = cli:
++   def main(args: Array[Text]): Unit = cli:
+
+= object DemoProxy:
+=   import Lsp.*
+=
+=   def main(args: Array[Text]): Unit = cli:
+-     execute:
++     execute:
+
+= object DemoProxy:
+=   import Lsp.*
+=
+=   def main(args: Array[Text]): Unit = cli:
+=     execute:
+-       supervise:
++       supervise:
+
+-         Lsp.proxy(Lsp.Server(sh"rust-analyzer")):
++         Lsp.proxy(Lsp.Server(sh"rust-analyzer")):
+
+-           rewrite.capabilities(_.copy(hoverProvider = true))
++           rewrite.capabilities(_.copy(hoverProvider = true))
+
+-           rewrite.hover: hover =>
++           rewrite.hover: hover =>
+
+-             hover.copy(contents = MarkupContent(value = t"_(proxied)_ ${hover.contents.value}"))
++             hover.copy(contents = MarkupContent(value = t"_(proxied)_ ${hover.contents.value}"))
+
+-           rewrite.diagnostics(_.filter(_.severity != DiagnosticSeverity.Hint))
++           rewrite.diagnostics(_.filter(_.severity != DiagnosticSeverity.Hint))
+
+=           rewrite.diagnostics(_.filter(_.severity != DiagnosticSeverity.Hint))
+-       Exit.Ok
++       Exit.Ok
+
+=           rewrite.diagnostics(_.filter(_.severity != DiagnosticSeverity.Hint))
+=       Exit.Ok
+- ```
++ ```
+
+- Everything which is not registered is forwarded byte for byte: methods which this library does
+- not model, capabilities it does not know about, and the editor's own request ids, which are
+- never rewritten. The relay is asynchronous in both directions, so a proxy changes what an
+- exchange says, and not how it behaves.
++ Todo lo que no está registrado se reenvía byte a byte: los métodos que esta biblioteca no
++ modela, las prestaciones que no conoce y los propios ids de petición del editor, que nunca se
++ reescriben. El relevo es asíncrono en ambas direcciones, de modo que un proxy cambia lo que dice
++ un intercambio, y no cómo se comporta.
+
+- Each `rewrite` combinator decodes the payload into the same type which the server side uses,
+- applies the function, and encodes it again:
++ Cada combinador `rewrite` decodifica la carga útil en el mismo tipo que usa el lado del
++ servidor, aplica la función y la vuelve a codificar:
+
+= applies the function, and encodes it again:
+=
+- ```tabular
++ ```tabular
+
+- column  Combinator
+- column  Amends
+- column  As
+- row  `rewrite.capabilities`  the result of `initialize`  `ServerCapabilities`
+- row  `rewrite.hover`  the result of `textDocument/hover`  `Hover`
+- row  `rewrite.completions`  the result of `textDocument/completion`  `CompletionList`
+- row  `rewrite.definitions`  the result of `textDocument/definition`  `List[Location]`
+- row  `rewrite.symbols`  the result of `textDocument/documentSymbol`  `List[DocumentSymbol]`
+- row  `rewrite.codeActions`  the result of `textDocument/codeAction`  `List[CodeAction]`
+- row  `rewrite.codeLenses`  the result of `textDocument/codeLens`  `List[CodeLens]`
+- row  `rewrite.inlayHints`  the result of `textDocument/inlayHint`  `List[InlayHint]`
+- row  `rewrite.signatureHelp`  the result of `textDocument/signatureHelp`  `SignatureHelp`
+- row  `rewrite.diagnostics`  the reports in `textDocument/publishDiagnostics`  `List[Diagnostic]`
+- row  `rewrite.result`  the result of the named method  `Json`
+- row  `rewrite.notification`  the parameters of the named notification from the server  `Json`
++ column  Combinador
++ column  Modifica
++ column  Como
++ row  `rewrite.capabilities`  el resultado de `initialize`  `ServerCapabilities`
++ row  `rewrite.hover`  el resultado de `textDocument/hover`  `Hover`
++ row  `rewrite.completions`  el resultado de `textDocument/completion`  `CompletionList`
++ row  `rewrite.definitions`  el resultado de `textDocument/definition`  `List[Location]`
++ row  `rewrite.symbols`  el resultado de `textDocument/documentSymbol`  `List[DocumentSymbol]`
++ row  `rewrite.codeActions`  el resultado de `textDocument/codeAction`  `List[CodeAction]`
++ row  `rewrite.codeLenses`  el resultado de `textDocument/codeLens`  `List[CodeLens]`
++ row  `rewrite.inlayHints`  el resultado de `textDocument/inlayHint`  `List[InlayHint]`
++ row  `rewrite.signatureHelp`  el resultado de `textDocument/signatureHelp`  `SignatureHelp`
++ row  `rewrite.diagnostics`  los informes de `textDocument/publishDiagnostics`  `List[Diagnostic]`
++ row  `rewrite.result`  el resultado del método nombrado  `Json`
++ row  `rewrite.notification`  los parámetros de la notificación nombrada procedente del servidor  `Json`
+
+= row  `rewrite.notification`  the parameters of the named notification from the server  `Json`
+- ```
++ ```
+
+- A result which the server sent as `null`, having nothing to say, is passed on as it stands, so
+- a rewriter never has to spell out the empty case. For whole messages there are two more hooks,
+- `rewrite.outbound` and `rewrite.inbound`, each returning what should become of the message:
++ Un resultado que el servidor envió como `null`, por no tener nada que decir, se transmite tal
++ cual, de modo que un reescritor nunca tiene que explicitar el caso vacío. Para los mensajes
++ completos hay dos ganchos más, `rewrite.outbound` y `rewrite.inbound`, cada uno de los cuales
++ devuelve lo que debe ocurrir con el mensaje:
+
+= `rewrite.outbound` and `rewrite.inbound`, each returning what should become of the message:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `rewrite.outbound` and `rewrite.inbound`, each returning what should become of the message:
+=
+= ```scala fuel
+- parse
++ parse
+
+= `rewrite.outbound` and `rewrite.inbound`, each returning what should become of the message:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- object QuietProxy:
++ object QuietProxy:
+
+= object QuietProxy:
+-   import Lsp.*
++   import Lsp.*
+
+= object QuietProxy:
+=   import Lsp.*
+=
+-   def serve(): Unit = supervise:
++   def serve(): Unit = supervise:
+
+-     Lsp.proxy(Lsp.Server(sh"rust-analyzer")):
++     Lsp.proxy(Lsp.Server(sh"rust-analyzer")):
+
+-       rewrite.outbound: (method, message) =>
++       rewrite.outbound: (method, message) =>
+
+-         if method == t"textDocument/inlineValue" then Transit.Drop else Transit.Forward
++         if method == t"textDocument/inlineValue" then Transit.Drop else Transit.Forward
+
+=         if method == t"textDocument/inlineValue" then Transit.Drop else Transit.Forward
+- ```
++ ```
+
+- A hook answers with one of four `Transit` values:
++ Un gancho responde con uno de cuatro valores `Transit`:
+
+= A hook answers with one of four `Transit` values:
+=
+- ```tabular
++ ```tabular
+
+- column  Transit
++ column  Transit
+
+- column  Does
+- row  `Transit.Forward`  passes the message on unchanged
+- row  `Transit.Rewrite`  passes on a different message
+- row  `Transit.Drop`  swallows it
+- row  `Transit.Answer`  answers a request here, so that the server upstream never sees it
++ column  Hace
++ row  `Transit.Forward`  transmite el mensaje sin cambios
++ row  `Transit.Rewrite`  transmite un mensaje distinto
++ row  `Transit.Drop`  lo descarta
++ row  `Transit.Answer`  responde aquí a una petición, de modo que el servidor de origen nunca la ve
+
+= row  `Transit.Answer`  answers a request here, so that the server upstream never sees it
+- ```
++ ```
+
+- A proxy is not limited to what the editor asks. The session with the server upstream is in
+- scope as `upstream` throughout the registration block, so a hook may ask a question of its own,
+- typically for the project state which only the server knows. `rewrite.connected` runs once, on
+- a task of its own, as soon as that session is open:
++ Un proxy no se limita a lo que pregunta el editor. La sesión con el servidor de origen está en el
++ ámbito como `upstream` en todo el bloque de registro, así que un gancho puede hacer una pregunta
++ propia, normalmente sobre el estado del proyecto que solo conoce el servidor. `rewrite.connected`
++ se ejecuta una vez, en una tarea propia, en cuanto se abre esa sesión:
+
+= a task of its own, as soon as that session is open:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a task of its own, as soon as that session is open:
+=
+= ```scala fuel
+- parse
++ parse
+
+= a task of its own, as soon as that session is open:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- object ClasspathProxy:
++ object ClasspathProxy:
+
+= object ClasspathProxy:
+-   import Lsp.*
++   import Lsp.*
+
+-   import formatting.compactJsonFormatting
++   import formatting.compactJsonFormatting
+
+=   import formatting.compactJsonFormatting
+=
+-   def serve(): Unit = supervise:
++   def serve(): Unit = supervise:
+
+-     Lsp.proxy(Lsp.Server(sh"jdtls")):
++     Lsp.proxy(Lsp.Server(sh"jdtls")):
+
+-       val classpath: Promise[Json] = Promise()
++       val classpath: Promise[Json] = Promise()
+
+-       rewrite.connected:
++       rewrite.connected:
+
+-         classpath.offer(upstream.execute(t"java.project.getClasspaths").or(List[Text]().in[Json]))
++         classpath.offer(upstream.execute(t"java.project.getClasspaths").or(List[Text]().in[Json]))
+
+-       rewrite.inbound: (method, message) =>
++       rewrite.inbound: (method, message) =>
+
+-         if method == t"language/status"
++         if method == t"language/status"
+
+-         then async(Err.println(t"classpath: ${classpath.await()}"))
++         then async(Err.println(t"classpath: ${classpath.await()}"))
+
+-         Transit.Forward
++         Transit.Forward
+
+=         Transit.Forward
+- ```
++ ```
+
+- Answers come back to the caller which asked for them, and never reach the editor. A response to
+- a request which the proxy made itself is routed to whoever awaits it, and is not relayed.
++ Las respuestas vuelven a quien las pidió y nunca llegan al editor. La respuesta a una petición
++ que hizo el propio proxy se dirige a quien la espera, y no se retransmite.
+
+- Mind which thread each hook runs on. A request awaited on the task which reads the server's
+- messages, which is the task which would deliver the answer, would wait forever:
++ Atención al hilo en el que se ejecuta cada gancho. Una petición esperada en la tarea que lee los
++ mensajes del servidor, que es la tarea que entregaría la respuesta, esperaría para siempre:
+
+= messages, which is the task which would deliver the answer, would wait forever:
+=
+- ```tabular
++ ```tabular
+
+- column  Hook
+- column  Runs on
+- column  May await
+- row  `rewrite.inbound`  the task that reads the server's messages  no; make the request in an `async` block, as above
+- row  `rewrite.outbound`  the loop that reads the editor  yes, though the editor waits with it
+- row  `rewrite.connected`  a task of its own  yes, freely
++ column  Gancho
++ column  Se ejecuta en
++ column  Puede esperar
++ row  `rewrite.inbound`  la tarea que lee los mensajes del servidor  no; haz la petición en un bloque `async`, como arriba
++ row  `rewrite.outbound`  el bucle que lee el editor  sí, aunque el editor espera con él
++ row  `rewrite.connected`  una tarea propia  sí, libremente
+
+= row  `rewrite.connected`  a task of its own  yes, freely
+- ```
++ ```
+
+- ### Running the server
++ ### Ejecutar el servidor
+
+- `Lsp.listen` serves standard input until it is exhausted. A server object therefore supplies a
+- small `main` in the resident-daemon idiom, as `DemoServer` above does: the `cli` entry point,
+- an `execute` block, and `supervise` for the tasks which the server runs. An editor configured
+- to launch the object as its language server exchanges JSON-RPC with it over the pipe, and each
+- request arrives at the matching handler.
++ `Lsp.listen` atiende la entrada estándar hasta que se agota. Por eso, un objeto servidor
++ proporciona un `main` pequeño en el estilo de demonio residente, como hace `DemoServer` arriba:
++ el punto de entrada `cli`, un bloque `execute` y `supervise` para las tareas que ejecuta el
++ servidor. Un editor configurado para lanzar el objeto como su servidor de lenguaje intercambia
++ JSON-RPC con él por la tubería, y cada petición llega al manejador correspondiente.
+
+- ### Fast startup
++ ### Arranque rápido
+
+- The `cli` entry point runs the server as a resident [daemon](daemons.md). The first invocation
+- launches a background JVM, and every later one connects to the process which is already
+- running. An editor starts and restarts a language server often, so it matters to avoid the
+- JVM's startup cost on each launch, and to keep the optimizations which the just-in-time
+- compiler has accumulated. Packaging the server's JAR with the `xek` builder, from
+- [propensive/xek](https://github.com/propensive/xek), assembles a small native launcher which
+- starts, or connects to, the daemon, and forwards standard input, output and signals to it:
++ El punto de entrada `cli` ejecuta el servidor como un [demonio](daemons.md) residente. La primera
++ invocación lanza una JVM en segundo plano, y cada una de las posteriores se conecta al proceso
++ que ya está en ejecución. Un editor arranca y rearranca un servidor de lenguaje a menudo, así que
++ importa evitar el coste de arranque de la JVM en cada lanzamiento y conservar las optimizaciones
++ que ha acumulado el compilador just-in-time. Empaquetar el JAR del servidor con el constructor
++ `xek`, de [propensive/xek](https://github.com/propensive/xek), monta un pequeño lanzador nativo
++ que arranca el demonio, o se conecta a él, y le reenvía la entrada estándar, la salida y las
++ señales:
+
+- ```sh
++ ```sh
+
+- xek build demo-server.jar
++ xek build demo-server.jar
+
+= xek build demo-server.jar
+- ```
++ ```
+
+- ### A thin launcher
++ ### Un lanzador ligero
+
+- By default the launcher bundles every dependency into one fat JAR. Adding a dependency on the
+- on-demand dependency loader, and wrapping the body of the entry point in `externalize`,
+- distributes the server as a thin launcher instead. Its dependencies are fetched and cached the
+- first time they are needed. `externalize` hashes each dependency as the server's own module
+- compiles, and records the list in the compiled artifact. When that artifact is later repackaged,
+- each dependency which is published somewhere is referenced by URL and hash rather than inlined,
+- so the launcher stays small.
++ Por defecto, el lanzador agrupa todas las dependencias en un único JAR gordo. Si se añade una
++ dependencia del cargador de dependencias bajo demanda y se envuelve el cuerpo del punto de
++ entrada en `externalize`, el servidor se distribuye en cambio como un lanzador ligero. Sus
++ dependencias se descargan y se guardan en caché la primera vez que se necesitan. `externalize`
++ calcula el hash de cada dependencia al compilarse el propio módulo del servidor, y registra la
++ lista en el artefacto compilado. Cuando más tarde se reempaqueta ese artefacto, cada dependencia
++ que esté publicada en algún sitio se referencia por URL y hash en lugar de incluirse, de modo que
++ el lanzador sigue siendo pequeño.
+
+- ### Related
++ ### Relacionado
+
+- - [Daemons](daemons.md) describes the resident process which `cli` runs a server as.
+- - [CLI](cli.md) describes the `cli` and `execute` entry points.
+- - [RPC](rpc.md) describes the JSON-RPC and `Content-Length` framing which the protocol uses.
+- - [Debugging](debugging.md) serves the sibling Debug Adapter Protocol.
+- - [Concurrency](concurrency.md) describes `supervise`, `async` and `Promise`.
+- - [Processes](processes.md) describes the `sh"…"` command which launches a server.
+- - [Syntax highlighting](syntax-highlighting.md) and [TEL](tel.md) describe the trees which a server reports on, and [packaging](packaging.md) the thin launcher it ships as.
++ - [Demonios](daemons.md) describe el proceso residente como el que `cli` ejecuta un servidor.
++ - [CLI](cli.md) describe los puntos de entrada `cli` y `execute`.
++ - [RPC](rpc.md) describe el entramado JSON-RPC y `Content-Length` que usa el protocolo.
++ - [Depuración](debugging.md) sirve el protocolo hermano Debug Adapter Protocol.
++ - [Concurrencia](concurrency.md) describe `supervise`, `async` y `Promise`.
++ - [Procesos](processes.md) describe la orden `sh"…"` que lanza un servidor.
++ - [Resaltado de sintaxis](syntax-highlighting.md) y [TEL](tel.md) describen los árboles sobre los que informa un servidor, y [empaquetado](packaging.md), el lanzador ligero como el que se distribuye.

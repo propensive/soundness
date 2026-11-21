@@ -1,0 +1,2944 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base anticipation
++ base anticipation
+
+- import soundness
++ import soundness
+
+- info   the interface typeclasses libraries agree on, so that each can accept the others' types without depending on them
++ info   las clases de tipos de interfaz en que coinciden las bibliotecas, para que cada una acepte los tipos de las demás sin depender de ellas
+
+- detail
++ detail
+
+-     _Anticipation_ holds the small typeclasses through which Soundness's libraries, and
+-     libraries outside it, exchange values without depending on one another. A library which
+-     opens a file needs *some* path, a library which sleeps needs *some* duration, and a
+-     library which fetches needs *some* URL; none of them should have to choose between
+-     galilei's `Path`, `java.nio.file.Path` and `java.io.File`, or between aviation's
+-     `Instant`, `java.time.Instant` and a `Long`. Each asks instead for a type which is
+-     `Abstractable across Paths to Text`, or `Instantiable across Instants from Long`, and the
+-     library that owns the concrete type provides the instance.
++     _Anticipation_ contiene las pequeñas clases de tipos mediante las cuales las bibliotecas de
++     Soundness, y bibliotecas ajenas a ella, intercambian valores sin depender unas de otras. Una
++     biblioteca que abre un fichero necesita *alguna* ruta, una biblioteca que duerme necesita
++     *alguna* duración, y una biblioteca que descarga necesita *alguna* URL; ninguna debería tener
++     que elegir entre el `Path` de galilei, `java.nio.file.Path` y `java.io.File`, ni entre el
++     `Instant` de aviation, `java.time.Instant` y un `Long`. En su lugar, cada una pide un tipo que
++     sea `Abstractable across Paths to Text`, o `Instantiable across Instants from Long`, y la
++     biblioteca propietaria del tipo concreto proporciona la instancia.
+
+-     The typeclasses live here, apart from every implementation, because the dependency must
+-     point *into* a common, almost empty module from both sides. If `galilei` defined the path
+-     typeclass, a library accepting paths would depend on the whole filesystem library; if the
+-     library defined it, `galilei` would depend on that. Here neither depends on the other:
+-     both depend on `anticipation`, which depends on almost nothing.
++     Las clases de tipos viven aquí, aparte de toda implementación, porque la dependencia debe
++     apuntar *hacia* un módulo común, casi vacío, desde ambos lados. Si `galilei` definiera la
++     clase de tipos de las rutas, una biblioteca que aceptara rutas dependería de toda la
++     biblioteca del sistema de ficheros; si la definiera la biblioteca, `galilei` dependería de
++     ella. Aquí ninguna depende de la otra: ambas dependen de `anticipation`, que no depende de
++     casi nada.
+
+-     Two typeclasses carry most of the traffic, each parameterised by a **domain**, a sealed
+-     marker type which names the concept being exchanged (`Paths`, `Urls`, `Instants`,
+-     `Durations`, `Uuids`, `Hostnames`, `EmailAddresses`, `IpAddresses`, `HttpStreams`, …):
++     Dos clases de tipos llevan la mayor parte del tráfico, cada una parametrizada por un
++     **dominio**, un tipo marcador sellado que nombra el concepto que se intercambia (`Paths`,
++     `Urls`, `Instants`, `Durations`, `Uuids`, `Hostnames`, `EmailAddresses`, `IpAddresses`,
++     `HttpStreams`, …):
+
+-     - `Abstractable across Domain to Result`: a value becomes its **generic** representation,
+-       `value.generic`: text for a path or URL, nanoseconds for a duration, epoch milliseconds
+-       for an instant.
+-     - `Instantiable across Domain from Origin`: a generic representation becomes a value of
+-       the caller's chosen type, `target(origin)` inside a method with the bound
++     - `Abstractable across Domain to Result`: un valor se convierte en su representación
++       **genérica**, `value.generic`: texto para una ruta o una URL, nanosegundos para una
++       duración, milisegundos desde la época para un instante.
++     - `Instantiable across Domain from Origin`: una representación genérica se convierte en un
++       valor del tipo que elija quien llama, `target(origin)` dentro de un método con la cota
+
+-       `[target: Instantiable across Paths from Text]`.
++       `[target: Instantiable across Paths from Text]`.
+
+-     So a value of one library's type is converted to another's by abstracting it and
+-     instantiating the result, with neither library knowing of the other. A galilei path's
+-     generic form is its text, `t"/home/work"`, and that text becomes a `java.nio.file.Path` or
+-     a `java.io.File` according to the path interface imported:
++     Así, un valor del tipo de una biblioteca se convierte en el de otra abstrayéndolo e
++     instanciando el resultado, sin que ninguna de las dos bibliotecas sepa de la otra. La forma
++     genérica de una ruta de galilei es su texto, `t"/home/work"`, y ese texto se convierte en un
++     `java.nio.file.Path` o un `java.io.File` según la interfaz de rutas que se importe:
+
+-     ```scala fuel
++     ```scala fuel
+
+-     alternative `java.nio.file.Path`
++     alternative `java.nio.file.Path`
+
+=     alternative `java.nio.file.Path`
+-       code
++       code
+
+=     alternative `java.nio.file.Path`
+=       code
+-           import soundness.*
++           import soundness.*
+
+=     alternative `java.nio.file.Path`
+=       code
+=           import soundness.*
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+-           import pathInterfaces.javaNioPath
++           import pathInterfaces.javaNioPath
+
+=           import pathInterfaces.javaNioPath
+=
+-           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
++           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+
+=           import pathInterfaces.javaNioPath
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+-           :   target =
++           :   target =
+
+=           import pathInterfaces.javaNioPath
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+=           :   target =
+-             target(path.generic)
++             target(path.generic)
+
+=           import pathInterfaces.javaNioPath
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+=           :   target =
+=             target(path.generic)
+=
+-           val path: Path on Linux = t"/home/work".as[Path on Linux]
++           val path: Path on Linux = t"/home/work".as[Path on Linux]
+
+-           val nio: java.nio.file.Path = relocate[java.nio.file.Path](path)
++           val nio: java.nio.file.Path = relocate[java.nio.file.Path](path)
+
+-     alternative `java.io.File`
++     alternative `java.io.File`
+
+=     alternative `java.io.File`
+-       code
++       code
+
+=     alternative `java.io.File`
+=       code
+-           import soundness.*
++           import soundness.*
+
+=     alternative `java.io.File`
+=       code
+=           import soundness.*
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+-           import pathInterfaces.javaIoFile
++           import pathInterfaces.javaIoFile
+
+=           import pathInterfaces.javaIoFile
+=
+-           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
++           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+
+=           import pathInterfaces.javaIoFile
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+-           :   target =
++           :   target =
+
+=           import pathInterfaces.javaIoFile
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+=           :   target =
+-             target(path.generic)
++             target(path.generic)
+
+=           import pathInterfaces.javaIoFile
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+=           :   target =
+=             target(path.generic)
+=
+-           val path: Path on Linux = t"/home/work".as[Path on Linux]
++           val path: Path on Linux = t"/home/work".as[Path on Linux]
+
+-           val file: java.io.File = relocate[java.io.File](path)
++           val file: java.io.File = relocate[java.io.File](path)
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     A Soundness type's own instances live in its companion (`Path.generic`, `Url.abstractable`,
+-     `Instant.generic`), so they need no import. But a method bounded `[target: Instantiable
+-     across Paths from Text]` names no concrete type whose companion could be searched, and a
+-     Java type has no companion Soundness can write to, so the instances which *choose* a
+-     representation are offered in **choice packages**, one per domain, and imported by name:
+-     `pathInterfaces`, `urlInterfaces`, `instantInterfaces`, `durationInterfaces`,
+-     `uuidInterfaces`, `hostnameInterfaces`, `emailAddressInterfaces` and
+-     `ipAddressInterfaces`. Each package is declared in `anticipation` by the library which
+-     owns the type it offers: diuretic contributes the Java types (`javaNioPath`,
+-     `javaTimeInstant`, …), aviation its `Instant` and `Quantity`, galilei and serpentine the
+-     path representatives, inimitable `Uuid`, and urticose its URL and network types. Their
+-     names follow the house provenance words: a Java type keeps its type-path name
+-     (`javaNioPath`, `javaUtilDate`), and Soundness's own type is `soundness…`
+-     (`soundnessUrl`, `soundnessUuid`). The givens are imported by name, because `import
+-     pkg.*` does not import givens: `import pathInterfaces.javaNioPath`.
++     Las instancias propias de un tipo de Soundness viven en su objeto compañero (`Path.generic`,
++     `Url.abstractable`, `Instant.generic`), así que no necesitan importación. Pero un método con
++     la cota `[target: Instantiable
++     across Paths from Text]` no nombra ningún tipo concreto en cuyo objeto compañero se pueda
++     buscar, y un tipo de Java no tiene un objeto compañero en el que Soundness pueda escribir,
++     así que las instancias que *eligen* una representación se ofrecen en **paquetes de
++     elección**, uno por dominio, y se importan por nombre: `pathInterfaces`, `urlInterfaces`,
++     `instantInterfaces`, `durationInterfaces`, `uuidInterfaces`, `hostnameInterfaces`,
++     `emailAddressInterfaces` e `ipAddressInterfaces`. Cada paquete lo declara en `anticipation`
++     la biblioteca propietaria del tipo que ofrece: diuretic aporta los tipos de Java
++     (`javaNioPath`, `javaTimeInstant`, …), aviation su `Instant` y `Quantity`, galilei y
++     serpentine los representantes de rutas, inimitable `Uuid`, y urticose sus tipos de URL y de
++     red. Sus nombres siguen las palabras de procedencia de la casa: un tipo de Java conserva el
++     nombre de su ruta de tipo (`javaNioPath`, `javaUtilDate`), y el tipo propio de Soundness es
++     `soundness…` (`soundnessUrl`, `soundnessUuid`). Los givens se importan por nombre, porque
++     `import
++     pkg.*` no importa givens: `import pathInterfaces.javaNioPath`.
+
+-     A bare `Long` cannot say whether it counts nanoseconds or milliseconds, so it has no
+-     unit-agnostic instance: `abstractables` and `instantiables` hold one given per unit,
+-     named for it, and a file imports exactly one duration reading.
++     Un `Long` sin más no puede decir si cuenta nanosegundos o milisegundos, así que no tiene
++     ninguna instancia independiente de la unidad: `abstractables` e `instantiables` contienen un
++     given por unidad, con su nombre, y un fichero importa exactamente una lectura de duración.
+
+-     The rest of the module is the same idea applied to other concepts: `Text` itself (the
+-     opaque string every library shares), `Data` for bytes, `Encodable` for encoding into a
+-     named format, `Loggable`/`LogSink`/`Transcribable` for logging without a logging
+-     runtime, `Printable` and `Termcap` for terminal rendering, `Chromatic`, `Chroma` and the
+-     pixel `Channel`s for colour, `Graphical` for images, `Focusable` for browser locators,
+-     `Nominable` for names, `Textualizable` for text conversion, and `Durable` for
+-     capabilities safe to share across threads.
++     El resto del módulo es la misma idea aplicada a otros conceptos: el propio `Text` (la cadena
++     opaca que comparten todas las bibliotecas), `Data` para bytes, `Encodable` para codificar en
++     un formato con nombre, `Loggable`/`LogSink`/`Transcribable` para registrar sin un
++     tiempo de ejecución de registro, `Printable` y `Termcap` para la representación
++     en terminal, `Chromatic`, `Chroma` y los `Channel`s de píxel para el color, `Graphical`
++     para imágenes, `Focusable` para los localizadores del navegador, `Nominable` para los
++     nombres, `Textualizable` para la conversión a texto, y `Durable` para las
++     capacidades que se pueden compartir con seguridad entre hilos.
+
+-     The library is split into many small, platform-neutral components, so that a library
+-     depends only on the concepts it exchanges: `anticipation.generic` (`Abstractable`,
+-     `Instantiable`, `Representative`), `text`, `opaque`, `codec`, `color`, `gfx`, `focus`,
+-     `http`, `log`, `net`, `path`, `print`, `time`, `url` and `uuid`. Everything is exported
+-     to the `soundness` umbrella except `Channel`, which clashes with another library's and is
+-     reached as `anticipation.Channel`; the choice packages merge with the umbrella's own
+-     blocks of the same names.
++     La biblioteca está dividida en muchos componentes pequeños e independientes de la
++     plataforma, para que una biblioteca dependa solo de los conceptos que intercambia:
++     `anticipation.generic` (`Abstractable`, `Instantiable`, `Representative`), `text`, `opaque`,
++     `codec`, `color`, `gfx`, `focus`, `http`, `log`, `net`, `path`, `print`, `time`, `url` y
++     `uuid`. Todo se exporta al paraguas `soundness` salvo `Channel`, que choca con el de otra
++     biblioteca y se alcanza como `anticipation.Channel`; los paquetes de elección se fusionan
++     con los bloques del mismo nombre del propio paraguas.
+
+- refer anticipation.Abstractable
++ refer anticipation.Abstractable
+
+- refer anticipation.Instantiable
++ refer anticipation.Instantiable
+
+- refer anticipation.Representative
++ refer anticipation.Representative
+
+- refer anticipation.Text
++ refer anticipation.Text
+
+- refer anticipation.pathInterfaces
++ refer anticipation.pathInterfaces
+
+- refer anticipation.instantInterfaces
++ refer anticipation.instantInterfaces
+
+- entry .Abstractable   a typeclass turning a value into the generic representation of a domain
++ entry .Abstractable   una clase de tipos que convierte un valor en la representación genérica de un dominio
+
+= entry .Abstractable   a typeclass turning a value into the generic representation of a domain
+-   detail
++   detail
+
+-       `value is Abstractable across Domain to Result` says that `value` can be reduced to a
+-       `Result`, the representation every library agrees on for `Domain`: `Text` for `Paths`
+-       and `Urls`, a `Long` of nanoseconds for `Durations`, a `Long` of milliseconds since the
+-       epoch for `Instants`, an `HttpStreams.Content` for `HttpStreams`. A library which
+-       *consumes* paths, durations or URLs bounds its parameter by it and calls `#generic`,
+-       accepting any type with an instance and depending on none of them.
++       `value is Abstractable across Domain to Result` dice que `value` se puede reducir a un
++       `Result`, la representación en que coinciden todas las bibliotecas para `Domain`: `Text`
++       para `Paths` y `Urls`, un `Long` de nanosegundos para `Durations`, un `Long` de
++       milisegundos desde la época para `Instants`, un `HttpStreams.Content` para `HttpStreams`.
++       Una biblioteca que *consume* rutas, duraciones o URL acota su parámetro con ella y llama a
++       `#generic`, aceptando cualquier tipo con una instancia y sin depender de ninguno.
+
+=       accepting any type with an instance and depending on none of them.
+=
+-       ```scala
++       ```scala
+
+=       accepting any type with an instance and depending on none of them.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def describe[path: Abstractable across Paths to Text](path: path): Text =
++       def describe[path: Abstractable across Paths to Text](path: path): Text =
+
+-         t"the path ${path.generic}"
++         t"the path ${path.generic}"
+
+=         t"the path ${path.generic}"
+-       ```
++       ```
+
+-       Instances live in the companion of the abstracted type (`Path.generic`,
+-       `Url.abstractable`, `Moment.generic`), so they are found without an import; a Java
+-       type's instance is offered in a choice package such as `pathInterfaces` or
+-       `instantInterfaces`. A bare `Long` duration or instant has instances only in
+-       `abstractables`, one per unit, imported by name.
++       Las instancias viven en el objeto compañero del tipo abstraído (`Path.generic`,
++       `Url.abstractable`, `Moment.generic`), así que se encuentran sin importación; la instancia
++       de un tipo de Java se ofrece en un paquete de elección como `pathInterfaces` o
++       `instantInterfaces`. Una duración o un instante como `Long` sin más solo tiene instancias en
++       `abstractables`, una por unidad, que se importan por nombre.
+
+-       `Abstractable` is a pure typeclass: an instance captures nothing.
++       `Abstractable` es una clase de tipos pura: una instancia no captura nada.
+
+-   refer anticipation.Instantiable
++   refer anticipation.Instantiable
+
+=   refer anticipation.Instantiable
+-   refer anticipation.abstractables
++   refer anticipation.abstractables
+
+-   entry #genericize   reduces a value to its generic representation
+-       The method an instance implements; `#generic` is the extension a caller writes.
+-   entry #generic   the generic representation of a value: `value.generic`
+-       An extension on the abstracted type. `path.generic` is the path as text,
+-       `duration.generic` its nanoseconds, `instant.generic` its epoch milliseconds.
+-   entry #contramap   an instance for another type, by first mapping it to this one
+-       `abstractable.contramap[Wrapper](_.inner)` abstracts a `Wrapper` across the same domain
+-       to the same result. The function must be pure.
++   entry #genericize   reduce un valor a su representación genérica
++       El método que implementa una instancia; `#generic` es la extensión que escribe quien
++       llama.
++   entry #generic   la representación genérica de un valor: `value.generic`
++       Una extensión sobre el tipo abstraído. `path.generic` es la ruta como texto,
++       `duration.generic` sus nanosegundos, `instant.generic` sus milisegundos desde la época.
++   entry #contramap   una instancia para otro tipo, que primero lo transforma en este
++       `abstractable.contramap[Wrapper](_.inner)` abstrae un `Wrapper` en el mismo dominio y al
++       mismo resultado. La función debe ser pura.
+
+- entry .Instantiable   a typeclass building a value from the generic representation of a domain
++ entry .Instantiable   una clase de tipos que construye un valor a partir de la representación genérica de un dominio
+
+= entry .Instantiable   a typeclass building a value from the generic representation of a domain
+-   detail
++   detail
+
+-       `target is Instantiable across Domain from Origin` says that a `target` can be made from
+-       an `Origin`, the representation every library agrees on for `Domain`. A library which
+-       *produces* paths, instants or URLs bounds its result type by it, so the caller chooses
+-       the type it receives:
++       `target is Instantiable across Domain from Origin` dice que se puede crear un `target` a
++       partir de un `Origin`, la representación en que coinciden todas las bibliotecas para
++       `Domain`. Una biblioteca que *produce* rutas, instantes o URL acota con ella su tipo de
++       resultado, de modo que quien llama elige el tipo que recibe:
+
+=       the type it receives:
+=
+-       ```scala
++       ```scala
+
+=       the type it receives:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
++       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+
+=       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+-       ```
++       ```
+
+-       The context-bound name is itself the instance, so `path(text)` applies it. Instances
+-       for a Soundness type are in its companion; but where a method's bound names no concrete
+-       type, the choice of representation is made by importing an instance by name from a
+-       choice package, as `import pathInterfaces.javaNioPath` or `import
+-       urlInterfaces.soundnessUrl` does. An instance which parses (a `Uuid`, a `Hostname`, an
+-       `HttpUrl`) needs a `Tactic` for its error and captures it, which is why
+-       `Instantiable` is a tracked typeclass rather than a pure one.
++       El nombre de la cota de contexto es en sí la instancia, así que `path(text)` la aplica.
++       Las instancias para un tipo de Soundness están en su objeto compañero; pero cuando la cota
++       de un método no nombra ningún tipo concreto, la elección de la representación se hace
++       importando una instancia por nombre de un paquete de elección, como hacen
++       `import pathInterfaces.javaNioPath` o `import
++       urlInterfaces.soundnessUrl`. Una instancia que analiza (un `Uuid`, un `Hostname`, un
++       `HttpUrl`) necesita una `Tactic` para su error y la captura, y por eso `Instantiable` es
++       una clase de tipos rastreada y no una pura.
+
+-   refer anticipation.Abstractable
++   refer anticipation.Abstractable
+
+=   refer anticipation.Abstractable
+-   refer anticipation.instantiables
++   refer anticipation.instantiables
+
+=   refer anticipation.instantiables
+-   refer anticipation.Representative
++   refer anticipation.Representative
+
+-   entry #apply   builds a value from its generic representation
+-   entry #instantiate   builds a value from its generic representation: `origin.instantiate`
+-       An extension on the origin type, available where exactly one applicable instance is in
+-       scope; with several, apply the instance (`#apply`) instead.
+-   entry #map   an instance for another type, by mapping each value this one builds
+-       The result captures this instance and the function.
++   entry #apply   construye un valor a partir de su representación genérica
++   entry #instantiate   construye un valor a partir de su representación genérica: `origin.instantiate`
++       Una extensión sobre el tipo de origen, disponible donde haya exactamente una instancia
++       aplicable en el ámbito; si hay varias, aplica en su lugar la instancia (`#apply`).
++   entry #map   una instancia para otro tipo, que transforma cada valor que construye esta
++       El resultado captura esta instancia y la función.
+
+- entry .Representative   evidence that a type may stand for a domain, such as a path type for `Paths`
++ entry .Representative   evidencia de que un tipo puede representar un dominio, como un tipo de ruta para `Paths`
+
+= entry .Representative   evidence that a type may stand for a domain, such as a path type for `Paths`
+-   detail
++   detail
+
+-       `path is Representative of Paths` marks a type as an acceptable representation of a
+-       domain where the API must name the type the caller wants without converting anything
+-       yet: `workingDirectory[path: Representative of Paths]` and
+-       `temporaryDirectory[path: Representative of Paths]` in ambience accept only a type
+-       with this evidence, and then instantiate it through `Paths.Resolver`. It is a sealed,
+-       memberless marker, whose instances are erased (`inline given … = !!`) and cost nothing.
++       `path is Representative of Paths` marca un tipo como representación aceptable de un
++       dominio allí donde la API debe nombrar el tipo que quiere quien llama sin convertir nada
++       todavía: `workingDirectory[path: Representative of Paths]` y
++       `temporaryDirectory[path: Representative of Paths]` en ambience solo aceptan un tipo con
++       esta evidencia, y luego lo instancian a través de `Paths.Resolver`. Es un marcador
++       sellado y sin miembros, cuyas instancias se borran (`inline given … = !!`) y no cuestan
++       nada.
+
+=       memberless marker, whose instances are erased (`inline given … = !!`) and cost nothing.
+=
+-       ```scala
++       ```scala
+
+=       memberless marker, whose instances are erased (`inline given … = !!`) and cost nothing.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       memberless marker, whose instances are erased (`inline given … = !!`) and cost nothing.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       import workingDirectories.systemWorkingDirectory
++       import workingDirectories.systemWorkingDirectory
+
+-       val directory = workingDirectory[Path on Linux]
++       val directory = workingDirectory[Path on Linux]
+
+=       val directory = workingDirectory[Path on Linux]
+-       ```
++       ```
+
+-       galilei's platform paths (`Path on Linux`, `Path on Windows`, `Path on MacOs`, `Path on
+-       Local`, `Path on Posix`) carry their evidence in their platform's companion and in
+-       `pathInterfaces`; serpentine makes `Text` a representative (`pathInterfaces.textPath`),
+-       and diuretic `java.nio.file.Path` and `java.io.File`.
++       Las rutas de plataforma de galilei (`Path on Linux`, `Path on Windows`, `Path on MacOs`,
++       `Path on
++       Local`, `Path on Posix`) llevan su evidencia en el objeto compañero de su plataforma y en
++       `pathInterfaces`; serpentine hace de `Text` un representante
++       (`pathInterfaces.textPath`), y diuretic de `java.nio.file.Path` y `java.io.File`.
+
+=       and diuretic `java.nio.file.Path` and `java.io.File`.
+-   refer anticipation.Paths
++   refer anticipation.Paths
+
+=   refer anticipation.Paths
+-   refer anticipation.pathInterfaces
++   refer anticipation.pathInterfaces
+
+- entry .Paths   the domain of filesystem paths, whose generic representation is text
++ entry .Paths   el dominio de las rutas del sistema de ficheros, cuya representación genérica es texto
+
+= entry .Paths   the domain of filesystem paths, whose generic representation is text
+-   detail
++   detail
+
+-       A sealed marker naming the concept of a path, used as the `Domain` of `Abstractable`,
+-       `Instantiable` and `Representative`. A path's generic form is its text, as the
+-       filesystem writes it: `path is Abstractable across Paths to Text` reads a path of any
+-       type, and `path is Instantiable across Paths from Text` makes one. A second origin,
+-       `Paths.Trusted`, marks text which came from the operating system and so needs no
+-       validation.
++       Un marcador sellado que nombra el concepto de ruta, usado como `Domain` de
++       `Abstractable`, `Instantiable` y `Representative`. La forma genérica de una ruta es su
++       texto, tal como lo escribe el sistema de ficheros: `path is Abstractable across Paths to
++       Text` lee una ruta de cualquier tipo, y `path is Instantiable across Paths from Text`
++       crea una. Un segundo origen, `Paths.Trusted`, marca el texto que procede del sistema
++       operativo y que, por tanto, no necesita validación.
+
+=       validation.
+=
+-       ```scala
++       ```scala
+
+=       validation.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def open[path: Abstractable across Paths to Text](path: path): Text = path.generic
++       def open[path: Abstractable across Paths to Text](path: path): Text = path.generic
+
+=       def open[path: Abstractable across Paths to Text](path: path): Text = path.generic
+-       ```
++       ```
+
+-       Instances: galilei and serpentine's `Path` in its companion; `java.nio.file.Path` and
+-       `java.io.File` in `pathInterfaces`, from diuretic.
++       Instancias: el `Path` de galilei y serpentine en su objeto compañero;
++       `java.nio.file.Path` y `java.io.File` en `pathInterfaces`, de diuretic.
+
+=       `java.io.File` in `pathInterfaces`, from diuretic.
+-   refer anticipation.pathInterfaces
++   refer anticipation.pathInterfaces
+
+=   refer anticipation.pathInterfaces
+-   refer anticipation.Representative
++   refer anticipation.Representative
+
+-   entry .Trusted   path text known to be valid, such as a directory the operating system reported
++   entry .Trusted   texto de ruta que se sabe válido, como un directorio del que ha informado el sistema operativo
+
+=   entry .Trusted   path text known to be valid, such as a directory the operating system reported
+-     detail
++     detail
+
+-         An `Instantiable` origin distinct from plain `Text`: a path type which is
+-         `Instantiable across Paths from Paths.Trusted` can be made from it without the
+-         validation (and the `Tactic`) which instantiating from untrusted text needs.
+-         serpentine's `Path` has such an instance; `Paths.Resolver` prefers it.
+-     entry #text   the trusted path text
+-   entry .Resolver   resolves a directory's text into the requested path type, preferring trusted instantiation
++         Un origen de `Instantiable` distinto del `Text` sin más: un tipo de ruta que es
++         `Instantiable across Paths from Paths.Trusted` se puede crear a partir de él sin la
++         validación (ni la `Tactic`) que necesita la instanciación a partir de texto no fiable.
++         El `Path` de serpentine tiene una instancia así; `Paths.Resolver` la prefiere.
++     entry #text   el texto de ruta fiable
++   entry .Resolver   resuelve el texto de un directorio en el tipo de ruta pedido, prefiriendo la instanciación fiable
+
+=   entry .Resolver   resolves a directory's text into the requested path type, preferring trusted instantiation
+-     detail
++     detail
+
+-         The contextual value behind ambience's `workingDirectory` and `temporaryDirectory`:
+-         given the text of a directory the operating system reported, `resolver(text)`
+-         builds the caller's chosen path type. Its companion's `.trusted` instance, through
+-         `Instantiable across Paths from Trusted`, outranks the fallback `fromText` instance
+-         inherited from `Resolver2`, which instantiates from plain `Text`. The choice is made
+-         by ordinary implicit search rather than an inline `summonFrom`, so that it still
+-         works when the calling code is expanded inside a staged quote.
+-     entry .trusted   resolves through the path type's `Instantiable across Paths from Trusted` instance
+-     entry #apply   the path for a directory's text
+-   entry .Resolver2   the lower-priority parent of the `Paths.Resolver` companion
++         El valor contextual tras `workingDirectory` y `temporaryDirectory`
++         de ambience: dado el texto de un directorio del que ha informado el sistema operativo,
++         `resolver(text)` construye el tipo de ruta que ha elegido quien llama. La instancia
++         `.trusted` de su objeto compañero, mediante `Instantiable across Paths from Trusted`,
++         tiene prioridad sobre la instancia alternativa `fromText` heredada de `Resolver2`, que
++         instancia a partir de `Text` sin más. La elección se hace por búsqueda implícita
++         ordinaria y no con un `summonFrom` inline, para que siga funcionando cuando el código
++         que llama se expande dentro de una cita por etapas.
++     entry .trusted   resuelve mediante la instancia `Instantiable across Paths from Trusted` del tipo de ruta
++     entry #apply   la ruta para el texto de un directorio
++   entry .Resolver2   el padre de menor prioridad del objeto compañero de `Paths.Resolver`
+
+-     hidden
++     hidden
+
+=     hidden
+-     detail
++     detail
+
+-         Holds the fallback resolver, so that the trusted one in `Paths.Resolver`'s companion
+-         is preferred where both apply.
+-     entry #fromText   resolves through the path type's `Instantiable across Paths from Text` instance
++         Contiene el resolutor alternativo, para que se prefiera el fiable del objeto compañero
++         de `Paths.Resolver` cuando se apliquen ambos.
++     entry #fromText   resuelve mediante la instancia `Instantiable across Paths from Text` del tipo de ruta
+
+- entry .Nominable   a typeclass giving a value's name as text, such as a path's final segment
++ entry .Nominable   una clase de tipos que da el nombre de un valor como texto, como el último segmento de una ruta
+
+= entry .Nominable   a typeclass giving a value's name as text, such as a path's final segment
+-   detail
++   detail
+
+-       `value is Nominable` provides `#name`: for a serpentine `Path`, the last segment of its
+-       descent, or its root if it has none. A library which displays or sorts by name asks for
+-       a `Nominable` rather than for a particular path type. It is a pure typeclass.
+-   entry #name   the value's name
++       `value is Nominable` proporciona `#name`: para un `Path` de serpentine, el último segmento
++       de su descenso, o su raíz si no tiene ninguno. Una biblioteca que muestra u ordena por
++       nombre pide un `Nominable` en lugar de un tipo de ruta concreto. Es una clase de tipos
++       pura.
++   entry #name   el nombre del valor
+
+- entry .Urls   the domain of URLs, whose generic representation is text
++ entry .Urls   el dominio de las URL, cuya representación genérica es texto
+
+= entry .Urls   the domain of URLs, whose generic representation is text
+-   detail
++   detail
+
+-       A sealed marker naming the concept of a URL. `url is Abstractable across Urls to Text`
+-       reads a URL of any type as text, and `url is Instantiable across Urls from Text` makes
+-       one. urticose's `HttpUrl` has both in its companion, and the instantiation is also
+-       offered by name as `urlInterfaces.soundnessUrl`; `java.net.URL` is
+-       `urlInterfaces.javaNetUrl`, from diuretic.
++       Un marcador sellado que nombra el concepto de URL. `url is Abstractable across Urls to
++       Text` lee como texto una URL de cualquier tipo, y `url is Instantiable across Urls from
++       Text` crea una. El `HttpUrl` de urticose tiene ambas en su objeto compañero, y la
++       instanciación se ofrece también por nombre como `urlInterfaces.soundnessUrl`;
++       `java.net.URL` es `urlInterfaces.javaNetUrl`, de diuretic.
+
+-   refer anticipation.urlInterfaces
++   refer anticipation.urlInterfaces
+
+- entry .Instants   the domain of points in time, whose generic representation is epoch milliseconds
++ entry .Instants   el dominio de los puntos en el tiempo, cuya representación genérica son milisegundos desde la época
+
+= entry .Instants   the domain of points in time, whose generic representation is epoch milliseconds
+-   detail
++   detail
+
+-       A sealed marker naming the concept of an instant. The generic form is a `Long` of
+-       **milliseconds** since the Unix epoch: `instant is Abstractable across Instants to Long`
+-       and `instant is Instantiable across Instants from Long`. A library which schedules or
+-       stamps asks for one of these rather than for aviation's `Instant` or `java.time`.
++       Un marcador sellado que nombra el concepto de instante. La forma genérica es un `Long` de
++       **milisegundos** desde la época Unix: `instant is Abstractable across Instants to Long` e
++       `instant is Instantiable across Instants from Long`. Una biblioteca que planifica o pone
++       marcas de tiempo pide una de ellas en lugar del `Instant` de aviation o de `java.time`.
+
+=       stamps asks for one of these rather than for aviation's `Instant` or `java.time`.
+=
+-       ```scala
++       ```scala
+
+=       stamps asks for one of these rather than for aviation's `Instant` or `java.time`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       stamps asks for one of these rather than for aviation's `Instant` or `java.time`.
+=
+=       ```scala
+=       import soundness.*
+-       import instantInterfaces.javaTimeInstant
++       import instantInterfaces.javaTimeInstant
+
+-       def at[instant: Instantiable across Instants from Long](epochMilliseconds: Long): instant =
++       def at[instant: Instantiable across Instants from Long](epochMilliseconds: Long): instant =
+
+-         instant(epochMilliseconds)
++         instant(epochMilliseconds)
+
+-       at[java.time.Instant](0L)
++       at[java.time.Instant](0L)
+
+=       at[java.time.Instant](0L)
+-       ```
++       ```
+
+-       Instances: aviation's `Instant` and `Moment` in their companions, and by name in
+-       `instantInterfaces`; `java.time.Instant`, `java.util.Date` and a raw `Long` in
+-       `instantInterfaces`, from diuretic; a bare `Long` in `abstractables` and
+-       `instantiables` as `epochMillisecondsAbstractable` and `epochMillisecondsInstantiable`.
+-       Note the asymmetry with `Durations`, whose `Long` counts nanoseconds.
++       Instancias: el `Instant` y el `Moment` de aviation en sus objetos compañeros, y por nombre
++       en `instantInterfaces`; `java.time.Instant`, `java.util.Date` y un `Long` sin más en
++       `instantInterfaces`, de diuretic; un `Long` sin más en `abstractables` e `instantiables`
++       como `epochMillisecondsAbstractable` y `epochMillisecondsInstantiable`. Obsérvese la
++       asimetría con `Durations`, cuyo `Long` cuenta nanosegundos.
+
+-   refer anticipation.instantInterfaces
++   refer anticipation.instantInterfaces
+
+=   refer anticipation.instantInterfaces
+-   refer anticipation.Durations
++   refer anticipation.Durations
+
+- entry .Durations   the domain of lengths of time, whose generic representation is nanoseconds
++ entry .Durations   el dominio de las duraciones, cuya representación genérica son nanosegundos
+
+= entry .Durations   the domain of lengths of time, whose generic representation is nanoseconds
+-   detail
++   detail
+
+-       A sealed marker naming the concept of a duration. The generic form is a `Long` of
+-       **nanoseconds**: `duration is Abstractable across Durations to Long` and `duration is
+-       Instantiable across Durations from Long`. parasite's `sleep` and `snooze`, and every
+-       timeout in Soundness, accept any type with an instance, so an aviation `Timespan`, a
+-       quantitative `Quantity[Seconds[1]]` and a bare `Long` in a chosen unit all serve.
++       Un marcador sellado que nombra el concepto de duración. La forma genérica es un `Long` de
++       **nanosegundos**: `duration is Abstractable across Durations to Long` y `duration is
++       Instantiable across Durations from Long`. `sleep` y `snooze` de parasite, y todo tiempo de
++       espera de Soundness, aceptan cualquier tipo con una instancia, así que sirven un
++       `Timespan` de aviation, un `Quantity[Seconds[1]]` de quantitative y un `Long` sin más en
++       una unidad elegida.
+
+=       quantitative `Quantity[Seconds[1]]` and a bare `Long` in a chosen unit all serve.
+=
+-       ```scala
++       ```scala
+
+=       quantitative `Quantity[Seconds[1]]` and a bare `Long` in a chosen unit all serve.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       quantitative `Quantity[Seconds[1]]` and a bare `Long` in a chosen unit all serve.
+=
+=       ```scala
+=       import soundness.*
+-       import abstractables.millisecondsAbstractable
++       import abstractables.millisecondsAbstractable
+
+-       def nanoseconds[duration: Abstractable across Durations to Long](duration: duration): Long =
++       def nanoseconds[duration: Abstractable across Durations to Long](duration: duration): Long =
+
+-         duration.generic
++         duration.generic
+
+-       nanoseconds(200L)   // 200000000L
++       nanoseconds(200L)   // 200000000L
+
+=       nanoseconds(200L)   // 200000000L
+-       ```
++       ```
+
+-       A bare `Long` has no unit, so it has an instance only by import, one per unit, and the
+-       three share a type, so exactly one may be imported into a file. Instances: aviation's
+-       `Timespan` and `Quantity` in their companions, and by name as
+-       `durationInterfaces.aviationDuration`; a raw nanosecond `Long` as
+-       `durationInterfaces.javaLongDuration`, from diuretic.
++       Un `Long` sin más no tiene unidad, así que solo tiene una instancia mediante importación,
++       una por unidad, y las tres comparten un tipo, así que solo se puede importar exactamente
++       una en un fichero. Instancias: el `Timespan` y el `Quantity` de aviation en sus objetos
++       compañeros, y por nombre como `durationInterfaces.aviationDuration`; un `Long` sin más de
++       nanosegundos como `durationInterfaces.javaLongDuration`, de diuretic.
+
+=       `durationInterfaces.javaLongDuration`, from diuretic.
+-   refer anticipation.abstractables
++   refer anticipation.abstractables
+
+-   refer anticipation.durationInterfaces
++   refer anticipation.durationInterfaces
+
+-   entry .ms   converts between nanoseconds and milliseconds, inline
+-       Two overloads: `ms(long: Long): Double` scales a `Long` up by a million, and `ms(double:
+-       Double): Long` scales a `Double` down by a million, truncating. Note that the direction
+-       is set by the argument's type, not by the name.
+-   entry .ns   converts between a `Long` and a `Double` count of nanoseconds, inline
+-       `ns(long: Long): Double` widens; `ns(double: Double): Long` truncates.
++   entry .ms   convierte entre nanosegundos y milisegundos, inline
++       Dos sobrecargas: `ms(long: Long): Double` escala un `Long` hacia arriba en un millón, y
++       `ms(double:
++       Double): Long` escala un `Double` hacia abajo en un millón, truncando. Obsérvese que la
++       dirección la fija el tipo del argumento, no el nombre.
++   entry .ns   convierte entre una cuenta de nanosegundos como `Long` y como `Double`, inline
++       `ns(long: Long): Double` amplía; `ns(double: Double): Long` trunca.
+
+- entry .Dates   the domain of calendar dates, as a marker for `Abstractable` and `Instantiable`
+-     A sealed marker naming the concept of a date, with no fixed generic representation of its
+-     own: an instance states its `Result` or `Origin` type.
++ entry .Dates   el dominio de las fechas del calendario, como marcador para `Abstractable` e `Instantiable`
++     Un marcador sellado que nombra el concepto de fecha, sin una representación genérica fija
++     propia: una instancia declara su tipo `Result` u `Origin`.
+
+- entry .Times   the domain of times of day, as a marker for `Abstractable` and `Instantiable`
+-     A sealed marker naming the concept of a time of day, with no fixed generic
+-     representation of its own: an instance states its `Result` or `Origin` type.
++ entry .Times   el dominio de las horas del día, como marcador para `Abstractable` e `Instantiable`
++     Un marcador sellado que nombra el concepto de hora del día, sin una representación genérica
++     fija propia: una instancia declara su tipo `Result` u `Origin`.
+
+- entry .Uuids   the domain of UUIDs, whose generic representation is text
+-     A sealed marker naming the concept of a UUID. `uuid is Instantiable across Uuids from
+-     Text` parses one; inimitable's `Uuid` is offered by name as
+-     `uuidInterfaces.soundnessUuid`, so a library can accept UUIDs without depending on
++ entry .Uuids   el dominio de los UUID, cuya representación genérica es texto
++     Un marcador sellado que nombra el concepto de UUID. `uuid is Instantiable across Uuids from
++     Text` analiza uno; el `Uuid` de inimitable se ofrece por nombre como
++     `uuidInterfaces.soundnessUuid`, para que una biblioteca pueda aceptar UUID sin depender de
+
+-     inimitable.
++     inimitable.
+
+- entry .EmailAddresses   the domain of email addresses, whose generic representation is text
+-     A sealed marker naming the concept of an email address. urticose's `EmailAddress` is
+-     `Instantiable across EmailAddresses from Text` by the given
+-     `emailAddressInterfaces.soundnessEmailAddress`, imported by name.
++ entry .EmailAddresses   el dominio de las direcciones de correo electrónico, cuya representación genérica es texto
++     Un marcador sellado que nombra el concepto de dirección de correo electrónico. El
++     `EmailAddress` de urticose es `Instantiable across EmailAddresses from Text` mediante el
++     given `emailAddressInterfaces.soundnessEmailAddress`, que se importa por nombre.
+
+- entry .Hostnames   the domain of hostnames, whose generic representation is text
+-     A sealed marker naming the concept of a hostname. urticose's `Hostname` is `Instantiable
+-     across Hostnames from Text` by the given `hostnameInterfaces.soundnessHostname`,
+-     imported by name.
++ entry .Hostnames   el dominio de los nombres de host, cuya representación genérica es texto
++     Un marcador sellado que nombra el concepto de nombre de host. El `Hostname` de urticose es
++     `Instantiable
++     across Hostnames from Text` mediante el given `hostnameInterfaces.soundnessHostname`, que
++     se importa por nombre.
+
+- entry .IpAddresses   the domain of IP addresses, whose generic representation is text
+-     A sealed marker naming the concept of an IP address. urticose's `Ipv4` and `Ipv6` are
+-     `Instantiable across IpAddresses from Text` by the givens
+-     `ipAddressInterfaces.soundnessIpv4` and `ipAddressInterfaces.soundnessIpv6`, imported by
+-     name.
++ entry .IpAddresses   el dominio de las direcciones IP, cuya representación genérica es texto
++     Un marcador sellado que nombra el concepto de dirección IP. Los `Ipv4` e `Ipv6` de urticose
++     son `Instantiable across IpAddresses from Text` mediante los givens
++     `ipAddressInterfaces.soundnessIpv4` e `ipAddressInterfaces.soundnessIpv6`, que se importan
++     por nombre.
+
+- entry .HttpRequests   the domain of HTTP request bodies, as a marker for `Instantiable`
+-     A sealed marker naming what an HTTP server receives. telekinesis can decode a request
+-     body as any `content` which is `Instantiable across HttpRequests from Text`, and codec
+-     libraries (jacinta, xylophone, ypsiloid) provide such instances for their own types, so
+-     neither side depends on the other.
++ entry .HttpRequests   el dominio de los cuerpos de las peticiones HTTP, como marcador para `Instantiable`
++     Un marcador sellado que nombra lo que recibe un servidor HTTP. telekinesis puede
++     decodificar el cuerpo de una petición como cualquier `content` que sea `Instantiable across
++     HttpRequests from Text`, y las bibliotecas de códecs (jacinta, xylophone, ypsiloid)
++     proporcionan instancias así para sus propios tipos, de modo que ningún lado depende del
++     otro.
+
+- entry .HttpStreams   the domain of HTTP message bodies, with a minimal pull protocol for their bytes
++ entry .HttpStreams   el dominio de los cuerpos de los mensajes HTTP, con un protocolo de extracción mínimo para sus bytes
+
+= entry .HttpStreams   the domain of HTTP message bodies, with a minimal pull protocol for their bytes
+-   detail
++   detail
+
+-       A sealed marker naming what is sent as an HTTP body. A type which is `Abstractable
+-       across HttpStreams to HttpStreams.Content` can be posted by telekinesis's client or
+-       served by its server: a `Content` is a media type paired with a `Body`. jacinta's
+-       `Json`, xylophone's `Xml` and the binary codecs provide instances in their own
+-       companions.
++       Un marcador sellado que nombra lo que se envía como cuerpo HTTP. Un tipo que es
++       `Abstractable
++       across HttpStreams to HttpStreams.Content` lo puede enviar con POST el cliente de
++       telekinesis o servirlo su servidor: un `Content` es un tipo de medio emparejado con un
++       `Body`. El `Json` de jacinta, el `Xml` de xylophone y los códecs binarios proporcionan
++       instancias en sus propios objetos compañeros.
+
+=       companions.
+=
+-       ```scala
++       ```scala
+
+=       companions.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val content: HttpStreams.Content =
++       val content: HttpStreams.Content =
+
+-         (t"text/plain", HttpStreams.Body(Data(72, 105)))
++         (t"text/plain", HttpStreams.Body(Data(72, 105)))
+
+=         (t"text/plain", HttpStreams.Body(Data(72, 105)))
+-       ```
++       ```
+
+-       The `Body` protocol is deliberately dependency-free, so that libraries below
+-       turbulence can produce one; turbulence's streams adapt to and from it.
++       El protocolo `Body` carece deliberadamente de dependencias, para que las bibliotecas por
++       debajo de turbulence puedan producir uno; los flujos de turbulence se adaptan a él y desde
++       él.
+
+-   refer anticipation.HttpRequests
++   refer anticipation.HttpRequests
+
+-   entry .Body   a demand-driven source of body bytes, pulled one bounded chunk at a time
++   entry .Body   una fuente de bytes del cuerpo dirigida por la demanda, de la que se extrae un fragmento acotado cada vez
+
+=   entry .Body   a demand-driven source of body bytes, pulled one bounded chunk at a time
+-     detail
++     detail
+
+-         A `Body` is asked for its bytes with `#next(limit)`, which returns at most `limit`
+-         bytes as one chunk, or `null` at the end of the stream, and may block until input
+-         is available.
+-     entry .empty   the body with no bytes
+-     entry .apply   a body from a whole `Data` value, an iterator of chunks or a `Chain` of chunks
+-         From a `Data` value, the bytes are delivered in slices of at most `limit` bytes. From
+-         a stdlib iterator or a lazy `Chain` of chunks, each call delivers the next chunk
+-         whole, so `limit` does not bound its size; a body from an iterator captures it.
+-     entry #next   the next chunk of at most `limit` bytes, or `null` at the end of the body
+-   entry .Content   a body with its media type: `(Text, HttpStreams.Body)`
++         A un `Body` se le piden sus bytes con `#next(limit)`, que devuelve como mucho `limit`
++         bytes como un fragmento, o `null` al final del flujo, y puede bloquearse hasta que haya
++         entrada disponible.
++     entry .empty   el cuerpo sin bytes
++     entry .apply   un cuerpo a partir de un valor `Data` entero, un iterador de fragmentos o una `Chain` de fragmentos
++         A partir de un valor `Data`, los bytes se entregan en porciones de como mucho `limit`
++         bytes. A partir de un iterador de la stdlib o de una `Chain` perezosa de fragmentos,
++         cada llamada entrega entero el siguiente fragmento, así que `limit` no acota su tamaño;
++         un cuerpo creado a partir de un iterador lo captura.
++     entry #next   el siguiente fragmento de como mucho `limit` bytes, o `null` al final del cuerpo
++   entry .Content   un cuerpo con su tipo de medio: `(Text, HttpStreams.Body)`
+
+- entry .abstractables   the readings of a bare `Long` as a duration or an instant, each a given to import by name
++ entry .abstractables   las lecturas de un `Long` sin más como duración o como instante, cada una un given que se importa por nombre
+
+= entry .abstractables   the readings of a bare `Long` as a duration or an instant, each a given to import by name
+-   detail
++   detail
+
+-       A `Long` cannot say whether it counts nanoseconds, microseconds, milliseconds or
+-       milliseconds since the epoch, so `import soundness.*` gives it no reading at all, and a
+-       method which takes any `Abstractable across Durations` or `across Instants` rejects a
+-       bare `Long` until a unit is chosen by importing one of these by name:
++       Un `Long` no puede decir si cuenta nanosegundos, microsegundos, milisegundos o
++       milisegundos desde la época, así que `import soundness.*` no le da ninguna lectura, y un
++       método que acepta cualquier `Abstractable across Durations` o `across Instants` rechaza
++       un `Long` sin más hasta que se elige una unidad importando una de estas por nombre:
+
+=       bare `Long` until a unit is chosen by importing one of these by name:
+=
+-       ```scala
++       ```scala
+
+=       bare `Long` until a unit is chosen by importing one of these by name:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       bare `Long` until a unit is chosen by importing one of these by name:
+=
+=       ```scala
+=       import soundness.*
+-       import abstractables.millisecondsAbstractable
++       import abstractables.millisecondsAbstractable
+
+-       supervise:
++       supervise:
+
+-         snooze(200L)   // 200 milliseconds
++         snooze(200L)   // 200 milliseconds
+
+=         snooze(200L)   // 200 milliseconds
+-       ```
++       ```
+
+-       The three duration givens share a type, so exactly one may be imported into a file;
+-       importing a duration reading and `epochMillisecondsAbstractable` together makes a
+-       `Long` passed where either is accepted ambiguous. `instantiables` mirrors all four in
+-       the opposite direction.
++       Los tres givens de duración comparten un tipo, así que solo se puede importar exactamente
++       uno en un fichero; importar juntas una lectura de duración y
++       `epochMillisecondsAbstractable` hace ambiguo un `Long` pasado donde se acepte cualquiera
++       de las dos. `instantiables` refleja las cuatro en la dirección opuesta.
+
+=       the opposite direction.
+-   refer anticipation.instantiables
++   refer anticipation.instantiables
+
+=   refer anticipation.instantiables
+-   refer anticipation.Durations
++   refer anticipation.Durations
+
+-   entry .nanosecondsAbstractable   reads a `Long` duration as nanoseconds, the generic representation itself
+-   entry .microsecondsAbstractable   reads a `Long` duration as microseconds, multiplying by a thousand
+-   entry .millisecondsAbstractable   reads a `Long` duration as milliseconds, multiplying by a million
+-   entry .epochMillisecondsAbstractable   reads a `Long` instant as milliseconds since the epoch, the generic representation
++   entry .nanosecondsAbstractable   lee una duración `Long` como nanosegundos, la propia representación genérica
++   entry .microsecondsAbstractable   lee una duración `Long` como microsegundos, multiplicando por mil
++   entry .millisecondsAbstractable   lee una duración `Long` como milisegundos, multiplicando por un millón
++   entry .epochMillisecondsAbstractable   lee un instante `Long` como milisegundos desde la época, la representación genérica
+
+- entry .instantiables   the ways to receive a duration or an instant as a bare `Long`, each a given to import by name
++ entry .instantiables   las formas de recibir una duración o un instante como un `Long` sin más, cada una un given que se importa por nombre
+
+= entry .instantiables   the ways to receive a duration or an instant as a bare `Long`, each a given to import by name
+-   detail
++   detail
+
+-       The `Instantiable` counterparts of `abstractables`: with one imported, a method which
+-       returns any `Instantiable across Durations from Long` (or `across Instants`) can return
+-       a `Long` in the chosen unit. Conversions to a coarser unit truncate.
++       Las contrapartidas `Instantiable` de `abstractables`: con una importada, un método que
++       devuelve cualquier `Instantiable across Durations from Long` (o `across Instants`) puede
++       devolver un `Long` en la unidad elegida. Las conversiones a una unidad más gruesa
++       truncan.
+
+=       a `Long` in the chosen unit. Conversions to a coarser unit truncate.
+=
+-       ```scala
++       ```scala
+
+=       a `Long` in the chosen unit. Conversions to a coarser unit truncate.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import instantiables.millisecondsInstantiable
++       import instantiables.millisecondsInstantiable
+
+-       def length[duration: Instantiable across Durations from Long]: duration =
++       def length[duration: Instantiable across Durations from Long]: duration =
+
+-         duration(5_000_000L)
++         duration(5_000_000L)
+
+-       length[Long]   // 5L
++       length[Long]   // 5L
+
+=       length[Long]   // 5L
+-       ```
++       ```
+
+-       As with `abstractables`, the three duration givens share a type and only one may be in
+-       scope.
++       Como con `abstractables`, los tres givens de duración comparten un tipo y solo puede
++       haber uno en el ámbito.
+
+=       scope.
+-   refer anticipation.abstractables
++   refer anticipation.abstractables
+
+-   entry .nanosecondsInstantiable   gives a duration as a `Long` of nanoseconds, unchanged
+-   entry .microsecondsInstantiable   gives a duration as a `Long` of microseconds, dividing by a thousand
+-   entry .millisecondsInstantiable   gives a duration as a `Long` of milliseconds, dividing by a million
+-   entry .epochMillisecondsInstantiable   gives an instant as a `Long` of milliseconds since the epoch, unchanged
++   entry .nanosecondsInstantiable   da una duración como un `Long` de nanosegundos, sin cambios
++   entry .microsecondsInstantiable   da una duración como un `Long` de microsegundos, dividiendo entre mil
++   entry .millisecondsInstantiable   da una duración como un `Long` de milisegundos, dividiendo entre un millón
++   entry .epochMillisecondsInstantiable   da un instante como un `Long` de milisegundos desde la época, sin cambios
+
+- entry .pathInterfaces   the path types a path-producing API may return, each a given to import by name
++ entry .pathInterfaces   los tipos de ruta que puede devolver una API que produce rutas, cada uno un given que se importa por nombre
+
+= entry .pathInterfaces   the path types a path-producing API may return, each a given to import by name
+-   detail
++   detail
+
+-       A method which returns `[path: Instantiable across Paths from Text]`, or which asks for
+-       `[path: Representative of Paths]`, lets its caller choose a path type; for a type with
+-       no companion to search, the choice is made by importing one of these givens by name,
+-       since `import pathInterfaces.*` does not import givens.
++       Un método que devuelve `[path: Instantiable across Paths from Text]`, o que pide
++       `[path: Representative of Paths]`, deja que quien llama elija un tipo de ruta; para un
++       tipo sin objeto compañero en el que buscar, la elección se hace importando uno de estos
++       givens por nombre, ya que `import pathInterfaces.*` no importa givens.
+
+=       since `import pathInterfaces.*` does not import givens.
+=
+-       ```scala
++       ```scala
+
+=       since `import pathInterfaces.*` does not import givens.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import pathInterfaces.javaNioPath
++       import pathInterfaces.javaNioPath
+
+=       import pathInterfaces.javaNioPath
+=
+-       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
++       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+
+-       val path: java.nio.file.Path = home[java.nio.file.Path]
++       val path: java.nio.file.Path = home[java.nio.file.Path]
+
+=       val path: java.nio.file.Path = home[java.nio.file.Path]
+-       ```
++       ```
+
+-       The package is assembled from three libraries: diuretic declares `javaNioPath` and
+-       `javaIoFile`, galilei the platform path representatives, and serpentine `textPath`.
++       El paquete se compone a partir de tres bibliotecas: diuretic declara `javaNioPath` y
++       `javaIoFile`, galilei los representantes de rutas de plataforma, y serpentine `textPath`.
+
+=       `javaIoFile`, galilei the platform path representatives, and serpentine `textPath`.
+-   refer anticipation.Paths
++   refer anticipation.Paths
+
+=   refer anticipation.Paths
+-   refer anticipation.Representative
++   refer anticipation.Representative
+
+-   entry .javaNioPath   `java.nio.file.Path` as a path, abstracted to and instantiated from its text (diuretic)
+-       Both `Abstractable across Paths to Text` and `Instantiable across Paths from Text`, as
+-       the object `diuretic.JavaNioPath`. Abstraction gives the path's absolute form; a
+-       relative `java.nio.file.Path` is resolved against the JVM's working directory. JVM only.
+-   entry .javaIoFile   `java.io.File` as a path, abstracted to and instantiated from its text (diuretic)
+-       Both `Abstractable across Paths to Text` and `Instantiable across Paths from Text`, as
+-       the object `diuretic.JavaIoFile`; abstraction gives the file's absolute path.
+-   entry .pathOnLinux   `Path on Linux` as a `Representative of Paths` (galilei)
+-       Erased evidence; the same given is in the companion of `Linux`, where it is found
+-       without an import.
+-   entry .pathOnWindows   `Path on Windows` as a `Representative of Paths` (galilei)
+-       Erased evidence; the same given is in the companion of `Windows`.
+-   entry .pathOnMacOs   `Path on MacOs` as a `Representative of Paths` (galilei)
+-       Erased evidence; the same given is in the companion of `MacOs`.
+-   entry .pathOnLocal   `Path on Local`, the host platform's path, as a `Representative of Paths` (galilei)
+-       Erased evidence; the same given is in the companion of `Local`.
+-   entry .pathOnPosix   `Path on Posix` as a `Representative of Paths` (galilei)
+-       Erased evidence, for a path on any POSIX filesystem.
+-   entry .textPath   `Text` as a `Representative of Paths`, so a directory may be asked for as plain text (serpentine)
+-       With it imported, `workingDirectory[Text]` gives the working directory's text without
+-       choosing a path type.
++   entry .javaNioPath   `java.nio.file.Path` como ruta, abstraída a su texto e instanciada a partir de él (diuretic)
++       Tanto `Abstractable across Paths to Text` como `Instantiable across Paths from Text`,
++       como el objeto `diuretic.JavaNioPath`. La abstracción da la forma absoluta de la ruta; un
++       `java.nio.file.Path` relativo se resuelve respecto al directorio de trabajo de la JVM.
++       Solo JVM.
++   entry .javaIoFile   `java.io.File` como ruta, abstraído a su texto e instanciado a partir de él (diuretic)
++       Tanto `Abstractable across Paths to Text` como `Instantiable across Paths from Text`,
++       como el objeto `diuretic.JavaIoFile`; la abstracción da la ruta absoluta del fichero.
++   entry .pathOnLinux   `Path on Linux` como `Representative of Paths` (galilei)
++       Evidencia borrada; el mismo given está en el objeto compañero de `Linux`, donde se
++       encuentra sin importación.
++   entry .pathOnWindows   `Path on Windows` como `Representative of Paths` (galilei)
++       Evidencia borrada; el mismo given está en el objeto compañero de `Windows`.
++   entry .pathOnMacOs   `Path on MacOs` como `Representative of Paths` (galilei)
++       Evidencia borrada; el mismo given está en el objeto compañero de `MacOs`.
++   entry .pathOnLocal   `Path on Local`, la ruta de la plataforma anfitriona, como `Representative of Paths` (galilei)
++       Evidencia borrada; el mismo given está en el objeto compañero de `Local`.
++   entry .pathOnPosix   `Path on Posix` como `Representative of Paths` (galilei)
++       Evidencia borrada, para una ruta en cualquier sistema de ficheros POSIX.
++   entry .textPath   `Text` como `Representative of Paths`, para que se pueda pedir un directorio como texto sin más (serpentine)
++       Con él importado, `workingDirectory[Text]` da el texto del directorio de trabajo sin
++       elegir un tipo de ruta.
+
+- entry .urlInterfaces   the URL types a URL-producing API may return, each a given to import by name
++ entry .urlInterfaces   los tipos de URL que puede devolver una API que produce URL, cada uno un given que se importa por nombre
+
+= entry .urlInterfaces   the URL types a URL-producing API may return, each a given to import by name
+-   detail
++   detail
+
+-       A method bounded `[url: Instantiable across Urls from Text]` names no concrete URL type,
+-       so the instance is chosen by importing one of these by name.
++       Un método con la cota `[url: Instantiable across Urls from Text]` no nombra ningún tipo
++       de URL concreto, así que la instancia se elige importando uno de estos por nombre.
+
+=       so the instance is chosen by importing one of these by name.
+=
+-       ```scala
++       ```scala
+
+=       so the instance is chosen by importing one of these by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       so the instance is chosen by importing one of these by name.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import urlInterfaces.soundnessUrl
++       import urlInterfaces.soundnessUrl
+
+-       def site[url: Instantiable across Urls from Text]: url = url(t"https://example.com/")
++       def site[url: Instantiable across Urls from Text]: url = url(t"https://example.com/")
+
+-       val url: HttpUrl = site[HttpUrl]
++       val url: HttpUrl = site[HttpUrl]
+
+=       val url: HttpUrl = site[HttpUrl]
+-       ```
++       ```
+
+-   refer anticipation.Urls
++   refer anticipation.Urls
+
+-   entry .javaNetUrl   `java.net.URL` as a URL, abstracted to and instantiated from its text (diuretic)
+-       Both `Abstractable across Urls to Text` and `Instantiable across Urls from Text`, as the
+-       object `diuretic.JavaNetUrl`; instantiation goes through `java.net.URI`, so malformed
+-       text throws as the Java API does.
+-   entry .soundnessUrl   urticose's `HttpUrl`, instantiated from text by parsing (urticose)
+-       `HttpUrl is Instantiable across Urls from Text`, the instance `Url.instantiable` from
+-       `HttpUrl`'s companion offered by name. It needs a `Tactic[Url.Error]`, raised for text
+-       which is not a valid URL, and captures it.
++   entry .javaNetUrl   `java.net.URL` como URL, abstraída a su texto e instanciada a partir de él (diuretic)
++       Tanto `Abstractable across Urls to Text` como `Instantiable across Urls from Text`, como
++       el objeto `diuretic.JavaNetUrl`; la instanciación pasa por `java.net.URI`, así que el
++       texto mal formado lanza una excepción como lo hace la API de Java.
++   entry .soundnessUrl   el `HttpUrl` de urticose, instanciado a partir de texto mediante análisis (urticose)
++       `HttpUrl is Instantiable across Urls from Text`, la instancia `Url.instantiable` del objeto
++       compañero de `HttpUrl` ofrecida por nombre. Necesita una `Tactic[Url.Error]`, que se lanza
++       para un texto que no es una URL válida, y la captura.
+
+- entry .instantInterfaces   the instant types a time-producing API may return, each a given to import by name
++ entry .instantInterfaces   los tipos de instante que puede devolver una API que produce tiempos, cada uno un given que se importa por nombre
+
+= entry .instantInterfaces   the instant types a time-producing API may return, each a given to import by name
+-   detail
++   detail
+
+-       A method bounded `[instant: Instantiable across Instants from Long]` lets the caller
+-       choose the instant type it receives, from a `Long` of milliseconds since the epoch.
++       Un método con la cota `[instant: Instantiable across Instants from Long]` deja que quien
++       llama elija el tipo de instante que recibe, a partir de un `Long` de milisegundos desde la
++       época.
+
+=       choose the instant type it receives, from a `Long` of milliseconds since the epoch.
+=
+-       ```scala
++       ```scala
+
+=       choose the instant type it receives, from a `Long` of milliseconds since the epoch.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       choose the instant type it receives, from a `Long` of milliseconds since the epoch.
+=
+=       ```scala
+=       import soundness.*
+-       import instantInterfaces.javaTimeInstant
++       import instantInterfaces.javaTimeInstant
+
+-       def epoch[instant: Instantiable across Instants from Long]: instant = instant(0L)
++       def epoch[instant: Instantiable across Instants from Long]: instant = instant(0L)
+
+-       val start: java.time.Instant = epoch[java.time.Instant]
++       val start: java.time.Instant = epoch[java.time.Instant]
+
+=       val start: java.time.Instant = epoch[java.time.Instant]
+-       ```
++       ```
+
+-       diuretic declares the Java types, aviation its own `Instant`.
++       diuretic declara los tipos de Java, aviation su propio `Instant`.
+
+-   refer anticipation.Instants
++   refer anticipation.Instants
+
+-   entry .aviationInstant   aviation's `Instant`, as epoch milliseconds in both directions (aviation)
++   entry .aviationInstant   el `Instant` de aviation, como milisegundos desde la época en ambas direcciones (aviation)
+
+-       `(Instant over transport) is Abstractable & Instantiable across Instants to Long from
++       `(Instant over transport) is Abstractable & Instantiable across Instants to Long from
+
+-       Long`, for any `transport`, from `Instant.generic`.
+-   entry .javaTimeInstant   `java.time.Instant`, as epoch milliseconds in both directions (diuretic)
+-       Abstraction is `toEpochMilli`, so sub-millisecond precision is dropped.
+-   entry .javaLongInstant   a raw `Long` of epoch milliseconds, unchanged in both directions (diuretic)
+-       The identity: the `Long` is already the generic representation.
+-   entry .javaUtilDate   `java.util.Date`, as epoch milliseconds in both directions (diuretic)
++       Long`, para cualquier `transport`, a partir de `Instant.generic`.
++   entry .javaTimeInstant   `java.time.Instant`, como milisegundos desde la época en ambas direcciones (diuretic)
++       La abstracción es `toEpochMilli`, así que se descarta la precisión inferior al
++       milisegundo.
++   entry .javaLongInstant   un `Long` sin más de milisegundos desde la época, sin cambios en ambas direcciones (diuretic)
++       La identidad: el `Long` ya es la representación genérica.
++   entry .javaUtilDate   `java.util.Date`, como milisegundos desde la época en ambas direcciones (diuretic)
+
+- entry .durationInterfaces   the duration types a time-measuring API may return, each a given to import by name
++ entry .durationInterfaces   los tipos de duración que puede devolver una API que mide tiempo, cada uno un given que se importa por nombre
+
+= entry .durationInterfaces   the duration types a time-measuring API may return, each a given to import by name
+-   detail
++   detail
+
+-       A method bounded `[duration: Instantiable across Durations from Long]` lets the caller
+-       choose the duration type it receives, from a `Long` of nanoseconds.
++       Un método con la cota `[duration: Instantiable across Durations from Long]` deja que quien
++       llama elija el tipo de duración que recibe, a partir de un `Long` de nanosegundos.
+
+=       choose the duration type it receives, from a `Long` of nanoseconds.
+=
+-       ```scala
++       ```scala
+
+=       choose the duration type it receives, from a `Long` of nanoseconds.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import durationInterfaces.aviationDuration
++       import durationInterfaces.aviationDuration
+
+-       def second[duration: Instantiable across Durations from Long]: duration =
++       def second[duration: Instantiable across Durations from Long]: duration =
+
+-         duration(1_000_000_000L)
++         duration(1_000_000_000L)
+
+-       second[Quantity[Seconds[1]]]
++       second[Quantity[Seconds[1]]]
+
+=       second[Quantity[Seconds[1]]]
+-       ```
++       ```
+
+=       ```
+-   refer anticipation.Durations
++   refer anticipation.Durations
+
+=   refer anticipation.Durations
+-   refer anticipation.abstractables
++   refer anticipation.abstractables
+
+-   entry .aviationDuration   a quantitative `Quantity` of time, as nanoseconds in both directions (aviation)
+-       `Quantity[units] is Abstractable & Instantiable across Durations to Long from Long`, for
+-       any units normalizable to seconds: abstraction normalizes to seconds and scales to
+-       nanoseconds, truncating; instantiation scales back into `units`.
+-   entry .javaLongDuration   a raw `Long` of nanoseconds, unchanged in both directions (diuretic)
+-       The `Long` counts **nanoseconds**, the generic representation, unlike `javaLongInstant`,
+-       whose `Long` counts epoch milliseconds. For a `Long` in another unit, import a reading
+-       from `abstractables` or `instantiables` instead.
++   entry .aviationDuration   un `Quantity` de tiempo de quantitative, como nanosegundos en ambas direcciones (aviation)
++       `Quantity[units] is Abstractable & Instantiable across Durations to Long from Long`, para
++       cualesquiera unidades normalizables a segundos: la abstracción normaliza a segundos y
++       escala a nanosegundos, truncando; la instanciación vuelve a escalar a `units`.
++   entry .javaLongDuration   un `Long` sin más de nanosegundos, sin cambios en ambas direcciones (diuretic)
++       El `Long` cuenta **nanosegundos**, la representación genérica, a diferencia de
++       `javaLongInstant`, cuyo `Long` cuenta milisegundos desde la época. Para un `Long` en otra
++       unidad, importa en su lugar una lectura de `abstractables` o `instantiables`.
+
+- entry .uuidInterfaces   the UUID types a UUID-producing API may return, each a given to import by name
++ entry .uuidInterfaces   los tipos de UUID que puede devolver una API que produce UUID, cada uno un given que se importa por nombre
+
+= entry .uuidInterfaces   the UUID types a UUID-producing API may return, each a given to import by name
+-   detail
++   detail
+
+-       A method bounded `[uuid: Instantiable across Uuids from Text]` names no concrete type,
+-       so its instance is imported by name.
++       Un método con la cota `[uuid: Instantiable across Uuids from Text]` no nombra ningún tipo
++       concreto, así que su instancia se importa por nombre.
+
+=       so its instance is imported by name.
+=
+-       ```scala
++       ```scala
+
+=       so its instance is imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       so its instance is imported by name.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import uuidInterfaces.soundnessUuid
++       import uuidInterfaces.soundnessUuid
+
+-       def parse[uuid: Instantiable across Uuids from Text](text: Text): uuid = uuid(text)
++       def parse[uuid: Instantiable across Uuids from Text](text: Text): uuid = uuid(text)
+
+-       parse[Uuid](t"e3b0c442-98fc-1c14-9afb-f4c8996fb924")
++       parse[Uuid](t"e3b0c442-98fc-1c14-9afb-f4c8996fb924")
+
+=       parse[Uuid](t"e3b0c442-98fc-1c14-9afb-f4c8996fb924")
+-       ```
++       ```
+
+-   refer anticipation.Uuids
++   refer anticipation.Uuids
+
+-   entry .soundnessUuid   inimitable's `Uuid`, parsed from text (inimitable)
+-       Needs a `Tactic[Uuid.Error]`, raised for text which is not a UUID, and captures it.
++   entry .soundnessUuid   el `Uuid` de inimitable, analizado a partir de texto (inimitable)
++       Necesita una `Tactic[Uuid.Error]`, que se lanza para un texto que no es un UUID, y la
++       captura.
+
+- entry .emailAddressInterfaces   the email-address types an API may return, each a given to import by name
++ entry .emailAddressInterfaces   los tipos de dirección de correo electrónico que puede devolver una API, cada uno un given que se importa por nombre
+
+= entry .emailAddressInterfaces   the email-address types an API may return, each a given to import by name
+-   detail
++   detail
+
+-       For a method bounded `[email: Instantiable across EmailAddresses from Text]`, which
+-       names no concrete type whose companion could hold the instance.
++       Para un método con la cota `[email: Instantiable across EmailAddresses from Text]`, que no
++       nombra ningún tipo concreto cuyo objeto compañero pudiera contener la instancia.
+
+-   refer anticipation.EmailAddresses
++   refer anticipation.EmailAddresses
+
+-   entry .soundnessEmailAddress   urticose's `EmailAddress`, parsed from text (urticose)
+-       Needs a `Tactic[EmailAddress.Error]`, raised for text which is not a valid address, and
+-       captures it.
++   entry .soundnessEmailAddress   el `EmailAddress` de urticose, analizado a partir de texto (urticose)
++       Necesita una `Tactic[EmailAddress.Error]`, que se lanza para un texto que no es una
++       dirección válida, y la captura.
+
+- entry .hostnameInterfaces   the hostname types an API may return, each a given to import by name
++ entry .hostnameInterfaces   los tipos de nombre de host que puede devolver una API, cada uno un given que se importa por nombre
+
+= entry .hostnameInterfaces   the hostname types an API may return, each a given to import by name
+-   detail
++   detail
+
+-       For a method bounded `[hostname: Instantiable across Hostnames from Text]`, which names
+-       no concrete type whose companion could hold the instance.
++       Para un método con la cota `[hostname: Instantiable across Hostnames from Text]`, que no
++       nombra ningún tipo concreto cuyo objeto compañero pudiera contener la instancia.
+
+-   refer anticipation.Hostnames
++   refer anticipation.Hostnames
+
+-   entry .soundnessHostname   urticose's `Hostname`, parsed from text (urticose)
+-       Needs a `Tactic[Hostname.Error]`, raised for text which is not a valid hostname, and
+-       captures it.
++   entry .soundnessHostname   el `Hostname` de urticose, analizado a partir de texto (urticose)
++       Necesita una `Tactic[Hostname.Error]`, que se lanza para un texto que no es un nombre de
++       host válido, y la captura.
+
+- entry .ipAddressInterfaces   the IP-address types an API may return, each a given to import by name
++ entry .ipAddressInterfaces   los tipos de dirección IP que puede devolver una API, cada uno un given que se importa por nombre
+
+= entry .ipAddressInterfaces   the IP-address types an API may return, each a given to import by name
+-   detail
++   detail
+
+-       For a method bounded `[ip: Instantiable across IpAddresses from Text]`, which names no
+-       concrete type whose companion could hold the instance. The two givens instantiate
+-       different types, so both may be imported.
++       Para un método con la cota `[ip: Instantiable across IpAddresses from Text]`, que no
++       nombra ningún tipo concreto cuyo objeto compañero pudiera contener la instancia. Los dos
++       givens instancian tipos distintos, así que se pueden importar ambos.
+
+-   refer anticipation.IpAddresses
++   refer anticipation.IpAddresses
+
+-   entry .soundnessIpv4   urticose's `Ipv4`, parsed from dotted-decimal text (urticose)
+-       Needs a `Tactic[IpAddress.Error]`, raised for text which is not an IPv4 address.
+-   entry .soundnessIpv6   urticose's `Ipv6`, parsed from text (urticose)
+-       Needs a `Tactic[IpAddress.Error]`, raised for text which is not an IPv6 address.
++   entry .soundnessIpv4   el `Ipv4` de urticose, analizado a partir de texto decimal con puntos (urticose)
++       Necesita una `Tactic[IpAddress.Error]`, que se lanza para un texto que no es una
++       dirección IPv4.
++   entry .soundnessIpv6   el `Ipv6` de urticose, analizado a partir de texto (urticose)
++       Necesita una `Tactic[IpAddress.Error]`, que se lanza para un texto que no es una
++       dirección IPv6.
+
+- entry .Text   the pure, opaque string type every Soundness library exchanges text as
+-     `Text` is the opaque type `anticipation.internal.Text`, exported here: a `String` at
+-     runtime, with no `String` methods at the type level, and pure, so the capture checker
+-     treats a value of it as capturing nothing. Every Soundness API takes and returns `Text`
+-     rather than `String`, and its operations come from gossamer and the collection
+-     typeclasses rather than from `java.lang.String`.
++ entry .Text   el tipo de cadena puro y opaco con el que todas las bibliotecas de Soundness intercambian texto
++     `Text` es el tipo opaco `anticipation.internal.Text`, exportado aquí: un `String` en tiempo
++     de ejecución, sin métodos de `String` en el nivel de tipos, y puro, de modo que el
++     comprobador de capturas trata un valor suyo como si no capturara nada. Toda API de
++     Soundness toma y devuelve `Text` en lugar de `String`, y sus operaciones proceden de
++     gossamer y de las clases de tipos de colecciones, no de `java.lang.String`.
+
+=     typeclasses rather than from `java.lang.String`.
+=
+-     ```scala
++     ```scala
+
+=     typeclasses rather than from `java.lang.String`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val greeting: Text = t"Hello"
++     val greeting: Text = t"Hello"
+
+-     val legacy: Text = "world".tt
++     val legacy: Text = "world".tt
+
+-     val joined: Text = greeting+t", "+legacy
++     val joined: Text = greeting+t", "+legacy
+
+-     joined.s   // back to a String, for a Java API
++     joined.s   // back to a String, for a Java API
+
+=     joined.s   // back to a String, for a Java API
+-     ```
++     ```
+
+-     A `String` converts implicitly where a `Text` is expected (`Text.conversion`), and `tt`
+-     and `s` convert explicitly. Its companion supplies `+` with `Text` and with `String`,
+-     `*` by an `Int`, the empty text as `Zeroic`, the collection typeclasses (`Traversable by
+-     Char`, `Reshapable`, `Inclusive`, `Reversible`), equality with itself and with
+-     `String`, a `Typeable` so that `case text: Text` matches a `String`, and `ToExpr` and
+-     `FromExpr` for macros. All are in implicit scope; none needs an import.
++     Un `String` se convierte implícitamente donde se espera un `Text` (`Text.conversion`), y
++     `tt` y `s` convierten explícitamente. Su objeto compañero aporta `+` con `Text` y con
++     `String`, `*` por un `Int`, el texto vacío como `Zeroic`, las clases de tipos de
++     colecciones (`Traversable by
++     Char`, `Reshapable`, `Inclusive`, `Reversible`), la igualdad consigo mismo y con `String`,
++     un `Typeable` para que `case text: Text` coincida con un `String`, y `ToExpr` y `FromExpr`
++     para las macros. Todos están en el ámbito implícito; ninguno necesita importación.
+
+-     A macro author should know that `Expr(text)` lifts through a quote typed inside
+-     `Text`'s own scope, where the alias is transparent, so the spliced tree is typed as
+-     `String & caps.Pure`; at an expansion site compiled with separation checking that fails
+-     as `Text`. Lift the `String` and convert instead: `'{${Expr(text.s)}.tt}`.
++     Quien escriba macros debe saber que `Expr(text)` eleva a través de una cita tipada dentro
++     del propio ámbito de `Text`, donde el alias es transparente, así que el árbol insertado se
++     tipa como `String & caps.Pure`; en un punto de expansión compilado con comprobación de
++     separación, eso falla como `Text`. Eleva en su lugar el `String` y conviértelo:
++     `'{${Expr(text.s)}.tt}`.
+
+- entry .tt   converts a `String` to `Text`: `"…".tt`
+-     The explicit conversion, a runtime no-op. Prefer a `t"…"` literal for constant text.
++ entry .tt   convierte un `String` en `Text`: `"…".tt`
++     La conversión explícita, que no hace nada en tiempo de ejecución. Para un texto constante,
++     es preferible un literal `t"…"`.
+
+- entry .ss   converts a collection of `Text` to a collection of `String`, for Java and stdlib APIs
+-     `texts.ss` maps every element with `Text.s`, as an `Iterable[String]`.
++ entry .ss   convierte una colección de `Text` en una colección de `String`, para las API de Java y de la stdlib
++     `texts.ss` transforma cada elemento con `Text.s`, como un `Iterable[String]`.
+
+- entry .subsumes   whether a `Text` contains another as a substring
+-     `text.subsumes(t"lo")` is substring containment through `String.indexOf`, with no
+-     traversal and no interim collections, which is why it is a separate extension from the
+-     generic collection `subsumes` (still importable as `murmuration.subsumes`).
++ entry .subsumes   si un `Text` contiene a otro como subcadena
++     `text.subsumes(t"lo")` es la contención de subcadenas mediante `String.indexOf`, sin
++     recorrido ni colecciones intermedias, y por eso es una extensión aparte del `subsumes`
++     genérico de colecciones (que sigue pudiéndose importar como `murmuration.subsumes`).
+
+=     generic collection `subsumes` (still importable as `murmuration.subsumes`).
+=
+-     ```scala
++     ```scala
+
+=     generic collection `subsumes` (still importable as `murmuration.subsumes`).
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"Hello".subsumes(t"ell")   // true
++     t"Hello".subsumes(t"ell")   // true
+
+=     t"Hello".subsumes(t"ell")   // true
+-     ```
++     ```
+
+- entry .Textualizable   a typeclass converting a value to `Text`, for APIs which take anything textual
++ entry .Textualizable   una clase de tipos que convierte un valor en `Text`, para las API que aceptan cualquier cosa textual
+
+= entry .Textualizable   a typeclass converting a value to `Text`, for APIs which take anything textual
+-   detail
++   detail
+
+-       `value is Textualizable` provides the extension `#textual`, so an API can accept any
+-       value with a canonical textual form without depending on the library that defines it.
+-       Unlike `Showable`, which renders for a human, a `Textualizable` value *is* text in
+-       another guise.
+-   entry #convert   the value as `Text`
+-   entry #textual   the value as `Text`: `value.textual`
+-   entry #contramap   an instance for another type, by first mapping it to this one
++       `value is Textualizable` proporciona la extensión `#textual`, para que una API pueda
++       aceptar cualquier valor con una forma textual canónica sin depender de la biblioteca que
++       lo define. A diferencia de `Showable`, que representa para una persona, un valor
++       `Textualizable` *es* texto bajo otra apariencia.
++   entry #convert   el valor como `Text`
++   entry #textual   el valor como `Text`: `value.textual`
++   entry #contramap   una instancia para otro tipo, que primero lo transforma en este
+
+- entry .Durable   the classifier of shared capabilities which may be retained across a thread boundary
+-     A capture-checking classifier (a `caps.SharedCapability`) for monitors, running
+-     processes, connections, channels, loggers and log sinks. A task's body runs on another
+-     thread and is retained by a worker, so it is typed `->{caps.any.only[Durable]}`: it may
+-     capture `Durable` capabilities but not, for example, a `Tactic`, which is a
+-     `caps.Control` capability holding a return point on its installer's stack. A task
+-     raises only through its own tactic.
++ entry .Durable   el clasificador de las capacidades compartidas que se pueden retener a través de una frontera entre hilos
++     Un clasificador de la comprobación de capturas (un `caps.SharedCapability`) para monitores,
++     procesos en ejecución, conexiones, canales, loggers y sumideros de registro. El cuerpo de
++     una tarea se ejecuta en otro hilo y lo retiene un trabajador, así que se tipa
++     `->{caps.any.only[Durable]}`: puede capturar capacidades `Durable` pero no, por ejemplo, una
++     `Tactic`, que es una capacidad `caps.Control` que mantiene un punto de retorno en la pila de
++     quien la instaló. Una tarea solo lanza a través de su propia táctica.
+
+-     A library declares its own long-lived capability by extending `Durable`; one meant to
+-     be ambient is provided by a given that is a *value* (or an object), not a polymorphic
+-     method, since a value is a static capability visible from every level.
++     Una biblioteca declara su propia capacidad de larga vida extendiendo `Durable`; la que haya
++     de ser ambiental se proporciona mediante un given que sea un *valor* (o un objeto), no un
++     método polimórfico, ya que un valor es una capacidad estática visible desde todos los
++     niveles.
+
+- entry .Bidi   the reading direction of a positional operation: from the start or from the end
+-     An enum with the cases `Ltr`, which anchors at the start, and `Rtl`, which anchors at
+-     the end. It is the vocabulary of the generic positional operations (`keep`, `skip`,
+-     `snip`) on collections and on text, so that both share one type.
++ entry .Bidi   la dirección de lectura de una operación posicional: desde el principio o desde el final
++     Un enum con los casos `Ltr`, que ancla al principio, y `Rtl`, que ancla al final. Es el
++     vocabulario de las operaciones posicionales genéricas (`keep`, `skip`, `snip`) sobre
++     colecciones y sobre texto, para que ambas compartan un tipo.
+
+=     `snip`) on collections and on text, so that both share one type.
+=
+-     ```scala
++     ```scala
+
+=     `snip`) on collections and on text, so that both share one type.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"filename.txt".keep(3, Bidi.Rtl)   // t"txt"
++     t"filename.txt".keep(3, Bidi.Rtl)   // t"txt"
+
+=     t"filename.txt".keep(3, Bidi.Rtl)   // t"txt"
+-     ```
++     ```
+
+-     `Ltr` is the default wherever a direction is optional. The umbrella exports `Bidi`
+-     through gossamer.
++     `Ltr` es el valor por defecto dondequiera que una dirección sea opcional. El paraguas
++     exporta `Bidi` a través de gossamer.
+
+- entry .internal   the home of the opaque `Text` type and its companion instances
++ entry .internal   el hogar del tipo opaco `Text` y de las instancias de su objeto compañero
+
+= entry .internal   the home of the opaque `Text` type and its companion instances
+-   hidden
++   hidden
+
+= entry .internal   the home of the opaque `Text` type and its companion instances
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `Text` is exported from here to the `anticipation` package, and its
+-       page there has the full account.
+-   entry .Text   the opaque string type; see `anticipation.Text`
++       No es para uso directo: `Text` se exporta desde aquí al paquete `anticipation`, y su
++       página allí tiene la descripción completa.
++   entry .Text   el tipo de cadena opaco; véase `anticipation.Text`
+
+=   entry .Text   the opaque string type; see `anticipation.Text`
+-     detail
++     detail
+
+-         The opaque type `Text <: Matchable & caps.Pure`, a `String` at runtime. Its
+-         companion holds the instances which make it a first-class text type.
+-     entry .apply   makes `Text` from a `String`, an array of characters or an array of ASCII bytes
+-         Bytes are decoded as US-ASCII; for another charset use a decoder.
+-     entry .s   the `Text` as a `String`: `text.s`
+-     entry .zeroic   the empty text as `Text`'s zero
+-     entry .concatenable   `text+text`, concatenating two `Text`s
+-     entry .addableString   `text+string`, appending a `String` to a `Text`
+-     entry .multiplicable   `text*n`, repeating a `Text` `n` times; a negative count gives the empty text
+-     entry .fromString   lets a `@main` method take `Text` parameters from the command line
+-     entry .traversable   traverses a `Text` as its `Char`s
+-     entry .reshapable   rebuilds a `Text` from a traversal of `Char`s
+-     entry .inclusive   whether a `Text` contains a `Char`
+-     entry .convertible   collects any traversal of `Char`s into a `Text`
+-     entry .reversible   reverses a `Text`, keeping surrogate pairs intact
+-     entry .fromExpr   reads a constant `Text` from a macro's `Expr`
+-     entry .toExpr   lifts a `Text` into a macro's `Expr`
+-         The lifted tree is typed as `String & caps.Pure`; under separation checking at the
+-         expansion site, lift the `String` and convert with `.tt` instead.
+-     entry .conversion   converts a `String` to `Text` wherever a `Text` is expected
+-     entry .canEqual   permits `==` between two `Text`s under strict equality
+-     entry .canEqual2   permits `==` between a `String` and a `Text` under strict equality
+-     entry .canEqual3   permits `==` between a `Text` and a `String` under strict equality
+-     entry .typeable   lets a pattern `case text: Text` match any `String`
++         El tipo opaco `Text <: Matchable & caps.Pure`, un `String` en tiempo de ejecución. Su
++         objeto compañero contiene las instancias que lo convierten en un tipo de texto de
++         primera clase.
++     entry .apply   crea un `Text` a partir de un `String`, un array de caracteres o un array de bytes ASCII
++         Los bytes se decodifican como US-ASCII; para otro juego de caracteres, usa un
++         decodificador.
++     entry .s   el `Text` como `String`: `text.s`
++     entry .zeroic   el texto vacío como cero de `Text`
++     entry .concatenable   `text+text`, que concatena dos `Text`s
++     entry .addableString   `text+string`, que añade un `String` a un `Text`
++     entry .multiplicable   `text*n`, que repite un `Text` `n` veces; una cuenta negativa da el texto vacío
++     entry .fromString   permite que un método `@main` tome parámetros `Text` de la línea de comandos
++     entry .traversable   recorre un `Text` como sus `Char`s
++     entry .reshapable   reconstruye un `Text` a partir de un recorrido de `Char`s
++     entry .inclusive   si un `Text` contiene un `Char`
++     entry .convertible   reúne cualquier recorrido de `Char`s en un `Text`
++     entry .reversible   invierte un `Text`, manteniendo intactos los pares sustitutos
++     entry .fromExpr   lee un `Text` constante de la `Expr` de una macro
++     entry .toExpr   eleva un `Text` a la `Expr` de una macro
++         El árbol elevado se tipa como `String & caps.Pure`; con comprobación de separación en
++         el punto de expansión, eleva en su lugar el `String` y conviértelo con `.tt`.
++     entry .conversion   convierte un `String` en `Text` dondequiera que se espere un `Text`
++     entry .canEqual   permite `==` entre dos `Text`s con igualdad estricta
++     entry .canEqual2   permite `==` entre un `String` y un `Text` con igualdad estricta
++     entry .canEqual3   permite `==` entre un `Text` y un `String` con igualdad estricta
++     entry .typeable   permite que un patrón `case text: Text` coincida con cualquier `String`
+
+- entry .Data   immutable bytes: an `Array[Byte]` which captures nothing
++ entry .Data   bytes inmutables: un `Array[Byte]` que no captura nada
+
+= entry .Data   immutable bytes: an `Array[Byte]` which captures nothing
+-   detail
++   detail
+
+-       `Data` is the type alias `Array[Byte]^{}`, the byte sequence every Soundness library
+-       reads, writes, hashes and encodes. It is built with `apply`, `.build` or `.fill`, and
+-       a block whose length is a literal is branded `Sized[n]`.
++       `Data` es el alias de tipo `Array[Byte]^{}`, la secuencia de bytes que todas las
++       bibliotecas de Soundness leen, escriben, resumen y codifican. Se construye con `apply`,
++       `.build` o `.fill`, y un bloque cuya longitud es un literal lleva la marca `Sized[n]`.
+
+=       a block whose length is a literal is branded `Sized[n]`.
+=
+-       ```scala
++       ```scala
+
+=       a block whose length is a literal is branded `Sized[n]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val header: Data = Data(0x50, 0x4b, 0x03, 0x04)
++       val header: Data = Data(0x50, 0x4b, 0x03, 0x04)
+
+-       val zeros = Data.fill(16)(_ => 0)
++       val zeros = Data.fill(16)(_ => 0)
+
+=       val zeros = Data.fill(16)(_ => 0)
+-       ```
++       ```
+
+-   refer anticipation.Encodable
++   refer anticipation.Encodable
+
+-   refer anticipation.bytestream
++   refer anticipation.bytestream
+
+-   entry .apply   `Data` from the bytes given
+-   entry .build   `Data` of a given length, filled in by a function writing into a fresh array
+-       `Data.build(n)(array => …)` allocates an `n`-byte array, passes it to the function to
+-       populate, and returns it frozen. With a literal length the result is branded
+-       `Data & Sized[n]`; with a non-literal one it is plain `Data`.
+-   entry .fill   `Data` of a given length, each byte computed from its index
+-       With a literal length the result is branded `Data & Sized[n]`.
++   entry .apply   `Data` a partir de los bytes dados
++   entry .build   `Data` de una longitud dada, rellenado por una función que escribe en un array nuevo
++       `Data.build(n)(array => …)` reserva un array de `n` bytes, se lo pasa a la función para
++       que lo rellene y lo devuelve congelado. Con una longitud literal, el resultado lleva la
++       marca `Data & Sized[n]`; con una no literal, es `Data` sin más.
++   entry .fill   `Data` de una longitud dada, con cada byte calculado a partir de su índice
++       Con una longitud literal, el resultado lleva la marca `Data & Sized[n]`.
+
+- entry .Encodable   a typeclass encoding a value into a named format, `value.in[Format]`
++ entry .Encodable   una clase de tipos que codifica un valor en un formato con nombre, `value.in[Format]`
+
+= entry .Encodable   a typeclass encoding a value into a named format, `value.in[Format]`
+-   detail
++   detail
+
+-       `value is Encodable in Form` says that `value` can be encoded as a `Form`: `Text`,
+-       `Data`, `Json`, `Xml`, a binary protocol, or any carrier type a codec library defines.
+-       Encoding is a value-level operation, `value.in[Json]` (`in`), and `#encode` where the
+-       instance is in hand. Codec libraries provide instances, often derived, in their format's
+-       companion.
++       `value is Encodable in Form` dice que `value` se puede codificar como un `Form`: `Text`,
++       `Data`, `Json`, `Xml`, un protocolo binario o cualquier tipo portador que defina una
++       biblioteca de códecs. La codificación es una operación en el nivel de valores,
++       `value.in[Json]` (`in`), y `#encode` cuando se tiene la instancia a mano. Las bibliotecas
++       de códecs proporcionan instancias, a menudo derivadas, en el objeto compañero de su
++       formato.
+
+=       companion.
+=
+-       ```scala
++       ```scala
+
+=       companion.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       42.in[Text]   // t"42"
++       42.in[Text]   // t"42"
+
+=       42.in[Text]   // t"42"
+-       ```
++       ```
+
+-       The companion gives the primitives as `Text` (their `toString`), `Data` as itself, and
+-       a `Long` as its eight big-endian bytes. `Encodable` is a tracked typeclass: an instance
+-       derived from codecs which raise retains their `Tactic`.
++       El objeto compañero da los tipos primitivos como `Text` (su `toString`), `Data` como sí
++       mismo y un `Long` como sus ocho bytes big-endian. `Encodable` es una clase de tipos
++       rastreada: una instancia derivada de códecs que lanzan retiene su `Tactic`.
+
+-   refer anticipation.in
++   refer anticipation.in
+
+-   refer anticipation.Schematic
++   refer anticipation.Schematic
+
+-   entry .bytes   `Data` encodes in `Data` as itself
+-   entry .sizedBytes   `Data & Sized[n]` encodes in `Data` as itself
+-   entry .longData   a `Long` encodes in `Data` as its eight bytes, big-endian
+-   entry .int   an `Int` encodes in `Text` as its decimal form
+-   entry .double   a `Double` encodes in `Text` by `toString`
+-   entry .byte   a `Byte` encodes in `Text` as its decimal form
+-   entry .short   a `Short` encodes in `Text` as its decimal form
+-   entry .long   a `Long` encodes in `Text` as its decimal form
+-   entry .float   a `Float` encodes in `Text` by `toString`
+-   entry .text   `Text` encodes in `Text` as itself
+-   entry .char   a `Char` encodes in `Text` as a one-character text
+-   entry .string   a `String` encodes in `Text` as the same text
+-   entry #encoded   encodes a value into the format
+-   entry #encode   encodes a value into the format: `value.encode`
+-   entry #contramap   an instance for another type, by first mapping it to this one
+-       The result captures this instance and the function.
++   entry .bytes   `Data` se codifica en `Data` como sí mismo
++   entry .sizedBytes   `Data & Sized[n]` se codifica en `Data` como sí mismo
++   entry .longData   un `Long` se codifica en `Data` como sus ocho bytes, big-endian
++   entry .int   un `Int` se codifica en `Text` como su forma decimal
++   entry .double   un `Double` se codifica en `Text` mediante `toString`
++   entry .byte   un `Byte` se codifica en `Text` como su forma decimal
++   entry .short   un `Short` se codifica en `Text` como su forma decimal
++   entry .long   un `Long` se codifica en `Text` como su forma decimal
++   entry .float   un `Float` se codifica en `Text` mediante `toString`
++   entry .text   `Text` se codifica en `Text` como sí mismo
++   entry .char   un `Char` se codifica en `Text` como un texto de un carácter
++   entry .string   un `String` se codifica en `Text` como el mismo texto
++   entry #encoded   codifica un valor en el formato
++   entry #encode   codifica un valor en el formato: `value.encode`
++   entry #contramap   una instancia para otro tipo, que primero lo transforma en este
++       El resultado captura esta instancia y la función.
+
+- entry .in   encodes a value into the named format: `value.in[Json]`
+-     The value-level counterpart of `value is Encodable in Format`. It replaces both
+-     `.encode`, whose format is implicit in the instance found, and per-format shorthands such
+-     as `.json`, naming the target format at the call.
++ entry .in   codifica un valor en el formato con nombre: `value.in[Json]`
++     La contrapartida en el nivel de valores de `value is Encodable in Format`. Sustituye tanto
++     a `.encode`, cuyo formato está implícito en la instancia encontrada, como a los atajos por
++     formato como `.json`, y nombra el formato de destino en la llamada.
+
+=     as `.json`, naming the target format at the call.
+=
+-     ```scala
++     ```scala
+
+=     as `.json`, naming the target format at the call.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val text: Text = 42.in[Text]
++     val text: Text = 42.in[Text]
+
+-     val bytes: Data = 42L.in[Data]
++     val bytes: Data = 42L.in[Data]
+
+=     val bytes: Data = 42L.in[Data]
+-     ```
++     ```
+
+- entry .bytestream   a value as bytes, through its `Encodable in Data` instance
+-     `value.bytestream` is `value.in[Data]`.
++ entry .bytestream   un valor como bytes, mediante su instancia `Encodable in Data`
++     `value.bytestream` es `value.in[Data]`.
+
+- entry .Schematic   a typeclass giving the schema of a value's encoding, in a chosen schema representation
++ entry .Schematic   una clase de tipos que da el esquema de la codificación de un valor, en una representación de esquemas elegida
+
+= entry .Schematic   a typeclass giving the schema of a value's encoding, in a chosen schema representation
+-   detail
++   detail
+
+-       `value is Schematic over JsonSchema` provides `#schema`, the schema of the value's
+-       encoding in the `Transport` representation (`JsonSchema` in jacinta, `Tels.Type` in
+-       stratiform). It is the sibling of `Encodable`, and the two are commonly required
+-       together, as `Encodable & Schematic in Json over JsonSchema`, so that a value's
+-       encoding and its schema come from the same derivation. Format-specific instances live
+-       with their format.
++       `value is Schematic over JsonSchema` proporciona `#schema`, el esquema de la codificación
++       del valor en la representación `Transport` (`JsonSchema` en jacinta, `Tels.Type` en
++       stratiform). Es hermana de `Encodable`, y las dos se exigen a menudo juntas, como
++       `Encodable & Schematic in Json over JsonSchema`, para que la codificación de un valor y su
++       esquema procedan de la misma derivación. Las instancias específicas de un formato viven
++       con su formato.
+
+-   refer anticipation.Morphology
++   refer anticipation.Morphology
+
+-   entry #schema   the schema, in the `Transport` representation
++   entry #schema   el esquema, en la representación `Transport`
+
+- entry .Schema   a typeclass for a schema type which parses text into a typed form
++ entry .Schema   una clase de tipos para un tipo de esquema que analiza texto en una forma tipada
+
+= entry .Schema   a typeclass for a schema type which parses text into a typed form
+-   detail
++   detail
+
+-       A schema whose `Form` has a `Topic` type member: `#parse` reads a document as text into
+-       a `Form of Topic`, typed by the schema.
+-   entry #Form   the parsed form, refined with a `Topic` type member
+-   entry #parse   parses a lazy chain of text into the schema's typed form
++       Un esquema cuyo `Form` tiene un miembro de tipo `Topic`: `#parse` lee un documento en
++       forma de texto como un `Form of Topic`, tipado por el esquema.
++   entry #Form   la forma analizada, refinada con un miembro de tipo `Topic`
++   entry #parse   analiza una cadena perezosa de texto en la forma tipada del esquema
+
+- entry .Morphology   the format-neutral shape of an encoding, carried by a codec beside its schema
++ entry .Morphology   la forma de una codificación, independiente del formato, que lleva un códec junto a su esquema
+
+= entry .Morphology   the format-neutral shape of an encoding, carried by a codec beside its schema
+-   detail
++   detail
+
+-       A codec (jacinta's `Json.Encodable`, stratiform's TEL codecs) carries the morphology of
+-       the values it encodes, so that the codec and the schema derived from it are coherent by
+-       construction; the morphology is then reified into a format-specific schema, a
+-       `JsonSchema` or a `Tels.Type`, downstream. It records structure only; descriptions,
+-       formats and bounds belong to each format's own schema.
++       Un códec (el `Json.Encodable` de jacinta, los códecs TEL de stratiform) lleva la
++       morfología de los valores que codifica, para que el códec y el esquema derivado de él
++       sean coherentes por construcción; después, más adelante, la morfología se materializa en
++       un esquema específico de un formato, un `JsonSchema` o un `Tels.Type`. Solo registra la
++       estructura; las descripciones, los formatos y las cotas pertenecen al esquema propio de
++       cada formato.
+
+-       The leaf cases are `Str` (a string), `Whole` (an integer), `Real` (a fractional
+-       number), `Bool`, `Empty` (null or unit) and `Any` (unconstrained); the compound ones
+-       follow.
++       Los casos hoja son `Str` (una cadena), `Whole` (un entero), `Real` (un número
++       fraccionario), `Bool`, `Empty` (null o unit) y `Any` (sin restricciones); los compuestos
++       vienen a continuación.
+
+=       follow.
+=
+-       ```scala
++       ```scala
+
+=       follow.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val person = Morphology.Obj(List(t"name" -> Morphology.Str, t"age" -> Morphology.Whole),
++       val person = Morphology.Obj(List(t"name" -> Morphology.Str, t"age" -> Morphology.Whole),
+
+-           List(t"name", t"age"))
++           List(t"name", t"age"))
+
+=           List(t"name", t"age"))
+-       ```
++       ```
+
+-   entry #optional   whether a value of this shape may be absent: true only for `Opt`
+-       Used to compute which fields of a record are required.
+-   entry .Opt   an optional value of a shape
+-     entry #shape   the shape when present
+-   entry .Arr   a homogeneous sequence
+-     entry #items   the shape of each element
+-   entry .Dict   a map of arbitrary keys to values
+-     entry #key     the shape of the keys
+-     entry #value   the shape of the values
+-   entry .Obj   a record of named fields, with those which are required
+-     entry #fields     the fields' names and shapes, in order
+-     entry #required   the names of the fields which must be present
+-   entry .OneOf   a tagged disjunction of shapes
+-     entry #variants   the shape of each variant
++   entry #optional   si un valor de esta forma puede estar ausente: verdadero solo para `Opt`
++       Se usa para calcular qué campos de un registro son obligatorios.
++   entry .Opt   un valor opcional de una forma
++     entry #shape   la forma cuando está presente
++   entry .Arr   una secuencia homogénea
++     entry #items   la forma de cada elemento
++   entry .Dict   un mapa de claves arbitrarias a valores
++     entry #key     la forma de las claves
++     entry #value   la forma de los valores
++   entry .Obj   un registro de campos con nombre, con los que son obligatorios
++     entry #fields     los nombres y las formas de los campos, en orden
++     entry #required   los nombres de los campos que deben estar presentes
++   entry .OneOf   una disyunción etiquetada de formas
++     entry #variants   la forma de cada variante
+
+- entry .Underlying   erased evidence that an opaque type is represented by a primitive
+-     `Underlying[Alias, Primitive]` is declared, erased, in an opaque type's companion (as
+-     `Chroma` declares `Underlying[Chroma, Int]`) to permit `underlying`, which views a value
+-     of the alias as its representation at no cost. It is sealed and has no runtime value.
++ entry .Underlying   evidencia borrada de que un tipo opaco se representa mediante un tipo primitivo
++     `Underlying[Alias, Primitive]` se declara, borrado, en el objeto compañero de un tipo opaco
++     (como `Chroma` declara `Underlying[Chroma, Int]`) para permitir `underlying`, que ve un
++     valor del alias como su representación sin coste alguno. Es sellado y no tiene valor en
++     tiempo de ejecución.
+
+- entry .underlying   views an opaque value as its primitive representation, where the alias permits it
+-     `value.underlying[Int]` compiles only where an erased `Underlying[Alias, Int]` is in
+-     scope, and is a cast with no runtime cost.
++ entry .underlying   ve un valor opaco como su representación primitiva, donde el alias lo permite
++     `value.underlying[Int]` solo compila donde hay en el ámbito un `Underlying[Alias, Int]`
++     borrado, y es una conversión de tipo sin coste en tiempo de ejecución.
+
+- entry .Log   logs an event at one of four levels, and names the categories an event may belong to
++ entry .Log   registra un evento en uno de cuatro niveles, y nombra las categorías a las que puede pertenecer un evento
+
+= entry .Log   logs an event at one of four levels, and names the categories an event may belong to
+-   detail
++   detail
+
+-       `Log.fine`, `Log.info`, `Log.warn` and `Log.fail` log a value through the `Loggable`
+-       instance in scope, which `Loggable.fanOut` derives in implicit scope from every
+-       `LogSink` present. The argument is taken by name and the level is checked first, so
+-       when no sink accepts the level, including when there is no sink at all, the value is
+-       never constructed: a disabled log statement costs nothing and needs no guard.
++       `Log.fine`, `Log.info`, `Log.warn` y `Log.fail` registran un valor mediante la instancia
++       de `Loggable` del ámbito, que `Loggable.fanOut` deriva en el ámbito implícito a partir de
++       cada `LogSink` presente. El argumento se recibe por nombre y el nivel se comprueba
++       primero, así que cuando ningún sumidero acepta el nivel, incluso cuando no hay ningún
++       sumidero, el valor nunca se construye: una instrucción de log desactivada no cuesta nada
++       y no necesita ninguna guarda.
+
+=       never constructed: a disabled log statement costs nothing and needs no guard.
+=
+-       ```scala
++       ```scala
+
+=       never constructed: a disabled log statement costs nothing and needs no guard.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def report(remote: Text): Unit =
++       def report(remote: Text): Unit =
+
+-         Log.fine(m"starting...")
++         Log.fine(m"starting...")
+
+-         Log.info(m"connected to $remote")
++         Log.info(m"connected to $remote")
+
+=         Log.info(m"connected to $remote")
+-       ```
++       ```
+
+-       A library declares that a method logs its own event type with `logs`, as in `Long logs
+-       Backup.Event`.
++       Una biblioteca declara con `logs` que un método registra su propio tipo de evento, como
++       en `Long logs Backup.Event`.
+
+-       The object also holds a growable vocabulary of **categories** describing the nature of
+-       an event: an event type, or one of its enum cases, mixes in one or more of the marker
+-       traits (`Log.Network`, `Log.Filesystem`, …), and a sink configured with a set of
+-       `Log.Category` values (such as eucalyptus's `Logger(…, categories = Set(Log.Network))`)
+-       records only events whose runtime type mixes one in. Each trait is paired with an
+-       object of the same name, the `Category` value carrying its runtime class. The filter
+-       crosses libraries, so every library's network events can be selected at once.
++       El objeto contiene también un vocabulario ampliable de **categorías** que describen la
++       naturaleza de un evento: un tipo de evento, o uno de sus casos de enumeración, mezcla uno
++       o varios de los traits marcadores (`Log.Network`, `Log.Filesystem`, …), y un sumidero
++       configurado con un conjunto de valores `Log.Category` (como el
++       `Logger(…, categories = Set(Log.Network))` de eucalyptus) registra solo los eventos cuyo
++       tipo en tiempo de ejecución mezcla alguno de ellos. Cada trait va emparejado con un
++       objeto del mismo nombre, el valor `Category` que lleva su clase en tiempo de ejecución.
++       El filtro atraviesa bibliotecas, de modo que se pueden seleccionar a la vez los eventos
++       de red de todas las bibliotecas.
+
+=       crosses libraries, so every library's network events can be selected at once.
+=
+-       ```scala
++       ```scala
+
+=       crosses libraries, so every library's network events can be selected at once.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       enum Fetch:
++       enum Fetch:
+
+-         case Requested(url: Text) extends Fetch, Log.Network
++         case Requested(url: Text) extends Fetch, Log.Network
+
+-         case Cached(url: Text) extends Fetch, Log.Network, Log.Cache
++         case Cached(url: Text) extends Fetch, Log.Network, Log.Cache
+
+=         case Cached(url: Text) extends Fetch, Log.Network, Log.Cache
+-       ```
++       ```
+
+=       ```
+-   refer anticipation.Loggable
++   refer anticipation.Loggable
+
+=   refer anticipation.Loggable
+-   refer anticipation.LogSink
++   refer anticipation.LogSink
+
+=   refer anticipation.LogSink
+-   refer anticipation.logs
++   refer anticipation.logs
+
+-   entry .fine   logs a value at `Log.Level.Fine`: high-frequency detail, useful while debugging
+-   entry .info   logs a value at `Log.Level.Info`: one line per significant operation
+-   entry .warn   logs a value at `Log.Level.Warn`: a recoverable or unexpected-but-handled condition
+-   entry .fail   logs a value at `Log.Level.Fail`: an operation which failed unrecoverably
+-   entry .Category   a category of log event, carrying the runtime class of its marker trait
++   entry .fine   registra un valor en `Log.Level.Fine`: detalle de alta frecuencia, útil al depurar
++   entry .info   registra un valor en `Log.Level.Info`: una línea por cada operación significativa
++   entry .warn   registra un valor en `Log.Level.Warn`: una condición recuperable, o inesperada pero gestionada
++   entry .fail   registra un valor en `Log.Level.Fail`: una operación que falló de forma irrecuperable
++   entry .Category   una categoría de evento de log, que lleva la clase en tiempo de ejecución de su trait marcador
+
+=   entry .Category   a category of log event, carrying the runtime class of its marker trait
+-     detail
++     detail
+
+-         Each category is an object paired with a marker trait of the same name; a sink
+-         tests an event against a category with `#reference`, at runtime, since the call site
+-         knows only the event's general type.
+-     entry #reference   the runtime class of the category's marker trait
+-   entry .Memory   events about memory use and allocation, as a marker trait and its `Category`
+-   entry .Cpu   events about processor use, as a marker trait and its `Category`
+-   entry .Threading   events about threads, tasks and their scheduling, as a marker trait and its `Category`
+-   entry .Process   events about operating-system processes, as a marker trait and its `Category`
+-   entry .Filesystem   events about files and directories, as a marker trait and its `Category`
+-   entry .Disk   events about storage devices and volumes, as a marker trait and its `Category`
+-   entry .Network   events about network connections and traffic, as a marker trait and its `Category`
+-   entry .Database   events about database access, as a marker trait and its `Category`
+-   entry .Cache   events about caching, hits and evictions, as a marker trait and its `Category`
+-   entry .Serialization   events about encoding and decoding, as a marker trait and its `Category`
+-   entry .Crypto   events about cryptographic operations, as a marker trait and its `Category`
+-   entry .Auth   events about authentication and authorization, as a marker trait and its `Category`
+-   entry .Configuration   events about reading configuration, as a marker trait and its `Category`
+-   entry .Dependency   events about resolving dependencies, as a marker trait and its `Category`
+-   entry .Scheduler   events about scheduled and periodic work, as a marker trait and its `Category`
+-   entry .Time   events about clocks and timing, as a marker trait and its `Category`
+-   entry .Ui   events about the user interface, as a marker trait and its `Category`
+-   entry .Protocol   events about protocol messages and handshakes, as a marker trait and its `Category`
+-   entry .Compiler   events about compilation, as a marker trait and its `Category`
+-   entry .Runtime   events about the runtime environment, such as loading code, as a marker trait and its `Category`
+-   entry .Gc   events about garbage collection, as a marker trait and its `Category`
+-   entry .Resource   events about reading bundled resources, as a marker trait and its `Category`
+-   entry .Security   events about security-relevant conditions, as a marker trait and its `Category`
++         Cada categoría es un objeto emparejado con un trait marcador del mismo nombre; un
++         sumidero comprueba un evento contra una categoría con `#reference`, en tiempo de
++         ejecución, puesto que el punto de llamada solo conoce el tipo general del evento.
++     entry #reference   la clase en tiempo de ejecución del trait marcador de la categoría
++   entry .Memory   eventos sobre el uso y la asignación de memoria, como trait marcador y su `Category`
++   entry .Cpu   eventos sobre el uso del procesador, como trait marcador y su `Category`
++   entry .Threading   eventos sobre hilos, tareas y su planificación, como trait marcador y su `Category`
++   entry .Process   eventos sobre procesos del sistema operativo, como trait marcador y su `Category`
++   entry .Filesystem   eventos sobre ficheros y directorios, como trait marcador y su `Category`
++   entry .Disk   eventos sobre dispositivos y volúmenes de almacenamiento, como trait marcador y su `Category`
++   entry .Network   eventos sobre conexiones y tráfico de red, como trait marcador y su `Category`
++   entry .Database   eventos sobre el acceso a bases de datos, como trait marcador y su `Category`
++   entry .Cache   eventos sobre la caché, sus aciertos y sus expulsiones, como trait marcador y su `Category`
++   entry .Serialization   eventos sobre codificación y decodificación, como trait marcador y su `Category`
++   entry .Crypto   eventos sobre operaciones criptográficas, como trait marcador y su `Category`
++   entry .Auth   eventos sobre autenticación y autorización, como trait marcador y su `Category`
++   entry .Configuration   eventos sobre la lectura de la configuración, como trait marcador y su `Category`
++   entry .Dependency   eventos sobre la resolución de dependencias, como trait marcador y su `Category`
++   entry .Scheduler   eventos sobre trabajo programado y periódico, como trait marcador y su `Category`
++   entry .Time   eventos sobre relojes y temporización, como trait marcador y su `Category`
++   entry .Ui   eventos sobre la interfaz de usuario, como trait marcador y su `Category`
++   entry .Protocol   eventos sobre mensajes y handshakes de protocolo, como trait marcador y su `Category`
++   entry .Compiler   eventos sobre la compilación, como trait marcador y su `Category`
++   entry .Runtime   eventos sobre el entorno de ejecución, como la carga de código, como trait marcador y su `Category`
++   entry .Gc   eventos sobre la recolección de basura, como trait marcador y su `Category`
++   entry .Resource   eventos sobre la lectura de recursos empaquetados, como trait marcador y su `Category`
++   entry .Security   eventos sobre condiciones relevantes para la seguridad, como trait marcador y su `Category`
+
+-   entry .Level   the severity of a log event: `Fine`, `Info`, `Warn` or `Fail`
++   entry .Level   la gravedad de un evento de log: `Fine`, `Info`, `Warn` o `Fail`
+
+=   entry .Level   the severity of a log event: `Fine`, `Info`, `Warn` or `Fail`
+-     detail
++     detail
+
+-         An enum, ordered from least to most severe. `Fine` is high-frequency detail, normally
+-         switched off; `Info` one line per significant operation; `Warn` a recoverable or
+-         unexpected-but-handled condition; `Fail` an operation which failed unrecoverably,
+-         logged beside the error being raised. A sink's threshold (`LogSink#accepts`) drops
+-         everything below a chosen level, as eucalyptus's `Logger(Out, level = Log.Level.Warn)` does.
+-     entry .comparable   orders levels by severity, from `Fine` to `Fail`
++         Una enumeración, ordenada de menor a mayor gravedad. `Fine` es detalle de alta
++         frecuencia, normalmente desactivado; `Info`, una línea por cada operación
++         significativa; `Warn`, una condición recuperable, o inesperada pero gestionada; `Fail`,
++         una operación que falló de forma irrecuperable, registrada junto al error que se lanza.
++         El umbral de un sumidero (`LogSink#accepts`) descarta todo lo que está por debajo de un
++         nivel elegido, como hace el `Logger(Out, level = Log.Level.Warn)` de eucalyptus.
++     entry .comparable   ordena los niveles por gravedad, de `Fine` a `Fail`
+
+- entry .Loggable   a typeclass logging events of one type, derived from the sinks in scope
++ entry .Loggable   una clase de tipos que registra eventos de un tipo, derivada de los sumideros del ámbito
+
+= entry .Loggable   a typeclass logging events of one type, derived from the sinks in scope
+-   detail
++   detail
+
+-       `event is Loggable` is what `Log.info` and its siblings need. It is rarely written by
+-       hand: `.fanOut`, in implicit scope, derives one by transcribing the event once to each
+-       sink's carrier type (`Transcribable`) and fanning it out to every `LogSink` in scope,
+-       so several sinks in scope each receive every event, each applying its own threshold.
+-       With no sink in scope the derived instance is silent. An explicitly imported instance
+-       outranks the derived one: `import logging.silentLogging`, from eucalyptus, suppresses
+-       all logging in a file.
++       `event is Loggable` es lo que necesitan `Log.info` y sus hermanos. Rara vez se escribe a
++       mano: `.fanOut`, en el ámbito implícito, deriva uno transcribiendo el evento una vez al
++       tipo portador de cada sumidero (`Transcribable`) y distribuyéndolo a cada `LogSink` del
++       ámbito, de modo que varios sumideros en el ámbito reciben cada uno todos los eventos, y
++       cada uno aplica su propio umbral. Sin ningún sumidero en el ámbito, la instancia derivada
++       es silenciosa. Una instancia importada explícitamente tiene prioridad sobre la derivada:
++       `import logging.silentLogging`, de eucalyptus, suprime todo el log en un fichero.
+
+-       A `Loggable` is a shared capability (`Durable`): it is written to from every task at
+-       once, and captures the sinks it fans out to, which is why `logs` makes its evidence a
+-       capturing one.
++       Un `Loggable` es una capacidad compartida (`Durable`): se escribe en él desde todas las
++       tareas a la vez, y captura los sumideros a los que distribuye, por lo que `logs` hace que
++       su evidencia sea una evidencia que captura.
+
+=       capturing one.
+-   refer anticipation.LogSink
++   refer anticipation.LogSink
+
+-   refer anticipation.Transcribable
++   refer anticipation.Transcribable
+
+=   refer anticipation.Transcribable
+-   refer anticipation.logs
++   refer anticipation.logs
+
+-   entry .silent   a logger for an event type which records nothing, as a pure value
+-   entry .fanOut   derives a logger from every `LogSink` in scope, through the event's `Transcribable`
+-       For each logged event, if any sink accepts its level, the by-name event is forced once
+-       and, unless `Transcribable#skip` rejects it, transcribed lazily to the carrier and
+-       submitted to every sink whose threshold and categories (`LogSink#admits`) accept it.
+-   entry #log   logs an event at a level and timestamp
+-   entry #contramap   a logger for another type, by first mapping each event to this one
+-       The function may capture only `Durable` capabilities, since the logger retains it.
++   entry .silent   un logger para un tipo de evento que no registra nada, como valor puro
++   entry .fanOut   deriva un logger de cada `LogSink` del ámbito, mediante el `Transcribable` del evento
++       Para cada evento registrado, si algún sumidero acepta su nivel, el evento por nombre se
++       fuerza una vez y, salvo que `Transcribable#skip` lo rechace, se transcribe de forma
++       perezosa al portador y se envía a cada sumidero cuyo umbral y categorías
++       (`LogSink#admits`) lo acepten.
++   entry #log   registra un evento con un nivel y una marca de tiempo
++   entry #contramap   un logger para otro tipo, que primero transforma cada evento en uno de este
++       La función solo puede capturar capacidades `Durable`, puesto que el logger la retiene.
+
+- entry .LogSink   a destination for log events of a carrier type, such as eucalyptus's `Logger`
++ entry .LogSink   un destino para eventos de log de un tipo portador, como el `Logger` de eucalyptus
+
+= entry .LogSink   a destination for log events of a carrier type, such as eucalyptus's `Logger`
+-   detail
++   detail
+
+-       A `LogSink[Event, Carrier]` records events transcribed to `Carrier` (a `Message`,
+-       say). It is the abstraction `Loggable.fanOut` gathers from scope, so this module
+-       needs no logging runtime; eucalyptus's `Logger` implements it. It is contravariant in
+-       its event type, so a `LogSink[Any, Message]` collects every event.
++       Un `LogSink[Event, Carrier]` registra eventos transcritos a `Carrier` (un `Message`, por
++       ejemplo). Es la abstracción que `Loggable.fanOut` reúne del ámbito, de modo que este
++       módulo no necesita ningún entorno de ejecución de log; el `Logger` de eucalyptus la
++       implementa. Es contravariante en su tipo de evento, así que un `LogSink[Any, Message]`
++       recoge todos los eventos.
+
+-       A sink is a `Durable` capability: it is shared and synchronised, since every task
+-       writes to it, and ambient, typically an imported package given.
++       Un sumidero es una capacidad `Durable`: es compartido y sincronizado, puesto que todas
++       las tareas escriben en él, y ambiental, normalmente un given de paquete importado.
+
+=       writes to it, and ambient, typically an imported package given.
+-   refer anticipation.Loggable
++   refer anticipation.Loggable
+
+-   entry #accepts   whether the sink records events at a level
+-       Consulted before the event is forced, so a rejected event is never constructed.
+-   entry #admits   whether the sink records this particular event; true unless overridden
+-       Takes the original event rather than its transcription, so that a sink filtered to
+-       `Log.Category`s can test the event's runtime type.
+-   entry #submit   records an event, already transcribed, at a level and timestamp
++   entry #accepts   si el sumidero registra eventos de un nivel
++       Se consulta antes de forzar el evento, así que un evento rechazado nunca se construye.
++   entry #admits   si el sumidero registra este evento concreto; verdadero salvo que se sobrescriba
++       Recibe el evento original y no su transcripción, para que un sumidero filtrado por
++       `Log.Category`s pueda comprobar el tipo en tiempo de ejecución del evento.
++   entry #submit   registra un evento, ya transcrito, con un nivel y una marca de tiempo
+
+- entry .Transcribable   a typeclass transcribing an event into a sink's carrier type
++ entry .Transcribable   una clase de tipos que transcribe un evento al tipo portador de un sumidero
+
+= entry .Transcribable   a typeclass transcribing an event into a sink's carrier type
+-   detail
++   detail
+
+-       `event is Transcribable to Carrier` converts an event into the type a `LogSink`
+-       records, and is how one library's events are carried inside another's. `transcribes`
+-       reads more naturally in a given:
++       `event is Transcribable to Carrier` convierte un evento al tipo que registra un
++       `LogSink`, y es como los eventos de una biblioteca viajan dentro de los de otra.
++       `transcribes` se lee con más naturalidad en un given:
+
+=       reads more naturally in a given:
+=
+-       ```scala
++       ```scala
+
+=       reads more naturally in a given:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       enum Inner:
++       enum Inner:
+
+-         case Copied(source: Text)
++         case Copied(source: Text)
+
+-       enum Outer:
++       enum Outer:
+
+-         case Ran(event: Inner)
++         case Ran(event: Inner)
+
+-       given (Outer transcribes Inner) = Outer.Ran(_)
++       given (Outer transcribes Inner) = Outer.Ran(_)
+
+=       given (Outer transcribes Inner) = Outer.Ran(_)
+-       ```
++       ```
+
+-       A message type is transcribable from any `Communicable` event, which is why logging an
+-       `m"…"` message needs no declaration.
++       Un tipo de mensaje se puede transcribir a partir de cualquier evento `Communicable`, por
++       eso registrar un mensaje `m"…"` no necesita ninguna declaración.
+
+-   refer anticipation.transcribes
++   refer anticipation.transcribes
+
+-   entry #record   transcribes an event into the carrier type
+-   entry #skip   whether to drop an event rather than transcribe it; false unless overridden
+-   entry #contramap   an instance for another type, by first mapping each event to this one
++   entry #record   transcribe un evento al tipo portador
++   entry #skip   si descartar un evento en lugar de transcribirlo; falso salvo que se sobrescriba
++   entry #contramap   una instancia para otro tipo, que primero transforma cada evento en uno de este
+
+- entry .logs   the type of a result computed by code that logs events of a type: `Result logs Event`
+-     `Long logs Backup.Event` is a context function needing a capturing `Backup.Event is
+-     Loggable`, so a caller must either declare the event itself or have a sink for it in
+-     scope. Declarations chain: `Unit logs Http.Event logs Exec.Event`.
++ entry .logs   el tipo del resultado que calcula un código que registra eventos de un tipo: `Result logs Event`
++     `Long logs Backup.Event` es una función contextual que necesita un
++     `Backup.Event is Loggable` que capture, así que quien llama debe o bien declarar el evento
++     él mismo o bien tener un sumidero para él en el ámbito. Las declaraciones se encadenan:
++     `Unit logs Http.Event logs Exec.Event`.
+
+=     scope. Declarations chain: `Unit logs Http.Event logs Exec.Event`.
+=
+-     ```scala
++     ```scala
+
+=     scope. Declarations chain: `Unit logs Http.Event logs Exec.Event`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     enum Backup:
++     enum Backup:
+
+-       case Started(source: Text)
++       case Started(source: Text)
+
+-     def backup(source: Text): Unit logs Backup =
++     def backup(source: Text): Unit logs Backup =
+
+-       Log.info(Backup.Started(source))
++       Log.info(Backup.Started(source))
+
+=       Log.info(Backup.Started(source))
+-     ```
++     ```
+
+- entry .transcribes   the type of a `Transcribable` instance read in the direction of the wrapping
+-     `Outer transcribes Inner` is `Inner is Transcribable to Outer`: a given of it lets
+-     `Inner` events be logged where `Outer` events are accepted, wrapped as `Outer`.
++ entry .transcribes   el tipo de una instancia de `Transcribable` leído en el sentido del envoltorio
++     `Outer transcribes Inner` es `Inner is Transcribable to Outer`: un given de este tipo
++     permite registrar eventos `Inner` donde se aceptan eventos `Outer`, envueltos como `Outer`.
+
+- entry .Printable   a typeclass rendering a value as text for a terminal of known capabilities
++ entry .Printable   una clase de tipos que representa un valor como texto para un terminal de prestaciones conocidas
+
+= entry .Printable   a typeclass rendering a value as text for a terminal of known capabilities
+-   detail
++   detail
+
+-       `value is Printable` renders a value to `Text` given a `Termcap`, so that a value which
+-       may carry colour or styling (an escapade `Teletype`, a `Message`) degrades to plain
+-       text on a terminal without ANSI support. turbulence's `Out.println` and `Err.println`
+-       take any `Printable` value, with a `Termcap` in scope.
++       `value is Printable` representa un valor como `Text` dado un `Termcap`, de modo que un
++       valor que puede llevar color o estilo (un `Teletype` de escapade, un `Message`) se degrada
++       a texto plano en un terminal sin soporte ANSI. Los `Out.println` y `Err.println` de
++       turbulence aceptan cualquier valor `Printable`, con un `Termcap` en el ámbito.
+
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       ##
+=       import soundness.*
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+-       import stdios.javaLangSystemStdio
++       import stdios.javaLangSystemStdio
+
+-       Out.println(t"Hello")
++       Out.println(t"Hello")
+
+=       Out.println(t"Hello")
+-       ```
++       ```
+
+-       The companion makes `Text`, `String` and `Char` printable as themselves; escapade
+-       provides instances for its styled text.
++       El objeto compañero hace imprimibles como sí mismos `Text`, `String` y `Char`; escapade
++       proporciona instancias para su texto con estilo.
+
+=       provides instances for its styled text.
+-   refer anticipation.Termcap
++   refer anticipation.Termcap
+
+-   entry .text   `Text` prints as itself, on any terminal
+-   entry .string   a `String` prints as the same text
+-   entry .char   a `Char` prints as a one-character text
+-   entry #print   renders a value for a terminal with the given capabilities
+-   entry #contramap   an instance for another type, by first mapping each value, with the `Termcap` in context
+-       The function is a context function of the `Termcap`, so the mapping itself can depend
+-       on what the terminal supports.
++   entry .text   `Text` se imprime como sí mismo, en cualquier terminal
++   entry .string   un `String` se imprime como el mismo texto
++   entry .char   un `Char` se imprime como un texto de un carácter
++   entry #print   representa un valor para un terminal con las prestaciones dadas
++   entry #contramap   una instancia para otro tipo, que primero transforma cada valor, con el `Termcap` en el contexto
++       La función es una función contextual del `Termcap`, así que la propia transformación
++       puede depender de lo que admita el terminal.
+
+- entry .Termcap   the capabilities of a terminal: ANSI support, colour depth and size
++ entry .Termcap   las prestaciones de un terminal: soporte ANSI, profundidad de color y tamaño
+
+= entry .Termcap   the capabilities of a terminal: ANSI support, colour depth and size
+-   detail
++   detail
+
+-       A `Termcap` in scope tells a `Printable` how to render: whether ANSI escapes are
+-       understood, how many colours are available, and the terminal's width and height, which
+-       default to unbounded (`Int.MaxValue`), so that nothing wraps. A fixed one is imported
+-       by name from `termcapDefinitions`; ambience's `termcaps.environmentTermcap` reads the
+-       terminal's capabilities from the environment, and a daemon's invocation carries its
+-       client's.
++       Un `Termcap` en el ámbito le dice a un `Printable` cómo representar: si se entienden los
++       escapes ANSI, cuántos colores hay disponibles, y la anchura y la altura del terminal, que
++       por defecto son ilimitadas (`Int.MaxValue`), para que nada se ajuste. Uno fijo se importa
++       por nombre de `termcapDefinitions`; el `termcaps.environmentTermcap` de ambience lee las
++       prestaciones del terminal a partir del entorno, y la invocación de un demonio lleva las
++       de su cliente.
+
+-   refer anticipation.termcapDefinitions
++   refer anticipation.termcapDefinitions
+
+-   refer anticipation.ColorDepth
++   refer anticipation.ColorDepth
+
+-   entry #ansi    whether the terminal understands ANSI escape sequences
+-   entry #color   how many colours the terminal can show
+-   entry #width   the terminal's width in columns; unbounded unless known
+-   entry #height   the terminal's height in rows; unbounded unless known
++   entry #ansi    si el terminal entiende las secuencias de escape ANSI
++   entry #color   cuántos colores puede mostrar el terminal
++   entry #width   la anchura del terminal en columnas; ilimitada salvo que se conozca
++   entry #height   la altura del terminal en filas; ilimitada salvo que se conozca
+
+- entry .ColorDepth   how many colours a terminal can display, from none to 24-bit true colour
++ entry .ColorDepth   cuántos colores puede mostrar un terminal, desde ninguno hasta el color verdadero de 24 bits
+
+= entry .ColorDepth   how many colours a terminal can display, from none to 24-bit true colour
+-   detail
++   detail
+
+-       An enum, from least to most capable: `NoColor`; `Indexed8` and `Indexed16`, the basic
+-       ANSI palettes; `Cube4` and `Cube6`, the 88- and 256-colour palettes with a colour cube;
+-       and `TrueColor`, 24-bit colour.
++       Una enumeración, de menor a mayor capacidad: `NoColor`; `Indexed8` e `Indexed16`, las
++       paletas ANSI básicas; `Cube4` y `Cube6`, las paletas de 88 y 256 colores con un cubo de
++       color; y `TrueColor`, color de 24 bits.
+
+=       and `TrueColor`, 24-bit colour.
+=
+-       ```scala
++       ```scala
+
+=       and `TrueColor`, 24-bit colour.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       ColorDepth(256)   // ColorDepth.Cube6
++       ColorDepth(256)   // ColorDepth.Cube6
+
+=       ColorDepth(256)   // ColorDepth.Cube6
+-       ```
++       ```
+
+-   entry .apply   the colour depth for a terminal's colour count, as `tput colors` reports it
+-       8 is `Indexed8`; 15 or 16 `Indexed16`; 52, 64 or 88 `Cube4`; 256 `Cube6`; 65536 or
+-       16777216 `TrueColor`; anything else `NoColor`.
++   entry .apply   la profundidad de color para el número de colores de un terminal, tal como lo comunica `tput colors`
++       8 es `Indexed8`; 15 o 16, `Indexed16`; 52, 64 u 88, `Cube4`; 256, `Cube6`; 65536 o
++       16777216, `TrueColor`; cualquier otro, `NoColor`.
+
+- entry .termcapDefinitions   fixed terminal capabilities, each a given to import by name
++ entry .termcapDefinitions   prestaciones de terminal fijas, cada una un given que se importa por nombre
+
+= entry .termcapDefinitions   fixed terminal capabilities, each a given to import by name
+-   detail
++   detail
+
+-       For a program which knows what its output is rendered on, or a test or document whose
+-       output must not depend on the terminal running it. Each is a given imported by name,
+-       since `import termcapDefinitions.*` does not import givens:
++       Para un programa que sabe en qué se representa su salida, o una prueba o un documento
++       cuya salida no debe depender del terminal en que se ejecuta. Cada una es un given que se
++       importa por nombre, puesto que `import termcapDefinitions.*` no importa givens:
+
+=       since `import termcapDefinitions.*` does not import givens:
+=
+-       ```scala
++       ```scala
+
+=       since `import termcapDefinitions.*` does not import givens:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       ```scala
+=       import soundness.*
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+=       import termcapDefinitions.basicTermcap
+-       ```
++       ```
+
+-       None reports a width or height, so text never wraps.
++       Ninguna comunica una anchura ni una altura, así que el texto nunca se ajusta.
+
+=       None reports a width or height, so text never wraps.
+-   refer anticipation.Termcap
++   refer anticipation.Termcap
+
+-   entry .basicTermcap   a terminal with no ANSI support and no colour: plain text
+-   entry .xterm256Termcap   an ANSI terminal with the 256-colour palette
+-   entry .xtermTrueColorTermcap   an ANSI terminal with 24-bit true colour
++   entry .basicTermcap   un terminal sin soporte ANSI y sin color: texto plano
++   entry .xterm256Termcap   un terminal ANSI con la paleta de 256 colores
++   entry .xtermTrueColorTermcap   un terminal ANSI con color verdadero de 24 bits
+
+- entry .Chromatic   a typeclass reducing a colour of any representation to a packed 24-bit RGB `Chroma`
++ entry .Chromatic   una clase de tipos que reduce un color de cualquier representación a un `Chroma` RGB empaquetado de 24 bits
+
+= entry .Chromatic   a typeclass reducing a colour of any representation to a packed 24-bit RGB `Chroma`
+-   detail
++   detail
+
+-       `color is Chromatic` lets an API which draws or styles accept a colour from any
+-       library: cataclysm's CSS, savagery's SVG and escapade's terminal styling each take a
+-       `Chromatic` value, and iridescence's colour spaces and pixels provide instances.
++       `color is Chromatic` permite que una API que dibuja o aplica estilos acepte un color de
++       cualquier biblioteca: el CSS de cataclysm, el SVG de savagery y los estilos de terminal de
++       escapade aceptan cada uno un valor `Chromatic`, y los espacios de color y los píxeles de
++       iridescence proporcionan instancias.
+
+=       `Chromatic` value, and iridescence's colour spaces and pixels provide instances.
+=
+-       ```scala
++       ```scala
+
+=       `Chromatic` value, and iridescence's colour spaces and pixels provide instances.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def hex[color: Chromatic](color: color): Int = color.chroma.underlying
++       def hex[color: Chromatic](color: color): Int = color.chroma.underlying
+
+-       hex(Chroma(255, 128, 0))
++       hex(Chroma(255, 128, 0))
+
+=       hex(Chroma(255, 128, 0))
+-       ```
++       ```
+
+=       ```
+-   refer anticipation.Chroma
++   refer anticipation.Chroma
+
+-   entry #convert   the colour as a `Chroma`
+-   entry #chroma   the colour as a `Chroma`: `color.chroma`
+-   entry #red     the colour's red component, 0 to 255
+-   entry #green   the colour's green component, 0 to 255
+-   entry #blue    the colour's blue component, 0 to 255
+-   entry #contramap   an instance for another type, by first mapping it to a colour of this one
++   entry #convert   el color como `Chroma`
++   entry #chroma   el color como `Chroma`: `color.chroma`
++   entry #red     la componente roja del color, de 0 a 255
++   entry #green   la componente verde del color, de 0 a 255
++   entry #blue    la componente azul del color, de 0 a 255
++   entry #contramap   una instancia para otro tipo, que primero lo transforma en un color de este
+
+- entry .Chroma   a colour as 24-bit RGB packed into an `Int`, the common currency of `Chromatic`
+-     `Chroma` is the opaque type `anticipation.internal2.Chroma`, exported here: an `Int`
+-     whose low 24 bits hold red, green and blue, eight bits each, most significant first. It
+-     is the type every `Chromatic` instance converts to, and is itself `Chromatic`.
++ entry .Chroma   un color RGB de 24 bits empaquetado en un `Int`, la moneda común de `Chromatic`
++     `Chroma` es el tipo opaco `anticipation.internal2.Chroma`, exportado aquí: un `Int` cuyos
++     24 bits inferiores contienen el rojo, el verde y el azul, ocho bits cada uno, empezando por
++     el más significativo. Es el tipo al que convierte toda instancia de `Chromatic`, y es él
++     mismo `Chromatic`.
+
+=     is the type every `Chromatic` instance converts to, and is itself `Chromatic`.
+=
+-     ```scala
++     ```scala
+
+=     is the type every `Chromatic` instance converts to, and is itself `Chromatic`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val orange: Chroma = Chroma(255, 128, 0)
++     val orange: Chroma = Chroma(255, 128, 0)
+
+-     orange.red        // 255
++     orange.red        // 255
+
+-     orange.underlying // 0xff8000
++     orange.underlying // 0xff8000
+
+=     orange.underlying // 0xff8000
+-     ```
++     ```
+
+-     The `red`, `green` and `blue` extensions mask the component, so the top eight bits of
+-     the `Int` are never part of the colour; `underlying` gives the packed `Int`.
++     Las extensiones `red`, `green` y `blue` enmascaran la componente, así que los ocho bits
++     superiores del `Int` nunca forman parte del color; `underlying` da el `Int` empaquetado.
+
+- entry .internal2   the home of the opaque `Chroma` type
++ entry .internal2   el hogar del tipo opaco `Chroma`
+
+= entry .internal2   the home of the opaque `Chroma` type
+-   hidden
++   hidden
+
+= entry .internal2   the home of the opaque `Chroma` type
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `Chroma` is exported from here to the `anticipation` package, and
+-       its page there has the full account.
+-   entry .Chroma   a packed 24-bit RGB colour; see `anticipation.Chroma`
++       No es para uso directo: `Chroma` se exporta desde aquí al paquete `anticipation`, y su
++       página allí tiene la descripción completa.
++   entry .Chroma   un color RGB empaquetado de 24 bits; véase `anticipation.Chroma`
+
+=   entry .Chroma   a packed 24-bit RGB colour; see `anticipation.Chroma`
+-     detail
++     detail
+
+-         The opaque type `Chroma <: Matchable`, an `Int` at runtime.
+-     entry .apply   a `Chroma` from a packed `Int`, or from red, green and blue components
+-         Each component is masked to eight bits.
+-     entry .chromatic   a `Chroma` is `Chromatic` as itself
+-     entry .underlying   erased evidence that a `Chroma` is represented by an `Int`
+-   entry .underlying   the packed `Int` of a `Chroma`
+-   entry .red     the red component of a `Chroma`, 0 to 255
+-   entry .green   the green component of a `Chroma`, 0 to 255
+-   entry .blue    the blue component of a `Chroma`, 0 to 255
++         El tipo opaco `Chroma <: Matchable`, un `Int` en tiempo de ejecución.
++     entry .apply   un `Chroma` a partir de un `Int` empaquetado, o de las componentes roja, verde y azul
++         Cada componente se enmascara a ocho bits.
++     entry .chromatic   un `Chroma` es `Chromatic` como sí mismo
++     entry .underlying   evidencia borrada de que un `Chroma` se representa con un `Int`
++   entry .underlying   el `Int` empaquetado de un `Chroma`
++   entry .red     la componente roja de un `Chroma`, de 0 a 255
++   entry .green   la componente verde de un `Chroma`, de 0 a 255
++   entry .blue    la componente azul de un `Chroma`, de 0 a 255
+
+- entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, with match types over layouts
++ entry .Channel   un canal fantasma de una disposición de píxel empaquetada, como `Red[10]`, con tipos de coincidencia sobre disposiciones
+
+= entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, with match types over layouts
+-   detail
++   detail
+
+-       A channel is a colour component with a bit depth, never instantiated: `Red[10]` is ten
+-       bits of red. A pixel **layout** is a tuple of channels, most significant first, such as
+-       `(Red[10], Green[12], Blue[10])`, and iridescence's pixel types are parameterised by
+-       one. Each channel family carries a literal label (`"red"`, `"cyan"`, …) by which the
+-       match types in the companion find it within a layout; the hierarchy is open, so a
+-       library may add channels with labels of its own.
++       Un canal es una componente de color con una profundidad de bits, que nunca se instancia:
++       `Red[10]` son diez bits de rojo. Una **disposición** de píxel es una tupla de canales,
++       empezando por el más significativo, como `(Red[10], Green[12], Blue[10])`, y los tipos de
++       píxel de iridescence están parametrizados por una. Cada familia de canales lleva un
++       rótulo literal (`"red"`, `"cyan"`, …) por el que los tipos de coincidencia del objeto
++       compañero la encuentran dentro de una disposición; la jerarquía es abierta, así que una
++       biblioteca puede añadir canales con rótulos propios.
+
+=       library may add channels with labels of its own.
+=
+-       ```scala
++       ```scala
+
+=       library may add channels with labels of its own.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       type Rgb565 = (Channel.Red[5], Channel.Green[6], Channel.Blue[5])
++       type Rgb565 = (Channel.Red[5], Channel.Green[6], Channel.Blue[5])
+
+-       summon[anticipation.Channel.TotalBits[Rgb565] =:= 16]
++       summon[anticipation.Channel.TotalBits[Rgb565] =:= 16]
+
+-       summon[anticipation.Channel.Storage[Rgb565] =:= Short]
++       summon[anticipation.Channel.Storage[Rgb565] =:= Short]
+
+=       summon[anticipation.Channel.Storage[Rgb565] =:= Short]
+-       ```
++       ```
+
+-       `Channel` is not exported to the `soundness` umbrella, where the name belongs to a
+-       WebSocket channel; reach it as `anticipation.Channel`. The channel families `Red`,
+-       `Green`, `Blue` and the rest are exported.
++       `Channel` no se exporta al paraguas `soundness`, donde el nombre pertenece a un canal de
++       WebSocket; se llega a él como `anticipation.Channel`. Las familias de canales `Red`,
++       `Green`, `Blue` y las demás sí se exportan.
+
+-   refer anticipation.Channel.Red
++   refer anticipation.Channel.Red
+
+-   entry .Label   the literal label of a channel: `Label[Red[8]]` is `"red"`
+-   entry .Bits   the bit depth of a channel: `Bits[Red[8]]` is `8`
+-   entry .TotalBits   the total bit width of a layout
+-   entry .Has   whether a layout has a channel with a label, as a literal `Boolean`
+-   entry .Shift   the bit offset of a labelled channel within a layout
+-       The total width of the channels packed below it. It does not reduce for a layout
+-       without the channel, which statically gates accessors such as `.red` or `.cyan` to
+-       layouts which have it.
+-   entry .Depth   the bit depth of a labelled channel within a layout
+-   entry .Storage   the narrowest primitive holding one pixel of a layout: `Byte`, `Short`, `Int` or `Long`
++   entry .Label   el rótulo literal de un canal: `Label[Red[8]]` es `"red"`
++   entry .Bits   la profundidad de bits de un canal: `Bits[Red[8]]` es `8`
++   entry .TotalBits   la anchura total en bits de una disposición
++   entry .Has   si una disposición tiene un canal con un rótulo, como `Boolean` literal
++   entry .Shift   el desplazamiento en bits de un canal con rótulo dentro de una disposición
++       La anchura total de los canales empaquetados por debajo de él. No se reduce para una
++       disposición sin el canal, lo que restringe estáticamente accesores como `.red` o `.cyan`
++       a las disposiciones que lo tienen.
++   entry .Depth   la profundidad de bits de un canal con rótulo dentro de una disposición
++   entry .Storage   el primitivo más estrecho que contiene un píxel de una disposición: `Byte`, `Short`, `Int` o `Long`
+
+-   entry .Red   a pixel channel of red, of a given bit depth, labelled `"red"`
+-   entry .Green   a pixel channel of green, of a given bit depth, labelled `"green"`
+-   entry .Blue   a pixel channel of blue, of a given bit depth, labelled `"blue"`
+-   entry .Alpha   a pixel channel of opacity, of a given bit depth, labelled `"alpha"`
+-   entry .Cyan   a pixel channel of cyan, for CMYK layouts, labelled `"cyan"`
+-   entry .Magenta   a pixel channel of magenta, for CMYK layouts, labelled `"magenta"`
+-   entry .Yellow   a pixel channel of yellow, for CMYK layouts, labelled `"yellow"`
+-   entry .Key   a pixel channel of black (the K of CMYK), labelled `"key"`
+-   entry .Grey   a pixel channel of grey intensity, for monochrome layouts, labelled `"grey"`
++   entry .Red   un canal de píxel de rojo, de una profundidad de bits dada, con el rótulo `"red"`
++   entry .Green   un canal de píxel de verde, de una profundidad de bits dada, con el rótulo `"green"`
++   entry .Blue   un canal de píxel de azul, de una profundidad de bits dada, con el rótulo `"blue"`
++   entry .Alpha   un canal de píxel de opacidad, de una profundidad de bits dada, con el rótulo `"alpha"`
++   entry .Cyan   un canal de píxel de cian, para disposiciones CMYK, con el rótulo `"cyan"`
++   entry .Magenta   un canal de píxel de magenta, para disposiciones CMYK, con el rótulo `"magenta"`
++   entry .Yellow   un canal de píxel de amarillo, para disposiciones CMYK, con el rótulo `"yellow"`
++   entry .Key   un canal de píxel de negro (la K de CMYK), con el rótulo `"key"`
++   entry .Grey   un canal de píxel de intensidad de gris, para disposiciones monocromas, con el rótulo `"grey"`
+
+- entry .Graphical   a typeclass reading any image as a grid of `Chroma` pixels
++ entry .Graphical   una clase de tipos que lee cualquier imagen como una cuadrícula de píxeles `Chroma`
+
+= entry .Graphical   a typeclass reading any image as a grid of `Chroma` pixels
+-   detail
++   detail
+
+-       `image is Graphical` exposes an image's dimensions and its pixels as packed RGB, so a
+-       consumer can draw an image of any library's type: escapade renders any `Graphical`
+-       value on a terminal, and hallucination's `Raster` provides an instance.
++       `image is Graphical` expone las dimensiones de una imagen y sus píxeles como RGB
++       empaquetado, de modo que un consumidor puede dibujar una imagen del tipo de cualquier
++       biblioteca: escapade representa cualquier valor `Graphical` en un terminal, y el `Raster`
++       de hallucination proporciona una instancia.
+
+=       value on a terminal, and hallucination's `Raster` provides an instance.
+-   refer anticipation.Chroma
++   refer anticipation.Chroma
+
+-   entry #width    the image's width in pixels
+-   entry #height   the image's height in pixels
+-   entry #pixel    the colour of the pixel at a column and row
++   entry #width    la anchura de la imagen en píxeles
++   entry #height   la altura de la imagen en píxeles
++   entry #pixel    el color del píxel en una columna y una fila
+
+- entry .Focusable   a typeclass locating an element in a document, in a browser driver's terms
++ entry .Focusable   una clase de tipos que localiza un elemento en un documento, en los términos de un controlador de navegador
+
+= entry .Focusable   a typeclass locating an element in a document, in a browser driver's terms
+-   detail
++   detail
+
+-       `value is Focusable` names a WebDriver locating strategy (`#strategy`: `css selector`,
+-       `xpath`, `link text`, `tag name`) and renders a value in it (`#focus`), so tarantula's
+-       `element` and `\` accept a selector, an XPath, an HTML tag or plain link text without
+-       depending on the libraries defining them. Those libraries (cataclysm, xylophone,
+-       honeycomb, nomenclature) provide instances in their own companions; the companion here
+-       makes `Text` focus as link text.
++       `value is Focusable` nombra un método de localización de WebDriver (`#strategy`:
++       `css selector`, `xpath`, `link text`, `tag name`) y representa un valor en él (`#focus`),
++       de modo que `element` y `\` de tarantula aceptan un selector, un XPath, una etiqueta HTML o
++       un simple texto de enlace sin depender de las bibliotecas que los definen. Esas
++       bibliotecas (cataclysm, xylophone, honeycomb, nomenclature) proporcionan instancias en sus
++       propios objetos compañeros; el objeto compañero de aquí hace que `Text` se enfoque como
++       texto de enlace.
+
+=       makes `Text` focus as link text.
+=
+-       ```scala
++       ```scala
+
+=       makes `Text` focus as link text.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class TestId(name: Text)
++       case class TestId(name: Text)
+
+-       given TestId is Focusable = Focusable(t"css selector", id => t"[data-testid='${id.name}']")
++       given TestId is Focusable = Focusable(t"css selector", id => t"[data-testid='${id.name}']")
+
+=       given TestId is Focusable = Focusable(t"css selector", id => t"[data-testid='${id.name}']")
+-       ```
++       ```
+
+-       It is a pure typeclass: the rendering function must capture nothing.
+-   entry .apply   a `Focusable` from a strategy name and a pure rendering function
+-   entry .text   `Text` focuses as link text: the element whose link has exactly that text
+-   entry #strategy   the WebDriver locating strategy, such as `css selector` or `xpath`
+-   entry #focus   the value rendered in the locating strategy's syntax
++       Es una clase de tipos pura: la función de representación no debe capturar nada.
++   entry .apply   un `Focusable` a partir del nombre de un método de localización y una función de representación pura
++   entry .text   `Text` se enfoca como texto de enlace: el elemento cuyo enlace tiene exactamente ese texto
++   entry #strategy   el método de localización de WebDriver, como `css selector` o `xpath`
++   entry #focus   el valor representado en la sintaxis del método de localización

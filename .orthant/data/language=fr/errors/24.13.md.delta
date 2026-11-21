@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.24.13` — Wildcard in pattern type extraction
++ # `↯/s.24.13` — Joker dans l'extraction du type d'un motif
+
+- Raised by Contingency's pattern-type extractor when a wildcard
+- pattern is encountered where a concrete type was needed.
++ Levée par l'extracteur de types de motifs de Contingency lorsqu'il rencontre un motif joker là où
++ un type concret était nécessaire.
+
+- ## Cause
++ ## Cause
+
+- A wildcard `_` pattern carries no type information that the
+- extractor can use to register a recovered case.
++ Un motif joker `_` ne porte aucune information de type que l'extracteur puisse utiliser pour
++ enregistrer un cas récupéré.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.24.13] wildcard
++ [↯/s.24.13] wildcard
+
+= [↯/s.24.13] wildcard
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Replace the wildcard with a typed pattern (e.g. `error: SomeError`).
++ Remplacez le joker par un motif typé (par exemple `error: SomeError`).
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Source : `lib/contingency/src/core/contingency.internal.scala`

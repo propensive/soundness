@@ -1,0 +1,2676 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base anticipation
++ base anticipation
+
+- import soundness
++ import soundness
+
+- info   the interface typeclasses libraries agree on, so that each can accept the others' types without depending on them
++ info   ライブラリ同士が合意するインターフェースの型クラス。各ライブラリが互いに依存せずに他方の型を受け入れられるようにする
+
+- detail
++ detail
+
+-     _Anticipation_ holds the small typeclasses through which Soundness's libraries, and
+-     libraries outside it, exchange values without depending on one another. A library which
+-     opens a file needs *some* path, a library which sleeps needs *some* duration, and a
+-     library which fetches needs *some* URL; none of them should have to choose between
+-     galilei's `Path`, `java.nio.file.Path` and `java.io.File`, or between aviation's
+-     `Instant`, `java.time.Instant` and a `Long`. Each asks instead for a type which is
+-     `Abstractable across Paths to Text`, or `Instantiable across Instants from Long`, and the
+-     library that owns the concrete type provides the instance.
++     _Anticipation_ は、Soundness のライブラリや、その外のライブラリが、互いに依存せずに値をやり取りするための小さな型クラスを保持する。
++     ファイルを開くライブラリは*何らかの*パスを、スリープするライブラリは*何らかの*継続時間を、取得するライブラリは*何らかの* URL を必要とする。そのどれもが、galilei の `Path`、`java.nio.file.Path`、`java.io.File` の間で、あるいは aviation の `Instant`、`java.time.Instant`、`Long` の間で選ばなければならないべきではない。
++     代わりに、それぞれは `Abstractable across Paths to Text` や `Instantiable across Instants from Long` である型を求め、具体的な型を所有するライブラリがインスタンスを提供する。
+
+-     The typeclasses live here, apart from every implementation, because the dependency must
+-     point *into* a common, almost empty module from both sides. If `galilei` defined the path
+-     typeclass, a library accepting paths would depend on the whole filesystem library; if the
+-     library defined it, `galilei` would depend on that. Here neither depends on the other:
+-     both depend on `anticipation`, which depends on almost nothing.
++     型クラスがすべての実装から離れてここにあるのは、依存関係が両側から、共通のほとんど空のモジュール*へ*向かわなければならないからである。
++     `galilei` がパスの型クラスを定義すれば、パスを受け入れるライブラリはファイルシステムのライブラリ全体に依存することになり、そのライブラリが定義すれば、`galilei` がそれに依存することになる。
++     ここではどちらも他方に依存しない。どちらも、ほとんど何にも依存しない `anticipation` に依存する。
+
+-     Two typeclasses carry most of the traffic, each parameterised by a **domain**, a sealed
+-     marker type which names the concept being exchanged (`Paths`, `Urls`, `Instants`,
+-     `Durations`, `Uuids`, `Hostnames`, `EmailAddresses`, `IpAddresses`, `HttpStreams`, …):
++     やり取りの大部分は二つの型クラスが担う。それぞれは**ドメイン**によってパラメーター化される。ドメインとは、やり取りされる概念を名指すシールされたマーカー型である（`Paths`、`Urls`、`Instants`、`Durations`、`Uuids`、`Hostnames`、`EmailAddresses`、`IpAddresses`、`HttpStreams`、…）。
+
+-     - `Abstractable across Domain to Result`: a value becomes its **generic** representation,
+-       `value.generic`: text for a path or URL, nanoseconds for a duration, epoch milliseconds
+-       for an instant.
+-     - `Instantiable across Domain from Origin`: a generic representation becomes a value of
+-       the caller's chosen type, `target(origin)` inside a method with the bound
+-       `[target: Instantiable across Paths from Text]`.
++     - `Abstractable across Domain to Result`：値がその**汎用**表現 `value.generic` になる。パスや URL ならテキスト、継続時間ならナノ秒、時点ならエポックからのミリ秒である。
++     - `Instantiable across Domain from Origin`：汎用表現が、呼び出し側が選んだ型の値になる。境界 `[target: Instantiable across Paths from Text]` を持つメソッドの中での `target(origin)` である。
+
+-     So a value of one library's type is converted to another's by abstracting it and
+-     instantiating the result, with neither library knowing of the other. A galilei path's
+-     generic form is its text, `t"/home/work"`, and that text becomes a `java.nio.file.Path` or
+-     a `java.io.File` according to the path interface imported:
++     したがって、あるライブラリの型の値は、それを抽象化し、その結果をインスタンス化することで、別のライブラリの型に変換される。どちらのライブラリも他方を知らない。
++     galilei のパスの汎用形式はそのテキスト `t"/home/work"` であり、そのテキストは、インポートされたパスのインターフェースに応じて `java.nio.file.Path` か `java.io.File` になる。
+
+-     ```scala fuel
++     ```scala fuel
+
+-     alternative `java.nio.file.Path`
++     alternative `java.nio.file.Path`
+
+=     alternative `java.nio.file.Path`
+-       code
++       code
+
+=     alternative `java.nio.file.Path`
+=       code
+-           import soundness.*
++           import soundness.*
+
+=     alternative `java.nio.file.Path`
+=       code
+=           import soundness.*
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+-           import pathInterfaces.javaNioPath
++           import pathInterfaces.javaNioPath
+
+=           import pathInterfaces.javaNioPath
+=
+-           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
++           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+
+=           import pathInterfaces.javaNioPath
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+-           :   target =
++           :   target =
+
+=           import pathInterfaces.javaNioPath
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+=           :   target =
+-             target(path.generic)
++             target(path.generic)
+
+=           import pathInterfaces.javaNioPath
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+=           :   target =
+=             target(path.generic)
+=
+-           val path: Path on Linux = t"/home/work".as[Path on Linux]
++           val path: Path on Linux = t"/home/work".as[Path on Linux]
+
+-           val nio: java.nio.file.Path = relocate[java.nio.file.Path](path)
++           val nio: java.nio.file.Path = relocate[java.nio.file.Path](path)
+
+-     alternative `java.io.File`
++     alternative `java.io.File`
+
+=     alternative `java.io.File`
+-       code
++       code
+
+=     alternative `java.io.File`
+=       code
+-           import soundness.*
++           import soundness.*
+
+=     alternative `java.io.File`
+=       code
+=           import soundness.*
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+-           import pathInterfaces.javaIoFile
++           import pathInterfaces.javaIoFile
+
+=           import pathInterfaces.javaIoFile
+=
+-           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
++           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+
+=           import pathInterfaces.javaIoFile
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+-           :   target =
++           :   target =
+
+=           import pathInterfaces.javaIoFile
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+=           :   target =
+-             target(path.generic)
++             target(path.generic)
+
+=           import pathInterfaces.javaIoFile
+=
+=           def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+=           :   target =
+=             target(path.generic)
+=
+-           val path: Path on Linux = t"/home/work".as[Path on Linux]
++           val path: Path on Linux = t"/home/work".as[Path on Linux]
+
+-           val file: java.io.File = relocate[java.io.File](path)
++           val file: java.io.File = relocate[java.io.File](path)
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     A Soundness type's own instances live in its companion (`Path.generic`, `Url.abstractable`,
+-     `Instant.generic`), so they need no import. But a method bounded `[target: Instantiable
+-     across Paths from Text]` names no concrete type whose companion could be searched, and a
+-     Java type has no companion Soundness can write to, so the instances which *choose* a
+-     representation are offered in **choice packages**, one per domain, and imported by name:
+-     `pathInterfaces`, `urlInterfaces`, `instantInterfaces`, `durationInterfaces`,
+-     `uuidInterfaces`, `hostnameInterfaces`, `emailAddressInterfaces` and
+-     `ipAddressInterfaces`. Each package is declared in `anticipation` by the library which
+-     owns the type it offers: diuretic contributes the Java types (`javaNioPath`,
+-     `javaTimeInstant`, …), aviation its `Instant` and `Quantity`, galilei and serpentine the
+-     path representatives, inimitable `Uuid`, and urticose its URL and network types. Their
+-     names follow the house provenance words: a Java type keeps its type-path name
+-     (`javaNioPath`, `javaUtilDate`), and Soundness's own type is `soundness…`
+-     (`soundnessUrl`, `soundnessUuid`). The givens are imported by name, because `import
+-     pkg.*` does not import givens: `import pathInterfaces.javaNioPath`.
++     Soundness の型自身のインスタンスはそのコンパニオンにある（`Path.generic`、`Url.abstractable`、`Instant.generic`）ので、インポートは要らない。
++     しかし、`[target: Instantiable across Paths from Text]` という境界を持つメソッドは、コンパニオンを探せる具体的な型を何も名指さず、また Java の型には Soundness が書き込めるコンパニオンがない。そこで、表現を*選ぶ*インスタンスは、ドメインごとに一つの**選択パッケージ**で提供され、名前でインポートされる：`pathInterfaces`、`urlInterfaces`、`instantInterfaces`、`durationInterfaces`、`uuidInterfaces`、`hostnameInterfaces`、`emailAddressInterfaces`、`ipAddressInterfaces`。
++     各パッケージは、それが提供する型を所有するライブラリによって `anticipation` の中に宣言される。diuretic は Java の型（`javaNioPath`、`javaTimeInstant`、…）を、aviation はその `Instant` と `Quantity` を、galilei と serpentine はパスの代表を、inimitable は `Uuid` を、urticose はその URL とネットワークの型を提供する。
++     それらの名前はこのプロジェクトの出自を示す語に従う。Java の型はその型のパスの名前を保ち（`javaNioPath`、`javaUtilDate`）、Soundness 自身の型は `soundness…` である（`soundnessUrl`、`soundnessUuid`）。
++     `import pkg.*` は given をインポートしないので、given は名前でインポートされる：`import pathInterfaces.javaNioPath`。
+
+-     A bare `Long` cannot say whether it counts nanoseconds or milliseconds, so it has no
+-     unit-agnostic instance: `abstractables` and `instantiables` hold one given per unit,
+-     named for it, and a file imports exactly one duration reading.
++     裸の `Long` は、それがナノ秒を数えているのかミリ秒を数えているのかを示せないので、単位に依存しないインスタンスを持たない。`abstractables` と `instantiables` は単位ごとに、その単位にちなんで名付けられた given を一つずつ持ち、ファイルは継続時間の読み方をちょうど一つだけインポートする。
+
+-     The rest of the module is the same idea applied to other concepts: `Text` itself (the
+-     opaque string every library shares), `Data` for bytes, `Encodable` for encoding into a
+-     named format, `Loggable`/`LogSink`/`Transcribable` for logging without a logging
+-     runtime, `Printable` and `Termcap` for terminal rendering, `Chromatic`, `Chroma` and the
+-     pixel `Channel`s for colour, `Graphical` for images, `Focusable` for browser locators,
+-     `Nominable` for names, `Textualizable` for text conversion, and `Durable` for
+-     capabilities safe to share across threads.
++     モジュールの残りは、同じ考えを他の概念に適用したものである：`Text` そのもの（すべてのライブラリが共有する不透明な文字列）、バイトのための `Data`、名前付きの形式へのエンコードのための `Encodable`、ログのランタイムなしにログを記録するための `Loggable`/`LogSink`/`Transcribable`、端末での描画のための `Printable` と `Termcap`、色のための `Chromatic`、`Chroma`、ピクセルの `Channel`、画像のための `Graphical`、ブラウザのロケーターのための `Focusable`、名前のための `Nominable`、テキストへの変換のための `Textualizable`、そしてスレッド間で共有して安全なケイパビリティのための `Durable`。
+
+-     The library is split into many small, platform-neutral components, so that a library
+-     depends only on the concepts it exchanges: `anticipation.generic` (`Abstractable`,
+-     `Instantiable`, `Representative`), `text`, `opaque`, `codec`, `color`, `gfx`, `focus`,
+-     `http`, `log`, `net`, `path`, `print`, `time`, `url` and `uuid`. Everything is exported
+-     to the `soundness` umbrella except `Channel`, which clashes with another library's and is
+-     reached as `anticipation.Channel`; the choice packages merge with the umbrella's own
+-     blocks of the same names.
++     ライブラリが、自分がやり取りする概念だけに依存するように、このライブラリは多くの小さなプラットフォーム非依存のコンポーネントに分かれている：`anticipation.generic`（`Abstractable`、`Instantiable`、`Representative`）、`text`、`opaque`、`codec`、`color`、`gfx`、`focus`、`http`、`log`、`net`、`path`、`print`、`time`、`url`、`uuid`。
++     すべては `soundness` アンブレラにエクスポートされるが、別のライブラリのものと衝突する `Channel` は例外で、`anticipation.Channel` として到達する。選択パッケージは、アンブレラ自身の同名のブロックと統合される。
+
+- refer anticipation.Abstractable
++ refer anticipation.Abstractable
+
+- refer anticipation.Instantiable
++ refer anticipation.Instantiable
+
+- refer anticipation.Representative
++ refer anticipation.Representative
+
+- refer anticipation.Text
++ refer anticipation.Text
+
+- refer anticipation.pathInterfaces
++ refer anticipation.pathInterfaces
+
+- refer anticipation.instantInterfaces
++ refer anticipation.instantInterfaces
+
+- entry .Abstractable   a typeclass turning a value into the generic representation of a domain
++ entry .Abstractable   値をドメインの汎用表現に変える型クラス
+
+= entry .Abstractable   a typeclass turning a value into the generic representation of a domain
+-   detail
++   detail
+
+-       `value is Abstractable across Domain to Result` says that `value` can be reduced to a
+-       `Result`, the representation every library agrees on for `Domain`: `Text` for `Paths`
+-       and `Urls`, a `Long` of nanoseconds for `Durations`, a `Long` of milliseconds since the
+-       epoch for `Instants`, an `HttpStreams.Content` for `HttpStreams`. A library which
+-       *consumes* paths, durations or URLs bounds its parameter by it and calls `#generic`,
+-       accepting any type with an instance and depending on none of them.
++       `value is Abstractable across Domain to Result` は、`value` を `Result` に還元できることを表す。`Result` は、すべてのライブラリが `Domain` について合意する表現であり、`Paths` と `Urls` には `Text`、`Durations` にはナノ秒の `Long`、`Instants` にはエポックからのミリ秒の `Long`、`HttpStreams` には `HttpStreams.Content` である。
++       パス、継続時間、URL を*消費する*ライブラリは、パラメーターをこれで境界付けて `#generic` を呼び、インスタンスを持つ任意の型を受け入れつつ、そのどれにも依存しない。
+
+=       accepting any type with an instance and depending on none of them.
+=
+-       ```scala
++       ```scala
+
+=       accepting any type with an instance and depending on none of them.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def describe[path: Abstractable across Paths to Text](path: path): Text =
++       def describe[path: Abstractable across Paths to Text](path: path): Text =
+
+-         t"the path ${path.generic}"
++         t"the path ${path.generic}"
+
+=         t"the path ${path.generic}"
+-       ```
++       ```
+
+-       Instances live in the companion of the abstracted type (`Path.generic`,
+-       `Url.abstractable`, `Moment.generic`), so they are found without an import; a Java
+-       type's instance is offered in a choice package such as `pathInterfaces` or
+-       `instantInterfaces`. A bare `Long` duration or instant has instances only in
+-       `abstractables`, one per unit, imported by name.
++       インスタンスは抽象化される型のコンパニオンにある（`Path.generic`、`Url.abstractable`、`Moment.generic`）ので、インポートなしに見つかる。Java の型のインスタンスは `pathInterfaces` や `instantInterfaces` のような選択パッケージで提供される。
++       裸の `Long` の継続時間や時点は、`abstractables` に単位ごとに一つあるインスタンスしか持たず、それは名前でインポートされる。
+
+-       `Abstractable` is a pure typeclass: an instance captures nothing.
++       `Abstractable` は純粋な型クラスである。インスタンスは何も捕捉しない。
+
+-   refer anticipation.Instantiable
++   refer anticipation.Instantiable
+
+=   refer anticipation.Instantiable
+-   refer anticipation.abstractables
++   refer anticipation.abstractables
+
+-   entry #genericize   reduces a value to its generic representation
+-       The method an instance implements; `#generic` is the extension a caller writes.
+-   entry #generic   the generic representation of a value: `value.generic`
+-       An extension on the abstracted type. `path.generic` is the path as text,
+-       `duration.generic` its nanoseconds, `instant.generic` its epoch milliseconds.
+-   entry #contramap   an instance for another type, by first mapping it to this one
+-       `abstractable.contramap[Wrapper](_.inner)` abstracts a `Wrapper` across the same domain
+-       to the same result. The function must be pure.
++   entry #genericize   値をその汎用表現に還元する
++       インスタンスが実装するメソッドである。`#generic` は呼び出し側が書く拡張メソッドである。
++   entry #generic   値の汎用表現：`value.generic`
++       抽象化される型に対する拡張メソッドである。
++       `path.generic` はテキストとしてのパス、`duration.generic` はそのナノ秒、`instant.generic` はそのエポックからのミリ秒である。
++   entry #contramap   別の型のためのインスタンス。まずそれをこの型に写すことで作る
++       `abstractable.contramap[Wrapper](_.inner)` は、`Wrapper` を同じドメインにわたって同じ結果へ抽象化する。
++       関数は純粋でなければならない。
+
+- entry .Instantiable   a typeclass building a value from the generic representation of a domain
++ entry .Instantiable   ドメインの汎用表現から値を組み立てる型クラス
+
+= entry .Instantiable   a typeclass building a value from the generic representation of a domain
+-   detail
++   detail
+
+-       `target is Instantiable across Domain from Origin` says that a `target` can be made from
+-       an `Origin`, the representation every library agrees on for `Domain`. A library which
+-       *produces* paths, instants or URLs bounds its result type by it, so the caller chooses
+-       the type it receives:
++       `target is Instantiable across Domain from Origin` は、`Domain` についてすべてのライブラリが合意する表現である `Origin` から `target` を作れることを表す。
++       パス、時点、URL を*生成する*ライブラリは、結果の型をこれで境界付けるので、呼び出し側が受け取る型を選ぶ。
+
+=       the type it receives:
+=
+-       ```scala
++       ```scala
+
+=       the type it receives:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
++       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+
+=       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+-       ```
++       ```
+
+-       The context-bound name is itself the instance, so `path(text)` applies it. Instances
+-       for a Soundness type are in its companion; but where a method's bound names no concrete
+-       type, the choice of representation is made by importing an instance by name from a
+-       choice package, as `import pathInterfaces.javaNioPath` or `import
+-       urlInterfaces.soundnessUrl` does. An instance which parses (a `Uuid`, a `Hostname`, an
+-       `HttpUrl`) needs a `Tactic` for its error and captures it, which is why
+-       `Instantiable` is a tracked typeclass rather than a pure one.
++       コンテキスト境界の名前そのものがインスタンスなので、`path(text)` がそれを適用する。
++       Soundness の型のインスタンスはそのコンパニオンにある。しかし、メソッドの境界が具体的な型を何も名指さない場合、表現の選択は、`import pathInterfaces.javaNioPath` や `import urlInterfaces.soundnessUrl` のように、選択パッケージからインスタンスを名前でインポートすることで行われる。
++       パースを行うインスタンス（`Uuid`、`Hostname`、`HttpUrl`）は、そのエラーのための `Tactic` を必要としてそれを捕捉する。これが、`Instantiable` が純粋な型クラスではなく追跡される型クラスである理由である。
+
+-   refer anticipation.Abstractable
++   refer anticipation.Abstractable
+
+=   refer anticipation.Abstractable
+-   refer anticipation.instantiables
++   refer anticipation.instantiables
+
+=   refer anticipation.instantiables
+-   refer anticipation.Representative
++   refer anticipation.Representative
+
+-   entry #apply   builds a value from its generic representation
+-   entry #instantiate   builds a value from its generic representation: `origin.instantiate`
+-       An extension on the origin type, available where exactly one applicable instance is in
+-       scope; with several, apply the instance (`#apply`) instead.
+-   entry #map   an instance for another type, by mapping each value this one builds
+-       The result captures this instance and the function.
++   entry #apply   汎用表現から値を組み立てる
++   entry #instantiate   汎用表現から値を組み立てる：`origin.instantiate`
++       元の型に対する拡張メソッドであり、適用可能なインスタンスがスコープにちょうど一つあるところで使える。複数ある場合は、代わりにインスタンスを適用する（`#apply`）。
++   entry #map   別の型のためのインスタンス。この型が組み立てる各値を写すことで作る
++       結果はこのインスタンスと関数を捕捉する。
+
+- entry .Representative   evidence that a type may stand for a domain, such as a path type for `Paths`
++ entry .Representative   型がドメインを代表してよいという証拠。たとえば `Paths` に対するパスの型
+
+= entry .Representative   evidence that a type may stand for a domain, such as a path type for `Paths`
+-   detail
++   detail
+
+-       `path is Representative of Paths` marks a type as an acceptable representation of a
+-       domain where the API must name the type the caller wants without converting anything
+-       yet: `workingDirectory[path: Representative of Paths]` and
+-       `temporaryDirectory[path: Representative of Paths]` in ambience accept only a type
+-       with this evidence, and then instantiate it through `Paths.Resolver`. It is a sealed,
+-       memberless marker, whose instances are erased (`inline given … = !!`) and cost nothing.
++       `path is Representative of Paths` は、API がまだ何も変換せずに呼び出し側の望む型を名指さなければならないところで、ある型をドメインの許容される表現として印付ける。ambience の `workingDirectory[path: Representative of Paths]` と `temporaryDirectory[path: Representative of Paths]` は、この証拠を持つ型だけを受け入れ、それを `Paths.Resolver` を通じてインスタンス化する。
++       これはシールされた、メンバーのないマーカーであり、そのインスタンスは消去され（`inline given … = !!`）、コストがかからない。
+
+=       memberless marker, whose instances are erased (`inline given … = !!`) and cost nothing.
+=
+-       ```scala
++       ```scala
+
+=       memberless marker, whose instances are erased (`inline given … = !!`) and cost nothing.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       memberless marker, whose instances are erased (`inline given … = !!`) and cost nothing.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       import workingDirectories.systemWorkingDirectory
++       import workingDirectories.systemWorkingDirectory
+
+-       val directory = workingDirectory[Path on Linux]
++       val directory = workingDirectory[Path on Linux]
+
+=       val directory = workingDirectory[Path on Linux]
+-       ```
++       ```
+
+-       galilei's platform paths (`Path on Linux`, `Path on Windows`, `Path on MacOs`, `Path on
+-       Local`, `Path on Posix`) carry their evidence in their platform's companion and in
+-       `pathInterfaces`; serpentine makes `Text` a representative (`pathInterfaces.textPath`),
+-       and diuretic `java.nio.file.Path` and `java.io.File`.
++       galilei のプラットフォームのパス（`Path on Linux`、`Path on Windows`、`Path on MacOs`、`Path on Local`、`Path on Posix`）は、その証拠をプラットフォームのコンパニオンと `pathInterfaces` に持つ。serpentine は `Text` を代表にし（`pathInterfaces.textPath`）、diuretic は `java.nio.file.Path` と `java.io.File` を代表にする。
+
+=       and diuretic `java.nio.file.Path` and `java.io.File`.
+-   refer anticipation.Paths
++   refer anticipation.Paths
+
+=   refer anticipation.Paths
+-   refer anticipation.pathInterfaces
++   refer anticipation.pathInterfaces
+
+- entry .Paths   the domain of filesystem paths, whose generic representation is text
++ entry .Paths   ファイルシステムのパスのドメイン。汎用表現はテキスト
+
+= entry .Paths   the domain of filesystem paths, whose generic representation is text
+-   detail
++   detail
+
+-       A sealed marker naming the concept of a path, used as the `Domain` of `Abstractable`,
+-       `Instantiable` and `Representative`. A path's generic form is its text, as the
+-       filesystem writes it: `path is Abstractable across Paths to Text` reads a path of any
+-       type, and `path is Instantiable across Paths from Text` makes one. A second origin,
+-       `Paths.Trusted`, marks text which came from the operating system and so needs no
+-       validation.
++       パスという概念を名指すシールされたマーカーであり、`Abstractable`、`Instantiable`、`Representative` の `Domain` として使われる。
++       パスの汎用形式は、ファイルシステムが書くとおりのそのテキストである。`path is Abstractable across Paths to Text` は任意の型のパスを読み、`path is Instantiable across Paths from Text` はパスを作る。
++       二つ目の元である `Paths.Trusted` は、オペレーティングシステムから来たので検証を必要としないテキストを印付ける。
+
+=       validation.
+=
+-       ```scala
++       ```scala
+
+=       validation.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def open[path: Abstractable across Paths to Text](path: path): Text = path.generic
++       def open[path: Abstractable across Paths to Text](path: path): Text = path.generic
+
+=       def open[path: Abstractable across Paths to Text](path: path): Text = path.generic
+-       ```
++       ```
+
+-       Instances: galilei and serpentine's `Path` in its companion; `java.nio.file.Path` and
+-       `java.io.File` in `pathInterfaces`, from diuretic.
++       インスタンス：galilei と serpentine の `Path` はそのコンパニオンに、`java.nio.file.Path` と `java.io.File` は diuretic から `pathInterfaces` にある。
+
+=       `java.io.File` in `pathInterfaces`, from diuretic.
+-   refer anticipation.pathInterfaces
++   refer anticipation.pathInterfaces
+
+=   refer anticipation.pathInterfaces
+-   refer anticipation.Representative
++   refer anticipation.Representative
+
+-   entry .Trusted   path text known to be valid, such as a directory the operating system reported
++   entry .Trusted   有効であることが分かっているパスのテキスト。たとえばオペレーティングシステムが報告したディレクトリー
+
+=   entry .Trusted   path text known to be valid, such as a directory the operating system reported
+-     detail
++     detail
+
+-         An `Instantiable` origin distinct from plain `Text`: a path type which is
+-         `Instantiable across Paths from Paths.Trusted` can be made from it without the
+-         validation (and the `Tactic`) which instantiating from untrusted text needs.
+-         serpentine's `Path` has such an instance; `Paths.Resolver` prefers it.
+-     entry #text   the trusted path text
+-   entry .Resolver   resolves a directory's text into the requested path type, preferring trusted instantiation
++         普通の `Text` とは区別される `Instantiable` の元である。`Instantiable across Paths from Paths.Trusted` であるパスの型は、信頼されないテキストからのインスタンス化に必要な検証（と `Tactic`）なしに、これから作ることができる。
++         serpentine の `Path` はそのようなインスタンスを持ち、`Paths.Resolver` はそれを優先する。
++     entry #text   信頼されたパスのテキスト
++   entry .Resolver   ディレクトリーのテキストを要求されたパスの型に解決する。信頼されたインスタンス化を優先する
+
+=   entry .Resolver   resolves a directory's text into the requested path type, preferring trusted instantiation
+-     detail
++     detail
+
+-         The contextual value behind ambience's `workingDirectory` and `temporaryDirectory`:
+-         given the text of a directory the operating system reported, `resolver(text)`
+-         builds the caller's chosen path type. Its companion's `.trusted` instance, through
+-         `Instantiable across Paths from Trusted`, outranks the fallback `fromText` instance
+-         inherited from `Resolver2`, which instantiates from plain `Text`. The choice is made
+-         by ordinary implicit search rather than an inline `summonFrom`, so that it still
+-         works when the calling code is expanded inside a staged quote.
+-     entry .trusted   resolves through the path type's `Instantiable across Paths from Trusted` instance
+-     entry #apply   the path for a directory's text
+-   entry .Resolver2   the lower-priority parent of the `Paths.Resolver` companion
++         ambience の `workingDirectory` と `temporaryDirectory` の背後にあるコンテキスト値である。オペレーティングシステムが報告したディレクトリーのテキストが与えられると、`resolver(text)` は呼び出し側が選んだパスの型を組み立てる。
++         そのコンパニオンの `.trusted` インスタンスは、`Instantiable across Paths from Trusted` を通じて、`Resolver2` から継承された代替の `fromText` インスタンスより優先される。後者は普通の `Text` からインスタンス化する。
++         選択はインラインの `summonFrom` ではなく通常の暗黙の探索によって行われるので、呼び出し側のコードがステージングされたクオートの中で展開されても機能する。
++     entry .trusted   パスの型の `Instantiable across Paths from Trusted` インスタンスを通じて解決する
++     entry #apply   ディレクトリーのテキストに対するパス
++   entry .Resolver2   `Paths.Resolver` のコンパニオンの、優先度の低い親
+
+-     hidden
++     hidden
+
+=     hidden
+-     detail
++     detail
+
+-         Holds the fallback resolver, so that the trusted one in `Paths.Resolver`'s companion
+-         is preferred where both apply.
+-     entry #fromText   resolves through the path type's `Instantiable across Paths from Text` instance
++         代替のリゾルバーを保持し、両方が当てはまるところでは `Paths.Resolver` のコンパニオンにある信頼されたものが優先されるようにする。
++     entry #fromText   パスの型の `Instantiable across Paths from Text` インスタンスを通じて解決する
+
+- entry .Nominable   a typeclass giving a value's name as text, such as a path's final segment
++ entry .Nominable   値の名前をテキストとして与える型クラス。たとえばパスの最後のセグメント
+
+= entry .Nominable   a typeclass giving a value's name as text, such as a path's final segment
+-   detail
++   detail
+
+-       `value is Nominable` provides `#name`: for a serpentine `Path`, the last segment of its
+-       descent, or its root if it has none. A library which displays or sorts by name asks for
+-       a `Nominable` rather than for a particular path type. It is a pure typeclass.
+-   entry #name   the value's name
++       `value is Nominable` は `#name` を提供する。serpentine の `Path` では、その下降の最後のセグメント、それがなければそのルートである。
++       名前で表示したり並べ替えたりするライブラリは、特定のパスの型ではなく `Nominable` を求める。
++       これは純粋な型クラスである。
++   entry #name   値の名前
+
+- entry .Urls   the domain of URLs, whose generic representation is text
++ entry .Urls   URL のドメイン。汎用表現はテキスト
+
+= entry .Urls   the domain of URLs, whose generic representation is text
+-   detail
++   detail
+
+-       A sealed marker naming the concept of a URL. `url is Abstractable across Urls to Text`
+-       reads a URL of any type as text, and `url is Instantiable across Urls from Text` makes
+-       one. urticose's `HttpUrl` has both in its companion, and the instantiation is also
+-       offered by name as `urlInterfaces.soundnessUrl`; `java.net.URL` is
+-       `urlInterfaces.javaNetUrl`, from diuretic.
++       URL という概念を名指すシールされたマーカーである。
++       `url is Abstractable across Urls to Text` は任意の型の URL をテキストとして読み、`url is Instantiable across Urls from Text` は URL を作る。
++       urticose の `HttpUrl` は両方をそのコンパニオンに持ち、インスタンス化は `urlInterfaces.soundnessUrl` として名前でも提供される。`java.net.URL` は diuretic による `urlInterfaces.javaNetUrl` である。
+
+-   refer anticipation.urlInterfaces
++   refer anticipation.urlInterfaces
+
+- entry .Instants   the domain of points in time, whose generic representation is epoch milliseconds
++ entry .Instants   時点のドメイン。汎用表現はエポックからのミリ秒
+
+= entry .Instants   the domain of points in time, whose generic representation is epoch milliseconds
+-   detail
++   detail
+
+-       A sealed marker naming the concept of an instant. The generic form is a `Long` of
+-       **milliseconds** since the Unix epoch: `instant is Abstractable across Instants to Long`
+-       and `instant is Instantiable across Instants from Long`. A library which schedules or
+-       stamps asks for one of these rather than for aviation's `Instant` or `java.time`.
++       時点という概念を名指すシールされたマーカーである。
++       汎用形式は Unix エポックからの**ミリ秒**の `Long` である：`instant is Abstractable across Instants to Long` と `instant is Instantiable across Instants from Long`。
++       スケジュールしたりタイムスタンプを付けたりするライブラリは、aviation の `Instant` や `java.time` ではなく、これらのどちらかを求める。
+
+=       stamps asks for one of these rather than for aviation's `Instant` or `java.time`.
+=
+-       ```scala
++       ```scala
+
+=       stamps asks for one of these rather than for aviation's `Instant` or `java.time`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       stamps asks for one of these rather than for aviation's `Instant` or `java.time`.
+=
+=       ```scala
+=       import soundness.*
+-       import instantInterfaces.javaTimeInstant
++       import instantInterfaces.javaTimeInstant
+
+-       def at[instant: Instantiable across Instants from Long](epochMilliseconds: Long): instant =
++       def at[instant: Instantiable across Instants from Long](epochMilliseconds: Long): instant =
+
+-         instant(epochMilliseconds)
++         instant(epochMilliseconds)
+
+-       at[java.time.Instant](0L)
++       at[java.time.Instant](0L)
+
+=       at[java.time.Instant](0L)
+-       ```
++       ```
+
+-       Instances: aviation's `Instant` and `Moment` in their companions, and by name in
+-       `instantInterfaces`; `java.time.Instant`, `java.util.Date` and a raw `Long` in
+-       `instantInterfaces`, from diuretic; a bare `Long` in `abstractables` and
+-       `instantiables` as `epochMillisecondsAbstractable` and `epochMillisecondsInstantiable`.
+-       Note the asymmetry with `Durations`, whose `Long` counts nanoseconds.
++       インスタンス：aviation の `Instant` と `Moment` はそのコンパニオンに、また名前で `instantInterfaces` にある。`java.time.Instant`、`java.util.Date`、生の `Long` は diuretic から `instantInterfaces` にある。裸の `Long` は `abstractables` と `instantiables` に `epochMillisecondsAbstractable` と `epochMillisecondsInstantiable` としてある。
++       `Long` がナノ秒を数える `Durations` との非対称性に注意すること。
+
+-   refer anticipation.instantInterfaces
++   refer anticipation.instantInterfaces
+
+=   refer anticipation.instantInterfaces
+-   refer anticipation.Durations
++   refer anticipation.Durations
+
+- entry .Durations   the domain of lengths of time, whose generic representation is nanoseconds
++ entry .Durations   時間の長さのドメイン。汎用表現はナノ秒
+
+= entry .Durations   the domain of lengths of time, whose generic representation is nanoseconds
+-   detail
++   detail
+
+-       A sealed marker naming the concept of a duration. The generic form is a `Long` of
+-       **nanoseconds**: `duration is Abstractable across Durations to Long` and `duration is
+-       Instantiable across Durations from Long`. parasite's `sleep` and `snooze`, and every
+-       timeout in Soundness, accept any type with an instance, so an aviation `Timespan`, a
+-       quantitative `Quantity[Seconds[1]]` and a bare `Long` in a chosen unit all serve.
++       継続時間という概念を名指すシールされたマーカーである。
++       汎用形式は**ナノ秒**の `Long` である：`duration is Abstractable across Durations to Long` と `duration is Instantiable across Durations from Long`。
++       parasite の `sleep` と `snooze`、そして Soundness のすべてのタイムアウトは、インスタンスを持つ任意の型を受け入れるので、aviation の `Timespan`、quantitative の `Quantity[Seconds[1]]`、選んだ単位での裸の `Long` のどれもが使える。
+
+=       quantitative `Quantity[Seconds[1]]` and a bare `Long` in a chosen unit all serve.
+=
+-       ```scala
++       ```scala
+
+=       quantitative `Quantity[Seconds[1]]` and a bare `Long` in a chosen unit all serve.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       quantitative `Quantity[Seconds[1]]` and a bare `Long` in a chosen unit all serve.
+=
+=       ```scala
+=       import soundness.*
+-       import abstractables.millisecondsAbstractable
++       import abstractables.millisecondsAbstractable
+
+-       def nanoseconds[duration: Abstractable across Durations to Long](duration: duration): Long =
++       def nanoseconds[duration: Abstractable across Durations to Long](duration: duration): Long =
+
+-         duration.generic
++         duration.generic
+
+-       nanoseconds(200L)   // 200000000L
++       nanoseconds(200L)   // 200000000L
+
+=       nanoseconds(200L)   // 200000000L
+-       ```
++       ```
+
+-       A bare `Long` has no unit, so it has an instance only by import, one per unit, and the
+-       three share a type, so exactly one may be imported into a file. Instances: aviation's
+-       `Timespan` and `Quantity` in their companions, and by name as
+-       `durationInterfaces.aviationDuration`; a raw nanosecond `Long` as
+-       `durationInterfaces.javaLongDuration`, from diuretic.
++       裸の `Long` には単位がないので、インポートによってだけ、単位ごとに一つのインスタンスを持つ。三つは型を共有するので、一つのファイルにインポートできるのはちょうど一つである。
++       インスタンス：aviation の `Timespan` と `Quantity` はそのコンパニオンに、また名前で `durationInterfaces.aviationDuration` としてある。生のナノ秒の `Long` は diuretic による `durationInterfaces.javaLongDuration` である。
+
+=       `durationInterfaces.javaLongDuration`, from diuretic.
+-   refer anticipation.abstractables
++   refer anticipation.abstractables
+
+-   refer anticipation.durationInterfaces
++   refer anticipation.durationInterfaces
+
+-   entry .ms   converts between nanoseconds and milliseconds, inline
+-       Two overloads: `ms(long: Long): Double` scales a `Long` up by a million, and `ms(double:
+-       Double): Long` scales a `Double` down by a million, truncating. Note that the direction
+-       is set by the argument's type, not by the name.
+-   entry .ns   converts between a `Long` and a `Double` count of nanoseconds, inline
+-       `ns(long: Long): Double` widens; `ns(double: Double): Long` truncates.
++   entry .ms   ナノ秒とミリ秒の間をインラインで変換する
++       二つのオーバーロードがある。`ms(long: Long): Double` は `Long` を百万倍に拡大し、`ms(double: Double): Long` は `Double` を百万分の一に縮小して切り捨てる。
++       向きは名前ではなく引数の型によって決まることに注意すること。
++   entry .ns   ナノ秒の数を `Long` と `Double` の間でインラインで変換する
++       `ns(long: Long): Double` は拡大し、`ns(double: Double): Long` は切り捨てる。
+
+- entry .Dates   the domain of calendar dates, as a marker for `Abstractable` and `Instantiable`
+-     A sealed marker naming the concept of a date, with no fixed generic representation of its
+-     own: an instance states its `Result` or `Origin` type.
++ entry .Dates   暦日のドメイン。`Abstractable` と `Instantiable` のためのマーカー
++     日付という概念を名指すシールされたマーカーであり、それ自身の固定された汎用表現を持たない。インスタンスがその `Result` または `Origin` の型を述べる。
+
+- entry .Times   the domain of times of day, as a marker for `Abstractable` and `Instantiable`
+-     A sealed marker naming the concept of a time of day, with no fixed generic
+-     representation of its own: an instance states its `Result` or `Origin` type.
++ entry .Times   時刻のドメイン。`Abstractable` と `Instantiable` のためのマーカー
++     時刻という概念を名指すシールされたマーカーであり、それ自身の固定された汎用表現を持たない。インスタンスがその `Result` または `Origin` の型を述べる。
+
+- entry .Uuids   the domain of UUIDs, whose generic representation is text
+-     A sealed marker naming the concept of a UUID. `uuid is Instantiable across Uuids from
+-     Text` parses one; inimitable's `Uuid` is offered by name as
+-     `uuidInterfaces.soundnessUuid`, so a library can accept UUIDs without depending on
+-     inimitable.
++ entry .Uuids   UUID のドメイン。汎用表現はテキスト
++     UUID という概念を名指すシールされたマーカーである。
++     `uuid is Instantiable across Uuids from Text` は UUID をパースする。inimitable の `Uuid` は名前で `uuidInterfaces.soundnessUuid` として提供されるので、ライブラリは inimitable に依存せずに UUID を受け入れられる。
+
+- entry .EmailAddresses   the domain of email addresses, whose generic representation is text
+-     A sealed marker naming the concept of an email address. urticose's `EmailAddress` is
+-     `Instantiable across EmailAddresses from Text` by the given
+-     `emailAddressInterfaces.soundnessEmailAddress`, imported by name.
++ entry .EmailAddresses   メールアドレスのドメイン。汎用表現はテキスト
++     メールアドレスという概念を名指すシールされたマーカーである。
++     urticose の `EmailAddress` は、名前でインポートされる given `emailAddressInterfaces.soundnessEmailAddress` によって `Instantiable across EmailAddresses from Text` である。
+
+- entry .Hostnames   the domain of hostnames, whose generic representation is text
+-     A sealed marker naming the concept of a hostname. urticose's `Hostname` is `Instantiable
+-     across Hostnames from Text` by the given `hostnameInterfaces.soundnessHostname`,
+-     imported by name.
++ entry .Hostnames   ホスト名のドメイン。汎用表現はテキスト
++     ホスト名という概念を名指すシールされたマーカーである。
++     urticose の `Hostname` は、名前でインポートされる given `hostnameInterfaces.soundnessHostname` によって `Instantiable across Hostnames from Text` である。
+
+- entry .IpAddresses   the domain of IP addresses, whose generic representation is text
+-     A sealed marker naming the concept of an IP address. urticose's `Ipv4` and `Ipv6` are
+-     `Instantiable across IpAddresses from Text` by the givens
+-     `ipAddressInterfaces.soundnessIpv4` and `ipAddressInterfaces.soundnessIpv6`, imported by
+-     name.
++ entry .IpAddresses   IP アドレスのドメイン。汎用表現はテキスト
++     IP アドレスという概念を名指すシールされたマーカーである。
++     urticose の `Ipv4` と `Ipv6` は、名前でインポートされる given `ipAddressInterfaces.soundnessIpv4` と `ipAddressInterfaces.soundnessIpv6` によって `Instantiable across IpAddresses from Text` である。
+
+- entry .HttpRequests   the domain of HTTP request bodies, as a marker for `Instantiable`
+-     A sealed marker naming what an HTTP server receives. telekinesis can decode a request
+-     body as any `content` which is `Instantiable across HttpRequests from Text`, and codec
+-     libraries (jacinta, xylophone, ypsiloid) provide such instances for their own types, so
+-     neither side depends on the other.
++ entry .HttpRequests   HTTP リクエストの本文のドメイン。`Instantiable` のためのマーカー
++     HTTP サーバーが受け取るものを名指すシールされたマーカーである。
++     telekinesis はリクエストの本文を `Instantiable across HttpRequests from Text` である任意の `content` としてデコードでき、コーデックのライブラリ（jacinta、xylophone、ypsiloid）は自身の型のためにそのようなインスタンスを提供するので、どちらの側も他方に依存しない。
+
+- entry .HttpStreams   the domain of HTTP message bodies, with a minimal pull protocol for their bytes
++ entry .HttpStreams   HTTP メッセージの本文のドメイン。そのバイトのための最小限のプルプロトコルを持つ
+
+= entry .HttpStreams   the domain of HTTP message bodies, with a minimal pull protocol for their bytes
+-   detail
++   detail
+
+-       A sealed marker naming what is sent as an HTTP body. A type which is `Abstractable
+-       across HttpStreams to HttpStreams.Content` can be posted by telekinesis's client or
+-       served by its server: a `Content` is a media type paired with a `Body`. jacinta's
+-       `Json`, xylophone's `Xml` and the binary codecs provide instances in their own
+-       companions.
++       HTTP の本文として送られるものを名指すシールされたマーカーである。
++       `Abstractable across HttpStreams to HttpStreams.Content` である型は、telekinesis のクライアントで POST したり、そのサーバーで提供したりできる。`Content` は、メディアタイプと `Body` の組である。
++       jacinta の `Json`、xylophone の `Xml`、バイナリのコーデックは、自身のコンパニオンにインスタンスを提供する。
+
+=       companions.
+=
+-       ```scala
++       ```scala
+
+=       companions.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val content: HttpStreams.Content =
++       val content: HttpStreams.Content =
+
+-         (t"text/plain", HttpStreams.Body(Data(72, 105)))
++         (t"text/plain", HttpStreams.Body(Data(72, 105)))
+
+=         (t"text/plain", HttpStreams.Body(Data(72, 105)))
+-       ```
++       ```
+
+-       The `Body` protocol is deliberately dependency-free, so that libraries below
+-       turbulence can produce one; turbulence's streams adapt to and from it.
++       `Body` のプロトコルは、turbulence より下位のライブラリがそれを生成できるよう、意図的に依存関係を持たない。turbulence のストリームはそれとの間で相互に変換される。
+
+-   refer anticipation.HttpRequests
++   refer anticipation.HttpRequests
+
+-   entry .Body   a demand-driven source of body bytes, pulled one bounded chunk at a time
++   entry .Body   要求駆動の本文のバイトの源。一度に上限付きのチャンクを一つずつ引き出す
+
+=   entry .Body   a demand-driven source of body bytes, pulled one bounded chunk at a time
+-     detail
++     detail
+
+-         A `Body` is asked for its bytes with `#next(limit)`, which returns at most `limit`
+-         bytes as one chunk, or `null` at the end of the stream, and may block until input
+-         is available.
+-     entry .empty   the body with no bytes
+-     entry .apply   a body from a whole `Data` value, an iterator of chunks or a `Chain` of chunks
+-         From a `Data` value, the bytes are delivered in slices of at most `limit` bytes. From
+-         a stdlib iterator or a lazy `Chain` of chunks, each call delivers the next chunk
+-         whole, so `limit` does not bound its size; a body from an iterator captures it.
+-     entry #next   the next chunk of at most `limit` bytes, or `null` at the end of the body
+-   entry .Content   a body with its media type: `(Text, HttpStreams.Body)`
++         `Body` には `#next(limit)` でバイトを求める。これは最大 `limit` バイトを一つのチャンクとして返すか、ストリームの終わりでは `null` を返し、入力が得られるまでブロックすることがある。
++     entry .empty   バイトを持たない本文
++     entry .apply   `Data` の値全体、チャンクのイテレーター、またはチャンクの `Chain` から作る本文
++         `Data` の値からは、バイトは最大 `limit` バイトの断片で届けられる。
++         stdlib のイテレーターや遅延的なチャンクの `Chain` からは、各呼び出しが次のチャンクを丸ごと届けるので、`limit` はそのサイズを制限しない。イテレーターから作った本文はそれを捕捉する。
++     entry #next   最大 `limit` バイトの次のチャンク。本文の終わりでは `null`
++   entry .Content   メディアタイプ付きの本文：`(Text, HttpStreams.Body)`
+
+- entry .abstractables   the readings of a bare `Long` as a duration or an instant, each a given to import by name
++ entry .abstractables   裸の `Long` を継続時間または時点として読む方法。それぞれ名前でインポートする given
+
+= entry .abstractables   the readings of a bare `Long` as a duration or an instant, each a given to import by name
+-   detail
++   detail
+
+-       A `Long` cannot say whether it counts nanoseconds, microseconds, milliseconds or
+-       milliseconds since the epoch, so `import soundness.*` gives it no reading at all, and a
+-       method which takes any `Abstractable across Durations` or `across Instants` rejects a
+-       bare `Long` until a unit is chosen by importing one of these by name:
++       `Long` は、それがナノ秒、マイクロ秒、ミリ秒、あるいはエポックからのミリ秒のどれを数えているのかを示せないので、`import soundness.*` はそれに何の読み方も与えない。任意の `Abstractable across Durations` や `across Instants` を受け取るメソッドは、これらのうち一つを名前でインポートして単位を選ぶまで、裸の `Long` を拒否する。
+
+=       bare `Long` until a unit is chosen by importing one of these by name:
+=
+-       ```scala
++       ```scala
+
+=       bare `Long` until a unit is chosen by importing one of these by name:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       bare `Long` until a unit is chosen by importing one of these by name:
+=
+=       ```scala
+=       import soundness.*
+-       import abstractables.millisecondsAbstractable
++       import abstractables.millisecondsAbstractable
+
+-       supervise:
++       supervise:
+
+-         snooze(200L)   // 200 milliseconds
++         snooze(200L)   // 200 milliseconds
+
+=         snooze(200L)   // 200 milliseconds
+-       ```
++       ```
+
+-       The three duration givens share a type, so exactly one may be imported into a file;
+-       importing a duration reading and `epochMillisecondsAbstractable` together makes a
+-       `Long` passed where either is accepted ambiguous. `instantiables` mirrors all four in
+-       the opposite direction.
++       三つの継続時間の given は型を共有するので、一つのファイルにインポートできるのはちょうど一つである。継続時間の読み方と `epochMillisecondsAbstractable` を一緒にインポートすると、どちらも受け入れられるところに渡された `Long` が曖昧になる。
++       `instantiables` は四つすべてを逆向きに映したものである。
+
+=       the opposite direction.
+-   refer anticipation.instantiables
++   refer anticipation.instantiables
+
+=   refer anticipation.instantiables
+-   refer anticipation.Durations
++   refer anticipation.Durations
+
+-   entry .nanosecondsAbstractable   reads a `Long` duration as nanoseconds, the generic representation itself
+-   entry .microsecondsAbstractable   reads a `Long` duration as microseconds, multiplying by a thousand
+-   entry .millisecondsAbstractable   reads a `Long` duration as milliseconds, multiplying by a million
+-   entry .epochMillisecondsAbstractable   reads a `Long` instant as milliseconds since the epoch, the generic representation
++   entry .nanosecondsAbstractable   `Long` の継続時間をナノ秒として読む。汎用表現そのもの
++   entry .microsecondsAbstractable   `Long` の継続時間をマイクロ秒として読む。千倍する
++   entry .millisecondsAbstractable   `Long` の継続時間をミリ秒として読む。百万倍する
++   entry .epochMillisecondsAbstractable   `Long` の時点をエポックからのミリ秒として読む。汎用表現そのもの
+
+- entry .instantiables   the ways to receive a duration or an instant as a bare `Long`, each a given to import by name
++ entry .instantiables   継続時間や時点を裸の `Long` として受け取る方法。それぞれ名前でインポートする given
+
+= entry .instantiables   the ways to receive a duration or an instant as a bare `Long`, each a given to import by name
+-   detail
++   detail
+
+-       The `Instantiable` counterparts of `abstractables`: with one imported, a method which
+-       returns any `Instantiable across Durations from Long` (or `across Instants`) can return
+-       a `Long` in the chosen unit. Conversions to a coarser unit truncate.
++       `abstractables` に対応する `Instantiable` である。一つをインポートすると、任意の `Instantiable across Durations from Long`（または `across Instants`）を返すメソッドが、選んだ単位の `Long` を返せるようになる。
++       より粗い単位への変換は切り捨てる。
+
+=       a `Long` in the chosen unit. Conversions to a coarser unit truncate.
+=
+-       ```scala
++       ```scala
+
+=       a `Long` in the chosen unit. Conversions to a coarser unit truncate.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import instantiables.millisecondsInstantiable
++       import instantiables.millisecondsInstantiable
+
+-       def length[duration: Instantiable across Durations from Long]: duration =
++       def length[duration: Instantiable across Durations from Long]: duration =
+
+-         duration(5_000_000L)
++         duration(5_000_000L)
+
+-       length[Long]   // 5L
++       length[Long]   // 5L
+
+=       length[Long]   // 5L
+-       ```
++       ```
+
+-       As with `abstractables`, the three duration givens share a type and only one may be in
+-       scope.
++       `abstractables` と同様に、三つの継続時間の given は型を共有し、スコープに置けるのは一つだけである。
+
+=       scope.
+-   refer anticipation.abstractables
++   refer anticipation.abstractables
+
+-   entry .nanosecondsInstantiable   gives a duration as a `Long` of nanoseconds, unchanged
+-   entry .microsecondsInstantiable   gives a duration as a `Long` of microseconds, dividing by a thousand
+-   entry .millisecondsInstantiable   gives a duration as a `Long` of milliseconds, dividing by a million
+-   entry .epochMillisecondsInstantiable   gives an instant as a `Long` of milliseconds since the epoch, unchanged
++   entry .nanosecondsInstantiable   継続時間をナノ秒の `Long` として、そのまま与える
++   entry .microsecondsInstantiable   継続時間をマイクロ秒の `Long` として与える。千で割る
++   entry .millisecondsInstantiable   継続時間をミリ秒の `Long` として与える。百万で割る
++   entry .epochMillisecondsInstantiable   時点をエポックからのミリ秒の `Long` として、そのまま与える
+
+- entry .pathInterfaces   the path types a path-producing API may return, each a given to import by name
++ entry .pathInterfaces   パスを生成する API が返しうるパスの型。それぞれ名前でインポートする given
+
+= entry .pathInterfaces   the path types a path-producing API may return, each a given to import by name
+-   detail
++   detail
+
+-       A method which returns `[path: Instantiable across Paths from Text]`, or which asks for
+-       `[path: Representative of Paths]`, lets its caller choose a path type; for a type with
+-       no companion to search, the choice is made by importing one of these givens by name,
+-       since `import pathInterfaces.*` does not import givens.
++       `[path: Instantiable across Paths from Text]` を返すメソッドや `[path: Representative of Paths]` を求めるメソッドは、呼び出し側にパスの型を選ばせる。探すべきコンパニオンのない型については、`import pathInterfaces.*` は given をインポートしないので、これらの given のうち一つを名前でインポートすることで選択を行う。
+
+=       since `import pathInterfaces.*` does not import givens.
+=
+-       ```scala
++       ```scala
+
+=       since `import pathInterfaces.*` does not import givens.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import pathInterfaces.javaNioPath
++       import pathInterfaces.javaNioPath
+
+=       import pathInterfaces.javaNioPath
+=
+-       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
++       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+
+-       val path: java.nio.file.Path = home[java.nio.file.Path]
++       val path: java.nio.file.Path = home[java.nio.file.Path]
+
+=       val path: java.nio.file.Path = home[java.nio.file.Path]
+-       ```
++       ```
+
+-       The package is assembled from three libraries: diuretic declares `javaNioPath` and
+-       `javaIoFile`, galilei the platform path representatives, and serpentine `textPath`.
++       このパッケージは三つのライブラリから組み立てられる。diuretic が `javaNioPath` と `javaIoFile` を、galilei がプラットフォームのパスの代表を、serpentine が `textPath` を宣言する。
+
+=       `javaIoFile`, galilei the platform path representatives, and serpentine `textPath`.
+-   refer anticipation.Paths
++   refer anticipation.Paths
+
+=   refer anticipation.Paths
+-   refer anticipation.Representative
++   refer anticipation.Representative
+
+-   entry .javaNioPath   `java.nio.file.Path` as a path, abstracted to and instantiated from its text (diuretic)
+-       Both `Abstractable across Paths to Text` and `Instantiable across Paths from Text`, as
+-       the object `diuretic.JavaNioPath`. Abstraction gives the path's absolute form; a
+-       relative `java.nio.file.Path` is resolved against the JVM's working directory. JVM only.
+-   entry .javaIoFile   `java.io.File` as a path, abstracted to and instantiated from its text (diuretic)
+-       Both `Abstractable across Paths to Text` and `Instantiable across Paths from Text`, as
+-       the object `diuretic.JavaIoFile`; abstraction gives the file's absolute path.
+-   entry .pathOnLinux   `Path on Linux` as a `Representative of Paths` (galilei)
+-       Erased evidence; the same given is in the companion of `Linux`, where it is found
+-       without an import.
+-   entry .pathOnWindows   `Path on Windows` as a `Representative of Paths` (galilei)
+-       Erased evidence; the same given is in the companion of `Windows`.
+-   entry .pathOnMacOs   `Path on MacOs` as a `Representative of Paths` (galilei)
+-       Erased evidence; the same given is in the companion of `MacOs`.
+-   entry .pathOnLocal   `Path on Local`, the host platform's path, as a `Representative of Paths` (galilei)
+-       Erased evidence; the same given is in the companion of `Local`.
+-   entry .pathOnPosix   `Path on Posix` as a `Representative of Paths` (galilei)
+-       Erased evidence, for a path on any POSIX filesystem.
+-   entry .textPath   `Text` as a `Representative of Paths`, so a directory may be asked for as plain text (serpentine)
+-       With it imported, `workingDirectory[Text]` gives the working directory's text without
+-       choosing a path type.
++   entry .javaNioPath   パスとしての `java.nio.file.Path`。そのテキストへ抽象化され、そのテキストからインスタンス化される（diuretic）
++       オブジェクト `diuretic.JavaNioPath` として、`Abstractable across Paths to Text` でも `Instantiable across Paths from Text` でもある。
++       抽象化はパスの絶対形を与える。相対的な `java.nio.file.Path` は JVM の作業ディレクトリーに対して解決される。
++       JVM のみ。
++   entry .javaIoFile   パスとしての `java.io.File`。そのテキストへ抽象化され、そのテキストからインスタンス化される（diuretic）
++       オブジェクト `diuretic.JavaIoFile` として、`Abstractable across Paths to Text` でも `Instantiable across Paths from Text` でもある。抽象化はファイルの絶対パスを与える。
++   entry .pathOnLinux   `Representative of Paths` としての `Path on Linux`（galilei）
++       消去された証拠である。同じ given が `Linux` のコンパニオンにあり、そこではインポートなしに見つかる。
++   entry .pathOnWindows   `Representative of Paths` としての `Path on Windows`（galilei）
++       消去された証拠である。同じ given が `Windows` のコンパニオンにある。
++   entry .pathOnMacOs   `Representative of Paths` としての `Path on MacOs`（galilei）
++       消去された証拠である。同じ given が `MacOs` のコンパニオンにある。
++   entry .pathOnLocal   ホストのプラットフォームのパスである `Path on Local` を `Representative of Paths` として（galilei）
++       消去された証拠である。同じ given が `Local` のコンパニオンにある。
++   entry .pathOnPosix   `Representative of Paths` としての `Path on Posix`（galilei）
++       任意の POSIX ファイルシステム上のパスのための、消去された証拠である。
++   entry .textPath   `Representative of Paths` としての `Text`。ディレクトリーを普通のテキストとして求められるようにする（serpentine）
++       これをインポートすると、`workingDirectory[Text]` は、パスの型を選ばずに作業ディレクトリーのテキストを与える。
+
+- entry .urlInterfaces   the URL types a URL-producing API may return, each a given to import by name
++ entry .urlInterfaces   URL を生成する API が返しうる URL の型。それぞれ名前でインポートする given
+
+= entry .urlInterfaces   the URL types a URL-producing API may return, each a given to import by name
+-   detail
++   detail
+
+-       A method bounded `[url: Instantiable across Urls from Text]` names no concrete URL type,
+-       so the instance is chosen by importing one of these by name.
++       `[url: Instantiable across Urls from Text]` という境界を持つメソッドは具体的な URL の型を名指さないので、これらのうち一つを名前でインポートすることでインスタンスが選ばれる。
+
+=       so the instance is chosen by importing one of these by name.
+=
+-       ```scala
++       ```scala
+
+=       so the instance is chosen by importing one of these by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       so the instance is chosen by importing one of these by name.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import urlInterfaces.soundnessUrl
++       import urlInterfaces.soundnessUrl
+
+-       def site[url: Instantiable across Urls from Text]: url = url(t"https://example.com/")
++       def site[url: Instantiable across Urls from Text]: url = url(t"https://example.com/")
+
+-       val url: HttpUrl = site[HttpUrl]
++       val url: HttpUrl = site[HttpUrl]
+
+=       val url: HttpUrl = site[HttpUrl]
+-       ```
++       ```
+
+-   refer anticipation.Urls
++   refer anticipation.Urls
+
+-   entry .javaNetUrl   `java.net.URL` as a URL, abstracted to and instantiated from its text (diuretic)
+-       Both `Abstractable across Urls to Text` and `Instantiable across Urls from Text`, as the
+-       object `diuretic.JavaNetUrl`; instantiation goes through `java.net.URI`, so malformed
+-       text throws as the Java API does.
+-   entry .soundnessUrl   urticose's `HttpUrl`, instantiated from text by parsing (urticose)
+-       `HttpUrl is Instantiable across Urls from Text`, the instance `Url.instantiable` from
+-       `HttpUrl`'s companion offered by name. It needs a `Tactic[Url.Error]`, raised for text
+-       which is not a valid URL, and captures it.
++   entry .javaNetUrl   URL としての `java.net.URL`。そのテキストへ抽象化され、そのテキストからインスタンス化される（diuretic）
++       オブジェクト `diuretic.JavaNetUrl` として、`Abstractable across Urls to Text` でも `Instantiable across Urls from Text` でもある。インスタンス化は `java.net.URI` を経由するので、不正なテキストは Java の API と同じように例外を投げる。
++   entry .soundnessUrl   urticose の `HttpUrl`。テキストをパースしてインスタンス化される（urticose）
++       `HttpUrl is Instantiable across Urls from Text` であり、`HttpUrl` のコンパニオンのインスタンス `Url.instantiable` を名前で提供したものである。
++       有効な URL でないテキストに対して発生する `Tactic[Url.Error]` を必要とし、それを捕捉する。
+
+- entry .instantInterfaces   the instant types a time-producing API may return, each a given to import by name
++ entry .instantInterfaces   時刻を生成する API が返しうる時点の型。それぞれ名前でインポートする given
+
+= entry .instantInterfaces   the instant types a time-producing API may return, each a given to import by name
+-   detail
++   detail
+
+-       A method bounded `[instant: Instantiable across Instants from Long]` lets the caller
+-       choose the instant type it receives, from a `Long` of milliseconds since the epoch.
++       `[instant: Instantiable across Instants from Long]` という境界を持つメソッドは、エポックからのミリ秒の `Long` から受け取る時点の型を、呼び出し側に選ばせる。
+
+=       choose the instant type it receives, from a `Long` of milliseconds since the epoch.
+=
+-       ```scala
++       ```scala
+
+=       choose the instant type it receives, from a `Long` of milliseconds since the epoch.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       choose the instant type it receives, from a `Long` of milliseconds since the epoch.
+=
+=       ```scala
+=       import soundness.*
+-       import instantInterfaces.javaTimeInstant
++       import instantInterfaces.javaTimeInstant
+
+-       def epoch[instant: Instantiable across Instants from Long]: instant = instant(0L)
++       def epoch[instant: Instantiable across Instants from Long]: instant = instant(0L)
+
+-       val start: java.time.Instant = epoch[java.time.Instant]
++       val start: java.time.Instant = epoch[java.time.Instant]
+
+=       val start: java.time.Instant = epoch[java.time.Instant]
+-       ```
++       ```
+
+-       diuretic declares the Java types, aviation its own `Instant`.
++       diuretic が Java の型を、aviation が自身の `Instant` を宣言する。
+
+-   refer anticipation.Instants
++   refer anticipation.Instants
+
+-   entry .aviationInstant   aviation's `Instant`, as epoch milliseconds in both directions (aviation)
+-       `(Instant over transport) is Abstractable & Instantiable across Instants to Long from
+-       Long`, for any `transport`, from `Instant.generic`.
+-   entry .javaTimeInstant   `java.time.Instant`, as epoch milliseconds in both directions (diuretic)
+-       Abstraction is `toEpochMilli`, so sub-millisecond precision is dropped.
+-   entry .javaLongInstant   a raw `Long` of epoch milliseconds, unchanged in both directions (diuretic)
+-       The identity: the `Long` is already the generic representation.
+-   entry .javaUtilDate   `java.util.Date`, as epoch milliseconds in both directions (diuretic)
++   entry .aviationInstant   aviation の `Instant`。両方向でエポックからのミリ秒として扱う（aviation）
++       任意の `transport` について `(Instant over transport) is Abstractable & Instantiable across Instants to Long from Long` であり、`Instant.generic` から来る。
++   entry .javaTimeInstant   `java.time.Instant`。両方向でエポックからのミリ秒として扱う（diuretic）
++       抽象化は `toEpochMilli` なので、ミリ秒未満の精度は失われる。
++   entry .javaLongInstant   エポックからのミリ秒の生の `Long`。両方向でそのまま（diuretic）
++       恒等変換である。`Long` はすでに汎用表現である。
++   entry .javaUtilDate   `java.util.Date`。両方向でエポックからのミリ秒として扱う（diuretic）
+
+- entry .durationInterfaces   the duration types a time-measuring API may return, each a given to import by name
++ entry .durationInterfaces   時間を測る API が返しうる継続時間の型。それぞれ名前でインポートする given
+
+= entry .durationInterfaces   the duration types a time-measuring API may return, each a given to import by name
+-   detail
++   detail
+
+-       A method bounded `[duration: Instantiable across Durations from Long]` lets the caller
+-       choose the duration type it receives, from a `Long` of nanoseconds.
++       `[duration: Instantiable across Durations from Long]` という境界を持つメソッドは、ナノ秒の `Long` から受け取る継続時間の型を、呼び出し側に選ばせる。
+
+=       choose the duration type it receives, from a `Long` of nanoseconds.
+=
+-       ```scala
++       ```scala
+
+=       choose the duration type it receives, from a `Long` of nanoseconds.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import durationInterfaces.aviationDuration
++       import durationInterfaces.aviationDuration
+
+-       def second[duration: Instantiable across Durations from Long]: duration =
++       def second[duration: Instantiable across Durations from Long]: duration =
+
+-         duration(1_000_000_000L)
++         duration(1_000_000_000L)
+
+-       second[Quantity[Seconds[1]]]
++       second[Quantity[Seconds[1]]]
+
+=       second[Quantity[Seconds[1]]]
+-       ```
++       ```
+
+=       ```
+-   refer anticipation.Durations
++   refer anticipation.Durations
+
+=   refer anticipation.Durations
+-   refer anticipation.abstractables
++   refer anticipation.abstractables
+
+-   entry .aviationDuration   a quantitative `Quantity` of time, as nanoseconds in both directions (aviation)
+-       `Quantity[units] is Abstractable & Instantiable across Durations to Long from Long`, for
+-       any units normalizable to seconds: abstraction normalizes to seconds and scales to
+-       nanoseconds, truncating; instantiation scales back into `units`.
+-   entry .javaLongDuration   a raw `Long` of nanoseconds, unchanged in both directions (diuretic)
+-       The `Long` counts **nanoseconds**, the generic representation, unlike `javaLongInstant`,
+-       whose `Long` counts epoch milliseconds. For a `Long` in another unit, import a reading
+-       from `abstractables` or `instantiables` instead.
++   entry .aviationDuration   時間の quantitative な `Quantity`。両方向でナノ秒として扱う（aviation）
++       秒に正規化できる任意の単位について `Quantity[units] is Abstractable & Instantiable across Durations to Long from Long` である。抽象化は秒に正規化してナノ秒に拡大し、切り捨てる。インスタンス化は `units` へ縮尺を戻す。
++   entry .javaLongDuration   ナノ秒の生の `Long`。両方向でそのまま（diuretic）
++       この `Long` は汎用表現である**ナノ秒**を数える。`Long` がエポックからのミリ秒を数える `javaLongInstant` とは異なる。
++       別の単位の `Long` には、代わりに `abstractables` や `instantiables` から読み方をインポートすること。
+
+- entry .uuidInterfaces   the UUID types a UUID-producing API may return, each a given to import by name
++ entry .uuidInterfaces   UUID を生成する API が返しうる UUID の型。それぞれ名前でインポートする given
+
+= entry .uuidInterfaces   the UUID types a UUID-producing API may return, each a given to import by name
+-   detail
++   detail
+
+-       A method bounded `[uuid: Instantiable across Uuids from Text]` names no concrete type,
+-       so its instance is imported by name.
++       `[uuid: Instantiable across Uuids from Text]` という境界を持つメソッドは具体的な型を名指さないので、そのインスタンスは名前でインポートされる。
+
+=       so its instance is imported by name.
+=
+-       ```scala
++       ```scala
+
+=       so its instance is imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       so its instance is imported by name.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import uuidInterfaces.soundnessUuid
++       import uuidInterfaces.soundnessUuid
+
+-       def parse[uuid: Instantiable across Uuids from Text](text: Text): uuid = uuid(text)
++       def parse[uuid: Instantiable across Uuids from Text](text: Text): uuid = uuid(text)
+
+-       parse[Uuid](t"e3b0c442-98fc-1c14-9afb-f4c8996fb924")
++       parse[Uuid](t"e3b0c442-98fc-1c14-9afb-f4c8996fb924")
+
+=       parse[Uuid](t"e3b0c442-98fc-1c14-9afb-f4c8996fb924")
+-       ```
++       ```
+
+-   refer anticipation.Uuids
++   refer anticipation.Uuids
+
+-   entry .soundnessUuid   inimitable's `Uuid`, parsed from text (inimitable)
+-       Needs a `Tactic[Uuid.Error]`, raised for text which is not a UUID, and captures it.
++   entry .soundnessUuid   inimitable の `Uuid`。テキストからパースされる（inimitable）
++       UUID でないテキストに対して発生する `Tactic[Uuid.Error]` を必要とし、それを捕捉する。
+
+- entry .emailAddressInterfaces   the email-address types an API may return, each a given to import by name
++ entry .emailAddressInterfaces   API が返しうるメールアドレスの型。それぞれ名前でインポートする given
+
+= entry .emailAddressInterfaces   the email-address types an API may return, each a given to import by name
+-   detail
++   detail
+
+-       For a method bounded `[email: Instantiable across EmailAddresses from Text]`, which
+-       names no concrete type whose companion could hold the instance.
++       `[email: Instantiable across EmailAddresses from Text]` という境界を持つメソッドのためのものである。そのようなメソッドは、コンパニオンがインスタンスを保持できる具体的な型を名指さない。
+
+-   refer anticipation.EmailAddresses
++   refer anticipation.EmailAddresses
+
+-   entry .soundnessEmailAddress   urticose's `EmailAddress`, parsed from text (urticose)
+-       Needs a `Tactic[EmailAddress.Error]`, raised for text which is not a valid address, and
+-       captures it.
++   entry .soundnessEmailAddress   urticose の `EmailAddress`。テキストからパースされる（urticose）
++       有効なアドレスでないテキストに対して発生する `Tactic[EmailAddress.Error]` を必要とし、それを捕捉する。
+
+- entry .hostnameInterfaces   the hostname types an API may return, each a given to import by name
++ entry .hostnameInterfaces   API が返しうるホスト名の型。それぞれ名前でインポートする given
+
+= entry .hostnameInterfaces   the hostname types an API may return, each a given to import by name
+-   detail
++   detail
+
+-       For a method bounded `[hostname: Instantiable across Hostnames from Text]`, which names
+-       no concrete type whose companion could hold the instance.
++       `[hostname: Instantiable across Hostnames from Text]` という境界を持つメソッドのためのものである。そのようなメソッドは、コンパニオンがインスタンスを保持できる具体的な型を名指さない。
+
+-   refer anticipation.Hostnames
++   refer anticipation.Hostnames
+
+-   entry .soundnessHostname   urticose's `Hostname`, parsed from text (urticose)
+-       Needs a `Tactic[Hostname.Error]`, raised for text which is not a valid hostname, and
+-       captures it.
++   entry .soundnessHostname   urticose の `Hostname`。テキストからパースされる（urticose）
++       有効なホスト名でないテキストに対して発生する `Tactic[Hostname.Error]` を必要とし、それを捕捉する。
+
+- entry .ipAddressInterfaces   the IP-address types an API may return, each a given to import by name
++ entry .ipAddressInterfaces   API が返しうる IP アドレスの型。それぞれ名前でインポートする given
+
+= entry .ipAddressInterfaces   the IP-address types an API may return, each a given to import by name
+-   detail
++   detail
+
+-       For a method bounded `[ip: Instantiable across IpAddresses from Text]`, which names no
+-       concrete type whose companion could hold the instance. The two givens instantiate
+-       different types, so both may be imported.
++       `[ip: Instantiable across IpAddresses from Text]` という境界を持つメソッドのためのものである。そのようなメソッドは、コンパニオンがインスタンスを保持できる具体的な型を名指さない。
++       二つの given は異なる型をインスタンス化するので、両方をインポートしてよい。
+
+-   refer anticipation.IpAddresses
++   refer anticipation.IpAddresses
+
+-   entry .soundnessIpv4   urticose's `Ipv4`, parsed from dotted-decimal text (urticose)
+-       Needs a `Tactic[IpAddress.Error]`, raised for text which is not an IPv4 address.
+-   entry .soundnessIpv6   urticose's `Ipv6`, parsed from text (urticose)
+-       Needs a `Tactic[IpAddress.Error]`, raised for text which is not an IPv6 address.
++   entry .soundnessIpv4   urticose の `Ipv4`。ドット区切りの十進のテキストからパースされる（urticose）
++       IPv4 アドレスでないテキストに対して発生する `Tactic[IpAddress.Error]` を必要とする。
++   entry .soundnessIpv6   urticose の `Ipv6`。テキストからパースされる（urticose）
++       IPv6 アドレスでないテキストに対して発生する `Tactic[IpAddress.Error]` を必要とする。
+
+- entry .Text   the pure, opaque string type every Soundness library exchanges text as
+-     `Text` is the opaque type `anticipation.internal.Text`, exported here: a `String` at
+-     runtime, with no `String` methods at the type level, and pure, so the capture checker
+-     treats a value of it as capturing nothing. Every Soundness API takes and returns `Text`
+-     rather than `String`, and its operations come from gossamer and the collection
+-     typeclasses rather than from `java.lang.String`.
++ entry .Text   すべての Soundness のライブラリがテキストをやり取りするための、純粋で不透明な文字列の型
++     `Text` は不透明型 `anticipation.internal.Text` であり、ここでエクスポートされる。実行時には `String` であり、型のレベルでは `String` のメソッドを持たず、純粋なので、キャプチャ検査器はその値を何も捕捉しないものとして扱う。
++     すべての Soundness の API は `String` ではなく `Text` を受け取って返し、その操作は `java.lang.String` からではなく、gossamer とコレクションの型クラスから来る。
+
+=     typeclasses rather than from `java.lang.String`.
+=
+-     ```scala
++     ```scala
+
+=     typeclasses rather than from `java.lang.String`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val greeting: Text = t"Hello"
++     val greeting: Text = t"Hello"
+
+-     val legacy: Text = "world".tt
++     val legacy: Text = "world".tt
+
+-     val joined: Text = greeting+t", "+legacy
++     val joined: Text = greeting+t", "+legacy
+
+-     joined.s   // back to a String, for a Java API
++     joined.s   // back to a String, for a Java API
+
+=     joined.s   // back to a String, for a Java API
+-     ```
++     ```
+
+-     A `String` converts implicitly where a `Text` is expected (`Text.conversion`), and `tt`
+-     and `s` convert explicitly. Its companion supplies `+` with `Text` and with `String`,
+-     `*` by an `Int`, the empty text as `Zeroic`, the collection typeclasses (`Traversable by
+-     Char`, `Reshapable`, `Inclusive`, `Reversible`), equality with itself and with
+-     `String`, a `Typeable` so that `case text: Text` matches a `String`, and `ToExpr` and
+-     `FromExpr` for macros. All are in implicit scope; none needs an import.
++     `Text` が期待されるところでは `String` が暗黙に変換され（`Text.conversion`）、`tt` と `s` は明示的に変換する。
++     そのコンパニオンは、`Text` や `String` との `+`、`Int` による `*`、`Zeroic` としての空のテキスト、コレクションの型クラス（`Traversable by Char`、`Reshapable`、`Inclusive`、`Reversible`）、自身および `String` との等価性、`case text: Text` が `String` にマッチするための `Typeable`、そしてマクロのための `ToExpr` と `FromExpr` を提供する。
++     すべては暗黙のスコープにあり、どれもインポートを必要としない。
+
+-     A macro author should know that `Expr(text)` lifts through a quote typed inside
+-     `Text`'s own scope, where the alias is transparent, so the spliced tree is typed as
+-     `String & caps.Pure`; at an expansion site compiled with separation checking that fails
+-     as `Text`. Lift the `String` and convert instead: `'{${Expr(text.s)}.tt}`.
++     マクロの作者は、`Expr(text)` が `Text` 自身のスコープ — そこではエイリアスが透過的である — の中で型付けされたクオートを通じて持ち上げられるので、スプライスされた木が `String & caps.Pure` として型付けされることを知っておくべきである。分離検査を有効にしてコンパイルされた展開箇所では、それは `Text` として失敗する。
++     代わりに `String` を持ち上げてから変換すること：`'{${Expr(text.s)}.tt}`。
+
+- entry .tt   converts a `String` to `Text`: `"…".tt`
+-     The explicit conversion, a runtime no-op. Prefer a `t"…"` literal for constant text.
++ entry .tt   `String` を `Text` に変換する：`"…".tt`
++     明示的な変換であり、実行時には何もしない。
++     定数のテキストには `t"…"` リテラルを使うほうがよい。
+
+- entry .ss   converts a collection of `Text` to a collection of `String`, for Java and stdlib APIs
+-     `texts.ss` maps every element with `Text.s`, as an `Iterable[String]`.
++ entry .ss   `Text` のコレクションを、Java や stdlib の API のために `String` のコレクションに変換する
++     `texts.ss` はすべての要素を `Text.s` で写し、`Iterable[String]` とする。
+
+- entry .subsumes   whether a `Text` contains another as a substring
+-     `text.subsumes(t"lo")` is substring containment through `String.indexOf`, with no
+-     traversal and no interim collections, which is why it is a separate extension from the
+-     generic collection `subsumes` (still importable as `murmuration.subsumes`).
++ entry .subsumes   `Text` が別のものを部分文字列として含むかどうか
++     `text.subsumes(t"lo")` は `String.indexOf` による部分文字列の包含判定であり、走査も中間のコレクションもない。これが、汎用のコレクションの `subsumes`（`murmuration.subsumes` として今もインポートできる）とは別の拡張メソッドである理由である。
+
+=     generic collection `subsumes` (still importable as `murmuration.subsumes`).
+=
+-     ```scala
++     ```scala
+
+=     generic collection `subsumes` (still importable as `murmuration.subsumes`).
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"Hello".subsumes(t"ell")   // true
++     t"Hello".subsumes(t"ell")   // true
+
+=     t"Hello".subsumes(t"ell")   // true
+-     ```
++     ```
+
+- entry .Textualizable   a typeclass converting a value to `Text`, for APIs which take anything textual
++ entry .Textualizable   値を `Text` に変換する型クラス。テキストとして扱えるものなら何でも受け取る API のためのもの
+
+= entry .Textualizable   a typeclass converting a value to `Text`, for APIs which take anything textual
+-   detail
++   detail
+
+-       `value is Textualizable` provides the extension `#textual`, so an API can accept any
+-       value with a canonical textual form without depending on the library that defines it.
+-       Unlike `Showable`, which renders for a human, a `Textualizable` value *is* text in
+-       another guise.
+-   entry #convert   the value as `Text`
+-   entry #textual   the value as `Text`: `value.textual`
+-   entry #contramap   an instance for another type, by first mapping it to this one
++       `value is Textualizable` は拡張メソッド `#textual` を提供するので、API は、正規のテキスト形式を持つ任意の値を、それを定義するライブラリに依存せずに受け入れられる。
++       人間のために描画する `Showable` とは異なり、`Textualizable` な値は、別の姿をしたテキスト*そのもの*である。
++   entry #convert   `Text` としての値
++   entry #textual   `Text` としての値：`value.textual`
++   entry #contramap   別の型のためのインスタンス。まずそれをこの型に写すことで作る
+
+- entry .Durable   the classifier of shared capabilities which may be retained across a thread boundary
+-     A capture-checking classifier (a `caps.SharedCapability`) for monitors, running
+-     processes, connections, channels, loggers and log sinks. A task's body runs on another
+-     thread and is retained by a worker, so it is typed `->{caps.any.only[Durable]}`: it may
+-     capture `Durable` capabilities but not, for example, a `Tactic`, which is a
+-     `caps.Control` capability holding a return point on its installer's stack. A task
+-     raises only through its own tactic.
++ entry .Durable   スレッドの境界を越えて保持してよい共有ケイパビリティの分類子
++     モニター、実行中のプロセス、接続、チャンネル、ロガー、ログのシンクのための、キャプチャ検査の分類子（`caps.SharedCapability`）である。
++     タスクの本体は別のスレッドで実行され、ワーカーに保持されるので、`->{caps.any.only[Durable]}` と型付けされる。`Durable` なケイパビリティは捕捉してよいが、たとえば `Tactic` は捕捉できない。`Tactic` は、それを設置した者のスタック上の戻り地点を保持する `caps.Control` ケイパビリティだからである。
++     タスクは自身の戦術を通じてだけエラーを発生させる。
+
+-     A library declares its own long-lived capability by extending `Durable`; one meant to
+-     be ambient is provided by a given that is a *value* (or an object), not a polymorphic
+-     method, since a value is a static capability visible from every level.
++     ライブラリは、`Durable` を継承することで自身の長寿命のケイパビリティを宣言する。アンビエントであることを意図したものは、多相的なメソッドではなく*値*（またはオブジェクト）である given によって提供される。値は、どのレベルからも見える静的なケイパビリティだからである。
+
+- entry .Bidi   the reading direction of a positional operation: from the start or from the end
+-     An enum with the cases `Ltr`, which anchors at the start, and `Rtl`, which anchors at
+-     the end. It is the vocabulary of the generic positional operations (`keep`, `skip`,
+-     `snip`) on collections and on text, so that both share one type.
++ entry .Bidi   位置に基づく操作の読む向き：先頭からか末尾からか
++     ケース `Ltr`（先頭を基準にする）と `Rtl`（末尾を基準にする）を持つ列挙型である。
++     これはコレクションとテキストに対する汎用の位置に基づく操作（`keep`、`skip`、`snip`）の語彙であり、両者が一つの型を共有するためのものである。
+
+=     `snip`) on collections and on text, so that both share one type.
+=
+-     ```scala
++     ```scala
+
+=     `snip`) on collections and on text, so that both share one type.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"filename.txt".keep(3, Bidi.Rtl)   // t"txt"
++     t"filename.txt".keep(3, Bidi.Rtl)   // t"txt"
+
+=     t"filename.txt".keep(3, Bidi.Rtl)   // t"txt"
+-     ```
++     ```
+
+-     `Ltr` is the default wherever a direction is optional. The umbrella exports `Bidi`
+-     through gossamer.
++     向きが省略可能なところでは、どこでも `Ltr` がデフォルトである。
++     アンブレラは `Bidi` を gossamer を通じてエクスポートする。
+
+- entry .internal   the home of the opaque `Text` type and its companion instances
++ entry .internal   不透明な `Text` 型とそのコンパニオンのインスタンスの置き場所
+
+= entry .internal   the home of the opaque `Text` type and its companion instances
+-   hidden
++   hidden
+
+= entry .internal   the home of the opaque `Text` type and its companion instances
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `Text` is exported from here to the `anticipation` package, and its
+-       page there has the full account.
+-   entry .Text   the opaque string type; see `anticipation.Text`
++       直接使うためのものではない。`Text` はここから `anticipation` パッケージへエクスポートされ、そこにあるページに詳しい説明がある。
++   entry .Text   不透明な文字列の型。`anticipation.Text` を参照
+
+=   entry .Text   the opaque string type; see `anticipation.Text`
+-     detail
++     detail
+
+-         The opaque type `Text <: Matchable & caps.Pure`, a `String` at runtime. Its
+-         companion holds the instances which make it a first-class text type.
+-     entry .apply   makes `Text` from a `String`, an array of characters or an array of ASCII bytes
+-         Bytes are decoded as US-ASCII; for another charset use a decoder.
+-     entry .s   the `Text` as a `String`: `text.s`
+-     entry .zeroic   the empty text as `Text`'s zero
+-     entry .concatenable   `text+text`, concatenating two `Text`s
+-     entry .addableString   `text+string`, appending a `String` to a `Text`
+-     entry .multiplicable   `text*n`, repeating a `Text` `n` times; a negative count gives the empty text
+-     entry .fromString   lets a `@main` method take `Text` parameters from the command line
+-     entry .traversable   traverses a `Text` as its `Char`s
+-     entry .reshapable   rebuilds a `Text` from a traversal of `Char`s
+-     entry .inclusive   whether a `Text` contains a `Char`
+-     entry .convertible   collects any traversal of `Char`s into a `Text`
+-     entry .reversible   reverses a `Text`, keeping surrogate pairs intact
+-     entry .fromExpr   reads a constant `Text` from a macro's `Expr`
+-     entry .toExpr   lifts a `Text` into a macro's `Expr`
+-         The lifted tree is typed as `String & caps.Pure`; under separation checking at the
+-         expansion site, lift the `String` and convert with `.tt` instead.
+-     entry .conversion   converts a `String` to `Text` wherever a `Text` is expected
+-     entry .canEqual   permits `==` between two `Text`s under strict equality
+-     entry .canEqual2   permits `==` between a `String` and a `Text` under strict equality
+-     entry .canEqual3   permits `==` between a `Text` and a `String` under strict equality
+-     entry .typeable   lets a pattern `case text: Text` match any `String`
++         不透明型 `Text <: Matchable & caps.Pure` であり、実行時には `String` である。
++         そのコンパニオンは、これを第一級のテキストの型にするインスタンスを保持する。
++     entry .apply   `String`、文字の配列、ASCII のバイトの配列から `Text` を作る
++         バイトは US-ASCII としてデコードされる。他の文字セットにはデコーダーを使うこと。
++     entry .s   `String` としての `Text`：`text.s`
++     entry .zeroic   `Text` のゼロとしての空のテキスト
++     entry .concatenable   `text+text`。二つの `Text` を連結する
++     entry .addableString   `text+string`。`Text` に `String` を付け加える
++     entry .multiplicable   `text*n`。`Text` を `n` 回繰り返す。負の回数は空のテキストを与える
++     entry .fromString   `@main` メソッドがコマンドラインから `Text` のパラメーターを受け取れるようにする
++     entry .traversable   `Text` をその `Char` として走査する
++     entry .reshapable   `Char` の走査から `Text` を組み立て直す
++     entry .inclusive   `Text` が `Char` を含むかどうか
++     entry .convertible   `Char` の任意の走査を `Text` に集める
++     entry .reversible   サロゲートペアを壊さずに `Text` を反転する
++     entry .fromExpr   マクロの `Expr` から定数の `Text` を読む
++     entry .toExpr   `Text` をマクロの `Expr` に持ち上げる
++         持ち上げられた木は `String & caps.Pure` として型付けされる。展開箇所で分離検査が有効な場合は、代わりに `String` を持ち上げて `.tt` で変換すること。
++     entry .conversion   `Text` が期待されるところではどこでも `String` を `Text` に変換する
++     entry .canEqual   厳密な等価性のもとで、二つの `Text` の間の `==` を許可する
++     entry .canEqual2   厳密な等価性のもとで、`String` と `Text` の間の `==` を許可する
++     entry .canEqual3   厳密な等価性のもとで、`Text` と `String` の間の `==` を許可する
++     entry .typeable   パターン `case text: Text` が任意の `String` にマッチするようにする
+
+- entry .Data   immutable bytes: an `Array[Byte]` which captures nothing
++ entry .Data   不変のバイト列：何も捕捉しない `Array[Byte]`
+
+= entry .Data   immutable bytes: an `Array[Byte]` which captures nothing
+-   detail
++   detail
+
+-       `Data` is the type alias `Array[Byte]^{}`, the byte sequence every Soundness library
+-       reads, writes, hashes and encodes. It is built with `apply`, `.build` or `.fill`, and
+-       a block whose length is a literal is branded `Sized[n]`.
++       `Data` は型エイリアス `Array[Byte]^{}` であり、すべての Soundness のライブラリが読み、書き、ハッシュし、エンコードするバイト列である。
++       `apply`、`.build`、`.fill` で作られ、長さがリテラルであるブロックには `Sized[n]` のブランドが付く。
+
+=       a block whose length is a literal is branded `Sized[n]`.
+=
+-       ```scala
++       ```scala
+
+=       a block whose length is a literal is branded `Sized[n]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val header: Data = Data(0x50, 0x4b, 0x03, 0x04)
++       val header: Data = Data(0x50, 0x4b, 0x03, 0x04)
+
+-       val zeros = Data.fill(16)(_ => 0)
++       val zeros = Data.fill(16)(_ => 0)
+
+=       val zeros = Data.fill(16)(_ => 0)
+-       ```
++       ```
+
+-   refer anticipation.Encodable
++   refer anticipation.Encodable
+
+-   refer anticipation.bytestream
++   refer anticipation.bytestream
+
+-   entry .apply   `Data` from the bytes given
+-   entry .build   `Data` of a given length, filled in by a function writing into a fresh array
+-       `Data.build(n)(array => …)` allocates an `n`-byte array, passes it to the function to
+-       populate, and returns it frozen. With a literal length the result is branded
+-       `Data & Sized[n]`; with a non-literal one it is plain `Data`.
+-   entry .fill   `Data` of a given length, each byte computed from its index
+-       With a literal length the result is branded `Data & Sized[n]`.
++   entry .apply   与えられたバイトからなる `Data`
++   entry .build   与えられた長さの `Data`。新しい配列に書き込む関数によって埋められる
++       `Data.build(n)(array => …)` は `n` バイトの配列を確保し、それを埋めるために関数に渡し、凍結して返す。
++       長さがリテラルなら、結果には `Data & Sized[n]` のブランドが付く。リテラルでなければ普通の `Data` である。
++   entry .fill   与えられた長さの `Data`。各バイトはそのインデックスから計算される
++       長さがリテラルなら、結果には `Data & Sized[n]` のブランドが付く。
+
+- entry .Encodable   a typeclass encoding a value into a named format, `value.in[Format]`
++ entry .Encodable   値を名前付きの形式にエンコードする型クラス。`value.in[Format]`
+
+= entry .Encodable   a typeclass encoding a value into a named format, `value.in[Format]`
+-   detail
++   detail
+
+-       `value is Encodable in Form` says that `value` can be encoded as a `Form`: `Text`,
+-       `Data`, `Json`, `Xml`, a binary protocol, or any carrier type a codec library defines.
+-       Encoding is a value-level operation, `value.in[Json]` (`in`), and `#encode` where the
+-       instance is in hand. Codec libraries provide instances, often derived, in their format's
+-       companion.
++       `value is Encodable in Form` は、`value` を `Form` としてエンコードできることを表す。`Form` は `Text`、`Data`、`Json`、`Xml`、バイナリのプロトコル、あるいはコーデックのライブラリが定義する任意のキャリアの型である。
++       エンコードは値のレベルの操作 `value.in[Json]`（`in`）であり、インスタンスが手元にあるところでは `#encode` である。
++       コーデックのライブラリは、しばしば導出されたインスタンスを、その形式のコンパニオンに提供する。
+
+=       companion.
+=
+-       ```scala
++       ```scala
+
+=       companion.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       42.in[Text]   // t"42"
++       42.in[Text]   // t"42"
+
+=       42.in[Text]   // t"42"
+-       ```
++       ```
+
+-       The companion gives the primitives as `Text` (their `toString`), `Data` as itself, and
+-       a `Long` as its eight big-endian bytes. `Encodable` is a tracked typeclass: an instance
+-       derived from codecs which raise retains their `Tactic`.
++       コンパニオンは、プリミティブを `Text`（その `toString`）として、`Data` をそれ自身として、`Long` をビッグエンディアンの 8 バイトとして与える。
++       `Encodable` は追跡される型クラスである。エラーを発生させるコーデックから導出されたインスタンスは、その `Tactic` を保持する。
+
+-   refer anticipation.in
++   refer anticipation.in
+
+-   refer anticipation.Schematic
++   refer anticipation.Schematic
+
+-   entry .bytes   `Data` encodes in `Data` as itself
+-   entry .sizedBytes   `Data & Sized[n]` encodes in `Data` as itself
+-   entry .longData   a `Long` encodes in `Data` as its eight bytes, big-endian
+-   entry .int   an `Int` encodes in `Text` as its decimal form
+-   entry .double   a `Double` encodes in `Text` by `toString`
+-   entry .byte   a `Byte` encodes in `Text` as its decimal form
+-   entry .short   a `Short` encodes in `Text` as its decimal form
+-   entry .long   a `Long` encodes in `Text` as its decimal form
+-   entry .float   a `Float` encodes in `Text` by `toString`
+-   entry .text   `Text` encodes in `Text` as itself
+-   entry .char   a `Char` encodes in `Text` as a one-character text
+-   entry .string   a `String` encodes in `Text` as the same text
+-   entry #encoded   encodes a value into the format
+-   entry #encode   encodes a value into the format: `value.encode`
+-   entry #contramap   an instance for another type, by first mapping it to this one
+-       The result captures this instance and the function.
++   entry .bytes   `Data` は `Data` においてそれ自身としてエンコードされる
++   entry .sizedBytes   `Data & Sized[n]` は `Data` においてそれ自身としてエンコードされる
++   entry .longData   `Long` は `Data` においてビッグエンディアンの 8 バイトとしてエンコードされる
++   entry .int   `Int` は `Text` において十進の形式としてエンコードされる
++   entry .double   `Double` は `Text` において `toString` によってエンコードされる
++   entry .byte   `Byte` は `Text` において十進の形式としてエンコードされる
++   entry .short   `Short` は `Text` において十進の形式としてエンコードされる
++   entry .long   `Long` は `Text` において十進の形式としてエンコードされる
++   entry .float   `Float` は `Text` において `toString` によってエンコードされる
++   entry .text   `Text` は `Text` においてそれ自身としてエンコードされる
++   entry .char   `Char` は `Text` において一文字のテキストとしてエンコードされる
++   entry .string   `String` は `Text` において同じテキストとしてエンコードされる
++   entry #encoded   値をその形式にエンコードする
++   entry #encode   値をその形式にエンコードする：`value.encode`
++   entry #contramap   別の型のためのインスタンス。まずそれをこの型に写すことで作る
++       結果はこのインスタンスと関数を捕捉する。
+
+- entry .in   encodes a value into the named format: `value.in[Json]`
+-     The value-level counterpart of `value is Encodable in Format`. It replaces both
+-     `.encode`, whose format is implicit in the instance found, and per-format shorthands such
+-     as `.json`, naming the target format at the call.
++ entry .in   値を名前付きの形式にエンコードする：`value.in[Json]`
++     `value is Encodable in Format` に対応する値のレベルの操作である。
++     形式が見つかったインスタンスに暗黙に含まれる `.encode` と、`.json` のような形式ごとの省略形の両方に代わり、呼び出し箇所で対象の形式を名指す。
+
+=     as `.json`, naming the target format at the call.
+=
+-     ```scala
++     ```scala
+
+=     as `.json`, naming the target format at the call.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val text: Text = 42.in[Text]
++     val text: Text = 42.in[Text]
+
+-     val bytes: Data = 42L.in[Data]
++     val bytes: Data = 42L.in[Data]
+
+=     val bytes: Data = 42L.in[Data]
+-     ```
++     ```
+
+- entry .bytestream   a value as bytes, through its `Encodable in Data` instance
+-     `value.bytestream` is `value.in[Data]`.
++ entry .bytestream   `Encodable in Data` インスタンスを通じた、バイト列としての値
++     `value.bytestream` は `value.in[Data]` である。
+
+- entry .Schematic   a typeclass giving the schema of a value's encoding, in a chosen schema representation
++ entry .Schematic   選んだスキーマ表現で、値のエンコードのスキーマを与える型クラス
+
+= entry .Schematic   a typeclass giving the schema of a value's encoding, in a chosen schema representation
+-   detail
++   detail
+
+-       `value is Schematic over JsonSchema` provides `#schema`, the schema of the value's
+-       encoding in the `Transport` representation (`JsonSchema` in jacinta, `Tels.Type` in
+-       stratiform). It is the sibling of `Encodable`, and the two are commonly required
+-       together, as `Encodable & Schematic in Json over JsonSchema`, so that a value's
+-       encoding and its schema come from the same derivation. Format-specific instances live
+-       with their format.
++       `value is Schematic over JsonSchema` は `#schema` を提供する。これは `Transport` の表現（jacinta では `JsonSchema`、stratiform では `Tels.Type`）での、値のエンコードのスキーマである。
++       これは `Encodable` の兄弟であり、値のエンコードとそのスキーマが同じ導出から来るよう、二つは `Encodable & Schematic in Json over JsonSchema` のようにしばしば一緒に要求される。
++       形式に固有のインスタンスは、その形式とともにある。
+
+-   refer anticipation.Morphology
++   refer anticipation.Morphology
+
+-   entry #schema   the schema, in the `Transport` representation
++   entry #schema   `Transport` の表現でのスキーマ
+
+- entry .Schema   a typeclass for a schema type which parses text into a typed form
++ entry .Schema   テキストを型付きの形式にパースするスキーマの型のための型クラス
+
+= entry .Schema   a typeclass for a schema type which parses text into a typed form
+-   detail
++   detail
+
+-       A schema whose `Form` has a `Topic` type member: `#parse` reads a document as text into
+-       a `Form of Topic`, typed by the schema.
+-   entry #Form   the parsed form, refined with a `Topic` type member
+-   entry #parse   parses a lazy chain of text into the schema's typed form
++       `Form` が `Topic` 型メンバーを持つスキーマである。`#parse` は文書をテキストとして読み、スキーマによって型付けされた `Form of Topic` にする。
++   entry #Form   `Topic` 型メンバーで細分化された、パースされた形式
++   entry #parse   テキストの遅延的な連なりを、スキーマの型付きの形式にパースする
+
+- entry .Morphology   the format-neutral shape of an encoding, carried by a codec beside its schema
++ entry .Morphology   コーデックがスキーマとともに運ぶ、形式に依存しないエンコードの形
+
+= entry .Morphology   the format-neutral shape of an encoding, carried by a codec beside its schema
+-   detail
++   detail
+
+-       A codec (jacinta's `Json.Encodable`, stratiform's TEL codecs) carries the morphology of
+-       the values it encodes, so that the codec and the schema derived from it are coherent by
+-       construction; the morphology is then reified into a format-specific schema, a
+-       `JsonSchema` or a `Tels.Type`, downstream. It records structure only; descriptions,
+-       formats and bounds belong to each format's own schema.
++       コーデック（jacinta の `Json.Encodable`、stratiform の TEL のコーデック）は、エンコードする値の形態を運ぶので、コーデックとそこから導出されたスキーマは構造上一貫する。形態はその後、下流で、`JsonSchema` や `Tels.Type` のような形式に固有のスキーマへと具体化される。
++       これは構造だけを記録する。説明、フォーマット、範囲は、各形式自身のスキーマに属する。
+
+-       The leaf cases are `Str` (a string), `Whole` (an integer), `Real` (a fractional
+-       number), `Bool`, `Empty` (null or unit) and `Any` (unconstrained); the compound ones
+-       follow.
++       葉のケースは `Str`（文字列）、`Whole`（整数）、`Real`（小数を含む数）、`Bool`、`Empty`（null または unit）、`Any`（制約なし）であり、複合のケースは次のとおりである。
+
+=       follow.
+=
+-       ```scala
++       ```scala
+
+=       follow.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val person = Morphology.Obj(List(t"name" -> Morphology.Str, t"age" -> Morphology.Whole),
++       val person = Morphology.Obj(List(t"name" -> Morphology.Str, t"age" -> Morphology.Whole),
+
+-           List(t"name", t"age"))
++           List(t"name", t"age"))
+
+=           List(t"name", t"age"))
+-       ```
++       ```
+
+-   entry #optional   whether a value of this shape may be absent: true only for `Opt`
+-       Used to compute which fields of a record are required.
+-   entry .Opt   an optional value of a shape
+-     entry #shape   the shape when present
+-   entry .Arr   a homogeneous sequence
+-     entry #items   the shape of each element
+-   entry .Dict   a map of arbitrary keys to values
+-     entry #key     the shape of the keys
+-     entry #value   the shape of the values
+-   entry .Obj   a record of named fields, with those which are required
+-     entry #fields     the fields' names and shapes, in order
+-     entry #required   the names of the fields which must be present
+-   entry .OneOf   a tagged disjunction of shapes
+-     entry #variants   the shape of each variant
++   entry #optional   この形の値が存在しなくてもよいかどうか：`Opt` の場合だけ真
++       レコードのどのフィールドが必須かを計算するのに使われる。
++   entry .Opt   ある形の、オプショナルな値
++     entry #shape   存在するときの形
++   entry .Arr   同種の要素の列
++     entry #items   各要素の形
++   entry .Dict   任意のキーから値への写像
++     entry #key     キーの形
++     entry #value   値の形
++   entry .Obj   名前付きのフィールドからなるレコード。必須のものを伴う
++     entry #fields     フィールドの名前と形。順番どおり
++     entry #required   存在しなければならないフィールドの名前
++   entry .OneOf   形のタグ付きの選言
++     entry #variants   各バリアントの形
+
+- entry .Underlying   erased evidence that an opaque type is represented by a primitive
+-     `Underlying[Alias, Primitive]` is declared, erased, in an opaque type's companion (as
+-     `Chroma` declares `Underlying[Chroma, Int]`) to permit `underlying`, which views a value
+-     of the alias as its representation at no cost. It is sealed and has no runtime value.
++ entry .Underlying   不透明型がプリミティブによって表現されているという、消去された証拠
++     `Underlying[Alias, Primitive]` は、不透明型のコンパニオンに消去された形で宣言され（`Chroma` が `Underlying[Chroma, Int]` を宣言するように）、エイリアスの値をコストなしにその表現として見る `underlying` を許可する。
++     これはシールされており、実行時の値を持たない。
+
+- entry .underlying   views an opaque value as its primitive representation, where the alias permits it
+-     `value.underlying[Int]` compiles only where an erased `Underlying[Alias, Int]` is in
+-     scope, and is a cast with no runtime cost.
++ entry .underlying   エイリアスが許す場合に、不透明な値をそのプリミティブの表現として見る
++     `value.underlying[Int]` は、消去された `Underlying[Alias, Int]` がスコープにある場合にのみコンパイルでき、実行時のコストのないキャストである。
+
+- entry .Log   logs an event at one of four levels, and names the categories an event may belong to
++ entry .Log   四つのレベルのいずれかでイベントをログに記録し、イベントが属し得るカテゴリーを名指す
+
+= entry .Log   logs an event at one of four levels, and names the categories an event may belong to
+-   detail
++   detail
+
+-       `Log.fine`, `Log.info`, `Log.warn` and `Log.fail` log a value through the `Loggable`
+-       instance in scope, which `Loggable.fanOut` derives in implicit scope from every
+-       `LogSink` present. The argument is taken by name and the level is checked first, so
+-       when no sink accepts the level, including when there is no sink at all, the value is
+-       never constructed: a disabled log statement costs nothing and needs no guard.
++       `Log.fine`、`Log.info`、`Log.warn`、`Log.fail` は、スコープにある `Loggable` のインスタンスを通じて値をログに記録する。そのインスタンスは、存在するすべての `LogSink` から `Loggable.fanOut` が暗黙のスコープで導出する。
++       引数は名前渡しで受け取られ、レベルが先に検査されるので、そのレベルを受け付けるシンクがないとき（シンクがまったくない場合も含む）、値は構築されない。無効になったログ文はコストがかからず、ガードも要らない。
+
+=       never constructed: a disabled log statement costs nothing and needs no guard.
+=
+-       ```scala
++       ```scala
+
+=       never constructed: a disabled log statement costs nothing and needs no guard.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def report(remote: Text): Unit =
++       def report(remote: Text): Unit =
+
+-         Log.fine(m"starting...")
++         Log.fine(m"starting...")
+
+-         Log.info(m"connected to $remote")
++         Log.info(m"connected to $remote")
+
+=         Log.info(m"connected to $remote")
+-       ```
++       ```
+
+-       A library declares that a method logs its own event type with `logs`, as in `Long logs
+-       Backup.Event`.
++       ライブラリは、メソッドが独自のイベント型をログに記録することを `logs` で宣言する。`Long logs Backup.Event` のようにである。
+
+-       The object also holds a growable vocabulary of **categories** describing the nature of
+-       an event: an event type, or one of its enum cases, mixes in one or more of the marker
+-       traits (`Log.Network`, `Log.Filesystem`, …), and a sink configured with a set of
+-       `Log.Category` values (such as eucalyptus's `Logger(…, categories = Set(Log.Network))`)
+-       records only events whose runtime type mixes one in. Each trait is paired with an
+-       object of the same name, the `Category` value carrying its runtime class. The filter
+-       crosses libraries, so every library's network events can be selected at once.
++       このオブジェクトは、イベントの性質を表す**カテゴリー**の拡張可能な語彙も保持する。イベント型、あるいはその列挙型のケースの一つは、一つ以上のマーカートレイト（`Log.Network`、`Log.Filesystem`、…）をミックスインし、`Log.Category` の値の集合で設定されたシンク（eucalyptus の `Logger(…, categories = Set(Log.Network))` など）は、実行時の型がそのいずれかをミックスインしているイベントだけを記録する。
++       各トレイトは同じ名前のオブジェクトと対になっており、そのオブジェクトが実行時のクラスを持つ `Category` の値である。
++       このフィルターはライブラリをまたぐので、すべてのライブラリのネットワークのイベントを一度に選べる。
+
+=       crosses libraries, so every library's network events can be selected at once.
+=
+-       ```scala
++       ```scala
+
+=       crosses libraries, so every library's network events can be selected at once.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       enum Fetch:
++       enum Fetch:
+
+-         case Requested(url: Text) extends Fetch, Log.Network
++         case Requested(url: Text) extends Fetch, Log.Network
+
+-         case Cached(url: Text) extends Fetch, Log.Network, Log.Cache
++         case Cached(url: Text) extends Fetch, Log.Network, Log.Cache
+
+=         case Cached(url: Text) extends Fetch, Log.Network, Log.Cache
+-       ```
++       ```
+
+=       ```
+-   refer anticipation.Loggable
++   refer anticipation.Loggable
+
+=   refer anticipation.Loggable
+-   refer anticipation.LogSink
++   refer anticipation.LogSink
+
+=   refer anticipation.LogSink
+-   refer anticipation.logs
++   refer anticipation.logs
+
+-   entry .fine   logs a value at `Log.Level.Fine`: high-frequency detail, useful while debugging
+-   entry .info   logs a value at `Log.Level.Info`: one line per significant operation
+-   entry .warn   logs a value at `Log.Level.Warn`: a recoverable or unexpected-but-handled condition
+-   entry .fail   logs a value at `Log.Level.Fail`: an operation which failed unrecoverably
+-   entry .Category   a category of log event, carrying the runtime class of its marker trait
++   entry .fine   値を `Log.Level.Fine` で記録する。頻度の高い詳細で、デバッグ中に役立つ
++   entry .info   値を `Log.Level.Info` で記録する。重要な操作ごとに一行
++   entry .warn   値を `Log.Level.Warn` で記録する。回復可能な、あるいは予期しないが処理された状況
++   entry .fail   値を `Log.Level.Fail` で記録する。回復不能な形で失敗した操作
++   entry .Category   ログイベントのカテゴリー。そのマーカートレイトの実行時のクラスを持つ
+
+=   entry .Category   a category of log event, carrying the runtime class of its marker trait
+-     detail
++     detail
+
+-         Each category is an object paired with a marker trait of the same name; a sink
+-         tests an event against a category with `#reference`, at runtime, since the call site
+-         knows only the event's general type.
+-     entry #reference   the runtime class of the category's marker trait
+-   entry .Memory   events about memory use and allocation, as a marker trait and its `Category`
+-   entry .Cpu   events about processor use, as a marker trait and its `Category`
+-   entry .Threading   events about threads, tasks and their scheduling, as a marker trait and its `Category`
+-   entry .Process   events about operating-system processes, as a marker trait and its `Category`
+-   entry .Filesystem   events about files and directories, as a marker trait and its `Category`
+-   entry .Disk   events about storage devices and volumes, as a marker trait and its `Category`
+-   entry .Network   events about network connections and traffic, as a marker trait and its `Category`
+-   entry .Database   events about database access, as a marker trait and its `Category`
+-   entry .Cache   events about caching, hits and evictions, as a marker trait and its `Category`
+-   entry .Serialization   events about encoding and decoding, as a marker trait and its `Category`
+-   entry .Crypto   events about cryptographic operations, as a marker trait and its `Category`
+-   entry .Auth   events about authentication and authorization, as a marker trait and its `Category`
+-   entry .Configuration   events about reading configuration, as a marker trait and its `Category`
+-   entry .Dependency   events about resolving dependencies, as a marker trait and its `Category`
+-   entry .Scheduler   events about scheduled and periodic work, as a marker trait and its `Category`
+-   entry .Time   events about clocks and timing, as a marker trait and its `Category`
+-   entry .Ui   events about the user interface, as a marker trait and its `Category`
+-   entry .Protocol   events about protocol messages and handshakes, as a marker trait and its `Category`
+-   entry .Compiler   events about compilation, as a marker trait and its `Category`
+-   entry .Runtime   events about the runtime environment, such as loading code, as a marker trait and its `Category`
+-   entry .Gc   events about garbage collection, as a marker trait and its `Category`
+-   entry .Resource   events about reading bundled resources, as a marker trait and its `Category`
+-   entry .Security   events about security-relevant conditions, as a marker trait and its `Category`
++         各カテゴリーは同じ名前のマーカートレイトと対になったオブジェクトである。呼び出し箇所はイベントの一般的な型しか知らないので、シンクは `#reference` によって実行時に、イベントをカテゴリーに照らして検査する。
++     entry #reference   カテゴリーのマーカートレイトの実行時のクラス
++   entry .Memory   メモリーの使用とアロケーションについてのイベント。マーカートレイトとその `Category`
++   entry .Cpu   プロセッサーの使用についてのイベント。マーカートレイトとその `Category`
++   entry .Threading   スレッド、タスク、そのスケジューリングについてのイベント。マーカートレイトとその `Category`
++   entry .Process   オペレーティングシステムのプロセスについてのイベント。マーカートレイトとその `Category`
++   entry .Filesystem   ファイルとディレクトリーについてのイベント。マーカートレイトとその `Category`
++   entry .Disk   ストレージデバイスとボリュームについてのイベント。マーカートレイトとその `Category`
++   entry .Network   ネットワークの接続と通信についてのイベント。マーカートレイトとその `Category`
++   entry .Database   データベースへのアクセスについてのイベント。マーカートレイトとその `Category`
++   entry .Cache   キャッシュ、ヒット、追い出しについてのイベント。マーカートレイトとその `Category`
++   entry .Serialization   エンコードとデコードについてのイベント。マーカートレイトとその `Category`
++   entry .Crypto   暗号の操作についてのイベント。マーカートレイトとその `Category`
++   entry .Auth   認証と認可についてのイベント。マーカートレイトとその `Category`
++   entry .Configuration   設定の読み込みについてのイベント。マーカートレイトとその `Category`
++   entry .Dependency   依存関係の解決についてのイベント。マーカートレイトとその `Category`
++   entry .Scheduler   予定された作業や定期的な作業についてのイベント。マーカートレイトとその `Category`
++   entry .Time   時計とタイミングについてのイベント。マーカートレイトとその `Category`
++   entry .Ui   ユーザーインターフェースについてのイベント。マーカートレイトとその `Category`
++   entry .Protocol   プロトコルのメッセージとハンドシェイクについてのイベント。マーカートレイトとその `Category`
++   entry .Compiler   コンパイルについてのイベント。マーカートレイトとその `Category`
++   entry .Runtime   コードの読み込みなど、実行時環境についてのイベント。マーカートレイトとその `Category`
++   entry .Gc   ガベージコレクションについてのイベント。マーカートレイトとその `Category`
++   entry .Resource   同梱されたリソースの読み込みについてのイベント。マーカートレイトとその `Category`
++   entry .Security   セキュリティに関わる状況についてのイベント。マーカートレイトとその `Category`
+
+-   entry .Level   the severity of a log event: `Fine`, `Info`, `Warn` or `Fail`
++   entry .Level   ログイベントの重大度：`Fine`、`Info`、`Warn`、`Fail`
+
+=   entry .Level   the severity of a log event: `Fine`, `Info`, `Warn` or `Fail`
+-     detail
++     detail
+
+-         An enum, ordered from least to most severe. `Fine` is high-frequency detail, normally
+-         switched off; `Info` one line per significant operation; `Warn` a recoverable or
+-         unexpected-but-handled condition; `Fail` an operation which failed unrecoverably,
+-         logged beside the error being raised. A sink's threshold (`LogSink#accepts`) drops
+-         everything below a chosen level, as eucalyptus's `Logger(Out, level = Log.Level.Warn)` does.
+-     entry .comparable   orders levels by severity, from `Fine` to `Fail`
++         最も軽いものから最も重いものへと順序付けられた列挙型である。
++         `Fine` は頻度の高い詳細で、通常は無効にされる。`Info` は重要な操作ごとに一行である。`Warn` は回復可能な、あるいは予期しないが処理された状況である。`Fail` は回復不能な形で失敗した操作で、発生させるエラーと並べて記録される。
++         シンクのしきい値（`LogSink#accepts`）は、eucalyptus の `Logger(Out, level = Log.Level.Warn)` のように、選んだレベルより下のものをすべて捨てる。
++     entry .comparable   レベルを重大度で、`Fine` から `Fail` へと順序付ける
+
+- entry .Loggable   a typeclass logging events of one type, derived from the sinks in scope
++ entry .Loggable   ある型のイベントをログに記録する型クラス。スコープにあるシンクから導出される
+
+= entry .Loggable   a typeclass logging events of one type, derived from the sinks in scope
+-   detail
++   detail
+
+-       `event is Loggable` is what `Log.info` and its siblings need. It is rarely written by
+-       hand: `.fanOut`, in implicit scope, derives one by transcribing the event once to each
+-       sink's carrier type (`Transcribable`) and fanning it out to every `LogSink` in scope,
+-       so several sinks in scope each receive every event, each applying its own threshold.
+-       With no sink in scope the derived instance is silent. An explicitly imported instance
+-       outranks the derived one: `import logging.silentLogging`, from eucalyptus, suppresses
+-       all logging in a file.
++       `event is Loggable` は、`Log.info` とその仲間が必要とするものである。
++       手で書くことはまれである。暗黙のスコープにある `.fanOut` が、イベントを各シンクのキャリア型へ一度だけ転記し（`Transcribable`）、スコープにあるすべての `LogSink` へファンアウトすることで導出する。このため、スコープにあるいくつものシンクがそれぞれすべてのイベントを受け取り、それぞれが独自のしきい値を適用する。
++       スコープにシンクがなければ、導出されたインスタンスは何も記録しない。
++       明示的にインポートされたインスタンスは導出されたものより優先される。eucalyptus の `import logging.silentLogging` は、ファイル内のすべてのログ記録を抑止する。
+
+-       A `Loggable` is a shared capability (`Durable`): it is written to from every task at
+-       once, and captures the sinks it fans out to, which is why `logs` makes its evidence a
+-       capturing one.
++       `Loggable` は共有されるケイパビリティ（`Durable`）である。すべてのタスクから同時に書き込まれ、ファンアウト先のシンクをキャプチャする。このため `logs` は、その証拠をキャプチャするものにする。
+
+=       capturing one.
+-   refer anticipation.LogSink
++   refer anticipation.LogSink
+
+-   refer anticipation.Transcribable
++   refer anticipation.Transcribable
+
+=   refer anticipation.Transcribable
+-   refer anticipation.logs
++   refer anticipation.logs
+
+-   entry .silent   a logger for an event type which records nothing, as a pure value
+-   entry .fanOut   derives a logger from every `LogSink` in scope, through the event's `Transcribable`
+-       For each logged event, if any sink accepts its level, the by-name event is forced once
+-       and, unless `Transcribable#skip` rejects it, transcribed lazily to the carrier and
+-       submitted to every sink whose threshold and categories (`LogSink#admits`) accept it.
+-   entry #log   logs an event at a level and timestamp
+-   entry #contramap   a logger for another type, by first mapping each event to this one
+-       The function may capture only `Durable` capabilities, since the logger retains it.
++   entry .silent   何も記録しない、あるイベント型のロガー。純粋な値である
++   entry .fanOut   スコープにあるすべての `LogSink` から、イベントの `Transcribable` を通じてロガーを導出する
++       記録される各イベントについて、そのレベルを受け付けるシンクがあれば、名前渡しのイベントが一度だけ強制評価され、`Transcribable#skip` が拒否しなければ、キャリアへ遅延して転記され、しきい値とカテゴリー（`LogSink#admits`）がそれを受け付けるすべてのシンクへ渡される。
++   entry #log   イベントを、あるレベルとタイムスタンプで記録する
++   entry #contramap   各イベントをまずこの型へ写すことで得られる、別の型のロガー
++       ロガーが関数を保持するので、関数がキャプチャできるのは `Durable` なケイパビリティだけである。
+
+- entry .LogSink   a destination for log events of a carrier type, such as eucalyptus's `Logger`
++ entry .LogSink   あるキャリア型のログイベントの宛先。eucalyptus の `Logger` など
+
+= entry .LogSink   a destination for log events of a carrier type, such as eucalyptus's `Logger`
+-   detail
++   detail
+
+-       A `LogSink[Event, Carrier]` records events transcribed to `Carrier` (a `Message`,
+-       say). It is the abstraction `Loggable.fanOut` gathers from scope, so this module
+-       needs no logging runtime; eucalyptus's `Logger` implements it. It is contravariant in
+-       its event type, so a `LogSink[Any, Message]` collects every event.
++       `LogSink[Event, Carrier]` は、`Carrier`（たとえば `Message`）へ転記されたイベントを記録する。
++       これは `Loggable.fanOut` がスコープから集める抽象であり、そのためこのモジュールはログ記録の実行時の仕組みを必要としない。eucalyptus の `Logger` がこれを実装する。
++       イベント型について反変なので、`LogSink[Any, Message]` はすべてのイベントを集める。
+
+-       A sink is a `Durable` capability: it is shared and synchronised, since every task
+-       writes to it, and ambient, typically an imported package given.
++       シンクは `Durable` なケイパビリティである。すべてのタスクが書き込むので共有され同期されており、アンビエントで、通常はインポートされたパッケージの given である。
+
+=       writes to it, and ambient, typically an imported package given.
+-   refer anticipation.Loggable
++   refer anticipation.Loggable
+
+-   entry #accepts   whether the sink records events at a level
+-       Consulted before the event is forced, so a rejected event is never constructed.
+-   entry #admits   whether the sink records this particular event; true unless overridden
+-       Takes the original event rather than its transcription, so that a sink filtered to
+-       `Log.Category`s can test the event's runtime type.
+-   entry #submit   records an event, already transcribed, at a level and timestamp
++   entry #accepts   シンクがあるレベルのイベントを記録するかどうか
++       イベントが強制評価される前に参照されるので、拒否されたイベントは構築されない。
++   entry #admits   シンクがこの特定のイベントを記録するかどうか。オーバーライドされない限り真
++       転記されたものではなく元のイベントを受け取るので、`Log.Category` で絞り込まれたシンクがイベントの実行時の型を検査できる。
++   entry #submit   すでに転記されたイベントを、あるレベルとタイムスタンプで記録する
+
+- entry .Transcribable   a typeclass transcribing an event into a sink's carrier type
++ entry .Transcribable   イベントをシンクのキャリア型へ転記する型クラス
+
+= entry .Transcribable   a typeclass transcribing an event into a sink's carrier type
+-   detail
++   detail
+
+-       `event is Transcribable to Carrier` converts an event into the type a `LogSink`
+-       records, and is how one library's events are carried inside another's. `transcribes`
+-       reads more naturally in a given:
++       `event is Transcribable to Carrier` はイベントを `LogSink` が記録する型へ変換するものであり、あるライブラリのイベントを別のライブラリのイベントの中に運ぶ方法である。
++       given の中では `transcribes` の方が自然に読める。
+
+=       reads more naturally in a given:
+=
+-       ```scala
++       ```scala
+
+=       reads more naturally in a given:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       enum Inner:
++       enum Inner:
+
+-         case Copied(source: Text)
++         case Copied(source: Text)
+
+-       enum Outer:
++       enum Outer:
+
+-         case Ran(event: Inner)
++         case Ran(event: Inner)
+
+-       given (Outer transcribes Inner) = Outer.Ran(_)
++       given (Outer transcribes Inner) = Outer.Ran(_)
+
+=       given (Outer transcribes Inner) = Outer.Ran(_)
+-       ```
++       ```
+
+-       A message type is transcribable from any `Communicable` event, which is why logging an
+-       `m"…"` message needs no declaration.
++       メッセージの型は任意の `Communicable` なイベントから転記できる。このため `m"…"` のメッセージをログに記録するのに宣言は要らない。
+
+-   refer anticipation.transcribes
++   refer anticipation.transcribes
+
+-   entry #record   transcribes an event into the carrier type
+-   entry #skip   whether to drop an event rather than transcribe it; false unless overridden
+-   entry #contramap   an instance for another type, by first mapping each event to this one
++   entry #record   イベントをキャリア型へ転記する
++   entry #skip   イベントを転記せずに捨てるかどうか。オーバーライドされない限り偽
++   entry #contramap   各イベントをまずこの型へ写すことで得られる、別の型のインスタンス
+
+- entry .logs   the type of a result computed by code that logs events of a type: `Result logs Event`
+-     `Long logs Backup.Event` is a context function needing a capturing `Backup.Event is
+-     Loggable`, so a caller must either declare the event itself or have a sink for it in
+-     scope. Declarations chain: `Unit logs Http.Event logs Exec.Event`.
++ entry .logs   ある型のイベントをログに記録するコードが計算する結果の型：`Result logs Event`
++     `Long logs Backup.Event` は、キャプチャする `Backup.Event is Loggable` を必要とするコンテキスト関数なので、呼び出し側はそのイベントを自ら宣言するか、スコープにそれのためのシンクを持たなければならない。
++     宣言は連鎖できる：`Unit logs Http.Event logs Exec.Event`。
+
+=     scope. Declarations chain: `Unit logs Http.Event logs Exec.Event`.
+=
+-     ```scala
++     ```scala
+
+=     scope. Declarations chain: `Unit logs Http.Event logs Exec.Event`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     enum Backup:
++     enum Backup:
+
+-       case Started(source: Text)
++       case Started(source: Text)
+
+-     def backup(source: Text): Unit logs Backup =
++     def backup(source: Text): Unit logs Backup =
+
+-       Log.info(Backup.Started(source))
++       Log.info(Backup.Started(source))
+
+=       Log.info(Backup.Started(source))
+-     ```
++     ```
+
+- entry .transcribes   the type of a `Transcribable` instance read in the direction of the wrapping
+-     `Outer transcribes Inner` is `Inner is Transcribable to Outer`: a given of it lets
+-     `Inner` events be logged where `Outer` events are accepted, wrapped as `Outer`.
++ entry .transcribes   包む方向に読んだ `Transcribable` のインスタンスの型
++     `Outer transcribes Inner` は `Inner is Transcribable to Outer` である。その given があれば、`Outer` のイベントが受け付けられる場所で、`Inner` のイベントを `Outer` として包んでログに記録できる。
+
+- entry .Printable   a typeclass rendering a value as text for a terminal of known capabilities
++ entry .Printable   機能が既知の端末向けに、値をテキストとして描画する型クラス
+
+= entry .Printable   a typeclass rendering a value as text for a terminal of known capabilities
+-   detail
++   detail
+
+-       `value is Printable` renders a value to `Text` given a `Termcap`, so that a value which
+-       may carry colour or styling (an escapade `Teletype`, a `Message`) degrades to plain
+-       text on a terminal without ANSI support. turbulence's `Out.println` and `Err.println`
+-       take any `Printable` value, with a `Termcap` in scope.
++       `value is Printable` は `Termcap` が与えられたときに値を `Text` へ描画する。このため色やスタイルを持ち得る値（escapade の `Teletype`、`Message`）は、ANSI をサポートしない端末では素のテキストへと格下げされる。
++       turbulence の `Out.println` と `Err.println` は、スコープに `Termcap` があれば任意の `Printable` な値を受け取る。
+
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       ##
+=       import soundness.*
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+-       import stdios.javaLangSystemStdio
++       import stdios.javaLangSystemStdio
+
+-       Out.println(t"Hello")
++       Out.println(t"Hello")
+
+=       Out.println(t"Hello")
+-       ```
++       ```
+
+-       The companion makes `Text`, `String` and `Char` printable as themselves; escapade
+-       provides instances for its styled text.
++       コンパニオンは `Text`、`String`、`Char` をそれ自身として印字可能にする。escapade は、そのスタイル付きのテキストに対するインスタンスを提供する。
+
+=       provides instances for its styled text.
+-   refer anticipation.Termcap
++   refer anticipation.Termcap
+
+-   entry .text   `Text` prints as itself, on any terminal
+-   entry .string   a `String` prints as the same text
+-   entry .char   a `Char` prints as a one-character text
+-   entry #print   renders a value for a terminal with the given capabilities
+-   entry #contramap   an instance for another type, by first mapping each value, with the `Termcap` in context
+-       The function is a context function of the `Termcap`, so the mapping itself can depend
+-       on what the terminal supports.
++   entry .text   `Text` はどの端末でもそれ自身として印字される
++   entry .string   `String` は同じテキストとして印字される
++   entry .char   `Char` は一文字のテキストとして印字される
++   entry #print   与えられた機能を持つ端末向けに値を描画する
++   entry #contramap   各値をまず写すことで得られる、別の型のインスタンス。コンテキストに `Termcap` がある
++       関数は `Termcap` のコンテキスト関数なので、写像そのものが端末のサポートするものに依存できる。
+
+- entry .Termcap   the capabilities of a terminal: ANSI support, colour depth and size
++ entry .Termcap   端末の機能：ANSI のサポート、色深度、大きさ
+
+= entry .Termcap   the capabilities of a terminal: ANSI support, colour depth and size
+-   detail
++   detail
+
+-       A `Termcap` in scope tells a `Printable` how to render: whether ANSI escapes are
+-       understood, how many colours are available, and the terminal's width and height, which
+-       default to unbounded (`Int.MaxValue`), so that nothing wraps. A fixed one is imported
+-       by name from `termcapDefinitions`; ambience's `termcaps.environmentTermcap` reads the
+-       terminal's capabilities from the environment, and a daemon's invocation carries its
+-       client's.
++       スコープにある `Termcap` は、`Printable` にどう描画するかを伝える。ANSI のエスケープが理解されるかどうか、何色が使えるか、そして端末の幅と高さである。幅と高さの既定は無制限（`Int.MaxValue`）なので、何も折り返されない。
++       固定のものは `termcapDefinitions` から名前でインポートする。ambience の `termcaps.environmentTermcap` は端末の機能を環境から読み取り、デーモンの呼び出しはそのクライアントのものを運ぶ。
+
+-   refer anticipation.termcapDefinitions
++   refer anticipation.termcapDefinitions
+
+-   refer anticipation.ColorDepth
++   refer anticipation.ColorDepth
+
+-   entry #ansi    whether the terminal understands ANSI escape sequences
+-   entry #color   how many colours the terminal can show
+-   entry #width   the terminal's width in columns; unbounded unless known
+-   entry #height   the terminal's height in rows; unbounded unless known
++   entry #ansi    端末が ANSI のエスケープシーケンスを理解するかどうか
++   entry #color   端末が表示できる色の数
++   entry #width   端末の幅（桁数）。わかっていなければ無制限
++   entry #height   端末の高さ（行数）。わかっていなければ無制限
+
+- entry .ColorDepth   how many colours a terminal can display, from none to 24-bit true colour
++ entry .ColorDepth   端末が表示できる色の数。なしから 24 ビットのトゥルーカラーまで
+
+= entry .ColorDepth   how many colours a terminal can display, from none to 24-bit true colour
+-   detail
++   detail
+
+-       An enum, from least to most capable: `NoColor`; `Indexed8` and `Indexed16`, the basic
+-       ANSI palettes; `Cube4` and `Cube6`, the 88- and 256-colour palettes with a colour cube;
+-       and `TrueColor`, 24-bit colour.
++       最も能力の低いものから高いものへと並んだ列挙型である。`NoColor`、基本的な ANSI のパレットである `Indexed8` と `Indexed16`、カラーキューブを持つ 88 色と 256 色のパレットである `Cube4` と `Cube6`、そして 24 ビットカラーの `TrueColor` である。
+
+=       and `TrueColor`, 24-bit colour.
+=
+-       ```scala
++       ```scala
+
+=       and `TrueColor`, 24-bit colour.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       ColorDepth(256)   // ColorDepth.Cube6
++       ColorDepth(256)   // ColorDepth.Cube6
+
+=       ColorDepth(256)   // ColorDepth.Cube6
+-       ```
++       ```
+
+-   entry .apply   the colour depth for a terminal's colour count, as `tput colors` reports it
+-       8 is `Indexed8`; 15 or 16 `Indexed16`; 52, 64 or 88 `Cube4`; 256 `Cube6`; 65536 or
+-       16777216 `TrueColor`; anything else `NoColor`.
++   entry .apply   `tput colors` が報告する端末の色数に対応する色深度
++       8 は `Indexed8`、15 か 16 は `Indexed16`、52、64、88 は `Cube4`、256 は `Cube6`、65536 か 16777216 は `TrueColor`、それ以外は `NoColor` である。
+
+- entry .termcapDefinitions   fixed terminal capabilities, each a given to import by name
++ entry .termcapDefinitions   固定の端末の機能。それぞれ名前でインポートする given である
+
+= entry .termcapDefinitions   fixed terminal capabilities, each a given to import by name
+-   detail
++   detail
+
+-       For a program which knows what its output is rendered on, or a test or document whose
+-       output must not depend on the terminal running it. Each is a given imported by name,
+-       since `import termcapDefinitions.*` does not import givens:
++       出力が何の上に描画されるかをわかっているプログラムや、出力がそれを実行する端末に依存してはならないテストや文書のためのものである。
++       `import termcapDefinitions.*` は given をインポートしないので、それぞれ名前でインポートする given である。
+
+=       since `import termcapDefinitions.*` does not import givens:
+=
+-       ```scala
++       ```scala
+
+=       since `import termcapDefinitions.*` does not import givens:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       ```scala
+=       import soundness.*
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+=       import termcapDefinitions.basicTermcap
+-       ```
++       ```
+
+-       None reports a width or height, so text never wraps.
++       どれも幅や高さを報告しないので、テキストが折り返されることはない。
+
+=       None reports a width or height, so text never wraps.
+-   refer anticipation.Termcap
++   refer anticipation.Termcap
+
+-   entry .basicTermcap   a terminal with no ANSI support and no colour: plain text
+-   entry .xterm256Termcap   an ANSI terminal with the 256-colour palette
+-   entry .xtermTrueColorTermcap   an ANSI terminal with 24-bit true colour
++   entry .basicTermcap   ANSI のサポートも色もない端末。素のテキスト
++   entry .xterm256Termcap   256 色のパレットを持つ ANSI 端末
++   entry .xtermTrueColorTermcap   24 ビットのトゥルーカラーを持つ ANSI 端末
+
+- entry .Chromatic   a typeclass reducing a colour of any representation to a packed 24-bit RGB `Chroma`
++ entry .Chromatic   任意の表現の色を、詰め込まれた 24 ビット RGB の `Chroma` へ還元する型クラス
+
+= entry .Chromatic   a typeclass reducing a colour of any representation to a packed 24-bit RGB `Chroma`
+-   detail
++   detail
+
+-       `color is Chromatic` lets an API which draws or styles accept a colour from any
+-       library: cataclysm's CSS, savagery's SVG and escapade's terminal styling each take a
+-       `Chromatic` value, and iridescence's colour spaces and pixels provide instances.
++       `color is Chromatic` により、描画やスタイル付けを行う API が任意のライブラリの色を受け付けられる。cataclysm の CSS、savagery の SVG、escapade の端末のスタイル付けはそれぞれ `Chromatic` な値を受け取り、iridescence の色空間とピクセルがインスタンスを提供する。
+
+=       `Chromatic` value, and iridescence's colour spaces and pixels provide instances.
+=
+-       ```scala
++       ```scala
+
+=       `Chromatic` value, and iridescence's colour spaces and pixels provide instances.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def hex[color: Chromatic](color: color): Int = color.chroma.underlying
++       def hex[color: Chromatic](color: color): Int = color.chroma.underlying
+
+-       hex(Chroma(255, 128, 0))
++       hex(Chroma(255, 128, 0))
+
+=       hex(Chroma(255, 128, 0))
+-       ```
++       ```
+
+=       ```
+-   refer anticipation.Chroma
++   refer anticipation.Chroma
+
+-   entry #convert   the colour as a `Chroma`
+-   entry #chroma   the colour as a `Chroma`: `color.chroma`
+-   entry #red     the colour's red component, 0 to 255
+-   entry #green   the colour's green component, 0 to 255
+-   entry #blue    the colour's blue component, 0 to 255
+-   entry #contramap   an instance for another type, by first mapping it to a colour of this one
++   entry #convert   `Chroma` としての色
++   entry #chroma   `Chroma` としての色：`color.chroma`
++   entry #red     色の赤の成分。0 から 255
++   entry #green   色の緑の成分。0 から 255
++   entry #blue    色の青の成分。0 から 255
++   entry #contramap   まずこの型の色へ写すことで得られる、別の型のインスタンス
+
+- entry .Chroma   a colour as 24-bit RGB packed into an `Int`, the common currency of `Chromatic`
+-     `Chroma` is the opaque type `anticipation.internal2.Chroma`, exported here: an `Int`
+-     whose low 24 bits hold red, green and blue, eight bits each, most significant first. It
+-     is the type every `Chromatic` instance converts to, and is itself `Chromatic`.
++ entry .Chroma   `Int` に詰め込まれた 24 ビット RGB の色。`Chromatic` の共通通貨
++     `Chroma` は不透明型 `anticipation.internal2.Chroma` で、ここにエクスポートされている。下位 24 ビットに赤、緑、青をそれぞれ 8 ビットずつ、上位のものから順に保持する `Int` である。
++     すべての `Chromatic` のインスタンスが変換する先の型であり、それ自身も `Chromatic` である。
+
+=     is the type every `Chromatic` instance converts to, and is itself `Chromatic`.
+=
+-     ```scala
++     ```scala
+
+=     is the type every `Chromatic` instance converts to, and is itself `Chromatic`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val orange: Chroma = Chroma(255, 128, 0)
++     val orange: Chroma = Chroma(255, 128, 0)
+
+-     orange.red        // 255
++     orange.red        // 255
+
+-     orange.underlying // 0xff8000
++     orange.underlying // 0xff8000
+
+=     orange.underlying // 0xff8000
+-     ```
++     ```
+
+-     The `red`, `green` and `blue` extensions mask the component, so the top eight bits of
+-     the `Int` are never part of the colour; `underlying` gives the packed `Int`.
++     `red`、`green`、`blue` の拡張メソッドは成分をマスクするので、`Int` の上位 8 ビットが色の一部になることはない。`underlying` は詰め込まれた `Int` を与える。
+
+- entry .internal2   the home of the opaque `Chroma` type
++ entry .internal2   不透明な `Chroma` 型の置き場所
+
+= entry .internal2   the home of the opaque `Chroma` type
+-   hidden
++   hidden
+
+= entry .internal2   the home of the opaque `Chroma` type
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `Chroma` is exported from here to the `anticipation` package, and
+-       its page there has the full account.
+-   entry .Chroma   a packed 24-bit RGB colour; see `anticipation.Chroma`
++       直接使うためのものではない。`Chroma` はここから `anticipation` パッケージにエクスポートされており、そこにあるそのページに詳しい説明がある。
++   entry .Chroma   詰め込まれた 24 ビット RGB の色。`anticipation.Chroma` を参照
+
+=   entry .Chroma   a packed 24-bit RGB colour; see `anticipation.Chroma`
+-     detail
++     detail
+
+-         The opaque type `Chroma <: Matchable`, an `Int` at runtime.
+-     entry .apply   a `Chroma` from a packed `Int`, or from red, green and blue components
+-         Each component is masked to eight bits.
+-     entry .chromatic   a `Chroma` is `Chromatic` as itself
+-     entry .underlying   erased evidence that a `Chroma` is represented by an `Int`
+-   entry .underlying   the packed `Int` of a `Chroma`
+-   entry .red     the red component of a `Chroma`, 0 to 255
+-   entry .green   the green component of a `Chroma`, 0 to 255
+-   entry .blue    the blue component of a `Chroma`, 0 to 255
++         不透明型 `Chroma <: Matchable` で、実行時には `Int` である。
++     entry .apply   詰め込まれた `Int`、または赤、緑、青の成分からの `Chroma`
++         各成分は 8 ビットにマスクされる。
++     entry .chromatic   `Chroma` はそれ自身として `Chromatic` である
++     entry .underlying   `Chroma` が `Int` で表現されることの消去された証拠
++   entry .underlying   `Chroma` の詰め込まれた `Int`
++   entry .red     `Chroma` の赤の成分。0 から 255
++   entry .green   `Chroma` の緑の成分。0 から 255
++   entry .blue    `Chroma` の青の成分。0 から 255
+
+- entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, with match types over layouts
++ entry .Channel   `Red[10]` のような、詰め込まれたピクセルのレイアウトの幻のチャンネル。レイアウトに対するマッチ型を持つ
+
+= entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, with match types over layouts
+-   detail
++   detail
+
+-       A channel is a colour component with a bit depth, never instantiated: `Red[10]` is ten
+-       bits of red. A pixel **layout** is a tuple of channels, most significant first, such as
+-       `(Red[10], Green[12], Blue[10])`, and iridescence's pixel types are parameterised by
+-       one. Each channel family carries a literal label (`"red"`, `"cyan"`, …) by which the
+-       match types in the companion find it within a layout; the hierarchy is open, so a
+-       library may add channels with labels of its own.
++       チャンネルはビット深度を持つ色の成分で、インスタンス化されることはない。`Red[10]` は 10 ビットの赤である。
++       ピクセルの**レイアウト**は、`(Red[10], Green[12], Blue[10])` のように上位のものから順に並べたチャンネルのタプルであり、iridescence のピクセルの型はレイアウトによってパラメーター化される。
++       各チャンネルの系列はリテラルのラベル（`"red"`、`"cyan"`、…）を持ち、コンパニオンにあるマッチ型はそれによってレイアウトの中のチャンネルを見つける。階層は開かれているので、ライブラリは独自のラベルを持つチャンネルを加えられる。
+
+=       library may add channels with labels of its own.
+=
+-       ```scala
++       ```scala
+
+=       library may add channels with labels of its own.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       type Rgb565 = (Channel.Red[5], Channel.Green[6], Channel.Blue[5])
++       type Rgb565 = (Channel.Red[5], Channel.Green[6], Channel.Blue[5])
+
+-       summon[anticipation.Channel.TotalBits[Rgb565] =:= 16]
++       summon[anticipation.Channel.TotalBits[Rgb565] =:= 16]
+
+-       summon[anticipation.Channel.Storage[Rgb565] =:= Short]
++       summon[anticipation.Channel.Storage[Rgb565] =:= Short]
+
+=       summon[anticipation.Channel.Storage[Rgb565] =:= Short]
+-       ```
++       ```
+
+-       `Channel` is not exported to the `soundness` umbrella, where the name belongs to a
+-       WebSocket channel; reach it as `anticipation.Channel`. The channel families `Red`,
+-       `Green`, `Blue` and the rest are exported.
++       `Channel` は `soundness` アンブレラにはエクスポートされない。そこではこの名前は WebSocket のチャンネルのものだからである。`anticipation.Channel` としてアクセスする。
++       チャンネルの系列 `Red`、`Green`、`Blue` などはエクスポートされている。
+
+-   refer anticipation.Channel.Red
++   refer anticipation.Channel.Red
+
+-   entry .Label   the literal label of a channel: `Label[Red[8]]` is `"red"`
+-   entry .Bits   the bit depth of a channel: `Bits[Red[8]]` is `8`
+-   entry .TotalBits   the total bit width of a layout
+-   entry .Has   whether a layout has a channel with a label, as a literal `Boolean`
+-   entry .Shift   the bit offset of a labelled channel within a layout
+-       The total width of the channels packed below it. It does not reduce for a layout
+-       without the channel, which statically gates accessors such as `.red` or `.cyan` to
+-       layouts which have it.
+-   entry .Depth   the bit depth of a labelled channel within a layout
+-   entry .Storage   the narrowest primitive holding one pixel of a layout: `Byte`, `Short`, `Int` or `Long`
++   entry .Label   チャンネルのリテラルのラベル：`Label[Red[8]]` は `"red"`
++   entry .Bits   チャンネルのビット深度：`Bits[Red[8]]` は `8`
++   entry .TotalBits   レイアウトの全体のビット幅
++   entry .Has   レイアウトがあるラベルのチャンネルを持つかどうか。リテラルの `Boolean` である
++   entry .Shift   レイアウト内でのラベル付きのチャンネルのビットオフセット
++       その下に詰め込まれたチャンネルの幅の合計である。
++       そのチャンネルを持たないレイアウトに対しては簡約されないので、`.red` や `.cyan` のようなアクセサーは、それを持つレイアウトに静的に限定される。
++   entry .Depth   レイアウト内でのラベル付きのチャンネルのビット深度
++   entry .Storage   レイアウトの一つのピクセルを保持する最も狭いプリミティブ：`Byte`、`Short`、`Int`、`Long`
+
+-   entry .Red   a pixel channel of red, of a given bit depth, labelled `"red"`
+-   entry .Green   a pixel channel of green, of a given bit depth, labelled `"green"`
+-   entry .Blue   a pixel channel of blue, of a given bit depth, labelled `"blue"`
+-   entry .Alpha   a pixel channel of opacity, of a given bit depth, labelled `"alpha"`
+-   entry .Cyan   a pixel channel of cyan, for CMYK layouts, labelled `"cyan"`
+-   entry .Magenta   a pixel channel of magenta, for CMYK layouts, labelled `"magenta"`
+-   entry .Yellow   a pixel channel of yellow, for CMYK layouts, labelled `"yellow"`
+-   entry .Key   a pixel channel of black (the K of CMYK), labelled `"key"`
+-   entry .Grey   a pixel channel of grey intensity, for monochrome layouts, labelled `"grey"`
++   entry .Red   あるビット深度の赤のピクセルのチャンネル。ラベルは `"red"`
++   entry .Green   あるビット深度の緑のピクセルのチャンネル。ラベルは `"green"`
++   entry .Blue   あるビット深度の青のピクセルのチャンネル。ラベルは `"blue"`
++   entry .Alpha   あるビット深度の不透明度のピクセルのチャンネル。ラベルは `"alpha"`
++   entry .Cyan   CMYK のレイアウトのためのシアンのピクセルのチャンネル。ラベルは `"cyan"`
++   entry .Magenta   CMYK のレイアウトのためのマゼンタのピクセルのチャンネル。ラベルは `"magenta"`
++   entry .Yellow   CMYK のレイアウトのためのイエローのピクセルのチャンネル。ラベルは `"yellow"`
++   entry .Key   黒（CMYK の K）のピクセルのチャンネル。ラベルは `"key"`
++   entry .Grey   モノクロのレイアウトのための灰色の強度のピクセルのチャンネル。ラベルは `"grey"`
+
+- entry .Graphical   a typeclass reading any image as a grid of `Chroma` pixels
++ entry .Graphical   任意の画像を `Chroma` のピクセルの格子として読む型クラス
+
+= entry .Graphical   a typeclass reading any image as a grid of `Chroma` pixels
+-   detail
++   detail
+
+-       `image is Graphical` exposes an image's dimensions and its pixels as packed RGB, so a
+-       consumer can draw an image of any library's type: escapade renders any `Graphical`
+-       value on a terminal, and hallucination's `Raster` provides an instance.
++       `image is Graphical` は画像の寸法とピクセルを詰め込まれた RGB として公開するので、利用者は任意のライブラリの型の画像を描画できる。escapade は任意の `Graphical` な値を端末上に描画し、hallucination の `Raster` がインスタンスを提供する。
+
+=       value on a terminal, and hallucination's `Raster` provides an instance.
+-   refer anticipation.Chroma
++   refer anticipation.Chroma
+
+-   entry #width    the image's width in pixels
+-   entry #height   the image's height in pixels
+-   entry #pixel    the colour of the pixel at a column and row
++   entry #width    画像の幅（ピクセル数）
++   entry #height   画像の高さ（ピクセル数）
++   entry #pixel    ある列と行にあるピクセルの色
+
+- entry .Focusable   a typeclass locating an element in a document, in a browser driver's terms
++ entry .Focusable   ブラウザのドライバーの言葉で、文書中の要素の位置を特定する型クラス
+
+= entry .Focusable   a typeclass locating an element in a document, in a browser driver's terms
+-   detail
++   detail
+
+-       `value is Focusable` names a WebDriver locating strategy (`#strategy`: `css selector`,
+-       `xpath`, `link text`, `tag name`) and renders a value in it (`#focus`), so tarantula's
+-       `element` and `\` accept a selector, an XPath, an HTML tag or plain link text without
+-       depending on the libraries defining them. Those libraries (cataclysm, xylophone,
+-       honeycomb, nomenclature) provide instances in their own companions; the companion here
+-       makes `Text` focus as link text.
++       `value is Focusable` は WebDriver の位置特定方式（`#strategy`：`css selector`、`xpath`、`link text`、`tag name`）を名指し、値をその方式で描画する（`#focus`）。このため tarantula の `element` と `\` は、それらを定義するライブラリに依存せずに、セレクター、XPath、HTML のタグ、素のリンクテキストを受け付ける。
++       それらのライブラリ（cataclysm、xylophone、honeycomb、nomenclature）は自身のコンパニオンでインスタンスを提供する。ここにあるコンパニオンは、`Text` をリンクテキストとしてフォーカスさせる。
+
+=       makes `Text` focus as link text.
+=
+-       ```scala
++       ```scala
+
+=       makes `Text` focus as link text.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class TestId(name: Text)
++       case class TestId(name: Text)
+
+-       given TestId is Focusable = Focusable(t"css selector", id => t"[data-testid='${id.name}']")
++       given TestId is Focusable = Focusable(t"css selector", id => t"[data-testid='${id.name}']")
+
+=       given TestId is Focusable = Focusable(t"css selector", id => t"[data-testid='${id.name}']")
+-       ```
++       ```
+
+-       It is a pure typeclass: the rendering function must capture nothing.
+-   entry .apply   a `Focusable` from a strategy name and a pure rendering function
+-   entry .text   `Text` focuses as link text: the element whose link has exactly that text
+-   entry #strategy   the WebDriver locating strategy, such as `css selector` or `xpath`
+-   entry #focus   the value rendered in the locating strategy's syntax
++       これは純粋な型クラスであり、描画の関数は何もキャプチャしてはならない。
++   entry .apply   方式の名前と純粋な描画の関数からの `Focusable`
++   entry .text   `Text` はリンクテキストとしてフォーカスする。リンクがちょうどそのテキストを持つ要素である
++   entry #strategy   WebDriver の位置特定方式。`css selector` や `xpath` など
++   entry #focus   位置特定方式の構文で描画された値

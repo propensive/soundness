@@ -1,0 +1,517 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base imperial
++ base imperial
+
+- import soundness
++ import soundness
+
+- info   the standard directories of a Unix system and a user's home, as typed, nested names
++ info   Unix システムとユーザーのホームの標準ディレクトリを、型付きの入れ子の名前として表す
+
+- detail
++ detail
+
+-     _Imperial_ names the conventional directories of a Unix system as a tree of nested
+-     objects, so that a standard location is written as a value rather than as text, and a
+-     mistyped directory is a compile error. `Home` is the tree beneath the user's home
+-     directory, and `Base` the tree beneath the filesystem root. Each object is named for the
+-     directory it stands for, capitalized, with any leading `.` dropped — `$HOME/.local/bin`
+-     is `Home.Local.Bin` and `/var/lib` is `Base.Var.Lib`.
++     _Imperial_ は Unix システムの慣習的なディレクトリを入れ子のオブジェクトの木として名付けるので、標準の場所はテキストではなく値として書かれ、ディレクトリの書き間違いはコンパイルエラーになる。
++     `Home` はユーザーのホームディレクトリ以下の木であり、`Base` はファイルシステムのルート以下の木である。
++     各オブジェクトは、それが表すディレクトリの名前を、先頭の `.` を落として大文字で始めたものである。`$HOME/.local/bin` は `Home.Local.Bin`、`/var/lib` は `Base.Var.Lib` である。
+
+-     Every node is a `BaseLayout`. Applying one, with a path type as its type argument,
+-     resolves it to that type against the `Environment` and `System` in scope, so the same
+-     names serve a `Path on Linux`, plain `Text` or any other representation which is
+-     `Instantiable across Paths from Text`:
++     すべてのノードは `BaseLayout` である。
++     パスの型を型引数として与えて適用すると、スコープ内の `Environment` と `System` に照らしてその型に解決される。そのため、同じ名前が `Path on Linux` にも、ただの `Text` にも、`Instantiable across Paths from Text` であるほかのどんな表現にも使える。
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import environments.javaBaseEnvironment
++     import environments.javaBaseEnvironment
+
+-     import systems.javaBaseSystem
++     import systems.javaBaseSystem
+
+-     Home.Config[Path on Linux]()        // ~/.config
++     Home.Config[Path on Linux]()        // ~/.config
+
+-     Home.Local.Share[Path on Linux]()   // ~/.local/share
++     Home.Local.Share[Path on Linux]()   // ~/.local/share
+
+-     Base.Var.Log[Path on Linux]()       // /var/log
++     Base.Var.Log[Path on Linux]()       // /var/log
+
+-     Base.Usr.Bin.readOnly               // true
++     Base.Usr.Bin.readOnly               // true
+
+-     Base.Etc.readOnly                   // false
++     Base.Etc.readOnly                   // false
+
+-     ```
++     ```
+
+-     A layout also says whether it is meant to be written to: `readOnly` is `true` for
+-     `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the per-process
+-     directories under `/proc`. The layouts are fixed paths: `Home.Config` is always
+-     `$HOME/.config`, whatever `XDG_CONFIG_HOME` says; for the XDG-aware locations, use
+-     ambience's `Xdg` values.
++     レイアウトは、書き込むためのものかどうかも示す。
++     `readOnly` は、`/boot`、`/efi`、`/sys`、`/usr` とその下のすべて、そして `/proc` の下のプロセスごとのディレクトリで `true` である。
++     レイアウトは固定のパスである。
++     `XDG_CONFIG_HOME` が何を示していても、`Home.Config` は常に `$HOME/.config` である。
++     XDG を考慮した場所には、ambience の `Xdg` の値を使う。
+
+-     The library has a single source set, `imperial.core`, and everything is exported to the
+-     `soundness` umbrella.
++     このライブラリのソースセットは `imperial.core` の一つだけで、すべてが `soundness` アンブレラにエクスポートされる。
+
+- refer imperial.BaseLayout
++ refer imperial.BaseLayout
+
+- refer imperial.Home
++ refer imperial.Home
+
+- refer imperial.Base
++ refer imperial.Base
+
+- entry .BaseLayout   a directory in a standard layout, resolved to any path type against the environment
++ entry .BaseLayout   標準のレイアウトにおけるディレクトリ。環境に照らして任意のパスの型に解決される
+
+= entry .BaseLayout   a directory in a standard layout, resolved to any path type against the environment
+-   detail
++   detail
+
+-       A `BaseLayout` is one node of the `Home` or `Base` tree: the name of a directory, the
+-       layout it sits in (carried as the contextual `BaseLayout.Dir` of its enclosing
+-       object), and whether it is `#readOnly`. Its `#Topic` type member is a tuple of the
+-       directory names from the node up to its root, so `Base.Var.Log` has the topic `("log",
+-       "var")` and the type of each node is distinct.
++       `BaseLayout` は `Home` または `Base` の木の一つのノードである。
++       ディレクトリの名前、それが置かれるレイアウト（それを囲むオブジェクトのコンテキストの `BaseLayout.Dir` として運ばれる）、そしてそれが `#readOnly` かどうかからなる。
++       型メンバー `#Topic` は、そのノードからルートまでのディレクトリ名のタプルなので、`Base.Var.Log` のトピックは `("log", "var")` であり、各ノードの型は互いに異なる。
+
+-       Applying a layout, `layout[Path on Linux]()`, renders its absolute path and constructs
+-       a value of the requested path type from it. A layout under `Home` reads the `HOME`
+-       environment variable, raising `Environment.Error` if it is not set; one under `Base`
+-       needs no environment variable at all, though both signatures ask for an `Environment`
+-       and a `System` in scope.
++       レイアウトを適用すると（`layout[Path on Linux]()`）、その絶対パスを描画し、そこから求められたパスの型の値を構築する。
++       `Home` の下のレイアウトは環境変数 `HOME` を読み、設定されていなければ `Environment.Error` を発生させる。
++       `Base` の下のレイアウトは環境変数をまったく必要としないが、どちらのシグネチャもスコープ内に `Environment` と `System` を求める。
+
+=       and a `System` in scope.
+=
+-       ```scala
++       ```scala
+
+=       and a `System` in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       and a `System` in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       and a `System` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       and a `System` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import environments.javaBaseEnvironment
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       Base.Usr.Share.Doc[Path on Linux]()   // /usr/share/doc
++       Base.Usr.Share.Doc[Path on Linux]()   // /usr/share/doc
+
+-       Base.Proc(Pid(1)).absolutePath        // t"/proc/1"
++       Base.Proc(Pid(1)).absolutePath        // t"/proc/1"
+
+=       Base.Proc(Pid(1)).absolutePath        // t"/proc/1"
+-       ```
++       ```
+
+-       A new layout nested in an existing one is an object extending `BaseLayout` inside it,
+-       which picks up its parent's `#dir` as its own base.
++       既存のレイアウトの中に入れ子にした新しいレイアウトは、その中で `BaseLayout` を拡張するオブジェクトであり、親の `#dir` を自身の基点として受け取る。
+
+=       which picks up its parent's `#dir` as its own base.
+-   refer imperial.Home
++   refer imperial.Home
+
+=   refer imperial.Home
+-   refer imperial.Base
++   refer imperial.Base
+
+-   entry .Dir   a layout's position: whether it is under the home directory, and its path segments
++   entry .Dir   レイアウトの位置：ホームディレクトリの下にあるかどうかと、そのパスのセグメント
+
+=   entry .Dir   a layout's position: whether it is under the home directory, and its path segments
+-     detail
++     detail
+
+-         A layout's `BaseLayout.Dir` is passed to its nested layouts as a contextual value,
+-         which is how a nested object knows the directory it sits in. Segments are held
+-         innermost first.
+-     entry #home   whether the path is relative to the user's home directory
+-     entry #path   the path's segments, innermost first
+-     entry #/   the directory of a child, by its name
+-     entry #render   the absolute path as text, given the home directory's path
+-         A `Dir` which is not home-relative and has no segments renders as `/`.
+-   entry #readOnly   whether the directory is conventionally not written to by programs
+-       `true` for `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the
+-       directories of `/proc`; `false` for every layout under `Home`.
+-   entry #Topic   the directory names from this node up to its root, as a tuple type
+-   entry #absolutePath   the layout's absolute path, as text
+-       Needs an `Environment` and a `System`. A layout under `Home` reads the `HOME`
+-       environment variable, without a trailing `/`, and raises `Environment.Error` if it
+-       is unset.
+-   entry #dir   the `BaseLayout.Dir` of this layout, given to the layouts nested in it
+-   entry #apply   the layout's absolute path, as a path type of the caller's choosing
+-       `layout[Path on Linux]()` makes a value of any type which is `Instantiable across
+-       Paths from Text` from `#absolutePath`. Needs an `Environment` and a `System`, and
+-       raises `Environment.Error` (for a `Home` layout whose `HOME` is unset) and
+-       `Property.Error`.
++         レイアウトの `BaseLayout.Dir` は、コンテキスト値として入れ子のレイアウトに渡される。
++         入れ子のオブジェクトは、こうして自身が置かれているディレクトリを知る。
++         セグメントは内側のものから先に保持される。
++     entry #home   パスがユーザーのホームディレクトリからの相対パスかどうか
++     entry #path   パスのセグメント。内側のものから先に並ぶ
++     entry #/   名前で指定した子のディレクトリ
++     entry #render   ホームディレクトリのパスを与えて、絶対パスをテキストとして描画する
++         ホームからの相対ではなく、セグメントを持たない `Dir` は `/` として描画される。
++   entry #readOnly   そのディレクトリに、慣習上プログラムが書き込まないかどうか
++       `/boot`、`/efi`、`/sys`、`/usr` とその下のすべて、そして `/proc` のディレクトリでは `true` であり、`Home` の下のすべてのレイアウトでは `false` である。
++   entry #Topic   このノードからルートまでのディレクトリ名。タプル型として
++   entry #absolutePath   レイアウトの絶対パス。テキストとして
++       `Environment` と `System` を必要とする。
++       `Home` の下のレイアウトは、末尾の `/` なしで環境変数 `HOME` を読み、設定されていなければ `Environment.Error` を発生させる。
++   entry #dir   このレイアウトの `BaseLayout.Dir`。その中に入れ子にされたレイアウトに与えられる
++   entry #apply   レイアウトの絶対パス。呼び出し側が選んだパスの型として
++       `layout[Path on Linux]()` は、`#absolutePath` から、`Instantiable across Paths from Text` である任意の型の値を作る。
++       `Environment` と `System` を必要とし、`Environment.Error`（`HOME` が設定されていない `Home` のレイアウトの場合）と `Property.Error` を発生させる。
+
+- entry .Home   the user's home directory, `$HOME`, and the standard directories beneath it
++ entry .Home   ユーザーのホームディレクトリ `$HOME` と、その下の標準ディレクトリ
+
+= entry .Home   the user's home directory, `$HOME`, and the standard directories beneath it
+-   detail
++   detail
+
+-       A `BaseLayout` resolved against the `HOME` environment variable. `Home[Path on
+-       Linux]()` is the home directory itself; its nested objects name the conventional
+-       directories beneath it.
++       環境変数 `HOME` に照らして解決される `BaseLayout` である。
++       `Home[Path on Linux]()` はホームディレクトリそのものであり、入れ子のオブジェクトはその下の慣習的なディレクトリを名付ける。
+
+=       directories beneath it.
+=
+-       ```scala
++       ```scala
+
+=       directories beneath it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       directories beneath it.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       directories beneath it.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       directories beneath it.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import environments.javaBaseEnvironment
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       Home.Cache[Path on Linux]()       // ~/.cache
++       Home.Cache[Path on Linux]()       // ~/.cache
+
+-       Home.Local.Bin[Path on Linux]()   // ~/.local/bin
++       Home.Local.Bin[Path on Linux]()   // ~/.local/bin
+
+=       Home.Local.Bin[Path on Linux]()   // ~/.local/bin
+-       ```
++       ```
+
+-       The paths are fixed: `Home.Config` is `$HOME/.config` even where `XDG_CONFIG_HOME`
+-       names another directory, so a program which should honour the XDG variables should
+-       use ambience's `Xdg` instead.
++       パスは固定である。
++       `XDG_CONFIG_HOME` が別のディレクトリを示していても `Home.Config` は `$HOME/.config` なので、XDG の変数に従うべきプログラムは代わりに ambience の `Xdg` を使う。
+
+=       use ambience's `Xdg` instead.
+-   refer imperial.BaseLayout
++   refer imperial.BaseLayout
+
+=   refer imperial.BaseLayout
+-   refer imperial.Base
++   refer imperial.Base
+
+-   entry .Cache   the user's cache directory, `~/.cache`
+-   entry .Config   the user's configuration directory, `~/.config`
+-   entry .Local   the user's local installation prefix, `~/.local`
++   entry .Cache   ユーザーのキャッシュディレクトリ、`~/.cache`
++   entry .Config   ユーザーの設定ディレクトリ、`~/.config`
++   entry .Local   ユーザーのローカルのインストール先の接頭辞、`~/.local`
+
+=   entry .Local   the user's local installation prefix, `~/.local`
+-     detail
++     detail
+
+-         The per-user counterpart of `/usr`, holding a user's own programs, libraries, data
+-         and state.
+-     entry .Bin   the user's own executables, `~/.local/bin`
+-     entry .Lib   the user's own libraries, `~/.local/lib`
+-     entry .Share   the user's own application data, `~/.local/share`
+-     entry .State   the user's application state, `~/.local/state`
++         `/usr` に対応するユーザーごとのディレクトリであり、ユーザー自身のプログラム、ライブラリ、データ、状態を保持する。
++     entry .Bin   ユーザー自身の実行ファイル、`~/.local/bin`
++     entry .Lib   ユーザー自身のライブラリ、`~/.local/lib`
++     entry .Share   ユーザー自身のアプリケーションのデータ、`~/.local/share`
++     entry .State   ユーザーのアプリケーションの状態、`~/.local/state`
+
+- entry .Base   the filesystem root, `/`, and the standard system directories beneath it
++ entry .Base   ファイルシステムのルート `/` と、その下の標準のシステムディレクトリ
+
+= entry .Base   the filesystem root, `/`, and the standard system directories beneath it
+-   detail
++   detail
+
+-       A `BaseLayout` for the root directory, with nested objects for the directories of the
+-       Filesystem Hierarchy Standard. `Base[Path on Linux]()` is `/`. None of its layouts
+-       reads the environment, so none raises `Environment.Error` in practice.
++       ルートディレクトリのための `BaseLayout` であり、Filesystem Hierarchy Standard のディレクトリのための入れ子のオブジェクトを持つ。
++       `Base[Path on Linux]()` は `/` である。
++       そのレイアウトはどれも環境を読まないので、実際に `Environment.Error` を発生させるものはない。
+
+=       reads the environment, so none raises `Environment.Error` in practice.
+=
+-       ```scala
++       ```scala
+
+=       reads the environment, so none raises `Environment.Error` in practice.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       reads the environment, so none raises `Environment.Error` in practice.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       reads the environment, so none raises `Environment.Error` in practice.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       reads the environment, so none raises `Environment.Error` in practice.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import environments.javaBaseEnvironment
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       Base.Usr.Share[Path on Linux]()   // /usr/share
++       Base.Usr.Share[Path on Linux]()   // /usr/share
+
+-       Base.Var.Lib[Path on Linux]()     // /var/lib
++       Base.Var.Lib[Path on Linux]()     // /var/lib
+
+-       Base.Usr.readOnly                 // true
++       Base.Usr.readOnly                 // true
+
+=       Base.Usr.readOnly                 // true
+-       ```
++       ```
+
+=       ```
+-   refer imperial.BaseLayout
++   refer imperial.BaseLayout
+
+=   refer imperial.BaseLayout
+-   refer imperial.Home
++   refer imperial.Home
+
+-   entry .Boot   the boot loader's files, `/boot`, read-only
+-   entry .Efi   the EFI system partition, `/efi`, read-only
+-   entry .Etc   the system's configuration files, `/etc`
+-   entry .Home   the directory holding users' home directories, `/home`
+-       Not to be confused with the top-level `Home`, which is the current user's own home
+-       directory.
+-   entry .Root   the root user's home directory, `/root`
+-   entry .Srv   data served by the system, `/srv`
+-   entry .Tmp   temporary files, `/tmp`, which may not survive a reboot
+-   entry .Run   runtime data since the last boot, `/run`
++   entry .Boot   ブートローダーのファイル、`/boot`。読み取り専用
++   entry .Efi   EFI システムパーティション、`/efi`。読み取り専用
++   entry .Etc   システムの設定ファイル、`/etc`
++   entry .Home   ユーザーのホームディレクトリを保持するディレクトリ、`/home`
++       現在のユーザー自身のホームディレクトリであるトップレベルの `Home` と混同しないこと。
++   entry .Root   root ユーザーのホームディレクトリ、`/root`
++   entry .Srv   システムが提供するデータ、`/srv`
++   entry .Tmp   再起動を越えて残らないことがある一時ファイル、`/tmp`
++   entry .Run   最後の起動以降の実行時データ、`/run`
+
+=   entry .Run   runtime data since the last boot, `/run`
+-     detail
++     detail
+
+-         Volatile state such as sockets and process identifier files, cleared at boot.
+-     entry .Log   runtime logs, `/run/log`
+-     entry .User   per-user runtime directories, `/run/user`
+-   entry .Usr   shareable, read-only system data, `/usr`
++         ソケットやプロセス ID のファイルなどの揮発性の状態であり、起動時に消去される。
++     entry .Log   実行時のログ、`/run/log`
++     entry .User   ユーザーごとの実行時ディレクトリ、`/run/user`
++   entry .Usr   共有可能で読み取り専用のシステムデータ、`/usr`
+
+=   entry .Usr   shareable, read-only system data, `/usr`
+-     detail
++     detail
+
+-         Every layout beneath `/usr` is `readOnly`: programs installed by the system's
+-         package manager live here, and an application should not write to it.
+-     entry .Bin   system executables, `/usr/bin`, read-only
+-     entry .Include   C header files, `/usr/include`, read-only
+-     entry .Lib   system libraries, `/usr/lib`, read-only
+-     entry .Share   architecture-independent data, `/usr/share`, read-only
++         `/usr` の下のすべてのレイアウトは `readOnly` である。
++         システムのパッケージマネージャーがインストールしたプログラムがここにあり、アプリケーションはここに書き込むべきではない。
++     entry .Bin   システムの実行ファイル、`/usr/bin`。読み取り専用
++     entry .Include   C のヘッダーファイル、`/usr/include`。読み取り専用
++     entry .Lib   システムのライブラリ、`/usr/lib`。読み取り専用
++     entry .Share   アーキテクチャーに依存しないデータ、`/usr/share`。読み取り専用
+
+-       detail
++       detail
+
+-           Documentation, and the factory defaults from which `/etc` and `/var` can be
+-           rebuilt.
+-       entry .Doc   package documentation, `/usr/share/doc`, read-only
+-       entry .Factory   pristine copies of system configuration, `/usr/share/factory`, read-only
++           ドキュメントと、`/etc` と `/var` を再構築できる工場出荷時の既定値である。
++       entry .Doc   パッケージのドキュメント、`/usr/share/doc`。読み取り専用
++       entry .Factory   システムの設定の初期状態の複製、`/usr/share/factory`。読み取り専用
+
+-         detail
++         detail
+
+-             The defaults from which a system's `/etc` and `/var` can be restored.
+-         entry .Etc   the factory copy of `/etc`, `/usr/share/factory/etc`, read-only
+-         entry .Var   the factory copy of `/var`, `/usr/share/factory/var`, read-only
+-   entry .Var   variable data which persists across reboots, `/var`
++             システムの `/etc` と `/var` を復元できる既定値である。
++         entry .Etc   `/etc` の工場出荷時の複製、`/usr/share/factory/etc`。読み取り専用
++         entry .Var   `/var` の工場出荷時の複製、`/usr/share/factory/var`。読み取り専用
++   entry .Var   再起動を越えて残る可変のデータ、`/var`
+
+=   entry .Var   variable data which persists across reboots, `/var`
+-     detail
++     detail
+
+-         Data which the system's programs write while running: caches, state, logs, queues
+-         and temporary files which must survive a reboot.
+-     entry .Cache   application caches, `/var/cache`
+-     entry .Lib   application state, `/var/lib`
+-     entry .Log   log files, `/var/log`
+-     entry .Spool   queues of pending work, such as mail and print jobs, `/var/spool`
+-     entry .Tmp   temporary files preserved across reboots, `/var/tmp`
+-   entry .Dev   device files, `/dev`
++         システムのプログラムが実行中に書き込むデータであり、キャッシュ、状態、ログ、キュー、そして再起動を越えて残らなければならない一時ファイルである。
++     entry .Cache   アプリケーションのキャッシュ、`/var/cache`
++     entry .Lib   アプリケーションの状態、`/var/lib`
++     entry .Log   ログファイル、`/var/log`
++     entry .Spool   メールや印刷ジョブなどの保留中の作業のキュー、`/var/spool`
++     entry .Tmp   再起動を越えて保たれる一時ファイル、`/var/tmp`
++   entry .Dev   デバイスファイル、`/dev`
+
+=   entry .Dev   device files, `/dev`
+-     detail
++     detail
+
+-         The kernel's device nodes.
+-     entry .Shm   shared memory, `/dev/shm`
+-   entry .Proc   the process information filesystem, `/proc`
++         カーネルのデバイスノードである。
++     entry .Shm   共有メモリ、`/dev/shm`
++   entry .Proc   プロセス情報のファイルシステム、`/proc`
+
+=   entry .Proc   the process information filesystem, `/proc`
+-     detail
++     detail
+
+-         The kernel's view of running processes. `Base.Proc(pid)` is the directory of one
+-         process, `/proc/<pid>`, and is read-only.
++         実行中のプロセスに対するカーネルの見方である。
++         `Base.Proc(pid)` は一つのプロセスのディレクトリ `/proc/<pid>` であり、読み取り専用である。
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         Base.Proc(Pid(1)).readOnly   // true
++         Base.Proc(Pid(1)).readOnly   // true
+
+-         ```
++         ```
+
+-     entry .apply   the directory of one process, `/proc/<pid>`, by its `Pid`
+-     entry .Sys   kernel parameters, `/proc/sys`, read-only
+-   entry .Sys   the kernel's device and driver tree, `/sys`, read-only
++     entry .apply   `Pid` で指定した一つのプロセスのディレクトリ、`/proc/<pid>`
++     entry .Sys   カーネルのパラメーター、`/proc/sys`。読み取り専用
++   entry .Sys   カーネルのデバイスとドライバーの木、`/sys`。読み取り専用

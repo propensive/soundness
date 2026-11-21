@@ -1,0 +1,3418 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base breviloquence
++ base breviloquence
+
+- import soundness
++ import soundness
+
+- info   CBOR (RFC 8949) as a typed tree, derived and generated codecs, a streaming parser and HTTP bodies
++ info   型付きのツリーとしての CBOR（RFC 8949）：導出されたコーデックと生成されたコーデック、ストリーミングパーサー、HTTP 本文
+
+- detail
++ detail
+
+-     _Breviloquence_ reads and writes [CBOR](https://datatracker.ietf.org/doc/html/rfc8949), the
+-     binary cousin of JSON, with the same interface Soundness gives its textual siblings: bytes
+-     parse into a `Cbor` value, case classes convert to and from it with codecs derived from
+-     their definitions, and navigation, updates and lenses work as they do for JSON and YAML.
+-     Where no human reads the wire — a device protocol, a cache entry, a message queue — CBOR
+-     keeps JSON's data model (maps, arrays, integers, floats, text, byte strings, booleans,
+-     `null` and `undefined`) in a compact binary form, and adds **tags** which annotate a value
+-     with its meaning.
++     _Breviloquence_ は [CBOR](https://datatracker.ietf.org/doc/html/rfc8949) を読み書きする。
++     CBOR は JSON のバイナリ版の親戚であり、Soundness はテキスト形式の兄弟と同じインターフェースをこれに与える。
++     バイト列は `Cbor` 値へパースされ、ケースクラスはその定義から導出されたコーデックで `Cbor` と相互に変換され、ナビゲーション、更新、レンズは JSON や YAML と同じように働く。
++     デバイスのプロトコル、キャッシュのエントリー、メッセージキューのように、ワイヤ上のデータを人が読まない場所では、CBOR は JSON のデータモデル（マップ、配列、整数、浮動小数点数、テキスト、バイト文字列、真偽値、`null` と `undefined`）をコンパクトなバイナリ形式で保ち、さらに値にその意味を注記する**タグ**を加える。
+
+-     A `Cbor` is an immutable tree over a `Cbor.Ast`, the opaque storage type whose accessors
+-     (`isMap`, `entries`, `key`, `value`, `long`, `string`, …) classify and read one node. A
+-     value encodes with `in[Cbor]` and a tree decodes with `as[T]`; bytes come from
+-     `Cbor.Ast.encodable` and go back through `Cbor.Ast.parse`, or, in one step each way,
+-     `in[Data over Cbor]` and `read[T in Cbor]`:
++     `Cbor` は `Cbor.Ast` の上の不変なツリーである。
++     `Cbor.Ast` は不透明なストレージ型であり、そのアクセサー（`isMap`、`entries`、`key`、`value`、`long`、`string`、…）が一つのノードを分類し、読み取る。
++     値は `in[Cbor]` でエンコードされ、ツリーは `as[T]` でデコードされる。
++     バイト列は `Cbor.Ast.encodable` から得られ、`Cbor.Ast.parse` を通って元に戻る。
++     あるいは、それぞれの方向を一段階で行う `in[Data over Cbor]` と `read[T in Cbor]` を使う。
+
+=     `in[Data over Cbor]` and `read[T in Cbor]`:
+=
+-     ```scala
++     ```scala
+
+=     `in[Data over Cbor]` and `read[T in Cbor]`:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `in[Data over Cbor]` and `read[T in Cbor]`:
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+-     val encoded: Cbor = Person(t"Hal", 36).in[Cbor]
++     val encoded: Cbor = Person(t"Hal", 36).in[Cbor]
+
+-     encoded.as[Person]                                     // Person(t"Hal", 36)
++     encoded.as[Person]                                     // Person(t"Hal", 36)
+
+-     val bytes: Data = Person(t"Hal", 36).in[Data over Cbor]
++     val bytes: Data = Person(t"Hal", 36).in[Data over Cbor]
+
+-     bytes.read[Person in Cbor]                             // Person(t"Hal", 36)
++     bytes.read[Person in Cbor]                             // Person(t"Hal", 36)
+
+-     Cbor.unseal(encoded).show                              // t"{\"name\": \"Hal\", \"age\": 36}"
++     Cbor.unseal(encoded).show                              // t"{\"name\": \"Hal\", \"age\": 36}"
+
+=     Cbor.unseal(encoded).show                              // t"{\"name\": \"Hal\", \"age\": 36}"
+-     ```
++     ```
+
+-     Reading is streaming: `read[Cbor]`, `read[Cbor.Ast]` and `read[T in Cbor]` over a
+-     `Chain[Data]` or a `Stream[Data]` drive the `CborParser`, a stateful capability over a
+-     `zephyrine.Cursor`, which reads each chunk as it is pulled and never assembles the input
+-     first. A value split across chunks reads exactly as one which arrived whole, and every
+-     `Cbor.Error` reports an absolute byte offset.
++     読み取りはストリーミングで行われる。
++     `Chain[Data]` や `Stream[Data]` に対する `read[Cbor]`、`read[Cbor.Ast]`、`read[T in Cbor]` は `CborParser` を駆動する。
++     `CborParser` は `zephyrine.Cursor` の上の状態を持つケイパビリティであり、各チャンクを引き出されたときに読み、入力を先に組み立てることはない。
++     複数のチャンクにまたがる値は、一度にまとめて届いた値とまったく同じように読まれ、すべての `Cbor.Error` は絶対的なバイトオフセットを報告する。
+
+-     Three paths lead from bytes to a value. The **derived** path parses the whole tree and
+-     decodes it through `Decodable in Cbor`, derived for any case class or sealed hierarchy.
+-     The **direct** path, `Cbor.Parsable` and `Cbor.Printable`, consumes items straight off
+-     the parser's rim through a `Cbor.Reader`, or writes them straight into a byte producer,
+-     with no tree built; `Inlinable.parsable[T]` and `Inlinable.printable[T]` generate such
+-     instances at compile time, `derives Cbor.Direct` generates both into a companion, and
+-     `import codecs.direct` selects the generated codec for every record in scope. A third
+-     option, `import codecs.strict`, makes a record with no direct codec a compile error. With
+-     no mode imported, a type takes the direct path exactly when it has a `Cbor.Parsable` or
+-     `Cbor.Printable` of its own, and the derived path otherwise.
++     バイト列から値へ至る経路は三つある。
++     **導出**の経路はツリー全体をパースし、それを `Decodable in Cbor` を通じてデコードする。
++     `Decodable in Cbor` は任意のケースクラスやシールされた階層に対して導出される。
++     **直接**の経路である `Cbor.Parsable` と `Cbor.Printable` は、ツリーを作らずに、`Cbor.Reader` を通じてパーサーの縁から項目を直接消費し、あるいはバイトの生産者へ直接書き込む。
++     `Inlinable.parsable[T]` と `Inlinable.printable[T]` はそのようなインスタンスをコンパイル時に生成し、`derives Cbor.Direct` は両方をコンパニオンに生成し、`import codecs.direct` はスコープ内のすべてのレコードに対して生成されたコーデックを選ぶ。
++     三つ目の選択肢である `import codecs.strict` は、直接のコーデックを持たないレコードをコンパイルエラーにする。
++     モードを何もインポートしなければ、型は自身の `Cbor.Parsable` または `Cbor.Printable` を持つときにだけ直接の経路を通り、それ以外では導出の経路を通る。
+
+-     The library has three components:
++     このライブラリには三つのコンポーネントがある。
+
+-     - `breviloquence.core` — `Cbor`, `Cbor.Ast`, `CborParser`, `Cbor.Reader`, the derived
+-       and direct codecs, optics, `Inlinable` and the `optionalityOptions`, `dynamicAccess`
+-       and `conversions` packages. Compiles for the JVM, Scala.js and Scala Native.
+-     - `breviloquence.staged` — an in-macro staging compiler (`InlinableStager`) which lets
+-       `Inlinable.parsable` evaluate a hand-written `Inlinable` instance, and a sealed sum's
+-       `Discriminable in Cbor`, while the code compiles. It brings the Scala compiler onto the
+-       macro classpath, so it is a separate, opt-in component; without it a field whose type
+-       has only a hand-written instance takes a runtime seam, and a sum is not generated. JVM
+-       only.
+-     - `breviloquence.http` — the `postables`, `servables` and `construables` givens which make
+-       a `Cbor` an `application/cbor` request or response body with telekinesis. JVM only.
++     - `breviloquence.core` — `Cbor`、`Cbor.Ast`、`CborParser`、`Cbor.Reader`、導出されたコーデックと直接のコーデック、オプティクス、`Inlinable`、そして `optionalityOptions`、`dynamicAccess`、`conversions` パッケージ。JVM、Scala.js、Scala Native 向けにコンパイルできる。
++     - `breviloquence.staged` — マクロ内のステージングコンパイラ（`InlinableStager`）。コードのコンパイル中に、`Inlinable.parsable` が手書きの `Inlinable` インスタンスや、シールされた直和型の `Discriminable in Cbor` を評価できるようにする。Scala コンパイラをマクロのクラスパスに持ち込むので、別個の、明示的に選ぶコンポーネントになっている。これがなければ、型が手書きのインスタンスしか持たないフィールドは実行時の継ぎ目を通り、直和型は生成されない。JVM のみ。
++     - `breviloquence.http` — `postables`、`servables`、`construables` の given。telekinesis で `Cbor` を `application/cbor` のリクエスト本文やレスポンス本文にする。JVM のみ。
+
+-     `Cbor` and `Cbor2` are exported to the `soundness` umbrella, with the `parse` extension,
+-     and each choice package merges with the umbrella's own: a user writes `import soundness.*`
+-     and then imports a policy by name, since `import soundness.*` does not import givens
+-     (`import optionalityOptions.strictCborNulls`, `import dynamicAccess.dynamicCbor`,
+-     `import codecs.direct`).
++     `Cbor` と `Cbor2` は `parse` 拡張とともに `soundness` アンブレラにエクスポートされ、各選択パッケージはアンブレラ自身の同名のパッケージと統合される。
++     ユーザーは `import soundness.*` と書き、それからポリシーを名前でインポートする。
++     `import soundness.*` は given をインポートしないからである（`import optionalityOptions.strictCborNulls`、`import dynamicAccess.dynamicCbor`、`import codecs.direct`）。
+
+- refer breviloquence.Cbor
++ refer breviloquence.Cbor
+
+- refer breviloquence.Cbor.Ast
++ refer breviloquence.Cbor.Ast
+
+- refer breviloquence.CborParser
++ refer breviloquence.CborParser
+
+- refer breviloquence.Inlinable
++ refer breviloquence.Inlinable
+
+- refer breviloquence.Cbor.Error
++ refer breviloquence.Cbor.Error
+
+- entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks and optics
++ entry .Cbor   CBOR ドキュメント：不変なツリーと、そのコーデック、パーサーのフック、オプティクス
+
+= entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks and optics
+-   detail
++   detail
+
+-       A `Cbor` wraps one `Cbor.Ast` node — the root of a document — and is the type every
+-       encoding produces and every decoding consumes. It is `Dynamic`, so with
+-       `dynamicAccess.dynamicCbor` in scope a map's fields read as members, an array indexes,
+-       and an assignment makes an updated copy; it compares structurally with `==`, map
+-       entries position by position (canonical CBOR orders keys deterministically, so a
+-       round-tripped document compares equal, but two maps with the same entries in a
+-       different order do not).
++       `Cbor` は一つの `Cbor.Ast` ノード（ドキュメントのルート）を包み、すべてのエンコードが生成し、すべてのデコードが消費する型である。
++       `Dynamic` なので、`dynamicAccess.dynamicCbor` がスコープにあれば、マップのフィールドはメンバーとして読め、配列はインデックスで参照でき、代入は更新されたコピーを作る。
++       `==` で構造的に比較され、マップのエントリーは位置ごとに比較される（正準 CBOR はキーを決定的に並べるので、往復したドキュメントは等しくなるが、同じエントリーを異なる順序で持つ二つのマップは等しくない）。
+
+=       different order do not).
+=
+-       ```scala
++       ```scala
+
+=       different order do not).
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       different order do not).
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       different order do not).
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import dynamicAccess.dynamicCbor
++       import dynamicAccess.dynamicCbor
+
+=       different order do not).
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import dynamicAccess.dynamicCbor
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       case class Person(name: Text, age: Int)
+=
+-       val person: Cbor = Person(t"Hal", 36).in[Cbor]
++       val person: Cbor = Person(t"Hal", 36).in[Cbor]
+
+-       person.name.as[Text]                  // t"Hal"
++       person.name.as[Text]                  // t"Hal"
+
+-       (person.age = 40).as[Person]          // Person(t"Hal", 40)
++       (person.age = 40).as[Person]          // Person(t"Hal", 40)
+
+-       Cbor.make(name = t"Kate".in[Cbor], age = 30.in[Cbor]).as[Person]
++       Cbor.make(name = t"Kate".in[Cbor], age = 30.in[Cbor]).as[Person]
+
+=       Cbor.make(name = t"Kate".in[Cbor], age = 30.in[Cbor]).as[Person]
+-       ```
++       ```
+
+-       The companion holds everything a `Cbor` can do: the `Encodable in Cbor` and
+-       `Decodable in Cbor` givens for primitives, collections, `Optional`, `Option` and `Map`
+-       (`Cbor.decodable` and `Cbor.encodable` derive them for any case class or sealed
+-       hierarchy), the read paths `.aggregable`, `Cbor.aggregableIn` and
+-       `Cbor.aggregableParsed` which turn chunked bytes into a tree or a value, the write paths
+-       `Cbor.encodableOver` and `Cbor.encodableOverPrinted` behind `in[Data over Cbor]`, the
+-       `.lens` and array optics, `.emit` for serializing a block at a time, and the
+-       direct-codec surface `.Parsable`, `.Printable`, `.Reader` and `.Direct`. All of these
+-       are in implicit scope: only the policies in `optionalityOptions`, `dynamicAccess`,
+-       `conversions` and `codecs` are imported by name. Those written here as `Cbor.…` are
+-       inherited rather than declared: the lower-priority traits `Cbor1` and `Cbor2` declare
+-       them, and document them.
++       コンパニオンは `Cbor` ができることのすべてを保持する。
++       プリミティブ、コレクション、`Optional`、`Option`、`Map` に対する `Encodable in Cbor` と `Decodable in Cbor` の given（`Cbor.decodable` と `Cbor.encodable` は任意のケースクラスやシールされた階層に対してそれらを導出する）、チャンクに分かれたバイト列をツリーや値に変える読み取りの経路 `.aggregable`、`Cbor.aggregableIn`、`Cbor.aggregableParsed`、`in[Data over Cbor]` の背後にある書き込みの経路 `Cbor.encodableOver` と `Cbor.encodableOverPrinted`、`.lens` と配列のオプティクス、一ブロックずつ直列化する `.emit`、そして直接のコーデックの面である `.Parsable`、`.Printable`、`.Reader`、`.Direct` である。
++       これらはすべて暗黙のスコープにあり、名前でインポートするのは `optionalityOptions`、`dynamicAccess`、`conversions`、`codecs` のポリシーだけである。
++       ここで `Cbor.…` と書いたものは、宣言されたものではなく継承されたものである。
++       優先度の低いトレイト `Cbor1` と `Cbor2` がそれらを宣言し、文書化している。
+
+-       Decoding needs a `Tactic[Cbor.Error]` in scope (`strategies.throwUnsafely`, a `safely`
+-       or `unsafely` block, or a `raises Cbor.Error` clause). A failed read raises
+-       `Cbor.Error` with a `Cbor.Error.Reason`: malformed input names a byte offset, and a
+-       failed conversion says which type was found and which was expected, or that a field
+-       was absent.
++       デコードにはスコープ内の `Tactic[Cbor.Error]` が必要である（`strategies.throwUnsafely`、`safely` または `unsafely` ブロック、あるいは `raises Cbor.Error` 節）。
++       読み取りに失敗すると、`Cbor.Error.Reason` を持つ `Cbor.Error` が発生する。
++       不正な入力はバイトオフセットを示し、変換の失敗は、どの型が見つかりどの型が期待されたか、あるいはフィールドが存在しなかったことを述べる。
+
+=       was absent.
+-   refer breviloquence.Cbor.Ast
++   refer breviloquence.Cbor.Ast
+
+=       was absent.
+=   refer breviloquence.Cbor.Ast
+-   refer breviloquence.Cbor.Error
++   refer breviloquence.Cbor.Error
+
+=   refer breviloquence.Cbor.Error
+-   refer breviloquence.Cbor.Parsable
++   refer breviloquence.Cbor.Parsable
+
+=   refer breviloquence.Cbor.Error
+=   refer breviloquence.Cbor.Parsable
+-   refer breviloquence.Cbor.Printable
++   refer breviloquence.Cbor.Printable
+
+-   refer breviloquence.Inlinable
++   refer breviloquence.Inlinable
+
+-   refer breviloquence.dynamicAccess
++   refer breviloquence.dynamicAccess
+
+-   entry #apply   a map's field by name, or an array's element by index
+-       `cbor(t"name")` is the value under the key `name`, as a `Cbor`, or a `Cbor` whose root
+-       is `undefined` if the map has no such key (so a chain of lookups into missing fields
+-       yields `undefined` rather than failing); looking a field up on a non-map raises
+-       `Cbor.Error` with `NotType(found, Map)`. `cbor(2)` is the third element of an array,
+-       and raises `NotType` on anything else.
+-   entry #selectDynamic   `cbor.field`: a map entry by name, under `dynamicAccess.dynamicCbor`
+-       The `Dynamic` form of `#apply` with a text key, available only where a
+-       `(? >: Cbor) is Dynamical` is in scope — `import dynamicAccess.dynamicCbor` for a whole
+-       scope, or a `dynamically[Cbor]:` block for one expression — so that a misspelt field
+-       name cannot be mistaken for a method where dynamic access was not intended. Raises
+-       `Cbor.Error` if the receiver is not a map.
+-   entry #applyDynamic   `cbor.field(index)`: an element of an array-valued field
+-       Under `dynamicAccess.dynamicCbor`, `cbor.values(1)` is the second element of the array
+-       under the key `values`. Raises `Cbor.Error` if the receiver is not a map or the field is
+-       not an array.
+-   entry #updateDynamic   `cbor.field = value`: a copy with the entry replaced, added or removed
+-       Under `dynamicAccess.dynamicCbor`, `person.age = 40` is a new `Cbor` whose `age` entry
+-       holds the encoding of `40` (any `Encodable in Cbor` value; `conversions.encodableToCbor`
+-       lets a lens assignment take one too), appended as a new entry if the key was absent.
+-       `person.age = Unset` removes the entry. Both raise `Cbor.Error` with `NotType(found,
+-       Map)` if the receiver is not a map.
++   entry #apply   マップのフィールドを名前で、または配列の要素をインデックスで取り出す
++       `cbor(t"name")` はキー `name` の下にある値を `Cbor` として返す。
++       マップにそのキーがなければ、ルートが `undefined` である `Cbor` を返す（そのため、存在しないフィールドへの参照を連ねても、失敗せずに `undefined` になる）。
++       マップでないものに対してフィールドを参照すると、`NotType(found, Map)` を持つ `Cbor.Error` が発生する。
++       `cbor(2)` は配列の三番目の要素であり、それ以外のものに対しては `NotType` が発生する。
++   entry #selectDynamic   `cbor.field`：`dynamicAccess.dynamicCbor` のもとで、マップのエントリーを名前で取り出す
++       テキストのキーを取る `#apply` の `Dynamic` 形式である。
++       `(? >: Cbor) is Dynamical` がスコープにある場所でだけ使える。
++       スコープ全体には `import dynamicAccess.dynamicCbor`、一つの式には `dynamically[Cbor]:` ブロックを使う。
++       こうして、動的アクセスを意図していない場所で、綴りを誤ったフィールド名がメソッドと取り違えられることはない。
++       レシーバがマップでなければ `Cbor.Error` が発生する。
++   entry #applyDynamic   `cbor.field(index)`：配列を値とするフィールドの要素
++       `dynamicAccess.dynamicCbor` のもとで、`cbor.values(1)` はキー `values` の下にある配列の二番目の要素である。
++       レシーバがマップでないか、フィールドが配列でなければ `Cbor.Error` が発生する。
++   entry #updateDynamic   `cbor.field = value`：エントリーを置き換え、追加し、または削除したコピー
++       `dynamicAccess.dynamicCbor` のもとで、`person.age = 40` は、`age` エントリーが `40` のエンコード（任意の `Encodable in Cbor` の値。`conversions.encodableToCbor` を使えば、レンズの代入でもそれを受け取れる）を持つ新しい `Cbor` である。
++       キーが存在しなければ、新しいエントリーとして末尾に追加される。
++       `person.age = Unset` はエントリーを削除する。
++       レシーバがマップでなければ、どちらも `NotType(found, Map)` を持つ `Cbor.Error` を発生させる。
+
+=       Map)` if the receiver is not a map.
+=
+-       ```scala
++       ```scala
+
+=       Map)` if the receiver is not a map.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       Map)` if the receiver is not a map.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       Map)` if the receiver is not a map.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import dynamicAccess.dynamicCbor
++       import dynamicAccess.dynamicCbor
+
+=       Map)` if the receiver is not a map.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import dynamicAccess.dynamicCbor
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       case class Named(name: Text, age: Optional[Int])
++       case class Named(name: Text, age: Optional[Int])
+
+=       case class Named(name: Text, age: Optional[Int])
+=
+-       val person: Cbor = Person(t"Hal", 36).in[Cbor]
++       val person: Cbor = Person(t"Hal", 36).in[Cbor]
+
+-       (person.age = 40).as[Person]       // Person(t"Hal", 40)
++       (person.age = 40).as[Person]       // Person(t"Hal", 40)
+
+-       (person.age = Unset).as[Named]     // Named(t"Hal", Unset)
++       (person.age = Unset).as[Named]     // Named(t"Hal", Unset)
+
+=       (person.age = Unset).as[Named]     // Named(t"Hal", Unset)
+-       ```
++       ```
+
+-   entry #as   decodes the document as a type, through its `Decodable in Cbor`
+-       `cbor.as[Person]` runs the type's decoder over the tree and needs a
+-       `Tactic[Cbor.Error]`. A case class decodes from a map by field name (renamed by a
+-       `@name[Cbor]` annotation), a sealed hierarchy through its `Discriminable in Cbor`, a
+-       collection from an array, and a primitive from the matching leaf; an `Optional` or
+-       `Option` field reads an absent key, a `null` or a mistyped value as
+-       `optionalityOptions` says. Under a `Validate` scope, every mistyped or absent field
+-       accrues its own error with a `Pointer` to it, and the case class is constructed only
+-       when every field was clean.
+-   entry .ast   wraps an AST node as a `Cbor` document
+-       `Cbor.ast(node)` is the inverse of `.unseal`: a `Cbor.Ast` — the result of
+-       `Cbor.Ast.parse`, or a node reached through the accessors — as a document which can be
+-       decoded, navigated and updated.
++   entry #as   ドキュメントを、型の `Decodable in Cbor` を通じてその型としてデコードする
++       `cbor.as[Person]` は型のデコーダーをツリーに対して実行し、`Tactic[Cbor.Error]` を必要とする。
++       ケースクラスはマップからフィールド名で（`@name[Cbor]` アノテーションで名前を変えられる）、シールされた階層は `Discriminable in Cbor` を通じて、コレクションは配列から、プリミティブは対応する葉からデコードされる。
++       `Optional` または `Option` のフィールドは、存在しないキー、`null`、型の合わない値を `optionalityOptions` の指定どおりに読む。
++       `Validate` スコープのもとでは、型の合わないフィールドや存在しないフィールドがそれぞれ、そのフィールドへの `Pointer` を持つ自身のエラーを蓄積し、ケースクラスはすべてのフィールドに問題がなかったときにだけ構築される。
++   entry .ast   AST ノードを `Cbor` ドキュメントとして包む
++       `Cbor.ast(node)` は `.unseal` の逆である。
++       `Cbor.Ast`（`Cbor.Ast.parse` の結果や、アクセサーを通じてたどり着いたノード）を、デコード、ナビゲーション、更新のできるドキュメントにする。
+
+=       decoded, navigated and updated.
+=
+-       ```scala
++       ```scala
+
+=       decoded, navigated and updated.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       decoded, navigated and updated.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Cbor.ast(Cbor.Ast.parse(hex"83010203")).as[List[Int]]   // List(1, 2, 3)
++       Cbor.ast(Cbor.Ast.parse(hex"83010203")).as[List[Int]]   // List(1, 2, 3)
+
+=       Cbor.ast(Cbor.Ast.parse(hex"83010203")).as[List[Int]]   // List(1, 2, 3)
+-       ```
++       ```
+
+-   entry .unseal   the AST node at the root of a document
+-       `Cbor.unseal(cbor)` exposes the tree as a `Cbor.Ast`, for the accessors (`isTag`,
+-       `entries`, `key`, …), for `show` in diagnostic notation, and for
+-       `Cbor.Ast.encodable.encoded`, which gives the document's bytes.
+-   entry .applyDynamicNamed   `Cbor.make(key = value, …)`: a map built from named arguments
+-       The companion is `Dynamic` with the single method name `make`, so
+-       `Cbor.make(name = t"Kate".in[Cbor], age = 30.in[Cbor])` is a map with those entries in
+-       that order, each argument already a `Cbor`. This is how a map is assembled where no case
+-       class fits.
+-   entry .emit   a document's bytes a block at a time, pulled as an iterator or pushed to a function
+-       Two forms over the same depth-first walk, each needing a `Buffering` in scope for the
+-       block size. `Cbor.emit(cbor)` is an `Iterator[Data]^` which serializes the next block
+-       only when it is pulled, without a fiber: a block ends at the first node boundary past
+-       the buffering capacity, so one long string may overrun it. `Cbor.emit(cbor, deliver)`
+-       serializes on the caller's thread and hands each block to `deliver` as it fills, the
+-       shape for writing to a file, a socket or an `OutputStream`. The bytes are exactly those
+-       `Cbor.Ast.encodable` writes, and `.streamable` wraps the pull form as a `Stream`.
++   entry .unseal   ドキュメントのルートにある AST ノード
++       `Cbor.unseal(cbor)` はツリーを `Cbor.Ast` として公開する。
++       アクセサー（`isTag`、`entries`、`key`、…）のため、診断記法での `show` のため、そしてドキュメントのバイト列を与える `Cbor.Ast.encodable.encoded` のためである。
++   entry .applyDynamicNamed   `Cbor.make(key = value, …)`：名前付き引数から構築されるマップ
++       コンパニオンは単一のメソッド名 `make` を持つ `Dynamic` である。
++       そのため、`Cbor.make(name = t"Kate".in[Cbor], age = 30.in[Cbor])` はそれらのエントリーをその順序で持つマップであり、各引数はすでに `Cbor` である。
++       合うケースクラスがない場所では、このようにしてマップを組み立てる。
++   entry .emit   ドキュメントのバイト列を一ブロックずつ、イテレーターとして引き出すか、関数へ押し出す
++       同じ深さ優先の走査に対する二つの形式があり、どちらもブロックの大きさのためにスコープ内の `Buffering` を必要とする。
++       `Cbor.emit(cbor)` は `Iterator[Data]^` であり、ファイバーを使わずに、次のブロックを引き出されたときにだけ直列化する。
++       ブロックはバッファリングの容量を超えた最初のノード境界で終わるので、一つの長い文字列が容量を超えることもある。
++       `Cbor.emit(cbor, deliver)` は呼び出し元のスレッドで直列化し、各ブロックが満ちるたびに `deliver` へ渡す。
++       これはファイル、ソケット、`OutputStream` へ書き込むための形である。
++       バイト列は `Cbor.Ast.encodable` が書くものとまったく同じであり、`.streamable` は引き出す形式を `Stream` として包む。
+
+=       `Cbor.Ast.encodable` writes, and `.streamable` wraps the pull form as a `Stream`.
+=
+-       ```scala
++       ```scala
+
+=       `Cbor.Ast.encodable` writes, and `.streamable` wraps the pull form as a `Stream`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       case class Wrapper(values: List[Int], label: Text)
++       case class Wrapper(values: List[Int], label: Text)
+
+-       given Buffering:
++       given Buffering:
+
+-         def capacity(substrate: Substrate): Int = 8
++         def capacity(substrate: Substrate): Int = 8
+
+-         def depth: Int = 2
++         def depth: Int = 2
+
+-       val cbor: Cbor = Wrapper(List(1, 2, 300, 70000), t"hello, world").in[Cbor]
++       val cbor: Cbor = Wrapper(List(1, 2, 300, 70000), t"hello, world").in[Cbor]
+
+-       Cbor.emit(cbor).to[List].length                  // several blocks
++       Cbor.emit(cbor).to[List].length                  // several blocks
+
+-       Cbor.emit(cbor, block => ())
++       Cbor.emit(cbor, block => ())
+
+=       Cbor.emit(cbor, block => ())
+-       ```
++       ```
+
+-   entry .streamable   a `Cbor` as a `Stream[Data]` metered by `Credit`, through `.emit`
+-       Needs a `Buffering`. This is what lets a document be written with `stream.transfer`, or
+-       sent wherever a `Streamable by Data` is accepted, without its whole encoding in memory.
+-   entry .aggregable   reads chunked bytes into a `Cbor`: the given behind `read[Cbor]`
+-       `Chain(bytes).read[Cbor]` and `stream.read[Cbor]` parse one data item, reading each
+-       chunk as it is pulled, and reject trailing bytes with `Cbor.Error(Trailing(offset))`.
+-       Needs a `Tactic[Cbor.Error]`; the whole tree is built, so the input's size bounds the
+-       memory held.
+-   entry .aggregableDerived   under `codecs.derived`, the tree path even where a `Cbor.Parsable` is in scope
+-       `import codecs.derived` selects the derived codecs for every type: this given outranks
+-       `Cbor.aggregableParsed` and applies exactly where it would, so `read[T in Cbor]` parses the
+-       tree and decodes it through the type's `Decodable in Cbor` even when a direct parser is
+-       in scope.
+-   entry .readableDerived   under `codecs.derived`, `data.read[T in Cbor]` through the tree
+-       The whole-`Data` counterpart of `.aggregableDerived`, outranking `Cbor.readableParsed`.
+-   entry .encodableOverDerived   under `codecs.derived`, `in[Data over Cbor]` through the tree
+-       Outranks `Cbor.encodableOverPrinted` wherever a `Cbor.Printable` is in scope, so the value is
+-       encoded to a tree through its `Encodable in Cbor` and serialized.
+-   entry .aggregableStrict   under `codecs.strict`, the direct read path for a type with a `Cbor.Parsable`
+-       `import codecs.strict` is `codecs.direct` with no fallback: a type with a direct parser
+-       reads through it, and a type without one meets `Cbor.aggregableStrictFailure`, a compile
+-       error naming the type, instead of the tree path.
+-   entry .encodableOverStrict   under `codecs.strict`, `in[Data over Cbor]` through a `Cbor.Printable`
+-       The writing half of the strict pair; a type with no `Cbor.Printable` meets
+-       `Cbor.encodableOverStrictFailure`.
+-   entry .option   decodes an `Option[T]` field, by the same three `optionalityOptions` policies as `Cbor.optional`
+-       Absent, `null` and faulty values yield `None` under the lenient policies and raise
+-       `Cbor.Error` under the strict ones; a present value decodes to `Some`.
+-   entry .optionEncodable   encodes an `Option[T]`: the value's encoding, or `undefined` for `None`
+-   entry .unit   decodes CBOR `null` as `()`
+-       Anything but `null` raises `Cbor.Error`: `Absent` for `undefined`, and `NotType(found,
+-       Null)` otherwise.
+-   entry .boolean   decodes a CBOR boolean as `Boolean`
+-       Any other node raises `Cbor.Error(NotType(found, Boolean))`.
+-   entry .double   decodes a CBOR float as `Double`, or an integer widened to one
+-       Half, single and double precision floats all parse to a `Double`; an integer node is
+-       converted. Any other node raises `Cbor.Error(NotType(found, Float))`.
+-   entry .float   decodes a CBOR float or integer as `Float`
+-   entry .long   decodes a CBOR integer as `Long`, or a float truncated to one
+-       An integer outside the range of a `Long` fails at parse time with `Overflow(offset)`;
+-       a float node is truncated. Any other node raises `Cbor.Error(NotType(found, Integer))`.
+-   entry .int   decodes a CBOR integer as `Int`
+-       Through `.long`, then narrowed with `toInt`: a value outside the `Int` range wraps
+-       rather than failing.
+-   entry .text   decodes a CBOR text string as `Text`
+-       Any other node raises `Cbor.Error(NotType(found, TextString))`.
+-   entry .string   decodes a CBOR text string as `String`
+-   entry .byteString   decodes a CBOR byte string as frozen `Array[Byte]`, that is, `Data`
+-       Any other node raises `Cbor.Error(NotType(found, ByteString))`.
+-   entry .cbor   decodes a `Cbor` as itself, so a field may keep its subtree as a document
+-   entry .integralEncodable   encodes any `Integral` number as a CBOR integer, through `toLong`
+-   entry .textEncodable   encodes `Text` as a CBOR text string
+-   entry .stringEncodable   encodes `String` as a CBOR text string
+-   entry .doubleEncodable   encodes `Double` as a 64-bit CBOR float
+-       Floats are always written at 64 bits; the shorter encodings are parsed but never
+-       produced.
+-   entry .floatEncodable   encodes `Float` as a 64-bit CBOR float
+-   entry .intEncodable   encodes `Int` as a CBOR integer, in the shortest head encoding
+-   entry .longEncodable   encodes `Long` as a CBOR integer, in the shortest head encoding
+-       A negative value is written as major type 1; the head takes 1, 2, 3, 5 or 9 bytes
+-       according to the magnitude.
+-   entry .booleanEncodable   encodes `Boolean` as CBOR `true` or `false`
+-   entry .unitEncodable   encodes `()` as CBOR `null`
+-   entry .bytesEncodable   encodes a frozen `Array[Byte]` (`Data`) as a CBOR byte string
+-   entry .cborEncodable   encodes a `Cbor` as itself
+-   entry .listEncodable   encodes a `List[T]` as a CBOR array, through the element's `Encodable in Cbor`
+-       Captures the element codec, which is taken by name so that a recursive type (a `Tree`
+-       with `children: List[Tree]`) derives.
+-   entry .setEncodable   encodes a `Set[T]` as a CBOR array of its elements, in the set's order
+-   entry .seriesEncodable   encodes a `Sequence[T]` as a CBOR array
+-   entry .collectionDecodable   decodes a CBOR array into any `Iterable` collection with a `Factory`
+-       The general instance for stdlib collection types; `.listDecodable`, `.setDecodable`
+-       and `.seriesDecodable` are its counterparts for Soundness's own `List`, `Set` and
+-       `Sequence`, which are opaque and so do not match `Iterable`. A non-array node raises
+-       `Cbor.Error(NotType(found, Array))`. Captures the tactic and the element decoder.
+-   entry .listDecodable   decodes a CBOR array as a `List[T]`
+-       The element decoder is taken by name, so a type recursive through a `List` (a `Tree`
+-       with `children: List[Tree]`) derives without a hand-written instance.
+-   entry .setDecodable   decodes a CBOR array as a `Set[T]`
+-   entry .seriesDecodable   decodes a CBOR array as a `Sequence[T]`
+-   entry .mapDecodable   decodes a CBOR map with text keys as a `Map[K, V]`
+-       Each key decodes through `K`'s `Decodable in Text` and each value through `V`'s
+-       `Decodable in Cbor`; a key which is not a text string raises
+-       `Cbor.Error(NonStringKey)`. A non-map node decodes as an empty map.
+-   entry .mapEncodable   encodes a `Map[K, V]` as a CBOR map with text keys
+-       Keys are written through `K`'s `Encodable in Text`, in the map's iteration order.
+-   entry .lens   `cbor.lens(_.field = value)`: a `Lens` from a document onto one of its map entries
+-       Each name becomes a `name is Lens from Cbor onto Cbor` which reads the entry with
+-       `#selectDynamic` and writes it with an immutable update, so `play.lens(_.hero.name =
+-       t"Kent")` rebuilds the path from the root. It needs a `(? >: Cbor) is Dynamical`
+-       (`dynamicAccess.dynamicCbor`) and a `Tactic[Cbor.Error]`; with
+-       `conversions.encodableToCbor` imported, the assigned value may be any `Encodable in
+-       Cbor` rather than a `Cbor`.
++   entry .streamable   `.emit` を通じて、`Credit` で計量される `Stream[Data]` としての `Cbor`
++       `Buffering` を必要とする。
++       これにより、エンコード全体をメモリに置くことなく、ドキュメントを `stream.transfer` で書き込んだり、`Streamable by Data` を受け付ける場所へ送ったりできる。
++   entry .aggregable   チャンクに分かれたバイト列を `Cbor` へ読み込む：`read[Cbor]` の背後にある given
++       `Chain(bytes).read[Cbor]` と `stream.read[Cbor]` は、各チャンクを引き出されたときに読みながら一つのデータ項目をパースし、後続のバイトを `Cbor.Error(Trailing(offset))` で拒否する。
++       `Tactic[Cbor.Error]` を必要とする。
++       ツリー全体が構築されるので、保持されるメモリは入力の大きさで決まる。
++   entry .aggregableDerived   `codecs.derived` のもとで、`Cbor.Parsable` がスコープにある場所でもツリーの経路を使う
++       `import codecs.derived` はすべての型に対して導出されたコーデックを選ぶ。
++       この given は `Cbor.aggregableParsed` より優先され、それが適用されるのとまったく同じ場所で適用される。
++       そのため、直接のパーサーがスコープにあっても、`read[T in Cbor]` はツリーをパースし、型の `Decodable in Cbor` を通じてデコードする。
++   entry .readableDerived   `codecs.derived` のもとで、ツリーを通じて `data.read[T in Cbor]` を行う
++       `.aggregableDerived` の、`Data` 全体に対する対応物であり、`Cbor.readableParsed` より優先される。
++   entry .encodableOverDerived   `codecs.derived` のもとで、ツリーを通じて `in[Data over Cbor]` を行う
++       `Cbor.Printable` がスコープにある場所ではどこでも `Cbor.encodableOverPrinted` より優先されるので、値は `Encodable in Cbor` を通じてツリーへエンコードされ、直列化される。
++   entry .aggregableStrict   `codecs.strict` のもとで、`Cbor.Parsable` を持つ型に対する直接の読み取りの経路
++       `import codecs.strict` は、フォールバックのない `codecs.direct` である。
++       直接のパーサーを持つ型はそれを通じて読まれ、持たない型はツリーの経路ではなく `Cbor.aggregableStrictFailure` に行き当たる。
++       これはその型を名指すコンパイルエラーである。
++   entry .encodableOverStrict   `codecs.strict` のもとで、`Cbor.Printable` を通じて `in[Data over Cbor]` を行う
++       strict の組の書き込み側である。
++       `Cbor.Printable` を持たない型は `Cbor.encodableOverStrictFailure` に行き当たる。
++   entry .option   `Option[T]` のフィールドを、`Cbor.optional` と同じ三つの `optionalityOptions` ポリシーでデコードする
++       存在しない値、`null`、誤りのある値は、寛容なポリシーのもとでは `None` になり、厳格なポリシーのもとでは `Cbor.Error` を発生させる。
++       存在する値は `Some` にデコードされる。
++   entry .optionEncodable   `Option[T]` をエンコードする：値のエンコード、または `None` に対しては `undefined`
++   entry .unit   CBOR の `null` を `()` としてデコードする
++       `null` 以外のものはすべて `Cbor.Error` を発生させる。
++       `undefined` に対しては `Absent`、それ以外に対しては `NotType(found, Null)` である。
++   entry .boolean   CBOR の真偽値を `Boolean` としてデコードする
++       それ以外のノードは `Cbor.Error(NotType(found, Boolean))` を発生させる。
++   entry .double   CBOR の浮動小数点数を `Double` として、または整数を拡大してデコードする
++       半精度、単精度、倍精度の浮動小数点数はすべて `Double` にパースされ、整数のノードは変換される。
++       それ以外のノードは `Cbor.Error(NotType(found, Float))` を発生させる。
++   entry .float   CBOR の浮動小数点数または整数を `Float` としてデコードする
++   entry .long   CBOR の整数を `Long` として、または浮動小数点数を切り捨ててデコードする
++       `Long` の範囲外の整数は、パース時に `Overflow(offset)` で失敗する。
++       浮動小数点数のノードは切り捨てられる。
++       それ以外のノードは `Cbor.Error(NotType(found, Integer))` を発生させる。
++   entry .int   CBOR の整数を `Int` としてデコードする
++       `.long` を通じてデコードし、それから `toInt` で縮小する。
++       `Int` の範囲外の値は、失敗せずに桁あふれして巡回する。
++   entry .text   CBOR のテキスト文字列を `Text` としてデコードする
++       それ以外のノードは `Cbor.Error(NotType(found, TextString))` を発生させる。
++   entry .string   CBOR のテキスト文字列を `String` としてデコードする
++   entry .byteString   CBOR のバイト文字列を凍結済みの `Array[Byte]`、すなわち `Data` としてデコードする
++       それ以外のノードは `Cbor.Error(NotType(found, ByteString))` を発生させる。
++   entry .cbor   `Cbor` をそれ自身としてデコードする。これにより、フィールドはその部分木をドキュメントとして保てる
++   entry .integralEncodable   任意の `Integral` な数を、`toLong` を通じて CBOR の整数としてエンコードする
++   entry .textEncodable   `Text` を CBOR のテキスト文字列としてエンコードする
++   entry .stringEncodable   `String` を CBOR のテキスト文字列としてエンコードする
++   entry .doubleEncodable   `Double` を 64 ビットの CBOR 浮動小数点数としてエンコードする
++       浮動小数点数は常に 64 ビットで書かれる。
++       より短いエンコードはパースされるが、生成されることはない。
++   entry .floatEncodable   `Float` を 64 ビットの CBOR 浮動小数点数としてエンコードする
++   entry .intEncodable   `Int` を、最も短いヘッドのエンコードで CBOR の整数としてエンコードする
++   entry .longEncodable   `Long` を、最も短いヘッドのエンコードで CBOR の整数としてエンコードする
++       負の値はメジャータイプ 1 として書かれる。
++       ヘッドは大きさに応じて 1、2、3、5、9 バイトのいずれかを占める。
++   entry .booleanEncodable   `Boolean` を CBOR の `true` または `false` としてエンコードする
++   entry .unitEncodable   `()` を CBOR の `null` としてエンコードする
++   entry .bytesEncodable   凍結済みの `Array[Byte]`（`Data`）を CBOR のバイト文字列としてエンコードする
++   entry .cborEncodable   `Cbor` をそれ自身としてエンコードする
++   entry .listEncodable   `List[T]` を、要素の `Encodable in Cbor` を通じて CBOR の配列としてエンコードする
++       要素のコーデックを捕捉する。
++       コーデックは名前渡しで受け取られるので、再帰的な型（`children: List[Tree]` を持つ `Tree`）も導出できる。
++   entry .setEncodable   `Set[T]` を、その要素の CBOR 配列として、集合の順序でエンコードする
++   entry .seriesEncodable   `Sequence[T]` を CBOR の配列としてエンコードする
++   entry .collectionDecodable   CBOR の配列を、`Factory` を持つ任意の `Iterable` コレクションへデコードする
++       標準ライブラリのコレクション型に対する汎用のインスタンスである。
++       `.listDecodable`、`.setDecodable`、`.seriesDecodable` は、Soundness 自身の `List`、`Set`、`Sequence` に対する対応物である。
++       これらは不透明なので、`Iterable` には一致しない。
++       配列でないノードは `Cbor.Error(NotType(found, Array))` を発生させる。
++       戦術と要素のデコーダーを捕捉する。
++   entry .listDecodable   CBOR の配列を `List[T]` としてデコードする
++       要素のデコーダーは名前渡しで受け取られるので、`List` を通じて再帰する型（`children: List[Tree]` を持つ `Tree`）も手書きのインスタンスなしに導出できる。
++   entry .setDecodable   CBOR の配列を `Set[T]` としてデコードする
++   entry .seriesDecodable   CBOR の配列を `Sequence[T]` としてデコードする
++   entry .mapDecodable   テキストのキーを持つ CBOR のマップを `Map[K, V]` としてデコードする
++       各キーは `K` の `Decodable in Text` を通じて、各値は `V` の `Decodable in Cbor` を通じてデコードされる。
++       テキスト文字列でないキーは `Cbor.Error(NonStringKey)` を発生させる。
++       マップでないノードは空のマップとしてデコードされる。
++   entry .mapEncodable   `Map[K, V]` を、テキストのキーを持つ CBOR のマップとしてエンコードする
++       キーは `K` の `Encodable in Text` を通じて、マップの反復順に書かれる。
++   entry .lens   `cbor.lens(_.field = value)`：ドキュメントからそのマップのエントリーの一つへの `Lens`
++       各名前は `name is Lens from Cbor onto Cbor` になり、これは `#selectDynamic` でエントリーを読み、不変な更新でそれを書く。
++       そのため、`play.lens(_.hero.name = t"Kent")` はルートからパスを組み立て直す。
++       `(? >: Cbor) is Dynamical`（`dynamicAccess.dynamicCbor`）と `Tactic[Cbor.Error]` を必要とする。
++       `conversions.encodableToCbor` をインポートすれば、代入する値は `Cbor` ではなく任意の `Encodable in Cbor` でよい。
+
+=       Cbor` rather than a `Cbor`.
+=
+-       ```scala
++       ```scala
+
+=       Cbor` rather than a `Cbor`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       Cbor` rather than a `Cbor`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       Cbor` rather than a `Cbor`.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import dynamicAccess.dynamicCbor
++       import dynamicAccess.dynamicCbor
+
+=       Cbor` rather than a `Cbor`.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import dynamicAccess.dynamicCbor
+-       import conversions.encodableToCbor
++       import conversions.encodableToCbor
+
+=       import conversions.encodableToCbor
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       import conversions.encodableToCbor
+=
+=       case class Person(name: Text, age: Int)
+-       case class Play(hero: Person, year: Int)
++       case class Play(hero: Person, year: Int)
+
+-       val play: Cbor = Play(Person(t"Lear", 80), 1606).in[Cbor]
++       val play: Cbor = Play(Person(t"Lear", 80), 1606).in[Cbor]
+
+-       play.lens(_.year = 1608).as[Play]            // Play(Person(t"Lear", 80), 1608)
++       play.lens(_.year = 1608).as[Play]            // Play(Person(t"Lear", 80), 1608)
+
+-       play.lens(_.hero.name = t"Kent").as[Play]    // Play(Person(t"Kent", 80), 1606)
++       play.lens(_.hero.name = t"Kent").as[Play]    // Play(Person(t"Kent", 80), 1606)
+
+-       summon["year" is Lens from Cbor onto Cbor](play).as[Int]   // 1606
++       summon["year" is Lens from Cbor onto Cbor](play).as[Int]   // 1606
+
+=       summon["year" is Lens from Cbor onto Cbor](play).as[Int]   // 1606
+-       ```
++       ```
+
+-   entry .ordinalOptical   `cbor.lens(_.values(Sec) = x)`: an optic onto one element of an array by ordinal
+-       An `Ordinal` (`Prim`, `Sec`, `Ter`, …) applied inside a lens path selects one element
+-       of an array-valued entry; an ordinal past the end, or a non-array, leaves the document
+-       unchanged.
+-   entry .eachOptical   `cbor.lens(_.values(Each) = x)`: an optic over every element of an array
+-       Applies the update to every element; a non-array is left unchanged.
+-   entry .filterOptical   `cbor.lens(_.values(Filter[Cbor](p)) = x)`: an optic over the elements a predicate selects
+-       Applies the update to each element for which the predicate holds and keeps the rest.
++   entry .ordinalOptical   `cbor.lens(_.values(Sec) = x)`：配列の一つの要素を序数で指すオプティクス
++       レンズのパスの中で適用された `Ordinal`（`Prim`、`Sec`、`Ter`、…）は、配列を値とするエントリーの一つの要素を選ぶ。
++       末尾を越えた序数や配列でないものに対しては、ドキュメントは変わらない。
++   entry .eachOptical   `cbor.lens(_.values(Each) = x)`：配列のすべての要素に対するオプティクス
++       更新をすべての要素に適用する。
++       配列でないものは変わらない。
++   entry .filterOptical   `cbor.lens(_.values(Filter[Cbor](p)) = x)`：述語が選ぶ要素に対するオプティクス
++       述語が成り立つ各要素に更新を適用し、残りはそのまま保つ。
+
+=       Applies the update to each element for which the predicate holds and keeps the rest.
+=
+-       ```scala
++       ```scala
+
+=       Applies the update to each element for which the predicate holds and keeps the rest.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       Applies the update to each element for which the predicate holds and keeps the rest.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       Applies the update to each element for which the predicate holds and keeps the rest.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import dynamicAccess.dynamicCbor
++       import dynamicAccess.dynamicCbor
+
+=       Applies the update to each element for which the predicate holds and keeps the rest.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import dynamicAccess.dynamicCbor
+-       import conversions.encodableToCbor
++       import conversions.encodableToCbor
+
+=       import conversions.encodableToCbor
+=
+-       case class Wrapper(values: List[Int], label: Text)
++       case class Wrapper(values: List[Int], label: Text)
+
+-       val list: Cbor = Wrapper(List(1, 2, 3), t"hi").in[Cbor]
++       val list: Cbor = Wrapper(List(1, 2, 3), t"hi").in[Cbor]
+
+-       list.lens(_.values(Sec) = 9).as[Wrapper]                          // Wrapper(List(1, 9, 3), t"hi")
++       list.lens(_.values(Sec) = 9).as[Wrapper]                          // Wrapper(List(1, 9, 3), t"hi")
+
+-       list.lens(_.values(Each) = 0).as[Wrapper]                         // Wrapper(List(0, 0, 0), t"hi")
++       list.lens(_.values(Each) = 0).as[Wrapper]                         // Wrapper(List(0, 0, 0), t"hi")
+
+-       list.lens(_.values(Filter[Cbor](_.as[Int] > 1)) = 0).as[Wrapper]  // Wrapper(List(1, 0, 0), t"hi")
++       list.lens(_.values(Filter[Cbor](_.as[Int] > 1)) = 0).as[Wrapper]  // Wrapper(List(1, 0, 0), t"hi")
+
+=       list.lens(_.values(Filter[Cbor](_.as[Int] > 1)) = 0).as[Wrapper]  // Wrapper(List(1, 0, 0), t"hi")
+-       ```
++       ```
+
+-   entry .abstractable   a `Cbor` as an HTTP body: `application/cbor` and the encoded bytes
+-       The `Abstractable across HttpStreams` given from which telekinesis derives a request or
+-       response body: `cbor.generic` is the pair of the media type and the bytes. The
+-       `breviloquence.http` component's `postables.cborPostable` and `servables.cborServable`
+-       are the named forms for a client's `post` and a server's response, and a body parses
+-       back through `.aggregable`.
+-   entry .discriminatedUnion   a `Discriminable in Cbor` for a sealed hierarchy, by a named map key
+-       `given (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")` declares,
+-       once, that a `Status` encodes as its variant's map with an extra `kind` entry holding
+-       the variant's name (renamed by `@name[Cbor]` on the case), and decodes by reading the
+-       same entry back. The result is a `.DiscriminantKey`, the one shape the direct-codec
+-       generator can recognise, so a sum with this instance can also be generated by
+-       `Inlinable.parsable` when `breviloquence.staged` is on the compile classpath.
++   entry .abstractable   HTTP 本文としての `Cbor`：`application/cbor` とエンコードされたバイト列
++       telekinesis がリクエスト本文やレスポンス本文を導出する元となる `Abstractable across HttpStreams` の given である。
++       `cbor.generic` はメディアタイプとバイト列の組である。
++       `breviloquence.http` コンポーネントの `postables.cborPostable` と `servables.cborServable` は、クライアントの `post` とサーバーのレスポンスのための名前付きの形式であり、本文は `.aggregable` を通じてパースし直される。
++   entry .discriminatedUnion   シールされた階層に対する、名前付きのマップキーによる `Discriminable in Cbor`
++       `given (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")` は、`Status` がそのバリアントのマップに、バリアントの名前（ケースに付けた `@name[Cbor]` で名前を変えられる）を保持する `kind` エントリーを加えた形でエンコードされ、同じエントリーを読み戻すことでデコードされることを、一度だけ宣言する。
++       結果は `.DiscriminantKey` であり、これは直接のコーデックの生成器が認識できる唯一の形である。
++       そのため、このインスタンスを持つ直和型は、`breviloquence.staged` がコンパイル時のクラスパスにあるとき、`Inlinable.parsable` でも生成できる。
+
+=       `Inlinable.parsable` when `breviloquence.staged` is on the compile classpath.
+=
+-       ```scala
++       ```scala
+
+=       `Inlinable.parsable` when `breviloquence.staged` is on the compile classpath.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Inlinable.parsable` when `breviloquence.staged` is on the compile classpath.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       enum Status:
++       enum Status:
+
+-         case Active(since: Int)
++         case Active(since: Int)
+
+-         case Retired
++         case Retired
+
+-       given (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
++       given (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
+
+-       (Status.Active(2020): Status).in[Cbor].as[Status]   // Status.Active(2020)
++       (Status.Active(2020): Status).in[Cbor].as[Status]   // Status.Active(2020)
+
+=       (Status.Active(2020): Status).in[Cbor].as[Status]   // Status.Active(2020)
+-       ```
++       ```
+
+-   entry .DiscriminantKey   the map-key-discriminated `Discriminable in Cbor`, as a class the generator can recognise
++   entry .DiscriminantKey   マップのキーで判別する `Discriminable in Cbor` を、生成器が認識できるクラスとして表したもの
+
+=   entry .DiscriminantKey   the map-key-discriminated `Discriminable in Cbor`, as a class the generator can recognise
+-     detail
++     detail
+
+-         The class `Cbor.discriminatedUnion` returns: a `Discriminable` with `Form = Cbor`
+-         which writes the variant name under `#key`, reads it back from the same entry, and
+-         strips the entry before a variant is decoded as its product. It is a named class, not
+-         an anonymous instance, because a generated direct parser dispatches on the
+-         discriminant monomorphically and must extract the key at expansion time.
+-     entry #key   the map key which holds a variant's name
+-     entry #rewrite   adds the discriminator entry to a variant's encoded map
+-     entry #discriminate   the variant name a document carries under the key, or `Unset`
+-         `Unset` when the document is not a map, has no such key, or the key's value is not
+-         text; the derived decoder then raises `Cbor.Error(Absent)`.
+-     entry #variant   the document with the discriminator entry removed, ready to decode as a product
+-   entry .Ast   one CBOR node: the opaque storage type behind a document, with its accessors and codecs
++         `Cbor.discriminatedUnion` が返すクラスである。
++         `Form = Cbor` を持つ `Discriminable` であり、バリアント名を `#key` の下に書き、同じエントリーからそれを読み戻し、バリアントを直積型としてデコードする前にそのエントリーを取り除く。
++         無名のインスタンスではなく名前付きのクラスであるのは、生成された直接のパーサーが判別子に対して単相的に振り分けを行い、展開時にキーを取り出さなければならないからである。
++     entry #key   バリアントの名前を保持するマップのキー
++     entry #rewrite   バリアントのエンコードされたマップに判別子のエントリーを加える
++     entry #discriminate   ドキュメントがキーの下に持つバリアント名、または `Unset`
++         ドキュメントがマップでないとき、そのキーを持たないとき、またはキーの値がテキストでないときは `Unset` になる。
++         その場合、導出されたデコーダーは `Cbor.Error(Absent)` を発生させる。
++     entry #variant   判別子のエントリーを取り除き、直積型としてデコードできるようにしたドキュメント
++   entry .Ast   一つの CBOR ノード：ドキュメントの背後にある不透明なストレージ型と、そのアクセサーとコーデック
+
+=   entry .Ast   one CBOR node: the opaque storage type behind a document, with its accessors and codecs
+-     detail
++     detail
+
+-         `Cbor.Ast` is the representation of a CBOR data item: an opaque union over the JVM
+-         values which store each major type — a `Long` for an integer, a `Double` for a float,
+-         a `String` for a text string, a frozen `Array[Byte]` for a byte string, a `Boolean`,
+-         `.CborNull` for `null`, `Unset` for `undefined`, a `.Tag` for a tagged value, and a
+-         frozen `Array[Any]` for an array or a map (an array's backing array has odd length,
+-         padded with a sentinel, and a map's has even length, keys and values alternating,
+-         which is how the two are told apart). A node is never pattern-matched: the accessors
+-         in the companion classify it (`unset`, `nullary`, `isInteger`, `isFloat`,
+-         `isTextString`, `isByteString`, `isBoolean`, `isTag`, `isArray`, `isMap`,
+-         `primitive`) and read it (`long`, `double`, `string`, `byteString`, `boolean`, `tag`,
+-         `array`, `elements`, `element`, `entries`, `key`, `value`, `index`), and each is in
+-         implicit scope wherever a `Cbor.Ast` is used, through `import soundness.*` alone.
++         `Cbor.Ast` は CBOR のデータ項目の表現である。
++         各メジャータイプを格納する JVM の値に対する不透明なユニオンであり、整数には `Long`、浮動小数点数には `Double`、テキスト文字列には `String`、バイト文字列には凍結済みの `Array[Byte]`、そして `Boolean`、`null` には `.CborNull`、`undefined` には `Unset`、タグ付きの値には `.Tag`、配列やマップには凍結済みの `Array[Any]` を使う（配列の背後にある配列は番兵でパディングされて奇数の長さを持ち、マップのものはキーと値が交互に並んで偶数の長さを持つ。こうして二つを区別する）。
++         ノードがパターンマッチされることはない。
++         コンパニオンにあるアクセサーがノードを分類し（`unset`、`nullary`、`isInteger`、`isFloat`、`isTextString`、`isByteString`、`isBoolean`、`isTag`、`isArray`、`isMap`、`primitive`）、読み取る（`long`、`double`、`string`、`byteString`、`boolean`、`tag`、`array`、`elements`、`element`、`entries`、`key`、`value`、`index`）。
++         それぞれは、`import soundness.*` だけで、`Cbor.Ast` を使うあらゆる場所の暗黙のスコープにある。
+
+=         implicit scope wherever a `Cbor.Ast` is used, through `import soundness.*` alone.
+=
+-         ```scala
++         ```scala
+
+=         implicit scope wherever a `Cbor.Ast` is used, through `import soundness.*` alone.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         implicit scope wherever a `Cbor.Ast` is used, through `import soundness.*` alone.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val ast: Cbor.Ast = Cbor.Ast.parse(hex"a2 6161 01 6162 82 02 03")   // {"a": 1, "b": [2, 3]}
++         val ast: Cbor.Ast = Cbor.Ast.parse(hex"a2 6161 01 6162 82 02 03")   // {"a": 1, "b": [2, 3]}
+
+-         ast.isMap && ast.entries == 2                 // true
++         ast.isMap && ast.entries == 2                 // true
+
+-         ast.key(0).string                             // "a"
++         ast.key(0).string                             // "a"
+
+-         ast.value(1).element(1).long                  // 3L
++         ast.value(1).element(1).long                  // 3L
+
+-         ast.show                                      // t"{\"a\": 1, \"b\": [2, 3]}"
++         ast.show                                      // t"{\"a\": 1, \"b\": [2, 3]}"
+
+-         Cbor.Ast.encodable.encoded(ast).length        // 9
++         Cbor.Ast.encodable.encoded(ast).length        // 9
+
+=         Cbor.Ast.encodable.encoded(ast).length        // 9
+-         ```
++         ```
+
+-         A node is parsed from bytes with `parse` (an extension on the companion, from
+-         `breviloquence.parse`), read from chunked bytes with `read[Cbor.Ast]` through
+-         `.aggregable`, serialized through `.encodable`, and rendered in RFC 8949 diagnostic
+-         notation through `.showable`. `Cbor.ast` wraps a node as a document and
+-         `Cbor.unseal` takes the root node back out.
++         ノードは `parse`（`breviloquence.parse` から来るコンパニオンへの拡張）でバイト列からパースされ、`.aggregable` を通じて `read[Cbor.Ast]` でチャンクに分かれたバイト列から読まれ、`.encodable` を通じて直列化され、`.showable` を通じて RFC 8949 の診断記法で描画される。
++         `Cbor.ast` はノードをドキュメントとして包み、`Cbor.unseal` はルートのノードを取り出す。
+
+-     refer breviloquence.Cbor
++     refer breviloquence.Cbor
+
+-     refer breviloquence.parse
++     refer breviloquence.parse
+
+=     refer breviloquence.parse
+-     refer breviloquence.CborParser
++     refer breviloquence.CborParser
+
+-     entry .apply   wraps a storage value — a `Long`, a `String`, a `Tag`, `Unset`, … — as a node
+-         `Cbor.Ast(42L)`, `Cbor.Ast("text")`, `Cbor.Ast(Unset)` for `undefined`,
+-         `Cbor.Ast(Cbor.CborNull)` for `null`, or `Cbor.Ast(Cbor.Tag(1L, 1363896240L))`. The
+-         argument must be one of the `.CborTypes` members; an array or map is built with
+-         `.array` or `.map` instead, which lay the backing array out correctly.
+-     entry .map   a map node from parallel arrays of keys and values
+-         `Cbor.Ast.map(keys, values)` interleaves the two frozen `Array[Any]`s of nodes into
+-         the even-length backing array a map node is; the arrays must be the same length.
+-     entry .array   a node's elements as an array, or an array node from an array of elements
+-         As a companion method, `Cbor.Ast.array(elements)` makes an array node from a frozen
+-         `Array[Any]` of nodes, padding it with a sentinel if its length is even so that it
+-         can be told from a map. As an accessor, `ast.array` is the elements of an array node
+-         as a frozen `Array[Cbor.Ast]` (without the padding), and raises
+-         `Cbor.Error(NotType(found, Array))` on any other node.
+-     entry .length   the number of elements an array node holds, discounting the padding
+-         The accessor `elements` is the same count; `.size` is the entry count of a map node.
+-     entry .size   the number of entries a map node holds
+-         The accessor `entries` is the same count.
+-     entry .Sentinel   the padding object at the end of an even-count array's backing array
+-         An implementation detail of the storage layout, public because the accessors are
+-         inline: it is never a node's value, and `elements` never counts it.
+-     entry .encodable   serializes a node to its CBOR bytes: `Cbor.Ast.encodable.encoded(ast)`
+-         The `Encodable in Data` given, and so `ast.encode`: the tree is written depth first,
+-         with integers in the shortest head encoding, floats always at 64 bits, text as UTF-8,
+-         and arrays and maps length-prefixed (never indefinite-length, which is parsed but not
+-         produced). The bytes are exactly those a generated `Cbor.Printable` writes and
+-         `Cbor.emit` yields block by block.
+-     entry .aggregable   reads chunked bytes into a node: the given behind `read[Cbor.Ast]`
+-         `Chain(bytes).read[Cbor.Ast]` and `stream.read[Cbor.Ast]` parse one data item through
+-         the `CborParser`, pulling each chunk as the parser needs it, and reject trailing bytes
+-         with `Cbor.Error(Trailing(offset))`. Needs a `Tactic[Cbor.Error]`.
+-     entry .showable   renders a node in RFC 8949 diagnostic notation: `ast.show`
+-         The human-readable rendering the specification defines, the format's counterpart of
+-         a hex dump which can be read: integers and floats as numbers (`NaN`, `Infinity`,
+-         `-Infinity` spelled out), text strings quoted with `\"`, `\\`, `\n`, `\r`, `\t` and
+-         `\uXXXX` escapes, byte strings as `h'0102'`, booleans, `null` and `undefined` by
+-         name, a tag as `1(1363896240)`, arrays as `[1, 2, 3]` and maps as `{"a": 1}`. It is
+-         what to reach for when a message is not what it should be.
++     entry .apply   ストレージの値（`Long`、`String`、`Tag`、`Unset`、…）をノードとして包む
++         `Cbor.Ast(42L)`、`Cbor.Ast("text")`、`undefined` に対する `Cbor.Ast(Unset)`、`null` に対する `Cbor.Ast(Cbor.CborNull)`、あるいは `Cbor.Ast(Cbor.Tag(1L, 1363896240L))` のように使う。
++         引数は `.CborTypes` のメンバーのいずれかでなければならない。
++         配列やマップは代わりに `.array` や `.map` で構築する。
++         これらは背後にある配列を正しく配置する。
++     entry .map   キーと値の並行な配列から作るマップのノード
++         `Cbor.Ast.map(keys, values)` は、ノードの二つの凍結済みの `Array[Any]` を交互に並べ、マップのノードの実体である偶数長の背後の配列にする。
++         二つの配列は同じ長さでなければならない。
++     entry .array   ノードの要素を配列として取り出す、または要素の配列から配列のノードを作る
++         コンパニオンのメソッドとしては、`Cbor.Ast.array(elements)` はノードの凍結済みの `Array[Any]` から配列のノードを作り、長さが偶数ならマップと区別できるよう番兵でパディングする。
++         アクセサーとしては、`ast.array` は配列のノードの要素を（パディングを除いて）凍結済みの `Array[Cbor.Ast]` として返し、それ以外のノードに対しては `Cbor.Error(NotType(found, Array))` を発生させる。
++     entry .length   配列のノードが保持する要素の数。パディングは数えない
++         アクセサー `elements` も同じ数である。
++         `.size` はマップのノードのエントリー数である。
++     entry .size   マップのノードが保持するエントリーの数
++         アクセサー `entries` も同じ数である。
++     entry .Sentinel   偶数個の要素を持つ配列の、背後の配列の末尾に置かれるパディング用のオブジェクト
++         ストレージのレイアウトの実装の詳細であり、アクセサーがインラインであるために公開されている。
++         ノードの値になることはなく、`elements` がこれを数えることもない。
++     entry .encodable   ノードを CBOR のバイト列へ直列化する：`Cbor.Ast.encodable.encoded(ast)`
++         `Encodable in Data` の given であり、したがって `ast.encode` でもある。
++         ツリーは深さ優先で書かれる。
++         整数は最も短いヘッドのエンコードで、浮動小数点数は常に 64 ビットで、テキストは UTF-8 で書かれ、配列とマップには長さが前置される（不定長はパースされるが、生成されることはない）。
++         バイト列は、生成された `Cbor.Printable` が書くもの、また `Cbor.emit` が一ブロックずつ生み出すものとまったく同じである。
++     entry .aggregable   チャンクに分かれたバイト列をノードへ読み込む：`read[Cbor.Ast]` の背後にある given
++         `Chain(bytes).read[Cbor.Ast]` と `stream.read[Cbor.Ast]` は、パーサーが必要とするたびに各チャンクを引き出しながら、`CborParser` を通じて一つのデータ項目をパースし、後続のバイトを `Cbor.Error(Trailing(offset))` で拒否する。
++         `Tactic[Cbor.Error]` を必要とする。
++     entry .showable   ノードを RFC 8949 の診断記法で描画する：`ast.show`
++         仕様が定める、人が読める描画であり、この形式における読める 16 進ダンプに相当する。
++         整数と浮動小数点数は数として（`NaN`、`Infinity`、`-Infinity` は文字で綴る）、テキスト文字列は `\"`、`\\`、`\n`、`\r`、`\t`、`\uXXXX` のエスケープを使って引用符で囲み、バイト文字列は `h'0102'` として、真偽値、`null`、`undefined` は名前で、タグは `1(1363896240)` として、配列は `[1, 2, 3]`、マップは `{"a": 1}` として書く。
++         メッセージがあるべき姿になっていないとき、頼りにするのがこれである。
+
+-         ```scala fuel
++         ```scala fuel
+
+=         ```scala fuel
+-         frame
++         frame
+
+-           label A record, encoded
++           label エンコードしたレコード
+
+=           label A record, encoded
+-           code
++           code
+
+-               import soundness.*
++               import soundness.*
+
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+-               case class Person(name: Text, age: Int)
++               case class Person(name: Text, age: Int)
+
+-               val bytes: Data = Person(t"Hal", 36).in[Data over Cbor]
++               val bytes: Data = Person(t"Hal", 36).in[Data over Cbor]
+
+-               bytes.length   // 16
++               bytes.length   // 16
+
+=               bytes.length   // 16
+-         frame
++         frame
+
+-           label The bytes, in diagnostic notation
++           label 診断記法で表したバイト列
+
+=           label The bytes, in diagnostic notation
+-           code
++           code
+
+-               Cbor.Ast.parse(bytes).show   // t"{\"name\": \"Hal\", \"age\": 36}"
++               Cbor.Ast.parse(bytes).show   // t"{\"name\": \"Hal\", \"age\": 36}"
+
+=               Cbor.Ast.parse(bytes).show   // t"{\"name\": \"Hal\", \"age\": 36}"
+-         frame
++         frame
+
+-           label And decoded back
++           label そしてデコードし直したもの
+
+=           label And decoded back
+-           code
++           code
+
+-               bytes.read[Person in Cbor]   // Person(t"Hal", 36)
++               bytes.read[Person in Cbor]   // Person(t"Hal", 36)
+
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-     entry .unset   whether a node is `undefined` (or absent): it is `Unset`
+-     entry .nullary   whether a node is CBOR `null`
+-         `null` and `undefined` are distinct on the wire (0xF6 and 0xF7) and distinct here:
+-         `null` is the `.CborNull` sentinel, so that it cannot collide with the null-backed
+-         `Unset` which represents `undefined` and an absent key.
+-     entry .isInteger   whether a node is an integer (major types 0 and 1), stored as a `Long`
+-     entry .isFloat   whether a node is a float, stored as a `Double` whatever its wire width
+-     entry .isTextString   whether a node is a text string (major type 3), stored as a `String`
+-     entry .isByteString   whether a node is a byte string (major type 2), stored as a frozen `Array[Byte]`
+-     entry .isBoolean   whether a node is `true` or `false`
+-     entry .isTag   whether a node is a tagged value, a `Cbor.Tag`
+-     entry .isArray   whether a node is an array (major type 4)
+-     entry .isMap   whether a node is a map (major type 5)
+-     entry .primitive   which kind of node this is, as a `Cbor.Error.Primitive`
+-         The classification an error reports: `Integer`, `Float`, `TextString`, `ByteString`,
+-         `Boolean`, `Map`, `Array`, `Tag`, `Undefined` or `Null`.
+-     entry .elements   the number of elements of an array node
+-         Zero-cost on an array; on any other node the result is meaningless, so check
+-         `isArray` first.
+-     entry .element   an array node's element by index, unchecked
+-         `ast.element(i)` reads the backing array directly: the index must be below
+-         `elements`, and the node must be an array.
+-     entry .entries   the number of entries of a map node
+-     entry .key   a map node's key by entry index, unchecked
+-         `ast.key(i)` for `i` below `entries`. A key is any node, though the derived codecs
+-         only use text keys and ignore an entry under any other.
+-     entry .value   a map node's value by entry index, unchecked
+-     entry .index   the entry index of a text key in a map node, or `-1` if absent
+-         A linear scan comparing each key to the `String`; the first match wins, which is
+-         why a repeated key reads as its first occurrence.
+-     entry .long   an integer node's value, or a float's truncated; raises `NotType` otherwise
+-         Any other node raises `Cbor.Error(NotType(found, Integer))`, or `Absent` for
+-         `undefined`. Under an accruing `Validate` scope the error is registered and `0L` is
+-         returned so that sibling fields keep accruing; the derived decoder never constructs
+-         from it.
+-     entry .double   a float node's value, or an integer's widened; raises `NotType` otherwise
+-     entry .string   a text string node's value as a `String`; raises `NotType` otherwise
+-     entry .byteString   a byte string node's bytes as a frozen `Array[Byte]`; raises `NotType` otherwise
+-     entry .boolean   a boolean node's value; raises `NotType` otherwise
+-     entry .tag   a tagged node as a `Cbor.Tag`; raises `NotType` otherwise
++     entry .unset   ノードが `undefined`（または存在しない）かどうか：`Unset` であること
++     entry .nullary   ノードが CBOR の `null` かどうか
++         `null` と `undefined` はワイヤ上で区別され（0xF6 と 0xF7）、ここでも区別される。
++         `null` は `.CborNull` という番兵であり、`undefined` と存在しないキーを表す、null を背後に持つ `Unset` と衝突しないようになっている。
++     entry .isInteger   ノードが整数（メジャータイプ 0 と 1）かどうか。`Long` として格納される
++     entry .isFloat   ノードが浮動小数点数かどうか。ワイヤ上の幅にかかわらず `Double` として格納される
++     entry .isTextString   ノードがテキスト文字列（メジャータイプ 3）かどうか。`String` として格納される
++     entry .isByteString   ノードがバイト文字列（メジャータイプ 2）かどうか。凍結済みの `Array[Byte]` として格納される
++     entry .isBoolean   ノードが `true` または `false` かどうか
++     entry .isTag   ノードがタグ付きの値、すなわち `Cbor.Tag` かどうか
++     entry .isArray   ノードが配列（メジャータイプ 4）かどうか
++     entry .isMap   ノードがマップ（メジャータイプ 5）かどうか
++     entry .primitive   このノードの種類を `Cbor.Error.Primitive` として返す
++         エラーが報告する分類であり、`Integer`、`Float`、`TextString`、`ByteString`、`Boolean`、`Map`、`Array`、`Tag`、`Undefined`、`Null` のいずれかである。
++     entry .elements   配列のノードの要素の数
++         配列に対してはコストがかからない。
++         それ以外のノードに対しては結果に意味がないので、先に `isArray` を確かめる。
++     entry .element   配列のノードの要素をインデックスで取り出す。検査は行わない
++         `ast.element(i)` は背後の配列を直接読む。
++         インデックスは `elements` 未満でなければならず、ノードは配列でなければならない。
++     entry .entries   マップのノードのエントリーの数
++     entry .key   マップのノードのキーをエントリーのインデックスで取り出す。検査は行わない
++         `i` が `entries` 未満のとき `ast.key(i)` を使う。
++         キーは任意のノードでよいが、導出されたコーデックはテキストのキーしか使わず、それ以外のキーの下にあるエントリーは無視する。
++     entry .value   マップのノードの値をエントリーのインデックスで取り出す。検査は行わない
++     entry .index   マップのノードにおけるテキストのキーのエントリーのインデックス。存在しなければ `-1`
++         各キーを `String` と比較する線形の走査であり、最初に一致したものが選ばれる。
++         そのため、繰り返されたキーは最初に現れたものとして読まれる。
++     entry .long   整数のノードの値、または浮動小数点数を切り捨てた値。それ以外では `NotType` を発生させる
++         それ以外のノードは `Cbor.Error(NotType(found, Integer))` を、`undefined` に対しては `Absent` を発生させる。
++         蓄積型の `Validate` スコープのもとでは、エラーは登録され、兄弟のフィールドが蓄積を続けられるよう `0L` が返される。
++         導出されたデコーダーがこの値から構築することはない。
++     entry .double   浮動小数点数のノードの値、または整数を拡大した値。それ以外では `NotType` を発生させる
++     entry .string   テキスト文字列のノードの値を `String` として返す。それ以外では `NotType` を発生させる
++     entry .byteString   バイト文字列のノードのバイト列を凍結済みの `Array[Byte]` として返す。それ以外では `NotType` を発生させる
++     entry .boolean   真偽値のノードの値。それ以外では `NotType` を発生させる
++     entry .tag   タグ付きのノードを `Cbor.Tag` として返す。それ以外では `NotType` を発生させる
+
+=     entry .tag   a tagged node as a `Cbor.Tag`; raises `NotType` otherwise
+-         ```scala
++         ```scala
+
+=     entry .tag   a tagged node as a `Cbor.Tag`; raises `NotType` otherwise
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=     entry .tag   a tagged node as a `Cbor.Tag`; raises `NotType` otherwise
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val ast: Cbor.Ast = Cbor.Ast.parse(hex"c11a514b67b0")   // tag 1 around 1363896240
++         val ast: Cbor.Ast = Cbor.Ast.parse(hex"c11a514b67b0")   // tag 1 around 1363896240
+
+-         ast.isTag && ast.tag.tag == 1L                          // true
++         ast.isTag && ast.tag.tag == 1L                          // true
+
+-         ast.tag.value == 1363896240L                            // true
++         ast.tag.value == 1363896240L                            // true
+
+=         ast.tag.value == 1363896240L                            // true
+-         ```
++         ```
+
+-   entry .Tag   a tagged value: the tag number and the node it annotates
++   entry .Tag   タグ付きの値：タグ番号と、それが注記するノード
+
+=   entry .Tag   a tagged value: the tag number and the node it annotates
+-     detail
++     detail
+
+-         CBOR's tags (major type 6) annotate a value with its meaning — tag 1 is an epoch
+-         time, tag 2 a big integer, and the registry runs to hundreds. A parsed tag keeps both
+-         its number and its content, so a document carrying tags round-trips without losing
+-         them; nothing in the library interprets a tag's meaning. Two tags are equal when
+-         their numbers and values are. The derived codecs do not produce tags, and decoding a
+-         tagged node as a primitive raises `Cbor.Error(NotType(Tag, …))`; read the tag with
+-         `ast.tag` and decode its `#value`.
+-     entry #tag   the tag number
+-     entry #value   the tagged node, as `Any`; cast it to `Cbor.Ast` to read it
+-   entry .CborNull   the sentinel which stores a CBOR `null`, distinct from `Unset`
+-       An object and the type of that object. `undefined` (0xF7) and an absent key are the
+-       null-backed `Unset`; `null` (0xF6) would be the same JVM `null`, so it is this
+-       sentinel instead, which `nullary` tests for.
+-   entry .CborInteger   the storage type of an integer node: `Long`
+-   entry .CborFloat   the storage type of a float node: `Double`
+-   entry .CborText   the storage type of a text string node: `String`
+-   entry .CborBytes   the storage type of a byte string node: a frozen `Array[Byte]`
+-   entry .CborArray   the storage type of an array node: a frozen `Array[Any]` of odd length
+-   entry .CborMap   the storage type of a map node: a frozen `Array[Any]` of even length, keys and values alternating
+-   entry .CborBoolean   the storage type of a boolean node: `Boolean`
+-   entry .CborUndefined   the storage type of `undefined`: `Unset`
+-   entry .CborTypes   the union of every storage type a `Cbor.Ast` may be
+-       `CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean |
+-       CborNull | CborUndefined | Tag`: what `Cbor.Ast.apply` accepts.
+-   entry .Error   raised when CBOR cannot be parsed or a node cannot be decoded as the type asked for
++         CBOR のタグ（メジャータイプ 6）は値にその意味を注記する。
++         タグ 1 はエポック時刻、タグ 2 は多倍長整数であり、レジストリは数百に及ぶ。
++         パースされたタグはその番号と内容の両方を保つので、タグを持つドキュメントはそれを失わずに往復する。
++         ライブラリの中でタグの意味を解釈するものはない。
++         二つのタグは、番号と値が等しいときに等しい。
++         導出されたコーデックはタグを生成せず、タグ付きのノードをプリミティブとしてデコードすると `Cbor.Error(NotType(Tag, …))` が発生する。
++         タグは `ast.tag` で読み、その `#value` をデコードする。
++     entry #tag   タグ番号
++     entry #value   タグ付きのノードを `Any` として返す。読むには `Cbor.Ast` にキャストする
++   entry .CborNull   CBOR の `null` を格納する番兵。`Unset` とは区別される
++       オブジェクトであり、そのオブジェクトの型でもある。
++       `undefined`（0xF7）と存在しないキーは、null を背後に持つ `Unset` である。
++       `null`（0xF6）は同じ JVM の `null` になってしまうので、代わりにこの番兵を使い、`nullary` がこれを判定する。
++   entry .CborInteger   整数のノードのストレージ型：`Long`
++   entry .CborFloat   浮動小数点数のノードのストレージ型：`Double`
++   entry .CborText   テキスト文字列のノードのストレージ型：`String`
++   entry .CborBytes   バイト文字列のノードのストレージ型：凍結済みの `Array[Byte]`
++   entry .CborArray   配列のノードのストレージ型：奇数長の凍結済みの `Array[Any]`
++   entry .CborMap   マップのノードのストレージ型：キーと値が交互に並ぶ、偶数長の凍結済みの `Array[Any]`
++   entry .CborBoolean   真偽値のノードのストレージ型：`Boolean`
++   entry .CborUndefined   `undefined` のストレージ型：`Unset`
++   entry .CborTypes   `Cbor.Ast` がとりうるすべてのストレージ型のユニオン
++       `CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean | CborNull | CborUndefined | Tag`：`Cbor.Ast.apply` が受け付けるもの。
++   entry .Error   CBOR をパースできないとき、またはノードを求められた型としてデコードできないときに発生する
+
+=   entry .Error   raised when CBOR cannot be parsed or a node cannot be decoded as the type asked for
+-     detail
++     detail
+
+-         Error `↯/s.104.1`: _could not process the CBOR value because `reason`_, with the
+-         `.Reason`'s own number as the error's second component. Raised by `Cbor.Ast.parse`
+-         and every `read[…]` for malformed input, with the absolute byte offset at which the
+-         fault was met — input which stops mid-value names the offset of the byte which
+-         should have followed, trailing bytes name where the surplus begins, and a reserved
+-         head byte names its offset and its value — and by every decoder for a node of the
+-         wrong kind, a missing field or a non-text map key. It needs a `Diagnostics` in scope
+-         to construct, as every `fulminate.Error` does.
++         エラー `↯/s.104.1`：_could not process the CBOR value because `reason`_。
++         エラーの二番目の要素には `.Reason` 自身の番号が入る。
++         不正な入力に対しては `Cbor.Ast.parse` とすべての `read[…]` が、誤りに出会った絶対的なバイトオフセットとともにこれを発生させる。
++         値の途中で止まった入力は続くはずだったバイトのオフセットを示し、後続のバイトは余剰が始まる位置を示し、予約されたヘッドバイトはそのオフセットと値を示す。
++         また、種類の違うノード、欠けたフィールド、テキストでないマップのキーに対しては、すべてのデコーダーがこれを発生させる。
++         すべての `fulminate.Error` と同じく、構築するにはスコープ内に `Diagnostics` が必要である。
+
+=         to construct, as every `fulminate.Error` does.
+=
+-         ```scala
++         ```scala
+
+=         to construct, as every `fulminate.Error` does.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         capture[Cbor.Error](Cbor.Ast.parse(hex"830102")).reason match
++         capture[Cbor.Error](Cbor.Ast.parse(hex"830102")).reason match
+
+-           case Cbor.Error.Reason.Truncated(offset) => offset   // 3: three elements promised, two given
++           case Cbor.Error.Reason.Truncated(offset) => offset   // 3: three elements promised, two given
+
+-           case Cbor.Error.Reason.Trailing(offset)  => offset
++           case Cbor.Error.Reason.Trailing(offset)  => offset
+
+-           case _                                   => -1L
++           case _                                   => -1L
+
+=           case _                                   => -1L
+-         ```
++         ```
+
+-         Under a `Validate` scope, decoding accrues one error per faulty field, each with a
+-         `Pointer` naming the field (`lead.name` for a nested record).
+-     entry #reason   why the value could not be processed, as a `Cbor.Error.Reason`
+-     entry .Reason   the specific fault: where the input broke, or what mismatched
++         `Validate` スコープのもとでは、デコードは誤りのあるフィールドごとに一つのエラーを蓄積し、それぞれがそのフィールドを示す `Pointer`（入れ子のレコードなら `lead.name`）を持つ。
++     entry #reason   値を処理できなかった理由を `Cbor.Error.Reason` として返す
++     entry .Reason   具体的な誤り：入力が壊れた位置、または何が合わなかったか
+
+=     entry .Reason   the specific fault: where the input broke, or what mismatched
+-       detail
++       detail
+
+-           A `Clarification` enum, each case numbered. Cases 1 to 7 are parse faults, and carry
+-           an absolute byte offset into the input, counted from its start whatever the chunking;
+-           cases 8 to 11 are decoding faults, about the tree:
++           ケースごとに番号を持つ `Clarification` の列挙型である。
++           ケース 1 から 7 はパースの誤りであり、チャンクの分かれ方にかかわらず入力の先頭から数えた、入力内の絶対的なバイトオフセットを持つ。
++           ケース 8 から 11 はツリーに関するデコードの誤りである。
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
+-           row  `Truncated(offset)`  1  _the input was truncated at byte `offset`_  the item needed a byte which was not there
+-           row  `Reserved(offset, byte)`  2  _a reserved CBOR head byte `byte` was found at byte `offset`_  additional information 28 to 30
+-           row  `BadSimpleValue(offset, value)`  3  _an invalid simple value `value` was found at byte `offset`_  a two-byte simple value below 32
+-           row  `InvalidUtf8(offset)`  4  _invalid UTF-8 was found at byte `offset`_  in a text string
+-           row  `Overflow(offset)`  5  _an integer too large for Long was found at byte `offset`_  a 64-bit unsigned integer, or a negative one, beyond `Long`
+-           row  `UnexpectedBreak(offset)`  6  _an unexpected break stop code was found at byte `offset`_  0xFF outside an indefinite-length item
+-           row  `Trailing(offset)`  7  _unexpected trailing bytes were found from byte `offset`_  the item ended but the input did not
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
++           row  `Truncated(offset)`  1  _the input was truncated at byte `offset`_  項目が必要とするバイトがそこになかった
++           row  `Reserved(offset, byte)`  2  _a reserved CBOR head byte `byte` was found at byte `offset`_  追加情報 28 から 30
++           row  `BadSimpleValue(offset, value)`  3  _an invalid simple value `value` was found at byte `offset`_  32 未満の 2 バイトの単純値
++           row  `InvalidUtf8(offset)`  4  _invalid UTF-8 was found at byte `offset`_  テキスト文字列の中で
++           row  `Overflow(offset)`  5  _an integer too large for Long was found at byte `offset`_  `Long` を超える 64 ビットの符号なし整数、または負の整数
++           row  `UnexpectedBreak(offset)`  6  _an unexpected break stop code was found at byte `offset`_  不定長の項目の外にある 0xFF
++           row  `Trailing(offset)`  7  _unexpected trailing bytes were found from byte `offset`_  項目は終わったが入力は終わらなかった
+
+-           row  `OutOfRange`  8  _the array index was out of range_
++           row  `OutOfRange`  8  _the array index was out of range_
+
+-           row  `NotType(found, expected)`  9  _the CBOR value had type `found` instead of `expected`_  each a `.Primitive`
+-           row  `NonStringKey`  10  _the map key was not a string_  decoding a `Map`
+-           row  `Absent`  11  _the CBOR value was not present_  a required field's key or a sealed hierarchy's discriminator was missing, or an `Optional` was absent under `optionalityOptions.strictCborAbsence`
++           row  `NotType(found, expected)`  9  _the CBOR value had type `found` instead of `expected`_  それぞれ `.Primitive`
++           row  `NonStringKey`  10  _the map key was not a string_  `Map` をデコードするとき
++           row  `Absent`  11  _the CBOR value was not present_  必須のフィールドのキーやシールされた階層の判別子が欠けていた、または `optionalityOptions.strictCborAbsence` のもとで `Optional` が存在しなかった
+
+-           ```
++           ```
+
+-       entry #number   the reason's number, 1 to 11, which the error reports as its second component
+-       entry .communicable   renders each reason as its message
+-     entry .Primitive   the kinds of CBOR node an error names: what was found and what was expected
++       entry #number   理由の番号（1 から 11）。エラーはこれを二番目の要素として報告する
++       entry .communicable   各理由をそのメッセージとして描画する
++     entry .Primitive   エラーが名指す CBOR ノードの種類：見つかったものと期待されたもの
+
+=     entry .Primitive   the kinds of CBOR node an error names: what was found and what was expected
+-       detail
++       detail
+
+-           `Integer`, `Float`, `ByteString`, `TextString`, `Array`, `Map`, `Tag`, `Boolean`,
+-           `Null` and `Undefined`: the classification `Cbor.Ast`'s `primitive` accessor
+-           gives, used by `Reason.NotType`.
+-       entry .communicable   renders each kind as a message: `integer`, `byte string`, `text string`, …
+-   entry .Reader   the restricted rim of the parser a `Cbor.Parsable` reads through: one item per call
++           `Integer`、`Float`、`ByteString`、`TextString`、`Array`、`Map`、`Tag`、`Boolean`、`Null`、`Undefined`。
++           `Cbor.Ast` の `primitive` アクセサーが与える分類であり、`Reason.NotType` が使う。
++       entry .communicable   各種類をメッセージとして描画する：`integer`、`byte string`、`text string`、…
++   entry .Reader   `Cbor.Parsable` が読み取りに使う、パーサーの制限された縁：一回の呼び出しで一項目
+
+=   entry .Reader   the restricted rim of the parser a `Cbor.Parsable` reads through: one item per call
+-     detail
++     detail
+
+-         A `Cbor.Reader` wraps a `CborParser` and the `Tactic[Cbor.Error]` of the read which
+-         made it, and is handed to a `Cbor.Parsable`'s `parse` so that the instance can
+-         consume data items straight off the input, with no `Cbor.Ast` built. Each method
+-         consumes exactly one item, or one structural step; failures abort through the
+-         carried tactic, so a `parse` body needs no error vocabulary of its own. Values and
+-         failures agree with the `Cbor.Ast` accessors exactly — an integer coerces to a
+-         float and a float to an integer, as `long` and `double` do on a node — so a direct
+-         read and a tree read yield equal values.
++         `Cbor.Reader` は `CborParser` と、それを作った読み取りの `Tactic[Cbor.Error]` を包み、`Cbor.Parsable` の `parse` に渡される。
++         これにより、インスタンスは `Cbor.Ast` を作らずに、入力からデータ項目を直接消費できる。
++         各メソッドはちょうど一つの項目、または構造上の一段階を消費する。
++         失敗は運ばれてきた戦術を通じて中断するので、`parse` の本体に独自のエラーの語彙は要らない。
++         値と失敗は `Cbor.Ast` のアクセサーと正確に一致する。
++         ノードに対する `long` と `double` と同じく、整数は浮動小数点数に、浮動小数点数は整数に変換されるので、直接の読み取りとツリーの読み取りは等しい値を生む。
+
+-         It is an exclusive, stateful capability (`caps.ExclusiveCapability, caps.Stateful`),
+-         owned by one `parse` call for its duration: every reading method is an `update def`,
+-         callable only through a `Cbor.Reader^`, and nothing of it may be retained after the
+-         call. Only the library's read paths construct one; a hand-written instance receives
+-         it.
++         これは排他的で状態を持つケイパビリティ（`caps.ExclusiveCapability, caps.Stateful`）であり、一つの `parse` 呼び出しがその間だけ所有する。
++         読み取りのメソッドはすべて `update def` であり、`Cbor.Reader^` を通じてしか呼び出せず、呼び出しの後にその一部でも保持することはできない。
++         これを構築するのはライブラリの読み取りの経路だけであり、手書きのインスタンスはそれを受け取る。
+
+=         it.
+=
+-         ```scala
++         ```scala
+
+=         it.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         it.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         case class Point(x: Int, y: Int)
++         case class Point(x: Int, y: Int)
+
+-         given (Point is Cbor.Parsable) = Cbor.Parsable: reader =>
++         given (Point is Cbor.Parsable) = Cbor.Parsable: reader =>
+
+-           var x = 0
++           var x = 0
+
+-           var y = 0
++           var y = 0
+
+-           val count = reader.openMap()
++           val count = reader.openMap()
+
+-           var remaining = count
++           var remaining = count
+
+-           while remaining != 0 && !(count < 0 && reader.breakEnd()) do
++           while remaining != 0 && !(count < 0 && reader.breakEnd()) do
+
+-             reader.keyName() match
++             reader.keyName() match
+
+-               case "x"  => x = reader.int()
++               case "x"  => x = reader.int()
+
+-               case "y"  => y = reader.int()
++               case "y"  => y = reader.int()
+
+-               case _    => reader.skipValue()
++               case _    => reader.skipValue()
+
+-             remaining -= 1
++             remaining -= 1
+
+-           Point(x, y)
++           Point(x, y)
+
+-         hex"a2 6178 03 6179 04".read[Point in Cbor]   // Point(3, 4)
++         hex"a2 6178 03 6179 04".read[Point in Cbor]   // Point(3, 4)
+
+=         hex"a2 6178 03 6179 04".read[Point in Cbor]   // Point(3, 4)
+-         ```
++         ```
+
+=         hex"a2 6178 03 6179 04".read[Point in Cbor]   // Point(3, 4)
+=         ```
+-     refer breviloquence.Cbor.Parsable
++     refer breviloquence.Cbor.Parsable
+
+=     refer breviloquence.Cbor.Parsable
+-     refer breviloquence.CborParser
++     refer breviloquence.CborParser
+
+-     entry .KeyOpaque   the value `#keyWord` returns for a key it cannot pack: `-2L`
+-         Impossible as a packed key, whose bytes are all 7-bit ASCII. A caller which sees it
+-         takes the `#keyName` step instead.
+-     entry .of   reasserts a reader which travelled as an `AnyRef` carrier, for generated parsers
+-         `Cbor.Reader.of(carrier)` casts a neutral reference back to a `Cbor.Reader^`. It is
+-         the entry point of the parsers `Inlinable.parsable` splices into user modules, where
+-         the generated body receives the reader capture-erased; hand-written code has no use
+-         for it.
+-     entry #long   consumes an integer item as a `Long`, or a float truncated to one
+-     entry #int   consumes an integer item as an `Int`
+-     entry #double   consumes a float item as a `Double`, or an integer widened to one
+-     entry #boolean   consumes a `true` or `false` item
+-     entry #text   consumes a text string item as `Text`
+-     entry #string   consumes a text string item as a `String`
+-     entry #byteString   consumes a byte string item as a frozen `Array[Byte]`
+-     entry #hasUndefined   whether the next item is `undefined`, without consuming it
+-         The peek an optional wrapper makes to map a wire `undefined` (0xF7) to an absent
+-         value, exactly as the tree path's `Cbor.optional` does.
+-     entry #undefined   consumes an `undefined` item
+-     entry #openMap   opens a map: its entry count, or `-1` for an indefinite-length map
+-         An indefinite-length map ends with a break stop code, consumed by `#breakEnd`. Any
+-         other item is consumed whole and reads as an empty map — every field absent — which
+-         is what the tree path's record decoder does with a non-map.
+-     entry #openArray   opens an array: its element count, or `-1` for an indefinite-length array
+-         A non-array item fails with `Cbor.Error(NotType(found, Array))`, as the tree
+-         accessor `array` does.
+-     entry #breakEnd   consumes a break stop code if one is next: the end of an indefinite-length item
+-         `true` when the break was there and consumed, `false` (consuming nothing) when the
+-         next item is another element or entry.
+-     entry #keyWord   the next map key packed into a `Long`, for comparison against literals
+-         Generated parsers compile field names to immediates: a definite-length, one-to-sixteen
+-         byte, 7-bit-clean text key packs into two words, the low one returned and the high
+-         one left in `#keyHigh`, and the key is consumed. A key which cannot be packed yields
+-         `.KeyOpaque` and consumes nothing, so the caller takes `#keyName` instead. A key split
+-         across a chunk boundary is buffered whole first, so it packs as one which arrived
+-         whole.
+-     entry #keyHigh   the high word of the key `#keyWord` last packed
+-     entry #keyName   consumes the next map key: a text key's content, or `null` for a non-text key
+-         A non-text key's entry is ignored by the record decoders, so a caller which sees
+-         `null` skips the entry's value with `#skipValue` and continues.
+-     entry #value   consumes one whole item as a `Cbor` document
+-         The seam back to the tree world: a field whose type has only a `Decodable in Cbor` is
+-         read through this and decoded, materializing just that field's subtree.
+-     entry #skipValue   consumes one whole item, building nothing
+-         For an unknown key: a string's content is skipped, not buffered, so skipping is
+-         bounded-memory whatever the item's size, and a malformed item fails exactly as it
+-         would when parsed.
+-     entry #discriminant   the text value under a key of the upcoming map, leaving the reader where it was
+-         The dispatch primitive for a sealed hierarchy: the discriminant entry may appear
+-         anywhere in the map, so the map is scanned ahead and the reader rewound to its start
+-         before the chosen variant parses it. `Unset` when the item is not a map, has no such
+-         key, or the key's value is not text. The map is held in the buffer for the scan's
+-         duration, the one place a direct read holds more than a single item.
+-   entry .Parsable   the direct-parsing typeclass: a type which consumes CBOR items off a `Cbor.Reader`
++     entry .KeyOpaque   `#keyWord` がパックできないキーに対して返す値：`-2L`
++         パックされたキーのバイトはすべて 7 ビットの ASCII なので、パックされたキーとしてはありえない値である。
++         これを見た呼び出し元は、代わりに `#keyName` の段階をとる。
++     entry .of   `AnyRef` のキャリアとして運ばれてきたリーダーを、生成されたパーサーのために再び表明する
++         `Cbor.Reader.of(carrier)` は中立的な参照を `Cbor.Reader^` へキャストし戻す。
++         これは `Inlinable.parsable` がユーザーのモジュールへ埋め込むパーサーの入り口であり、そこでは生成された本体がキャプチャを消去されたリーダーを受け取る。
++         手書きのコードでこれを使うことはない。
++     entry #long   整数の項目を `Long` として、または浮動小数点数を切り捨てて消費する
++     entry #int   整数の項目を `Int` として消費する
++     entry #double   浮動小数点数の項目を `Double` として、または整数を拡大して消費する
++     entry #boolean   `true` または `false` の項目を消費する
++     entry #text   テキスト文字列の項目を `Text` として消費する
++     entry #string   テキスト文字列の項目を `String` として消費する
++     entry #byteString   バイト文字列の項目を凍結済みの `Array[Byte]` として消費する
++     entry #hasUndefined   次の項目が `undefined` かどうかを、消費せずに確かめる
++         オプショナルなラッパーが、ワイヤ上の `undefined`（0xF7）を存在しない値に対応づけるために行う先読みであり、ツリーの経路の `Cbor.optional` とまったく同じように働く。
++     entry #undefined   `undefined` の項目を消費する
++     entry #openMap   マップを開く：そのエントリー数、または不定長のマップなら `-1`
++         不定長のマップはブレークの停止コードで終わり、それは `#breakEnd` が消費する。
++         それ以外の項目は丸ごと消費され、空のマップ（すべてのフィールドが存在しない）として読まれる。
++         これは、ツリーの経路のレコードのデコーダーがマップでないものに対して行うことと同じである。
++     entry #openArray   配列を開く：その要素数、または不定長の配列なら `-1`
++         配列でない項目は、ツリーのアクセサー `array` と同じく、`Cbor.Error(NotType(found, Array))` で失敗する。
++     entry #breakEnd   次がブレークの停止コードならそれを消費する：不定長の項目の終わり
++         ブレークがあって消費されたときは `true`、次の項目が別の要素やエントリーであるときは（何も消費せずに）`false` を返す。
++     entry #keyWord   次のマップのキーを、リテラルとの比較のために `Long` へパックしたもの
++         生成されたパーサーはフィールド名を即値へコンパイルする。
++         定長で、1 から 16 バイトの、7 ビットに収まるテキストのキーは二つのワードへパックされ、下位のワードが返されて上位のワードは `#keyHigh` に残され、キーは消費される。
++         パックできないキーは `.KeyOpaque` を返して何も消費しないので、呼び出し元は代わりに `#keyName` をとる。
++         チャンクの境界にまたがるキーは先に丸ごとバッファリングされるので、一度に届いたキーと同じようにパックされる。
++     entry #keyHigh   `#keyWord` が最後にパックしたキーの上位ワード
++     entry #keyName   次のマップのキーを消費する：テキストのキーの内容、またはテキストでないキーなら `null`
++         テキストでないキーのエントリーはレコードのデコーダーに無視されるので、`null` を見た呼び出し元は `#skipValue` でエントリーの値を読み飛ばして先へ進む。
++     entry #value   一つの項目を丸ごと `Cbor` ドキュメントとして消費する
++         ツリーの世界へ戻る継ぎ目である。
++         型が `Decodable in Cbor` しか持たないフィールドはこれを通じて読まれてデコードされ、そのフィールドの部分木だけが実体化される。
++     entry #skipValue   一つの項目を丸ごと消費し、何も構築しない
++         未知のキーのためのものである。
++         文字列の内容はバッファリングされずに読み飛ばされるので、読み飛ばしは項目の大きさにかかわらず限られたメモリで行われ、不正な項目はパースしたときとまったく同じように失敗する。
++     entry #discriminant   次に来るマップのキーの下にあるテキストの値。リーダーの位置は変えない
++         シールされた階層のための振り分けの基本操作である。
++         判別子のエントリーはマップのどこに現れてもよいので、マップを先まで走査し、選ばれたバリアントがパースする前にリーダーをその先頭へ巻き戻す。
++         項目がマップでないとき、そのキーがないとき、またはキーの値がテキストでないときは `Unset` になる。
++         走査の間はマップがバッファに保持される。
++         直接の読み取りが一つの項目より多くを保持するのは、ここだけである。
++   entry .Parsable   直接パースの型クラス：`Cbor.Reader` から CBOR の項目を消費する型
+
+=   entry .Parsable   the direct-parsing typeclass: a type which consumes CBOR items off a `Cbor.Reader`
+-     detail
++     detail
+
+-         `Cbor.Parsable` is the direct-parsing counterpart of `Decodable in Cbor`: where a
+-         decoder walks a materialized tree, an instance's `parse(reader)` consumes data items
+-         straight off the input through a `Cbor.Reader`, so `read[T in Cbor]` instantiates
+-         the value with no tree built and holds only the item being read. It is the opt-in
+-         surface for the direct path: an explicit instance (`Cbor.Parsable(reader => …)`),
+-         one generated at compile time by `Inlinable.parsable[T]`, one generated into the
+-         companion by `derives Cbor.Direct`, or `import codecs.direct` for every record in
+-         scope. Without one of these, no read changes behaviour. A field type without an
+-         instance bridges through `.fromDecodable`, which parses the field's subtree and
+-         decodes it.
++         `Cbor.Parsable` は、`Decodable in Cbor` に対する直接パースの対応物である。
++         デコーダーが実体化されたツリーをたどるのに対し、インスタンスの `parse(reader)` は `Cbor.Reader` を通じて入力からデータ項目を直接消費する。
++         そのため、`read[T in Cbor]` はツリーを作らずに値を生成し、読んでいる項目だけを保持する。
++         これは直接の経路を明示的に選ぶための面である。
++         明示的なインスタンス（`Cbor.Parsable(reader => …)`）、`Inlinable.parsable[T]` がコンパイル時に生成するもの、`derives Cbor.Direct` がコンパニオンに生成するもの、あるいはスコープ内のすべてのレコードに対する `import codecs.direct` がある。
++         これらのいずれもなければ、どの読み取りの振る舞いも変わらない。
++         インスタンスを持たないフィールドの型は `.fromDecodable` を通じて橋渡しされ、それはフィールドの部分木をパースしてデコードする。
+
+=         decodes it.
+=
+-         ```scala
++         ```scala
+
+=         decodes it.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         decodes it.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         import strategies.throwUnsafely
+=
+-         case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-         given (Person is Cbor.Parsable) = Inlinable.parsable[Person]
++         given (Person is Cbor.Parsable) = Inlinable.parsable[Person]
+
+-         val bytes: Data = Person(t"Hal", 36).in[Data over Cbor]
++         val bytes: Data = Person(t"Hal", 36).in[Data over Cbor]
+
+-         bytes.read[Person in Cbor]          // parsed without building a tree
++         bytes.read[Person in Cbor]          // parsed without building a tree
+
+-         Chain(bytes).read[Person in Cbor]   // and over chunks, as they are pulled
++         Chain(bytes).read[Person in Cbor]   // and over chunks, as they are pulled
+
+=         Chain(bytes).read[Person in Cbor]   // and over chunks, as they are pulled
+-         ```
++         ```
+
+-         An instance is a `distillate.Parsable` with `Transport = Cbor` and `Reader =
+-         Cbor.Reader`; `#absent` says what a field of the type yields when its key is missing
+-         from a map. The companion's `generated` given (inherited from `Cbor.Parsable2`) is the
+-         `codecs.direct` instance, and `.declared` the `derives Cbor.Direct` one.
++         インスタンスは `Transport = Cbor` と `Reader = Cbor.Reader` を持つ `distillate.Parsable` である。
++         `#absent` は、その型のフィールドのキーがマップにないときに何を返すかを述べる。
++         コンパニオンの `generated` の given（`Cbor.Parsable2` から継承される）は `codecs.direct` のインスタンスであり、`.declared` は `derives Cbor.Direct` のものである。
+
+-     refer breviloquence.Cbor.Reader
++     refer breviloquence.Cbor.Reader
+
+=     refer breviloquence.Cbor.Reader
+-     refer breviloquence.Inlinable
++     refer breviloquence.Inlinable
+
+=     refer breviloquence.Inlinable
+-     refer breviloquence.Cbor.Printable
++     refer breviloquence.Cbor.Printable
+
+-     refer breviloquence.Cbor.Direct
++     refer breviloquence.Cbor.Direct
+
+-     entry #Transport   the format this parser reads: `Cbor`
+-     entry #Reader   the reader it reads through: `Cbor.Reader`
+-     entry #absent   what a field of this type yields when its key is absent from the map
+-         Raises `Cbor.Error(Absent)` unless overridden; `.fromDecodable` overrides it to decode
+-         `undefined` through the bridged decoder, which is how an `Optional` field bridges to
+-         `Unset`.
+-     entry .apply   an instance from a function over the reader: `Cbor.Parsable(reader => …)`
+-         The function receives a `Cbor.Reader^` and must consume exactly one item. The
+-         instance captures the function.
+-     entry .fromDecodable   an instance which parses one item as a tree and decodes it with a `Decodable in Cbor`
+-         The universal bridge from the tree world, and the one-line escape hatch when a custom
+-         decoder must beat a generated direct parser: `Cbor.Parsable.fromDecodable(decoder)`.
+-         Its `#absent` decodes `undefined` through the decoder.
+-     entry .declared   the parser a type generated into its companion with `derives Cbor.Direct`
+-         A given which resolves through `Cbor.Direct[T]`, so a record declared with the
+-         `derives` clause is parsed directly with no import.
+-     entry .missing   raises `Cbor.Error(Absent)` for a required field whose key was not in the map
+-         Public because generated parsers, spliced into user modules, call it.
+-     entry .parseField   calls a nominal `Cbor.Parsable` from a generated parser, with the reader as a carrier
+-         The call point for a hand-written or recursive instance in a field position of
+-         generated code, which is capture-erased; both arguments travel as `AnyRef` and the
+-         capability is reasserted here. Not for hand-written code.
+-     entry .absentField   calls a nominal `Cbor.Parsable`'s `absent` from a generated parser
+-     entry .Direct   the base class of generated parsers, receiving the reader as a carrier
++     entry #Transport   このパーサーが読む形式：`Cbor`
++     entry #Reader   読み取りに使うリーダー：`Cbor.Reader`
++     entry #absent   この型のフィールドのキーがマップに存在しないときに返すもの
++         上書きされなければ `Cbor.Error(Absent)` を発生させる。
++         `.fromDecodable` はこれを上書きし、橋渡しされたデコーダーを通じて `undefined` をデコードする。
++         `Optional` のフィールドはこうして `Unset` へ橋渡しされる。
++     entry .apply   リーダーに対する関数から作るインスタンス：`Cbor.Parsable(reader => …)`
++         関数は `Cbor.Reader^` を受け取り、ちょうど一つの項目を消費しなければならない。
++         インスタンスはその関数を捕捉する。
++     entry .fromDecodable   一つの項目をツリーとしてパースし、`Decodable in Cbor` でデコードするインスタンス
++         ツリーの世界からの汎用の橋渡しであり、独自のデコーダーが生成された直接のパーサーより優先されなければならないときの、一行で書ける逃げ道でもある：`Cbor.Parsable.fromDecodable(decoder)`。
++         その `#absent` はデコーダーを通じて `undefined` をデコードする。
++     entry .declared   型が `derives Cbor.Direct` でコンパニオンに生成したパーサー
++         `Cbor.Direct[T]` を通じて解決される given である。
++         そのため、`derives` 節とともに宣言されたレコードは、インポートなしに直接パースされる。
++     entry .missing   キーがマップになかった必須のフィールドに対して `Cbor.Error(Absent)` を発生させる
++         ユーザーのモジュールへ埋め込まれた、生成されたパーサーがこれを呼ぶので、公開されている。
++     entry .parseField   生成されたパーサーから、リーダーをキャリアとして、名目的な `Cbor.Parsable` を呼ぶ
++         キャプチャを消去された生成コードの、フィールドの位置にある手書きのインスタンスや再帰的なインスタンスを呼ぶ地点である。
++         二つの引数はどちらも `AnyRef` として運ばれ、ケイパビリティはここで再び表明される。
++         手書きのコード向けではない。
++     entry .absentField   生成されたパーサーから、名目的な `Cbor.Parsable` の `absent` を呼ぶ
++     entry .Direct   生成されたパーサーの基底クラス。リーダーをキャリアとして受け取る
+
+=     entry .Direct   the base class of generated parsers, receiving the reader as a carrier
+-       detail
++       detail
+
+-           An abstract `Cbor.Parsable` whose `parse` forwards to `#parseCarrier` with the
+-           reader as an `AnyRef`: generated code is capture-erased, so the capability is
+-           asserted at this rim rather than in the generated body. `Inlinable.parsable`
+-           extends it; hand-written code uses `Cbor.Parsable.apply`.
+-   entry .Printable   the direct-printing typeclass: a type which writes its CBOR bytes straight into a producer
++           抽象的な `Cbor.Parsable` であり、その `parse` はリーダーを `AnyRef` として `#parseCarrier` へ転送する。
++           生成コードはキャプチャを消去されているので、ケイパビリティは生成された本体の中ではなく、この縁で表明される。
++           `Inlinable.parsable` はこれを継承する。
++           手書きのコードは `Cbor.Parsable.apply` を使う。
++   entry .Printable   直接出力の型クラス：自身の CBOR のバイト列を生産者へ直接書き込む型
+
+=   entry .Printable   the direct-printing typeclass: a type which writes its CBOR bytes straight into a producer
+-     detail
++     detail
+
+-         `Cbor.Printable` is the writing counterpart of `Cbor.Parsable`, and the direct
+-         counterpart of `Encodable in Cbor`: `write(value, out)` puts the value's bytes into a
+-         `Producer.Bytes` with no tree built, and `in[Data over Cbor]` uses an instance
+-         wherever one exists. The bytes are exactly those the derived encoding writes. Its
+-         surface is an explicit instance, `Inlinable.printable[T]`, `derives Cbor.Direct` and
+-         `import codecs.direct`; a field type without an instance bridges through
+-         `.fromEncodable`.
++         `Cbor.Printable` は、`Cbor.Parsable` の書き込み側の対応物であり、`Encodable in Cbor` に対する直接の対応物である。
++         `write(value, out)` はツリーを作らずに値のバイト列を `Producer.Bytes` へ入れ、`in[Data over Cbor]` はインスタンスがある場所ではどこでもそれを使う。
++         バイト列は導出されたエンコードが書くものとまったく同じである。
++         その面は、明示的なインスタンス、`Inlinable.printable[T]`、`derives Cbor.Direct`、`import codecs.direct` である。
++         インスタンスを持たないフィールドの型は `.fromEncodable` を通じて橋渡しされる。
+
+=         `.fromEncodable`.
+=
+-         ```scala
++         ```scala
+
+=         `.fromEncodable`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         import soundness.*
+=
+-         case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-         given (Person is Cbor.Printable) = Inlinable.printable[Person]
++         given (Person is Cbor.Printable) = Inlinable.printable[Person]
+
+-         Person(t"Hal", 36).in[Data over Cbor]   // the same bytes, written directly
++         Person(t"Hal", 36).in[Data over Cbor]   // the same bytes, written directly
+
+-         Cbor.Printable.print(Person(t"Hal", 36))
++         Cbor.Printable.print(Person(t"Hal", 36))
+
+=         Cbor.Printable.print(Person(t"Hal", 36))
+-         ```
++         ```
+
+-         `.print` gives the bytes whole and `.emit` hands them on a block at a time, so a
+-         value can be sent without its whole encoding ever being held. The `write…` methods
+-         are the leaf writers generated printers call.
++         `.print` はバイト列を丸ごと与え、`.emit` はそれを一ブロックずつ渡すので、値はエンコード全体を一度も保持することなく送れる。
++         `write…` メソッドは、生成されたプリンターが呼ぶ葉の書き込み関数である。
+
+=         are the leaf writers generated printers call.
+-     refer breviloquence.Cbor.Parsable
++     refer breviloquence.Cbor.Parsable
+
+=     refer breviloquence.Cbor.Parsable
+-     refer breviloquence.Inlinable
++     refer breviloquence.Inlinable
+
+-     entry #write   writes a value's CBOR bytes into a byte producer
+-     entry .print   a value's whole CBOR bytes through its `Cbor.Printable`
+-         `Cbor.Printable.print(value)` collects what `#write` produces into one `Data`.
+-     entry .emit   a value's bytes in blocks of the `Buffering` capacity, each handed to a function as it fills
+-         `Cbor.Printable.emit(value, deliver)` serializes on the caller's thread and never
+-         builds an array of the whole value: the shape for writing a large record to a file or
+-         a socket. Needs the type's `Cbor.Printable` and a `Buffering`.
+-     entry .fromEncodable   an instance which encodes a value to a tree and writes the tree
+-         The bridge from the tree world, for a field type with only an `Encodable in Cbor`, or
+-         for forcing a custom encoder over a generated printer.
+-     entry .declared   the printer a type generated into its companion with `derives Cbor.Direct`
+-     entry .present   whether a field's encoded tree is written at all: `false` for `undefined`
+-         The derived encoding leaves out a field whose encoding is `undefined`, such as an
+-         unset `Optional`; generated printers ask this before writing a bridged field.
+-     entry .writeHead   writes a major type's head with a count: the leaf writer for an array or map head
+-         `writeHead(out, 5, entries)` opens a map of that many entries; `4` opens an array.
+-         The producer travels as an `AnyRef` carrier, as in every `write…` method, because
+-         generated code is capture-erased; hand-written code uses `Cbor.Ast.encodable` or
+-         `Cbor.emit`.
+-     entry .writeLong   writes an integer in the shortest head encoding, negative as major type 1
+-     entry .writeDouble   writes a 64-bit float
+-     entry .writeText   writes a text string, as UTF-8 with its length head
+-     entry .writeBytes   writes a byte string with its length head
+-     entry .writeBoolean   writes `true` or `false`
+-     entry .writeAst   writes a whole `Cbor.Ast` node: the seam for a field kept as a document
+-     entry .writeField   calls a nominal `Cbor.Printable` from a generated printer, with the producer as a carrier
+-         The call point for a hand-written or recursive instance in a field position. Not
+-         for hand-written code.
+-     entry .Direct   the base class of generated printers, receiving the producer as a carrier
++     entry #write   値の CBOR のバイト列をバイトの生産者へ書き込む
++     entry .print   `Cbor.Printable` を通じた、値の CBOR のバイト列全体
++         `Cbor.Printable.print(value)` は `#write` が生み出すものを一つの `Data` に集める。
++     entry .emit   値のバイト列を `Buffering` の容量のブロックに分け、満ちるたびに関数へ渡す
++         `Cbor.Printable.emit(value, deliver)` は呼び出し元のスレッドで直列化し、値全体の配列を作ることはない。
++         大きなレコードをファイルやソケットへ書き込むための形である。
++         型の `Cbor.Printable` と `Buffering` を必要とする。
++     entry .fromEncodable   値をツリーへエンコードし、そのツリーを書き込むインスタンス
++         ツリーの世界からの橋渡しであり、`Encodable in Cbor` しか持たないフィールドの型のため、あるいは生成されたプリンターより独自のエンコーダーを優先させるためのものである。
++     entry .declared   型が `derives Cbor.Direct` でコンパニオンに生成したプリンター
++     entry .present   フィールドのエンコードされたツリーを書くかどうか：`undefined` なら `false`
++         導出されたエンコードは、未設定の `Optional` のように、エンコードが `undefined` になるフィールドを省く。
++         生成されたプリンターは、橋渡しされたフィールドを書く前にこれを尋ねる。
++     entry .writeHead   メジャータイプのヘッドを数とともに書く：配列やマップのヘッドのための葉の書き込み関数
++         `writeHead(out, 5, entries)` はその数のエントリーを持つマップを開き、`4` は配列を開く。
++         すべての `write…` メソッドと同じく、生成コードはキャプチャを消去されているので、生産者は `AnyRef` のキャリアとして運ばれる。
++         手書きのコードは `Cbor.Ast.encodable` か `Cbor.emit` を使う。
++     entry .writeLong   整数を最も短いヘッドのエンコードで書く。負の数はメジャータイプ 1 として書く
++     entry .writeDouble   64 ビットの浮動小数点数を書く
++     entry .writeText   テキスト文字列を、長さのヘッドとともに UTF-8 で書く
++     entry .writeBytes   バイト文字列を長さのヘッドとともに書く
++     entry .writeBoolean   `true` または `false` を書く
++     entry .writeAst   `Cbor.Ast` のノードを丸ごと書く：ドキュメントとして保たれたフィールドのための継ぎ目
++     entry .writeField   生成されたプリンターから、生産者をキャリアとして、名目的な `Cbor.Printable` を呼ぶ
++         フィールドの位置にある手書きのインスタンスや再帰的なインスタンスを呼ぶ地点である。
++         手書きのコード向けではない。
++     entry .Direct   生成されたプリンターの基底クラス。生産者をキャリアとして受け取る
+
+=     entry .Direct   the base class of generated printers, receiving the producer as a carrier
+-       detail
++       detail
+
+-           An abstract `Cbor.Printable` whose `write` forwards to `#writeCarrier` with the
+-           producer as an `AnyRef`, as `Cbor.Parsable.Direct` does for parsers.
+-           `Inlinable.printable` extends it.
+-   entry .Parsable2   the trait which holds the `codecs.direct` parser given
++           抽象的な `Cbor.Printable` であり、その `write` は、`Cbor.Parsable.Direct` がパーサーに対して行うのと同じく、生産者を `AnyRef` として `#writeCarrier` へ転送する。
++           `Inlinable.printable` はこれを継承する。
++   entry .Parsable2   `codecs.direct` のパーサーの given を保持するトレイト
+
+=   entry .Parsable2   the trait which holds the `codecs.direct` parser given
+-     hidden
++     hidden
+
+=   entry .Parsable2   the trait which holds the `codecs.direct` parser given
+=     hidden
+-     detail
++     detail
+
+-         Mixed into the `Cbor.Parsable` companion so that its one given sits below the
+-         companion's `declared` instance; not for direct use.
+-     entry #generated   under `codecs.direct`, a generated `Cbor.Parsable` for any record
+-         An inline given conditional on `Codecs.Direct` and on `Inlinable.Generates[T]`, the
+-         evidence that the generator builds the type structurally as a record: a type which
+-         is not a record — a generic case class, a sealed hierarchy — fails the evidence and
+-         keeps the derived path unless it has an instance of its own. Expands
+-         `Inlinable.parsable[T]` where it is needed.
+-   entry .Printable2   the trait which holds the `codecs.direct` printer given
++         その一つの given がコンパニオンの `declared` インスタンスより下に位置するよう、`Cbor.Parsable` のコンパニオンに混ぜ込まれる。
++         直接使うものではない。
++     entry #generated   `codecs.direct` のもとで、任意のレコードに対して生成される `Cbor.Parsable`
++         `Codecs.Direct` と `Inlinable.Generates[T]` を条件とするインライン given である。
++         `Inlinable.Generates[T]` は、生成器がその型をレコードとして構造的に構築することの証拠である。
++         レコードでない型（ジェネリックなケースクラスやシールされた階層）はこの証拠を満たさず、自身のインスタンスを持たない限り導出の経路にとどまる。
++         必要な場所で `Inlinable.parsable[T]` を展開する。
++   entry .Printable2   `codecs.direct` のプリンターの given を保持するトレイト
+
+=   entry .Printable2   the trait which holds the `codecs.direct` printer given
+-     hidden
++     hidden
+
+=   entry .Printable2   the trait which holds the `codecs.direct` printer given
+=     hidden
+-     detail
++     detail
+
+-         Mixed into the `Cbor.Printable` companion; not for direct use.
+-     entry #generated   under `codecs.direct`, a generated `Cbor.Printable` for any record
+-         The writing counterpart of `Cbor.Parsable.generated`: expands
+-         `Inlinable.printable[T]` for any type with `Inlinable.Generates[T]` evidence.
+-   entry .Direct   `derives Cbor.Direct`: a record's generated parser and printer, made once into its companion
++         `Cbor.Printable` のコンパニオンに混ぜ込まれる。
++         直接使うものではない。
++     entry #generated   `codecs.direct` のもとで、任意のレコードに対して生成される `Cbor.Printable`
++         `Cbor.Parsable.generated` の書き込み側の対応物であり、`Inlinable.Generates[T]` の証拠を持つ任意の型に対して `Inlinable.printable[T]` を展開する。
++   entry .Direct   `derives Cbor.Direct`：レコードの生成されたパーサーとプリンターを、一度だけコンパニオンに作る
+
+=   entry .Direct   `derives Cbor.Direct`: a record's generated parser and printer, made once into its companion
+-     detail
++     detail
+
+-         A `Self`-typed typeclass has no type parameters, so neither `Cbor.Parsable` nor
+-         `Cbor.Printable` can appear in a `derives` clause; `Cbor.Direct[T]` is the carrier
+-         which can. `case class Play(…) derives Cbor.Direct` generates `Play`'s parser and
+-         printer once, into its companion, where the `declared` givens of `Cbor.Parsable`
+-         and `Cbor.Printable` find them, so `Play` reads and writes directly with no import
+-         and no per-use expansion.
++         `Self` 型の型クラスは型パラメーターを持たないので、`Cbor.Parsable` も `Cbor.Printable` も `derives` 節に現れることができない。
++         `Cbor.Direct[T]` は、それができるキャリアである。
++         `case class Play(…) derives Cbor.Direct` は `Play` のパーサーとプリンターを一度だけコンパニオンに生成し、そこで `Cbor.Parsable` と `Cbor.Printable` の `declared` の given がそれらを見つける。
++         そのため、`Play` はインポートなしに、使うたびに展開することもなく、直接読み書きされる。
+
+=         and no per-use expansion.
+=
+-         ```scala
++         ```scala
+
+=         and no per-use expansion.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         and no per-use expansion.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         case class Declared(id: Int, name: Text) derives Cbor.Direct
++         case class Declared(id: Int, name: Text) derives Cbor.Direct
+
+-         Declared(5, t"five").in[Data over Cbor].read[Declared in Cbor]   // Declared(5, t"five")
++         Declared(5, t"five").in[Data over Cbor].read[Declared in Cbor]   // Declared(5, t"five")
+
+=         Declared(5, t"five").in[Data over Cbor].read[Declared in Cbor]   // Declared(5, t"five")
+-         ```
++         ```
+
+=         Declared(5, t"five").in[Data over Cbor].read[Declared in Cbor]   // Declared(5, t"five")
+=         ```
+-     refer breviloquence.Cbor.Parsable
++     refer breviloquence.Cbor.Parsable
+
+=     refer breviloquence.Cbor.Parsable
+-     refer breviloquence.Cbor.Printable
++     refer breviloquence.Cbor.Printable
+
+=     refer breviloquence.Cbor.Printable
+-     refer breviloquence.Inlinable
++     refer breviloquence.Inlinable
+
+-     entry .derived   the `derives` hook: `Inlinable.parsable[T]` and `Inlinable.printable[T]`, paired
+-     entry #parsable   the generated `Cbor.Parsable`
+-     entry #printable   the generated `Cbor.Printable`
++     entry .derived   `derives` のフック：対にした `Inlinable.parsable[T]` と `Inlinable.printable[T]`
++     entry #parsable   生成された `Cbor.Parsable`
++     entry #printable   生成された `Cbor.Printable`
+
+- entry .Cbor1   the trait which holds the direct-path givens of `object Cbor`, above the derived path
++ entry .Cbor1   `object Cbor` の直接の経路の given を保持するトレイト。導出の経路より優先される
+
+= entry .Cbor1   the trait which holds the direct-path givens of `object Cbor`, above the derived path
+-   hidden
++   hidden
+
+= entry .Cbor1   the trait which holds the direct-path givens of `object Cbor`, above the derived path
+=   hidden
+-   detail
++   detail
+
+-       Mixed into `object Cbor` between `Cbor2` and the object's own members, so that its
+-       givens outrank the derived path and are outranked by the `codecs.derived` and
+-       `codecs.strict` pairs; not for direct use. Its members — `aggregableParsed`,
+-       `readableParsed`, `encodableOverPrinted`, `aggregableStrictFailure` and
+-       `encodableOverStrictFailure` — are documented here; `object Cbor` inherits them.
+-   entry #aggregableParsed   the direct read path: a `Cbor.Parsable` drives the parser, no tree built
+-       In scope for any type with a `(value is Cbor.Parsable)^`, above `Cbor.aggregableIn`:
+-       `read[T in Cbor]` over a `Chain[Data]` or a `Stream[Data]` then consumes items straight
+-       off the `CborParser` through a `Cbor.Reader`, holding at most the one item being read
+-       (a sum's discriminant scan holds its map), so a large document streams in bounded
+-       memory. Trailing bytes are rejected exactly as on the tree path. The given captures the
+-       parsable and the `Tactic[Cbor.Error]` it uses; a summon which names its type must allow
+-       the capture (`summon[((T in Cbor) is Aggregable by Data)^]`), while resolution through
+-       `read` needs nothing.
+-   entry #readableParsed   `data.read[T in Cbor]` for a whole `Data`, parsed in place through a `Cbor.Parsable`
+-       The in-memory counterpart of `#aggregableParsed`: when the whole content is already a
+-       `Data`, it is parsed where it lies rather than wrapped in a one-element chain. Captures
+-       the parsable and the tactic, as `#aggregableParsed` does.
+-   entry #encodableOverPrinted   `in[Data over Cbor]` written directly through a `Cbor.Printable`
+-       In scope for any type with a `(value is Cbor.Printable)^`, above `Cbor.encodableOver`: the
+-       value's bytes are written straight into a byte producer, with no tree built, and are
+-       exactly those the derived encoding writes.
+-   entry #aggregableStrictFailure   under `codecs.strict`, the compile error for a type with no direct parser
+-       An inline given selected for every type the strict pair does not take, which then
+-       reports _breviloquence: `T` has no direct codec_ at the use site. It exists so that
+-       `read[T in Cbor]` never silently falls back to the tree under `codecs.strict`.
+-   entry #encodableOverStrictFailure   under `codecs.strict`, the compile error for a type with no direct printer
+-       The writing counterpart of `#aggregableStrictFailure`, for `in[Data over Cbor]`.
++       `object Cbor` に `Cbor2` とそのオブジェクト自身のメンバーの間でミックスインされ、その given が導出の経路より優先され、`codecs.derived` と `codecs.strict` の組には劣後するようにする。
++       直接使うためのものではない。
++       そのメンバー `aggregableParsed`、`readableParsed`、`encodableOverPrinted`、`aggregableStrictFailure`、`encodableOverStrictFailure` はここで説明し、`object Cbor` がそれらを継承する。
++   entry #aggregableParsed   直接の読み取り経路：`Cbor.Parsable` がパーサーを駆動し、ツリーは作らない
++       `(value is Cbor.Parsable)^` を持つ任意の型についてスコープにあり、`Cbor.aggregableIn` より優先される。
++       このとき `Chain[Data]` や `Stream[Data]` に対する `read[T in Cbor]` は、`Cbor.Reader` を通じて `CborParser` から項目を直接消費し、保持するのは読み取り中の一つの項目だけである（直和型の判別子の走査はそのマップを保持する）。
++       そのため大きなドキュメントも有界のメモリーでストリーミングされる。
++       末尾の余分なバイトは、ツリーの経路とまったく同じように拒否される。
++       この given は Parsable とそれが使う `Tactic[Cbor.Error]` をキャプチャする。
++       その型を名指す召喚はこのキャプチャを許さなければならない（`summon[((T in Cbor) is Aggregable by Data)^]`）が、`read` を通じた解決には何も要らない。
++   entry #readableParsed   `Data` 全体に対する `data.read[T in Cbor]`。`Cbor.Parsable` でその場でパースする
++       `#aggregableParsed` のメモリー上の対応物である。
++       内容全体が既に `Data` であるとき、要素一つのチェーンに包むのではなく、それがある場所でパースする。
++       `#aggregableParsed` と同様に、Parsable と戦術をキャプチャする。
++   entry #encodableOverPrinted   `Cbor.Printable` を通じて直接書き出す `in[Data over Cbor]`
++       `(value is Cbor.Printable)^` を持つ任意の型についてスコープにあり、`Cbor.encodableOver` より優先される。
++       値のバイトはツリーを作らずにバイトの生産者へ直接書き込まれ、導出のエンコーディングが書くものとまったく同じである。
++   entry #aggregableStrictFailure   `codecs.strict` のもとで、直接のパーサーを持たない型に対するコンパイルエラー
++       strict の組が受け持たないすべての型について選ばれるインラインの given であり、使用箇所で _breviloquence: `T` has no direct codec_ を報告する。
++       `codecs.strict` のもとで `read[T in Cbor]` が黙ってツリーに後退することがないように存在する。
++   entry #encodableOverStrictFailure   `codecs.strict` のもとで、直接のプリンターを持たない型に対するコンパイルエラー
++       `#aggregableStrictFailure` の書き込み側の対応物で、`in[Data over Cbor]` のためのものである。
+
+- entry .Cbor2   the trait which holds the derived-path givens of `object Cbor`, at the lowest priority
++ entry .Cbor2   `object Cbor` の導出の経路の given を保持するトレイト。優先度は最も低い
+
+= entry .Cbor2   the trait which holds the derived-path givens of `object Cbor`, at the lowest priority
+-   hidden
++   hidden
+
+= entry .Cbor2   the trait which holds the derived-path givens of `object Cbor`, at the lowest priority
+=   hidden
+-   detail
++   detail
+
+-       Mixed into `object Cbor` beneath everything else, and exported to the `soundness`
+-       umbrella alongside `Cbor` so that its givens stay reachable there; not for direct use.
+-       Its members — `decodable`, `encodable`, `optional`, `optionalEncodable`,
+-       `aggregableIn`, `encodableOver`, `DecodableDerivation` and `EncodableDerivation` — are
+-       documented here; `object Cbor` inherits them.
+-   entry #aggregableIn   `read[T in Cbor]` over chunked bytes: parse the tree, then decode it
+-       `source.read[Person in Cbor]` is shorthand for `source.read[Cbor].as[Person]` for any
+-       `Decodable in Cbor` type. It is the derived read path; `Cbor.aggregableParsed` outranks it
+-       whenever the type has a `Cbor.Parsable`, so the same expression reads directly, with no
+-       tree, as soon as a direct parser is in scope. Needs a `Tactic[Cbor.Error]`.
+-   entry #encodableOver   `in[Data over Cbor]`: a value's CBOR bytes through its tree
+-       The write-side mirror of `read[T in Cbor]`: `person.in[Data over Cbor]` encodes the
+-       value to a `Cbor` and serializes it. `Cbor.encodableOverPrinted` outranks it whenever the
+-       type has a `Cbor.Printable`, writing the same bytes with no tree.
++       `object Cbor` に他のすべての下でミックスインされ、その given がアンブレラでも到達できるように、`Cbor` とともに `soundness` アンブレラにエクスポートされる。
++       直接使うためのものではない。
++       そのメンバー `decodable`、`encodable`、`optional`、`optionalEncodable`、`aggregableIn`、`encodableOver`、`DecodableDerivation`、`EncodableDerivation` はここで説明し、`object Cbor` がそれらを継承する。
++   entry #aggregableIn   チャンク化されたバイト列に対する `read[T in Cbor]`：ツリーをパースしてからデコードする
++       `source.read[Person in Cbor]` は、任意の `Decodable in Cbor` な型について `source.read[Cbor].as[Person]` の略記である。
++       これは導出の読み取り経路である。
++       型が `Cbor.Parsable` を持つときは常に `Cbor.aggregableParsed` がこれより優先されるので、直接のパーサーがスコープに入ったとたん、同じ式がツリーなしで直接読むようになる。
++       `Tactic[Cbor.Error]` を必要とする。
++   entry #encodableOver   `in[Data over Cbor]`：ツリーを経由した値の CBOR のバイト列
++       `read[T in Cbor]` の書き込み側の鏡像である。
++       `person.in[Data over Cbor]` は値を `Cbor` にエンコードし、それを直列化する。
++       型が `Cbor.Printable` を持つときは常に `Cbor.encodableOverPrinted` がこれより優先され、ツリーなしで同じバイト列を書く。
+
+=       type has a `Cbor.Printable`, writing the same bytes with no tree.
+=
+-       ```scala
++       ```scala
+
+=       type has a `Cbor.Printable`, writing the same bytes with no tree.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       type has a `Cbor.Printable`, writing the same bytes with no tree.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       type has a `Cbor.Printable`, writing the same bytes with no tree.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       Person(t"Hal", 36).in[Data over Cbor].read[Person in Cbor]   // Person(t"Hal", 36)
++       Person(t"Hal", 36).in[Data over Cbor].read[Person in Cbor]   // Person(t"Hal", 36)
+
+=       Person(t"Hal", 36).in[Data over Cbor].read[Person in Cbor]   // Person(t"Hal", 36)
+-       ```
++       ```
+
+-   entry #decodable   derives a `Decodable in Cbor` for any case class, sealed hierarchy or text-decodable type
+-       An inline given, at the lowest priority, which takes the first of two routes: a type
+-       which is `Decodable in Text` decodes from a CBOR text string through that decoder, and a
+-       type with a `Reflection` is derived — a case class from a map, by field name, a sealed
+-       hierarchy through its `Discriminable in Cbor` (declared once with
+-       `Cbor.discriminatedUnion`). A `@name[Cbor]` annotation (or a bare `@name`) renames a
+-       field's key or a variant's discriminator; a field with a default takes it when the key
+-       is absent; a nested record's error is pointed at `outer.inner`. The derivation is
+-       `#DecodableDerivation`.
+-   entry #encodable   derives an `Encodable in Cbor` for any case class, sealed hierarchy or text-encodable type
+-       The writing counterpart of `#decodable`: a type which is `Encodable in Text` encodes as
+-       a text string, and a type with a `Reflection` is derived — a case class as a map of its
+-       fields (a field whose encoding is `undefined`, such as an unset `Optional`, is left out),
+-       a sealed hierarchy as the variant's map with the discriminator entry added by its
+-       `Discriminable in Cbor`. The derivation is `#EncodableDerivation`.
+-   entry #optional   decodes an `Optional[T]` field, reading absence, `null` and faults by the `optionalityOptions` policies
+-       An absent key, and a wire `undefined` (0xF7), read as `Unset` unless
+-       `strictCborAbsence` is in scope, which raises `Cbor.Error(Absent)`; a wire `null` (0xF6)
+-       reads as `Unset` unless `strictCborNulls` is in scope, which hands it to the inner
+-       decoder; and a value the inner decoder rejects is an error unless `lenientCborFaults` is
+-       in scope, which reads it as `Unset`. The given captures the `Tactic[Cbor.Error]` and the
+-       inner decoder.
++   entry #decodable   任意のケースクラス、シールされた階層、テキストからデコード可能な型について `Decodable in Cbor` を導出する
++       最も低い優先度のインラインの given で、二つの経路のうち最初に当てはまるものをとる。
++       `Decodable in Text` である型は、そのデコーダーを通じて CBOR のテキスト文字列からデコードされる。
++       `Reflection` を持つ型は導出される。
++       ケースクラスはマップからフィールド名で、シールされた階層はその `Discriminable in Cbor`（`Cbor.discriminatedUnion` で一度だけ宣言する）を通じて導出される。
++       `@name[Cbor]` アノテーション（または単独の `@name`）は、フィールドのキーやバリアントの判別子の名前を変える。
++       デフォルトを持つフィールドは、キーが存在しないときにそのデフォルトをとる。
++       入れ子のレコードのエラーは `outer.inner` を指す。
++       導出は `#DecodableDerivation` である。
++   entry #encodable   任意のケースクラス、シールされた階層、テキストにエンコード可能な型について `Encodable in Cbor` を導出する
++       `#decodable` の書き込み側の対応物である。
++       `Encodable in Text` である型はテキスト文字列としてエンコードされ、`Reflection` を持つ型は導出される。
++       ケースクラスはそのフィールドのマップとして（エンコーディングが `undefined` になるフィールド、たとえば未設定の `Optional` は除かれる）、シールされた階層は、その `Discriminable in Cbor` によって判別子のエントリーを加えたバリアントのマップとしてエンコードされる。
++       導出は `#EncodableDerivation` である。
++   entry #optional   `Optional[T]` のフィールドをデコードし、存在しないキー、`null`、誤りを `optionalityOptions` のポリシーで読む
++       存在しないキーとワイヤ上の `undefined`（0xF7）は `Unset` として読まれる。
++       ただし `strictCborAbsence` がスコープにあれば `Cbor.Error(Absent)` を発生させる。
++       ワイヤ上の `null`（0xF6）は `Unset` として読まれる。
++       ただし `strictCborNulls` がスコープにあれば、それを内側のデコーダーに渡す。
++       内側のデコーダーが拒否する値はエラーになる。
++       ただし `lenientCborFaults` がスコープにあれば、`Unset` として読む。
++       この given は `Tactic[Cbor.Error]` と内側のデコーダーをキャプチャする。
+
+=       inner decoder.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       inner decoder.
+=
+=       ```scala fuel
+-       alternative Defaults
++       alternative Defaults
+
+=       inner decoder.
+=
+=       ```scala fuel
+=       alternative Defaults
+-         code
++         code
+
+=       inner decoder.
+=
+=       ```scala fuel
+=       alternative Defaults
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       inner decoder.
+=
+=       ```scala fuel
+=       alternative Defaults
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=       inner decoder.
+=
+=       ```scala fuel
+=       alternative Defaults
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             case class Reading(sensor: Text, value: Optional[Int])
++             case class Reading(sensor: Text, value: Optional[Int])
+
+=             import strategies.throwUnsafely
+=
+=             case class Reading(sensor: Text, value: Optional[Int])
+=
+-             // {"sensor": "a", "value": null}
++             // {"sensor": "a", "value": null}
+
+=             import strategies.throwUnsafely
+=
+=             case class Reading(sensor: Text, value: Optional[Int])
+=
+=             // {"sensor": "a", "value": null}
+-             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
++             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+-             // {"sensor": "a", "value": "x"}
++             // {"sensor": "a", "value": "x"}
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+=             // {"sensor": "a", "value": "x"}
+-             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178"
++             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178"
+
+=
+-             Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading]           // Reading(t"a", Unset)
++             Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading]           // Reading(t"a", Unset)
+
+-             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: a NotType error
++             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: a NotType error
+
+=             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: a NotType error
+-       alternative Strict nulls
++       alternative Strict nulls
+
+=             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: a NotType error
+=       alternative Strict nulls
+-         code
++         code
+
+=             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: a NotType error
+=       alternative Strict nulls
+=         code
+-             import soundness.*
++             import soundness.*
+
+=             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: a NotType error
+=       alternative Strict nulls
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: a NotType error
+=       alternative Strict nulls
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+-             import optionalityOptions.strictCborNulls
++             import optionalityOptions.strictCborNulls
+
+=             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: a NotType error
+=       alternative Strict nulls
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import optionalityOptions.strictCborNulls
+=
+-             case class Reading(sensor: Text, value: Optional[Int])
++             case class Reading(sensor: Text, value: Optional[Int])
+
+=             import optionalityOptions.strictCborNulls
+=
+=             case class Reading(sensor: Text, value: Optional[Int])
+=
+-             // {"sensor": "a", "value": null}
++             // {"sensor": "a", "value": null}
+
+=             import optionalityOptions.strictCborNulls
+=
+=             case class Reading(sensor: Text, value: Optional[Int])
+=
+=             // {"sensor": "a", "value": null}
+-             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
++             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+=
+-             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
++             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+-       alternative Lenient faults
++       alternative Lenient faults
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+=       alternative Lenient faults
+-         code
++         code
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+=       alternative Lenient faults
+=         code
+-             import soundness.*
++             import soundness.*
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+=       alternative Lenient faults
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+=       alternative Lenient faults
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+-             import optionalityOptions.lenientCborFaults
++             import optionalityOptions.lenientCborFaults
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+=       alternative Lenient faults
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import optionalityOptions.lenientCborFaults
+=
+-             case class Reading(sensor: Text, value: Optional[Int])
++             case class Reading(sensor: Text, value: Optional[Int])
+
+=
+-             // {"sensor": "a", "value": "x"}
++             // {"sensor": "a", "value": "x"}
+
+=
+=             // {"sensor": "a", "value": "x"}
+-             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178"
++             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178"
+
+=             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178"
+=
+-             Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
++             Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
+
+=             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178"
+=
+=             Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
+-       ##
++       ##
+
+=             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178"
+=
+=             Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
+=       ##
+-       ```
++       ```
+
+-   entry #optionalEncodable   encodes an `Optional[T]`: the value's encoding, or `undefined` when unset
+-       An unset field encodes as `undefined`, which the derived record encoding then omits
+-       from the map, so an `Optional` field costs nothing on the wire when it is absent.
+-   entry #DecodableDerivation   the wisteria derivation behind `Cbor.decodable`
++   entry #optionalEncodable   `Optional[T]` をエンコードする：値のエンコーディング、または未設定なら `undefined`
++       未設定のフィールドは `undefined` としてエンコードされ、導出のレコードのエンコーディングはそれをマップから省く。
++       そのため `Optional` のフィールドは、存在しないときにはワイヤ上で何も費やさない。
++   entry #DecodableDerivation   `Cbor.decodable` の背後にある wisteria の導出
+
+=   entry #DecodableDerivation   the wisteria derivation behind `Cbor.decodable`
+-     detail
++     detail
+
+-         A `Derivable[Decodable in Cbor]`: `.conjunction` decodes a case class from a map and
+-         `.disjunction` a sealed hierarchy through its `Discriminable in Cbor`. It is reached
+-         through `Cbor.decodable`, and may be named to derive an instance explicitly
+-         (`given (Person is Decodable in Cbor) = Cbor.DecodableDerivation.derived`).
+-     entry .conjunction   decodes a product: each field from the map entry of its (renamed) name
+-         Field names map to keys through `@name[Cbor]` (or a bare `@name`) relabelling; an
+-         absent key takes the field's default if it has one, and otherwise decodes `undefined`
+-         (an `Optional` reads `Unset`, a required type raises `Cbor.Error(Absent)`). Under an
+-         accruing `Validate` scope every faulty field registers its own error with a `Pointer`,
+-         and the constructor runs only when every field was clean. A non-map decodes as a map
+-         with no entries.
+-     entry .disjunction   decodes a sum: the discriminator picks the variant, which decodes the same map
+-         Needs a `Discriminable in Cbor` for the type, such as `Cbor.discriminatedUnion(t"kind")`;
+-         a missing discriminator raises `Cbor.Error(Absent)`. `@name[Cbor]` on a case renames
+-         its discriminator value.
+-   entry #EncodableDerivation   the wisteria derivation behind `Cbor.encodable`
++         `Derivable[Decodable in Cbor]` である。
++         `.conjunction` はケースクラスをマップからデコードし、`.disjunction` はシールされた階層をその `Discriminable in Cbor` を通じてデコードする。
++         `Cbor.decodable` を通じて到達し、インスタンスを明示的に導出するために名指すこともできる（`given (Person is Decodable in Cbor) = Cbor.DecodableDerivation.derived`）。
++     entry .conjunction   直積型をデコードする：各フィールドを、その（名前を変えた）名前のマップのエントリーから
++         フィールド名は `@name[Cbor]`（または単独の `@name`）による付け替えを通じてキーに対応する。
++         存在しないキーは、フィールドにデフォルトがあればそれをとり、なければ `undefined` をデコードする（`Optional` は `Unset` を読み、必須の型は `Cbor.Error(Absent)` を発生させる）。
++         蓄積型の `Validate` スコープのもとでは、誤りのある各フィールドが自分のエラーを `Pointer` とともに登録し、コンストラクターはすべてのフィールドが問題なかったときにだけ実行される。
++         マップでないものは、エントリーのないマップとしてデコードされる。
++     entry .disjunction   直和型をデコードする：判別子がバリアントを選び、そのバリアントが同じマップをデコードする
++         型について `Cbor.discriminatedUnion(t"kind")` のような `Discriminable in Cbor` を必要とする。
++         判別子がなければ `Cbor.Error(Absent)` を発生させる。
++         ケースに付けた `@name[Cbor]` は、その判別子の値の名前を変える。
++   entry #EncodableDerivation   `Cbor.encodable` の背後にある wisteria の導出
+
+=   entry #EncodableDerivation   the wisteria derivation behind `Cbor.encodable`
+-     detail
++     detail
+
+-         A `Derivable[Encodable in Cbor]`: `.conjunction` encodes a case class as a map and
+-         `.disjunction` a sealed hierarchy as the variant's map with its discriminator entry.
+-     entry .conjunction   encodes a product as a map of its fields, omitting those which encode as `undefined`
+-         Keys are the field names, relabelled by `@name[Cbor]`; a field whose encoding is
+-         `undefined` — an unset `Optional`, a `None` — is left out of the map.
+-     entry .disjunction   encodes a sum as the variant's map with the discriminator entry added
+-         Through the type's `Discriminable in Cbor`, with the variant name relabelled by
+-         `@name[Cbor]` on the case.
++         `Derivable[Encodable in Cbor]` である。
++         `.conjunction` はケースクラスをマップとしてエンコードし、`.disjunction` はシールされた階層を、判別子のエントリーを持つバリアントのマップとしてエンコードする。
++     entry .conjunction   直積型をそのフィールドのマップとしてエンコードし、`undefined` にエンコードされるものを省く
++         キーはフィールド名で、`@name[Cbor]` によって付け替えられる。
++         エンコーディングが `undefined` になるフィールド（未設定の `Optional`、`None`）はマップから除かれる。
++     entry .disjunction   直和型を、判別子のエントリーを加えたバリアントのマップとしてエンコードする
++         型の `Discriminable in Cbor` を通じて行い、バリアント名はケースに付けた `@name[Cbor]` で付け替えられる。
+
+- entry .CborParser   the streaming CBOR parser: one data item at a time off a `Cursor` of bytes
++ entry .CborParser   ストリーミングの CBOR パーサー：バイトの `Cursor` から一度に一つのデータ項目を読む
+
+= entry .CborParser   the streaming CBOR parser: one data item at a time off a `Cursor` of bytes
+-   detail
++   detail
+
+-       `CborParser` reads CBOR data items from a `zephyrine.Cursor[Data]`, so a document
+-       arriving in chunks is read as it arrives, and the buffer holds only the item being
+-       read — the whole of a byte or text string, since the result is one array, but never a
+-       container's elements once they are consumed. It is what every read path uses:
+-       `Cbor.Ast.parse` over a `Data` or a `Chain[Data]`, `read[Cbor.Ast]`, `read[Cbor]` and
+-       `read[T in Cbor]` over a chain or a `Stream[Data]`, and a `Cbor.Parsable` through the
+-       `Cbor.Reader` which wraps it. Every `Cbor.Error` it raises carries the absolute byte
+-       offset of the fault, counted from the input's start whatever the chunking.
++       `CborParser` は `zephyrine.Cursor[Data]` から CBOR のデータ項目を読むので、チャンクに分かれて届くドキュメントは届くそばから読まれる。
++       バッファーが保持するのは読み取り中の項目だけである。
++       結果は一つの配列なので、バイト文字列やテキスト文字列はその全体を保持するが、コンテナーの要素は消費された後は決して保持しない。
++       すべての読み取り経路がこれを使う。
++       `Data` や `Chain[Data]` に対する `Cbor.Ast.parse`、チェーンや `Stream[Data]` に対する `read[Cbor.Ast]`、`read[Cbor]`、`read[T in Cbor]`、そしてこれを包む `Cbor.Reader` を通じた `Cbor.Parsable` である。
++       これが発生させるすべての `Cbor.Error` は誤りの絶対的なバイトオフセットを持ち、チャンクの分け方にかかわらず入力の先頭から数えられる。
+
+-       It is public as a type — generated parsers, spliced into user modules, bind one per
+-       record and read through its direct rim — but only the library's read paths can
+-       construct one. It is a stateful capability (`caps.ExclusiveCapability, caps.Stateful`,
+-       a `Cursor.Snapshot[Data, Byte]`): every reading method is an `update def`, callable
+-       only through a `CborParser^`. Hand-written code reads through a `Cbor.Reader`, whose
+-       methods forward to the `direct…` methods here with the read's tactic.
++       型としては公開されている。
++       ユーザーのモジュールにスプライスされる生成されたパーサーは、レコードごとに一つを束縛し、その直接の縁を通じて読む。
++       しかし構築できるのはライブラリの読み取り経路だけである。
++       これは状態を持つケイパビリティ（`caps.ExclusiveCapability, caps.Stateful`、`Cursor.Snapshot[Data, Byte]`）である。
++       読み取りのメソッドはすべて `update def` であり、`CborParser^` を通じてのみ呼び出せる。
++       手書きのコードは `Cbor.Reader` を通じて読み、そのメソッドは読み取りの戦術とともにここにある `direct…` メソッドに転送する。
+
+-       Two groups of methods: `#value` is the tree path, parsing one whole item into a
+-       `Cbor.Ast`; the `direct…` methods are the byte-level rim for direct parsing, each
+-       consuming one complete item with fast paths for the common head shapes and a fallback
+-       through `#value` on anything exotic — tags, mistyped items, absence — so that values
+-       and failures agree with the tree accessors exactly. Indefinite-length strings, arrays
+-       and maps are all read; half-precision and single-precision floats widen to `Double`;
+-       an integer beyond `Long` fails with `Overflow`; simple values other than the booleans,
+-       `null` and `undefined` fail with `BadSimpleValue`.
++       メソッドは二つのグループに分かれる。
++       `#value` はツリーの経路で、一つの項目全体を `Cbor.Ast` にパースする。
++       `direct…` メソッドは直接パースのためのバイト単位の縁で、それぞれ一つの完全な項目を消費する。
++       よくあるヘッドの形には高速な経路があり、タグ、型の誤った項目、存在しないものなど風変わりなものには `#value` を通じた代替がある。
++       そのため値も失敗もツリーのアクセサーとまったく一致する。
++       長さ不定の文字列、配列、マップはすべて読まれる。
++       半精度と単精度の浮動小数点数は `Double` に拡大される。
++       `Long` を超える整数は `Overflow` で失敗する。
++       真偽値、`null`、`undefined` 以外の単純値は `BadSimpleValue` で失敗する。
+
+-   refer breviloquence.Cbor.Reader
++   refer breviloquence.Cbor.Reader
+
+=   refer breviloquence.Cbor.Reader
+-   refer breviloquence.Cbor.Ast
++   refer breviloquence.Cbor.Ast
+
+=   refer breviloquence.Cbor.Reader
+=   refer breviloquence.Cbor.Ast
+-   refer breviloquence.Cbor.Error
++   refer breviloquence.Cbor.Error
+
+-   entry .of   reasserts a parser which travelled as an `AnyRef` carrier, for generated parsers
+-       `CborParser.of(carrier)` casts a neutral reference back to a `CborParser^`: the
+-       reassertion point of the parsers `Inlinable.parsable` splices into user modules.
+-       Hand-written code has no use for it.
+-   entry #directKeyHigh   the high word of the key `#directKeyWord` last packed
+-   entry #value   parses one whole data item into a `Cbor.Ast`
+-       The tree path: fast paths for in-head small integers, short text strings and byte
+-       strings, then the general decode by major type. A container's elements are parsed
+-       recursively; a tag wraps its parsed content in a `Cbor.Tag`. Needs a
+-       `Tactic[Cbor.Error]`, and raises `Truncated`, `Reserved`, `BadSimpleValue`,
+-       `InvalidUtf8`, `Overflow` or `UnexpectedBreak` with the fault's offset.
+-   entry #directLong   consumes an integer item as a `Long`, or a float truncated to one
+-   entry #directDouble   consumes a float item as a `Double`, or an integer widened to one
+-   entry #directBoolean   consumes a `true` or `false` item
+-   entry #directString   consumes a text string item as a `String`, reading it in place
+-       A definite-length string is decoded straight from the buffer; an indefinite-length
+-       string's chunks are joined. Invalid UTF-8 raises `InvalidUtf8(offset)`.
+-   entry #directBytes   consumes a byte string item as a frozen `Array[Byte]`
+-   entry #directIsUndefined   whether the next item is `undefined` (0xF7), without consuming it
+-   entry #directUndefined   consumes an `undefined` item
+-   entry #directOpenMap   opens a map: its entry count, or `-1` for indefinite length
+-       Any other item is consumed whole and reads as an empty map, as the tree path's record
+-       decoder treats a non-map.
+-   entry #directOpenArray   opens an array: its element count, or `-1` for indefinite length
+-       Any other item fails with `Cbor.Error(NotType(found, Array))`, as the tree accessor
+-       `array` does.
+-   entry #directBreak   consumes a break stop code (0xFF) if one is next
+-       `true` when it was consumed: the end step of an indefinite-length map or array.
+-   entry #directKeyWord   the next map key packed into a `Long`, or `Cbor.Reader.KeyOpaque`
+-       A definite-length, one-to-sixteen byte, 7-bit-clean text key packs into two words —
+-       the low one returned, the high one left in `#directKeyHigh` — and is consumed;
+-       anything else yields `KeyOpaque` and consumes nothing, so the caller takes
+-       `#directKeyName`. A key split across a chunk boundary is buffered whole first; only a
+-       truncated key is opaque here, and the general step then reports the truncation.
+-   entry #directKeyName   consumes the next map key: a text key's content, or `null` for a non-text key
+-       The record decoders ignore an entry under a non-text key, so the caller skips its
+-       value with `#directSkipValue` and continues.
+-   entry #directSkipValue   consumes one whole item, building nothing
+-       For unknown keys and non-map-shaped records: rejects exactly the head shapes `#value`
+-       rejects, so a skipped malformed item fails as the tree path would, and a string's
+-       content is skipped, not buffered, so skipping is bounded-memory whatever the item's
+-       size.
+-   entry #directDiscriminant   the text under a key of the upcoming map, leaving the parser where it started
+-       The dispatch primitive for a sealed hierarchy's discriminant entry, which may appear
+-       anywhere in the map: the map is scanned, the position rewound, and the result is the
+-       key's text value or `null` when the item is not a map, has no such key, or the value
+-       is not text. The map is held in the buffer for the scan's duration — the one place the
+-       buffer grows past a single item — and released before the variant's own parse begins.
++   entry .of   `AnyRef` のキャリアとして運ばれたパーサーを再表明する。生成されたパーサーのためのもの
++       `CborParser.of(carrier)` は中立の参照を `CborParser^` にキャストし直す。
++       `Inlinable.parsable` がユーザーのモジュールにスプライスするパーサーの、再表明の地点である。
++       手書きのコードには用途がない。
++   entry #directKeyHigh   `#directKeyWord` が最後に詰め込んだキーの上位ワード
++   entry #value   一つのデータ項目全体を `Cbor.Ast` にパースする
++       ツリーの経路である。
++       ヘッド内の小さな整数、短いテキスト文字列、バイト文字列には高速な経路があり、それ以外はメジャータイプによる一般的なデコードを行う。
++       コンテナーの要素は再帰的にパースされ、タグはパースした内容を `Cbor.Tag` で包む。
++       `Tactic[Cbor.Error]` を必要とし、誤りのオフセットとともに `Truncated`、`Reserved`、`BadSimpleValue`、`InvalidUtf8`、`Overflow`、`UnexpectedBreak` を発生させる。
++   entry #directLong   整数の項目を `Long` として、または浮動小数点数を切り捨てたものとして消費する
++   entry #directDouble   浮動小数点数の項目を `Double` として、または整数を拡大したものとして消費する
++   entry #directBoolean   `true` または `false` の項目を消費する
++   entry #directString   テキスト文字列の項目を `String` として、その場で読んで消費する
++       長さの定まった文字列はバッファーから直接デコードされ、長さ不定の文字列はチャンクが連結される。
++       不正な UTF-8 は `InvalidUtf8(offset)` を発生させる。
++   entry #directBytes   バイト文字列の項目を凍結済みの `Array[Byte]` として消費する
++   entry #directIsUndefined   次の項目が `undefined`（0xF7）かどうかを、消費せずに調べる
++   entry #directUndefined   `undefined` の項目を消費する
++   entry #directOpenMap   マップを開く：エントリー数、または長さ不定なら `-1`
++       それ以外の項目は丸ごと消費され、空のマップとして読まれる。
++       ツリーの経路のレコードのデコーダーがマップでないものを扱うのと同じである。
++   entry #directOpenArray   配列を開く：要素数、または長さ不定なら `-1`
++       それ以外の項目は、ツリーのアクセサー `array` と同じく `Cbor.Error(NotType(found, Array))` で失敗する。
++   entry #directBreak   次がブレークの停止コード（0xFF）なら、それを消費する
++       消費したときは `true` であり、長さ不定のマップや配列の終わりの段階である。
++   entry #directKeyWord   `Long` に詰め込んだ次のマップのキー、または `Cbor.Reader.KeyOpaque`
++       長さが定まり、1 から 16 バイトで、7 ビットに収まるテキストのキーは二つのワードに詰め込まれ（下位のワードが返され、上位のワードは `#directKeyHigh` に残る）、消費される。
++       それ以外は `KeyOpaque` を返して何も消費しないので、呼び出し側は `#directKeyName` を使う。
++       チャンクの境界にまたがるキーは、まず丸ごとバッファーに入れられる。
++       ここで不透明になるのは途中で切れたキーだけであり、その場合は一般的な段階が切り詰めを報告する。
++   entry #directKeyName   次のマップのキーを消費する：テキストのキーの内容、またはテキストでないキーなら `null`
++       レコードのデコーダーはテキストでないキーのエントリーを無視するので、呼び出し側は `#directSkipValue` でその値を読み飛ばして続ける。
++   entry #directSkipValue   一つの項目全体を、何も作らずに消費する
++       未知のキーや、マップの形をしていないレコードのためのものである。
++       `#value` が拒否するヘッドの形をまったく同じように拒否するので、読み飛ばした不正な項目はツリーの経路と同じように失敗する。
++       文字列の内容はバッファーに入れずに読み飛ばすので、項目の大きさにかかわらず読み飛ばしは有界のメモリーで行われる。
++   entry #directDiscriminant   次に来るマップのあるキーの下にあるテキスト。パーサーは開始位置に戻る
++       シールされた階層の判別子のエントリーのための振り分けの基本操作である。
++       このエントリーはマップのどこに現れてもよい。
++       マップを走査して位置を巻き戻し、結果はそのキーのテキストの値であり、項目がマップでない、そのキーがない、または値がテキストでないときは `null` である。
++       マップは走査の間バッファーに保持され（バッファーが一つの項目を超えて大きくなる唯一の場所である）、バリアント自身のパースが始まる前に解放される。
+
+- entry .Inlinable   the compile-time code generator for direct codecs: `Inlinable.parsable[T]` and `Inlinable.printable[T]`
++ entry .Inlinable   直接のコーデックのためのコンパイル時のコード生成器：`Inlinable.parsable[T]` と `Inlinable.printable[T]`
+
+= entry .Inlinable   the compile-time code generator for direct codecs: `Inlinable.parsable[T]` and `Inlinable.printable[T]`
+-   detail
++   detail
+
+-       `Inlinable` is the `Expr`-level counterpart of `Cbor.Parsable` and `Cbor.Printable`: a
+-       typeclass whose methods are macro-time code generators. An instance receives an
+-       `Expr` of the reader and returns an `Expr` of the parsed value (or receives the value
+-       and the producer and returns the writing code), which the generating macro splices
+-       directly into one flat, monomorphic parser or printer — nested records, collection
+-       loops, variant dispatch and custom leaf parsers all inline, with no runtime dispatch
+-       and no adapter hops. The user-facing entry points are `.parsable` and `.printable`,
+-       which generate a `Cbor.Parsable` or a `Cbor.Printable` for a case class, or for a
+-       sealed hierarchy whose `Discriminable in Cbor` is `Cbor.discriminatedUnion`:
++       `Inlinable` は `Cbor.Parsable` と `Cbor.Printable` の `Expr` レベルの対応物であり、メソッドがマクロ時のコード生成器である型クラスである。
++       インスタンスはリーダーの `Expr` を受け取り、パースした値の `Expr` を返す（あるいは値と生産者を受け取り、書き込みのコードを返す）。
++       生成するマクロはそれを、一つの平坦で単相的なパーサーまたはプリンターに直接スプライスする。
++       入れ子のレコード、コレクションのループ、バリアントの振り分け、独自のリーフのパーサーはすべてインライン化され、実行時の振り分けもアダプターの経由もない。
++       ユーザー向けの入口は `.parsable` と `.printable` であり、ケースクラス、または `Discriminable in Cbor` が `Cbor.discriminatedUnion` であるシールされた階層について、`Cbor.Parsable` または `Cbor.Printable` を生成する。
+
+=       sealed hierarchy whose `Discriminable in Cbor` is `Cbor.discriminatedUnion`:
+=
+-       ```scala
++       ```scala
+
+=       sealed hierarchy whose `Discriminable in Cbor` is `Cbor.discriminatedUnion`:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       sealed hierarchy whose `Discriminable in Cbor` is `Cbor.discriminatedUnion`:
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       sealed hierarchy whose `Discriminable in Cbor` is `Cbor.discriminatedUnion`:
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       import strategies.throwUnsafely
+=
+=       case class Person(name: Text, age: Int)
+-       case class Play(hero: Person, year: Int)
++       case class Play(hero: Person, year: Int)
+
+-       given (Play is Cbor.Parsable) = Inlinable.parsable[Play]
++       given (Play is Cbor.Parsable) = Inlinable.parsable[Play]
+
+-       given (Play is Cbor.Printable) = Inlinable.printable[Play]
++       given (Play is Cbor.Printable) = Inlinable.printable[Play]
+
+-       Play(Person(t"Lear", 80), 1606).in[Data over Cbor].read[Play in Cbor]
++       Play(Person(t"Lear", 80), 1606).in[Data over Cbor].read[Play in Cbor]
+
+=       Play(Person(t"Lear", 80), 1606).in[Data over Cbor].read[Play in Cbor]
+-       ```
++       ```
+
+-       A generated parser compares map keys against the field names compiled to immediates
+-       (`Cbor.Reader#keyWord`), takes a field's declared default when its key is missing,
+-       bridges an `Optional` field to `Unset`, skips unknown keys whole, ignores non-text
+-       keys, lets the first of a repeated key win, and coerces a float into an integer field
+-       as the tree accessors do — so a direct read and a tree read of the same bytes agree,
+-       and a generated printer writes exactly the derived encoding's bytes.
++       生成されたパーサーは、即値にコンパイルされたフィールド名とマップのキーを比較し（`Cbor.Reader#keyWord`）、キーがなければフィールドに宣言されたデフォルトをとり、`Optional` のフィールドを `Unset` に橋渡しし、未知のキーを丸ごと読み飛ばし、テキストでないキーを無視し、繰り返されたキーは最初のものを採用し、ツリーのアクセサーと同じく浮動小数点数を整数のフィールドに変換する。
++       そのため同じバイト列の直接の読み取りとツリーの読み取りは一致し、生成されたプリンターは導出のエンコーディングとまったく同じバイト列を書く。
+
+-       The generator resolves each field's type down a ladder: a built-in leaf (the givens
+-       `.int`, `.long`, `.double`, `.float`, `.boolean`, `.text`, `.string`, `.byteString`,
+-       `.cbor`), then an `Inlinable` instance found by a staging summon, then a structural
+-       generator for a collection (`.iterable`), a case class (`.derived`) or a sum, and
+-       finally a runtime seam: a field whose type has a `Cbor.Parsable` of its own calls it,
+-       and anything else bridges through its `Decodable in Cbor`, materializing just that
+-       field's subtree. A recursive occurrence (a `Tree` with `children: List[Tree]`) takes
+-       the seam rather than expanding forever.
++       生成器は各フィールドの型を段階的に解決する。
++       まず組み込みのリーフ（given `.int`、`.long`、`.double`、`.float`、`.boolean`、`.text`、`.string`、`.byteString`、`.cbor`）、次にステージングの召喚で見つかる `Inlinable` のインスタンス、次にコレクション（`.iterable`）、ケースクラス（`.derived`）、直和型のための構造的な生成器、そして最後に実行時の継ぎ目である。
++       型が自分の `Cbor.Parsable` を持つフィールドはそれを呼び、それ以外は `Decodable in Cbor` を通じて橋渡しされ、そのフィールドの部分木だけを実体化する。
++       再帰的な出現（`children: List[Tree]` を持つ `Tree`）は、際限なく展開する代わりに継ぎ目をとる。
+
+-       Instances are ordinary runtime values, so a hand-written instance, and a sum's
+-       `Discriminable in Cbor`, can only be consulted by evaluating them while the code
+-       compiles — which takes an in-macro staging compiler, and with it the compiler jars.
+-       That is `breviloquence.staged`: with it on the compile classpath, `.Stager` evaluates
+-       them; without it, a field whose type has only a hand-written instance takes the
+-       runtime seam, and `Inlinable.parsable` of a sum reports that the sum is not
+-       inlinable. Either way, an instance (and its type) must be compiled in an earlier run
+-       than the expansion: a same-run instance degrades to the seam.
++       インスタンスは通常の実行時の値なので、手書きのインスタンスや直和型の `Discriminable in Cbor` を参照するには、コードのコンパイル中にそれらを評価するしかない。
++       それにはマクロ内のステージングコンパイラが必要であり、したがってコンパイラの jar が必要になる。
++       それが `breviloquence.staged` である。
++       これがコンパイルのクラスパスにあれば `.Stager` がそれらを評価する。
++       なければ、型が手書きのインスタンスしか持たないフィールドは実行時の継ぎ目をとり、直和型の `Inlinable.parsable` はその直和型がインライン化できないと報告する。
++       いずれにせよ、インスタンス（とその型）は展開より前のコンパイルの実行でコンパイルされていなければならない。
++       同じ実行のインスタンスは継ぎ目に格下げされる。
+
+-       The derived-codec alternatives, `derives Cbor.Direct` and `import codecs.direct`,
+-       both expand through this generator.
++       導出されたコーデックの代替手段である `derives Cbor.Direct` と `import codecs.direct` は、どちらもこの生成器を通じて展開される。
+
+=       both expand through this generator.
+-   refer breviloquence.Cbor.Parsable
++   refer breviloquence.Cbor.Parsable
+
+=       both expand through this generator.
+=   refer breviloquence.Cbor.Parsable
+-   refer breviloquence.Cbor.Printable
++   refer breviloquence.Cbor.Printable
+
+-   refer breviloquence.Cbor.Direct
++   refer breviloquence.Cbor.Direct
+
+-   refer breviloquence.InlinableStager
++   refer breviloquence.InlinableStager
+
+-   entry .parsable   generates a monomorphic `Cbor.Parsable` for a case class or a key-discriminated sum
+-       `Inlinable.parsable[T]` is a macro: a parser composed through `Inlinable` instances
+-       at compile time, with nested records, collection loops, variant dispatch and custom
+-       leaf parsers all inlined into one. A type the generator cannot build — a sum without
+-       `breviloquence.staged`, a type with no fields it can read — is a compile error naming
+-       the type.
+-   entry .printable   generates a monomorphic `Cbor.Printable` for a case class or a key-discriminated sum
+-       The writing counterpart of `.parsable`, composed through the same instances: a
+-       printer which writes the value straight into a byte producer, producing exactly the
+-       derived encoding's bytes. A field whose instance does not print (`#prints` is
+-       `false`) is written through its `Encodable in Cbor` seam.
+-   entry .derived   the structural instance for a case class, by reflection when its code is generated
+-       `Inlinable.derived[T]` needs no macro of its own: the `Type[T]` arrives with the
+-       `parse` or `write` call. It is what `derives Inlinable.ForCbor` places in a companion.
+-   entry .Generates   evidence that the generator builds a type's codec structurally, as a record
++   entry .parsable   ケースクラスまたはキーで判別される直和型について、単相的な `Cbor.Parsable` を生成する
++       `Inlinable.parsable[T]` はマクロであり、コンパイル時に `Inlinable` のインスタンスを通じて組み立てられたパーサーで、入れ子のレコード、コレクションのループ、バリアントの振り分け、独自のリーフのパーサーがすべて一つにインライン化される。
++       生成器が作れない型（`breviloquence.staged` のない直和型、読めるフィールドを持たない型）は、その型を名指すコンパイルエラーになる。
++   entry .printable   ケースクラスまたはキーで判別される直和型について、単相的な `Cbor.Printable` を生成する
++       `.parsable` の書き込み側の対応物で、同じインスタンスを通じて組み立てられる。
++       値をバイトの生産者に直接書き込むプリンターであり、導出のエンコーディングとまったく同じバイト列を生み出す。
++       インスタンスが出力しない（`#prints` が `false` である）フィールドは、その `Encodable in Cbor` の継ぎ目を通じて書かれる。
++   entry .derived   ケースクラスのための構造的なインスタンス。コードが生成されるときにリフレクションで作られる
++       `Inlinable.derived[T]` は独自のマクロを必要としない。
++       `Type[T]` は `parse` や `write` の呼び出しとともに届く。
++       `derives Inlinable.ForCbor` がコンパニオンに置くのはこれである。
++   entry .Generates   生成器が型のコーデックをレコードとして構造的に作るという証拠
+
+=   entry .Generates   evidence that the generator builds a type's codec structurally, as a record
+-     detail
++     detail
+
+-         The condition on the `codecs.direct` givens (`Cbor.Parsable.generated` and
+-         `Cbor.Printable.generated`): `Inlinable.Generates[T]` resolves for a case class the
+-         generator can expand, and its given fails for any other type — a generic case class,
+-         a sealed hierarchy — so the search for a generated instance fails too and the derived
+-         path resolves instead. A cheap shape test, so a search under the mode stays cheap; a
+-         sum's discriminant is only known to the staging compiler, so a sum keeps the derived
+-         path under `codecs.direct` unless it has an instance of its own.
+-     entry .generates   the transparent inline given which supplies the evidence, or fails to
+-   entry .Stager   the hook through which `breviloquence.staged` evaluates instances while the code compiles
++         `codecs.direct` の given（`Cbor.Parsable.generated` と `Cbor.Printable.generated`）の条件である。
++         `Inlinable.Generates[T]` は生成器が展開できるケースクラスについて解決され、その given はそれ以外の型（ジェネリックなケースクラス、シールされた階層）では失敗する。
++         そのため生成されたインスタンスの探索も失敗し、代わりに導出の経路が解決される。
++         これは安価な形の検査なので、このモードでの探索も安価なままである。
++         直和型の判別子はステージングコンパイラにしかわからないので、直和型は独自のインスタンスを持たない限り、`codecs.direct` のもとでも導出の経路のままである。
++     entry .generates   証拠を与える、あるいは与えられずに失敗する transparent inline の given
++   entry .Stager   コードのコンパイル中に `breviloquence.staged` がインスタンスを評価するためのフック
+
+=   entry .Stager   the hook through which `breviloquence.staged` evaluates instances while the code compiles
+-     detail
++     detail
+
+-         A trait with two macro-time operations — `#summon`, which evaluates the `Inlinable`
+-         instance for a field type, and `#discriminantKey`, which evaluates a sum's
+-         `Discriminable in Cbor` and returns its key if it is a `Cbor.DiscriminantKey` — and a
+-         companion which loads the implementation, `InlinableStager.Implementation`, by name
+-         from the macro's own classloader when `breviloquence.staged` is on the compile
+-         classpath, and answers `None` to everything when it is not. The core generator calls
+-         the companion; user code never does.
+-     entry .summon   the `Inlinable` for a type, evaluated by the staging compiler, or `None`
+-     entry .discriminantKey   a sum's discriminant map key, if its `Discriminable in Cbor` is a `Cbor.DiscriminantKey`
+-     entry #summon   the implementation of the staged summon
+-     entry #discriminantKey   the implementation of the discriminant-key evaluation
+-   entry .ForCbor   `derives Inlinable.ForCbor`: a case class's structural `Inlinable`, placed in its companion
++         マクロ時の二つの操作を持つトレイトである。
++         `#summon` はフィールドの型の `Inlinable` のインスタンスを評価し、`#discriminantKey` は直和型の `Discriminable in Cbor` を評価して、それが `Cbor.DiscriminantKey` ならそのキーを返す。
++         コンパニオンは、`breviloquence.staged` がコンパイルのクラスパスにあるときは実装 `InlinableStager.Implementation` をマクロ自身のクラスローダーから名前で読み込み、ないときはすべてに `None` を返す。
++         コアの生成器はコンパニオンを呼ぶが、ユーザーのコードが呼ぶことはない。
++     entry .summon   ステージングコンパイラが評価した型の `Inlinable`、または `None`
++     entry .discriminantKey   `Discriminable in Cbor` が `Cbor.DiscriminantKey` である場合の、直和型の判別子のマップのキー
++     entry #summon   ステージングされた召喚の実装
++     entry #discriminantKey   判別子のキーの評価の実装
++   entry .ForCbor   `derives Inlinable.ForCbor`：コンパニオンに置かれる、ケースクラスの構造的な `Inlinable`
+
+=   entry .ForCbor   `derives Inlinable.ForCbor`: a case class's structural `Inlinable`, placed in its companion
+-     detail
++     detail
+
+-         A `Self`-typed typeclass cannot appear in a `derives` clause, so `case class Play(…)
+-         derives Inlinable.ForCbor` synthesizes this parameterized subtrait — which *is* a
+-         `Play is Inlinable` — into `Play`'s companion, where the staging summon finds it when
+-         `Play` is a field of a type being generated in a later compilation run. It delegates
+-         every operation to the structural instance it wraps.
+-     entry .derived   the `derives` hook: wraps `Inlinable.derived[T]`
+-     entry #parse   delegates to the wrapped instance's generator
+-     entry #absent   delegates to the wrapped instance's absent-field generator
+-     entry #prints   whether the wrapped instance generates a printer
+-     entry #write   delegates to the wrapped instance's writer generator
+-   entry #parse   generates the code which parses one item of `Self` from a reader expression
+-       Receives an `Expr[Cbor.Reader]`, the `Quotes` and the `Type[Self]`, and returns the
+-       `Expr[Self]` the generating macro splices. A hand-written instance's body is ordinary
+-       quoted code over the reader's methods (`'{$reader.int()}`), and is consulted at
+-       expansion time only with `breviloquence.staged` on the compile classpath.
+-   entry #prints   whether this instance also generates a printer: `false` unless overridden
+-       A parse-only instance stays honest: a field of its type is written through its
+-       `Encodable in Cbor` seam rather than failing.
+-   entry #write   generates the code which writes a value of `Self` into a producer expression
+-       The producer travels as an `Expr[AnyRef]`, since generated code is capture-erased;
+-       `Cbor.Printable`'s `write…` methods reassert it. The default reports a compile error,
+-       _breviloquence: the Inlinable for `T` generates no printer_; an instance which
+-       overrides it also overrides `#prints`.
+-   entry #absent   generates what a field of `Self` yields when its key is absent from the map
+-       An abort with `Cbor.Error(Absent)` through `Cbor.Parsable.missing` unless overridden,
+-       mirroring the runtime instances.
+-   entry .int   the leaf generator for `Int`: `reader.int()`
+-   entry .long   the leaf generator for `Long`: `reader.long()`
+-   entry .double   the leaf generator for `Double`: `reader.double()`
+-   entry .float   the leaf generator for `Float`: `reader.double().toFloat`
+-   entry .boolean   the leaf generator for `Boolean`: `reader.boolean()`
+-   entry .text   the leaf generator for `Text`: `reader.text()`
+-   entry .string   the leaf generator for `String`: `reader.string()`
+-   entry .byteString   the leaf generator for `Data`: `reader.byteString()`
+-   entry .cbor   the leaf generator for a `Cbor` field: one whole item kept as a document
+-   entry .iterable   the generator for any `Iterable` collection of an inlinable element
+-       Composes a loop over a definite- or indefinite-length array through the element's
+-       instance and the collection's `Factory`; Soundness's own `List`, `Set` and `Sequence`
+-       are recognised by symbol and built at their underlying type.
++         `Self` 型の型クラスは `derives` 節に現れることができない。
++         そのため `case class Play(…) derives Inlinable.ForCbor` は、このパラメーター化されたサブトレイト（これは*まさに* `Play is Inlinable` である）を `Play` のコンパニオンに合成する。
++         `Play` が後のコンパイルの実行で生成される型のフィールドであるとき、ステージングの召喚はそこでそれを見つける。
++         すべての操作を、包んでいる構造的なインスタンスに委譲する。
++     entry .derived   `derives` のフック：`Inlinable.derived[T]` を包む
++     entry #parse   包んだインスタンスの生成器に委譲する
++     entry #absent   包んだインスタンスの、存在しないフィールドの生成器に委譲する
++     entry #prints   包んだインスタンスがプリンターを生成するかどうか
++     entry #write   包んだインスタンスのライターの生成器に委譲する
++   entry #parse   リーダーの式から `Self` の項目を一つパースするコードを生成する
++       `Expr[Cbor.Reader]`、`Quotes`、`Type[Self]` を受け取り、生成するマクロがスプライスする `Expr[Self]` を返す。
++       手書きのインスタンスの本体はリーダーのメソッドに対する通常のクォートされたコード（`'{$reader.int()}`）であり、展開時に参照されるのは `breviloquence.staged` がコンパイルのクラスパスにあるときだけである。
++   entry #prints   このインスタンスがプリンターも生成するかどうか：上書きされない限り `false`
++       パース専用のインスタンスは正直なままである。
++       その型のフィールドは、失敗するのではなく、その `Encodable in Cbor` の継ぎ目を通じて書かれる。
++   entry #write   `Self` の値を生産者の式に書き込むコードを生成する
++       生成されたコードはキャプチャが消去されているので、生産者は `Expr[AnyRef]` として運ばれる。
++       `Cbor.Printable` の `write…` メソッドがそれを再表明する。
++       デフォルトはコンパイルエラー _breviloquence: the Inlinable for `T` generates no printer_ を報告する。
++       これを上書きするインスタンスは `#prints` も上書きする。
++   entry #absent   キーがマップに存在しないとき、`Self` のフィールドが返すものを生成する
++       上書きされない限り `Cbor.Parsable.missing` を通じた `Cbor.Error(Absent)` による中断であり、実行時のインスタンスと同じである。
++   entry .int   `Int` のリーフの生成器：`reader.int()`
++   entry .long   `Long` のリーフの生成器：`reader.long()`
++   entry .double   `Double` のリーフの生成器：`reader.double()`
++   entry .float   `Float` のリーフの生成器：`reader.double().toFloat`
++   entry .boolean   `Boolean` のリーフの生成器：`reader.boolean()`
++   entry .text   `Text` のリーフの生成器：`reader.text()`
++   entry .string   `String` のリーフの生成器：`reader.string()`
++   entry .byteString   `Data` のリーフの生成器：`reader.byteString()`
++   entry .cbor   `Cbor` のフィールドのリーフの生成器：一つの項目全体をドキュメントとして保持する
++   entry .iterable   インライン化可能な要素の任意の `Iterable` コレクションのための生成器
++       要素のインスタンスとコレクションの `Factory` を通じて、長さの定まった配列または長さ不定の配列に対するループを組み立てる。
++       Soundness 自身の `List`、`Set`、`Sequence` はシンボルで認識され、その基底の型で作られる。
+
+- entry .InlinableStager   the in-macro staging compiler behind `Inlinable.parsable`, from `breviloquence.staged`
++ entry .InlinableStager   `Inlinable.parsable` の背後にある、`breviloquence.staged` のマクロ内のステージングコンパイラ
+
+= entry .InlinableStager   the in-macro staging compiler behind `Inlinable.parsable`, from `breviloquence.staged`
+-   hidden
++   hidden
+
+= entry .InlinableStager   the in-macro staging compiler behind `Inlinable.parsable`, from `breviloquence.staged`
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. The `breviloquence.staged` component's implementation of
+-       `Inlinable.Stager`: for each field type, it runs a fresh staging compiler over the
+-       macro classloader's classpath (with the current output directory excluded, since a
+-       type defined in the compilation in progress has no trustworthy classfile) and summons
+-       the `Inlinable` instance, or the sum's `Discriminable in Cbor`, live, so that the
+-       generator can consult it. The type travels into the inner compiler as a tree of
+-       classes, which restricts evaluation to class-shaped types; opaque and structural types
+-       degrade to a runtime seam. Each summon reports its duration as a compiler
+-       information message. JVM only: this component depends on the Scala compiler and
+-       staging jars, which is why it is kept out of `breviloquence.core`.
+-   entry .evaluate   the `Inlinable` for a field type, summoned inside a fresh staging compiler, or `None`
+-   entry .discriminantKey   a sum's discriminant key, if its `Discriminable in Cbor` evaluates to a `Cbor.DiscriminantKey`
+-   entry .Implementation   the `Inlinable.Stager` which `Inlinable.Stager` loads by name
++       直接使うためのものではない。
++       `breviloquence.staged` コンポーネントによる `Inlinable.Stager` の実装である。
++       フィールドの型ごとに、マクロのクラスローダーのクラスパス上で新しいステージングコンパイラを実行し（進行中のコンパイルで定義された型には信頼できるクラスファイルがないので、現在の出力ディレクトリーは除く）、`Inlinable` のインスタンス、または直和型の `Discriminable in Cbor` をその場で召喚し、生成器が参照できるようにする。
++       型はクラスのツリーとして内側のコンパイラに渡されるので、評価はクラスの形をした型に限られる。
++       不透明型や構造的な型は実行時の継ぎ目に格下げされる。
++       各召喚は所要時間をコンパイラの情報メッセージとして報告する。
++       JVM 専用である。
++       このコンポーネントは Scala のコンパイラとステージングの jar に依存するので、`breviloquence.core` からは外されている。
++   entry .evaluate   新しいステージングコンパイラの中で召喚した、フィールドの型の `Inlinable`、または `None`
++   entry .discriminantKey   `Discriminable in Cbor` が `Cbor.DiscriminantKey` に評価される場合の、直和型の判別子のキー
++   entry .Implementation   `Inlinable.Stager` が名前で読み込む `Inlinable.Stager`
+
+=   entry .Implementation   the `Inlinable.Stager` which `Inlinable.Stager` loads by name
+-     detail
++     detail
+
+-         The object `Inlinable.Stager` finds through `Class.forName` when this component is
+-         on the macro classpath.
++         このコンポーネントがマクロのクラスパスにあるとき、`Inlinable.Stager` が `Class.forName` で見つけるオブジェクトである。
+
+-     entry .summon   `InlinableStager.evaluate`
++     entry .summon   `InlinableStager.evaluate`
+
+-     entry .discriminantKey   `InlinableStager.discriminantKey`
++     entry .discriminantKey   `InlinableStager.discriminantKey`
+
+- entry .inlining   the machinery behind `Inlinable`: the resolution ladder, the structural generators and the entry macros
++ entry .inlining   `Inlinable` の背後にある仕組み：解決の段階、構造的な生成器、入口のマクロ
+
+= entry .inlining   the machinery behind `Inlinable`: the resolution ladder, the structural generators and the entry macros
+-   hidden
++   hidden
+
+= entry .inlining   the machinery behind `Inlinable`: the resolution ladder, the structural generators and the entry macros
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. Expansion-time instance resolution (built-in leaf, staged summon,
+-       structural collection, product or sum, runtime seam), the generators which emit a
+-       record's key-dispatch loop, a collection's loop and a sum's discriminant dispatch, and
+-       the macro implementations `Inlinable.parsable`, `Inlinable.printable` and
+-       `Inlinable.Generates` expand into. Its public members exist because generated code is
+-       spliced into user modules.
+-   entry .fieldSeam   the runtime seam for a field with no `Inlinable`: its `Cbor.Parsable`, or its `Decodable in Cbor` bridged
+-       An inline method expanded where the generated parser is spliced: a nominal
+-       `Cbor.Parsable` is called directly, and anything else parses the field's subtree and
+-       decodes it through `Cbor.Parsable.fromDecodable`.
+-   entry .fieldSeamAbsent   the seam's absent counterpart: what a bridged field yields when its key is missing
+-   entry .generates   the macro behind `Inlinable.Generates`: evidence for a record, or a compile error
+-   entry .inlinableParsable   the macro behind `Inlinable.parsable`
+-   entry .inlinablePrintable   the macro behind `Inlinable.printable`
++       直接使うためのものではない。
++       展開時のインスタンスの解決（組み込みのリーフ、ステージングされた召喚、構造的なコレクション、直積型または直和型、実行時の継ぎ目）、レコードのキーによる振り分けのループ、コレクションのループ、直和型の判別子による振り分けを出力する生成器、そして `Inlinable.parsable`、`Inlinable.printable`、`Inlinable.Generates` が展開されるマクロの実装である。
++       公開メンバーがあるのは、生成されたコードがユーザーのモジュールにスプライスされるからである。
++   entry .fieldSeam   `Inlinable` を持たないフィールドのための実行時の継ぎ目：その `Cbor.Parsable`、または橋渡しされた `Decodable in Cbor`
++       生成されたパーサーがスプライスされる場所で展開されるインラインのメソッドである。
++       名目的な `Cbor.Parsable` は直接呼ばれ、それ以外はフィールドの部分木をパースして `Cbor.Parsable.fromDecodable` を通じてデコードする。
++   entry .fieldSeamAbsent   継ぎ目の、存在しない場合の対応物：キーがないとき、橋渡しされたフィールドが返すもの
++   entry .generates   `Inlinable.Generates` の背後にあるマクロ：レコードの証拠、またはコンパイルエラー
++   entry .inlinableParsable   `Inlinable.parsable` の背後にあるマクロ
++   entry .inlinablePrintable   `Inlinable.printable` の背後にあるマクロ
+
+- entry .parse   `Cbor.Ast.parse(bytes)`: parses exactly one data item, rejecting trailing bytes
+-     An extension on the `Cbor.Ast` companion, exported to the umbrella as `soundness.parse`.
+-     `Cbor.Ast.parse(data)` reads the item in place from a `Data`; `Cbor.Ast.parse(chain)`
+-     reads it from a `Chain[Data]` as the chunks are pulled. Both need a
+-     `Tactic[Cbor.Error]` and raise `Cbor.Error` with the absolute offset of any fault,
+-     including `Trailing(offset)` when bytes follow the item. A stream is read with
+-     `stream.read[Cbor.Ast]` instead, which streams likewise.
++ entry .parse   `Cbor.Ast.parse(bytes)`：ちょうど一つのデータ項目をパースし、末尾の余分なバイトを拒否する
++     `Cbor.Ast` のコンパニオンに対する拡張で、アンブレラには `soundness.parse` としてエクスポートされる。
++     `Cbor.Ast.parse(data)` は `Data` からその場で項目を読み、`Cbor.Ast.parse(chain)` は `Chain[Data]` からチャンクが引き出されるにつれて読む。
++     どちらも `Tactic[Cbor.Error]` を必要とし、誤りがあればその絶対的なオフセットとともに `Cbor.Error` を発生させる。
++     項目の後にバイトが続くときの `Trailing(offset)` も含む。
++     ストリームは代わりに `stream.read[Cbor.Ast]` で読み、こちらも同様にストリーミングされる。
+
+=     `stream.read[Cbor.Ast]` instead, which streams likewise.
+=
+-     ```scala
++     ```scala
+
+=     `stream.read[Cbor.Ast]` instead, which streams likewise.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `stream.read[Cbor.Ast]` instead, which streams likewise.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     Cbor.Ast.parse(hex"83010203").show               // t"[1, 2, 3]"
++     Cbor.Ast.parse(hex"83010203").show               // t"[1, 2, 3]"
+
+-     Cbor.ast(Cbor.Ast.parse(hex"a1616101")).as[Map[Text, Int]]   // Map(t"a" -> 1)
++     Cbor.ast(Cbor.Ast.parse(hex"a1616101")).as[Map[Text, Int]]   // Map(t"a" -> 1)
+
+=     Cbor.ast(Cbor.Ast.parse(hex"a1616101")).as[Map[Text, Int]]   // Map(t"a" -> 1)
+-     ```
++     ```
+
+- entry .optionalityOptions   how an `Optional` or `Option` field reads absence, `null` and a faulty value: six givens to import by name
++ entry .optionalityOptions   `Optional` や `Option` のフィールドが、存在しないキー、`null`、誤った値をどう読むか：名前でインポートする六つの given
+
+= entry .optionalityOptions   how an `Optional` or `Option` field reads absence, `null` and a faulty value: six givens to import by name
+-   detail
++   detail
+
+-       Three independent policies, each with a strict and a lenient given, decide what an
+-       `Optional[T]` or `Option[T]` field yields when its key is absent from the map (or the
+-       wire holds `undefined`), when the wire holds `null`, and when the inner decoder rejects
+-       the value. The defaults, with nothing imported, are lenient absence, lenient nulls
+-       and strict faults: an absent or `null` field reads as `Unset` or `None`, and a
+-       mistyped one is a `Cbor.Error`. Each policy is varied separately by importing one
+-       given by name — `import soundness.*` brings none in — and the choice is scoped to the
+-       import.
++       三つの独立したポリシーがあり、それぞれ厳格な given と寛容な given を持つ。
++       それらは `Optional[T]` や `Option[T]` のフィールドが、キーがマップに存在しない（またはワイヤ上の値が `undefined` である）とき、ワイヤ上の値が `null` のとき、内側のデコーダーが値を拒否するときに何を返すかを決める。
++       何もインポートしないときのデフォルトは、存在しないキーに寛容、null に寛容、誤りに厳格である。
++       存在しないフィールドや `null` のフィールドは `Unset` または `None` として読まれ、型の誤ったフィールドは `Cbor.Error` になる。
++       各ポリシーは一つの given を名前でインポートすることで個別に変えられ（`import soundness.*` はどれも取り込まない）、その選択はインポートのスコープに限られる。
+
+=       import.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       import.
+=
+=       ```scala fuel
+-       alternative Defaults
++       alternative Defaults
+
+=       import.
+=
+=       ```scala fuel
+=       alternative Defaults
+-         code
++         code
+
+=       import.
+=
+=       ```scala fuel
+=       alternative Defaults
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       import.
+=
+=       ```scala fuel
+=       alternative Defaults
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=       import.
+=
+=       ```scala fuel
+=       alternative Defaults
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             case class Reading(sensor: Text, value: Optional[Int])
++             case class Reading(sensor: Text, value: Optional[Int])
+
+=             import strategies.throwUnsafely
+=
+=             case class Reading(sensor: Text, value: Optional[Int])
+=
+-             val noValue: Data = hex"a1 6673656e736f72 6161"                     // {"sensor": "a"}
++             val noValue: Data = hex"a1 6673656e736f72 6161"                     // {"sensor": "a"}
+
+=             val noValue: Data = hex"a1 6673656e736f72 6161"                     // {"sensor": "a"}
+-             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
++             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+-             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178" // {"sensor": "a", "value": "x"}
++             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178" // {"sensor": "a", "value": "x"}
+
+-             Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading]             // Reading(t"a", Unset)
++             Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading]             // Reading(t"a", Unset)
+
+=             Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading]             // Reading(t"a", Unset)
+-             Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading]           // Reading(t"a", Unset)
++             Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading]           // Reading(t"a", Unset)
+
+-             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: NotType(TextString, Integer)
++             safely(Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading])   // Unset: NotType(TextString, Integer)
+
+-       alternative Strict absence
++       alternative Strict absence
+
+=       alternative Strict absence
+-         code
++         code
+
+=       alternative Strict absence
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative Strict absence
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             import optionalityOptions.strictCborAbsence
++             import optionalityOptions.strictCborAbsence
+
+=             import optionalityOptions.strictCborAbsence
+=
+-             case class Reading(sensor: Text, value: Optional[Int])
++             case class Reading(sensor: Text, value: Optional[Int])
+
+=             import optionalityOptions.strictCborAbsence
+=
+=             case class Reading(sensor: Text, value: Optional[Int])
+=
+-             val noValue: Data = hex"a1 6673656e736f72 6161"                     // {"sensor": "a"}
++             val noValue: Data = hex"a1 6673656e736f72 6161"                     // {"sensor": "a"}
+
+-             safely(Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading])   // Unset: Absent
++             safely(Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading])   // Unset: Absent
+
+=             safely(Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading])   // Unset: Absent
+-       alternative Strict nulls
++       alternative Strict nulls
+
+=             safely(Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading])   // Unset: Absent
+=       alternative Strict nulls
+-         code
++         code
+
+=             safely(Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading])   // Unset: Absent
+=       alternative Strict nulls
+=         code
+-             import soundness.*
++             import soundness.*
+
+=             safely(Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading])   // Unset: Absent
+=       alternative Strict nulls
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=             safely(Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading])   // Unset: Absent
+=       alternative Strict nulls
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+-             import optionalityOptions.strictCborNulls
++             import optionalityOptions.strictCborNulls
+
+=             safely(Cbor.ast(Cbor.Ast.parse(noValue)).as[Reading])   // Unset: Absent
+=       alternative Strict nulls
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import optionalityOptions.strictCborNulls
+=
+-             case class Reading(sensor: Text, value: Optional[Int])
++             case class Reading(sensor: Text, value: Optional[Int])
+
+=
+-             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
++             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+=
+-             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
++             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+-       alternative Lenient faults
++       alternative Lenient faults
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+=       alternative Lenient faults
+-         code
++         code
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+=       alternative Lenient faults
+=         code
+-             import soundness.*
++             import soundness.*
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+=       alternative Lenient faults
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+=       alternative Lenient faults
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+-             import optionalityOptions.lenientCborFaults
++             import optionalityOptions.lenientCborFaults
+
+=             val nullValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 f6"   // {"sensor": "a", "value": null}
+=
+=             safely(Cbor.ast(Cbor.Ast.parse(nullValue)).as[Reading])   // Unset: NotType(Null, Integer)
+=       alternative Lenient faults
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import optionalityOptions.lenientCborFaults
+=
+-             case class Reading(sensor: Text, value: Optional[Int])
++             case class Reading(sensor: Text, value: Optional[Int])
+
+=
+-             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178" // {"sensor": "a", "value": "x"}
++             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178" // {"sensor": "a", "value": "x"}
+
+=             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178" // {"sensor": "a", "value": "x"}
+=
+-             Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
++             Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
+
+=             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178" // {"sensor": "a", "value": "x"}
+=
+=             Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
+-       ##
++       ##
+
+=             val textValue: Data = hex"a2 6673656e736f72 6161 6576616c7565 6178" // {"sensor": "a", "value": "x"}
+=
+=             Cbor.ast(Cbor.Ast.parse(textValue)).as[Reading]   // Reading(t"a", Unset)
+=       ##
+-       ```
++       ```
+
+-       The givens are `distillate.Decodable.Absence in Cbor`, `Nullity in Cbor` and `Fault
+-       in Cbor`, the same policy types every Soundness format uses, so a program which reads
+-       several formats sets each format's policy independently. They apply to the tree path
+-       (`Cbor.optional` and `Cbor.option`) and, through the seam, to an `Optional` field of a
+-       generated direct parser.
+-   entry .strictCborAbsence   an absent key, or a wire `undefined`, raises `Cbor.Error(Absent)`
+-   entry .lenientCborAbsence   an absent key, or a wire `undefined`, reads as `Unset` or `None`: the default
+-   entry .strictCborNulls   a wire `null` is handed to the inner decoder, which rejects it for most types
+-   entry .lenientCborNulls   a wire `null` reads as `Unset` or `None`: the default
+-   entry .strictCborFaults   a value the inner decoder rejects raises its `Cbor.Error`: the default
+-   entry .lenientCborFaults   a value the inner decoder rejects reads as `Unset` or `None`
+-       The inner decoder runs under `tolerate`, so under an accruing `Validate` scope its
+-       error is still recorded against the field.
++       given は `distillate.Decodable.Absence in Cbor`、`Nullity in Cbor`、`Fault in Cbor` であり、Soundness のすべての形式が使うのと同じポリシーの型である。
++       そのため複数の形式を読むプログラムは、形式ごとのポリシーを独立に設定する。
++       これらはツリーの経路（`Cbor.optional` と `Cbor.option`）に適用され、継ぎ目を通じて、生成された直接のパーサーの `Optional` のフィールドにも適用される。
++   entry .strictCborAbsence   存在しないキー、またはワイヤ上の `undefined` は `Cbor.Error(Absent)` を発生させる
++   entry .lenientCborAbsence   存在しないキー、またはワイヤ上の `undefined` は `Unset` または `None` として読まれる：デフォルト
++   entry .strictCborNulls   ワイヤ上の `null` は内側のデコーダーに渡され、ほとんどの型ではそれが拒否する
++   entry .lenientCborNulls   ワイヤ上の `null` は `Unset` または `None` として読まれる：デフォルト
++   entry .strictCborFaults   内側のデコーダーが拒否する値は、その `Cbor.Error` を発生させる：デフォルト
++   entry .lenientCborFaults   内側のデコーダーが拒否する値は `Unset` または `None` として読まれる
++       内側のデコーダーは `tolerate` のもとで動くので、蓄積型の `Validate` スコープのもとでは、そのエラーはフィールドに対して記録される。
+
+- entry .dynamicAccess   the given which enables `cbor.field`, `cbor.field(i)` and `cbor.field = value`
++ entry .dynamicAccess   `cbor.field`、`cbor.field(i)`、`cbor.field = value` を有効にする given
+
+= entry .dynamicAccess   the given which enables `cbor.field`, `cbor.field(i)` and `cbor.field = value`
+-   detail
++   detail
+
+-       Dynamic member access on a `Cbor` is gated by a `(? >: Cbor) is Dynamical` so that a
+-       misspelt method name cannot silently become a map lookup where none was intended.
+-       `import dynamicAccess.dynamicCbor` grants it to the rest of a scope; a
+-       `dynamically[Cbor]:` block grants it to one expression. The `Cbor.lens` given needs the
+-       same evidence.
++       `Cbor` への動的なメンバーアクセスは `(? >: Cbor) is Dynamical` によって制限されている。
++       そうすることで、綴りを誤ったメソッド名が、意図しないマップの検索に黙って変わることがない。
++       `import dynamicAccess.dynamicCbor` はスコープの残りでそれを許可し、`dynamically[Cbor]:` ブロックは一つの式でそれを許可する。
++       `Cbor.lens` の given も同じ証拠を必要とする。
+
+=       same evidence.
+=
+-       ```scala
++       ```scala
+
+=       same evidence.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       same evidence.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       same evidence.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import dynamicAccess.dynamicCbor
++       import dynamicAccess.dynamicCbor
+
+=       same evidence.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import dynamicAccess.dynamicCbor
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       case class Person(name: Text, age: Int)
+-       val person: Cbor = Person(t"Hal", 36).in[Cbor]
++       val person: Cbor = Person(t"Hal", 36).in[Cbor]
+
+-       person.name.as[Text]            // t"Hal"
++       person.name.as[Text]            // t"Hal"
+
+-       (person.age = 40).as[Person]    // Person(t"Hal", 40)
++       (person.age = 40).as[Person]    // Person(t"Hal", 40)
+
+=       (person.age = 40).as[Person]    // Person(t"Hal", 40)
+-       ```
++       ```
+
+-   entry .dynamicCbor   `Cbor is Dynamical`: an erased given which unlocks `selectDynamic`, `applyDynamic` and `updateDynamic`
++   entry .dynamicCbor   `Cbor is Dynamical`：`selectDynamic`、`applyDynamic`、`updateDynamic` を解禁する消去された given
+
+- entry .conversions   a `Conversion` which lets any `Encodable in Cbor` value stand where a `Cbor` is wanted
++ entry .conversions   任意の `Encodable in Cbor` な値を、`Cbor` が求められる場所で使えるようにする `Conversion`
+
+= entry .conversions   a `Conversion` which lets any `Encodable in Cbor` value stand where a `Cbor` is wanted
+-   detail
++   detail
+
+-       Imported by name for the scope which assigns through a lens: `import
+-       conversions.encodableToCbor` lets `play.lens(_.year = 1608)` take the `Int` directly,
+-       where otherwise the assignment needs `5.in[Cbor]`.
+-   entry .encodableToCbor   `Conversion[T, Cbor]` for any `T` which is `Encodable in Cbor`: `_.encode`
++       レンズを通じて代入するスコープのために名前でインポートする。
++       `import conversions.encodableToCbor` により `play.lens(_.year = 1608)` は `Int` を直接受け取れる。
++       そうでなければ、代入には `5.in[Cbor]` が必要である。
++   entry .encodableToCbor   `Encodable in Cbor` である任意の `T` についての `Conversion[T, Cbor]`：`_.encode`
+
+- entry .postables   the given which sends a `Cbor` as an `application/cbor` request body
++ entry .postables   `Cbor` を `application/cbor` のリクエスト本文として送る given
+
+= entry .postables   the given which sends a `Cbor` as an `application/cbor` request body
+-   detail
++   detail
+
+-       From `breviloquence.http` (JVM only). Imported by name — `import postables.cborPostable`
+-       — so that a telekinesis client can `post` a `Cbor` value: the body is the document's
+-       encoded bytes, with no charset, and the media type is `application/cbor`.
+-   entry .cborPostable   `Cbor is Postable`: `application/cbor`, the encoded bytes as the body
++       `breviloquence.http` にある（JVM 専用）。
++       名前でインポートし（`import postables.cborPostable`）、telekinesis のクライアントが `Cbor` 値を `post` できるようにする。
++       本文はドキュメントのエンコードされたバイト列で、文字セットはなく、メディアタイプは `application/cbor` である。
++   entry .cborPostable   `Cbor is Postable`：`application/cbor`、本文はエンコードされたバイト列
+
+- entry .servables   the given which serves a `Cbor` as an `application/cbor` response body
++ entry .servables   `Cbor` を `application/cbor` のレスポンス本文として提供する given
+
+= entry .servables   the given which serves a `Cbor` as an `application/cbor` response body
+-   detail
++   detail
+
+-       From `breviloquence.http` (JVM only). Imported by name — `import servables.cborServable`
+-       — so that a scintillate or telekinesis handler can respond with a `Cbor` value: a
+-       fixed body of the document's encoded bytes, typed `application/cbor`.
+-   entry .cborServable   `Cbor is Servable`: `application/cbor`, the encoded bytes as a fixed body
++       `breviloquence.http` にある（JVM 専用）。
++       名前でインポートし（`import servables.cborServable`）、scintillate や telekinesis のハンドラが `Cbor` 値で応答できるようにする。
++       本文はドキュメントのエンコードされたバイト列からなる固定の本文で、型は `application/cbor` である。
++   entry .cborServable   `Cbor is Servable`：`application/cbor`、エンコードされたバイト列を固定の本文とする
+
+- entry .construables   the given which reads an `application/cbor` body back into a `Cbor`
++ entry .construables   `application/cbor` の本文を `Cbor` に読み戻す given
+
+= entry .construables   the given which reads an `application/cbor` body back into a `Cbor`
+-   detail
++   detail
+
+-       From `breviloquence.http` (JVM only). Imported by name — `import
+-       construables.cborConstruable` — so that a request or response body whose media type is
+-       `application/cbor` construes as a `Cbor`, through `Cbor.aggregable`; a binary API is
+-       then consumed and offered with the same code as a JSON one, only the format's type
+-       differing.
++       `breviloquence.http` にある（JVM 専用）。
++       名前でインポートし（`import construables.cborConstruable`）、メディアタイプが `application/cbor` であるリクエストやレスポンスの本文を、`Cbor.aggregable` を通じて `Cbor` として解釈できるようにする。
++       こうしてバイナリの API は、形式の型が違うだけで、JSON の API と同じコードで利用し、提供できる。
+
+-   entry .cborConstruable   `"application/cbor" is Construable to Cbor`
++   entry .cborConstruable   `"application/cbor" is Construable to Cbor`

@@ -1,0 +1,1235 @@
+orthant 1 language
+
+- ## Graphs
++ ## Grafos
+
+- ### About
++ ### Descripción
+
+- A [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph) is a set of
+- nodes with dependencies between them, and no cycles. Build systems, task schedules, type
+- hierarchies and package dependencies all have this shape.
++ Un [grafo acíclico dirigido](https://en.wikipedia.org/wiki/Directed_acyclic_graph) es un conjunto
++ de nodos con dependencias entre ellos, y sin ciclos. Los sistemas de compilación, las
++ planificaciones de tareas, las jerarquías de tipos y las dependencias entre paquetes tienen todos
++ esta forma.
+
+- A `Dag` represents one as an [immutable] value. It has the operations which such graphs need:
+- topological ordering, reachability, transitive closure and reduction, and editing which keeps
+- the graph acyclic. Two other graph types sit beside it:
++ Un `Dag` representa uno como un valor [inmutable]. Tiene las operaciones que necesitan
++ estos grafos: ordenación topológica, alcanzabilidad, cierre y reducción transitivos, y una edición
++ que mantiene el grafo acíclico. Junto a él hay otros dos tipos de grafo:
+
+= the graph acyclic. Two other graph types sit beside it:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Cycles
+- column  Editing
+- column  Suited to
+- row  `Dag`  never  returns a new value  dependency structures as values
+- row  `Digraph`  allowed  returns a new value  graphs that may hold a cycle
+- row  `Topology[node]^`  never  in place  graphs built up edge by edge
+- row  `Topology[node]^{}`  never  none: frozen  graphs built once and queried often
++ column  Tipo
++ column  Ciclos
++ column  Edición
++ column  Adecuado para
++ row  `Dag`  nunca  devuelve un valor nuevo  estructuras de dependencias como valores
++ row  `Digraph`  permitidos  devuelve un valor nuevo  grafos que pueden contener un ciclo
++ row  `Topology[node]^`  nunca  en el sitio  grafos construidos arista a arista
++ row  `Topology[node]^{}`  nunca  ninguna: congelado  grafos construidos una vez y consultados a menudo
+
+= row  `Topology[node]^{}`  never  none: frozen  graphs built once and queried often
+- ```
++ ```
+
+- All of these share one vocabulary through the `Nodal` [typeclass], so the same operations apply
+- to each. So does anything else with the shape of a graph, such as a `Hasse` diagram, or a `Map`
+- from nodes to their successors.
++ Todos ellos comparten un mismo vocabulario mediante la [clase de tipos] `Nodal`, así que las
++ mismas operaciones se aplican a cada uno. Lo mismo ocurre con cualquier otra cosa que tenga forma
++ de grafo, como un diagrama de `Hasse` o un `Map` de nodos a sus sucesores.
+
+- ### On acyclic graphs
++ ### Sobre los grafos acíclicos
+
+- Dependency structures have the same needs wherever they appear: an order in which to process the
+- nodes, the set which a change can reach, the removal of redundant edges. A general-purpose graph
+- library carries the weight of arbitrary graphs, cycles included. More often, a project writes
+- its own topological sort over a `Map`, and inherits its edge cases.
++ Las estructuras de dependencias tienen las mismas necesidades dondequiera que aparecen: un orden
++ en el que procesar los nodos, el conjunto al que puede llegar un cambio, la eliminación de las
++ aristas redundantes. Una biblioteca de grafos de propósito general carga con el peso de los grafos
++ arbitrarios, ciclos incluidos. Más a menudo, un proyecto escribe su propia ordenación topológica
++ sobre un `Map` y hereda sus casos límite.
+
+- A `Dag` cannot be constructed with a cycle. A cyclic dependency graph is an
+- [impossible state](../../philosophy/impossible-states.md), ruled out where the graph is built, and
+- so the topological order of a `Dag` has no way to fail.
++ Un `Dag` no puede construirse con un ciclo. Un grafo de dependencias cíclico es un
++ [estado imposible](../../philosophy/impossible-states.md), descartado allí donde se construye el
++ grafo, y por eso el orden topológico de un `Dag` no tiene manera de fallar.
+
+- Everything comes from the `soundness` package. The other imports choose a
+- [strategy](errors.md#choosing-a-strategy) for errors, and let the samples print their results:
++ Todo procede del paquete `soundness`. Las demás importaciones eligen una
++ [estrategia](errors.md#choosing-a-strategy) para los errores y permiten que los ejemplos impriman
++ sus resultados:
+
+= [strategy](errors.md#choosing-a-strategy) for errors, and let the samples print their results:
+=
+- ```scala fuel
++ ```scala fuel
+
+- feature experimental.captureChecking
++ feature experimental.captureChecking
+
+= feature experimental.captureChecking
+- ##
++ ##
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Building a graph
++ ### Construir un grafo
+
+- A `Dag` is built from nodes with their sets of dependencies:
++ Un `Dag` se construye a partir de nodos con sus conjuntos de dependencias:
+
+= A `Dag` is built from nodes with their sets of dependencies:
+=
+- ```scala
++ ```scala
+
+- val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set())
++ val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set())
+
+= val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set())
+- ```
++ ```
+
+- An edge `a -> b` means that `a` depends on `b`. A `Dag` is also built from edges alone, and both
+- ends of every edge become nodes:
++ Una arista `a -> b` significa que `a` depende de `b`. Un `Dag` también se construye solo a partir
++ de aristas, y los dos extremos de cada arista se convierten en nodos:
+
+= ends of every edge become nodes:
+=
+- ```scala
++ ```scala
+
+- val edges = Dag(8 -> 4, 8 -> 6, 6 -> 3)
++ val edges = Dag(8 -> 4, 8 -> 6, 6 -> 3)
+
+= val edges = Dag(8 -> 4, 8 -> 6, 6 -> 3)
+- ```
++ ```
+
+- A third form takes a set of nodes, and a function which gives the dependencies of each.
++ Una tercera forma recibe un conjunto de nodos y una función que da las dependencias de cada uno.
+
+- Each of these checks for a cycle, and raises a `Dag.Error` if it finds one:
++ Cada una de ellas comprueba si hay un ciclo, y lanza un `Dag.Error` si encuentra uno:
+
+= Each of these checks for a cycle, and raises a `Dag.Error` if it finds one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Each of these checks for a cycle, and raises a `Dag.Error` if it finds one:
+=
+= ```scala fuel
+- run
++ run
+
+= Each of these checks for a cycle, and raises a `Dag.Error` if it finds one:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= Each of these checks for a cycle, and raises a `Dag.Error` if it finds one:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- Dag(1 -> 2, 2 -> 3, 3 -> 1)
++ Dag(1 -> 2, 2 -> 3, 3 -> 1)
+
+= Dag(1 -> 2, 2 -> 3, 3 -> 1)
+- ```
++ ```
+
+- A graph which may hold a cycle is a `Digraph`. It is built in the same ways, without the check.
+- `cycle` finds a cycle, as a list of nodes which ends where it began:
++ Un grafo que puede contener un ciclo es un `Digraph`. Se construye de las mismas maneras, sin la
++ comprobación. `cycle` encuentra un ciclo, como una lista de nodos que termina donde empezó:
+
+= `cycle` finds a cycle, as a list of nodes which ends where it began:
+=
+- ```scala
++ ```scala
+
+- val graph = Digraph(1 -> 2, 2 -> 3, 3 -> 1)
++ val graph = Digraph(1 -> 2, 2 -> 3, 3 -> 1)
+
+= val graph = Digraph(1 -> 2, 2 -> 3, 3 -> 1)
+- ```
++ ```
+
+= val graph = Digraph(1 -> 2, 2 -> 3, 3 -> 1)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val graph = Digraph(1 -> 2, 2 -> 3, 3 -> 1)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val graph = Digraph(1 -> 2, 2 -> 3, 3 -> 1)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(graph.cycle.inspect)
++ Out.println(graph.cycle.inspect)
+
+= Out.println(graph.cycle.inspect)
+- ```
++ ```
+
+- `acyclic` is the one checked conversion from a `Digraph` to a `Dag`:
++ `acyclic` es la única conversión comprobada de un `Digraph` a un `Dag`:
+
+= `acyclic` is the one checked conversion from a `Digraph` to a `Dag`:
+=
+- ```scala
++ ```scala
+
+- val checked = Digraph(1 -> 2).acyclic
++ val checked = Digraph(1 -> 2).acyclic
+
+= val checked = Digraph(1 -> 2).acyclic
+- ```
++ ```
+
+- `explore` builds a `Digraph` by following a dependency function outward from one node. The
+- result is a `Digraph` because the function may lead back on itself. This is the graph of
+- divisors beneath 12:
++ `explore` construye un `Digraph` siguiendo una función de dependencias hacia fuera desde un nodo.
++ El resultado es un `Digraph` porque la función puede volver sobre sí misma. Este es el grafo de
++ los divisores por debajo de 12:
+
+= divisors beneath 12:
+=
+- ```scala fuel
++ ```scala fuel
+
+= divisors beneath 12:
+=
+= ```scala fuel
+- run
++ run
+
+= divisors beneath 12:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val divisors = 12.explore(n => (1 until n).filter(n % _ == 0)).acyclic
++ val divisors = 12.explore(n => (1 until n).filter(n % _ == 0)).acyclic
+
+- Out.println(divisors.linearized.inspect)
++ Out.println(divisors.linearized.inspect)
+
+= Out.println(divisors.linearized.inspect)
+- ```
++ ```
+
+- ### Ordering and reachability
++ ### Ordenación y alcanzabilidad
+
+- `linearized` gives a [topological order](https://en.wikipedia.org/wiki/Topological_sorting).
+- Every node comes after its dependencies, and the nodes are otherwise in the order they were
+- given:
++ `linearized` da un [orden topológico](https://en.wikipedia.org/wiki/Topological_sorting). Cada
++ nodo va después de sus dependencias, y por lo demás los nodos siguen el orden en que se dieron:
+
+= given:
+=
+- ```scala fuel
++ ```scala fuel
+
+= given:
+=
+= ```scala fuel
+- run
++ run
+
+= given:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dag.linearized.inspect)
++ Out.println(dag.linearized.inspect)
+
+= Out.println(dag.linearized.inspect)
+- ```
++ ```
+
+- `reachable` gives a node and everything it depends on, directly or through other nodes:
++ `reachable` da un nodo y todo aquello de lo que depende, directamente o a través de otros nodos:
+
+= `reachable` gives a node and everything it depends on, directly or through other nodes:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `reachable` gives a node and everything it depends on, directly or through other nodes:
+=
+= ```scala fuel
+- run
++ run
+
+= `reachable` gives a node and everything it depends on, directly or through other nodes:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dag.reachable(8).inspect)
++ Out.println(dag.reachable(8).inspect)
+
+- Out.println(dag.reachable(4).inspect)
++ Out.println(dag.reachable(4).inspect)
+
+= Out.println(dag.reachable(4).inspect)
+- ```
++ ```
+
+- `reachable` raises a `Dag.Error` for a node which the graph does not have. It is defined on a
+- `Dag` and a `Digraph` alike, since reachability is well defined whether or not there is a cycle:
++ `reachable` lanza un `Dag.Error` para un nodo que el grafo no tiene. Está definido tanto en un
++ `Dag` como en un `Digraph`, ya que la alcanzabilidad está bien definida haya o no un ciclo:
+
+= `Dag` and a `Digraph` alike, since reachability is well defined whether or not there is a cycle:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Dag` and a `Digraph` alike, since reachability is well defined whether or not there is a cycle:
+=
+= ```scala fuel
+- run
++ run
+
+= `Dag` and a `Digraph` alike, since reachability is well defined whether or not there is a cycle:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= `Dag` and a `Digraph` alike, since reachability is well defined whether or not there is a cycle:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- dag.reachable(5)
++ dag.reachable(5)
+
+= dag.reachable(5)
+- ```
++ ```
+
+- These are the queries which a graph answers:
++ Estas son las consultas a las que responde un grafo:
+
+= These are the queries which a graph answers:
+=
+- ```tabular
++ ```tabular
+
+- column  Query
+- column  Answers
+- column  On a `Dag`
+- row  `sources`  the nodes depending on nothing, where a build starts
+- row  `sinks`  the nodes nothing depends on
+- row  `successors(n)`  the dependencies of `n`
+- row  `predecessors(n)`  the dependants of `n`  needs `linearScan`
+- row  `reachable(n)`  `n` and everything it depends on, transitively
+- row  `descendants(n)`  the sub-graph beneath `n`
+- row  `ancestors(n)`  the sub-graph that depends on `n`  needs `linearScan`
+- row  `lineage(n)`  ancestors and descendants together  needs `linearScan`
+- row  `linearized`  a topological order
+- row  `invert`  the graph with every edge reversed
+- row  `reaches(a, b)`  whether `a` depends on `b`, transitively  frozen `Topology` only
++ column  Consulta
++ column  Responde
++ column  En un `Dag`
++ row  `sources`  los nodos que no dependen de nada, donde empieza una compilación
++ row  `sinks`  los nodos de los que nada depende
++ row  `successors(n)`  las dependencias de `n`
++ row  `predecessors(n)`  los dependientes de `n`  requiere `linearScan`
++ row  `reachable(n)`  `n` y todo aquello de lo que depende, transitivamente
++ row  `descendants(n)`  el subgrafo por debajo de `n`
++ row  `ancestors(n)`  el subgrafo que depende de `n`  requiere `linearScan`
++ row  `lineage(n)`  ancestros y descendientes juntos  requiere `linearScan`
++ row  `linearized`  un orden topológico
++ row  `invert`  el grafo con todas las aristas invertidas
++ row  `reaches(a, b)`  si `a` depende de `b`, transitivamente  solo `Topology` congelada
+
+= row  `reaches(a, b)`  whether `a` depends on `b`, transitively  frozen `Topology` only
+- ```
++ ```
+
+- As a collection, a graph is its nodes, and those of a `Dag` are in topological order. The
+- [collection](collections.md) vocabulary applies through the usual typeclasses:
++ Como colección, un grafo es sus nodos, y los de un `Dag` están en orden topológico. El
++ vocabulario de las [colecciones](collections.md) se aplica a través de las clases de tipos
++ habituales:
+
+= [collection](collections.md) vocabulary applies through the usual typeclasses:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [collection](collections.md) vocabulary applies through the usual typeclasses:
+=
+= ```scala fuel
+- run
++ run
+
+= [collection](collections.md) vocabulary applies through the usual typeclasses:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dag.has(4).inspect)
++ Out.println(dag.has(4).inspect)
+
+- Out.println(dag.size.show)
++ Out.println(dag.size.show)
+
+= Out.println(dag.size.show)
+- ```
++ ```
+
+- `dag.map(_.toString)` gives a `Digraph`, not a `Dag`. Two nodes may map to the same value, and
+- merging them could close a cycle.
++ `dag.map(_.toString)` da un `Digraph`, no un `Dag`. Dos nodos pueden transformarse en el mismo
++ valor, y fusionarlos podría cerrar un ciclo.
+
+- A `Dag` stores only the forward direction. Finding the predecessors of a node means scanning
+- every edge, which is a cost out of proportion to the question. The operations which need it are
+- `predecessors`, `ancestors`, `lineage`, `bypass` and `-`. Without an acknowledgement of the
+- cost, they do not compile:
++ Un `Dag` solo almacena la dirección hacia delante. Encontrar los predecesores de un nodo supone
++ recorrer todas las aristas, un coste desproporcionado respecto a la pregunta. Las operaciones que
++ lo necesitan son `predecessors`, `ancestors`, `lineage`, `bypass` y `-`. Sin un reconocimiento del
++ coste, no compilan:
+
+= cost, they do not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- dag.predecessors(2)
++ dag.predecessors(2)
+
+= dag.predecessors(2)
+- ```
++ ```
+
+- An import gives the acknowledgement:
++ Una importación da el reconocimiento:
+
+= An import gives the acknowledgement:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearScan
++ import dysasymptotics.linearScan
+
+= import dysasymptotics.linearScan
+- ```
++ ```
+
+= import dysasymptotics.linearScan
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import dysasymptotics.linearScan
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import dysasymptotics.linearScan
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dag.predecessors(2).inspect)
++ Out.println(dag.predecessors(2).inspect)
+
+- Out.println(dag.ancestors(2).linearized.inspect)
++ Out.println(dag.ancestors(2).linearized.inspect)
+
+- Out.println(dag.lineage(4).linearized.inspect)
++ Out.println(dag.lineage(4).linearized.inspect)
+
+= Out.println(dag.lineage(4).linearized.inspect)
+- ```
++ ```
+
+- ### Folding over a graph
++ ### Plegar un grafo
+
+- A traversal computes a value for every node from the values of the nodes it depends on. The
+- dependencies are always computed first. This traversal gives each node one more than the sum of
+- the values beneath it:
++ Un recorrido calcula un valor para cada nodo a partir de los valores de los nodos de los que
++ depende. Las dependencias siempre se calculan primero. Este recorrido da a cada nodo uno más que
++ la suma de los valores que tiene por debajo:
+
+= the values beneath it:
+=
+- ```scala
++ ```scala
+
+- val counts = dag.traversal[Int]((childValues, node) => childValues.total + 1)
++ val counts = dag.traversal[Int]((childValues, node) => childValues.total + 1)
+
+= val counts = dag.traversal[Int]((childValues, node) => childValues.total + 1)
+- ```
++ ```
+
+- Most real work over a dependency graph has this shape: the cost of a build, a version constraint
+- passed along, a transitive set gathered up. A traversal expresses it once, without recursion
+- written by hand or a set of visited nodes to keep.
++ La mayor parte del trabajo real sobre un grafo de dependencias tiene esta forma: el coste de una
++ compilación, una restricción de versión que se transmite, un conjunto transitivo que se va
++ reuniendo. Un recorrido lo expresa una sola vez, sin recursión escrita a mano ni un conjunto de
++ nodos visitados que mantener.
+
+- ### Closure and reduction
++ ### Cierre y reducción
+
+- The transitive `closure` adds an edge wherever a path exists. The transitive `reduction` removes
+- every edge which a path already implies. The reduction is the smallest graph with the same
+- reachability, and is the form in which a dependency graph is usually drawn:
++ El cierre transitivo, `closure`, añade una arista allí donde existe un camino. La reducción
++ transitiva, `reduction`, elimina toda arista que ya está implícita en un camino. La reducción es
++ el grafo más pequeño con la misma alcanzabilidad, y es la forma en que suele dibujarse un grafo de
++ dependencias:
+
+= reachability, and is the form in which a dependency graph is usually drawn:
+=
+- ```scala
++ ```scala
+
+- val closed = dag.closure
++ val closed = dag.closure
+
+- val reduced = dag.reduction
++ val reduced = dag.reduction
+
+= val reduced = dag.reduction
+- ```
++ ```
+
+- Both are answered from the reachability matrix of a frozen topology, which the next section
+- describes. A graph which is queried this way more than once is best frozen once.
++ Ambas se responden a partir de la matriz de alcanzabilidad de una topología congelada, que
++ describe la sección siguiente. Un grafo que se consulta así más de una vez conviene congelarlo una
++ sola vez.
+
+- ### Freezing
++ ### Congelación
+
+- Whether a `Topology` can be edited is a matter of its capture set, as it is for arrays. A
+- `Topology[node]^` can be edited. A `Topology[node]^{}` cannot, since the editing methods need an
+- exclusive handle. `dag.freeze` gives the frozen form, as does `Topology.freeze`, which consumes
+- an editable topology.
++ Que una `Topology` pueda editarse es cuestión de su conjunto de capturas, igual que con los
++ arrays. Una `Topology[node]^` puede editarse. Una `Topology[node]^{}` no, puesto que los métodos
++ de edición necesitan un descriptor exclusivo. `dag.freeze` da la forma congelada, y también
++ `Topology.freeze`, que consume una topología editable.
+
+- The frozen form is laid out for querying. It holds both directions of adjacency in dense arrays,
+- and maintains its sources and sinks. It builds a bit matrix of reachability on first use, so
+- whether one node reaches another is a single bit:
++ La forma congelada está organizada para consultarla. Guarda ambas direcciones de adyacencia en
++ arrays densos y mantiene sus fuentes y sumideros. Construye una matriz de bits de alcanzabilidad
++ en su primer uso, de modo que saber si un nodo alcanza a otro es un único bit:
+
+= whether one node reaches another is a single bit:
+=
+- ```scala
++ ```scala
+
+- val frozen = dag.freeze
++ val frozen = dag.freeze
+
+= val frozen = dag.freeze
+- ```
++ ```
+
+= val frozen = dag.freeze
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val frozen = dag.freeze
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val frozen = dag.freeze
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(frozen.reaches(8, 2).inspect)
++ Out.println(frozen.reaches(8, 2).inspect)
+
+- Out.println(frozen.reaches(2, 8).inspect)
++ Out.println(frozen.reaches(2, 8).inspect)
+
+- Out.println(frozen.predecessors(2).inspect)
++ Out.println(frozen.predecessors(2).inspect)
+
+= Out.println(frozen.predecessors(2).inspect)
+- ```
++ ```
+
+- `predecessors` needs no acknowledgement here. `frozen.snapshot` gives a `Dag` back.
++ `predecessors` no necesita aquí ningún reconocimiento. `frozen.snapshot` devuelve un `Dag`.
+
+- `closure`, `reduction` and `reaches` read the matrix. They are offered only on the frozen form,
+- since an edit would make the matrix stale. To edit, take an editable copy with
+- `Topology(frozen)`, edit it, and freeze again.
++ `closure`, `reduction` y `reaches` leen la matriz. Solo se ofrecen en la forma congelada, ya que
++ una edición dejaría la matriz desfasada. Para editar, tómese una copia editable con
++ `Topology(frozen)`, edítese y vuélvase a congelar.
+
+- ### Editing
++ ### Edición
+
+- An edit to a `Dag` gives a new `Dag` where the edit cannot create a cycle, and a `Digraph` where
+- it might:
++ Una edición de un `Dag` da un `Dag` nuevo cuando la edición no puede crear un ciclo, y un
++ `Digraph` cuando podría:
+
+= it might:
+=
+- ```tabular
++ ```tabular
+
+- column  Edit
+- column  Returns
+- column  Acknowledgement
+- row  `add(a, b)`  a `Dag`, or raises `Dag.Error`
+- row  `remove(a, b)`  a `Dag`
+- row  `- n`  a `Dag`  `linearScan`
+- row  `bypass(n)`  a `Dag`  `linearScan`
+- row  `bypassAll(nodes)`  a `Dag`  `linearScan`
+- row  `subgraph(nodes)`  a `Dag`  `linearSize`
+- row  `+ (a -> b)`  a `Digraph`
+- row  `++ other`  a `Digraph`
+- row  `map(f)`  a `Digraph`
++ column  Edición
++ column  Devuelve
++ column  Reconocimiento
++ row  `add(a, b)`  un `Dag`, o lanza `Dag.Error`
++ row  `remove(a, b)`  un `Dag`
++ row  `- n`  un `Dag`  `linearScan`
++ row  `bypass(n)`  un `Dag`  `linearScan`
++ row  `bypassAll(nodes)`  un `Dag`  `linearScan`
++ row  `subgraph(nodes)`  un `Dag`  `linearSize`
++ row  `+ (a -> b)`  un `Digraph`
++ row  `++ other`  un `Digraph`
++ row  `map(f)`  un `Digraph`
+
+= row  `map(f)`  a `Digraph`
+- ```
++ ```
+
+- `add` adds a dependency, and `remove` takes one away:
++ `add` añade una dependencia, y `remove` quita una:
+
+= `add` adds a dependency, and `remove` takes one away:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `add` adds a dependency, and `remove` takes one away:
+=
+= ```scala fuel
+- run
++ run
+
+= `add` adds a dependency, and `remove` takes one away:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dag.add(8, 3).reachable(8).inspect)
++ Out.println(dag.add(8, 3).reachable(8).inspect)
+
+- Out.println(dag.remove(8, 4).reachable(8).inspect)
++ Out.println(dag.remove(8, 4).reachable(8).inspect)
+
+= Out.println(dag.remove(8, 4).reachable(8).inspect)
+- ```
++ ```
+
+- `add` refuses an edge which would close a cycle:
++ `add` rechaza una arista que cerraría un ciclo:
+
+= `add` refuses an edge which would close a cycle:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `add` refuses an edge which would close a cycle:
+=
+= ```scala fuel
+- run
++ run
+
+= `add` refuses an edge which would close a cycle:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= `add` refuses an edge which would close a cycle:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- dag.add(2, 8)
++ dag.add(2, 8)
+
+= dag.add(2, 8)
+- ```
++ ```
+
+- `+` adds the same edge without complaint, because its result is a `Digraph`:
++ `+` añade la misma arista sin protestar, porque su resultado es un `Digraph`:
+
+= `+` adds the same edge without complaint, because its result is a `Digraph`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `+` adds the same edge without complaint, because its result is a `Digraph`:
+=
+= ```scala fuel
+- run
++ run
+
+= `+` adds the same edge without complaint, because its result is a `Digraph`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((dag + (2 -> 8)).cycle.inspect)
++ Out.println((dag + (2 -> 8)).cycle.inspect)
+
+= Out.println((dag + (2 -> 8)).cycle.inspect)
+- ```
++ ```
+
+- `bypass` drops a node, and reroutes each of its dependants to each of its dependencies. Every
+- path through the node survives. `-` drops the node and its edges, and the paths with them:
++ `bypass` elimina un nodo y redirige cada uno de sus dependientes a cada una de sus dependencias.
++ Todo camino que pasaba por el nodo sobrevive. `-` elimina el nodo y sus aristas, y con ellas los
++ caminos:
+
+= path through the node survives. `-` drops the node and its edges, and the paths with them:
+=
+- ```scala fuel
++ ```scala fuel
+
+= path through the node survives. `-` drops the node and its edges, and the paths with them:
+=
+= ```scala fuel
+- run
++ run
+
+= path through the node survives. `-` drops the node and its edges, and the paths with them:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dag.bypass(6).reachable(8).inspect)
++ Out.println(dag.bypass(6).reachable(8).inspect)
+
+- Out.println((dag - 6).reachable(8).inspect)
++ Out.println((dag - 6).reachable(8).inspect)
+
+= Out.println((dag - 6).reachable(8).inspect)
+- ```
++ ```
+
+- `bypassAll` bypasses a set of nodes, one after another. `subgraph` keeps only the edges among
+- the chosen nodes. It rebuilds the whole map, which is the cost that `linearSize` acknowledges:
++ `bypassAll` puentea un conjunto de nodos, uno tras otro. `subgraph` conserva solo las aristas
++ entre los nodos elegidos. Reconstruye el mapa entero, que es el coste que reconoce `linearSize`:
+
+= the chosen nodes. It rebuilds the whole map, which is the cost that `linearSize` acknowledges:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- val part = dag.subgraph(Set(8, 4, 2))
++ val part = dag.subgraph(Set(8, 4, 2))
+
+= val part = dag.subgraph(Set(8, 4, 2))
+- ```
++ ```
+
+- ### Editing in place
++ ### Edición en el sitio
+
+- A graph is sometimes built up one edge at a time, as when a build system discovers tasks or a
+- scheduler accepts jobs. A `Topology` keeps its topological order valid as edges arrive. A new
+- edge disturbs only the nodes between its two ends.
++ A veces un grafo se construye arista a arista, como cuando un sistema de compilación descubre
++ tareas o un planificador acepta jobs. Una `Topology` mantiene válido su orden topológico a medida
++ que llegan aristas. Una arista nueva solo altera los nodos situados entre sus dos extremos.
+
+- A `Topology` is a mutable value with one exclusive owner. It is edited through its methods,
+- which do not produce new values:
++ Una `Topology` es un valor mutable con un único dueño exclusivo. Se edita mediante sus métodos,
++ que no producen valores nuevos:
+
+= which do not produce new values:
+=
+- ```scala
++ ```scala
+
+- val topology = Topology[Text]()
++ val topology = Topology[Text]()
+
+- topology.add(t"app", t"lib")
++ topology.add(t"app", t"lib")
+
+- topology.add(t"lib", t"core")
++ topology.add(t"lib", t"core")
+
+= topology.add(t"lib", t"core")
+- ```
++ ```
+
+= topology.add(t"lib", t"core")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= topology.add(t"lib", t"core")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= topology.add(t"lib", t"core")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(topology.linearized.inspect)
++ Out.println(topology.linearized.inspect)
+
+= Out.println(topology.linearized.inspect)
+- ```
++ ```
+
+- An edge which would close a cycle is refused with a `Dag.Error`, and the graph is left as it
+- was:
++ Una arista que cerraría un ciclo se rechaza con un `Dag.Error`, y el grafo queda como estaba:
+
+= was:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- topology.add(t"core", t"app")
++ topology.add(t"core", t"app")
+
+= topology.add(t"core", t"app")
+- ```
++ ```
+
+- When the editing is done, the topology is given up. `Topology.freeze(topology)` and
+- `Dag(topology)` both consume it, so the result can never be edited behind its back. A `Dag`
+- thaws into a `Topology` with `thaw`, and `snapshot` takes a `Dag` without giving up the handle.
++ Cuando se termina de editar, se renuncia a la topología. `Topology.freeze(topology)` y
++ `Dag(topology)` la consumen ambos, de modo que el resultado nunca puede editarse a sus espaldas.
++ Un `Dag` se descongela en una `Topology` con `thaw`, y `snapshot` toma un `Dag` sin renunciar al
++ descriptor.
+
+- ### Partial orders
++ ### Órdenes parciales
+
+- A `Hasse` diagram takes a set and an ordering relation, and computes the covering structure: for
+- each element, the elements immediately above and below it, with every implied comparison
+- dropped. These are the divisors of 12, ordered by divisibility:
++ Un diagrama de `Hasse` recibe un conjunto y una relación de orden, y calcula la estructura de
++ cobertura: para cada elemento, los elementos inmediatamente por encima y por debajo de él, con
++ todas las comparaciones implícitas eliminadas. Estos son los divisores de 12, ordenados por
++ divisibilidad:
+
+= dropped. These are the divisors of 12, ordered by divisibility:
+=
+- ```scala
++ ```scala
+
+- val divisors = Hasse(Set(1, 2, 3, 4, 6, 12))((a, b) => b % a == 0)
++ val divisors = Hasse(Set(1, 2, 3, 4, 6, 12))((a, b) => b % a == 0)
+
+= val divisors = Hasse(Set(1, 2, 3, 4, 6, 12))((a, b) => b % a == 0)
+- ```
++ ```
+
+= val divisors = Hasse(Set(1, 2, 3, 4, 6, 12))((a, b) => b % a == 0)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val divisors = Hasse(Set(1, 2, 3, 4, 6, 12))((a, b) => b % a == 0)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val divisors = Hasse(Set(1, 2, 3, 4, 6, 12))((a, b) => b % a == 0)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(divisors.parents(2).inspect)
++ Out.println(divisors.parents(2).inspect)
+
+- Out.println(divisors.children(6).inspect)
++ Out.println(divisors.children(6).inspect)
+
+- Out.println(divisors.maxima.inspect)
++ Out.println(divisors.maxima.inspect)
+
+= Out.println(divisors.maxima.inspect)
+- ```
++ ```
+
+- A `Hasse` diagram is itself a graph, in which each element points at the elements it covers. It
+- linearizes from its bottom to its top, and `divisors.dag` is the same relation as a `Dag`.
++ Un diagrama de `Hasse` es a su vez un grafo, en el que cada elemento apunta a los elementos que
++ cubre. Se linealiza desde su base hasta su cima, y `divisors.dag` es la misma relación como un
++ `Dag`.
+
+- ### Layering
++ ### Estratificación
+
+- `layered` arranges a `Dag` for drawing. Each node is assigned to a layer, with dependencies
+- above dependents. The nodes within each layer are ordered so that the lines which join adjacent
+- layers cross as rarely as possible. This is the layered approach of Sugiyama, which Graphviz's
+- `dot` uses.
++ `layered` organiza un `Dag` para dibujarlo. Cada nodo se asigna a una capa, con las dependencias
++ por encima de los dependientes. Los nodos de cada capa se ordenan de modo que las líneas que unen
++ capas adyacentes se crucen lo menos posible. Es el método por capas de Sugiyama, que usa `dot` de
++ Graphviz.
+
+= `dot` uses.
+=
+- ```scala
++ ```scala
+
+- val layering = dag.layered
++ val layering = dag.layered
+
+= val layering = dag.layered
+- ```
++ ```
+
+- A node with no dependencies is in the first layer. Node `8` is two layers below, one for each
+- dependency on its longest path. No link in this graph crosses another:
++ Un nodo sin dependencias está en la primera capa. El nodo `8` está dos capas más abajo, una por
++ cada dependencia de su camino más largo. Ningún enlace de este grafo cruza otro:
+
+= dependency on its longest path. No link in this graph crosses another:
+=
+- ```scala fuel
++ ```scala fuel
+
+= dependency on its longest path. No link in this graph crosses another:
+=
+= ```scala fuel
+- run
++ run
+
+= dependency on its longest path. No link in this graph crosses another:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(layering.rank(2).show)
++ Out.println(layering.rank(2).show)
+
+- Out.println(layering.rank(8).show)
++ Out.println(layering.rank(8).show)
+
+- Out.println(layering.crossings.show)
++ Out.println(layering.crossings.show)
+
+= Out.println(layering.crossings.show)
+- ```
++ ```
+
+- `layering.layers(1)` gives the vertices of the second layer in their drawn order, and
+- `layering.links(0)` gives the positions joined between the first two layers. An edge which spans
+- more than one layer passes through a `Layering.Vertex.Virtual` in each layer between, so every
+- link joins adjacent layers.
++ `layering.layers(1)` da los vértices de la segunda capa en el orden en que se dibujan, y
++ `layering.links(0)` da las posiciones unidas entre las dos primeras capas. Una arista que abarca
++ más de una capa pasa por un `Layering.Vertex.Virtual` en cada capa intermedia, de modo que todo
++ enlace une capas adyacentes.
+
+- By default a node sits one layer below its deepest dependency, so every node without
+- dependencies shares the first layer:
++ Por defecto, un nodo se sitúa una capa por debajo de su dependencia más profunda, así que todos
++ los nodos sin dependencias comparten la primera capa:
+
+= dependencies shares the first layer:
+=
+- ```scala
++ ```scala
+
+- val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
++ val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
+
+= val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
+- ```
++ ```
+
+= val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(deep.layered.rank(5).show)
++ Out.println(deep.layered.rank(5).show)
+
+= Out.println(deep.layered.rank(5).show)
+- ```
++ ```
+
+- `rankings.balancedRanking` instead pulls each node which has dependents down to the layer above
+- its shallowest dependent. That shortens the long edge from a source which feeds only something
+- deep. Node `5` feeds only node `3`, two layers down, so it sinks to the layer above:
++ `rankings.balancedRanking`, en cambio, baja cada nodo que tiene dependientes hasta la capa
++ situada por encima de su dependiente menos profundo. Eso acorta la arista larga que sale de una
++ fuente que solo alimenta algo profundo. El nodo `5` solo alimenta al nodo `3`, dos capas más
++ abajo, así que desciende hasta la capa de encima:
+
+= deep. Node `5` feeds only node `3`, two layers down, so it sinks to the layer above:
+=
+- ```scala fuel
++ ```scala fuel
+
+= deep. Node `5` feeds only node `3`, two layers down, so it sinks to the layer above:
+=
+= ```scala fuel
+- run
++ run
+
+= deep. Node `5` feeds only node `3`, two layers down, so it sinks to the layer above:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- locally:
++ locally:
+
+-   import rankings.balancedRanking
++   import rankings.balancedRanking
+
+-   Out.println(deep.layered.rank(5).show)
++   Out.println(deep.layered.rank(5).show)
+
+=   Out.println(deep.layered.rank(5).show)
+- ```
++ ```
+
+- ### Drawing
++ ### Dibujo
+
+- [Trees](trees.md#graphs) draws a graph as text, in lanes, in layers or as a dense grid.
++ [Árboles](trees.md#graphs) dibuja un grafo como texto, en carriles, en capas o como una
++ cuadrícula densa.
+
+- A `Dag` of text is also rendered as
+- [DOT](https://en.wikipedia.org/wiki/DOT_(graph_description_language)), ready for
++ Un `Dag` de texto también se representa como
++ [DOT](https://en.wikipedia.org/wiki/DOT_(graph_description_language)), listo para
+
+- [Graphviz](https://graphviz.org/):
++ [Graphviz](https://graphviz.org/):
+
+= [Graphviz](https://graphviz.org/):
+=
+- ```scala fuel
++ ```scala fuel
+
+= [Graphviz](https://graphviz.org/):
+=
+= ```scala fuel
+- run
++ run
+
+= [Graphviz](https://graphviz.org/):
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dag.map(_.show).acyclic.dot.serialize)
++ Out.println(dag.map(_.show).acyclic.dot.serialize)
+
+= Out.println(dag.map(_.show).acyclic.dot.serialize)
+- ```
++ ```
+
+- ### Related
++ ### Relacionado
+
+- - [Trees](trees.md) draws trees and graphs as text.
+- - [Collections](collections.md) describes the vocabulary which a graph shares, and the
+-   acknowledgements of cost in `dysasymptotics`.
+- - [Concurrency](concurrency.md) runs the tasks which a dependency graph orders.
+- - [Impossible states](../../philosophy/impossible-states.md) explains why a `Dag` cannot hold a
+-   cycle.
+- - [Charts](charts.md) draws a graph as a doughnut, and [compiler](compiler.md) builds a toolchain as one.
++ - [Árboles](trees.md) dibuja árboles y grafos como texto.
++ - [Colecciones](collections.md) describe el vocabulario que comparte un grafo, y los
++   reconocimientos de coste de `dysasymptotics`.
++ - [Concurrencia](concurrency.md) ejecuta las tareas que ordena un grafo de dependencias.
++ - [Estados imposibles](../../philosophy/impossible-states.md) explica por qué un `Dag` no puede
++   contener un ciclo.
++ - [Gráficos](charts.md) dibuja un grafo como un gráfico de anillo, y [compilador](compiler.md)
++   construye una cadena de herramientas como uno.

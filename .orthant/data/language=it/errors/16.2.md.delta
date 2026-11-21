@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.16.2` — Upper bound must be a `Double` singleton literal
++ # `↯/s.16.2` — Il limite superiore deve essere un letterale singleton `Double`
+
+- Raised by Cardinality's `NumericRange` macro when the upper bound
+- type is not a `Double` singleton literal type.
++ Sollevato dalla macro `NumericRange` di Cardinality quando il tipo del limite
++ superiore non è un tipo letterale singleton `Double`.
+
+- ## Cause
++ ## Causa
+
+- The macro inspects the type of the upper bound and expects a
+- `ConstantType(DoubleConstant(_))`. Any other shape — for example a
+- non-singleton type or a non-`Double` literal — triggers this halt.
++ La macro ispeziona il tipo del limite superiore e si aspetta un
++ `ConstantType(DoubleConstant(_))`. Qualsiasi altra forma, per esempio un tipo
++ non singleton o un letterale non `Double`, provoca questo arresto.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.16.2] the upper bound must be a Double singleton literal types
++ [↯/s.16.2] the upper bound must be a Double singleton literal types
+
+= [↯/s.16.2] the upper bound must be a Double singleton literal types
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Provide a `Double` singleton literal type as the upper bound (e.g.
+- `5.0` rather than `5`).
++ Fornire come limite superiore un tipo letterale singleton `Double` (per esempio
++ `5.0` anziché `5`).
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/cardinality/src/core/cardinality.internal.scala`
++ - Sorgente: `lib/cardinality/src/core/cardinality.internal.scala`

@@ -1,0 +1,56 @@
+orthant 1 language
+
+- # `↯/s.102.2` — `Mdns.Error`
++ # `↯/s.102.2` — `Mdns.Error`
+
+- Raised when the socket-based mDNS responder (`syndesis`) cannot start.
++ Порождается, когда ответчик mDNS на сокетах (`syndesis`) не может запуститься.
+
+- ## Cause
++ ## Причина
+
+- The responder joins the mDNS multicast group (`224.0.0.251:5353`) on every interface that is up
+- and multicast-capable. With no such interface, or a join the operating system refuses, there is
+- nothing to speak through. The message is `the mDNS responder could not start because $reason`.
++ Ответчик присоединяется к группе многоадресной рассылки mDNS (`224.0.0.251:5353`) на каждом
++ интерфейсе, который поднят и поддерживает многоадресную рассылку. Если такого интерфейса нет
++ или операционная система отказывает в присоединении, говорить не через что. Сообщение —
++ `the mDNS responder could not start because $reason`.
+
+- ## Variants
++ ## Варианты
+
+- ### `↯/s.102.2.1` — `Join`
++ ### `↯/s.102.2.1` — `Join`
+
+- The multicast group could not be joined: binding port 5353 with reuse failed, or the join was
+- refused on every interface.
++ Не удалось присоединиться к группе многоадресной рассылки: привязка к порту 5353 с повторным
++ использованием не удалась, или в присоединении отказано на каждом интерфейсе.
+
+- **Example.** `[↯/s.102.2.1] the mDNS responder could not start because the multicast group 224.0.0.251:5353 could not be joined`
++ **Пример.** `[↯/s.102.2.1] the mDNS responder could not start because the multicast group 224.0.0.251:5353 could not be joined`
+
+- **Resolution.** Check that port 5353 is not held without reuse by another program, and that the
+- interfaces have IPv4 addresses.
++ **Решение.** Проверьте, что порт 5353 не занят другой программой без повторного использования и
++ что у интерфейсов есть адреса IPv4.
+
+- ### `↯/s.102.2.2` — `NoInterface`
++ ### `↯/s.102.2.2` — `NoInterface`
+
+- No network interface is up and multicast-capable (loopback does not count).
++ Ни один сетевой интерфейс не поднят и не поддерживает многоадресную рассылку (loopback не
++ считается).
+
+- **Example.** `[↯/s.102.2.2] the mDNS responder could not start because no interface is up and capable of multicast`
++ **Пример.** `[↯/s.102.2.2] the mDNS responder could not start because no interface is up and capable of multicast`
+
+- **Resolution.** mDNS needs a link; in a sandbox without one, use the in-memory `Mdns.Transport.Bus`.
++ **Решение.** mDNS нужна связь; в песочнице без неё используйте `Mdns.Transport.Bus` в памяти.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/syndesis/src/core/syndesis.Mdns.scala`
++ - Исходный код: `lib/syndesis/src/core/syndesis.Mdns.scala`
