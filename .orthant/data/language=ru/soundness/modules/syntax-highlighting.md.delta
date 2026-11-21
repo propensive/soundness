@@ -1,0 +1,298 @@
+orthant 1 language
+
+- ## Syntax Highlighting
++ ## Подсветка синтаксиса
+
+- ### About
++ ### Обзор
+
+- Scala source code is highlighted by the Scala compiler itself. The language is not
+- approximated with regular expressions. The real tokenizer, and, when asked, the whole front
+- end of the compiler, is run over the source, so the highlighting is exactly as the compiler
+- reads it.
++ Исходный код на Scala подсвечивается самим компилятором Scala. Язык не аппроксимируется
++ регулярными выражениями. Над исходным кодом запускается настоящий токенизатор, а по запросу —
++ и весь фронтенд компилятора, поэтому подсветка в точности соответствует тому, как код читает
++ компилятор.
+
+- The result is a `SourceCode` of accented tokens, which is displayed as styled
+- [terminal](terminal.md#styled-text) output, or as [HTML](html.md). At the deeper levels it
+- has the *types* of its expressions, the compiler's diagnostics, and even completions.
++ Результат — `SourceCode` из токенов с акцентами, который выводится как стилизованный вывод
++ [терминала](terminal.md#styled-text) или как [HTML](html.md). На более глубоких уровнях в нём
++ есть *типы* его выражений, диагностики компилятора и даже автодополнения.
+
+- ### On highlighting
++ ### О подсветке
+
+- Scala resists casual highlighting. Its soft keywords are keywords only in certain positions.
+- Its syntax for givens, and its significant whitespace, defeat grammars based on patterns.
+- The highlighting files of editors chase the language, release by release. The one program
+- which always tokenizes Scala correctly is the compiler, so the reliable highlighter is the
+- compiler, asked politely.
++ Scala сопротивляется небрежной подсветке. Её мягкие ключевые слова являются ключевыми только в
++ определённых позициях. Её синтаксис для given и значимые отступы побеждают грамматики,
++ основанные на шаблонах. Файлы подсветки редакторов гонятся за языком, релиз за релизом.
++ Единственная программа, которая всегда правильно разбивает Scala на токены, — компилятор,
++ поэтому надёжный подсветчик — это компилятор, которого вежливо попросили.
+
+- It is driven at three depths, each of which is chosen by a given in the package
+- `highlighting`:
++ Он работает на трёх глубинах, каждая из которых выбирается given из пакета `highlighting`:
+
+= `highlighting`:
+=
+- ```tabular
++ ```tabular
+
+- column  Depth
++ column  Глубина
+
+- column  Given
++ column  Given
+
+- column  Needs
+- column  Gives
+- row  tokenized  `tokenizedScala`, the default  the text alone  classified tokens
+- row  typechecked  `typecheckedScala`  a compiler and a classpath  types and diagnostics, from the frontend
+- row  typechecked  `sessionScala`  a warm compiler session  the same, within the session
+- row  compiled  `compiledScala`  a compiler and a classpath  the diagnostics only later phases produce
++ column  Требует
++ column  Даёт
++ row  токенизация  `tokenizedScala`, по умолчанию  только текст  классифицированные токены
++ row  проверка типов  `typecheckedScala`  компилятор и путь классов  типы и диагностики от фронтенда
++ row  проверка типов  `sessionScala`  прогретая сессия компилятора  то же самое, внутри сессии
++ row  компиляция  `compiledScala`  компилятор и путь классов  диагностики, которые дают только поздние фазы
+
+= row  compiled  `compiledScala`  a compiler and a classpath  the diagnostics only later phases produce
+- ```
++ ```
+
+- A highlighted token which knows its type is
+- [composability](../../philosophy/composability.md) between the compiler and whatever displays
+- the code.
++ Подсвеченный токен, который знает свой тип, — это
++ [композиционность](../../philosophy/composability.md) между компилятором и тем, что выводит код.
+
+- Everything comes from the `soundness` package:
++ Всё берётся из пакета `soundness`:
+
+= Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+= import soundness.*
+- ```
++ ```
+
+- ### Highlighting
++ ### Подсветка
+
+- `Scala.highlight` tokenizes source into lines of accented tokens, such as keywords,
+- identifiers, numbers, strings and modifiers, ready to display:
++ `Scala.highlight` разбивает исходный код на строки токенов с акцентами — ключевые слова,
++ идентификаторы, числа, строки и модификаторы, — готовые к выводу:
+
+= identifiers, numbers, strings and modifiers, ready to display:
+=
+- ```scala
++ ```scala
+
+- val code = Scala.highlight(t"val xs = List(1, 2, 3)")
++ val code = Scala.highlight(t"val xs = List(1, 2, 3)")
+
+= val code = Scala.highlight(t"val xs = List(1, 2, 3)")
+- ```
++ ```
+
+- The accents are the categories to which a palette assigns colors:
++ Акценты — это категории, которым палитра назначает цвета:
+
+= The accents are the categories to which a palette assigns colors:
+=
+- ```tabular
++ ```tabular
+
+- column  Accent
+- column  Marks
+- row  `Keyword`  keywords, other than modifiers
+- row  `Modifier`  modifier keywords
+- row  `Term`, `Typal`  definitions
+- row  `Symbol`  operators
+- row  `Parens`  brackets
+- row  `Number`, `String`  literals, including interpolated ones
+- row  `Error`, `Unparsed`  tokens that did not come out cleanly
++ column  Акцент
++ column  Отмечает
++ row  `Keyword`  ключевые слова, кроме модификаторов
++ row  `Modifier`  ключевые слова-модификаторы
++ row  `Term`, `Typal`  определения
++ row  `Symbol`  операторы
++ row  `Parens`  скобки
++ row  `Number`, `String`  литералы, включая интерполированные
++ row  `Error`, `Unparsed`  токены, которые не удалось чисто разобрать
+
+= row  `Error`, `Unparsed`  tokens that did not come out cleanly
+- ```
++ ```
+
+- The default depth is tokenized, which needs nothing but the text. `Java.highlight` does the
+- same for Java source.
++ Глубина по умолчанию — токенизация, которой не нужно ничего, кроме текста. `Java.highlight`
++ делает то же для исходного кода на Java.
+
+- A palette, as a given, maps the accents to [colors](colors.md), and the ANSI renderers,
+- numbered or plain, turn a `SourceCode` into terminal output. Fenced `scala` and `java` code
+- blocks in a [Markdown](markdown.md) document are displayed through the same machinery.
++ Палитра, как given, сопоставляет акцентам [цвета](colors.md), а ANSI-средства отображения, с
++ нумерацией строк или без, превращают `SourceCode` в вывод терминала. Огороженные блоки кода
++ `scala` и `java` в документе [Markdown](markdown.md) выводятся через тот же механизм.
+
+- ### Types and diagnostics
++ ### Типы и диагностики
+
+- With a [compiler](compiler.md) and a [classpath](classpath.md) in scope, `typecheckedScala`
+- runs the front end, and each identifier has the type which the compiler gave it. That is the
+- difference between coloring `xs` as an identifier, and knowing that it is a `List[Int]`:
++ С [компилятором](compiler.md) и [путём классов](classpath.md) в области видимости
++ `typecheckedScala` запускает фронтенд, и у каждого идентификатора есть тип, который дал ему
++ компилятор. В этом разница между тем, чтобы раскрасить `xs` как идентификатор, и тем, чтобы
++ знать, что это `List[Int]`:
+
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+- ##
++ ##
+
+- given scalac: Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
++ given scalac: Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+
+- given classpath: LocalClasspath = LocalClasspath()
++ given classpath: LocalClasspath = LocalClasspath()
+
+- import highlighting.typecheckedScala
++ import highlighting.typecheckedScala
+
+- val typed = Scala.highlight(t"val xs = List(1, 2, 3)")
++ val typed = Scala.highlight(t"val xs = List(1, 2, 3)")
+
+= val typed = Scala.highlight(t"val xs = List(1, 2, 3)")
+- ```
++ ```
+
+- `typecheckedScala` comes from the module `harlequin.typed`, which is the only part of the
+- highlighter that depends on the compiler.
++ `typecheckedScala` берётся из модуля `harlequin.typed` — единственной части подсветчика, которая
++ зависит от компилятора.
+
+- Source which is ill-typed does not fail to highlight. It is highlighted *with its errors*.
+- Each `Diagnostic` has its span and its message, which is what documentation tools and
+- editors need:
++ Исходный код с ошибками типов не перестаёт подсвечиваться. Он подсвечивается *вместе со своими
++ ошибками*. У каждой `Diagnostic` есть свой отрезок и своё сообщение — именно это нужно
++ инструментам документации и редакторам:
+
+= editors need:
+=
+- ```scala
++ ```scala
+
+- val diagnostics = Scala.highlight(t"""val n: Int = "oops"""").diagnostics
++ val diagnostics = Scala.highlight(t"""val n: Int = "oops"""").diagnostics
+
+= val diagnostics = Scala.highlight(t"""val n: Int = "oops"""").diagnostics
+- ```
++ ```
+
+- ### Completions
++ ### Автодополнения
+
+- A caret position turns highlighting into completion. The compiler's own interactive engine
+- proposes what could follow, with kinds and signatures:
++ Позиция курсора превращает подсветку в автодополнение. Собственный интерактивный движок
++ компилятора предлагает, что может следовать дальше, с видами и сигнатурами:
+
+= proposes what could follow, with kinds and signatures:
+=
+- ```scala
++ ```scala
+
+- val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
++ val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
+
+- val completions = Scala.highlight(source, caret = source.length.z).completions
++ val completions = Scala.highlight(source, caret = source.length.z).completions
+
+= val completions = Scala.highlight(source, caret = source.length.z).completions
+- ```
++ ```
+
+- Under a typechecked depth, the proposals here are `map`, `max`, `mkString` and the other
+- members of `List[Int]` which begin with `m`. They come from the same compiler which will
+- eventually compile the code, so they are never guesses.
++ При глубине проверки типов предложения здесь — `map`, `max`, `mkString` и другие члены
++ `List[Int]`, начинающиеся на `m`. Они исходят от того же компилятора, который в итоге
++ скомпилирует код, поэтому никогда не являются догадками.
+
+- Members after a `.` are the easy case. A bare identifier which is being typed is harder,
+- because the statement which contains it does not typecheck. That is precisely its state
+- while it is being written, and a batch compilation discards the code. Completions therefore
+- come from the compiler's interactive driver, which keeps code that has errors. Terms and
+- types which are in scope are completed wherever the caret is, and in the position of a type,
+- the offers are narrowed to types, modules and packages.
++ Члены после `.` — простой случай. Голый идентификатор, который набирается, сложнее, потому что
++ содержащая его инструкция не проходит проверку типов. Именно в таком состоянии она находится,
++ пока её пишут, а пакетная компиляция отбрасывает такой код. Поэтому автодополнения берутся от
++ интерактивного драйвера компилятора, который сохраняет код с ошибками. Термы и типы в области
++ видимости дополняются, где бы ни был курсор, а в позиции типа предложения сужаются до типов,
++ модулей и пакетов.
+
+- ### Completing keywords and dynamic members
++ ### Дополнение ключевых слов и динамических членов
+
+- Two kinds of proposal which the compiler cannot make are supplied beside its own.
++ Два вида предложений, которые компилятор сделать не может, поставляются рядом с его
++ собственными.
+
+- *Keywords* are grammatical, not semantic. What may follow depends on the tokens before the
+- caret, not on any table of symbols. A trie over reversed contexts of tokens, derived from a
+- corpus of real Scala, and looking back only as far as remains relevant, answers which
+- keywords could come next, and what the grammar expects there. `case ` therefore offers what
+- a case may begin with, and a position which must be a type offers no keywords at all.
++ *Ключевые слова* — грамматическая, а не семантическая категория. Что может следовать, зависит от
++ токенов перед курсором, а не от какой-либо таблицы символов. Префиксное дерево над обращёнными
++ контекстами токенов, выведенное из корпуса реального кода на Scala и смотрящее назад лишь
++ настолько, насколько это остаётся значимым, отвечает, какие ключевые слова могут идти следующими
++ и чего там ожидает грамматика. Поэтому `case ` предлагает то, с чего может начинаться кейс, а
++ позиция, которая должна быть типом, не предлагает ключевых слов вовсе.
+
+- *Dynamic* members have no symbols to offer at all. Where the caret sits on a selection whose
+- qualifier derives from `scala.Dynamic`, the companion of the type is asked which members its
+- refinement admits, if it implements the interface for saying so. That is how a
+- [foreign](foreign-interop.md) value is completed with the members which its foreign
+- declarations name, and how any `Dynamic` type can offer honest completions, instead of none.
++ У *динамических* членов вообще нет символов, которые можно предложить. Где курсор стоит на
++ выборке, квалификатор которой происходит от `scala.Dynamic`, у компаньона типа спрашивают, какие
++ члены допускает его уточнение, если он реализует интерфейс, позволяющий это сказать. Так
++ [чужеродное](foreign-interop.md) значение дополняется членами, которые называют его чужеродные
++ объявления, и так любой тип `Dynamic` может предлагать честные автодополнения, а не никаких.
+
+- ### Related
++ ### Связанное
+
+- - [Compiler](compiler.md) describes running the Scala compiler from a program.
+- - [LSP](lsp.md) serves completions and diagnostics to an editor.
+- - [Markdown](markdown.md) displays highlighted code blocks.
+- - [Terminal](terminal.md) and [HTML](html.md) are the two forms of output.
++ - [Компилятор](compiler.md) описывает запуск компилятора Scala из программы.
++ - [LSP](lsp.md) отдаёт автодополнения и диагностики редактору.
++ - [Markdown](markdown.md) выводит подсвеченные блоки кода.
++ - [Терминал](terminal.md) и [HTML](html.md) — две формы вывода.

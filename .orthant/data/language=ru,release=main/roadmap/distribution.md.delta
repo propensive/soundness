@@ -1,0 +1,32 @@
+orthant 1 language
+
+- The keystone item: `doc/work/migration.md` defines the agent-executable
+- migration-instruction format — what changed, how to detect affected code, the exact rewrite,
+- and how to verify it — and CI enforces that breaking-labelled pull requests carry instructions
+- in that format. Several tracks terminate here: it is what `api-6` flows through and what
+- `tool-5` serves to agents.
++ Краеугольный пункт: `doc/work/migration.md` определяет формат инструкций по миграции, исполнимых
++ агентом, — что изменилось, как обнаружить затронутый код, точное переписывание и как его
++ проверить, — а CI требует, чтобы пулл-реквесты с меткой ломающего изменения несли инструкции в
++ этом формате. Здесь заканчиваются несколько направлений: через это проходит `api-6`, и это
++ `tool-5` отдаёт агентам.
+
+- Done when: `doc/work/migration.md` defines the convention, the release refuses to run without
+- `doc/work/migration/<version>.md`, and a CI check fails any pull request that changes `lib/**/src`
+- without touching the unreleased migration notes. The first two hold: the convention is
+- written, `0.65.0.md` onwards exist, and the `migration` directive in `etc/release` refuses a tag
+- while the version's notes are missing or another version's are unreleased. The pull-request
+- check is what remains: `main.yml` verifies the attestation and nothing else. The convention is
+- not label-based: every material change records itself in the next release's
+- `doc/work/migration/<version>.md`, named after that release from the start.
++ Готово, когда: `doc/work/migration.md` определяет соглашение, релиз отказывается выполняться без
++ `doc/work/migration/<version>.md`, а проверка CI отклоняет любой пулл-реквест, который меняет
++ `lib/**/src`, не затрагивая невыпущенные заметки о миграции. Первые два условия выполнены:
++ соглашение написано, файлы начиная с `0.65.0.md` существуют, а директива `migration` в
++ `etc/release` отклоняет тег, пока заметки этой версии отсутствуют или заметки другой версии не
++ выпущены. Остаётся проверка пулл-реквестов: `main.yml` проверяет свидетельство и больше ничего.
++ Соглашение не основано на метках: каждое существенное изменение записывает себя в
++ `doc/work/migration/<version>.md` следующего релиза, названный по этому релизу с самого начала.
+
+-     git grep -c reliquary -- build.mill etc doc/work/soundness/modules | wc -l   # 0
++     git grep -c reliquary -- build.mill etc doc/work/soundness/modules | wc -l   # 0

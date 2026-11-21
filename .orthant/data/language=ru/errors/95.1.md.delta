@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.95.1` — `Question.Error`
++ # `↯/s.95.1` — `Question.Error`
+
+- Raised when an interactive prompt is dismissed by the user.
++ Порождается, когда пользователь закрывает интерактивный запрос.
+
+- ## Cause
++ ## Причина
+
+- Profanity throws this error when the user presses an
+- interaction-cancelling key (e.g. `Esc`) on a prompt that requires a
+- selection.
++ Profanity бросает эту ошибку, когда пользователь нажимает клавишу,
++ отменяющую взаимодействие (например, `Esc`), в запросе, требующем
++ выбора.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.95.1] the user dismissed an interaction
++ [↯/s.95.1] the user dismissed an interaction
+
+= [↯/s.95.1] the user dismissed an interaction
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Treat the dismissal as a graceful cancellation in the calling
+- code.
++ Обрабатывайте закрытие в вызывающем коде как штатную отмену.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/profanity/src/core/profanity.Question.scala`
++ - Исходник: `lib/profanity/src/core/profanity.Question.scala`

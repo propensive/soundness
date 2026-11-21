@@ -1,0 +1,51 @@
+orthant 1 language
+
+- # `↯/s.68.1` — `Name.Error`
++ # `↯/s.68.1` — `Name.Error`
+
+- Raised when a value does not satisfy the rules of a named-type's
+- `Nominative` system.
++ Порождается, когда значение не удовлетворяет правилам системы `Nominative`
++ именованного типа.
+
+- ## Cause
++ ## Причина
+
+- Nomenclature defines `Name`-like types parameterised by a
+- `Nominative` system whose rules constrain valid values. When a
+- candidate violates a rule, this error is thrown carrying the
+- `name`, the failing `Rule`, and a `parameter` describing the rule's
+- specific complaint.
++ Nomenclature определяет типы наподобие `Name`, параметризованные системой
++ `Nominative`, правила которой ограничивают допустимые значения. Когда
++ кандидат нарушает правило, выбрасывается эта ошибка, несущая
++ `name`, нарушенное правило `Rule` и `parameter`, описывающий конкретную
++ претензию этого правила.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.68.1] the name verona/capulet is not valid because it contains the prohibited character /
++ [↯/s.68.1] the name verona/capulet is not valid because it contains the prohibited character /
+
+= [↯/s.68.1] the name verona/capulet is not valid because it contains the prohibited character /
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Adjust the value to satisfy the rule, or pick a different
+- `Nominative` system whose rules permit the value.
++ Измените значение так, чтобы оно удовлетворяло правилу, или выберите другую
++ систему `Nominative`, правила которой допускают это значение.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/nomenclature/src/core/nomenclature.internal.scala`
++ - Исходный код: `lib/nomenclature/src/core/nomenclature.internal.scala`

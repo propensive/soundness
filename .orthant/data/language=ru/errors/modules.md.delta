@@ -1,0 +1,458 @@
+orthant 1 language
+
+- # Soundness's modules, by number
++ # Модули Soundness по номерам
+
+- The number of each module in a bolt code: `↯/s.118.1` is the first error of Stratiform. A
+- module keeps its number for good, and a new module takes the next one.
++ Номер каждого модуля в коде bolt: `↯/s.118.1` — первая ошибка Stratiform. Модуль сохраняет свой
++ номер навсегда, а новый модуль получает следующий.
+
+- ```tabular
++ ```tabular
+
+- column  Number
+- column  Module
++ column  Номер
++ column  Модуль
+
+- row  1  Beneficence
++ row  1  Beneficence
+
+- row  2  Proscenium
++ row  2  Proscenium
+
+- row  3  Gigantism
++ row  3  Gigantism
+
+- row  4  Larceny
++ row  4  Larceny
+
+- row  5  Prepositional
++ row  5  Prepositional
+
+- row  6  Aperture
++ row  6  Aperture
+
+- row  7  Murmuration
++ row  7  Murmuration
+
+- row  8  Contextual
++ row  8  Contextual
+
+- row  9  Prescience
++ row  9  Prescience
+
+- row  10  Sedentary
++ row  10  Sedentary
+
+- row  11  Symbolism
++ row  11  Symbolism
+
+- row  12  Anticipation
++ row  12  Anticipation
+
+- row  13  Corpuscular
++ row  13  Corpuscular
+
+- row  14  Diuretic
++ row  14  Diuretic
+
+- row  15  Fulminate
++ row  15  Fulminate
+
+- row  16  Cardinality
++ row  16  Cardinality
+
+- row  17  Mercator
++ row  17  Mercator
+
+- row  18  Typonym
++ row  18  Typonym
+
+- row  19  Umbrageous
++ row  19  Umbrageous
+
+- row  20  Vacuous
++ row  20  Vacuous
+
+- row  21  Denominative
++ row  21  Denominative
+
+- row  22  Concordance
++ row  22  Concordance
+
+- row  23  Rudiments
++ row  23  Rudiments
+
+- row  24  Contingency
++ row  24  Contingency
+
+- row  25  Distillate
++ row  25  Distillate
+
+- row  26  Anamnesis
++ row  26  Anamnesis
+
+- row  27  Hypotenuse
++ row  27  Hypotenuse
+
+- row  28  Metamorphose
++ row  28  Metamorphose
+
+- row  29  Panopticon
++ row  29  Panopticon
+
+- row  30  Adversaria
++ row  30  Adversaria
+
+- row  31  Gnossienne
++ row  31  Gnossienne
+
+- row  32  Polyvinyl
++ row  32  Polyvinyl
+
+- row  33  Praxinoscope
++ row  33  Praxinoscope
+
+- row  34  Kaleidoscope
++ row  34  Kaleidoscope
+
+- row  35  Hieroglyph
++ row  35  Hieroglyph
+
+- row  36  Stenography
++ row  36  Stenography
+
+- row  37  Vexillology
++ row  37  Vexillology
+
+- row  38  Vicarious
++ row  38  Vicarious
+
+- row  39  Wisteria
++ row  39  Wisteria
+
+- row  40  Polaris
++ row  40  Polaris
+
+- row  41  Spectacular
++ row  41  Spectacular
+
+- row  42  Gossamer
++ row  42  Gossamer
+
+- row  43  Charisma
++ row  43  Charisma
+
+- row  44  Clavichord
++ row  44  Clavichord
+
+- row  45  Cosmopolite
++ row  45  Cosmopolite
+
+- row  46  Geodesy
++ row  46  Geodesy
+
+- row  47  Inimitable
++ row  47  Inimitable
+
+- row  48  Iridescence
++ row  48  Iridescence
+
+- row  49  Mosquito
++ row  49  Mosquito
+
+- row  50  Plutocrat
++ row  50  Plutocrat
+
+- row  51  Polysyllabic
++ row  51  Polysyllabic
+
+- row  52  Prophesy
++ row  52  Prophesy
+
+- row  53  Quantitative
++ row  53  Quantitative
+
+- row  54  Abacist
++ row  54  Abacist
+
+- row  55  Baroque
++ row  55  Baroque
+
+- row  56  Tessellate
++ row  56  Tessellate
+
+- row  57  Escritoire
++ row  57  Escritoire
+
+- row  58  Virility
++ row  58  Virility
+
+- row  59  Xenophile
++ row  59  Xenophile
+
+- row  60  Zephyrine
++ row  60  Zephyrine
+
+- row  61  Monotonous
++ row  61  Monotonous
+
+- row  62  Ambience
++ row  62  Ambience
+
+- row  63  Digression
++ row  63  Digression
+
+- row  64  Escapade
++ row  64  Escapade
+
+- row  65  Galilei
++ row  65  Galilei
+
+- row  66  Gastronomy
++ row  66  Gastronomy
+
+- row  67  Hellenism
++ row  67  Hellenism
+
+- row  68  Nomenclature
++ row  68  Nomenclature
+
+- row  69  Parasite
++ row  69  Parasite
+
+- row  70  Serpentine
++ row  70  Serpentine
+
+- row  71  Turbulence
++ row  71  Turbulence
+
+- row  72  Acyclicity
++ row  72  Acyclicity
+
+- row  73  Aviation
++ row  73  Aviation
+
+- row  74  Camouflage
++ row  74  Camouflage
+
+- row  75  Capricious
++ row  75  Capricious
+
+- row  76  Cartouche
++ row  76  Cartouche
+
+- row  77  Dendrology
++ row  77  Dendrology
+
+- row  78  Dissonance
++ row  78  Dissonance
+
+- row  79  Chiaroscuro
++ row  79  Chiaroscuro
+
+- row  80  Frontier
++ row  80  Frontier
+
+- row  81  Gesticulate
++ row  81  Gesticulate
+
+- row  82  Cacophony
++ row  82  Cacophony
+
+- row  83  Caesura
++ row  83  Caesura
+
+- row  84  Guillotine
++ row  84  Guillotine
+
+- row  85  Honeycomb
++ row  85  Honeycomb
+
+- row  86  Imperial
++ row  86  Imperial
+
+- row  87  Legerdemain
++ row  87  Legerdemain
+
+- row  88  Mandible
++ row  88  Mandible
+
+- row  89  Phoenicia
++ row  89  Phoenicia
+
+- row  90  Cataclysm
++ row  90  Cataclysm
+
+- row  91  Graffiti
++ row  91  Graffiti
+
+- row  92  Pneumatic
++ row  92  Pneumatic
+
+- row  93  Bitumen
++ row  93  Bitumen
+
+- row  94  Hallucination
++ row  94  Hallucination
+
+- row  95  Profanity
++ row  95  Profanity
+
+- row  96  Querencia
++ row  96  Querencia
+
+- row  97  Revolution
++ row  97  Revolution
+
+- row  98  Surveillance
++ row  98  Surveillance
+
+- row  99  Ulysses
++ row  99  Ulysses
+
+- row  100  Urticose
++ row  100  Urticose
+
+- row  101  Coaxial
++ row  101  Coaxial
+
+- row  102  Syndesis
++ row  102  Syndesis
+
+- row  103  Telekinesis
++ row  103  Telekinesis
+
+- row  104  Breviloquence
++ row  104  Breviloquence
+
+- row  105  Enigmatic
++ row  105  Enigmatic
+
+- row  106  Jacinta
++ row  106  Jacinta
+
+- row  107  Caduceus
++ row  107  Caduceus
+
+- row  108  Eucalyptus
++ row  108  Eucalyptus
+
+- row  109  Exoskeleton
++ row  109  Exoskeleton
+
+- row  110  Facsimile
++ row  110  Facsimile
+
+- row  111  Locomotion
++ row  111  Locomotion
+
+- row  112  Obligatory
++ row  112  Obligatory
+
+- row  113  Embarcadero
++ row  113  Embarcadero
+
+- row  114  Exegesis
++ row  114  Exegesis
+
+- row  115  Perihelion
++ row  115  Perihelion
+
+- row  116  Scintillate
++ row  116  Scintillate
+
+- row  117  Orthodoxy
++ row  117  Orthodoxy
+
+- row  118  Stratiform
++ row  118  Stratiform
+
+- row  119  Probably
++ row  119  Probably
+
+- row  120  Austronesian
++ row  120  Austronesian
+
+- row  121  Superlunary
++ row  121  Superlunary
+
+- row  122  Susurration
++ row  122  Susurration
+
+- row  123  Octogenarian
++ row  123  Octogenarian
+
+- row  124  Synesthesia
++ row  124  Synesthesia
+
+- row  125  Espionage
++ row  125  Espionage
+
+- row  126  Sibylline
++ row  126  Sibylline
+
+- row  127  Tarantula
++ row  127  Tarantula
+
+- row  128  Xylophone
++ row  128  Xylophone
+
+- row  129  Archimedes
++ row  129  Archimedes
+
+- row  130  Savagery
++ row  130  Savagery
+
+- row  131  Tasseomancy
++ row  131  Tasseomancy
+
+- row  132  Yossarian
++ row  132  Yossarian
+
+- row  133  Ultimatum
++ row  133  Ultimatum
+
+- row  134  Ypsiloid
++ row  134  Ypsiloid
+
+- row  135  Apoplexy
++ row  135  Apoplexy
+
+- row  136  Zeppelin
++ row  136  Zeppelin
+
+- row  137  Anthology
++ row  137  Anthology
+
+- row  138  Burdock
++ row  138  Burdock
+
+- row  139  Degustation
++ row  139  Degustation
+
+- row  140  Ethereal
++ row  140  Ethereal
+
+- row  141  Harlequin
++ row  141  Harlequin
+
+- row  142  Punctuation
++ row  142  Punctuation
+
+- row  143  Delicious
++ row  143  Delicious
+
+- row  144  Hyperbole
++ row  144  Hyperbole
+
+- row  145  Vivisection
++ row  145  Vivisection
+
+- row  146  Abscission
++ row  146  Abscission
+
+- ```
++ ```

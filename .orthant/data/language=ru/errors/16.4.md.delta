@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.16.4` — Value below its lower bound
++ # `↯/s.16.4` — Значение ниже своей нижней границы
+
+- Raised at compiletime when a literal is less than the minimum its bounded type permits.
++ Порождается во время компиляции, когда литерал меньше минимума, допускаемого его ограниченным
++ типом.
+
+- ## Cause
++ ## Причина
+
+- A bounded numeric type carries its range in its type, so a literal outside the range is
+- rejected where it is written.
++ Ограниченный числовой тип несёт свой диапазон в своём типе, поэтому литерал вне диапазона
++ отвергается там, где он записан.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.16.4] the value -0.5 is less than the lower bound for this value, 0.0
++ [↯/s.16.4] the value -0.5 is less than the lower bound for this value, 0.0
+
+= [↯/s.16.4] the value -0.5 is less than the lower bound for this value, 0.0
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Use a value within the range, or widen the type's bounds.
++ Используйте значение внутри диапазона или расширьте границы типа.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/cardinality/src/core/cardinality.internal.scala`
++ - Исходный код: `lib/cardinality/src/core/cardinality.internal.scala`

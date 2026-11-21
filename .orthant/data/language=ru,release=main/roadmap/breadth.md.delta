@@ -1,0 +1,26 @@
+orthant 1 language
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and
+- round-trips the RFC 7515/7516 example vectors.
++ Готово, когда: модуль поставляется с тестами, страницами ошибок и темой в `doc/work/soundness/modules/` и
++ проходит круговой путь на примерах векторов из RFC 7515/7516.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and
+- passes the standard TOML compliance suite.
++ Готово, когда: модуль поставляется с тестами, страницами ошибок и темой в `doc/work/soundness/modules/` и
++ проходит стандартный набор тестов на соответствие TOML.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and a
+- scripted registration-and-assertion ceremony passes against a reference authenticator.
++ Готово, когда: модуль поставляется с тестами, страницами ошибок и темой в `doc/work/soundness/modules/`, а
++ сценарий церемонии регистрации и подтверждения проходит с эталонным аутентификатором.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and
+- interoperates with a reference HTTP/3 server and client.
++ Готово, когда: модуль поставляется с тестами, страницами ошибок и темой в `doc/work/soundness/modules/` и
++ взаимодействует с эталонными сервером и клиентом HTTP/3.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and a
+- scripted session passes against a reference IMAP server.
++ Готово, когда: модуль поставляется с тестами, страницами ошибок и темой в `doc/work/soundness/modules/`, а
++ сценарий сессии проходит с эталонным сервером IMAP.

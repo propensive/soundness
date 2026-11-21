@@ -1,0 +1,247 @@
+orthant 1 language
+
+- # API Coherence
++ # Согласованность API
+
+- Predictability is a safety property. A developer — or an agent — who has learned one corner of
+- Soundness should be able to guess the next corner correctly: similar operations share one API,
+- variation is expressed in parameters rather than in names, and names are honest. If two
+- declarations share a name, they are the same thing; if they differ in name, they differ in
+- meaning. An exported surface that violates these rules taxes every user on every lookup, and it
+- taxes agents hardest, because agents generalise aggressively from patterns.
++ Предсказуемость — это свойство безопасности. Разработчик — или агент, — изучивший один уголок
++ Soundness, должен уметь правильно угадать следующий: схожие операции разделяют один API,
++ вариации выражаются параметрами, а не именами, и имена честны. Если у двух объявлений одно имя,
++ это одно и то же; если их имена различаются, различается и смысл. Экспортируемая поверхность,
++ нарушающая эти правила, облагает налогом каждого пользователя при каждом поиске, а агентов —
++ сильнее всего, потому что агенты агрессивно обобщают по образцам.
+
+- The surface has already been measured: `doc/api-reduction-candidates.md` inventories every
+- identifier the `soundness` package exports, and classifies the reduction candidates:
++ Поверхность уже измерена: `doc/api-reduction-candidates.md` перечисляет каждый
++ идентификатор, который экспортирует пакет `soundness`, и классифицирует кандидатов на
++ сокращение:
+
+= identifier the `soundness` package exports, and classifies the reduction candidates:
+=
+- ```tabular
++ ```tabular
+
+- column  Category
+- column  Candidates
+- column  Item
+- row  C1  multi-word names that should nest inside the types that prefix them  api-1
+- row  C2  non-established abbreviations  api-3
+- row  C3  typeclass-backing entities that need not be exported at all  api-3
+- row  C4  the homonym and synonym tables, where one name means two things or two names mean one  api-2
++ column  Категория
++ column  Кандидаты
++ column  Пункт
++ row  C1  многословные имена, которые должны быть вложены в типы, служащие им префиксом  api-1
++ row  C2  неустоявшиеся сокращения  api-3
++ row  C3  сущности, стоящие за классами типов, которые вообще не нужно экспортировать  api-3
++ row  C4  таблицы омонимов и синонимов, где одно имя означает две вещи или два имени — одну  api-2
+
+= row  C4  the homonym and synonym tables, where one name means two things or two names mean one  api-2
+- ```
++ ```
+
+- That inventory is scaffolding, not documentation: this track applies it category by category,
+- and ends by deleting it. The file's absence is the completion signal.
++ Этот перечень — каркас, а не документация: это направление применяет его категория за
++ категорией и завершается его удалением. Отсутствие файла — сигнал завершения.
+
+- The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
++ Пункты направления с их горизонтами и жёсткими зависимостями; [`status.tel`](status.tel) фиксирует, на каком этапе находится каждый:
+
+= The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+=
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Title
+- column  Horizon
+- column  Needs
+- row  api-1  multi-word names nest  near
+- row  api-2  homonyms and synonyms resolve  near
+- row  api-3  the backing entities demote  mid
+- row  api-4  naming conformance is checked  mid
+- row  api-5  the inventory is deleted  long  api-1, api-2, api-3, api-7
+- row  api-6  surface changes flow through the migration convention  long  dist-2
+- row  api-7  over-generic top-level names nest  mid
++ column  Пункт
++ column  Название
++ column  Горизонт
++ column  Зависит от
++ row  api-1  многословные имена вложены  ближний
++ row  api-2  омонимы и синонимы устранены  ближний
++ row  api-3  стоящие за классами типов сущности понижены  средний
++ row  api-4  соответствие именованию проверяется  средний
++ row  api-5  перечень удалён  дальний  api-1, api-2, api-3, api-7
++ row  api-6  изменения поверхности проходят через соглашение о миграции  дальний  dist-2
++ row  api-7  слишком общие имена верхнего уровня вложены  средний
+
+= row  api-7  over-generic top-level names nest  mid
+- ```
++ ```
+
+- ## api-1: multi-word names nest
++ ## api-1: многословные имена вложены
+
+- Horizon: near
+- Baseline: 4 renamed names still defined at top level (`BlockCipherMode`, `BlockCipherPadding`, `SyntaxMatcher`, `TlsAcceptance`); 61 prefix families with 210 names, plus 216 singletons, still listed (measured 2026-09-25)
++ Горизонт: ближний
++ Исходный уровень: 4 переименованных имени по-прежнему определены на верхнем уровне (`BlockCipherMode`, `BlockCipherPadding`, `SyntaxMatcher`, `TlsAcceptance`); всё ещё перечислены 61 семейство префиксов с 210 именами плюс 216 одиночных (измерено 2026-09-25)
+
+- The C1 candidates — multi-word names whose prefix already names a same-module type — move
+- inside that type: `Play.Scene`, not `PlayScene`. Each move ships with migration instructions once
+- `dist-2` establishes the convention.
++ Кандидаты C1 — многословные имена, префикс которых уже называет тип того же модуля, —
++ переносятся внутрь этого типа: `Play.Scene`, а не `PlayScene`. Каждый перенос поставляется с
++ инструкциями по миграции, как только `dist-2` установит соглашение.
+
+- Done when: the rename table in `doc/api-nesting-proposal.md` (which superseded the C1
+- section) is fully applied, and the inventory's "Remaining names by prefix family" section
+- lists no name outside "Reviewed items which should not be moved".
++ Готово, когда: таблица переименований в `doc/api-nesting-proposal.md` (которая заменила
++ раздел C1) применена полностью, а раздел перечня «Remaining names by prefix family» не
++ перечисляет ни одного имени вне «Reviewed items which should not be moved».
+
+- ## api-2: homonyms and synonyms resolve
++ ## api-2: омонимы и синонимы устранены
+
+- Horizon: near
+- Baseline: 12 homonym pairs and 1 synonym family (`*Parser`) listed; `etc/check-given-uniqueness.py` checks given names only, not same-name-same-thing (measured 2026-09-25)
++ Горизонт: ближний
++ Исходный уровень: перечислены 12 пар омонимов и 1 семейство синонимов (`*Parser`); `etc/check-given-uniqueness.py` проверяет только имена given-экземпляров, но не правило «одно имя — одна вещь» (измерено 2026-09-25)
+
+- Every C4-homonym pair either unifies into one declaration or one side renames; every C4-synonym
+- family collapses onto a single term for the role. Same name, same thing; different name,
+- different thing.
++ Каждая пара омонимов C4 либо объединяется в одно объявление, либо одна из сторон
++ переименовывается; каждое семейство синонимов C4 сводится к одному термину для этой роли. Одно
++ имя — одна вещь; разные имена — разные вещи.
+
+- Done when: the C4-homonym and C4-synonym sections of the inventory are empty, and a
+- same-name-same-thing check runs in the ordinary build (extending `make check-givens`).
++ Готово, когда: разделы омонимов C4 и синонимов C4 в перечне пусты, а проверка «одно имя — одна
++ вещь» выполняется в обычной сборке (как расширение `make check-givens`).
+
+- ## api-3: the backing entities demote
++ ## api-3: стоящие за классами типов сущности понижены
+
+- Horizon: mid
+- Baseline: 3 C2 abbreviations listed (`AddOp`, `CellRef`, `Err`) (measured 2026-09-25)
++ Горизонт: средний
++ Исходный уровень: перечислены 3 сокращения C2 (`AddOp`, `CellRef`, `Err`) (измерено 2026-09-25)
+
+- The C3 candidates — typeclass-backing entities and nested derivation objects that exist to be
+- summoned, not named — are demoted, inlined or de-exported, and the C2 abbreviations are spelled
+- out or established.
++ Кандидаты C3 — сущности, стоящие за классами типов, и вложенные объекты деривации, которые
++ существуют, чтобы их призывали, а не называли, — понижаются, встраиваются или исключаются из
++ экспорта, а сокращения C2 записываются полностью или становятся устоявшимися.
+
+- Done when: the C2 section of the inventory is empty. (C3 and C3b were superseded by
+- `doc/api-nesting-proposal.md` and closed with it.)
++ Готово, когда: раздел C2 в перечне пуст. (C3 и C3b были заменены
++ `doc/api-nesting-proposal.md` и закрыты вместе с ним.)
+
+- ## api-4: naming conformance is checked
++ ## api-4: соответствие именованию проверяется
+
+= ## api-4: naming conformance is checked
+=
+- Horizon: mid
++ Горизонт: средний
+
+- The naming standards in `doc/standards/naming.md` and `doc/standards/given-naming.md` gain a
+- conformance sweep, so that drift back into incoherence is caught mechanically rather than in
+- review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
+- nothing checks `naming.md`, though flare's `S1.1` rule enforces its one `unsafe…` clause.
++ Стандарты именования в `doc/standards/naming.md` и `doc/standards/given-naming.md` получают
++ проверку соответствия, чтобы дрейф обратно к несогласованности обнаруживался механически, а не
++ при ревью. `etc/check-given-uniqueness.py`, запускаемый `make build`, покрывает половину,
++ относящуюся к именованию given-экземпляров; `naming.md` не проверяет ничто, хотя правило
++ `S1.1` из flare обеспечивает его единственный пункт об `unsafe…`.
+
+- Done when: a checked-in sweep script reports zero deviations from the naming standards, and
+- runs in the ordinary build.
++ Готово, когда: зафиксированный в репозитории скрипт проверки сообщает о нуле отклонений от
++ стандартов именования и выполняется в обычной сборке.
+
+- ## api-5: the inventory is deleted
++ ## api-5: перечень удалён
+
+- Horizon: long
+- Needs: api-1, api-2, api-3, api-7
++ Горизонт: дальний
++ Зависит от: api-1, api-2, api-3, api-7
+
+- When every category is drained, the scaffolding comes down.
++ Когда все категории вычерпаны, каркас снимается.
+
+- Done when:
++ Готово, когда:
+
+-     test -f doc/api-reduction-candidates.md || echo absent    # absent
++     test -f doc/api-reduction-candidates.md || echo absent    # absent
+
+- ## api-6: surface changes flow through the migration convention
++ ## api-6: изменения поверхности проходят через соглашение о миграции
+
+- Horizon: long
+- Needs: dist-2
++ Горизонт: дальний
++ Зависит от: dist-2
+
+- From here on, coherence is maintained rather than restored: any change to the exported surface
+- ships with agent-executable migration instructions, per the convention `dist-2` defines. There
+- is no fear of improving an API, because migration is cheap.
++ С этого момента согласованность поддерживается, а не восстанавливается: любое изменение
++ экспортируемой поверхности поставляется с исполнимыми агентом инструкциями по миграции согласно
++ соглашению, которое определяет `dist-2`. Улучшать API не страшно, потому что миграция дешева.
+
+- Done when: the `dist-2` CI check has been enforced on every surface-changing pull request for
+- ten consecutive releases.
++ Готово, когда: проверка CI из `dist-2` применяется к каждому пул-реквесту, меняющему
++ поверхность, на протяжении десяти выпусков подряд.
+
+- ## api-7: over-generic top-level names nest
++ ## api-7: слишком общие имена верхнего уровня вложены
+
+- Horizon: mid
+- Baseline: 6 names exported into the umbrella by two libraries each (`Namespace`, `Commandline`, `Pane`, `Arithmetic`, `Native`, `Bytes`); 2 homonyms hidden by `@unexported` (`Tag`, `Renderable`); about 110 single-word candidates in rule R8's tables (measured 2026-11-12)
++ Горизонт: средний
++ Исходный уровень: 6 имён экспортируются в зонтичный модуль двумя библиотеками каждое (`Namespace`, `Commandline`, `Pane`, `Arithmetic`, `Native`, `Bytes`); 2 омонима скрыты с помощью `@unexported` (`Tag`, `Renderable`); около 110 однословных кандидатов в таблицах правила R8 (измерено 2026-11-12)
+
+- api-1 nests a name whose prefix repeats its context. This item covers the case with no prefix
+- to strip: a single word whose bare spelling claims a general concept when it names one
+- library's notion. ultimatum's layout tree is not *the* `Frame`. Each candidate is judged
+- case by case against rule R8 in `doc/api-nesting-proposal.md`. Convenience keeps a name
+- top-level only when it is the library's principal type, or a concept that really is general.
++ api-1 вкладывает имя, префикс которого повторяет его контекст. Этот пункт охватывает случай,
++ когда снимать нечего: одно слово, голое написание которого претендует на общее понятие, хотя
++ называет понятие одной библиотеки. Дерево раскладки ultimatum — это не *тот самый* `Frame`.
++ Каждый кандидат оценивается отдельно по правилу R8 в `doc/api-nesting-proposal.md`. Удобство
++ оставляет имя на верхнем уровне, только когда это главный тип библиотеки или действительно
++ общее понятие.
+
+- Progress (2026-11-12): no name is exported by more than one library; of the R8 high-confidence
+- table, nineteen rows are done, three deferred for a ruling (ultimatum's gauges, honeycomb's
+- attribute-value enums, savagery's `Figure` taxonomy), and xylophone's `Tag`/`Renderable` are
+- blocked by `object Xml extends Tag.Container`.
++ Ход работы (2026-11-12): ни одно имя не экспортируется более чем одной библиотекой; из таблицы
++ высокой уверенности R8 девятнадцать строк выполнены, три отложены до решения (индикаторы
++ ultimatum, перечисления значений атрибутов honeycomb, таксономия `Figure` в savagery), а
++ `Tag`/`Renderable` из xylophone заблокированы определением `object Xml extends Tag.Container`.
+
+- Done when: no name is exported into `package soundness` by more than one library, no
+- `@unexported` exists only to dodge a clash, and every row of the R8 tables in
+- `doc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept
+- top-level" list.
++ Готово, когда: ни одно имя не экспортируется в `package soundness` более чем одной
++ библиотекой, ни одна аннотация `@unexported` не существует лишь для того, чтобы избежать
++ конфликта, и каждая строка таблиц R8 в `doc/api-nesting-proposal.md` либо применена, либо
++ перенесена в её список «Reviewed and kept top-level».

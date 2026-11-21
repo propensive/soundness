@@ -1,0 +1,3408 @@
+orthant 1 language
+
+- ## JSON
++ ## JSON
+
+- ### About
++ ### Обзор
+
+- [JSON](https://en.wikipedia.org/wiki/JSON) text parses into a `Json` value, and a `Json` value
+- converts to and from ordinary Scala types. A case class needs no annotation and no hand-written
+- codec: its encoder and decoder are [derived][derivation] from its fields.
++ Текст [JSON](https://en.wikipedia.org/wiki/JSON) разбирается в значение `Json`, а значение `Json`
++ преобразуется в обычные типы Scala и обратно. Case-классу не нужны ни аннотации, ни написанный
++ вручную кодек: его кодировщик и декодер [выводятся][деривация] из его полей.
+
+- Every conversion is checked. Asking a number for a string, or a document for a field it lacks,
+- raises a typed error which says what was wrong and where. It never yields a `null`, a default,
+- or a wrong answer.
++ Каждое преобразование проверяется. Если запросить у числа строку или у документа отсутствующее
++ в нём поле, порождается типизированная ошибка, которая говорит, что не так и где. Результатом
++ никогда не бывает `null`, значение по умолчанию или неверный ответ.
+
+- A document can also be validated against a schema derived from a Scala type. Once it is
+- validated, its fields can be navigated with the compiler checking each step.
++ Документ также можно проверить по схеме, выведенной из типа Scala. После проверки по его полям
++ можно перемещаться, и компилятор проверяет каждый шаг.
+
+- ### On JSON
++ ### О JSON
+
+- Most libraries treat JSON loosely. A parsed document is an untyped tree, and fields are fished
+- out of it by string keys. When the data does not hold what the code expects, the mismatch
+- surfaces as a `null`, a failed cast or a silent default, often far from where it began.
++ Большинство библиотек обращаются с JSON вольно. Разобранный документ — нетипизированное дерево,
++ и поля выуживаются из него по строковым ключам. Когда данные содержат не то, чего ожидает код,
++ несоответствие всплывает как `null`, неудачное приведение типа или молчаливое значение по
++ умолчанию, часто далеко от того места, где оно возникло.
+
+- Here the structure and the types stay together:
++ Здесь структура и типы остаются вместе:
+
+- - Parsing gives a `Json` value, which is [immutable]: every operation on it returns a new value,
+-   in keeping with [immutability](../../philosophy/immutability.md).
+- - Converting between `Json` and a Scala type is done by an encoder or decoder which the compiler
+-   derives from the type's shape. A case class becomes an object, and an enumeration becomes a
+-   tagged union, so there is nothing to write and nothing to keep in step by hand.
+- - A conversion that cannot be made raises a `Json.Error`. The error names its reason and, where
+-   it can, the position in the document.
+- - The same derivation produces a schema. A document checked against the schema can then be read
+-   with the compiler rejecting any path the schema does not allow.
++ - Разбор даёт значение `Json`, которое [неизменяемо][неизменяемый]: каждая операция над ним
++   возвращает новое значение, в согласии с [неизменяемостью](../../philosophy/immutability.md).
++ - Преобразование между `Json` и типом Scala выполняет кодировщик или декодер, который компилятор
++   выводит из формы типа. Case-класс становится объектом, а перечисление — размеченным
++   объединением, так что писать нечего и вручную согласовывать тоже нечего.
++ - Преобразование, которое невозможно выполнить, порождает `Json.Error`. Ошибка называет свою
++   причину и, где возможно, позицию в документе.
++ - Та же деривация производит схему. Документ, проверенный по схеме, затем можно читать, и
++   компилятор отвергнет любой путь, который схема не допускает.
+
+- The sections below begin with the everyday work of parsing, decoding and encoding. Schemas,
+- validation, streaming and the faster direct codecs come later, and each can be read on its own.
++ Разделы ниже начинаются с повседневной работы: разбора, декодирования и кодирования. Схемы,
++ проверка, потоковая обработка и более быстрые прямые кодеки идут позже, и каждый раздел можно
++ читать отдельно.
+
+- Everything comes from the `soundness` package. Working with JSON also depends on a few choices,
+- each made by importing a [given] from a [choice package]:
++ Всё берётся из пакета `soundness`. Работа с JSON также зависит от нескольких выборов, каждый из
++ которых делается импортом [given] из [пакета выбора][пакет выбора]:
+
+= each made by importing a [given] from a [choice package]:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  Decides
+- row  `codepages.utf8Codepage`  how JSON text is written as bytes
+- row  `errorDiagnostics.stackTracesDiagnostics`  that an error records a stack trace
+- row  `formatting.compactJsonFormatting`  that JSON is written without whitespace; [Formatting](#formatting) has the alternative
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception; [errors](errors.md#choosing-a-strategy) has the other strategies
+- row  `stdios.javaLangSystemStdio`  where the samples print their results
++ column  Импорт
++ column  Решает
++ row  `codepages.utf8Codepage`  как текст JSON записывается в байты
++ row  `errorDiagnostics.stackTracesDiagnostics`  что ошибка записывает трассировку стека
++ row  `formatting.compactJsonFormatting`  что JSON записывается без пробельных символов; альтернатива — в разделе [Форматирование](#formatting)
++ row  `strategies.throwUnsafely`  что ошибка выбрасывается как исключение; другие стратегии — в разделе [ошибки](errors.md#choosing-a-strategy)
++ row  `stdios.javaLangSystemStdio`  куда примеры выводят свои результаты
+
+= row  `stdios.javaLangSystemStdio`  where the samples print their results
+- ```
++ ```
+
+- ### Parsing
++ ### Разбор
+
+- `read[Json]` parses any source of text into a `Json` value:
++ `read[Json]` разбирает любой источник текста в значение `Json`:
+
+= `read[Json]` parses any source of text into a `Json` value:
+=
+- ```scala
++ ```scala
+
+- val document = t"""{"name": "Hamlet", "age": 30}""".read[Json]
++ val document = t"""{"name": "Hamlet", "age": 30}""".read[Json]
+
+= val document = t"""{"name": "Hamlet", "age": 30}""".read[Json]
+- ```
++ ```
+
+- `show` writes a `Json` value back out as text, in the formatting in scope:
++ `show` записывает значение `Json` обратно в текст, в форматировании из области видимости:
+
+= `show` writes a `Json` value back out as text, in the formatting in scope:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `show` writes a `Json` value back out as text, in the formatting in scope:
+=
+= ```scala fuel
+- run
++ run
+
+= `show` writes a `Json` value back out as text, in the formatting in scope:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(document.show)
++ Out.println(document.show)
+
+= Out.println(document.show)
+- ```
++ ```
+
+- Parsing fails on malformed input, and the failure goes to the [strategy] in scope. Under
+- `throwUnsafely`, that means an exception which says what the parser found and where:
++ На некорректных входных данных разбор завершается неудачей, и неудача передаётся [стратегии][стратегия] в
++ области видимости. При `throwUnsafely` это означает исключение, которое говорит, что парсер
++ нашёл и где:
+
+= `throwUnsafely`, that means an exception which says what the parser found and where:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `throwUnsafely`, that means an exception which says what the parser found and where:
+=
+= ```scala fuel
+- run
++ run
+
+= `throwUnsafely`, that means an exception which says what the parser found and where:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= `throwUnsafely`, that means an exception which says what the parser found and where:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"""{"name": "Hamlet", "age": }""".read[Json]
++ t"""{"name": "Hamlet", "age": }""".read[Json]
+
+= t"""{"name": "Hamlet", "age": }""".read[Json]
+- ```
++ ```
+
+- ### Reading values
++ ### Чтение значений
+
+- `as` converts a `Json` value to a Scala type. Primitive types, collections and maps are all read
+- directly:
++ `as` преобразует значение `Json` в тип Scala. Примитивные типы, коллекции и отображения читаются
++ напрямую:
+
+= directly:
+=
+- ```scala fuel
++ ```scala fuel
+
+= directly:
+=
+= ```scala fuel
+- run
++ run
+
+= directly:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"42".read[Json].as[Int].show)
++ Out.println(t"42".read[Json].as[Int].show)
+
+- Out.println(t"3.14".read[Json].as[Double].inspect)
++ Out.println(t"3.14".read[Json].as[Double].inspect)
+
+- Out.println(t""""hello"""".read[Json].as[Text])
++ Out.println(t""""hello"""".read[Json].as[Text])
+
+- Out.println(t"true".read[Json].as[Boolean].inspect)
++ Out.println(t"true".read[Json].as[Boolean].inspect)
+
+- Out.println(t"[1, 2, 3]".read[Json].as[List[Int]].inspect)
++ Out.println(t"[1, 2, 3]".read[Json].as[List[Int]].inspect)
+
+- Out.println(t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].inspect)
++ Out.println(t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].inspect)
+
+= Out.println(t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].inspect)
+- ```
++ ```
+
+- JSON's `null` reads as `Unit`, and as the absent value of an [optional] type.
++ `null` в JSON читается как `Unit` и как отсутствующее значение [опционального][опциональный]
++ типа.
+
+- Asking for the wrong type is an error, not a conversion. A string is never quietly turned into a
+- number:
++ Запрос неверного типа — ошибка, а не преобразование. Строка никогда не превращается тихо в
++ число:
+
+= number:
+=
+- ```scala fuel
++ ```scala fuel
+
+= number:
+=
+= ```scala fuel
+- run
++ run
+
+= number:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= number:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t""""hello"""".read[Json].as[Int]
++ t""""hello"""".read[Json].as[Int]
+
+= t""""hello"""".read[Json].as[Int]
+- ```
++ ```
+
+- ### Case classes and enumerations
++ ### Case-классы и перечисления
+
+- A case class takes part in JSON as it stands. Its decoder is derived from its fields, so an
+- object reads into a value:
++ Case-класс участвует в JSON как есть. Его декодер выводится из его полей, поэтому объект
++ читается в значение:
+
+= object reads into a value:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
++ val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
+
+= val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
+- ```
++ ```
+
+= val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(horatio.inspect)
++ Out.println(horatio.inspect)
+
+= Out.println(horatio.inspect)
+- ```
++ ```
+
+- Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
++ Его кодировщик выводится так же. `in[Json]` кодирует значение как `Json`:
+
+= Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
+=
+= ```scala fuel
+- run
++ run
+
+= Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Person(t"Hamlet", 30).in[Json].show)
++ Out.println(Person(t"Hamlet", 30).in[Json].show)
+
+= Out.println(Person(t"Hamlet", 30).in[Json].show)
+- ```
++ ```
+
+- Nested case classes, and collections of them, derive in turn, so a whole structure converts in
+- one step:
++ Вложенные case-классы и их коллекции выводятся в свою очередь, поэтому вся структура
++ преобразуется за один шаг:
+
+= one step:
+=
+- ```scala
++ ```scala
+
+- case class Troupe(players: List[Person], director: Person, prompter: Option[Person])
++ case class Troupe(players: List[Person], director: Person, prompter: Option[Person])
+
+- val troupe =
++ val troupe =
+
+-   t"""{"players":[{"name":"Bottom","age":35}],"director":{"name":"Quince","age":40}}"""
++   t"""{"players":[{"name":"Bottom","age":35}],"director":{"name":"Quince","age":40}}"""
+
+-   . read[Troupe in Json]
++   . read[Troupe in Json]
+
+=   . read[Troupe in Json]
+- ```
++ ```
+
+=   . read[Troupe in Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   . read[Troupe in Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   . read[Troupe in Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(troupe.inspect)
++ Out.println(troupe.inspect)
+
+= Out.println(troupe.inspect)
+- ```
++ ```
+
+- `read[Troupe in Json]` parses and decodes together. `in`, `as` and `read` are the same vocabulary
+- for every format, and between them they give each route between text, `Json` and a Scala type:
++ `read[Troupe in Json]` разбирает и декодирует вместе. `in`, `as` и `read` — один и тот же словарь
++ для каждого формата, и вместе они дают каждый маршрут между текстом, `Json` и типом Scala:
+
+= for every format, and between them they give each route between text, `Json` and a Scala type:
+=
+- ```tabular
++ ```tabular
+
+- column  Expression
+- column  Does
+- column  Yields
+- row  `value.in[Json]`  encodes a value  `Json`
+- row  `json.as[Type]`  decodes a `Json` value  `Type`
+- row  `text.read[Json]`  parses text  `Json`
+- row  `text.read[Type in Json]`  parses and decodes in one step  `Type`
+- row  `value.in[Text over Json]`  encodes and renders  `Text`
+- row  `value.in[Data over Json]`  encodes and renders as bytes  `Data`
++ column  Выражение
++ column  Делает
++ column  Даёт
++ row  `value.in[Json]`  кодирует значение  `Json`
++ row  `json.as[Type]`  декодирует значение `Json`  `Type`
++ row  `text.read[Json]`  разбирает текст  `Json`
++ row  `text.read[Type in Json]`  разбирает и декодирует за один шаг  `Type`
++ row  `value.in[Text over Json]`  кодирует и отображает  `Text`
++ row  `value.in[Data over Json]`  кодирует и отображает как байты  `Data`
+
+= row  `value.in[Data over Json]`  encodes and renders as bytes  `Data`
+- ```
++ ```
+
+- `in[Text over Json]` writes in the `Json.Formatting` in scope, exactly as `show` does, and
+- `in[Data over Json]` writes the same text as bytes in the `Codepage` in scope:
++ `in[Text over Json]` записывает в `Json.Formatting` из области видимости, ровно как `show`, а
++ `in[Data over Json]` записывает тот же текст как байты в `Codepage` из области видимости:
+
+= `in[Data over Json]` writes the same text as bytes in the `Codepage` in scope:
+=
+- ```scala
++ ```scala
+
+- val written: Text = Person(t"Hamlet", 30).in[Text over Json]
++ val written: Text = Person(t"Hamlet", 30).in[Text over Json]
+
+= val written: Text = Person(t"Hamlet", 30).in[Text over Json]
+- ```
++ ```
+
+= val written: Text = Person(t"Hamlet", 30).in[Text over Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val written: Text = Person(t"Hamlet", 30).in[Text over Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val written: Text = Person(t"Hamlet", 30).in[Text over Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(written)
++ Out.println(written)
+
+= Out.println(written)
+- ```
++ ```
+
+- [Derivation](derivation.md#when-derivation-fails) explains what happens when a field's type has
+- no decoder, and
+- [Decoding](decoding.md) describes the decoders that turn a single text value, such as a JSON
+- string, into a type of one's own.
++ В разделе [Деривация](derivation.md#when-derivation-fails) объясняется, что происходит, когда у
++ типа поля нет декодера, а
++ в разделе [Декодирование](decoding.md) описаны декодеры, которые превращают одно текстовое
++ значение, например строку JSON, в собственный тип.
+
+- ### Optional fields and defaults
++ ### Опциональные поля и значения по умолчанию
+
+- A field typed as `Optional` is left out of the output when it is absent, and reads as `Unset`
+- when the document omits it. `Option` behaves the same way, with `None`:
++ Поле с типом `Optional` опускается в выводе, когда оно отсутствует, и читается как `Unset`, когда
++ документ его не содержит. `Option` ведёт себя так же, с `None`:
+
+= when the document omits it. `Option` behaves the same way, with `None`:
+=
+- ```scala
++ ```scala
+
+- case class Profile(name: Text, age: Optional[Int])
++ case class Profile(name: Text, age: Optional[Int])
+
+= case class Profile(name: Text, age: Optional[Int])
+- ```
++ ```
+
+= case class Profile(name: Text, age: Optional[Int])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Profile(name: Text, age: Optional[Int])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Profile(name: Text, age: Optional[Int])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Profile(t"Fool", Unset).in[Json].show)
++ Out.println(Profile(t"Fool", Unset).in[Json].show)
+
+- Out.println(t"""{"name": "Fool"}""".read[Json].as[Profile].inspect)
++ Out.println(t"""{"name": "Fool"}""".read[Json].as[Profile].inspect)
+
+= Out.println(t"""{"name": "Fool"}""".read[Json].as[Profile].inspect)
+- ```
++ ```
+
+- A field with a default value takes that default when the document omits it:
++ Поле со значением по умолчанию принимает это значение, когда документ его не содержит:
+
+= A field with a default value takes that default when the document omits it:
+=
+- ```scala
++ ```scala
+
+- case class Account(name: Text, age: Int = 18)
++ case class Account(name: Text, age: Int = 18)
+
+= case class Account(name: Text, age: Int = 18)
+- ```
++ ```
+
+= case class Account(name: Text, age: Int = 18)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Account(name: Text, age: Int = 18)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Account(name: Text, age: Int = 18)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"""{"name": "Fool"}""".read[Json].as[Account].inspect)
++ Out.println(t"""{"name": "Fool"}""".read[Json].as[Account].inspect)
+
+= Out.println(t"""{"name": "Fool"}""".read[Json].as[Account].inspect)
+- ```
++ ```
+
+- A field which is neither optional nor defaulted is required. A document without it does not
+- decode:
++ Поле, которое не является ни опциональным, ни имеющим значение по умолчанию, обязательно.
++ Документ без него не декодируется:
+
+= decode:
+=
+- ```scala fuel
++ ```scala fuel
+
+= decode:
+=
+= ```scala fuel
+- run
++ run
+
+= decode:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= decode:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"""{"age": 40}""".read[Json].as[Person]
++ t"""{"age": 40}""".read[Json].as[Person]
+
+= t"""{"age": 40}""".read[Json].as[Person]
+- ```
++ ```
+
+- [Optional values](optional-values.md) describes `Optional` and `Unset` in full.
++ В разделе [Опциональные значения](optional-values.md) `Optional` и `Unset` описаны полностью.
+
+- #### Controlling optionality
++ #### Управление опциональностью
+
+- An `Optional` field answers three questions. Each answer has a default, which a given from the
+- `optionalityOptions` package overrides:
++ Поле `Optional` отвечает на три вопроса. У каждого ответа есть значение по умолчанию, которое
++ переопределяет given из пакета `optionalityOptions`:
+
+= `optionalityOptions` package overrides:
+=
+- ```tabular
++ ```tabular
+
+- column  A key which is
+- column  Reads as
+- column  Unless
+- row  omitted from the document  `Unset`  `strictJsonAbsence` makes it an error
+- row  an explicit null  `Unset`  `strictJsonNulls` hands it to the inner decoder
+- row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
++ column  Ключ, который
++ column  Читается как
++ column  Если только
++ row  отсутствует в документе  `Unset`  `strictJsonAbsence` не делает это ошибкой
++ row  явный null  `Unset`  `strictJsonNulls` не передаёт его внутреннему декодеру
++ row  присутствует, но отвергнут внутренним декодером  ошибка  `lenientJsonFaults` не читает его как `Unset`
+
+= row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
+- ```
++ ```
+
+- A strict absence raises the reason `Absent`. A strict null is rejected by the inner decoder, as
+- it would be for any other field. A lenient fault is read as `Unset` and reports nothing. Each is
+- a separate given, so one can be varied alone:
++ Строгое отсутствие порождает причину `Absent`. Строгий null отвергается внутренним декодером, как
++ это было бы для любого другого поля. Нестрогий сбой читается как `Unset` и ни о
++ чём не сообщает. Каждый вариант — отдельный given, поэтому их можно менять по одному:
+
+= a separate given, so one can be varied alone:
+=
+- ```scala
++ ```scala
+
+- val strict =
++ val strict =
+
+-   import optionalityOptions.strictJsonAbsence
++   import optionalityOptions.strictJsonAbsence
+
+-   capture[Json.Error](t"""{"name": "Fool"}""".read[Json].as[Profile]).reason
++   capture[Json.Error](t"""{"name": "Fool"}""".read[Json].as[Profile]).reason
+
+- val lenient =
++ val lenient =
+
+-   import optionalityOptions.lenientJsonFaults
++   import optionalityOptions.lenientJsonFaults
+
+-   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
++   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
+
+=   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
+- ```
++ ```
+
+=   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(strict.inspect)
++ Out.println(strict.inspect)
+
+- Out.println(lenient.inspect)
++ Out.println(lenient.inspect)
+
+= Out.println(lenient.inspect)
+- ```
++ ```
+
+- `Option` fields follow the same three policies, and give `None`. A declared default of `Unset`
+- cannot be told apart from no default, so it does not satisfy a strict absence.
++ Поля `Option` следуют тем же трём политикам и дают `None`. Объявленное значение по умолчанию
++ `Unset` невозможно отличить от отсутствия значения по умолчанию, поэтому оно не удовлетворяет
++ строгому отсутствию.
+
+- The [direct parsers](#skipping-the-tree) honor the policies too, with one limit. They tolerate
+- a lenient fault only when the value in the document is of the wrong *kind*, such as a string
+- where a number was expected, because the parser sees the kind before reading the value and can
+- skip it whole. A value of the right kind which fails part-way, such as a number too large for an
+- `Int`, has already been partly consumed, so it still raises.
++ [Прямые парсеры](#skipping-the-tree) тоже соблюдают эти политики, с одним ограничением. Они
++ допускают нестрогий сбой, только когда значение в документе неверного *рода*, например строка
++ там, где ожидалось число, потому что парсер видит род до чтения значения и может пропустить его
++ целиком. Значение верного рода, которое сбоит на полпути, например число, слишком большое для
++ `Int`, уже частично прочитано, поэтому всё равно порождает ошибку.
+
+- ### Renaming fields
++ ### Переименование полей
+
+- A field's name in Scala need not match its key in JSON. The `@name` annotation gives the key to
+- use. `@name[Json]` confines the rename to JSON, where another format may want a different key:
++ Имя поля в Scala не обязано совпадать с его ключом в JSON. Аннотация `@name` задаёт ключ.
++ `@name[Json]` ограничивает переименование форматом JSON, тогда как другому формату может быть
++ нужен другой ключ:
+
+= use. `@name[Json]` confines the rename to JSON, where another format may want a different key:
+=
+- ```scala
++ ```scala
+
+- case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
++ case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+
+= case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+- ```
++ ```
+
+= case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Record(t"Juliet", 1582).in[Json].show)
++ Out.println(Record(t"Juliet", 1582).in[Json].show)
+
+= Out.println(Record(t"Juliet", 1582).in[Json].show)
+- ```
++ ```
+
+- ### Tagged unions
++ ### Размеченные объединения
+
+- An enumeration or sealed hierarchy encodes as an object with an extra *discriminator* field,
+- which names the case. The key that holds the discriminator is chosen by import, and is `kind`
+- here:
++ Перечисление или запечатанная иерархия кодируется как объект с дополнительным
++ *полем-дискриминатором*, которое называет кейс. Ключ, содержащий дискриминатор, выбирается импортом;
++ здесь это `kind`:
+
+= here:
+=
+- ```scala
++ ```scala
+
+- import discriminables.jsonByKindDiscriminable
++ import discriminables.jsonByKindDiscriminable
+
+- enum Shape:
++ enum Shape:
+
+-   case Circle(radius: Double)
++   case Circle(radius: Double)
+
+-   case Square(side: Double)
++   case Square(side: Double)
+
+- val circle: Shape = Shape.Circle(1.0)
++ val circle: Shape = Shape.Circle(1.0)
+
+= val circle: Shape = Shape.Circle(1.0)
+- ```
++ ```
+
+= val circle: Shape = Shape.Circle(1.0)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val circle: Shape = Shape.Circle(1.0)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val circle: Shape = Shape.Circle(1.0)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(circle.in[Json].show)
++ Out.println(circle.in[Json].show)
+
+= Out.println(circle.in[Json].show)
+- ```
++ ```
+
+- Decoding reads the discriminator and builds the right case:
++ Декодирование читает дискриминатор и строит нужный кейс:
+
+= Decoding reads the discriminator and builds the right case:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Decoding reads the discriminator and builds the right case:
+=
+= ```scala fuel
+- run
++ run
+
+= Decoding reads the discriminator and builds the right case:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"""{"side":2.0,"kind":"Square"}""".read[Json].as[Shape].inspect)
++ Out.println(t"""{"side":2.0,"kind":"Square"}""".read[Json].as[Shape].inspect)
+
+= Out.println(t"""{"side":2.0,"kind":"Square"}""".read[Json].as[Shape].inspect)
+- ```
++ ```
+
+- `@name` renames a case's discriminator value just as it renames a field, so the name in the
+- document and the name in Scala can differ.
++ `@name` переименовывает значение дискриминатора у кейса так же, как переименовывает поле, поэтому
++ имя в документе и имя в Scala могут различаться.
+
+- A discriminator beside the case's own fields is only one convention in use. The others are also
+- chosen by a `Discriminable` given, not by writing a codec. A *wrapper* puts the whole variant
+- inside an object with a single key, named for the case. An *envelope* names one field for the
+- tag and another for the payload:
++ Дискриминатор рядом с собственными полями кейса — лишь одно из используемых соглашений.
++ Остальные тоже выбираются given `Discriminable`, а не написанием кодека. *Обёртка* помещает весь
++ вариант внутрь объекта с единственным ключом, названным по кейсу. *Конверт* отводит одно поле
++ под тег, а другое — под полезную нагрузку:
+
+= tag and another for the payload:
+=
+- ```scala fuel
++ ```scala fuel
+
+- alternative Discriminator field
++ alternative Discriminator field
+
+= alternative Discriminator field
+-   code
++   code
+
+=   code
+-       circle.in[Json].show
++       circle.in[Json].show
+
+- alternative Wrapper
++ alternative Wrapper
+
+= alternative Wrapper
+-   code
++   code
+
+-       given Shape is Discriminable in Json = Json.DiscriminantWrapper()
++       given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+
+=       given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+=
+-       circle.in[Json].show
++       circle.in[Json].show
+
+- alternative Envelope
++ alternative Envelope
+
+= alternative Envelope
+-   code
++   code
+
+-       given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
++       given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
+
+=       given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
+=
+-       circle.in[Json].show
++       circle.in[Json].show
+
+=       circle.in[Json].show
+- ##
++ ##
+
+=       circle.in[Json].show
+= ##
+- ```
++ ```
+
+= ##
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Convention
+- column  `Shape.Circle(1.0)` is written as
+- row  Discriminator field  `{"radius":1.0,"kind":"Circle"}`
+- row  Wrapper  `{"Circle":{"radius":1.0}}`
+- row  Envelope  `{"type":"Circle","value":{"radius":1.0}}`
++ column  Соглашение
++ column  `Shape.Circle(1.0)` записывается как
++ row  Поле-дискриминатор  `{"radius":1.0,"kind":"Circle"}`
++ row  Обёртка  `{"Circle":{"radius":1.0}}`
++ row  Конверт  `{"type":"Circle","value":{"radius":1.0}}`
+
+= row  Envelope  `{"type":"Circle","value":{"radius":1.0}}`
+- ```
++ ```
+
+- Each convention works through the tree and through the [direct parsers](#skipping-the-tree). A
+- direct parser does not need the tag to come first: a document whose `type` field follows its
+- `value` reads just as well. A wrapper object with more than one key is not a valid variant, and
+- raises `Json.Error.Reason.Absent` instead of guessing which key was meant.
++ Каждое соглашение работает через дерево и через [прямые парсеры](#skipping-the-tree). Прямому
++ парсеру не нужно, чтобы тег шёл первым: документ, в котором поле `type` следует за `value`,
++ читается так же хорошо. Объект-обёртка с более чем одним ключом — недопустимый вариант, и он
++ порождает `Json.Error.Reason.Absent`, вместо того чтобы угадывать, какой ключ имелся в виду.
+
+- Anything more unusual is a `Discriminable` written by hand. It has three methods, which say how
+- to attach a tag, how to read one, and how to reach the variant. Codecs derived from it work
+- unchanged.
++ Всё более необычное — это `Discriminable`, написанный вручную. У него три метода, которые
++ говорят, как прикрепить тег, как его прочитать и как добраться до варианта. Выведенные из него
++ кодеки работают без изменений.
+
+- ### Building JSON
++ ### Построение JSON
+
+- A `Json` value can also be assembled directly, without a case class. `Json.make` builds an
+- object from named arguments, each of them a `Json`:
++ Значение `Json` можно также собрать напрямую, без case-класса. `Json.make` строит объект из
++ именованных аргументов, каждый из которых — `Json`:
+
+= object from named arguments, each of them a `Json`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= object from named arguments, each of them a `Json`:
+=
+= ```scala fuel
+- run
++ run
+
+= object from named arguments, each of them a `Json`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show)
++ Out.println(Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show)
+
+= Out.println(Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show)
+- ```
++ ```
+
+- The `j"…"` [interpolator] writes JSON literally, and its syntax is checked at [compiletime]. A
+- substitution in a value's place encodes that value. One followed by `*` splices a collection
+- into an array, and one in a field's place merges a map of fields into an object:
++ [Интерполятор][интерполятор] `j"…"` записывает JSON буквально, и его синтаксис проверяется во
++ [время компиляции]. Подстановка на месте значения кодирует это значение. Подстановка
++ с последующей `*` вставляет коллекцию в массив, а подстановка на месте поля сливает отображение
++ полей в объект:
+
+= into an array, and one in a field's place merges a map of fields into an object:
+=
+- ```scala
++ ```scala
+
+- val x = 42
++ val x = 42
+
+- val xs = List(2, 3, 4)
++ val xs = List(2, 3, 4)
+
+- val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
++ val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+
+= val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+- ```
++ ```
+
+= val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(j"""{"a": $x}""".show)
++ Out.println(j"""{"a": $x}""".show)
+
+- Out.println(j"""[1, $xs*]""".show)
++ Out.println(j"""[1, $xs*]""".show)
+
+- Out.println(j"""{"a": 1, $rest}""".show)
++ Out.println(j"""{"a": 1, $rest}""".show)
+
+= Out.println(j"""{"a": 1, $rest}""".show)
+- ```
++ ```
+
+- A malformed literal is rejected where it is written. The error points at the character at
+- fault, not at the whole expression:
++ Некорректный литерал отвергается там, где он написан. Ошибка указывает на виновный символ, а не
++ на всё выражение:
+
+= fault, not at the whole expression:
+=
+- ```scala fuel
++ ```scala fuel
+
+= fault, not at the whole expression:
+=
+= ```scala fuel
+- compile
++ compile
+
+= fault, not at the whole expression:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= fault, not at the whole expression:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- j""" {"a": 1, } """
++ j""" {"a": 1, } """
+
+= j""" {"a": 1, } """
+- ```
++ ```
+
+- ### Matching JSON
++ ### Сопоставление JSON
+
+- The same `j"…"` interpolator is a pattern. In a `match` it takes a document apart, binding each
+- substitution to the piece found in its place. A document of another shape falls through to the
+- next case:
++ Тот же интерполятор `j"…"` служит образцом. В `match` он разбирает документ на части, связывая
++ каждую подстановку с фрагментом, найденным на её месте. Документ другой формы переходит к
++ следующему кейсу:
+
+= next case:
+=
+- ```scala
++ ```scala
+
+- val answer = t"""{"a": 42}""".read[Json] match
++ val answer = t"""{"a": 42}""".read[Json] match
+
+-   case j"""{"a": $a}""" => a.as[Int]
++   case j"""{"a": $a}""" => a.as[Int]
+
+-   case _                => -1
++   case _                => -1
+
+=   case _                => -1
+- ```
++ ```
+
+- An array pattern matches by length, and a trailing `*` captures the remaining elements:
++ Образец массива сопоставляется по длине, а завершающая `*` захватывает оставшиеся элементы:
+
+= An array pattern matches by length, and a trailing `*` captures the remaining elements:
+=
+- ```scala
++ ```scala
+
+- val split = t"""[1, 2, 3, 4]""".read[Json] match
++ val split = t"""[1, 2, 3, 4]""".read[Json] match
+
+-   case j"""[$head, $tail*]""" => (head.as[Int], tail.as[List[Int]])
++   case j"""[$head, $tail*]""" => (head.as[Int], tail.as[List[Int]])
+
+-   case _                      => (0, Nil)
++   case _                      => (0, Nil)
+
+=   case _                      => (0, Nil)
+- ```
++ ```
+
+=   case _                      => (0, Nil)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                      => (0, Nil)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                      => (0, Nil)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(answer.show)
++ Out.println(answer.show)
+
+- Out.println(split.inspect)
++ Out.println(split.inspect)
+
+= Out.println(split.inspect)
+- ```
++ ```
+
+- Each kind of substitution has a meaning as an expression and as a pattern:
++ У каждого рода подстановки есть смысл в выражении и в образце:
+
+= Each kind of substitution has a meaning as an expression and as a pattern:
+=
+- ```tabular
++ ```tabular
+
+- column  Substitution
+- column  In an expression
+- column  In a pattern
+- row  `$x` in a value's place  the value, encoded as `Json`  binds the value there, as `Json`
+- row  `$xs*` at the end of an array  splices a collection's elements  binds the remaining elements, as an array
+- row  `$rest` in a field's place  merges a `Map[Text, Json]` of fields  binds the other fields, as an object
+- row  `$x` inside a string  the value, encoded as `Text`  not supported
++ column  Подстановка
++ column  В выражении
++ column  В образце
++ row  `$x` на месте значения  значение, закодированное как `Json`  связывает находящееся там значение, как `Json`
++ row  `$xs*` в конце массива  вставляет элементы коллекции  связывает оставшиеся элементы, как массив
++ row  `$rest` на месте поля  сливает `Map[Text, Json]` полей  связывает остальные поля, как объект
++ row  `$x` внутри строки  значение, закодированное как `Text`  не поддерживается
+
+= row  `$x` inside a string  the value, encoded as `Text`  not supported
+- ```
++ ```
+
+- [Interpolation](interpolation.md) describes how interpolators like `j"…"` are built.
++ В разделе [Интерполяция](interpolation.md) описано, как строятся интерполяторы вроде `j"…"`.
+
+- ### Navigating
++ ### Навигация
+
+- Applying a `Json` value to a key reaches a field, and applying it to an index reaches an array
+- element. The steps chain:
++ Применение значения `Json` к ключу даёт доступ к полю, а применение к индексу — к элементу
++ массива. Шаги выстраиваются в цепочку:
+
+= element. The steps chain:
+=
+- ```scala
++ ```scala
+
+- val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
++ val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+
+= val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+- ```
++ ```
+
+= val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(data(t"a")(t"b")(t"c").as[Int].show)
++ Out.println(data(t"a")(t"b")(t"c").as[Int].show)
+
+- Out.println(t"[10, 20, 30]".read[Json](1).as[Int].show)
++ Out.println(t"[10, 20, 30]".read[Json](1).as[Int].show)
+
+= Out.println(t"[10, 20, 30]".read[Json](1).as[Int].show)
+- ```
++ ```
+
+- Reaching for a field that is not there is not itself an error. It gives an absent `Json`, which
+- decodes to `Unset` when an optional type is asked for, and raises only when a value is required:
++ Обращение к отсутствующему полю само по себе не ошибка. Оно даёт отсутствующий `Json`, который
++ декодируется в `Unset`, когда запрошен опциональный тип, и порождает ошибку, только когда значение
++ обязательно:
+
+= decodes to `Unset` when an optional type is asked for, and raises only when a value is required:
+=
+- ```scala
++ ```scala
+
+- val person = t"""{"name": "Hamlet"}""".read[Json]
++ val person = t"""{"name": "Hamlet"}""".read[Json]
+
+= val person = t"""{"name": "Hamlet"}""".read[Json]
+- ```
++ ```
+
+= val person = t"""{"name": "Hamlet"}""".read[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val person = t"""{"name": "Hamlet"}""".read[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val person = t"""{"name": "Hamlet"}""".read[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(person(t"missing").as[Optional[Int]].inspect)
++ Out.println(person(t"missing").as[Optional[Int]].inspect)
+
+= Out.println(person(t"missing").as[Optional[Int]].inspect)
+- ```
++ ```
+
+= Out.println(person(t"missing").as[Optional[Int]].inspect)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(person(t"missing").as[Optional[Int]].inspect)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- person(t"missing").as[Int]
++ person(t"missing").as[Int]
+
+= person(t"missing").as[Int]
+- ```
++ ```
+
+- #### Fields as members
++ #### Поля как члены
+
+- The compiler knows nothing about which fields a `Json` value has, or even whether it is an
+- object. Often the programmer knows more, and would like to write `person.name`. That syntax
+- gives up checking, since a misspelled field is found only at [runtime], so it is not available
+- by default:
++ Компилятор ничего не знает о том, какие поля есть у значения `Json` и является ли оно вообще
++ объектом. Часто программист знает больше и хотел бы писать `person.name`. Такой синтаксис
++ отказывается от проверки, поскольку ошибка в имени поля обнаруживается только во
++ [время выполнения], поэтому по умолчанию он недоступен:
+
+= by default:
+=
+- ```scala fuel
++ ```scala fuel
+
+= by default:
+=
+= ```scala fuel
+- compile
++ compile
+
+= by default:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= by default:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- person.name
++ person.name
+
+= person.name
+- ```
++ ```
+
+- Importing `dynamicAccess.dynamicJson` permits it for the rest of the scope:
++ Импорт `dynamicAccess.dynamicJson` разрешает его до конца области видимости:
+
+= Importing `dynamicAccess.dynamicJson` permits it for the rest of the scope:
+=
+- ```scala
++ ```scala
+
+- import dynamicAccess.dynamicJson
++ import dynamicAccess.dynamicJson
+
+= import dynamicAccess.dynamicJson
+- ```
++ ```
+
+= import dynamicAccess.dynamicJson
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import dynamicAccess.dynamicJson
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import dynamicAccess.dynamicJson
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(person.name.as[Text])
++ Out.println(person.name.as[Text])
+
+= Out.println(person.name.as[Text])
+- ```
++ ```
+
+- The import grants a permission, `Json is Dynamical`. The same permission can be confined to one
+- block with `dynamically`, which names the formats it covers:
++ Импорт предоставляет допуск, `Json is Dynamical`. Тот же допуск можно ограничить одним блоком с
++ помощью `dynamically`, который называет охватываемые форматы:
+
+= block with `dynamically`, which names the formats it covers:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  Grants dynamic access to
+- row  `dynamically[Json]`  JSON alone
+- row  `dynamically[Json | Yaml]`  each format in the union
+- row  `dynamically`  every format with dynamic access
++ column  Форма
++ column  Даёт динамический доступ к
++ row  `dynamically[Json]`  только JSON
++ row  `dynamically[Json | Yaml]`  каждому формату в объединении
++ row  `dynamically`  каждому формату с динамическим доступом
+
+= row  `dynamically`  every format with dynamic access
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- val config = t"""{"server": {"port": 8080}}""".read[Json]
++ val config = t"""{"server": {"port": 8080}}""".read[Json]
+
+- val port = dynamically[Json]:
++ val port = dynamically[Json]:
+
+-   config.server.port.as[Int]
++   config.server.port.as[Int]
+
+=   config.server.port.as[Int]
+- ```
++ ```
+
+- A document whose shape is known in advance is better [validated](#validation) once. Its fields
+- are then members which the compiler does check.
++ Документ, форма которого известна заранее, лучше один раз [проверить](#validation). Тогда его
++ поля становятся членами, которые компилятор проверяет.
+
+- ### Updating
++ ### Обновление
+
+- Assigning to a field through dynamic access gives a new document. The original is unchanged,
+- since a `Json` value is immutable. Assigning a value adds or replaces a field, and assigning
+- `Unset` removes one:
++ Присваивание полю через динамический доступ даёт новый документ. Исходный не меняется, поскольку
++ значение `Json` неизменяемо. Присваивание значения добавляет или заменяет поле, а присваивание
++ `Unset` удаляет его:
+
+= `Unset` removes one:
+=
+- ```scala
++ ```scala
+
+- val base = t"""{"x": 1}""".read[Json]
++ val base = t"""{"x": 1}""".read[Json]
+
+= val base = t"""{"x": 1}""".read[Json]
+- ```
++ ```
+
+= val base = t"""{"x": 1}""".read[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val base = t"""{"x": 1}""".read[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val base = t"""{"x": 1}""".read[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((base.y = 2).show)
++ Out.println((base.y = 2).show)
+
+- Out.println((base.x = Unset).show)
++ Out.println((base.x = Unset).show)
+
+- Out.println(base.show)
++ Out.println(base.show)
+
+= Out.println(base.show)
+- ```
++ ```
+
+- A deeper update is written with a [lens](optics.md). A lens reaches through several levels, and
+- may carry optics such as `Each` or `Filter` to change many elements at once:
++ Более глубокое обновление записывается с помощью [линзы](optics.md). Линза проходит через
++ несколько уровней и может нести оптику, например `Each` или `Filter`, чтобы менять много
++ элементов сразу:
+
+= may carry optics such as `Each` or `Filter` to change many elements at once:
+=
+- ```scala
++ ```scala
+
+- case class Scene(place: Text)
++ case class Scene(place: Text)
+
+- case class Act(name: Text, number: Int, scenes: List[Scene])
++ case class Act(name: Text, number: Int, scenes: List[Scene])
+
+- case class Play(title: Text, opening: Act)
++ case class Play(title: Text, opening: Act)
+
+- val play = Play(t"Macbeth", Act(t"Act I", 1, List(Scene(t"A heath")))).in[Json]
++ val play = Play(t"Macbeth", Act(t"Act I", 1, List(Scene(t"A heath")))).in[Json]
+
+- val renumbered =
++ val renumbered =
+
+-   import conversions.encodableToJson
++   import conversions.encodableToJson
+
+-   import optics.jsonLens
++   import optics.jsonLens
+
+-   play.lens(_.opening.number = 2.in[Json])
++   play.lens(_.opening.number = 2.in[Json])
+
+=   play.lens(_.opening.number = 2.in[Json])
+- ```
++ ```
+
+=   play.lens(_.opening.number = 2.in[Json])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   play.lens(_.opening.number = 2.in[Json])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   play.lens(_.opening.number = 2.in[Json])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(renumbered.show)
++ Out.println(renumbered.show)
+
+= Out.println(renumbered.show)
+- ```
++ ```
+
+- ### Formatting
++ ### Форматирование
+
+- The output format is a given in scope. Compact formatting leaves out all whitespace, and
+- indented formatting adds newlines and indentation for a human reader:
++ Формат вывода — given в области видимости. Компактное форматирование опускает все пробельные
++ символы, а форматирование с отступами добавляет переводы строк и отступы для человека:
+
+= indented formatting adds newlines and indentation for a human reader:
+=
+- ```scala fuel
++ ```scala fuel
+
+= indented formatting adds newlines and indentation for a human reader:
+=
+= ```scala fuel
+- run
++ run
+
+= indented formatting adds newlines and indentation for a human reader:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= indented formatting adds newlines and indentation for a human reader:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import formatting.indentedJsonFormatting
++   import formatting.indentedJsonFormatting
+
+=   import formatting.indentedJsonFormatting
+=
+-   Out.println(troupe.in[Json].show)
++   Out.println(troupe.in[Json].show)
+
+=   import formatting.indentedJsonFormatting
+=
+=   Out.println(troupe.in[Json].show)
+- ```
++ ```
+
+- `show` renders the whole document into one `Text`. A large document need not be held in memory
+- before it is sent, and the other forms of output deliver it a block at a time. They differ in
+- where the work of serializing happens, and in what they hand out:
++ `show` отображает весь документ в один `Text`. Большой документ не обязательно держать в памяти
++ перед отправкой: другие формы вывода выдают его поблочно. Они различаются тем, где выполняется
++ работа по сериализации, и тем, что они выдают:
+
+= where the work of serializing happens, and in what they hand out:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  Serializes on
+- column  Hands out
+- row  `json.show`  the caller's thread  one `Text` of the whole document
+- row  `Json.emit[Text](json, deliver)`  the caller's thread  each block as `Text`, to a function
+- row  `Json.emit[Data](json, deliver)`  the caller's thread  each block as UTF-8 `Data`, to a function
+- row  `Json.lend(json)`  the caller's thread  the writer's own buffer, lent block by block
+- row  `Json.emit(json)`  a fiber  an iterator of `Text`
+- row  `Json` as `Streamable` by `Text`  a fiber  a stream of `Text`
++ column  Форма
++ column  Сериализует в
++ column  Выдаёт
++ row  `json.show`  потоке выполнения вызывающего  один `Text` со всем документом
++ row  `Json.emit[Text](json, deliver)`  потоке выполнения вызывающего  каждый блок как `Text`, функции
++ row  `Json.emit[Data](json, deliver)`  потоке выполнения вызывающего  каждый блок как `Data` в UTF-8, функции
++ row  `Json.lend(json)`  потоке выполнения вызывающего  собственный буфер записывающего, предоставляемый на время блок за блоком
++ row  `Json.emit(json)`  файбере  итератор `Text`
++ row  `Json` как `Streamable` по `Text`  файбере  поток данных `Text`
+
+= row  `Json` as `Streamable` by `Text`  a fiber  a stream of `Text`
+- ```
++ ```
+
+- The push form of `Json.emit` hands each block to a function as it fills. With `emit[Data]` the
+- blocks are UTF-8 bytes, encoded straight from the serializer, which suits writing to a file, a
+- [socket](sockets.md) or an `OutputStream`:
++ Push-форма `Json.emit` передаёт каждый блок функции по мере его заполнения. С `emit[Data]` блоки
++ — байты UTF-8, закодированные прямо сериализатором, что подходит для записи в файл,
++ [сокет](sockets.md) или `OutputStream`:
+
+= [socket](sockets.md) or an `OutputStream`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [socket](sockets.md) or an `OutputStream`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [socket](sockets.md) or an `OutputStream`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val json = Person(t"Hamlet", 30).in[Json]
++ val json = Person(t"Hamlet", 30).in[Json]
+
+- Json.emit[Data](json, chunk => socket.write(chunk))
++ Json.emit[Data](json, chunk => socket.write(chunk))
+
+= Json.emit[Data](json, chunk => socket.write(chunk))
+- ```
++ ```
+
+- `Json.lend` avoids even the copy into each `Data` block. It lends the consumer the writer's own
+- buffer as a `Region`, together with an interval which proves that every index in it is in range.
+- Both are valid only for the duration of the call, the same rule as a
+- [stream's](streams.md) `lend`:
++ `Json.lend` избегает даже копирования в каждый блок `Data`. Он предоставляет потребителю на время
++ собственный буфер записывающего как `Region` вместе с интервалом, который доказывает, что каждый
++ индекс в нём находится в допустимых пределах. Оба действительны только на время вызова — то же
++ правило, что и у `lend` [потока данных](streams.md):
+
+= [stream's](streams.md) `lend`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [stream's](streams.md) `lend`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [stream's](streams.md) `lend`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- Json.lend(json): region =>
++ Json.lend(json): region =>
+
+-   interval => region.visit(interval)(index => sink.put(region(index)))
++   interval => region.visit(interval)(index => sink.put(region(index)))
+
+=   interval => region.visit(interval)(index => sink.put(region(index)))
+- ```
++ ```
+
+- Where the consumer pulls instead, `Json.emit(json)` serializes on a fiber and hands out the text
+- through an iterator. A `Json` is `Streamable` by `Text` on the same terms. Both need a
+- [`supervise`](concurrency.md) block:
++ Там, где потребитель сам вытягивает данные, `Json.emit(json)` сериализует в файбере и выдаёт
++ текст через итератор. `Json` является `Streamable` по `Text` на тех же условиях. Обоим нужен блок
++ [`supervise`](concurrency.md):
+
+= [`supervise`](concurrency.md) block:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [`supervise`](concurrency.md) block:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [`supervise`](concurrency.md) block:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import probates.cancelProbate
++ import probates.cancelProbate
+
+- supervise:
++ supervise:
+
+-   Json.emit(json).each(chunk => out.write(chunk))
++   Json.emit(json).each(chunk => out.write(chunk))
+
+=   Json.emit(json).each(chunk => out.write(chunk))
+- ```
++ ```
+
+- ### Errors
++ ### Ошибки
+
+- A conversion that cannot be made raises a `Json.Error`, whose `reason` says what went wrong:
++ Преобразование, которое невозможно выполнить, порождает `Json.Error`, чей `reason` говорит, что
++ пошло не так:
+
+= A conversion that cannot be made raises a `Json.Error`, whose `reason` says what went wrong:
+=
+- ```tabular
++ ```tabular
+
+- column  Reason
+- column  Raised for
+- row  `NotType(found, primitive)`  a value of the wrong type
+- row  `Absent`  a required field that is absent
+- row  `OutOfRange`  a number outside the target's range
++ column  Причина
++ column  Порождается для
++ row  `NotType(found, primitive)`  значения неверного типа
++ row  `Absent`  отсутствующего обязательного поля
++ row  `OutOfRange`  числа вне диапазона целевого типа
+
+= row  `OutOfRange`  a number outside the target's range
+- ```
++ ```
+
+- `capture` runs an expression that is expected to fail, and gives its error, so that the reason
+- can be inspected:
++ `capture` выполняет выражение, которое должно завершиться неудачей, и даёт его ошибку, чтобы
++ причину можно было рассмотреть:
+
+= can be inspected:
+=
+- ```scala fuel
++ ```scala fuel
+
+= can be inspected:
+=
+= ```scala fuel
+- run
++ run
+
+= can be inspected:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(capture[Json.Error](t""""abc"""".read[Json].as[Int]).reason.inspect)
++ Out.println(capture[Json.Error](t""""abc"""".read[Json].as[Int]).reason.inspect)
+
+- Out.println(capture[Json.Error](t"""{}""".read[Json].as[Person]).reason.inspect)
++ Out.println(capture[Json.Error](t"""{}""".read[Json].as[Person]).reason.inspect)
+
+= Out.println(capture[Json.Error](t"""{}""".read[Json].as[Person]).reason.inspect)
+- ```
++ ```
+
+- Throwing at the first error is one [strategy] among several. A method that should not throw
+- declares `raises Json.Error` instead, and its caller chooses what a failure does;
+- [Errors](errors.md) covers the choices.
++ Выбрасывание исключения при первой ошибке — одна [стратегия] из нескольких. Метод, который не
++ должен выбрасывать исключений, вместо этого объявляет `raises Json.Error`, и вызывающий выбирает,
++ что делает неудача; варианты описаны в разделе
++ [Ошибки](errors.md).
+
+- #### Collecting every error
++ #### Сбор всех ошибок
+
+- Under a strategy that [accumulates failures](errors.md#accumulating-failures), decoding does
+- not stop at the first error. Every error is collected, and each is tagged with a
+- [JSON Pointer](https://en.wikipedia.org/wiki/JSON_Pointer) to the field that failed, so all of a
+- document's problems are reported at once.
++ При стратегии, которая [накапливает неудачи](errors.md#accumulating-failures), декодирование не
++ останавливается на первой ошибке. Собирается каждая ошибка, и каждая помечается
++ [JSON Pointer](https://en.wikipedia.org/wiki/JSON_Pointer) на сбойное поле, так что обо всех
++ проблемах документа сообщается сразу.
+
+- The pointer comes from a *focus*, which the decoder maintains as it descends, and which the
+- strategy reads through `prior`. This contact has a person and an address which are each wrong in
+- two places:
++ Указатель берётся из *фокуса*, который декодер поддерживает по мере спуска и который стратегия
++ читает через `prior`. В этом контакте человек и адрес ошибочны каждый в двух местах:
+
+= two places:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- case class Address(street: Text, postcode: Text)
++ case class Address(street: Text, postcode: Text)
+
+- case class Contact(person: Person, address: Address)
++ case class Contact(person: Person, address: Address)
+
+- case class Issues(items: List[(Text, Json.Error)] = Nil)(using Diagnostics)
++ case class Issues(items: List[(Text, Json.Error)] = Nil)(using Diagnostics)
+
+- extends Error(m"${items.size} problems"):
++ extends Error(m"${items.size} problems"):
+
+-   def +(pointer: Text, error: Json.Error): Issues = Issues(items :+ (pointer, error))
++   def +(pointer: Text, error: Json.Error): Issues = Issues(items :+ (pointer, error))
+
+- val damaged = t"""{"person": {"name": 1}, "address": {"street": 2}}""".read[Json]
++ val damaged = t"""{"person": {"name": 1}, "address": {"street": 2}}""".read[Json]
+
+- val problems =
++ val problems =
+
+-   Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
++   Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
+
+-     ( Issues(),
++     ( Issues(),
+
+-       { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
++       { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
+
+-   . protect(damaged.as[Contact])
++   . protect(damaged.as[Contact])
+
+-   . items
++   . items
+
+=   . items
+- ```
++ ```
+
+- Decoding yields four errors, one for each fault:
++ Декодирование даёт четыре ошибки, по одной на каждый сбой:
+
+= Decoding yields four errors, one for each fault:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Decoding yields four errors, one for each fault:
+=
+= ```scala fuel
+- run
++ run
+
+= Decoding yields four errors, one for each fault:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- problems.each: (pointer, error) =>
++ problems.each: (pointer, error) =>
+
+-   Out.println(t"$pointer: ${error.reason.inspect}")
++   Out.println(t"$pointer: ${error.reason.inspect}")
+
+=   Out.println(t"$pointer: ${error.reason.inspect}")
+- ```
++ ```
+
+- Missing fields and fields of the wrong type accumulate together. An absent field contributes
+- exactly one error, however many times the decoder tries to read it.
++ Отсутствующие поля и поля неверного типа накапливаются вместе. Отсутствующее поле даёт ровно
++ одну ошибку, сколько бы раз декодер ни пытался его прочитать.
+
+- ### Equality and structure
++ ### Равенство и структура
+
+- Two documents are equal when they mean the same thing. The order of an object's keys does not
+- matter, and a whole number equals the same value written with a decimal point:
++ Два документа равны, когда они означают одно и то же. Порядок ключей объекта не имеет значения, а
++ целое число равно тому же значению, записанному с десятичной точкой:
+
+= matter, and a whole number equals the same value written with a decimal point:
+=
+- ```scala fuel
++ ```scala fuel
+
+= matter, and a whole number equals the same value written with a decimal point:
+=
+= ```scala fuel
+- run
++ run
+
+= matter, and a whole number equals the same value written with a decimal point:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((t"""{"x": 1, "y": 2}""".read[Json] == t"""{"y": 2, "x": 1}""".read[Json]).inspect)
++ Out.println((t"""{"x": 1, "y": 2}""".read[Json] == t"""{"y": 2, "x": 1}""".read[Json]).inspect)
+
+- Out.println((t"5".read[Json] == t"5.0".read[Json]).inspect)
++ Out.println((t"5".read[Json] == t"5.0".read[Json]).inspect)
+
+= Out.println((t"5".read[Json] == t"5.0".read[Json]).inspect)
+- ```
++ ```
+
+- `Json.unseal` exposes the underlying tree where it is needed directly. The tree has a predicate
+- for each kind of value, and a `primitive` which names the kind:
++ `Json.unseal` открывает нижележащее дерево там, где оно нужно напрямую. У дерева есть предикат для
++ каждого рода значений и `primitive`, который называет род:
+
+= for each kind of value, and a `primitive` which names the kind:
+=
+- ```scala fuel
++ ```scala fuel
+
+= for each kind of value, and a `primitive` which names the kind:
+=
+= ```scala fuel
+- run
++ run
+
+= for each kind of value, and a `primitive` which names the kind:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Json.unseal(t"42".read[Json]).isLong.inspect)
++ Out.println(Json.unseal(t"42".read[Json]).isLong.inspect)
+
+- Out.println(Json.unseal(t""""x"""".read[Json]).primitive.inspect)
++ Out.println(Json.unseal(t""""x"""".read[Json]).primitive.inspect)
+
+= Out.println(Json.unseal(t""""x"""".read[Json]).primitive.inspect)
+- ```
++ ```
+
+- The predicates are finer than the primitives. Code which cares how a number is represented can
+- ask, and code which does not need not:
++ Предикаты тоньше примитивов. Код, которому важно, как представлено число, может спросить, а код,
++ которому неважно, может не спрашивать:
+
+= ask, and code which does not need not:
+=
+- ```tabular
++ ```tabular
+
+- column  Predicate
+- column  Primitive
+- column  True for
+- row  `isLong`  `Number`  a number held as a `Long`
+- row  `isDouble`  `Number`  a number held as a `Double`
+- row  `isNumber`  `Number`  any number
+- row  `isString`  `String`  a string
+- row  `isBoolean`  `Boolean`  `true` or `false`
++ column  Предикат
++ column  Примитив
++ column  Истинен для
++ row  `isLong`  `Number`  числа, хранимого как `Long`
++ row  `isDouble`  `Number`  числа, хранимого как `Double`
++ row  `isNumber`  `Number`  любого числа
++ row  `isString`  `String`  строки
++ row  `isBoolean`  `Boolean`  `true` или `false`
+
+- row  `isNull`  `Null`  `null`
++ row  `isNull`  `Null`  `null`
+
+- row  `isObject`  `Object`  an object
+- row  `isArray`  `Array`  an array
++ row  `isObject`  `Object`  объекта
++ row  `isArray`  `Array`  массива
+
+= row  `isArray`  `Array`  an array
+- ```
++ ```
+
+- ### Numbers and precision
++ ### Числа и точность
+
+- A JSON number has no limit on its precision, and most parsers quietly impose one. Here the
+- *number mode* in scope decides what happens to a number too long for the parser's fast path,
+- which holds about fifteen digits. A shorter number is decoded identically in every mode:
++ У числа JSON нет предела точности, а большинство парсеров тихо его навязывают. Здесь *числовой
++ режим* в области видимости решает, что происходит с числом, слишком длинным для быстрого пути
++ парсера, который вмещает около пятнадцати цифр. Более короткое число декодируется одинаково в
++ любом режиме:
+
+= which holds about fifteen digits. A shorter number is decoded identically in every mode:
+=
+- ```scala
++ ```scala
+
+- import numberModes.fullNumberMode
++ import numberModes.fullNumberMode
+
+= import numberModes.fullNumberMode
+- ```
++ ```
+
+= import numberModes.fullNumberMode
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Mode
+- column  With a number too long for the fast path
+- row  `fullNumberMode`  keeps every digit as a binary-coded decimal, at the cost of an allocation
+- row  `doubleNumberMode`  drops the excess digits and computes a `Double` from the leading ones
+- row  `bcdNumberMode`  drops the excess digits and yields the raw packed accumulator, with no allocation
++ column  Режим
++ column  С числом, слишком длинным для быстрого пути
++ row  `fullNumberMode`  сохраняет каждую цифру как двоично-десятичное число ценой выделения памяти
++ row  `doubleNumberMode`  отбрасывает лишние цифры и вычисляет `Double` по старшим
++ row  `bcdNumberMode`  отбрасывает лишние цифры и даёт сырой упакованный аккумулятор, без выделения памяти
+
+= row  `bcdNumberMode`  drops the excess digits and yields the raw packed accumulator, with no allocation
+- ```
++ ```
+
+- `fullNumberMode` is the default, because losing digits silently is the wrong thing to do
+- unasked. `doubleNumberMode` does what Jawn, Circe, Jsoniter and Jackson do. It is the mode for
+- a like-for-like comparison of speed, or for data known to fit in a `Double`. The `Long` which
+- `bcdNumberMode` yields holds binary-coded decimal digits, not the number's value, so it buys
+- speed at the price of treating long numbers as opaque. [Numbers](numbers.md) covers the numeric
+- types a value can be decoded to.
++ `fullNumberMode` — режим по умолчанию, потому что молча терять цифры без спроса неправильно.
++ `doubleNumberMode` делает то же, что Jawn, Circe, Jsoniter и Jackson. Это режим для честного
++ сравнения скорости или для данных, заведомо помещающихся в `Double`. `Long`, который даёт
++ `bcdNumberMode`, содержит двоично-десятичные цифры, а не значение числа, поэтому он покупает
++ скорость ценой того, что длинные числа становятся непрозрачными. В разделе [Числа](numbers.md)
++ описаны числовые типы, в которые можно декодировать значение.
+
+- ### NDJSON
++ ### NDJSON
+
+- [Newline-delimited JSON](https://en.wikipedia.org/wiki/JSON_streaming) is a stream of
+- independent documents, one on each line. It needs no type of its own. `delineate` splits a
+- [source](streams.md#records) into records at its line boundaries, and each record is read as
++ [JSON с разделителями-переводами строк](https://en.wikipedia.org/wiki/JSON_streaming) — это поток
++ данных из независимых документов, по одному на строке. Собственный тип ему не нужен. `delineate`
++ разбивает [источник](streams.md#records) на записи по границам строк, и каждая запись читается как
+
+- `Json`:
++ `Json`:
+
+= `Json`:
+=
+- ```scala
++ ```scala
+
+- import lineSeparation.adaptiveLinefeedLineSeparation
++ import lineSeparation.adaptiveLinefeedLineSeparation
+
+- val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
++ val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
+- ```
++ ```
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.inspect)
++ Out.println(numbers.inspect)
+
+= Out.println(numbers.inspect)
+- ```
++ ```
+
+- Each line is read independently, so the documents need not share a shape. A log of mixed
+- records reads as well as a uniform one.
++ Каждая строка читается независимо, поэтому документам не нужно иметь общую форму. Журнал из
++ разнородных записей читается так же хорошо, как и однородный.
+
+- ### JSON Pointers
++ ### JSON Pointer
+
+- A [JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901) names a location within a
+- document. The `jp"…"` interpolator writes one, and checks it at compiletime. A pointer can also
+- be built a segment at a time:
++ [JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901) называет место внутри документа.
++ Интерполятор `jp"…"` записывает указатель и проверяет его во время компиляции. Указатель можно
++ также строить по одному сегменту:
+
+= be built a segment at a time:
+=
+- ```scala fuel
++ ```scala fuel
+
+= be built a segment at a time:
+=
+= ```scala fuel
+- run
++ run
+
+= be built a segment at a time:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(jp"#/verona/capulet".encode)
++ Out.println(jp"#/verona/capulet".encode)
+
+- Out.println(JsonPointer()(t"a")(t"b").encode)
++ Out.println(JsonPointer()(t"a")(t"b").encode)
+
+= Out.println(JsonPointer()(t"a")(t"b").encode)
+- ```
++ ```
+
+- Within a segment, the special characters `~` and `/` are escaped as `~0` and `~1`. A malformed
+- pointer does not compile, and the error points at the character at fault:
++ Внутри сегмента специальные символы `~` и `/` экранируются как `~0` и `~1`. Некорректный
++ указатель не компилируется, и ошибка указывает на виновный символ:
+
+= pointer does not compile, and the error points at the character at fault:
+=
+- ```scala fuel
++ ```scala fuel
+
+= pointer does not compile, and the error points at the character at fault:
+=
+= ```scala fuel
+- compile
++ compile
+
+= pointer does not compile, and the error points at the character at fault:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= pointer does not compile, and the error points at the character at fault:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- jp"#/verona~2capulet"
++ jp"#/verona~2capulet"
+
+= jp"#/verona~2capulet"
+- ```
++ ```
+
+- ### Source positions
++ ### Позиции в исходном тексте
+
+- Ordinary parsing keeps no record of where each value sat in the text, since most programs never
+- ask. A program which does ask, perhaps to underline the source of an error, brings
+- `parsing.trackPositions` into scope. `read` then records positions, and `locate` gives the line
+- and column of the value a pointer names:
++ Обычный разбор не запоминает, где в тексте находилось каждое значение, поскольку большинство
++ программ никогда об этом не спрашивают. Программа, которая спрашивает, например чтобы подчеркнуть
++ источник ошибки, вводит в область видимости `parsing.trackPositions`. Тогда `read` записывает
++ позиции, а `locate` даёт строку и столбец значения, которое называет указатель:
+
+= and column of the value a pointer names:
+=
+- ```scala
++ ```scala
+
+- import parsing.trackPositions
++ import parsing.trackPositions
+
+- val tracked = t"{\n  \"a\": 42\n}".read[Json]
++ val tracked = t"{\n  \"a\": 42\n}".read[Json]
+
+= val tracked = t"{\n  \"a\": 42\n}".read[Json]
+- ```
++ ```
+
+= val tracked = t"{\n  \"a\": 42\n}".read[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val tracked = t"{\n  \"a\": 42\n}".read[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val tracked = t"{\n  \"a\": 42\n}".read[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(tracked.locate(JsonPointer()(t"a")).let(_.line).inspect)
++ Out.println(tracked.locate(JsonPointer()(t"a")).let(_.line).inspect)
+
+= Out.println(tracked.locate(JsonPointer()(t"a")).let(_.line).inspect)
+- ```
++ ```
+
+- A position covers the whole of the value it names. A negative number's extent includes its
+- minus sign, and an object or array runs from its opening bracket to its closing one. `locateKey`
+- gives the position of the *key* matching the pointer's last segment, not of its value, which is
+- what underlining a misspelled field name needs.
++ Позиция охватывает всё значение, которое она называет. Протяжённость отрицательного числа
++ включает его знак минус, а объект или массив простирается от открывающей скобки до закрывающей.
++ `locateKey` даёт позицию *ключа*, соответствующего последнему сегменту указателя, а не его
++ значения, — именно это нужно, чтобы подчеркнуть ошибку в имени поля.
+
+- A pointer which does not resolve gives `Unset`, whether it names a key the document lacks or an
+- index past the end of an array. Probing a document for a position is therefore always safe.
+- Under ordinary parsing, without tracking, every `locate` gives `Unset`, and a program which does
+- not want positions pays nothing for them.
++ Указатель, который не разрешается, даёт `Unset`, называет ли он ключ, которого нет в документе,
++ или индекс за концом массива. Поэтому запрос позиции у документа всегда безопасен. При обычном
++ разборе, без отслеживания, каждый `locate` даёт `Unset`, и программа, которой позиции не нужны,
++ ничего за них не платит.
+
+- ### Schemas
++ ### Схемы
+
+- A [JSON Schema](https://en.wikipedia.org/wiki/JSON_Schema) describes the shape a document is
+- allowed to have. A schema is derived from a Scala type, and a schema value renders as a standard
+- JSON Schema document:
++ [JSON Schema](https://en.wikipedia.org/wiki/JSON_Schema) описывает форму, которую разрешено иметь
++ документу. Схема выводится из типа Scala, а значение схемы отображается как стандартный документ
++ JSON Schema:
+
+= JSON Schema document:
+=
+- ```scala fuel
++ ```scala fuel
+
+= JSON Schema document:
+=
+= ```scala fuel
+- run
++ run
+
+= JSON Schema document:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((JsonSchema.Integer(): JsonSchema).in[Json].show)
++ Out.println((JsonSchema.Integer(): JsonSchema).in[Json].show)
+
+= Out.println((JsonSchema.Integer(): JsonSchema).in[Json].show)
+- ```
++ ```
+
+- The `@memo` annotation on a field gives it a description in the generated schema. String
+- formats such as `date-time` and `email` are represented by `JsonSchema.Format`. The derived
+- schema is what [validation](#validation) rests on, and [OpenAPI](openapi.md) uses the same
+- schemas to describe a service.
++ Аннотация `@memo` у поля даёт ему описание в сгенерированной схеме. Строковые форматы, такие как
++ `date-time` и `email`, представлены `JsonSchema.Format`. Выведенная схема — то, на чём держится
++ [проверка](#validation), а [OpenAPI](openapi.md) использует те же схемы для описания сервиса.
+
+- ### Validation
++ ### Проверка
+
+- `verify` checks a document against the shape a type expects. On success it gives the same
+- document, now carrying that type:
++ `verify` проверяет документ на соответствие форме, которую ожидает тип. При успехе он даёт тот же
++ документ, теперь несущий этот тип:
+
+= document, now carrying that type:
+=
+- ```scala
++ ```scala
+
+- case class Player(name: Text, age: Int, email: Text)
++ case class Player(name: Text, age: Int, email: Text)
+
+- val viola = t"""{"name": "Viola", "age": 20, "email": "viola@example.com"}""".read[Json]
++ val viola = t"""{"name": "Viola", "age": 20, "email": "viola@example.com"}""".read[Json]
+
+- val player = viola.verify[Player]
++ val player = viola.verify[Player]
+
+= val player = viola.verify[Player]
+- ```
++ ```
+
+- A document which does not conform raises a `Json.Error`:
++ Документ, который не соответствует, порождает `Json.Error`:
+
+= A document which does not conform raises a `Json.Error`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A document which does not conform raises a `Json.Error`:
+=
+= ```scala fuel
+- run
++ run
+
+= A document which does not conform raises a `Json.Error`:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= A document which does not conform raises a `Json.Error`:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"""{"name": "Feste"}""".read[Json].verify[Player]
++ t"""{"name": "Feste"}""".read[Json].verify[Player]
+
+= t"""{"name": "Feste"}""".read[Json].verify[Player]
+- ```
++ ```
+
+- The verified document carries the schema's structure in its type, so its fields are reached as
+- members, with full checking and without the `dynamicAccess.dynamicJson` import:
++ Проверенный документ несёт структуру схемы в своём типе, поэтому к его полям обращаются как к
++ членам, с полной проверкой и без импорта `dynamicAccess.dynamicJson`:
+
+= members, with full checking and without the `dynamicAccess.dynamicJson` import:
+=
+- ```scala fuel
++ ```scala fuel
+
+= members, with full checking and without the `dynamicAccess.dynamicJson` import:
+=
+= ```scala fuel
+- run
++ run
+
+= members, with full checking and without the `dynamicAccess.dynamicJson` import:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(player.name.as[Text])
++ Out.println(player.name.as[Text])
+
+- Out.println(player.as[Player].inspect)
++ Out.println(player.as[Player].inspect)
+
+= Out.println(player.as[Player].inspect)
+- ```
++ ```
+
+- Anything the schema does not permit is a compiletime error. That includes a field which does
+- not exist, an index into something which is not an array, and a field of a scalar:
++ Всё, что схема не допускает, — ошибка времени компиляции. Сюда входят несуществующее поле,
++ индексирование того, что не является массивом, и поле скаляра:
+
+= not exist, an index into something which is not an array, and a field of a scalar:
+=
+- ```scala fuel
++ ```scala fuel
+
+= not exist, an index into something which is not an array, and a field of a scalar:
+=
+= ```scala fuel
+- compile
++ compile
+
+= not exist, an index into something which is not an array, and a field of a scalar:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= not exist, an index into something which is not an array, and a field of a scalar:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- player.nope
++ player.nope
+
+= player.nope
+- ```
++ ```
+
+= player.nope
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= player.nope
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= player.nope
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= player.nope
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- player.name(0)
++ player.name(0)
+
+= player.name(0)
+- ```
++ ```
+
+= player.name(0)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= player.name(0)
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= player.name(0)
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= player.name(0)
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- player.name.deeper
++ player.name.deeper
+
+= player.name.deeper
+- ```
++ ```
+
+- Navigation runs to any depth, through nested objects and into arrays, and each step is checked:
++ Навигация идёт на любую глубину, через вложенные объекты и внутрь массивов, и каждый шаг
++ проверяется:
+
+= Navigation runs to any depth, through nested objects and into arrays, and each step is checked:
+=
+- ```scala
++ ```scala
+
+- case class Venue(city: Text)
++ case class Venue(city: Text)
+
+- case class Premiere(title: Text, venue: Venue)
++ case class Premiere(title: Text, venue: Venue)
+
+- case class Court(members: List[Person])
++ case class Court(members: List[Person])
+
+- val premiere = t"""{"title": "Hamlet", "venue": {"city": "London"}}""".read[Json]
++ val premiere = t"""{"title": "Hamlet", "venue": {"city": "London"}}""".read[Json]
+
+- val court =
++ val court =
+
+-   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
++   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
+
+=   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
+- ```
++ ```
+
+=   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(premiere.verify[Premiere].venue.city.as[Text])
++ Out.println(premiere.verify[Premiere].venue.city.as[Text])
+
+- Out.println(court.verify[Court].members(1).name.as[Text])
++ Out.println(court.verify[Court].members(1).name.as[Text])
+
+= Out.println(court.verify[Court].members(1).name.as[Text])
+- ```
++ ```
+
+- It is the schema which licenses this access, not a blanket permission. Reaching a field of an
+- *unverified* document still needs `dynamicJson`, so the two kinds of access cannot be confused.
+- A path through a document is thereby checked against the type the document is supposed to have,
+- before the program runs.
++ Этот доступ разрешает схема, а не огульный допуск. Обращение к полю *непроверенного* документа
++ по-прежнему требует `dynamicJson`, так что два вида доступа невозможно спутать. Тем самым путь по
++ документу проверяется по типу, который документ должен иметь, ещё до запуска программы.
+
+- ### Overriding one field's encoder
++ ### Переопределение кодировщика одного поля
+
+- A derived encoder uses, for each field, whichever instance is in scope for that field's type.
+- A different given in scope would change every field of that type at once, which is rarely what
+- one awkward field calls for. A `Specific` names a path instead, and its override applies along
+- that path and nowhere else:
++ Выведенный кодировщик использует для каждого поля тот экземпляр, который находится в области
++ видимости для типа этого поля. Другой given в области видимости изменил бы сразу все поля этого
++ типа, а это редко то, чего требует одно неудобное поле. Вместо этого `Specific` называет путь, и
++ его переопределение действует вдоль этого пути и больше нигде:
+
+= that path and nowhere else:
+=
+- ```scala
++ ```scala
+
+- case class Fencer(name: Text, age: Int)
++ case class Fencer(name: Text, age: Int)
+
+- case class Duel(challenger: Fencer, opponent: Fencer)
++ case class Duel(challenger: Fencer, opponent: Fencer)
+
+- val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
++ val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+
+= val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+- ```
++ ```
+
+- With the `Specific` given in scope, only the opponent's name is changed:
++ С given `Specific` в области видимости меняется только имя противника:
+
+= With the `Specific` given in scope, only the opponent's name is changed:
+=
+- ```scala fuel
++ ```scala fuel
+
+= With the `Specific` given in scope, only the opponent's name is changed:
+=
+= ```scala fuel
+- run
++ run
+
+= With the `Specific` given in scope, only the opponent's name is changed:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= With the `Specific` given in scope, only the opponent's name is changed:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   given (Duel is Specific over Json.Encodable) =
++   given (Duel is Specific over Json.Encodable) =
+
+=   given (Duel is Specific over Json.Encodable) =
+-     specifically:
++     specifically:
+
+-       case root.opponent.name() => shout
++       case root.opponent.name() => shout
+
+-   Out.println(Duel(Fencer(t"hamlet", 30), Fencer(t"laertes", 25)).in[Json].show)
++   Out.println(Duel(Fencer(t"hamlet", 30), Fencer(t"laertes", 25)).in[Json].show)
+
+=   Out.println(Duel(Fencer(t"hamlet", 30), Fencer(t"laertes", 25)).in[Json].show)
+- ```
++ ```
+
+- A path which ends at a collection takes an encoder for the collection. Deriving that encoder
+- again, with a local given in scope, changes how the members of that one list are written without
+- changing their type's encoding everywhere:
++ Путь, который заканчивается на коллекции, принимает кодировщик для коллекции. Повторная деривация
++ этого кодировщика с локальным given в области видимости меняет то, как записываются члены этого
++ одного списка, не меняя кодирование их типа повсюду:
+
+= changing their type's encoding everywhere:
+=
+- ```scala
++ ```scala
+
+- val nameOnly: Person is Json.Encodable =
++ val nameOnly: Person is Json.Encodable =
+
+-   Json.Encodable(() => Morphology.Str): person => Json(person.name)
++   Json.Encodable(() => Morphology.Str): person => Json(person.name)
+
+=   Json.Encodable(() => Morphology.Str): person => Json(person.name)
+- ```
++ ```
+
+=   Json.Encodable(() => Morphology.Str): person => Json(person.name)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   Json.Encodable(() => Morphology.Str): person => Json(person.name)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   Json.Encodable(() => Morphology.Str): person => Json(person.name)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   given (Troupe is Specific over Json.Encodable) =
++   given (Troupe is Specific over Json.Encodable) =
+
+=   given (Troupe is Specific over Json.Encodable) =
+-     specifically:
++     specifically:
+
+-       case root.players() =>
++       case root.players() =>
+
+-         given Person is Json.Encodable = nameOnly
++         given Person is Json.Encodable = nameOnly
+
+-         summon[List[Person] is Json.Encodable]
++         summon[List[Person] is Json.Encodable]
+
+=         summon[List[Person] is Json.Encodable]
+=
+-   Out.println(troupe.in[Json].show)
++   Out.println(troupe.in[Json].show)
+
+=         summon[List[Person] is Json.Encodable]
+=
+=   Out.println(troupe.in[Json].show)
+- ```
++ ```
+
+- ### Skipping the tree
++ ### Без дерева
+
+- `read[Person in Json]` ordinarily parses the text into a `Json` tree, and then decodes the tree.
+- A type with a `Json.Parsable` instance is instead read *directly* from the source. Its parser is
+- composed for that type at compiletime, and takes the fields from the text as they arrive, so no
+- tree is built. The saving is the whole intermediate structure: its allocation, its boxing and a
+- second traversal.
++ `read[Person in Json]` обычно разбирает текст в дерево `Json`, а затем декодирует дерево. Тип с
++ экземпляром `Json.Parsable` вместо этого читается *напрямую* из источника. Его парсер
++ составляется для этого типа во время компиляции и забирает поля из текста по мере их поступления,
++ так что дерево не строится. Экономия — вся промежуточная структура: её выделение памяти, её
++ упаковка и второй обход.
+
+= second traversal.
+=
+- ```scala
++ ```scala
+
+- given personParsable: (Person is Json.Parsable) = Json.Parsable.derived
++ given personParsable: (Person is Json.Parsable) = Json.Parsable.derived
+
+= given personParsable: (Person is Json.Parsable) = Json.Parsable.derived
+- ```
++ ```
+
+- In ordinary code the instance belongs in the type's companion object, where it is found without
+- an import.
++ В обычном коде экземпляру место в объекте-компаньоне типа, где он находится без импорта.
+
+- Writing has a matching instance, `Json.Printable`. A type which has one is written directly,
+- with no tree, wherever the formatting is compact. Indented formatting still renders through the
+- tree. Both routes write the same text:
++ У записи есть соответствующий экземпляр, `Json.Printable`. Тип, у которого он есть, записывается
++ напрямую, без дерева, везде, где форматирование компактное. Форматирование с отступами
++ по-прежнему отображается через дерево. Оба маршрута записывают один и тот же текст:
+
+= tree. Both routes write the same text:
+=
+- ```scala fuel
++ ```scala fuel
+
+- alternative Tree
++ alternative Tree
+
+= alternative Tree
+-   code
++   code
+
+-       Person(t"Hamlet", 30).in[Text over Json]
++       Person(t"Hamlet", 30).in[Text over Json]
+
+- alternative Direct
++ alternative Direct
+
+= alternative Direct
+-   code
++   code
+
+-       val direct =
++       val direct =
+
+-         given Person is Json.Printable = Json.Direct.derived[Person].printable
++         given Person is Json.Printable = Json.Direct.derived[Person].printable
+
+-         Person(t"Hamlet", 30).in[Text over Json]
++         Person(t"Hamlet", 30).in[Text over Json]
+
+=         Person(t"Hamlet", 30).in[Text over Json]
+- ##
++ ##
+
+=         Person(t"Hamlet", 30).in[Text over Json]
+= ##
+- ```
++ ```
+
+- `Json.Printable.emit` writes the text a block at a time, handing each block to a function as it
+- fills.
++ `Json.Printable.emit` записывает текст поблочно, передавая каждый блок функции по мере его
++ заполнения.
+
+- A record can generate both instances at once, into its companion, with `derives Json.Direct`.
+- A single import then selects the route for every record in scope:
++ Запись может сгенерировать оба экземпляра сразу, в своём компаньоне, с помощью
++ `derives Json.Direct`. Тогда один импорт выбирает маршрут для каждой записи в области видимости:
+
+= A single import then selects the route for every record in scope:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  For a record
+- column  For any other type
+- row  `codecs.direct`  a generated parser and printer  its own direct instance, else the tree
+- row  `codecs.derived`  the derived codecs, even over a direct instance  the derived codecs, even over a direct instance
+- row  `codecs.strict`  a generated parser and printer  its own direct instance, else a compile error naming the type
++ column  Импорт
++ column  Для записи
++ column  Для любого другого типа
++ row  `codecs.direct`  сгенерированные парсер и принтер  его собственный прямой экземпляр, иначе дерево
++ row  `codecs.derived`  выведенные кодеки, даже поверх прямого экземпляра  выведенные кодеки, даже поверх прямого экземпляра
++ row  `codecs.strict`  сгенерированные парсер и принтер  его собственный прямой экземпляр, иначе ошибка компиляции с именем типа
+
+= row  `codecs.strict`  a generated parser and printer  its own direct instance, else a compile error naming the type
+- ```
++ ```
+
+- Under `codecs.strict` the error is reported wherever `read[Play in Json]` or `in[Text over Json]`
+- would otherwise fall back to the tree. With none of the three imported, a type takes the direct
+- route exactly when it has a direct instance of its own. The modes are alternatives, so import
+- one at a time.
++ При `codecs.strict` об ошибке сообщается везде, где `read[Play in Json]` или
++ `in[Text over Json]` иначе откатились бы к дереву. Если не импортирован ни один из трёх, тип
++ идёт прямым маршрутом ровно тогда, когда у него есть собственный прямой экземпляр. Режимы
++ являются альтернативами, поэтому импортируйте по одному.
+
+- The tree remains the right route for a document whose shape is not known in advance, and
+- wherever the tree itself is what is wanted.
++ Дерево остаётся правильным маршрутом для документа, форма которого заранее неизвестна, и везде,
++ где нужно именно само дерево.
+
+- ### Typed records from a schema
++ ### Типизированные записи из схемы
+
+- Sometimes the schema arrives as a JSON Schema document, not as a Scala type. A `Json.Provider`
+- reads such a schema at compiletime, and produces typed records from JSON which matches it. A
+- provider object, here `Catalogue`, holds the schema, and its `record` method turns a `Json`
+- value into a record. Each field of the record has the type the schema declares, and a field the
+- schema does not describe is a compiletime error:
++ Иногда схема приходит как документ JSON Schema, а не как тип Scala. `Json.Provider` читает такую
++ схему во время компиляции и производит типизированные записи из JSON, который ей соответствует.
++ Объект-провайдер, здесь `Catalogue`, содержит схему, а его метод `record` превращает значение
++ `Json` в запись. Каждое поле записи имеет тип, который объявляет схема, а поле, которое схема не
++ описывает, — ошибка времени компиляции:
+
+= schema does not describe is a compiletime error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= schema does not describe is a compiletime error:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= schema does not describe is a compiletime error:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- object Catalogue extends Json.Provider(t"""{
++ object Catalogue extends Json.Provider(t"""{
+
+-   "type": "object",
++   "type": "object",
+
+-   "required": ["name", "children"],
++   "required": ["name", "children"],
+
+-   "properties": {
++   "properties": {
+
+-     "name": { "type": "string" },
++     "name": { "type": "string" },
+
+-     "email": { "type": "string", "format": "email" },
++     "email": { "type": "string", "format": "email" },
+
+-     "children": {
++     "children": {
+
+-       "type": "array",
++       "type": "array",
+
+-       "items": {
++       "items": {
+
+-         "type": "object",
++         "type": "object",
+
+-         "required": ["weight"],
++         "required": ["weight"],
+
+-         "properties": { "weight": { "type": "number", "minimum": 0 } }
++         "properties": { "weight": { "type": "number", "minimum": 0 } }
+
+-       }
++       }
+
+-     }
++     }
+
+-   }
++   }
+
+- }""".read[Json])
++ }""".read[Json])
+
+- val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
++ val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
+
+- val record = Catalogue.record(input)
++ val record = Catalogue.record(input)
+
+- val name: Text = record.name
++ val name: Text = record.name
+
+- val weight: Optional[Double] = record.children.head.let(_.weight)
++ val weight: Optional[Double] = record.children.head.let(_.weight)
+
+= val weight: Optional[Double] = record.children.head.let(_.weight)
+- ```
++ ```
+
+- The provider takes its schema as anything readable as JSON. A schema kept as a
+- [classpath](classpath.md) resource is bound directly, as
+- `object Catalogue extends Json.Provider(cp"/schemas/catalogue.json")`, with a `Classloader` such
+- as `classloaders.threadContextClassloader` in scope, and is read as the code compiles.
++ Провайдер принимает схему в виде всего, что читается как JSON. Схема, хранящаяся как ресурс
++ [пути классов](classpath.md), привязывается напрямую, как
++ `object Catalogue extends Json.Provider(cp"/schemas/catalogue.json")`, с `Classloader`, например
++ `classloaders.threadContextClassloader`, в области видимости, и читается при компиляции кода.
+
+- Each construct in the schema has a reading in Scala:
++ У каждой конструкции схемы есть прочтение в Scala:
+
+= Each construct in the schema has a reading in Scala:
+=
+- ```tabular
++ ```tabular
+
+- column  Schema construct
+- column  Reads as
++ column  Конструкция схемы
++ column  Читается как
+
+- row  `"type": "string"`  `Text`
++ row  `"type": "string"`  `Text`
+
+- row  `"type": "integer"`  `Int`, or `Long` with `"format": "int64"`
++ row  `"type": "integer"`  `Int` или `Long` с `"format": "int64"`
+
+- row  `"type": "number"`  `Double`
++ row  `"type": "number"`  `Double`
+
+- row  `"type": "boolean"`  `Boolean`
++ row  `"type": "boolean"`  `Boolean`
+
+- row  a property in the `required` list  its type, with a `Json.Provider.Error` where the document omits it
+- row  any other property, or one whose type admits `null`  an `Optional`, `Unset` where omitted or `null`
+- row  an `array` with an `items` schema  a `List` of the items' type
+- row  an `object` with `properties`  a nested record
+- row  `additionalProperties`, or `patternProperties` all of one type  a `Map[Text, T]`, empty where absent
+- row  a `$ref` into the same document  the definition it names
+- row  an `allOf` of objects  one record with all their properties
+- row  an `enum` (or `const`) without a `type`  the type of its values
+- row  a `oneOf` or `anyOf` whose alternatives are all strings  `Text`, an `enum` of all their values where each alternative is one
+- row  a property admitting several types  the union of their readings, chosen by the kind of value found
++ row  свойство из списка `required`  его тип, с `Json.Provider.Error` там, где документ его опускает
++ row  любое другое свойство или свойство, тип которого допускает `null`  `Optional`, `Unset` там, где оно опущено или `null`
++ row  `array` со схемой `items`  `List` из типа элементов
++ row  `object` с `properties`  вложенная запись
++ row  `additionalProperties` или `patternProperties` одного типа  `Map[Text, T]`, пустое при отсутствии
++ row  `$ref` в тот же документ  определение, которое он называет
++ row  `allOf` из объектов  одна запись со всеми их свойствами
++ row  `enum` (или `const`) без `type`  тип его значений
++ row  `oneOf` или `anyOf`, все альтернативы которого — строки  `Text`, `enum` всех их значений, если каждая альтернатива — одно значение
++ row  свойство, допускающее несколько типов  объединение их прочтений, выбираемое по роду найденного значения
+
+= row  a property admitting several types  the union of their readings, chosen by the kind of value found
+- ```
++ ```
+
+- A `$ref` may take any JSON pointer, `#/definitions/…` and `#/$defs/…` alike. A union arises
+- from the alternatives of an `anyOf` or `oneOf`, and from a `type` which names several. So
+- `"exec": string | object` reads as `Text | Record { … }`, and `"ignore": string | array` as
+- `Text | List[Text]`, and each alternative keeps its own checks. A dictionary nests freely: a
+- dictionary of lists, a list of dictionaries, an array of arrays. A property named with a hyphen
+- or a keyword is reached through a backticked name, such as ``record.`content-type` ``.
++ `$ref` может принимать любой JSON Pointer, как `#/definitions/…`, так и `#/$defs/…`. Объединение
++ возникает из альтернатив `anyOf` или `oneOf` и из `type`, который называет несколько типов. Так,
++ `"exec": string | object` читается как `Text | Record { … }`, а `"ignore": string | array` — как
++ `Text | List[Text]`, и каждая альтернатива сохраняет собственные проверки. Словари свободно
++ вкладываются: словарь списков, список словарей, массив массивов. К свойству, имя которого
++ содержит дефис или является ключевым словом, обращаются через имя в обратных кавычках, например
++ ``record.`content-type` ``.
+
+- The schema's constraints are checked as each field is read, as is the value's JSON type:
++ Ограничения схемы проверяются при чтении каждого поля, как и JSON-тип значения:
+
+= The schema's constraints are checked as each field is read, as is the value's JSON type:
+=
+- ```tabular
++ ```tabular
+
+- column  Applies to
+- column  Keywords checked
+- row  a string  `enum` (or `const`), `pattern`, `minLength`, `maxLength`
+- row  a number  `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`
++ column  Применяется к
++ column  Проверяемые ключевые слова
++ row  строке  `enum` (или `const`), `pattern`, `minLength`, `maxLength`
++ row  числу  `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`
+
+= row  a number  `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`
+- ```
++ ```
+
+- The exclusive bounds are accepted in draft 4's boolean form and in the later numeric form. A
+- failed check raises a `Json.Provider.Error`. Every error is raised through the [tactic] of the
+- code which reads the field, so `validate`, with a `venture` for each field,
+- [collects every problem](errors.md#ventures-and-guards) in a document.
++ Исключающие границы принимаются как в булевой форме draft 4, так и в более поздней числовой.
++ Неудачная проверка порождает `Json.Provider.Error`. Каждая ошибка порождается через [тактику][тактика]
++ кода, который читает поле, поэтому `validate` с `venture` для каждого поля
++ [собирает все проблемы](errors.md#ventures-and-guards) документа.
+
+- Some constructs cannot be given a type, and remain raw `Json` to be read by hand:
++ Некоторым конструкциям нельзя дать тип, и они остаются сырым `Json`, который читается вручную:
+
+- - alternatives which the kind of value cannot tell apart, such as two object shapes in a
+-   `oneOf`, or an alternative typed as anything;
+- - a `not` or an `if`;
+- - an object with neither `properties` nor a value schema;
+- - an array with no `items` schema, or with a tuple-form `items` list;
+- - `patternProperties` of differing types;
+- - a reference to another document;
+- - a recursive reference, at the point of recursion, since a record type cannot contain itself.
++ - альтернативы, которые нельзя различить по роду значения, например две формы объектов в
++   `oneOf` или альтернатива, типизированная как что угодно;
++ - `not` или `if`;
++ - объект без `properties` и без схемы значений;
++ - массив без схемы `items` или со списком `items` в форме кортежа;
++ - `patternProperties` разных типов;
++ - ссылка на другой документ;
++ - рекурсивная ссылка, в точке рекурсии, поскольку тип записи не может содержать сам себя.
+
+- The schema's root must be an object with properties. A root which is an array, a bare string or
+- a reference to another document is a compiletime error. Where the root offers alternatives, and
+- one of them is such an object, the provider reads that one.
++ Корень схемы должен быть объектом со свойствами. Корень, который является массивом, голой строкой
++ или ссылкой на другой документ, — ошибка времени компиляции. Там, где корень предлагает
++ альтернативы и одна из них — такой объект, провайдер читает её.
+
+- A property whose name is a method of every JVM object, such as `notify`, `wait`, `toString` or
+- `hashCode`, cannot be selected by name. It is read through `record.selectDynamic("notify")`,
+- whose result is the field's reading: cast it to `Record.Field[T, Json.Provider.Error]`, and it
+- is applied to the `Tactic` in scope.
++ Свойство, имя которого — метод любого объекта JVM, например `notify`, `wait`, `toString` или
++ `hashCode`, нельзя выбрать по имени. Оно читается через `record.selectDynamic("notify")`, чей
++ результат — прочтение поля: приведите его к `Record.Field[T, Json.Provider.Error]`, и оно
++ применяется к `Tactic` в области видимости.
+
+- A format which names a network or identity type reads as whichever type represents that domain
+- where the record is used, chosen by importing its interface:
++ Формат, который называет сетевой тип или тип идентификатора, читается как тот тип, который
++ представляет эту область там, где используется запись, и выбирается импортом его интерфейса:
+
+= where the record is used, chosen by importing its interface:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Interface
+- column  Reads as
++ column  Формат
++ column  Интерфейс
++ column  Читается как
+
+- row  `email`, `idn-email`  `emailAddressInterfaces.soundnessEmailAddress`  `EmailAddress`
++ row  `email`, `idn-email`  `emailAddressInterfaces.soundnessEmailAddress`  `EmailAddress`
+
+- row  `hostname`  `hostnameInterfaces.soundnessHostname`  `Hostname`
++ row  `hostname`  `hostnameInterfaces.soundnessHostname`  `Hostname`
+
+- row  `ipv4`  `ipAddressInterfaces.soundnessIpv4`  `Ipv4`
++ row  `ipv4`  `ipAddressInterfaces.soundnessIpv4`  `Ipv4`
+
+- row  `ipv6`  `ipAddressInterfaces.soundnessIpv6`  `Ipv6`
++ row  `ipv6`  `ipAddressInterfaces.soundnessIpv6`  `Ipv6`
+
+- row  `uri`, `iri`  `urlInterfaces.soundnessUrl`  `HttpUrl`
++ row  `uri`, `iri`  `urlInterfaces.soundnessUrl`  `HttpUrl`
+
+- row  `uuid`  `uuidInterfaces.soundnessUuid`  `Uuid`
++ row  `uuid`  `uuidInterfaces.soundnessUuid`  `Uuid`
+
+= row  `uuid`  `uuidInterfaces.soundnessUuid`  `Uuid`
+- ```
++ ```
+
+- So with `emailAddressInterfaces.soundnessEmailAddress` imported, `record.email` is an
+- `EmailAddress`. [Network addresses](network-addresses.md) and [UUIDs](uuid.md) describe these
+- types.
++ Так, при импортированном `emailAddressInterfaces.soundnessEmailAddress` `record.email` — это
++ `EmailAddress`. Эти типы описаны в разделах [Сетевые адреса](network-addresses.md) и
++ [UUID](uuid.md).
+
+- A provider can equally produce a named tuple, `(name: Text, children: List[(weight: Double)])`,
+- whose elements are all read when it is built, by declaring a `tuple` method beside `record`.
+- [Records](records.md) describes both forms and how they differ.
++ Провайдер может так же производить именованный кортеж, `(name: Text, children: List[(weight:
++ Double)])`, все элементы которого читаются при его построении, если объявить метод `tuple` рядом
++ с `record`. В разделе [Записи](records.md) описаны обе формы и то, чем они различаются.
+
+- ### Dates and times
++ ### Даты и время
+
+- The temporal types of [Time](time.md) are not encoded in JSON until an import says how. An
+- `Instant` and a `Duration` each travel as a whole number of milliseconds:
++ Временные типы из раздела [Время](time.md) не кодируются в JSON, пока импорт не скажет как.
++ `Instant` и `Duration` передаются как целое число миллисекунд:
+
+= `Instant` and a `Duration` each travel as a whole number of milliseconds:
+=
+- ```scala
++ ```scala
+
+- import chronometries.unixChronometry
++ import chronometries.unixChronometry
+
+- import encodables.instantJsonEncodable
++ import encodables.instantJsonEncodable
+
+- import decodables.durationJsonDecodable
++ import decodables.durationJsonDecodable
+
+= import decodables.durationJsonDecodable
+- ```
++ ```
+
+= import decodables.durationJsonDecodable
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import decodables.durationJsonDecodable
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import decodables.durationJsonDecodable
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Instant(1700000000000L).in[Json].show)
++ Out.println(Instant(1700000000000L).in[Json].show)
+
+- Out.println(t"5000".read[Json].as[Duration].value.inspect)
++ Out.println(t"5000".read[Json].as[Duration].value.inspect)
+
+= Out.println(t"5000".read[Json].as[Duration].value.inspect)
+- ```
++ ```
+
+- `encodables` and `decodables` each have an instance for both types, and `parsables` has the
+- instances the [direct parsers](#skipping-the-tree) use.
++ В `encodables` и `decodables` есть по экземпляру для обоих типов, а в `parsables` — экземпляры,
++ которые используют [прямые парсеры](#skipping-the-tree).
+
+- ### JSON over HTTP
++ ### JSON поверх HTTP
+
+- A `Json` value is a request body and a response body, sent as `application/json`. The
+- [HTTP client](http-client.md#posting-a-body) posts one once `postables.jsonPostable` is
+- imported, and the response's text is read back as `Json`:
++ Значение `Json` — тело запроса и тело ответа, отправляемое как `application/json`.
++ [HTTP-клиент](http-client.md#posting-a-body) отправляет его, как только импортирован
++ `postables.jsonPostable`, а текст ответа читается обратно как `Json`:
+
+= imported, and the response's text is read back as `Json`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= imported, and the response's text is read back as `Json`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= imported, and the response's text is read back as `Json`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import postables.jsonPostable
++ import postables.jsonPostable
+
+- val reply: Json =
++ val reply: Json =
+
+-   url"https://example.com/people".submit(Http.Post)(Person(t"Hamlet", 30).in[Json]).receive[Text].read[Json]
++   url"https://example.com/people".submit(Http.Post)(Person(t"Hamlet", 30).in[Json]).receive[Text].read[Json]
+
+=   url"https://example.com/people".submit(Http.Post)(Person(t"Hamlet", 30).in[Json]).receive[Text].read[Json]
+- ```
++ ```
+
+- With `servables.jsonServable` imported, an [HTTP server](http-server.md#responses) answers a
+- request with a `Json` value in the same way. No glue is needed between the two layers: the
+- encoders and decoders described above carry the values across.
++ С импортированным `servables.jsonServable` [HTTP-сервер](http-server.md#responses) так же
++ отвечает на запрос значением `Json`. Между двумя слоями не нужен никакой связующий код: описанные
++ выше кодировщики и декодеры переносят значения.
+
+- ### Related
++ ### Связанное
+
+- - [YAML](yaml.md), [XML](xml.md), [CBOR](cbor.md), [TEL](tel.md) and [CSV](csv.md) use the same
+-   `read`, `as` and `in` vocabulary, so a case class which works with one works with the others.
+- - [Derivation](derivation.md) explains how the codecs for a case class are generated.
+- - [Decoding](decoding.md) covers reading a single text value as a type.
+- - [Errors](errors.md) covers the strategies that decide what a `Json.Error` does.
+- - [Optics](optics.md) covers the lenses used for deep updates.
+- - [Records](records.md) covers the typed records a schema provides.
++ - [YAML](yaml.md), [XML](xml.md), [CBOR](cbor.md), [TEL](tel.md) и [CSV](csv.md) используют тот
++   же словарь `read`, `as` и `in`, поэтому case-класс, который работает с одним, работает и с
++   остальными.
++ - В разделе [Деривация](derivation.md) объясняется, как генерируются кодеки для case-класса.
++ - Раздел [Декодирование](decoding.md) посвящён чтению одного текстового значения как типа.
++ - Раздел [Ошибки](errors.md) посвящён стратегиям, которые решают, что делает `Json.Error`.
++ - Раздел [Оптика](optics.md) посвящён линзам, используемым для глубоких обновлений.
++ - Раздел [Записи](records.md) посвящён типизированным записям, которые предоставляет схема.

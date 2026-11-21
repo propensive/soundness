@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.68.2` — `Moniker.Error`
++ # `↯/s.68.2` — `Moniker.Error`
+
+- Raised when a moniker — a stable, compiletime-checked identifier — is not valid.
++ Порождается, когда моникер — стабильный идентификатор, проверяемый во время компиляции, — некорректен.
+
+- ## Cause
++ ## Причина
+
+- A moniker names something so it can be referred to across edits: a test, a benchmark cell,
+- a schema field. Its syntax is restricted so that it can appear unquoted on a command line
+- and in a report.
++ Моникер называет что-либо так, чтобы на это можно было ссылаться при правках: тест, ячейку
++ бенчмарка, поле схемы. Его синтаксис ограничен, чтобы он мог появляться без кавычек в командной
++ строке и в отчёте.
+
+- ## Variants
++ ## Варианты
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Код
++ column  Причина
++ column  Сообщение
+
+- row  `↯/s.68.2.1`  `Unreadable`  `[↯/s.68.2.1] the vocabulary could not be read`
++ row  `↯/s.68.2.1`  `Unreadable`  `[↯/s.68.2.1] the vocabulary could not be read`
+
+- row  `↯/s.68.2.2`  `OutOfRange`  `[↯/s.68.2.2] the number <n> is outside the representable range`
++ row  `↯/s.68.2.2`  `OutOfRange`  `[↯/s.68.2.2] the number <n> is outside the representable range`
+
+- row  `↯/s.68.2.3`  `Malformed`  `[↯/s.68.2.3] <name> is not of the form <adjective>-<animal>`
++ row  `↯/s.68.2.3`  `Malformed`  `[↯/s.68.2.3] <name> is not of the form <adjective>-<animal>`
+
+- row  `↯/s.68.2.4`  `UnknownWord`  `[↯/s.68.2.4] the word <word> does not appear in the vocabulary`
++ row  `↯/s.68.2.4`  `UnknownWord`  `[↯/s.68.2.4] the word <word> does not appear in the vocabulary`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Use an identifier made of letters, digits and the permitted separators, beginning with a
+- letter. The reason names the specific rule that was broken.
++ Используйте идентификатор из букв, цифр и допустимых разделителей, начинающийся с буквы. Причина
++ называет конкретное нарушенное правило.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/nomenclature/src/lexicon/nomenclature.Moniker.scala`
++ - Исходный код: `lib/nomenclature/src/lexicon/nomenclature.Moniker.scala`

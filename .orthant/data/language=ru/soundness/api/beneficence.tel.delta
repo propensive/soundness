@@ -1,0 +1,530 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base beneficence
++ base beneficence
+
+- import soundness
++ import soundness
+
+- info   a compiler plugin which indexes givens, test suites and tests as they compile, for tools to find later
++ info   плагин компилятора, который при компиляции индексирует given, наборы тестов и тесты, чтобы инструменты позже могли их найти
+
+- detail
++ detail
+
+-     _Beneficence_ is a Scala 3 compiler plugin with a small runtime half. As each module
+-     compiles, the plugin walks the typed trees and writes three indexes into the module's
+-     output directory, so that a tool can later learn what a classpath offers without loading
+-     or running any of it:
++     _Beneficence_ — плагин компилятора Scala 3 с небольшой частью для времени выполнения. При
++     компиляции каждого модуля плагин обходит типизированные деревья и записывает три индекса в
++     выходной каталог модуля, чтобы инструмент позже мог узнать, что предлагает путь классов, не
++     загружая и не запуская ничего из него:
+
+-     - `META-INF/givens/<typeclass>` — every named given of a `Findable` type, by the fully
+-       qualified name a programmer would import it by. The `frontier` library's explanation of
+-       a missing contextual value reads this index (through `givens`) to propose the givens
+-       which would supply it, such as `systems.javaBaseSystem` for a missing `System`.
+-     - `META-INF/services/probably.Suite` — every `probably.Suite` object, in the standard
+-       `ServiceLoader` layout. A suite has no main class: the fume test runner discovers
+-       suites from this index alone, so a test module compiled without the plugin has no
+-       runnable tests.
+-     - `META-INF/probably/tests/<source>-<hash>` — one file per source, listing each test, group
+-       and suite, its place in the hierarchy, kind, moniker, tags and line, so that a runner can
+-       list and select tests without running a suite.
++     - `META-INF/givens/<typeclass>` — каждый именованный given типа `Findable` под полным
++       квалифицированным именем, по которому программист импортировал бы его. Объяснение
++       отсутствующего контекстного значения в библиотеке `frontier` читает этот индекс (через
++       `givens`), чтобы предложить given, которые его предоставили бы, например
++       `systems.javaBaseSystem` для отсутствующего `System`.
++     - `META-INF/services/probably.Suite` — каждый объект `probably.Suite` в стандартной раскладке
++       `ServiceLoader`. У набора тестов нет главного класса: раннер тестов fume находит наборы
++       тестов только по этому индексу, поэтому в тестовом модуле, скомпилированном без плагина,
++       нет запускаемых тестов.
++     - `META-INF/probably/tests/<source>-<hash>` — по одному файлу на исходник, перечисляющему
++       каждый тест, группу и набор тестов, его место в иерархии, вид, моникер, теги и строку,
++       чтобы раннер мог перечислять и выбирать тесты, не запуская набор тестов.
+
+-     A type takes part in the givens index by extending `Findable`:
++     Тип участвует в индексе given, расширяя `Findable`:
+
+=     A type takes part in the givens index by extending `Findable`:
+=
+-     ```scala
++     ```scala
+
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     trait Renderer extends Findable:
++     trait Renderer extends Findable:
+
+-       def render(text: Text): Text
++       def render(text: Text): Text
+
+-     object renderers:
++     object renderers:
+
+-       given plainRenderer: Renderer = text => text
++       given plainRenderer: Renderer = text => text
+
+=       given plainRenderer: Renderer = text => text
+-     ```
++     ```
+
+-     Compiled with the plugin, this writes `renderers.plainRenderer` to
+-     `META-INF/givens/Renderer`, beneath a `# source:` line naming the file it came from.
++     При компиляции с плагином это записывает `renderers.plainRenderer` в
++     `META-INF/givens/Renderer` под строкой `# source:`, называющей файл, откуда он взят.
+
+-     The plugin is enabled with `-Xplugin:` pointing at the `beneficence.plugin` jar, and does
+-     nothing at all unless `beneficence.Findable` is on the compilation's classpath. It writes
+-     only to a directory output; compiling straight to a JAR writes no index. Compilation is
+-     incremental-safe: the entries contributed by the sources being recompiled are replaced,
+-     and those of every other source are kept, and each file is written to a unique temporary
+-     file beside it and moved into place atomically, so concurrent compilations into the same
+-     directory do not corrupt one another.
++     Плагин включается с помощью `-Xplugin:`, указывающего на jar `beneficence.plugin`, и не
++     делает вообще ничего, если `beneficence.Findable` нет в пути классов компиляции. Он пишет
++     только в выходной каталог; при компиляции прямо в JAR индекс не записывается. Компиляция
++     безопасна для инкрементности: записи, внесённые перекомпилируемыми исходниками, заменяются,
++     записи всех остальных исходников сохраняются, а каждый файл записывается в уникальный
++     временный файл рядом с ним и атомарно перемещается на место, поэтому параллельные компиляции
++     в один каталог не портят друг друга.
+
+-     Because each module writes its own fragment of each index, a build which merges modules
+-     into one JAR (an assembly, a fat jar) must concatenate the files under `META-INF/givens/`,
+-     `META-INF/services/` and `META-INF/probably/` rather than keep only one of them.
++     Поскольку каждый модуль пишет собственный фрагмент каждого индекса, сборка, объединяющая
++     модули в один JAR (assembly, fat jar), должна конкатенировать файлы в `META-INF/givens/`,
++     `META-INF/services/` и `META-INF/probably/`, а не оставлять только один из них.
+
+-     The library has two components:
++     У библиотеки два компонента:
+
+-     - `beneficence.core` — `Findable` and the `givens` lookup, a dependency of almost every
+-       Soundness library. Exported to the `soundness` umbrella.
+-     - `beneficence.plugin` — `BeneficencePlugin` and its phase, built against the compiler
+-       and published as a standalone artifact, since a `-Xplugin:` jar declares exactly one
+-       plugin.
++     - `beneficence.core` — `Findable` и поиск `givens`, зависимость почти каждой библиотеки
++       Soundness. Экспортируется в зонтичный модуль `soundness`.
++     - `beneficence.plugin` — `BeneficencePlugin` и его фаза, собранные против компилятора и
++       публикуемые как отдельный артефакт, поскольку jar для `-Xplugin:` объявляет ровно один
++       плагин.
+
+- refer beneficence.Findable
++ refer beneficence.Findable
+
+- refer beneficence.givens
++ refer beneficence.givens
+
+- refer beneficence.BeneficencePlugin
++ refer beneficence.BeneficencePlugin
+
+- entry .Findable   marks a type whose named givens are recorded in the `META-INF/givens` index
++ entry .Findable   помечает тип, именованные given которого записываются в индекс `META-INF/givens`
+
+= entry .Findable   marks a type whose named givens are recorded in the `META-INF/givens` index
+-   detail
++   detail
+
+-       `Findable` is an empty marker trait. A `given` whose type has `Findable` among its base
+-       classes is recorded by the beneficence plugin under `META-INF/givens/<typeclass>`, where
+-       the typeclass is the given's first proper base class: for `given javaBaseSystem: System`
+-       the file is `META-INF/givens/ambience.System`, and the line is
+-       `ambience.systems.javaBaseSystem`. A given declared with a refining body (`given puck: T:
+-       …`), which the compiler implements as a class of its own, is recorded under `T`.
++       `Findable` — пустой трейт-маркер. `given`, у типа которого среди базовых классов есть
++       `Findable`, записывается плагином beneficence в `META-INF/givens/<typeclass>`, где класс
++       типов — первый собственный базовый класс given: для `given javaBaseSystem: System` файлом
++       будет `META-INF/givens/ambience.System`, а строкой —
++       `ambience.systems.javaBaseSystem`. Given, объявленный с уточняющим телом (`given puck: T:
++       …`), который компилятор реализует собственным классом, записывается под `T`.
+
+-       What the plugin records, as the declaration changes:
++       Что записывает плагин при изменении объявления:
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A plain trait: nothing is recorded
++         label Простой трейт: ничего не записывается
+
+=         label A plain trait: nothing is recorded
+-         code
++         code
+
+-             trait Dialect:
++             trait Dialect:
+
+=             trait Dialect:
+-               def name: Text
++               def name: Text
+
+=             trait Dialect:
+=               def name: Text
+=
+-             object dialects:
++             object dialects:
+
+=             trait Dialect:
+=               def name: Text
+=
+=             object dialects:
+-               given ansiDialect: Dialect:
++               given ansiDialect: Dialect:
+
+=             trait Dialect:
+=               def name: Text
+=
+=             object dialects:
+=               given ansiDialect: Dialect:
+-                 def name: Text = t"ANSI"
++                 def name: Text = t"ANSI"
+
+=             trait Dialect:
+=               def name: Text
+=
+=             object dialects:
+=               given ansiDialect: Dialect:
+=                 def name: Text = t"ANSI"
+-       frame
++       frame
+
+-         label Extending Findable: `dialects.ansiDialect` is written to META-INF/givens/Dialect
++         label Расширение Findable: `dialects.ansiDialect` записывается в META-INF/givens/Dialect
+
+=         label Extending Findable: `dialects.ansiDialect` is written to META-INF/givens/Dialect
+-         code
++         code
+
+=         label Extending Findable: `dialects.ansiDialect` is written to META-INF/givens/Dialect
+=         code
+-             trait Dialect extends Findable:
++             trait Dialect extends Findable:
+
+=         label Extending Findable: `dialects.ansiDialect` is written to META-INF/givens/Dialect
+=         code
+=             trait Dialect extends Findable:
+-               def name: Text
++               def name: Text
+
+=             trait Dialect extends Findable:
+=               def name: Text
+=
+-             object dialects:
++             object dialects:
+
+=             trait Dialect extends Findable:
+=               def name: Text
+=
+=             object dialects:
+-               given ansiDialect: Dialect:
++               given ansiDialect: Dialect:
+
+=             trait Dialect extends Findable:
+=               def name: Text
+=
+=             object dialects:
+=               given ansiDialect: Dialect:
+-                 def name: Text = t"ANSI"
++                 def name: Text = t"ANSI"
+
+=             trait Dialect extends Findable:
+=               def name: Text
+=
+=             object dialects:
+=               given ansiDialect: Dialect:
+=                 def name: Text = t"ANSI"
+-       frame
++       frame
+
+-         label A given inside a class cannot be imported, so it is not recorded
++         label Given внутри класса нельзя импортировать, поэтому он не записывается
+
+=         label A given inside a class cannot be imported, so it is not recorded
+-         code
++         code
+
+=         label A given inside a class cannot be imported, so it is not recorded
+=         code
+-             trait Dialect extends Findable:
++             trait Dialect extends Findable:
+
+=         label A given inside a class cannot be imported, so it is not recorded
+=         code
+=             trait Dialect extends Findable:
+-               def name: Text
++               def name: Text
+
+-             class Dialects():
++             class Dialects():
+
+=             class Dialects():
+-               given ansiDialect: Dialect:
++               given ansiDialect: Dialect:
+
+=             class Dialects():
+=               given ansiDialect: Dialect:
+-                 def name: Text = t"ANSI"
++                 def name: Text = t"ANSI"
+
+-       ##
++       ##
+
+-       ```
++       ```
+
+-       Only givens a plain `import` could reach are recorded: every enclosing scope must be a
+-       package or an object. A given in a class, trait or method body is skipped, as is an
+-       anonymous given, which has no name to import. Many Soundness contexts are `Findable`
+-       (`System`, `Clock`, `Random`, `Timezone`, `Environment`, `Serializable`,
+-       `Deserializable`, …), which is what lets a compile error for a missing one suggest the
+-       import which would supply it.
++       Записываются только given, до которых мог бы дотянуться обычный `import`: каждая
++       объемлющая область видимости должна быть пакетом или объектом. Given в теле класса, трейта
++       или метода пропускается, как и анонимный given, у которого нет имени для импорта. Многие
++       контексты Soundness являются `Findable` (`System`, `Clock`, `Random`, `Timezone`,
++       `Environment`, `Serializable`, `Deserializable`, …), и именно это позволяет ошибке
++       компиляции из-за отсутствия одного из них предложить импорт, который его предоставил бы.
+
+-   refer beneficence.givens
++   refer beneficence.givens
+
+- entry .givens   the givens recorded on the compiler's classpath for a typeclass, for use in a macro
+-     `givens(typeRepr)` is a macro-time lookup: given a `TypeRepr` inside a `Quotes` context, it
+-     reads every `META-INF/givens/<typeclass>` resource on the classpath of the macro's own
+-     classloader (the class of the dealiased type names the file), skips blank lines and `#`
+-     comments, removes duplicates, and resolves each fully qualified name to the `Symbol` of the
+-     given, as a method or a field of its owning object or class. A name which no longer
+-     resolves is silently dropped, and a type with no class symbol gives `Nil`.
++ entry .givens   given, записанные в пути классов компилятора для класса типов, для использования в макросе
++     `givens(typeRepr)` — поиск во время работы макроса: для `TypeRepr` внутри контекста `Quotes`
++     он читает каждый ресурс `META-INF/givens/<typeclass>` в пути классов собственного
++     загрузчика классов макроса (класс типа с раскрытыми псевдонимами называет файл), пропускает
++     пустые строки и комментарии `#`, удаляет дубликаты и разрешает каждое полное
++     квалифицированное имя в `Symbol` given — как метод или поле объекта или класса-владельца.
++     Имя, которое больше не разрешается, молча отбрасывается, а тип без символа класса даёт `Nil`.
+
+=     resolves is silently dropped, and a type with no class symbol gives `Nil`.
+=
+-     ```scala
++     ```scala
+
+-     import scala.quoted.*
++     import scala.quoted.*
+
+=     import scala.quoted.*
+-     import soundness.*
++     import soundness.*
+
+-     def candidates[typeclass: Type](using Quotes): scala.collection.immutable.List[Text] =
++     def candidates[typeclass: Type](using Quotes): scala.collection.immutable.List[Text] =
+
+-       import quotes.reflect.*
++       import quotes.reflect.*
+
+-       givens(TypeRepr.of[typeclass]).map(_.fullName.tt)
++       givens(TypeRepr.of[typeclass]).map(_.fullName.tt)
+
+=       givens(TypeRepr.of[typeclass]).map(_.fullName.tt)
+-     ```
++     ```
+
+-     The result is the stdlib `List` of `quotes.reflect.Symbol`, since it is used only by
+-     macro code. `frontier` uses it to propose the givens that would satisfy a missing
+-     contextual parameter.
++     Результат — стандартный `List` из `quotes.reflect.Symbol`, поскольку он используется только
++     кодом макросов. `frontier` использует его, чтобы предлагать given, которые удовлетворили бы
++     отсутствующий контекстный параметр.
+
+- entry .internal   the classpath reader behind `givens`
++ entry .internal   читатель пути классов, стоящий за `givens`
+
+= entry .internal   the classpath reader behind `givens`
+-   hidden
++   hidden
+
+= entry .internal   the classpath reader behind `givens`
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `givens` delegates to it.
+-   entry .givens   reads and resolves the `META-INF/givens` entries for a type; see `beneficence.givens`
++       Не для прямого использования: `givens` делегирует ему.
++   entry .givens   читает и разрешает записи `META-INF/givens` для типа; см. `beneficence.givens`
+
+- entry .BeneficencePlugin   the compiler plugin which writes the givens, suites and tests indexes
++ entry .BeneficencePlugin   плагин компилятора, который записывает индексы given, наборов тестов и тестов
+
+= entry .BeneficencePlugin   the compiler plugin which writes the givens, suites and tests indexes
+-   detail
++   detail
+
+-       The `StandardPlugin` named `beneficence`, which installs one phase, `GivensPhase`. It is
+-       enabled by passing the `beneficence.plugin` jar to the compiler as
+-       `-Xplugin:<path to the jar>`, and takes no options. The plugin writes indexes only into a directory output, and only
+-       records givens when `beneficence.Findable` is on the classpath; suites and tests are
+-       indexed only when `probably.Suite` (and `probably.Testable`) are.
++       `StandardPlugin` с именем `beneficence`, устанавливающий одну фазу, `GivensPhase`. Он
++       включается передачей jar `beneficence.plugin` компилятору как
++       `-Xplugin:<path to the jar>` и не принимает параметров. Плагин пишет индексы только в выходной каталог и
++       записывает given, только когда `beneficence.Findable` есть в пути классов; наборы тестов и
++       тесты индексируются, только когда там есть `probably.Suite` (и `probably.Testable`).
+
+-   refer beneficence.GivensPhase
++   refer beneficence.GivensPhase
+
+-   entry #name   the plugin's name: `beneficence`
++   entry #name   имя плагина: `beneficence`
+
+- entry .GivensPhase   the plugin phase which collects givens, suites and tests and writes their indexes
++ entry .GivensPhase   фаза плагина, которая собирает given, наборы тестов и тесты и записывает их индексы
+
+= entry .GivensPhase   the plugin phase which collects givens, suites and tests and writes their indexes
+-   detail
++   detail
+
+-       Runs after `typer` and before `pickler`, over all the compilation units of a run at once.
+-       It records:
++       Выполняется после `typer` и до `pickler` над всеми единицами компиляции прогона сразу.
++       Она записывает:
+
+-       - each stably accessible named given of a `Findable` type, under its typeclass;
+-       - each top-level or object-nested `object` extending `probably.Suite`, into
+-         `META-INF/services/probably.Suite`;
+-       - each source's tests, through `TestsIndex`, into `META-INF/probably/tests`.
++       - каждый стабильно доступный именованный given типа `Findable` — под его классом типов;
++       - каждый `object` верхнего уровня или вложенный в объект, расширяющий `probably.Suite`, —
++         в `META-INF/services/probably.Suite`;
++       - тесты каждого исходника — через `TestsIndex` в `META-INF/probably/tests`.
+
+-       Then it merges what it found into the output directory with `GivensWriter`. The phase
+-       may also report two compile errors while indexing tests: _the suite id "…" must be a
++       Затем она сливает найденное в выходной каталог с помощью `GivensWriter`. При индексации
++       тестов фаза может также сообщить о двух ошибках компиляции: _the suite id "…" must be a
+
+-       letter or `_` followed by letters, digits, `_` or `-`, so that it can be typed on a
++       letter or `_` followed by letters, digits, `_` or `-`, so that it can be typed on a
+
+-       command line_, for a suite whose `Topic` is not such an identifier, and _this Testable
+-       has no topic, so a test declared in this method would not be declared for it_, for a
+-       method taking a `Testable` whose `Topic` is not fixed (write `Testable of "<suite>"`, or
+-       `Testable of topic` for a type parameter `topic <: Label`).
++       command line_ — для набора тестов, `Topic` которого не является таким идентификатором, и
++       _this Testable has no topic, so a test declared in this method would not be declared for
++       it_ — для метода, принимающего `Testable`, `Topic` которого не зафиксирован (напишите
++       `Testable of "<suite>"` или `Testable of topic` для параметра типа `topic <: Label`).
+
+-   refer beneficence.GivensWriter
++   refer beneficence.GivensWriter
+
+-   refer beneficence.TestsIndex
++   refer beneficence.TestsIndex
+
+-   entry #phaseName   the phase's name: `beneficenceGivens`
++   entry #phaseName   имя фазы: `beneficenceGivens`
+
+- entry .Entry   one recorded name and the source file which declared it
++ entry .Entry   одно записанное имя и исходный файл, который его объявил
+
+= entry .Entry   one recorded name and the source file which declared it
+-   hidden
++   hidden
+
+= entry .Entry   one recorded name and the source file which declared it
+=   hidden
+-   detail
++   detail
+
+-       The plugin's working record, grouped by source when an index is merged. Not for direct
+-       use.
+-   entry #fqn          the fully qualified name of the given or suite
+-   entry #sourceFile   the path of the source file which declared it
++       Рабочая запись плагина, группируемая по исходникам при слиянии индекса. Не для прямого
++       использования.
++   entry #fqn          полное квалифицированное имя given или набора тестов
++   entry #sourceFile   путь к исходному файлу, который его объявил
+
+- entry .GivensWriter   merges the plugin's collected entries into the index files of the output directory
++ entry .GivensWriter   сливает собранные плагином записи в файлы индексов выходного каталога
+
+= entry .GivensWriter   merges the plugin's collected entries into the index files of the output directory
+-   hidden
++   hidden
+
+= entry .GivensWriter   merges the plugin's collected entries into the index files of the output directory
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. Each index file is a sequence of blocks, one per source file, each
+-       headed `# source: <path>` and followed by one fully qualified name per line. A merge
+-       drops the blocks of the sources being recompiled, keeps the others in their order, and
+-       appends the new ones, then writes a unique temporary file beside the target and moves it
+-       into place atomically. With a JAR output, nothing is written.
+-   entry .merge         merges collected givens into `META-INF/givens/<typeclass>`, one file per typeclass
+-   entry .mergeSuites   merges collected suites into `META-INF/services/probably.Suite`
+-       Skipped entirely when the compilation found no suites, leaving any earlier file as it was.
+-   entry .writeTests    writes each source's test index into `META-INF/probably/tests`
+-       One file per source, named from the source's file name and the first six bytes of the
+-       SHA-256 of its path, so no two modules of an assembly write the same file. A source which
+-       now declares no tests has its file deleted.
++       Не для прямого использования. Каждый файл индекса — последовательность блоков, по одному на
++       исходный файл, каждый с заголовком `# source: <path>`, за которым следует по одному полному
++       квалифицированному имени на строку. Слияние отбрасывает блоки перекомпилируемых
++       исходников, сохраняет остальные в их порядке и дописывает новые, затем записывает
++       уникальный временный файл рядом с целевым и атомарно перемещает его на место. При выводе в
++       JAR ничего не записывается.
++   entry .merge         сливает собранные given в `META-INF/givens/<typeclass>`, по одному файлу на класс типов
++   entry .mergeSuites   сливает собранные наборы тестов в `META-INF/services/probably.Suite`
++       Полностью пропускается, если компиляция не нашла наборов тестов, и прежний файл остаётся
++       как был.
++   entry .writeTests    записывает индекс тестов каждого исходника в `META-INF/probably/tests`
++       По одному файлу на исходник, имя которого составлено из имени файла исходника и первых
++       шести байтов SHA-256 его пути, поэтому никакие два модуля сборки не пишут один и тот же
++       файл. Если исходник больше не объявляет тестов, его файл удаляется.
+
+- entry .TestsIndex   the static index of Probably tests the plugin writes for each source file
++ entry .TestsIndex   статический индекс тестов Probably, который плагин записывает для каждого исходного файла
+
+= entry .TestsIndex   the static index of Probably tests the plugin writes for each source file
+-   hidden
++   hidden
+
+= entry .TestsIndex   the static index of Probably tests the plugin writes for each source file
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use; the format is read by test runners such as fume. Each file begins
+-       `# probably tests <version>` and `# source: <path>`, followed by tab-separated lines of
+-       six kinds — `suite`, `group`, `test`, `nest`, `call` and `open` — which place every test
+-       declaration in its suite's hierarchy by the `probably.Testable` the compiler chose for
+-       it, rather than by where it sits in the source. A test declared inside an `impromptu`
+-       block is left out, and an `open` line marks the place as having more tests than are
+-       listed. Backslashes, tabs and newlines in a field are escaped with a backslash, and `\*`
+-       stands for a part of a name only known at runtime.
+-   entry .version   the version of the index format, written in each file's first line
+-   entry .index     the index lines for one compilation unit
++       Не для прямого использования; формат читают раннеры тестов, такие как fume. Каждый файл
++       начинается с `# probably tests <version>` и `# source: <path>`, за которыми следуют строки
++       с полями через табуляцию шести видов — `suite`, `group`, `test`, `nest`, `call` и `open`, —
++       помещающие каждое объявление теста в иерархию его набора тестов по `probably.Testable`,
++       который для него выбрал компилятор, а не по его месту в исходнике. Тест, объявленный внутри
++       блока `impromptu`, не включается, а строка `open` помечает место как содержащее больше
++       тестов, чем перечислено. Обратные косые черты, табуляции и переводы строк в поле
++       экранируются обратной косой чертой, а `\*` обозначает часть имени, известную только во
++       время выполнения.
++   entry .version   версия формата индекса, записываемая в первой строке каждого файла
++   entry .index     строки индекса для одной единицы компиляции

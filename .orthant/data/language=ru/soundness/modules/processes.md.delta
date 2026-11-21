@@ -1,0 +1,857 @@
+orthant 1 language
+
+- ## Processes
++ ## Процессы
+
+- ### About
++ ### Обзор
+
+- Shell commands and subprocesses are run through the `sh"…"` [interpolator]:
++ Команды оболочки и подпроцессы запускаются через [интерполятор] `sh"…"`:
+
+- - The command is parsed at [compiletime], so an unbalanced quote does not compile.
+- - A value which is substituted into it is escaped according to where it sits, so a filename
+-   with a space in it cannot break the command apart.
+- - The output is turned into whatever type is asked for: its lines as a list, the whole of it
+-   as text, the raw bytes as a stream, or the exit status.
++ - Команда разбирается во [время компиляции], поэтому несбалансированная кавычка не компилируется.
++ - Значение, подставленное в команду, экранируется в зависимости от того, где оно стоит, поэтому
++   имя файла с пробелом не может разбить команду на части.
++ - Вывод превращается в тот тип, который запрошен: строки в виде списка, весь вывод в виде текста,
++   сырые байты в виде потока данных или код завершения.
+
+- Commands pipe together. A command is run and waited for, or is forked into a background job.
++ Команды соединяются в конвейеры. Команду можно запустить и дождаться её завершения или ответвить
++ в фоновое задание.
+
+- ### On subprocesses
++ ### О подпроцессах
+
+- Running a subprocess is where injection bugs breed. Build the command as one string, and a
+- substituted value can smuggle in extra arguments, or a character which means something to the
+- shell. Build it as an array to be safe, and the convenience is gone. Either way, the output
+- comes back as a raw stream, to be decoded, buffered and closed by hand, and the exit status is
+- an integer which someone must remember to check.
++ Запуск подпроцесса — рассадник ошибок внедрения. Если собрать команду одной строкой, подставленное
++ значение может протащить лишние аргументы или символ, который что-то значит для оболочки. Если для
++ безопасности собрать её массивом, удобство пропадает. В обоих случаях вывод возвращается сырым
++ потоком данных, который нужно вручную декодировать, буферизовать и закрыть, а код завершения —
++ целое число, которое кто-то должен не забыть проверить.
+
+- Here the structure of the command is parsed at compiletime, so quoting is understood before
+- the program runs. Each substituted value is escaped for its exact position: a value placed
+- where a single argument is expected stays one argument, however it is spelled. The output is
+- interpreted by the type requested, so reading lines, bytes or an exit status is a matter of
+- naming the type, not of parsing a stream. A process whose result type and ways of failing are
+- in its signature has an [honest signature](../../philosophy/honest-signatures.md), for something
+- which is usually driven by side effect.
++ Здесь структура команды разбирается во время компиляции, поэтому кавычки понимаются ещё до запуска
++ программы. Каждое подставленное значение экранируется для своей точной позиции: значение,
++ помещённое туда, где ожидается один аргумент, остаётся одним аргументом, как бы оно ни было
++ записано. Вывод интерпретируется запрошенным типом, поэтому чтение строк, байтов или кода
++ завершения сводится к тому, чтобы назвать тип, а не разбирать поток данных. У процесса, тип
++ результата и способы отказа которого указаны в его сигнатуре, —
++ [честная сигнатура](../../philosophy/honest-signatures.md), и это у того, что обычно управляется
++ побочными эффектами.
+
+- Everything comes from the `soundness` package. A working directory and an error [strategy] are
+- in scope, and the last import lets the samples print their results:
++ Всё берётся из пакета `soundness`. В области видимости находятся рабочий каталог и [стратегия]
++ обработки ошибок, а последний импорт позволяет примерам печатать результаты:
+
+= in scope, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import workingDirectories.javaBaseWorkingDirectory
++ import workingDirectories.javaBaseWorkingDirectory
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Defining a command
++ ### Определение команды
+
+- `sh"…"` builds a `Command`. It splits the text at whitespace, and honors quotes as a shell
+- would:
++ `sh"…"` строит `Command`. Он разбивает текст по пробельным символам и учитывает кавычки так же,
++ как оболочка:
+
+= would:
+=
+- ```scala fuel
++ ```scala fuel
+
+= would:
+=
+= ```scala fuel
+- run
++ run
+
+= would:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sh"ls -la".inspect)
++ Out.println(sh"ls -la".inspect)
+
+- Out.println(sh"echo 'Hello world'".inspect)
++ Out.println(sh"echo 'Hello world'".inspect)
+
+= Out.println(sh"echo 'Hello world'".inspect)
+- ```
++ ```
+
+- A command whose quotes do not balance does not compile:
++ Команда с несбалансированными кавычками не компилируется:
+
+= A command whose quotes do not balance does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- sh"echo 'Hello world"
++ sh"echo 'Hello world"
+
+= sh"echo 'Hello world"
+- ```
++ ```
+
+- ### Running a command
++ ### Запуск команды
+
+- `exec` runs the command, and interprets its output as the type named:
++ `exec` запускает команду и интерпретирует её вывод как названный тип:
+
+= `exec` runs the command, and interprets its output as the type named:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `exec` runs the command, and interprets its output as the type named:
+=
+= ```scala fuel
+- run
++ run
+
+= `exec` runs the command, and interprets its output as the type named:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sh"echo hello".exec[Text]().trim)
++ Out.println(sh"echo hello".exec[Text]().trim)
+
+- Out.println(sh"printf 'a\nb\nc\n'".exec[List[Text]]().inspect)
++ Out.println(sh"printf 'a\nb\nc\n'".exec[List[Text]]().inspect)
+
+- Out.println(sh"false".exec[Exit]().inspect)
++ Out.println(sh"false".exec[Exit]().inspect)
+
+= Out.println(sh"false".exec[Exit]().inspect)
+- ```
++ ```
+
+- The type does more than name a conversion. It decides how the result is *interpreted*.
+- Commands disagree about which stream carries the important output, and about what a nonzero
+- status means. For some it is a failure, and for others it is one of several ordinary answers.
+- The choice of type settles both. It also decides *when* the call returns:
++ Тип делает больше, чем называет преобразование. Он решает, как результат *интерпретируется*.
++ Команды расходятся в том, какой поток данных несёт важный вывод и что означает ненулевой код. Для
++ одних это отказ, для других — один из нескольких обычных ответов. Выбор типа решает и то, и
++ другое. Он решает также, *когда* вызов возвращается:
+
+= The choice of type settles both. It also decides *when* the call returns:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Gives
+- column  Returns
+- row  `Text`  the whole of standard output  when the process finishes
+- row  `List[Text]`  the lines of standard output  when the process finishes
+- row  `Chain[Text]`  the lines of standard output, lazily  at once, reading each line as it arrives
+- row  `Stderr`  the whole of standard error  when the process finishes
+- row  `Data`  the raw bytes of standard output  when the process finishes
+- row  `Exit`  the exit status  when the process finishes
+- row  `Unit`  nothing: the output is discarded  when the process finishes
+- row  a path type  the trimmed output, read as a path  when the process finishes
++ column  Тип
++ column  Даёт
++ column  Возвращается
++ row  `Text`  весь стандартный вывод  когда процесс завершится
++ row  `List[Text]`  строки стандартного вывода  когда процесс завершится
++ row  `Chain[Text]`  строки стандартного вывода, лениво  сразу, читая каждую строку по мере поступления
++ row  `Stderr`  весь стандартный поток ошибок  когда процесс завершится
++ row  `Data`  сырые байты стандартного вывода  когда процесс завершится
++ row  `Exit`  код завершения  когда процесс завершится
++ row  `Unit`  ничего: вывод отбрасывается  когда процесс завершится
++ row  тип пути  обрезанный вывод, прочитанный как путь  когда процесс завершится
+
+= row  a path type  the trimmed output, read as a path  when the process finishes
+- ```
++ ```
+
+- A `Computable` instance defines each of these. A type which is not covered gains one by saying
+- how to interpret a process which has finished, or which is running. That is often done by
+- mapping an existing instance, since `Computable` is a functor.
++ Каждый из них определяется экземпляром `Computable`. Тип, который не охвачен, получает экземпляр,
++ если указать, как интерпретировать процесс, который завершился или который выполняется. Часто это
++ делается отображением существующего экземпляра, поскольку `Computable` — функтор.
+
+- ### An implied output type
++ ### Подразумеваемый тип вывода
+
+- Many commands have an obvious type of output, and the common ones are known. Applying a
+- command directly, without naming a type, uses that default. `echo` gives text, and `ls` gives
+- a stream of lines:
++ У многих команд тип вывода очевиден, и распространённые из них известны. Если применить команду
++ напрямую, не называя тип, используется этот тип по умолчанию. `echo` даёт текст, а `ls` — поток
++ строк:
+
+= a stream of lines:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a stream of lines:
+=
+= ```scala fuel
+- run
++ run
+
+= a stream of lines:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sh"echo hi"().trim)
++ Out.println(sh"echo hi"().trim)
+
+= Out.println(sh"echo hi"().trim)
+- ```
++ ```
+
+- ### Substitution and escaping
++ ### Подстановка и экранирование
+
+- A value which is substituted into a command is escaped for its position. Where an argument is
+- expected:
++ Значение, подставленное в команду, экранируется для своей позиции. Там, где ожидается аргумент:
+
+= expected:
+=
+- ```tabular
++ ```tabular
+
+- column  A substituted
+- column  Becomes
+- row  value  exactly one argument, no matter its contents
+- row  list  one argument for each element
+- row  path  one argument, its text
+- row  command  one argument, escaped, as described below
++ column  Подставленное
++ column  Становится
++ row  значение  ровно одним аргументом, каким бы ни было его содержимое
++ row  список  одним аргументом на каждый элемент
++ row  путь  одним аргументом, своим текстом
++ row  команда  одним аргументом, экранированным, как описано ниже
+
+= row  command  one argument, escaped, as described below
+- ```
++ ```
+
+- A filename which contains a space stays one argument, and a list becomes several:
++ Имя файла, содержащее пробел, остаётся одним аргументом, а список становится несколькими:
+
+= A filename which contains a space stays one argument, and a list becomes several:
+=
+- ```scala
++ ```scala
+
+- val file = t"a file.txt"
++ val file = t"a file.txt"
+
+- val flags = List(t"-l", t"-a")
++ val flags = List(t"-l", t"-a")
+
+= val flags = List(t"-l", t"-a")
+- ```
++ ```
+
+= val flags = List(t"-l", t"-a")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val flags = List(t"-l", t"-a")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val flags = List(t"-l", t"-a")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sh"cat $file".inspect)
++ Out.println(sh"cat $file".inspect)
+
+- Out.println(sh"ls $flags".inspect)
++ Out.println(sh"ls $flags".inspect)
+
+= Out.println(sh"ls $flags".inspect)
+- ```
++ ```
+
+- Any type which describes how it becomes an argument of a command can be substituted, so a
+- value from a program's own domain, such as a [path](paths.md), is placed in a command without
+- first being turned into a string by hand. [Interpolation](interpolation.md#substitutions)
+- describes the mechanism.
++ Подставить можно любой тип, который описывает, как он становится аргументом команды, поэтому
++ значение из собственной предметной области программы, например [путь](paths.md), помещается в
++ команду без предварительного ручного превращения в строку. Механизм описан в разделе
++ [Интерполяция](interpolation.md#substitutions).
+
+- ### Piping
++ ### Конвейеры
+
+- Commands are piped with `|`. The output of one becomes the input of the next, and the pipeline
+- is run, and read, exactly as a single command is:
++ Команды соединяются в конвейер через `|`. Вывод одной становится вводом следующей, а конвейер
++ запускается и читается точно так же, как одна команда:
+
+= is run, and read, exactly as a single command is:
+=
+- ```scala fuel
++ ```scala fuel
+
+= is run, and read, exactly as a single command is:
+=
+= ```scala fuel
+- run
++ run
+
+= is run, and read, exactly as a single command is:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((sh"echo 'Hello world'" | sh"sed s/e/a/g").exec[Text]().trim)
++ Out.println((sh"echo 'Hello world'" | sh"sed s/e/a/g").exec[Text]().trim)
+
+= Out.println((sh"echo 'Hello world'" | sh"sed s/e/a/g").exec[Text]().trim)
+- ```
++ ```
+
+- Pipelines flatten, and do not nest. A pipeline of three stages is one pipeline of three
+- commands, however it was assembled, and a pipeline which is piped into a command extends it:
++ Конвейеры уплощаются, а не вкладываются. Конвейер из трёх стадий — это один конвейер из трёх
++ команд, как бы он ни был собран, а конвейер, направленный в команду, удлиняется ею:
+
+= commands, however it was assembled, and a pipeline which is piped into a command extends it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= commands, however it was assembled, and a pipeline which is piped into a command extends it:
+=
+= ```scala fuel
+- run
++ run
+
+= commands, however it was assembled, and a pipeline which is piped into a command extends it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((sh"echo a" | sh"cat" | sh"wc").commands.length.show)
++ Out.println((sh"echo a" | sh"cat" | sh"wc").commands.length.show)
+
+= Out.println((sh"echo a" | sh"cat" | sh"wc").commands.length.show)
+- ```
++ ```
+
+- ### Commands inside commands
++ ### Команды внутри команд
+
+- A command which is substituted into another is escaped as a single argument. That is what
+- invoking a shell requires, and what command strings built by hand get wrong:
++ Команда, подставленная в другую, экранируется как один аргумент. Именно этого требует вызов
++ оболочки, и именно здесь ошибаются строки команд, собранные вручную:
+
+= invoking a shell requires, and what command strings built by hand get wrong:
+=
+- ```scala
++ ```scala
+
+- val inner = sh"echo 'Hello world'"
++ val inner = sh"echo 'Hello world'"
+
+= val inner = sh"echo 'Hello world'"
+- ```
++ ```
+
+= val inner = sh"echo 'Hello world'"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val inner = sh"echo 'Hello world'"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val inner = sh"echo 'Hello world'"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sh"sh -c '$inner'".exec[Text]().trim)
++ Out.println(sh"sh -c '$inner'".exec[Text]().trim)
+
+- Out.println(Command(t"echo", t"a b").escape)
++ Out.println(Command(t"echo", t"a b").escape)
+
+= Out.println(Command(t"echo", t"a b").escape)
+- ```
++ ```
+
+- An argument which contains a space, a quote or a character special to the shell is therefore
+- carried through untouched. There is no point at which it becomes a string which a shell might
+- split again.
++ Поэтому аргумент, содержащий пробел, кавычку или символ, особый для оболочки, проходит нетронутым.
++ Ни в какой момент он не становится строкой, которую оболочка могла бы снова разбить.
+
+- ### Failure
++ ### Отказ
+
+- A command which cannot be run at all, because its binary is missing, or is a directory, or is
+- not executable, raises an `Exec.Error`. The error carries the command which failed, so it
+- names what was attempted, instead of reporting an error number from the operating system:
++ Команда, которую вообще нельзя запустить, потому что её исполняемый файл отсутствует, является
++ каталогом или не исполняем, порождает `Exec.Error`. Ошибка несёт отказавшую команду, поэтому она
++ называет то, что пытались сделать, а не сообщает номер ошибки операционной системы:
+
+= names what was attempted, instead of reporting an error number from the operating system:
+=
+- ```scala fuel
++ ```scala fuel
+
+= names what was attempted, instead of reporting an error number from the operating system:
+=
+= ```scala fuel
+- run
++ run
+
+= names what was attempted, instead of reporting an error number from the operating system:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.head)
++ Out.println(capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.head)
+
+= Out.println(capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.head)
+- ```
++ ```
+
+- A command which runs, and *fails*, is a different matter. Its exit status is part of its
+- result, and what a nonzero status means is the caller's decision. Asking for an `Exit` gives
+- the status itself. Asking for a `Text`, or a stream, gives the output, with the status
+- available beside it.
++ Команда, которая запускается и *завершается неудачей*, — совсем другое дело. Её код завершения —
++ часть её результата, а что означает ненулевой код, решает вызывающая сторона. Запрос `Exit` даёт
++ сам код. Запрос `Text` или потока данных даёт вывод, а код доступен рядом с ним.
+
+- ### Forking
++ ### Ответвление
+
+- `exec` blocks until the command finishes. `fork` starts the command without waiting, and
+- returns a `Job`, which can be awaited for its result, inspected, or stopped:
++ `exec` блокируется, пока команда не завершится. `fork` запускает команду, не дожидаясь, и
++ возвращает `Job`, результата которого можно дождаться, который можно проинспектировать или
++ остановить:
+
+= returns a `Job`, which can be awaited for its result, inspected, or stopped:
+=
+- ```scala fuel
++ ```scala fuel
+
+= returns a `Job`, which can be awaited for its result, inspected, or stopped:
+=
+= ```scala fuel
+- run
++ run
+
+= returns a `Job`, which can be awaited for its result, inspected, or stopped:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val job = sh"sleep 5".fork[Unit]()
++ val job = sh"sleep 5".fork[Unit]()
+
+- Out.println(job.alive.inspect)
++ Out.println(job.alive.inspect)
+
+- job.kill()
++ job.kill()
+
+= job.kill()
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Member of a `Job`
+- column  Does
+- row  `alive`  says whether the process is still running
+- row  `abort()`  asks the process to stop
+- row  `kill()`  insists that it stop
+- row  `await()`  blocks for the result
+- row  `pid`  gives the process's `Pid`
+- row  `process`  gives the operating system's process itself
++ column  Член `Job`
++ column  Что делает
++ row  `alive`  сообщает, выполняется ли ещё процесс
++ row  `abort()`  просит процесс остановиться
++ row  `kill()`  требует, чтобы он остановился
++ row  `await()`  блокируется до получения результата
++ row  `pid`  даёт `Pid` процесса
++ row  `process`  даёт сам процесс операционной системы
+
+= row  `process`  gives the operating system's process itself
+- ```
++ ```
+
+- `pid` and `process` are for the occasions where a signal must be sent, or a tree of processes
+- inspected. A `Pid` is a distinct type, not a number, so it cannot be confused with an exit
+- code or a file descriptor, and it is written and parsed in a form of its own.
++ `pid` и `process` нужны в тех случаях, когда требуется послать сигнал или проинспектировать дерево
++ процессов. `Pid` — отдельный тип, а не число, поэтому его нельзя спутать с кодом завершения или
++ файловым дескриптором, и он записывается и разбирается в собственной форме.
+
+- ### Detaching
++ ### Отсоединение
+
+- A process which should outlive the one that starts it, such as a server or a
+- [daemon](daemons.md), is *detached*. `detach` starts it reading from the null device, and
+- writing nowhere, or appending to a log whose parent directories are made. It gives the
+- process's pid, and holds nothing else of it.
++ Процесс, который должен пережить запустивший его процесс, например сервер или
++ [демон](daemons.md), *отсоединяется*. `detach` запускает его так, что он читает из нулевого
++ устройства и пишет в никуда или дописывает в журнал, родительские каталоги которого создаются. Он
++ даёт pid процесса и больше ничего от него не удерживает.
+
+- A forked child inherits pipes which nobody drains, and a server which writes to them
+- eventually blocks. A detached process cannot. Its environment is the
+- [`Environment`](environment.md#overriding-for-a-block) in scope, so `emptyEnvironment` with
+- `variables(…)` gives it exactly the variables named:
++ Ответвлённый потомок наследует каналы, которые никто не вычерпывает, и сервер, пишущий в них, рано
++ или поздно блокируется. Отсоединённый процесс — не может. Его окружение — это
++ [`Environment`](environment.md#overriding-for-a-block) из области видимости, поэтому
++ `emptyEnvironment` с `variables(…)` даёт ему ровно названные переменные:
+
+= `variables(…)` gives it exactly the variables named:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `variables(…)` gives it exactly the variables named:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= `variables(…)` gives it exactly the variables named:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- val directory: Path on Linux = (% / "var" / "log").on[Linux]
++ val directory: Path on Linux = (% / "var" / "log").on[Linux]
+
+- val pid: Pid = sh"server --port 8080".detach(log = directory / "server.log")
++ val pid: Pid = sh"server --port 8080".detach(log = directory / "server.log")
+
+= val pid: Pid = sh"server --port 8080".detach(log = directory / "server.log")
+- ```
++ ```
+
+- So a command is started in one of three ways or, through `pty`, on a terminal:
++ Итак, команда запускается одним из трёх способов или, через `pty`, на терминале:
+
+= So a command is started in one of three ways or, through `pty`, on a terminal:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Waits
+- column  Answers
+- row  `exec`  until the command finishes  its result, as the type named
+- row  `fork`  only until it has started  a `Job`, to await, inspect or stop
+- row  `detach`  only until it has started  its `Pid`, holding nothing else of it
+- row  `pty`  not at all  a description of the command on a pseudo-terminal, to `exec` or open a `session` on
++ column  Метод
++ column  Ждёт
++ column  Отвечает
++ row  `exec`  пока команда не завершится  её результатом в виде названного типа
++ row  `fork`  только пока она не запустится  `Job`, которого можно дождаться, проинспектировать или остановить
++ row  `detach`  только пока она не запустится  её `Pid`, больше ничего от неё не удерживая
++ row  `pty`  вовсе не ждёт  описанием команды на псевдотерминале, для `exec` или для открытия `session`
+
+= row  `pty`  not at all  a description of the command on a pseudo-terminal, to `exec` or open a `session` on
+- ```
++ ```
+
+- ### On a terminal
++ ### На терминале
+
+- A command's standard streams are normally pipes, and many programs behave differently when
+- they notice. A shell prints no prompt, `stty` fails, and a line editor never starts. `pty`
+- runs the command on a fresh pseudo-terminal of the given size instead. The command then finds
+- a terminal on its input, output and error, as it would if a person had typed it. Here `stty`
+- reports the size which was asked for, as 30 rows and 100 columns:
++ Стандартные потоки данных команды обычно являются каналами, и многие программы, заметив это, ведут
++ себя иначе. Оболочка не печатает приглашение, `stty` завершается неудачей, а редактор строк
++ никогда не запускается. `pty` вместо этого запускает команду на новом псевдотерминале заданного
++ размера. Тогда команда находит терминал на своём вводе, выводе и потоке ошибок, как если бы её
++ набрал человек. Здесь `stty` сообщает запрошенный размер — 30 строк и 100 столбцов:
+
+= reports the size which was asked for, as 30 rows and 100 columns:
+=
+- ```scala fuel
++ ```scala fuel
+
+= reports the size which was asked for, as 30 rows and 100 columns:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= reports the size which was asked for, as 30 rows and 100 columns:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val size: Text = sh"stty size".pty(100, 30).exec[Text]().trim
++ val size: Text = sh"stty size".pty(100, 30).exec[Text]().trim
+
+= val size: Text = sh"stty size".pty(100, 30).exec[Text]().trim
+- ```
++ ```
+
+- For an interactive program, a `session` lends the running command to a block, as a `Job`
+- which can also be resized, and ends the command when the block does. If the program is still
+- running, it is hung up on, as it would be by closing a real terminal.
++ Для интерактивной программы `session` одалживает выполняющуюся команду блоку в виде `Job`, размер
++ которого можно также менять, и завершает команду вместе с блоком. Если программа ещё выполняется,
++ связь с ней разрывается, как это произошло бы при закрытии настоящего терминала.
+
+- The session's output is everything which the program writes to the terminal, standard error
+- included, with its escape sequences, which is what a
+- [terminal emulator](terminal-emulator.md) would receive. Anything streamable can be typed at
+- it, with `writeTo`. A terminal has no end of input of its own, so a program which reads until
+- the end is sent the end-of-file character, `^D`, instead of having its input closed:
++ Вывод сессии — это всё, что программа пишет в терминал, включая стандартный поток ошибок, вместе с
++ escape-последовательностями, то есть то, что получил бы [эмулятор терминала](terminal-emulator.md).
++ Ей можно набрать всё, что поддерживает потоковую передачу, с помощью `writeTo`. У терминала нет
++ собственного конца ввода, поэтому программе, читающей до конца, вместо закрытия ввода посылается
++ символ конца файла `^D`:
+
+= the end is sent the end-of-file character, `^D`, instead of having its input closed:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the end is sent the end-of-file character, `^D`, instead of having its input closed:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= the end is sent the end-of-file character, `^D`, instead of having its input closed:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
++ sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
+
+-   terminal.resize(132, 50)
++   terminal.resize(132, 50)
+
+-   t"\r".writeTo(terminal)
++   t"\r".writeTo(terminal)
+
+-   terminal.text().trim
++   terminal.text().trim
+
+=   terminal.text().trim
+- ```
++ ```
+
+- Resizing sends the program the signal `SIGWINCH`, writing `\r` presses Return, and the text
+- which comes back is `50 132`.
++ Изменение размера посылает программе сигнал `SIGWINCH`, запись `\r` нажимает Return, а
++ возвращаемый текст — `50 132`.
+
+- The value which `pty` returns is not itself a terminal. It describes how to run the command,
+- and each `session` or `exec` allocates a fresh terminal, and releases it again.
++ Значение, которое возвращает `pty`, само не является терминалом. Оно описывает, как запустить
++ команду, а каждая `session` или `exec` выделяет новый терминал и снова его освобождает.
+
+- A terminal's *line discipline* says whether it echoes what is typed, gathers input a line at a
+- time, turns `^C` into a signal, and so on. It is a `Termios`, named after the POSIX structure,
+- with a switch for each of the flags which a program most often changes. `Termios.raw` turns
+- them all off, as a full-screen program does before it draws, and `Termios.cooked` turns them
+- all on. A `Termios` given to `pty` is set before the command starts, and the terminal of a
+- running command can be read and changed through its `Job`:
++ *Дисциплина линии* терминала определяет, отображает ли он набираемое, собирает ли ввод построчно,
++ превращает ли `^C` в сигнал и так далее. Это `Termios`, названный по структуре POSIX, с
++ переключателем для каждого из флагов, которые программы меняют чаще всего. `Termios.raw` выключает
++ их все, как это делает полноэкранная программа перед отрисовкой, а `Termios.cooked` включает их
++ все. `Termios`, переданный `pty`, устанавливается до запуска команды, а терминал выполняющейся
++ команды можно читать и менять через её `Job`:
+
+= running command can be read and changed through its `Job`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= running command can be read and changed through its `Job`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= running command can be read and changed through its `Job`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- sh"head -c 2".pty(termios = Termios.raw).session: terminal ?=>
++ sh"head -c 2".pty(termios = Termios.raw).session: terminal ?=>
+
+-   t"hi".writeTo(terminal)
++   t"hi".writeTo(terminal)
+
+-   val canonical: Boolean = terminal.mode.canonical
++   val canonical: Boolean = terminal.mode.canonical
+
+-   terminal.mode = Termios.cooked
++   terminal.mode = Termios.cooked
+
+-   terminal.text()
++   terminal.text()
+
+=   terminal.text()
+- ```
++ ```
+
+- In raw mode the two characters are delivered at once, without a newline, and are not echoed,
+- so the text which comes back is just `hi`.
++ В сыром режиме оба символа доставляются сразу, без перевода строки, и не отображаются, поэтому
++ возвращаемый текст — просто `hi`.
+
+- Pseudo-terminals are allocated through the JDK's foreign function API, on Linux and macOS. A
+- program which uses them should be run with `--enable-native-access=ALL-UNNAMED`, to keep the
+- JDK from warning about it.
++ Псевдотерминалы выделяются через API внешних функций JDK, на Linux и macOS. Программу, которая их
++ использует, следует запускать с `--enable-native-access=ALL-UNNAMED`, чтобы JDK не выдавал
++ предупреждения.
+
+- ### Related
++ ### Связанное
+
+- - [Environment](environment.md) decides which variables a subprocess inherits.
+- - [Streams](streams.md) reads a command's output a part at a time.
+- - [Git](git.md), [Docker](docker.md) and [SSH](ssh.md) drive particular programs with typed
+-   APIs of their own.
+- - [Command-line interfaces](cli.md) covers the other side: a program which is itself run from
+-   a shell.
+- - [ACP](acp.md), [debugging](debugging.md), [logging](logging.md), [LSP](lsp.md), [staging](staging.md) and [terminal](terminal.md) launch and control processes.
++ - [Окружение](environment.md) определяет, какие переменные наследует подпроцесс.
++ - [Потоки данных](streams.md) читают вывод команды по частям.
++ - [Git](git.md), [Docker](docker.md) и [SSH](ssh.md) управляют конкретными программами через
++   собственные типизированные API.
++ - [Интерфейсы командной строки](cli.md) охватывают другую сторону: программу, которая сама
++   запускается из оболочки.
++ - [ACP](acp.md), [отладка](debugging.md), [журналирование](logging.md), [LSP](lsp.md), [стадирование](staging.md) и [терминал](terminal.md) запускают процессы и управляют ими.

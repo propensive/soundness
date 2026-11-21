@@ -1,0 +1,9 @@
+orthant 1 language
+
+-     The library has three source sets:
++     У библиотеки три набора исходников:
+
+-     - `orthodoxy.oidc` — OpenID Connect: `Oidc.discover` for a provider's metadata, and
+-       `Oidc.identify`, which verifies the ID token an `Authorization` carries with sigillate.
++     - `orthodoxy.oidc` — OpenID Connect: `Oidc.discover` для метаданных провайдера и
++       `Oidc.identify`, который с помощью sigillate проверяет ID-токен, несомый `Authorization`.

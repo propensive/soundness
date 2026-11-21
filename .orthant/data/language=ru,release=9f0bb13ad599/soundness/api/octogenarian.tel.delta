@@ -1,0 +1,65 @@
+orthant 1 language
+
+-     import filesystemOptions.createParents
++     import filesystemOptions.createParents
+
+-         import filesystemOptions.createParents
++         import filesystemOptions.createParents
+
+-         `Exec(event)` wraps a `guillotine.Exec.Event`, tagged `Log.Process`; `.execEvent`
+-         transcribes guillotine's events into it, so a `Commandline.Event is Loggable` in scope
+-         is all the backend needs. `logging.silentLogging` discards them.
+-     entry .execEvent   transcribes a guillotine `Exec.Event` into a `Commandline.Event`
+-     entry .communicable   renders an event as _git: `event`_
+-   entry .Outcome   what one `git` invocation produced: its exit status, standard output and standard error
+-     entry #exit   the exit status
+-     entry #stdout   standard output, as text
+-     entry #stderr   standard error, as text
+-     entry #ok   whether the exit status was zero
+-     entry #lines   standard output as non-empty lines
+-   entry .reason   reads git's standard error as a `Git.Error.Reason`
+-       Matches git's messages — stable enough to match on — for `NoRepository`, `Moved`,
+-       `RefExists`, `Locked`, `NoSuchRef`, `Unmerged`, `NoSuchObject`, `NothingToCommit`,
+-       `Detached`, `Dirty`, `NotFastForward`, `LeaseFailed`, `OutsideWorktree`, `Untracked`,
+-       `NoOperationInProgress`, `NoSuchRemote`, `RemoteExists`, `Unauthorized`, `Unreachable`,
+-       `RemoteRejected`, `InvalidConfig`, `NoteExists`, `BadSignature`, `SigningFailed`,
+-       `NoSuchWorktree` and `Conflict`; anything else is `Unexpected`.
++         `Exec(event)` оборачивает `guillotine.Exec.Event` с тегом `Log.Process`; `.execEvent`
++         переписывает в него события guillotine, так что `Commandline.Event is Loggable` в
++         области видимости — всё, что нужно бэкенду. `logging.silentLogging` их отбрасывает.
++     entry .execEvent   переписывает `Exec.Event` из guillotine в `Commandline.Event`
++     entry .communicable   отображает событие как _git: `event`_
++   entry .Outcome   что дал один вызов `git`: его код завершения, стандартный вывод и стандартный поток ошибок
++     entry #exit   код завершения
++     entry #stdout   стандартный вывод, как текст
++     entry #stderr   стандартный поток ошибок, как текст
++     entry #ok   был ли код завершения нулевым
++     entry #lines   стандартный вывод в виде непустых строк
++   entry .reason   читает стандартный поток ошибок git как `Git.Error.Reason`
++       Сопоставляет сообщения git — достаточно стабильные для сопоставления — для
++       `NoRepository`, `Moved`, `RefExists`, `Locked`, `NoSuchRef`, `Unmerged`, `NoSuchObject`,
++       `NothingToCommit`, `Detached`, `Dirty`, `NotFastForward`, `LeaseFailed`,
++       `OutsideWorktree`, `Untracked`, `NoOperationInProgress`, `NoSuchRemote`, `RemoteExists`,
++       `Unauthorized`, `Unreachable`, `RemoteRejected`, `InvalidConfig`, `NoteExists`,
++       `BadSignature`, `SigningFailed`, `NoSuchWorktree` и `Conflict`; всё остальное — это
++       `Unexpected`.
+
+=       alternative which runs the `git` command.
+=
+=       ```scala
+=       import soundness.*
+=       import gitBackends.soundnessGit
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       import filesystemOptions.createParents
++       import filesystemOptions.createParents
+
+=       name; `gitBackends.commandlineGit` is the alternative which runs the `git` command.
+=
+=       ```scala
+=       import soundness.*
+=       import gitBackends.soundnessGit
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       import filesystemOptions.createParents
++       import filesystemOptions.createParents

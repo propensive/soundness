@@ -1,0 +1,120 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base chatelaine
++ base chatelaine
+
+- import soundness
++ import soundness
+
+- info   WebAuthn for relying parties: registration and authentication ceremonies for passkeys and security keys
++ info   WebAuthn для проверяющих сторон: церемонии регистрации и аутентификации для ключей доступа и ключей безопасности
+
+- detail
++ detail
+
+-     _Chatelaine_ implements the relying party's side of
+-     [Web Authentication](https://www.w3.org/TR/webauthn-2/): passwordless sign-in with a key
+-     pair an authenticator makes for one site and never lets out. Everything is a member of
+-     `WebAuthn`.
++     _Chatelaine_ реализует ту часть
++     [Web Authentication](https://www.w3.org/TR/webauthn-2/), которая относится к проверяющей
++     стороне: вход без пароля с помощью пары
++     ключей, которую аутентификатор создаёт для одного сайта и никогда не выпускает наружу. Всё
++     это — члены `WebAuthn`.
+
+-     Each of the two ceremonies is one call to make the options a page gives the browser, and
+-     one to check the answer the page sends back:
++     Каждая из двух церемоний — это один вызов, создающий параметры, которые страница передаёт
++     браузеру, и один вызов, проверяющий ответ, который страница присылает обратно:
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+-     import providers.javaBaseProvider
++     import providers.javaBaseProvider
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val globe = WebAuthn.RelyingParty(t"globe.example", t"The Globe", List(t"https://globe.example"))
++     val globe = WebAuthn.RelyingParty(t"globe.example", t"The Globe", List(t"https://globe.example"))
+
+-     val burbage = WebAuthn.User(t"account-1567".in[Data], t"burbage", t"Richard Burbage")
++     val burbage = WebAuthn.User(t"account-1567".in[Data], t"burbage", t"Richard Burbage")
+
+-     val challenge = WebAuthn.Challenge()
++     val challenge = WebAuthn.Challenge()
+
+-     val options: Json = WebAuthn.registration(globe, burbage, challenge)
++     val options: Json = WebAuthn.registration(globe, burbage, challenge)
+
+-     def enrol(answer: Json): WebAuthn.Credential = WebAuthn.register(answer, challenge, globe)
++     def enrol(answer: Json): WebAuthn.Credential = WebAuthn.register(answer, challenge, globe)
+
+-     ```
++     ```
+
+-     `WebAuthn.register` and `WebAuthn.authenticate` make every check the standard requires
+-     of a relying party (§7.1 and §7.2), and raise `WebAuthn.Error` for an answer that fails
+-     one. The `none` and `packed` attestation formats are understood.
++     `WebAuthn.register` и `WebAuthn.authenticate` выполняют все проверки, которых стандарт
++     требует от проверяющей стороны (§7.1 и §7.2), и порождают `WebAuthn.Error` для ответа, не
++     прошедшего одну из них. Поддерживаются форматы аттестации `none` и `packed`.
+
+-     The library has two source sets:
++     У библиотеки два набора исходников:
+
+-     - `chatelaine.core` — `WebAuthn`: the options, the checking of answers, and the
+-       `WebAuthn.Credential` a relying party stores.
+-     - `chatelaine.server` — `Ceremonies`, which keeps each session's challenge between
+-       the two requests of a ceremony.
++     - `chatelaine.core` — `WebAuthn`: параметры, проверка ответов и
++       `WebAuthn.Credential`, который хранит проверяющая сторона.
++     - `chatelaine.server` — `Ceremonies`, хранящий вызов каждой сессии между двумя
++       запросами церемонии.
+
+-     Both are exported to the `soundness` umbrella. There are no choice packages of its own;
+-     the ceremonies need a `Crypto` provider (`providers.javaBaseProvider`), and registration
+-     a `Clock`.
++     Оба экспортируются в зонтичный модуль `soundness`. Собственных пакетов выбора нет;
++     церемониям нужен провайдер `Crypto` (`providers.javaBaseProvider`), а регистрации —
++     `Clock`.
+
+- refer chatelaine.WebAuthn
++ refer chatelaine.WebAuthn
+
+- refer chatelaine.WebAuthn.Error
++ refer chatelaine.WebAuthn.Error
+
+- entry .WebAuthn   the relying party's side of Web Authentication: options, and the checking of answers
++ entry .WebAuthn   часть Web Authentication, относящаяся к проверяющей стороне: параметры и проверка ответов
+
+-   detail
++   detail
+
+-       `WebAuthn.registration` and `WebAuthn.authentication` make a ceremony's options as
+-       JSON; `WebAuthn.register` and `WebAuthn.authenticate` check its answer, the first
+-       giving a `WebAuthn.Credential` to store and the second that credential with its
+-       signature counter advanced.
++       `WebAuthn.registration` и `WebAuthn.authentication` создают параметры церемонии в виде
++       JSON; `WebAuthn.register` и `WebAuthn.authenticate` проверяют её ответ: первый
++       даёт `WebAuthn.Credential` для хранения, а второй — те же учётные данные с увеличенным
++       счётчиком подписей.

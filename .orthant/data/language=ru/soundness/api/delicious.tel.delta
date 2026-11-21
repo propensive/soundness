@@ -1,0 +1,1012 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base delicious
++ base delicious
+
+- import soundness
++ import soundness
+
+- info   the compiler's semantic diagnostics as trees, with their types reified and rendered as the user would write them
++ info   семантическая диагностика компилятора в виде деревьев, с материализованными типами, отображёнными так, как их написал бы пользователь
+
+- detail
++ detail
+
+-     _Delicious_ reads the **semantic diagnostics** the proscala compiler emits under
+-     `-Zsemantic-diagnostics` (anthology's `scalacOptions.semanticDiagnostics`): compiler
+-     messages in which each type, symbol, name and code sample is marked up with
+-     private-use-character markers, and each type additionally carries its TASTy pickled
+-     form. A plain compiler message is text in which `List[Int]` is five characters; a
+-     semantic one knows that `List[Int]` is a type, which type, and that `List` is
+-     `scala.collection.immutable.List`.
++     _Delicious_ читает **семантическую диагностику**, которую компилятор proscala выдаёт с
++     флагом `-Zsemantic-diagnostics` (`scalacOptions.semanticDiagnostics` в anthology):
++     сообщения компилятора, в которых каждый тип, символ, имя и пример кода размечен
++     маркерами из символов области частного использования, а каждый тип дополнительно несёт
++     свою сериализованную форму TASTy. Обычное сообщение компилятора — это текст, в котором
++     `List[Int]` — пять символов; семантическое знает, что `List[Int]` — тип, какой именно
++     тип, и что `List` — это `scala.collection.immutable.List`.
+
+-     `Markup.parse` turns the marked-up text into a tree of `Markup` nodes — `Textual`,
+-     `Typed`, `Symbolic`, `Named`, `Code` and `Spanned` — and `SemanticMessage` wraps a
+-     whole message. A `Reifier`, given a classpath, unpickles each `Typed` node's TASTy
+-     payload back into a stenography `Syntax`, so the type can be rendered abbreviated
+-     against a set of imports, exactly as the user would write it; `render` does this for a
+-     whole message as text, and `teletype` as styled terminal output with every code sample
+-     and type syntax-highlighted by harlequin.
++     `Markup.parse` превращает размеченный текст в дерево узлов `Markup` — `Textual`,
++     `Typed`, `Symbolic`, `Named`, `Code` и `Spanned`, — а `SemanticMessage` оборачивает
++     сообщение целиком. `Reifier`, получив путь классов, десериализует полезную нагрузку
++     TASTy каждого узла `Typed` обратно в `Syntax` из stenography, так что тип можно
++     отобразить сокращённо относительно набора импортов, в точности так, как его написал бы
++     пользователь; `render` делает это для всего сообщения в виде текста, а `teletype` — в
++     виде стилизованного вывода терминала, где каждый пример кода и каждый тип подсвечены
++     harlequin.
+
+=     and type syntax-highlighted by harlequin.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     substitute ???  ...
++     substitute ???  ...
+
+=     ```scala fuel
+=     substitute ???  ...
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     val notice: Compiler.Notice = ???   // from a Scalac process run with scalacOptions.semanticDiagnostics
++     val notice: Compiler.Notice = ???   // from a Scalac process run with scalacOptions.semanticDiagnostics
+
+-     val message: Optional[SemanticMessage] = notice.markup.let(SemanticMessage.parse(_))
++     val message: Optional[SemanticMessage] = notice.markup.let(SemanticMessage.parse(_))
+
+-     message.let(_.plain)         // the message with every marker removed
++     message.let(_.plain)         // the message with every marker removed
+
+-     message.let(_.types.size)    // how many types it mentions
++     message.let(_.types.size)    // how many types it mentions
+
+=     message.let(_.types.size)    // how many types it mentions
+-     ```
++     ```
+
+=     ```
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     ```
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     typecheck
+-     ##
++     ##
+
+-     val classpath: LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
++     val classpath: LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+
+-     val reifier: Reifier = Reifier(classpath)
++     val reifier: Reifier = Reifier(classpath)
+
+=     val reifier: Reifier = Reifier(classpath)
+-     given Imports = Imports.empty
++     given Imports = Imports.empty
+
+-     notice.markup.let(SemanticMessage.parse(_)).let(_.render(reifier))
++     notice.markup.let(SemanticMessage.parse(_)).let(_.render(reifier))
+
+-     // Found: scala.collection.immutable.List[scala.Double]
++     // Found: scala.collection.immutable.List[scala.Double]
+
+-     // Required: scala.collection.immutable.List[java.lang.String]
++     // Required: scala.collection.immutable.List[java.lang.String]
+
+=     // Required: scala.collection.immutable.List[java.lang.String]
+-     ```
++     ```
+
+-     Anything the compiler could not pickle — a local type, a skolem, a type variable, an
+-     error type — was replaced by a `Placeholder` before pickling, and is substituted back
+-     into the rendering by the name the compiler printed for it, so a diagnostic never
+-     becomes a crash: a payload which cannot be unpickled falls back to the compiler's own
+-     text. The library is split into three source sets:
++     Всё, что компилятор не смог сериализовать, — локальный тип, сколем, переменная типа,
++     тип ошибки — перед сериализацией заменяется на `Placeholder` и подставляется обратно
++     при отображении по имени, которое для него напечатал компилятор, поэтому диагностика
++     никогда не превращается в сбой: полезная нагрузка, которую нельзя десериализовать,
++     заменяется собственным текстом компилятора. Библиотека разделена на три набора
++     исходников:
+
+-     - `delicious.core` — `Markup`, `SemanticMessage`, `Placeholder`, `PlaceholderKind` and
+-       `Rendition`: pure parsing, depending on nothing but text, and available on every
+-       platform.
+-     - `delicious.scala` — `Reifier` and the `render` extension, which embed the Scala
+-       compiler to unpickle TASTy, and so are JVM-only.
+-     - `delicious.ansi` — the `teletype` extension, rendering a message with harlequin's
+-       syntax highlighting; JVM-only.
+-     - `delicious.compiler` — the `Shim` over the one compiler-internal constructor which
+-       differs between the Scala 3.9 and 3.10 streams; not for direct use.
++     - `delicious.core` — `Markup`, `SemanticMessage`, `Placeholder`, `PlaceholderKind` и
++       `Rendition`: чистый разбор, не зависящий ни от чего, кроме текста, и доступный на
++       всех платформах.
++     - `delicious.scala` — `Reifier` и расширение `render`, которые встраивают компилятор
++       Scala для десериализации TASTy и потому работают только на JVM.
++     - `delicious.ansi` — расширение `teletype`, отображающее сообщение с подсветкой
++       синтаксиса harlequin; только JVM.
++     - `delicious.compiler` — `Shim` над единственным внутренним конструктором компилятора,
++       который различается между линиями Scala 3.9 и 3.10; не для прямого использования.
+
+-     Everything is exported to the `soundness` umbrella except `teletype`, which clashes
+-     there with escapade's `Teletypeable` rendering, and so is called as
++     Всё экспортируется в зонтичный модуль `soundness`, кроме `teletype`, который
++     конфликтует там с отображением `Teletypeable` из escapade и потому вызывается как
+
+-     `delicious.teletype(message)(reifier)`.
++     `delicious.teletype(message)(reifier)`.
+
+- refer delicious.SemanticMessage
++ refer delicious.SemanticMessage
+
+- refer delicious.Markup
++ refer delicious.Markup
+
+- refer delicious.Reifier
++ refer delicious.Reifier
+
+- refer delicious.render
++ refer delicious.render
+
+- entry .SemanticMessage   a compiler message parsed into its markup tree
++ entry .SemanticMessage   сообщение компилятора, разобранное в дерево разметки
+
+= entry .SemanticMessage   a compiler message parsed into its markup tree
+-   detail
++   detail
+
+-       A `SemanticMessage` is the `Markup` nodes of one marked-up compiler message, made by
+-       `SemanticMessage.parse` from the text an anthology `Compiler.Notice#markup` carries when the
+-       compiler ran with `scalacOptions.semanticDiagnostics`. From it, `#plain` is the message
+-       with its markers stripped (the same text as the notice's own `message`), `#types` the
+-       `Markup.Typed` nodes it mentions, and `render` and `teletype` (with a `Reifier`) its
+-       renderings with every type reified.
++       `SemanticMessage` — это узлы `Markup` одного размеченного сообщения компилятора,
++       созданные `SemanticMessage.parse` из текста, который несёт `Compiler.Notice#markup` из
++       anthology, когда компилятор запущен с `scalacOptions.semanticDiagnostics`. Из него
++       `#plain` даёт сообщение без маркеров (тот же текст, что и собственный `message`
++       замечания), `#types` — упомянутые в нём узлы `Markup.Typed`, а `render` и `teletype`
++       (с `Reifier`) — его отображения, в которых каждый тип материализован.
+
+=       renderings with every type reified.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       substitute ???  ...
++       substitute ???  ...
+
+=       ```scala fuel
+=       substitute ???  ...
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       val notice: Compiler.Notice = ???
++       val notice: Compiler.Notice = ???
+
+-       notice.markup.let(SemanticMessage.parse(_)).let(_.types.map(_.plain))
++       notice.markup.let(SemanticMessage.parse(_)).let(_.types.map(_.plain))
+
+-       // the compiler-printed text of each type the message mentions
++       // the compiler-printed text of each type the message mentions
+
+=       // the compiler-printed text of each type the message mentions
+-       ```
++       ```
+
+-   refer delicious.Markup
++   refer delicious.Markup
+
+=   refer delicious.Markup
+-   refer delicious.Reifier
++   refer delicious.Reifier
+
+=   refer delicious.Reifier
+-   refer delicious.render
++   refer delicious.render
+
+-   entry .marked   whether a text contains semantic-diagnostic markers
+-       True when any character of the private-use range the markers use is present, so a
+-       message from a compiler without semantic diagnostics is cheaply told apart from one
+-       with them. The same test as `Markup.marked`.
+-   entry .parse   parses a marked-up message into a `SemanticMessage`
+-       `Markup.parse` applied to the whole text: a message with no markers parses to a single
+-       `Markup.Textual` node, so it is safe to call on any message.
+-   entry #markup   the message's nodes, in order
+-   entry #plain   the message with every marker removed, leaving only the visible text
+-   entry #types   every `Markup.Typed` node in the message, outermost first, nested ones included
+-       Found through `Named`, `Symbolic`, `Code` and `Spanned` nodes alike, and a `Typed`
+-       node's own `Typed` children follow it.
++   entry .marked   содержит ли текст маркеры семантической диагностики
++       Истинно, если присутствует хотя бы один символ из области частного использования,
++       которую используют маркеры, так что сообщение компилятора без семантической
++       диагностики дёшево отличить от сообщения с ней. Та же проверка, что и `Markup.marked`.
++   entry .parse   разбирает размеченное сообщение в `SemanticMessage`
++       `Markup.parse`, применённый ко всему тексту: сообщение без маркеров разбирается в
++       единственный узел `Markup.Textual`, поэтому вызывать его безопасно на любом
++       сообщении.
++   entry #markup   узлы сообщения по порядку
++   entry #plain   сообщение без маркеров, в котором остаётся только видимый текст
++   entry #types   все узлы `Markup.Typed` в сообщении, начиная с внешних, включая вложенные
++       Находятся через узлы `Named`, `Symbolic`, `Code` и `Spanned` одинаково, а
++       собственные дочерние `Typed` узла `Typed` следуют за ним.
+
+- entry .Markup   one node of a semantic diagnostic: text, a type, a symbol, a name, code, or a span
++ entry .Markup   один узел семантической диагностики: текст, тип, символ, имя, код или отрезок
+
+= entry .Markup   one node of a semantic diagnostic: text, a type, a symbol, a name, code, or a span
+-   detail
++   detail
+
+-       An enum of the node kinds a marked-up compiler message is made of, with `Markup.parse`
+-       to read a tree from the compiler's text and `Markup.plain` to strip it. A node is one
+-       of:
++       Перечисление видов узлов, из которых состоит размеченное сообщение компилятора, с
++       `Markup.parse` для чтения дерева из текста компилятора и `Markup.plain` для удаления
++       разметки. Узел — одно из следующего:
+
+=       of:
+=
+-       ```tabular
++       ```tabular
+
+-       column  Case
+-       column  Node
+-       row  `Textual(text)`  plain text between markers
+-       row  `Typed(tasty, placeholders, rendition, children)`  a type: `tasty` is its TASTy pickled form as Base64 text (`Unset` when the compiler supplied none), reified by `Reifier#syntax`; `placeholders` stand in for the parts which could not be pickled; `children` are the compiler's printed rendering, the fallback
+-       row  `Symbolic(name, full, rendition, children)`  a symbol reference, by its `name` and `full`y qualified name
+-       row  `Named(isType, rendition, children)`  a name, with whether it is a type name
+-       row  `Code(rendition, children)`  a code sample, which `teletype` syntax-highlights
+-       row  `Spanned(kind, rendition, children)`  a marker of a `kind` this library does not know, kept with its children
++       column  Кейс
++       column  Узел
++       row  `Textual(text)`  обычный текст между маркерами
++       row  `Typed(tasty, placeholders, rendition, children)`  тип: `tasty` — его сериализованная форма TASTy в виде текста Base64 (`Unset`, если компилятор её не предоставил), материализуемая `Reifier#syntax`; `placeholders` замещают части, которые не удалось сериализовать; `children` — напечатанное компилятором отображение, запасной вариант
++       row  `Symbolic(name, full, rendition, children)`  ссылка на символ, по его имени `name` и полному (`full`) квалифицированному имени
++       row  `Named(isType, rendition, children)`  имя, с указанием, является ли оно именем типа
++       row  `Code(rendition, children)`  пример кода, который `teletype` подсвечивает
++       row  `Spanned(kind, rendition, children)`  маркер вида `kind`, неизвестного этой библиотеке, сохранённый вместе с дочерними узлами
+
+=       row  `Spanned(kind, rendition, children)`  a marker of a `kind` this library does not know, kept with its children
+-       ```
++       ```
+
+-       Every node but `Textual` has a `Rendition`, the form the compiler presented it in, and
+-       `children`, the nodes inside it; `#plain` on any node is its visible text.
++       У каждого узла, кроме `Textual`, есть `Rendition` — форма, в которой его представил
++       компилятор, — и `children`, узлы внутри него; `#plain` на любом узле даёт его видимый
++       текст.
+
+=       `children`, the nodes inside it; `#plain` on any node is its visible text.
+=
+-       ```scala
++       ```scala
+
+=       `children`, the nodes inside it; `#plain` on any node is its visible text.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Markup.parse(t"type mismatch")   // List(Markup.Textual(t"type mismatch"))
++       Markup.parse(t"type mismatch")   // List(Markup.Textual(t"type mismatch"))
+
+-       SemanticMessage.parse(t"Found: …").markup.map:
++       SemanticMessage.parse(t"Found: …").markup.map:
+
+-         case Markup.Typed(tasty, placeholders, _, children) => t"type"
++         case Markup.Typed(tasty, placeholders, _, children) => t"type"
+
+-         case Markup.Code(_, _)                              => t"code"
++         case Markup.Code(_, _)                              => t"code"
+
+-         case other                                          => other.plain
++         case other                                          => other.plain
+
+=         case other                                          => other.plain
+-       ```
++       ```
+
+=       ```
+-   refer delicious.SemanticMessage
++   refer delicious.SemanticMessage
+
+=       ```
+=   refer delicious.SemanticMessage
+-   refer delicious.Placeholder
++   refer delicious.Placeholder
+
+-   refer delicious.Rendition
++   refer delicious.Rendition
+
+-   entry .marked   whether a text contains any of the markers `parse` reads
+-       A character in the private-use range `U+E000` to `U+E003`.
+-   entry .parse   parses marked-up text into a list of nodes, as the compiler's own parser would
+-       Follows the compiler's `DiagnosticMarkup.parse` exactly: a marker opens with a start
+-       character, its kind, an attributes separator, `key=value` attributes (percent-encoded
+-       where a value holds a reserved character, decoded here) and a text separator, and
+-       closes with an end character. Anything which does not form a complete marker is
+-       dropped and the surrounding content kept as text — a stray start or end character
+-       vanishes, a truncated header reads as plain text — and the children of a marker never
+-       closed are spliced into its parent, so a message cut short still parses. The kind
+-       decides the node: `type`, `sym`, `name` and `code` have their own cases, and any
+-       other kind is `Spanned`.
+-   entry .plain   the text with every marker removed, keeping only the visible content
+-       Text with no markers is returned as it is, without parsing.
+-   entry #plain   this node's visible text: its own text, or its children's joined
++   entry .marked   содержит ли текст хотя бы один из маркеров, которые читает `parse`
++       Символ из области частного использования от `U+E000` до `U+E003`.
++   entry .parse   разбирает размеченный текст в список узлов, как это сделал бы собственный парсер компилятора
++       В точности следует `DiagnosticMarkup.parse` компилятора: маркер открывается
++       начальным символом, своим видом, разделителем атрибутов, атрибутами `key=value`
++       (закодированными процентным кодированием, если значение содержит зарезервированный
++       символ, и декодируемыми здесь) и разделителем текста, а закрывается конечным
++       символом. Всё, что не образует полный маркер, отбрасывается, а окружающее содержимое
++       сохраняется как текст — одиночный начальный или конечный символ исчезает, усечённый
++       заголовок читается как обычный текст, — а дочерние узлы так и не закрытого маркера
++       вставляются в родителя, поэтому оборванное сообщение всё равно разбирается. Вид
++       определяет узел: у `type`, `sym`, `name` и `code` есть свои кейсы, а любой другой вид
++       даёт `Spanned`.
++   entry .plain   текст без маркеров, в котором остаётся только видимое содержимое
++       Текст без маркеров возвращается как есть, без разбора.
++   entry #plain   видимый текст этого узла: его собственный текст или объединённый текст его дочерних узлов
+
+- entry .Placeholder   what stood in for a part of a type the compiler could not pickle
++ entry .Placeholder   то, что заменило часть типа, которую компилятор не смог сериализовать
+
+= entry .Placeholder   what stood in for a part of a type the compiler could not pickle
+-   detail
++   detail
+
+-       The pickler which gives a `Markup.Typed` node its TASTy payload can only pickle what
+-       resolves against the classpath alone; a local type or term, a skolem, a type variable
+-       or an error type is replaced, as a whole maximal subtree, by a sentinel string-literal
+-       type `⟨scala-diag:N⟩` and recorded as a `Placeholder` numbered `N`, with its `#kind`,
+-       `#name`, `#arity`, where it was defined, and the text the compiler `#printed` for it.
+-       `Reifier.substitute` puts the printed text back where each sentinel stands, so
+-       `List[Bad.Local]` renders with `Bad.Local` even though `Local` is on no classpath.
++       Сериализатор, дающий узлу `Markup.Typed` его полезную нагрузку TASTy, может
++       сериализовать лишь то, что разрешается относительно одного только пути классов;
++       локальный тип или терм, сколем, переменная типа или тип ошибки заменяется — как целое
++       максимальное поддерево — на тип-значение-маркер строкового литерала
++       `⟨scala-diag:N⟩` и записывается как `Placeholder` с номером `N`, вместе с его `#kind`,
++       `#name`, `#arity`, местом определения и текстом, который компилятор для него
++       напечатал (`#printed`). `Reifier.substitute` возвращает напечатанный текст на место
++       каждого значения-маркера, так что `List[Bad.Local]` отображается с `Bad.Local`, хотя
++       `Local` нет ни в одном пути классов.
+
+=       `List[Bad.Local]` renders with `Bad.Local` even though `Local` is on no classpath.
+=
+-       ```scala
++       ```scala
+
+=       `List[Bad.Local]` renders with `Bad.Local` even though `Local` is on no classpath.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Placeholder.decode(t"3|skolem|x|0|Test.scala:5|x.type")
++       Placeholder.decode(t"3|skolem|x|0|Test.scala:5|x.type")
+
+-       // Placeholder(3, PlaceholderKind.Skolem, t"x", 0, t"Test.scala:5", t"x.type")
++       // Placeholder(3, PlaceholderKind.Skolem, t"x", 0, t"Test.scala:5", t"x.type")
+
+-       Placeholder.reference(t"⟨scala-diag:42⟩")          // 42
++       Placeholder.reference(t"⟨scala-diag:42⟩")          // 42
+
+-       Placeholder.escaped(t"⟨scala-diag:esc:real text⟩")  // t"real text"
++       Placeholder.escaped(t"⟨scala-diag:esc:real text⟩")  // t"real text"
+
+=       Placeholder.escaped(t"⟨scala-diag:esc:real text⟩")  // t"real text"
+-       ```
++       ```
+
+-   refer delicious.PlaceholderKind
++   refer delicious.PlaceholderKind
+
+=   refer delicious.PlaceholderKind
+-   refer delicious.Reifier
++   refer delicious.Reifier
+
+-   entry .Prefix   the reserved prefix of a placeholder sentinel, `⟨scala-diag:`
+-       A genuine string-literal type which happens to start with it is escaped by the
+-       compiler with the `esc:` form, which `escaped` reads back.
+-   entry .text   the sentinel text for a placeholder number: `⟨scala-diag:N⟩`
+-   entry .reference   the placeholder number, if a text is a sentinel reference
+-       `Unset` for any other text, including an escaped literal.
+-   entry .escaped   the original literal, if a text is an escaped genuine string literal
+-       `⟨scala-diag:esc:…⟩` gives back the `…`.
+-   entry .decode   a placeholder from its six `|`-separated fields, or `Unset`
+-       The fields are the number, the kind, the name, the arity, where it was defined (which
+-       may be empty) and the printed text, each percent-encoded where it would otherwise
+-       hold a `|`. A non-numeric number, or too few or too many fields, gives `Unset`;
+-       an unknown kind is kept as `PlaceholderKind.Other`.
+-   entry #id   the placeholder's number, as the sentinel refers to it
+-   entry #kind   what was replaced: a local type or term, an error, a type variable or a skolem
+-   entry #name   the name of what was replaced
+-   entry #arity   the number of type parameters of what was replaced
+-   entry #definedAt   where it was defined, as the compiler recorded it, or `Unset`
+-   entry #printed   the text the compiler printed for it, used in its place when rendering
++   entry .Prefix   зарезервированный префикс значения-маркера заглушки, `⟨scala-diag:`
++       Настоящий тип строкового литерала, который случайно начинается с него, компилятор
++       экранирует формой `esc:`, которую читает обратно `escaped`.
++   entry .text   текст значения-маркера для номера заглушки: `⟨scala-diag:N⟩`
++   entry .reference   номер заглушки, если текст — ссылка-маркер
++       `Unset` для любого другого текста, включая экранированный литерал.
++   entry .escaped   исходный литерал, если текст — экранированный настоящий строковый литерал
++       `⟨scala-diag:esc:…⟩` возвращает `…`.
++   entry .decode   заглушка из шести полей, разделённых `|`, или `Unset`
++       Поля — номер, вид, имя, арность, место определения (может быть пустым) и
++       напечатанный текст, каждое закодировано процентным кодированием, если иначе
++       содержало бы `|`. Нечисловой номер, а также слишком мало или слишком много полей дают
++       `Unset`; неизвестный вид сохраняется как `PlaceholderKind.Other`.
++   entry #id   номер заглушки, по которому на неё ссылается значение-маркер
++   entry #kind   что было заменено: локальный тип или терм, ошибка, переменная типа или сколем
++   entry #name   имя того, что было заменено
++   entry #arity   число параметров типа у того, что было заменено
++   entry #definedAt   место определения, как его записал компилятор, или `Unset`
++   entry #printed   текст, который компилятор напечатал для заменённого, используемый вместо него при отображении
+
+- entry .PlaceholderKind   the kind of thing a placeholder replaced
++ entry .PlaceholderKind   вид того, что заменила заглушка
+
+= entry .PlaceholderKind   the kind of thing a placeholder replaced
+-   detail
++   detail
+
+-       `PlaceholderKind(text)` reads a kind from its wire name:
++       `PlaceholderKind(text)` читает вид по его имени в форме передачи:
+
+=       `PlaceholderKind(text)` reads a kind from its wire name:
+=
+-       ```tabular
++       ```tabular
+
+-       column  Case
+-       column  Wire name
+-       column  Replaced
+-       row  `LocalType`  `local-type`  a type definition local to the compilation
+-       row  `LocalTerm`  `local-term`  a term definition local to the compilation
+-       row  `Error`  `error`  an error type
+-       row  `Typevar`  `typevar`  an uninstantiated type variable
+-       row  `Skolem`  `skolem`  a skolem
+-       row  `Other(kind)`  anything else  a kind this library does not know, keeping the compiler's text
++       column  Кейс
++       column  Имя в форме передачи
++       column  Что заменено
++       row  `LocalType`  `local-type`  определение типа, локальное для компиляции
++       row  `LocalTerm`  `local-term`  определение терма, локальное для компиляции
++       row  `Error`  `error`  тип ошибки
++       row  `Typevar`  `typevar`  неинстанцированная переменная типа
++       row  `Skolem`  `skolem`  сколем
++       row  `Other(kind)`  что угодно другое  вид, неизвестный этой библиотеке, с сохранением текста компилятора
+
+=       row  `Other(kind)`  anything else  a kind this library does not know, keeping the compiler's text
+-       ```
++       ```
+
+-   entry .apply   a kind from its wire name, with an unknown name kept as `Other`
++   entry .apply   вид по его имени в форме передачи, где неизвестное имя сохраняется как `Other`
+
+- entry .Rendition   the form a symbol reference is presented in: default, declaration, located or full
++ entry .Rendition   форма, в которой представлена ссылка на символ: по умолчанию, объявление, с местоположением или полная
+
+= entry .Rendition   the form a symbol reference is presented in: default, declaration, located or full
+-   detail
++   detail
+
+-       Carried by every `Markup` node but `Textual`. It is parsed from the marker's `style`
+-       attribute, but it is not visual styling; `Rendition(text)` reads it from its wire name:
++       Есть у каждого узла `Markup`, кроме `Textual`. Разбирается из атрибута `style`
++       маркера, но не является визуальным оформлением; `Rendition(text)` читает её по имени в
++       форме передачи:
+
+=       attribute, but it is not visual styling; `Rendition(text)` reads it from its wire name:
+=
+-       ```tabular
++       ```tabular
+
+-       column  Case
+-       column  Wire name
+-       column  The symbol is shown
+-       row  `Declaration`  `dcl`  as its declaration: `def act: Int`
+-       row  `Located`  `located`  as its located name
+-       row  `Full`  `full`  as its full name
+-       row  `Default`  anything else, or `Unset`  as it is normally printed
++       column  Кейс
++       column  Имя в форме передачи
++       column  Как показан символ
++       row  `Declaration`  `dcl`  как его объявление: `def act: Int`
++       row  `Located`  `located`  как его имя с местоположением
++       row  `Full`  `full`  как его полное имя
++       row  `Default`  что угодно другое или `Unset`  так, как он обычно печатается
+
+=       row  `Default`  anything else, or `Unset`  as it is normally printed
+-       ```
++       ```
+
+-   entry .apply   a rendition from an optional wire name, `Default` when absent or unknown
++   entry .apply   форма по опциональному имени в форме передачи, `Default`, если оно отсутствует или неизвестно
+
+- entry .Reifier   unpickles the TASTy types in semantic diagnostics back into stenography `Syntax`
++ entry .Reifier   десериализует типы TASTy в семантической диагностике обратно в `Syntax` из stenography
+
+= entry .Reifier   unpickles the TASTy types in semantic diagnostics back into stenography `Syntax`
+-   detail
++   detail
+
+-       A `Reifier(classpath)` holds a compiler context over a hellenism `LocalClasspath`,
+-       made lazily on first use, against which the TASTy payload of each `Markup.Typed` node
+-       is unpickled into a type and rendered as a stenography `Syntax`. The classpath should
+-       be the one the diagnosed code was compiled against — the pickler guarantees a payload
+-       resolves against the classpath alone, everything else having been replaced by a
+-       `Placeholder`, which `Reifier.substitute` puts back by its printed text.
++       `Reifier(classpath)` хранит контекст компилятора над `LocalClasspath` из hellenism,
++       создаваемый лениво при первом использовании, относительно которого полезная нагрузка
++       TASTy каждого узла `Markup.Typed` десериализуется в тип и отображается как `Syntax` из
++       stenography. Путь классов должен быть тем, с которым компилировался
++       диагностируемый код, — сериализатор гарантирует, что полезная нагрузка разрешается
++       относительно одного только пути классов, поскольку всё прочее заменено на
++       `Placeholder`, который `Reifier.substitute` возвращает по его напечатанному тексту.
+
+=       `Placeholder`, which `Reifier.substitute` puts back by its printed text.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `Placeholder`, which `Reifier.substitute` puts back by its printed text.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       typecheck
+-       substitute ???  ...
++       substitute ???  ...
+
+=       typecheck
+=       substitute ???  ...
+-       ##
++       ##
+
+-       val classpath: LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
++       val classpath: LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+
+-       val reifier: Reifier = Reifier(classpath)
++       val reifier: Reifier = Reifier(classpath)
+
+-       given Imports = Imports.empty
++       given Imports = Imports.empty
+
+-       val message: SemanticMessage = ???
++       val message: SemanticMessage = ???
+
+-       message.types.map(reifier.syntax(_).let(_.text))
++       message.types.map(reifier.syntax(_).let(_.text))
+
+=       message.types.map(reifier.syntax(_).let(_.text))
+-       ```
++       ```
+
+-       A reifier is a value to keep, not to make per message: its context loads the
+-       classpath's symbol table once. `render` and `teletype` take one, and `#imports` builds
+-       the `Imports` a rendering abbreviates against. In `delicious.scala`.
++       Материализатор — значение, которое следует хранить, а не создавать для каждого
++       сообщения: его контекст загружает таблицу символов пути классов один раз. `render` и
++       `teletype` принимают его, а `#imports` строит `Imports`, относительно которого
++       сокращается отображение. Находится в `delicious.scala`.
+
+=       the `Imports` a rendering abbreviates against. In `delicious.scala`.
+-   refer delicious.render
++   refer delicious.render
+
+=   refer delicious.render
+-   refer delicious.SemanticMessage
++   refer delicious.SemanticMessage
+
+=   refer delicious.render
+=   refer delicious.SemanticMessage
+-   refer delicious.Placeholder
++   refer delicious.Placeholder
+
+-   entry .substitute   rewrites the placeholder sentinels in a `Syntax` into their printed text
+-       Walks a `Syntax`, replacing each primitive whose text is a quoted `⟨scala-diag:N⟩`
+-       sentinel with `Syntax.Symbolic` of placeholder `N`'s printed text, and each escaped
+-       genuine literal `⟨scala-diag:esc:…⟩` with the literal it stood for. Sound because the
+-       pickler replaces whole maximal subtrees, so a sentinel is only ever a complete type,
+-       never a constructor or a prefix. Any other primitive is left alone.
++   entry .substitute   переписывает значения-маркеры заглушек в `Syntax` в их напечатанный текст
++       Обходит `Syntax`, заменяя каждый примитив, текст которого — значение-маркер
++       `⟨scala-diag:N⟩` в кавычках, на `Syntax.Symbolic` с напечатанным текстом заглушки
++       `N`, а каждый экранированный настоящий литерал `⟨scala-diag:esc:…⟩` — на литерал,
++       который он представлял. Это корректно, поскольку сериализатор заменяет целые
++       максимальные поддеревья, так что значение-маркер всегда является полным типом и
++       никогда — конструктором или префиксом. Любой другой примитив остаётся без изменений.
+
+=       never a constructor or a prefix. Any other primitive is left alone.
+=
+-       ```scala
++       ```scala
+
+=       never a constructor or a prefix. Any other primitive is left alone.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val placeholder = Placeholder(0, PlaceholderKind.LocalType, t"Local", 0, Unset, t"Bad.Local")
++       val placeholder = Placeholder(0, PlaceholderKind.LocalType, t"Local", 0, Unset, t"Bad.Local")
+
+-       val list = Syntax.Simple(Designator(t"scala.collection.immutable.List"))
++       val list = Syntax.Simple(Designator(t"scala.collection.immutable.List"))
+
+-       val syntax = Syntax.Application(list, List(Syntax.Primitive(t"\"⟨scala-diag:0⟩\"")), false)
++       val syntax = Syntax.Application(list, List(Syntax.Primitive(t"\"⟨scala-diag:0⟩\"")), false)
+
+-       Reifier.substitute(syntax, List(placeholder))
++       Reifier.substitute(syntax, List(placeholder))
+
+-       // Syntax.Application(list, List(Syntax.Symbolic(t"Bad.Local")), false)
++       // Syntax.Application(list, List(Syntax.Symbolic(t"Bad.Local")), false)
+
+=       // Syntax.Application(list, List(Syntax.Symbolic(t"Bad.Local")), false)
+-       ```
++       ```
+
+-   entry #imports   an `Imports` for rendering against this classpath, with `export`s resolved
+-       `reifier.imports(designators, direct)` is `Imports.resolve` under the reifier's
+-       context: an `Imports` whose wildcard scopes are `designators` and whose directly
+-       imported names are `direct`, extended by the targets (type and companion) of every
+-       `export` alias declared in each of `designators`. This is what makes a type reached
+-       through a wildcard-imported prelude — `jacinta.Json` under `import soundness.*` —
+-       render by its leaf name, `Json`, as the user would write it, where an `Imports` built
+-       by hand renders it qualified. A scope which declares no exports, or which cannot be
+-       resolved, adds nothing and does not throw. Both sets are stdlib
+-       `scala.collection.immutable.Set[Designator]`s, as `Imports` itself holds them.
++   entry #imports   `Imports` для отображения относительно этого пути классов, с разрешёнными `export`
++       `reifier.imports(designators, direct)` — это `Imports.resolve` в контексте
++       материализатора: `Imports`, области видимости подстановочных импортов которого —
++       `designators`, а напрямую импортированные имена — `direct`, дополненный целями (тип и
++       компаньон) каждого псевдонима `export`, объявленного в каждом из `designators`.
++       Именно поэтому тип, доступный через импортированную подстановочным импортом
++       прелюдию, — `jacinta.Json` при `import soundness.*` — отображается по своему
++       листовому имени, `Json`, как его написал бы пользователь, тогда как `Imports`,
++       построенный вручную, отображает его квалифицированным. Область видимости, не
++       объявляющая экспортов или не поддающаяся разрешению, ничего не добавляет и не
++       бросает исключения. Оба множества — стандартные
++       `scala.collection.immutable.Set[Designator]`, как их хранит и сам `Imports`.
+
+=       `scala.collection.immutable.Set[Designator]`s, as `Imports` itself holds them.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `scala.collection.immutable.Set[Designator]`s, as `Imports` itself holds them.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+-       val reifier: Reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
++       val reifier: Reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+
+-       val scope = scala.collection.immutable.Set(Designator(t"soundness"))
++       val scope = scala.collection.immutable.Set(Designator(t"soundness"))
+
+-       given Imports = reifier.imports(scope, scala.collection.immutable.Set())
++       given Imports = reifier.imports(scope, scala.collection.immutable.Set())
+
+-       Syntax.Simple(Designator(t"stenography#Syntax")).text   // t"Syntax"
++       Syntax.Simple(Designator(t"stenography#Syntax")).text   // t"Syntax"
+
+=       Syntax.Simple(Designator(t"stenography#Syntax")).text   // t"Syntax"
+-       ```
++       ```
+
+-   entry #syntax   the `Syntax` of a `Markup.Typed` node's payload, or `Unset` if it cannot be unpickled
+-       Decodes the node's Base64 TASTy, unpickles it as a type tree under the reifier's
+-       context, converts the type to a stenography `Syntax`, and applies
+-       `Reifier.substitute` with the node's placeholders. A node with no payload, or one
+-       whose payload cannot be unpickled (pickled by a different compiler version, or
+-       against another classpath), gives `Unset` rather than an error, so a caller falls
+-       back to the node's printed children.
++   entry #syntax   `Syntax` полезной нагрузки узла `Markup.Typed` или `Unset`, если её нельзя десериализовать
++       Декодирует TASTy узла из Base64, десериализует его как дерево типа в контексте
++       материализатора, преобразует тип в `Syntax` из stenography и применяет
++       `Reifier.substitute` с заглушками узла. Узел без полезной нагрузки или с полезной
++       нагрузкой, которую нельзя десериализовать (сериализованной другой версией
++       компилятора или относительно другого пути классов), даёт `Unset`, а не ошибку, так
++       что вызывающий код возвращается к напечатанным дочерним узлам.
+
+- entry .render   a semantic message as text, with every type re-rendered through stenography
+-     An extension on `SemanticMessage`, in `delicious.scala`:
+-     `message.render(reifier)(using Imports)` joins the message's nodes, rendering each
+-     `Markup.Typed` node as `Syntax#text` of `reifier.syntax(node)` — abbreviated according
+-     to the `Imports` in scope, so `List[Int]` reads as `List[Int]` under an import of
+-     `scala.*` and as `scala.collection.immutable.List[scala.Int]` under `Imports.empty` —
+-     and every other node as its visible text. A type which cannot be reified falls back to
+-     the compiler-printed text, so the result is never worse than `SemanticMessage#plain`.
++ entry .render   семантическое сообщение в виде текста, с каждым типом, заново отображённым через stenography
++     Расширение для `SemanticMessage` в `delicious.scala`:
++     `message.render(reifier)(using Imports)` объединяет узлы сообщения, отображая каждый
++     узел `Markup.Typed` как `Syntax#text` от `reifier.syntax(node)` — сокращённо
++     согласно `Imports` в области видимости, так что `List[Int]` читается как `List[Int]`
++     при импорте `scala.*` и как `scala.collection.immutable.List[scala.Int]` при
++     `Imports.empty`, — а каждый другой узел — как его видимый текст. Тип, который нельзя
++     материализовать, заменяется напечатанным компилятором текстом, поэтому результат
++     никогда не хуже `SemanticMessage#plain`.
+
+=     the compiler-printed text, so the result is never worse than `SemanticMessage#plain`.
+=
+-     ```scala fuel
++     ```scala fuel
+
+-     alternative Plain
++     alternative Plain
+
+=     alternative Plain
+-       code
++       code
+
+=     alternative Plain
+=       code
+-           val message = SemanticMessage.parse(markedText)
++           val message = SemanticMessage.parse(markedText)
+
+-           message.plain
++           message.plain
+
+-           // Found: List[Double]  Required: List[String]
++           // Found: List[Double]  Required: List[String]
+
+-     alternative Fully qualified
++     alternative Fully qualified
+
+=     alternative Fully qualified
+-       code
++       code
+
+=     alternative Fully qualified
+=       code
+-           val message = SemanticMessage.parse(markedText)
++           val message = SemanticMessage.parse(markedText)
+
+=     alternative Fully qualified
+=       code
+=           val message = SemanticMessage.parse(markedText)
+-           val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
++           val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+
+=     alternative Fully qualified
+=       code
+=           val message = SemanticMessage.parse(markedText)
+=           val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+-           locally:
++           locally:
+
+-             given Imports = Imports.empty
++             given Imports = Imports.empty
+
+=             given Imports = Imports.empty
+-             message.render(reifier)
++             message.render(reifier)
+
+-             // Found: scala.collection.immutable.List[scala.Double]  Required: scala.collection.immutable.List[java.lang.String]
++             // Found: scala.collection.immutable.List[scala.Double]  Required: scala.collection.immutable.List[java.lang.String]
+
+-     alternative Abbreviated
++     alternative Abbreviated
+
+=     alternative Abbreviated
+-       code
++       code
+
+=     alternative Abbreviated
+=       code
+-           val message = SemanticMessage.parse(markedText)
++           val message = SemanticMessage.parse(markedText)
+
+=     alternative Abbreviated
+=       code
+=           val message = SemanticMessage.parse(markedText)
+-           val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
++           val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+
+=     alternative Abbreviated
+=       code
+=           val message = SemanticMessage.parse(markedText)
+=           val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+-           locally:
++           locally:
+
+-             given Imports = reifier.imports(scala.collection.immutable.Set(Designator(t"scala")), scala.collection.immutable.Set())
++             given Imports = reifier.imports(scala.collection.immutable.Set(Designator(t"scala")), scala.collection.immutable.Set())
+
+=             given Imports = reifier.imports(scala.collection.immutable.Set(Designator(t"scala")), scala.collection.immutable.Set())
+-             message.render(reifier)
++             message.render(reifier)
+
+-             // Found: List[Double]  Required: List[String]
++             // Found: List[Double]  Required: List[String]
+
+=             // Found: List[Double]  Required: List[String]
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+- entry .teletype   a semantic message as styled terminal text, with code and types syntax-highlighted
+-     An extension on `SemanticMessage`, in `delicious.ansi`, called as
+-     `delicious.teletype(message)(reifier)` — it is not exported to the umbrella, where
+-     `teletype` is escapade's `Teletypeable` rendering. It needs an `Imports`, a
+-     `ScalaSyntaxPalette` and a `Highlight` in scope (`Highlight.default`, tokenized, is
+-     found with no import). Each `Markup.Code` node is highlighted by harlequin as a Scala
+-     term, and each `Markup.Typed` node is reified through the `Reifier`, rendered against
+-     the `Imports`, and highlighted in type position; a type which cannot be reified is
+-     highlighted from the compiler's printed text instead. Any ANSI styling the compiler
+-     itself put in the text is stripped first, so the highlighting is from scratch.
++ entry .teletype   семантическое сообщение в виде стилизованного текста терминала, с подсветкой кода и типов
++     Расширение для `SemanticMessage` в `delicious.ansi`, вызываемое как
++     `delicious.teletype(message)(reifier)`, — оно не экспортируется в зонтичный модуль, где
++     `teletype` — это отображение `Teletypeable` из escapade. Ему нужны `Imports`,
++     `ScalaSyntaxPalette` и `Highlight` в области видимости (`Highlight.default`,
++     токенизированный, находится без импорта). Каждый узел `Markup.Code` подсвечивается
++     harlequin как терм Scala, а каждый узел `Markup.Typed` материализуется через
++     `Reifier`, отображается относительно `Imports` и подсвечивается в позиции типа; тип,
++     который нельзя материализовать, подсвечивается по напечатанному компилятором тексту.
++     Любое ANSI-оформление, которое компилятор сам поместил в текст, сначала удаляется,
++     так что подсветка выполняется с нуля.
+
+=     itself put in the text is stripped first, so the highlighting is from scratch.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     itself put in the text is stripped first, so the highlighting is from scratch.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     typecheck
+-     substitute ???  ...
++     substitute ???  ...
+
+=     typecheck
+=     substitute ???  ...
+-     ##
++     ##
+
+-     given palette: ScalaSyntaxPalette = new Palette:
++     given palette: ScalaSyntaxPalette = new Palette:
+
+-       type Form = Srgb
++       type Form = Srgb
+
+-       def background: Color in Srgb       = WebColors.Black
++       def background: Color in Srgb       = WebColors.Black
+
+-       def foreground: Color in Srgb       = WebColors.White
++       def foreground: Color in Srgb       = WebColors.White
+
+-       def scalaError: Color in Srgb       = WebColors.Red
++       def scalaError: Color in Srgb       = WebColors.Red
+
+-       def scalaNumber: Color in Srgb      = WebColors.Gold
++       def scalaNumber: Color in Srgb      = WebColors.Gold
+
+-       def scalaString: Color in Srgb      = WebColors.LimeGreen
++       def scalaString: Color in Srgb      = WebColors.LimeGreen
+
+-       def scalaTerm: Color in Srgb        = WebColors.Silver
++       def scalaTerm: Color in Srgb        = WebColors.Silver
+
+-       def scalaType: Color in Srgb        = WebColors.Turquoise
++       def scalaType: Color in Srgb        = WebColors.Turquoise
+
+-       def scalaKeyword: Color in Srgb     = WebColors.Orange
++       def scalaKeyword: Color in Srgb     = WebColors.Orange
+
+-       def scalaSymbol: Color in Srgb      = WebColors.Gray
++       def scalaSymbol: Color in Srgb      = WebColors.Gray
+
+-       def scalaParenthesis: Color in Srgb = WebColors.Gray
++       def scalaParenthesis: Color in Srgb = WebColors.Gray
+
+-       def scalaModifier: Color in Srgb    = WebColors.Orchid
++       def scalaModifier: Color in Srgb    = WebColors.Orchid
+
+-       def scalaComment: Color in Srgb     = WebColors.DimGray
++       def scalaComment: Color in Srgb     = WebColors.DimGray
+
+-       def subdued: Color in Srgb          = WebColors.DimGray
++       def subdued: Color in Srgb          = WebColors.DimGray
+
+-       def accented: Color in Srgb         = WebColors.White
++       def accented: Color in Srgb         = WebColors.White
+
+-       def margin: Color in Srgb           = WebColors.DimGray
++       def margin: Color in Srgb           = WebColors.DimGray
+
+-     val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
++     val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+
+=     val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+-     given Imports = Imports.empty
++     given Imports = Imports.empty
+
+-     val message: SemanticMessage = ???
++     val message: SemanticMessage = ???
+
+-     val styled: Teletype = delicious.teletype(message)(reifier)
++     val styled: Teletype = delicious.teletype(message)(reifier)
+
+-     styled.plain   // the same text as message.render(reifier)
++     styled.plain   // the same text as message.render(reifier)
+
+=     styled.plain   // the same text as message.render(reifier)
+-     ```
++     ```
+
+-     No library ships a `ScalaSyntaxPalette`, since a palette is a choice of colours: a
+-     program defines one as a given, as the sample does, with a colour for each accent.
++     Ни одна библиотека не поставляет `ScalaSyntaxPalette`, поскольку палитра — это выбор
++     цветов: программа определяет её как given, как в примере, с цветом для каждого
++     акцента.
+
+- entry .Shim   the spelling of the compiler-internal API delicious wraps, per compiler stream
++ entry .Shim   написание внутреннего API компилятора, которое оборачивает delicious, для каждой линии компилятора
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. `delicious.compiler` holds one `Shim` for the Scala 3.9 stream and
+-       one for 3.10, defining the same name against each stream's shapes, so that nothing
+-       else in delicious knows which is in play.
+-   entry .compilationUnitInfo   a `CompilationUnitInfo` over a virtual file and its `TastyInfo`
+-       3.9 takes the `TastyInfo` by value and 3.10 as a lazy loader; the shim supplies it as
+-       each stream expects, always present, since the tree unpickler reads it
+-       unconditionally.
++       Не для прямого использования. `delicious.compiler` содержит один `Shim` для линии
++       Scala 3.9 и один для 3.10, определяющие одно и то же имя относительно форм каждой
++       линии, так что больше ничто в delicious не знает, какая из них используется.
++   entry .compilationUnitInfo   `CompilationUnitInfo` над виртуальным файлом и его `TastyInfo`
++       3.9 принимает `TastyInfo` по значению, а 3.10 — как ленивый загрузчик; шим
++       предоставляет его так, как ожидает каждая линия, всегда присутствующим, поскольку
++       десериализатор деревьев читает его безусловно.

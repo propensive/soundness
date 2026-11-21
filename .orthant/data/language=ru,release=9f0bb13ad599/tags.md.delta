@@ -1,0 +1,294 @@
+orthant 1 language
+
+- abacist: composite-units mixed-radix time-decomposition quantities
+- acyclicity: graph dag directed-graph poset graphviz dot subgraph
+- adversaria: annotations metadata reflection compile-time-reflection
+- ambience: envvar system-properties configuration xdg directories environment
+- anamnesis: database entity persistence storage data-access
+- anthology: scala-compiler compilation programmatic-compiler diagnostics
+- anticipation: integration typeclass-bridges abstract-typeclasses cross-module
+- aperture: open create scoped-resource handle capability grant mode
+- apoplexy: openapi swagger api-specification rest schema
+- archimedes: mathml equations mathematical-notation rendering
+- austronesian: pojo java-interop serialization classloader-isolation
+- aviation: time date calendar timezone iso8601 rfc1123 holidays leap-seconds tzdb
+- baroque: complex-numbers math imaginary algebra
+- beneficence: build-plugin publishing artifacts distribution
+- bitumen: tar archive pax tarball unix-permissions
+- breviloquence: cbor binary-json concise-binary serialization
+- burdock: bootstrap installer self-installer
+- cacophony: audio sound aiff wav playback recording stereo waveform
+- caduceus: email smtp mime sender attachment envelope
+- caesura: csv tsv dsv spreadsheet sheet delimited-values
+- camouflage: cache lru-cache memoization
+- capricious: random rng probability gaussian gamma distribution sampling seed
+- cardinality: refinement-types numeric-range bounded-numbers ranges
+- cartouche: label-placement captions obstacles arranger collision-avoidance chart-labels
+- cataclysm: css stylesheet selectors keyframes media-queries fonts typesafe-css
+- charisma: chemistry periodic-table chemical-equation molecule chemical-formula
+- chatelaine: webauthn passkey fido2 authentication passwordless security-key attestation
+- chiaroscuro: diff comparison contrast similarity test-assertions decomposition
+- clavichord: keyboard keypress keys modifiers input
+- coaxial: socket tcp udp multicast dns networking domain-socket bindable connection
+- concordance: collections concatenation appendable prependable joining
+- contextual: string-interpolation interpolator typesafe-interpolation custom-interpolators
+- contingency: error-handling exceptions tactics recovery validation effects
+- corpuscular: checksum crc32 crc64 adler32 non-cryptographic-hash integrity
+- cosmopolite: i18n internationalization locale language polyglot l10n
+- degustation: tasty api-surface api-atoms inspection library-identity
+- delicious: semantic-diagnostics compiler-errors explanations diagnostics
+- dendrology: tree-diagram dag-diagram ascii-tree visualization tree-rendering
+- denominative: ordinal indexing zero-based one-based interval
+- digression: stacktrace codepoint fqcn introspection debugging
+- dissonance: diff myers-diff text-diff edit-distance change-detection
+- distillate: decoder encoder typeclass conversion extraction
+- diuretic: java-interop adapters legacy-java compatibility java-types
+- embarcadero: docker container container-runtime
+- enigmatic: cryptography aes rsa hmac encryption signing pem public-key
+- escapade: ansi-escape terminal-styling colors text-style hyperlink ribbon teletype
+- escritoire: table tabulation grid box-drawing terminal-tables column-alignment
+- espionage: acp agent-client-protocol coding-agent ide-integration json-rpc
+- ethereal: daemon ipc background-process service-installer client-server
+- eucalyptus: logging logs realm logger structured-logging
+- exegesis: lsp language-server-protocol ide-integration
+- exoskeleton: cli command-line application-framework entrypoint shell-completion
+- facsimile: pdf cos document page-tree text-extraction annotations bookmarks
+- frontier: implicits given-search compile-time-reflection enumeration
+- fulminate: error-messages diagnostics fail-fast structured-messages internationalization-messages
+- galilei: filesystem io files directories symlinks volumes posix
+- gastronomy: hashing digest sha256 md5 crc32 feistel checksum
+- geodesy: geolocation compass coordinates directions geography cardinal-direction
+- gesticulate: mime media-types multipart content-type assets
+- gigantism: macros metaprogramming compile-time scala-compiler-internals
+- gnossienne: reference foreign-key entity-reference resolvable
+- gossamer: text strings text-utilities decimal-formatting bidi unicode joining
+- graffiti: page archetype html-page hero masthead breadcrumbs colophon favicon dashboard
+- guillotine: shell process subprocess command-execution posix sh
+- hallucination: image png jpeg gif bmp raster image-io
+- harlequin: syntax-highlighting source-code tokenization scala-parser
+- hellenism: classpath classloader jvm resources jar
+- hieroglyph: unicode encoding character-encoding utf8 grapheme text-encoding
+- honeycomb: html html5 dom typesafe-html tags attributes
+- hyperbole: tasty scala-compiler introspection ast macro-debugging
+- hypotenuse: numeric overflow division integer-arithmetic ordered
+- imperial: directory-layout home-directory base-directory filesystem-layout xdg
+- inimitable: uuid identifier guid
+- iridescence: color color-spaces rgb cielab hsl srgb palette theme colorimetry
+- jacinta: json parser serialization json-pointer json-schema schema-validation dynamic-access
+- kaleidoscope: regex glob pattern-matching scanner regular-expressions
+- larceny: compiler-plugin compile-error testing compile-time-testing
+- legerdemain: forms widgets html-forms input fields
+- locomotion: protobuf protocol-buffers wire-format binary-serialization
+- mandible: bytecode jvm classfile class-file
+- mercator: functor monad applicative typeclass functional-programming
+- metamorphose: permutations combinatorics factoradic lehmer
+- monotonous: base64 base32 hex binary-encoding base-encoding serialization
+- mosquito: matrix linear-algebra math vector
+- murmuration: collections typeclasses traversable foldable mappable filterable
+- nomenclature: name-validation type-level constraints refinement-types string-literal-types
+- obligatory: rpc json-rpc sse server-sent-events framing length-prefix protocol
+- octogenarian: git version-control git-repository commit ssh-url
+- orthodoxy: oauth authentication authorization oauth2 scope
+- panopticon: lens optics composable case-class accessor
+- parasite: async threading concurrency tasks promise daemon supervision
+- perihelion: websocket frame ws-protocol
+- phoenicia: fonts typography ttf truetype font-metrics opentype
+- plutocrat: currency money price finance luhn isin fixed-point
+- pneumatic: compression deflate gzip zlib brotli xz lzma2 lzw
+- polysyllabic: hyphenation liang-algorithm line-breaking typesetting
+- polyvinyl: structural-types records anonymous-records type-providers
+- praxinoscope: regex re2 automaton linear-time regex-engine redos
+- prepositional: typeclass type-infrastructure refinement-types abstract-types
+- prescience: staging macro-typeclass code-generation expansion-time
+- probably: testing test-runner property-testing benchmark assertions
+- profanity: terminal tui keyboard line-editor interactive console
+- prophesy: completions dynamic-types tab-completion ide-suggestions
+- proscenium: re-exports stdlib utilities boilerplate-reduction
+- punctuation: markdown commonmark prose text-formatting
+- quantitative: units quantities dimensional-analysis si-units measurements physics
+- querencia: dom browser typed-dom web-ui client-side
+- revolution: jar-manifest semver versioning
+- rudiments: utilities core-library bijection loops indexable
+- savagery: svg vector-graphics 2d-graphics path shapes
+- scintillate: http-server servlet web-framework http-routing
+- sedentary: benchmarking performance-testing micro-benchmark
+- serpentine: path filesystem-paths posix windows linux relative-path absolute-path
+- sibylline: llm anthropic openai gemini chat-completions tool-use structured-output streaming
+- sigillate: jose jwt jws jwe jwk token bearer authentication signing encryption
+- spectacular: show pretty-printing display inspect
+- stenography: typename qualified-names imports symbol-rendering scala-types
+- stratiform: tel configuration-language records schema binary-tel
+- superlunary: staging remote-execution multi-stage-programming distributed-computing
+- surveillance: file-watcher filesystem file-events directory-monitoring nio
+- susurration: ssh ssh-client known-hosts identity transport session remote-commands
+- symbolism: operators arithmetic typeclass operator-overloading algebra
+- syndesis: mdns dns-sd zeroconf bonjour service-discovery multicast
+- synesthesia: mcp model-context-protocol llm ai-protocol
+- tarantula: webdriver browser-automation chrome firefox safari edge selenium headless
+- tasseomancy: charts graphs plotting data-visualization svg benchmarks bar-chart line-chart pie-chart histogram
+- telekinesis: http http-client cookies authentication rest-client web-requests
+- tessellate: layout box-drawing reflow alignment flex text-layout
+- turbulence: streams io stdio streaming reactive line-separation
+- typonym: type-level type-list type-map heterogeneous reflection
+- ultimatum: terminal-layout panes progress-bar spinner gauge sparkline tui
+- ulysses: bloom-filter probabilistic-data-structures palimpsest
+- umbrageous: compiler-plugin shading namespace-isolation
+- urticose: hostname email-address ip-address mac-address port network-identifiers endpoint dns
+- vacuous: optional null-safety option maybe nullable
+- vexillology: bit-flags flags enumeration bitfield
+- vicarious: catalog proxy type-indexed records
+- virility: roff manpage man-page troff documentation cli-help
+- vivisection: debugging jdi breakpoints stepping dap debug-adapter variables
+- wisteria: derivation product-types sum-types case-class typeclass-derivation magnolia
+- xenophile: ffi foreign-interop wit webidl typescript kotlin wasm native
+- xylophone: xml xml-schema typesafe-xml dynamic-xml
+- yossarian: pty terminal-emulator ansi-escape screen-buffer vt100 cursor
+- ypsiloid: yaml parser serialization yaml-ast anchors
+- zephyrine: parser parsing cursor emitter sparse-format binary-layout pack unpack
+- zeppelin: zip archive zip-file compression
++ abacist: составные-единицы смешанное-основание разложение-времени величины
++ acyclicity: граф dag ориентированный-граф частично-упорядоченное-множество graphviz dot подграф
++ adversaria: аннотации метаданные рефлексия рефлексия-во-время-компиляции
++ ambience: переменная-окружения системные-свойства конфигурация xdg каталоги окружение
++ anamnesis: база-данных сущность персистентность хранилище доступ-к-данным
++ anthology: компилятор-scala компиляция программный-компилятор диагностика
++ anticipation: интеграция мосты-классов-типов абстрактные-классы-типов межмодульный
++ aperture: открытие создание ресурс-с-областью-видимости дескриптор возможность право-доступа режим
++ apoplexy: openapi swagger спецификация-api rest схема
++ archimedes: mathml уравнения математическая-нотация отрисовка
++ austronesian: pojo взаимодействие-с-java сериализация изоляция-загрузчиков-классов
++ aviation: время дата календарь часовой-пояс iso8601 rfc1123 праздники високосные-секунды tzdb
++ baroque: комплексные-числа математика мнимые-числа алгебра
++ beneficence: плагин-сборки публикация артефакты дистрибуция
++ bitumen: tar архив pax tar-архив unix-права
++ breviloquence: cbor двоичный-json компактный-двоичный сериализация
++ burdock: начальная-загрузка установщик самоустановщик
++ cacophony: аудио звук aiff wav воспроизведение запись стерео форма-волны
++ caduceus: электронная-почта smtp mime отправитель вложение конверт
++ caesura: csv tsv dsv электронная-таблица лист значения-с-разделителями
++ camouflage: кеш lru-кеш мемоизация
++ capricious: случайные-числа гсч вероятность гауссово гамма распределение выборка начальное-значение
++ cardinality: уточняющие-типы числовой-диапазон ограниченные-числа диапазоны
++ cartouche: размещение-меток подписи препятствия расстановщик предотвращение-наложений метки-диаграмм
++ cataclysm: css таблица-стилей селекторы ключевые-кадры медиазапросы шрифты типобезопасный-css
++ charisma: химия периодическая-таблица химическое-уравнение молекула химическая-формула
++ chatelaine: webauthn passkey fido2 аутентификация вход-без-пароля ключ-безопасности аттестация
++ chiaroscuro: diff сравнение контраст сходство тестовые-утверждения декомпозиция
++ clavichord: клавиатура нажатие-клавиши клавиши модификаторы ввод
++ coaxial: сокет tcp udp мультикаст dns сеть доменный-сокет привязываемый соединение
++ concordance: коллекции конкатенация дописываемый предписываемый объединение
++ contextual: интерполяция-строк интерполятор типобезопасная-интерполяция пользовательские-интерполяторы
++ contingency: обработка-ошибок исключения тактики восстановление валидация эффекты
++ corpuscular: контрольная-сумма crc32 crc64 adler32 некриптографический-хеш целостность
++ cosmopolite: i18n интернационализация локаль язык многоязычность l10n
++ degustation: tasty поверхность-api атомы-api инспекция идентичность-библиотеки
++ delicious: семантическая-диагностика ошибки-компилятора объяснения диагностика
++ dendrology: диаграмма-дерева диаграмма-dag ascii-дерево визуализация отрисовка-дерева
++ denominative: порядковый-номер индексация с-нуля с-единицы интервал
++ digression: трассировка-стека кодовая-точка fqcn интроспекция отладка
++ dissonance: diff алгоритм-майерса текстовый-diff редакционное-расстояние обнаружение-изменений
++ distillate: декодер кодировщик класс-типов преобразование извлечение
++ diuretic: взаимодействие-с-java адаптеры унаследованная-java совместимость типы-java
++ embarcadero: docker контейнер среда-выполнения-контейнеров
++ enigmatic: криптография aes rsa hmac шифрование подпись pem открытый-ключ
++ escapade: ansi-последовательности стилизация-терминала цвета стиль-текста гиперссылка лента телетайп
++ escritoire: таблица табулирование сетка псевдографика терминальные-таблицы выравнивание-столбцов
++ espionage: acp agent-client-protocol агент-для-программирования интеграция-с-ide json-rpc
++ ethereal: демон ipc фоновый-процесс установщик-служб клиент-сервер
++ eucalyptus: логирование логи область логгер структурированное-логирование
++ exegesis: lsp language-server-protocol интеграция-с-ide
++ exoskeleton: cli командная-строка фреймворк-приложений точка-входа автодополнение-в-оболочке
++ facsimile: pdf cos документ дерево-страниц извлечение-текста аннотации закладки
++ frontier: имплиситы поиск-given рефлексия-во-время-компиляции перечисление
++ fulminate: сообщения-об-ошибках диагностика быстрый-отказ структурированные-сообщения интернационализация-сообщений
++ galilei: файловая-система ввод-вывод файлы каталоги символические-ссылки тома posix
++ gastronomy: хеширование дайджест sha256 md5 crc32 фейстель контрольная-сумма
++ geodesy: геолокация компас координаты направления география сторона-света
++ gesticulate: mime медиатипы multipart content-type ресурсы
++ gigantism: макросы метапрограммирование время-компиляции внутренности-компилятора-scala
++ gnossienne: ссылка внешний-ключ ссылка-на-сущность разрешимый
++ gossamer: текст строки текстовые-утилиты десятичное-форматирование bidi юникод объединение
++ graffiti: страница архетип html-страница hero-блок шапка хлебные-крошки колофон фавикон дашборд
++ guillotine: оболочка процесс подпроцесс выполнение-команд posix sh
++ hallucination: изображение png jpeg gif bmp растр ввод-вывод-изображений
++ harlequin: подсветка-синтаксиса исходный-код токенизация парсер-scala
++ hellenism: classpath загрузчик-классов jvm ресурсы jar
++ hieroglyph: юникод кодирование кодировка-символов utf8 графема кодирование-текста
++ honeycomb: html html5 dom типобезопасный-html теги атрибуты
++ hyperbole: tasty компилятор-scala интроспекция ast отладка-макросов
++ hypotenuse: числовой переполнение деление целочисленная-арифметика упорядоченный
++ imperial: структура-каталогов домашний-каталог базовый-каталог структура-файловой-системы xdg
++ inimitable: uuid идентификатор guid
++ iridescence: цвет цветовые-пространства rgb cielab hsl srgb палитра тема колориметрия
++ jacinta: json парсер сериализация json-pointer json-schema валидация-по-схеме динамический-доступ
++ kaleidoscope: регулярные-выражения glob сопоставление-с-образцом сканер regex
++ larceny: плагин-компилятора ошибка-компиляции тестирование тестирование-во-время-компиляции
++ legerdemain: формы виджеты html-формы ввод поля
++ locomotion: protobuf protocol-buffers формат-передачи двоичная-сериализация
++ mandible: байт-код jvm classfile файл-класса
++ mercator: функтор монада аппликатив класс-типов функциональное-программирование
++ metamorphose: перестановки комбинаторика факториальная-система-счисления код-лемера
++ monotonous: base64 base32 hex двоичное-кодирование базовое-кодирование сериализация
++ mosquito: матрица линейная-алгебра математика вектор
++ murmuration: коллекции классы-типов traversable foldable mappable filterable
++ nomenclature: валидация-имён уровень-типов ограничения уточняющие-типы строковые-литеральные-типы
++ obligatory: rpc json-rpc sse события-отправляемые-сервером кадрирование префикс-длины протокол
++ octogenarian: git система-контроля-версий git-репозиторий коммит ssh-url
++ orthodoxy: oauth аутентификация авторизация oauth2 область-доступа
++ panopticon: линза оптика композируемый case-класс функция-доступа
++ parasite: асинхронность многопоточность конкурентность задачи промис демон супервизия
++ perihelion: websocket кадр протокол-ws
++ phoenicia: шрифты типографика ttf truetype метрики-шрифта opentype
++ plutocrat: валюта деньги цена финансы алгоритм-луна isin фиксированная-точка
++ pneumatic: сжатие deflate gzip zlib brotli xz lzma2 lzw
++ polysyllabic: расстановка-переносов алгоритм-лянга разрыв-строк вёрстка
++ polyvinyl: структурные-типы записи анонимные-записи провайдеры-типов
++ praxinoscope: регулярные-выражения re2 автомат линейное-время движок-регулярных-выражений redos
++ prepositional: класс-типов инфраструктура-типов уточняющие-типы абстрактные-типы
++ prescience: стадирование макро-класс-типов генерация-кода время-раскрытия
++ probably: тестирование раннер-тестов тестирование-свойств бенчмарк утверждения
++ profanity: терминал tui клавиатура редактор-строки интерактивный консоль
++ prophesy: автодополнения динамические-типы автодополнение-по-tab подсказки-ide
++ proscenium: реэкспорты стандартная-библиотека утилиты сокращение-шаблонного-кода
++ punctuation: markdown commonmark проза форматирование-текста
++ quantitative: единицы величины анализ-размерностей единицы-си измерения физика
++ querencia: dom браузер типизированный-dom веб-интерфейс клиентская-сторона
++ revolution: манифест-jar semver версионирование
++ rudiments: утилиты базовая-библиотека биекция циклы индексируемый
++ savagery: svg векторная-графика 2d-графика контур фигуры
++ scintillate: http-сервер сервлет веб-фреймворк http-маршрутизация
++ sedentary: бенчмаркинг тестирование-производительности микробенчмарк
++ serpentine: путь пути-файловой-системы posix windows linux относительный-путь абсолютный-путь
++ sibylline: llm anthropic openai gemini chat-completions использование-инструментов структурированный-вывод потоковая-передача
++ sigillate: jose jwt jws jwe jwk токен bearer аутентификация подпись шифрование
++ spectacular: show красивая-печать отображение inspect
++ stenography: имя-типа квалифицированные-имена импорты отрисовка-символов типы-scala
++ stratiform: tel язык-конфигурации записи схема двоичный-tel
++ superlunary: стадирование удалённое-выполнение многостадийное-программирование распределённые-вычисления
++ surveillance: наблюдатель-файлов файловая-система события-файлов мониторинг-каталогов nio
++ susurration: ssh ssh-клиент known-hosts идентичность транспорт сессия удалённые-команды
++ symbolism: операторы арифметика класс-типов перегрузка-операторов алгебра
++ syndesis: mdns dns-sd zeroconf bonjour обнаружение-служб мультикаст
++ synesthesia: mcp model-context-protocol llm протокол-ии
++ tarantula: webdriver автоматизация-браузера chrome firefox safari edge selenium headless
++ tasseomancy: диаграммы графики построение-графиков визуализация-данных svg бенчмарки столбчатая-диаграмма линейный-график круговая-диаграмма гистограмма
++ telekinesis: http http-клиент cookie аутентификация rest-клиент веб-запросы
++ tessellate: раскладка псевдографика переформатирование выравнивание flex раскладка-текста
++ turbulence: потоки-данных ввод-вывод stdio потоковая-передача реактивный разделение-строк
++ typonym: уровень-типов список-типов отображение-типов гетерогенный рефлексия
++ ultimatum: раскладка-терминала панели индикатор-выполнения спиннер шкала спарклайн tui
++ ulysses: фильтр-блума вероятностные-структуры-данных палимпсест
++ umbrageous: плагин-компилятора шейдинг изоляция-пространств-имён
++ urticose: имя-хоста адрес-электронной-почты ip-адрес mac-адрес порт сетевые-идентификаторы конечная-точка dns
++ vacuous: опциональный null-безопасность option maybe nullable
++ vexillology: битовые-флаги флаги перечисление битовое-поле
++ vicarious: каталог прокси индексированный-по-типу записи
++ virility: roff man-страница страница-руководства troff документация справка-cli
++ vivisection: отладка jdi точки-останова пошаговое-выполнение dap адаптер-отладки переменные
++ wisteria: деривация типы-произведения типы-суммы case-класс деривация-классов-типов magnolia
++ xenophile: ffi межъязыковое-взаимодействие wit webidl typescript kotlin wasm нативный
++ xylophone: xml xml-schema типобезопасный-xml динамический-xml
++ yossarian: pty эмулятор-терминала ansi-последовательности экранный-буфер vt100 курсор
++ ypsiloid: yaml парсер сериализация yaml-ast якоря
++ zephyrine: парсер разбор курсор эмиттер разреженный-формат двоичная-раскладка упаковка распаковка
++ zeppelin: zip архив zip-файл сжатие

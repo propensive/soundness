@@ -1,0 +1,3550 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base turbulence
++ base turbulence
+
+- import soundness
++ import soundness
+
+- info   byte and text streams: one `read`, `writeTo` and `source` over every source and sink, with lines, stdio and async pumps
++ info   потоки данных байтов и текста: единые `read`, `writeTo` и `source` для каждого источника и приёмника, со строками, stdio и асинхронными насосами
+
+- detail
++ detail
+
+-     _Turbulence_ is the vocabulary for moving bytes and text between the things that produce
+-     them and the things that consume them. Three verbs cover every source and every sink:
+-     `read[T]` pulls a source in whole as the type named, `writeTo` drains a value into a
+-     destination, and `source[element]` opens a value as a pull endpoint — a zephyrine
+-     `Stream[Data]` or `Stream[Text]` over `Credit` — which later stages attach to with `via`
+-     and terminal operations drain. Which types take part is decided by typeclasses, so a new
+-     file type, socket or process joins the same three verbs as everything else:
++     _Turbulence_ — это словарь для перемещения байтов и текста между тем, что их производит, и
++     тем, что их потребляет. Три глагола покрывают каждый источник и каждый приёмник: `read[T]`
++     вытягивает источник целиком в виде названного типа, `writeTo` вычерпывает значение в место
++     назначения, а `source[element]` открывает значение как конечную точку pull — `Stream[Data]`
++     или `Stream[Text]` из zephyrine поверх `Credit`, — к которой последующие стадии
++     присоединяются через `via` и которую вычерпывают терминальные операции. Какие типы в этом
++     участвуют, решают классы типов, так что новый тип файла, сокет или процесс присоединяется
++     к тем же трём глаголам, что и всё остальное:
+
+-     - `Streamable` says how a value opens as a stream of `Data` or `Text` chunks;
+-     - `Aggregable` says how a stream of `Data` or `Text` collapses into one value;
+-     - `Readable` composes the two into `read`, bridging bytes and text through the `Charset`
+-       or `Codepage` in scope when the source and the result disagree;
+-     - `Writable` says how a destination drains a whole stream, and `Sink` how it opens as a
+-       push endpoint (an `Intake`) for callers which write incrementally.
++     - `Streamable` говорит, как значение открывается в виде потока данных чанков `Data` или
++       `Text`;
++     - `Aggregable` говорит, как поток данных `Data` или `Text` сворачивается в одно значение;
++     - `Readable` составляет из этих двух `read`, переходя между байтами и текстом через
++       `Charset` или `Codepage` в области видимости, когда источник и результат расходятся;
++     - `Writable` говорит, как место назначения вычерпывает целый поток данных, а `Sink` — как
++       оно открывается в виде конечной точки push (`Intake`) для вызывающих, которые пишут
++       постепенно.
+
+=       push endpoint (an `Intake`) for callers which write incrementally.
+=
+-     ```scala
++     ```scala
+
+=       push endpoint (an `Intake`) for callers which write incrementally.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import charsets.utf8Charset
++     import charsets.utf8Charset
+
+=     import charsets.utf8Charset
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import lineSeparation.adaptiveLinefeedLineSeparation
++     import lineSeparation.adaptiveLinefeedLineSeparation
+
+-     val text: Text = t"The quick brown fox\njumps over the lazy dog"
++     val text: Text = t"The quick brown fox\njumps over the lazy dog"
+
+-     val bytes: Data = text.read[Data]              // the UTF-8 bytes
++     val bytes: Data = text.read[Data]              // the UTF-8 bytes
+
+-     bytes.read[Text]                               // the text again
++     bytes.read[Text]                               // the text again
+
+-     bytes.source[Data].delineate.records.to[List]  // List(t"The quick brown fox", t"jumps over the lazy dog")
++     bytes.source[Data].delineate.records.to[List]  // List(t"The quick brown fox", t"jumps over the lazy dog")
+
+=     bytes.source[Data].delineate.records.to[List]  // List(t"The quick brown fox", t"jumps over the lazy dog")
+-     ```
++     ```
+
+-     A `Stream` is a pull endpoint over a buffer, not a lazy list of chunks: a consumer calls
+-     `refill` with the `Credit` it is prepared to take, reads the window it is granted, and
+-     skips past it. Nothing is copied or retained, backpressure is the absence of a call, and
+-     every stream is an exclusive capability which the capture checker will not let be read
+-     twice or shared. `Buffering` (zephyrine's) is the one policy every buffer consults, and
+-     the `Truncation.Error` a cut stream reports is zephyrine's too, re-exported here.
++     `Stream` — это конечная точка pull поверх буфера, а не ленивый список чанков: потребитель
++     вызывает `refill` с тем `Credit`, который готов принять, читает предоставленное ему окно и
++     пропускает его. Ничего не копируется и не удерживается, противодавление — это отсутствие
++     вызова, а каждый поток данных — исключительная возможность, которую проверка захвата не
++     позволит прочитать дважды или разделить. `Buffering` (из zephyrine) — единственная
++     политика, к которой обращается каждый буфер, и `Truncation.Error`, о которой сообщает
++     оборванный поток данных, тоже из zephyrine и реэкспортируется здесь.
+
+-     Lines are a policy, not a constant: `delineate` splits a text or byte stream into a record
+-     stream of its lines under the `LineSeparation` given in scope, chosen by name from the
+-     `lineSeparation` package. Standard streams are a capability: `Out`, `Err` and `In` write
+-     and read through the `Stdio` in scope, chosen from the `stdios` package, and
+-     `Stdio.divert` and `Stdio.capture` redirect a thread's `System.out` and `System.err`.
+-     Where elements are produced over time by other threads, a `Relay` fans any number of
+-     producers into one reader; `Confluence` merges streams, `Divergence` replicates one, and
+-     `convey` pumps a stream into an intake on its own task.
++     Строки — это политика, а не константа: `delineate` разбивает текстовый или байтовый поток
++     данных на поток записей из его строк согласно given `LineSeparation` в области видимости,
++     выбираемому по имени из пакета `lineSeparation`. Стандартные потоки — это возможность:
++     `Out`, `Err` и `In` пишут и читают через `Stdio` в области видимости, выбираемый из пакета
++     `stdios`, а `Stdio.divert` и `Stdio.capture` перенаправляют `System.out` и `System.err`
++     потока выполнения. Там, где элементы производятся со временем другими потоками
++     выполнения, `Relay` сводит любое число производителей к одному читателю; `Confluence`
++     сливает потоки данных, `Divergence` размножает один, а `convey` перекачивает поток данных
++     в приёмный конец в собственной задаче.
+
+-     The library has four source sets:
++     У библиотеки четыре набора исходников:
+
+-     - `turbulence.core` — the typeclasses, the `read`/`writeTo`/`source`/`load` verbs, line
+-       separation, `Relay`, `StreamOutputStream` and the JDK adapters (`inputStream`, the
+-       `InputStream`/`OutputStream`/channel/`Reader` givens).
+-     - `turbulence.stdio` — `Stdio`, `Out`, `Err`, `In` and the `stdios` package's
+-       `muteStdio`, `javaLangSystemStdio` and `fileDescriptorStdio`.
+-     - `turbulence.async` — `Confluence`, `Divergence` and `convey`, which need a parasite
+-       `Monitor` and `Probate`, so they run inside `supervise`.
+-     - `turbulence.wasi` — `stdios.wasiStdio`, a `Stdio` over the WASI CLI stream resources,
+-       and `wasiApis.wasiCliApi`, the WIT interface it is typechecked against.
++     - `turbulence.core` — классы типов, глаголы `read`/`writeTo`/`source`/`load`, разделение
++       строк, `Relay`, `StreamOutputStream` и адаптеры JDK (`inputStream`, given-экземпляры для
++       `InputStream`/`OutputStream`/каналов/`Reader`).
++     - `turbulence.stdio` — `Stdio`, `Out`, `Err`, `In` и `muteStdio`, `javaLangSystemStdio`
++       и `fileDescriptorStdio` из пакета `stdios`.
++     - `turbulence.async` — `Confluence`, `Divergence` и `convey`, которым нужны `Monitor` и
++       `Probate` из parasite, поэтому они выполняются внутри `supervise`.
++     - `turbulence.wasi` — `stdios.wasiStdio`, `Stdio` поверх потоковых ресурсов WASI CLI, и
++       `wasiApis.wasiCliApi`, интерфейс WIT, относительно которого он проверяется на типы.
+
+-     Everything is exported to the `soundness` umbrella, and the `lineSeparation`, `stdios`
+-     and `wasiApis` choice packages merge with the umbrella's own. Their givens are imported
+-     by name, since `import soundness.*` does not import givens; the companion givens
+-     (`Streamable.bytes`, `Readable.dataText`, `Writable.outputStreamData`, …) resolve
+-     through implicit scope with no import.
++     Всё экспортируется в зонтичный модуль `soundness`, а пакеты выбора `lineSeparation`,
++     `stdios` и `wasiApis` сливаются с собственными пакетами зонтичного модуля. Их
++     given-экземпляры импортируются по имени, поскольку `import soundness.*` не импортирует
++     given-экземпляры; given-экземпляры компаньонов (`Streamable.bytes`, `Readable.dataText`,
++     `Writable.outputStreamData`, …) разрешаются через неявную область видимости без импорта.
+
+- refer turbulence.Streamable
++ refer turbulence.Streamable
+
+- refer turbulence.Readable
++ refer turbulence.Readable
+
+- refer turbulence.Writable
++ refer turbulence.Writable
+
+- refer turbulence.Aggregable
++ refer turbulence.Aggregable
+
+- refer turbulence.Sink
++ refer turbulence.Sink
+
+- refer turbulence.LineSeparation
++ refer turbulence.LineSeparation
+
+- refer turbulence.Stdio
++ refer turbulence.Stdio
+
+- refer turbulence.Relay
++ refer turbulence.Relay
+
+- refer zephyrine.Stream
++ refer zephyrine.Stream
+
+- refer zephyrine.Buffering
++ refer zephyrine.Buffering
+
+- refer zephyrine.Truncation
++ refer zephyrine.Truncation
+
+- entry .Streamable   a value which opens as a pull endpoint: a `Stream` of `Data` or `Text` over `Credit`
++ entry .Streamable   значение, которое открывается как конечная точка pull: `Stream` из `Data` или `Text` поверх `Credit`
+
+= entry .Streamable   a value which opens as a pull endpoint: a `Stream` of `Data` or `Text` over `Credit`
+-   detail
++   detail
+
+-       `value is Streamable by medium over Credit` is the evidence that `value` can be opened
+-       as a `(Stream[medium] over Credit)^`, where `medium` is `Data` or `Text`. It is the
+-       source half of `read`, the source half of `writeTo`, and the whole of `source`. The
+-       trait has one abstract method, `#stream`; an instance which needs a buffer policy or an
+-       error context takes it as a contextual parameter of the given and captures it, which is
+-       why most givens here are written `(tactic: Tactic[Truncation.Error], buffering:
++       `value is Streamable by medium over Credit` — это свидетельство того, что `value` можно
++       открыть как `(Stream[medium] over Credit)^`, где `medium` — это `Data` или `Text`. Это
++       половина-источник `read`, половина-источник `writeTo` и весь `source`. У трейта один
++       абстрактный метод, `#stream`; экземпляр, которому нужна политика буфера или контекст
++       ошибок, принимает их как контекстный параметр given и захватывает, поэтому большинство
++       given-экземпляров здесь записаны как `(tactic: Tactic[Truncation.Error], buffering:
+
+-       Buffering) => (… is Streamable …)^{tactic}`.
++       Buffering) => (… is Streamable …)^{tactic}`.
+
+=       Buffering) => (… is Streamable …)^{tactic}`.
+=
+-       ```scala
++       ```scala
+
+=       Buffering) => (… is Streamable …)^{tactic}`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Row(name: Text, count: Int)
++       case class Row(name: Text, count: Int)
+
+-       object Row:
++       object Row:
+
+-         given streamable: Row is Streamable by Text over Credit =
++         given streamable: Row is Streamable by Text over Credit =
+
+-           row => Stream(t"${row.name},${row.count}")
++           row => Stream(t"${row.name},${row.count}")
+
+-       Row(t"apples", 3).source[Text]
++       Row(t"apples", 3).source[Text]
+
+-       Row(t"apples", 3).read[Text]   // t"apples,3"
++       Row(t"apples", 3).read[Text]   // t"apples,3"
+
+=       Row(t"apples", 3).read[Text]   // t"apples,3"
+-       ```
++       ```
+
+-       Values which are streamable without any instance of their own: `Data` and `Text`
+-       (`.bytes`, `.text`, and `.textData` to stream text as bytes through the `Codepage` in
+-       scope), a `Chain[Data]` or `Chain[Text]` of chunks, an `HttpStreams.Body`, a
+-       zephyrine `Spring[Data]`, and the JDK's `InputStream`, `ReadableByteChannel` and
+-       `Reader`. A stream opened from a JDK source raises `Truncation.Error` through the
+-       `Tactic` the given captured if the source fails mid-read, and closes the source when it
+-       ends.
++       Значения, которые передаются потоком данных без собственного экземпляра: `Data` и
++       `Text` (`.bytes`, `.text` и `.textData` для передачи текста как байтов через `Codepage`
++       в области видимости), `Chain[Data]` или `Chain[Text]` из чанков, `HttpStreams.Body`,
++       `Spring[Data]` из zephyrine, а также `InputStream`, `ReadableByteChannel` и `Reader` из
++       JDK. Поток данных, открытый из источника JDK, порождает `Truncation.Error` через
++       захваченную given-экземпляром `Tactic`, если источник отказывает посреди чтения, и
++       закрывает источник, когда заканчивается.
+
+-       Every type which streams by `Data` also reads as `Text` and vice versa: `Readable`
+-       bridges through the `Charset` or `Codepage` in scope, so one `Streamable` instance is
+-       enough for a source. `#contramap` derives an instance for a type which can be turned
+-       into one that already has an instance.
++       Каждый тип, передаваемый потоком по `Data`, также читается как `Text` и наоборот:
++       `Readable` переходит между ними через `Charset` или `Codepage` в области видимости, так
++       что источнику достаточно одного экземпляра `Streamable`. `#contramap` выводит экземпляр
++       для типа, который можно превратить в тип, у которого экземпляр уже есть.
+
+=       into one that already has an instance.
+-   refer turbulence.Readable
++   refer turbulence.Readable
+
+-   refer turbulence.source
++   refer turbulence.source
+
+-   refer zephyrine.Stream
++   refer zephyrine.Stream
+
+-   entry #Transport   the demand type the stream is pulled with: `Credit` for every instance here
+-   entry #stream   opens the value as a fresh pull endpoint
+-       Each call mints a new `(Stream[Operand] over Transport)^`; the stream is an exclusive
+-       capability, drained by one consumer. `value.source[element]` is the fluent form.
+-   entry #contramap   an instance for `self2`, by turning it into a `Self` first
+-       `streamable.contramap(lambda)` is `self2 is Streamable by Operand over Transport`,
+-       streaming `lambda(value)`. The result captures both the original instance and the
+-       lambda.
+-   entry .bytes   a `Data` streams as itself, in one window
+-       `Data is Streamable by Data over Credit`: `Stream(data)`, a region-stable stream whose
+-       single window is the array itself, shared by reference and never copied.
+-   entry .sizedBytes   a `Data & Sized[length]` streams as its bytes
+-       A sized block is a refinement of `Data` which the exact-`Self` `.bytes` instance does
+-       not match, so it has an instance of its own with the same behaviour.
+-   entry .transported   bytes tagged with a format, `Data over transport`, stream as plain bytes
+-       What `value.in[Data over Protobuf]` writes reads back through the ordinary byte
+-       pipeline: the tag is a phantom and the stream is `Stream(data)`.
+-   entry .text   a `Text` (or any subtype) streams as itself, in one window
+-       `textual is Streamable by Text over Credit` for every `textual <: Text`, so a refined
+-       or branded text needs no instance of its own.
+-   entry .textData   a `Text` streams as bytes, encoded through the `Codepage` in scope
+-       Needs a `Codepage` and a `Buffering`. The text is encoded incrementally through the
+-       encoder duct, so `text.source[Data]` and `text.read[Data]` never hold the whole
+-       encoding at once. With a `Codepage` in scope, `load` prefers this byte route for a
+-       `Text` source, as `read` does.
+-   entry .chainData   a lazy `Chain[Data]` of chunks is a byte source
+-       Each chunk becomes one window. The chain's production is beyond the stream's demand
+-       control — a `Chain` is produced by whoever built it — so credit bounds only how much of
+-       each chunk is exposed at a time.
+-   entry .chainText   a lazy `Chain[Text]` of chunks is a text source
+-   entry .httpBody   an `HttpStreams.Body` (the HTTP-body interchange protocol) is a byte source
+-       Needs a `Buffering`. Each refill asks the body for one block-sized chunk, so a request
+-       or response body is `read` directly, without first being materialised.
+-   entry .spring   a zephyrine `Spring[Data]` is a byte source, minting a fresh endpoint per pull
+-       Needs a `Tactic[Truncation.Error]`, which the instance captures: a spring's `apply()`
+-       raises it when the source is cut, so a request body or a multipart part can be `read`
+-       or handed to a parser as it is.
+-   entry .inputStream   any `java.io.InputStream` is a byte source
+-       Needs a `Tactic[Truncation.Error]` and a `Buffering`. Reads go through a channel over
+-       the stream, directly into the stream's own storage, at most one granted block
+-       (`buffering.capacity(Substrate.Bytes)`) at a time. End of input closes the
+-       `InputStream`; an `IOException` mid-read closes it and aborts with `Truncation.Error`
+-       carrying the bytes delivered so far.
++   entry #Transport   тип спроса, с которым вытягивается поток данных: `Credit` для каждого экземпляра здесь
++   entry #stream   открывает значение как новую конечную точку pull
++       Каждый вызов выпускает новый `(Stream[Operand] over Transport)^`; поток данных —
++       исключительная возможность, вычерпываемая одним потребителем. `value.source[element]` —
++       его текучая форма.
++   entry #contramap   экземпляр для `self2`, получаемый превращением его сначала в `Self`
++       `streamable.contramap(lambda)` — это `self2 is Streamable by Operand over Transport`,
++       передающий потоком `lambda(value)`. Результат захватывает и исходный экземпляр, и
++       лямбду.
++   entry .bytes   `Data` передаётся потоком как есть, одним окном
++       `Data is Streamable by Data over Credit`: `Stream(data)`, стабильный по регионам поток
++       данных, единственное окно которого — сам массив, разделяемый по ссылке и никогда не
++       копируемый.
++   entry .sizedBytes   `Data & Sized[length]` передаётся потоком как свои байты
++       Блок с размером — это уточнение `Data`, которому не соответствует экземпляр `.bytes` с
++       точным `Self`, поэтому у него собственный экземпляр с тем же поведением.
++   entry .transported   байты, помеченные форматом, `Data over transport`, передаются потоком как простые байты
++       То, что записывает `value.in[Data over Protobuf]`, читается обратно через обычный
++       байтовый конвейер: метка — фантом, а поток данных — это `Stream(data)`.
++   entry .text   `Text` (или любой подтип) передаётся потоком как есть, одним окном
++       `textual is Streamable by Text over Credit` для каждого `textual <: Text`, так что
++       уточнённому или брендированному тексту не нужен собственный экземпляр.
++   entry .textData   `Text` передаётся потоком как байты, закодированные через `Codepage` в области видимости
++       Нужны `Codepage` и `Buffering`. Текст кодируется постепенно через дакт кодировщика, так
++       что `text.source[Data]` и `text.read[Data]` никогда не держат всю кодировку сразу. При
++       наличии `Codepage` в области видимости `load` предпочитает для источника `Text` этот
++       байтовый маршрут, как и `read`.
++   entry .chainData   ленивая `Chain[Data]` из чанков — источник байтов
++       Каждый чанк становится одним окном. Производство цепочки лежит вне управления спросом
++       потока данных — `Chain` производит тот, кто её построил, — поэтому кредит ограничивает
++       лишь то, какая часть каждого чанка открыта за раз.
++   entry .chainText   ленивая `Chain[Text]` из чанков — источник текста
++   entry .httpBody   `HttpStreams.Body` (протокол обмена HTTP-телами) — источник байтов
++       Нужен `Buffering`. Каждое пополнение запрашивает у тела один чанк размером с блок, так
++       что тело запроса или ответа читается через `read` напрямую, без предварительной
++       материализации.
++   entry .spring   `Spring[Data]` из zephyrine — источник байтов, выпускающий новую конечную точку на каждое вытягивание
++       Нужна `Tactic[Truncation.Error]`, которую экземпляр захватывает: `apply()` источника
++       Spring порождает её, когда источник обрывается, так что тело запроса или часть multipart
++       можно прочитать через `read` или передать парсеру как есть.
++   entry .inputStream   любой `java.io.InputStream` — источник байтов
++       Нужны `Tactic[Truncation.Error]` и `Buffering`. Чтение идёт через канал поверх потока,
++       прямо в собственное хранилище потока данных, не больше одного предоставленного блока
++       (`buffering.capacity(Substrate.Bytes)`) за раз. Конец ввода закрывает `InputStream`;
++       `IOException` посреди чтения закрывает его и прерывает работу с `Truncation.Error`,
++       несущей уже доставленные байты.
+
+=       carrying the bytes delivered so far.
+=
+-       ```scala
++       ```scala
+
+=       carrying the bytes delivered so far.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       carrying the bytes delivered so far.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val input = java.io.ByteArrayInputStream(Array.unsafeJvm(t"hello".read[Data]))
++       val input = java.io.ByteArrayInputStream(Array.unsafeJvm(t"hello".read[Data]))
+
+-       input.read[Text]   // t"hello"
++       input.read[Text]   // t"hello"
+
+=       input.read[Text]   // t"hello"
+-       ```
++       ```
+
+-   entry .channel   any `java.nio.channels.ReadableByteChannel` is a byte source
+-       As `.inputStream`, reading each block with `channel.read(buffer)`; needs a
+-       `Tactic[Truncation.Error]` and a `Buffering`.
+-   entry .reader   any `java.io.Reader` is a text source
+-       Needs a `Tactic[Truncation.Error]` and a `Buffering`. Characters are read in blocks of
+-       `buffering.capacity(Substrate.Chars)` into a char window; the reader is closed at end of
+-       input, and an `IOException` aborts with `Truncation.Error` carrying the characters
+-       delivered so far.
++   entry .channel   любой `java.nio.channels.ReadableByteChannel` — источник байтов
++       Как `.inputStream`, с чтением каждого блока через `channel.read(buffer)`; нужны
++       `Tactic[Truncation.Error]` и `Buffering`.
++   entry .reader   любой `java.io.Reader` — источник текста
++       Нужны `Tactic[Truncation.Error]` и `Buffering`. Символы читаются блоками по
++       `buffering.capacity(Substrate.Chars)` в символьное окно; читающий закрывается в конце
++       ввода, а `IOException` прерывает работу с `Truncation.Error`, несущей уже доставленные
++       символы.
+
+- entry .Readable   a source which can be read whole as a result type: the composition behind `read[T]`
++ entry .Readable   источник, который можно прочитать целиком как тип результата: композиция, стоящая за `read[T]`
+
+= entry .Readable   a source which can be read whole as a result type: the composition behind `read[T]`
+-   detail
++   detail
+
+-       `source is Readable to result` is what `value.read[result]` needs. It is almost never
+-       written by hand: `Readable`'s companion composes it from a `Streamable` instance for
+-       the source and an `Aggregable` instance for the result, bridging bytes and text through
+-       the `Charset` or `Codepage` in scope when the two disagree. The four pipelines are
+-       ordinary prioritised givens: `dataToData` in `Readable` itself is highest, then
+-       `textToText` in `Readable1`, `dataToText` in `Readable2` and `textToData` in `Readable3`.
+-       By source and result:
++       `source is Readable to result` — это то, что нужно `value.read[result]`. Его почти
++       никогда не пишут вручную: компаньон `Readable` составляет его из экземпляра
++       `Streamable` для источника и экземпляра `Aggregable` для результата, переходя между
++       байтами и текстом через `Charset` или `Codepage` в области видимости, когда они
++       расходятся. Четыре конвейера — обычные given-экземпляры с приоритетами: `dataToData` в
++       самом `Readable` — высший, затем `textToText` в `Readable1`, `dataToText` в
++       `Readable2` и `textToData` в `Readable3`. По источнику и результату:
+
+-       ```tabular
++       ```tabular
+
+-       column  Source
+-       column  To a byte-aggregated result
+-       column  To a text-aggregated result
+-       row  bytes  `dataToData`  `dataToText`, decoded through a `Charset`; needs a `Buffering`
+-       row  text  `textToData`, encoded through a `Codepage`; needs a `Buffering`  `textToText`
++       column  Источник
++       column  В результат, агрегируемый из байтов
++       column  В результат, агрегируемый из текста
++       row  байты  `dataToData`  `dataToText`, с декодированием через `Charset`; нужен `Buffering`
++       row  текст  `textToData`, с кодированием через `Codepage`; нужен `Buffering`  `textToText`
+
+=       row  text  `textToData`, encoded through a `Codepage`; needs a `Buffering`  `textToText`
+-       ```
++       ```
+
+-       So a type with only a `Streamable by Data` instance reads as `Text`, and one with only
+-       `Streamable by Text` reads as `Data`, given an encoding; a type with both prefers the
+-       direct route. Because they are givens rather than a macro, a missing instance is an
+-       ordinary failed implicit search: the message is _turbulence: the source cannot be read
+-       as the target type; this needs a `Source` instance for the source and an `Aggregable`
+-       instance for the target, plus a `Charset` or `Codepage` if their operands (Data/Text)
+-       differ_.
++       Так тип, у которого есть только экземпляр `Streamable by Data`, читается как `Text`, а
++       тип только со `Streamable by Text` — как `Data`, при наличии кодировки; тип с обоими
++       предпочитает прямой маршрут. Поскольку это given-экземпляры, а не макрос, отсутствующий
++       экземпляр — это обычный неудавшийся неявный поиск: сообщение — _turbulence: the source
++       cannot be read as the target type; this needs a `Source` instance for the source and an
++       `Aggregable` instance for the target, plus a `Charset` or `Codepage` if their operands
++       (Data/Text) differ_.
+
+=       differ_.
+=
+-       ```scala
++       ```scala
+
+=       differ_.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       differ_.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       differ_.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+-       val text = t"The quick brown fox"
++       val text = t"The quick brown fox"
+
+-       text.read[Text]          // t"The quick brown fox"
++       text.read[Text]          // t"The quick brown fox"
+
+-       text.read[Data]          // the UTF-8 bytes
++       text.read[Data]          // the UTF-8 bytes
+
+-       text.read[Chain[Text]]   // the text as a lazy chain of chunks
++       text.read[Chain[Text]]   // the text as a lazy chain of chunks
+
+-       text.read[Data].read[Text]
++       text.read[Data].read[Text]
+
+=       text.read[Data].read[Text]
+-       ```
++       ```
+
+-       A whole `Data` in hand has direct instances (`.dataData`, `.dataText`) which decode in
+-       one step rather than through a one-window stream, which is what makes a file's
+-       `path.read[Text]` a genuinely direct read. The bridged pipelines transcode
+-       incrementally, in bounded buffers, on the reading thread.
++       У целого `Data` на руках есть прямые экземпляры (`.dataData`, `.dataText`), которые
++       декодируют за один шаг, а не через поток данных из одного окна; именно это делает
++       `path.read[Text]` для файла по-настоящему прямым чтением. Конвейеры с переходом
++       перекодируют постепенно, в ограниченных буферах, в читающем потоке выполнения.
+
+=       incrementally, in bounded buffers, on the reading thread.
+-   refer turbulence.read
++   refer turbulence.read
+
+=   refer turbulence.read
+-   refer turbulence.Streamable
++   refer turbulence.Streamable
+
+-   refer turbulence.Aggregable
++   refer turbulence.Aggregable
+
+-   entry #read   reads the value whole as the result type
+-   entry .dataData   a `Data` reads as itself, with no copy
+-   entry .dataText   a `Data` reads as `Text`, decoded whole through the `Charset` in scope
+-   entry .sizedDataData   a `Data & Sized[length]` reads as `Data`
+-       A sized block is a refinement the exact-`Self` `.dataData` does not match, so it has
+-       its own instance.
+-   entry .sizedDataText   a `Data & Sized[length]` reads as `Text` through the `Charset` in scope
+-   entry .dataToData   a byte-streamable source reads as any byte-aggregable result
+-       The highest-priority composed pipeline: `source is Streamable by Data over Credit` with
+-       `result is Aggregable by Data`, no encoding needed. The result captures both instances.
++   entry #read   читает значение целиком как тип результата
++   entry .dataData   `Data` читается как есть, без копирования
++   entry .dataText   `Data` читается как `Text`, декодируясь целиком через `Charset` в области видимости
++   entry .sizedDataData   `Data & Sized[length]` читается как `Data`
++       Блок с размером — это уточнение, которому не соответствует `.dataData` с точным
++       `Self`, поэтому у него собственный экземпляр.
++   entry .sizedDataText   `Data & Sized[length]` читается как `Text` через `Charset` в области видимости
++   entry .dataToData   источник, передаваемый потоком байтов, читается как любой результат, агрегируемый из байтов
++       Составной конвейер с наивысшим приоритетом: `source is Streamable by Data over Credit`
++       с `result is Aggregable by Data`, кодировка не нужна. Результат захватывает оба
++       экземпляра.
+
+- entry .Readable1   the second-priority `read` pipeline: a text source to a text result
++ entry .Readable1   конвейер `read` второго приоритета: текстовый источник в текстовый результат
+
+= entry .Readable1   the second-priority `read` pipeline: a text source to a text result
+-   hidden
++   hidden
+
+= entry .Readable1   the second-priority `read` pipeline: a text source to a text result
+=   hidden
+-   detail
++   detail
+
+-       A priority layer of `Readable`'s companion, not for direct use: it holds the pipeline
+-       which `Readable.dataToData` outranks and which outranks the two bridged ones.
+-   entry #textToText   a text-streamable source reads as any text-aggregable result
+-       `source is Streamable by Text over Credit` with `result is Aggregable by Text`; no
+-       encoding is needed.
++       Слой приоритета компаньона `Readable`, не для прямого использования: он содержит
++       конвейер, который уступает `Readable.dataToData` и превосходит два конвейера с
++       переходом.
++   entry #textToText   источник, передаваемый потоком текста, читается как любой результат, агрегируемый из текста
++       `source is Streamable by Text over Credit` с `result is Aggregable by Text`; кодировка
++       не нужна.
+
+- entry .Readable2   the third-priority `read` pipeline: a byte source decoded to a text result
++ entry .Readable2   конвейер `read` третьего приоритета: байтовый источник, декодируемый в текстовый результат
+
+= entry .Readable2   the third-priority `read` pipeline: a byte source decoded to a text result
+-   hidden
++   hidden
+
+= entry .Readable2   the third-priority `read` pipeline: a byte source decoded to a text result
+=   hidden
+-   detail
++   detail
+
+-       A priority layer of `Readable`'s companion, not for direct use.
+-   entry #dataToText   a byte-streamable source reads as a text-aggregable result through a `Charset`
+-       Needs a `Charset` and a `Buffering`: the bytes are decoded incrementally through the
+-       charset duct, so `bytes.read[Text]` on a stream never holds the whole decoding at once.
++       Слой приоритета компаньона `Readable`, не для прямого использования.
++   entry #dataToText   источник, передаваемый потоком байтов, читается как результат, агрегируемый из текста, через `Charset`
++       Нужны `Charset` и `Buffering`: байты декодируются постепенно через дакт кодировки, так
++       что `bytes.read[Text]` на потоке данных никогда не держит всё декодирование сразу.
+
+- entry .Readable3   the lowest-priority `read` pipeline: a text source encoded to a byte result
++ entry .Readable3   конвейер `read` низшего приоритета: текстовый источник, кодируемый в байтовый результат
+
+= entry .Readable3   the lowest-priority `read` pipeline: a text source encoded to a byte result
+-   hidden
++   hidden
+
+= entry .Readable3   the lowest-priority `read` pipeline: a text source encoded to a byte result
+=   hidden
+-   detail
++   detail
+
+-       A priority layer of `Readable`'s companion, not for direct use.
+-   entry #textToData   a text-streamable source reads as a byte-aggregable result through a `Codepage`
+-       Needs a `Codepage` and a `Buffering`: the text is encoded incrementally through the
+-       codepage duct.
++       Слой приоритета компаньона `Readable`, не для прямого использования.
++   entry #textToData   источник, передаваемый потоком текста, читается как результат, агрегируемый из байтов, через `Codepage`
++       Нужны `Codepage` и `Buffering`: текст кодируется постепенно через дакт кодовой
++       страницы.
+
+- entry .Aggregable   a result type which can be built from a stream of `Data` or `Text` chunks
++ entry .Aggregable   тип результата, который можно построить из потока данных чанков `Data` или `Text`
+
+= entry .Aggregable   a result type which can be built from a stream of `Data` or `Text` chunks
+-   detail
++   detail
+
+-       `result is Aggregable by medium` is the result half of `read[result]`: how a whole
+-       stream of `Data` or `Text` collapses into one value. `Data` and `Text` are aggregable
+-       by their own medium (`.bytesData`, `.textText`), `Text` also by `Data` through the
+-       `Charset` in scope (`.bytesText`), and a `Chain[element]` of anything aggregable is
+-       aggregable (`.stream`), which is how `read[Chain[Text]]` works.
++       `result is Aggregable by medium` — это половина-результат `read[result]`: как целый
++       поток данных `Data` или `Text` сворачивается в одно значение. `Data` и `Text`
++       агрегируются из собственного типа данных (`.bytesData`, `.textText`), `Text` — также из
++       `Data` через `Charset` в области видимости (`.bytesText`), а `Chain[element]` из
++       чего угодно агрегируемого агрегируема сама (`.stream`); так работает
++       `read[Chain[Text]]`.
+
+-       The trait has two methods. `#aggregate` takes the legacy shape, a lazy `Chain` of
+-       chunks; `#accept` takes a pull endpoint and, by default, materialises one chunk per
+-       refill and delegates to `aggregate`. The `Data` and `Text` instances override `accept`
+-       to copy each window straight into a builder, with no intermediate chunks, and a format
+-       whose `accept` streams should do the same. `#map` derives an instance for a type
+-       reachable from an aggregated one, forwarding `accept` as well as `aggregate` so that a
+-       streaming `accept` is not lost under the mapping.
++       У трейта два метода. `#aggregate` принимает унаследованную форму, ленивую `Chain` из
++       чанков; `#accept` принимает конечную точку pull и по умолчанию материализует по одному
++       чанку на пополнение и делегирует `aggregate`. Экземпляры для `Data` и `Text`
++       переопределяют `accept`, чтобы копировать каждое окно прямо в построитель, без
++       промежуточных чанков, и формат, `accept` которого работает потоково, должен делать то
++       же. `#map` выводит экземпляр для типа, достижимого из агрегированного, передавая дальше
++       как `accept`, так и `aggregate`, чтобы потоковый `accept` не терялся при отображении.
+
+=       streaming `accept` is not lost under the mapping.
+=
+-       ```scala
++       ```scala
+
+=       streaming `accept` is not lost under the mapping.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Shout(text: Text)
++       case class Shout(text: Text)
+
+-       object Shout:
++       object Shout:
+
+-         given aggregable: Shout is Aggregable by Text =
++         given aggregable: Shout is Aggregable by Text =
+
+-           summon[Text is Aggregable by Text].map: text =>
++           summon[Text is Aggregable by Text].map: text =>
+
+-             Shout(text.upper)
++             Shout(text.upper)
+
+-       t"the quick brown fox".read[Shout]   // Shout(t"THE QUICK BROWN FOX")
++       t"the quick brown fox".read[Shout]   // Shout(t"THE QUICK BROWN FOX")
+
+=       t"the quick brown fox".read[Shout]   // Shout(t"THE QUICK BROWN FOX")
+-       ```
++       ```
+
+=       ```
+-   refer turbulence.Readable
++   refer turbulence.Readable
+
+=   refer turbulence.Readable
+-   refer turbulence.read
++   refer turbulence.read
+
+-   entry #aggregate   builds the result from a lazy `Chain` of chunks
+-   entry #accept   builds the result by draining a pull endpoint
+-       The default refills with unbounded credit, materialises each window as a chunk and
+-       hands the lazy chain of them to `#aggregate`. Override it to read the windows directly.
+-   entry #map   an instance for `self2`, by transforming the aggregated `Self`
+-       The mapped instance forwards both `accept` and `aggregate`, and captures the original
+-       instance and the lambda.
+-   entry .bytesData   a stream of `Data` aggregates to one `Data`
+-       Copies each window into a growing byte builder, one copy per region, and builds the
+-       result once. The `aggregate` form sums the chunk lengths and places each chunk.
+-   entry .bytesText   a stream of `Data` aggregates to `Text`, decoded through the `Charset` in scope
+-       `.bytesData` mapped through `Charset#decoded`: the bytes are gathered whole and decoded
+-       in one step.
+-   entry .textText   a stream of `Text` aggregates to one `Text`
+-   entry .stream   a `Chain[element2]` is aggregable by `element` wherever `element2` is
+-       Each chunk is aggregated on its own, so `read[Chain[Text]]` yields one element per
+-       chunk of the source rather than one joined value.
++   entry #aggregate   строит результат из ленивой `Chain` чанков
++   entry #accept   строит результат, вычерпывая конечную точку pull
++       По умолчанию пополняет с неограниченным кредитом, материализует каждое окно как чанк и
++       передаёт их ленивую цепочку в `#aggregate`. Переопределите его, чтобы читать окна
++       напрямую.
++   entry #map   экземпляр для `self2`, получаемый преобразованием агрегированного `Self`
++       Отображённый экземпляр передаёт дальше и `accept`, и `aggregate` и захватывает исходный
++       экземпляр и лямбду.
++   entry .bytesData   поток данных `Data` агрегируется в один `Data`
++       Копирует каждое окно в растущий построитель байтов, одна копия на регион, и строит
++       результат один раз. Форма `aggregate` суммирует длины чанков и размещает каждый чанк.
++   entry .bytesText   поток данных `Data` агрегируется в `Text`, декодируясь через `Charset` в области видимости
++       `.bytesData`, отображённый через `Charset#decoded`: байты собираются целиком и
++       декодируются за один шаг.
++   entry .textText   поток данных `Text` агрегируется в один `Text`
++   entry .stream   `Chain[element2]` агрегируема из `element` везде, где агрегируем `element2`
++       Каждый чанк агрегируется отдельно, так что `read[Chain[Text]]` даёт по одному элементу
++       на чанк источника, а не одно соединённое значение.
+
+- entry .Writable   a destination which drains a whole stream of `Data` or `Text` chunks
++ entry .Writable   место назначения, которое вычерпывает целый поток данных чанков `Data` или `Text`
+
+= entry .Writable   a destination which drains a whole stream of `Data` or `Text` chunks
+-   detail
++   detail
+
+-       `target is Writable by medium` is what `value.writeTo(target)` needs on the target's
+-       side: a single method, `#write`, which takes the target and a pull endpoint and drains
+-       it to completion. The JDK's `OutputStream` and `WritableByteChannel` are writable by
+-       `Data` (and `OutputStream` by `Text`, through the `Codepage` in scope), and an adapter
+-       pair makes any `Writable by Text` also `Writable by Data` and vice versa, so a
+-       destination needs one instance for whichever medium is natural to it.
++       `target is Writable by medium` — это то, что нужно `value.writeTo(target)` со стороны
++       цели: единственный метод, `#write`, который принимает цель и конечную точку pull и
++       вычерпывает её до конца. `OutputStream` и `WritableByteChannel` из JDK записываемы по
++       `Data` (а `OutputStream` — и по `Text`, через `Codepage` в области видимости), а пара
++       адаптеров делает любой `Writable by Text` также `Writable by Data` и наоборот, так что
++       месту назначения нужен один экземпляр для того типа данных, который для него
++       естественен.
+
+=       destination needs one instance for whichever medium is natural to it.
+=
+-       ```scala
++       ```scala
+
+=       destination needs one instance for whichever medium is natural to it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       destination needs one instance for whichever medium is natural to it.
+=
+=       ```scala
+=       import soundness.*
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+=       import soundness.*
+=       import codepages.utf8Codepage
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       class Store():
++       class Store():
+
+-         val buffer: StringBuilder = StringBuilder()
++         val buffer: StringBuilder = StringBuilder()
+
+-       object Store:
++       object Store:
+
+-         given writable: Store is Writable by Text = (store, stream) =>
++         given writable: Store is Writable by Text = (store, stream) =>
+
+-           stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^].drain:
++           stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^].drain:
+
+-             region => range => store.buffer.append(region.materialize(range).s)
++             region => range => store.buffer.append(region.materialize(range).s)
+
+-       val store = Store()
++       val store = Store()
+
+-       t"hello".writeTo(store)
++       t"hello".writeTo(store)
+
+-       t"hello".read[Data].writeTo(store)   // bytes, through the decoding adapter
++       t"hello".read[Data].writeTo(store)   // bytes, through the decoding adapter
+
+=       t"hello".read[Data].writeTo(store)   // bytes, through the decoding adapter
+-       ```
++       ```
+
+-       A write failure is reported, not thrown: the JDK givens take an `Emit[Truncation.Error]`
+-       and `raise` the error with the count of bytes written before the cut, then stop
+-       writing. The target is closed whether or not the write failed. A writer never aborts,
+-       so a `Writable` given is summoned under an `Emit`, never a `Tactic`.
++       О сбое записи сообщается, а не бросается исключение: given-экземпляры JDK принимают
++       `Emit[Truncation.Error]` и выполняют `raise` ошибки с количеством байтов, записанных до
++       обрыва, а затем прекращают запись. Цель закрывается независимо от того, был ли сбой.
++       Записывающий никогда не прерывает работу, поэтому given `Writable` призывается при
++       `Emit`, а не при `Tactic`.
+
+-       `Sink` is the push-side counterpart, for callers which write incrementally through an
+-       `Intake` instead of handing over a whole stream. The `write` method's stream parameter
+-       is not declared `consume`, so an instance which hands it to a consuming operation
+-       crosses it as a neutral reference, as the sample does.
++       `Sink` — аналог на стороне push, для вызывающих, которые пишут постепенно через
++       `Intake`, а не передают целый поток данных. Параметр-поток метода `write` не объявлен
++       как `consume`, поэтому экземпляр, передающий его поглощающей операции, пропускает его
++       как нейтральную ссылку, как это делает пример.
+
+-   refer turbulence.writeTo
++   refer turbulence.writeTo
+
+=   refer turbulence.writeTo
+-   refer turbulence.Sink
++   refer turbulence.Sink
+
+=   refer turbulence.Sink
+-   refer zephyrine.Truncation
++   refer zephyrine.Truncation
+
+-   entry #write   drains the stream into the target, to completion
+-   entry #contramap   an instance for `self2`, by turning it into a `Self` first
+-   entry .outputStreamData   any `java.io.OutputStream` is writable by `Data`
+-       Needs an `Emit[Truncation.Error]` and a `Buffering`. Each window is written straight
+-       from the stream's own storage; the stream is flushed and closed at the end, and an
+-       `IOException` at any point raises `Truncation.Error` with the bytes written so far.
++   entry #write   вычерпывает поток данных в цель до конца
++   entry #contramap   экземпляр для `self2`, получаемый превращением его сначала в `Self`
++   entry .outputStreamData   любой `java.io.OutputStream` записываем по `Data`
++       Нужны `Emit[Truncation.Error]` и `Buffering`. Каждое окно записывается прямо из
++       собственного хранилища потока данных; в конце поток сбрасывается и закрывается, а
++       `IOException` в любой момент порождает `Truncation.Error` с уже записанными байтами.
+
+=       `IOException` at any point raises `Truncation.Error` with the bytes written so far.
+=
+-       ```scala
++       ```scala
+
+=       `IOException` at any point raises `Truncation.Error` with the bytes written so far.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `IOException` at any point raises `Truncation.Error` with the bytes written so far.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       `IOException` at any point raises `Truncation.Error` with the bytes written so far.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val output = java.io.ByteArrayOutputStream()
++       val output = java.io.ByteArrayOutputStream()
+
+-       t"hello".read[Data].writeTo(output)
++       t"hello".read[Data].writeTo(output)
+
+=       t"hello".read[Data].writeTo(output)
+-       output.toByteArray.nn.length   // 5
++       output.toByteArray.nn.length   // 5
+
+=       t"hello".read[Data].writeTo(output)
+=       output.toByteArray.nn.length   // 5
+-       ```
++       ```
+
+-   entry .outputStreamText   a `java.io.OutputStream` is writable by `Text`, encoded through the `Codepage` in scope
+-       As `.outputStreamData`, with the text encoded incrementally through the codepage duct;
+-       needs a `Codepage` as well.
+-   entry .decodingAdapter   a target writable by `Text` is writable by `Data`, through the `Charset` in scope
+-       The bytes are decoded incrementally through the charset duct before reaching the text
+-       writer; needs a `Charset` and a `Buffering`.
+-   entry .encodingAdapter   a target writable by `Data` is writable by `Text`, through the `Codepage` in scope
+-       The text is encoded incrementally through the codepage duct before reaching the byte
+-       writer; needs a `Codepage` and a `Buffering`.
+-   entry .chunked   a target writable by a medium is writable by a record stream of that medium's chunks
+-       `writable is Writable by (Array[medium]^{})`: each record of the stream is one chunk,
+-       written in order. This is the shape of an event log, where every formatted event is one
+-       `Text` or `Data` chunk, and is what a `Logger`'s destination needs. Needs the medium's
+-       `Addressable` and a `Buffering`.
+-   entry .channel   a `java.nio.channels.WritableByteChannel` is writable by `Data`
+-       Needs an `Emit[Truncation.Error]` and a `Buffering`. Each window is wrapped as a
+-       `ByteBuffer` and written until drained; a `-1` from the channel or an exception raises
+-       `Truncation.Error` with the bytes written so far. The channel is not closed.
++   entry .outputStreamText   `java.io.OutputStream` записываем по `Text`, кодируемому через `Codepage` в области видимости
++       Как `.outputStreamData`, с постепенным кодированием текста через дакт кодовой
++       страницы; дополнительно нужна `Codepage`.
++   entry .decodingAdapter   цель, записываемая по `Text`, записываема по `Data` через `Charset` в области видимости
++       Байты постепенно декодируются через дакт кодировки, прежде чем достичь текстового
++       записывающего; нужны `Charset` и `Buffering`.
++   entry .encodingAdapter   цель, записываемая по `Data`, записываема по `Text` через `Codepage` в области видимости
++       Текст постепенно кодируется через дакт кодовой страницы, прежде чем достичь байтового
++       записывающего; нужны `Codepage` и `Buffering`.
++   entry .chunked   цель, записываемая по типу данных, записываема потоком записей из чанков этого типа
++       `writable is Writable by (Array[medium]^{})`: каждая запись потока данных — один чанк,
++       записываемый по порядку. Такова форма журнала событий, где каждое отформатированное
++       событие — один чанк `Text` или `Data`, и это то, что нужно месту назначения `Logger`.
++       Нужны `Addressable` для типа данных и `Buffering`.
++   entry .channel   `java.nio.channels.WritableByteChannel` записываем по `Data`
++       Нужны `Emit[Truncation.Error]` и `Buffering`. Каждое окно оборачивается в `ByteBuffer`
++       и записывается до опустошения; `-1` от канала или исключение порождает
++       `Truncation.Error` с уже записанными байтами. Канал не закрывается.
+
+- entry .Sink   a destination which opens as a push endpoint: an `Intake` of `Data` or `Text` over `Credit`
++ entry .Sink   место назначения, которое открывается как конечная точка push: `Intake` из `Data` или `Text` поверх `Credit`
+
+= entry .Sink   a destination which opens as a push endpoint: an `Intake` of `Data` or `Text` over `Credit`
+-   detail
++   detail
+
+-       `target is Sink by medium over Credit` is the push-side counterpart of `Writable`:
+-       rather than draining a whole stream, `#intake` opens the target as a zephyrine
+-       `(Intake[medium] over Credit)^`, which a caller writes to incrementally with `put`, and
+-       which a stream is pumped into with `pump` or, on its own task, `convey`. `finish`
+-       closes the underlying resource, as `Writable` does at the end of a stream.
++       `target is Sink by medium over Credit` — аналог `Writable` на стороне push: вместо того
++       чтобы вычерпывать целый поток данных, `#intake` открывает цель как
++       `(Intake[medium] over Credit)^` из zephyrine, в который вызывающий пишет постепенно
++       через `put` и в который поток данных перекачивается через `pump` или, в собственной
++       задаче, через `convey`. `finish` закрывает нижележащий ресурс, как это делает
++       `Writable` в конце потока данных.
+
+=       closes the underlying resource, as `Writable` does at the end of a stream.
+=
+-       ```scala
++       ```scala
+
+=       closes the underlying resource, as `Writable` does at the end of a stream.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       closes the underlying resource, as `Writable` does at the end of a stream.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       closes the underlying resource, as `Writable` does at the end of a stream.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val output = java.io.ByteArrayOutputStream()
++       val output = java.io.ByteArrayOutputStream()
+
+-       val sink = summon[(java.io.ByteArrayOutputStream is Sink by Data over Credit)^]
++       val sink = summon[(java.io.ByteArrayOutputStream is Sink by Data over Credit)^]
+
+-       t"hello".read[Data].source[Data].pump(sink.intake(output))
++       t"hello".read[Data].source[Data].pump(sink.intake(output))
+
+=       t"hello".read[Data].source[Data].pump(sink.intake(output))
+-       output.toByteArray.nn.length   // 5
++       output.toByteArray.nn.length   // 5
+
+=       t"hello".read[Data].source[Data].pump(sink.intake(output))
+=       output.toByteArray.nn.length   // 5
+-       ```
++       ```
+
+-       A write failure is reported through the `Emit[Truncation.Error]` the given captured —
+-       a sink only reports a cut, never aborts — and the intake's demand drops to zero so
+-       that a pump stops. `.buffered` adapts a whole-chain writing function to the intake
+-       protocol for a target which has only that.
++       О сбое записи сообщается через захваченный given-экземпляром `Emit[Truncation.Error]` —
++       приёмник лишь сообщает об обрыве и никогда не прерывает работу, — и спрос приёмного
++       конца падает до нуля, так что насос останавливается. `.buffered` приспосабливает
++       функцию записи целой цепочки к протоколу приёмного конца для цели, у которой есть
++       только такая функция.
+
+=       protocol for a target which has only that.
+-   refer turbulence.Writable
++   refer turbulence.Writable
+
+=   refer turbulence.Writable
+-   refer turbulence.convey
++   refer turbulence.convey
+
+-   refer zephyrine.Intake
++   refer zephyrine.Intake
+
+-   entry #Transport   the demand type of the intake: `Credit` for every instance here
+-   entry #intake   opens the target as a fresh push endpoint
+-   entry #contramap   an instance for `self2`, by turning it into a `Self` first
+-   entry .outputStream   any `java.io.OutputStream` opens as a byte intake
+-       Needs an `Emit[Truncation.Error]` and a `Buffering`. Writes are staged in a block of
+-       `buffering.capacity(Substrate.Bytes)` bytes and written through (and flushed) when it
+-       fills, on `flush`, and on `finish`, which then closes the stream. An `IOException`
+-       marks the intake broken — its demand becomes zero — and raises `Truncation.Error` with
+-       the bytes written so far.
+-   entry .channel   a `java.nio.channels.WritableByteChannel` opens as a byte intake
+-       As `.outputStream`, writing each staged block through a `ByteBuffer`; `finish` closes
+-       the channel.
+-   entry .buffered   an intake which accumulates chunks and hands them all to a whole-chain writer on `finish`
+-       `Sink.buffered(target, write)` takes a `(target, Chain[medium]) => Unit` and returns an
+-       `(Intake[medium] over Credit)^`: writes are staged by the `Buffering` block size, each
+-       full block becomes one chunk, and `finish` calls `write` once with every chunk in
+-       order. Its demand is honestly unbounded, since it keeps everything until `finish`. It
+-       needs the medium's `Addressable` and a `Buffering`.
++   entry #Transport   тип спроса приёмного конца: `Credit` для каждого экземпляра здесь
++   entry #intake   открывает цель как новую конечную точку push
++   entry #contramap   экземпляр для `self2`, получаемый превращением его сначала в `Self`
++   entry .outputStream   любой `java.io.OutputStream` открывается как байтовый приёмный конец
++       Нужны `Emit[Truncation.Error]` и `Buffering`. Записи накапливаются в блоке размером
++       `buffering.capacity(Substrate.Bytes)` байтов и записываются насквозь (со сбросом),
++       когда он заполняется, при `flush` и при `finish`, который затем закрывает поток.
++       `IOException` помечает приёмный конец сломанным — его спрос становится нулевым — и
++       порождает `Truncation.Error` с уже записанными байтами.
++   entry .channel   `java.nio.channels.WritableByteChannel` открывается как байтовый приёмный конец
++       Как `.outputStream`, с записью каждого накопленного блока через `ByteBuffer`; `finish`
++       закрывает канал.
++   entry .buffered   приёмный конец, который накапливает чанки и при `finish` передаёт их все функции записи целой цепочки
++       `Sink.buffered(target, write)` принимает `(target, Chain[medium]) => Unit` и возвращает
++       `(Intake[medium] over Credit)^`: записи накапливаются блоками размера из `Buffering`,
++       каждый полный блок становится одним чанком, а `finish` один раз вызывает `write` со
++       всеми чанками по порядку. Его спрос честно неограничен, поскольку он хранит всё до
++       `finish`. Ему нужны `Addressable` для типа данных и `Buffering`.
+
+=       needs the medium's `Addressable` and a `Buffering`.
+=
+-       ```scala
++       ```scala
+
+=       needs the medium's `Addressable` and a `Buffering`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       var sizes: List[Int] = Nil
++       var sizes: List[Int] = Nil
+
+-       val intake = Sink.buffered[Unit, Data]((), (_, chunks) => sizes = chunks.map(_.length).to[List])
++       val intake = Sink.buffered[Unit, Data]((), (_, chunks) => sizes = chunks.map(_.length).to[List])
+
+-       intake.put(Data.fill(8)(_.toByte))
++       intake.put(Data.fill(8)(_.toByte))
+
+-       intake.finish()
++       intake.finish()
+
+=       intake.finish()
+-       ```
++       ```
+
+- entry .Loadable   a document type which parses from a stream of `Data` or `Text`, keeping its metadata
++ entry .Loadable   тип документа, который разбирается из потока данных `Data` или `Text`, сохраняя свои метаданные
+
+= entry .Loadable   a document type which parses from a stream of `Data` or `Text`, keeping its metadata
+-   detail
++   detail
+
+-       `result is Loadable by medium` is what `value.load[result]` needs on the result's
+-       side: `#load` takes a pull endpoint and returns a `Document[result]`, the parsed root
+-       beside the metadata the parse discovered (an XML prologue's encoding, an HTML
+-       document's source positions). The `Self` must be a `Documentary`, which declares what
+-       its metadata is. Formats such as `Xml`, `Html`, `Tel` and `Math` provide instances,
+-       usually one by `Text` and one by `Data`, each capturing the `Tactic` for its own parse
+-       error.
++       `result is Loadable by medium` — это то, что нужно `value.load[result]` со стороны
++       результата: `#load` принимает конечную точку pull и возвращает `Document[result]` —
++       разобранный корень рядом с метаданными, обнаруженными при разборе (кодировкой из пролога
++       XML, позициями в исходнике HTML-документа). `Self` должен быть `Documentary`, который
++       объявляет, каковы его метаданные. Форматы, такие как `Xml`, `Html`, `Tel` и `Math`,
++       предоставляют экземпляры, обычно один по `Text` и один по `Data`, каждый из которых
++       захватывает `Tactic` для собственной ошибки разбора.
+
+=       error.
+=
+-       ```scala
++       ```scala
+
+=       error.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       error.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       error.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+-       val document: Document[Xml] = t"<doc><a/></doc>".load[Xml]
++       val document: Document[Xml] = t"<doc><a/></doc>".load[Xml]
+
+-       document()         // the parsed Xml root
++       document()         // the parsed Xml root
+
+-       document.metadata
++       document.metadata
+
+=       document.metadata
+-       ```
++       ```
+
+-       Where a source and a loader disagree on medium, `load` bridges through the `Charset`
+-       or `Codepage` in scope; `.fromData` and `.fromText` are the two halves of that
+-       dispatch, for code which already holds a stream.
++       Если источник и загрузчик расходятся в типе данных, `load` переходит между ними через
++       `Charset` или `Codepage` в области видимости; `.fromData` и `.fromText` — две половины
++       этой диспетчеризации, для кода, у которого уже есть поток данных.
+
+=       dispatch, for code which already holds a stream.
+-   refer turbulence.load
++   refer turbulence.load
+
+=   refer turbulence.load
+-   refer turbulence.Document
++   refer turbulence.Document
+
+-   refer turbulence.Documentary
++   refer turbulence.Documentary
+
+-   entry #Self   the document type, a `Documentary`
+-   entry #Operand   the medium the loader reads: `Data` or `Text`
+-   entry #load   parses the stream into a `Document[Self]`
+-   entry .fromData   loads a document from a byte stream, decoding through a `Charset` if the loader wants text
+-       `Loadable.fromData[result](stream)` consumes the stream. It prefers a `result is
+-       Loadable by Data`; failing that it uses a `Loadable by Text` through the `Charset` and
+-       `Buffering` in scope; and with neither it fails to compile with _turbulence: the result
+-       type has no `Loadable` instance_.
+-   entry .fromText   loads a document from a text stream, encoding through a `Codepage` if the loader wants bytes
+-       The text twin of `.fromData`: a `Loadable by Text` first, else `Loadable by Data`
+-       through the `Codepage` and `Buffering` in scope.
+-   entry .whole   a whole-value source's bytes as a one-window stream
+-       `Loadable.whole(source)` reads the source with its `Readable to Data` instance and
+-       wraps the result as a `Stream[Data]`: the route `load` takes for a source which is not
+-       streamable but is readable whole, such as a filesystem path.
++   entry #Self   тип документа, `Documentary`
++   entry #Operand   тип данных, который читает загрузчик: `Data` или `Text`
++   entry #load   разбирает поток данных в `Document[Self]`
++   entry .fromData   загружает документ из байтового потока данных, декодируя через `Charset`, если загрузчику нужен текст
++       `Loadable.fromData[result](stream)` поглощает поток данных. Он предпочитает `result is
++       Loadable by Data`; если его нет, использует `Loadable by Text` через `Charset` и
++       `Buffering` в области видимости; а при отсутствии обоих не компилируется с сообщением
++       _turbulence: the result type has no `Loadable` instance_.
++   entry .fromText   загружает документ из текстового потока данных, кодируя через `Codepage`, если загрузчику нужны байты
++       Текстовый двойник `.fromData`: сначала `Loadable by Text`, иначе `Loadable by Data`
++       через `Codepage` и `Buffering` в области видимости.
++   entry .whole   байты источника целого значения в виде потока данных из одного окна
++       `Loadable.whole(source)` читает источник его экземпляром `Readable to Data` и
++       оборачивает результат в `Stream[Data]`: маршрут, которым `load` идёт для источника,
++       который не передаётся потоком, но читается целиком, такого как путь в файловой системе.
+
+- entry .Document   a parsed document: its root value beside the metadata the parse discovered
++ entry .Document   разобранный документ: его корневое значение рядом с метаданными, обнаруженными при разборе
+
+= entry .Document   a parsed document: its root value beside the metadata the parse discovered
+-   detail
++   detail
+
+-       `Document[content]` is what `load[content]` returns. `#root` (also `#apply`) is the
+-       parsed value, and `#metadata` is typed by the content's own `Documentary` declaration:
+-       `root.Metadata`, so an `Xml` document's metadata is whatever `Xml` says it is.
++       `Document[content]` — это то, что возвращает `load[content]`. `#root` (а также
++       `#apply`) — разобранное значение, а `#metadata` типизирован собственным объявлением
++       `Documentary` содержимого: `root.Metadata`, так что метаданные документа `Xml` — это то,
++       чем их объявляет `Xml`.
+
+=       `root.Metadata`, so an `Xml` document's metadata is whatever `Xml` says it is.
+-   refer turbulence.Loadable
++   refer turbulence.Loadable
+
+=   refer turbulence.Loadable
+-   refer turbulence.load
++   refer turbulence.load
+
+-   entry #root   the parsed document
+-   entry #metadata   what the parse discovered beside the content, typed as `root.Metadata`
+-   entry #apply   the parsed document, as `document()`
++   entry #root   разобранный документ
++   entry #metadata   то, что разбор обнаружил рядом с содержимым, типизированное как `root.Metadata`
++   entry #apply   разобранный документ, как `document()`
+
+- entry .Documentary   a type which can be the content of a `Document`, declaring its metadata type
++ entry .Documentary   тип, который может быть содержимым `Document`, объявляющий тип своих метаданных
+
+= entry .Documentary   a type which can be the content of a `Document`, declaring its metadata type
+-   detail
++   detail
+
+-       A marker trait for a format's root type: `type Metadata` is what a parse of it discovers
+-       beside the content, and `Document[content]` exposes it as `root.Metadata`. `Xml`,
+-       `Html`, `Tel`, `Email` and `Math` are documentaries; a new format extends it and gives a
+-       `Loadable` instance.
++       Трейт-маркер для корневого типа формата: `type Metadata` — это то, что обнаруживает
++       его разбор рядом с содержимым, а `Document[content]` открывает это как
++       `root.Metadata`. `Xml`, `Html`, `Tel`, `Email` и `Math` — это `Documentary`; новый
++       формат расширяет его и даёт экземпляр `Loadable`.
+
+=       `Loadable` instance.
+-   refer turbulence.Document
++   refer turbulence.Document
+
+=   refer turbulence.Document
+-   refer turbulence.Loadable
++   refer turbulence.Loadable
+
+-   entry #Self   the documentary type itself
+-   entry #Metadata   what a parse of this type discovers beside its content
++   entry #Self   сам тип `Documentary`
++   entry #Metadata   то, что разбор этого типа обнаруживает рядом с его содержимым
+
+- entry .Eof   a file named for appending: `Eof(file)` is the file's end
++ entry .Eof   файл, названный для дозаписи: `Eof(file)` — это конец файла
+
+= entry .Eof   a file named for appending: `Eof(file)` is the file's end
+-   detail
++   detail
+
+-       `Eof(path)` wraps a path so that opening it means opening the file for appending. The
+-       filesystem library makes `Eof[file]` openable wherever `file` is, prepending the `Append`
+-       flag, so `Eof(path).open(...)` appends where `path.open(...)` would overwrite. The
+-       wrapper itself is just the case class with its one field.
+-   entry #file   the wrapped file
++       `Eof(path)` оборачивает путь так, что его открытие означает открытие файла для
++       дозаписи. Библиотека файловой системы делает `Eof[file]` открываемым везде, где
++       открываем `file`, добавляя в начало флаг `Append`, так что `Eof(path).open(...)`
++       дописывает там, где `path.open(...)` перезаписал бы. Сама обёртка — просто case-класс с
++       одним полем.
++   entry #file   обёрнутый файл
+
+- entry .Line   one line of text, which renders with the newline the `LineSeparation` in scope uses
++ entry .Line   одна строка текста, которая отображается с переводом строки, используемым `LineSeparation` в области видимости
+
+= entry .Line   one line of text, which renders with the newline the `LineSeparation` in scope uses
+-   detail
++   detail
+
+-       `Line(content)` holds a line without its terminator; `line()` appends the newline
+-       sequence of the `LineSeparation` given in scope, so one value renders as `\n`, `\r\n`
+-       or `\r` according to the policy chosen.
++       `Line(content)` хранит строку без её терминатора; `line()` добавляет последовательность
++       перевода строки из given `LineSeparation` в области видимости, так что одно значение
++       отображается как `\n`, `\r\n` или `\r` в зависимости от выбранной политики.
+
+=       or `\r` according to the policy chosen.
+-   refer turbulence.LineSeparation
++   refer turbulence.LineSeparation
+
+-   entry #content   the line's text, without a terminator
+-   entry #apply   the line with the `LineSeparation`'s newline appended
++   entry #content   текст строки без терминатора
++   entry #apply   строка с добавленным переводом строки из `LineSeparation`
+
+- entry .LineSeparation   a line-ending policy: which of CR, LF, CRLF and LFCR end a line, and how a line is written
++ entry .LineSeparation   политика концов строк: какие из CR, LF, CRLF и LFCR завершают строку и как строка записывается
+
+= entry .LineSeparation   a line-ending policy: which of CR, LF, CRLF and LFCR end a line, and how a line is written
+-   detail
++   detail
+
+-       A `LineSeparation` says how `delineate` splits text into lines, and which sequence
+-       `Line#apply` and `#newlineData` write. It is a value of five fields: `#newline`, the
+-       `NewlineSeq` written out, and four `Action`s saying what a bare CR, a bare LF, a CRLF
+-       pair and an LFCR pair each do when read — end a line (`Nl`), stay in the text as a
+-       character (`Cr`, `Lf`), be dropped (`Skip`), or end a line and keep part of themselves
+-       (`NlCr`, `NlLf`, `CrNl`, `LfNl`) or end two (`NlNl`).
++       `LineSeparation` говорит, как `delineate` разбивает текст на строки и какую
++       последовательность записывают `Line#apply` и `#newlineData`. Это значение из пяти полей:
++       `#newline`, записываемая `NewlineSeq`, и четыре `Action`, говорящих, что при чтении
++       делают одиночный CR, одиночный LF, пара CRLF и пара LFCR: завершают строку (`Nl`),
++       остаются в тексте как символ (`Cr`, `Lf`), отбрасываются (`Skip`), завершают строку и
++       сохраняют часть себя (`NlCr`, `NlLf`, `CrNl`, `LfNl`) или завершают две (`NlNl`).
+
+-       The policy is never implicit: the `lineSeparation` package has the standard ones,
+-       imported by name, and the same text splits differently under each.
++       Политика никогда не задаётся неявно: в пакете `lineSeparation` есть стандартные
++       политики, импортируемые по имени, и один и тот же текст разбивается по-разному при
++       каждой из них.
+
+=       imported by name, and the same text splits differently under each.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Adaptive
++       alternative Adaptive
+
+=       alternative Adaptive
+-         code
++         code
+
+=       alternative Adaptive
+=         code
+-             locally:
++             locally:
+
+-               import lineSeparation.adaptiveLinefeedLineSeparation
++               import lineSeparation.adaptiveLinefeedLineSeparation
+
+-               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"b", t"c", t"d")
++               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"b", t"c", t"d")
+
+-       alternative Linefeed
++       alternative Linefeed
+
+=       alternative Linefeed
+-         code
++         code
+
+=       alternative Linefeed
+=         code
+-             locally:
++             locally:
+
+-               import lineSeparation.linefeedLineSeparation
++               import lineSeparation.linefeedLineSeparation
+
+-               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"bc", t"d")
++               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"bc", t"d")
+
+-       alternative Carriage return
++       alternative Carriage return
+
+=       alternative Carriage return
+-         code
++         code
+
+=       alternative Carriage return
+=         code
+-             locally:
++             locally:
+
+-               import lineSeparation.carriageReturnLineSeparation
++               import lineSeparation.carriageReturnLineSeparation
+
+-               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"b", t"cd")
++               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"b", t"cd")
+
+-       alternative CRLF
++       alternative CRLF
+
+=       alternative CRLF
+-         code
++         code
+
+=       alternative CRLF
+=         code
+-             locally:
++             locally:
+
+-               import lineSeparation.carriageReturnLinefeedLineSeparation
++               import lineSeparation.carriageReturnLinefeedLineSeparation
+
+-               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"bc\nd")
++               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"bc\nd")
+
+=               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"bc\nd")
+-       ##
++       ##
+
+=               t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"bc\nd")
+=       ##
+-       ```
++       ```
+
+-       The splitting itself is a zephyrine `Duct`, applied as a stage: `.lines` is the
+-       `Ductile` instance which lets a policy value be attached to a text stream with `via`,
+-       yielding a record stream with one `Text` per line, without its terminator. A final
+-       line with no terminator is still delivered; an empty input yields no lines; and a
+-       two-character sequence split across two windows is resolved across the boundary. A
+-       byte stream under an ASCII-transparent encoding (UTF-8, ASCII, Latin-1) is split in the
+-       raw bytes by `.byteLines`, each line decoded whole in one step, which `delineate`
+-       chooses by checking the `Charset`; any other encoding decodes first.
++       Само разбиение — это `Duct` из zephyrine, применяемый как стадия: `.lines` — это
++       экземпляр `Ductile`, который позволяет присоединить значение политики к текстовому
++       потоку данных через `via`, давая поток записей с одним `Text` на строку, без её
++       терминатора. Последняя строка без терминатора всё равно доставляется; пустой ввод не
++       даёт строк; а двухсимвольная последовательность, разделённая между двумя окнами,
++       распознаётся через границу. Байтовый поток данных в ASCII-прозрачной кодировке (UTF-8,
++       ASCII, Latin-1) разбивается в сырых байтах через `.byteLines`, и каждая строка
++       декодируется целиком за один шаг; `delineate` выбирает этот путь, проверив `Charset`, а
++       любая другая кодировка сначала декодируется.
+
+-       A line with no separator at all grows the carried partial line without bound, as any
+-       line reader must; cap the input upstream if it is adversarial.
++       Строка вовсе без разделителя неограниченно наращивает переносимую частичную строку, как
++       и в любом читателе строк; если ввод враждебен, ограничьте его выше по потоку.
+
+=       line reader must; cap the input upstream if it is adversarial.
+-   refer turbulence.delineate
++   refer turbulence.delineate
+
+=   refer turbulence.delineate
+-   refer turbulence.lineSeparation
++   refer turbulence.lineSeparation
+
+-   refer turbulence.Line
++   refer turbulence.Line
+
+-   entry .NewlineSeq   the sequence a policy writes as a line ending: `Cr`, `Lf`, `CrLf` or `LfCr`
++   entry .NewlineSeq   последовательность, которую политика записывает как конец строки: `Cr`, `Lf`, `CrLf` или `LfCr`
+
+=   entry .NewlineSeq   the sequence a policy writes as a line ending: `Cr`, `Lf`, `CrLf` or `LfCr`
+-     detail
++     detail
+
+-         An enum of the four newline sequences; `#text` is the sequence as `Text`
+-         (`"\r"`, `"\n"`, `"\r\n"`, `"\n\r"`), and `LineSeparation#newlineData` gives the same as
+-         bytes.
+-     entry #text   the sequence as text
+-   entry .Action   what a policy does with a CR, LF, CRLF or LFCR it reads
+-       An enum of nine actions: `Nl` ends the line; `Cr` and `Lf` keep the character in the
+-       line's text; `Skip` drops it; `NlCr` and `NlLf` end the line and start the next with
+-       the character; `CrNl` and `LfNl` append the character and then end the line; and
+-       `NlNl` ends two lines. A `LineSeparation` names one for each of its `cr`, `lf`, `crlf`
+-       and `lfcr` fields.
+-   entry .lines   the `Ductile` instance which applies a policy to a text stream as a stage
+-       `stream.via(lineSeparation)` attaches the line-splitting duct, producing a
+-       `Stream[Array[Text]^{}]` — a record stream with one `Text` per line — and translating
+-       line credit to character credit one for one. `delineate` is the same with the policy
+-       taken from scope. It needs a `Buffering`.
+-   entry .asciiTransparent   whether a `0x0A` or `0x0D` byte in a charset can only be a line terminator
+-       True for UTF-8, US-ASCII and ISO-8859-1, in which no multi-byte sequence contains those
+-       bytes, so lines can be found before decoding. False for UTF-16 and the rest.
+-   entry .byteLines   the byte-level line duct for an ASCII-transparent encoding
+-       `LineSeparation.byteLines(policy, charset)` builds a `Duct[Data, Array[Text]^{}]` which
+-       finds terminators in the raw bytes and decodes each completed line in one fused call,
+-       with no separate decoding stage; a multi-byte character cut by a window boundary simply
+-       accumulates with the line. It is a method rather than a given, applied by `delineate`
+-       once it has checked the encoding with `.asciiTransparent`, and must not be used with an
+-       encoding that fails that check. Needs a `Buffering`.
+-   entry #newline   the sequence written as a line ending
+-   entry #cr   what a bare carriage return does when read
+-   entry #lf   what a bare linefeed does when read
+-   entry #crlf   what a carriage return followed by a linefeed does when read
+-   entry #lfcr   what a linefeed followed by a carriage return does when read
+-   entry #newlineData   the newline sequence as bytes
+-       `Data(13)`, `Data(10)`, `Data(13, 10)` or `Data(10, 13)` for `Cr`, `Lf`, `CrLf` and
++         Перечисление четырёх последовательностей перевода строки; `#text` — последовательность
++         в виде `Text` (`"\r"`, `"\n"`, `"\r\n"`, `"\n\r"`), а `LineSeparation#newlineData`
++         даёт то же в виде байтов.
++     entry #text   последовательность в виде текста
++   entry .Action   что политика делает с прочитанным CR, LF, CRLF или LFCR
++       Перечисление девяти действий: `Nl` завершает строку; `Cr` и `Lf` сохраняют символ в
++       тексте строки; `Skip` отбрасывает его; `NlCr` и `NlLf` завершают строку и начинают
++       следующую с этого символа; `CrNl` и `LfNl` добавляют символ, а затем завершают строку;
++       `NlNl` завершает две строки. `LineSeparation` называет по одному для каждого из своих
++       полей `cr`, `lf`, `crlf` и `lfcr`.
++   entry .lines   экземпляр `Ductile`, который применяет политику к текстовому потоку данных как стадию
++       `stream.via(lineSeparation)` присоединяет дакт разбиения на строки, производя
++       `Stream[Array[Text]^{}]` — поток записей с одним `Text` на строку — и переводя кредит
++       строк в кредит символов один к одному. `delineate` — то же самое с политикой, взятой из
++       области видимости. Нужен `Buffering`.
++   entry .asciiTransparent   может ли байт `0x0A` или `0x0D` в кодировке быть только терминатором строки
++       Истинно для UTF-8, US-ASCII и ISO-8859-1, где ни одна многобайтовая последовательность
++       не содержит этих байтов, так что строки можно найти до декодирования. Ложно для UTF-16
++       и остальных.
++   entry .byteLines   байтовый дакт строк для ASCII-прозрачной кодировки
++       `LineSeparation.byteLines(policy, charset)` строит `Duct[Data, Array[Text]^{}]`,
++       который находит терминаторы в сырых байтах и декодирует каждую завершённую строку одним
++       слитным вызовом, без отдельной стадии декодирования; многобайтовый символ, разрезанный
++       границей окна, просто накапливается вместе со строкой. Это метод, а не given; его
++       применяет `delineate`, проверив кодировку через `.asciiTransparent`, и его нельзя
++       использовать с кодировкой, не прошедшей эту проверку. Нужен `Buffering`.
++   entry #newline   последовательность, записываемая как конец строки
++   entry #cr   что делает при чтении одиночный возврат каретки
++   entry #lf   что делает при чтении одиночный перевод строки
++   entry #crlf   что делает при чтении возврат каретки, за которым следует перевод строки
++   entry #lfcr   что делает при чтении перевод строки, за которым следует возврат каретки
++   entry #newlineData   последовательность перевода строки в виде байтов
++       `Data(13)`, `Data(10)`, `Data(13, 10)` или `Data(10, 13)` для `Cr`, `Lf`, `CrLf` и
+
+-       `LfCr`.
++       `LfCr`.
+
+- entry .lineSeparation   the standard line-ending policies, each a given to import by name
++ entry .lineSeparation   стандартные политики концов строк, каждая — given, импортируемый по имени
+
+= entry .lineSeparation   the standard line-ending policies, each a given to import by name
+-   detail
++   detail
+
+-       Which characters end a line is decided by the `LineSeparation` given in scope, and the
+-       choice is never implicit: `import soundness.*` brings none of these in, and one is
+-       imported by name. Each is a `LineSeparation` value whose action table the test suite
+-       runs through every fragmentation of its input.
++       Какие символы завершают строку, решает given `LineSeparation` в области видимости, и
++       выбор никогда не делается неявно: `import soundness.*` не приносит ни одну из них, и
++       одна импортируется по имени. Каждая — значение `LineSeparation`, таблицу действий
++       которого набор тестов прогоняет через каждое возможное разбиение входных данных на
++       фрагменты.
+
+=       runs through every fragmentation of its input.
+=
+-       ```scala
++       ```scala
+
+=       runs through every fragmentation of its input.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import lineSeparation.adaptiveLinefeedLineSeparation
++       import lineSeparation.adaptiveLinefeedLineSeparation
+
+-       t"one two\nthree four\r\nfive".delineate.to[List]   // List(t"one two", t"three four", t"five")
++       t"one two\nthree four\r\nfive".delineate.to[List]   // List(t"one two", t"three four", t"five")
+
+=       t"one two\nthree four\r\nfive".delineate.to[List]   // List(t"one two", t"three four", t"five")
+-       ```
++       ```
+
+-       `adaptiveLinefeedLineSeparation` suits input of unknown provenance; the strict
+-       policies are for formats where a lone character of the other kind is data, and
+-       `javaBaseLineSeparation` follows the running platform.
++       `adaptiveLinefeedLineSeparation` подходит для ввода неизвестного происхождения; строгие
++       политики — для форматов, где одиночный символ другого вида является данными, а
++       `javaBaseLineSeparation` следует работающей платформе.
+
+=       `javaBaseLineSeparation` follows the running platform.
+-   refer turbulence.LineSeparation
++   refer turbulence.LineSeparation
+
+=   refer turbulence.LineSeparation
+-   refer turbulence.delineate
++   refer turbulence.delineate
+
+-   entry .adaptiveLinefeedLineSeparation   any of CR, LF, CRLF or LFCR ends a line; writes LF
+-       Every sequence is one line break, so `a\n\nb` is three lines (`a`, an empty line, `b`)
+-       and `a\r\nb` two.
+-   entry .linefeedLineSeparation   LF ends a line; a bare CR is dropped; CRLF and LFCR are one break; writes LF
+-       `a\rb` is the one line `ab`.
+-   entry .strictLinefeedsLineSeparation   a bare LF ends a line and a CR stays in the text; writes LF
+-       The action table as it stands is `cr = Nl, lf = Lf, crlf = NlLf, lfcr = LfNl` — the
+-       same as `strictCarriageReturnLineSeparation` — so `a\nb` is the one line `a\nb` and
+-       `a\rb` is two; only the written newline (LF) differs.
+-   entry .carriageReturnLineSeparation   CR ends a line; a bare LF is dropped; CRLF and LFCR are one break; writes CR
+-       `a\nb` is the one line `ab`.
+-   entry .strictCarriageReturnLineSeparation   only CR ends a line; an LF stays in the text; writes CR
+-       `a\r\nb` is the two lines `a` and `\nb`.
+-   entry .carriageReturnLinefeedLineSeparation   only CRLF ends a line; a bare CR is dropped and a bare LF kept; writes CRLF
+-       `a\nb` is the one line `a\nb`, `a\rb` is `ab`, and `a\n\rb` is `a\n` and `b`.
+-   entry .javaBaseLineSeparation   the policy matching the JVM's `System.lineSeparator`
+-       `carriageReturnLinefeedLineSeparation` on Windows, `linefeedLineSeparation` where the
+-       separator is LF, `carriageReturnLineSeparation` for CR, and otherwise the adaptive
+-       policy.
++   entry .adaptiveLinefeedLineSeparation   любой из CR, LF, CRLF или LFCR завершает строку; записывает LF
++       Каждая последовательность — один разрыв строки, так что `a\n\nb` — три строки (`a`,
++       пустая строка, `b`), а `a\r\nb` — две.
++   entry .linefeedLineSeparation   LF завершает строку; одиночный CR отбрасывается; CRLF и LFCR — один разрыв; записывает LF
++       `a\rb` — одна строка `ab`.
++   entry .strictLinefeedsLineSeparation   одиночный LF завершает строку, а CR остаётся в тексте; записывает LF
++       Таблица действий в текущем виде — `cr = Nl, lf = Lf, crlf = NlLf, lfcr = LfNl`, та же,
++       что у `strictCarriageReturnLineSeparation`, — так что `a\nb` — одна строка `a\nb`, а
++       `a\rb` — две; отличается только записываемый перевод строки (LF).
++   entry .carriageReturnLineSeparation   CR завершает строку; одиночный LF отбрасывается; CRLF и LFCR — один разрыв; записывает CR
++       `a\nb` — одна строка `ab`.
++   entry .strictCarriageReturnLineSeparation   только CR завершает строку; LF остаётся в тексте; записывает CR
++       `a\r\nb` — две строки, `a` и `\nb`.
++   entry .carriageReturnLinefeedLineSeparation   только CRLF завершает строку; одиночный CR отбрасывается, а одиночный LF сохраняется; записывает CRLF
++       `a\nb` — одна строка `a\nb`, `a\rb` — это `ab`, а `a\n\rb` — это `a\n` и `b`.
++   entry .javaBaseLineSeparation   политика, соответствующая `System.lineSeparator` JVM
++       `carriageReturnLinefeedLineSeparation` в Windows, `linefeedLineSeparation` там, где
++       разделитель — LF, `carriageReturnLineSeparation` для CR, а в остальных случаях —
++       адаптивная политика.
+
+- entry .source   opens a value as a pull endpoint, naming the element type: `value.source[Data]`
++ entry .source   открывает значение как конечную точку pull, называя тип элемента: `value.source[Data]`
+
+= entry .source   opens a value as a pull endpoint, naming the element type: `value.source[Data]`
+-   detail
++   detail
+
+-       An extension on any value with a `Streamable by element over Credit` instance:
+-       `value.source[Text]` or `value.source[Data]` is `streamable.stream(value)`, a fresh
+-       `(Stream[element] over Credit)^`. It is the fluent form of `Streamable#stream`, named
+-       `source` because zephyrine's `.stream` constructor owns that name under the umbrella.
+-       The element type is given explicitly where a value is streamable both ways, as `Text`
+-       is with a `Codepage` in scope.
++       Расширение для любого значения с экземпляром `Streamable by element over Credit`:
++       `value.source[Text]` или `value.source[Data]` — это `streamable.stream(value)`, новый
++       `(Stream[element] over Credit)^`. Это текучая форма `Streamable#stream`, названная
++       `source`, потому что в зонтичном модуле это имя занимает конструктор `.stream` из
++       zephyrine. Тип элемента указывается явно там, где значение передаётся потоком обоими
++       способами, как `Text` при наличии `Codepage` в области видимости.
+
+=       is with a `Codepage` in scope.
+=
+-       ```scala
++       ```scala
+
+=       is with a `Codepage` in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       is with a `Codepage` in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+-       t"The quick brown fox".source[Text].memoize
++       t"The quick brown fox".source[Text].memoize
+
+-       t"The quick brown fox".source[Data].memoize
++       t"The quick brown fox".source[Data].memoize
+
+=       t"The quick brown fox".source[Data].memoize
+-       ```
++       ```
+
+=       ```
+-   refer turbulence.Streamable
++   refer turbulence.Streamable
+
+- entry .read   reads a value whole as the type named: `value.read[Text]`, `value.read[Data]`
++ entry .read   читает значение целиком как названный тип: `value.read[Text]`, `value.read[Data]`
+
+= entry .read   reads a value whole as the type named: `value.read[Text]`, `value.read[Data]`
+-   detail
++   detail
+
+-       An inline extension on any value with a `Readable to result` instance. A source with a
+-       `Streamable` instance by either medium reads as `Data`, as `Text`, or as a
+-       `Chain[Data]` or `Chain[Text]`, or as any type with an `Aggregable` instance, with the
+-       `Charset` or `Codepage` in scope bridging bytes and text. A file, a URL, a process's
+-       output and a classpath resource all read with this one verb.
++       Встраиваемое расширение для любого значения с экземпляром `Readable to result`.
++       Источник с экземпляром `Streamable` по любому типу данных читается как `Data`, как
++       `Text`, как `Chain[Data]` или `Chain[Text]` или как любой тип с экземпляром
++       `Aggregable`, а `Charset` или `Codepage` в области видимости переходит между байтами и
++       текстом. Файл, URL, вывод процесса и ресурс из пути классов читаются этим одним
++       глаголом.
+
+=       output and a classpath resource all read with this one verb.
+=
+-       ```scala
++       ```scala
+
+=       output and a classpath resource all read with this one verb.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       output and a classpath resource all read with this one verb.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       output and a classpath resource all read with this one verb.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+=       import charsets.utf8Charset
+=       import codepages.utf8Codepage
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       t"The quick brown fox".read[Data].read[Text]   // t"The quick brown fox"
++       t"The quick brown fox".read[Data].read[Text]   // t"The quick brown fox"
+
+=       t"The quick brown fox".read[Data].read[Text]   // t"The quick brown fox"
+-       ```
++       ```
+
+-       A JDK source raises `Truncation.Error` through the `Tactic` its `Streamable` given
+-       captured if it is cut mid-read; a `Data` or `Text` in hand reads without a stream at all.
++       Источник JDK порождает `Truncation.Error` через `Tactic`, захваченную его given
++       `Streamable`, если он обрывается посреди чтения; `Data` или `Text` на руках читается
++       вовсе без потока данных.
+
+=       captured if it is cut mid-read; a `Data` or `Text` in hand reads without a stream at all.
+-   refer turbulence.Readable
++   refer turbulence.Readable
+
+- entry .writeTo   drains a value into a destination: `value.writeTo(target)`
++ entry .writeTo   вычерпывает значение в место назначения: `value.writeTo(target)`
+
+= entry .writeTo   drains a value into a destination: `value.writeTo(target)`
+-   detail
++   detail
+
+-       An extension on any value with a `Streamable by element over Credit` instance, for any
+-       target with a `Writable by element` instance: `value.writeTo(target)` streams the value
+-       and hands the stream to the target's writer, which drains it to completion and closes
+-       the target. The element type is inferred from the two instances, and the `Writable`
+-       adapters let text go to a byte sink and bytes to a text sink through the encoding in
+-       scope. A JDK target reports a cut with `Truncation.Error` through its `Emit`.
++       Расширение для любого значения с экземпляром `Streamable by element over Credit`, для
++       любой цели с экземпляром `Writable by element`: `value.writeTo(target)` передаёт
++       значение потоком и отдаёт поток данных записывающему цели, который вычерпывает его до
++       конца и закрывает цель. Тип элемента выводится из двух экземпляров, а адаптеры
++       `Writable` позволяют отправлять текст в байтовый приёмник и байты в текстовый приёмник
++       через кодировку в области видимости. Цель JDK сообщает об обрыве через
++       `Truncation.Error` посредством своего `Emit`.
+
+=       scope. A JDK target reports a cut with `Truncation.Error` through its `Emit`.
+=
+-       ```scala
++       ```scala
+
+=       scope. A JDK target reports a cut with `Truncation.Error` through its `Emit`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       scope. A JDK target reports a cut with `Truncation.Error` through its `Emit`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       scope. A JDK target reports a cut with `Truncation.Error` through its `Emit`.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val output = java.io.ByteArrayOutputStream()
++       val output = java.io.ByteArrayOutputStream()
+
+-       t"The quick brown fox".read[Data].writeTo(output)
++       t"The quick brown fox".read[Data].writeTo(output)
+
+=       t"The quick brown fox".read[Data].writeTo(output)
+-       ```
++       ```
+
+=       ```
+-   refer turbulence.Writable
++   refer turbulence.Writable
+
+=   refer turbulence.Writable
+-   refer turbulence.Streamable
++   refer turbulence.Streamable
+
+- entry .load   parses a value as a document type, keeping the metadata: `value.load[Xml]`
++ entry .load   разбирает значение как тип документа, сохраняя метаданные: `value.load[Xml]`
+
+= entry .load   parses a value as a document type, keeping the metadata: `value.load[Xml]`
+-   detail
++   detail
+
+-       An inline extension on any value: `value.load[result]` returns a `Document[result]` for
+-       any `result <: Documentary` with a `Loadable` instance. It resolves its instances at the
+-       call site, in order: a byte-streamable source with a byte loader, else a text loader
+-       through the `Charset` in scope; a text-streamable source with a text loader, else a byte
+-       loader through the `Codepage` in scope; and finally a source which is not streamable but
+-       is `Readable to Data` (a filesystem path), read whole. A `Text` with a `Codepage` in
+-       scope therefore takes the byte route, as `read` does. Each loader captures the `Tactic`
+-       for its own parse error, which must be in scope.
++       Встраиваемое расширение для любого значения: `value.load[result]` возвращает
++       `Document[result]` для любого `result <: Documentary` с экземпляром `Loadable`. Оно
++       разрешает свои экземпляры в месте вызова, по порядку: источник, передаваемый потоком
++       байтов, с байтовым загрузчиком, иначе текстовый загрузчик через `Charset` в области
++       видимости; источник, передаваемый потоком текста, с текстовым загрузчиком, иначе
++       байтовый загрузчик через `Codepage` в области видимости; и наконец источник, который не
++       передаётся потоком, но является `Readable to Data` (путь в файловой системе), читаемый
++       целиком. Поэтому `Text` при наличии `Codepage` в области видимости идёт байтовым
++       маршрутом, как и `read`. Каждый загрузчик захватывает `Tactic` для собственной ошибки
++       разбора, которая должна быть в области видимости.
+
+=       for its own parse error, which must be in scope.
+=
+-       ```scala
++       ```scala
+
+=       for its own parse error, which must be in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       for its own parse error, which must be in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       for its own parse error, which must be in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+-       t"<doc><a/></doc>".load[Xml]()
++       t"<doc><a/></doc>".load[Xml]()
+
+=       t"<doc><a/></doc>".load[Xml]()
+-       ```
++       ```
+
+=       ```
+-   refer turbulence.Loadable
++   refer turbulence.Loadable
+
+=   refer turbulence.Loadable
+-   refer turbulence.Document
++   refer turbulence.Document
+
+- entry .delineate   splits text or bytes into lines under the `LineSeparation` in scope
++ entry .delineate   разбивает текст или байты на строки согласно `LineSeparation` в области видимости
+
+= entry .delineate   splits text or bytes into lines under the `LineSeparation` in scope
+-   detail
++   detail
+
+-       Four overloads, one implementation. On a `(Stream[Text] over Credit)^` it attaches the
+-       `LineSeparation.lines` duct and yields a `(Stream[Array[Text]^{}] over Credit)^` — a
+-       record stream with one `Text` per line, without its terminator — to drain with
+-       `records`, `memoize`, or compose onward. On a `(Stream[Data] over Credit)^` it needs a
+-       `Charset` too: under an ASCII-transparent encoding (UTF-8, ASCII, Latin-1) the
+-       separators are found in the raw bytes and each line is decoded whole, in one fused call;
+-       under any other encoding the stream is decoded first and the characters split. On a
+-       whole `Text` or `Data` it drives the same duct over the value as a single window and
+-       returns an `Array[Text]^{}` directly. Every form needs a `LineSeparation` (imported by
+-       name from `lineSeparation`) and a `Buffering`.
++       Четыре перегрузки, одна реализация. На `(Stream[Text] over Credit)^` она присоединяет
++       дакт `LineSeparation.lines` и даёт `(Stream[Array[Text]^{}] over Credit)^` — поток
++       записей с одним `Text` на строку, без её терминатора, — который вычерпывается через
++       `records`, `memoize` или компонуется дальше. На `(Stream[Data] over Credit)^` ей нужен
++       ещё и `Charset`: в ASCII-прозрачной кодировке (UTF-8, ASCII, Latin-1) разделители
++       находятся в сырых байтах, и каждая строка декодируется целиком одним слитным вызовом; в
++       любой другой кодировке поток данных сначала декодируется, а затем разбиваются символы.
++       На целом `Text` или `Data` она прогоняет тот же дакт над значением как над единственным
++       окном и возвращает `Array[Text]^{}` напрямую. Каждой форме нужны `LineSeparation`
++       (импортируемая по имени из `lineSeparation`) и `Buffering`.
+
+=       name from `lineSeparation`) and a `Buffering`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A byte stream
++         label Байтовый поток данных
+
+=         label A byte stream
+-         code
++         code
+
+=         label A byte stream
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A byte stream
+=         code
+=             import soundness.*
+-             import charsets.utf8Charset
++             import charsets.utf8Charset
+
+=         label A byte stream
+=         code
+=             import soundness.*
+=             import charsets.utf8Charset
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label A byte stream
+=         code
+=             import soundness.*
+=             import charsets.utf8Charset
+=             import strategies.throwUnsafely
+-             import lineSeparation.adaptiveLinefeedLineSeparation
++             import lineSeparation.adaptiveLinefeedLineSeparation
+
+=         label A byte stream
+=         code
+=             import soundness.*
+=             import charsets.utf8Charset
+=             import strategies.throwUnsafely
+=             import lineSeparation.adaptiveLinefeedLineSeparation
+=
+-             val bytes: Data = t"first\nsecond\r\nthird".read[Data]
++             val bytes: Data = t"first\nsecond\r\nthird".read[Data]
+
+-             bytes.source[Data]
++             bytes.source[Data]
+
+=             bytes.source[Data]
+-       frame
++       frame
+
+-         label Split into lines, as a record stream
++         label Разбит на строки, как поток записей
+
+=         label Split into lines, as a record stream
+-         code
++         code
+
+=         label Split into lines, as a record stream
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Split into lines, as a record stream
+=         code
+=             import soundness.*
+-             import charsets.utf8Charset
++             import charsets.utf8Charset
+
+=         label Split into lines, as a record stream
+=         code
+=             import soundness.*
+=             import charsets.utf8Charset
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Split into lines, as a record stream
+=         code
+=             import soundness.*
+=             import charsets.utf8Charset
+=             import strategies.throwUnsafely
+-             import lineSeparation.adaptiveLinefeedLineSeparation
++             import lineSeparation.adaptiveLinefeedLineSeparation
+
+=         label Split into lines, as a record stream
+=         code
+=             import soundness.*
+=             import charsets.utf8Charset
+=             import strategies.throwUnsafely
+=             import lineSeparation.adaptiveLinefeedLineSeparation
+=
+-             val bytes: Data = t"first\nsecond\r\nthird".read[Data]
++             val bytes: Data = t"first\nsecond\r\nthird".read[Data]
+
+-             bytes.source[Data].delineate
++             bytes.source[Data].delineate
+
+=             bytes.source[Data].delineate
+-       frame
++       frame
+
+-         label Drained as records
++         label Вычерпан как записи
+
+=         label Drained as records
+-         code
++         code
+
+=         label Drained as records
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Drained as records
+=         code
+=             import soundness.*
+-             import charsets.utf8Charset
++             import charsets.utf8Charset
+
+=         label Drained as records
+=         code
+=             import soundness.*
+=             import charsets.utf8Charset
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Drained as records
+=         code
+=             import soundness.*
+=             import charsets.utf8Charset
+=             import strategies.throwUnsafely
+-             import lineSeparation.adaptiveLinefeedLineSeparation
++             import lineSeparation.adaptiveLinefeedLineSeparation
+
+=         label Drained as records
+=         code
+=             import soundness.*
+=             import charsets.utf8Charset
+=             import strategies.throwUnsafely
+=             import lineSeparation.adaptiveLinefeedLineSeparation
+=
+-             val bytes: Data = t"first\nsecond\r\nthird".read[Data]
++             val bytes: Data = t"first\nsecond\r\nthird".read[Data]
+
+-             bytes.source[Data].delineate.records.to[List]   // List(t"first", t"second", t"third")
++             bytes.source[Data].delineate.records.to[List]   // List(t"first", t"second", t"third")
+
+=             bytes.source[Data].delineate.records.to[List]   // List(t"first", t"second", t"third")
+-       frame
++       frame
+
+-         label Or written out, one line per record
++         label Или записан, по одной строке на запись
+
+=         label Or written out, one line per record
+-         code
++         code
+
+=         label Or written out, one line per record
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Or written out, one line per record
+=         code
+=             import soundness.*
+-             import charsets.utf8Charset
++             import charsets.utf8Charset
+
+-             import codepages.utf8Codepage
++             import codepages.utf8Codepage
+
+=             import codepages.utf8Codepage
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=             import codepages.utf8Codepage
+=             import strategies.throwUnsafely
+-             import lineSeparation.adaptiveLinefeedLineSeparation
++             import lineSeparation.adaptiveLinefeedLineSeparation
+
+=             import codepages.utf8Codepage
+=             import strategies.throwUnsafely
+=             import lineSeparation.adaptiveLinefeedLineSeparation
+=
+-             val bytes: Data = t"first\nsecond\r\nthird".read[Data]
++             val bytes: Data = t"first\nsecond\r\nthird".read[Data]
+
+-             val output = java.io.ByteArrayOutputStream()
++             val output = java.io.ByteArrayOutputStream()
+
+-             bytes.source[Data].delineate.records.map(_ + t"\n").to[Chain].writeTo(output)
++             bytes.source[Data].delineate.records.map(_ + t"\n").to[Chain].writeTo(output)
+
+=             bytes.source[Data].delineate.records.map(_ + t"\n").to[Chain].writeTo(output)
+-       ##
++       ##
+
+=             bytes.source[Data].delineate.records.map(_ + t"\n").to[Chain].writeTo(output)
+=       ##
+-       ```
++       ```
+
+-       A line spanning many windows is reassembled, a final line with no terminator is
+-       delivered, and an empty input yields no lines. The name is `delineate` rather than
+-       `lines` because gossamer's value-level `lines` would shadow a same-named extension under
+-       the umbrella.
++       Строка, охватывающая много окон, собирается заново, последняя строка без терминатора
++       доставляется, а пустой ввод не даёт строк. Имя — `delineate`, а не `lines`, потому что
++       `lines` уровня значений из gossamer затенил бы одноимённое расширение в зонтичном
++       модуле.
+
+=       the umbrella.
+-   refer turbulence.LineSeparation
++   refer turbulence.LineSeparation
+
+=   refer turbulence.LineSeparation
+-   refer turbulence.lineSeparation
++   refer turbulence.lineSeparation
+
+- entry .inputStream   a byte stream as a `java.io.InputStream`, for handing to JDK APIs
+-     Two forms. On a `(Stream[Data] over Credit)^` (needing a `Buffering`), the result pulls
+-     through the window one block of credit at a time and never materialises a chunk;
+-     `close` closes the endpoint, and so does reaching its end. On a `Chain[Data]`, the
+-     result walks the chain's chunks; its `close` does nothing. Both are the bridge to a Java
+-     library which insists on an `InputStream`.
++ entry .inputStream   байтовый поток данных в виде `java.io.InputStream` для передачи в API JDK
++     Две формы. На `(Stream[Data] over Credit)^` (которому нужен `Buffering`) результат
++     вытягивает данные через окно по одному блоку кредита за раз и никогда не материализует
++     чанк; `close` закрывает конечную точку, как и достижение её конца. На `Chain[Data]`
++     результат обходит чанки цепочки; его `close` ничего не делает. Обе формы — мост к
++     Java-библиотеке, которая настаивает на `InputStream`.
+
+=     library which insists on an `InputStream`.
+=
+-     ```scala
++     ```scala
+
+=     library which insists on an `InputStream`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     import soundness.*
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     val input: java.io.InputStream = t"hello".source[Data].inputStream
++     val input: java.io.InputStream = t"hello".source[Data].inputStream
+
+-     input.read()   // 104
++     input.read()   // 104
+
+=     input.read()   // 104
+-     ```
++     ```
+
+- entry .httpBody   a byte stream as an `HttpStreams.Body`, the HTTP-body interchange protocol
+-     An extension on a `(Stream[Data] over Credit)^` (consumed): each `next(limit)` of the
+-     body refills the stream with `limit` credit and materialises the region delivered, and
+-     returns `null` once the stream ends. The inverse of the `stream` extension on a body.
+-     Not exported to the umbrella: reach it as `turbulence.httpBody`.
++ entry .httpBody   байтовый поток данных в виде `HttpStreams.Body`, протокола обмена HTTP-телами
++     Расширение для `(Stream[Data] over Credit)^` (поглощаемого): каждый `next(limit)` тела
++     пополняет поток данных кредитом `limit` и материализует доставленный регион, а после
++     окончания потока данных возвращает `null`. Обратное к расширению `stream` на теле. Не
++     экспортируется в зонтичный модуль: обращайтесь к нему как к `turbulence.httpBody`.
+
+- entry .stream   an `HttpStreams.Body` as a pull endpoint, one chunk per block-sized request
+-     An extension on `HttpStreams.Body`, needing a `Buffering`: each refill asks the body for
+-     at most `buffering.capacity(Substrate.Bytes)` bytes (or the credit granted, if smaller)
+-     and exposes the chunk as the window; a `null` from the body ends the stream. It is what
+-     `Streamable.httpBody` uses, and it is not exported to the umbrella, where zephyrine's
+-     `stream` constructor owns the name: reach it as `turbulence.stream`.
++ entry .stream   `HttpStreams.Body` в виде конечной точки pull, по одному чанку на запрос размером с блок
++     Расширение для `HttpStreams.Body`, которому нужен `Buffering`: каждое пополнение
++     запрашивает у тела не более `buffering.capacity(Substrate.Bytes)` байтов (или
++     предоставленный кредит, если он меньше) и открывает чанк как окно; `null` от тела
++     завершает поток данных. Его использует `Streamable.httpBody`, и оно не экспортируется в
++     зонтичный модуль, где это имя занимает конструктор `stream` из zephyrine: обращайтесь к
++     нему как к `turbulence.stream`.
+
+- entry .more   the rest of a chain inside a `flow` block
++ entry .more   остаток цепочки внутри блока `flow`
+
+= entry .more   the rest of a chain inside a `flow` block
+-   detail
++   detail
+
+-       `more` is the contextual `Chain` labelled `"more"` which `flow` binds beside `next`: the
+-       tail still to be consumed. It is an inline accessor which resolves the labelled value,
+-       so inside `stream.flow(end)(... more ...)` it reads as a plain name.
++       `more` — это контекстная `Chain` с меткой `"more"`, которую `flow` связывает рядом с
++       `next`: хвост, который ещё предстоит обработать. Это встраиваемый аксессор, который
++       находит значение с меткой, поэтому внутри `stream.flow(end)(... more ...)` он читается
++       как обычное имя.
+
+-   refer turbulence.flow
++   refer turbulence.flow
+
+- entry .flow   a one-step case split over a chain: a termination value, or a block over `next` and `more`
++ entry .flow   разбор цепочки на два случая за один шаг: значение завершения или блок над `next` и `more`
+
+= entry .flow   a one-step case split over a chain: a termination value, or a block over `next` and `more`
+-   detail
++   detail
+
+-       `chain.flow(termination)(proceed)` evaluates `proceed` with `next` (the head) and `more`
+-       (the tail) bound as contextual values if the chain is non-empty, and `termination`
+-       otherwise. It is the pattern `case next #:: more => … case _ => …` as a combinator,
+-       which `condense`, `drop` and `take` are written with. Under capture checking the
+-       labelled bindings may need `next.asInstanceOf[element]` in some positions.
++       `chain.flow(termination)(proceed)` вычисляет `proceed`, связав `next` (голову) и `more`
++       (хвост) как контекстные значения, если цепочка непуста, и `termination` в противном
++       случае. Это образец `case next #:: more => … case _ => …` в виде комбинатора, с помощью
++       которого написаны `condense`, `drop` и `take`. При проверке захвата связанным по метке
++       значениям в некоторых позициях может понадобиться `next.asInstanceOf[element]`.
+
+=       labelled bindings may need `next.asInstanceOf[element]` in some positions.
+=
+-       ```scala
++       ```scala
+
+=       labelled bindings may need `next.asInstanceOf[element]` in some positions.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def head(chain: Chain[Int]): Optional[Int] = chain.flow(Unset)(next)
++       def head(chain: Chain[Int]): Optional[Int] = chain.flow(Unset)(next)
+
+=       def head(chain: Chain[Int]): Optional[Int] = chain.flow(Unset)(next)
+-       ```
++       ```
+
+-   refer turbulence.more
++   refer turbulence.more
+
+- entry .condense   collapses each run of consecutive equal elements of a chain to one, lazily
+-     `Chain(1, 1, 2, 2, 2, 1).condense` is `Chain(1, 2, 1)`: only adjacent duplicates are
+-     merged, which is distinct from `deduplicate`, the whole-collection distinct-by-key. The
+-     chain stays lazy.
++ entry .condense   лениво сворачивает каждую серию подряд идущих равных элементов цепочки в один
++     `Chain(1, 1, 2, 2, 2, 1).condense` — это `Chain(1, 2, 1)`: объединяются только соседние
++     дубликаты, что отличается от `deduplicate`, удаляющего повторы по ключу во всей
++     коллекции. Цепочка остаётся ленивой.
+
+- entry .strict   forces a lazy chain to its end and returns it
+-     Evaluates every element of the chain (by taking its size) and returns the same chain,
+-     now fully memoized, so that whatever side effects its production had have happened.
++ entry .strict   вычисляет ленивую цепочку до конца и возвращает её
++     Вычисляет каждый элемент цепочки (запрашивая её размер) и возвращает ту же цепочку, теперь
++     полностью мемоизированную, так что все побочные эффекты её построения уже произошли.
+
+- entry .drop   drops a number of bytes from the front of a `Chain[Data]`
+-     `chain.drop(bytes)` takes a `Bytes` count rather than a chunk count: whole chunks within
+-     the count are skipped and the chunk which straddles the boundary is cut, so the result is
+-     the same bytes re-chunked at the boundary. Lazy.
++ entry .drop   отбрасывает некоторое число байтов из начала `Chain[Data]`
++     `chain.drop(bytes)` принимает количество `Bytes`, а не количество чанков: целые чанки в
++     пределах этого количества пропускаются, а чанк, пересекающий границу, разрезается, так что
++     результат — те же байты, заново разбитые на чанки по границе. Лениво.
+
+- entry .take   keeps a number of bytes from the front of a `Chain[Data]`
+-     `chain.take(bytes)` takes a `Bytes` count: chunks within the count are kept whole and
+-     the one which straddles the boundary is cut, so the result holds exactly `bytes` bytes
+-     (or fewer if the chain is shorter). Lazy.
++ entry .take   оставляет некоторое число байтов из начала `Chain[Data]`
++     `chain.take(bytes)` принимает количество `Bytes`: чанки в пределах этого количества
++     сохраняются целыми, а тот, что пересекает границу, разрезается, так что результат содержит
++     ровно `bytes` байтов (или меньше, если цепочка короче). Лениво.
+
+- entry .shred   re-chunks a `Chain[Data]` into buffers whose sizes are drawn afresh for each
+-     `chain.shred(chunkSize)` evaluates the by-name `chunkSize` once per output chunk (at
+-     least 1), so a caller hands in a constant to re-block a stream uniformly, or samples a
+-     distribution to produce every fragmentation a parser must survive:
++ entry .shred   заново разбивает `Chain[Data]` на буферы, размер каждого из которых выбирается заново
++     `chain.shred(chunkSize)` вычисляет передаваемый по имени `chunkSize` один раз на каждый
++     выходной чанк (не менее 1), так что вызывающий код передаёт константу, чтобы равномерно
++     переразбить поток данных, или берёт выборку из распределения, чтобы получить любую
++     фрагментацию, которую должен выдержать парсер:
+
+=     distribution to produce every fragmentation a parser must survive:
+=
+-     ```scala
++     ```scala
+
+=     distribution to produce every fragmentation a parser must survive:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import randomization.seededRandomization
++     import randomization.seededRandomization
+
+-     given Seed = Seed(1L)
++     given Seed = Seed(1L)
+
+-     val data: Chain[Data] = Chain(Data.fill(1000)(_.toByte))
++     val data: Chain[Data] = Chain(Data.fill(1000)(_.toByte))
+
+-     stochastic:
++     stochastic:
+
+-       given Distribution = Gamma.approximate(20.0, 10.0)
++       given Distribution = Gamma.approximate(20.0, 10.0)
+
+-       data.shred(arbitrary[Double]().toInt).map(_.length).total   // 1000
++       data.shred(arbitrary[Double]().toInt).map(_.length).total   // 1000
+
+=       data.shred(arbitrary[Double]().toInt).map(_.length).total   // 1000
+-     ```
++     ```
+
+-     The bytes are copied into fresh buffers, so the output never aliases the input's chunks.
++     Байты копируются в свежие буферы, поэтому выход никогда не разделяет память с чанками
++     входа.
+
+- entry .Relay   a bus from any number of producer threads to one reader of records
++ entry .Relay   шина от любого числа потоков выполнения-производителей к одному читателю записей
+
+= entry .Relay   a bus from any number of producer threads to one reader of records
+-   detail
++   detail
+
+-       A `Relay[record]` is the push-side bridge for record-granularity traffic — events,
+-       notifications, messages: producers `#put` records as they arise, one of them
+-       eventually calls `#stop`, and a single reader drains them through `#stream`, `#chain`
+-       or `#batches`. Producers never block, by contract rather than oversight: a relay is the
+-       bus which fans many writers into one drain (HTTP/2's outbound frame multiplexer relies
+-       on it, as does the logging spool), where a blocking `put` would risk deadlock between
+-       streams, so its queue is unbounded and its discipline is its single consumer. A bounded
+-       hand-off for byte or character traffic between two threads is zephyrine's `Conduit`.
++       `Relay[record]` — мост на стороне push для трафика с гранулярностью записей — событий,
++       уведомлений, сообщений: производители добавляют записи через `#put` по мере их
++       появления, один из них в итоге вызывает `#stop`, а единственный читатель вычерпывает их
++       через `#stream`, `#chain` или `#batches`. Производители никогда не блокируются — по
++       соглашению, а не по недосмотру: ретранслятор — это шина, сводящая многих писателей в
++       один сток (на него опираются мультиплексор исходящих кадров HTTP/2 и спул
++       журналирования), где блокирующий `put` грозил бы взаимной блокировкой между стримами,
++       поэтому его очередь не ограничена, а дисциплину обеспечивает единственный потребитель.
++       Ограниченная передача байтового или символьного трафика между двумя потоками выполнения
++       — это `Conduit` из zephyrine.
+
+=       hand-off for byte or character traffic between two threads is zephyrine's `Conduit`.
+=
+-       ```scala
++       ```scala
+
+=       hand-off for byte or character traffic between two threads is zephyrine's `Conduit`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       val relay = Relay[Text]()
++       val relay = Relay[Text]()
+
+-       relay.put(t"one")
++       relay.put(t"one")
+
+-       relay.put(t"two")
++       relay.put(t"two")
+
+=       relay.put(t"two")
+-       relay.stop()
++       relay.stop()
+
+-       relay.stream.records.to[List]   // List(t"one", t"two")
++       relay.stream.records.to[List]   // List(t"one", t"two")
+
+=       relay.stream.records.to[List]   // List(t"one", t"two")
+-       ```
++       ```
+
+-       The reader blocks for the first record and then takes whatever else has already
+-       arrived into the same window, so records batch across the thread boundary instead of
+-       costing one hand-off each. Records put after `stop` are never delivered. Order is
+-       preserved per producer.
++       Читатель блокируется до первой записи, а затем забирает в то же окно всё, что уже
++       успело прийти, так что записи пересекают границу потоков выполнения пакетами, а не
++       ценой отдельной передачи на каждую. Записи, добавленные после `stop`, никогда не
++       доставляются. Порядок сохраняется для каждого производителя.
+
+-   refer zephyrine.Conduit
++   refer zephyrine.Conduit
+
+=   refer zephyrine.Conduit
+-   refer turbulence.Confluence
++   refer turbulence.Confluence
+
+-   entry #put   adds a record; never blocks
+-   entry #stop   ends the relay: the reader sees the end once every record put before it is drained
+-   entry #stream   the pull endpoint over the records, as a record stream: single-owner, created once
+-       `(Stream[Array[record]^{}] over Credit)^`, needing the record array's `Addressable` (the
+-       generic boxed instance serves any reference type) and a `Buffering`. A refill blocks
+-       for a first record and then drains every record already queued into the same window,
+-       up to its capacity; a stop found mid-drain still delivers the batch and the next
+-       refill ends the stream. Drain it with `records`.
+-   entry #chain   the records as a lazy `Chain`, one cons cell per record
+-       Needs no `Addressable`, so it works for any record type including an abstract one, at
+-       the cost of a cell per record: the form for low-rate delivery such as logging or a
+-       message bus. Lazy and single-owner, as `#stream` is.
+-   entry #batches   the records coalesced into batches by a quiet period
+-       `relay.batches(quiet)` takes any duration abstractable to milliseconds (a `Long` with
+-       `abstractables.millisecondsAbstractable`, or an aviation duration) and returns a lazy
+-       `Chain[List[record]]`. The reader blocks for a first record; every further arrival
+-       restarts a timer of `quiet`; when it expires with nothing new, the records gathered so
+-       far are one batch, oldest first, and the reader blocks again. This is the "changed, and
+-       then nothing for a while" shape a rebuild or a rehash wants. A stop found mid-burst
+-       still delivers the partial batch, and a zero `quiet` degrades to draining whatever has
+-       already arrived.
++   entry #put   добавляет запись; никогда не блокируется
++   entry #stop   завершает ретранслятор: читатель видит конец, как только вычерпаны все записи, добавленные до него
++   entry #stream   конечная точка pull над записями в виде потока записей: с единственным владельцем, создаётся один раз
++       `(Stream[Array[record]^{}] over Credit)^`; требует `Addressable` для массива записей
++       (обобщённый экземпляр с упаковкой подходит для любого ссылочного типа) и `Buffering`.
++       Пополнение блокируется до первой записи, а затем вычерпывает в то же окно все уже
++       стоящие в очереди записи, вплоть до его ёмкости; остановка, обнаруженная посреди
++       вычерпывания, всё равно доставляет пакет, а следующее пополнение завершает поток данных.
++       Вычерпайте его через `records`.
++   entry #chain   записи в виде ленивой `Chain`, по одной cons-ячейке на запись
++       Не требует `Addressable`, поэтому работает для любого типа записей, включая абстрактный,
++       ценой одной ячейки на запись: форма для доставки с низкой частотой, такой как
++       журналирование или шина сообщений. Ленива и имеет единственного владельца, как и
++       `#stream`.
++   entry #batches   записи, объединённые в пакеты по периоду тишины
++       `relay.batches(quiet)` принимает любую длительность, абстрагируемую до миллисекунд
++       (`Long` с `abstractables.millisecondsAbstractable` или длительность aviation), и
++       возвращает ленивую `Chain[List[record]]`. Читатель блокируется до первой записи; каждое
++       следующее поступление перезапускает таймер на `quiet`; когда он истекает, а нового
++       ничего нет, собранные к этому моменту записи образуют один пакет, от старых к новым, и
++       читатель снова блокируется. Это та форма «изменилось, а потом какое-то время ничего»,
++       которая нужна пересборке или перехешированию. Остановка, обнаруженная посреди всплеска,
++       всё равно доставляет неполный пакет, а нулевой `quiet` сводится к вычерпыванию того, что
++       уже пришло.
+
+=       already arrived.
+=
+-       ```scala
++       ```scala
+
+=       already arrived.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import abstractables.millisecondsAbstractable
++       import abstractables.millisecondsAbstractable
+
+=       import abstractables.millisecondsAbstractable
+=
+-       val relay = Relay[Text]()
++       val relay = Relay[Text]()
+
+-       relay.put(t"a")
++       relay.put(t"a")
+
+-       relay.put(t"b")
++       relay.put(t"b")
+
+=       relay.put(t"b")
+-       relay.stop()
++       relay.stop()
+
+-       relay.batches(50L).to[List]   // List(List(t"a", t"b"))
++       relay.batches(50L).to[List]   // List(List(t"a", t"b"))
+
+=       relay.batches(50L).to[List]   // List(List(t"a", t"b"))
+-       ```
++       ```
+
+- entry .StreamOutputStream   a `java.io.OutputStream` whose writes become a lazy `Chain[Data]`
++ entry .StreamOutputStream   `java.io.OutputStream`, записи в который становятся ленивой `Chain[Data]`
+
+= entry .StreamOutputStream   a `java.io.OutputStream` whose writes become a lazy `Chain[Data]`
+-   detail
++   detail
+
+-       For a Java API which can only write to an `OutputStream`: hand it a
+-       `StreamOutputStream`, and read what it wrote from `#stream`, a `Chain[Data]` fed through
+-       a `Relay`. Single-byte writes are buffered and released as a chunk on `flush`; an array
+-       write is copied — the JDK lets a caller reuse its array once `write` returns, and the
+-       chunk is read later — and relayed as one chunk; `close` flushes and ends the chain. A
+-       reader of `stream` on another thread blocks until the next chunk or the close.
++       Для Java API, который умеет писать только в `OutputStream`: передайте ему
++       `StreamOutputStream` и читайте то, что он записал, из `#stream` — `Chain[Data]`,
++       питаемой через `Relay`. Однобайтовые записи буферизуются и выпускаются одним чанком при
++       `flush`; запись массива копируется — JDK позволяет вызывающему коду повторно
++       использовать свой массив, как только `write` вернёт управление, а чанк читается позже, —
++       и передаётся одним чанком; `close` сбрасывает буфер и завершает цепочку. Читатель
++       `stream` в другом потоке выполнения блокируется до следующего чанка или закрытия.
+
+=       reader of `stream` on another thread blocks until the next chunk or the close.
+=
+-       ```scala
++       ```scala
+
+=       reader of `stream` on another thread blocks until the next chunk or the close.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       reader of `stream` on another thread blocks until the next chunk or the close.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val out = StreamOutputStream()
++       val out = StreamOutputStream()
+
+-       out.write(scala.Array[Byte](1, 2, 3))
++       out.write(scala.Array[Byte](1, 2, 3))
+
+-       out.close()
++       out.close()
+
+-       out.stream.read[Data].to[List]   // List(1, 2, 3)
++       out.stream.read[Data].to[List]   // List(1, 2, 3)
+
+=       out.stream.read[Data].to[List]   // List(1, 2, 3)
+-       ```
++       ```
+
+=       ```
+-   refer turbulence.Relay
++   refer turbulence.Relay
+
+-   entry #stream   the bytes written so far and still to come, as a lazy `Chain[Data]`
+-   entry #write   writes one byte (buffered until `flush`), or an array, copied and relayed as a chunk
++   entry #stream   байты, записанные до сих пор и ещё предстоящие, в виде ленивой `Chain[Data]`
++   entry #write   записывает один байт (буферизуемый до `flush`) или массив, копируемый и передаваемый одним чанком
+
+- entry .Truncation   `zephyrine.Truncation`, re-exported: the error a stream raises when it is cut short
++ entry .Truncation   `zephyrine.Truncation`, реэкспортированный: ошибка, которую порождает поток данных, когда он обрывается
+
+= entry .Truncation   `zephyrine.Truncation`, re-exported: the error a stream raises when it is cut short
+-   detail
++   detail
+
+-       `Truncation.Error(total)` is error `↯/s.60.1`, _the stream was cut prematurely after `total`_,
+-       where `total` is the `Bytes` delivered before the cut. A `Spring`'s pull and the
+-       `Streamable` givens for JDK sources abort with it through a `Tactic`; the `Writable` and
+-       `Sink` givens for JDK targets `raise` it through an `Emit`, since a writer only reports a
+-       cut and never aborts. The type lives in zephyrine, beside `Stream` and `Spring`; this
+-       export keeps `import turbulence.*` sufficient for modules which name it.
++       `Truncation.Error(total)` — это ошибка `↯/s.60.1`, _the stream was cut prematurely after `total`_,
++       где `total` — количество `Bytes`, доставленных до обрыва. Извлечение данных из `Spring`
++       и given `Streamable` для источников JDK прерываются с ней через `Tactic`; given
++       `Writable` и `Sink` для целей JDK порождают её (`raise`) через `Emit`, поскольку записывающий
++       только сообщает об обрыве и никогда не прерывается. Тип находится в zephyrine, рядом со
++       `Stream` и `Spring`; этот экспорт позволяет модулям, которые его называют, обходиться
++       `import turbulence.*`.
+
+=       export keeps `import turbulence.*` sufficient for modules which name it.
+-   refer zephyrine.Truncation
++   refer zephyrine.Truncation
+
+- entry .Stdio   the standard streams as a value: `out`, `err`, `in` and the terminal's capabilities
++ entry .Stdio   стандартные потоки данных в виде значения: `out`, `err`, `in` и возможности терминала
+
+= entry .Stdio   the standard streams as a value: `out`, `err`, `in` and the terminal's capabilities
+-   detail
++   detail
+
+-       A `Stdio` holds the three standard streams as JDK `PrintStream`s and an `InputStream`,
+-       together with the `Termcap` describing what the terminal at the other end can render.
+-       It is a contextual value rather than a global: `Out`, `Err` and `In` write and read
+-       through the `Stdio` in scope, so a daemon serving several clients, a test capturing
+-       output, or a process launched with a pipe each get the streams that belong to them.
+-       One is chosen by name from the `stdios` package (`javaLangSystemStdio` for the JVM's
+-       own streams, `fileDescriptorStdio` for the process's descriptors, `muteStdio` for
+-       none, `wasiStdio` on WASI), built with `.apply`, or provided by a `Stdio.Provider`
+-       such as a CLI invocation, which `.provided` turns into a `Stdio` wherever the
+-       invocation is ambient.
++       `Stdio` содержит три стандартных потока данных — два `PrintStream` и `InputStream` из
++       JDK — вместе с `Termcap`, описывающим, что умеет отображать терминал на другом конце.
++       Это контекстное значение, а не глобальное: `Out`, `Err` и `In` пишут и читают через
++       `Stdio` в области видимости, так что демон, обслуживающий нескольких клиентов, тест,
++       перехватывающий вывод, или процесс, запущенный с каналом, — каждый получает
++       принадлежащие ему потоки данных. Значение выбирается по имени из пакета `stdios`
++       (`javaLangSystemStdio` для собственных потоков данных JVM, `fileDescriptorStdio` для
++       дескрипторов процесса, `muteStdio` для отсутствия потоков, `wasiStdio` на WASI),
++       строится через `.apply` или предоставляется `Stdio.Provider`, например вызовом CLI,
++       который `.provided` превращает в `Stdio` везде, где этот вызов является окружающим.
+
+=       invocation is ambient.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       invocation is ambient.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       invocation is ambient.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       invocation is ambient.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       invocation is ambient.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import stdios.javaLangSystemStdio
++       import stdios.javaLangSystemStdio
+
+=       invocation is ambient.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import stdios.javaLangSystemStdio
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+-       Out.println(t"started")
++       Out.println(t"started")
+
+=       Out.println(t"started")
+-       Err.println(t"a warning")
++       Err.println(t"a warning")
+
+-       summon[Stdio].platform   // true
++       summon[Stdio].platform   // true
+
+=       summon[Stdio].platform   // true
+-       ```
++       ```
+
+-       A `Stdio` is a plain value, not a capability trait: it is mixed into exclusive types
+-       such as an `Invocation` as an interface, and one built from the JVM's thread-safe
+-       streams captures nothing. One which retains a terminal or a flow says so as
+-       `Stdio^{…}`.
++       `Stdio` — обычное значение, а не трейт возможности: он примешивается к исключительным
++       типам, таким как `Invocation`, в качестве интерфейса, а значение, построенное из
++       потокобезопасных потоков данных JVM, ничего не захватывает. Значение, удерживающее
++       терминал или поток, сообщает об этом как `Stdio^{…}`.
+
+-       Code which cannot be changed — a Java library printing to `System.out` — is redirected
+-       with `.divert`, which is a diversion of the calling *thread* and the tasks spawned
+-       under it, not of the JVM, so a host may divert around several guests at once without
+-       their output crossing; `.capture` is the same with the output collected as text.
++       Код, который нельзя изменить, — Java-библиотека, печатающая в `System.out`, —
++       перенаправляется через `.divert`, который отводит вывод вызывающего *потока выполнения*
++       и задач, порождённых под ним, а не всей JVM, так что хост может отводить вывод сразу
++       нескольких гостей, не смешивая его; `.capture` делает то же самое, собирая вывод в виде
++       текста.
+
+=       their output crossing; `.capture` is the same with the output collected as text.
+-   refer turbulence.Out
++   refer turbulence.Out
+
+=   refer turbulence.Out
+-   refer turbulence.Err
++   refer turbulence.Err
+
+-   refer turbulence.In
++   refer turbulence.In
+
+-   refer turbulence.stdios
++   refer turbulence.stdios
+
+-   entry .Provider   something which carries a canonical `Stdio`: a CLI invocation
++   entry .Provider   то, что несёт канонический `Stdio`: вызов CLI
+
+=   entry .Provider   something which carries a canonical `Stdio`: a CLI invocation
+-     detail
++     detail
+
+-         A trait with one member, `#stdio`. The `Stdio.provided` given makes a pure `Stdio`
+-         summonable wherever a `Provider^` is in scope, which is how `Out.println` inside a
+-         CLI's `execute` block finds the invocation's streams without naming them.
+-     entry #stdio   the provider's standard streams
+-   entry .provided   the `Stdio` of whatever `Stdio.Provider` is in scope
+-       A conditional given in the companion of the searched type, so it needs no import: a
+-       `Provider^` (a tracked capability such as an invocation) in scope yields its `stdio`,
+-       a pure value.
+-   entry .apply   builds a `Stdio` from JDK streams and a `Termcap`, muting any that is `null`
+-       `Stdio(out, err, in, termcap)`: a `null` output goes to `.MutePrintStream` and a
+-       `null` input to `.MuteInputStream`, which reports end of input.
+-   entry .MuteOutputStream   an `OutputStream` which discards every write
+-   entry .MutePrintStream   a `PrintStream` over `.MuteOutputStream`: what a `null` `out` or `err` becomes
+-   entry .MuteInputStream   an `InputStream` at end of input: `read()` is `-1` and nothing is available
+-   entry .Capture   what a block printed through the JVM's streams while they were captured, beside its result
++         Трейт с одним членом, `#stdio`. Given `Stdio.provided` позволяет призвать чистый
++         `Stdio` везде, где в области видимости есть `Provider^`; так `Out.println` внутри
++         блока `execute` CLI находит потоки данных вызова, не называя их.
++     entry #stdio   стандартные потоки данных провайдера
++   entry .provided   `Stdio` того `Stdio.Provider`, который находится в области видимости
++       Условный given в компаньоне искомого типа, поэтому он не требует импорта: `Provider^`
++       (отслеживаемая возможность, например вызов) в области видимости даёт свой `stdio` —
++       чистое значение.
++   entry .apply   строит `Stdio` из потоков данных JDK и `Termcap`, заглушая те, что равны `null`
++       `Stdio(out, err, in, termcap)`: выход, равный `null`, направляется в
++       `.MutePrintStream`, а вход, равный `null`, — в `.MuteInputStream`, который сообщает о
++       конце ввода.
++   entry .MuteOutputStream   `OutputStream`, отбрасывающий каждую запись
++   entry .MutePrintStream   `PrintStream` над `.MuteOutputStream`: то, чем становится `out` или `err`, равный `null`
++   entry .MuteInputStream   `InputStream` в конце ввода: `read()` равно `-1`, и ничего не доступно
++   entry .Capture   то, что блок напечатал через потоки данных JVM, пока они перехватывались, рядом с его результатом
+
+=   entry .Capture   what a block printed through the JVM's streams while they were captured, beside its result
+-     detail
++     detail
+
+-         `Stdio.capture` returns `Capture(result, out, err)`: the block's value, and what
+-         reached `System.out` and `System.err` meanwhile, decoded as UTF-8, the encoding the
+-         capturing streams wrote.
+-     entry #result   the block's value
+-     entry #out   what was written to standard output, as text
+-     entry #err   what was written to standard error, as text
+-   entry .diverted   the `Stdio` this thread's `System` writes are diverted to, or `Unset`
+-       What a task carries to the thread it runs on. `Unset` on a thread with no diversion
+-       in force.
+-   entry .divert   runs a block with this thread's `System.out` and `System.err` redirected to a `Stdio`
+-       `Stdio.divert(stdio)(block)` is a diversion of the calling thread, not of the JVM. The
+-       first call installs one dispatcher on each of `System.out` and `System.err`, kept for
+-       the life of the JVM (so `System.out` is a different object after it), through which
+-       every write reaches the stream the writing thread is diverted to, or the original
+-       where it is not. A thread started under a diversion inherits it, and a parasite task
+-       runs under the diversion of the thread that spawned it, so a diversion follows the
+-       structure of the concurrency, not the accident of which thread a task lands on. On the
+-       way out the guest's streams are flushed and the previous diversion restored, in a
+-       `finally`. Scala's own `println` is thread-local already; this covers Java prints and
+-       anything else which writes to the `System` streams. Nothing reaches a diversion
+-       through `stdios.fileDescriptorStdio`, which names the process's descriptors directly.
++         `Stdio.capture` возвращает `Capture(result, out, err)`: значение блока и то, что
++         тем временем попало в `System.out` и `System.err`, декодированное как UTF-8 —
++         кодировка, в которой писали перехватывающие потоки данных.
++     entry #result   значение блока
++     entry #out   то, что было записано в стандартный вывод, в виде текста
++     entry #err   то, что было записано в стандартный поток ошибок, в виде текста
++   entry .diverted   `Stdio`, в который отводятся записи `System` этого потока выполнения, или `Unset`
++       То, что задача переносит в поток выполнения, на котором она работает. `Unset` в потоке
++       выполнения, где отвод не действует.
++   entry .divert   выполняет блок, перенаправив `System.out` и `System.err` этого потока выполнения в `Stdio`
++       `Stdio.divert(stdio)(block)` отводит вывод вызывающего потока выполнения, а не всей
++       JVM. Первый вызов устанавливает по одному диспетчеру на `System.out` и на `System.err`,
++       сохраняемому на всё время жизни JVM (так что после этого `System.out` — другой
++       объект), через который каждая запись попадает в поток данных, куда отведён пишущий поток
++       выполнения, или в исходный, если отвода нет. Поток выполнения, запущенный под отводом,
++       наследует его, а задача parasite выполняется под отводом того потока выполнения,
++       который её породил, так что отвод следует структуре конкурентности, а не случайности
++       того, на каком потоке выполнения окажется задача. При выходе потоки данных гостя
++       сбрасываются, а предыдущий отвод восстанавливается в `finally`. Собственный `println`
++       Scala уже локален для потока выполнения; это покрывает печать из Java и всё остальное,
++       что пишет в потоки данных `System`. Через `stdios.fileDescriptorStdio`, который
++       напрямую называет дескрипторы процесса, в отвод ничего не попадает.
+
+=       through `stdios.fileDescriptorStdio`, which names the process's descriptors directly.
+=
+-       ```scala
++       ```scala
+
+=       through `stdios.fileDescriptorStdio`, which names the process's descriptors directly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+-       val buffer = java.io.ByteArrayOutputStream()
++       val buffer = java.io.ByteArrayOutputStream()
+
+-       val guest = Stdio(java.io.PrintStream(buffer, true, "UTF-8"), null, null, basicTermcap)
++       val guest = Stdio(java.io.PrintStream(buffer, true, "UTF-8"), null, null, basicTermcap)
+
+-       Stdio.divert(guest):
++       Stdio.divert(guest):
+
+-         java.lang.System.out.nn.print("routed")
++         java.lang.System.out.nn.print("routed")
+
+-       buffer.toString("UTF-8").nn.tt   // t"routed"
++       buffer.toString("UTF-8").nn.tt   // t"routed"
+
+=       buffer.toString("UTF-8").nn.tt   // t"routed"
+-       ```
++       ```
+
+-   entry .capture   runs a block with its `System.out` and `System.err` output collected as text
+-       `Stdio.capture(block)` is `.divert` into a pair of in-memory UTF-8 streams, returning a
+-       `Capture` of the block's result and the two texts. Output through `Out` under
+-       `stdios.javaLangSystemStdio` is captured too, since that `Stdio` wraps the JVM's
+-       streams; two concurrent captures on different tasks keep their output apart.
++   entry .capture   выполняет блок, собирая его вывод в `System.out` и `System.err` в виде текста
++       `Stdio.capture(block)` — это `.divert` в пару потоков данных UTF-8 в памяти,
++       возвращающий `Capture` с результатом блока и двумя текстами. Вывод через `Out` при
++       `stdios.javaLangSystemStdio` тоже перехватывается, поскольку этот `Stdio` оборачивает
++       потоки данных JVM; два одновременных перехвата в разных задачах держат свой вывод
++       раздельно.
+
+=       streams; two concurrent captures on different tasks keep their output apart.
+=
+-       ```scala
++       ```scala
+
+=       streams; two concurrent captures on different tasks keep their output apart.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Stdio.capture:
++       Stdio.capture:
+
+-         java.lang.System.out.nn.print("shown")
++         java.lang.System.out.nn.print("shown")
+
+-         7
++         7
+
+-       // Stdio.Capture(7, t"shown", t"")
++       // Stdio.Capture(7, t"shown", t"")
+
+=       // Stdio.Capture(7, t"shown", t"")
+-       ```
++       ```
+
+-   entry #termcap   what the terminal at the other end can render
+-   entry #out   standard output, as a `PrintStream`
+-   entry #err   standard error, as a `PrintStream`
+-   entry #in   standard input, as an `InputStream`
+-   entry #ready   whether a character can be read from `in` without blocking
+-       Consults the shared character reader over `in`, so characters already buffered inside
+-       its decoder count, which an `available()` check on the raw stream would miss.
+-   entry #readChar   reads one character from the shared reader, or `-1` at end of input
+-       The companion to `#ready`, for character-at-a-time consumers such as a terminal. The
+-       reader is shared with the `read(array: Array[Char])` overload.
+-   entry #write   writes bytes to standard output
+-   entry #print   writes text to standard output, as `out.print`
+-   entry #writeErr   writes bytes to standard error
+-   entry #printErr   writes text to standard error
+-   entry #read   fills a byte array from `in`, or a char array from the shared reader, returning the count
+-   entry #platform   whether these are the JVM's own `System.out`, `System.in` and `System.err`
++   entry #termcap   что умеет отображать терминал на другом конце
++   entry #out   стандартный вывод в виде `PrintStream`
++   entry #err   стандартный поток ошибок в виде `PrintStream`
++   entry #in   стандартный ввод в виде `InputStream`
++   entry #ready   можно ли прочитать символ из `in` без блокировки
++       Обращается к общему символьному читающему над `in`, так что учитываются и символы, уже
++       буферизованные в его декодере, которые проверка `available()` на сыром потоке данных
++       пропустила бы.
++   entry #readChar   читает один символ из общего читающего или `-1` в конце ввода
++       Дополнение к `#ready` для потребителей, читающих по одному символу, таких как терминал.
++       Читающий общий с перегрузкой `read(array: Array[Char])`.
++   entry #write   записывает байты в стандартный вывод
++   entry #print   записывает текст в стандартный вывод, как `out.print`
++   entry #writeErr   записывает байты в стандартный поток ошибок
++   entry #printErr   записывает текст в стандартный поток ошибок
++   entry #read   заполняет массив байтов из `in` или массив символов из общего читающего, возвращая количество
++   entry #platform   являются ли это собственные `System.out`, `System.in` и `System.err` JVM
+
+- entry .Out   standard output, through the `Stdio` in scope
++ entry .Out   стандартный вывод через `Stdio` в области видимости
+
+= entry .Out   standard output, through the `Stdio` in scope
+-   detail
++   detail
+
+-       `Out.print` and `Out.println` render any `Printable` value — `Text`, a styled
+-       `Teletype`, anything with a `Printable` instance — under the `Stdio`'s `Termcap`, so
+-       colour and styling are emitted only where the terminal can show them, and write it to
+-       the `Stdio`'s `out`. The argument is a `Termcap ?=> textual`, so an expression which
+-       needs the termcap to render may be passed directly. `println` takes any number of
+-       lines and writes them under a lock, so lines from concurrent writers do not interleave.
++       `Out.print` и `Out.println` отображают любое значение `Printable` — `Text`,
++       стилизованный `Teletype`, что угодно с экземпляром `Printable` — с учётом `Termcap`
++       этого `Stdio`, так что цвет и стили выводятся только там, где терминал может их
++       показать, и записывают результат в `out` этого `Stdio`. Аргумент имеет тип
++       `Termcap ?=> textual`, поэтому выражение, которому для отображения нужен termcap, можно
++       передать напрямую. `println` принимает любое число строк и записывает их под
++       блокировкой, так что строки от одновременных писателей не перемешиваются.
+
+=       lines and writes them under a lock, so lines from concurrent writers do not interleave.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       lines and writes them under a lock, so lines from concurrent writers do not interleave.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       lines and writes them under a lock, so lines from concurrent writers do not interleave.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       lines and writes them under a lock, so lines from concurrent writers do not interleave.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       lines and writes them under a lock, so lines from concurrent writers do not interleave.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import stdios.javaLangSystemStdio
++       import stdios.javaLangSystemStdio
+
+=       lines and writes them under a lock, so lines from concurrent writers do not interleave.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import stdios.javaLangSystemStdio
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+-       Out.println(t"Hello world")
++       Out.println(t"Hello world")
+
+-       Out.print(t"no newline")
++       Out.print(t"no newline")
+
+-       Out.println()
++       Out.println()
+
+-       Out.write(t"raw\n".read[Data])
++       Out.write(t"raw\n".read[Data])
+
+=       Out.write(t"raw\n".read[Data])
+-       ```
++       ```
+
+-       In a daemon or a CLI the `Stdio` is the client's, so this is the only output which
+-       reaches the user; Scala's `println` writes to the daemon process's own `System.out`.
++       В демоне или CLI `Stdio` принадлежит клиенту, так что это единственный вывод, который
++       доходит до пользователя; `println` из Scala пишет в собственный `System.out` процесса
++       демона.
+
+=       reaches the user; Scala's `println` writes to the daemon process's own `System.out`.
+-   refer turbulence.Stdio
++   refer turbulence.Stdio
+
+=   refer turbulence.Stdio
+-   refer turbulence.Err
++   refer turbulence.Err
+
+-   entry .write   writes bytes to standard output
+-   entry .print   renders a `Printable` value under the terminal's `Termcap` and writes it, with no newline
+-   entry .println   writes each line, rendered, with a newline after each; with no argument, a newline alone
+-       The multi-line form needs a plain `Stdio` (not a capturing one) and holds a mutex for
+-       the whole call.
++   entry .write   записывает байты в стандартный вывод
++   entry .print   отображает значение `Printable` с учётом `Termcap` терминала и записывает его без перевода строки
++   entry .println   записывает каждую строку, отображённую, с переводом строки после каждой; без аргумента — только перевод строки
++       Многострочной форме нужен обычный `Stdio` (не захватывающий), и она удерживает мьютекс
++       на всё время вызова.
+
+- entry .Err   standard error, through the `Stdio` in scope
++ entry .Err   стандартный поток ошибок через `Stdio` в области видимости
+
+= entry .Err   standard error, through the `Stdio` in scope
+-   detail
++   detail
+
+-       The twin of `Out` over the `Stdio`'s `err` stream: `Err.print` and `Err.println`
+-       render a `Printable` value under the terminal's `Termcap` and write it, and
+-       `Err.write` writes bytes. `println` with several lines writes them under a lock.
++       Двойник `Out` над потоком данных `err` этого `Stdio`: `Err.print` и `Err.println`
++       отображают значение `Printable` с учётом `Termcap` терминала и записывают его, а
++       `Err.write` записывает байты. `println` с несколькими строками записывает их под
++       блокировкой.
+
+=       `Err.write` writes bytes. `println` with several lines writes them under a lock.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `Err.write` writes bytes. `println` with several lines writes them under a lock.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `Err.write` writes bytes. `println` with several lines writes them under a lock.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `Err.write` writes bytes. `println` with several lines writes them under a lock.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       `Err.write` writes bytes. `println` with several lines writes them under a lock.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import stdios.javaLangSystemStdio
++       import stdios.javaLangSystemStdio
+
+=       `Err.write` writes bytes. `println` with several lines writes them under a lock.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import stdios.javaLangSystemStdio
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+=
+-       Err.println(t"a warning")
++       Err.println(t"a warning")
+
+=       Err.println(t"a warning")
+-       ```
++       ```
+
+=       Err.println(t"a warning")
+=       ```
+-   refer turbulence.Stdio
++   refer turbulence.Stdio
+
+=   refer turbulence.Stdio
+-   refer turbulence.Out
++   refer turbulence.Out
+
+-   entry .write   writes bytes to standard error
+-   entry .print   renders a `Printable` value under the terminal's `Termcap` and writes it to standard error
+-   entry .println   writes each line to standard error with a newline after each; with no argument, a newline alone
++   entry .write   записывает байты в стандартный поток ошибок
++   entry .print   отображает значение `Printable` с учётом `Termcap` терминала и записывает его в стандартный поток ошибок
++   entry .println   записывает каждую строку в стандартный поток ошибок с переводом строки после каждой; без аргумента — только перевод строки
+
+- entry .In   standard input, through the `Stdio` in scope
++ entry .In   стандартный ввод через `Stdio` в области видимости
+
+= entry .In   standard input, through the `Stdio` in scope
+-   detail
++   detail
+
+-       `In.read(array)` fills a byte array from the `Stdio`'s `in` and returns the count read
+-       (or `-1` at end of input), and `In.close()` closes it. Character-level reading goes
+-       through `Stdio#readChar` and `Stdio#ready`; a whole line through a reader over
++       `In.read(array)` заполняет массив байтов из `in` этого `Stdio` и возвращает количество
++       прочитанного (или `-1` в конце ввода), а `In.close()` закрывает его. Посимвольное чтение
++       идёт через `Stdio#readChar` и `Stdio#ready`; чтение целой строки — через читающий над
+
+-       `summon[Stdio].in`.
++       `summon[Stdio].in`.
+
+=       `summon[Stdio].in`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `summon[Stdio].in`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `summon[Stdio].in`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `summon[Stdio].in`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       `summon[Stdio].in`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import stdios.javaLangSystemStdio
++       import stdios.javaLangSystemStdio
+
+=       `summon[Stdio].in`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import stdios.javaLangSystemStdio
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+-       val buffer = new scala.Array[Byte](1024)
++       val buffer = new scala.Array[Byte](1024)
+
+-       val count = In.read(buffer)
++       val count = In.read(buffer)
+
+=       val count = In.read(buffer)
+-       ```
++       ```
+
+=       val count = In.read(buffer)
+=       ```
+-   refer turbulence.Stdio
++   refer turbulence.Stdio
+
+-   entry .read   fills a byte array from standard input, returning the count or `-1` at the end
+-   entry .close   closes standard input
++   entry .read   заполняет массив байтов из стандартного ввода, возвращая количество или `-1` в конце
++   entry .close   закрывает стандартный ввод
+
+- entry .stdios   the standard-stream configurations, each a given to import by name
++ entry .stdios   конфигурации стандартных потоков данных, каждая — given для импорта по имени
+
+= entry .stdios   the standard-stream configurations, each a given to import by name
+-   detail
++   detail
+
+-       Which streams `Out`, `Err` and `In` use is decided by the `Stdio` given in scope, and
+-       the choice is never implicit: `import soundness.*` brings none of these in, and one is
+-       imported by name. All but `muteStdio` need a `Termcap` in scope too, chosen from
+-       `termcapDefinitions`.
++       Какие потоки данных используют `Out`, `Err` и `In`, определяется given `Stdio` в
++       области видимости, и этот выбор никогда не бывает неявным: `import soundness.*` не
++       приносит ни одного из них, и нужный импортируется по имени. Всем, кроме `muteStdio`,
++       также нужен `Termcap` в области видимости, выбираемый из `termcapDefinitions`.
+
+=       `termcapDefinitions`.
+=
+-       ```scala
++       ```scala
+
+=       `termcapDefinitions`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       ```scala
+=       import soundness.*
+-       import stdios.javaLangSystemStdio
++       import stdios.javaLangSystemStdio
+
+=       ```scala
+=       import soundness.*
+=       import stdios.javaLangSystemStdio
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+=       import stdios.javaLangSystemStdio
+=       import termcapDefinitions.basicTermcap
+-       ```
++       ```
+
+-       A CLI or daemon invocation provides its own `Stdio` through `Stdio.Provider`, so an
+-       `execute` block imports none of these.
++       Вызов CLI или демона предоставляет собственный `Stdio` через `Stdio.Provider`, так что
++       блок `execute` не импортирует ни одного из них.
+
+=       `execute` block imports none of these.
+-   refer turbulence.Stdio
++   refer turbulence.Stdio
+
+-   entry .muteStdio   a `Stdio` which discards all output and is at end of input, with the basic `Termcap`
+-       For a test, or a program which must not print: `out` and `err` are `Stdio.MutePrintStream`
+-       and `in` is `Stdio.MuteInputStream`. Needs no `Termcap`.
+-   entry .javaLangSystemStdio   the JVM's `System.out`, `System.err` and `System.in`, with the `Termcap` in scope
+-       Output written through it is subject to `Stdio.divert` and `Stdio.capture`, since
+-       those redirect the JVM's streams.
+-   entry .fileDescriptorStdio   the process's own file descriptors 0, 1 and 2, with the `Termcap` in scope
+-       Fresh `PrintStream`s and a `FileInputStream` over `FileDescriptor.out`, `err` and `in`:
+-       the streams as the operating system handed them to the process, bypassing anything a
+-       JVM or a host has installed in `System.out`. Nothing written through it reaches a
++   entry .muteStdio   `Stdio`, который отбрасывает весь вывод и находится в конце ввода, с базовым `Termcap`
++       Для теста или программы, которая не должна ничего печатать: `out` и `err` — это
++       `Stdio.MutePrintStream`, а `in` — `Stdio.MuteInputStream`. Не требует `Termcap`.
++   entry .javaLangSystemStdio   `System.out`, `System.err` и `System.in` JVM с `Termcap` из области видимости
++       Вывод, записанный через него, подчиняется `Stdio.divert` и `Stdio.capture`, поскольку
++       они перенаправляют потоки данных JVM.
++   entry .fileDescriptorStdio   собственные файловые дескрипторы процесса 0, 1 и 2 с `Termcap` из области видимости
++       Свежие `PrintStream` и `FileInputStream` над `FileDescriptor.out`, `err` и `in`: потоки
++       данных в том виде, в каком их передала процессу операционная система, в обход всего,
++       что JVM или хост установили в `System.out`. Ничто, записанное через него, не попадает в
+
+-       `Stdio.divert`.
++       `Stdio.divert`.
+
+-   entry .wasiStdio   a `Stdio` over the WASI CLI stream resources, for a Wasm component
+-       In `turbulence.wasi`, with the `Termcap` in scope. Each write obtains the `stdout` or
+-       `stderr` stream handle, calls its `blocking-write-and-flush`, and disposes of the
+-       handle; a read obtains `stdin` and calls `blocking-read`, blocking until a byte is
+-       available, with a closed stream read as end of input. `print` and `printErr` send
+-       the text's UTF-8 bytes directly rather than through the `PrintStream`s. The given is
+-       `inline`, so the WASI imports materialise at the site which summons it, which must
+-       also see `wasiApis.wasiCliApi`; summon it once, in the component's entry point.
++   entry .wasiStdio   `Stdio` над ресурсами потоков данных WASI CLI, для Wasm-компонента
++       В `turbulence.wasi`, с `Termcap` из области видимости. Каждая запись получает дескриптор
++       потока данных `stdout` или `stderr`, вызывает его `blocking-write-and-flush` и
++       освобождает дескриптор; чтение получает `stdin` и вызывает `blocking-read`, блокируясь,
++       пока не станет доступен байт, причём закрытый поток данных читается как конец ввода.
++       `print` и `printErr` отправляют UTF-8-байты текста напрямую, а не через `PrintStream`.
++       Given помечен `inline`, так что импорты WASI материализуются в месте, где он
++       призывается, и там также должен быть виден `wasiApis.wasiCliApi`; призывайте его один
++       раз, в точке входа компонента.
+
+- entry .Confluence   merges several pull endpoints into one, in arrival order
++ entry .Confluence   сводит несколько конечных точек pull в одну в порядке поступления
+
+= entry .Confluence   merges several pull endpoints into one, in arrival order
+-   detail
++   detail
+
+-       `Confluence(sources*)` is fan-in. A pull architecture has no `select` over blocked
+-       refills, so the merge is the honest cost of multiplexing: one pump task per input,
+-       each pulling transfer-sized credits into a shared bounded queue — a full queue parks
+-       the pumps, so slow consumption backpressures every input uniformly — and a reader
+-       endpoint which parks while the queue is empty. The merged stream ends when every input
+-       has ended; an input's failure is rethrown from the reader's next refill. In
+-       `turbulence.async`: it needs the medium's `Addressable`, a `Buffering`, and a parasite
+-       `Monitor` and `Probate`, so it runs inside `supervise`. The pumps are children of the
+-       enclosing scope, and cancelling it releases pumps parked on a merge nobody is reading.
++       `Confluence(sources*)` — это сведение потоков. В архитектуре pull нет `select` над
++       заблокированными пополнениями, поэтому слияние — честная цена мультиплексирования: по
++       одной задаче-насосу на каждый вход, каждая из которых вытягивает кредиты размером с
++       передачу в общую ограниченную очередь, — полная очередь паркует насосы, так что
++       медленное потребление равномерно создаёт противодавление на каждый вход, — и
++       конечная точка читателя, которая паркуется, пока очередь пуста. Слитый поток данных
++       заканчивается, когда закончились все входы; сбой входа повторно выбрасывается из
++       следующего пополнения читателя. В `turbulence.async`: требует `Addressable` для типа
++       данных, `Buffering`, а также `Monitor` и `Probate` из parasite, поэтому выполняется
++       внутри `supervise`. Насосы являются дочерними задачами окружающей области видимости, и
++       её отмена освобождает насосы, припаркованные на слиянии, которое никто не читает.
+
+=       enclosing scope, and cancelling it releases pumps parked on a merge nobody is reading.
+=
+-       ```scala
++       ```scala
+
+=       enclosing scope, and cancelling it releases pumps parked on a merge nobody is reading.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       enclosing scope, and cancelling it releases pumps parked on a merge nobody is reading.
+=
+=       ```scala
+=       import soundness.*
+-       import threads.platformThreads
++       import threads.platformThreads
+
+=       enclosing scope, and cancelling it releases pumps parked on a merge nobody is reading.
+=
+=       ```scala
+=       import soundness.*
+=       import threads.platformThreads
+-       import probates.cancelProbate
++       import probates.cancelProbate
+
+=       enclosing scope, and cancelling it releases pumps parked on a merge nobody is reading.
+=
+=       ```scala
+=       import soundness.*
+=       import threads.platformThreads
+=       import probates.cancelProbate
+=
+-       supervise:
++       supervise:
+
+-         Confluence(Stream(t"one"), Stream(t"two"), Stream(t"three")).memoize
++         Confluence(Stream(t"one"), Stream(t"two"), Stream(t"three")).memoize
+
+=         Confluence(Stream(t"one"), Stream(t"two"), Stream(t"three")).memoize
+-       ```
++       ```
+
+-       A region-stable source (a fixed in-memory buffer) is shared by reference; a transient
+-       one is snapshotted block by block before its window is reused, in blocks of
+-       `buffering.transfer(substrate)`.
++       Источник, стабильный в пределах региона (фиксированный буфер в памяти), разделяется по
++       ссылке; временный источник поблочно копируется в снимок, прежде чем его окно будет
++       использовано повторно, блоками по `buffering.transfer(substrate)`.
+
+-   refer turbulence.Divergence
++   refer turbulence.Divergence
+
+=   refer turbulence.Divergence
+-   refer turbulence.convey
++   refer turbulence.convey
+
+=   refer turbulence.convey
+-   refer turbulence.Relay
++   refer turbulence.Relay
+
+-   entry .apply   the merged stream of any number of `(Stream[medium] over Credit)^` sources
++   entry .apply   слитый поток данных из любого числа источников `(Stream[medium] over Credit)^`
+
+- entry .Divergence   delivers one pull endpoint to several subscribers, each chunk shared
++ entry .Divergence   доставляет одну конечную точку pull нескольким подписчикам, разделяя каждый чанк
+
+= entry .Divergence   delivers one pull endpoint to several subscribers, each chunk shared
+-   detail
++   detail
+
+-       `Divergence(source, count)` is fan-out: one pump task pulls the source and delivers
+-       every chunk to each of `count` subscriber endpoints through a bounded ring per
+-       subscriber. Chunks are materialised once and shared read-only between subscribers; a
+-       full ring parks the pump, so the slowest subscriber gates the source, which is the
+-       right backpressure for replication. A subscriber which closes its stream closes its
+-       ring, releasing the pump and discarding later deliveries, so an abandoned slow
+-       subscriber cannot wedge the rest. A source failure is rethrown from each subscriber's
+-       next refill. In `turbulence.async`: needs the medium's `Addressable`, a `Buffering`,
+-       and a parasite `Monitor` and `Probate`, so it runs inside `supervise`; the source is
+-       consumed.
++       `Divergence(source, count)` — это веерное распределение: одна задача-насос вытягивает
++       источник и доставляет каждый чанк каждой из `count` конечных точек подписчиков через
++       ограниченное кольцо для каждого подписчика. Чанки материализуются один раз и
++       разделяются между подписчиками только для чтения; полное кольцо паркует насос, так что
++       самый медленный подписчик сдерживает источник, что и есть правильное противодавление
++       для репликации. Подписчик, закрывающий свой поток данных, закрывает своё кольцо,
++       освобождая насос и отбрасывая последующие доставки, так что брошенный медленный
++       подписчик не может заклинить остальных. Сбой источника повторно выбрасывается из
++       следующего пополнения каждого подписчика. В `turbulence.async`: требует `Addressable`
++       для типа данных, `Buffering`, а также `Monitor` и `Probate` из parasite, поэтому
++       выполняется внутри `supervise`; источник потребляется.
+
+=       consumed.
+=
+-       ```scala
++       ```scala
+
+=       consumed.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       consumed.
+=
+=       ```scala
+=       import soundness.*
+-       import threads.platformThreads
++       import threads.platformThreads
+
+=       consumed.
+=
+=       ```scala
+=       import soundness.*
+=       import threads.platformThreads
+-       import probates.cancelProbate
++       import probates.cancelProbate
+
+=       consumed.
+=
+=       ```scala
+=       import soundness.*
+=       import threads.platformThreads
+=       import probates.cancelProbate
+=
+-       supervise:
++       supervise:
+
+-         val subscribers = Divergence(Stream(t"shared"), 2)
++         val subscribers = Divergence(Stream(t"shared"), 2)
+
+-         subscribers(0).memoize
++         subscribers(0).memoize
+
+=         subscribers(0).memoize
+-       ```
++       ```
+
+-       The result is an `IndexedSeq` of `count` streams, each an exclusive endpoint drained
+-       by one consumer; read them on separate tasks or one after another.
++       Результат — `IndexedSeq` из `count` потоков данных, каждый из которых — исключительная
++       конечная точка, вычерпываемая одним потребителем; читайте их в отдельных задачах или
++       один за другим.
+
+=       by one consumer; read them on separate tasks or one after another.
+-   refer turbulence.Confluence
++   refer turbulence.Confluence
+
+-   entry .apply   `count` subscriber streams over one consumed source
++   entry .apply   `count` потоков данных подписчиков над одним потребляемым источником
+
+- entry .convey   pumps a stream into an intake on its own task
++ entry .convey   перекачивает поток данных в приёмный конец в собственной задаче
+
+= entry .convey   pumps a stream into an intake on its own task
+-   detail
++   detail
+
+-       An extension in `turbulence.async` on a consumed `(Stream[medium] over transport)^`:
+-       `stream.convey(intake)` is `stream.pump(intake)` run on a parasite task, returning the
+-       `Task[Unit]`, for fire-and-forget transfers and for pipelines with an asynchronous
+-       boundary, where this is the one pumping thread. Both endpoints move onto the task; the
+-       caller keeps neither. Needs a `Monitor` and a `Probate`, so it runs inside `supervise`,
+-       and cancelling the scope releases a pump blocked on an empty conduit.
++       Расширение в `turbulence.async` для потребляемого `(Stream[medium] over transport)^`:
++       `stream.convey(intake)` — это `stream.pump(intake)`, выполняемый в задаче parasite и
++       возвращающий `Task[Unit]`, — для передач fire-and-forget и для конвейеров с
++       асинхронной границей, где это единственный перекачивающий поток выполнения. Обе
++       конечные точки переходят в задачу; вызывающий код не сохраняет ни одной. Требует
++       `Monitor` и `Probate`, поэтому выполняется внутри `supervise`, а отмена области
++       видимости освобождает насос, заблокированный на пустом conduit.
+
+=       and cancelling the scope releases a pump blocked on an empty conduit.
+=
+-       ```scala
++       ```scala
+
+=       and cancelling the scope releases a pump blocked on an empty conduit.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       and cancelling the scope releases a pump blocked on an empty conduit.
+=
+=       ```scala
+=       import soundness.*
+-       import threads.platformThreads
++       import threads.platformThreads
+
+=       and cancelling the scope releases a pump blocked on an empty conduit.
+=
+=       ```scala
+=       import soundness.*
+=       import threads.platformThreads
+-       import probates.cancelProbate
++       import probates.cancelProbate
+
+=       import probates.cancelProbate
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import strategies.throwUnsafely
+=
+-       supervise:
++       supervise:
+
+-         val output = java.io.ByteArrayOutputStream()
++         val output = java.io.ByteArrayOutputStream()
+
+-         val sink = summon[(java.io.ByteArrayOutputStream is Sink by Data over Credit)^]
++         val sink = summon[(java.io.ByteArrayOutputStream is Sink by Data over Credit)^]
+
+-         t"hello".read[Data].source[Data].convey(sink.intake(output)).await()
++         t"hello".read[Data].source[Data].convey(sink.intake(output)).await()
+
+=         t"hello".read[Data].source[Data].convey(sink.intake(output)).await()
+-       ```
++       ```
+
+=       ```
+-   refer turbulence.Sink
++   refer turbulence.Sink
+
+=   refer turbulence.Sink
+-   refer turbulence.Confluence
++   refer turbulence.Confluence
+
+- entry .WasiCliApi   the WIT interface of the WASI CLI world, as a type: `Interface in Wit at "/turbulence/cli.wit"`
++ entry .WasiCliApi   WIT-интерфейс мира WASI CLI в виде типа: `Interface in Wit at "/turbulence/cli.wit"`
+
+= entry .WasiCliApi   the WIT interface of the WASI CLI world, as a type: `Interface in Wit at "/turbulence/cli.wit"`
+-   detail
++   detail
+
+-       In `turbulence.wasi`. The type the `stdios.wasiStdio` navigation is typechecked
+-       against, and which the `call` materialiser consults for the `get-stdout`, `get-stderr`
+-       and `get-stdin` imports and the stream resources' methods. Its value is
+-       `wasiApis.wasiCliApi`.
++       В `turbulence.wasi`. Тип, относительно которого проверяется навигация
++       `stdios.wasiStdio` и к которому обращается материализатор `call` для импортов
++       `get-stdout`, `get-stderr` и `get-stdin` и методов ресурсов потоков данных. Его
++       значение — `wasiApis.wasiCliApi`.
+
+-   refer turbulence.wasiApis
++   refer turbulence.wasiApis
+
+- entry .wasiApis   the WASI interface definitions turbulence links against, each a given to import by name
++ entry .wasiApis   определения интерфейсов WASI, с которыми компонуется turbulence, каждое — given для импорта по имени
+
+= entry .wasiApis   the WASI interface definitions turbulence links against, each a given to import by name
+-   detail
++   detail
+
+-       In `turbulence.wasi`. A Wasm component which summons `stdios.wasiStdio` must have
+-       `wasiCliApi` visible at that site, since the stream calls expand there.
++       В `turbulence.wasi`. В месте, где Wasm-компонент призывает `stdios.wasiStdio`, должен
++       быть виден `wasiCliApi`, поскольку вызовы потоков данных разворачиваются там.
+
+=       `wasiCliApi` visible at that site, since the stream calls expand there.
+=
+-       ```scala
++       ```scala
+
+=       `wasiCliApi` visible at that site, since the stream calls expand there.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import wasiApis.wasiCliApi
++       import wasiApis.wasiCliApi
+
+-       import stdios.wasiStdio
++       import stdios.wasiStdio
+
+=       import stdios.wasiStdio
+-       import termcapDefinitions.basicTermcap
++       import termcapDefinitions.basicTermcap
+
+=       import stdios.wasiStdio
+=       import termcapDefinitions.basicTermcap
+-       ```
++       ```
+
+-   entry .wasiCliApi   the `WasiCliApi` interface, loaded from the `/turbulence/cli.wit` classpath resource
+-       `Interface[Wit](cp"/turbulence/cli.wit")`: the resource is checked at compile time, and
+-       the WIT it holds defines the `stdout`, `stderr` and `stdin` imports with their
+-       `output-stream` and `input-stream` resources.
++   entry .wasiCliApi   интерфейс `WasiCliApi`, загружаемый из ресурса пути классов `/turbulence/cli.wit`
++       `Interface[Wit](cp"/turbulence/cli.wit")`: ресурс проверяется во время компиляции, а
++       WIT, который он содержит, определяет импорты `stdout`, `stderr` и `stdin` с их
++       ресурсами `output-stream` и `input-stream`.

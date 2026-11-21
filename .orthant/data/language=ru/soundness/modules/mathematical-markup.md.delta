@@ -1,0 +1,606 @@
+orthant 1 language
+
+- ## Mathematical Markup
++ ## Математическая разметка
+
+- ### About
++ ### Обзор
+
+- Mathematics on a web page is [MathML](https://www.w3.org/TR/MathML-Core/): a presentation tree
+- of rows, fractions, scripts and roots, which browsers render natively. That tree is modeled
+- here as typed values, read back from XML, and embedded in [HTML](html.md). Writing MathML by
+- hand is unbearable, so *Ergo* is provided too: a one-line shorthand which parses to the same
+- tree, and serializes back out of it.
++ Математика на веб-странице — это [MathML](https://www.w3.org/TR/MathML-Core/): презентационное
++ дерево из строк, дробей, индексов и корней, которое браузеры отображают нативно. Здесь это
++ дерево моделируется типизированными значениями, читается обратно из XML и встраивается в
++ [HTML](html.md). Писать MathML вручную невыносимо, поэтому предоставляется и *Ergo*:
++ однострочная сокращённая запись, которая разбирается в то же дерево и сериализуется обратно из
++ него.
+
+- ### On writing mathematics
++ ### О записи математики
+
+- An equation is a tree, and MathML says so honestly. But it says so in perhaps ten times the
+- characters of the equation itself. `x²` is `<msup><mi>x</mi><mn>2</mn></msup>`, and a quadratic
+- formula runs to several lines which no one can read as mathematics. The alternatives are worse
+- in a different way. TeX is compact and expressive, but needs a large renderer and produces
+- something the browser cannot introspect. An image loses the content entirely.
++ Уравнение — это дерево, и MathML честно так и говорит. Но говорит, пожалуй, в десять раз большим
++ числом символов, чем само уравнение. `x²` — это `<msup><mi>x</mi><mn>2</mn></msup>`, а формула
++ корней квадратного уравнения растягивается на несколько строк, которые никто не прочтёт как
++ математику. Альтернативы хуже по-другому. TeX компактен и выразителен, но требует большого
++ отрисовщика и даёт то, что браузер не может исследовать. Изображение полностью теряет
++ содержимое.
+
+- Ergo takes the middle path. It is a compact linear notation, with one glyph for each structural
+- role, which parses to MathML and serializes back. The source stays readable, the output is a
+- real document tree, and the round trip is exact. Markup built from typed values, and not from
+- strings, is [safety by construction](../../philosophy/safety-by-construction.md) for a notation
+- which is easy to get subtly wrong.
++ Ergo выбирает средний путь. Это компактная линейная нотация с одним глифом для каждой
++ структурной роли, которая разбирается в MathML и сериализуется обратно. Исходник остаётся
++ читаемым, результат — настоящее дерево документа, а круговой путь точен. Разметка, построенная
++ из типизированных значений, а не из строк, — это
++ [безопасность по построению](../../philosophy/safety-by-construction.md) для нотации, в которой
++ легко незаметно ошибиться.
+
+- Everything comes from the `soundness` package. The other imports choose a [strategy] for errors
+- and an [XML schema](xml.md) for reading, and let the samples print their results:
++ Всё берётся из пакета `soundness`. Остальные импорты выбирают [стратегию][стратегия] для ошибок
++ и [схему XML](xml.md) для чтения, а также позволяют примерам печатать свои результаты:
+
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import Mathml.*
++ import Mathml.*
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import xmlSchemas.freeformXmlSchema
++ import xmlSchemas.freeformXmlSchema
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### The MathML tree
++ ### Дерево MathML
+
+- The elements are values named after the tags, and `Math` is the root. These are the ones which
+- Ergo writes:
++ Элементы — это значения, названные по тегам, а `Math` — корень. Вот те из них, которые пишет
++ Ergo:
+
+= Ergo writes:
+=
+- ```tabular
++ ```tabular
+
+- column  Value
+- column  Element
+- column  Meaning
+- row  `Mi`  `<mi>`  identifier
+- row  `Mn`  `<mn>`  number
+- row  `Mo`  `<mo>`  operator
+- row  `Mrow`  `<mrow>`  group
+- row  `Mfrac`  `<mfrac>`  fraction
+- row  `Msqrt`  `<msqrt>`  square root
+- row  `Mroot`  `<mroot>`  nth root
+- row  `Msup`  `<msup>`  superscript
+- row  `Msub`  `<msub>`  subscript
+- row  `Msubsup`  `<msubsup>`  subscript and superscript
+- row  `Mover`  `<mover>`  overscript
+- row  `Munder`  `<munder>`  underscript
+- row  `Munderover`  `<munderover>`  underscript and overscript
+- row  `Mtable`, `Mtr`, `Mtd`  `<mtable>`, `<mtr>`, `<mtd>`  table, row, cell
++ column  Значение
++ column  Элемент
++ column  Смысл
++ row  `Mi`  `<mi>`  идентификатор
++ row  `Mn`  `<mn>`  число
++ row  `Mo`  `<mo>`  оператор
++ row  `Mrow`  `<mrow>`  группа
++ row  `Mfrac`  `<mfrac>`  дробь
++ row  `Msqrt`  `<msqrt>`  квадратный корень
++ row  `Mroot`  `<mroot>`  корень n-й степени
++ row  `Msup`  `<msup>`  верхний индекс
++ row  `Msub`  `<msub>`  нижний индекс
++ row  `Msubsup`  `<msubsup>`  нижний и верхний индексы
++ row  `Mover`  `<mover>`  надстрочный элемент
++ row  `Munder`  `<munder>`  подстрочный элемент
++ row  `Munderover`  `<munderover>`  подстрочный и надстрочный элементы
++ row  `Mtable`, `Mtr`, `Mtd`  `<mtable>`, `<mtr>`, `<mtd>`  таблица, строка, ячейка
+
+= row  `Mtable`, `Mtr`, `Mtd`  `<mtable>`, `<mtr>`, `<mtd>`  table, row, cell
+- ```
++ ```
+
+- The other elements, such as `Mtext`, `Mspace`, `Mstyle` and `Mpadded`, are modeled the same
+- way. `in[Xml]` renders a `Math`:
++ Остальные элементы, такие как `Mtext`, `Mspace`, `Mstyle` и `Mpadded`, моделируются так же.
++ `in[Xml]` отображает `Math`:
+
+= way. `in[Xml]` renders a `Math`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= way. `in[Xml]` renders a `Math`:
+=
+= ```scala fuel
+- run
++ run
+
+= way. `in[Xml]` renders a `Math`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Math(Msup(Mi(t"x"), Mn(t"2"))).in[Xml].show)
++ Out.println(Math(Msup(Mi(t"x"), Mn(t"2"))).in[Xml].show)
+
+= Out.println(Math(Msup(Mi(t"x"), Mn(t"2"))).in[Xml].show)
+- ```
++ ```
+
+- MathML text reads back with `read[Math]`, and a document round-trips unchanged. An attribute
+- which the model does not interpret is preserved, not dropped:
++ Текст MathML читается обратно через `read[Math]`, и документ проходит круговой путь без
++ изменений. Атрибут, который модель не интерпретирует, сохраняется, а не отбрасывается:
+
+= which the model does not interpret is preserved, not dropped:
+=
+- ```scala fuel
++ ```scala fuel
+
+= which the model does not interpret is preserved, not dropped:
+=
+= ```scala fuel
+- run
++ run
+
+= which the model does not interpret is preserved, not dropped:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val square = Math(Msup(Mi(t"x"), Mn(t"2")))
++ val square = Math(Msup(Mi(t"x"), Mn(t"2")))
+
+- Out.println((square.in[Xml].show.read[Math] == square).inspect)
++ Out.println((square.in[Xml].show.read[Math] == square).inspect)
+
+= Out.println((square.in[Xml].show.read[Math] == square).inspect)
+- ```
++ ```
+
+- A root element which is not `<math>` raises a `Mathml.Error`, which names what was found
+- instead:
++ Корневой элемент, не являющийся `<math>`, порождает `Mathml.Error`, которая называет то, что
++ было найдено вместо него:
+
+= instead:
+=
+- ```scala fuel
++ ```scala fuel
+
+= instead:
+=
+= ```scala fuel
+- run
++ run
+
+= instead:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= instead:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"<p>not mathematics</p>".read[Math]
++ t"<p>not mathematics</p>".read[Math]
+
+= t"<p>not mathematics</p>".read[Math]
+- ```
++ ```
+
+- `html` embeds an expression as a foreign element in an HTML tree, and `Mathml.Reader.read`
+- extracts it again.
++ `html` встраивает выражение как чужеродный элемент в дерево HTML, а `Mathml.Reader.read`
++ снова извлекает его.
+
+- A `Math` also has a `display`, which is block or inline. It decides whether the browser sets the
+- expression as a displayed equation, or within running text.
++ У `Math` есть также `display` — блочный или строчный. Он решает, оформит ли браузер выражение
++ как выключное уравнение или внутри текста.
+
+- ### Ergo
++ ### Ergo
+
+- An Ergo expression is delimited by a pair of brackets, and the **first character** chooses which
+- pair, `(`, `[`, `{` or `⟨`, acts as grouping throughout. Every *other* bracket is then a literal
+- operator. A grouped run is one `<mrow>`, and the operands of an operator are uniformly "an atom
+- or a grouped unit". This is the quadratic formula:
++ Выражение Ergo ограничено парой скобок, и **первый символ** выбирает, какая пара — `(`, `[`,
++ `{` или `⟨` — служит группировкой по всему выражению. Тогда каждая *другая* скобка — это
++ литеральный оператор. Сгруппированная последовательность — это один `<mrow>`, а операнды
++ оператора единообразно являются «атомом или сгруппированной единицей». Вот формула корней
++ квадратного уравнения:
+
+= or a grouped unit". This is the quadratic formula:
+=
+- ```scala fuel
++ ```scala fuel
+
+= or a grouped unit". This is the quadratic formula:
+=
+= ```scala fuel
+- run
++ run
+
+= or a grouped unit". This is the quadratic formula:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val quadratic = Ergo.parse(t"(x = (-b ± √(b↗2 - 4 a c))/(2 a))")
++ val quadratic = Ergo.parse(t"(x = (-b ± √(b↗2 - 4 a c))/(2 a))")
+
+- Out.println(quadratic.in[Xml].show)
++ Out.println(quadratic.in[Xml].show)
+
+= Out.println(quadratic.in[Xml].show)
+- ```
++ ```
+
+- Tokens follow three rules, and a space is a separator which renders as nothing:
++ Токены подчиняются трём правилам, а пробел — это разделитель, который не отображается:
+
+= Tokens follow three rules, and a space is a separator which renders as nothing:
+=
+- ```tabular
++ ```tabular
+
+- column  A run of
+- column  Becomes
+- column  Example
+- row  letters  one identifier, `<mi>`  `sin` is `<mi>sin</mi>`; `x y` means *x·y*
+- row  digits, with an interior `.` allowed  one number, `<mn>`  `3.14`
+- row  any other character  an operator, `<mo>`  `=`
++ column  Последовательность
++ column  Становится
++ column  Пример
++ row  букв  одним идентификатором, `<mi>`  `sin` — это `<mi>sin</mi>`; `x y` означает *x·y*
++ row  цифр, допускающая внутреннюю `.`  одним числом, `<mn>`  `3.14`
++ row  любого другого символа  оператором, `<mo>`  `=`
+
+= row  any other character  an operator, `<mo>`  `=`
+- ```
++ ```
+
+- ### Structural glyphs
++ ### Структурные глифы
+
+- Scripts and limits attach to the atom on their left, and a fraction binds more loosely than the
+- scripts. An index atom immediately before `√`, with no space, makes an nth root. The three table
+- introducers are each self-delimiting, and their body is one group whose children are the
+- elements.
++ Индексы и пределы присоединяются к атому слева от них, а дробь связывает слабее, чем индексы.
++ Атом-показатель непосредственно перед `√`, без пробела, даёт корень n-й степени. Каждый из трёх
++ вводящих таблицу глифов сам себя ограничивает, а его тело — это одна группа, дочерние узлы
++ которой являются элементами.
+
+= elements.
+=
+- ```tabular
++ ```tabular
+
+- column  Glyph
+- column  Role
+- column  Element
+- column  Example
+- row  `↗`  superscript  `<msup>`  `x↗2` is *x²*
+- row  `↘`  subscript  `<msub>`  `x↘i` is *xᵢ*
+- row  `↘` and `↗`  both, on one base  `<msubsup>`  `x↘i↗2` is *xᵢ²*
+- row  `↑`  overscript or upper limit  `<mover>`
+- row  `↓`  underscript or lower limit  `<munder>`
+- row  `↓` and `↑`  both, on one base  `<munderover>`  `∑↓(i = 1)↑n`
+- row  `/`  fraction  `<mfrac>`  `a/b`
+- row  `√`  square root  `<msqrt>`  `√x`
+- row  `√` after an index  nth root  `<mroot>`  `3√x` is *∛x*
+- row  `⋱`  matrix  `<mtable>`  `⋱(((1)(2))((3)(4)))` is a 2×2 matrix
+- row  `⋯`  row vector  a single-row `<mtable>`
+- row  `⋮`  column vector  a single-column `<mtable>`
++ column  Глиф
++ column  Роль
++ column  Элемент
++ column  Пример
++ row  `↗`  верхний индекс  `<msup>`  `x↗2` — это *x²*
++ row  `↘`  нижний индекс  `<msub>`  `x↘i` — это *xᵢ*
++ row  `↘` и `↗`  оба на одной базе  `<msubsup>`  `x↘i↗2` — это *xᵢ²*
++ row  `↑`  надстрочный элемент или верхний предел  `<mover>`
++ row  `↓`  подстрочный элемент или нижний предел  `<munder>`
++ row  `↓` и `↑`  оба на одной базе  `<munderover>`  `∑↓(i = 1)↑n`
++ row  `/`  дробь  `<mfrac>`  `a/b`
++ row  `√`  квадратный корень  `<msqrt>`  `√x`
++ row  `√` после показателя  корень n-й степени  `<mroot>`  `3√x` — это *∛x*
++ row  `⋱`  матрица  `<mtable>`  `⋱(((1)(2))((3)(4)))` — это матрица 2×2
++ row  `⋯`  вектор-строка  `<mtable>` из одной строки
++ row  `⋮`  вектор-столбец  `<mtable>` из одного столбца
+
+= row  `⋮`  column vector  a single-column `<mtable>`
+- ```
++ ```
+
+- Large operators need no special syntax. `∑` is an ordinary operator, and `∑↓(i = 1)↑n` gives it
+- limits below and above:
++ Большим операторам не нужен особый синтаксис. `∑` — обычный оператор, а `∑↓(i = 1)↑n` даёт ему
++ пределы снизу и сверху:
+
+= limits below and above:
+=
+- ```scala fuel
++ ```scala fuel
+
+= limits below and above:
+=
+= ```scala fuel
+- run
++ run
+
+= limits below and above:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Ergo.parse(t"(∑↓(i = 1)↑n i↗2)").in[Xml].show)
++ Out.println(Ergo.parse(t"(∑↓(i = 1)↑n i↗2)").in[Xml].show)
+
+= Out.println(Ergo.parse(t"(∑↓(i = 1)↑n i↗2)").in[Xml].show)
+- ```
++ ```
+
+- An operator glyph with a missing operand degrades to a literal operator, so `(↗)` writes a
+- literal ↗ rather than failing.
++ Глиф оператора, у которого отсутствует операнд, вырождается в литеральный оператор, поэтому
++ `(↗)` записывает литеральный ↗, а не завершается неудачей.
+
+- ### Attribute directives
++ ### Директивы атрибутов
+
+- Each MathML Core presentation attribute has one directive glyph. Directives are *postfix*, and
+- bind to the atom or bracketed group immediately to their left. Several simply juxtapose: `=◆⇿`
+- sets both `largeop` and `stretchy` on the `=`.
++ У каждого презентационного атрибута MathML Core есть один глиф-директива. Директивы
++ *постфиксные* и привязываются к атому или группе в скобках непосредственно слева от них.
++ Несколько директив просто ставятся рядом: `=◆⇿` устанавливает у `=` и `largeop`, и `stretchy`.
+
+- Enumerated and boolean attributes have one bare glyph for each value, and take no parameter. A
+- boolean is `⇿` for true and `↮` for false. Because they never take a group, `=◆(a)` is `=` with
+- `largeop="true"`, *times* `(a)`. Open-valued attributes, which are lengths, colors and integers,
+- take their value in the active grouping bracket, read verbatim. Under `(` grouping, `x●(red)`
+- sets `mathcolor="red"`.
++ У перечислимых и булевых атрибутов есть по одному голому глифу на каждое значение, и параметра
++ они не принимают. Булев атрибут — это `⇿` для истины и `↮` для лжи. Поскольку они никогда не
++ принимают группу, `=◆(a)` — это `=` с `largeop="true"`, *умноженное на* `(a)`. Атрибуты с
++ открытым множеством значений — длины, цвета и целые числа — принимают значение в активной
++ группирующей скобке, читаемое дословно. При группировке `(` запись `x●(red)` устанавливает
++ `mathcolor="red"`.
+
+- Grouping decides what a directive applies to. `(x↗2)●(red)` colors the whole superscript, while
+- `x↗2●(red)` colors only the `2`:
++ Группировка решает, к чему применяется директива. `(x↗2)●(red)` окрашивает весь верхний индекс,
++ а `x↗2●(red)` окрашивает только `2`:
+
+= `x↗2●(red)` colors only the `2`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `x↗2●(red)` colors only the `2`:
+=
+= ```scala fuel
+- run
++ run
+
+= `x↗2●(red)` colors only the `2`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Ergo.parse(t"((x↗2)●(red))").in[Xml].show)
++ Out.println(Ergo.parse(t"((x↗2)●(red))").in[Xml].show)
+
+- Out.println(Ergo.parse(t"(x↗2●(red))").in[Xml].show)
++ Out.println(Ergo.parse(t"(x↗2●(red))").in[Xml].show)
+
+= Out.println(Ergo.parse(t"(x↗2●(red))").in[Xml].show)
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Glyphs
+- column  Attribute
+- column  Meaning
+- row  `⧆` / `⧄`  `displaystyle`  display style, or inline/text style
+- row  `⌄[±n]`  `scriptlevel`  relative script size; `+n` shrinks
+- row  `◻` / `▭`  `display`  block or inline, on the root
+- row  `●[colour]`  `mathcolor`  foreground color
+- row  `▨[colour]`  `mathbackground`  background color
+- row  `⟑[length]`  `mathsize`  font size
+- row  `⦱`  `mathvariant`  upright, canceling automatic italicisation
+- row  `⊩` / `⫣`  `dir`  left-to-right or right-to-left
+- row  `⊰` / `⊹` / `⊱`  `form`  prefix, infix or postfix operator
+- row  `∥` / `∤`  `fence`  mark as a fence
+- row  `▮` / `▯`  `separator`  mark as a separator
+- row  `⇿` / `↮`  `stretchy`  allow stretching to surrounding content
+- row  `⋈` / `⋊`  `symmetric`  stretch symmetrically about the axis
+- row  `◆` / `◇`  `largeop`  treat as a large operator in display style
+- row  `⧳` / `⧯`  `movablelimits`  limits over/under in display, scripts inline
+- row  `⧔[length]` / `⧕[length]`  `lspace` / `rspace`  space either side of an operator
+- row  `⟰[length]` / `⟱[length]`  `maxsize` / `minsize`  stretch bounds
+- row  `↔[length]`  `width`  advance width of a box
+- row  `⍏[length]` / `⍖[length]`  `height` / `depth`  extent above and below the baseline
+- row  `↕[length]`  `voffset`  vertical shift of padded content
+- row  `═[length]`  `linethickness`  fraction bar thickness; `0` for none
+- row  `◠` / `⌢`  `accent`  treat an overscript as a tight accent
+- row  `◡` / `⌣`  `accentunder`  treat an underscript as a tight accent
+- row  `⚙[type]`  `actiontype`  legacy; undefined in Core
++ column  Глифы
++ column  Атрибут
++ column  Смысл
++ row  `⧆` / `⧄`  `displaystyle`  выключной стиль или строчный/текстовый стиль
++ row  `⌄[±n]`  `scriptlevel`  относительный размер индекса; `+n` уменьшает
++ row  `◻` / `▭`  `display`  блочный или строчный, на корне
++ row  `●[colour]`  `mathcolor`  цвет переднего плана
++ row  `▨[colour]`  `mathbackground`  цвет фона
++ row  `⟑[length]`  `mathsize`  размер шрифта
++ row  `⦱`  `mathvariant`  прямое начертание, отменяющее автоматический курсив
++ row  `⊩` / `⫣`  `dir`  слева направо или справа налево
++ row  `⊰` / `⊹` / `⊱`  `form`  префиксный, инфиксный или постфиксный оператор
++ row  `∥` / `∤`  `fence`  пометить как ограждение
++ row  `▮` / `▯`  `separator`  пометить как разделитель
++ row  `⇿` / `↮`  `stretchy`  разрешить растягивание по окружающему содержимому
++ row  `⋈` / `⋊`  `symmetric`  растягивать симметрично относительно оси
++ row  `◆` / `◇`  `largeop`  считать большим оператором в выключном стиле
++ row  `⧳` / `⧯`  `movablelimits`  пределы сверху/снизу в выключном стиле, индексы в строке
++ row  `⧔[length]` / `⧕[length]`  `lspace` / `rspace`  пространство по обе стороны оператора
++ row  `⟰[length]` / `⟱[length]`  `maxsize` / `minsize`  границы растяжения
++ row  `↔[length]`  `width`  ширина продвижения блока
++ row  `⍏[length]` / `⍖[length]`  `height` / `depth`  протяжённость выше и ниже базовой линии
++ row  `↕[length]`  `voffset`  вертикальный сдвиг дополненного содержимого
++ row  `═[length]`  `linethickness`  толщина черты дроби; `0` — без черты
++ row  `◠` / `⌢`  `accent`  считать надстрочный элемент плотным акцентом
++ row  `◡` / `⌣`  `accentunder`  считать подстрочный элемент плотным акцентом
++ row  `⚙[type]`  `actiontype`  устаревший; не определён в Core
+
+= row  `⚙[type]`  `actiontype`  legacy; undefined in Core
+- ```
++ ```
+
+- The scope is MathML Core, so the MathML 3 families which it dropped have no glyphs: the table
+- attributes, such as `columnalign`, `rowspan` and `frame`, since Core keeps the table *elements*
+- but defines none of these; `<menclose>` and its notations; the quote attributes of `<ms>`; and
+- the elementary-mathematics elements `<mstack>`, `<mlongdiv>` and the rest.
++ Область охвата — MathML Core, поэтому у семейств MathML 3, которые в нём отброшены, глифов
++ нет: это атрибуты таблиц, такие как `columnalign`, `rowspan` и `frame`, поскольку Core
++ сохраняет *элементы* таблиц, но не определяет ни один из этих атрибутов; `<menclose>` и его
++ нотации; атрибуты кавычек у `<ms>`; и элементы элементарной математики `<mstack>`,
++ `<mlongdiv>` и прочие.
+
+- ### Serializing back
++ ### Обратная сериализация
+
+- `Ergo.serialize` turns a MathML tree back into Ergo. The two are inverse over the Ergo subset: a
+- parsed expression serializes and parses again to the same tree:
++ `Ergo.serialize` превращает дерево MathML обратно в Ergo. На подмножестве Ergo они взаимно
++ обратны: разобранное выражение сериализуется и снова разбирается в то же дерево:
+
+= parsed expression serializes and parses again to the same tree:
+=
+- ```scala fuel
++ ```scala fuel
+
+= parsed expression serializes and parses again to the same tree:
+=
+= ```scala fuel
+- run
++ run
+
+= parsed expression serializes and parses again to the same tree:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Ergo.serialize(quadratic))
++ Out.println(Ergo.serialize(quadratic))
+
+= Out.println(Ergo.serialize(quadratic))
+- ```
++ ```
+
+- An element outside that subset, such as `<mtext>`, is rejected with an `Ergo.Error`, and is not
+- serialized approximately, so the round trip is a guarantee and not a hope:
++ Элемент вне этого подмножества, такой как `<mtext>`, отвергается с `Ergo.Error`, а не
++ сериализуется приближённо, поэтому круговой путь — это гарантия, а не надежда:
+
+= serialized approximately, so the round trip is a guarantee and not a hope:
+=
+- ```scala fuel
++ ```scala fuel
+
+= serialized approximately, so the round trip is a guarantee and not a hope:
+=
+= ```scala fuel
+- run
++ run
+
+= serialized approximately, so the round trip is a guarantee and not a hope:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= serialized approximately, so the round trip is a guarantee and not a hope:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- Ergo.serialize(Math(Mtext(t"hello")))
++ Ergo.serialize(Math(Mtext(t"hello")))
+
+= Ergo.serialize(Math(Mtext(t"hello")))
+- ```
++ ```
+
+- ### Related
++ ### Связанное
+
+- - [HTML](html.md) describes the documents which a `Math` is embedded in.
+- - [XML](xml.md) describes the `Xml` which MathML renders to and reads from.
+- - [Chemistry](chemistry.md) typesets formulas of another kind.
+- - [Mathematics](mathematics.md) computes with the quantities that the markup displays.
++ - [HTML](html.md) описывает документы, в которые встраивается `Math`.
++ - [XML](xml.md) описывает `Xml`, в который отображается MathML и из которого он читается.
++ - [Химия](chemistry.md) набирает формулы другого рода.
++ - [Математика](mathematics.md) вычисляет с величинами, которые отображает разметка.

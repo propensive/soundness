@@ -1,0 +1,494 @@
+orthant 1 language
+
+- ## Metaprogramming
++ ## Метапрограммирование
+
+- ### About
++ ### Обзор
+
+- Much of the machinery which runs at [compiletime] here rests on a small set of tools for writing
+- and debugging macros. They are available to any project which does the same:
++ Значительная часть механизмов, которые здесь работают во [время компиляции], опирается на
++ небольшой набор инструментов для написания и отладки макросов. Они доступны любому проекту,
++ который делает то же самое:
+
+= and debugging macros. They are available to any project which does the same:
+=
+- ```tabular
++ ```tabular
+
+- column  Tool
+- column  Does
+- row  `every`  collects *all* the given instances of a type visible at a call site
+- row  `reify`  turns a type-level collection into a runtime value
+- row  `Syntax.name`  renders a type as it would be written under the caller's imports
+- row  `Introspect`  displays a macro expansion as an inspectable tree
+- row  `Classfile`  reads compiled bytecode back, for the rare work that must see what the compiler produced
++ column  Инструмент
++ column  Что делает
++ row  `every`  собирает *все* given-экземпляры типа, видимые в точке вызова
++ row  `reify`  превращает коллекцию уровня типов в значение времени выполнения
++ row  `Syntax.name`  отображает тип так, как он был бы записан при импортах вызывающего кода
++ row  `Introspect`  показывает раскрытие макроса в виде дерева, доступного для инспекции
++ row  `Classfile`  считывает обратно скомпилированный байт-код для тех редких задач, которым нужно видеть, что выдал компилятор
+
+= row  `Classfile`  reads compiled bytecode back, for the rare work that must see what the compiler produced
+- ```
++ ```
+
+- Collecting every given is the mechanism behind pluggable configuration throughout these
+- libraries.
++ Сбор всех given — это механизм, на котором во всех этих библиотеках построена подключаемая
++ конфигурация.
+
+- ### On metaprogramming
++ ### О метапрограммировании
+
+- Scala 3's macros are principled, and short of tools. A macro author stares at expansions with
+- `println`, renders types with a `show` which ignores the caller's imports, and cannot ask an
+- innocent question, "which givens of this type are in scope?", because implicit search answers
+- with one given, or with an ambiguity. These gaps are generic, and every macro project fills them
+- again.
++ Макросы Scala 3 принципиальны, но им не хватает инструментов. Автор макроса разглядывает
++ раскрытия через `println`, отображает типы с помощью `show`, который игнорирует импорты
++ вызывающего кода, и не может задать невинный вопрос «какие given этого типа находятся в области
++ видимости?», потому что неявный поиск отвечает одним given или неоднозначностью. Эти пробелы
++ универсальны, и каждый проект с макросами заполняет их заново.
+
+- Here they are filled once. Macros which check code as it compiles are how much of
+- [safety by construction](../../philosophy/safety-by-construction.md) is achieved elsewhere.
++ Здесь они заполнены один раз. Макросы, которые проверяют код во время его компиляции, — это то,
++ чем во многом достигается [безопасность по построению](../../philosophy/safety-by-construction.md)
++ в других местах.
+
+- Everything comes from the `soundness` package, and the second import lets the samples print
+- their results:
++ Всё берётся из пакета `soundness`, а второй импорт позволяет примерам печатать свои результаты:
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Every given in scope
++ ### Все given в области видимости
+
+- Implicit search finds *the* [given]. `every` finds *all of them*. It is a compiletime search
+- which returns their list, and it includes instances which would be ambiguous against each
+- other:
++ Неявный поиск находит *тот самый* [given]. `every` находит *их все*. Это поиск во время
++ компиляции, который возвращает их список, и в него входят экземпляры, которые были бы
++ неоднозначны друг относительно друга:
+
+= other:
+=
+- ```scala
++ ```scala
+
+- case class Plugin(name: Text)
++ case class Plugin(name: Text)
+
+- given alpha: Plugin = Plugin(t"alpha")
++ given alpha: Plugin = Plugin(t"alpha")
+
+- given beta: Plugin = Plugin(t"beta")
++ given beta: Plugin = Plugin(t"beta")
+
+= given beta: Plugin = Plugin(t"beta")
+- ```
++ ```
+
+= given beta: Plugin = Plugin(t"beta")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= given beta: Plugin = Plugin(t"beta")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= given beta: Plugin = Plugin(t"beta")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- every[Plugin].values.each(plugin => Out.println(plugin.name))
++ every[Plugin].values.each(plugin => Out.println(plugin.name))
+
+= every[Plugin].values.each(plugin => Out.println(plugin.name))
+- ```
++ ```
+
+- This inverts the usual flow of configuration. Instead of one value which names all the options,
+- each option is declared as a given where it applies, and the consumer collects whatever is in
+- scope. It is how [socket options](sockets.md) accumulate, how every [log sink](logging.md)
+- receives events, and how [terminal features](terminal.md) are switched on.
++ Это обращает обычный поток конфигурации. Вместо одного значения, которое перечисляет все опции,
++ каждая опция объявляется как given там, где она применяется, а потребитель собирает всё, что
++ находится в области видимости. Так накапливаются [опции сокетов](sockets.md), так каждый
++ [приёмник журнала](logging.md) получает события и так включаются
++ [функции терминала](terminal.md).
+
+- ### Type-level values
++ ### Значения уровня типов
+
+- A type parameter is to typechecking what an ordinary parameter is to execution: a way of passing
+- information to the place which will use it. Types are the poorer medium. Type-level operations
+- are far less expressive than those on values, and code written in them is harder to write and to
+- read. Macros close the gap. The logic is written as ordinary code over values, which happens to
+- *run* at compiletime. One thing is then missing: a way to carry a collection between the two
+- worlds.
++ Параметр типа для проверки типов — то же, что обычный параметр для выполнения: способ передать
++ информацию туда, где она будет использована. Типы — более бедная среда. Операции уровня типов
++ гораздо менее выразительны, чем операции над значениями, а код на них труднее писать и читать.
++ Макросы закрывают этот разрыв. Логика пишется как обычный код над значениями, который просто
++ *выполняется* во время компиляции. Тогда недостаёт одного: способа переносить коллекцию между
++ двумя мирами.
+
+- The type-level collections do that. A macro which is parameterized by static data, such as a
+- list of names or a mapping, carries the data in a type, and *reifies* it to a runtime value:
++ Это делают коллекции уровня типов. Макрос, параметризованный статическими данными, такими как
++ список имён или отображение, несёт данные в типе и *материализует* их в значение времени
++ выполнения:
+
+= list of names or a mapping, carries the data in a type, and *reifies* it to a runtime value:
+=
+- ```scala fuel
++ ```scala fuel
+
+= list of names or a mapping, carries the data in a type, and *reifies* it to a runtime value:
+=
+= ```scala fuel
+- run
++ run
+
+= list of names or a mapping, carries the data in a type, and *reifies* it to a runtime value:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(reify[TypeList[("one", "two", "three")]].inspect)
++ Out.println(reify[TypeList[("one", "two", "three")]].inspect)
+
+- Out.println(reify[TypeSet["yes" | "no" | "maybe"]].inspect)
++ Out.println(reify[TypeSet["yes" | "no" | "maybe"]].inspect)
+
+= Out.println(reify[TypeSet["yes" | "no" | "maybe"]].inspect)
+- ```
++ ```
+
+- Each runtime value has a type-level form:
++ У каждого значения времени выполнения есть форма уровня типов:
+
+= Each runtime value has a type-level form:
+=
+- ```tabular
++ ```tabular
+
+- column  Value
+- column  Type-level form
+- row  an `Int`, `String`, `Double` or `Boolean`  its singleton type
+- row  a `List`  a `Tuple`, under `TypeList`
+- row  a `Set`  a union, under `TypeSet`
+- row  a `Map`  a tuple of pairs, under `TypeMap`
++ column  Значение
++ column  Форма уровня типов
++ row  `Int`, `String`, `Double` или `Boolean`  его синглтон-тип
++ row  `List`  `Tuple` под `TypeList`
++ row  `Set`  объединение под `TypeSet`
++ row  `Map`  кортеж пар под `TypeMap`
+
+= row  a `Map`  a tuple of pairs, under `TypeMap`
+- ```
++ ```
+
+- `reify` has a second form, which takes a `Type` rather than a static type parameter, for use
+- inside a macro implementation where the type is known only abstractly. `reifyAs` fixes the type
+- of the result where inference needs the help.
++ У `reify` есть вторая форма, которая принимает `Type`, а не статический параметр типа, — для
++ использования внутри реализации макроса, где тип известен только абстрактно. `reifyAs` фиксирует
++ тип результата там, где выводу типов нужна помощь.
+
+- The data stays in the type system, where macros can inspect it, until the moment a value is
+- needed.
++ Данные остаются в системе типов, где макросы могут их исследовать, до того момента, когда нужно
++ значение.
+
+- ### Abstracting over containers
++ ### Абстрагирование от контейнеров
+
+- Many types are *containers* in the same sense. An [`Optional`](optional-values.md), an
+- `Attempt`, a [`Task`](concurrency.md) and a [collection](collections.md) all allow a value to be
+- put in, mapped over, and flat-mapped through. Writing an operation once over all of them needs
+- those capabilities as values, and not as methods which happen to share names.
++ Многие типы являются *контейнерами* в одном и том же смысле. [`Optional`](optional-values.md),
++ `Attempt`, [`Task`](concurrency.md) и [коллекция](collections.md) позволяют поместить в них
++ значение, отобразить его и пройти через flatMap. Чтобы написать операцию один раз для всех них,
++ эти умения нужны в виде значений, а не в виде методов, у которых просто совпадают имена.
+
+- `Functor` supplies `point`, which lifts a value into the container, and mapping. `Monad` adds
+- `bind`, which is `flatMap` under a name which does not collide with the method the container
+- already has. Instances are constructed for any type which provides the needed methods, so a
+- container written without any of this in mind takes part anyway.
++ `Functor` предоставляет `point`, который поднимает значение в контейнер, и отображение. `Monad`
++ добавляет `bind` — это `flatMap` под именем, которое не конфликтует с методом, уже имеющимся у
++ контейнера. Экземпляры строятся для любого типа, который предоставляет нужные методы, поэтому
++ контейнер, написанный без всякой мысли об этом, всё равно участвует.
+
+- Two operations follow at once, and are the reason this is worth having. `sequence` turns a
+- collection of containers inside out:
++ Сразу следуют две операции, и именно ради них это стоит иметь. `sequence` выворачивает коллекцию
++ контейнеров наизнанку:
+
+= collection of containers inside out:
+=
+- ```scala fuel
++ ```scala fuel
+
+= collection of containers inside out:
+=
+= ```scala fuel
+- run
++ run
+
+= collection of containers inside out:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List[Option[Int]](Some(1), Some(2), Some(3)).sequence.inspect)
++ Out.println(List[Option[Int]](Some(1), Some(2), Some(3)).sequence.inspect)
+
+- Out.println(List[Option[Int]](Some(1), None, Some(3)).sequence.inspect)
++ Out.println(List[Option[Int]](Some(1), None, Some(3)).sequence.inspect)
+
+= Out.println(List[Option[Int]](Some(1), None, Some(3)).sequence.inspect)
+- ```
++ ```
+
+- `traverse` maps a function which may fail over a collection, and gathers the results in one
+- container, not in a collection of containers. This is the shape of "parse all of these, and fail
+- if any of them fails":
++ `traverse` отображает коллекцию функцией, которая может завершиться неудачей, и собирает
++ результаты в один контейнер, а не в коллекцию контейнеров. Такова форма задачи «разобрать всё
++ это и потерпеть неудачу, если неудачен разбор хоть одного»:
+
+= if any of them fails":
+=
+- ```scala
++ ```scala
+
+- def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
++ def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+
+= def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+- ```
++ ```
+
+= def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List(t"1", t"2", t"3").traverse(parseNumber).inspect)
++ Out.println(List(t"1", t"2", t"3").traverse(parseNumber).inspect)
+
+- Out.println(List(t"1", t"2", t"x").traverse(parseNumber).inspect)
++ Out.println(List(t"1", t"2", t"x").traverse(parseNumber).inspect)
+
+= Out.println(List(t"1", t"2", t"x").traverse(parseNumber).inspect)
+- ```
++ ```
+
+- Both work on any collection, and the result keeps the shape of the collection. A `List` of
+- `Option`s sequences to an `Option` of a `List`, and a `Set` to an `Option` of a `Set`.
++ Обе работают на любой коллекции, и результат сохраняет форму коллекции. `List` из `Option`
++ превращается в `Option` от `List`, а `Set` — в `Option` от `Set`.
+
+- ### Types as source text
++ ### Типы как исходный текст
+
+- A type rendered in an error message or in generated code should read as the *user* would write
+- it, with their imports respected and infix syntax used where the type is infix. `Syntax.name`
+- does that, and covers the full grammar of types:
++ Тип, отображённый в сообщении об ошибке или в сгенерированном коде, должен читаться так, как
++ написал бы его *пользователь*: с учётом его импортов и с инфиксным синтаксисом там, где тип
++ инфиксный. Это делает `Syntax.name`, и он охватывает всю грамматику типов:
+
+= does that, and covers the full grammar of types:
+=
+- ```scala fuel
++ ```scala fuel
+
+= does that, and covers the full grammar of types:
+=
+= ```scala fuel
+- run
++ run
+
+= does that, and covers the full grammar of types:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Syntax.name[Int | String & Double])
++ Out.println(Syntax.name[Int | String & Double])
+
+- Out.println(Syntax.name[(text: Text) => text.type])
++ Out.println(Syntax.name[(text: Text) => text.type])
+
+- Out.println(Syntax.name[Addable by Int to Double])
++ Out.println(Syntax.name[Addable by Int to Double])
+
+= Out.println(Syntax.name[Addable by Int to Double])
+- ```
++ ```
+
+- Error messages from a macro built with it read as Scala, not as compiler internals.
++ Сообщения об ошибках из макроса, построенного с его помощью, читаются как Scala, а не как
++ внутренности компилятора.
+
+- ### Inspecting expansions
++ ### Инспекция раскрытий
+
+- `Introspect.syntax` captures the tree of an expression, as the compiler sees it, with its tags,
+- nodes and types. The result is a value which renders as a navigable diagram.
+- `Introspect.semantics` does the same for the flags and members of a symbol:
++ `Introspect.syntax` захватывает дерево выражения таким, каким его видит компилятор, с его
++ тегами, узлами и типами. Результат — значение, которое отображается в виде диаграммы с
++ навигацией. `Introspect.semantics` делает то же самое для флагов и членов символа:
+
+= `Introspect.semantics` does the same for the flags and members of a symbol:
+=
+- ```scala
++ ```scala
+
+- val x = 5
++ val x = 5
+
+- val tree = Introspect.syntax(true):
++ val tree = Introspect.syntax(true):
+
+-   1 + x
++   1 + x
+
+=   1 + x
+- ```
++ ```
+
+- For a macro author, this replaces archaeology with `println` by a structured view of what an
+- expansion actually produced. Both work from *outside* a macro too, on any expression in ordinary
+- code, which makes them useful for answering questions about the language itself. Introspecting
+- `1 + x`, as above, shows an `Apply` of a `Select` over a `Literal` and an `Ident`. Doing the
+- same for a `val y: 5 = 5` shows a single `Literal`, because the [singleton type] let the
+- compiler fold the addition away.
++ Для автора макросов это заменяет археологию с `println` структурированным видом того, что
++ раскрытие фактически произвело. Оба работают и *вне* макроса, на любом выражении в обычном коде,
++ поэтому они полезны для ответов на вопросы о самом языке. Инспекция `1 + x`, как выше,
++ показывает `Apply` от `Select` над `Literal` и `Ident`. То же самое для `val y: 5 = 5`
++ показывает один `Literal`, потому что [синглтон-тип] позволил компилятору свернуть сложение.
+
+- Inside a macro, where a `Quotes` is available, the `syntax` and `semantics` extension methods do
+- the same for an `Expr` or a `Symbol`. The result is colored through a `TastyPalette`, so it
+- reads well at a terminal.
++ Внутри макроса, где доступен `Quotes`, методы-расширения `syntax` и `semantics` делают то же
++ самое для `Expr` или `Symbol`. Результат раскрашивается через `TastyPalette`, поэтому он хорошо
++ читается в терминале.
+
+- A macro which must fail does so with `halt`, which takes a `Message`. The compile errors of a
+- macro are therefore built from the same structured messages as [runtime errors](errors.md),
+- with their substitutions highlighted where the compiler's output supports it, and they can be
+- attached to a position in the source.
++ Макрос, который должен завершиться неудачей, делает это с помощью `halt`, принимающего
++ `Message`. Поэтому ошибки компиляции макроса строятся из тех же структурированных сообщений, что
++ и [ошибки времени выполнения](errors.md), с подсветкой подстановок там, где вывод компилятора это
++ поддерживает, и их можно привязать к позиции в исходном коде.
+
+- ### Down to bytecode
++ ### До байт-кода
+
+- Occasionally the question is not what the compiler *typed*, but what it *emitted*: whether a
+- combinator inlines away, or what a hot path compiles to. A classfile parses into typed methods
+- and instructions, and each instruction carries the state of the operand stack, reconstructed:
++ Иногда вопрос не в том, что компилятор *типизировал*, а в том, что он *выдал*: встраивается ли
++ комбинатор без остатка или во что компилируется горячий путь. Файл класса разбирается в
++ типизированные методы и инструкции, и каждая инструкция несёт восстановленное состояние стека
++ операндов:
+
+= and instructions, and each instruction carries the state of the operand stack, reconstructed:
+=
+- ```scala
++ ```scala
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- val methods = Classfile[Exit].let(_.methods.map(_.name))
++ val methods = Classfile[Exit].let(_.methods.map(_.name))
+
+= val methods = Classfile[Exit].let(_.methods.map(_.name))
+- ```
++ ```
+
+- The `bytecode` of each method is its JVM instructions, with their stack states, ready to render.
+- A quoted expression can also be compiled and disassembled in one step. This is the foundation
+- for performance work which must verify what the optimizer did, and not assume it.
++ `bytecode` каждого метода — это его инструкции JVM с состояниями стека, готовые к отображению.
++ Цитированное выражение также можно скомпилировать и дизассемблировать за один шаг. Это основа
++ для работы над производительностью, которая должна проверять, что сделал оптимизатор, а не
++ предполагать.
+
+- ### Related
++ ### Связанное
+
+- - [Staging](staging.md) runs quoted code in another environment.
+- - [Derivation](derivation.md) generates typeclass instances from the structure of a type.
+- - [Annotations](annotations.md) reads annotations without a macro.
+- - [Compiler](compiler.md) runs the Scala compiler as a library.
+- - [Classpath](classpath.md) describes the classloaders which a classfile is read through.
+- - [Interpolation](interpolation.md) and [records](records.md) are built with these tools.
++ - [Стадирование](staging.md) выполняет цитированный код в другом окружении.
++ - [Деривация](derivation.md) генерирует экземпляры классов типов из структуры типа.
++ - [Аннотации](annotations.md) читает аннотации без макроса.
++ - [Компилятор](compiler.md) запускает компилятор Scala как библиотеку.
++ - [Путь классов](classpath.md) описывает загрузчики классов, через которые читается файл класса.
++ - [Интерполяция](interpolation.md) и [записи](records.md) построены с помощью этих инструментов.

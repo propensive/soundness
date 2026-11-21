@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.12` — `U16` value below 0
++ # `↯/s.27.12` — значение `U16` меньше 0
+
+- Raised at compile time by Hypotenuse's `u16` macro when the value
+- is less than 0.
++ Порождается во время компиляции макросом `u16` из Hypotenuse, когда
++ значение меньше 0.
+
+- ## Cause
++ ## Причина
+
+- A `U16` (unsigned 16-bit) cannot be negative.
++ `U16` (беззнаковое 16-битное) не может быть отрицательным.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.27.12] a U16 may not be less than 0
++ [↯/s.27.12] a U16 may not be less than 0
+
+= [↯/s.27.12] a U16 may not be less than 0
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Provide a value in the range 0-65535.
++ Укажите значение в диапазоне 0–65535.
+
+- ## See also
++ ## См. также
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Другие ошибки целочисленных литералов: [Семейства](README.md#families)
++ - Исходник: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

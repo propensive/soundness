@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.100.9` — `Internet.Error`
++ # `↯/s.100.9` — `Internet.Error`
+
+- Raised when an Internet connection is required but not available.
++ Порождается, когда требуется подключение к Интернету, но оно недоступно.
+
+- ## Cause
++ ## Причина
+
+- Urticose throws this error when an `Online`-requiring operation is
+- attempted in a context that has been declared offline (or when
+- network access fails outright).
++ Urticose бросает эту ошибку при попытке выполнить операцию, требующую
++ `Online`, в контексте, объявленном автономным (или когда доступ к сети
++ полностью не удаётся).
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.100.9] an Internet connection is not available
++ [↯/s.100.9] an Internet connection is not available
+
+= [↯/s.100.9] an Internet connection is not available
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Restore network connectivity, or run the operation in a context
+- where being offline is acceptable.
++ Восстановите сетевое подключение или выполните операцию в контексте,
++ где работа без сети допустима.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/urticose/src/core/urticose.Internet.scala`
++ - Исходник: `lib/urticose/src/core/urticose.Internet.scala`

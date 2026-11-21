@@ -1,0 +1,2311 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base proscenium
++ base proscenium
+
+- import soundness
++ import soundness
+
+- info   the prelude every Soundness module compiles against: its collections, markers and blessed names
++ info   прелюдия, с которой компилируется каждый модуль Soundness: её коллекции, маркеры и благословлённые имена
+
+- detail
++ detail
+
+-     _Proscenium_ is the default namespace of Soundness. Every module in the build is
+-     compiled with `-Yno-predef -Yimports:java.lang,proscenium`, so neither `scala.Predef`
+-     nor the `scala` package is imported implicitly; what a source file sees without an
+-     import is `java.lang`, this package, and nothing else. A consumer outside the build
+-     reaches the same names through `import soundness.*`, since everything here is
+-     re-exported to the umbrella (the collection companions as stable `val`s, so their
+-     members resolve through the forwarders).
++     _Proscenium_ — пространство имён Soundness по умолчанию. Каждый модуль сборки
++     компилируется с `-Yno-predef -Yimports:java.lang,proscenium`, поэтому ни `scala.Predef`,
++     ни пакет `scala` не импортируются неявно: без импорта исходный файл видит `java.lang`,
++     этот пакет и больше ничего. Потребитель вне сборки получает те же имена через
++     `import soundness.*`, поскольку всё здесь реэкспортируется в зонтичный модуль (объекты-компаньоны
++     коллекций — как стабильные `val`, чтобы их члены разрешались через форвардеры).
+
+-     The package has three kinds of content.
++     В пакете содержимое трёх видов.
+
+-     **The collections.** `List`, `Sequence`, `Set`, `Map`, `Ledger`, `Chain` and `Array`
+-     are *opaque* aliases of the standard library's structures — a linked list, a `Vector`,
+-     a hash set, a hash map, an insertion-ordered `VectorMap`, a `LazyList` and a JVM array
+-     — which cost nothing to wrap and expose none of the stdlib's members. Their companions
+-     hold construction (`apply`, `empty`, `from`, `fill`, `tabulate`, `range`), pattern
+-     support, macro lifting, and the greppable `stdlib` bridge; every other operation —
+-     `map`, `filter`, `fold`, `head`, `at`, `size`, `sort` — is a typeclass-driven
+-     extension defined in the libraries above (`murmuration`, `denominative`,
+-     `concordance`, `rudiments`), reached with `import soundness.*`. A total vocabulary
+-     replaces the partial one: `head` returns an `Optional` unless the receiver is proven
+-     `Populated`, and the operations whose cost belies their name (a `List`'s `size`, a
+-     `Chain`'s) are gated behind a named import from `dysasymptotics`.
++     **Коллекции.** `List`, `Sequence`, `Set`, `Map`, `Ledger`, `Chain` и `Array` — это
++     *непрозрачные* псевдонимы структур стандартной библиотеки: связного списка, `Vector`,
++     хеш-множества, хеш-таблицы, упорядоченного по вставке `VectorMap`, `LazyList` и массива JVM.
++     Обёртка ничего не стоит, и ни один член stdlib не виден. Их объекты-компаньоны содержат
++     построение (`apply`, `empty`, `from`, `fill`, `tabulate`, `range`), поддержку образцов,
++     подъём в макросах и легко находимый grep'ом мост `stdlib`; любая другая операция —
++     `map`, `filter`, `fold`, `head`, `at`, `size`, `sort` — это метод-расширение на основе
++     классов типов, определённый в библиотеках уровнем выше (`murmuration`, `denominative`,
++     `concordance`, `rudiments`) и доступный через `import soundness.*`. Всюду определённый
++     словарь заменяет частичный: `head` возвращает `Optional`, если не доказано, что получатель
++     `Populated`, а операции, стоимость которых не соответствует их названию (`size` у `List`
++     и у `Chain`), закрыты за именованным импортом из `dysasymptotics`.
+
+=     `Chain`'s) are gated behind a named import from `dysasymptotics`.
+=
+-     ```scala
++     ```scala
+
+=     `Chain`'s) are gated behind a named import from `dysasymptotics`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val numbers = List(3, 1, 2)                  // List[Int] & Populated: the arity is the proof
++     val numbers = List(3, 1, 2)                  // List[Int] & Populated: the arity is the proof
+
+-     numbers.head                                 // 3, total on a populated list
++     numbers.head                                 // 3, total on a populated list
+
+-     numbers.map(_*2)                             // List(6, 2, 4)
++     numbers.map(_*2)                             // List(6, 2, 4)
+
+-     Map(t"a" -> 1).at(t"b")                      // Unset
++     Map(t"a" -> 1).at(t"b")                      // Unset
+
+-     numbers.stdlib                               // scala.collection.immutable.List(3, 1, 2)
++     numbers.stdlib                               // scala.collection.immutable.List(3, 1, 2)
+
+-     List.from(scala.collection.immutable.List(1, 2))
++     List.from(scala.collection.immutable.List(1, 2))
+
+=     List.from(scala.collection.immutable.List(1, 2))
+-     ```
++     ```
+
+-     There is deliberately no implicit conversion between an opaque collection and its
+-     stdlib form in either direction: a conversion applies at member selection too and would
+-     silently restore the whole partial API. Crossing to a stdlib or Java API is written as
+-     `xs.stdlib` — a zero-copy view, and a greppable marker of every seam — and back with the
+-     companion's `from` or `.to(List)`. A varargs splice, `f(xs*)`, works on an opaque
+-     collection directly, through the `Spreadable` givens beside each collection. Do not use
+-     `stdlib` to dodge a cost gate: `xs.stdlib.length` hides exactly the cost
+-     `dysasymptotics.linearSize` exists to acknowledge; open the gate with a comment saying
+-     why the cost is acceptable, or restructure.
++     Неявного преобразования между непрозрачной коллекцией и её формой из stdlib намеренно нет
++     ни в одну сторону: преобразование применяется и при выборе члена и незаметно вернуло бы
++     весь частичный API. Переход к API stdlib или Java записывается как `xs.stdlib` —
++     представление без копирования и легко находимая grep'ом метка каждого шва, — а обратно
++     через `from` объекта-компаньона или `.to(List)`. Развёртка varargs, `f(xs*)`, работает с
++     непрозрачной коллекцией напрямую, через given'ы `Spreadable` рядом с каждой коллекцией. Не
++     используйте `stdlib`, чтобы обойти шлюз стоимости: `xs.stdlib.length` скрывает именно ту
++     стоимость, ради признания которой существует `dysasymptotics.linearSize`; откройте шлюз с
++     комментарием, объясняющим, почему стоимость приемлема, или перестройте код.
+
+-     **The markers.** `Populated` is a structural refinement recording a proof of
+-     non-emptiness (`List[Int] & Populated`), minted by the fixed-arity literal constructors
+-     and by rudiments' `occupied`; `Sized[n]` records a proof of length, minted by `fill`
+-     and `tabulate` with a literal count; and `Comparison` (`Less`, `Same`, `More`) is the
+-     result of every three-way comparison in Soundness, the currency of symbolism's
+-     `Comparable`.
++     **Маркеры.** `Populated` — структурное уточнение, фиксирующее доказательство непустоты
++     (`List[Int] & Populated`); его создают конструкторы литералов фиксированной арности и
++     `occupied` из rudiments. `Sized[n]` фиксирует доказательство длины; его создают `fill` и
++     `tabulate` с литеральным количеством. `Comparison` (`Less`, `Same`, `More`) — результат
++     каждого трёхстороннего сравнения в Soundness, валюта `Comparable` из symbolism.
+
+-     **The blessed names.** `proscenium.prelude.scala` re-exports from `scala` only what
+-     Soundness code needs without an import: the fundamental and primitive types, the infix
+-     `&`/`|`/`<:<`/`=:=`, `Option`/`Either` and the tuple types, `CanEqual`, `Conversion`,
+-     `PartialFunction`, `StringContext`, the numeric abstractions, the annotations, `Iterable`
+-     and (for now) `StringBuilder`. `proscenium_core.scala` adds the Predef members worth
+-     keeping (`nn`, `summon`, `identity`, `locally`, `valueOf`, `is`, `ArrowAssoc`, the
+-     primitive wrappers and array ops, `assert`, `???`), `ClassTag`, `Typeable`, `TreeMap`,
+-     `TreeSet`, `TrieMap`, `NonFatal`, `boundary`/`break`, the `…HasAsScala`/`…HasAsJava`
+-     converters, `tailrec`/`targetName`/`switch`/`missingContext`, the `unchecked…`
+-     annotations, and a few of its own: `classOf` (an inline version which is correct through
+-     an export), `absolve` (Predef's `runtimeChecked`), `Void`, `Nat`, `Label`, `Zero`,
+-     `Mono`, `~>`, `prohibits`, `infer`, `provide`, `->` and the `unexported` annotation.
++     **Благословлённые имена.** `proscenium.prelude.scala` реэкспортирует из `scala` только
++     то, что нужно коду Soundness без импорта: фундаментальные и примитивные типы, инфиксные
++     `&`/`|`/`<:<`/`=:=`, `Option`/`Either` и типы кортежей, `CanEqual`, `Conversion`,
++     `PartialFunction`, `StringContext`, числовые абстракции, аннотации, `Iterable` и (пока)
++     `StringBuilder`. `proscenium_core.scala` добавляет члены Predef, которые стоит сохранить
++     (`nn`, `summon`, `identity`, `locally`, `valueOf`, `is`, `ArrowAssoc`, обёртки примитивов
++     и операции над массивами, `assert`, `???`), `ClassTag`, `Typeable`, `TreeMap`,
++     `TreeSet`, `TrieMap`, `NonFatal`, `boundary`/`break`, преобразователи
++     `…HasAsScala`/`…HasAsJava`, `tailrec`/`targetName`/`switch`/`missingContext`, аннотации
++     `unchecked…` и несколько собственных: `classOf` (inline-версия, корректная и через
++     экспорт), `absolve` (`runtimeChecked` из Predef), `Void`, `Nat`, `Label`, `Zero`,
++     `Mono`, `~>`, `prohibits`, `infer`, `provide`, `->` и аннотацию `unexported`.
+
+-     What is *not* blessed is as deliberate as what is. The stdlib's concrete collections
+-     (`Seq`, `Vector`, `IndexedSeq`, `Range`, `LazyList`) are absent, so a stdlib collection
+-     at an interop seam must announce itself with `import scala.collection…`; `Ordering` and
+-     `Ordered` are absent, since comparison is `Comparable` and the few APIs which still take
+-     an `Ordering` import `scala.math.Ordering` explicitly; `Iterator` is absent, so a bare
+-     `Iterator` under `import soundness.*` is murmuration's separation-checked one, and a
+-     stdlib iterator is written `scala.collection.Iterator`; and `Precise` is absent because
+-     an exported alias of it silently fails to suppress union widening — write
+-     `scala.Precise`. Packages (`scala.caps`, `scala.math`, `scala.compiletime`,
+-     `scala.annotation`, `scala.util`) cannot be exported and are imported per file.
++     То, что *не* благословлено, так же продуманно, как и то, что благословлено. Конкретных
++     коллекций stdlib (`Seq`, `Vector`, `IndexedSeq`, `Range`, `LazyList`) нет, поэтому
++     коллекция stdlib на шве взаимодействия должна заявить о себе через `import scala.collection…`;
++     нет `Ordering` и `Ordered`, поскольку сравнение — это `Comparable`, а немногие API, которые
++     всё ещё принимают `Ordering`, импортируют `scala.math.Ordering` явно; нет `Iterator`,
++     поэтому голый `Iterator` под `import soundness.*` — это итератор из murmuration с проверкой
++     разделения, а итератор stdlib записывается как `scala.collection.Iterator`; и нет
++     `Precise`, потому что его экспортированный псевдоним незаметно перестаёт подавлять
++     расширение объединений, — пишите `scala.Precise`. Пакеты (`scala.caps`, `scala.math`,
++     `scala.compiletime`, `scala.annotation`, `scala.util`) экспортировать нельзя, и они
++     импортируются в каждом файле.
+
+-     Two traps for macro authors. `Unit` is a type alias here, not an export (its companion
+-     cannot be exported), so it is a *distinct symbol* from `scala.Unit`: in a macro, compare
+-     types with `=:=` or after `.dealias`, never by `typeSymbol ==`. And `Array` is the
+-     opaque alias, so `TypeRepr.of[Array[Byte]]` is likewise not `scala.Array`'s symbol.
++     Две ловушки для авторов макросов. `Unit` здесь — псевдоним типа, а не экспорт (его
++     объект-компаньон нельзя экспортировать), поэтому это *отдельный символ*, не `scala.Unit`: в
++     макросе сравнивайте типы через `=:=` или после `.dealias`, но никогда через
++     `typeSymbol ==`. И `Array` — непрозрачный псевдоним, поэтому `TypeRepr.of[Array[Byte]]`
++     тоже не символ `scala.Array`.
+
+-     The library is a single source set, `proscenium.core`, with no dependencies, compiled
+-     for the JVM, Scala.js and Scala Native. On every platform the collections are the same
+-     stdlib structures underneath; `Array` is the platform's native array.
++     Библиотека — один набор исходников, `proscenium.core`, без зависимостей, компилируемый для
++     JVM, Scala.js и Scala Native. На каждой платформе под коллекциями лежат одни и те же
++     структуры stdlib; `Array` — нативный массив платформы.
+
+- refer proscenium.List
++ refer proscenium.List
+
+- refer proscenium.Array
++ refer proscenium.Array
+
+- refer proscenium.Populated
++ refer proscenium.Populated
+
+- refer proscenium.Comparison
++ refer proscenium.Comparison
+
+- refer proscenium.Chain
++ refer proscenium.Chain
+
+- entry .Array   a fixed-size array whose write access is tracked by separation checking
++ entry .Array   массив фиксированного размера, доступ на запись к которому отслеживается проверкой разделения
+
+= entry .Array   a fixed-size array whose write access is tracked by separation checking
+-   detail
++   detail
+
+-       `Array[element]` is an opaque alias of the platform's native array, so it costs
+-       nothing to use, but its access rights are in its capture set: any reference can
+-       *read*, only an exclusive reference — `Array[element]^` — can *write*, aliased
+-       writers are rejected, and `freeze` consumes an exclusive array to yield the
+-       **frozen** form, `Array[element]^{}`, without copying. The frozen form is not a
+-       parallel immutable type: an array no capture set can write through *is* immutable,
+-       so `^{}` is the whole story, and `Data`, anticipation's type for bytes, is exactly
+-       `Array[Byte]^{}`.
++       `Array[element]` — непрозрачный псевдоним нативного массива платформы, поэтому его
++       использование ничего не стоит, но права доступа к нему записаны в его множестве захвата:
++       *читать* может любая ссылка, *писать* — только исключительная ссылка, `Array[element]^`,
++       писатели-псевдонимы отвергаются, а `freeze` поглощает исключительный массив и без
++       копирования даёт **замороженную** форму, `Array[element]^{}`. Замороженная форма — не
++       параллельный неизменяемый тип: массив, в который не может писать ни одно множество
++       захвата, *и есть* неизменяемый, так что `^{}` — это вся история, и `Data`, тип байтов из
++       anticipation, — это в точности `Array[Byte]^{}`.
+
+=       `Array[Byte]^{}`.
+=
+-       ```scala
++       ```scala
+
+=       `Array[Byte]^{}`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val frozen: Array[Int]^{} = Array(1, 2, 3)        // a literal is frozen by construction
++       val frozen: Array[Int]^{} = Array(1, 2, 3)        // a literal is frozen by construction
+
+-       val buffer: Array[Int]^ = Array.allocate[Int](3)  // exclusive and writable
++       val buffer: Array[Int]^ = Array.allocate[Int](3)  // exclusive and writable
+
+-       buffer(0) = 11
++       buffer(0) = 11
+
+-       buffer.fill(8)
++       buffer.fill(8)
+
+-       val done: Array[Int]^{} = Array.freeze(buffer)    // consumes `buffer`
++       val done: Array[Int]^{} = Array.freeze(buffer)    // consumes `buffer`
+
+-       Array.freeze(Array.thaw(done)).to[List]            // an exclusive copy, frozen again
++       Array.freeze(Array.thaw(done)).to[List]            // an exclusive copy, frozen again
+
+-       done.map(_*2).to[List]                             // List(16, 16, 16)
++       done.map(_*2).to[List]                             // List(16, 16, 16)
+
+=       done.map(_*2).to[List]                             // List(16, 16, 16)
+-       ```
++       ```
+
+-       Reading is `Int`-indexed here, since `denominative`'s `Ordinal` sits above this
+-       module: an exclusive array reads with `apply(index)` and writes with
+-       `update(index, value)`, both inlined to the JVM's own array access; a shared or frozen
+-       reference reads with `readUnchecked(index)`, which is bounds-partial and is what
+-       concordance's total, `Optional`-returning `at` and the ordinal-indexed `apply` in
+-       rudiments are built on. At an ordinary call site use those, or a confined ordinal;
+-       a bare `readUnchecked` carries a comment naming its proof.
++       Чтение здесь индексируется `Int`, поскольку `Ordinal` из `denominative` лежит выше этого
++       модуля: исключительный массив читается через `apply(index)` и записывается через
++       `update(index, value)`, и оба встраиваются в собственный доступ JVM к массиву;
++       разделяемая или замороженная ссылка читается через `readUnchecked(index)`, частичный по
++       границам, — на нём построены всюду определённый, возвращающий `Optional` `at` из
++       concordance и индексируемый порядковыми номерами `apply` из rudiments. В обычном месте
++       вызова используйте их или ограниченный порядковый номер; голый `readUnchecked`
++       сопровождается комментарием, называющим его доказательство.
+
+-       Editing a frozen array is copy-and-freeze: `thaw` for an exclusive copy to write
+-       several slots, `concat` of segments (`Array.concat(xs.before(i), replacement,
+-       xs.after(i))`) for a splice, and rudiments' `define` for one slot. Two things are
+-       sanctioned uses of the raw `scala.Array`: `raw` and `unsafeJvm`, for the JDK's
+-       byte-array surface (`OutputStream.write`, `MessageDigest.update`), and a field whose
+-       type an external definition fixes. New code otherwise stays on `Array`.
++       Редактирование замороженного массива — это копирование и заморозка: `thaw` для
++       исключительной копии, чтобы записать несколько ячеек, `concat` сегментов
++       (`Array.concat(xs.before(i), replacement,
++       xs.after(i))`) для вставки и `define` из rudiments для одной ячейки. Есть два
++       санкционированных применения сырого `scala.Array`: `raw` и `unsafeJvm` для байтовых
++       массивов в API JDK (`OutputStream.write`, `MessageDigest.update`) и поле, тип которого
++       задан внешним определением. В остальном новый код остаётся на `Array`.
+
+-       Equality on an array is reference identity — the opaque alias cannot override `==` —
+-       so content equality is `Array.same`, and a test compares through `to[List]`. A `val`
+-       cannot hold an exclusive buffer that is then consumed and replaced (`grow`), so an
+-       accumulating builder threads its buffer through `consume` parameters by recursion.
+-       One trap: `import rudiments.*` brings an `Applicable` `apply` which shadows the
+-       exclusive array's inline `apply`; a file which imports rudiments wholesale reads a
+-       buffer through ordinals or `readUnchecked` instead.
++       Равенство массивов — это идентичность ссылок (непрозрачный псевдоним не может
++       переопределить `==`), поэтому равенство содержимого — это `Array.same`, а тест сравнивает
++       через `to[List]`. `val` не может хранить исключительный буфер, который затем поглощается и
++       заменяется (`grow`), поэтому накапливающий построитель передаёт свой буфер рекурсией
++       через параметры `consume`. Одна ловушка: `import rudiments.*` вносит `apply` из
++       `Applicable`, который затеняет inline-`apply` исключительного массива; файл, который
++       импортирует rudiments целиком, читает буфер через порядковые номера или `readUnchecked`.
+
+-       Pattern matching reads but never writes, so `case Array(a, b, c)` works on any
+-       reference. A frozen array `map`s to a frozen array (`map` needs a `ClassTag` for the
+-       result element, which is why it is a companion extension rather than a `Mappable`
+-       instance), and the generic collection vocabulary — `to[List]`, `each`, `fold`,
+-       `extent`, `at` — comes from the libraries above.
++       Сопоставление с образцом читает, но никогда не пишет, поэтому `case Array(a, b, c)`
++       работает с любой ссылкой. Замороженный массив через `map` даёт замороженный массив (`map`
++       нужен `ClassTag` для элемента результата, поэтому это расширение в объекте-компаньоне, а не
++       экземпляр `Mappable`), а общий словарь коллекций — `to[List]`, `each`, `fold`,
++       `extent`, `at` — приходит из библиотек уровнем выше.
+
+-   refer proscenium.Sized
++   refer proscenium.Sized
+
+=   refer proscenium.Sized
+-   refer proscenium.Populated
++   refer proscenium.Populated
+
+-   entry .allocate   a new exclusive array of a given size: `Array.allocate[Int](3)`
+-       Named `allocate` rather than `apply` so that `Array(3)` unambiguously means the
+-       one-element literal. The elements are the type's zero (`0`, `false`, `null`), and
+-       the result is `Array[element]^`, writable through `update`. Needs a `ClassTag`.
+-   entry .apply   `Array(a, b, c)`, a frozen literal; and `buffer(index)`, the exclusive read
+-       Two members share the name. On the companion, `Array(elements*)` builds a fresh
+-       array which no writer can alias, so it is frozen (`Array[element]^{}`) by
+-       construction; it needs a `ClassTag`. As an extension on an exclusive `Array[element]^`,
+-       `buffer(index)` reads one slot, inlined to the JVM's own array access (no boxing):
+-       sole ownership means nobody else can have changed the content. On a shared or frozen
+-       reference there is no `apply`; read with `readUnchecked`, or through concordance's
+-       total `at`.
+-   entry .update   `buffer(index) = value`: writes one slot of an exclusive array
+-       An inline extension on `Array[element]^` only — a frozen or shared reference has no
+-       `update` — compiled to the JVM's own array store. The receiver is inline, so it is
+-       evaluated after the index and value, where it is used.
+-   entry .empty   the frozen empty array: `Array.empty[Int]`
+-   entry .from   a frozen array copied from any `IterableOnce`
+-       `Array.from(elements)` copies the elements of a stdlib iterable or iterator into a
+-       fresh array, which is frozen since nothing else can reach it. Needs a `ClassTag`.
+-   entry .fill   `Array.fill(n)(element)`: a frozen array of `n` copies; and `buffer.fill(value)`
+-       On the companion, `Array.fill(count)(element)` evaluates `element` once per slot and
+-       freezes the result; when `count` is a literal the result is additionally branded
+-       `Sized[count]`, so `Array.fill(512)(0.toByte)` is an `Array[Byte]^{} & Sized[512]`
+-       and a literal ordinal below 512 reads it totally. A `val` count gives the plain
+-       array. As an extension on an exclusive `Array[element]^`, `buffer.fill(value)`
+-       overwrites every slot in place.
+-   entry .tabulate   `Array.tabulate(n)(index => …)`: a frozen array computed by index
+-       Like `.fill` with the slot's index passed to the lambda, and branded `Sized[n]` when
+-       `n` is a literal.
+-   entry .range   `Array.range(start, end)`: the integers from `start` up to `end`, exclusive
+-       Frozen; an empty range (`end <= start`) is the empty array.
+-   entry .concat   a frozen array of two or three readable arrays in sequence
+-       `Array.concat(left, right)` copies both into a fresh array and freezes it; with two
+-       `Sized` arguments the result is `Sized[left + right]`, decided at the type level. The
+-       three-operand form, `Array.concat(left, middle, right)`, is the splice: `Array.concat
+-       (xs.before(i), replacement, xs.after(i))` rebuilds an array with a segment replaced
+-       in one pass. The arity is fixed rather than variadic because a frozen array as the
+-       element of a varargs `Seq` is re-freshened under capture checking and the segments'
+-       element types then fail to unify. Needs a `ClassTag`.
+-   entry .same   element-wise equality of two readable arrays
+-       `Array.same(left, right)` is whether the two have the same length and equal elements
+-       at every index. `==` on arrays is reference identity, which the opaque alias cannot
+-       override, so content equality is a named operation.
+-   entry .freeze   consumes an exclusive array and yields it frozen, without copying
+-       `Array.freeze(buffer)` takes `buffer` as a `consume` parameter: the separation
+-       checker retires every writer statically, so the surviving reference can drop its
+-       write capability and become `Array[element]^{}` with no copy. It is the only sound
+-       way to produce a frozen array from a mutable one; after the call, `buffer` cannot be
+-       used again.
++   entry .allocate   новый исключительный массив заданного размера: `Array.allocate[Int](3)`
++       Назван `allocate`, а не `apply`, чтобы `Array(3)` однозначно означал литерал из одного
++       элемента. Элементы — нулевое значение типа (`0`, `false`, `null`), а результат —
++       `Array[element]^`, доступный для записи через `update`. Нужен `ClassTag`.
++   entry .apply   `Array(a, b, c)`, замороженный литерал; и `buffer(index)`, исключительное чтение
++       Это имя носят два члена. В объекте-компаньоне `Array(elements*)` строит свежий массив,
++       у которого не может быть писателя-псевдонима, поэтому он заморожен (`Array[element]^{}`)
++       по построению; ему нужен `ClassTag`. Как расширение исключительного `Array[element]^`,
++       `buffer(index)` читает одну ячейку, встраиваясь в собственный доступ JVM к массиву (без
++       упаковки): единоличное владение означает, что никто другой не мог изменить содержимое. У
++       разделяемой или замороженной ссылки `apply` нет; читайте через `readUnchecked` или через
++       всюду определённый `at` из concordance.
++   entry .update   `buffer(index) = value`: записывает одну ячейку исключительного массива
++       Inline-расширение только для `Array[element]^` — у замороженной или разделяемой ссылки
++       нет `update`, — компилируемое в собственную запись JVM в массив. Получатель inline,
++       поэтому он вычисляется после индекса и значения, там, где используется.
++   entry .empty   замороженный пустой массив: `Array.empty[Int]`
++   entry .from   замороженный массив, скопированный из любого `IterableOnce`
++       `Array.from(elements)` копирует элементы итерируемой коллекции или итератора stdlib в
++       свежий массив, который заморожен, поскольку больше ничто не может до него добраться.
++       Нужен `ClassTag`.
++   entry .fill   `Array.fill(n)(element)`: замороженный массив из `n` копий; и `buffer.fill(value)`
++       В объекте-компаньоне `Array.fill(count)(element)` вычисляет `element` один раз на ячейку и
++       замораживает результат; когда `count` — литерал, результат дополнительно получает бренд
++       `Sized[count]`, так что `Array.fill(512)(0.toByte)` — это `Array[Byte]^{} & Sized[512]`,
++       и литеральный порядковый номер меньше 512 читает его всюду определённо. Количество из `val`
++       даёт простой массив. Как расширение исключительного `Array[element]^`,
++       `buffer.fill(value)` перезаписывает каждую ячейку на месте.
++   entry .tabulate   `Array.tabulate(n)(index => …)`: замороженный массив, вычисленный по индексу
++       Как `.fill`, но лямбде передаётся индекс ячейки; получает бренд `Sized[n]`, когда `n` —
++       литерал.
++   entry .range   `Array.range(start, end)`: целые числа от `start` до `end`, не включая его
++       Замороженный; пустой диапазон (`end <= start`) — это пустой массив.
++   entry .concat   замороженный массив из двух или трёх читаемых массивов подряд
++       `Array.concat(left, right)` копирует оба в свежий массив и замораживает его; с двумя
++       аргументами `Sized` результат — `Sized[left + right]`, что решается на уровне типов.
++       Форма с тремя операндами, `Array.concat(left, middle, right)`, — это вставка: `Array.concat
++       (xs.before(i), replacement, xs.after(i))` за один проход перестраивает массив с заменённым
++       сегментом. Арность фиксирована, а не переменна, потому что замороженный массив как
++       элемент `Seq` для varargs заново освежается при проверке захвата, и типы элементов
++       сегментов тогда не унифицируются. Нужен `ClassTag`.
++   entry .same   поэлементное равенство двух читаемых массивов
++       `Array.same(left, right)` — истинно ли, что у двух массивов одинаковая длина и равные
++       элементы на каждом индексе. `==` для массивов — это идентичность ссылок, которую
++       непрозрачный псевдоним не может переопределить, поэтому равенство содержимого — именованная
++       операция.
++   entry .freeze   поглощает исключительный массив и возвращает его замороженным, без копирования
++       `Array.freeze(buffer)` принимает `buffer` как параметр `consume`: проверка разделения
++       статически выводит из употребления всех писателей, так что оставшаяся ссылка может
++       отказаться от возможности записи и стать `Array[element]^{}` без копирования. Это
++       единственный корректный способ получить замороженный массив из изменяемого; после вызова
++       `buffer` использовать снова нельзя.
+
+=       used again.
+=
+-       ```scala
++       ```scala
+
+=       used again.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val buffer = Array.allocate[Int](2)
++       val buffer = Array.allocate[Int](2)
+
+-       buffer(0) = 1
++       buffer(0) = 1
+
+-       buffer(1) = 2
++       buffer(1) = 2
+
+-       Array.freeze(buffer).to[List]   // List(1, 2)
++       Array.freeze(buffer).to[List]   // List(1, 2)
+
+=       Array.freeze(buffer).to[List]   // List(1, 2)
+-       ```
++       ```
+
+-   entry .thaw   an exclusive copy of any readable array, the inverse of `freeze`
+-       `Array.thaw(array)` allocates a fresh exclusive array and copies the source into it,
+-       so the caller may write several slots (`copy(i) = value`) and `freeze` again. Always
+-       a copy, never the source itself: the source may be frozen or shared, so other
+-       readers keep seeing it unchanged. For a one-slot edit use rudiments' `define`; for a
+-       splice, `.concat`. Needs a `ClassTag`.
+-   entry .grow   a larger exclusive array holding an exclusive buffer's content, consuming it
+-       `Array.grow(buffer, size)` is the step of a linear accumulating builder: it consumes
+-       `buffer`, copies as much of it as fits into a fresh array of `size` (a smaller size
+-       truncates), and returns that, exclusive. Because the old buffer is consumed, the
+-       idiom is recursion threading the buffer through `consume` parameters — a `var`
+-       cannot hold an exclusive buffer.
+-   entry .place   copies a readable array into an exclusive one, at an offset
+-       Extensions on `Array[element]^`: `buffer.place(source)` copies `source` to the start,
+-       `buffer.place(source, at)` to offset `at`, and `buffer.place(source, sourceStart,
+-       targetStart, count)` copies a window. Frozen and shared sources both serve. It is
+-       `System.arraycopy` underneath, and is what every frozen constructor uses to fill its
+-       result.
+-   entry .length   the number of slots, on any reference
+-   entry .readUnchecked   reads a slot of a shared or frozen array, with no bounds check
+-       The bounds-partial read, inlined: `array.readUnchecked(index)` on any readable
+-       reference. Reading through a shared reference is sound because separation excludes
+-       a live writer wherever readers alias. It is the primitive under concordance's total
+-       `at`; at an ordinary call site prefer that or a confined ordinal, and a bare call
+-       carries a comment naming the proof that the index is in range.
+-   entry .raw   the underlying JVM array of an exclusive reference, for interop
+-       `buffer.raw` is the `scala.Array[element]^` behind an exclusive array, for a Java API
+-       which fills it (`random.nextBytes`, `stream.read`). The result aliases the array and
+-       shares its exclusivity rather than escaping it.
+-   entry .stdlib   a zero-copy, read-only `ArraySeq` view of any readable array
+-       The greppable bridge to the stdlib and Java APIs which want a `Seq`, as
+-       `List.stdlib` is for lists. Not for element access: its generic `apply` boxes and
+-       is a partial read the collection vocabulary does not offer.
+-   entry .map   a frozen array of the results of a function, from any readable array
+-       `array.map(lambda)` on any readable reference gives a new frozen array; it needs a
+-       `ClassTag` for the result element, which is why it is a companion extension rather
+-       than a `Mappable` instance (no typeclass slot can carry the obligation). The lambda's
+-       result type is an explicit type parameter so that a nested frozen array's capture is
+-       not re-minted at the call.
+-   entry .scratch   a bare JVM array, for interior scratch below the exclusivity discipline
+-       `Array.scratch[element](size)` is `new scala.Array[element](size)`, through the
+-       companion so that the fields of `caps.Mutable` state machines and other code beneath
+-       `Array`'s reach share this vocabulary without spelling `new`. Not an `Array`; see
+-       `.raw` for the exclusive interop view.
+-   entry .unsafeFrozen   asserts a JVM array has no writer and returns it frozen
+-       The trusted boundary cast for interop edges which cannot thread `consume`: the
+-       caller asserts it retains no writer to the `scala.Array` it passes. Named `unsafe…`
+-       because the assertion is unchecked.
+-   entry .unsafeJvm   the JVM array behind a readable reference, for Java APIs which only read
+-       `Array.unsafeJvm(array)` hands a `scala.Array[element]` to the JDK's byte-array
+-       surface — `OutputStream.write`, `MessageDigest.update`, `SecretKeySpec` — which reads
+-       but never writes its argument. Nothing is asserted about this side; the whole claim
+-       is about the callee, which a Java signature cannot express, so it is one greppable
+-       call checkable against one Javadoc rather than an ambient `Unsafe`.
+-   entry .unapplySeq   `case Array(a, b, c)`: pattern support for any readable array
+-       A pattern reads but never writes, so frozen, shared and exclusive receivers all
+-       match; a pattern of the wrong arity fails to match.
+-   entry .quoted   lifts a list or frozen array of `Expr`s into one `Expr` of a frozen array
+-       The native counterpart of `Expr.ofList` for macro code holding `List[Expr[element]]`
+-       or `Array[Expr[element]]^{}`: `Array.quoted(elements)` splices one
+-       `Expr[Array[element]^{}]`, resolving the element's `ClassTag` at the expansion site
+-       where the type is concrete, and failing the expansion with _no ClassTag is available
+-       for the elements of the array_ if there is none.
+-   entry .arrayIsSpreadable   lets a frozen array be spliced into varargs: `f(array*)`
+-       The `Spreadable` given (a `scala.Spreadable`, from the proscala compiler) which
+-       makes `f(array*)` work on an `Array[element]^{}` without a `stdlib` crossing.
++   entry .thaw   исключительная копия любого читаемого массива, обратная к `freeze`
++       `Array.thaw(array)` выделяет свежий исключительный массив и копирует в него источник,
++       чтобы вызывающий код мог записать несколько ячеек (`copy(i) = value`) и снова выполнить
++       `freeze`. Всегда копия, никогда не сам источник: источник может быть замороженным или
++       разделяемым, так что другие читатели продолжают видеть его неизменным. Для правки одной
++       ячейки используйте `define` из rudiments; для вставки — `.concat`. Нужен `ClassTag`.
++   entry .grow   больший исключительный массив с содержимым исключительного буфера, поглощающий его
++       `Array.grow(buffer, size)` — шаг линейного накапливающего построителя: он поглощает
++       `buffer`, копирует из него столько, сколько помещается, в свежий массив размера `size`
++       (меньший размер усекает) и возвращает его, исключительным. Поскольку старый буфер
++       поглощается, идиома — рекурсия, передающая буфер через параметры `consume`: `var`
++       не может хранить исключительный буфер.
++   entry .place   копирует читаемый массив в исключительный, со смещением
++       Расширения `Array[element]^`: `buffer.place(source)` копирует `source` в начало,
++       `buffer.place(source, at)` — по смещению `at`, а `buffer.place(source, sourceStart,
++       targetStart, count)` копирует окно. Подходят и замороженные, и разделяемые источники.
++       Внутри это `System.arraycopy`, и именно так каждый замороженный конструктор заполняет
++       свой результат.
++   entry .length   количество ячеек, для любой ссылки
++   entry .readUnchecked   читает ячейку разделяемого или замороженного массива без проверки границ
++       Частичное по границам чтение, встраиваемое: `array.readUnchecked(index)` для любой
++       читаемой ссылки. Чтение через разделяемую ссылку корректно, поскольку разделение
++       исключает живого писателя везде, где читатели являются псевдонимами. Это примитив под
++       всюду определённым `at` из concordance; в обычном месте вызова предпочитайте его или
++       ограниченный порядковый номер, а голый вызов сопровождается комментарием, называющим
++       доказательство того, что индекс в пределах диапазона.
++   entry .raw   нижележащий массив JVM исключительной ссылки, для взаимодействия
++       `buffer.raw` — это `scala.Array[element]^` за исключительным массивом, для API Java,
++       который его заполняет (`random.nextBytes`, `stream.read`). Результат является
++       псевдонимом массива и разделяет его исключительность, а не выпускает её наружу.
++   entry .stdlib   представление `ArraySeq` любого читаемого массива, без копирования и только для чтения
++       Легко находимый grep'ом мост к API stdlib и Java, которым нужен `Seq`, как `List.stdlib`
++       для списков. Не для доступа к элементам: его обобщённый `apply` упаковывает и является
++       частичным чтением, которого словарь коллекций не предлагает.
++   entry .map   замороженный массив результатов функции, из любого читаемого массива
++       `array.map(lambda)` для любой читаемой ссылки даёт новый замороженный массив; ему нужен
++       `ClassTag` для элемента результата, поэтому это расширение в объекте-компаньоне, а не
++       экземпляр `Mappable` (ни одна ячейка класса типов не может нести это обязательство). Тип
++       результата лямбды — явный параметр типа, чтобы захват вложенного замороженного массива
++       не создавался заново при вызове.
++   entry .scratch   голый массив JVM, для внутреннего рабочего буфера ниже дисциплины исключительности
++       `Array.scratch[element](size)` — это `new scala.Array[element](size)` через
++       объект-компаньон, чтобы поля конечных автоматов `caps.Mutable` и другой код, лежащий ниже
++       досягаемости `Array`, пользовались этим словарём, не записывая `new`. Не `Array`;
++       исключительное представление для взаимодействия см. в `.raw`.
++   entry .unsafeFrozen   утверждает, что у массива JVM нет писателя, и возвращает его замороженным
++       Доверенное граничное приведение для краёв взаимодействия, которые не могут передать
++       `consume`: вызывающий код утверждает, что не удерживает писателя для передаваемого
++       `scala.Array`. Назван `unsafe…`, потому что утверждение не проверяется.
++   entry .unsafeJvm   массив JVM за читаемой ссылкой, для API Java, которые только читают
++       `Array.unsafeJvm(array)` передаёт `scala.Array[element]` в API JDK для байтовых массивов —
++       `OutputStream.write`, `MessageDigest.update`, `SecretKeySpec`, — которые читают, но
++       никогда не пишут в свой аргумент. Об этой стороне ничего не утверждается; всё
++       утверждение касается вызываемого кода, чего сигнатура Java выразить не может, так что
++       это один легко находимый grep'ом вызов, проверяемый по одному Javadoc, а не окружающий
++       `Unsafe`.
++   entry .unapplySeq   `case Array(a, b, c)`: поддержка образцов для любого читаемого массива
++       Образец читает, но никогда не пишет, поэтому подходят замороженные, разделяемые и
++       исключительные получатели; образец неверной арности не сопоставляется.
++   entry .quoted   поднимает список или замороженный массив `Expr` в один `Expr` замороженного массива
++       Нативный аналог `Expr.ofList` для кода макросов, хранящего `List[Expr[element]]`
++       или `Array[Expr[element]]^{}`: `Array.quoted(elements)` вставляет один
++       `Expr[Array[element]^{}]`, разрешая `ClassTag` элемента в месте раскрытия, где тип
++       конкретен, и прерывая раскрытие с _no ClassTag is available
++       for the elements of the array_, если его нет.
++   entry .arrayIsSpreadable   позволяет развернуть замороженный массив в varargs: `f(array*)`
++       Given `Spreadable` (`scala.Spreadable` из компилятора proscala), благодаря которому
++       `f(array*)` работает с `Array[element]^{}` без перехода через `stdlib`.
+
+- entry .List   an immutable linked list, as an opaque alias of the stdlib's `List`
++ entry .List   неизменяемый связный список, непрозрачный псевдоним `List` из stdlib
+
+= entry .List   an immutable linked list, as an opaque alias of the stdlib's `List`
+-   detail
++   detail
+
+-       `List[element]` is the workhorse collection: cheap to prepend to and to traverse,
+-       linear to index or to count. It is an opaque alias of
+-       `scala.collection.immutable.List`, so it costs nothing, but none of the stdlib's
+-       members are visible on it; its API is the typeclass-driven vocabulary of the
+-       libraries above (`map`, `filter`, `bind`, `fold`, `each`, `head`, `at`, `sort`, …),
+-       which is total. The companion holds construction, pattern support, the `stdlib`
+-       bridge, and the macro lifting.
++       `List[element]` — рабочая лошадка среди коллекций: в начало добавлять и обходить дёшево,
++       индексировать и считать — линейно. Это непрозрачный псевдоним
++       `scala.collection.immutable.List`, поэтому он ничего не стоит, но ни один член stdlib на
++       нём не виден; его API — словарь библиотек уровнем выше на основе классов типов
++       (`map`, `filter`, `bind`, `fold`, `each`, `head`, `at`, `sort`, …),
++       всюду определённый. Объект-компаньон содержит построение, поддержку образцов, мост
++       `stdlib` и подъём в макросах.
+
+=       bridge, and the macro lifting.
+=
+-       ```scala
++       ```scala
+
+=       bridge, and the macro lifting.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val numbers = List(3, 1, 2)      // List[Int] & Populated
++       val numbers = List(3, 1, 2)      // List[Int] & Populated
+
+-       numbers.head                      // 3: total, since the arity proved non-emptiness
++       numbers.head                      // 3: total, since the arity proved non-emptiness
+
+-       val more = 0 :: numbers           // List(0, 3, 1, 2)
++       val more = 0 :: numbers           // List(0, 3, 1, 2)
+
+-       more match
++       more match
+
+=       more match
+-         case head :: tail => head
++         case head :: tail => head
+
+-         case Nil          => -1
++         case Nil          => -1
+
+-       List.empty[Int].head              // Optional[Int]: Unset
++       List.empty[Int].head              // Optional[Int]: Unset
+
+=       List.empty[Int].head              // Optional[Int]: Unset
+-       ```
++       ```
+
+-       A literal of one to twelve elements is branded `& Populated` — the arity of the
+-       call *is* the proof of non-emptiness — so `head`, `last`, `tail` and `reduce` are
+-       total on it. A thirteen-element literal, `List(elements*)` from a `Seq`, and the
+-       result of any transformation are plain `List[element]`, on which `head` is an
+-       `Optional`; rudiments' `occupied` recovers the proof with one check. A branded list
+-       compares with a plain one (`.populatedEquality`).
++       Литерал из одного–двенадцати элементов получает бренд `& Populated` — арность вызова
++       *и есть* доказательство непустоты, — поэтому `head`, `last`, `tail` и `reduce` на нём
++       всюду определены. Литерал из тринадцати элементов, `List(elements*)` из `Seq` и результат
++       любого преобразования — простой `List[element]`, у которого `head` — это `Optional`;
++       `occupied` из rudiments восстанавливает доказательство одной проверкой. Список с брендом
++       сравнивается с простым (`.populatedEquality`).
+
+-       `Nil` is the empty list, matched by equality (`case Nil =>`); `head :: tail`
+-       constructs and deconstructs (through `consConstructor` and the `::` extractor); and
+-       `case List(a, b)` matches by `.unapplySeq`. Counting a list (`size`) and indexing it
+-       (`at`, `sec`, `ter`) are walks from its head, and so are available only under
+-       `import dysasymptotics.linearSize` and `linearAccess` respectively — which say
+-       something true and should not be dodged through `stdlib`.
++       `Nil` — пустой список, сопоставляемый по равенству (`case Nil =>`); `head :: tail`
++       строит и разбирает (через `consConstructor` и экстрактор `::`); а
++       `case List(a, b)` сопоставляется через `.unapplySeq`. Подсчёт списка (`size`) и его
++       индексация (`at`, `sec`, `ter`) — это проходы от головы, поэтому они доступны только с
++       `import dysasymptotics.linearSize` и `linearAccess` соответственно; эти импорты говорят
++       правду, и обходить их через `stdlib` не следует.
+
+-       Crossing to the stdlib is `list.stdlib`, a cast with no copy, and back is `List.from`
+-       or `.to(List)` on any stdlib collection (through `.factory`); there is no implicit
+-       conversion in either direction. A varargs splice `f(list*)` works directly. The
+-       companion's primitive operations (`.size`, `.head`, `.at`, `.map`, …) are plain
+-       methods for the typeclass instances above to call; at an ordinary call site the
+-       extension vocabulary is what to use.
++       Переход к stdlib — это `list.stdlib`, приведение без копирования, а обратно — `List.from`
++       или `.to(List)` для любой коллекции stdlib (через `.factory`); неявного преобразования нет
++       ни в одну сторону. Развёртка varargs `f(list*)` работает напрямую. Примитивные операции
++       объекта-компаньона (`.size`, `.head`, `.at`, `.map`, …) — простые методы, которые вызывают
++       экземпляры классов типов уровнем выше; в обычном месте вызова следует использовать словарь
++       расширений.
+
+-   refer proscenium.Nil
++   refer proscenium.Nil
+
+=   refer proscenium.Nil
+-   refer proscenium.Populated
++   refer proscenium.Populated
+
+-   refer proscenium.Sequence
++   refer proscenium.Sequence
+
+-   refer proscenium.Chain
++   refer proscenium.Chain
+
+-   entry .apply   `List(a, b, c)`: a list of its arguments, branded `Populated` up to twelve
+-       One fixed-arity overload per arity from one to twelve returns `List[element] &
+-       Populated`; the varargs form, which a `Seq` splice or more than twelve elements
+-       reaches, returns a plain `List[element]`. The fixed arities exist because a
+-       `(head, tail*)` overload is ambiguous with `(elements*)` and a macro would be an
+-       implicit search under live type variables.
+-   entry .empty   the empty list, typed: `List.empty[Int]`
+-   entry .from   a list copied from any `IterableOnce`
+-       `List.from(elements)` is the way back from the stdlib: it copies a stdlib collection
+-       or iterator into a `List`. A `scala.collection.immutable.List` is wrapped without
+-       copying.
+-   entry .fill   `List.fill(n)(element)`: `n` evaluations of `element`
+-   entry .tabulate   `List.tabulate(n)(index => …)`: `n` elements computed by index
+-   entry .range   `List.range(start, end)`: the integers from `start` up to `end`, exclusive
+-   entry .unapplySeq   `case List(a, b)`: pattern support
+-   entry .stdlib   the underlying `scala.collection.immutable.List`, with no copy
+-       The greppable bridge to a stdlib or Java API, as an inline cast. It is the one way to
+-       reach the partial stdlib surface, and every use is a visible seam; it should not be
+-       used to bypass a cost gate (`xs.stdlib.length` for a gated `size`).
+-   entry .factory   `.to(List)` on a stdlib collection builds a `List`
+-       A `Conversion` from the companion `List.type` to a stdlib `Factory`, so that
+-       `scalaSeq.to(List)` works. It is defined on the companion's type only, so it cannot
+-       expose members of `List` values.
+-   entry .populatedEquality   `CanEqual[List[a] & Populated, List[b]]`: a branded list compares with a plain one
+-       `CanEqual` is sought in the companions of the compared types, and the `Populated`
+-       brand contributes none, so the equality lives here; `.populatedEqualityReversed`
+-       is the other order.
++   entry .apply   `List(a, b, c)`: список из аргументов, с брендом `Populated` до двенадцати элементов
++       Перегрузка фиксированной арности для каждой арности от одного до двенадцати возвращает
++       `List[element] & Populated`; форма varargs, к которой ведёт развёртка `Seq` или более
++       двенадцати элементов, возвращает простой `List[element]`. Фиксированные арности
++       существуют потому, что перегрузка `(head, tail*)` неоднозначна с `(elements*)`, а макрос
++       означал бы неявный поиск при живых переменных типа.
++   entry .empty   пустой список, типизированный: `List.empty[Int]`
++   entry .from   список, скопированный из любого `IterableOnce`
++       `List.from(elements)` — путь обратно из stdlib: он копирует коллекцию или итератор stdlib
++       в `List`. `scala.collection.immutable.List` оборачивается без копирования.
++   entry .fill   `List.fill(n)(element)`: `n` вычислений `element`
++   entry .tabulate   `List.tabulate(n)(index => …)`: `n` элементов, вычисленных по индексу
++   entry .range   `List.range(start, end)`: целые числа от `start` до `end`, не включая его
++   entry .unapplySeq   `case List(a, b)`: поддержка образцов
++   entry .stdlib   нижележащий `scala.collection.immutable.List`, без копирования
++       Легко находимый grep'ом мост к API stdlib или Java, в виде inline-приведения. Это
++       единственный путь к частичной поверхности stdlib, и каждое использование — видимый шов;
++       его не следует использовать для обхода шлюза стоимости (`xs.stdlib.length` вместо
++       закрытого шлюзом `size`).
++   entry .factory   `.to(List)` для коллекции stdlib строит `List`
++       `Conversion` из типа объекта-компаньона `List.type` в `Factory` из stdlib, чтобы работал
++       `scalaSeq.to(List)`. Он определён только для типа объекта-компаньона, поэтому не может
++       открыть члены значений `List`.
++   entry .populatedEquality   `CanEqual[List[a] & Populated, List[b]]`: список с брендом сравнивается с простым
++       `CanEqual` ищется в объектах-компаньонах сравниваемых типов, а бренд `Populated` ничего
++       не вносит, поэтому равенство находится здесь; `.populatedEqualityReversed` —
++       обратный порядок.
+
+-   entry .populatedEqualityReversed   `CanEqual[List[a], List[b] & Populated]`
++   entry .populatedEqualityReversed   `CanEqual[List[a], List[b] & Populated]`
+
+-   entry .toExpr   lifts a `List` of liftable elements into an `Expr` in a macro
+-       `Expr(list)` works for a `List[element]` whose element has a `ToExpr`; the lifted tree
+-       is `List.from(…)`.
+-   entry .fromExpr   unlifts an `Expr[List[element]]` which was produced by lifting
+-       Recognises `List.from(…)` of a constant stdlib list, `List.empty` and `Nil`; any
+-       other list-yielding tree is not constant-foldable and gives `None`.
+-   entry .quoted   lifts a `List[Expr[element]]` into one `Expr[List[element]]`
+-       The native counterpart of `Expr.ofList`, for macro code holding a native list of
+-       lifted elements; `Expr.ofList(xs.stdlib)` wrapped in `List.from` is `List.quoted(xs)`.
+-   entry .size   the length, by traversal: a primitive for `Countable`
+-       The companion's primitive operations are plain methods, not extensions, for the
+-       typeclass instances in the libraries above; call-site code uses the gated `size`
+-       extension instead.
+-   entry .nil   whether the list is empty: a primitive for the typeclass instances
+-   entry .head   the first element, partial: a primitive for the `Populated`-gated `head`
+-   entry .tail   everything after the first element, partial: a primitive
+-   entry .last   the final element, partial: a primitive
+-   entry .lead   everything before the last element, partial: a primitive
+-   entry .at   the element at an `Int` index, partial: a primitive for `Indexable`
+-   entry .define   a list with the element at an index replaced: a primitive for `Definable`
+-   entry .has   whether an element is present: a primitive for `Inclusive`
+-   entry .drop   the list without its first `n` elements: a primitive
+-   entry .append   the list with an element added at the end, branded `Populated`
+-       Appending makes the list non-empty, so the construction is the proof.
+-   entry .prepend   the list with an element added at the front, branded `Populated`
+-   entry .concat   two lists joined: a primitive for `concat`
+-   entry .invert   the list reversed: a primitive for `Reversible`
+-   entry .map   the list with a function applied to each element: a primitive for `Mappable`
+-   entry .slice   the elements between two `Int` indices: a primitive for `excerpt`
+-   entry .iterator   a stdlib iterator over the list: a primitive for `Traversable`
++   entry .toExpr   поднимает `List` поднимаемых элементов в `Expr` в макросе
++       `Expr(list)` работает для `List[element]`, у элемента которого есть `ToExpr`; поднятое
++       дерево — `List.from(…)`.
++   entry .fromExpr   опускает `Expr[List[element]]`, полученный подъёмом
++       Распознаёт `List.from(…)` от константного списка stdlib, `List.empty` и `Nil`; любое
++       другое дерево, дающее список, не сворачивается в константу и даёт `None`.
++   entry .quoted   поднимает `List[Expr[element]]` в один `Expr[List[element]]`
++       Нативный аналог `Expr.ofList` для кода макросов, хранящего нативный список поднятых
++       элементов; `Expr.ofList(xs.stdlib)`, обёрнутый в `List.from`, — это `List.quoted(xs)`.
++   entry .size   длина, путём обхода: примитив для `Countable`
++       Примитивные операции объекта-компаньона — простые методы, а не расширения, для
++       экземпляров классов типов в библиотеках уровнем выше; код в месте вызова использует
++       вместо них закрытое шлюзом расширение `size`.
++   entry .nil   пуст ли список: примитив для экземпляров классов типов
++   entry .head   первый элемент, частично: примитив для закрытого через `Populated` `head`
++   entry .tail   всё после первого элемента, частично: примитив
++   entry .last   последний элемент, частично: примитив
++   entry .lead   всё до последнего элемента, частично: примитив
++   entry .at   элемент по индексу `Int`, частично: примитив для `Indexable`
++   entry .define   список с заменённым элементом по индексу: примитив для `Definable`
++   entry .has   присутствует ли элемент: примитив для `Inclusive`
++   entry .drop   список без первых `n` элементов: примитив
++   entry .append   список с элементом, добавленным в конец, с брендом `Populated`
++       Добавление делает список непустым, так что построение и есть доказательство.
++   entry .prepend   список с элементом, добавленным в начало, с брендом `Populated`
++   entry .concat   два соединённых списка: примитив для `concat`
++   entry .invert   обращённый список: примитив для `Reversible`
++   entry .map   список с функцией, применённой к каждому элементу: примитив для `Mappable`
++   entry .slice   элементы между двумя индексами `Int`: примитив для `excerpt`
++   entry .iterator   итератор stdlib по списку: примитив для `Traversable`
+
+- entry .Nil   the empty list, `List[Nothing]`
+-     A value, not an extractor object, so `case Nil =>` matches by equality and existing
+-     syntax compiles unchanged. It conforms to every `List[element]` by covariance, and
+-     `Default[List[element]]` is `Nil`.
++ entry .Nil   пустой список, `List[Nothing]`
++     Значение, а не объект-экстрактор, поэтому `case Nil =>` сопоставляется по равенству, и
++     существующий синтаксис компилируется без изменений. Благодаря ковариантности он
++     соответствует любому `List[element]`, а `Default[List[element]]` — это `Nil`.
+
+- entry .listIsSpreadable   lets a list be spliced into varargs: `f(list*)`
+-     The `Spreadable` given (a `scala.Spreadable`, from the proscala compiler) which makes
+-     `f(list*)` work on an opaque `List` without a `stdlib` crossing. It is
+-     subtype-parametric, so a branded `List[a] & Populated` splices too. Unlike the other
+-     collections' `Spreadable` givens it sits at the top level of the package rather than
+-     in the companion, which is equivalent for resolution: a top-level opaque type's
+-     implicit scope includes the definitions beside it.
++ entry .listIsSpreadable   позволяет развернуть список в varargs: `f(list*)`
++     Given `Spreadable` (`scala.Spreadable` из компилятора proscala), благодаря которому
++     `f(list*)` работает с непрозрачным `List` без перехода через `stdlib`. Он
++     параметричен по подтипам, поэтому разворачивается и `List[a] & Populated` с брендом. В
++     отличие от given'ов `Spreadable` других коллекций, он находится на верхнем уровне пакета,
++     а не в объекте-компаньоне, что равносильно для разрешения: неявная область видимости
++     непрозрачного типа верхнего уровня включает определения рядом с ним.
+
+- entry .listGatherable   makes a repeated parameter a `List` in the body of its method
+-     The `Gatherable` given (a `scala.Gatherable`, from the proscala compiler) which a
+-     module compiled with `-Zgatherable-varargs` receives its repeated parameters through:
+-     the body of `def join(parts: Text*)` sees `parts` as a `List[Text]`, converted once on
+-     entry, where the language would hand it a stdlib `Seq`. Every Soundness module is
+-     compiled this way, so a varargs method is written against the `List` API directly, with
+-     no `parts.to(List)` on its first line. Callers are unaffected: the signature is still
+-     `Text*`, and `join(texts*)` splices as before. It sits at the top level of the package
+-     because `Gatherable[element]` has no subject whose companion could hold it; `-Yimports`
+-     puts it in scope. A project using `soundness.*` without that root import, or without
+-     the flag, keeps the stdlib `Seq`. Class parameters (`case class Path(segments: Text*)`),
+-     `inline` parameters and macros are not affected by the flag and remain a `Seq`.
++ entry .listGatherable   превращает повторяющийся параметр в `List` в теле его метода
++     Given `Gatherable` (`scala.Gatherable` из компилятора proscala), через который модуль,
++     скомпилированный с `-Zgatherable-varargs`, получает свои повторяющиеся параметры: тело
++     `def join(parts: Text*)` видит `parts` как `List[Text]`, преобразованный один раз при
++     входе, тогда как язык передал бы ему `Seq` из stdlib. Так компилируется каждый модуль
++     Soundness, поэтому метод с varargs пишется непосредственно против API `List`, без
++     `parts.to(List)` в первой строке. Вызывающего кода это не касается: сигнатура по-прежнему
++     `Text*`, и `join(texts*)` разворачивается как раньше. Он находится на верхнем уровне
++     пакета, потому что у `Gatherable[element]` нет субъекта, объект-компаньон которого мог бы
++     его содержать; в область видимости его вносит `-Yimports`. Проект, использующий
++     `soundness.*` без этого корневого импорта или без флага, сохраняет `Seq` из stdlib.
++     Параметры классов (`case class Path(segments: Text*)`), параметры `inline` и макросы
++     флаг не затрагивает, и они остаются `Seq`.
+
+- entry .consConstructor   the given which supplies `head :: tail` on the opaque `List`
+-     `::` is right-associative, so the receiver of the extension is the head — the left
+-     operand at the call site — and the argument is the tail. The extension rides on a given
+-     rather than at top level because the name belongs to the extractor object `::`; the
+-     given is visible everywhere through `-Yimports`, so `1 :: List(2, 3)` just works. The
+-     result is a plain `List[element]`, not `& Populated`: in a chain `a :: b :: c` the
+-     right operand is typed first, and the element type cannot be inferred from a branded
+-     result there.
++ entry .consConstructor   given, который предоставляет `head :: tail` для непрозрачного `List`
++     `::` правоассоциативен, поэтому получатель расширения — голова, левый операнд в месте
++     вызова, а аргумент — хвост. Расширение держится на given, а не на верхнем уровне,
++     потому что имя принадлежит объекту-экстрактору `::`; given виден везде через `-Yimports`,
++     так что `1 :: List(2, 3)` просто работает. Результат — простой `List[element]`, а не
++     `& Populated`: в цепочке `a :: b :: c` правый операнд типизируется первым, и тип элемента
++     там нельзя вывести из результата с брендом.
+
+- entry .::   the extractor for `case head :: tail =>` on the opaque `List`
++ entry .::   экстрактор для `case head :: tail =>` на непрозрачном `List`
+
+= entry .::   the extractor for `case head :: tail =>` on the opaque `List`
+-   detail
++   detail
+
+-       A name-based extractor, allocating no `Option`: `::.unapply(list)` yields a
+-       `ConsView` whose `isEmpty` is the list's, and whose `_1` and `_2` are the head and
+-       the tail. The constructor `head :: tail` is the extension in `consConstructor`.
++       Экстрактор на основе имён, не выделяющий `Option`: `::.unapply(list)` даёт
++       `ConsView`, чей `isEmpty` — это пустота списка, а `_1` и `_2` — голова и хвост.
++       Конструктор `head :: tail` — это расширение в `consConstructor`.
+
+=       the tail. The constructor `head :: tail` is the extension in `consConstructor`.
+=
+-       ```scala
++       ```scala
+
+=       the tail. The constructor `head :: tail` is the extension in `consConstructor`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       List(1, 2, 3) match
++       List(1, 2, 3) match
+
+=       List(1, 2, 3) match
+-         case head :: tail => head
++         case head :: tail => head
+
+-         case Nil          => 0
++         case Nil          => 0
+
+=         case Nil          => 0
+-       ```
++       ```
+
+-   entry .ConsView   the view a `::` pattern reads: `isEmpty`, `_1` (head), `_2` (tail)
+-     entry #isEmpty   whether the list is empty, in which case the pattern fails
+-     entry #get   the view itself
+-     entry #_1   the head
+-     entry #_2   the tail, as a `List`
+-   entry .unapply   `case head :: tail`: the view over a list
++   entry .ConsView   представление, которое читает образец `::`: `isEmpty`, `_1` (голова), `_2` (хвост)
++     entry #isEmpty   пуст ли список; в этом случае образец не сопоставляется
++     entry #get   само представление
++     entry #_1   голова
++     entry #_2   хвост, как `List`
++   entry .unapply   `case head :: tail`: представление над списком
+
+- entry .Sequence   an immutable indexed sequence, as an opaque alias of the stdlib's `Vector`
++ entry .Sequence   неизменяемая индексируемая последовательность, непрозрачный псевдоним `Vector` из stdlib
+
+= entry .Sequence   an immutable indexed sequence, as an opaque alias of the stdlib's `Vector`
+-   detail
++   detail
+
+-       A `Sequence[element]` is cheap to read at any position and to append to, so
+-       indexing (`at`, `sec`, `ter`) and `size` need no cost acknowledgment, unlike a
+-       `List`. It is an opaque alias of `scala.collection.immutable.Vector` with the same
+-       design as `List`: members invisible, the vocabulary from the typeclass extensions
+-       above, construction and the `stdlib` bridge in the companion, and no implicit
+-       conversion to or from `Vector`.
++       `Sequence[element]` дёшево читать в любой позиции и дёшево дополнять, поэтому индексация
++       (`at`, `sec`, `ter`) и `size` не требуют признания стоимости, в отличие от
++       `List`. Это непрозрачный псевдоним `scala.collection.immutable.Vector` с тем же
++       устройством, что и `List`: члены невидимы, словарь — из расширений на основе классов типов
++       уровнем выше, построение и мост `stdlib` — в объекте-компаньоне, а неявного
++       преобразования в `Vector` и из него нет.
+
+=       conversion to or from `Vector`.
+=
+-       ```scala
++       ```scala
+
+=       conversion to or from `Vector`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val letters = Sequence(t"a", t"b", t"c")   // Sequence[Text] & Populated
++       val letters = Sequence(t"a", t"b", t"c")   // Sequence[Text] & Populated
+
+-       letters(Sec)                                // t"b"
++       letters(Sec)                                // t"b"
+
+-       letters.head                                // t"a"
++       letters.head                                // t"a"
+
+-       letters match
++       letters match
+
+-         case Sequence(a, b, c) => a
++         case Sequence(a, b, c) => a
+
+-         case _                 => t""
++         case _                 => t""
+
+=         case _                 => t""
+-       ```
++       ```
+
+-       A literal of one to twelve elements is branded `& Populated`, as a `List` literal is.
+-       A `Sequence` has no `factory` conversion, so a stdlib collection is converted with
+-       `Sequence.from(elements)` rather than `.to(Sequence)`.
++       Литерал из одного–двенадцати элементов получает бренд `& Populated`, как и литерал `List`.
++       У `Sequence` нет преобразования `factory`, поэтому коллекция stdlib преобразуется через
++       `Sequence.from(elements)`, а не `.to(Sequence)`.
+
+=       `Sequence.from(elements)` rather than `.to(Sequence)`.
+-   refer proscenium.List
++   refer proscenium.List
+
+-   entry .apply   `Sequence(a, b, c)`: a sequence of its arguments, branded `Populated` up to twelve
+-   entry .empty   the empty sequence, typed: `Sequence.empty[Int]`
+-   entry .from   a sequence copied from any `IterableOnce`
+-       The way back from the stdlib, and the only one: `Sequence` has no `factory`
+-       conversion for `.to(Sequence)`.
+-   entry .unapplySeq   `case Sequence(a, b)`: pattern support
+-   entry .stdlib   the underlying `scala.collection.immutable.Vector`, with no copy
+-       The greppable bridge to a stdlib or Java API.
++   entry .apply   `Sequence(a, b, c)`: последовательность из аргументов, с брендом `Populated` до двенадцати элементов
++   entry .empty   пустая последовательность, типизированная: `Sequence.empty[Int]`
++   entry .from   последовательность, скопированная из любого `IterableOnce`
++       Путь обратно из stdlib, и единственный: у `Sequence` нет преобразования `factory`
++       для `.to(Sequence)`.
++   entry .unapplySeq   `case Sequence(a, b)`: поддержка образцов
++   entry .stdlib   нижележащий `scala.collection.immutable.Vector`, без копирования
++       Легко находимый grep'ом мост к API stdlib или Java.
+
+-   entry .populatedEquality   `CanEqual[Sequence[a] & Populated, Sequence[b]]`
++   entry .populatedEquality   `CanEqual[Sequence[a] & Populated, Sequence[b]]`
+
+-   entry .populatedEqualityReversed   `CanEqual[Sequence[a], Sequence[b] & Populated]`
++   entry .populatedEqualityReversed   `CanEqual[Sequence[a], Sequence[b] & Populated]`
+
+-   entry .toExpr   lifts a `Sequence` of liftable elements into an `Expr` in a macro
+-   entry .fromExpr   unlifts an `Expr[Sequence[element]]` produced by `Sequence.from` of a constant list
+-   entry .sequenceIsSpreadable   lets a sequence be spliced into varargs: `f(sequence*)`
+-       Subtype-parametric, so a branded `Sequence[a] & Populated` splices too.
+-   entry .size   the length, constant time: a primitive for `Countable`
+-       The companion's primitive operations are plain methods for the typeclass instances
+-       above; call-site code uses the extension vocabulary.
+-   entry .nil   whether the sequence is empty: a primitive
+-   entry .head   the first element, partial: a primitive for the `Populated`-gated `head`
+-   entry .tail   everything after the first element, partial: a primitive
+-   entry .last   the final element, partial: a primitive
+-   entry .lead   everything before the last element, partial: a primitive
+-   entry .at   the element at an `Int` index, partial: a primitive for `Indexable`
+-   entry .define   a sequence with the element at an index replaced: a primitive
+-   entry .has   whether an element is present: a primitive
+-   entry .drop   the sequence without its first `n` elements: a primitive
+-   entry .append   the sequence with an element at the end: a primitive
+-   entry .prepend   the sequence with an element at the front: a primitive
+-   entry .concat   two sequences joined: a primitive
+-   entry .invert   the sequence reversed: a primitive for `Reversible`
+-   entry .map   the sequence with a function applied to each element: a primitive
+-   entry .slice   the elements between two `Int` indices: a primitive
+-   entry .iterator   a stdlib iterator over the sequence: a primitive for `Traversable`
++   entry .toExpr   поднимает `Sequence` поднимаемых элементов в `Expr` в макросе
++   entry .fromExpr   опускает `Expr[Sequence[element]]`, полученный через `Sequence.from` от константного списка
++   entry .sequenceIsSpreadable   позволяет развернуть последовательность в varargs: `f(sequence*)`
++       Параметричен по подтипам, поэтому разворачивается и `Sequence[a] & Populated` с брендом.
++   entry .size   длина, за константное время: примитив для `Countable`
++       Примитивные операции объекта-компаньона — простые методы для экземпляров классов типов
++       уровнем выше; код в месте вызова использует словарь расширений.
++   entry .nil   пуста ли последовательность: примитив
++   entry .head   первый элемент, частично: примитив для закрытого через `Populated` `head`
++   entry .tail   всё после первого элемента, частично: примитив
++   entry .last   последний элемент, частично: примитив
++   entry .lead   всё до последнего элемента, частично: примитив
++   entry .at   элемент по индексу `Int`, частично: примитив для `Indexable`
++   entry .define   последовательность с заменённым элементом по индексу: примитив
++   entry .has   присутствует ли элемент: примитив
++   entry .drop   последовательность без первых `n` элементов: примитив
++   entry .append   последовательность с элементом в конце: примитив
++   entry .prepend   последовательность с элементом в начале: примитив
++   entry .concat   две соединённые последовательности: примитив
++   entry .invert   обращённая последовательность: примитив для `Reversible`
++   entry .map   последовательность с функцией, применённой к каждому элементу: примитив
++   entry .slice   элементы между двумя индексами `Int`: примитив
++   entry .iterator   итератор stdlib по последовательности: примитив для `Traversable`
+
+- entry .Set   an immutable set, as an opaque alias of the stdlib's `Set`
++ entry .Set   неизменяемое множество, непрозрачный псевдоним `Set` из stdlib
+
+= entry .Set   an immutable set, as an opaque alias of the stdlib's `Set`
+-   detail
++   detail
+
+-       A `Set[element]` holds each element once, with no order, so it cannot be sorted,
+-       excerpted or indexed: those operations are absent rather than arbitrary. It supports
+-       membership (`has`), insertion (`:+`), union (`concat`), `intersect` and `except`
+-       through the typeclass extensions above, and is invariant in its element, like the
+-       stdlib's. An opaque alias of `scala.collection.immutable.Set` with the same design as
+-       `List`: members invisible, construction and the `stdlib` bridge in the companion, no
+-       implicit conversion.
++       `Set[element]` хранит каждый элемент один раз и без порядка, поэтому его нельзя
++       сортировать, вырезать из него фрагменты или индексировать: эти операции отсутствуют, а
++       не произвольны. Через расширения на основе классов типов уровнем выше он поддерживает
++       принадлежность (`has`), вставку (`:+`), объединение (`concat`), `intersect` и `except` и,
++       как и множество stdlib, инвариантен по элементу. Непрозрачный псевдоним
++       `scala.collection.immutable.Set` с тем же устройством, что и `List`: члены невидимы,
++       построение и мост `stdlib` — в объекте-компаньоне, неявного преобразования нет.
+
+=       implicit conversion.
+=
+-       ```scala
++       ```scala
+
+=       implicit conversion.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val primes = Set(2, 3, 5, 7)
++       val primes = Set(2, 3, 5, 7)
+
+-       primes.has(5)                  // true
++       primes.has(5)                  // true
+
+-       primes.intersect(Set(2, 4))    // Set(2)
++       primes.intersect(Set(2, 4))    // Set(2)
+
+-       primes.except(Set(2, 3))       // Set(5, 7)
++       primes.except(Set(2, 3))       // Set(5, 7)
+
+-       primes.stdlib                  // scala.collection.immutable.Set(2, 3, 5, 7)
++       primes.stdlib                  // scala.collection.immutable.Set(2, 3, 5, 7)
+
+=       primes.stdlib                  // scala.collection.immutable.Set(2, 3, 5, 7)
+-       ```
++       ```
+
+-       Unlike `List` and `Sequence`, a `Set` literal is not branded `Populated`; `occupied`
+-       proves it where needed.
++       В отличие от `List` и `Sequence`, литерал `Set` не получает бренд `Populated`; там, где
++       нужно, его доказывает `occupied`.
+
+=       proves it where needed.
+-   refer proscenium.Map
++   refer proscenium.Map
+
+-   entry .apply   `Set(a, b, c)`: a set of its arguments, duplicates discarded
+-   entry .empty   the empty set, typed: `Set.empty[Int]`
+-   entry .from   a set built from any `IterableOnce`, duplicates discarded
+-   entry .stdlib   the underlying `scala.collection.immutable.Set`, with no copy
+-   entry .factory   `.to(Set)` on a stdlib collection builds a `Set`
+-   entry .populatedEquality   `CanEqual[Set[a] & Populated, Set[b]]`: a proven-non-empty set compares with a plain one
++   entry .apply   `Set(a, b, c)`: множество из аргументов, дубликаты отбрасываются
++   entry .empty   пустое множество, типизированное: `Set.empty[Int]`
++   entry .from   множество, построенное из любого `IterableOnce`, дубликаты отбрасываются
++   entry .stdlib   нижележащий `scala.collection.immutable.Set`, без копирования
++   entry .factory   `.to(Set)` для коллекции stdlib строит `Set`
++   entry .populatedEquality   `CanEqual[Set[a] & Populated, Set[b]]`: множество с доказанной непустотой сравнивается с простым
+
+-   entry .populatedEqualityReversed   `CanEqual[Set[a], Set[b] & Populated]`
++   entry .populatedEqualityReversed   `CanEqual[Set[a], Set[b] & Populated]`
+
+-   entry .toExpr   lifts a `Set` of liftable elements into an `Expr` in a macro
+-   entry .fromExpr   unlifts an `Expr[Set[element]]` produced by `Set.from` of a constant list
+-   entry .size   the number of elements, constant time: a primitive for `Countable`
+-       The companion's primitive operations are plain methods for the typeclass instances
+-       above; call-site code uses the extension vocabulary.
+-   entry .nil   whether the set is empty: a primitive
+-   entry .has   whether an element is present: a primitive for `Inclusive`
+-   entry .insert   the set with an element added: a primitive for `:+`
+-   entry .concat   the union of two sets: a primitive
+-   entry .intersect   the elements in both sets: a primitive
+-   entry .except   the elements of the left set not in the right: a primitive
+-   entry .map   the set of a function's results over the elements: a primitive for `Mappable`
+-   entry .iterator   a stdlib iterator over the elements: a primitive for `Traversable`
++   entry .toExpr   поднимает `Set` поднимаемых элементов в `Expr` в макросе
++   entry .fromExpr   опускает `Expr[Set[element]]`, полученный через `Set.from` от константного списка
++   entry .size   количество элементов, за константное время: примитив для `Countable`
++       Примитивные операции объекта-компаньона — простые методы для экземпляров классов типов
++       уровнем выше; код в месте вызова использует словарь расширений.
++   entry .nil   пусто ли множество: примитив
++   entry .has   присутствует ли элемент: примитив для `Inclusive`
++   entry .insert   множество с добавленным элементом: примитив для `:+`
++   entry .concat   объединение двух множеств: примитив
++   entry .intersect   элементы, входящие в оба множества: примитив
++   entry .except   элементы левого множества, которых нет в правом: примитив
++   entry .map   множество результатов функции над элементами: примитив для `Mappable`
++   entry .iterator   итератор stdlib по элементам: примитив для `Traversable`
+
+- entry .Map   an immutable map from keys to values, as an opaque alias of the stdlib's `Map`
++ entry .Map   неизменяемое отображение ключей в значения, непрозрачный псевдоним `Map` из stdlib
+
+= entry .Map   an immutable map from keys to values, as an opaque alias of the stdlib's `Map`
+-   detail
++   detail
+
+-       A `Map[key, value]` pairs keys with values with no promised iteration order (a
+-       `Ledger` promises insertion order). Through the typeclass extensions above it reads a
+-       value by key with `at`, as an `Optional` since the key may be absent; tests a key with
+-       `defines`; adds or replaces with `define`; removes with `omit`; exposes `keys` (a
+-       `Set`) and `values`; and `map`s its values, keeping its keys, where `remap`
+-       transforms entries as pairs. An opaque alias of `scala.collection.immutable.Map`,
+-       covariant in its value, with construction and the `stdlib` bridge in the companion
+-       and no implicit conversion.
++       `Map[key, value]` связывает ключи со значениями без обещанного порядка обхода (порядок
++       вставки обещает `Ledger`). Через расширения на основе классов типов уровнем выше он
++       читает значение по ключу через `at` — как `Optional`, поскольку ключ может
++       отсутствовать; проверяет ключ через `defines`; добавляет или заменяет через `define`;
++       удаляет через `omit`; предоставляет `keys` (как `Set`) и `values`; и через `map`
++       отображает свои значения, сохраняя ключи, тогда как `remap` преобразует записи как пары.
++       Непрозрачный псевдоним `scala.collection.immutable.Map`, ковариантный по значению, с
++       построением и мостом `stdlib` в объекте-компаньоне и без неявного преобразования.
+
+=       and no implicit conversion.
+=
+-       ```scala
++       ```scala
+
+=       and no implicit conversion.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val ages = Map(t"Romeo" -> 16, t"Juliet" -> 13)
++       val ages = Map(t"Romeo" -> 16, t"Juliet" -> 13)
+
+-       ages.at(t"Romeo")           // 16
++       ages.at(t"Romeo")           // 16
+
+-       ages.at(t"Paris")           // Unset
++       ages.at(t"Paris")           // Unset
+
+-       ages.define(t"Paris", 25)   // a new map of three entries; `ages` is unchanged
++       ages.define(t"Paris", 25)   // a new map of three entries; `ages` is unchanged
+
+-       ages.map(_ + 1)             // Map(t"Romeo" -> 17, t"Juliet" -> 14)
++       ages.map(_ + 1)             // Map(t"Romeo" -> 17, t"Juliet" -> 14)
+
+=       ages.map(_ + 1)             // Map(t"Romeo" -> 17, t"Juliet" -> 14)
+-       ```
++       ```
+
+-   refer proscenium.Ledger
++   refer proscenium.Ledger
+
+-   refer proscenium.Set
++   refer proscenium.Set
+
+-   entry .apply   `Map(k1 -> v1, k2 -> v2)`: a map of its pairs; a later pair for a key wins
+-   entry .empty   the empty map, typed: `Map.empty[Text, Int]`
+-   entry .from   a map built from any `IterableOnce` of pairs
+-   entry .stdlib   the underlying `scala.collection.immutable.Map`, with no copy
+-   entry .factory   `.to(Map)` on a stdlib collection of pairs builds a `Map`
+-   entry .toExpr   lifts a `Map` of liftable keys and values into an `Expr` in a macro
+-   entry .fromExpr   unlifts an `Expr[Map[key, value]]` produced by `Map.from` of a constant list
+-   entry .size   the number of entries, constant time: a primitive for `Countable`
+-       The companion's primitive operations are plain methods for the typeclass instances
+-       above; call-site code uses the extension vocabulary. `.read` mirrors the stdlib's
+-       `Option`-returning `get`; the `Optional`-returning `at` is layered above, in the
+-       libraries which know `vacuous`.
+-   entry .nil   whether the map is empty: a primitive
+-   entry .defines   whether a key is present: a primitive for `Applicable`
+-   entry .at   the value for a key, partial: a primitive
+-   entry .read   the value for a key as an `Option`: a primitive, mirroring the stdlib's `get`
+-   entry .define   a map with a key set to a value: a primitive for `Definable`
+-   entry .omit   a map without a key: a primitive for `Omissible`
+-   entry .keys   the keys, as a `Set`: a primitive
+-   entry .values   the values, as a `List`: a primitive
+-   entry .concat   two maps merged, the right's entries winning: a primitive
+-   entry .map   the map with a function applied to each value, keys unchanged: a primitive for `Mappable`
+-   entry .iterator   a stdlib iterator over the entries as pairs: a primitive for `Traversable`
++   entry .apply   `Map(k1 -> v1, k2 -> v2)`: отображение из пар; более поздняя пара для ключа побеждает
++   entry .empty   пустое отображение, типизированное: `Map.empty[Text, Int]`
++   entry .from   отображение, построенное из любого `IterableOnce` пар
++   entry .stdlib   нижележащий `scala.collection.immutable.Map`, без копирования
++   entry .factory   `.to(Map)` для коллекции пар stdlib строит `Map`
++   entry .toExpr   поднимает `Map` поднимаемых ключей и значений в `Expr` в макросе
++   entry .fromExpr   опускает `Expr[Map[key, value]]`, полученный через `Map.from` от константного списка
++   entry .size   количество записей, за константное время: примитив для `Countable`
++       Примитивные операции объекта-компаньона — простые методы для экземпляров классов типов
++       уровнем выше; код в месте вызова использует словарь расширений. `.read` повторяет
++       возвращающий `Option` `get` из stdlib; возвращающий `Optional` `at` построен уровнем
++       выше, в библиотеках, которые знают `vacuous`.
++   entry .nil   пусто ли отображение: примитив
++   entry .defines   присутствует ли ключ: примитив для `Applicable`
++   entry .at   значение для ключа, частично: примитив
++   entry .read   значение для ключа как `Option`: примитив, повторяющий `get` из stdlib
++   entry .define   отображение с ключом, установленным в значение: примитив для `Definable`
++   entry .omit   отображение без ключа: примитив для `Omissible`
++   entry .keys   ключи, как `Set`: примитив
++   entry .values   значения, как `List`: примитив
++   entry .concat   два слитых отображения, записи правого побеждают: примитив
++   entry .map   отображение с функцией, применённой к каждому значению, ключи без изменений: примитив для `Mappable`
++   entry .iterator   итератор stdlib по записям как парам: примитив для `Traversable`
+
+- entry .Ledger   an insertion-ordered immutable map, as an opaque alias of `VectorMap`
++ entry .Ledger   неизменяемое отображение, упорядоченное по вставке, непрозрачный псевдоним `VectorMap`
+
+= entry .Ledger   an insertion-ordered immutable map, as an opaque alias of `VectorMap`
+-   detail
++   detail
+
+-       A `Ledger[key, value]` is exactly a `Map` which promises to iterate its entries in
+-       the order they were first added, which `Map` deliberately does not. It is backed by
+-       `scala.collection.immutable.VectorMap` — insertion-ordered like `ListMap`, but with
+-       effectively constant-time lookup and append, since the registries kept in ledgers
+-       (dialect member tables, attribute lists, test reports) grow into the hundreds. The
+-       vocabulary is the `Map`'s: `at`, `defines`, `define`, `omit`, `keys`, `values`,
+-       `map` over values preserving order. A `Ledger` is not a `Map` and does not convert to
+-       one.
++       `Ledger[key, value]` — это в точности `Map`, который обещает обходить свои записи в
++       порядке их первого добавления, чего `Map` намеренно не делает. Он основан на
++       `scala.collection.immutable.VectorMap` — упорядоченном по вставке, как `ListMap`, но с
++       практически константным временем поиска и добавления, поскольку реестры, хранимые в
++       ledger'ах (таблицы членов диалектов, списки атрибутов, отчёты о тестах), разрастаются до
++       сотен записей. Словарь — тот же, что у `Map`: `at`, `defines`, `define`, `omit`, `keys`,
++       `values`, `map` по значениям с сохранением порядка. `Ledger` — не `Map` и в него не
++       преобразуется.
+
+=       one.
+=
+-       ```scala
++       ```scala
+
+=       one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val ledger = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
++       val ledger = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+
+-       ledger.keys                    // List(t"c", t"a", t"b"), in insertion order
++       ledger.keys                    // List(t"c", t"a", t"b"), in insertion order
+
+-       ledger.at(t"a")                // 1
++       ledger.at(t"a")                // 1
+
+-       Ledger(t"a" -> 1, t"a" -> 2).at(t"a")   // 2: a later pair for the same key wins
++       Ledger(t"a" -> 1, t"a" -> 2).at(t"a")   // 2: a later pair for the same key wins
+
+=       Ledger(t"a" -> 1, t"a" -> 2).at(t"a")   // 2: a later pair for the same key wins
+-       ```
++       ```
+
+=       ```
+-   refer proscenium.Map
++   refer proscenium.Map
+
+-   entry .apply   `Ledger(k1 -> v1, k2 -> v2)`: a ledger of its pairs, in order
+-   entry .empty   the empty ledger, typed: `Ledger.empty[Text, Int]`
+-   entry .from   a ledger built from any `IterableOnce` of pairs, in their order
+-   entry .stdlib   the underlying `scala.collection.immutable.VectorMap`, with no copy
+-   entry .factory   `.to(Ledger)` on a stdlib collection of pairs builds a `Ledger`
+-   entry .toExpr   lifts a `Ledger` of liftable keys and values into an `Expr` in a macro
+-   entry .fromExpr   unlifts an `Expr[Ledger[key, value]]` produced by `Ledger.from` of a constant list
+-   entry .size   the number of entries: a primitive for `Countable`
+-       The companion's primitive operations are plain methods for the typeclass instances
+-       above; call-site code uses the extension vocabulary.
+-   entry .nil   whether the ledger is empty: a primitive
+-   entry .defines   whether a key is present: a primitive
+-   entry .at   the value for a key, partial: a primitive
+-   entry .read   the value for a key as an `Option`: a primitive, mirroring the stdlib's `get`
+-   entry .define   a ledger with a key set to a value, keeping its position if present: a primitive
+-   entry .omit   a ledger without a key: a primitive
+-   entry .keys   the keys as a `List`, in insertion order: a primitive
+-   entry .values   the values as a `List`, in insertion order: a primitive
+-   entry .concat   two ledgers merged, the right's entries appended or overriding: a primitive
+-   entry .map   the ledger with a function applied to each value, order preserved: a primitive
+-   entry .iterator   a stdlib iterator over the entries, in insertion order: a primitive
++   entry .apply   `Ledger(k1 -> v1, k2 -> v2)`: ledger из пар, по порядку
++   entry .empty   пустой ledger, типизированный: `Ledger.empty[Text, Int]`
++   entry .from   ledger, построенный из любого `IterableOnce` пар, в их порядке
++   entry .stdlib   нижележащий `scala.collection.immutable.VectorMap`, без копирования
++   entry .factory   `.to(Ledger)` для коллекции пар stdlib строит `Ledger`
++   entry .toExpr   поднимает `Ledger` поднимаемых ключей и значений в `Expr` в макросе
++   entry .fromExpr   опускает `Expr[Ledger[key, value]]`, полученный через `Ledger.from` от константного списка
++   entry .size   количество записей: примитив для `Countable`
++       Примитивные операции объекта-компаньона — простые методы для экземпляров классов типов
++       уровнем выше; код в месте вызова использует словарь расширений.
++   entry .nil   пуст ли ledger: примитив
++   entry .defines   присутствует ли ключ: примитив
++   entry .at   значение для ключа, частично: примитив
++   entry .read   значение для ключа как `Option`: примитив, повторяющий `get` из stdlib
++   entry .define   ledger с ключом, установленным в значение, с сохранением его позиции, если он есть: примитив
++   entry .omit   ledger без ключа: примитив
++   entry .keys   ключи как `List`, в порядке вставки: примитив
++   entry .values   значения как `List`, в порядке вставки: примитив
++   entry .concat   два слитых ledger'а, записи правого добавляются в конец или переопределяют: примитив
++   entry .map   ledger с функцией, применённой к каждому значению, с сохранением порядка: примитив
++   entry .iterator   итератор stdlib по записям, в порядке вставки: примитив
+
+- entry .Chain   a lazy, possibly infinite sequence, as an opaque alias of the stdlib's `LazyList`
++ entry .Chain   ленивая, возможно бесконечная последовательность, непрозрачный псевдоним `LazyList` из stdlib
+
+= entry .Chain   a lazy, possibly infinite sequence, as an opaque alias of the stdlib's `LazyList`
+-   detail
++   detail
+
+-       A `Chain[element]` computes its elements as they are demanded and remembers them,
+-       so it can describe every natural number or every line a process will print, as long
+-       as only a finite prefix is ever forced. `head #:: rest` prepends without forcing
+-       `rest`; `Chain.iterate`, `Chain.unfold` and `Chain.continually` generate from a seed
+-       or a value; `keep` and `skip` take and drop a prefix lazily; `prefix #::: suffix`
+-       concatenates without forcing the suffix; and `case head #:: tail =>` matches forcing
+-       only the head. `size`, `last` and `lead` force the whole chain and may never return,
+-       so they are gated behind `import dysasymptotics.unboundedSize`.
++       `Chain[element]` вычисляет свои элементы по мере запроса и запоминает их, поэтому может
++       описывать все натуральные числа или все строки, которые выведет процесс, лишь бы
++       вычислялся только конечный префикс. `head #:: rest` добавляет в начало, не вычисляя
++       `rest`; `Chain.iterate`, `Chain.unfold` и `Chain.continually` порождают элементы из
++       начального значения или значения; `keep` и `skip` лениво берут и отбрасывают префикс;
++       `prefix #::: suffix` соединяет, не вычисляя суффикс; а `case head #:: tail =>`
++       сопоставляет, вычисляя только голову. `size`, `last` и `lead` вычисляют всю цепочку и
++       могут никогда не вернуться, поэтому они закрыты шлюзом `import dysasymptotics.unboundedSize`.
+
+=       so they are gated behind `import dysasymptotics.unboundedSize`.
+=
+-       ```scala
++       ```scala
+
+=       so they are gated behind `import dysasymptotics.unboundedSize`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val naturals: Chain[Int] = Chain.iterate(0)(_ + 1)
++       val naturals: Chain[Int] = Chain.iterate(0)(_ + 1)
+
+-       naturals.keep(5).to[List]            // List(0, 1, 2, 3, 4)
++       naturals.keep(5).to[List]            // List(0, 1, 2, 3, 4)
+
+-       naturals.skip(10).keep(2).to[List]   // List(10, 11)
++       naturals.skip(10).keep(2).to[List]   // List(10, 11)
+
+-       Chain.continually(7).keep(3).to[List]
++       Chain.continually(7).keep(3).to[List]
+
+-       def evens: Chain[Int] = naturals.filter(_%2 == 0)
++       def evens: Chain[Int] = naturals.filter(_%2 == 0)
+
+-       evens match
++       evens match
+
+-         case head #:: _ => head             // 0, forcing nothing beyond it
++         case head #:: _ => head             // 0, forcing nothing beyond it
+
+=         case head #:: _ => head             // 0, forcing nothing beyond it
+-       ```
++       ```
+
+-       An opaque alias of `scala.collection.immutable.LazyList` with the same design as
+-       `List` — members invisible, `stdlib` bridge in the companion, no implicit conversion
+-       — with one difference: a `Chain` literal is never branded `Populated`, since the
+-       streaming shape must not let a transparent expansion into a capture-checked call
+-       site; prove non-emptiness with `occupied` or a `#::` match. There is a `ToExpr` but
+-       no `FromExpr`, since an eager unlift would misrepresent the lazy shape. A `Chain`
+-       has deliberately no `Segmentable` instance: the lazy `keep`/`skip` in
+-       `chainSegments` are what it has, and a strict instance would force an unbounded
+-       chain.
++       Непрозрачный псевдоним `scala.collection.immutable.LazyList` с тем же устройством, что и
++       `List`, — члены невидимы, мост `stdlib` в объекте-компаньоне, неявного преобразования нет, —
++       с одним отличием: литерал `Chain` никогда не получает бренд `Populated`, поскольку
++       потоковая форма не должна допускать прозрачного раскрытия в месте вызова с проверкой
++       захвата; доказывайте непустоту через `occupied` или сопоставление с `#::`. Есть `ToExpr`,
++       но нет `FromExpr`, поскольку энергичное опускание исказило бы ленивую форму. У `Chain`
++       намеренно нет экземпляра `Segmentable`: у него есть ленивые `keep`/`skip` в
++       `chainSegments`, а строгий экземпляр вычислил бы неограниченную цепочку.
+
+-   refer proscenium.lazyCons
++   refer proscenium.lazyCons
+
+-   refer proscenium.chainSegments
++   refer proscenium.chainSegments
+
+=   refer proscenium.chainSegments
+-   refer proscenium.List
++   refer proscenium.List
+
+-   entry .apply   `Chain(a, b, c)`: a finite chain of its arguments, unbranded
+-   entry .empty   the empty chain, typed: `Chain.empty[Int]`
+-   entry .from   a chain over any `IterableOnce`, evaluated lazily where the source allows
+-   entry .continually   an infinite chain repeating a by-name value: `Chain.continually(7)`
+-   entry .iterate   an infinite chain from a seed and a step: `Chain.iterate(0)(_ + 1)`
+-       The seed is by-name; nothing is evaluated until forced.
+-   entry .unfold   a chain generated from a state by a function yielding `Option[(element, state)]`
+-       `Chain.unfold(init)(state => …)` continues while the function returns `Some` of the
+-       next element and state, and ends at `None`.
+-   entry .range   `Chain.range(start, end)`: the integral values from `start` up to `end`
+-   entry .cons   the primitive lazy cons: `Chain.cons(head, tail)`, with `tail` by-name
+-       The method form of `#::`.
+-   entry .defer   a chain whose evaluation is deferred until it is forced
+-       `Chain.defer(chain)` keeps the by-name `chain` unevaluated until the result is
+-       demanded, for a recursive definition whose body must not run eagerly.
+-   entry .unapplySeq   `case Chain(a, b)`: pattern support, forcing the whole chain
+-   entry .stdlib   the underlying `scala.collection.immutable.LazyList`, with no copy
+-   entry .factory   `.to(Chain)` on a stdlib collection builds a `Chain`
++   entry .apply   `Chain(a, b, c)`: конечная цепочка из аргументов, без бренда
++   entry .empty   пустая цепочка, типизированная: `Chain.empty[Int]`
++   entry .from   цепочка над любым `IterableOnce`, вычисляемая лениво, где источник это позволяет
++   entry .continually   бесконечная цепочка, повторяющая значение, передаваемое по имени: `Chain.continually(7)`
++   entry .iterate   бесконечная цепочка из начального значения и шага: `Chain.iterate(0)(_ + 1)`
++       Начальное значение передаётся по имени; ничего не вычисляется, пока не потребуется.
++   entry .unfold   цепочка, порождаемая из состояния функцией, которая возвращает `Option[(element, state)]`
++       `Chain.unfold(init)(state => …)` продолжается, пока функция возвращает `Some` со
++       следующим элементом и состоянием, и заканчивается на `None`.
++   entry .range   `Chain.range(start, end)`: целые значения от `start` до `end`
++   entry .cons   примитивный ленивый cons: `Chain.cons(head, tail)`, где `tail` передаётся по имени
++       Методная форма `#::`.
++   entry .defer   цепочка, вычисление которой отложено до тех пор, пока она не потребуется
++       `Chain.defer(chain)` оставляет передаваемый по имени `chain` невычисленным, пока результат
++       не будет запрошен, — для рекурсивного определения, тело которого не должно выполняться
++       энергично.
++   entry .unapplySeq   `case Chain(a, b)`: поддержка образцов, вычисляющая всю цепочку
++   entry .stdlib   нижележащий `scala.collection.immutable.LazyList`, без копирования
++   entry .factory   `.to(Chain)` для коллекции stdlib строит `Chain`
+
+-   entry .populatedEquality   `CanEqual[Chain[a] & Populated, Chain[b]]`
++   entry .populatedEquality   `CanEqual[Chain[a] & Populated, Chain[b]]`
+
+-   entry .populatedEqualityReversed   `CanEqual[Chain[a], Chain[b] & Populated]`
++   entry .populatedEqualityReversed   `CanEqual[Chain[a], Chain[b] & Populated]`
+
+-   entry .toExpr   lifts a finite `Chain` into an `Expr` in a macro, forcing it entirely
+-       A constant tree cannot be lazy, so lifting forces the whole chain; it serves only a
+-       finite chain a macro has already materialised. There is deliberately no `FromExpr`.
+-   entry .chainIsSpreadable   lets a chain be spliced into varargs: `f(chain*)`, forcing it
+-   entry .size   the length, forcing the whole chain: a primitive for the `unboundedSize`-gated `size`
+-       The companion's primitive operations are plain methods for the typeclass instances
+-       above; `size`, `last` and `lead` force the whole chain and diverge on an infinite
+-       one, which is why their extensions are gated.
+-   entry .nil   whether the chain is empty, forcing only the first node: a primitive
+-   entry .head   the first element, partial: a primitive for the `Populated`-gated `head`
+-   entry .tail   the chain after its first element, not forcing the tail's contents: a primitive
+-   entry .last   the final element, forcing the whole chain: a primitive
+-   entry .lead   everything before the last element, forcing the whole chain: a primitive
+-   entry .append   the chain with an element lazily appended: a primitive
+-   entry .prepend   the chain with an element prepended, lazily: a primitive
+-   entry .concat   two chains joined lazily: a primitive
+-   entry .map   the chain with a function applied lazily to each element: a primitive
+-   entry .iterator   a stdlib iterator over the chain: a primitive for `Traversable`
++   entry .toExpr   поднимает конечную `Chain` в `Expr` в макросе, вычисляя её целиком
++       Константное дерево не может быть ленивым, поэтому подъём вычисляет всю цепочку; он
++       годится только для конечной цепочки, которую макрос уже материализовал. `FromExpr`
++       намеренно нет.
++   entry .chainIsSpreadable   позволяет развернуть цепочку в varargs: `f(chain*)`, вычисляя её
++   entry .size   длина, с вычислением всей цепочки: примитив для закрытого шлюзом `unboundedSize` `size`
++       Примитивные операции объекта-компаньона — простые методы для экземпляров классов типов
++       уровнем выше; `size`, `last` и `lead` вычисляют всю цепочку и расходятся на бесконечной,
++       поэтому их расширения закрыты шлюзом.
++   entry .nil   пуста ли цепочка, с вычислением только первого узла: примитив
++   entry .head   первый элемент, частично: примитив для закрытого через `Populated` `head`
++   entry .tail   цепочка после первого элемента, без вычисления содержимого хвоста: примитив
++   entry .last   последний элемент, с вычислением всей цепочки: примитив
++   entry .lead   всё до последнего элемента, с вычислением всей цепочки: примитив
++   entry .append   цепочка с лениво добавленным в конец элементом: примитив
++   entry .prepend   цепочка с элементом, лениво добавленным в начало: примитив
++   entry .concat   две лениво соединённые цепочки: примитив
++   entry .map   цепочка с функцией, лениво применённой к каждому элементу: примитив
++   entry .iterator   итератор stdlib по цепочке: примитив для `Traversable`
+
+- entry .lazyCons   the given which supplies `head #:: tail` on the opaque `Chain`
+-     The lazy cons constructor: `head #:: tail` prepends `head` to `tail` without
+-     evaluating `tail`, which is by-name, so `head #:: recur()` does not call `recur()`.
+-     As with `::`, the receiver of the extension is the head (right-associativity swaps the
+-     operands), and it rides on a given because the name belongs to the extractor object
+-     `#::`; the given is visible everywhere through `-Yimports`.
++ entry .lazyCons   given, который предоставляет `head #:: tail` для непрозрачного `Chain`
++     Ленивый конструктор cons: `head #:: tail` добавляет `head` в начало `tail`, не вычисляя
++     `tail`, который передаётся по имени, так что `head #:: recur()` не вызывает `recur()`.
++     Как и у `::`, получатель расширения — голова (правая ассоциативность меняет операнды
++     местами), а держится оно на given, потому что имя принадлежит объекту-экстрактору `#::`;
++     given виден повсюду благодаря `-Yimports`.
+
+=     `#::`; the given is visible everywhere through `-Yimports`.
+=
+-     ```scala
++     ```scala
+
+=     `#::`; the given is visible everywhere through `-Yimports`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     def from(n: Int): Chain[Int] = n #:: from(n + 1)
++     def from(n: Int): Chain[Int] = n #:: from(n + 1)
+
+-     from(1).keep(3).to[List]   // List(1, 2, 3)
++     from(1).keep(3).to[List]   // List(1, 2, 3)
+
+=     from(1).keep(3).to[List]   // List(1, 2, 3)
+-     ```
++     ```
+
+- entry .#::   the non-forcing extractor for `case head #:: tail =>` on a `Chain`
++ entry .#::   невычисляющий экстрактор для `case head #:: tail =>` на `Chain`
+
+= entry .#::   the non-forcing extractor for `case head #:: tail =>` on a `Chain`
+-   detail
++   detail
+
+-       A name-based extractor whose `isEmpty` and `_1` force only the first node, and
+-       whose `_2` is the tail through `LazyList#tail`, which does not force the tail's
+-       elements — so matching a chain to read its head computes exactly one element. The
+-       constructor `head #:: tail` is the extension in `lazyCons`.
++       Экстрактор, основанный на именах, чьи `isEmpty` и `_1` вычисляют только первый узел, а
++       `_2` — это хвост через `LazyList#tail`, который не вычисляет элементы хвоста, — так что
++       сопоставление цепочки ради чтения её головы вычисляет ровно один элемент. Конструктор
++       `head #:: tail` — это расширение в `lazyCons`.
+
+=       constructor `head #:: tail` is the extension in `lazyCons`.
+=
+-       ```scala
++       ```scala
+
+=       constructor `head #:: tail` is the extension in `lazyCons`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Chain.continually(42) match
++       Chain.continually(42) match
+
+-         case head #:: _ => head   // 42
++         case head #:: _ => head   // 42
+
+=         case head #:: _ => head   // 42
+-       ```
++       ```
+
+-   entry .ConsView   the view a `#::` pattern reads: `isEmpty`, `_1` (head), `_2` (lazy tail)
+-     entry #isEmpty   whether the chain is empty, forcing only the first node
+-     entry #get   the view itself
+-     entry #_1   the head
+-     entry #_2   the tail, as a `Chain`, unforced
+-   entry .unapply   `case head #:: tail`: the view over a chain
++   entry .ConsView   представление, которое читает образец `#::`: `isEmpty`, `_1` (голова), `_2` (ленивый хвост)
++     entry #isEmpty   пуста ли цепочка; вычисляет только первый узел
++     entry #get   само представление
++     entry #_1   голова
++     entry #_2   хвост как `Chain`, невычисленный
++   entry .unapply   `case head #:: tail`: представление над цепочкой
+
+- entry .#:::   `prefix #::: suffix`: lazy concatenation of two chains
+-     An extension on `Chain[element]`: the suffix is by-name and is not forced until the
+-     prefix is exhausted, so a chain may be defined as a finite prefix followed by a
+-     recursive or infinite suffix. The suffix's element type may widen the prefix's.
++ entry .#:::   `prefix #::: suffix`: ленивая конкатенация двух цепочек
++     Расширение для `Chain[element]`: суффикс передаётся по имени и не вычисляется, пока не
++     исчерпан префикс, так что цепочку можно определить как конечный префикс, за которым следует
++     рекурсивный или бесконечный суффикс. Тип элементов суффикса может расширять тип элементов
++     префикса.
+
+- entry .chainSegments   the given which supplies the lazy `keep` and `skip` on a `Chain`
+-     `chain.keep(n)` and `chain.skip(n)` take and drop a prefix by count, `chain.keep(p)`
+-     and `chain.skip(p)` by predicate; all four are non-forcing — they evaluate elements
+-     only as the result is demanded — so all are safe on an unbounded chain, where the
+-     `Segmentable`-driven `keep`/`skip` on the strict collections would count and rebuild.
+-     The count forms are total: an out-of-range count clips. There is no right-to-left
+-     form, since it would have no non-forcing meaning. They ride on a given so that they
+-     are consulted only after the generic candidates have failed on a `Chain` receiver,
+-     which they always do.
++ entry .chainSegments   given, который предоставляет ленивые `keep` и `skip` для `Chain`
++     `chain.keep(n)` и `chain.skip(n)` берут и отбрасывают префикс по количеству, `chain.keep(p)`
++     и `chain.skip(p)` — по предикату; все четыре не вычисляют лишнего — они вычисляют элементы
++     только по мере востребования результата, — поэтому все безопасны на неограниченной
++     цепочке, где управляемые `Segmentable` `keep`/`skip` строгих коллекций считали бы и
++     перестраивали. Формы с количеством тотальны: количество вне диапазона обрезается. Формы
++     справа налево нет, поскольку у неё не было бы невычисляющего смысла. Они держатся на given,
++     чтобы к ним обращались только после того, как обобщённые кандидаты потерпели неудачу на
++     получателе `Chain`, что происходит всегда.
+
+=     which they always do.
+=
+-     ```scala
++     ```scala
+
+=     which they always do.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     Chain.iterate(0)(_ + 1).skip(10).keep(2).to[List]   // List(10, 11)
++     Chain.iterate(0)(_ + 1).skip(10).keep(2).to[List]   // List(10, 11)
+
+=     Chain.iterate(0)(_ + 1).skip(10).keep(2).to[List]   // List(10, 11)
+-     ```
++     ```
+
+- entry .Comparison   the result of a three-way comparison: `Less`, `Same` or `More`
++ entry .Comparison   результат трёхстороннего сравнения: `Less`, `Same` или `More`
+
+= entry .Comparison   the result of a three-way comparison: `Less`, `Same` or `More`
+-   detail
++   detail
+
+-       The currency of symbolism's `Comparable`, whose `compare(left, right)` returns one.
+-       An enumeration rather than an `Int` sign: the three cases are singletons, so it
+-       allocates nothing, while remaining pattern-matchable and carrying its queries as
+-       members, which an extension named `also` or `more` could not do without contending
+-       with the universal extensions in the umbrella. `Less` means the left operand is
+-       smaller, `More` that it is larger, and `Same` that neither is.
++       Валюта `Comparable` из symbolism, чей `compare(left, right)` возвращает это значение.
++       Перечисление, а не знак `Int`: три кейса — синглтоны, так что оно ничего не выделяет,
++       оставаясь при этом пригодным для сопоставления с образцом и неся свои запросы как члены,
++       чего расширение с именем `also` или `more` не могло бы делать, не соперничая с
++       универсальными расширениями в зонтичном модуле. `Less` означает, что левый операнд
++       меньше, `More` — что он больше, а `Same` — что ни то, ни другое.
+
+=       smaller, `More` that it is larger, and `Same` that neither is.
+=
+-       ```scala
++       ```scala
+
+=       smaller, `More` that it is larger, and `Same` that neither is.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Comparison(-42)                          // Comparison.Less
++       Comparison(-42)                          // Comparison.Less
+
+-       Comparison.Less.flip                     // Comparison.More
++       Comparison.Less.flip                     // Comparison.More
+
+-       Comparison.More.sign                     // 1
++       Comparison.More.sign                     // 1
+
+-       Comparison.Same.also(Comparison.Less)    // Comparison.Less
++       Comparison.Same.also(Comparison.Less)    // Comparison.Less
+
+-       Comparison.More.also(Comparison.Less)    // Comparison.More
++       Comparison.More.also(Comparison.Less)    // Comparison.More
+
+=       Comparison.More.also(Comparison.Less)    // Comparison.More
+-       ```
++       ```
+
+-       `also` composes comparisons lexicographically — this one unless it is `Same`, in
+-       which case the next, which is by-name and so unevaluated when the first is decisive —
+-       and `sign` and `.apply` convert to and from the sign convention of
+-       `java.util.Comparator` and `scala.math.Ordering` at the seams.
+-   entry .apply   a `Comparison` from a `compareTo`-style sign: negative, zero or positive
+-       Magnitudes are collapsed to the three cases, so every `Comparison` is canonical.
+-   entry #less   whether this is `Less`
+-   entry #same   whether this is `Same`
+-   entry #more   whether this is `More`
+-   entry #flip   the comparison of the same two values in the opposite order
+-       `Less` and `More` exchange; `Same` is unchanged.
+-   entry #sign   `-1`, `0` or `1`: the `Comparator`/`Ordering` convention, for stdlib and JDK seams
+-   entry #also   lexicographic composition: this unless it is `Same`, else the next comparison
+-       The second comparison is by-name, so a chain of `also`s stops at the first decisive
+-       result and evaluates nothing after it.
++       `also` составляет сравнения лексикографически — это сравнение, если оно не `Same`, а в
++       этом случае следующее, которое передаётся по имени и поэтому не вычисляется, когда первое
++       решающее, — а `sign` и `.apply` преобразуют в соглашение о знаке `java.util.Comparator` и
++       `scala.math.Ordering` на швах и обратно.
++   entry .apply   `Comparison` из знака в стиле `compareTo`: отрицательного, нулевого или положительного
++       Величины сводятся к трём кейсам, так что каждый `Comparison` каноничен.
++   entry #less   является ли это `Less`
++   entry #same   является ли это `Same`
++   entry #more   является ли это `More`
++   entry #flip   сравнение тех же двух значений в обратном порядке
++       `Less` и `More` меняются местами; `Same` не меняется.
++   entry #sign   `-1`, `0` или `1`: соглашение `Comparator`/`Ordering` для швов со stdlib и JDK
++   entry #also   лексикографическое составление: это сравнение, если оно не `Same`, иначе следующее
++       Второе сравнение передаётся по имени, так что цепочка `also` останавливается на первом
++       решающем результате и ничего после него не вычисляет.
+
+- entry .Populated   a proof of non-emptiness in a value's type: `List[Int] & Populated`
+-     A phantom structural refinement, `Any { type Occupied = true }`, intersected with a
+-     collection type to record that it has at least one element. The proof is minted two
+-     ways: the fixed-arity literal constructors (`List(1, 2, 3)`, `Sequence(t"a")`) brand
+-     their result by construction, and rudiments' `occupied` checks a value once and yields
+-     `Optional[self & Populated]`. The operations which are only total on a non-empty
+-     receiver — `head`, `last`, `tail`, `reduce` — then demand a `Populated` receiver, or
+-     degrade to an `Optional` result, so partiality is discharged where the code compiles.
++ entry .Populated   доказательство непустоты в типе значения: `List[Int] & Populated`
++     Фантомное структурное уточнение, `Any { type Occupied = true }`, пересекаемое с типом
++     коллекции, чтобы зафиксировать, что в ней есть хотя бы один элемент. Доказательство
++     создаётся двумя способами: литеральные конструкторы фиксированной арности (`List(1, 2, 3)`,
++     `Sequence(t"a")`) наделяют свой результат брендом по построению, а `occupied` из rudiments
++     однажды проверяет значение и даёт `Optional[self & Populated]`. Операции, которые тотальны
++     только на непустом получателе, — `head`, `last`, `tail`, `reduce`, — затем требуют
++     получателя `Populated` или деградируют до результата `Optional`, так что частичность
++     устраняется там, где компилируется код.
+
+=     degrade to an `Optional` result, so partiality is discharged where the code compiles.
+=
+-     ```scala
++     ```scala
+
+=     degrade to an `Optional` result, so partiality is discharged where the code compiles.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val proven = List(4, 5, 6)         // List[Int] & Populated
++     val proven = List(4, 5, 6)         // List[Int] & Populated
+
+-     proven.head                        // 4: an Int, not an Optional[Int]
++     proven.head                        // 4: an Int, not an Optional[Int]
+
+-     List.empty[Int].occupied           // Unset
++     List.empty[Int].occupied           // Unset
+
+-     List(7, 8).occupied.let(_.head)    // 7
++     List(7, 8).occupied.let(_.head)    // 7
+
+=     List(7, 8).occupied.let(_.head)    // 7
+-     ```
++     ```
+
+-     A refinement rather than a trait so that it erases away: `Text & Populated` is still
+-     a `String` at runtime, where a nominal marker would insert casts that fail. The
+-     brand is lost by any transformation and by a type ascription to the plain type. It
+-     lives here, below every collection, so the companions can brand their literals;
+-     `rudiments.Populated` is an alias of it.
++     Уточнение, а не трейт, чтобы оно стиралось: `Text & Populated` во время выполнения
++     по-прежнему `String`, тогда как номинальный маркер вставлял бы приведения, которые
++     завершались бы неудачей. Бренд теряется при любом преобразовании и при приписывании простого
++     типа. Он живёт здесь, ниже всех коллекций, чтобы компаньоны могли наделять брендом свои
++     литералы; `rudiments.Populated` — его псевдоним.
+
+- entry .Sized   a proof of length in a value's type: `Array[Byte]^{} & Sized[512]`
+-     The counterpart of `Populated` for fixed-layout data — a tar header of 512 bytes, a
+-     compass rose of eight points. `Sized[length]` is the refinement `Any { type Length =
+-     length }`, minted three ways: `Array.fill` and `Array.tabulate` (and `Data.fill`) with
+-     a *literal* count brand their result by construction; a producer which fixes a layout
+-     declares the brand on its result; and concordance's `sized[n]` checks a value's length
+-     once and records it, as `occupied` records non-emptiness. A literal ordinal below the
+-     length is then confined by construction: an `apply` on a `Sized[n]` receiver with a
+-     literal ordinal decides the bound at compile time, so the read is total and an
+-     out-of-range literal is a compile error. The length is a type-level `Int`, so
+-     `scala.compiletime.ops.int` combines proofs: `Array.concat` of two sized arrays is
+-     `Sized[left + right]`.
++ entry .Sized   доказательство длины в типе значения: `Array[Byte]^{} & Sized[512]`
++     Аналог `Populated` для данных с фиксированной раскладкой — заголовка tar в 512 байт, розы
++     ветров из восьми румбов. `Sized[length]` — это уточнение `Any { type Length =
++     length }`, создаваемое тремя способами: `Array.fill` и `Array.tabulate` (и `Data.fill`) с
++     *литеральным* количеством наделяют свой результат брендом по построению; производитель,
++     фиксирующий раскладку, объявляет бренд на своём результате; а `sized[n]` из concordance
++     однажды проверяет длину значения и записывает её, как `occupied` записывает непустоту.
++     Литеральный порядковый номер меньше длины тогда ограничен по построению: `apply` на
++     получателе `Sized[n]` с литеральным порядковым номером решает вопрос о границе во время
++     компиляции, так что чтение тотально, а литерал вне диапазона — ошибка компиляции. Длина —
++     это `Int` уровня типов, поэтому `scala.compiletime.ops.int` комбинирует доказательства:
++     `Array.concat` двух массивов с размером — это `Sized[left + right]`.
+
+- entry .Unit   the `Unit` type, as an alias of `scala.Unit`
+-     `Unit` cannot be `export`ed (its companion is forbidden in source), so the prelude
+-     declares `type Unit = scala.Unit`, which is a *distinct symbol*. Code is unaffected,
+-     but a macro which compares `TypeRepr.of[Unit].typeSymbol` with a method's return type
+-     symbol finds them unequal; compare with `=:=` or after `.dealias`.
++ entry .Unit   тип `Unit` как псевдоним `scala.Unit`
++     `Unit` нельзя `export`-ировать (его компаньон запрещён в исходном коде), поэтому прелюдия
++     объявляет `type Unit = scala.Unit`, который является *отдельным символом*. На код это не
++     влияет, но макрос, сравнивающий `TypeRepr.of[Unit].typeSymbol` с символом возвращаемого
++     типа метода, находит их неравными; сравнивайте через `=:=` или после `.dealias`.
+
+- entry .classOf   the class of a type, correct through an export: `classOf[Text]`
+-     Predef's `classOf` is a compiler intrinsic only when its call carries a concrete class
+-     type, so through an export forwarder every call yielded `Class[Object]`. This inline
+-     version summons the `ClassTag` at each call site, where the type argument is concrete,
+-     and takes `runtimeClass` from it.
++ entry .classOf   класс типа, корректный и через экспорт: `classOf[Text]`
++     `classOf` из Predef — встроенная функция компилятора, только когда её вызов несёт
++     конкретный тип класса, поэтому через форвардер экспорта каждый вызов давал
++     `Class[Object]`. Эта встраиваемая версия призывает `ClassTag` в каждом месте вызова, где
++     аргумент типа конкретен, и берёт из него `runtimeClass`.
+
+- entry .absolve   `Predef.runtimeChecked`, renamed: marks a match as deliberately non-exhaustive
+-     `value.absolve match …` tells the compiler the match need not be exhaustive, in place
+-     of an `@unchecked` annotation. Used in macros which match on a shape they know.
++ entry .absolve   переименованный `Predef.runtimeChecked`: помечает сопоставление как намеренно неисчерпывающее
++     `value.absolve match …` сообщает компилятору, что сопоставление не обязано быть
++     исчерпывающим, вместо аннотации `@unchecked`. Используется в макросах, которые
++     сопоставляют форму, которую знают.
+
+- entry .Nat   `Int & Singleton`: the type of a literal natural number
+-     A bound for a type-level integer parameter, such as a unit's power in quantitative
++ entry .Nat   `Int & Singleton`: тип литерального натурального числа
++     Граница для целочисленного параметра уровня типов, например степени единицы в quantitative
+
+-     (`Units[power <: Nat, …]`).
++     (`Units[power <: Nat, …]`).
+
+- entry .Label   `String & Singleton`: the type of a string literal
+-     A bound for a type parameter which must be a string literal, such as a field name, a
+-     tag name or a property name (`Typeface of "sans-serif"`, `AnnotatedField[…, target <:
++ entry .Label   `String & Singleton`: тип строкового литерала
++     Граница для параметра типа, который должен быть строковым литералом, например имени поля,
++     имени тега или имени свойства (`Typeface of "sans-serif"`, `AnnotatedField[…, target <:
+
+-     Label]`).
++     Label]`).
+
+- entry .Zero   `EmptyTuple`, renamed: the end of a tuple
+-     `Zero` is `scala.EmptyTuple`; a one-element tuple is `Mono[value]`, `value *: Zero`.
++ entry .Zero   переименованный `EmptyTuple`: конец кортежа
++     `Zero` — это `scala.EmptyTuple`; кортеж из одного элемента — это `Mono[value]`, `value *: Zero`.
+
+- entry .Mono   a one-element tuple: `Mono[value]` is `value *: Zero`, and `Mono(x)` makes one
+-     The name for the degenerate tuple which generic tuple code produces, with a
+-     constructor `Mono(value)`.
++ entry .Mono   кортеж из одного элемента: `Mono[value]` — это `value *: Zero`, а `Mono(x)` создаёт его
++     Имя для вырожденного кортежа, который производит обобщённый код для кортежей, с
++     конструктором `Mono(value)`.
+
+- entry .~>   `domain ~> range`: an infix alias of `PartialFunction[domain, range]`
+-     Lets a partial-function parameter read as an arrow: `lambda: (Optional[focus],
++ entry .~>   `domain ~> range`: инфиксный псевдоним `PartialFunction[domain, range]`
++     Позволяет параметру-частичной функции читаться как стрелка: `lambda: (Optional[focus],
+
+-     accrual) => Exception ~> accrual`.
++     accrual) => Exception ~> accrual`.
+
+- entry .prohibits   `result prohibits prohibited`: a given which is selected only if no `prohibited` given exists
+-     `prohibits[result, prohibited]` is `NotGiven[prohibited] ?-> result`, a pure context
+-     function: a given of this type is selected for `result` and, on selection, resolves
+-     its `NotGiven[prohibited]` at the use site, so `given choice: Choice prohibits Policy =
+-     …` reads as the guard it is. The arrow is pure so that an ordinary object can hold the
+-     given as a field.
++ entry .prohibits   `result prohibits prohibited`: given, который выбирается, только если не существует given `prohibited`
++     `prohibits[result, prohibited]` — это `NotGiven[prohibited] ?-> result`, чистая контекстная
++     функция: given этого типа выбирается для `result` и при выборе разрешает свой
++     `NotGiven[prohibited]` в месте использования, так что `given choice: Choice prohibits Policy =
++     …` читается как то условие, которым он и является. Стрелка чистая, чтобы обычный объект мог
++     хранить given как поле.
+
+- entry .unexported   marks a top-level definition deliberately absent from the `soundness` umbrella
+-     An annotation for a module, extension method or helper whose simple name would clash
+-     with another library's in the umbrella package, or which is a compile-time or internal
+-     helper reached through its own library's import. The export-generating tooling reads
+-     it and skips the annotated definition.
++ entry .unexported   помечает определение верхнего уровня, намеренно отсутствующее в зонтичном модуле `soundness`
++     Аннотация для модуля, метода-расширения или вспомогательного определения, чьё простое имя
++     конфликтовало бы с именем другой библиотеки в зонтичном пакете или которое является
++     вспомогательным определением времени компиляции или внутренним, доступным через импорт
++     собственной библиотеки. Инструментарий, генерирующий экспорты, читает её и пропускает
++     аннотированное определение.
+
+- entry .infer   `infer[context]`: summons a given, inlined
+-     `transparent inline def infer[context] = summonInline[context]`: the house spelling of
+-     `summonInline`, used where an instance is summoned inside an inline method so that the
+-     search happens at the expansion site. `summon` is the non-inline form.
++ entry .infer   `infer[context]`: призывает given, встраиваемо
++     `transparent inline def infer[context] = summonInline[context]`: принятое в проекте
++     написание `summonInline`, используемое там, где экземпляр призывается внутри встраиваемого
++     метода, чтобы поиск происходил в месте раскрытия. `summon` — невстраиваемая форма.
+
+- entry .provide   runs a block with a given of a named type supplied from the call site
+-     `provide[Context](block)` summons a `Context` where it is expanded and passes it to the
+-     context-function `block`, so that a method which needs a `Tactic[Error]` can be
+-     called from inline code which has one: `provide[Tactic[Pojo.Error]]: …`. The `Void`
+-     parameter is a placeholder which lets the result type parameter be inferred after
+-     the context one is given.
++ entry .provide   выполняет блок с given именованного типа, предоставленным из места вызова
++     `provide[Context](block)` призывает `Context` там, где раскрывается, и передаёт его
++     контекстной функции `block`, так что метод, которому нужен `Tactic[Error]`, можно
++     вызвать из встраиваемого кода, у которого он есть: `provide[Tactic[Pojo.Error]]: …`.
++     Параметр `Void` — заглушка, которая позволяет вывести параметр типа результата после того,
++     как задан контекстный.
+
+- entry .->   `left -> right`: the pair `(left, right)`
+-     The tuple arrow, supplied here because `scala.Predef` made it an inline method which
+-     `-Yno-predef` would otherwise lose. `Map(t"a" -> 1)` depends on it.
++ entry .->   `left -> right`: пара `(left, right)`
++     Стрелка кортежа, предоставленная здесь, потому что `scala.Predef` сделал её встраиваемым
++     методом, который иначе был бы потерян при `-Yno-predef`. От неё зависит `Map(t"a" -> 1)`.
+
+- entry .Void   `scala.DummyImplicit`, renamed: a placeholder using-parameter
+-     A `(using erased void: Void)` parameter lets a method separate a type parameter the
+-     caller gives from one the compiler infers: `safely[error](using erased void:
+-     Void)[success](…)`. Also exported under its original name, `DummyImplicit`.
++ entry .Void   переименованный `scala.DummyImplicit`: using-параметр-заглушка
++     Параметр `(using erased void: Void)` позволяет методу отделить параметр типа, задаваемый
++     вызывающим, от того, который выводит компилятор: `safely[error](using erased void:
++     Void)[success](…)`. Экспортируется также под исходным именем, `DummyImplicit`.
+
+- entry .is   `subject is Typeclass`: refines a typeclass's `Self` to its subject
+-     Predef's infix `is`, re-exported: `Text is Showable` is `Showable { type Self = Text }`,
+-     the phrase every Soundness typeclass is summoned and declared by, and the root the
+-     prepositional prepositions (`in`, `by`, `to`, …) extend.
++ entry .is   `subject is Typeclass`: уточняет `Self` класса типов до его субъекта
++     Инфиксный `is` из Predef, реэкспортированный: `Text is Showable` — это
++     `Showable { type Self = Text }`, оборот, которым призывается и объявляется каждый класс
++     типов Soundness, и корень, который расширяют предложные формы (`in`, `by`, `to`, …).
+
+- entry .nn   asserts a nullable value is not `null`: `javaResult.nn`
+-     Predef's `nn`, for a `T | Null` from a Java API whose documentation promises a
+-     value; throws `NullPointerException` if the promise is broken. Where `null` is a
+-     legitimate outcome, use `Optional(value)` instead.
++ entry .nn   утверждает, что nullable-значение не равно `null`: `javaResult.nn`
++     `nn` из Predef для `T | Null` из Java API, документация которого обещает значение;
++     выбрасывает `NullPointerException`, если обещание нарушено. Там, где `null` — законный
++     исход, используйте вместо этого `Optional(value)`.
+
+- entry .summon   `summon[T]`: the given of a type, from Predef
+-     The non-inline summon; `infer[T]` is the inline form for use inside inline methods.
++ entry .summon   `summon[T]`: given типа, из Predef
++     Невстраиваемый призыв; `infer[T]` — встраиваемая форма для использования внутри
++     встраиваемых методов.
+
+- entry .identity   `identity(x)` is `x`, from Predef
++ entry .identity   `identity(x)` — это `x`, из Predef
+
+- entry .locally   `locally { … }`: a block as an expression, from Predef
+-     Chiefly for a block which opens with a `given` import whose scope should end with it,
+-     such as a choice between `alphabets` or `dysasymptotics` givens.
++ entry .locally   `locally { … }`: блок как выражение, из Predef
++     Главным образом для блока, который начинается с импорта `given`, чья область видимости
++     должна закончиться вместе с блоком, например выбора между given-экземплярами `alphabets` или
++     `dysasymptotics`.
+
+- entry .valueOf   `valueOf[literal]`: the value of a singleton type, from Predef
++ entry .valueOf   `valueOf[literal]`: значение синглтон-типа, из Predef
+
+- entry .assert   Predef's `assert(condition)` and `assert(condition, message)`
++ entry .assert   `assert(condition)` и `assert(condition, message)` из Predef
+
+- entry .???   Predef's `???`: a placeholder which throws `NotImplementedError`
++ entry .???   `???` из Predef: заглушка, которая выбрасывает `NotImplementedError`
+
+- entry .ArrowAssoc   Predef's `ArrowAssoc`: the class behind `->`
+-     Kept so that stdlib code and the `->` extension here agree; the pair arrow itself is
+-     the `->` extension.
++ entry .ArrowAssoc   `ArrowAssoc` из Predef: класс, стоящий за `->`
++     Сохранён, чтобы код stdlib и расширение `->` здесь были согласованы; сама стрелка пары —
++     это расширение `->`.
+
+- entry .$conforms   Predef's `$conforms`: the given behind every `A <:< A` evidence
++ entry .$conforms   `$conforms` из Predef: given, стоящий за каждым свидетельством `A <:< A`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Re-exported from Predef so that subtype evidence (`<:<`) still resolves under
+-       `-Yno-predef`; not for direct use.
++       Реэкспортирован из Predef, чтобы свидетельства подтипа (`<:<`) по-прежнему разрешались
++       при `-Yno-predef`; не для прямого использования.
+
+- entry .augmentString   Predef's `String` to `StringOps` conversion, for the few `String` seams
++ entry .augmentString   преобразование `String` в `StringOps` из Predef, для немногих швов со `String`
+
+- entry .intWrapper   Predef's `Int` to `RichInt`, for `until`, `to`, `max`, `min` on `Int`
+- entry .longWrapper   Predef's `Long` to `RichLong`
+- entry .shortWrapper   Predef's `Short` to `RichShort`
+- entry .byteWrapper   Predef's `Byte` to `RichByte`
+- entry .charWrapper   Predef's `Char` to `RichChar`, for `isDigit`, `toUpper` and the like
+- entry .doubleWrapper   Predef's `Double` to `RichDouble`
+- entry .floatWrapper   Predef's `Float` to `RichFloat`
++ entry .intWrapper   `Int` в `RichInt` из Predef, для `until`, `to`, `max`, `min` на `Int`
++ entry .longWrapper   `Long` в `RichLong` из Predef
++ entry .shortWrapper   `Short` в `RichShort` из Predef
++ entry .byteWrapper   `Byte` в `RichByte` из Predef
++ entry .charWrapper   `Char` в `RichChar` из Predef, для `isDigit`, `toUpper` и подобных
++ entry .doubleWrapper   `Double` в `RichDouble` из Predef
++ entry .floatWrapper   `Float` в `RichFloat` из Predef
+
+- entry .refArrayOps   Predef's `ArrayOps` conversion for a `scala.Array` of references
+-     The array-ops conversions apply to the raw `scala.Array` at a JDK seam, not to the
+-     opaque `Array`, whose vocabulary is the typeclass one.
+- entry .genericArrayOps   Predef's `ArrayOps` conversion for a `scala.Array` of any element
+- entry .byteArrayOps   Predef's `ArrayOps` conversion for a `scala.Array[Byte]`
+- entry .shortArrayOps   Predef's `ArrayOps` conversion for a `scala.Array[Short]`
+- entry .intArrayOps   Predef's `ArrayOps` conversion for a `scala.Array[Int]`
+- entry .longArrayOps   Predef's `ArrayOps` conversion for a `scala.Array[Long]`
+- entry .floatArrayOps   Predef's `ArrayOps` conversion for a `scala.Array[Float]`
+- entry .doubleArrayOps   Predef's `ArrayOps` conversion for a `scala.Array[Double]`
+- entry .charArrayOps   Predef's `ArrayOps` conversion for a `scala.Array[Char]`
+- entry .booleanArrayOps   Predef's `ArrayOps` conversion for a `scala.Array[Boolean]`
+- entry .unitArrayOps   Predef's `ArrayOps` conversion for a `scala.Array[Unit]`
++ entry .refArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array` ссылок
++     Преобразования в array-ops применяются к сырому `scala.Array` на шве с JDK, а не к
++     непрозрачному `Array`, словарь которого — словарь классов типов.
++ entry .genericArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array` с любым элементом
++ entry .byteArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array[Byte]`
++ entry .shortArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array[Short]`
++ entry .intArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array[Int]`
++ entry .longArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array[Long]`
++ entry .floatArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array[Float]`
++ entry .doubleArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array[Double]`
++ entry .charArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array[Char]`
++ entry .booleanArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array[Boolean]`
++ entry .unitArrayOps   преобразование в `ArrayOps` из Predef для `scala.Array[Unit]`
+
+- entry .ClassTag   `scala.reflect.ClassTag`, re-exported: the runtime class token an array element needs
+-     Every `Array` constructor takes a `ClassTag[element]` context bound, so a generic
+-     method which builds arrays carries `[element: ClassTag]`.
++ entry .ClassTag   реэкспортированный `scala.reflect.ClassTag`: токен класса времени выполнения, нужный элементу массива
++     Каждый конструктор `Array` принимает контекстную границу `ClassTag[element]`, поэтому
++     обобщённый метод, строящий массивы, несёт `[element: ClassTag]`.
+
+- entry .Typeable   `scala.reflect.Typeable`, re-exported: a runtime type test for a type pattern
++ entry .Typeable   реэкспортированный `scala.reflect.Typeable`: проверка типа во время выполнения для типового образца
+
+- entry .TreeMap   `scala.collection.immutable.TreeMap`, re-exported: a sorted stdlib map
+-     A stdlib structure kept for the few places which need key order, at the cost of an
+-     explicit `import scala.math.Ordering` for its keys. Not an opaque Soundness collection.
++ entry .TreeMap   реэкспортированный `scala.collection.immutable.TreeMap`: сортированный словарь stdlib
++     Структура stdlib, сохранённая для немногих мест, где нужен порядок ключей, ценой явного
++     `import scala.math.Ordering` для ключей. Не непрозрачная коллекция Soundness.
+
+- entry .TreeSet   `scala.collection.immutable.TreeSet`, re-exported: a sorted stdlib set
++ entry .TreeSet   реэкспортированный `scala.collection.immutable.TreeSet`: сортированное множество stdlib
+
+- entry .TrieMap   `scala.collection.concurrent.TrieMap`, re-exported: a concurrent stdlib map
++ entry .TrieMap   реэкспортированный `scala.collection.concurrent.TrieMap`: конкурентный словарь stdlib
+
+- entry .NonFatal   `scala.util.control.NonFatal`, re-exported: the extractor for recoverable throwables
++ entry .NonFatal   реэкспортированный `scala.util.control.NonFatal`: экстрактор для восстановимых исключений
+
+- entry .boundary   `scala.util.boundary`, re-exported: a labelled block to `break` out of
+- entry .break   `scala.util.boundary.break`, re-exported: leaves the enclosing `boundary` with a value
++ entry .boundary   реэкспортированный `scala.util.boundary`: блок с меткой, из которого можно выйти через `break`
++ entry .break   реэкспортированный `scala.util.boundary.break`: покидает объемлющий `boundary` со значением
+
+- entry .IteratorHasAsScala   `.asScala` on a `java.util.Iterator`, from `CollectionConverters`
+-     The Java-interop converters are re-exported so that a JDK seam needs no extra import;
+-     the result is a stdlib collection, crossed back with the companion's `from`.
+- entry .ListHasAsScala   `.asScala` on a `java.util.List`, from `CollectionConverters`
+- entry .MapHasAsScala   `.asScala` on a `java.util.Map`, from `CollectionConverters`
+- entry .EnumerationHasAsScala   `.asScala` on a `java.util.Enumeration`, from `CollectionConverters`
+- entry .SeqHasAsJava   `.asJava` on a stdlib `Seq`, from `CollectionConverters`
+- entry .MapHasAsJava   `.asJava` on a stdlib `Map`, from `CollectionConverters`
++ entry .IteratorHasAsScala   `.asScala` для `java.util.Iterator`, из `CollectionConverters`
++     Конвертеры для взаимодействия с Java реэкспортированы, чтобы шву с JDK не требовался
++     дополнительный импорт; результат — коллекция stdlib, переводимая обратно через `from`
++     компаньона.
++ entry .ListHasAsScala   `.asScala` для `java.util.List`, из `CollectionConverters`
++ entry .MapHasAsScala   `.asScala` для `java.util.Map`, из `CollectionConverters`
++ entry .EnumerationHasAsScala   `.asScala` для `java.util.Enumeration`, из `CollectionConverters`
++ entry .SeqHasAsJava   `.asJava` для `Seq` из stdlib, из `CollectionConverters`
++ entry .MapHasAsJava   `.asJava` для `Map` из stdlib, из `CollectionConverters`
+
+- entry .tailrec   `scala.annotation.tailrec`, re-exported
+- entry .targetName   `scala.annotation.targetName`, re-exported
+- entry .switch   `scala.annotation.switch`, re-exported
+- entry .StaticAnnotation   `scala.annotation.StaticAnnotation`, re-exported: the base of a user annotation
+- entry .missingContext   `scala.annotation.implicitNotFound`, renamed: the message for a missing given
+-     `@missingContext("…")` on a typeclass or a given's type sets the error reported when
+-     no instance is found.
+- entry .uncheckedVariance   `scala.annotation.unchecked.uncheckedVariance`, re-exported
+- entry .uncheckedCaptures   `scala.annotation.unchecked.uncheckedCaptures`, re-exported
+- entry .uncheckedStable   `scala.annotation.unchecked.uncheckedStable`, re-exported
++ entry .tailrec   реэкспортированный `scala.annotation.tailrec`
++ entry .targetName   реэкспортированный `scala.annotation.targetName`
++ entry .switch   реэкспортированный `scala.annotation.switch`
++ entry .StaticAnnotation   реэкспортированный `scala.annotation.StaticAnnotation`: основа пользовательской аннотации
++ entry .missingContext   переименованный `scala.annotation.implicitNotFound`: сообщение об отсутствующем given
++     `@missingContext("…")` на классе типов или на типе given задаёт ошибку, сообщаемую, когда
++     экземпляр не найден.
++ entry .uncheckedVariance   реэкспортированный `scala.annotation.unchecked.uncheckedVariance`
++ entry .uncheckedCaptures   реэкспортированный `scala.annotation.unchecked.uncheckedCaptures`
++ entry .uncheckedStable   реэкспортированный `scala.annotation.unchecked.uncheckedStable`
+
+- entry .into   `Conversion.into`, re-exported: marks a parameter as accepting implicit conversions
++ entry .into   реэкспортированный `Conversion.into`: помечает параметр как принимающий неявные преобразования
+
+- entry .Any   `scala.Any`, re-exported
+- entry .AnyKind   `scala.AnyKind`, re-exported: the bound admitting a type of any kind
+- entry .AnyRef   `scala.AnyRef`, re-exported
+- entry .AnyVal   `scala.AnyVal`, re-exported
+- entry .Matchable   `scala.Matchable`, re-exported
+- entry .Nothing   `scala.Nothing`, re-exported
+-     The type of an expression which never yields — `panic`, `abort` and a tactic's
+-     `raise` return it — so it conforms to every type.
+- entry .Null   `scala.Null`, re-exported
+-     The type of `null` under explicit nulls; a Java API's nullable `T | Null` is made
+-     an `Optional` with `Optional(value)` or asserted with `nn`.
+- entry .Singleton   `scala.Singleton`, re-exported: the bound for a literal type parameter
+- entry .&   the infix intersection type, `A & B`, re-exported
+- entry .|   the infix union type, `A | B`, re-exported
+- entry .<:<   the subtype evidence `A <:< B`, re-exported
+- entry .=:=   the type-equality evidence `A =:= B`, re-exported
+- entry .Boolean   `scala.Boolean`, re-exported
+- entry .Byte   `scala.Byte`, re-exported
+- entry .Char   `scala.Char`, re-exported
+- entry .Double   `scala.Double`, re-exported
+- entry .Float   `scala.Float`, re-exported
+- entry .Int   `scala.Int`, re-exported
+- entry .Long   `scala.Long`, re-exported
+- entry .Short   `scala.Short`, re-exported
+- entry .Either   `scala.Either`, re-exported
+- entry .Left   `scala.Left`, re-exported
+- entry .Right   `scala.Right`, re-exported
+- entry .Option   `scala.Option`, re-exported, for the boundary with code which uses it
+-     Soundness code represents absence as an `Optional`; `Option` is kept for stdlib and
+-     third-party APIs, converted at the seam with `optional` and `option`.
+- entry .Some   `scala.Some`, re-exported
+- entry .None   `scala.None`, re-exported
+- entry .Tuple   `scala.Tuple`, re-exported
+- entry .EmptyTuple   `scala.EmptyTuple`, re-exported; also available as `Zero`
+- entry .NonEmptyTuple   `scala.NonEmptyTuple`, re-exported
+- entry .Tuple1   `scala.Tuple1`, re-exported
+- entry .Tuple2   `scala.Tuple2`, re-exported
+- entry .*:   the tuple cons type and extractor `head *: tail`, re-exported
+- entry .CanEqual   `scala.CanEqual`, re-exported: strict-equality evidence
+- entry .Conversion   `scala.Conversion`, re-exported: the class of an implicit conversion
+- entry .Dynamic   `scala.Dynamic`, re-exported: the marker for `selectDynamic` members
+- entry .Function   `scala.Function`, re-exported
+- entry .PartialFunction   `scala.PartialFunction`, re-exported; also written infix as `~>`
+- entry .Product   `scala.Product`, re-exported
+- entry .Selectable   `scala.Selectable`, re-exported: structural selection
+- entry .StringContext   `scala.StringContext`, re-exported: what an interpolator extends
+- entry .BigDecimal   `scala.BigDecimal`, re-exported
+- entry .BigInt   `scala.BigInt`, re-exported
+- entry .Fractional   `scala.Fractional`, re-exported
+- entry .Integral   `scala.Integral`, re-exported
+- entry .Numeric   `scala.Numeric`, re-exported
+-     The numeric abstractions are kept for the stdlib seams which take them; `Ordering`
+-     and `Ordered` are deliberately not, since comparison in Soundness is `Comparable`.
+- entry .deprecated   `scala.deprecated`, re-exported
+- entry .unchecked   `scala.unchecked`, re-exported
+- entry .volatile   `scala.volatile`, re-exported
+- entry .transient   `scala.transient`, re-exported
+- entry .native   `scala.native`, re-exported
+- entry .main   `scala.main`, re-exported: the annotation of a program's entry method
+- entry .unsafeExceptions   `scala.unsafeExceptions`, re-exported: `import unsafeExceptions.canThrowAny`
+-     The object whose `canThrowAny` given lets any exception be thrown without a
+-     `CanThrow`, for code which has decided not to track them.
+- entry .CanThrow   `scala.CanThrow`, re-exported: the capability to throw an exception type
+- entry .DummyImplicit   `scala.DummyImplicit`, re-exported; also available as `Void`
+- entry .MatchError   `scala.MatchError`, re-exported
+- entry .NamedTuple   `scala.NamedTuple`, re-exported
+- entry .Specializable   `scala.Specializable`, re-exported
+- entry .ValueOf   `scala.ValueOf`, re-exported: the value of a singleton type, as evidence
+- entry .NoSuchElementException   `scala.NoSuchElementException`, re-exported
+- entry .Iterable   `scala.Iterable`, re-exported: the one stdlib collection interface kept
+-     The abstract interface is the internal currency of the collection typeclasses
+-     (`compact`, `entire` and the `Iterable` receivers in rudiments take one); concrete
+-     stdlib collections are not re-exported. `Iterator` is *not* here: under `import
+-     soundness.*` it is murmuration's.
+- entry .StringBuilder   `scala.StringBuilder`, re-exported, for now, as the mutable text accumulator
+-     Marked temporary in the prelude, pending a review of mutable text accumulation.
++ entry .Any   реэкспортированный `scala.Any`
++ entry .AnyKind   реэкспортированный `scala.AnyKind`: граница, допускающая тип любого рода
++ entry .AnyRef   реэкспортированный `scala.AnyRef`
++ entry .AnyVal   реэкспортированный `scala.AnyVal`
++ entry .Matchable   реэкспортированный `scala.Matchable`
++ entry .Nothing   реэкспортированный `scala.Nothing`
++     Тип выражения, которое никогда не даёт значения — его возвращают `panic`, `abort` и
++     `raise` тактики, — поэтому он соответствует любому типу.
++ entry .Null   реэкспортированный `scala.Null`
++     Тип `null` при явных null; nullable-тип `T | Null` из Java API превращается в
++     `Optional` через `Optional(value)` или утверждается через `nn`.
++ entry .Singleton   реэкспортированный `scala.Singleton`: граница для литерального параметра типа
++ entry .&   инфиксный тип пересечения, `A & B`, реэкспортированный
++ entry .|   инфиксный тип объединения, `A | B`, реэкспортированный
++ entry .<:<   свидетельство подтипа `A <:< B`, реэкспортированное
++ entry .=:=   свидетельство равенства типов `A =:= B`, реэкспортированное
++ entry .Boolean   реэкспортированный `scala.Boolean`
++ entry .Byte   реэкспортированный `scala.Byte`
++ entry .Char   реэкспортированный `scala.Char`
++ entry .Double   реэкспортированный `scala.Double`
++ entry .Float   реэкспортированный `scala.Float`
++ entry .Int   реэкспортированный `scala.Int`
++ entry .Long   реэкспортированный `scala.Long`
++ entry .Short   реэкспортированный `scala.Short`
++ entry .Either   реэкспортированный `scala.Either`
++ entry .Left   реэкспортированный `scala.Left`
++ entry .Right   реэкспортированный `scala.Right`
++ entry .Option   реэкспортированный `scala.Option`, для границы с кодом, который его использует
++     Код Soundness представляет отсутствие как `Optional`; `Option` сохранён для API stdlib и
++     сторонних библиотек и преобразуется на шве через `optional` и `option`.
++ entry .Some   реэкспортированный `scala.Some`
++ entry .None   реэкспортированный `scala.None`
++ entry .Tuple   реэкспортированный `scala.Tuple`
++ entry .EmptyTuple   реэкспортированный `scala.EmptyTuple`; доступен также как `Zero`
++ entry .NonEmptyTuple   реэкспортированный `scala.NonEmptyTuple`
++ entry .Tuple1   реэкспортированный `scala.Tuple1`
++ entry .Tuple2   реэкспортированный `scala.Tuple2`
++ entry .*:   тип cons для кортежей и экстрактор `head *: tail`, реэкспортированные
++ entry .CanEqual   реэкспортированный `scala.CanEqual`: свидетельство строгого равенства
++ entry .Conversion   реэкспортированный `scala.Conversion`: класс неявного преобразования
++ entry .Dynamic   реэкспортированный `scala.Dynamic`: маркер для членов `selectDynamic`
++ entry .Function   реэкспортированный `scala.Function`
++ entry .PartialFunction   реэкспортированный `scala.PartialFunction`; записывается также инфиксно как `~>`
++ entry .Product   реэкспортированный `scala.Product`
++ entry .Selectable   реэкспортированный `scala.Selectable`: структурный выбор
++ entry .StringContext   реэкспортированный `scala.StringContext`: то, что расширяет интерполятор
++ entry .BigDecimal   реэкспортированный `scala.BigDecimal`
++ entry .BigInt   реэкспортированный `scala.BigInt`
++ entry .Fractional   реэкспортированный `scala.Fractional`
++ entry .Integral   реэкспортированный `scala.Integral`
++ entry .Numeric   реэкспортированный `scala.Numeric`
++     Числовые абстракции сохранены для швов со stdlib, которые их принимают; `Ordering` и
++     `Ordered` намеренно не сохранены, поскольку сравнение в Soundness — это `Comparable`.
++ entry .deprecated   реэкспортированный `scala.deprecated`
++ entry .unchecked   реэкспортированный `scala.unchecked`
++ entry .volatile   реэкспортированный `scala.volatile`
++ entry .transient   реэкспортированный `scala.transient`
++ entry .native   реэкспортированный `scala.native`
++ entry .main   реэкспортированный `scala.main`: аннотация метода точки входа программы
++ entry .unsafeExceptions   реэкспортированный `scala.unsafeExceptions`: `import unsafeExceptions.canThrowAny`
++     Объект, чей given `canThrowAny` позволяет выбрасывать любое исключение без `CanThrow`, для
++     кода, который решил их не отслеживать.
++ entry .CanThrow   реэкспортированный `scala.CanThrow`: возможность выбрасывать исключение данного типа
++ entry .DummyImplicit   реэкспортированный `scala.DummyImplicit`; доступен также как `Void`
++ entry .MatchError   реэкспортированный `scala.MatchError`
++ entry .NamedTuple   реэкспортированный `scala.NamedTuple`
++ entry .Specializable   реэкспортированный `scala.Specializable`
++ entry .ValueOf   реэкспортированный `scala.ValueOf`: значение синглтон-типа как свидетельство
++ entry .NoSuchElementException   реэкспортированный `scala.NoSuchElementException`
++ entry .Iterable   реэкспортированный `scala.Iterable`: единственный сохранённый интерфейс коллекций stdlib
++     Абстрактный интерфейс — внутренняя валюта классов типов коллекций (его принимают
++     `compact`, `entire` и получатели `Iterable` в rudiments); конкретные коллекции stdlib не
++     реэкспортируются. `Iterator` здесь *нет*: при `import
++     soundness.*` это `Iterator` из murmuration.
++ entry .StringBuilder   реэкспортированный `scala.StringBuilder`, пока что, как изменяемый аккумулятор текста
++     Помечен в прелюдии как временный, до пересмотра изменяемого накопления текста.

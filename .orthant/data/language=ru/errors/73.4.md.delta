@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.73.4` — `Timespan.Error`
++ # `↯/s.73.4` — `Timespan.Error`
+
+- Raised when a text value does not parse as an ISO-8601 duration.
++ Порождается, когда текстовое значение не разбирается как длительность ISO-8601.
+
+- ## Cause
++ ## Причина
+
+- `Timespan`'s `Decodable` instance and the `dur"…"` interpolator share one
+- parser. When it rejects the input — a bare `P`, a missing designator, or
+- components out of order — this error carries the offending text. The
+- message is `$text is not a recognized duration`.
++ Экземпляр `Decodable` для `Timespan` и интерполятор `dur"…"` используют один и тот же
++ парсер. Когда он отвергает ввод — одиночную `P`, пропущенный обозначитель или компоненты не
++ по порядку, — эта ошибка несёт ошибочный текст. Сообщение —
++ `$text is not a recognized duration`.
+
+- This was a variant of `↯/s.73.3` until durations were separated from moments:
+- a duration has no date, no clock time and no timezone, so a failure to read
+- one is not a failure to determine a moment.
++ Это был вариант `↯/s.73.3`, пока длительности не отделили от моментов: у длительности нет
++ даты, времени суток и часового пояса, поэтому неудача при её чтении — не неудача в
++ определении момента.
+
+- **Example.** `[↯/s.73.4] P is not a recognized duration`
++ **Пример.** `[↯/s.73.4] P is not a recognized duration`
+
+- **Resolution.** Supply a complete ISO-8601 duration, such as `P1Y2M3DT4H5M6S`
+- for one year, two months, three days, four hours, five minutes and six
+- seconds. A `dur"…"` literal is checked at compile time and cannot raise this.
++ **Решение.** Укажите полную длительность ISO-8601, например `P1Y2M3DT4H5M6S` — один год, два
++ месяца, три дня, четыре часа, пять минут и шесть секунд. Литерал `dur"…"` проверяется во время
++ компиляции и не может породить эту ошибку.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/aviation/src/core/aviation.Timespan.scala`
+- - Related: `↯/s.73.3` (`Moment.Error`)
++ - Исходный код: `lib/aviation/src/core/aviation.Timespan.scala`
++ - Связанное: `↯/s.73.3` (`Moment.Error`)

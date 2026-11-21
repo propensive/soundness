@@ -1,0 +1,1151 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base legerdemain
++ base legerdemain
+
+- import soundness
++ import soundness
+
+- info   HTML forms derived from data types, and the form-encoded `Query` their submissions decode from
++ info   HTML-формы, выводимые из типов данных, и form-encoded `Query`, из которого декодируются их отправки
+
+- detail
++ detail
+
+-     _Legerdemain_ treats an HTML form as a user interface to a data type. A case class gives a
+-     form — a labelled widget per field, chosen by the field's type, with nested case classes as
+-     nested fieldsets — and a submission, a `Query` of key–value pairs, decodes back into the
+-     case class, with any failure pointing at the field which caused it. The type is the single
+-     source of truth for both halves, so the form cannot drift from the data it collects.
++     _Legerdemain_ рассматривает HTML-форму как пользовательский интерфейс к типу данных.
++     Case-класс даёт форму — по подписанному виджету на каждое поле, выбранному по типу поля,
++     с вложенными case-классами в виде вложенных наборов полей, — а отправка, `Query` из пар
++     «ключ — значение», декодируется обратно в case-класс, и любая ошибка указывает на поле,
++     которое её вызвало. Тип — единственный источник истины для обеих половин, поэтому форма не
++     может разойтись с данными, которые она собирает.
+
+=     source of truth for both halves, so the form cannot drift from the data it collects.
+=
+-     ```scala
++     ```scala
+
+=     source of truth for both halves, so the form cannot drift from the data it collects.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     source of truth for both halves, so the form cannot drift from the data it collects.
+=
+=     ```scala
+=     import soundness.*
+-     import formulations.postFormulation
++     import formulations.postFormulation
+
+=     source of truth for both halves, so the form cannot drift from the data it collects.
+=
+=     ```scala
+=     import soundness.*
+=     import formulations.postFormulation
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     case class Person(name: Text, crowned: Boolean)
++     case class Person(name: Text, crowned: Boolean)
+
+-     case class Scene(speaker: Person, place: Text)
++     case class Scene(speaker: Person, place: Text)
+
+-     val form: Html of Flow = elicit[Scene](validation = Validation(), submit = t"Save")
++     val form: Html of Flow = elicit[Scene](validation = Validation(), submit = t"Save")
+
+-     val query = t"speaker.name=Macbeth&speaker.crowned=on&place=Dunsinane".as[Query]
++     val query = t"speaker.name=Macbeth&speaker.crowned=on&place=Dunsinane".as[Query]
+
+-     query.as[Scene]   // Scene(Person(t"Macbeth", true), t"Dunsinane")
++     query.as[Scene]   // Scene(Person(t"Macbeth", true), t"Dunsinane")
+
+=     query.as[Scene]   // Scene(Person(t"Macbeth", true), t"Dunsinane")
+-     ```
++     ```
+
+-     The pieces fit together through three typeclasses. `Elicitable` says which `Widget` a
+-     field's type is edited with — a `Field` for anything encodable as text, a `Checkbox` for a
+-     `Boolean`, a `Combobox` for an enumeration, a `Dropdown` for a stored `Reference`.
+-     `Formulaic` is derived for a product type from its fields' `Elicitable`s and produces the
+-     form's rows. `Formulation` decides how the form and each row are framed in HTML; the one
+-     standard choice is `formulations.postFormulation`, imported by name, since `import
+-     soundness.*` does not import givens.
++     Части соединяются через три класса типов. `Elicitable` определяет, каким `Widget`
++     редактируется тип поля: `Field` — для всего, что кодируется как текст, `Checkbox` — для
++     `Boolean`, `Combobox` — для перечисления, `Dropdown` — для хранимой ссылки `Reference`.
++     `Formulaic` выводится для типа-произведения из `Elicitable` его полей и порождает строки
++     формы. `Formulation` решает, как форма и каждая её строка обрамляются в HTML; единственный
++     стандартный вариант — `formulations.postFormulation`, импортируемый по имени, поскольку
++     `import soundness.*` не импортирует given-экземпляры.
+
+-     The library has two source sets. `legerdemain.query` holds `Query` and `Parametric`: the
+-     form-encoded key–value structure, with no HTML in it, which the HTTP client and server
+-     use for URL query strings and form posts. `legerdemain.core` adds the widgets, the
+-     typeclasses, `elicit`, `edit` and the `formulations` package, and depends on honeycomb's
+-     HTML. Everything is exported to the `soundness` umbrella. Telekinesis builds the form
+-     cycle — render, submit, re-render with errors — on these, as `orchestrate`.
++     У библиотеки два набора исходников. `legerdemain.query` содержит `Query` и `Parametric`:
++     form-encoded структуру «ключ — значение» без всякого HTML, которую HTTP-клиент и сервер
++     используют для строк запроса URL и отправки форм. `legerdemain.core` добавляет виджеты,
++     классы типов, `elicit`, `edit` и пакет `formulations` и зависит от HTML из honeycomb. Всё
++     экспортируется в зонтичный модуль `soundness`. Telekinesis строит на их основе цикл
++     формы — отображение, отправку, повторное отображение с ошибками — в виде `orchestrate`.
+
+- refer legerdemain.Query
++ refer legerdemain.Query
+
+- refer legerdemain.elicit
++ refer legerdemain.elicit
+
+- refer legerdemain.Formulaic
++ refer legerdemain.Formulaic
+
+- refer legerdemain.Formulation
++ refer legerdemain.Formulation
+
+- refer legerdemain.Elicitable
++ refer legerdemain.Elicitable
+
+- entry .elicit   renders the form for a type, optionally filled from a submitted `Query`, with its validation messages
+-     `elicit[Value](query, validation, submit)` renders the whole form for `Value`, which must
+-     be `Formulaic`, through the `Formulation` given in scope. `query` is what was submitted, to
+-     show the user's entries again (`Unset` for a blank form); `validation` holds the messages
+-     to attach to fields, keyed by each field's `Pointer` (`Validation()` for none); and
+-     `submit` is the submit button's label, or `Unset` for the formulation's default.
++ entry .elicit   отображает форму для типа, при необходимости заполненную из отправленного `Query`, с сообщениями валидации
++     `elicit[Value](query, validation, submit)` отображает всю форму для `Value`, который должен
++     быть `Formulaic`, через `Formulation`, заданный given-экземпляром в области видимости.
++     `query` — то, что было отправлено, чтобы снова показать введённое пользователем (`Unset` для
++     пустой формы); `validation` содержит сообщения, прикрепляемые к полям, по ключу `Pointer`
++     каждого поля (`Validation()`, если их нет); `submit` — подпись кнопки отправки или `Unset`
++     для подписи по умолчанию из formulation.
+
+=     `submit` is the submit button's label, or `Unset` for the formulation's default.
+=
+-     ```scala
++     ```scala
+
+=     `submit` is the submit button's label, or `Unset` for the formulation's default.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `submit` is the submit button's label, or `Unset` for the formulation's default.
+=
+=     ```scala
+=     import soundness.*
+-     import formulations.postFormulation
++     import formulations.postFormulation
+
+=     `submit` is the submit button's label, or `Unset` for the formulation's default.
+=
+=     ```scala
+=     import soundness.*
+=     import formulations.postFormulation
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import strategies.throwUnsafely
+=
+-     case class Person(name: Text, email: Text)
++     case class Person(name: Text, email: Text)
+
+-     val blank = elicit[Person](validation = Validation(), submit = t"Register")
++     val blank = elicit[Person](validation = Validation(), submit = t"Register")
+
+-     val submitted = t"name=Hamlet".as[Query]
++     val submitted = t"name=Hamlet".as[Query]
+
+-     val again = elicit[Person](submitted, Validation(), t"Register")
++     val again = elicit[Person](submitted, Validation(), t"Register")
+
+=     val again = elicit[Person](submitted, Validation(), t"Register")
+-     ```
++     ```
+
+-     Each field is labelled from its name, split at its capitals and capitalised (`firstName`
+-     becomes _First name_), and a nested case class becomes a `<fieldset>` with the field's
+-     label as its legend. A field's widget is named by its dotted path, `speaker.name`, which is
+-     the key it is submitted under.
++     Подпись каждого поля строится из его имени: оно разбивается по заглавным буквам, и первая
++     буква делается заглавной (`firstName` становится _First name_), а вложенный case-класс
++     становится `<fieldset>` с подписью поля в качестве легенды. Виджет поля называется по его
++     пути через точку, `speaker.name`, — это ключ, под которым поле отправляется.
+
+- entry .edit   renders the form for a value, filled with that value's fields
+-     An extension on any value which is both `Formulaic` and `Encodable in Query`:
+-     `value.edit(validation, submit)` is the form `elicit` renders, filled with the value's own
+-     fields encoded as a `Query`, for changing an existing record. It needs a `Formulation` in
+-     scope.
++ entry .edit   отображает форму для значения, заполненную полями этого значения
++     Расширение для любого значения, которое одновременно `Formulaic` и `Encodable in Query`:
++     `value.edit(validation, submit)` — это форма, которую отображает `elicit`, заполненная
++     собственными полями значения, закодированными как `Query`, для изменения существующей
++     записи. Нужен `Formulation` в области видимости.
+
+=     scope.
+=
+-     ```scala
++     ```scala
+
+=     scope.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     scope.
+=
+=     ```scala
+=     import soundness.*
+-     import formulations.postFormulation
++     import formulations.postFormulation
+
+=     import formulations.postFormulation
+=
+-     case class Person(name: Text, email: Text)
++     case class Person(name: Text, email: Text)
+
+-     Person(t"Bottom", t"bottom@example.com").edit(Validation(), t"Update")
++     Person(t"Bottom", t"bottom@example.com").edit(Validation(), t"Update")
+
+=     Person(t"Bottom", t"bottom@example.com").edit(Validation(), t"Update")
+-     ```
++     ```
+
+- entry .formulations   the standard ways to frame a form in HTML, each a given to import by name
++ entry .formulations   стандартные способы обрамить форму в HTML, каждый — given, импортируемый по имени
+
+= entry .formulations   the standard ways to frame a form in HTML, each a given to import by name
+-   detail
++   detail
+
+-       How a form and its rows are rendered is a `Formulation` in scope, and `import
+-       soundness.*` brings none in: one is imported by name, or an application defines its own
+-       to match its design.
++       То, как отображаются форма и её строки, определяет `Formulation` в области видимости, а
++       `import soundness.*` не приносит ни одного: его импортируют по имени, или приложение
++       определяет собственный под свой дизайн.
+
+=       to match its design.
+=
+-       ```scala
++       ```scala
+
+=       to match its design.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import formulations.postFormulation
++       import formulations.postFormulation
+
+=       import formulations.postFormulation
+-       ```
++       ```
+
+-   entry .postFormulation   a plain, unstyled form which posts back to its own URL
+-       The form is a `<form action="." method="post">` holding the rows and a submit button
+-       labelled with the `submit` text, or _Submit_ if it is `Unset`. Each row is a `<div>`
+-       holding a `<p class="alert">` with the field's validation message, if any, a `<label>`
+-       around the legend and the widget, and a `<span class="required">*</span>`, so a
+-       stylesheet can style the alert and the marker. The marker is currently shown on every
+-       row, whether or not the field is required.
++   entry .postFormulation   простая, без стилей, форма, отправляемая на собственный URL
++       Форма — это `<form action="." method="post">`, содержащий строки и кнопку отправки с
++       подписью из текста `submit` или _Submit_, если он `Unset`. Каждая строка — `<div>`,
++       содержащий `<p class="alert">` с сообщением валидации поля, если оно есть, `<label>`
++       вокруг легенды и виджета и `<span class="required">*</span>`, чтобы таблица стилей могла
++       оформить предупреждение и маркер. Сейчас маркер показывается в каждой строке, независимо от
++       того, обязательно ли поле.
+
+- entry .Formulation   how a form, and each labelled row of it, is framed in HTML
++ entry .Formulation   как в HTML обрамляется форма и каждая её подписанная строка
+
+= entry .Formulation   how a form, and each labelled row of it, is framed in HTML
+-   detail
++   detail
+
+-       A `Formulation` is the presentation of a form, separate from how its fields are derived:
+-       `#form` wraps the rows and the submit button, and `#element` frames one widget with its
+-       legend and validation message. `elicit` and `edit` take one as a contextual value;
+-       `formulations.postFormulation` is the standard one, and an application defines its own
+-       for its own markup:
++       `Formulation` — это представление формы, отделённое от того, как выводятся её поля:
++       `#form` оборачивает строки и кнопку отправки, а `#element` обрамляет один виджет с его
++       легендой и сообщением валидации. `elicit` и `edit` принимают его как контекстное значение;
++       `formulations.postFormulation` — стандартный вариант, а приложение определяет собственный
++       для своей разметки:
+
+=       for its own markup:
+=
+-       ```scala
++       ```scala
+
+=       for its own markup:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import htmlDoms.whatwg, whatwg.*
++       import htmlDoms.whatwg, whatwg.*
+
+-       given Formulation:
++       given Formulation:
+
+-         def form(content: List[Html of Flow], submit: Optional[Text]): Html of Flow =
++         def form(content: List[Html of Flow], submit: Optional[Text]): Html of Flow =
+
+-           Form(method = t"post")(Html.Fragment(content*), Input.Submit(value = submit.or(t"Go")))
++           Form(method = t"post")(Html.Fragment(content*), Input.Submit(value = submit.or(t"Go")))
+
+-         def element
++         def element
+
+-           ( widget: Html of Phrasing, legend: Text, validation: Optional[Message], required: Boolean )
++           ( widget: Html of Phrasing, legend: Text, validation: Optional[Message], required: Boolean )
+
+-         :   Html of Flow =
++         :   Html of Flow =
+
+-           Div(Label(legend, widget))
++           Div(Label(legend, widget))
+
+=           Div(Label(legend, widget))
+-       ```
++       ```
+
+-       A `Formulation` is capture-tracked (`Findable`), so one may close over a capability.
++       `Formulation` отслеживается проверкой захвата (`Findable`), поэтому может замыкать
++       возможность.
+
+-   refer legerdemain.formulations
++   refer legerdemain.formulations
+
+-   entry #form      wraps a form's rows and its submit button, labelled with the text or a default
+-   entry #element   frames one widget with its legend, its validation message, and whether it is required
++   entry #form      оборачивает строки формы и её кнопку отправки, подписанную текстом или подписью по умолчанию
++   entry #element   обрамляет один виджет с его легендой, сообщением валидации и признаком обязательности
+
+- entry .Formulaic   a type which can be presented as form rows: derived for case classes, field by field
++ entry .Formulaic   тип, который можно представить строками формы: выводится для case-классов поле за полем
+
+= entry .Formulaic   a type which can be presented as form rows: derived for case classes, field by field
+-   detail
++   detail
+
+-       `Formulaic` is the typeclass `elicit` and `edit` need. It is derived for a product type
+-       from its fields — each field must itself be `Formulaic` — and is given for any single
+-       value which is `Elicitable` and whose widget is `Renderable` as phrasing HTML. A
+-       derived product renders as a `<fieldset>` with a `<legend>`, so nesting in the data is
+-       nesting in the form.
++       `Formulaic` — класс типов, который нужен `elicit` и `edit`. Он выводится для
++       типа-произведения из его полей — каждое поле само должно быть `Formulaic` — и
++       предоставляется для любого одиночного значения, которое `Elicitable` и чей виджет
++       `Renderable` как фразовый HTML. Выведенное произведение отображается как `<fieldset>` с
++       `<legend>`, так что вложенность в данных становится вложенностью в форме.
+
+-       `#fields` receives the `Pointer` of the value within the whole form, its legend, the
+-       part of the submitted `Query` under that pointer, the `Validation` and the `Formulation`;
+-       a single field looks up its own message in the validation by its pointer.
++       `#fields` получает `Pointer` значения внутри всей формы, его легенду, часть отправленного
++       `Query` под этим указателем, `Validation` и `Formulation`; одиночное поле находит своё
++       сообщение в валидации по своему указателю.
+
+-   refer legerdemain.Elicitable
++   refer legerdemain.Elicitable
+
+=   refer legerdemain.Elicitable
+-   refer legerdemain.elicit
++   refer legerdemain.elicit
+
+-   entry .elicitable   a single field's row: its `Elicitable` widget, rendered and framed with its message
+-       Makes the widget for the value with the field's dotted name, legend and submitted value,
+-       renders it, and frames it with the formulation's `element`.
+-   entry .conjunction   derives the rows of a case class: a fieldset of each field's rows
+-       The derivation `Formulaic` uses for products. Each field's legend is its name split at
+-       the capitals and capitalised, and its pointer extends the parent's with the field's
+-       name.
+-   entry #fields   the form rows for a value, given its pointer, legend, submitted query, validation and formulation
++   entry .elicitable   строка одиночного поля: его виджет `Elicitable`, отображённый и обрамлённый вместе с сообщением
++       Создаёт виджет для значения с именем поля через точку, легендой и отправленным значением,
++       отображает его и обрамляет с помощью `element` из formulation.
++   entry .conjunction   выводит строки case-класса: набор полей из строк каждого поля
++       Деривация, которую `Formulaic` использует для произведений. Легенда каждого поля — его
++       имя, разбитое по заглавным буквам, с заглавной первой буквой, а его указатель продолжает
++       указатель родителя именем поля.
++   entry #fields   строки формы для значения по его указателю, легенде, отправленному запросу, валидации и formulation
+
+- entry .Elicitable   which widget edits a type, and how a value of it is entered as text
++ entry .Elicitable   каким виджетом редактируется тип и как его значение вводится в виде текста
+
+= entry .Elicitable   which widget edits a type, and how a value of it is entered as text
+-   detail
++   detail
+
+-       `value is Elicitable` says what a form field of type `value` looks like: its `Operand` is
+-       a `Widget` type, `#widget` makes one with a field's name, legend and current value, and
+-       `#input` gives the text a value is submitted as. The givens in the companion choose:
++       `value is Elicitable` определяет, как выглядит поле формы типа `value`: его `Operand` —
++       тип `Widget`, `#widget` создаёт виджет по имени, легенде и текущему значению поля, а
++       `#input` даёт текст, в виде которого значение отправляется. Выбирают given-экземпляры в
++       компаньоне:
+
+-       - any `Encodable in Text` value — `Text`, numbers, validated types such as
+-         `EmailAddress` — is a text `Field` (`decodable`, in `Elicitable2`, at lower priority);
+-       - a `Boolean` is a `Checkbox`, submitted as `on` when checked (`boolean`);
+-       - an `Enumerable` type is a `Combobox` offering each value's name (`enumerable`);
+-       - a `Reference[Entity]` to a stored entity is a `Dropdown` of every stored entity,
+-         shown by its `Showable` rendering (`reference`).
++       - любое значение `Encodable in Text` — `Text`, числа, валидируемые типы вроде
++         `EmailAddress` — это текстовое `Field` (`decodable`, в `Elicitable2`, с более низким приоритетом);
++       - `Boolean` — это `Checkbox`, отправляемый как `on`, когда флажок установлен (`boolean`);
++       - тип `Enumerable` — это `Combobox`, предлагающий имя каждого значения (`enumerable`);
++       - `Reference[Entity]` на хранимую сущность — это `Dropdown` из всех хранимых сущностей,
++         показанных через их отображение `Showable` (`reference`).
+
+-       A type of one's own gets a different widget with a given of its own.
++       Собственный тип получает другой виджет через собственный given.
+
+-   refer legerdemain.Widget
++   refer legerdemain.Widget
+
+-   refer legerdemain.Formulaic
++   refer legerdemain.Formulaic
+
+-   entry .boolean      edits a `Boolean` with a `Checkbox`, entered as `on` when true and empty when false
+-   entry .enumerable   edits an `Enumerable` type with a `Combobox` of its values' names
+-       Each value is entered by its name, as `Enumerable` names it, and the combobox's list
+-       offers all of them.
+-   entry .reference    edits a `Reference` to a stored entity with a `Dropdown` of all such entities
+-       Needs the entity to be `Listable`, `Showable` and `Referenceable`, and its reference's
+-       operand to be `Encodable in Text`: every stored entity is enumerated, each option keyed
+-       by its encoded reference and labelled with the entity's `show`.
+-   entry #input    the text a value of this type is entered or submitted as
+-   entry #widget   the widget for a field, from its name, its legend and its current text
++   entry .boolean      редактирует `Boolean` с помощью `Checkbox`; вводится как `on` для true и как пустая строка для false
++   entry .enumerable   редактирует тип `Enumerable` с помощью `Combobox` из имён его значений
++       Каждое значение вводится по имени, данному ему `Enumerable`, и список комбобокса
++       предлагает их все.
++   entry .reference    редактирует `Reference` на хранимую сущность с помощью `Dropdown` из всех таких сущностей
++       Требует, чтобы сущность была `Listable`, `Showable` и `Referenceable`, а операнд её ссылки
++       был `Encodable in Text`: перечисляется каждая хранимая сущность, и каждый вариант
++       получает ключ — её закодированную ссылку — и подпись — `show` сущности.
++   entry #input    текст, в виде которого значение этого типа вводится или отправляется
++   entry #widget   виджет для поля по его имени, легенде и текущему тексту
+
+- entry .Elicitable2   the lower-priority `Elicitable` given, for any type encodable as text
++ entry .Elicitable2   given `Elicitable` с более низким приоритетом, для любого типа, кодируемого как текст
+
+= entry .Elicitable2   the lower-priority `Elicitable` given, for any type encodable as text
+-   detail
++   detail
+
+-       Mixed into the `Elicitable` companion so that the more specific givens there win.
+-   entry #decodable   edits any `Encodable in Text` value with a text `Field`, entered as its encoding
+-       Despite its name, it requires only that the type is `Encodable in Text`: the field shows
+-       the value's encoding, and the submission is decoded separately, through `Query`.
++       Подмешан в компаньон `Elicitable`, чтобы более специфичные given-экземпляры там побеждали.
++   entry #decodable   редактирует любое значение `Encodable in Text` с помощью текстового `Field`; вводится как его кодировка
++       Вопреки имени, он требует лишь, чтобы тип был `Encodable in Text`: поле показывает
++       кодировку значения, а отправка декодируется отдельно, через `Query`.
+
+- entry .Widget   a form control, with the name it is submitted under and its current value
++ entry .Widget   элемент управления формы с именем, под которым он отправляется, и текущим значением
+
+= entry .Widget   a form control, with the name it is submitted under and its current value
+-   detail
++   detail
+
+-       The common shape of `Field`, `Checkbox`, `Combobox`, `Dropdown` and `RadioGroup`: each is
+-       a case class with a `#name`, the field's dotted path in the form, and a `#value`, the text
+-       it holds, and each companion has a `Renderable` given which renders it as phrasing HTML.
+-   entry #name    the name the control is submitted under: the field's dotted path within the form
+-   entry #value   the text the control holds, from the submitted query or the value being edited
++       Общая форма `Field`, `Checkbox`, `Combobox`, `Dropdown` и `RadioGroup`: каждый — это
++       case-класс с `#name`, путём поля в форме через точку, и `#value`, текстом, который он
++       содержит, а в каждом компаньоне есть given `Renderable`, отображающий его как фразовый HTML.
++   entry #name    имя, под которым отправляется элемент управления: путь поля внутри формы через точку
++   entry #value   текст, который содержит элемент управления, — из отправленного запроса или из редактируемого значения
+
+- entry .Field   a text input, the widget for any value encodable as text
++ entry .Field   текстовое поле ввода, виджет для любого значения, кодируемого как текст
+
+= entry .Field   a text input, the widget for any value encodable as text
+-   detail
++   detail
+
+-       Renders as `<input type="text">` with the widget's name and value; the label is
+-       rendered by the `Formulation` around it.
+-   entry .renderable   renders a field as an `<input type="text">`
+-   entry #label   the field's legend
+-   entry #name    the name the field is submitted under: its dotted path within the form
+-   entry #value   the text in the field
++       Отображается как `<input type="text">` с именем и значением виджета; подпись отображает
++       `Formulation` вокруг него.
++   entry .renderable   отображает поле как `<input type="text">`
++   entry #label   легенда поля
++   entry #name    имя, под которым отправляется поле: его путь внутри формы через точку
++   entry #value   текст в поле
+
+- entry .Checkbox   a checkbox, the widget for a `Boolean`
++ entry .Checkbox   флажок, виджет для `Boolean`
+
+= entry .Checkbox   a checkbox, the widget for a `Boolean`
+-   detail
++   detail
+
+-       Renders as `<input type="checkbox">`, checked when its value is not empty. A checked box
+-       is submitted as `on` and an unchecked one not at all, which is why a `Boolean` decodes
+-       from a `Query` by whether its key is present.
+-   entry .renderable   renders a checkbox, checked if its value is non-empty
+-   entry #name    the name the box is submitted under: its dotted path within the form
+-   entry #value   `on` when checked, and empty otherwise
++       Отображается как `<input type="checkbox">`, установленный, когда его значение не пусто.
++       Установленный флажок отправляется как `on`, а снятый не отправляется вовсе, поэтому
++       `Boolean` декодируется из `Query` по тому, присутствует ли его ключ.
++   entry .renderable   отображает флажок, установленный, если его значение не пусто
++   entry #name    имя, под которым отправляется флажок: его путь внутри формы через точку
++   entry #value   `on`, когда флажок установлен, и пустая строка в остальных случаях
+
+- entry .Combobox   a text input with a list of suggestions, the widget for an enumeration
++ entry .Combobox   текстовое поле ввода со списком подсказок, виджет для перечисления
+
+= entry .Combobox   a text input with a list of suggestions, the widget for an enumeration
+-   detail
++   detail
+
+-       Renders as an `<input>` tied by its `list` attribute to a `<datalist>` of the options, so
+-       a browser suggests the values while still accepting typed text, which then must decode.
+-       The datalist's id is the widget's name, so the name must be a valid DOM id: a field whose
+-       name contains whitespace, or a lone enumeration at the root of a form (whose name is
+-       empty), cannot be rendered.
+-   entry .renderable   renders a combobox as an `<input>` and its `<datalist>`
+-   entry #name      the name the input is submitted under, and its datalist's id
+-   entry #options   the suggested values
+-   entry #value     the text in the input
++       Отображается как `<input>`, связанный атрибутом `list` с `<datalist>` вариантов, так что
++       браузер подсказывает значения, но по-прежнему принимает набранный текст, который затем
++       должен декодироваться. Id элемента datalist — имя виджета, поэтому имя должно быть
++       допустимым DOM id: поле, имя которого содержит пробельные символы, или одиночное
++       перечисление в корне формы (чьё имя пусто) отобразить нельзя.
++   entry .renderable   отображает комбобокс как `<input>` и его `<datalist>`
++   entry #name      имя, под которым отправляется поле ввода, и id его datalist
++   entry #options   предлагаемые значения
++   entry #value     текст в поле ввода
+
+- entry .Dropdown   a selection from a fixed list of labelled options, the widget for a stored reference
++ entry .Dropdown   выбор из фиксированного списка подписанных вариантов, виджет для хранимой ссылки
+
+= entry .Dropdown   a selection from a fixed list of labelled options, the widget for a stored reference
+-   detail
++   detail
+
+-       Renders as a `<select>` of `<option>`s, each submitting its `key` and showing its `value`.
+-   entry .renderable   renders a dropdown as a `<select>` of its options
+-   entry #name      the name the selection is submitted under
+-   entry #options   the options, each a submitted key and a displayed label
+-   entry #value     the key currently selected
++       Отображается как `<select>` из `<option>`, каждый из которых отправляет свой `key` и
++       показывает свой `value`.
++   entry .renderable   отображает выпадающий список как `<select>` из его вариантов
++   entry #name      имя, под которым отправляется выбор
++   entry #options   варианты, каждый — отправляемый ключ и показываемая подпись
++   entry #value     ключ, выбранный в данный момент
+
+- entry .RadioGroup   a set of radio buttons sharing one name, one of which is chosen
++ entry .RadioGroup   набор радиокнопок с общим именем, из которых выбирается одна
+
+= entry .RadioGroup   a set of radio buttons sharing one name, one of which is chosen
+-   detail
++   detail
+
+-       Renders as a `<label>` per option around an `<input type="radio">`. No standard
+-       `Elicitable` produces one; a type which should be chosen by radio buttons needs an
+-       `Elicitable` given whose `Operand` is `RadioGroup`.
+-   entry .renderable   renders a radio group as a labelled radio button per option
+-   entry #name      the name every button in the group is submitted under
+-   entry #options   the options, each with a key, a submitted value and a label
+-   entry #value     the value currently chosen
++       Отображается как `<label>` на каждый вариант вокруг `<input type="radio">`. Ни один
++       стандартный `Elicitable` её не порождает; типу, который должен выбираться радиокнопками,
++       нужен given `Elicitable`, чей `Operand` — `RadioGroup`.
++   entry .renderable   отображает группу радиокнопок как подписанную радиокнопку на каждый вариант
++   entry #name      имя, под которым отправляется каждая кнопка группы
++   entry #options   варианты, каждый с ключом, отправляемым значением и подписью
++   entry #value     значение, выбранное в данный момент
+
+- entry .Query   form-encoded key–value pairs: a URL query string or a form submission, and their codecs
++ entry .Query   пары «ключ — значение» в form-encoded виде: строка запроса URL или отправка формы, и их кодеки
+
+= entry .Query   form-encoded key–value pairs: a URL query string or a form submission, and their codecs
+-   detail
++   detail
+
+-       A `Query` is an ordered list of `(key, value)` pairs of `Text`, as a query string
+-       `a=1&b=2` or an `application/x-www-form-urlencoded` body holds them. Nested data is
+-       flattened into dotted keys — `speaker.name` — so a case class encodes to a `Query` field
+-       by field and decodes from one, which is how form submissions and query parameters become
+-       typed values.
++       `Query` — упорядоченный список пар `(key, value)` из `Text`, в том виде, в каком их хранит
++       строка запроса `a=1&b=2` или тело `application/x-www-form-urlencoded`. Вложенные данные
++       уплощаются в ключи через точку — `speaker.name`, — поэтому case-класс кодируется в `Query`
++       поле за полем и декодируется из него; так отправки форм и параметры запроса становятся
++       типизированными значениями.
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label An empty query
++         label Пустой запрос
+
+=         label An empty query
+-         code
++         code
+
+=         label An empty query
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label An empty query
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             val query = Query()
++             val query = Query()
+
+-             query.show   // t""
++             query.show   // t""
+
+=             query.show   // t""
+-       frame
++       frame
+
+-         label One parameter
++         label Один параметр
+
+=         label One parameter
+-         code
++         code
+
+=         label One parameter
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label One parameter
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             val query = Query(List(t"name" -> t"Nick Bottom"))
++             val query = Query(List(t"name" -> t"Nick Bottom"))
+
+-             query.show   // t"name=Nick+Bottom"
++             query.show   // t"name=Nick+Bottom"
+
+=             query.show   // t"name=Nick+Bottom"
+-       frame
++       frame
+
+-         label A second parameter appended
++         label Добавлен второй параметр
+
+=         label A second parameter appended
+-         code
++         code
+
+=         label A second parameter appended
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A second parameter appended
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             val query = Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com"))
++             val query = Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com"))
+
+-             query.show   // t"name=Nick+Bottom&email=bottom%40example.com"
++             query.show   // t"name=Nick+Bottom&email=bottom%40example.com"
+
+=             query.show   // t"name=Nick+Bottom&email=bottom%40example.com"
+-       frame
++       frame
+
+-         label Both nested under a prefix, then decoded
++         label Оба вложены под префикс, затем декодированы
+
+=         label Both nested under a prefix, then decoded
+-         code
++         code
+
+=         label Both nested under a prefix, then decoded
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Both nested under a prefix, then decoded
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             case class Person(name: Text, email: Text)
++             case class Person(name: Text, email: Text)
+
+-             case class Scene(speaker: Person, place: Text)
++             case class Scene(speaker: Person, place: Text)
+
+-             val query =
++             val query =
+
+-               (Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com")))
++               (Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com")))
+
+-               . prefix(t"speaker") + Query(List(t"place" -> t"Athens"))
++               . prefix(t"speaker") + Query(List(t"place" -> t"Athens"))
+
+-             query.show       // t"speaker.name=Nick+Bottom&speaker.email=bottom%40example.com&place=Athens"
++             query.show       // t"speaker.name=Nick+Bottom&speaker.email=bottom%40example.com&place=Athens"
+
+-             query.as[Scene]  // Scene(Person(t"Nick Bottom", t"bottom@example.com"), t"Athens")
++             query.as[Scene]  // Scene(Person(t"Nick Bottom", t"bottom@example.com"), t"Athens")
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       Text decodes to a `Query` with `as[Query]` and a `Query` encodes, or `show`s, as the
+-       URL-encoded string. Any type which is `Encodable in Text` encodes to a `Query` of one
+-       unnamed value, and any case class whose fields encode does so field by field; decoding
+-       mirrors both, raising `Query.Error` for a missing parameter. Under an accruing strategy
+-       (`validate`), every missing or invalid field of a case class is reported, each with its
+-       dotted `Pointer`, and the case class's constructor runs only if every field decoded.
++       Текст декодируется в `Query` с помощью `as[Query]`, а `Query` кодируется, или показывается
++       через `show`, как URL-кодированная строка. Любой тип, который `Encodable in Text`,
++       кодируется в `Query` из одного безымянного значения, а любой case-класс, поля которого
++       кодируются, — поле за полем; декодирование зеркально повторяет оба случая и порождает
++       `Query.Error` при отсутствующем параметре. При накапливающей стратегии (`validate`)
++       сообщается о каждом отсутствующем или недопустимом поле case-класса, каждое со своим
++       `Pointer` через точку, а конструктор case-класса выполняется, только если декодировались
++       все поля.
+
+-       Named parameters are read and written dynamically — `query.name`, `query.name = value`,
+-       `Query.make(name = value)` — when a `Parametric` given types the name.
++       Именованные параметры читаются и записываются динамически — `query.name`,
++       `query.name = value`, `Query.make(name = value)`, — когда given `Parametric` задаёт тип
++       имени.
+
+-   refer legerdemain.Parametric
++   refer legerdemain.Parametric
+
+=   refer legerdemain.Parametric
+-   refer legerdemain.elicit
++   refer legerdemain.elicit
+
+-   entry .apply   an empty query, a query of one unnamed value, or one of the given pairs, in order
+-       `Query()` is empty, `Query(text)` holds the single value `text` with an empty key — the
+-       shape a value `Encodable in Text` encodes to — and `Query(pairs)` holds a list of `(key,
+-       value)` pairs as they are.
+-   entry .encodable   encodes a `Query` as URL-encoded text; and any encodable value or case class as a `Query`
+-       Two givens share the name. One renders a `Query` as `key=value` pairs joined by `&`, each
+-       key and value URL-encoded. The other, an inline given, makes any type `Encodable in
+-       Query`: a type `Encodable in Text` becomes a query of one unnamed value, and a case
+-       class encodes each field under its name, nested fields under dotted keys.
++   entry .apply   пустой запрос, запрос из одного безымянного значения или запрос из заданных пар по порядку
++       `Query()` пуст, `Query(text)` содержит единственное значение `text` с пустым ключом —
++       форму, в которую кодируется значение `Encodable in Text`, — а `Query(pairs)` содержит
++       список пар `(key, value)` как есть.
++   entry .encodable   кодирует `Query` как URL-кодированный текст, а любое кодируемое значение или case-класс — как `Query`
++       У двух given-экземпляров одно имя. Один отображает `Query` как пары `key=value`,
++       соединённые через `&`, с URL-кодированием каждого ключа и значения. Другой, встраиваемый
++       given, делает любой тип `Encodable in Query`: тип `Encodable in Text` становится запросом
++       из одного безымянного значения, а case-класс кодирует каждое поле под его именем, вложенные
++       поля — под ключами через точку.
+
+=       class encodes each field under its name, nested fields under dotted keys.
+=
+-       ```scala
++       ```scala
+
+=       class encodes each field under its name, nested fields under dotted keys.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       summon[Person is Encodable in Query].encoded(Person(t"Juliet", 13)).show   // t"name=Juliet&age=13"
++       summon[Person is Encodable in Query].encoded(Person(t"Juliet", 13)).show   // t"name=Juliet&age=13"
+
+=       summon[Person is Encodable in Query].encoded(Person(t"Juliet", 13)).show   // t"name=Juliet&age=13"
+-       ```
++       ```
+
+-   entry .decodable   decodes URL-encoded text as a `Query`; and a `Query` as any decodable value or case class
+-       Two givens share the name. One splits text on `&` and each part at its first `=`,
+-       URL-decoding both sides; a part with no `=` is a key with an empty value. The other, an
+-       inline given, makes any type `Decodable in Query`: a type `Decodable in Text` is decoded
+-       from the query's unnamed value, and a case class field by field from the parameters
+-       under its fields' names.
++   entry .decodable   декодирует URL-кодированный текст как `Query`, а `Query` — как любое декодируемое значение или case-класс
++       У двух given-экземпляров одно имя. Один разбивает текст по `&`, а каждую часть — по её
++       первому `=`, URL-декодируя обе стороны; часть без `=` — это ключ с пустым значением.
++       Другой, встраиваемый given, делает любой тип `Decodable in Query`: тип
++       `Decodable in Text` декодируется из безымянного значения запроса, а case-класс — поле за
++       полем из параметров под именами его полей.
+
+-       A missing value raises `Query.Error` with the reason `Missing`, unless the type has a
+-       `Default`, which is used after the error is raised. Under an accruing strategy, every
+-       missing field of a case class is raised, each focused at its dotted `Pointer`, and the
+-       constructor is not run on fallback values — so a refined type's constructor never
+-       reports phantom errors for fields the user did not fill in.
++       Отсутствующее значение порождает `Query.Error` с причиной `Missing`, если только у типа нет
++       `Default`, который используется после того, как ошибка порождена. При накапливающей
++       стратегии порождается ошибка для каждого отсутствующего поля case-класса, каждая с
++       фокусом на его `Pointer` через точку, и конструктор не выполняется на запасных значениях,
++       — поэтому конструктор уточнённого типа никогда не сообщает фантомных ошибок для полей,
++       которые пользователь не заполнил.
+
+=       reports phantom errors for fields the user did not fill in.
+=
+-       ```scala
++       ```scala
+
+=       reports phantom errors for fields the user did not fill in.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       reports phantom errors for fields the user did not fill in.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       case class Person(name: Text, email: Text)
++       case class Person(name: Text, email: Text)
+
+-       t"name=Hamlet&email=a%40b.c".as[Query].as[Person]   // Person(t"Hamlet", t"a@b.c")
++       t"name=Hamlet&email=a%40b.c".as[Query].as[Person]   // Person(t"Hamlet", t"a@b.c")
+
+=       t"name=Hamlet&email=a%40b.c".as[Query].as[Person]   // Person(t"Hamlet", t"a@b.c")
+-       ```
++       ```
+
+-   entry .EncodableDerivation   the product derivation of `Encodable in Query`: each field encoded under its name
++   entry .EncodableDerivation   деривация произведений для `Encodable in Query`: каждое поле кодируется под своим именем
+
+=   entry .EncodableDerivation   the product derivation of `Encodable in Query`: each field encoded under its name
+-     detail
++     detail
+
+-         Used by the inline `encodable` given for case classes; not normally named directly.
+-     entry .conjunction   encodes a product as the union of its fields' queries, each prefixed with the field's name
+-   entry .DecodableDerivation   the product derivation of `Decodable in Query`: each field decoded from its parameters
++         Используется встраиваемым given `encodable` для case-классов; обычно напрямую не
++         упоминается.
++     entry .conjunction   кодирует произведение как объединение запросов его полей, каждый с префиксом — именем поля
++   entry .DecodableDerivation   деривация произведений для `Decodable in Query`: каждое поле декодируется из своих параметров
+
+=   entry .DecodableDerivation   the product derivation of `Decodable in Query`: each field decoded from its parameters
+-     detail
++     detail
+
+-         Used by the inline `decodable` given for case classes; not normally named directly.
+-         It decodes the fields in a single traversal, focuses each field's errors at its
+-         `Pointer` (a nested record's error lands at `outer.inner`), and constructs the product
+-         only when every field decoded cleanly.
+-     entry .conjunction   decodes a product field by field, constructing it only if every field decoded
+-   entry .booleanEncodable   encodes a `Boolean` as a checkbox does: `on` when true, and nothing when false
+-   entry .booleanDecodable   decodes a `Boolean` as a checkbox's submission: true if the value is present at all
+-       An unchecked checkbox is not submitted, so a `Boolean` field is never missing: its
+-       absence is `false`.
+-   entry .showable   shows a `Query` as its URL-encoded query string, as `#queryString` gives it
+-   entry .inspectable   a debug rendering of a `Query`: `key = "value"` pairs, separated by commas, not URL-encoded
+-   entry .applyDynamicNamed   `Query.make(name = value, …)`: a query from named, typed parameters
+-       Each parameter name must have a `Parametric` given in scope saying what type its value
+-       takes, and each value must be `Encodable in Query`; both are checked as the code
+-       compiles. A value of the wrong type is a compile error, _the parameter `name` takes
+-       values of `T` but the provided value had type `U`_; a name with no `Parametric` is
+-       another (error `↯/s.87.4`), and a value with no encoding a third (error `↯/s.87.3`).
++         Используется встраиваемым given `decodable` для case-классов; обычно напрямую не
++         упоминается. Он декодирует поля за один обход, фокусирует ошибки каждого поля на его
++         `Pointer` (ошибка вложенной записи оказывается в `outer.inner`) и конструирует
++         произведение, только если каждое поле декодировалось без ошибок.
++     entry .conjunction   декодирует произведение поле за полем, конструируя его, только если декодировалось каждое поле
++   entry .booleanEncodable   кодирует `Boolean` так же, как флажок: `on` для true и ничего для false
++   entry .booleanDecodable   декодирует `Boolean` как отправку флажка: true, если значение вообще присутствует
++       Снятый флажок не отправляется, поэтому поле `Boolean` никогда не отсутствует: его
++       отсутствие означает `false`.
++   entry .showable   показывает `Query` как его URL-кодированную строку запроса, в том виде, в каком её даёт `#queryString`
++   entry .inspectable   отладочное представление `Query`: пары `key = "value"` через запятую, без URL-кодирования
++   entry .applyDynamicNamed   `Query.make(name = value, …)`: запрос из именованных типизированных параметров
++       Для имени каждого параметра в области видимости должен быть given `Parametric`,
++       указывающий, какого типа его значение, а каждое значение должно быть `Encodable in Query`;
++       и то и другое проверяется при компиляции кода. Значение неверного типа — ошибка компиляции,
++       _the parameter `name` takes values of `T` but the provided value had type `U`_; имя без
++       `Parametric` — другая (ошибка `↯/s.87.4`), а значение без кодирования — третья (ошибка
++       `↯/s.87.3`).
+
+=       another (error `↯/s.87.4`), and a value with no encoding a third (error `↯/s.87.3`).
+=
+-       ```scala
++       ```scala
+
+=       another (error `↯/s.87.4`), and a value with no encoding a third (error `↯/s.87.3`).
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       inline given ("key" is Parametric to Text) = !!
++       inline given ("key" is Parametric to Text) = !!
+
+-       inline given ("count" is Parametric to Int) = !!
++       inline given ("count" is Parametric to Int) = !!
+
+-       Query.make(key = t"hello world", count = 24).show   // t"key=hello+world&count=24"
++       Query.make(key = t"hello world", count = 24).show   // t"key=hello+world&count=24"
+
+=       Query.make(key = t"hello world", count = 24).show   // t"key=hello+world&count=24"
+-       ```
++       ```
+
+-       Telekinesis's `queryParameters.arbitraryQueryParameter`, imported by name, accepts any
+-       name with any value.
+-   entry .addable   `query + query`: the pairs of both, the left's first
+-   entry .Error   raised when a parameter a value needs is missing from a query
++       `queryParameters.arbitraryQueryParameter` из Telekinesis, импортируемый по имени,
++       принимает любое имя с любым значением.
++   entry .addable   `query + query`: пары обоих запросов, сначала левого
++   entry .Error   порождается, когда в запросе отсутствует параметр, нужный значению
+
+=   entry .Error   raised when a parameter a value needs is missing from a query
+-     detail
++     detail
+
+-         Error `↯/s.87.2`: _the query parameter could not be read because the parameter was not
+-         present in the query string_. Raised by the `Decodable in Query` givens when a value
+-         which is required has no parameter, and focused at that field's `Pointer` when a case
+-         class is decoded, so an accruing strategy reports every missing field of a form.
++         Ошибка `↯/s.87.2`: _the query parameter could not be read because the parameter was not
++         present in the query string_. Порождается given-экземплярами `Decodable in Query`, когда
++         у обязательного значения нет параметра, и при декодировании case-класса фокусируется на
++         `Pointer` этого поля, так что накапливающая стратегия сообщает о каждом отсутствующем
++         поле формы.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         case class Person(name: Text, email: Text)
++         case class Person(name: Text, email: Text)
+
+-         capture[Query.Error](t"name=Hamlet".as[Query].as[Person]).reason   // Query.Error.Reason.Missing
++         capture[Query.Error](t"name=Hamlet".as[Query].as[Person]).reason   // Query.Error.Reason.Missing
+
+-         ```
++         ```
+
+-     entry .Reason   why a query parameter could not be read: `Missing`, the only reason
++     entry .Reason   почему параметр запроса не удалось прочитать: `Missing`, единственная причина
+
+-       detail
++       detail
+
+-           `Missing` (1): the parameter was not present in the query string.
+-       entry #number   the reason's number, the second part of the error's code
+-     entry .communicable   renders a reason as a message: _the parameter was not present in the query string_
+-     entry #reason   the `Query.Error.Reason`
+-   entry #values   the query's `(key, value)` pairs, in order, with keys dotted for nested fields
+-   entry #append   a query with another's pairs after this one's
+-   entry #nil      whether the query holds no pairs
+-   entry #++       a query with another's pairs after this one's, as `#append`
+-   entry #selectDynamic   `query.name`: the parameter `name`, decoded to the type its `Parametric` names
+-       Needs `"name" is Parametric to Result` and `Result is Decodable in Query`; the part of the
+-       query under `name` (its own value and any dotted children) is decoded, raising
+-       `Query.Error` if it is missing.
+-   entry #updateDynamic   `query.name = value`: a query with the parameter `name` added, encoded from a typed value
+-       Needs `"name" is Parametric to Result` and the value to be `Encodable in Query`. A value
+-       encoding to one unnamed value is added under `name`; a structured one is added under
+-       `name.` and each of its own keys. The receiver is unchanged.
+-   entry #at      the value under a key, decoded from text, or `Unset` if there is none
+-       `query.at[Int](t"page")` is the value of the parameter `page` as an `Int`, or `Unset`
+-       when no `page` parameter has a value of its own. It needs a `Tactic` for the decoding.
+-   entry #as      the whole query decoded as a value, with errors focused at their `Pointer`s
+-       `query.as[Person]` decodes through `Person is Decodable in Query`, so a missing field
+-       raises `Query.Error` focused at that field's dotted pointer.
+-   entry #apply   the query's unnamed value, or `Unset`; or the part of the query under a key
+-       `query()` is the value of a query which holds exactly one pair with an empty key, and
+-       `Unset` otherwise. `query(t"speaker")` is the sub-query under `speaker`: the pair keyed
+-       `speaker` becomes the unnamed value and each key beginning `speaker.` loses that prefix.
++           `Missing` (1): параметр отсутствовал в строке запроса.
++       entry #number   номер причины, вторая часть кода ошибки
++     entry .communicable   отображает причину как сообщение: _the parameter was not present in the query string_
++     entry #reason   `Query.Error.Reason`
++   entry #values   пары `(key, value)` запроса по порядку, с ключами через точку для вложенных полей
++   entry #append   запрос, в котором пары другого запроса идут после пар этого
++   entry #nil      не содержит ли запрос ни одной пары
++   entry #++       запрос, в котором пары другого запроса идут после пар этого, как `#append`
++   entry #selectDynamic   `query.name`: параметр `name`, декодированный в тип, который называет его `Parametric`
++       Требует `"name" is Parametric to Result` и `Result is Decodable in Query`; декодируется
++       часть запроса под `name` (его собственное значение и все дочерние параметры через точку),
++       и при её отсутствии порождается `Query.Error`.
++   entry #updateDynamic   `query.name = value`: запрос с добавленным параметром `name`, закодированным из типизированного значения
++       Требует `"name" is Parametric to Result` и чтобы значение было `Encodable in Query`.
++       Значение, кодирующееся в одно безымянное значение, добавляется под `name`; структурированное
++       добавляется под `name.` и каждым из собственных ключей. Получатель не изменяется.
++   entry #at      значение под ключом, декодированное из текста, или `Unset`, если его нет
++       `query.at[Int](t"page")` — значение параметра `page` как `Int` или `Unset`, когда ни у
++       одного параметра `page` нет собственного значения. Для декодирования нужна `Tactic`.
++   entry #as      весь запрос, декодированный как значение, с ошибками, сфокусированными на их `Pointer`
++       `query.as[Person]` декодирует через `Person is Decodable in Query`, поэтому отсутствующее
++       поле порождает `Query.Error`, сфокусированную на указателе этого поля через точку.
++   entry #apply   безымянное значение запроса или `Unset`; либо часть запроса под ключом
++       `query()` — значение запроса, который содержит ровно одну пару с пустым ключом, и `Unset`
++       в остальных случаях. `query(t"speaker")` — подзапрос под `speaker`: пара с ключом
++       `speaker` становится безымянным значением, а каждый ключ, начинающийся с `speaker.`,
++       теряет этот префикс.
+
+=       `speaker` becomes the unnamed value and each key beginning `speaker.` loses that prefix.
+=
+-       ```scala
++       ```scala
+
+=       `speaker` becomes the unnamed value and each key beginning `speaker.` loses that prefix.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `speaker` becomes the unnamed value and each key beginning `speaker.` loses that prefix.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val query = t"speaker.name=Hamlet&speaker.email=a%40b.c&place=Elsinore".as[Query]
++       val query = t"speaker.name=Hamlet&speaker.email=a%40b.c&place=Elsinore".as[Query]
+
+-       query(t"speaker")             // the query name=Hamlet&email=a%40b.c
++       query(t"speaker")             // the query name=Hamlet&email=a%40b.c
+
+-       query(t"speaker")(t"name")()  // t"Hamlet"
++       query(t"speaker")(t"name")()  // t"Hamlet"
+
+=       query(t"speaker")(t"name")()  // t"Hamlet"
+-       ```
++       ```
+
+-   entry #prefix   the query with every key put under a prefix: `name` becomes `prefix.name`
+-       An unnamed value's key becomes the prefix itself, so a value encoded on its own and then
+-       prefixed is a named parameter.
+-   entry #queryString   the query as URL-encoded text, with an unnamed value written alone, without `=`
+-       Each pair is `key=value`, URL-encoded, joined with `&`; a pair with an empty key is
+-       written as its value alone.
++   entry #prefix   запрос, в котором каждый ключ помещён под префикс: `name` становится `prefix.name`
++       Ключ безымянного значения становится самим префиксом, так что значение, закодированное
++       отдельно и затем снабжённое префиксом, становится именованным параметром.
++   entry #queryString   запрос как URL-кодированный текст, где безымянное значение записывается отдельно, без `=`
++       Каждая пара — это `key=value` с URL-кодированием, соединённые через `&`; пара с пустым
++       ключом записывается как одно её значение.
+
+- entry .Parametric   the type a named query parameter takes, for `query.name` and `Query.make(name = …)`
++ entry .Parametric   тип, который принимает именованный параметр запроса, для `query.name` и `Query.make(name = …)`
+
+= entry .Parametric   the type a named query parameter takes, for `query.name` and `Query.make(name = …)`
+-   detail
++   detail
+
+-       `"name" is Parametric to Result` declares that the query parameter `name` holds values of
+-       type `Result`. It is the evidence the dynamic accessors of `Query` need — `query.name`,
+-       `query.name = value` and `Query.make(name = value)` — so a parameter is read and written
+-       at a fixed type, checked as the code compiles. It carries no behaviour, so a given is
+-       written as an erased placeholder:
++       `"name" is Parametric to Result` объявляет, что параметр запроса `name` содержит значения
++       типа `Result`. Это свидетельство, которое нужно динамическим аксессорам `Query` —
++       `query.name`, `query.name = value` и `Query.make(name = value)`, — чтобы параметр читался
++       и записывался с фиксированным типом, проверяемым при компиляции кода. Он не несёт
++       поведения, поэтому given записывается как стираемая заглушка:
+
+=       written as an erased placeholder:
+=
+-       ```scala
++       ```scala
+
+=       written as an erased placeholder:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       inline given ("page" is Parametric to Int) = !!
++       inline given ("page" is Parametric to Int) = !!
+
+=       inline given ("page" is Parametric to Int) = !!
+-       ```
++       ```
+
+-       Telekinesis's `queryParameters.arbitraryQueryParameter` gives every name every type, for
+-       code which wants dynamic access without declaring each parameter.
++       `queryParameters.arbitraryQueryParameter` из Telekinesis даёт каждому имени любой тип —
++       для кода, которому нужен динамический доступ без объявления каждого параметра.
+
+-   refer legerdemain.Query
++   refer legerdemain.Query
+
+-   entry #Self   the parameter's name, as a literal `Label` type
++   entry #Self   имя параметра в виде литерального типа `Label`
+
+- entry .internal   the macro behind `Query.make`
++ entry .internal   макрос, стоящий за `Query.make`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the macro has a stable home.
+-   entry .query   the macro behind `Query.make(name = value, …)`: checks each name's `Parametric` and encodes each value
++       Не для прямого использования: объект существует, чтобы у макроса было стабильное место.
++   entry .query   макрос, стоящий за `Query.make(name = value, …)`: проверяет `Parametric` каждого имени и кодирует каждое значение

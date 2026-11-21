@@ -1,0 +1,776 @@
+orthant 1 language
+
+- ## HTTP Client
++ ## HTTP-клиент
+
+- ### About
++ ### Обзор
+
+- An [HTTP](https://en.wikipedia.org/wiki/HTTP) request is one expression: a
+- [URL](network-addresses.md#urls), a method such as `fetch`, and the type the response should be
+- read as. Each part is typed. The URL is checked at [compiletime], a header's value must suit the
+- header it sets, a request body carries its own media type, and the response body is read as
+- whichever type is asked for.
++ Запрос [HTTP](https://en.wikipedia.org/wiki/HTTP) — это одно выражение:
++ [URL](network-addresses.md#urls), метод, например `fetch`, и тип, в виде которого следует прочитать
++ ответ. Каждая часть типизирована. URL проверяется во [время компиляции], значение заголовка
++ должно подходить к заголовку, который оно задаёт, тело запроса несёт собственный медиатип, а тело
++ ответа читается как тот тип, который запрошен.
+
+- Failure is typed too. A status outside the success range and a connection that cannot be made
+- are two distinct errors, and a method which makes requests declares both. A request also needs
+- the [capability] `Online` in scope, so a method that reaches the network says so in its
+- signature, and one that should not reach it cannot.
++ Отказ тоже типизирован. Код состояния вне диапазона успеха и соединение, которое не удаётся
++ установить, — две разные ошибки, и метод, выполняющий запросы, объявляет обе. Запросу также нужна
++ [возможность] `Online` в области видимости, поэтому метод, обращающийся к сети, сообщает об этом в
++ своей сигнатуре, а метод, который не должен к ней обращаться, не может этого сделать.
+
+- ### On HTTP requests
++ ### О HTTP-запросах
+
+- A typical HTTP client takes a URL as a string, headers as a map from strings to strings, and a
+- body as bytes. It hands back a response whose status must be checked by hand and whose body must
+- be decoded by hand. The URL may be malformed, a header name may be misspelled, and the body's
+- media type may not match its bytes. None of this is discovered until the request runs, if then.
++ Типичный HTTP-клиент принимает URL как строку, заголовки как отображение строк в строки, а тело
++ как байты. Он возвращает ответ, код состояния которого нужно проверять вручную, а тело —
++ декодировать вручную. URL может быть некорректным, имя заголовка может быть написано с ошибкой, а
++ медиатип тела может не соответствовать его байтам. Ничто из этого не обнаруживается, пока запрос
++ не выполнится, да и тогда не всегда.
+
+- Here each of those mistakes is found by the compiler:
++ Здесь каждую из этих ошибок находит компилятор:
+
+= Here each of those mistakes is found by the compiler:
+=
+- ```tabular
++ ```tabular
+
+- column  Part of a request
+- column  How it is checked
+- row  the URL  a `url"…"` [interpolator] validates it where it is written
+- row  a header  a named argument, whose value has the type that header takes
+- row  the request body  a typed value which supplies its own `Content-Type`
+- row  the response body  read with `receive`, as the type named
+- row  a failing status  an `Http.Error`, declared by the method that may raise it
+- row  a failed connection  a `Connect.Error`, declared likewise
+- row  access to the network  the `Online` capability, required in scope
++ column  Часть запроса
++ column  Как проверяется
++ row  URL  [интерполятор] `url"…"` проверяет его там, где он написан
++ row  заголовок  именованный аргумент, значение которого имеет тип, принимаемый этим заголовком
++ row  тело запроса  типизированное значение, которое само задаёт свой `Content-Type`
++ row  тело ответа  читается через `receive` как названный тип
++ row  неуспешный код состояния  `Http.Error`, объявленная методом, который может её породить
++ row  неудачное соединение  `Connect.Error`, объявленная так же
++ row  доступ к сети  возможность `Online`, требуемая в области видимости
+
+= row  access to the network  the `Online` capability, required in scope
+- ```
++ ```
+
+- Reporting failure through the types, and leaving the caller to decide what a failure does, is
+- [error handling](../../philosophy/error-handling.md) as it works everywhere else.
++ Сообщение об отказе через типы с передачей вызывающей стороне решения о том, что отказ делает, —
++ это [обработка ошибок](../../philosophy/error-handling.md) в том виде, в каком она работает везде.
+
+- ### What a request needs in scope
++ ### Что нужно запросу в области видимости
+
+- Everything comes from the `soundness` package. A request also depends on several decisions that
+- are made by importing a [given] from a [choice package], so that none is made silently:
++ Всё берётся из пакета `soundness`. Запрос также зависит от нескольких решений, которые принимаются
++ импортом [given] из [пакета выбора][пакет выбора], чтобы ни одно из них не принималось молча:
+
+= are made by importing a [given] from a [choice package], so that none is made silently:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+= import strategies.throwUnsafely
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  Decides
+- row  `charsets.utf8Charset`, `codepages.utf8Codepage`  how bytes become text, and text becomes bytes
+- row  `errorDiagnostics.stackTracesDiagnostics`  that an error records a stack trace
+- row  `httpBackends.javaNetHttp`  which implementation sends the request: here, the JVM's `java.net.http`
+- row  `internetAccess.online`  that this code may use the network
+- row  `logging.silentLogging`  that the requests are not logged; [logging](logging.md) has the alternatives
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception; [errors](errors.md#choosing-a-strategy) has the other strategies
++ column  Импорт
++ column  Что решает
++ row  `charsets.utf8Charset`, `codepages.utf8Codepage`  как байты становятся текстом, а текст — байтами
++ row  `errorDiagnostics.stackTracesDiagnostics`  что ошибка записывает трассировку стека
++ row  `httpBackends.javaNetHttp`  какая реализация отправляет запрос: здесь это `java.net.http` из JVM
++ row  `internetAccess.online`  что этот код может пользоваться сетью
++ row  `logging.silentLogging`  что запросы не журналируются; альтернативы описаны в разделе [журналирование](logging.md)
++ row  `strategies.throwUnsafely`  что ошибка бросается как исключение; другие стратегии описаны в разделе [ошибки](errors.md#choosing-a-strategy)
+
+= row  `strategies.throwUnsafely`  that an error is thrown as an exception; [errors](errors.md#choosing-a-strategy) has the other strategies
+- ```
++ ```
+
+- ### A GET request
++ ### GET-запрос
+
+- `fetch` sends a GET request to a URL. It gives the response, and `receive` reads the response's
+- body as the type named:
++ `fetch` отправляет GET-запрос по URL. Он даёт ответ, а `receive` читает тело ответа как
++ названный тип:
+
+= body as the type named:
+=
+- ```scala fuel
++ ```scala fuel
+
+= body as the type named:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= body as the type named:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val page: Text = url"https://example.com/".fetch().receive[Text]
++ val page: Text = url"https://example.com/".fetch().receive[Text]
+
+= val page: Text = url"https://example.com/".fetch().receive[Text]
+- ```
++ ```
+
+- The type passed to `receive` chooses how the body is read. `Text` decodes it with the charset in
+- scope, `Data` gives its bytes, and a [stream](streams.md) delivers it a part at a time without
+- holding the whole body in memory. A type with a decoder for a format reads the same way, so a
+- [JSON](json.md#json-over-http) response is received as `Json`.
++ Тип, переданный `receive`, выбирает, как читается тело. `Text` декодирует его кодировкой из
++ области видимости, `Data` даёт его байты, а [поток данных](streams.md) доставляет его по частям,
++ не держа всё тело в памяти. Тип с декодером для какого-либо формата читается так же, поэтому ответ
++ [JSON](json.md#json-over-http) получается как `Json`.
+
+- The response reports its status without its body being read:
++ Ответ сообщает свой код состояния без чтения тела:
+
+= The response reports its status without its body being read:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The response reports its status without its body being read:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= The response reports its status without its body being read:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val status: Http.Status = url"https://example.com/".fetch().status
++ val status: Http.Status = url"https://example.com/".fetch().status
+
+= val status: Http.Status = url"https://example.com/".fetch().status
+- ```
++ ```
+
+- For a page that exists this is `Http.Ok`.
++ Для существующей страницы это `Http.Ok`.
+
+- The URL is a typed value, not a string, so a malformed one never reaches the network. The
+- interpolator rejects it:
++ URL — типизированное значение, а не строка, поэтому некорректный URL никогда не доходит до сети.
++ Интерполятор его отвергает:
+
+= interpolator rejects it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= interpolator rejects it:
+=
+= ```scala fuel
+- compile
++ compile
+
+= interpolator rejects it:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= interpolator rejects it:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- url"https://example.com:port/"
++ url"https://example.com:port/"
+
+= url"https://example.com:port/"
+- ```
++ ```
+
+- A URL which is not known until the program runs is
+- [parsed at runtime](network-addresses.md#parsing-at-runtime) instead, and the parsing is where a
+- bad one is reported.
++ URL, который неизвестен до запуска программы, вместо этого
++ [разбирается во время выполнения](network-addresses.md#parsing-at-runtime), и о плохом URL
++ сообщается при разборе.
+
+- ### Headers
++ ### Заголовки
+
+- A request header is a named argument to `fetch`. Its name is the header's name in camel case, and
+- its type is whatever that header carries: `accept` takes a [media type](media-types.md), not any
+- text.
++ Заголовок запроса — именованный аргумент `fetch`. Его имя — имя заголовка в camel case, а его тип
++ — то, что несёт этот заголовок: `accept` принимает [медиатип](media-types.md), а не произвольный
++ текст.
+
+= text.
+=
+- ```scala fuel
++ ```scala fuel
+
+= text.
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= text.
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- url"https://example.com/".fetch(accept = media"application/json").receive[Text]
++ url"https://example.com/".fetch(accept = media"application/json").receive[Text]
+
+= url"https://example.com/".fetch(accept = media"application/json").receive[Text]
+- ```
++ ```
+
+- A value of the wrong type for its header does not compile:
++ Значение неподходящего для заголовка типа не компилируется:
+
+= A value of the wrong type for its header does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A value of the wrong type for its header does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= A value of the wrong type for its header does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= A value of the wrong type for its header does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- url"https://example.com/".fetch(accept = t"application/json")
++ url"https://example.com/".fetch(accept = t"application/json")
+
+= url"https://example.com/".fetch(accept = t"application/json")
+- ```
++ ```
+
+- Nor does a header whose name is misspelled, since no header of that name takes any value:
++ Не компилируется и заголовок с ошибкой в имени, поскольку никакой заголовок с таким именем не
++ принимает никакого значения:
+
+= Nor does a header whose name is misspelled, since no header of that name takes any value:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Nor does a header whose name is misspelled, since no header of that name takes any value:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Nor does a header whose name is misspelled, since no header of that name takes any value:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Nor does a header whose name is misspelled, since no header of that name takes any value:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- url"https://example.com/".fetch(acept = media"application/json")
++ url"https://example.com/".fetch(acept = media"application/json")
+
+= url"https://example.com/".fetch(acept = media"application/json")
+- ```
++ ```
+
+- ### Posting a body
++ ### Отправка тела
+
+- `submit` sends a request that has a body. Its first parameter list takes the method and any
+- headers, and its second takes the body:
++ `submit` отправляет запрос с телом. Его первый список параметров принимает метод и любые
++ заголовки, а второй — тело:
+
+= headers, and its second takes the body:
+=
+- ```scala fuel
++ ```scala fuel
+
+= headers, and its second takes the body:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= headers, and its second takes the body:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- url"https://example.com/submit".submit(Http.Post, accept = media"application/json")(t"Hello world")
++ url"https://example.com/submit".submit(Http.Post, accept = media"application/json")(t"Hello world")
+
+= url"https://example.com/submit".submit(Http.Post, accept = media"application/json")(t"Hello world")
+- ```
++ ```
+
+- `Http.Put`, `Http.Delete` and the others name the remaining methods.
++ `Http.Put`, `Http.Delete` и прочие называют остальные методы.
+
+- The body is a typed value, and its type decides the request's `Content-Type`, so the header can
+- never disagree with the bytes that follow it. Text is sent as `text/plain`, a `Query` is sent as
+- a [form submission](forms.md#submissions), and a `Json` value is sent as `application/json`.
+- [Types that know their media type](media-types.md#types-that-know-their-media-type) describes how
+- a type of one's own takes part.
++ Тело — типизированное значение, и его тип определяет `Content-Type` запроса, поэтому заголовок
++ никогда не может разойтись со следующими за ним байтами. Текст отправляется как `text/plain`,
++ `Query` — как [отправка формы](forms.md#submissions), а значение `Json` — как `application/json`.
++ Как в этом участвует собственный тип, описано в разделе
++ [Типы, знающие свой медиатип](media-types.md#types-that-know-their-media-type).
+
+- ### Reading the response
++ ### Чтение ответа
+
+- `receive` reads the body as any type that can be read from a response: `Text`, `Data`, a stream,
+- or a value parsed from the body. The status is an ordinary value, to inspect or to return, so a
+- program decides what a given status means.
++ `receive` читает тело как любой тип, который можно прочитать из ответа: `Text`, `Data`, поток
++ данных или значение, разобранное из тела. Код состояния — обычное значение, которое можно
++ проинспектировать или вернуть, поэтому программа сама решает, что означает тот или иной код.
+
+- By default a response outside the success range is not read at all: `receive` raises an
+- `Http.Error`, described under [Errors](#errors).
++ По умолчанию ответ вне диапазона успеха вовсе не читается: `receive` порождает `Http.Error`,
++ описанную в разделе [Ошибки](#errors).
+
+- ### Sessions
++ ### Сессии
+
+- A single `fetch` opens a connection and closes it. Where several requests go to the same origin,
+- a [session] opens one connection and lends it to a block, and every request made in the block
+- shares it:
++ Одиночный `fetch` открывает соединение и закрывает его. Когда несколько запросов идут к одному и
++ тому же источнику, [сессия] открывает одно соединение и одалживает его блоку, и все запросы,
++ сделанные в блоке, используют его совместно:
+
+= shares it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= shares it:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= shares it:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import soundness.httpUrlSessional
++ import soundness.httpUrlSessional
+
+- import socketBackends.javaBaseSockets
++ import socketBackends.javaBaseSockets
+
+- val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil,
++ val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil,
+
+-     new Spring[Data]:
++     new Spring[Data]:
+
+-       def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
++       def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
+
+-         Http.emptyBody())
++         Http.emptyBody())
+
+- url"https://example.com".session: session ?=>
++ url"https://example.com".session: session ?=>
+
+= url"https://example.com".session: session ?=>
+-   session.fetch(request).status
++   session.fetch(request).status
+
+=   session.fetch(request).status
+-   session.fetch(request).status
++   session.fetch(request).status
+
+=   session.fetch(request).status
+- ```
++ ```
+
+- The protocol is fixed for as long as the session lasts. For `https`, the server and client agree
+- on it during the TLS handshake, by
+- [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation):
++ Протокол фиксирован на всё время сессии. Для `https` сервер и клиент договариваются о нём во время
++ рукопожатия TLS, через [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation):
+
+= [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation):
+=
+- ```tabular
++ ```tabular
+
+- column  Scheme
+- column  Negotiated
+- column  Session
+- row  `https`  `h2`  *multiplexed* HTTP/2: fetches interleave over one connection
+- row  `https`  `http/1.1`  *sequential* HTTP/1.1
+- row  `http`  nothing  *sequential* HTTP/1.1, keep-alive pinning one connection
++ column  Схема
++ column  Согласовано
++ column  Сессия
++ row  `https`  `h2`  *мультиплексированный* HTTP/2: запросы чередуются в одном соединении
++ row  `https`  `http/1.1`  *последовательный* HTTP/1.1
++ row  `http`  ничего  *последовательный* HTTP/1.1, keep-alive закрепляет одно соединение
+
+= row  `http`  nothing  *sequential* HTTP/1.1, keep-alive pinning one connection
+- ```
++ ```
+
+- The block's boundary is enforced by the compiler. A response body that is still streaming from
+- the live connection cannot be returned from the block, because the connection it reads from
+- closes when the block ends. A value that has been read into memory can be returned freely.
++ Границу блока обеспечивает компилятор. Тело ответа, которое ещё передаётся потоком из живого
++ соединения, нельзя вернуть из блока, потому что соединение, из которого оно читается, закрывается
++ по окончании блока. Значение, уже прочитанное в память, можно возвращать свободно.
+
+- A response that is left unread does no harm. The next fetch first discards whatever remains of
+- the previous body, so that it starts at the next response.
++ Непрочитанный ответ вреда не причиняет. Следующий запрос сначала отбрасывает всё, что осталось от
++ предыдущего тела, чтобы начать со следующего ответа.
+
+- ### Choosing a transport
++ ### Выбор транспорта
+
+- The implementation that sends requests is a [given], chosen by import:
++ Реализация, отправляющая запросы, — это [given], выбираемый импортом:
+
+= The implementation that sends requests is a [given], chosen by import:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  Sends requests with
+- row  `httpBackends.javaNetHttp`  the JVM's own `java.net.http` client
+- row  `httpBackends.soundnessHttp`  Soundness's own HTTP codecs, directly over a [socket](sockets.md)
++ column  Импорт
++ column  Отправляет запросы через
++ row  `httpBackends.javaNetHttp`  собственный клиент JVM `java.net.http`
++ row  `httpBackends.soundnessHttp`  собственные HTTP-кодеки Soundness, напрямую поверх [сокета](sockets.md)
+
+= row  `httpBackends.soundnessHttp`  Soundness's own HTTP codecs, directly over a [socket](sockets.md)
+- ```
++ ```
+
+- A `locally` block confines a different choice to a few lines:
++ Блок `locally` ограничивает другой выбор несколькими строками:
+
+= A `locally` block confines a different choice to a few lines:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A `locally` block confines a different choice to a few lines:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A `locally` block confines a different choice to a few lines:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- locally:
++ locally:
+
+-   import httpBackends.soundnessHttp
++   import httpBackends.soundnessHttp
+
+-   url"https://example.com/".fetch().status
++   url"https://example.com/".fetch().status
+
+=   url"https://example.com/".fetch().status
+- ```
++ ```
+
+- The `soundnessHttp` backend keeps HTTP/1.1 connections alive and reuses them for later requests
+- to the same origin. Over TLS it negotiates HTTP/2 or HTTP/1.1 by ALPN and speaks whichever the
+- server chose. If a kept connection turns out to have been closed by the server, the request is
+- retried once on a new connection. Other platforms supply backends of their own in the same way.
++ Бэкенд `soundnessHttp` поддерживает соединения HTTP/1.1 открытыми и переиспользует их для
++ последующих запросов к тому же источнику. Поверх TLS он согласует HTTP/2 или HTTP/1.1 через ALPN и
++ говорит на том, который выбрал сервер. Если оказывается, что сохранённое соединение было закрыто
++ сервером, запрос повторяется один раз на новом соединении. Другие платформы так же предоставляют
++ собственные бэкенды.
+
+- ### Redirects
++ ### Перенаправления
+
+- A redirect is followed by default, up to a limit. Importing a stricter policy stops that, and a
+- redirect response is then an `Http.Error` carrying the redirect's status:
++ По умолчанию перенаправление выполняется, до некоторого предела. Импорт более строгой политики
++ это прекращает, и тогда ответ-перенаправление становится `Http.Error`, несущей код состояния
++ перенаправления:
+
+= redirect response is then an `Http.Error` carrying the redirect's status:
+=
+- ```scala
++ ```scala
+
+- import httpRedirections.doNotFollowRedirects
++ import httpRedirections.doNotFollowRedirects
+
+= import httpRedirections.doNotFollowRedirects
+- ```
++ ```
+
+- ### Errors
++ ### Ошибки
+
+- A request fails in one of two ways, and each is an error of its own type:
++ Запрос завершается неудачей одним из двух способов, и каждый — ошибка собственного типа:
+
+= A request fails in one of two ways, and each is an error of its own type:
+=
+- ```tabular
++ ```tabular
+
+- column  Error
+- column  Raised when
+- column  Carries
+- row  `Http.Error`  a response is outside the success range  the status and headers
+- row  `Connect.Error`  no connection can be made: an unresolvable host, a refused connection, a TLS failure  the reason
++ column  Ошибка
++ column  Порождается, когда
++ column  Несёт
++ row  `Http.Error`  ответ вне диапазона успеха  код состояния и заголовки
++ row  `Connect.Error`  соединение установить невозможно: неразрешимый хост, отказ в соединении, сбой TLS  причину
+
+= row  `Connect.Error`  no connection can be made: an unresolvable host, a refused connection, a TLS failure  the reason
+- ```
++ ```
+
+- Under the `throwUnsafely` [strategy] imported above, either is thrown as an exception. A method
+- that should not throw declares the errors instead, with [`raises`][raises], and its caller chooses
+- what to do about them; [Errors](errors.md) covers the choices.
++ При импортированной выше [стратегии][стратегия] `throwUnsafely` любая из них бросается как исключение. Метод,
++ который не должен бросать исключений, вместо этого объявляет ошибки через [`raises`][raises], а
++ вызывающая сторона выбирает, что с ними делать; возможности выбора описаны в разделе [Ошибки](errors.md).
+
+- `capture` runs an expression that is expected to fail, and gives the error. An `Http.Error` has
+- the status, so the caller can react to what went wrong:
++ `capture` выполняет выражение, которое должно завершиться неудачей, и даёт ошибку. У `Http.Error`
++ есть код состояния, поэтому вызывающая сторона может отреагировать на то, что пошло не так:
+
+= the status, so the caller can react to what went wrong:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the status, so the caller can react to what went wrong:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= the status, so the caller can react to what went wrong:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status
++ capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status
+
+= capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status
+- ```
++ ```
+
+- For a missing page this is `Http.NotFound`.
++ Для отсутствующей страницы это `Http.NotFound`.
+
+- A `Connect.Error` has a `reason`, which says why no connection was made:
++ У `Connect.Error` есть `reason`, которая сообщает, почему соединение не было установлено:
+
+= A `Connect.Error` has a `reason`, which says why no connection was made:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A `Connect.Error` has a `reason`, which says why no connection was made:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A `Connect.Error` has a `reason`, which says why no connection was made:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
++ capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
+
+= capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
+- ```
++ ```
+
+= capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Reason
+- column  Means
+- row  `Dns`  the host's name could not be resolved
+- row  `Refused`  the host refused the connection
+- row  `Ssl(reason)`  the TLS layer could not be established; its own reason is `Handshake`, `Key`, `Peer` or `Protocol`
+- row  `Timeout`  the server did not respond within the time limit
+- row  `Unknown`  the failure was not recognized as one of the others
++ column  Причина
++ column  Значение
++ row  `Dns`  имя хоста не удалось разрешить
++ row  `Refused`  хост отказал в соединении
++ row  `Ssl(reason)`  уровень TLS не удалось установить; его собственная причина — `Handshake`, `Key`, `Peer` или `Protocol`
++ row  `Timeout`  сервер не ответил в отведённое время
++ row  `Unknown`  отказ не распознан ни как одна из прочих причин
+
+= row  `Unknown`  the failure was not recognized as one of the others
+- ```
++ ```
+
+- A TLS failure is therefore told apart from a network failure, and its reason says at which stage
+- it happened. An expired certificate, a certificate for the wrong host, a revoked certificate, a
+- broken cipher suite and an undersized Diffie–Hellman group are each refused during the
+- handshake. The client is tested against the [badssl.com](https://badssl.com/) collection of
+- deliberately broken endpoints, so each refusal is verified.
++ Поэтому сбой TLS отличается от сбоя сети, а его причина сообщает, на какой стадии он произошёл.
++ Просроченный сертификат, сертификат для другого хоста, отозванный сертификат, сломанный набор
++ шифров и слишком маленькая группа Диффи — Хеллмана отвергаются во время рукопожатия. Клиент
++ тестируется на коллекции намеренно сломанных конечных точек [badssl.com](https://badssl.com/),
++ поэтому каждый отказ проверен.
+
+- Sometimes a connection must be made to a host whose certificate cannot be validated, such as a
+- development server with a self-signed certificate. A relaxed `TlsAcceptance` in scope permits it.
+- Accepting an unvalidated certificate is then a decision that can be found by searching the code
+- for the import.
++ Иногда нужно установить соединение с хостом, сертификат которого нельзя проверить, например с
++ сервером разработки с самоподписанным сертификатом. Это разрешает ослабленный `TlsAcceptance` в
++ области видимости. Тогда принятие непроверенного сертификата становится решением, которое можно
++ найти, поискав импорт в коде.
+
+- ### Related
++ ### Связанное
+
+- - [HTTP Server](http-server.md) answers requests with the same `Http` vocabulary of methods,
+-   statuses and headers.
+- - [JSON over HTTP](json.md#json-over-http) posts a `Json` value and receives one.
+- - [OAuth](oauth.md#credentials-for-a-typed-client) obtains the token an authorized request sends.
+- - [Network addresses](network-addresses.md) covers URLs, hostnames and ports.
++ - [HTTP-сервер](http-server.md) отвечает на запросы с тем же словарём `Http` из методов, кодов
++   состояния и заголовков.
++ - [JSON поверх HTTP](json.md#json-over-http) отправляет значение `Json` и получает его.
++ - [OAuth](oauth.md#credentials-for-a-typed-client) получает токен, который отправляет
++   авторизованный запрос.
++ - [Сетевые адреса](network-addresses.md) охватывают URL, имена хостов и порты.

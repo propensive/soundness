@@ -1,0 +1,686 @@
+orthant 1 language
+
+- ## Fonts
++ ## Шрифты
+
+- ### About
++ ### Обзор
+
+- A [TrueType or OpenType](https://en.wikipedia.org/wiki/TrueType) font file is binary data with a
+- well-defined internal structure: tables of glyphs, mappings and metrics. It is read directly
+- here. An `Sfnt` loads from any source of bytes, resolves characters to glyphs, and answers the
+- question which typography code most often asks: how wide is this text in this font?
++ Файл шрифта [TrueType или OpenType](https://en.wikipedia.org/wiki/TrueType) — это двоичные
++ данные с чётко определённой внутренней структурой: таблицами глифов, отображений и метрик.
++ Здесь он читается напрямую. `Sfnt` загружается из любого источника байтов, сопоставляет
++ символам глифы и отвечает на вопрос, который чаще всего задаёт типографский код: какова ширина
++ этого текста в этом шрифте?
+
+- Above the file, a `Typeface` names a font family. A `Face` chooses a weight, slant and features
+- from it. A `Typesettable` provision guarantees that a document which names the typeface carries
+- what its medium needs to show it.
++ Над файлом стоит `Typeface`, называющий семейство шрифтов. `Face` выбирает из него
++ насыщенность, наклон и функции. Предоставление `Typesettable` гарантирует, что документ,
++ называющий гарнитуру, несёт то, что нужно его среде, чтобы её показать.
+
+- ### On font metrics
++ ### О метриках шрифта
+
+- Text does not have a width. Text *in a font* does. Laying out a heading, sizing a button and
+- breaking a line to fit a measure each need the advance widths which live inside the font file,
+- in tables indexed through a mapping from characters to glyphs. Reaching them usually means a
+- rendering toolkit, brought in for what is, at heart, table lookup in a documented binary format.
++ У текста нет ширины. Она есть у текста *в некотором шрифте*. Раскладка заголовка, задание
++ размера кнопки и разбиение строки под заданную длину требуют ширин продвижения, которые хранятся
++ в файле шрифта, в таблицах, индексируемых через отображение символов в глифы. Чтобы добраться
++ до них, обычно подключают инструментарий отрисовки ради того, что по сути является поиском в
++ таблице документированного двоичного формата.
+
+- Here the format is parsed directly. The font is a value, its tables are read lazily, and its
+- metrics are ordinary method calls. A font parsed from its tables, with every value typed,
+- follows [safety by construction](../../philosophy/safety-by-construction.md): an invalid font is
+- rejected when it is loaded, and not at first use.
++ Здесь формат разбирается напрямую. Шрифт — это значение, его таблицы читаются лениво, а его
++ метрики — обычные вызовы методов. Шрифт, разобранный из своих таблиц, где каждое значение
++ типизировано, следует принципу
++ [безопасности по построению](../../philosophy/safety-by-construction.md): некорректный шрифт
++ отвергается при загрузке, а не при первом использовании.
+
+- Everything comes from the `soundness` package:
++ Всё берётся из пакета `soundness`:
+
+= Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import decimalConverters.javaDecimalConverter
++ import decimalConverters.javaDecimalConverter
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- The samples on this page read font files which are not shipped with the documentation, so they
+- are compiled but not run.
++ Примеры на этой странице читают файлы шрифтов, которые не поставляются вместе с документацией,
++ поэтому они компилируются, но не запускаются.
+
+- ### Loading a font
++ ### Загрузка шрифта
+
+- `Sfnt` reads a font from any streamable source of bytes: a file, a classpath resource, a URL.
+- The name is the format's own. An *sfnt* is the table container which TrueType and OpenType share.
+- The two specializations are told apart by their tables. A `CFF ` table means PostScript
+- outlines, so the font is an `Opentype`. Otherwise it is a `Truetype`:
++ `Sfnt` читает шрифт из любого потокового источника байтов: файла, ресурса пути классов, URL.
++ Имя взято из самого формата. *sfnt* — это контейнер таблиц, общий для TrueType и OpenType. Две
++ специализации различаются своими таблицами. Таблица `CFF ` означает контуры PostScript, и тогда
++ шрифт — `Opentype`. Иначе это `Truetype`:
+
+= outlines, so the font is an `Opentype`. Otherwise it is a `Truetype`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= outlines, so the font is an `Opentype`. Otherwise it is a `Truetype`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= outlines, so the font is an `Opentype`. Otherwise it is a `Truetype`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- val font: Sfnt = Sfnt(t"/fonts/text.ttf".as[Path on Classpath])
++ val font: Sfnt = Sfnt(t"/fonts/text.ttf".as[Path on Classpath])
+
+- val outlines: Text = font match
++ val outlines: Text = font match
+
+-   case truetype: Truetype => t"TrueType outlines"
++   case truetype: Truetype => t"TrueType outlines"
+
+-   case opentype: Opentype => t"PostScript outlines"
++   case opentype: Opentype => t"PostScript outlines"
+
+=   case opentype: Opentype => t"PostScript outlines"
+- ```
++ ```
+
+- Constructing a font from bytes cannot fail. The tables parse lazily, so a file which is not a
+- font, or which lacks a table an operation needs, raises a `Font.Error` which names the problem
+- when that table is first read.
++ Создание шрифта из байтов не может завершиться неудачей. Таблицы разбираются лениво, поэтому
++ файл, который не является шрифтом или в котором нет таблицы, нужной операции, порождает
++ `Font.Error`, называющую проблему, когда эта таблица впервые читается.
+
+- ### Measuring text
++ ### Измерение текста
+
+- `width` measures a text in the font. It returns a [quantity](quantities.md) in `em`s, the
+- font-relative unit which multiplies by the point size to give a physical width:
++ `width` измеряет текст в шрифте. Он возвращает [величину](quantities.md) в `em` — единице,
++ относительной к шрифту, которая при умножении на кегль даёт физическую ширину:
+
+= font-relative unit which multiplies by the point size to give a physical width:
+=
+- ```scala
++ ```scala
+
+- def measure(font: Sfnt): Quantity[Ems[1]] = font.width(t"Hello world")
++ def measure(font: Sfnt): Quantity[Ems[1]] = font.width(t"Hello world")
+
+= def measure(font: Sfnt): Quantity[Ems[1]] = font.width(t"Hello world")
+- ```
++ ```
+
+- Since the result is a typed quantity, an em-width cannot be mistaken for a measurement in pixels
+- or points. Scaling it by a font size is explicit arithmetic.
++ Поскольку результат — типизированная величина, ширину в em нельзя спутать с измерением в
++ пикселях или пунктах. Масштабирование её по размеру шрифта — явная арифметика.
+
+- ### Glyphs
++ ### Глифы
+
+- Questions about characters go through the glyph machinery. A character resolves to its glyph,
+- and each glyph carries its advance width and left side bearing, in the design units of the font:
++ Вопросы о символах проходят через механизм глифов. Символ сопоставляется своему глифу, и каждый
++ глиф несёт свою ширину продвижения и левый боковой отступ в единицах дизайна шрифта:
+
+= and each glyph carries its advance width and left side bearing, in the design units of the font:
+=
+- ```scala
++ ```scala
+
+- def metrics(font: Sfnt): (Int, Int) = (font.advanceWidth('H'), font.leftSideBearing('H'))
++ def metrics(font: Sfnt): (Int, Int) = (font.advanceWidth('H'), font.leftSideBearing('H'))
+
+= def metrics(font: Sfnt): (Int, Int) = (font.advanceWidth('H'), font.leftSideBearing('H'))
+- ```
++ ```
+
+- Each table which the font reads is a method of the same name, parsed on first use:
++ Каждая таблица, которую читает шрифт, — это метод с тем же именем, разбираемый при первом
++ использовании:
+
+= Each table which the font reads is a method of the same name, parsed on first use:
+=
+- ```tabular
++ ```tabular
+
+- column  Table
+- column  Method
+- column  Gives
+- row  `head`  `head`  units per em, relating design units to ems; the glyph bounding box
+- row  `hhea`  `hhea`  the ascender and descender heights that vertical layout needs
+- row  `hmtx`  `hmtx`  each glyph's advance width and left side bearing
+- row  `cmap`  `cmap`  the mapping from characters to glyphs
+- row  `maxp`  `maxp`  the number of glyphs
+- row  `name`  `name`  names and descriptions, as `fontName` and `familyName`
+- row  `post`  `post`  italic angle, underline position and thickness, monospacing
+- row  `OS/2`  `os2`  weight and width classes, typographic metrics, embedding rights
+- row  `fvar`  `fvar`  a variable font's axes, or `Unset`
++ column  Таблица
++ column  Метод
++ column  Даёт
++ row  `head`  `head`  число единиц на em, связывающее единицы дизайна с em; ограничивающий прямоугольник глифов
++ row  `hhea`  `hhea`  высоты верхних и нижних выносных элементов, нужные для вертикальной раскладки
++ row  `hmtx`  `hmtx`  ширину продвижения и левый боковой отступ каждого глифа
++ row  `cmap`  `cmap`  отображение символов в глифы
++ row  `maxp`  `maxp`  число глифов
++ row  `name`  `name`  имена и описания, как `fontName` и `familyName`
++ row  `post`  `post`  угол курсива, положение и толщину подчёркивания, моноширинность
++ row  `OS/2`  `os2`  классы насыщенности и ширины, типографские метрики, права на встраивание
++ row  `fvar`  `fvar`  оси вариативного шрифта или `Unset`
+
+= row  `fvar`  `fvar`  a variable font's axes, or `Unset`
+- ```
++ ```
+
+- The mapping from characters to glyphs covers the `cmap` subtable formats which fonts actually
+- use, and the best subtable is chosen by Unicode preference, not by taking the first one present.
+- A character which the font does not map gives the missing glyph, and not an error or a wrong
+- glyph.
++ Отображение символов в глифы охватывает те форматы подтаблиц `cmap`, которые реально
++ используются в шрифтах, а лучшая подтаблица выбирается по предпочтению Unicode, а не берётся
++ первая попавшаяся. Символ, который шрифт не отображает, даёт отсутствующий глиф, а не ошибку или
++ неверный глиф.
+
+- ### Names and metadata
++ ### Имена и метаданные
+
+- A font describes itself in its `name`, `post` and `OS/2` tables, and those descriptions are read
+- directly rather than guessed at. The names are [optional] values, since a font need not record
+- them:
++ Шрифт описывает себя в таблицах `name`, `post` и `OS/2`, и эти описания читаются напрямую, а не
++ угадываются. Имена — [опциональные][опциональный] значения, поскольку шрифт не обязан их
++ записывать:
+
+= them:
+=
+- ```scala
++ ```scala
+
+- def describe(font: Sfnt): Text =
++ def describe(font: Sfnt): Text =
+
+-   t"${font.fontName.or(t"?")} (${font.familyName.or(t"?")}), ${font.post.italicAngle.show}°"
++   t"${font.fontName.or(t"?")} (${font.familyName.or(t"?")}), ${font.post.italicAngle.show}°"
+
+=   t"${font.fontName.or(t"?")} (${font.familyName.or(t"?")}), ${font.post.italicAngle.show}°"
+- ```
++ ```
+
+- Records are decoded from both UTF-16BE and Macintosh encodings, with Windows-English preferred
+- where several are present. Weight, typographic metrics, x-height and embedding rights come from
+- `OS/2`, which is exactly what building a [PDF](pdf.md) font descriptor needs.
++ Записи декодируются как из UTF-16BE, так и из кодировок Macintosh, с предпочтением
++ Windows-English, если записей несколько. Насыщенность, типографские метрики, высота x и права на
++ встраивание берутся из `OS/2` — именно то, что нужно для построения дескриптора шрифта
++ [PDF](pdf.md).
+
+- ### Typefaces and faces
++ ### Гарнитуры и начертания
+
+- A font file is one thing. The typeface which a document *names* is another. `Typeface["Inter"]`
+- is a typeface by its family name, which is also its type, `Typeface of "Inter"`, so one typeface
+- is distinguishable from another as the code compiles. A `Face` says how the typeface is to be
+- set: its weight, slant and stretch, its positions on any further axes of a variable font, and
+- the layout features to turn on or off. It says nothing about where the font comes from:
++ Файл шрифта — одно. Гарнитура, которую документ *называет*, — другое. `Typeface["Inter"]` — это
++ гарнитура по имени её семейства, которое является и её типом, `Typeface of "Inter"`, поэтому
++ одну гарнитуру можно отличить от другой уже при компиляции кода. `Face` говорит, как набирать
++ гарнитуру: её насыщенность, наклон и ширину, её положения на любых дополнительных осях
++ вариативного шрифта и функции раскладки, которые нужно включить или выключить. Он ничего не
++ говорит о том, откуда берётся шрифт:
+
+= the layout features to turn on or off. It says nothing about where the font comes from:
+=
+- ```scala
++ ```scala
+
+- val inter = Typeface["Inter"]
++ val inter = Typeface["Inter"]
+
+- val heading = inter.bold.italic
++ val heading = inter.bold.italic
+
+- val figures = inter.face.enabling(Face.Feature.TabularNumerals).disabling(Face.Feature.Ligatures)
++ val figures = inter.face.enabling(Face.Feature.TabularNumerals).disabling(Face.Feature.Ligatures)
+
+- val display = inter.face.varying(Variation.Axis.OpticalSize, 24.0)
++ val display = inter.face.varying(Variation.Axis.OpticalSize, 24.0)
+
+= val display = inter.face.varying(Variation.Axis.OpticalSize, 24.0)
+- ```
++ ```
+
+- A face has these attributes:
++ У начертания есть такие атрибуты:
+
+= A face has these attributes:
+=
+- ```tabular
++ ```tabular
+
+- column  Attribute
+- column  Values
+- column  Set with
+- row  weight  1–1000, the scale CSS and OpenType share, `Weight.Thin` to `Weight.Black`  `thin` … `black`, `weighing(weight)`
+- row  slant  `Upright`, `Italic`, or `Oblique` at an angle  `upright`, `italic`, `oblique(angle)`, `slanted(slant)`
+- row  stretch  a percentage of the normal width  `condensed`, `expanded`, `stretched(stretch)`
+- row  variation  a position on a variable font's axis  `varying(axis, value)`
+- row  features  OpenType layout features, on or off  `enabling`, `disabling`, `featuring`
++ column  Атрибут
++ column  Значения
++ column  Задаётся с помощью
++ row  насыщенность  1–1000, шкала, общая для CSS и OpenType, от `Weight.Thin` до `Weight.Black`  `thin` … `black`, `weighing(weight)`
++ row  наклон  `Upright`, `Italic` или `Oblique` под углом  `upright`, `italic`, `oblique(angle)`, `slanted(slant)`
++ row  ширина  процент от нормальной ширины  `condensed`, `expanded`, `stretched(stretch)`
++ row  вариация  положение на оси вариативного шрифта  `varying(axis, value)`
++ row  функции  функции раскладки OpenType, включённые или выключенные  `enabling`, `disabling`, `featuring`
+
+= row  features  OpenType layout features, on or off  `enabling`, `disabling`, `featuring`
+- ```
++ ```
+
+- The registered weight, width and italic axes of a variable font are set through the first three,
+- so a static and a variable font are asked for alike. A `Variation` is for optical size and a
+- font's own axes. Features are named by their OpenType tags. Stylistic sets,
+- `Face.Feature.stylisticSet(n)`, and character variants, `Face.Feature.characterVariant(n)`, are
+- numbered:
++ Зарегистрированные оси насыщенности, ширины и курсива вариативного шрифта задаются через первые
++ три атрибута, так что статический и вариативный шрифты запрашиваются одинаково. `Variation`
++ предназначена для оптического размера и собственных осей шрифта. Функции называются своими
++ тегами OpenType. Стилистические наборы, `Face.Feature.stylisticSet(n)`, и варианты символов,
++ `Face.Feature.characterVariant(n)`, нумеруются:
+
+= numbered:
+=
+- ```tabular
++ ```tabular
+
+- column  Feature
+- column  Tag
++ column  Функция
++ column  Тег
+
+- row  `Ligatures`  `liga`
++ row  `Ligatures`  `liga`
+
+- row  `DiscretionaryLigatures`  `dlig`
++ row  `DiscretionaryLigatures`  `dlig`
+
+- row  `HistoricalLigatures`  `hlig`
++ row  `HistoricalLigatures`  `hlig`
+
+- row  `ContextualAlternates`  `calt`
++ row  `ContextualAlternates`  `calt`
+
+- row  `Kerning`  `kern`
++ row  `Kerning`  `kern`
+
+- row  `OldstyleNumerals`  `onum`
++ row  `OldstyleNumerals`  `onum`
+
+- row  `LiningNumerals`  `lnum`
++ row  `LiningNumerals`  `lnum`
+
+- row  `TabularNumerals`  `tnum`
++ row  `TabularNumerals`  `tnum`
+
+- row  `ProportionalNumerals`  `pnum`
++ row  `ProportionalNumerals`  `pnum`
+
+- row  `SlashedZero`  `zero`
++ row  `SlashedZero`  `zero`
+
+- row  `Fractions`  `frac`
++ row  `Fractions`  `frac`
+
+- row  `Ordinals`  `ordn`
++ row  `Ordinals`  `ordn`
+
+- row  `SmallCapitals`  `smcp`
++ row  `SmallCapitals`  `smcp`
+
+- row  `CapitalSmallCapitals`  `c2sc`
++ row  `CapitalSmallCapitals`  `c2sc`
+
+- row  `Swashes`  `swsh`
++ row  `Swashes`  `swsh`
+
+- row  `Superscript`  `sups`
++ row  `Superscript`  `sups`
+
+- row  `Subscript`  `subs`
++ row  `Subscript`  `subs`
+
+= row  `Subscript`  `subs`
+- ```
++ ```
+
+- ### Providing a typeface
++ ### Предоставление гарнитуры
+
+- Naming a typeface does not make it available where the document is shown. A browser without the
+- font falls back to another, and a PDF viewer substitutes. A provision closes that gap. It is an
+- instance of `Typesettable` for the typeface *in a medium*. It says how that medium obtains the
+- font, and which faces it can then set. It is declared once, as a [given]:
++ Назвать гарнитуру не значит сделать её доступной там, где показывается документ. Браузер без
++ шрифта переключается на другой, а программа просмотра PDF подставляет замену. Предоставление
++ закрывает этот разрыв. Это экземпляр `Typesettable` для гарнитуры *в некоторой среде*. Он
++ говорит, как эта среда получает шрифт и какие начертания она затем может набирать. Он
++ объявляется один раз, как [given]:
+
+= font, and which faces it can then set. It is declared once, as a [given]:
+=
+- ```scala fuel
++ ```scala fuel
+
+= font, and which faces it can then set. It is declared once, as a [given]:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= font, and which faces it can then set. It is declared once, as a [given]:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- object fonts:
++ object fonts:
+
+-   val interFile: Sfnt = Sfnt(t"/fonts/Inter-Variable.ttf".as[Path on Classpath])
++   val interFile: Sfnt = Sfnt(t"/fonts/Inter-Variable.ttf".as[Path on Classpath])
+
+-   given interProvision: (Typeface of "Inter") is Typesettable in Medium =
++   given interProvision: (Typeface of "Inter") is Typesettable in Medium =
+
+-     Typesettable.embedded(interFile)
++     Typesettable.embedded(interFile)
+
+=     Typesettable.embedded(interFile)
+- ```
++ ```
+
+- A font file can be carried in any document, so an embedded provision is `in Medium`, the medium
+- of every medium. Its coverage, which is the weights, slants and widths it offers, the axes of a
+- variable font, and the features which its `GSUB` and `GPOS` tables implement, is read from the
+- file. Several files, such as regular, bold and italic, make one provision whose coverage is
+- their union. Other kinds of provision belong to one medium, and are declared through it, each
+- with the coverage it is declared to have, since there is no file to read:
++ Файл шрифта можно нести в любом документе, поэтому встроенное предоставление — `in Medium`,
++ среда всех сред. Его покрытие — насыщенности, наклоны и ширины, которые оно предлагает, оси
++ вариативного шрифта и функции, которые реализуют его таблицы `GSUB` и `GPOS`, — читается из
++ файла. Несколько файлов, например обычный, полужирный и курсивный, образуют одно предоставление,
++ покрытие которого — их объединение. Другие виды предоставлений принадлежат одной среде и
++ объявляются через неё, каждое с объявленным для него покрытием, поскольку читать файл нечего:
+
+= with the coverage it is declared to have, since there is no file to read:
+=
+- ```tabular
++ ```tabular
+
+- column  Provision
+- column  Medium
+- column  The font comes from
+- column  Coverage
+- row  `Typesettable.embedded(files)`  `Medium`  the files, carried in the document  read from the files
+- row  `Web.linked(url, coverage)`  `Web`  a font file at a URL  declared
+- row  `Web.imported(url, coverage)`  `Web`  a stylesheet that declares the typeface  declared
+- row  `Web.local(coverage)`  `Web`  a font the reader has installed  declared, or unknown
+- row  the CSS generic families  `Web`  the browser, with no declaration  every face
+- row  PDF's standard fourteen  `Print`  the viewer, with no declaration  the faces the standard defines
++ column  Предоставление
++ column  Среда
++ column  Шрифт берётся из
++ column  Покрытие
++ row  `Typesettable.embedded(files)`  `Medium`  файлов, несомых в документе  читается из файлов
++ row  `Web.linked(url, coverage)`  `Web`  файла шрифта по URL  объявляется
++ row  `Web.imported(url, coverage)`  `Web`  таблицы стилей, объявляющей гарнитуру  объявляется
++ row  `Web.local(coverage)`  `Web`  шрифта, установленного у читателя  объявляется или неизвестно
++ row  обобщённые семейства CSS  `Web`  браузера, без объявления  все начертания
++ row  стандартные четырнадцать PDF  `Print`  программы просмотра, без объявления  начертания, определённые стандартом
+
+= row  PDF's standard fourteen  `Print`  the viewer, with no declaration  the faces the standard defines
+- ```
++ ```
+
+- ### Fonts
++ ### Шрифты
+
+- A `Font` is a face paired with the provision in scope for its typeface, in a medium: a
+- `Font in Web` for a browser, or a `Font in Print` for a PDF. It is the only form in which a
+- renderer accepts a font. It can be made only where a provision is in scope, so a document cannot
+- name a typeface which it does not carry. And it can be made only for a face which the provision
+- covers. Asking an upright-only file for italics, or a font without `onum` for oldstyle numerals,
+- is a `Font.Error` at the pairing, and not a synthesized or silently ignored rendering:
++ `Font` — это начертание в паре с предоставлением, находящимся в области видимости для его
++ гарнитуры, в некоторой среде: `Font in Web` для браузера или `Font in Print` для PDF. Это
++ единственная форма, в которой отрисовщик принимает шрифт. Его можно создать только там, где в
++ области видимости есть предоставление, поэтому документ не может назвать гарнитуру, которую не
++ несёт. И его можно создать только для начертания, которое покрывает предоставление. Запрос
++ курсива у файла, содержащего только прямое начертание, или старостильных цифр у шрифта без
++ `onum` — это `Font.Error` при составлении пары, а не синтезированная или молча
++ проигнорированная отрисовка:
+
+= is a `Font.Error` at the pairing, and not a synthesized or silently ignored rendering:
+=
+- ```scala fuel
++ ```scala fuel
+
+= is a `Font.Error` at the pairing, and not a synthesized or silently ignored rendering:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= is a `Font.Error` at the pairing, and not a synthesized or silently ignored rendering:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import fonts.interProvision
++ import fonts.interProvision
+
+- val label: Font in Web = Web.font(inter.bold)
++ val label: Font in Web = Web.font(inter.bold)
+
+= val label: Font in Web = Web.font(inter.bold)
+- ```
++ ```
+
+- Where the expected type already names the medium, as the `font` field of a figure does,
+- `Font(face)` suffices. The document then does the rest:
++ Там, где ожидаемый тип уже называет среду, как это делает поле `font` рисунка, достаточно
++ `Font(face)`. Остальное делает документ:
+
+= `Font(face)` suffices. The document then does the rest:
+=
+- ```tabular
++ ```tabular
+
+- column  Document
+- column  What it does with its fonts
+- row  SVG  writes `@font-face` rules for its lettering into its definitions
+- row  stylesheet  gains the rules through `Css.fontFace`
+- row  PDF  embeds the file, or names one of its standard fourteen fonts
++ column  Документ
++ column  Что он делает со своими шрифтами
++ row  SVG  записывает правила `@font-face` для своих надписей в свои определения
++ row  таблица стилей  получает правила через `Css.fontFace`
++ row  PDF  встраивает файл или называет один из своих стандартных четырнадцати шрифтов
+
+= row  PDF  embeds the file, or names one of its standard fourteen fonts
+- ```
++ ```
+
+- ### Checking as the code compiles
++ ### Проверка при компиляции кода
+
+- A font file on the classpath can be checked before anything runs. A provision made from a
+- classpath resource keeps the path of the resource as its `Locus`:
++ Файл шрифта в пути классов можно проверить до того, как что-либо запустится. Предоставление,
++ созданное из ресурса пути классов, сохраняет путь ресурса как свой `Locus`:
+
+= classpath resource keeps the path of the resource as its `Locus`:
+=
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+= parse
+- ##
++ ##
+
+- given interResource: ((Typeface of "Inter") is Typesettable in Medium at "/fonts/Inter.ttf") =
++ given interResource: ((Typeface of "Inter") is Typesettable in Medium at "/fonts/Inter.ttf") =
+
+-   Typesettable.embedded(cp"/fonts/Inter.ttf")
++   Typesettable.embedded(cp"/fonts/Inter.ttf")
+
+=   Typesettable.embedded(cp"/fonts/Inter.ttf")
+- ```
++ ```
+
+- A face, meanwhile, records what the code asked for in its type. `inter.bold.italic` has the
+- weight `700` and the slant `"italic"` as type members, and
+- `.enabling(Face.Feature.OldstyleNumerals)` adds `"onum"` to the features it needs. When a `Font`
+- is made from such a face and such a provision, the compiler reads the file, derives its coverage
+- exactly as the runtime would, and refuses the pairing with the same message if the file cannot
+- set the face: a weight it does not have, an italic it lacks, a feature its tables do not
+- implement. The mistake is then a compile error, with the file and the request named, and not a
+- fallback in the browser.
++ Начертание тем временем записывает в своём типе то, что запросил код. У `inter.bold.italic`
++ насыщенность `700` и наклон `"italic"` являются членами типа, а
++ `.enabling(Face.Feature.OldstyleNumerals)` добавляет `"onum"` к нужным ему функциям. Когда
++ `Font` создаётся из такого начертания и такого предоставления, компилятор читает файл, выводит
++ его покрытие в точности так, как это сделала бы среда выполнения, и отвергает пару с тем же
++ сообщением, если файл не может набрать начертание: насыщенность, которой в нём нет,
++ отсутствующий курсив, функцию, которую не реализуют его таблицы. Тогда ошибка становится
++ ошибкой компиляции с названными файлом и запросом, а не запасным вариантом в браузере.
+
+- Only what is known statically is checked statically. Anything else leaves the check to the
+- pairing at runtime, which always runs:
++ Статически проверяется только то, что известно статически. Всё остальное оставляет проверку
++ составлению пары во время выполнения, которое выполняется всегда:
+
+= pairing at runtime, which always runs:
+=
+- ```tabular
++ ```tabular
+
+- column  Checked as the code compiles
+- column  Checked only at runtime
+- row  a named weight, `inter.bold`  a computed weight, `inter.weighing(weight)`
+- row  a named feature, `Face.Feature.OldstyleNumerals`  a feature from a tag, `Face.Feature(t"ss03")`
+- row  a face whose type records its request  a face annotated as plain `Face of "Inter"`
+- row  a provision from a classpath file  any other provision
++ column  Проверяется при компиляции кода
++ column  Проверяется только во время выполнения
++ row  названная насыщенность, `inter.bold`  вычисленная насыщенность, `inter.weighing(weight)`
++ row  названная функция, `Face.Feature.OldstyleNumerals`  функция из тега, `Face.Feature(t"ss03")`
++ row  начертание, тип которого записывает его запрос  начертание, аннотированное просто как `Face of "Inter"`
++ row  предоставление из файла пути классов  любое другое предоставление
+
+= row  a provision from a classpath file  any other provision
+- ```
++ ```
+
+- ### Subsetting
++ ### Построение подмножества
+
+- Embedding a whole font to render a page of text is wasteful, and often not permitted. `subset`
+- builds a new TrueType font which contains only the glyphs a given set of characters needs:
++ Встраивать целый шрифт ради отрисовки страницы текста расточительно, а часто и не разрешено.
++ `subset` строит новый шрифт TrueType, содержащий только глифы, нужные заданному набору символов:
+
+= builds a new TrueType font which contains only the glyphs a given set of characters needs:
+=
+- ```scala
++ ```scala
+
+- def reduce(font: Truetype): Truetype = font.subset(t"Hello world")
++ def reduce(font: Truetype): Truetype = font.subset(t"Hello world")
+
+= def reduce(font: Truetype): Truetype = font.subset(t"Hello world")
+- ```
++ ```
+
+- Subsetting is not simply a matter of keeping the glyphs which a text maps to. A composite glyph
+- is assembled from others, so the retained set is the transitive closure under composition. It is
+- computed from the glyph outlines themselves, so an accented character keeps the components it is
+- drawn from.
++ Построение подмножества — это не просто сохранение глифов, в которые отображается текст.
++ Составной глиф собирается из других, поэтому сохраняемое множество — транзитивное замыкание по
++ составлению. Оно вычисляется из самих контуров глифов, поэтому символ с диакритикой сохраняет
++ компоненты, из которых он нарисован.
+
+- Nor are the glyphs renumbered. Discarded glyphs keep their numbers, and are left with empty
+- outlines rather than removed, so the character mapping, the metrics and every reference which one
+- glyph makes to another remain valid without rewriting. Every other table is carried across
+- unchanged. The result is a complete and valid font file, checksums included, ready to embed in a
+- [PDF](pdf.md).
++ Глифы также не перенумеровываются. Отброшенные глифы сохраняют свои номера и остаются с
++ пустыми контурами, а не удаляются, поэтому отображение символов, метрики и каждая ссылка
++ одного глифа на другой остаются корректными без переписывания. Все прочие таблицы переносятся
++ без изменений. Результат — полный и корректный файл шрифта, включая контрольные суммы, готовый
++ к встраиванию в [PDF](pdf.md).
+
+- ### Related
++ ### Связанное
+
+- - [PDF](pdf.md) embeds fonts and their subsets in documents.
+- - [SVG](svg.md) and [CSS](css.md) carry `@font-face` rules for a provision.
+- - [Quantities](quantities.md) describes the `em` in which text is measured.
+- - [Classpath](classpath.md) describes the resources which a font is loaded from.
+- - [Text](text.md) describes the text whose width is measured.
+- - [Charts](charts.md) measure their labels with the metrics of a font.
++ - [PDF](pdf.md) встраивает шрифты и их подмножества в документы.
++ - [SVG](svg.md) и [CSS](css.md) несут правила `@font-face` для предоставления.
++ - [Величины](quantities.md) описывают `em`, в котором измеряется текст.
++ - [Путь классов](classpath.md) описывает ресурсы, из которых загружается шрифт.
++ - [Текст](text.md) описывает текст, ширина которого измеряется.
++ - [Диаграммы](charts.md) измеряют свои подписи метриками шрифта.

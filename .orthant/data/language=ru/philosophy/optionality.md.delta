@@ -1,0 +1,296 @@
+orthant 1 language
+
+- # Optionality
++ # Опциональность
+
+- Soundness represents an absent value with a flat `Optional`, not with `null` and not
+- with `Option`. Unlike `null`, an `Optional` is visible in the type and cannot be
+- dereferenced by accident; unlike `Option`, it adds no wrapper around the value, so a
+- present value is simply the value itself and optionality does not stack into nested
+- layers. Absence is dealt with where it arises rather than threaded through the whole
+- program, which keeps the common case — a value that is present — direct and
+- unencumbered. In Soundness, `null` is treated as both unrepresentable and unnecessary.
++ Soundness представляет отсутствующее значение плоским `Optional`, а не `null` и не `Option`. В
++ отличие от `null`, `Optional` виден в типе и не может быть случайно разыменован; в отличие от
++ `Option`, он не добавляет обёртки вокруг значения, поэтому присутствующее значение — это просто
++ само значение, а опциональность не складывается во вложенные слои. С отсутствием разбираются
++ там, где оно возникает, а не протаскивают его через всю программу, что сохраняет общий случай —
++ присутствующее значение — прямым и необременённым. В Soundness `null` считается одновременно
++ непредставимым и ненужным.
+
+- ## Absence without a wrapper
++ ## Отсутствие без обёртки
+
+- An `Optional[Text]` *is* a `Text`, or it is `Unset`. There is no `Some` to allocate and
+- no `Some` to unwrap:
++ `Optional[Text]` *является* `Text` — или это `Unset`. Нет никакого `Some`, который нужно
++ выделять в памяти, и никакого `Some`, который нужно разворачивать:
+
+= no `Some` to unwrap:
+=
+- ```scala fuel
++ ```scala fuel
+
+= no `Some` to unwrap:
+=
+= ```scala fuel
+- parse
++ parse
+
+= no `Some` to unwrap:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val name: Optional[Text] = t"Hal"
++ val name: Optional[Text] = t"Hal"
+
+- val missing: Optional[Text] = Unset
++ val missing: Optional[Text] = Unset
+
+- name.or(t"anonymous")     // t"Hal"
++ name.or(t"anonymous")     // t"Hal"
+
+- missing.or(t"anonymous")  // t"anonymous"
++ missing.or(t"anonymous")  // t"anonymous"
+
+= missing.or(t"anonymous")  // t"anonymous"
+- ```
++ ```
+
+- The operations read as the questions they answer:
++ Операции читаются как вопросы, на которые они отвечают:
+
+= The operations read as the questions they answer:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Does
+- column  Result type
+- row  `or`  supplies a fallback for an absent value  the value's type
+- row  `let`  transforms a present value, leaving an absent one alone  an `Optional`
+- row  `lay`  supplies a fallback and a transformation together  the transformation's type
+- row  `present`  asks whether there is a value  `Boolean`
+- row  `absent`  asks whether there is none  `Boolean`
++ column  Метод
++ column  Что делает
++ column  Тип результата
++ row  `or`  даёт запасной вариант для отсутствующего значения  тип значения
++ row  `let`  преобразует присутствующее значение, не трогая отсутствующее  `Optional`
++ row  `lay`  даёт запасной вариант и преобразование вместе  тип преобразования
++ row  `present`  спрашивает, есть ли значение  `Boolean`
++ row  `absent`  спрашивает, нет ли значения  `Boolean`
+
+= row  `absent`  asks whether there is none  `Boolean`
+- ```
++ ```
+
+- And `assume` insists on presence where the surrounding code has already established it, throwing
+- an `Optional.Error` if that was wrong:
++ А `assume` настаивает на присутствии там, где окружающий код уже его установил, и выбрасывает
++ `Optional.Error`, если это было неверно:
+
+= an `Optional.Error` if that was wrong:
+=
+- ```scala fuel
++ ```scala fuel
+
+= an `Optional.Error` if that was wrong:
+=
+= ```scala fuel
+- parse
++ parse
+
+= an `Optional.Error` if that was wrong:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- name.let(_.upper)              // Optional[Text]
++ name.let(_.upper)              // Optional[Text]
+
+- name.lay(t"nobody")(_.upper)   // Text, either way
++ name.lay(t"nobody")(_.upper)   // Text, either way
+
+- name.present                   // true
++ name.present                   // true
+
+- name.assume                    // Text, or an Optional.Error if that was wrong
++ name.assume                    // Text, or an Optional.Error if that was wrong
+
+= name.assume                    // Text, or an Optional.Error if that was wrong
+- ```
++ ```
+
+- ## Why the wrapper costs more than it looks
++ ## Почему обёртка стоит больше, чем кажется
+
+- `Option` allocates one object per present value. In a single expression that is
+- invisible; in a table of a million records with three optional columns it is three
+- million objects that exist only to say "yes, there is one" — and every read of one is a
+- pointer to chase.
++ `Option` выделяет по одному объекту на каждое присутствующее значение. В одном выражении это
++ незаметно; в таблице из миллиона записей с тремя опциональными столбцами это три миллиона
++ объектов, которые существуют лишь для того, чтобы сказать «да, значение есть», — и каждое
++ чтение одного из них — это указатель, по которому нужно перейти.
+
+- The deeper cost is that wrappers *stack*. `Option[Option[T]]` is a legal type with three
+- inhabitants and no agreed meaning, and it arises whenever a lookup that may fail returns
+- a value that may itself be absent. Code that meets one usually flattens it and hopes the
+- two absences meant the same thing.
++ Более глубокая цена в том, что обёртки *складываются*. `Option[Option[T]]` — допустимый тип с
++ тремя обитателями и без согласованного смысла, и он возникает всякий раз, когда поиск, который
++ может не удаться, возвращает значение, которое само может отсутствовать. Код, встречающий
++ такой тип, обычно уплощает его и надеется, что два отсутствия означали одно и то же.
+
+- `Optional` cannot stack, and not by a rule that forbids it. `Optional[value]` is the union
+- `Unset | value`, and a union absorbs a repeated member, so `Optional[Optional[Int]]`
+- *is* `Optional[Int]` — the same type, arrived at by ordinary type equality rather than by
+- a check that rejects it.
++ `Optional` не может складываться, и не благодаря правилу, которое это запрещает.
++ `Optional[value]` — это объединение `Unset | value`, а объединение поглощает повторяющийся
++ член, поэтому `Optional[Optional[Int]]` *и есть* `Optional[Int]` — тот же тип, полученный
++ обычным равенством типов, а не проверкой, которая его отвергает.
+
+- The ambiguous type therefore never arises to be flattened away. There is no `Some(None)`
+- to disambiguate because there is nothing for it to be.
++ Поэтому неоднозначный тип, который пришлось бы уплощать, никогда не возникает. Нет никакого
++ `Some(None)`, который нужно было бы разрешать, потому что ему нечем быть.
+
+- The three representations of absence, side by side:
++ Три представления отсутствия бок о бок:
+
+= The three representations of absence, side by side:
+=
+- ```tabular
++ ```tabular
+
+- column  Representation
+- column  Visible in the type
+- column  Present value
+- column  Nested absence
+- row  `null`  no  the value itself  cannot be expressed
+- row  `Option`  yes  wrapped in a `Some`  `Option[Option[T]]`, with no agreed meaning
+- row  `Optional`  yes  the value itself  absorbed: `Optional[Optional[Int]]` is `Optional[Int]`
++ column  Представление
++ column  Видно в типе
++ column  Присутствующее значение
++ column  Вложенное отсутствие
++ row  `null`  нет  само значение  невыразимо
++ row  `Option`  да  обёрнуто в `Some`  `Option[Option[T]]`, без согласованного смысла
++ row  `Optional`  да  само значение  поглощается: `Optional[Optional[Int]]` — это `Optional[Int]`
+
+= row  `Optional`  yes  the value itself  absorbed: `Optional[Optional[Int]]` is `Optional[Int]`
+- ```
++ ```
+
+- ## What it costs
++ ## Чего это стоит
+
+- Two things, and they are worth stating plainly.
++ Две вещи, и о них стоит сказать прямо.
+
+- The first is the price of that absorption. It works because the compiler can see both
+- members of the union — and for an *abstract* type it cannot: a `value` later instantiated
+- to something already optional would merge two absences that were meant to be distinct. So
+- a generic method taking an `Optional[value]` needs evidence that `value` is a definite
+- type, and the evidence appears in the signature:
++ Первая — цена этого поглощения. Оно работает, потому что компилятор видит оба члена
++ объединения, — а для *абстрактного* типа не видит: `value`, позже инстанцированный чем-то уже
++ опциональным, слил бы два отсутствия, которые должны были быть различны. Поэтому обобщённому
++ методу, принимающему `Optional[value]`, нужно свидетельство того, что `value` — определённый
++ тип, и это свидетельство появляется в сигнатуре:
+
+= type, and the evidence appears in the signature:
+=
+- ```scala fuel
++ ```scala fuel
+
+= type, and the evidence appears in the signature:
+=
+= ```scala fuel
+- parse
++ parse
+
+= type, and the evidence appears in the signature:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def firstOrElse[value: Concrete](values: List[Optional[value]], fallback: value): value =
++ def firstOrElse[value: Concrete](values: List[Optional[value]], fallback: value): value =
+
+-   values.compact.head.or(fallback)
++   values.compact.head.or(fallback)
+
+=   values.compact.head.or(fallback)
+- ```
++ ```
+
+- The second is that `Optional` is not a monad and does not pretend to be one. There is no
+- `flatMap` threading absence through a `for` comprehension. Absence is handled where it
+- arises — with `or`, `let` or `lay` — which is the point rather than an omission: a value
+- that might be absent is made definite close to where it was obtained, instead of being
+- carried through the program in a wrapper that every later step must accommodate.
++ Вторая — `Optional` не является монадой и не притворяется ею. Нет никакого `flatMap`,
++ протаскивающего отсутствие через `for`-включение. С отсутствием разбираются там, где оно
++ возникает, — с помощью `or`, `let` или `lay`, — и в этом суть, а не упущение: значение, которое
++ может отсутствовать, делается определённым недалеко от того места, где оно было получено, а не
++ переносится через программу в обёртке, к которой должен приспосабливаться каждый следующий шаг.
+
+- ## Meeting `Option` at the boundary
++ ## Встреча с `Option` на границе
+
+- Other libraries return `Option`, and a Soundness value sometimes has to become one. The
+- conversion is explicit in both directions and confined to the boundary:
++ Другие библиотеки возвращают `Option`, и значению Soundness иногда приходится им становиться.
++ Преобразование явное в обоих направлениях и ограничено границей:
+
+= conversion is explicit in both directions and confined to the boundary:
+=
+- ```scala fuel
++ ```scala fuel
+
+= conversion is explicit in both directions and confined to the boundary:
+=
+= ```scala fuel
+- parse
++ parse
+
+= conversion is explicit in both directions and confined to the boundary:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- name.option              // Some(t"Hal"): Option[Text]
++ name.option              // Some(t"Hal"): Option[Text]
+
+- Some(t"Hal").optional    // t"Hal": Optional[Text]
++ Some(t"Hal").optional    // t"Hal": Optional[Text]
+
+= Some(t"Hal").optional    // t"Hal": Optional[Text]
+- ```
++ ```
+
+- Converting at the edge rather than adopting `Option` throughout is the same discipline
+- applied to `null`: a foreign representation is translated once, on arrival, and the
+- program's interior speaks one language.
++ Преобразование на краю вместо повсеместного использования `Option` — та же дисциплина, что
++ применяется к `null`: чужое представление переводится один раз, при поступлении, и внутренность
++ программы говорит на одном языке.
+
+- See [zero cost](zero-cost.md) for the general principle this is an instance of, and
+- [impossible states](impossible-states.md) for why the non-nesting matters.
++ Общий принцип, частным случаем которого это является, см. в разделе о
++ [нулевой стоимости](zero-cost.md), а о том, почему важна невложенность, — в разделе о
++ [невозможных состояниях](impossible-states.md).

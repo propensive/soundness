@@ -1,0 +1,274 @@
+orthant 1 language
+
+- ## Forms
++ ## Формы
+
+- ### About
++ ### Обзор
+
+- An HTML form is a user interface to a data type, and here one is generated from the type
+- itself. A case class produces a form, with a labeled input for each field, and a widget
+- chosen by the field's type. A submission is decoded back into the case class, and any
+- failures of validation are attached to the fields which caused them. Nested case classes
+- become nested fieldsets, so the form mirrors the structure of the data.
++ HTML-форма — это пользовательский интерфейс к типу данных, и здесь она генерируется из самого
++ типа. Case-класс производит форму с полем ввода и меткой для каждого поля и с виджетом,
++ выбранным по типу поля. Отправка декодируется обратно в case-класс, а все ошибки валидации
++ прикрепляются к полям, которые их вызвали. Вложенные case-классы становятся вложенными наборами
++ полей, поэтому форма отражает структуру данных.
+
+- ### On forms
++ ### О формах
+
+- Forms are written twice in most web applications: once as HTML inputs, and again as the
+- parsing and validation of what comes back. The two halves are kept consistent by hand. Every
+- change to the data, such as a new field, a renamed one or a stricter type, must be made in
+- both, or the form drifts from the data it claims to collect.
++ В большинстве веб-приложений формы пишутся дважды: один раз как поля ввода HTML, а второй — как
++ разбор и валидация того, что возвращается. Согласованность двух половин поддерживается вручную.
++ Каждое изменение данных, будь то новое поле, переименованное поле или более строгий тип, нужно
++ внести в обе, иначе форма отдаляется от данных, которые она якобы собирает.
+
+- [Deriving][derivation] both halves from one type removes the duplication. The type says what
+- fields exist, and what each accepts. The widgets follow from the types of the fields.
+- Decoding a submission applies the same validated types which govern the rest of the program,
+- so a malformed email address fails at the form, with a message which points at the email
+- field. That is [correctness](../../philosophy/correctness.md) through a single source of truth.
++ [Деривация][деривация] обеих половин из одного типа устраняет дублирование. Тип говорит, какие
++ поля существуют и что принимает каждое. Виджеты следуют из типов полей. Декодирование отправки
++ применяет те же проверенные типы, которые управляют остальной программой, поэтому некорректный
++ адрес электронной почты отвергается на уровне формы с сообщением, которое указывает на поле
++ электронной почты. Это [корректность](../../philosophy/correctness.md) через единый источник
++ истины.
+
+- Everything comes from the `soundness` package. The last import lets the samples print their
+- results:
++ Всё берётся из пакета `soundness`. Последний импорт позволяет примерам печатать свои
++ результаты:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import formulations.postFormulation
++ import formulations.postFormulation
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Rendering a form
++ ### Отображение формы
+
+- `elicit` renders the form for a type as [HTML](html.md), ready to serve. `edit` renders it
+- filled in from an existing value:
++ `elicit` отображает форму для типа в виде [HTML](html.md), готового к отдаче. `edit` отображает
++ её заполненной из существующего значения:
+
+= filled in from an existing value:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, email: EmailAddress)
++ case class Person(name: Text, email: EmailAddress)
+
+- case class Troupe(leader: Person, name: Text)
++ case class Troupe(leader: Person, name: Text)
+
+- val form = elicit[Troupe](validation = Validation(), submit = t"Save")
++ val form = elicit[Troupe](validation = Validation(), submit = t"Save")
+
+= val form = elicit[Troupe](validation = Validation(), submit = t"Save")
+- ```
++ ```
+
+= val form = elicit[Troupe](validation = Validation(), submit = t"Save")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val form = elicit[Troupe](validation = Validation(), submit = t"Save")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val form = elicit[Troupe](validation = Validation(), submit = t"Save")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(form.show)
++ Out.println(form.show)
+
+= Out.println(form.show)
+- ```
++ ```
+
+- Each field appears with a label derived from its name, so `leader` becomes "Leader". A nested
+- case class becomes a `<fieldset>` with a legend, so the structure of the form explains
+- itself.
++ Каждое поле появляется с меткой, выведенной из его имени, так что `leader` становится «Leader».
++ Вложенный case-класс становится `<fieldset>` с легендой, поэтому структура формы объясняет сама
++ себя.
+
+- The widget for each field is chosen by its type:
++ Виджет для каждого поля выбирается по его типу:
+
+- ```tabular
++ ```tabular
+
+- column  Field type
+- column  Widget
+- column  Rendered as
+- row  `Boolean`  `Checkbox`  a checkbox
+- row  an enumeration  `Combobox`  a text input with a `<datalist>` of the cases
+- row  `Reference[entity]`  `Dropdown`  a `<select>` of the listed entities
+- row  any other type encodable as `Text`  `Field`  a text input
+- row  a case class  none  a `<fieldset>` of its fields
++ column  Тип поля
++ column  Виджет
++ column  Отображается как
++ row  `Boolean`  `Checkbox`  флажок
++ row  перечисление  `Combobox`  текстовое поле ввода с `<datalist>` из кейсов
++ row  `Reference[entity]`  `Dropdown`  `<select>` из перечисленных сущностей
++ row  любой другой тип, кодируемый как `Text`  `Field`  текстовое поле ввода
++ row  case-класс  нет  `<fieldset>` из его полей
+
+= row  a case class  none  a `<fieldset>` of its fields
+- ```
++ ```
+
+- ### Submissions
++ ### Отправки
+
+- A submission arrives as a `Query`: the pairs of keys and values of a form post, in which
+- nested fields are dotted, as in `leader.name`. `as` decodes it to the type:
++ Отправка поступает как `Query`: пары ключей и значений из отправки формы, в которых вложенные
++ поля записываются через точку, как в `leader.name`. `as` декодирует её в тип:
+
+= nested fields are dotted, as in `leader.name`. `as` decodes it to the type:
+=
+- ```scala
++ ```scala
+
+- val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
++ val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
+
+= val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
+- ```
++ ```
+
+= val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(query.as[Troupe].inspect)
++ Out.println(query.as[Troupe].inspect)
+
+= Out.println(query.as[Troupe].inspect)
+- ```
++ ```
+
+- The fields are decoded through the same types which are used everywhere. An
+- [`EmailAddress`](network-addresses.md#email-addresses) must parse, and a
+- [`Name`](names.md) must satisfy its rules. The validation of a form is therefore not a
+- separate set of rules. It is the type system doing its usual work at the boundary, and a
+- failure carries a pointer to the field at fault:
++ Поля декодируются через те же типы, которые используются везде.
++ [`EmailAddress`](network-addresses.md#email-addresses) должен разбираться, а
++ [`Name`](names.md) — удовлетворять своим правилам. Поэтому валидация формы — не отдельный набор
++ правил. Это система типов, выполняющая свою обычную работу на границе, и неудача несёт указатель
++ на поле, в котором ошибка:
+
+= failure carries a pointer to the field at fault:
+=
+- ```scala fuel
++ ```scala fuel
+
+= failure carries a pointer to the field at fault:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- t"leader.name=Quince&leader.email=nobody&name=Mechanicals".as[Query].as[Troupe]
++ t"leader.name=Quince&leader.email=nobody&name=Mechanicals".as[Query].as[Troupe]
+
+= t"leader.name=Quince&leader.email=nobody&name=Mechanicals".as[Query].as[Troupe]
+- ```
++ ```
+
+- [Decoding](decoding.md#requiring-a-value) explains how a field's type decides whether the
+- field is required.
++ [Декодирование](decoding.md#requiring-a-value) объясняет, как тип поля решает, является ли поле
++ обязательным.
+
+- ### The form cycle
++ ### Цикл формы
+
+- A form is a loop: render, submit, and render again with errors, until the value is complete.
+- `elicit` takes the submitted `Query` and the state of validation, so the form which is
+- rendered again shows what was entered, with the faults attached to their fields.
++ Форма — это цикл: отобразить, отправить и отобразить снова с ошибками, пока значение не будет
++ полным. `elicit` принимает отправленный `Query` и состояние валидации, поэтому заново
++ отображённая форма показывает то, что было введено, с ошибками, прикреплёнными к своим полям.
+
+- A [server](http-server.md#responses) handler runs the loop, by decoding on success and
+- rendering again on failure. It therefore deals in values, not in requests. The
+- [HTTP client](http-client.md#posting-a-body) posts a `Query` as a form submission.
++ Цикл выполняет обработчик [сервера](http-server.md#responses), декодируя при успехе и заново
++ отображая при неудаче. Поэтому он имеет дело со значениями, а не с запросами.
++ [HTTP-клиент](http-client.md#posting-a-body) отправляет `Query` как отправку формы.
+
+- ### Customizing appearance
++ ### Настройка внешнего вида
+
+- How a form and its rows are rendered is a `Formulation`: the frame around the widgets, and
+- the placement of labels and error messages. `postFormulation` gives a plain, unstyled
+- rendering. An application supplies its own, to match its design, without touching how fields
+- are derived. [CSS](css.md) styles the result.
++ То, как отображаются форма и её строки, — это `Formulation`: рамка вокруг виджетов и размещение
++ меток и сообщений об ошибках. `postFormulation` даёт простое отображение без стилей. Приложение
++ предоставляет собственное, соответствующее его дизайну, не затрагивая то, как выводятся поля.
++ Результат стилизует [CSS](css.md).

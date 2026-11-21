@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.17.8` — Missing `Identity` for functor derivation
++ # `↯/s.17.8` — отсутствует `Identity` для деривации функтора
+
+- Raised at compile time by Mercator's `functor` macro when no
+- `Identity` instance can be summoned for the type.
++ Порождается во время компиляции макросом `functor` из Mercator, когда
++ для типа невозможно призвать экземпляр `Identity`.
+
+- ## Cause
++ ## Причина
+
+- Mercator's `Functor` derivation depends on an underlying `Identity`
+- instance.
++ Деривация `Functor` в Mercator зависит от нижележащего экземпляра
++ `Identity`.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.17.8] could not find Identity value for List
++ [↯/s.17.8] could not find Identity value for List
+
+= [↯/s.17.8] could not find Identity value for List
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Bring an `Identity` instance into scope (or provide one), then
+- re-derive the `Functor`.
++ Внесите экземпляр `Identity` в область видимости (или предоставьте
++ его), затем выполните деривацию `Functor` заново.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/mercator/src/core/mercator.internal.scala`
++ - Исходник: `lib/mercator/src/core/mercator.internal.scala`

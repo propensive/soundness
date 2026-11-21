@@ -1,0 +1,321 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base querencia
++ base querencia
+
+- import soundness
++ import soundness
+
+- info   the browser DOM as a typed foreign interface, navigated in Scala and rendered to JavaScript
++ info   DOM браузера как типизированный внешний интерфейс, навигируемый в Scala и отображаемый в JavaScript
+
+- detail
++ detail
+
+-     _Querencia_ lets a Scala program which generates a web page write the page's scripting —
+-     find an element, give it focus, scroll the window — in Scala, checked member by member
+-     against the browser's own WebIDL declarations of the DOM, and rendered to JavaScript for
+-     the page to run. Nothing runs the DOM on the JVM: navigating `document` or `window` builds
+-     a typed `Foreign.Expression`, which `Javascript.serialize` turns into source text, and
+-     which an HTML event-handler attribute such as `onclick` accepts directly.
++     _Querencia_ позволяет программе на Scala, которая генерирует веб-страницу, писать скрипты
++     страницы — найти элемент, передать ему фокус, прокрутить окно — на Scala, с проверкой член за
++     членом по собственным объявлениям DOM браузера на WebIDL, и отображать их в JavaScript, который
++     выполнит страница. DOM на JVM ничто не выполняет: навигация по `document` или `window` строит
++     типизированное `Foreign.Expression`, которое `Javascript.serialize` превращает в исходный
++     текст и которое атрибут-обработчик событий HTML, такой как `onclick`, принимает напрямую.
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import htmlDoms.html4Transitional
++     import htmlDoms.html4Transitional
+
+-     import html4Transitional.*
++     import html4Transitional.*
+
+-     val heading: Foreign of "HTMLElement" from Browser = document.getElementById(t"heading")
++     val heading: Foreign of "HTMLElement" from Browser = document.getElementById(t"heading")
+
+-     Javascript.serialize(heading.focus().expr)
++     Javascript.serialize(heading.focus().expr)
+
+-     // t"document.getElementById('heading').focus()"
++     // t"document.getElementById('heading').focus()"
+
+-     Button(onclick = heading.focus()).show
++     Button(onclick = heading.focus()).show
+
+-     // <button onclick="document.getElementById('heading').focus()"></button>
++     // <button onclick="document.getElementById('heading').focus()"></button>
+
+-     ```
++     ```
+
+-     A member the WebIDL interface does not declare, or an argument with no counterpart in the
+-     foreign type system, is a compile error. The machinery is xenophile's general one for
+-     foreign interfaces; querencia supplies the `Browser` ecosystem, its bundled DOM
+-     definitions (`/querencia/dom.idl` on the classpath), the conversions of Scala values to
+-     WebIDL types, the two globals and the JavaScript renderer. Every given lives in the
+-     `Browser` companion, which is in implicit scope wherever a type mentions `Browser`, so
+-     nothing need be imported to navigate the DOM or to use a handler.
++     Член, который интерфейс WebIDL не объявляет, или аргумент, у которого нет соответствия во
++     внешней системе типов, — ошибка компиляции. Механизм — общий механизм xenophile для внешних
++     интерфейсов; querencia предоставляет экосистему `Browser`, поставляемые вместе с ней
++     определения DOM (`/querencia/dom.idl` на пути классов), преобразования значений Scala в типы
++     WebIDL, два глобальных объекта и отрисовщик JavaScript. Каждый given находится в компаньоне
++     `Browser`, который находится в неявной области видимости везде, где тип упоминает `Browser`,
++     поэтому для навигации по DOM или использования обработчика ничего импортировать не нужно.
+
+-     The library has a single source set, `querencia.core`, for the JVM and Scala.js (not
+-     Scala Native, since the HTML libraries it builds on load classpath resources at runtime).
+-     Everything is exported to the `soundness` umbrella, where `document` and `window` are
+-     exported as top-level names.
++     У библиотеки один набор исходников, `querencia.core`, для JVM и Scala.js (но не для Scala
++     Native, поскольку HTML-библиотеки, на которых она построена, загружают ресурсы пути классов во
++     время выполнения). Всё экспортируется в зонтичный модуль `soundness`, где `document` и
++     `window` экспортируются как имена верхнего уровня.
+
+- refer querencia.Browser
++ refer querencia.Browser
+
+- refer querencia.Javascript
++ refer querencia.Javascript
+
+- refer querencia.Browser.document
++ refer querencia.Browser.document
+
+- refer querencia.Browser.window
++ refer querencia.Browser.window
+
+- entry .Browser   the web browser as a foreign ecosystem, whose interfaces are the DOM's WebIDL
++ entry .Browser   веб-браузер как внешняя экосистема, интерфейсы которой — WebIDL DOM
+
+= entry .Browser   the web browser as a foreign ecosystem, whose interfaces are the DOM's WebIDL
+-   detail
++   detail
+
+-       `Browser` is a xenophile `Ecosystem` whose grammar is the `WebIdlDialect`, and whose
+-       interface definitions are the DOM's, read from the bundled `/querencia/dom.idl`. A
+-       value of type `Foreign of "HTMLElement" from Browser` is a reference to a DOM object
+-       whose WebIDL interface is `HTMLElement`; selecting its members yields further foreign
+-       values of the declared types, with inheritance flattened, so an `HTMLElement` also
+-       offers what `Element` and `Node` declare.
++       `Browser` — это `Ecosystem` из xenophile, грамматика которой — `WebIdlDialect`, а
++       определения интерфейсов — определения DOM, читаемые из поставляемого
++       `/querencia/dom.idl`. Значение типа `Foreign of "HTMLElement" from Browser` — это ссылка
++       на объект DOM, интерфейс WebIDL которого — `HTMLElement`; выбор его членов даёт новые
++       внешние значения объявленных типов с развёрнутым наследованием, так что `HTMLElement`
++       предлагает и то, что объявляют `Element` и `Node`.
+
+=       offers what `Element` and `Node` declare.
+=
+-       ```scala
++       ```scala
+
+=       offers what `Element` and `Node` declare.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val first: Foreign of "HTMLElement" from Browser = document.querySelectorAll(t".btn")(0)
++       val first: Foreign of "HTMLElement" from Browser = document.querySelectorAll(t".btn")(0)
+
+-       window.document.getElementById(t"x").focus()
++       window.document.getElementById(t"x").focus()
+
+=       window.document.getElementById(t"x").focus()
+-       ```
++       ```
+
+-       It is distinct from xenophile's general `WebIdl` ecosystem so that it can own the DOM's
+-       `Interface`, and so that only a `Foreign from Browser` — not one from TypeScript or
+-       WIT — serves as an HTML event handler (`.scripting`).
++       Она отделена от общей экосистемы `WebIdl` из xenophile, чтобы владеть `Interface` DOM и
++       чтобы обработчиком событий HTML (`.scripting`) служил только `Foreign from Browser`, а не
++       значение из TypeScript или WIT.
+
+-       A Scala value passes as an argument only where an `Interoperable in Browser` instance
+-       gives its foreign type: the sized numbers `S8`–`S64`, `U8`–`U64`, `F32` and `F64` as the
+-       WebIDL types of the same width (so a `long` parameter takes an `S32`, not an `Int`),
+-       `Boolean`, `Text` as a string, a `List` as a `sequence`, and an `Optional` as a nullable
+-       type, with `Unset` crossing as `null`.
++       Значение Scala передаётся как аргумент только там, где экземпляр `Interoperable in Browser`
++       задаёт его внешний тип: числа фиксированного размера `S8`–`S64`, `U8`–`U64`, `F32` и `F64`
++       — как типы WebIDL той же ширины (так что параметр `long` принимает `S32`, а не `Int`),
++       `Boolean`, `Text` — как строка, `List` — как `sequence`, а `Optional` — как тип,
++       допускающий null, причём `Unset` передаётся как `null`.
+
+-   refer querencia.Javascript
++   refer querencia.Javascript
+
+-   entry #Grammar   the ecosystem's grammar: xenophile's `WebIdlDialect`
+-   entry .document   the page's `document` global, a foreign `Document`
+-       `Foreign of "Document" from Browser`, rendering as the JavaScript identifier
+-       `document`. It is exported to the `soundness` package as a top-level name.
++   entry #Grammar   грамматика экосистемы: `WebIdlDialect` из xenophile
++   entry .document   глобальный объект `document` страницы, внешний `Document`
++       `Foreign of "Document" from Browser`, отображаемый как идентификатор JavaScript
++       `document`. Экспортируется в пакет `soundness` как имя верхнего уровня.
+
+=       `document`. It is exported to the `soundness` package as a top-level name.
+=
+-       ```scala
++       ```scala
+
+=       `document`. It is exported to the `soundness` package as a top-level name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Javascript.serialize(document.getElementById(t"stage").focus().expr)
++       Javascript.serialize(document.getElementById(t"stage").focus().expr)
+
+-       // t"document.getElementById('stage').focus()"
++       // t"document.getElementById('stage').focus()"
+
+=       // t"document.getElementById('stage').focus()"
+-       ```
++       ```
+
+-   entry .window   the page's `window` global, a foreign `Window`
+-       `Foreign of "Window" from Browser`, rendering as the JavaScript identifier `window`.
+-       `Window` declares a `document` attribute, so `window.document` reaches the same page
+-       as `document`. It is exported to the `soundness` package as a top-level name.
++   entry .window   глобальный объект `window` страницы, внешний `Window`
++       `Foreign of "Window" from Browser`, отображаемый как идентификатор JavaScript `window`.
++       `Window` объявляет атрибут `document`, поэтому `window.document` достигает той же
++       страницы, что и `document`. Экспортируется в пакет `soundness` как имя верхнего уровня.
+
+=       as `document`. It is exported to the `soundness` package as a top-level name.
+=
+-       ```scala
++       ```scala
+
+=       as `document`. It is exported to the `soundness` package as a top-level name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Javascript.serialize(window.alert(t"hi").expr)   // t"window.alert('hi')"
++       Javascript.serialize(window.alert(t"hi").expr)   // t"window.alert('hi')"
+
+=       Javascript.serialize(window.alert(t"hi").expr)   // t"window.alert('hi')"
+-       ```
++       ```
+
+-   entry .interface   the DOM's WebIDL definitions, read from `/querencia/dom.idl` on the classpath
+-       The `Interface in Browser` which the navigation macro summons to find the members of
+-       each foreign type. It is read through hellenism from querencia's own JAR.
+-   entry .scripting   lets a `Foreign from Browser` be the value of an HTML scripting attribute
+-       The `Attributive to Whatwg.Scripting` instance which makes a DOM expression a valid
+-       value for `onclick`, `onchange` and the other event-handler attributes of honeycomb's
+-       HTML elements, rendered with `Javascript.serialize` when the page is shown. Plain text
+-       is not a script, so `Button(onclick = t"…")` does not compile.
+-   entry .s8   passes an `S8` as the WebIDL type `s8` (`byte`)
+-   entry .s16   passes an `S16` as the WebIDL type `s16` (`short`)
+-   entry .s32   passes an `S32` as the WebIDL type `s32` (`long`)
+-   entry .s64   passes an `S64` as the WebIDL type `s64` (`long long`)
+-   entry .u8   passes a `U8` as the WebIDL type `u8` (`octet`)
+-   entry .u16   passes a `U16` as the WebIDL type `u16` (`unsigned short`)
+-   entry .u32   passes a `U32` as the WebIDL type `u32` (`unsigned long`)
+-   entry .u64   passes a `U64` as the WebIDL type `u64` (`unsigned long long`)
+-   entry .f32   passes an `F32` as the WebIDL type `f32` (`float`)
+-   entry .f64   passes an `F64` as the WebIDL type `f64` (`double`)
+-   entry .boolean   passes a `Boolean` as the WebIDL type `boolean`
+-   entry .string   passes `Text` as a WebIDL string: `DOMString`, `USVString` or `ByteString`
+-   entry .sequence   passes a `List` of interoperable values as a WebIDL `sequence`
+-   entry .nullable   passes `Unset` as the WebIDL `null`
+-   entry .optional   passes an `Optional` of an interoperable type as a nullable WebIDL type
+-       `Optional[T]` corresponds to `T?`, with `Unset` crossing as `null`. The instance
+-       applies only to types with a `Mandatable` form, so it never competes with the
+-       instance for `T` itself.
++   entry .interface   определения WebIDL DOM, читаемые из `/querencia/dom.idl` на пути классов
++       `Interface in Browser`, который макрос навигации призывает, чтобы найти члены каждого
++       внешнего типа. Он читается через hellenism из собственного JAR querencia.
++   entry .scripting   позволяет `Foreign from Browser` быть значением атрибута скриптинга HTML
++       Экземпляр `Attributive to Whatwg.Scripting`, который делает выражение DOM допустимым
++       значением для `onclick`, `onchange` и других атрибутов-обработчиков событий элементов HTML
++       из honeycomb; при показе страницы оно отображается с помощью `Javascript.serialize`.
++       Простой текст — не скрипт, поэтому `Button(onclick = t"…")` не компилируется.
++   entry .s8   передаёт `S8` как тип WebIDL `s8` (`byte`)
++   entry .s16   передаёт `S16` как тип WebIDL `s16` (`short`)
++   entry .s32   передаёт `S32` как тип WebIDL `s32` (`long`)
++   entry .s64   передаёт `S64` как тип WebIDL `s64` (`long long`)
++   entry .u8   передаёт `U8` как тип WebIDL `u8` (`octet`)
++   entry .u16   передаёт `U16` как тип WebIDL `u16` (`unsigned short`)
++   entry .u32   передаёт `U32` как тип WebIDL `u32` (`unsigned long`)
++   entry .u64   передаёт `U64` как тип WebIDL `u64` (`unsigned long long`)
++   entry .f32   передаёт `F32` как тип WebIDL `f32` (`float`)
++   entry .f64   передаёт `F64` как тип WebIDL `f64` (`double`)
++   entry .boolean   передаёт `Boolean` как тип WebIDL `boolean`
++   entry .string   передаёт `Text` как строку WebIDL: `DOMString`, `USVString` или `ByteString`
++   entry .sequence   передаёт `List` из совместимых значений как `sequence` WebIDL
++   entry .nullable   передаёт `Unset` как `null` WebIDL
++   entry .optional   передаёт `Optional` совместимого типа как тип WebIDL, допускающий null
++       `Optional[T]` соответствует `T?`, причём `Unset` передаётся как `null`. Экземпляр
++       применяется только к типам, у которых есть форма `Mandatable`, поэтому он никогда не
++       конкурирует с экземпляром для самого `T`.
+
+- entry .Javascript   renders a foreign DOM expression to JavaScript source text
++ entry .Javascript   отображает внешнее выражение DOM в исходный текст JavaScript
+
+= entry .Javascript   renders a foreign DOM expression to JavaScript source text
+-   detail
++   detail
+
+-       The renderer behind querencia's event handlers, available for direct use.
++       Отрисовщик, стоящий за обработчиками событий querencia, доступный для прямого
++       использования.
+
+-   refer querencia.Browser
++   refer querencia.Browser
+
+-   entry .serialize   renders a `Foreign.Expression` as JavaScript source text
+-       A `Reference` renders as its name, a `Select` as `target.member`, an `Apply` as
+-       `target(arguments)`, an `Index` as `target[index]`, and a `Literal` as JavaScript:
+-       text single-quoted, with backslashes, quotes and line breaks escaped, so that the
+-       output nests inside an HTML attribute's double quotes; booleans as `true` and `false`;
+-       numbers verbatim.
++   entry .serialize   отображает `Foreign.Expression` в исходный текст JavaScript
++       `Reference` отображается как его имя, `Select` — как `target.member`, `Apply` — как
++       `target(arguments)`, `Index` — как `target[index]`, а `Literal` — как JavaScript: текст
++       в одинарных кавычках, с экранированием обратных косых черт, кавычек и переводов строк,
++       чтобы вывод вкладывался в двойные кавычки атрибута HTML; булевы значения — как `true` и
++       `false`; числа — дословно.
+
+=       numbers verbatim.
+=
+-       ```scala
++       ```scala
+
+=       numbers verbatim.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Javascript.serialize(document.querySelectorAll(t".btn")(0).click().expr)
++       Javascript.serialize(document.querySelectorAll(t".btn")(0).click().expr)
+
+-       // t"document.querySelectorAll('.btn')[0].click()"
++       // t"document.querySelectorAll('.btn')[0].click()"
+
+-       Javascript.serialize(window.alert(t"it's done").expr)
++       Javascript.serialize(window.alert(t"it's done").expr)
+
+-       // t"window.alert('it\\'s done')"
++       // t"window.alert('it\\'s done')"
+
+=       // t"window.alert('it\\'s done')"
+-       ```
++       ```

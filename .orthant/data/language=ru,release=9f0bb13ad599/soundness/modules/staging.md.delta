@@ -1,0 +1,18 @@
+orthant 1 language
+
+-   def stage(out: Path on Local): LocalClasspath = classpath(out)
++   def stage(out: Path on Local): LocalClasspath = classpath(out)
+
+- Code which runs elsewhere can fail, but an error raised in the staged block is not carried back
+- across the boundary as itself. `dispatch` raises only a `Compiler.Error`, if the staged code
+- does not compile, or a `Rig.Error`, for a failure of the rig. With the `Jvm` rig, staged code
+- which throws makes its subprocess exit with a failure, which is reported as a `Rig.Error` whose
+- reason is `Invocation`: the same error as a subprocess which would not start. Staged code which
+- may fail should therefore return its failure as a value.
++ Код, выполняющийся в другом месте, может завершиться неудачей, но ошибка, порождённая в
++ размещённом блоке, не переносится обратно через границу как есть. `dispatch` порождает только
++ `Compiler.Error`, если размещённый код не компилируется, или `Rig.Error` при неудаче рига. С
++ ригом `Jvm` размещённый код, который бросает исключение, заставляет свой подпроцесс завершиться
++ с ошибкой, о чём сообщается как о `Rig.Error` с причиной `Invocation`: это та же ошибка, что и
++ для подпроцесса, который не запустился. Поэтому размещённый код, который может завершиться
++ неудачей, должен возвращать свою неудачу как значение.

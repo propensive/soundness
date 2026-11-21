@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.2` — Binary literal contains non-binary character
++ # `↯/s.27.2` — Двоичный литерал содержит недвоичный символ
+
+- Raised at compile time by Hypotenuse's `bin"…"` literal macro when
+- the body contains a character that is not `0` or `1`.
++ Порождается во время компиляции макросом литерала `bin"…"` из Hypotenuse, когда
++ тело содержит символ, отличный от `0` и `1`.
+
+- ## Cause
++ ## Причина
+
+- Binary literals must be exclusively `0` and `1`.
++ Двоичные литералы должны состоять только из `0` и `1`.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.27.2] a binary value can only contain characters '0' or '1'
++ [↯/s.27.2] a binary value can only contain characters '0' or '1'
+
+= [↯/s.27.2] a binary value can only contain characters '0' or '1'
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Remove or correct the offending character.
++ Удалите или исправьте ошибочный символ.
+
+- ## See also
++ ## См. также
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Другие ошибки двоичных и шестнадцатеричных литералов: [Семейства](README.md#families)
++ - Исходный код: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

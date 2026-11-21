@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.120.1` — `Pojo.Error`
++ # `↯/s.120.1` — `Pojo.Error`
+
+- Raised when Austronesian cannot deserialize a value from its
+- classloader-neutral "Pojo" representation.
++ Порождается, когда Austronesian не может десериализовать значение из его
++ независимого от загрузчика классов представления «Pojo».
+
+- ## Cause
++ ## Причина
+
+- Austronesian encodes Scala values into a representation built only
+- from JDK-standard types — boxed primitives, `String`, and
+- `Array[Object]` — so they can cross classloader or process
+- boundaries. This error is raised during decoding, when a Pojo value
+- does not match the shape the target type expects: a scalar where an
+- array of fields was expected, an array of the wrong length, or a
+- sum value that is not a `(label, payload)` pair.
++ Austronesian кодирует значения Scala в представление, построенное только
++ из стандартных типов JDK — упакованных примитивов, `String` и
++ `Array[Object]`, — чтобы они могли пересекать границы загрузчиков классов
++ или процессов. Эта ошибка порождается при декодировании, когда значение Pojo
++ не соответствует форме, которую ожидает целевой тип: скаляр там, где
++ ожидался массив полей, массив неверной длины или значение суммы, которое
++ не является парой `(label, payload)`.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.120.1] could not deserialize from Java POJO types
++ [↯/s.120.1] could not deserialize from Java POJO types
+
+= [↯/s.120.1] could not deserialize from Java POJO types
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Confirm that the value was encoded from the same type it is being
+- decoded to, and that both sides agree on the type's definition —
+- field order and variant names are part of the encoding. More
+- specific reasons may be added as the module evolves.
++ Убедитесь, что значение было закодировано из того же типа, в который оно
++ декодируется, и что обе стороны согласны в определении этого типа: порядок
++ полей и имена вариантов входят в кодировку. По мере развития модуля могут
++ появиться более конкретные причины.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/austronesian/src/core/austronesian.internal.scala`
++ - Исходный код: `lib/austronesian/src/core/austronesian.internal.scala`

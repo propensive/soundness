@@ -1,0 +1,521 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base diuretic
++ base diuretic
+
+- import soundness
++ import soundness
+
+- info   Java's standard types for paths, URLs, instants and durations, as representations of Soundness's concepts
++ info   стандартные типы Java для путей, URL, мгновений и промежутков времени как представления понятий Soundness
+
+- detail
++ detail
+
+-     _Diuretic_ lets the JVM's own types stand in for the concepts Soundness abstracts over.
+-     anticipation names each concept as a domain — `Paths`, `Urls`, `Instants`, `Durations` —
+-     and an API which produces or accepts a path, a URL or an instant asks only for a type
+-     which is `Instantiable` from, or `Abstractable` to, that domain's generic form: text for a
+-     path or a URL, a `Long` of epoch milliseconds for an instant, and a `Long` of nanoseconds
+-     for a duration. Diuretic supplies those instances for `java.io.File`,
+-     `java.nio.file.Path`, `java.net.URL`, `java.time.Instant`, `java.util.Date` and a bare
+-     `Long`, so a program which meets both worlds hands values across without converting them
+-     by hand.
++     _Diuretic_ позволяет собственным типам JVM заменять понятия, над которыми абстрагируется
++     Soundness. anticipation называет каждое понятие доменом — `Paths`, `Urls`, `Instants`,
++     `Durations`, — и API, который создаёт или принимает путь, URL или мгновение, требует лишь
++     тип, который является `Instantiable` из обобщённой формы этого домена или `Abstractable`
++     в неё: текста для пути или URL, `Long` миллисекунд от эпохи для мгновения и `Long`
++     наносекунд для промежутка времени. Diuretic предоставляет эти экземпляры для `java.io.File`,
++     `java.nio.file.Path`, `java.net.URL`, `java.time.Instant`, `java.util.Date` и голого
++     `Long`, поэтому программа, стоящая на стыке двух миров, передаёт значения между ними, не
++     преобразуя их вручную.
+
+-     Each instance is an object — `JavaIoFile`, `JavaNioPath`, `JavaNetUrl`,
+-     `JavaTimeInstant`, `JavaUtilDate`, `JavaLongInstant`, `JavaLongDuration` — which is both
+-     `Abstractable` (`.genericize`, a Java value to its generic form) and `Instantiable`
+-     (`.apply`, the generic form to a Java value). None is in implicit scope, since the Java
+-     types have no companions Soundness can add to: each is offered as a given in one of
+-     anticipation's choice packages, `instantInterfaces`, `durationInterfaces`,
+-     `pathInterfaces` and `urlInterfaces`, and imported by name, because `import
+-     instantInterfaces.*` does not import givens.
++     Каждый экземпляр — это объект: `JavaIoFile`, `JavaNioPath`, `JavaNetUrl`,
++     `JavaTimeInstant`, `JavaUtilDate`, `JavaLongInstant`, `JavaLongDuration`, — который является
++     одновременно `Abstractable` (`.genericize`, значение Java в его обобщённую форму)
++     и `Instantiable` (`.apply`, обобщённая форма в значение Java). Ни один из них не находится
++     в неявной области видимости, поскольку у типов Java нет компаньонов, в которые Soundness
++     могла бы что-то добавить: каждый предлагается как given в одном из пакетов выбора
++     anticipation — `instantInterfaces`, `durationInterfaces`, `pathInterfaces`
++     и `urlInterfaces` — и импортируется по имени, потому что `import
++     instantInterfaces.*` не импортирует given.
+
+=     instantInterfaces.*` does not import givens.
+=
+-     ```scala
++     ```scala
+
+=     instantInterfaces.*` does not import givens.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import pathInterfaces.javaNioPath
++     import pathInterfaces.javaNioPath
+
+-     import instantInterfaces.javaTimeInstant
++     import instantInterfaces.javaTimeInstant
+
+-     def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
++     def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+
+-     val path: java.nio.file.Path = home[java.nio.file.Path]
++     val path: java.nio.file.Path = home[java.nio.file.Path]
+
+-     JavaTimeInstant(0L)                                 // java.time.Instant.EPOCH
++     JavaTimeInstant(0L)                                 // java.time.Instant.EPOCH
+
+-     JavaNioPath.genericize(java.nio.file.Paths.get("/tmp//x").nn)   // t"/tmp/x"
++     JavaNioPath.genericize(java.nio.file.Paths.get("/tmp//x").nn)   // t"/tmp/x"
+
+=     JavaNioPath.genericize(java.nio.file.Paths.get("/tmp//x").nn)   // t"/tmp/x"
+-     ```
++     ```
+
+-     The two `Long` instances are deliberately asymmetric, matching their domains: a
+-     `JavaLongInstant` counts milliseconds since the epoch, and a `JavaLongDuration`
+-     nanoseconds.
++     Два экземпляра для `Long` намеренно несимметричны в соответствии со своими доменами:
++     `JavaLongInstant` считает миллисекунды от эпохи, а `JavaLongDuration` — наносекунды.
+
+-     The library has one source set, `diuretic.core`, which needs the JVM's `java.io`,
+-     `java.nio.file`, `java.net` and `java.time` packages. Its seven objects are exported to the
+-     `soundness` umbrella, and the givens it contributes to the anticipation choice packages
+-     are mirrored there, so `import soundness.*` then an import by name is all a user writes.
+-     The givens themselves are declared in package `anticipation`, and documented with it.
++     У библиотеки один набор исходников, `diuretic.core`, которому нужны пакеты JVM `java.io`,
++     `java.nio.file`, `java.net` и `java.time`. Её семь объектов экспортируются в зонтичный
++     модуль `soundness`, и given, которые она добавляет в пакеты выбора anticipation, там же
++     отражены, поэтому пользователю достаточно написать `import soundness.*`, а затем импорт по
++     имени. Сами given объявлены в пакете `anticipation` и документированы вместе с ним.
+
+- refer anticipation.pathInterfaces
++ refer anticipation.pathInterfaces
+
+- refer anticipation.instantInterfaces
++ refer anticipation.instantInterfaces
+
+- refer anticipation.durationInterfaces
++ refer anticipation.durationInterfaces
+
+- refer anticipation.urlInterfaces
++ refer anticipation.urlInterfaces
+
+- refer anticipation.Abstractable
++ refer anticipation.Abstractable
+
+- refer anticipation.Instantiable
++ refer anticipation.Instantiable
+
+- entry .JavaIoFile   `java.io.File` as a path: abstracted to its absolute text, instantiated from text
++ entry .JavaIoFile   `java.io.File` как путь: абстрагируется в свой абсолютный текст, инстанцируется из текста
+
+= entry .JavaIoFile   `java.io.File` as a path: abstracted to its absolute text, instantiated from text
+-   detail
++   detail
+
+-       An object which is `java.io.File is Abstractable across Paths to Text` and
+-       `java.io.File is Instantiable across Paths from Text`. It is offered as the given
+-       `pathInterfaces.javaIoFile`, imported by name, so that any path-producing API can return
+-       a `File`.
++       Объект, который является `java.io.File is Abstractable across Paths to Text`
++       и `java.io.File is Instantiable across Paths from Text`. Он предлагается как given
++       `pathInterfaces.javaIoFile`, импортируемый по имени, чтобы любой API, создающий пути, мог
++       возвращать `File`.
+
+=       a `File`.
+=
+-       ```scala
++       ```scala
+
+=       a `File`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import pathInterfaces.javaIoFile
++       import pathInterfaces.javaIoFile
+
+-       val file: java.io.File = JavaIoFile(t"/tmp/example")
++       val file: java.io.File = JavaIoFile(t"/tmp/example")
+
+-       JavaIoFile.genericize(file)   // t"/tmp/example"
++       JavaIoFile.genericize(file)   // t"/tmp/example"
+
+=       JavaIoFile.genericize(file)   // t"/tmp/example"
+-       ```
++       ```
+
+-       Abstraction always gives the absolute path, so a relative `File` is resolved against the
+-       JVM's working directory. `java.io.File` is also a `Representative of Paths` through
+-       `javaIoFileRepresentative`.
++       Абстрагирование всегда даёт абсолютный путь, поэтому относительный `File` разрешается
++       относительно рабочего каталога JVM. `java.io.File` также является
++       `Representative of Paths` через `javaIoFileRepresentative`.
+
+=       `javaIoFileRepresentative`.
+-   refer anticipation.pathInterfaces
++   refer anticipation.pathInterfaces
+
+-   refer diuretic.javaIoFileRepresentative
++   refer diuretic.javaIoFileRepresentative
+
+-   entry .apply        a `java.io.File` for the path text, as `new File(path)`
+-   entry .genericize   the file's absolute path, as text
+-       `getAbsolutePath`: a relative file is resolved against the working directory, and no
+-       symbolic links are followed.
++   entry .apply        `java.io.File` для текста пути, как `new File(path)`
++   entry .genericize   абсолютный путь файла в виде текста
++       `getAbsolutePath`: относительный файл разрешается относительно рабочего каталога,
++       а символические ссылки не разыменовываются.
+
+- entry .JavaNioPath   `java.nio.file.Path` as a path: abstracted to its absolute text, instantiated from text
++ entry .JavaNioPath   `java.nio.file.Path` как путь: абстрагируется в свой абсолютный текст, инстанцируется из текста
+
+= entry .JavaNioPath   `java.nio.file.Path` as a path: abstracted to its absolute text, instantiated from text
+-   detail
++   detail
+
+-       An object which is `java.nio.file.Path is Abstractable across Paths to Text` and
+-       `java.nio.file.Path is Instantiable across Paths from Text`. It is offered as the given
+-       `pathInterfaces.javaNioPath`, imported by name.
++       Объект, который является `java.nio.file.Path is Abstractable across Paths to Text`
++       и `java.nio.file.Path is Instantiable across Paths from Text`. Он предлагается как given
++       `pathInterfaces.javaNioPath`, импортируемый по имени.
+
+=       `pathInterfaces.javaNioPath`, imported by name.
+=
+-       ```scala
++       ```scala
+
+=       `pathInterfaces.javaNioPath`, imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import pathInterfaces.javaNioPath
++       import pathInterfaces.javaNioPath
+
+-       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
++       def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+
+-       val path: java.nio.file.Path = home[java.nio.file.Path]
++       val path: java.nio.file.Path = home[java.nio.file.Path]
+
+-       JavaNioPath.genericize(path)   // t"/home/work"
++       JavaNioPath.genericize(path)   // t"/home/work"
+
+=       JavaNioPath.genericize(path)   // t"/home/work"
+-       ```
++       ```
+
+-       Instantiation is `Paths.get`, which normalises redundant separators, so `/tmp//example`
+-       abstracts back as `/tmp/example`. Abstraction always gives the absolute path. A
+-       `java.nio.file.Path` is also a `Representative of Paths` through
+-       `javaNioPathRepresentative`.
++       Инстанцирование выполняется через `Paths.get`, который нормализует избыточные
++       разделители, поэтому `/tmp//example` абстрагируется обратно как `/tmp/example`.
++       Абстрагирование всегда даёт абсолютный путь. `java.nio.file.Path` также является
++       `Representative of Paths` через `javaNioPathRepresentative`.
+
+=       `javaNioPathRepresentative`.
+-   refer anticipation.pathInterfaces
++   refer anticipation.pathInterfaces
+
+-   refer diuretic.javaNioPathRepresentative
++   refer diuretic.javaNioPathRepresentative
+
+-   entry .apply        a `java.nio.file.Path` for the path text, by `Paths.get`
+-   entry .genericize   the path's absolute form, as text
+-       `toAbsolutePath`: a relative path is resolved against the working directory; the path is
+-       not normalised beyond what `Paths.get` did, and no symbolic links are followed.
++   entry .apply        `java.nio.file.Path` для текста пути, через `Paths.get`
++   entry .genericize   абсолютная форма пути в виде текста
++       `toAbsolutePath`: относительный путь разрешается относительно рабочего каталога; путь не
++       нормализуется сверх того, что сделал `Paths.get`, а символические ссылки не
++       разыменовываются.
+
+- entry .JavaNetUrl   `java.net.URL` as a URL: abstracted to its text, instantiated from text
++ entry .JavaNetUrl   `java.net.URL` как URL: абстрагируется в свой текст, инстанцируется из текста
+
+= entry .JavaNetUrl   `java.net.URL` as a URL: abstracted to its text, instantiated from text
+-   detail
++   detail
+
+-       An object which is `java.net.URL is Abstractable across Urls to Text` and
+-       `java.net.URL is Instantiable across Urls from Text`, offered as the given
+-       `urlInterfaces.javaNetUrl`, imported by name.
++       Объект, который является `java.net.URL is Abstractable across Urls to Text`
++       и `java.net.URL is Instantiable across Urls from Text`, предлагаемый как given
++       `urlInterfaces.javaNetUrl`, импортируемый по имени.
+
+=       `urlInterfaces.javaNetUrl`, imported by name.
+=
+-       ```scala
++       ```scala
+
+=       `urlInterfaces.javaNetUrl`, imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import urlInterfaces.javaNetUrl
++       import urlInterfaces.javaNetUrl
+
+-       val url: java.net.URL = JavaNetUrl(t"http://localhost:8080/api?q=text")
++       val url: java.net.URL = JavaNetUrl(t"http://localhost:8080/api?q=text")
+
+-       JavaNetUrl.genericize(url)   // t"http://localhost:8080/api?q=text"
++       JavaNetUrl.genericize(url)   // t"http://localhost:8080/api?q=text"
+
+=       JavaNetUrl.genericize(url)   // t"http://localhost:8080/api?q=text"
+-       ```
++       ```
+
+-       Ports, paths and query strings round-trip unchanged.
++       Порты, пути и строки запроса проходят круговой путь без изменений.
+
+-   refer anticipation.urlInterfaces
++   refer anticipation.urlInterfaces
+
+-   entry .apply        a `java.net.URL` parsed from text, through `java.net.URI`
+-       `URI(text).toURL()`, the non-deprecated route: malformed text throws
+-       `URISyntaxException` or `MalformedURLException` as the Java API does, rather than
+-       raising a Soundness error, so text from outside the program should be validated first,
+-       for instance as an `HttpUrl`.
+-   entry .genericize   the URL's text, as `toString` gives it
++   entry .apply        `java.net.URL`, разобранный из текста через `java.net.URI`
++       `URI(text).toURL()`, путь без устаревших методов: некорректный текст выбрасывает
++       `URISyntaxException` или `MalformedURLException`, как это делает API Java, а не порождает
++       ошибку Soundness, поэтому текст извне программы следует сначала проверить, например как
++       `HttpUrl`.
++   entry .genericize   текст URL в том виде, в каком его даёт `toString`
+
+- entry .JavaTimeInstant   `java.time.Instant` as an instant: to and from a `Long` of epoch milliseconds
++ entry .JavaTimeInstant   `java.time.Instant` как мгновение: в `Long` миллисекунд от эпохи и обратно
+
+= entry .JavaTimeInstant   `java.time.Instant` as an instant: to and from a `Long` of epoch milliseconds
+-   detail
++   detail
+
+-       An object which is `java.time.Instant is Abstractable across Instants to Long` and
+-       `java.time.Instant is Instantiable across Instants from Long`, offered as the given
+-       `instantInterfaces.javaTimeInstant`, imported by name, so that a time read from a file
+-       or a clock can arrive as a `java.time.Instant`.
++       Объект, который является `java.time.Instant is Abstractable across Instants to Long`
++       и `java.time.Instant is Instantiable across Instants from Long`, предлагаемый как given
++       `instantInterfaces.javaTimeInstant`, импортируемый по имени, чтобы время, прочитанное из
++       файла или с часов, могло поступать в виде `java.time.Instant`.
+
+=       or a clock can arrive as a `java.time.Instant`.
+=
+-       ```scala
++       ```scala
+
+=       or a clock can arrive as a `java.time.Instant`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import instantInterfaces.javaTimeInstant
++       import instantInterfaces.javaTimeInstant
+
+-       val instant: java.time.Instant = JavaTimeInstant(1000000000000L)
++       val instant: java.time.Instant = JavaTimeInstant(1000000000000L)
+
+-       JavaTimeInstant.genericize(instant)   // 1000000000000L
++       JavaTimeInstant.genericize(instant)   // 1000000000000L
+
+=       JavaTimeInstant.genericize(instant)   // 1000000000000L
+-       ```
++       ```
+
+-       The generic form has millisecond precision, so a `java.time.Instant`'s sub-millisecond
+-       part is truncated by `.genericize`. Instants before the epoch are negative.
++       Обобщённая форма имеет миллисекундную точность, поэтому часть `java.time.Instant` меньше
++       миллисекунды усекается при `.genericize`. Мгновения до эпохи отрицательны.
+
+=       part is truncated by `.genericize`. Instants before the epoch are negative.
+-   refer anticipation.instantInterfaces
++   refer anticipation.instantInterfaces
+
+-   refer anticipation.Instants
++   refer anticipation.Instants
+
+-   entry .apply        a `java.time.Instant` from milliseconds since the epoch, by `Instant.ofEpochMilli`
+-   entry .genericize   an instant's milliseconds since the epoch, by `toEpochMilli`
+-       Truncates any sub-millisecond part; throws `ArithmeticException`, as `toEpochMilli` does,
+-       for an instant too far from the epoch to fit in a `Long` of milliseconds.
++   entry .apply        `java.time.Instant` из миллисекунд от эпохи, через `Instant.ofEpochMilli`
++   entry .genericize   миллисекунды мгновения от эпохи, через `toEpochMilli`
++       Усекает любую часть меньше миллисекунды; выбрасывает `ArithmeticException`, как это делает
++       `toEpochMilli`, для мгновения, слишком далёкого от эпохи, чтобы поместиться в `Long`
++       миллисекунд.
+
+- entry .JavaUtilDate   `java.util.Date` as an instant: to and from a `Long` of epoch milliseconds
++ entry .JavaUtilDate   `java.util.Date` как мгновение: в `Long` миллисекунд от эпохи и обратно
+
+= entry .JavaUtilDate   `java.util.Date` as an instant: to and from a `Long` of epoch milliseconds
+-   detail
++   detail
+
+-       An object which is `java.util.Date is Abstractable across Instants to Long` and
+-       `java.util.Date is Instantiable across Instants from Long`, offered as the given
+-       `instantInterfaces.javaUtilDate`, imported by name, for the legacy Java APIs which still
+-       take a `Date`.
++       Объект, который является `java.util.Date is Abstractable across Instants to Long`
++       и `java.util.Date is Instantiable across Instants from Long`, предлагаемый как given
++       `instantInterfaces.javaUtilDate`, импортируемый по имени, для устаревших API Java, которые
++       всё ещё принимают `Date`.
+
+=       take a `Date`.
+=
+-       ```scala
++       ```scala
+
+=       take a `Date`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import instantInterfaces.javaUtilDate
++       import instantInterfaces.javaUtilDate
+
+-       JavaUtilDate.genericize(JavaUtilDate(-42L))   // -42L
++       JavaUtilDate.genericize(JavaUtilDate(-42L))   // -42L
+
+=       JavaUtilDate.genericize(JavaUtilDate(-42L))   // -42L
+-       ```
++       ```
+
+=       ```
+-   refer anticipation.instantInterfaces
++   refer anticipation.instantInterfaces
+
+-   entry .apply        a `java.util.Date` from milliseconds since the epoch
+-   entry .genericize   a date's milliseconds since the epoch, by `getTime`
++   entry .apply        `java.util.Date` из миллисекунд от эпохи
++   entry .genericize   миллисекунды даты от эпохи, через `getTime`
+
+- entry .JavaLongInstant   a bare `Long` as an instant, counting milliseconds since the epoch
+-     An object which is `Long is Abstractable across Instants to Long` and `Long is
+-     Instantiable across Instants from Long`, both the identity, offered as the given
+-     `instantInterfaces.javaLongInstant`, imported by name. It is what lets an instant be
+-     taken or given as the raw `System.currentTimeMillis` form. Note the asymmetry with
+-     `JavaLongDuration`, whose `Long` counts nanoseconds. Its members `apply` and `genericize`
+-     both return their argument unchanged.
++ entry .JavaLongInstant   голый `Long` как мгновение, отсчитывающий миллисекунды от эпохи
++     Объект, который является `Long is Abstractable across Instants to Long` и `Long is
++     Instantiable across Instants from Long`, оба — тождественные, предлагаемый как given
++     `instantInterfaces.javaLongInstant`, импортируемый по имени. Именно он позволяет принимать
++     или отдавать мгновение в сырой форме `System.currentTimeMillis`. Обратите внимание на
++     асимметрию с `JavaLongDuration`, чей `Long` считает наносекунды. Его члены `apply`
++     и `genericize` оба возвращают свой аргумент без изменений.
+
+=     both return their argument unchanged.
+=
+-     ```scala
++     ```scala
+
+=     both return their argument unchanged.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import instantInterfaces.javaLongInstant
++     import instantInterfaces.javaLongInstant
+
+-     JavaLongInstant(99L) == JavaLongInstant.genericize(99L)
++     JavaLongInstant(99L) == JavaLongInstant.genericize(99L)
+
+=     JavaLongInstant(99L) == JavaLongInstant.genericize(99L)
+-     ```
++     ```
+
+- entry .JavaLongDuration   a bare `Long` as a duration, counting nanoseconds
+-     An object which is `Long is Abstractable … to Long` and `Long is Instantiable … from
+-     Long`, both the identity, offered as the given `durationInterfaces.javaLongDuration`,
+-     imported by name, so that a timeout or a sleep can be given as a raw `System.nanoTime`
+-     difference. The `Long` is a count of **nanoseconds**, the generic representation of
+-     `Durations` — not milliseconds, as for `JavaLongInstant`. Its members `apply` and
+-     `genericize` both return their argument unchanged.
++ entry .JavaLongDuration   голый `Long` как промежуток времени, отсчитывающий наносекунды
++     Объект, который является `Long is Abstractable … to Long` и `Long is Instantiable … from
++     Long`, оба — тождественные, предлагаемый как given `durationInterfaces.javaLongDuration`,
++     импортируемый по имени, чтобы тайм-аут или паузу можно было задать как сырую разность
++     `System.nanoTime`. `Long` — это число **наносекунд**, обобщённое представление `Durations`,
++     а не миллисекунд, как у `JavaLongInstant`. Его члены `apply` и `genericize` оба возвращают
++     свой аргумент без изменений.
+
+=     `genericize` both return their argument unchanged.
+=
+-     ```scala
++     ```scala
+
+=     `genericize` both return their argument unchanged.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import durationInterfaces.javaLongDuration
++     import durationInterfaces.javaLongDuration
+
+-     JavaLongDuration.genericize(1_000_000_000L)   // one second, in nanoseconds
++     JavaLongDuration.genericize(1_000_000_000L)   // one second, in nanoseconds
+
+=     JavaLongDuration.genericize(1_000_000_000L)   // one second, in nanoseconds
+-     ```
++     ```
+
+-     A bare `Long` has no unit, so where a duration in milliseconds or seconds is wanted, the
+-     per-unit givens in anticipation's `abstractables` package are the alternative; only one
+-     `Long` duration instance may be in scope at a time.
++     У голого `Long` нет единицы измерения, поэтому там, где нужен промежуток времени
++     в миллисекундах или секундах, альтернативой служат given для отдельных единиц из пакета
++     anticipation `abstractables`; в области видимости одновременно может находиться только один
++     экземпляр промежутка времени для `Long`.
+
+- entry .javaIoFileRepresentative   evidence that `java.io.File` is a `Representative of Paths`
+-     An erased given, so a method bounded `[path: Representative of Paths]` may be asked for a
+-     `java.io.File`. It is a top-level given in package `diuretic`, outside any companion
+-     (`java.io.File` has none Soundness can add to), so it must be imported by name:
++ entry .javaIoFileRepresentative   свидетельство того, что `java.io.File` является `Representative of Paths`
++     Стираемый given, благодаря которому у метода с ограничением `[path: Representative of
++     Paths]` можно запросить `java.io.File`. Это given верхнего уровня в пакете `diuretic`, вне
++     какого-либо компаньона (у `java.io.File` нет компаньона, в который Soundness могла бы
++     что-то добавить), поэтому его нужно импортировать по имени:
+
+-     `import diuretic.javaIoFileRepresentative`.
++     `import diuretic.javaIoFileRepresentative`.
+
+- entry .javaNioPathRepresentative   evidence that `java.nio.file.Path` is a `Representative of Paths`
+-     An erased given, so a method bounded `[path: Representative of Paths]` may be asked for a
+-     `java.nio.file.Path`. It is a top-level given in package `diuretic`, outside any companion,
+-     so it must be imported by name: `import diuretic.javaNioPathRepresentative`. Being
+-     erased, it can be summoned only in an erased position, such as a context bound.
++ entry .javaNioPathRepresentative   свидетельство того, что `java.nio.file.Path` является `Representative of Paths`
++     Стираемый given, благодаря которому у метода с ограничением `[path: Representative of
++     Paths]` можно запросить `java.nio.file.Path`. Это given верхнего уровня в пакете
++     `diuretic`, вне какого-либо компаньона, поэтому его нужно импортировать по имени:
++     `import diuretic.javaNioPathRepresentative`. Поскольку он стираемый, его можно призвать
++     только в стираемой позиции, например в контекстном ограничении.

@@ -1,0 +1,571 @@
+orthant 1 language
+
+- ## Randomness
++ ## Случайность
+
+- ### About
++ ### Обзор
+
+- Random values of any type, not only numbers, come from the `Randomizable` [typeclass]. An
+- instance is [derived][derivation] for a case class or an enumeration from its structure, so a
+- whole tree of test data is one call.
++ Случайные значения любого типа, а не только числа, берутся из [класса типов][класс типов]
++ `Randomizable`. Для case-класса или перечисления экземпляр получается [деривацией][деривация]
++ из его структуры, так что целое дерево тестовых данных — это один вызов.
+
+- The *source* of the randomness and the *shape* of the numbers are separate choices, and both
+- are explicit. The source is a [given] in scope, and is either seeded and reproducible, or
+- cryptographically secure. The distribution which a `Double` is drawn from is another given:
+- uniform, Gaussian or gamma.
++ *Источник* случайности и *форма* чисел — отдельные решения, и оба явные. Источник — это
++ [given] в области видимости, и он либо инициализирован сидом и воспроизводим, либо
++ криптографически стоек. Распределение, из которого выбирается `Double`, — это ещё один given:
++ равномерное, гауссово или гамма.
+
+- ### On randomness
++ ### О случайности
+
+- Randomness hides assumptions:
++ Случайность скрывает допущения:
+
+- - `math.random()` answers only one narrow question, a uniform `Double`, and everything else is
+-   assembled by hand.
+- - The seed is global and implicit, so a failing test which depended on chance cannot be
+-   replayed.
+- - Whether the generator is predictable is nowhere visible in the code. That is harmless in a
+-   simulation, and fatal in a generator of tokens.
++ - `math.random()` отвечает лишь на один узкий вопрос, равномерный `Double`, а всё остальное
++   собирается вручную.
++ - Сид глобален и неявен, поэтому упавший тест, который зависел от случая, нельзя
++   воспроизвести.
++ - Предсказуем ли генератор, нигде в коде не видно. В симуляции это безвредно, а в генераторе
++   токенов — фатально.
+
+- Here the concerns are separate, and each has a name:
++ Здесь эти вопросы разделены, и у каждого есть имя:
+
+= Here the concerns are separate, and each has a name:
+=
+- ```tabular
++ ```tabular
+
+- column  Concern
+- column  Stated by
+- row  where randomness is used  a `stochastic` block
+- row  which generator supplies it  an import from `randomization`
+- row  what distribution shapes a number  a `Distribution` given
+- row  how a value of some type is generated  a `Randomizable` instance, usually derived
++ column  Вопрос
++ column  Чем задаётся
++ row  где используется случайность  блоком `stochastic`
++ row  какой генератор её поставляет  импортом из `randomization`
++ row  какое распределение задаёт форму числа  given `Distribution`
++ row  как генерируется значение некоторого типа  экземпляром `Randomizable`, обычно выведенным
+
+= row  how a value of some type is generated  a `Randomizable` instance, usually derived
+- ```
++ ```
+
+- A source of randomness which is a [capability], not a global, is
+- [declarative context](../../philosophy/declarative-context.md): reproducibility follows from the
+- scope, not from discipline.
++ Источник случайности, который является [возможностью][возможность], а не глобальным значением, —
++ это [декларативный контекст](../../philosophy/declarative-context.md): воспроизводимость
++ следует из области видимости, а не из дисциплины.
+
+- Everything comes from the `soundness` package. A seeded source makes every run produce the same
+- values, and the last import lets the samples print their results:
++ Всё берётся из пакета `soundness`. Источник с сидом заставляет каждый запуск давать одни и те
++ же значения, а последний импорт позволяет примерам печатать свои результаты:
+
+= values, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import randomization.seededRandomization
++ import randomization.seededRandomization
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- given seed: Seed = Seed(1L)
++ given seed: Seed = Seed(1L)
+
+= given seed: Seed = Seed(1L)
+- ```
++ ```
+
+- ### Generating values
++ ### Генерация значений
+
+- `stochastic` opens a scope which has a source of randomness. Within it, `arbitrary` produces a
+- value of any type with a `Randomizable` instance. The primitive types have instances, and a
+- case class or an enumeration derives one from its members:
++ `stochastic` открывает область видимости, в которой есть источник случайности. Внутри неё
++ `arbitrary` выдаёт значение любого типа, у которого есть экземпляр `Randomizable`. У
++ примитивных типов есть экземпляры, а case-класс или перечисление выводит свой из своих членов:
+
+= case class or an enumeration derives one from its members:
+=
+- ```scala
++ ```scala
+
+- case class Point(x: Int, y: Int)
++ case class Point(x: Int, y: Int)
+
+= case class Point(x: Int, y: Int)
+- ```
++ ```
+
+= case class Point(x: Int, y: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Point(x: Int, y: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Point(x: Int, y: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= case class Point(x: Int, y: Int)
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- stochastic:
++ stochastic:
+
+-   Out.println(arbitrary[Int]().show)
++   Out.println(arbitrary[Int]().show)
+
+-   Out.println(arbitrary[Point]().inspect)
++   Out.println(arbitrary[Point]().inspect)
+
+=   Out.println(arbitrary[Point]().inspect)
+- ```
++ ```
+
+- The source is the seeded one, so running the code again with the same seed produces the same
+- values. That is what replaying a failing property test requires.
++ Источник здесь с сидом, поэтому повторный запуск кода с тем же сидом даёт те же значения.
++ Именно это нужно, чтобы воспроизвести упавший тест свойств.
+
+- Outside a `stochastic` block there is no source, and no random value can be asked for:
++ Вне блока `stochastic` источника нет, и запросить случайное значение нельзя:
+
+= Outside a `stochastic` block there is no source, and no random value can be asked for:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- arbitrary[Int]()
++ arbitrary[Int]()
+
+= arbitrary[Int]()
+- ```
++ ```
+
+- ### Distributions
++ ### Распределения
+
+- A random `Double` needs a shape, which a `Distribution` in scope supplies. Until the code says
+- which kind of `Double` it means, one cannot be generated, which prevents the classic mistake of
+- treating a uniform draw as though it were normal.
++ Случайному `Double` нужна форма, которую поставляет `Distribution` в области видимости. Пока
++ код не скажет, какой `Double` он имеет в виду, сгенерировать его нельзя, и это предотвращает
++ классическую ошибку — обращаться с равномерной выборкой так, будто она нормальная.
+
+= treating a uniform draw as though it were normal.
+=
+- ```tabular
++ ```tabular
+
+- column  Distribution
+- column  Parameters
+- column  Draws from
+- row  `Gaussian`  `mean`, defaulting to `0.0`, and `std`, to `1.0`  a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution)
+- row  `UniformDistribution`  `start` and `end`  a flat range
+- row  `Gamma`  `shape` and `scale`  a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution)
++ column  Распределение
++ column  Параметры
++ column  Из чего выбирает
++ row  `Gaussian`  `mean`, по умолчанию `0.0`, и `std`, по умолчанию `1.0`  из [нормального распределения](https://en.wikipedia.org/wiki/Normal_distribution)
++ row  `UniformDistribution`  `start` и `end`  из равномерного диапазона
++ row  `Gamma`  `shape` и `scale`  из [гамма-распределения](https://en.wikipedia.org/wiki/Gamma_distribution)
+
+= row  `Gamma`  `shape` and `scale`  a [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution)
+- ```
++ ```
+
+- Common choices are also givens, to import from the package `randomDistributions`:
++ Распространённые варианты есть и в виде given, которые импортируются из пакета
++ `randomDistributions`:
+
+= Common choices are also givens, to import from the package `randomDistributions`:
+=
+- ```tabular
++ ```tabular
+
+- column  Given
++ column  Given
+
+- column  Draws from
+- row  `gaussianDistribution`  the standard normal distribution
+- row  `uniformUnitIntervalDistribution`  a flat range from 0 to 1
+- row  `uniformSymmetricUnitIntervalDistribution`  a flat range from -1 to 1
+- row  `binaryDistribution`  a random `Long`, converted to a `Double`
++ column  Из чего выбирает
++ row  `gaussianDistribution`  из стандартного нормального распределения
++ row  `uniformUnitIntervalDistribution`  из равномерного диапазона от 0 до 1
++ row  `uniformSymmetricUnitIntervalDistribution`  из равномерного диапазона от -1 до 1
++ row  `binaryDistribution`  случайный `Long`, преобразованный в `Double`
+
+= row  `binaryDistribution`  a random `Long`, converted to a `Double`
+- ```
++ ```
+
+- Ten thousand draws from a Gaussian with a standard deviation of 2 have a mean close to 0:
++ Десять тысяч выборок из гауссова распределения со стандартным отклонением 2 имеют среднее,
++ близкое к 0:
+
+= Ten thousand draws from a Gaussian with a standard deviation of 2 have a mean close to 0:
+=
+- ```scala
++ ```scala
+
+- val draws = stochastic:
++ val draws = stochastic:
+
+-   given distribution: Distribution = Gaussian(0.0, 2.0)
++   given distribution: Distribution = Gaussian(0.0, 2.0)
+
+-   List.fill(10000)(arbitrary[Double]())
++   List.fill(10000)(arbitrary[Double]())
+
+=   List.fill(10000)(arbitrary[Double]())
+- ```
++ ```
+
+=   List.fill(10000)(arbitrary[Double]())
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   List.fill(10000)(arbitrary[Double]())
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   List.fill(10000)(arbitrary[Double]())
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((draws.fold(0.0)(_ + _)/10000).inspect)
++ Out.println((draws.fold(0.0)(_ + _)/10000).inspect)
+
+= Out.println((draws.fold(0.0)(_ + _)/10000).inspect)
+- ```
++ ```
+
+- [Mathematics](mathematics.md) has the statistics to describe such a sample.
++ В [математике](mathematics.md) есть статистика, чтобы описать такую выборку.
+
+- ### Sources
++ ### Источники
+
+- The generator behind a scope is chosen by an import from the package `randomization`. The
+- secure generators draw from the JDK's
+- [cryptographically secure](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator)
+- source, for values which an adversary must not predict:
++ Генератор, стоящий за областью видимости, выбирается импортом из пакета `randomization`.
++ Стойкие генераторы берут значения из
++ [криптографически стойкого](https://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator)
++ источника JDK — для значений, которые противник не должен предсказать:
+
+= source, for values which an adversary must not predict:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  Generator
+- column  Reproducible
+- row  `seededRandomization`  ordinary, from the `Seed` in scope  yes
+- row  `unseededRandomization`  ordinary  no, it varies run to run
+- row  `secureUnseededRandomization`  secure  no
+- row  `stronglySecureRandomization`  the platform's strongest secure source  no
++ column  Импорт
++ column  Генератор
++ column  Воспроизводим
++ row  `seededRandomization`  обычный, с `Seed` из области видимости  да
++ row  `unseededRandomization`  обычный  нет, меняется от запуска к запуску
++ row  `secureUnseededRandomization`  стойкий  нет
++ row  `stronglySecureRandomization`  самый стойкий источник платформы  нет
+
+- row
++ row
+
+-   cell  `secureSeededRandomization`
++   cell  `secureSeededRandomization`
+
+-   cell  secure, seeded from the `Seed` in scope
++   cell  стойкий, инициализированный `Seed` из области видимости
+
+-   cell
++   cell
+
+=   cell
+- ```
++ ```
+
+- Simulation and the generation of secrets therefore cannot be confused: the difference is
+- written at the import. [Cryptography](cryptography.md) generates keys from the secure sources.
++ Поэтому симуляцию и генерацию секретов невозможно спутать: разница записана в импорте.
++ [Криптография](cryptography.md) генерирует ключи из стойких источников.
+
+- ### Collections and custom types
++ ### Коллекции и собственные типы
+
+- A random collection needs a size, which is chosen by a `Random.Size` given.
+- `randomSizes.uniformSizeUpto100` bounds it at a hundred elements.
++ Случайной коллекции нужен размер, который выбирается given `Random.Size`.
++ `randomSizes.uniformSizeUpto100` ограничивает её сотней элементов.
+
+- A type whose values need more care than generating each field defines an instance of its own,
+- or maps an existing one:
++ Тип, значения которого требуют большей заботы, чем генерация каждого поля, определяет
++ собственный экземпляр или отображает существующий:
+
+= or maps an existing one:
+=
+- ```scala
++ ```scala
+
+- import randomDistributions.uniformUnitIntervalDistribution
++ import randomDistributions.uniformUnitIntervalDistribution
+
+- case class Latitude(degrees: Double)
++ case class Latitude(degrees: Double)
+
+- given latitudeRandomizable: (Latitude is Randomizable) =
++ given latitudeRandomizable: (Latitude is Randomizable) =
+
+-   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
++   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+
+=   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+- ```
++ ```
+
+=   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+=   summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- stochastic:
++ stochastic:
+
+-   Out.println(arbitrary[Latitude]().inspect)
++   Out.println(arbitrary[Latitude]().inspect)
+
+=   Out.println(arbitrary[Latitude]().inspect)
+- ```
++ ```
+
+- Where generating each field *is* right, the instance is derived from the type. A case class of
+- randomizable fields is randomizable, and a sealed hierarchy picks among its variants. That is
+- what property-based [testing](testing.md) needs, to generate values of an arbitrary type.
++ Там, где генерация каждого поля *действительно* правильна, экземпляр выводится из типа.
++ Case-класс из полей, допускающих случайную генерацию, сам её допускает, а запечатанная
++ иерархия выбирает среди своих вариантов. Именно это нужно [тестированию](testing.md) на основе
++ свойств, чтобы генерировать значения произвольного типа.
+
+- ### Reproducing a run
++ ### Воспроизведение запуска
+
+- A failing randomized test is worth nothing if it cannot be run again. Under
+- `seededRandomization`, the whole scope is a function of its `Seed`. Recording the seed of a
+- failing run, and supplying it again, reproduces exactly the same values. That includes the
+- sizes of generated collections, which are drawn from the same generator:
++ Упавший рандомизированный тест ничего не стоит, если его нельзя запустить снова. При
++ `seededRandomization` вся область видимости — функция её `Seed`. Если записать сид упавшего
++ запуска и передать его снова, получатся в точности те же значения. Это касается и размеров
++ сгенерированных коллекций, которые выбираются из того же генератора:
+
+= sizes of generated collections, which are drawn from the same generator:
+=
+- ```scala
++ ```scala
+
+- import randomSizes.uniformSizeUpto100
++ import randomSizes.uniformSizeUpto100
+
+- def sample(): List[Int] =
++ def sample(): List[Int] =
+
+-   given seed: Seed = Seed(42L)
++   given seed: Seed = Seed(42L)
+
+-   stochastic:
++   stochastic:
+
+-     arbitrary[List[Int]]().excerpt(0, 3)
++     arbitrary[List[Int]]().excerpt(0, 3)
+
+=     arbitrary[List[Int]]().excerpt(0, 3)
+- ```
++ ```
+
+=     arbitrary[List[Int]]().excerpt(0, 3)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=     arbitrary[List[Int]]().excerpt(0, 3)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=     arbitrary[List[Int]]().excerpt(0, 3)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ##
+- Out.println(sample().inspect)
++ Out.println(sample().inspect)
+
+= Out.println(sample().inspect)
+- Out.println(sample().inspect)
++ Out.println(sample().inspect)
+
+= Out.println(sample().inspect)
+- ```
++ ```
+
+- Nesting is deterministic too. A scope's generator is derived from that of the scope enclosing
+- it, so restoring the outer seed restores the inner sequence.
++ Вложенность тоже детерминирована. Генератор области видимости выводится из генератора
++ объемлющей её области, поэтому восстановление внешнего сида восстанавливает внутреннюю
++ последовательность.
+
+- What is determined is the *sequence of draws*, and that is only as reproducible as the code
+- which makes them. Single-threaded code draws in a fixed order, and reproduces exactly.
+- [Concurrent](concurrency.md) code which draws from one scope does not. Its threads interleave
+- differently on each run, so the same seed hands different values to different threads. Where a
+- concurrent computation must be reproducible, each strand needs a scope of its own, seeded
+- deterministically.
++ Определена именно *последовательность выборок*, и она воспроизводима лишь настолько, насколько
++ воспроизводим код, который их делает. Однопоточный код делает выборки в фиксированном порядке и
++ воспроизводится в точности. [Конкурентный](concurrency.md) код, который делает выборки из одной
++ области видимости, — нет. Его потоки выполнения чередуются по-разному при каждом запуске, так
++ что один и тот же сид раздаёт разные значения разным потокам выполнения. Там, где конкурентное
++ вычисление должно быть воспроизводимым, каждой пряди нужна собственная область видимости,
++ детерминированно инициализированная сидом.
+
+- ### Shuffling and coin-tosses
++ ### Перемешивание и подбрасывание монеты
+
+- A `Random` in scope also shuffles a sequence, and answers a fair coin-toss. These are small
+- conveniences which otherwise get written by hand, badly:
++ `Random` в области видимости также перемешивает последовательность и отвечает на честное
++ подбрасывание монеты. Это небольшие удобства, которые иначе пишутся вручную, и плохо:
+
+= conveniences which otherwise get written by hand, badly:
+=
+- ```scala fuel
++ ```scala fuel
+
+= conveniences which otherwise get written by hand, badly:
+=
+= ```scala fuel
+- run
++ run
+
+= conveniences which otherwise get written by hand, badly:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- stochastic: (random: Random) ?=>
++ stochastic: (random: Random) ?=>
+
+-   Out.println(random.shuffle(List(1, 2, 3, 4, 5)).inspect)
++   Out.println(random.shuffle(List(1, 2, 3, 4, 5)).inspect)
+
+-   Out.println(toss().inspect)
++   Out.println(toss().inspect)
+
+=   Out.println(toss().inspect)
+- ```
++ ```
+
+- ### Related
++ ### Связанное
+
+- - [UUIDs](uuid.md) and [label placement](label-placement.md) draw from a seeded source of randomness.
++ - [UUID](uuid.md) и [размещение меток](label-placement.md) берут значения из источника
++   случайности с сидом.

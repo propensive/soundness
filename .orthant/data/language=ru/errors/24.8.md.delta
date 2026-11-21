@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.24.8` — Bad pattern
++ # `↯/s.24.8` — Неверный образец
+
+- Raised by Contingency's pattern-analysis macro for a pattern it
+- cannot interpret at all.
++ Порождается макросом анализа образцов из Contingency для образца, который
++ он вообще не может интерпретировать.
+
+- ## Cause
++ ## Причина
+
+- The catch-all branch of the pattern walker. Triggered by malformed
+- or unsupported patterns that did not match any earlier case.
++ Это ветвь по умолчанию в обходе образцов. Срабатывает на некорректных
++ или неподдерживаемых образцах, которые не совпали ни с одним предыдущим кейсом.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.24.8] bad pattern
++ [↯/s.24.8] bad pattern
+
+= [↯/s.24.8] bad pattern
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Simplify the pattern. If the pattern is plausible, please file
+- an issue.
++ Упростите образец. Если образец выглядит разумным, пожалуйста, создайте
++ issue.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Исходный код: `lib/contingency/src/core/contingency.internal.scala`

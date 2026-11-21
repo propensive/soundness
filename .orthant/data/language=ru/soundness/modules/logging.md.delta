@@ -1,0 +1,758 @@
+orthant 1 language
+
+- ## Logging
++ ## Журналирование
+
+- ### About
++ ### Обзор
+
+- Logging is typed. A method which logs says so in its return type, with the infix type
+- `logs`, and emits a value of a typed event, not a string. Instead of returning `Long`, it
+- returns `Long logs Backup.Event`.
++ Журналирование типизировано. Метод, который пишет в журнал, сообщает об этом в своём
++ возвращаемом типе с помощью инфиксного типа `logs` и испускает значение типизированного
++ события, а не строку. Вместо `Long` он возвращает `Long logs Backup.Event`.
+
+- A logger which is placed in the caller's scope receives those events, and writes them
+- somewhere: a terminal, a file, or the system log. With no logger in scope, logging is
+- silent, and costs nothing, so declaring that a method logs imposes no obligation on the code
+- which calls it. A `logs` clause is an
+- [honest signature](../../philosophy/honest-signatures.md): it states what the method actually
+- emits, so a caller knows what there is to route.
++ Логгер, помещённый в область видимости вызывающей стороны, получает эти события и куда-то их
++ записывает: в терминал, в файл или в системный журнал. Без логгера в области видимости
++ журналирование молчит и ничего не стоит, поэтому объявление о том, что метод пишет в журнал, не
++ налагает никаких обязательств на вызывающий его код. Клауза `logs` — это
++ [честная сигнатура](../../philosophy/honest-signatures.md): она утверждает, что метод
++ действительно испускает, поэтому вызывающая сторона знает, что именно можно направлять.
+
+- A logger is an ordinary [contextual value]. Several can be in scope at once, and every event
+- goes to each of them. Each logger has its own threshold of severity, its own format and its
+- own destination. The decision of where logs go, and in what detail, belongs to the
+- application, not to the libraries which it uses. Choosing that by what is in scope is
+- [declarative context](../../philosophy/declarative-context.md).
++ Логгер — обычное [контекстное значение]. В области видимости их может быть несколько
++ одновременно, и каждое событие идёт в каждый из них. У каждого логгера свой порог
++ серьёзности, свой формат и своё место назначения. Решение о том, куда идут журналы и с какой
++ подробностью, принадлежит приложению, а не библиотекам, которые оно использует. Выбор этого
++ через то, что находится в области видимости, — это
++ [декларативный контекст](../../philosophy/declarative-context.md).
+
+- ### On logging
++ ### О журналировании
+
+- Most logging is typed as strings, and is always on. A log statement formats its message
+- eagerly, whether or not anything will read it. The cost of building the string is paid even
+- when the level is disabled, so careful code guards every statement with a check of the
+- level. The message itself is an opaque string, so whatever receives it cannot reformat it,
+- filter on its contents, or redact a field which it did not know was there.
++ Большая часть журналирования типизирована строками и всегда включена. Инструкция журналирования
++ форматирует своё сообщение энергично, независимо от того, прочтёт ли его кто-нибудь. Цена
++ построения строки платится, даже когда уровень отключён, поэтому аккуратный код охраняет каждую
++ инструкцию проверкой уровня. Само сообщение — непрозрачная строка, поэтому получатель не может ни
++ переформатировать её, ни фильтровать по её содержимому, ни скрыть поле, о существовании которого
++ он не знал.
+
+- Here the three concerns are separate:
++ Здесь три задачи разделены:
+
+- - A method states *that* it logs, and *what* it logs, in its type.
+- - The event which it emits has typed fields, not formatted text.
+- - *Where* the event goes, and *how* it is written, is decided by the loggers in scope.
++ - Метод заявляет в своём типе, *что* он пишет в журнал и *что именно* он в него пишет.
++ - Испускаемое им событие имеет типизированные поля, а не отформатированный текст.
++ - *Куда* идёт событие и *как* оно записывается, решают логгеры в области видимости.
+
+- The argument to a log call is passed by name, and is evaluated only if some logger will
+- record it. A disabled statement evaluates nothing, so log calls can be written freely,
+- without guards. When no logger is in scope at all, the machinery compiles away to nothing.
++ Аргумент вызова журналирования передаётся по имени и вычисляется, только если какой-нибудь
++ логгер его запишет. Отключённая инструкция ничего не вычисляет, поэтому вызовы журналирования
++ можно писать свободно, без охранных проверок. Когда в области видимости нет вообще ни одного
++ логгера, весь механизм при компиляции исчезает.
+
+- Everything comes from the `soundness` package. A program which logs also needs a format,
+- somewhere to write, and the [concurrency](concurrency.md) context which a logger writes
+- under:
++ Всё берётся из пакета `soundness`. Программе, которая пишет журнал, также нужны формат, место
++ для записи и контекст [конкурентности](concurrency.md), в котором работает логгер:
+
+= under:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import logFormats.ansiTimestampedLogFormat
++ import logFormats.ansiTimestampedLogFormat
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import termcapDefinitions.xterm256Termcap
++ import termcapDefinitions.xterm256Termcap
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import writables.outTeletypeWritable
++ import writables.outTeletypeWritable
+
+- given palette: LogPalette = new Palette:
++ given palette: LogPalette = new Palette:
+
+-   type Form = Srgb
++   type Form = Srgb
+
+-   def background: Color in Srgb  = WebColors.Black
++   def background: Color in Srgb  = WebColors.Black
+
+-   def foreground: Color in Srgb  = WebColors.White
++   def foreground: Color in Srgb  = WebColors.White
+
+-   def error: Color in Srgb       = WebColors.Red
++   def error: Color in Srgb       = WebColors.Red
+
+-   def warning: Color in Srgb     = WebColors.Orange
++   def warning: Color in Srgb     = WebColors.Orange
+
+-   def informative: Color in Srgb = WebColors.SteelBlue
++   def informative: Color in Srgb = WebColors.SteelBlue
+
+-   def subdued: Color in Srgb     = WebColors.DimGray
++   def subdued: Color in Srgb     = WebColors.DimGray
+
+=   def subdued: Color in Srgb     = WebColors.DimGray
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Import or given
+- column  Decides
+- row  `logFormats.ansiTimestampedLogFormat`  how an event is written: here, with color, for a terminal
+- row  the `LogPalette`  the colors which that format uses
+- row  `writables.outTeletypeWritable`  that standard output can be written to as styled text
+- row  `stdios`, `termcapDefinitions`  where standard output goes, and what the terminal can display
+- row  `threads`, `probates`  how the logger's background task runs
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception
++ column  Импорт или given
++ column  Определяет
++ row  `logFormats.ansiTimestampedLogFormat`  как записывается событие: здесь — в цвете, для терминала
++ row  `LogPalette`  цвета, которые использует этот формат
++ row  `writables.outTeletypeWritable`  что в стандартный вывод можно писать стилизованный текст
++ row  `stdios`, `termcapDefinitions`  куда идёт стандартный вывод и что может отображать терминал
++ row  `threads`, `probates`  как выполняется фоновая задача логгера
++ row  `strategies.throwUnsafely`  что ошибка выбрасывается как исключение
+
+= row  `strategies.throwUnsafely`  that an error is thrown as an exception
+- ```
++ ```
+
+- ### Setting up a logger
++ ### Настройка логгера
+
+- A `Logger` writes events to a destination. Placing one in scope, as a [given], makes it the
+- destination for everything which is logged within that scope. Its two type parameters say
+- which events it accepts, with `Any` for all of them, and the form in which they are written.
+- A logger which writes to standard output is enough to see log output:
++ `Logger` записывает события в место назначения. Если поместить его в область видимости как
++ [given], он становится местом назначения для всего, что журналируется в этой области
++ видимости. Два его параметра типа задают, какие события он принимает (`Any` — все), и форму, в
++ которой они записываются. Чтобы увидеть вывод журнала, достаточно логгера, пишущего в
++ стандартный вывод:
+
+= A logger which writes to standard output is enough to see log output:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A logger which writes to standard output is enough to see log output:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A logger which writes to standard output is enough to see log output:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= A logger which writes to standard output is enough to see log output:
+=
+= ```scala fuel
+= typecheck
+= ##
+- supervise:
++ supervise:
+
+= A logger which writes to standard output is enough to see log output:
+=
+= ```scala fuel
+= typecheck
+= ##
+= supervise:
+-   given logger: Logger[Any, Message] = Logger(Out)
++   given logger: Logger[Any, Message] = Logger(Out)
+
+-   Log.info(m"the logger is in scope")
++   Log.info(m"the logger is in scope")
+
+=   Log.info(m"the logger is in scope")
+- ```
++ ```
+
+- The message is written to standard output, with a timestamp.
++ Сообщение записывается в стандартный вывод с меткой времени.
+
+- Narrowing the first parameter filters by kind. A `Logger[Http.Event, Message]` receives HTTP
+- events, and nothing else, so the events of one library can be routed, or silenced,
+- independently of the rest.
++ Сужение первого параметра фильтрует по виду. `Logger[Http.Event, Message]` получает события
++ HTTP и ничего больше, поэтому события одной библиотеки можно направлять или заглушать
++ независимо от остальных.
+
+- `Logger` runs its writes on a background thread, so it needs the concurrency context which
+- `supervise` provides. The format in scope decides how an event is written. Each format is
+- imported from the package `logFormats`:
++ `Logger` выполняет записи в фоновом потоке выполнения, поэтому ему нужен контекст
++ конкурентности, который предоставляет `supervise`. Формат в области видимости определяет, как
++ записывается событие. Каждый формат импортируется из пакета `logFormats`:
+
+= imported from the package `logFormats`:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Renders
+- column  For
+- row  `ansiTimestampedLogFormat`  a dimmed timestamp and the level on a colored ground  a terminal
+- row  `timestampedLogFormat`  the timestamp and level as text  a plain-text destination, such as a file
+- row  `untimestampedLogFormat`  the level as text, with no timestamp  a plain-text destination
++ column  Формат
++ column  Отображает
++ column  Для
++ row  `ansiTimestampedLogFormat`  приглушённую метку времени и уровень на цветном фоне  терминала
++ row  `timestampedLogFormat`  метку времени и уровень текстом  места назначения с простым текстом, например файла
++ row  `untimestampedLogFormat`  уровень текстом, без метки времени  места назначения с простым текстом
+
+= row  `untimestampedLogFormat`  the level as text, with no timestamp  a plain-text destination
+- ```
++ ```
+
+- A threshold drops everything below a chosen level:
++ Порог отбрасывает всё, что ниже выбранного уровня:
+
+= A threshold drops everything below a chosen level:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A threshold drops everything below a chosen level:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A threshold drops everything below a chosen level:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= A threshold drops everything below a chosen level:
+=
+= ```scala fuel
+= typecheck
+= ##
+- supervise:
++ supervise:
+
+-   given logger: Logger[Any, Message] = Logger(Out, level = Log.Level.Warn)
++   given logger: Logger[Any, Message] = Logger(Out, level = Log.Level.Warn)
+
+-   Log.info(m"not written")
++   Log.info(m"not written")
+
+-   Log.warn(m"written")
++   Log.warn(m"written")
+
+=   Log.warn(m"written")
+- ```
++ ```
+
+- ### Logging a message
++ ### Журналирование сообщения
+
+- The simplest thing to log is a message, written with the
+- [`m"…"` interpolator](errors.md#defining-an-error). That suits the code of an application,
+- where the author controls both the logging and the reading. A library should instead define
+- a dedicated [event type](#event-types), so that its events stay structured, and can be
+- filtered. Four methods log a message, each at a level:
++ Проще всего записать в журнал сообщение, написанное с помощью
++ [интерполятора `m"…"`](errors.md#defining-an-error). Это подходит для кода приложения, где
++ автор контролирует и журналирование, и чтение. Библиотеке же следует определить отдельный
++ [тип события](#event-types), чтобы её события оставались структурированными и их можно было
++ фильтровать. Четыре метода записывают сообщение, каждый на своём уровне:
+
+= filtered. Four methods log a message, each at a level:
+=
+- ```scala
++ ```scala
+
+- def report(remote: Text, path: Text): Unit =
++ def report(remote: Text, path: Text): Unit =
+
+-   Log.fine(m"starting...")
++   Log.fine(m"starting...")
+
+-   Log.info(m"connected to $remote")
++   Log.info(m"connected to $remote")
+
+-   Log.warn(m"retrying after timeout")
++   Log.warn(m"retrying after timeout")
+
+-   Log.fail(m"could not open $path")
++   Log.fail(m"could not open $path")
+
+=   Log.fail(m"could not open $path")
+- ```
++ ```
+
+- Without a logger in scope, `report` compiles, and logs nothing. A message is `Loggable` by
+- default, so a method which logs only messages needs no declaration.
++ Без логгера в области видимости `report` компилируется и ничего не записывает. Сообщение по
++ умолчанию является `Loggable`, поэтому методу, записывающему только сообщения, объявление не
++ нужно.
+
+- ### Levels
++ ### Уровни
+
+- A level reflects frequency and severity together. `Fine` is normally switched off, so it can
+- be verbose. `Fail` is used sparingly.
++ Уровень отражает одновременно частоту и серьёзность. `Fine` обычно выключен, поэтому он может
++ быть многословным. `Fail` используется скупо.
+
+= be verbose. `Fail` is used sparingly.
+=
+- ```tabular
++ ```tabular
+
+- column  Level
+- column  Method
+- column  For
+- column  Such as
+- row  `Fine`  `Log.fine`  high-frequency, per-unit detail useful only while debugging  each frame, each packet, each file opened
+- row  `Info`  `Log.info`  one line per significant operation or lifecycle milestone  a connection established, a server now listening, a download finished
+- row  `Warn`  `Log.warn`  a recoverable or unexpected-but-handled condition  a forced kill, a connection reset, a fallback taken
+- row  `Fail`  `Log.fail`  an operation that failed unrecoverably, emitted alongside the error being raised
++ column  Уровень
++ column  Метод
++ column  Для
++ column  Например
++ row  `Fine`  `Log.fine`  частых подробностей по каждой единице, полезных только при отладке  каждый кадр, каждый пакет, каждый открытый файл
++ row  `Info`  `Log.info`  одной строки на значимую операцию или веху жизненного цикла  установлено соединение, сервер начал слушать, загрузка завершена
++ row  `Warn`  `Log.warn`  восстановимого или неожиданного, но обработанного состояния  принудительное завершение, сброс соединения, использован запасной вариант
++ row  `Fail`  `Log.fail`  операции, завершившейся неудачей без возможности восстановления; испускается вместе с порождаемой ошибкой
+
+= row  `Fail`  `Log.fail`  an operation that failed unrecoverably, emitted alongside the error being raised
+- ```
++ ```
+
+- ### Event types
++ ### Типы событий
+
+- An event is an [enumeration] whose cases hold the relevant values as typed fields. It is
+- paired with a `Communicable` instance in its companion, which maps each case to a message.
+- Keeping the values typed, instead of formatting them in advance, lets each logger write them
+- in its own way:
++ Событие — это [перечисление], кейсы которого хранят нужные значения в виде типизированных
++ полей. В паре с ним в компаньоне находится экземпляр `Communicable`, отображающий каждый кейс в
++ сообщение. Если сохранять значения типизированными, а не форматировать их заранее, каждый логгер
++ сможет записать их по-своему:
+
+= in its own way:
+=
+- ```scala
++ ```scala
+
+- object Backup:
++ object Backup:
+
+-   enum Event:
++   enum Event:
+
+-     case Started(source: Text)
++     case Started(source: Text)
+
+-     case Copied(source: Text, bytes: Long)
++     case Copied(source: Text, bytes: Long)
+
+-     case Failed(source: Text)
++     case Failed(source: Text)
+
+-   object Event:
++   object Event:
+
+-     given communicable: (Event is Communicable) =
++     given communicable: (Event is Communicable) =
+
+-       case Started(source)       => m"backing up $source"
++       case Started(source)       => m"backing up $source"
+
+-       case Copied(source, bytes) => m"copied $source ($bytes bytes)"
++       case Copied(source, bytes) => m"copied $source ($bytes bytes)"
+
+-       case Failed(source)        => m"could not back up $source"
++       case Failed(source)        => m"could not back up $source"
+
+=       case Failed(source)        => m"could not back up $source"
+- ```
++ ```
+
+- ### Declaring that a method logs
++ ### Объявление того, что метод пишет в журнал
+
+- A method opts into logging by naming its event type in its return type, with `logs`. It then
+- logs the event by value, at the point where the side effect happens:
++ Метод соглашается на журналирование, называя тип своего события в возвращаемом типе с помощью
++ `logs`. Затем он записывает событие по значению в той точке, где происходит побочный эффект:
+
+= logs the event by value, at the point where the side effect happens:
+=
+- ```scala
++ ```scala
+
+- def backup(source: Text): Long logs Backup.Event =
++ def backup(source: Text): Long logs Backup.Event =
+
+-   Log.info(Backup.Event.Started(source))
++   Log.info(Backup.Event.Started(source))
+
+-   val bytes = source.length.toLong
++   val bytes = source.length.toLong
+
+-   Log.info(Backup.Event.Copied(source, bytes))
++   Log.info(Backup.Event.Copied(source, bytes))
+
+-   bytes
++   bytes
+
+=   bytes
+- ```
++ ```
+
+- The requirement propagates. A method which calls `backup` must itself admit `Backup.Event`,
+- either by declaring it, or by having a logger for it in scope. A method which logs more than
+- one kind of event chains the declarations, as in `Unit logs Http.Event logs Exec.Event`.
++ Требование распространяется. Метод, вызывающий `backup`, должен сам допускать `Backup.Event` —
++ либо объявив его, либо имея для него логгер в области видимости. Метод, который записывает
++ больше одного вида событий, сцепляет объявления, как в `Unit logs Http.Event logs Exec.Event`.
+
+- A library which builds on another's work reuses its events, and does not duplicate them.
+- *Transcribing* one event into a case of another passes the wrapped event through unchanged.
+- So a library which schedules backups reuses the backup events:
++ Библиотека, построенная на работе другой, переиспользует её события, а не дублирует их.
++ *Транскрипция* одного события в кейс другого пропускает обёрнутое событие без изменений. Так
++ библиотека, планирующая резервные копирования, переиспользует события резервного копирования:
+
+= So a library which schedules backups reuses the backup events:
+=
+- ```scala
++ ```scala
+
+- enum Schedule:
++ enum Schedule:
+
+-   case Ran(event: Backup.Event)
++   case Ran(event: Backup.Event)
+
+-   case Skipped(reason: Text)
++   case Skipped(reason: Text)
+
+- object Schedule:
++ object Schedule:
+
+-   given communicable: (Schedule is Communicable) =
++   given communicable: (Schedule is Communicable) =
+
+-     case Ran(event)       => m"scheduled: ${event.communicate}"
++     case Ran(event)       => m"scheduled: ${event.communicate}"
+
+-     case Skipped(reason)  => m"skipped: $reason"
++     case Skipped(reason)  => m"skipped: $reason"
+
+- given transcription: (Schedule transcribes Backup.Event) = Schedule.Ran(_)
++ given transcription: (Schedule transcribes Backup.Event) = Schedule.Ran(_)
+
+- def nightly(): Unit logs Schedule =
++ def nightly(): Unit logs Schedule =
+
+-   backup(t"/home")
++   backup(t"/home")
+
+-   Log.info(Schedule.Skipped(t"nothing else to do"))
++   Log.info(Schedule.Skipped(t"nothing else to do"))
+
+=   Log.info(Schedule.Skipped(t"nothing else to do"))
+- ```
++ ```
+
+- With the transcription in scope, the events of `backup` are accepted by the declaration of
+- `nightly`, wrapped as `Schedule.Ran`, and a logger for `Schedule` sees both.
++ С транскрипцией в области видимости события `backup` принимаются объявлением `nightly`,
++ обёрнутые как `Schedule.Ran`, и логгер для `Schedule` видит и те, и другие.
+
+- ### Cost when disabled
++ ### Цена в отключённом состоянии
+
+- The argument to every `Log` method is taken by name, and the level is checked before the
+- argument is evaluated. When no logger accepts an event at its level, which includes the case
+- where no logger is in scope at all, the event is never constructed, and its fields are never
+- evaluated. A disabled log statement therefore costs nothing, and log calls need no guard.
++ Аргумент каждого метода `Log` принимается по имени, а уровень проверяется до вычисления
++ аргумента. Когда ни один логгер не принимает событие на его уровне, включая случай, когда в
++ области видимости нет вообще ни одного логгера, событие никогда не создаётся, а его поля никогда
++ не вычисляются. Поэтому отключённая инструкция журналирования ничего не стоит, и вызовам
++ журналирования не нужны охранные проверки.
+
+- This is why an event should hold its original typed values, and leave formatting to its
+- `Communicable`: the formatting happens only if the event is actually recorded. The exception
+- is a value whose formatting depends on context which is available only where it is logged.
+- That should be formatted there, into the event. The formatting still runs only when the
+- event is logged, because the argument is passed by name.
++ Вот почему событие должно хранить свои исходные типизированные значения, а форматирование
++ оставлять своему `Communicable`: форматирование происходит, только если событие действительно
++ записывается. Исключение — значение, форматирование которого зависит от контекста, доступного
++ только там, где оно журналируется. Такое значение следует отформатировать там же, в событие.
++ Форматирование всё равно выполняется, только когда событие записывается, потому что аргумент
++ передаётся по имени.
+
+- ### Routing to several places
++ ### Направление в несколько мест
+
+- A logger is just a contextual value, so more than one can be in scope, and an event reaches
+- every one. Two loggers, one to a file and one to the terminal, both receive each event, and
+- each applies its own threshold. The file can keep the detail of `Fine`, while the terminal
+- shows only `Warn` and `Fail`.
++ Логгер — всего лишь контекстное значение, поэтому в области видимости их может быть больше
++ одного, и событие доходит до каждого. Два логгера, один в файл и один в терминал, оба получают
++ каждое событие, и каждый применяет свой порог. Файл может хранить подробности уровня `Fine`, а
++ терминал показывать только `Warn` и `Fail`.
+
+- The file is written as text, so its logger imports the text format. That import is nearer,
+- so it takes precedence over the terminal format which was imported above:
++ Файл записывается как текст, поэтому его логгер импортирует текстовый формат. Этот импорт
++ ближе, поэтому он имеет приоритет над терминальным форматом, импортированным выше:
+
+= so it takes precedence over the terminal format which was imported above:
+=
+- ```scala fuel
++ ```scala fuel
+
+= so it takes precedence over the terminal format which was imported above:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= so it takes precedence over the terminal format which was imported above:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- val logFile = temporaryDirectory[Path on Linux] / "logging" / "app.log"
++ val logFile = temporaryDirectory[Path on Linux] / "logging" / "app.log"
+
+- logFile.create[File](CreateFlag.Parents)
++ logFile.create[File](CreateFlag.Parents)
+
+=
+- supervise:
++ supervise:
+
+-   given fileLog: Logger[Any, Message] =
++   given fileLog: Logger[Any, Message] =
+
+-     import logFormats.timestampedLogFormat
++     import logFormats.timestampedLogFormat
+
+-     Logger(logFile, level = Log.Level.Fine)
++     Logger(logFile, level = Log.Level.Fine)
+
+-   given terminalLog: Logger[Any, Message] = Logger(Out, level = Log.Level.Warn)
++   given terminalLog: Logger[Any, Message] = Logger(Out, level = Log.Level.Warn)
+
+-   Log.fine(m"only the file sees this")
++   Log.fine(m"only the file sees this")
+
+-   Log.warn(m"both see this")
++   Log.warn(m"both see this")
+
+=   Log.warn(m"both see this")
+- ```
++ ```
+
+- The first message reaches only the file, and the second reaches both.
+- [Filesystem](filesystem.md) describes the path which the file logger writes to.
++ Первое сообщение доходит только до файла, а второе — до обоих.
++ [Файловая система](filesystem.md) описывает путь, в который пишет файловый логгер.
+
+- ### Silencing
++ ### Заглушение
+
+- A single block can be run with one kind of event suppressed, whatever loggers are in scope,
+- with `mute`:
++ Отдельный блок можно выполнить с подавлением одного вида событий, какие бы логгеры ни были в
++ области видимости, с помощью `mute`:
+
+= with `mute`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= with `mute`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= with `mute`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= with `mute`:
+=
+= ```scala fuel
+= typecheck
+= ##
+- supervise:
++ supervise:
+
+= with `mute`:
+=
+= ```scala fuel
+= typecheck
+= ##
+= supervise:
+-   given logger: Logger[Any, Message] = Logger(Out)
++   given logger: Logger[Any, Message] = Logger(Out)
+
+-   mute[Backup.Event]:
++   mute[Backup.Event]:
+
+-     backup(t"/var")
++     backup(t"/var")
+
+=     backup(t"/var")
+- ```
++ ```
+
+- Importing `logging.silentLogging` suppresses all logging for a whole file, which is useful
+- where a dependency logs, and its output is not wanted. The tutorials for the
+- [HTTP client](http-client.md) and [processes](processes.md) import it for that reason.
++ Импорт `logging.silentLogging` подавляет всё журналирование для целого файла, что полезно там,
++ где журнал пишет зависимость, а её вывод не нужен. Руководства по
++ [HTTP-клиенту](http-client.md) и [процессам](processes.md) импортируют его по этой причине.
+
+- ### Writing good logs
++ ### Как писать хорошие журналы
+
+- Log only side effects which can be observed, and which take time or can fail: operations on
+- the network, the filesystem, processes and external services. Pure work in memory, such as
+- hashing, parsing or arithmetic, produces no log output, however expensive it is.
++ Записывайте только наблюдаемые побочные эффекты, которые занимают время или могут завершиться
++ неудачей: операции с сетью, файловой системой, процессами и внешними сервисами. Чистая работа в
++ памяти, такая как хеширование, разбор или арифметика, не даёт вывода в журнал, как бы дорого она
++ ни стоила.
+
+- A message should be specific:
++ Сообщение должно быть конкретным:
+
+- - Name the resource which it concerns: an address and port, a path, a process id, a URL.
+- - Give quantities when that is cheap: counts of bytes, elapsed milliseconds, status codes.
+- - Never log secrets: credentials, tokens, cookies, key material, or the whole body of a
+-   request or a response. Log a redaction, a size or a short preview instead.
++ - Называйте ресурс, которого оно касается: адрес и порт, путь, идентификатор процесса, URL.
++ - Приводите величины, когда это дёшево: число байтов, прошедшие миллисекунды, коды состояния.
++ - Никогда не записывайте секреты: учётные данные, токены, cookie, ключевой материал или всё тело
++   запроса или ответа. Вместо этого записывайте отметку о скрытии, размер или короткий фрагмент.
+
+- Messages are in lower case, terse, in the present tense, and have no trailing period. They
+- substitute the relevant context:
++ Сообщения пишутся строчными буквами, кратко, в настоящем времени и без точки в конце. В них
++ подставляется нужный контекст:
+
+= substitute the relevant context:
+=
+- ```scala
++ ```scala
+
+- def describe(remote: Text, path: Text, url: Text, size: Long, elapsed: Long): List[Message] = List
++ def describe(remote: Text, path: Text, url: Text, size: Long, elapsed: Long): List[Message] = List
+
+-   ( m"connected to $remote",
++   ( m"connected to $remote",
+
+-     m"opened $path for reading",
++     m"opened $path for reading",
+
+-     m"downloaded $url ($size bytes in ${elapsed}ms)" )
++     m"downloaded $url ($size bytes in ${elapsed}ms)" )
+
+=     m"downloaded $url ($size bytes in ${elapsed}ms)" )
+- ```
++ ```
+
+- A message which says only that something happened, such as `m"a failure occurred"`, is not
+- enough. Name what failed, and include its identifier.
++ Сообщения, которое говорит лишь о том, что что-то произошло, например `m"a failure occurred"`,
++ недостаточно. Назовите, что именно не удалось, и включите его идентификатор.
+
+- ### Related
++ ### Связанное
+
+- - [Errors](errors.md#defining-an-error) describes the messages which events are written as.
+- - [Terminal](terminal.md#styled-text) describes the styled text which a terminal logger
+-   writes.
+- - [Concurrency](concurrency.md) describes `supervise`, which a logger runs under.
+- - [Stack traces](stack-traces.md) presents the trace of an error which is logged.
+- - [HTTP server](http-server.md), [service discovery](service-discovery.md) and [metaprogramming](metaprogramming.md) log their events through the sinks in scope.
++ - [Ошибки](errors.md#defining-an-error) описывает сообщения, в виде которых записываются события.
++ - [Терминал](terminal.md#styled-text) описывает стилизованный текст, который пишет терминальный
++   логгер.
++ - [Конкурентность](concurrency.md) описывает `supervise`, под которым работает логгер.
++ - [Трассировки стека](stack-traces.md) показывает трассировку журналируемой ошибки.
++ - [HTTP-сервер](http-server.md), [обнаружение сервисов](service-discovery.md) и [метапрограммирование](metaprogramming.md) записывают свои события через приёмники в области видимости.

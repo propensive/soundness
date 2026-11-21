@@ -1,0 +1,389 @@
+orthant 1 language
+
+- # The Roadmap
++ # Дорожная карта
+
+- Soundness is being built towards a single destination: the point at which a serious team can
+- adopt it for real applications. Not a version number, and not a ceremony — a set of measurable
+- conditions, listed at the bottom of this page as [the gate](#the-gate). This roadmap describes
+- the route: nine parallel tracks, each with its own end-state, phased across three horizons.
++ Soundness строится в сторону единственной цели: точки, в которой серьёзная команда может взять
++ его для настоящих приложений. Это не номер версии и не церемония, а набор измеримых условий,
++ перечисленных внизу этой страницы как [рубеж](#the-gate). Эта дорожная карта описывает маршрут:
++ девять параллельных направлений, у каждого своё конечное состояние, распределённых по трём
++ горизонтам.
+
+- ## The vision
++ ## Видение
+
+- Everything on this roadmap serves one philosophy, elaborated in the
+- [philosophy](../philosophy/composability.md) pages:
++ Всё на этой дорожной карте служит одной философии, изложенной на страницах
++ [философии](../philosophy/composability.md):
+
+- - **Safety.** It is difficult or impossible to write Soundness code that fails surprisingly at
+-   runtime. Every API is total, or [declares the errors it raises](../philosophy/error-handling.md).
+-   Mutability is permitted only where separation checking proves it safe; capture checking
+-   enforces what signatures promise. Partiality anywhere — including in the Java and Scala
+-   standard libraries beneath us — undermines everything, so partial APIs are replaced, not
+-   tolerated.
+- - **Coherence.** APIs are predictable, clear and generalised. Similar things share one API;
+-   variation is a parameter, not a name. If two things share a name, they are the same thing; if
+-   they have different names, they are not.
+- - **Batteries included.** One platform for CLI applications, web applications (server and
+-   front-end), testing, scientific work and development tooling — built on
+-   [open standards](../tags.md), not proprietary inventions, and modular enough that unused
+-   batteries cost nothing.
+- - **Parity of targets.** JVM, Android, JavaScript and WASM/WASI are all viable targets, no
+-   harder to build for than the JVM.
+- - **A native-feeling world.** Developing, debugging and running Soundness code never feels like
+-   operating an advanced system inside an environment that wasn't designed for it. Java encodings
+-   of values are never visible.
+- - **Learnable, documented, specified.** Every API is documented; every error message is
+-   informative and has a documented page; every novel idea has a specification. Documentation is
+-   written so that both people and AI agents can act on it reliably.
+- - **Migration-first stability.** APIs change whenever a better or safer design exists. Stability
+-   comes not from freezing APIs but from making migration cheap: every breaking change ships with
+-   instructions precise enough for an agent to execute.
+- - **A trusted toolchain.** Building, testing, debugging, exploring and distributing Soundness
+-   code happens through its own tools — `fury`, `fume`, `flame`, `fluence`, the `exegesis` LSP
+-   server, the `vivisection` debugger and the `synesthesia` MCP server — with releases that are
+-   attested, predictable and verifiable, and libraries distributed as LIRA files that are
+-   guaranteed to compose safely. TEL is the configuration language wherever configuration is
+-   needed. The tools that are not modules of this repository — fury, fume, flame, fluence — are
+-   developed in their own repositories; this roadmap tracks only what Soundness must provide for
+-   them. Soundness is built with the Proscala compiler, which is modifiable whenever safety
+-   demands it, under one constraint: published artifacts stay readable from the mainline Scala
+-   compiler.
++ - **Безопасность.** Трудно или невозможно написать код на Soundness, который неожиданно
++   сломается во время выполнения. Каждый API тотален или [объявляет ошибки, которые
++   порождает](../philosophy/error-handling.md). Изменяемость допускается только там, где проверка
++   разделения доказывает её безопасность; проверка захвата обеспечивает то, что обещают сигнатуры.
++   Частичность где угодно — в том числе в стандартных библиотеках Java и Scala под нами — подрывает
++   всё, поэтому частичные API заменяются, а не терпятся.
++ - **Согласованность.** API предсказуемы, ясны и обобщены. Похожие вещи разделяют один API;
++   вариация — это параметр, а не имя. Если у двух вещей одно имя, это одна и та же вещь; если имена
++   разные, то нет.
++ - **Батарейки в комплекте.** Одна платформа для CLI-приложений, веб-приложений (сервера и
++   фронтенда), тестирования, научной работы и инструментов разработки — построенная на
++   [открытых стандартах](../tags.md), а не на проприетарных изобретениях, и достаточно модульная,
++   чтобы неиспользуемые батарейки ничего не стоили.
++ - **Паритет целей.** JVM, Android, JavaScript и WASM/WASI — все жизнеспособные цели, собирать для
++   которых не сложнее, чем для JVM.
++ - **Ощущение родного мира.** Разработка, отладка и запуск кода на Soundness никогда не ощущаются
++   как управление продвинутой системой внутри среды, которая для неё не предназначена. Java-кодировки
++   значений никогда не видны.
++ - **Изучаемость, документированность, специфицированность.** Каждый API документирован; каждое
++   сообщение об ошибке информативно и имеет страницу документации; у каждой новой идеи есть
++   спецификация. Документация пишется так, чтобы и люди, и ИИ-агенты могли надёжно действовать по ней.
++ - **Стабильность через миграцию.** API меняются всякий раз, когда существует лучший или более
++   безопасный дизайн. Стабильность достигается не заморозкой API, а удешевлением миграции: каждое
++   ломающее изменение поставляется с инструкциями, достаточно точными, чтобы их выполнил агент.
++ - **Доверенный тулчейн.** Сборка, тестирование, отладка, исследование и распространение кода на
++   Soundness происходят через его собственные инструменты — `fury`, `fume`, `flame`, `fluence`,
++   LSP-сервер `exegesis`, отладчик `vivisection` и MCP-сервер `synesthesia`, — с выпусками,
++   которые аттестованы, предсказуемы и проверяемы, и библиотеками, распространяемыми в виде файлов
++   LIRA, которые гарантированно безопасно составляются. TEL — язык конфигурации везде, где нужна
++   конфигурация. Инструменты, не являющиеся модулями этого репозитория, — fury, fume, flame,
++   fluence — разрабатываются в собственных репозиториях; эта дорожная карта отслеживает только то,
++   что Soundness должен для них предоставить. Soundness собирается компилятором Proscala, который
++   можно изменять всякий раз, когда этого требует безопасность, с одним ограничением:
++   опубликованные артефакты остаются читаемыми основным компилятором Scala.
+
+- ## How to read this roadmap
++ ## Как читать эту дорожную карту
+
+- Each track lives in its own file and follows the same shape: a short preamble saying why its
+- end-state matters, then a sequence of numbered items. Every item uses one format:
++ Каждое направление находится в своём файле и имеет одинаковую форму: короткая преамбула о том,
++ почему важно его конечное состояние, затем последовательность пронумерованных пунктов. Каждый
++ пункт использует один формат:
+
+=
+- ```
++ ```
+
+- ## core-3: no direct `scala.collection` imports
++ ## core-3: no direct `scala.collection` imports
+
+- Horizon: near → mid
++ Horizon: near → mid
+
+- Needs: core-1
++ Needs: core-1
+
+- Baseline: 219 files (measured 2026-08-01)
++ Baseline: 219 files (measured 2026-08-01)
+
+- One or two sentences of prose.
++ One or two sentences of prose.
+
+- Done when:
++ Done when:
+
+-     git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
++     git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
+
+=     git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
+- ```
++ ```
+
+- The rules that keep this document trustworthy:
++ Правила, сохраняющие этот документ достойным доверия:
+
+- - **Item identifiers are permanent.** They are track-prefixed and sequential, and are never
+-   reused — the same discipline as bolt codes. A completed item keeps its heading, gaining
+-   a `Done:` line naming the closing commit or pull request. The only exception is an item whose
+-   criterion *is* the deletion of an artifact.
+- - **Every criterion is a command or an observable fact.** A `Done when:` block contains a
+-   runnable command with its expected output as a trailing comment, or states a fact about a
+-   file's existence, emptiness, or a CI check's status. Nothing else is admissible. "Mostly
+-   complete" and "substantially done" are not criteria; if it cannot be counted, grepped or
+-   observed, it does not belong here.
+- - **Baselines are dated.** Numbers drift as work proceeds; an agent re-measuring a baseline
+-   should expect drift and report it, not silently trust a stale figure.
+- - **Horizons are not dates.** *Near* is the current working set; *mid* is what the near horizon
+-   unblocks; *long* approaches the track's end-state. Progress is measured by criteria, never by
+-   the calendar.
+- - **Status lives in [`status.tel`](status.tel).** The prose files say what and why;
+-   `status.tel` — one record per item, machine-readable, written in TEL — says where each item
+-   stands. Prose never claims completion; it links.
++ - **Идентификаторы пунктов постоянны.** Они имеют префикс направления, последовательны и никогда
++   не переиспользуются — та же дисциплина, что и для bolt-кодов. Завершённый пункт сохраняет свой
++   заголовок и получает строку `Done:` с указанием закрывающего коммита или pull request.
++   Единственное исключение — пункт, критерий которого *и есть* удаление артефакта.
++ - **Каждый критерий — команда или наблюдаемый факт.** Блок `Done when:` содержит запускаемую
++   команду с ожидаемым выводом в виде завершающего комментария или утверждает факт о
++   существовании файла, его пустоте или состоянии проверки CI. Ничто другое не допускается.
++   «В основном завершено» и «по существу сделано» — не критерии; если это нельзя подсчитать,
++   найти grep или наблюдать, ему здесь не место.
++ - **Исходные уровни датированы.** Числа дрейфуют по мере работы; агент, заново измеряющий
++   исходный уровень, должен ожидать дрейфа и сообщать о нём, а не молча доверять устаревшей цифре.
++ - **Горизонты — не даты.** *Ближний* — текущий рабочий набор; *средний* — то, что разблокирует
++   ближний горизонт; *дальний* приближается к конечному состоянию направления. Прогресс измеряется
++   критериями, а не календарём.
++ - **Состояние хранится в [`status.tel`](status.tel).** Файлы с прозой говорят, что и зачем;
++   `status.tel` — по одной записи на пункт, машиночитаемо, на TEL — говорит, где стоит каждый
++   пункт. Проза никогда не заявляет о завершении; она ссылается.
+
+- ## The tracks
++ ## Направления
+
+- Each track has a file, an item prefix and an end state:
++ У каждого направления есть файл, префикс пунктов и конечное состояние:
+
+= Each track has a file, an item prefix and an end state:
+=
+- ```tabular
++ ```tabular
+
+- column  Track
+- column  Prefix
+- column  End state
+- row  [The standard-library drain](core.md)  `core`  no module reaches the Java or Scala standard libraries except through proscenium's opaque boundary; nothing Java-shaped is visible at development or debug time
+- row  [Capabilities and effects](safety.md)  `safety`  the `caps.unsafe` escape hatches reach zero; capture checking, separation checking and declared errors hold without exemption; the compiler fork is sustainable
+- row  [Platform parity](platforms.md)  `plat`  JavaScript, Native, WASI and Android are no harder to build for than the JVM, with only inherent exclusions, verified in CI; the browser is a first-class application target
+- row  [API coherence](api.md)  `api`  one name means one thing; variations are parameters; the exported surface is deliberate
+- row  [Documentation and learnability](documentation.md)  `doc`  one documentation system, complete coverage, published API docs, and a path from nothing to a working application that an agent can follow
+- row  [The toolchain](tooling.md)  `tool`  flame, fury, fume, fluence, the LSP server, the debugger and the MCP server replace every Maven-era tool, with coverage and benchmarks tracked per commit in git notes
+- row  [Distribution and release](distribution.md)  `dist`  attested, changelogged releases; the migration-instruction convention; LIRA as the sole channel, retiring Maven Central
+- row  [Standards breadth](breadth.md)  `brd`  the remaining standards a production team expects: JOSE, TOML, WebAuthn, QUIC, IMAP
+- row  [Module boundaries](modularity.md)  `mod`  every module serves only its stated purpose; each algorithm has one implementation; hard dependencies become typeclass interfaces; the build is shallower and wider
++ column  Направление
++ column  Префикс
++ column  Конечное состояние
++ row  [Вычерпывание стандартной библиотеки](core.md)  `core`  ни один модуль не обращается к стандартным библиотекам Java или Scala иначе как через непрозрачную границу proscenium; ничто в форме Java не видно во время разработки или отладки
++ row  [Возможности и эффекты](safety.md)  `safety`  лазейки `caps.unsafe` сводятся к нулю; проверка захвата, проверка разделения и объявленные ошибки соблюдаются без исключений; форк компилятора жизнеспособен
++ row  [Паритет платформ](platforms.md)  `plat`  собирать для JavaScript, Native, WASI и Android не сложнее, чем для JVM, только с неотъемлемыми исключениями, проверенными в CI; браузер — полноценная цель для приложений
++ row  [Согласованность API](api.md)  `api`  одно имя означает одну вещь; вариации — параметры; экспортируемая поверхность продумана
++ row  [Документация и изучаемость](documentation.md)  `doc`  одна система документации, полное покрытие, опубликованная документация API и путь от нуля до работающего приложения, по которому может пройти агент
++ row  [Тулчейн](tooling.md)  `tool`  flame, fury, fume, fluence, LSP-сервер, отладчик и MCP-сервер заменяют каждый инструмент эпохи Maven, с покрытием и бенчмарками, отслеживаемыми по коммитам в заметках git
++ row  [Распространение и выпуски](distribution.md)  `dist`  аттестованные выпуски с журналами изменений; соглашение об инструкциях по миграции; LIRA как единственный канал, с отказом от Maven Central
++ row  [Широта стандартов](breadth.md)  `brd`  оставшиеся стандарты, которых ждёт производственная команда: JOSE, TOML, WebAuthn, QUIC, IMAP
++ row  [Границы модулей](modularity.md)  `mod`  каждый модуль служит только заявленной цели; у каждого алгоритма одна реализация; жёсткие зависимости становятся интерфейсами классов типов; сборка становится мельче и шире
+
+= row  [Module boundaries](modularity.md)  `mod`  every module serves only its stated purpose; each algorithm has one implementation; hard dependencies become typeclass interfaces; the build is shallower and wider
+- ```
++ ```
+
+- The browser target is reached through web APIs behind typed facades. The tools built
+- elsewhere appear in the toolchain track only as what Soundness owes them.
++ Цель «браузер» достигается через веб-API за типизированными фасадами. Инструменты, построенные
++ в других местах, появляются в направлении тулчейна лишь как то, что Soundness им должен.
+
+- ## Dependencies
++ ## Зависимости
+
+- An edge `a ← b` means *a cannot be completed before b* (it may be started). An item's `Needs:`
+- line records its hard dependencies, including those within its own track; the list below
+- duplicates only the cross-track edges, because those are the ones requiring coordination. If
+- this list ever grows much beyond a dozen edges, the tracks are wrongly factored, and
+- refactoring them is the fix.
++ Ребро `a ← b` означает, что *a нельзя завершить раньше b* (начать можно). Строка `Needs:` пункта
++ фиксирует его жёсткие зависимости, включая зависимости внутри его собственного направления;
++ список ниже дублирует только рёбра между направлениями, потому что именно они требуют
++ координации. Если этот список когда-нибудь сильно превысит дюжину рёбер, направления разбиты
++ неправильно, и исправление — разбить их заново.
+
+= refactoring them is the fix.
+=
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Needs
+- column  Because
+- row  `api-6`  `dist-2`  surface changes flow through the migration convention once it exists
+- row  `doc-8`  `tool-2`, `tool-4`  the walkthrough uses fume and fury
+- row  `tool-7`  `doc-5`  fluence consumes the API-extraction pipeline
+- row  `dist-4`  `doc-5`  API-derived versioning needs the same extraction
+- row  `dist-5`  `tool-4`  fury must build before it can publish
++ column  Пункт
++ column  Зависит от
++ column  Потому что
++ row  `api-6`  `dist-2`  изменения поверхности проходят через соглашение о миграции, как только оно появится
++ row  `doc-8`  `tool-2`, `tool-4`  пошаговое руководство использует fume и fury
++ row  `tool-7`  `doc-5`  fluence потребляет конвейер извлечения API
++ row  `dist-4`  `doc-5`  версионированию на основе API нужно то же извлечение
++ row  `dist-5`  `tool-4`  fury должен уметь собирать, прежде чем сможет публиковать
+
+= row  `dist-5`  `tool-4`  fury must build before it can publish
+- ```
++ ```
+
+- **External gates** — conditions that gate items but are not under this project's control. They
+- are listed here and never appear as items, because no `Done when:` command of ours can close
+- them.
++ **Внешние шлюзы** — условия, от которых зависят пункты, но которые не подконтрольны этому
++ проекту. Они перечислены здесь и никогда не появляются как пункты, потому что ни одна наша
++ команда `Done when:` не может их закрыть.
+
+= them.
+=
+- ```tabular
++ ```tabular
+
+- column  Condition
+- column  Gates
+- row  WASI's standard interfaces mature far enough to express full HTTP and UDP  `plat-4`
+- row  fury, developed in its own repository, becomes able to build this repository  `tool-4`, and through it `dist-5` and `doc-8`
+- row  LIRA's implementation, now in the `lira` repository (`dist-10`), round-trips and publishes a Soundness release  `dist-3`, `dist-6`, `dist-7`
++ column  Условие
++ column  Шлюз для
++ row  стандартные интерфейсы WASI созревают настолько, чтобы выражать полный HTTP и UDP  `plat-4`
++ row  fury, разрабатываемый в собственном репозитории, становится способен собрать этот репозиторий  `tool-4`, а через него `dist-5` и `doc-8`
++ row  реализация LIRA, теперь в репозитории `lira` (`dist-10`), проходит круговой путь и публикует выпуск Soundness  `dist-3`, `dist-6`, `dist-7`
+
+= row  LIRA's implementation, now in the `lira` repository (`dist-10`), round-trips and publishes a Soundness release  `dist-3`, `dist-6`, `dist-7`
+- ```
++ ```
+
+- The progress of fury and of LIRA is not tracked here; only what Soundness owes them is,
+- including the Soundness side of fury's bootstrap.
++ Прогресс fury и LIRA здесь не отслеживается; отслеживается только то, что им должен Soundness,
++ включая сторону Soundness в начальной загрузке fury.
+
+- The compiler is deliberately *not* on this list: Soundness is built with Proscala, and the
+- freedom to modify it — for capture-checking fixes, for the Wasm backend, for whatever safety
+- demands — is assumed throughout this roadmap, bounded only by the requirement that published
+- artifacts remain readable from mainline Scala (`safety-5`).
++ Компилятор намеренно *не* входит в этот список: Soundness собирается Proscala, и свобода
++ изменять его — для исправлений проверки захвата, для Wasm-бэкенда, для всего, чего требует
++ безопасность, — предполагается на всём протяжении этой дорожной карты и ограничена лишь
++ требованием, чтобы опубликованные артефакты оставались читаемыми основной Scala (`safety-5`).
+
+- ## The gate
++ ## Рубеж
+
+- Production-readiness is the conjunction of the following criteria. The gate defines nothing
+- new: each entry cites a track item, and the item's `Done when:` command is the authority.
++ Готовность к производству — это конъюнкция следующих критериев. Рубеж не определяет ничего
++ нового: каждая запись ссылается на пункт направления, и авторитетом служит команда `Done when:`
++ этого пункта.
+
+= new: each entry cites a track item, and the item's `Done when:` command is the authority.
+=
+- ```tabular
++ ```tabular
+
+- column  Criterion
+- column  Items
+- row  `proscenium.compat` is empty  `core-2`
+- row  No file outside proscenium imports `scala.collection`  `core-3`
+- row  No `caps.unsafe` escape hatch remains in `lib/`  `safety-4`
+- row  The platform manifest is enforced in CI, its exclusions carry reasons, and an Android APK is built and signed in CI  `plat-1`, `plat-2`, `plat-3`
+- row  `doc/api-reduction-candidates.md` no longer exists  `api-5`
+- row  Every error type has a bolt code and a documentation page, checked in CI  `doc-1`
+- row  Every published module is covered by a `doc/en/modules/` topic  `doc-4`
+- row  API documentation is generated and published for every component  `doc-5`
+- row  `fury build` builds Soundness itself, attestation-equal to the Mill build  `tool-4`
+- row  fume runs the full test suite, and no suite is disabled  `tool-2`
+- row  A scripted LSP editor session passes in CI  `tool-3`
+- row  Every breaking change in the last ten consecutive releases shipped with agent-executable migration instructions  `dist-2`
+- row  Every release is published as attested LIRA files  `dist-7`
+- row  JOSE, TOML and WebAuthn are shipped  `brd-1`, `brd-2`, `brd-3`
+- row  An agent, following only the documentation in `doc/`, takes a new project from nothing to a tested, deployed JVM-and-JavaScript web application using only ecosystem tools, and this walkthrough is executed and recorded in CI  `doc-8`
++ column  Критерий
++ column  Пункты
++ row  `proscenium.compat` пуст  `core-2`
++ row  Ни один файл вне proscenium не импортирует `scala.collection`  `core-3`
++ row  В `lib/` не осталось ни одной лазейки `caps.unsafe`  `safety-4`
++ row  Манифест платформ соблюдается в CI, его исключения снабжены причинами, а APK для Android собирается и подписывается в CI  `plat-1`, `plat-2`, `plat-3`
++ row  `doc/api-reduction-candidates.md` больше не существует  `api-5`
++ row  У каждого типа ошибки есть bolt-код и страница документации, что проверяется в CI  `doc-1`
++ row  Каждый опубликованный модуль покрыт темой в `doc/en/modules/`  `doc-4`
++ row  Документация API генерируется и публикуется для каждого компонента  `doc-5`
++ row  `fury build` собирает сам Soundness с аттестацией, равной сборке Mill  `tool-4`
++ row  fume запускает полный набор тестов, и ни один набор не отключён  `tool-2`
++ row  Скриптованная сессия LSP-редактора проходит в CI  `tool-3`
++ row  Каждое ломающее изменение в последних десяти выпусках подряд поставлялось с инструкциями по миграции, исполнимыми агентом  `dist-2`
++ row  Каждый выпуск публикуется в виде аттестованных файлов LIRA  `dist-7`
++ row  JOSE, TOML и WebAuthn поставлены  `brd-1`, `brd-2`, `brd-3`
++ row  Агент, следуя только документации в `doc/`, проводит новый проект от нуля до протестированного, развёрнутого веб-приложения на JVM и JavaScript, используя только инструменты экосистемы, и это прохождение выполняется и записывается в CI  `doc-8`
+
+= row  An agent, following only the documentation in `doc/`, takes a new project from nothing to a tested, deployed JVM-and-JavaScript web application using only ecosystem tools, and this walkthrough is executed and recorded in CI  `doc-8`
+- ```
++ ```
+
+- The last criterion is the integrative one, and the point of the exercise.
++ Последний критерий — интегрирующий, и в нём весь смысл упражнения.
+
+- ### Beyond the gate
++ ### За рубежом
+
+- The gate is not the horizon. Past it lie: Maven Central publishing retired, leaving LIRA as
+- the sole channel (`dist-8`); QUIC/HTTP-3 and IMAP (`brd-4`, `brd-5`); WASI at full parity once
+- its external gate lifts (`plat-4`, `plat-5`); and the fork's mainline-readability guarantee
+- enforced in CI (`safety-5`).
++ Рубеж — не горизонт. За ним лежат: отказ от публикации в Maven Central, после которого LIRA
++ останется единственным каналом (`dist-8`); QUIC/HTTP-3 и IMAP (`brd-4`, `brd-5`); WASI с полным
++ паритетом, когда снимется его внешний шлюз (`plat-4`, `plat-5`); и гарантия читаемости форка
++ основной Scala, соблюдаемая в CI (`safety-5`).
+
+- ## For AI agents
++ ## Для ИИ-агентов
+
+- This document is written to be acted on by agents as much as read by people:
++ Этот документ написан для того, чтобы агенты действовали по нему, в той же мере, в какой его
++ читают люди:
+
+- - Item identifiers are stable anchors; cite them (`core-3`, `dist-2`) rather than describing
+-   work in prose.
+- - Verify any claim of progress by running the item's `Done when:` command; never trust prose or
+-   memory over the command's output. Re-measure baselines before relying on them and report
+-   drift.
+- - Read [`status.tel`](status.tel) for current status; update it in the same commit as the work
+-   it describes.
+- - When a roadmap item changes a public API, follow the migration-instruction convention defined
+-   by `dist-2` in `doc/standards/migration.md` — that convention is what makes "APIs change
+-   freely" and "code keeps working" compatible.
++ - Идентификаторы пунктов — стабильные якоря; ссылайтесь на них (`core-3`, `dist-2`), а не
++   описывайте работу прозой.
++ - Проверяйте любое заявление о прогрессе, запуская команду `Done when:` пункта; никогда не
++   доверяйте прозе или памяти больше, чем выводу команды. Перед тем как опираться на исходные
++   уровни, измерьте их заново и сообщите о дрейфе.
++ - Читайте текущее состояние в [`status.tel`](status.tel); обновляйте его в том же коммите, что и
++   описываемую работу.
++ - Когда пункт дорожной карты меняет публичный API, следуйте соглашению об инструкциях по
++   миграции, определённому `dist-2` в `doc/standards/migration.md`, — именно это соглашение делает
++   совместимыми «API свободно меняются» и «код продолжает работать».

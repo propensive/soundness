@@ -1,0 +1,50 @@
+orthant 1 language
+
+- # `↯/s.118.3` — `Base256.Error`
++ # `↯/s.118.3` — `Base256.Error`
+
+- Raised when BASE-256 encoded data is malformed.
++ Порождается, когда данные в кодировке BASE-256 некорректны.
+
+- ## Cause
++ ## Причина
+
+- BASE-256 is the encoding TEL uses to carry binary data in a text document. This error means
+- the encoded text contains a character the alphabet does not define.
++ BASE-256 — это кодировка, с помощью которой TEL переносит двоичные данные в текстовом документе.
++ Эта ошибка означает, что закодированный текст содержит символ, который алфавит не определяет.
+
+- ## Variants
++ ## Варианты
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Код
++ column  Причина
++ column  Сообщение
+
+- row  `↯/s.118.3.1`  `NotInAlphabet`  `` [↯/s.118.3.1] the character `<character>` (<cp>) at position <position> is not in the BASE-256 alphabet ``
++ row  `↯/s.118.3.1`  `NotInAlphabet`  `` [↯/s.118.3.1] the character `<character>` (<cp>) at position <position> is not in the BASE-256 alphabet ``
+
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- The data has been altered in transit, or re-encoded by something that did not preserve the
+- byte values — a text editor changing line endings, or a transport that is not eight-bit
+- clean.
++ Данные были изменены при передаче или перекодированы чем-то, что не сохранило значения байтов:
++ текстовым редактором, заменившим окончания строк, или транспортом, который не прозрачен для
++ восьмибитных данных.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/stratiform/src/base256/stratiform.Base256.scala`
++ - Исходный код: `lib/stratiform/src/base256/stratiform.Base256.scala`

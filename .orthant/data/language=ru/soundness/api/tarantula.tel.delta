@@ -1,0 +1,3117 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base tarantula
++ base tarantula
+
+- import soundness
++ import soundness
+
+- info   browser automation over the W3C WebDriver protocol: sessions, elements, actions and screenshots
++ info   автоматизация браузера по протоколу W3C WebDriver: сессии, элементы, действия и снимки экрана
+
+- detail
++ detail
+
+-     _Tarantula_ drives a web browser from Scala through the
+-     [WebDriver](https://www.w3.org/TR/webdriver2/) protocol. A browser is a value — `WebDriver.Chrome`,
+-     `WebDriver.Firefox`, `WebDriver.Safari` or `WebDriver.Edge`, each the standard driver program for
+-     its browser — and opening a session on it launches the driver, waits for it to listen, creates a
+-     session and, when the block ends, deletes the session and stops the driver, whether the block
+-     returned or threw. A driver that is already running, or a remote Selenium grid, is driven through
+-     the same `WebDriver.Session` interface with `WebDriver(url, capabilities)`.
++     _Tarantula_ управляет веб-браузером из Scala по протоколу
++     [WebDriver](https://www.w3.org/TR/webdriver2/). Браузер — это значение: `WebDriver.Chrome`,
++     `WebDriver.Firefox`, `WebDriver.Safari` или `WebDriver.Edge`, каждое из которых — стандартная
++     программа-драйвер своего браузера. Открытие сессии на нём запускает драйвер, ждёт, пока тот начнёт
++     слушать, создаёт сессию, а по завершении блока удаляет сессию и останавливает драйвер, независимо
++     от того, вернул блок значение или выбросил исключение. Уже запущенным драйвером или удалённой
++     сеткой Selenium управляют через тот же интерфейс `WebDriver.Session` с помощью
++     `WebDriver(url, capabilities)`.
+
+-     Within the session, `browser` is the handle in scope: it navigates, reads the title and source,
+-     finds elements by typed criteria — an HTML tag, a validated DOM id, a class list, a CSS selector
+-     list, an XPath or link text, anything with a `Focusable` instance — switches windows and frames,
+-     handles alerts, manages cookies and timeouts, performs keyboard and pointer actions, runs
+-     JavaScript, prints the page and takes screenshots.
++     Внутри сессии `browser` — это дескриптор в области видимости: он выполняет навигацию, читает
++     заголовок и исходный код, находит элементы по типизированным критериям — тегу HTML,
++     проверенному DOM-идентификатору, списку классов, списку CSS-селекторов, XPath или тексту ссылки,
++     чему угодно с экземпляром `Focusable`, — переключает окна и фреймы, обрабатывает диалоговые окна,
++     управляет cookie и тайм-аутами, выполняет действия клавиатуры и указателя, запускает JavaScript,
++     печатает страницу и делает снимки экрана.
+
+=     JavaScript, prints the page and takes screenshots.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     JavaScript, prints the page and takes screenshots.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     JavaScript, prints the page and takes screenshots.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     import environments.javaBaseEnvironment
++     import environments.javaBaseEnvironment
+
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+-     import httpBackends.javaNetHttp
++     import httpBackends.javaNetHttp
+
+-     import internetAccess.online
++     import internetAccess.online
+
+-     import logging.silentLogging
++     import logging.silentLogging
+
+-     import probates.awaitProbate
++     import probates.awaitProbate
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+-     import workingDirectories.javaBaseWorkingDirectory
++     import workingDirectories.javaBaseWorkingDirectory
+
+=
+-     supervise:
++     supervise:
+
+=
+=     supervise:
+-       WebDriver.Chrome.headless.session:
++       WebDriver.Chrome.headless.session:
+
+=
+=     supervise:
+=       WebDriver.Chrome.headless.session:
+-         browser.navigateTo(url"https://example.com/")
++         browser.navigateTo(url"https://example.com/")
+
+=       WebDriver.Chrome.headless.session:
+=         browser.navigateTo(url"https://example.com/")
+-         browser.title()
++         browser.title()
+
+=         browser.title()
+-     ```
++     ```
+
+-     A session needs internet access (`internetAccess.online`), an HTTP client to speak to the driver
+-     (`httpBackends.javaNetHttp`), a `Tactic[WebDriver.Error]` and `Diagnostics`, and a logger for
+-     `Http.Event`s; launching a local driver additionally needs a `Monitor` (a `supervise` block), a
+-     `WorkingDirectory`, an `Environment` for the driver process and a logger for `Exec.Event`s.
++     Сессии нужны доступ в интернет (`internetAccess.online`), HTTP-клиент для общения с драйвером
++     (`httpBackends.javaNetHttp`), `Tactic[WebDriver.Error]` и `Diagnostics`, а также логгер для
++     `Http.Event`; для запуска локального драйвера дополнительно нужны `Monitor` (блок `supervise`),
++     `WorkingDirectory`, `Environment` для процесса драйвера и логгер для `Exec.Event`.
+
+-     The `WebDriver.Session` handle is a capability, confined by capture checking to the block that
+-     owns it: returning it, or anything that captures it, is a compile error. `WebDriver.Element`
+-     handles are pure values, but every operation on one takes the session as a contextual parameter,
+-     so a handle is inert outside its session, and one used after its page has changed raises
+-     `WebDriver.Error` with reason `StaleElement`. Every failure — a driver that cannot be reached, a
+-     reply of the wrong shape, or any error the driver reports — arrives as one `WebDriver.Error`,
+-     carrying the W3C error code as its `WebDriver.Error.Reason`.
++     Дескриптор `WebDriver.Session` — это возможность, которую проверка захвата ограничивает
++     блоком-владельцем: вернуть её или что-либо, что её захватывает, — ошибка компиляции. Дескрипторы
++     `WebDriver.Element` — чистые значения, но каждая операция над ними принимает сессию как
++     контекстный параметр, поэтому вне своей сессии дескриптор бездействует, а дескриптор,
++     использованный после изменения своей страницы, порождает `WebDriver.Error` с причиной
++     `StaleElement`. Любой сбой — недоступный драйвер, ответ неверной формы или любая ошибка, о которой
++     сообщает драйвер, — приходит как один `WebDriver.Error`, несущий код ошибки W3C в качестве своей
++     `WebDriver.Error.Reason`.
+
+-     Element selection is spelled `\`, not `/`: `browser \ Li`, `element \ cls"item"` and
+-     `shadowRoot \ Button` each return every match, and `element(…)` exactly one, raising
+-     `NoSuchElement` otherwise. The backslash leaves symbolism's arithmetic `/` free to divide
+-     quantities in the same scope.
++     Выбор элементов записывается как `\`, а не `/`: `browser \ Li`, `element \ cls"item"` и
++     `shadowRoot \ Button` возвращают все совпадения, а `element(…)` — ровно одно, порождая
++     `NoSuchElement` в противном случае. Обратная косая черта оставляет арифметический `/` из
++     symbolism свободным для деления величин в той же области видимости.
+
+-     The library has two source sets:
++     У библиотеки два набора исходного кода:
+
+-     - `tarantula.core` — `WebDriver` and its nested `Session`, `Element`, `ShadowRoot`, `Error` and
+-       `Local`, the `browser` accessor and the element extensions (`click`, `value`, `innerText`,
+-       `attribute`, …). It needs a driver binary (`chromedriver`, `geckodriver`, `safaridriver` or
+-       `msedgedriver`) on the path to launch a browser; the protocol layer itself is plain HTTP and
+-       can be exercised against any WebDriver endpoint.
+-     - `tarantula.image` — the `screenshot()` extensions, which decode a screenshot into a
+-       `Raster in Png` through hallucination, kept apart so that browser automation does not depend
+-       on an image codec.
++     - `tarantula.core` — `WebDriver` и вложенные в него `Session`, `Element`, `ShadowRoot`, `Error` и
++       `Local`, аксессор `browser` и расширения элементов (`click`, `value`, `innerText`,
++       `attribute`, …). Для запуска браузера ему нужен исполняемый файл драйвера (`chromedriver`,
++       `geckodriver`, `safaridriver` или `msedgedriver`) в пути поиска; сам протокольный слой — это
++       обычный HTTP, и его можно проверять с любой конечной точкой WebDriver.
++     - `tarantula.image` — расширения `screenshot()`, которые декодируют снимок экрана в
++       `Raster in Png` через hallucination; они вынесены отдельно, чтобы автоматизация браузера не
++       зависела от кодека изображений.
+
+-     Everything is exported to the `soundness` umbrella, so a user writes `import soundness.*` and
+-     imports the ambient givens above by name.
++     Всё экспортируется в зонтичный модуль `soundness`, поэтому пользователь пишет `import soundness.*`
++     и импортирует перечисленные выше окружающие given по имени.
+
+- refer tarantula.WebDriver
++ refer tarantula.WebDriver
+
+- refer tarantula.browser
++ refer tarantula.browser
+
+- refer anticipation.Focusable
++ refer anticipation.Focusable
+
+- entry .WebDriver   a browser to drive: a local driver program, or a driver already listening at a URL
++ entry .WebDriver   браузер для управления: локальная программа-драйвер или драйвер, уже слушающий по URL
+
+-   detail
++   detail
+
+-       `WebDriver` is two things which share a name. As a **type**, it is a driver that is already
+-       listening — one started by hand, or a Selenium grid — addressed by its `#base` URL and the
+-       `#capabilities` it will be asked for, and made with `WebDriver(url"http://localhost:4444",
+-       capabilities)`. As an **object**, it is the home of the four local browsers (`.Chrome`,
+-       `.Firefox`, `.Safari`, `.Edge`), each a `WebDriver.Local` which launches its driver program for
+-       the duration of a session, and of the types every session uses: `Session`, `Element`,
+-       `ShadowRoot` and `Error`.
++       `WebDriver` — это две вещи с одним именем. Как **тип** это драйвер, который уже слушает, —
++       запущенный вручную или сетка Selenium, — адресуемый своим URL `#base` и возможностями
++       `#capabilities`, которые у него будут запрошены, и создаваемый как `WebDriver(url"http://localhost:4444",
++       capabilities)`. Как **объект** это место четырёх локальных браузеров (`.Chrome`,
++       `.Firefox`, `.Safari`, `.Edge`), каждый из которых — `WebDriver.Local`, запускающий свою
++       программу-драйвер на время сессии, и типов, которые использует каждая сессия: `Session`,
++       `Element`, `ShadowRoot` и `Error`.
+
+-       Both are `Sessional`, so `driver.session: session ?=> …` opens a session on either, and the
+-       session is closed — and a launched driver stopped — in a `finally` when the block ends.
++       Оба являются `Sessional`, поэтому `driver.session: session ?=> …` открывает сессию на любом из
++       них, и сессия закрывается — а запущенный драйвер останавливается — в `finally` по завершении блока.
+
+=       session is closed — and a launched driver stopped — in a `finally` when the block ends.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       session is closed — and a launched driver stopped — in a `finally` when the block ends.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       session is closed — and a launched driver stopped — in a `finally` when the block ends.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       supervise:
++       supervise:
+
+-         WebDriver.Firefox.headless.on(4445).session:
++         WebDriver.Firefox.headless.on(4445).session:
+
+-           browser.navigateTo(url"https://example.com/")
++           browser.navigateTo(url"https://example.com/")
+
+-           browser.element(H1).innerText()
++           browser.element(H1).innerText()
+
+-       WebDriver(url"http://localhost:4444", WebDriver.Chrome.capabilities).session:
++       WebDriver(url"http://localhost:4444", WebDriver.Chrome.capabilities).session:
+
+=       WebDriver(url"http://localhost:4444", WebDriver.Chrome.capabilities).session:
+-         browser.title()
++         browser.title()
+
+=       WebDriver(url"http://localhost:4444", WebDriver.Chrome.capabilities).session:
+=         browser.title()
+-       ```
++       ```
+
+-       A `WebDriver` built with `apply` sends its `capabilities` JSON as the `POST /session` payload
+-       verbatim, so a Selenium grid's own extensions, proxies, timeouts and mobile emulation can all
+-       be requested through it.
++       `WebDriver`, построенный через `apply`, отправляет JSON своих `capabilities` как полезную
++       нагрузку `POST /session` дословно, поэтому через него можно запросить собственные расширения
++       сетки Selenium, прокси, тайм-ауты и эмуляцию мобильных устройств.
+
+-   refer tarantula.WebDriver.Session
++   refer tarantula.WebDriver.Session
+
+-   refer tarantula.WebDriver.Local
++   refer tarantula.WebDriver.Local
+
+-   refer tarantula.WebDriver.Error
++   refer tarantula.WebDriver.Error
+
+-   refer tarantula.browser
++   refer tarantula.browser
+
+-   entry .Driver   the four W3C driver programs: chromedriver, geckodriver, safaridriver and msedgedriver
++   entry .Driver   четыре программы-драйвера W3C: chromedriver, geckodriver, safaridriver и msedgedriver
+
+=   entry .Driver   the four W3C driver programs: chromedriver, geckodriver, safaridriver and msedgedriver
+-     detail
++     detail
+
+-         An enumeration of the driver programs a `WebDriver.Local` can launch, as data rather than
+-         subclasses: `Chromedriver`, `Geckodriver`, `Safaridriver` and `Edgedriver`. Each knows the
+-         command which starts it on a port, the `browserName` capability its browser answers to, and
+-         the arguments which put that browser in headless mode. Adding a browser is a new case, since
+-         the process lifecycle is the same for all of them.
+-     entry #command   the shell command which starts the driver listening on a port
+-         `chromedriver --port=N` and `msedgedriver --port=N` take the port with an equals sign;
+-         `geckodriver --port N` and `safaridriver --port N` take it as a separate argument. The
+-         driver binary must be on the path.
+-     entry #browserName   the `browserName` capability the driver's browser answers to
+-         `chrome`, `firefox`, `safari` or `MicrosoftEdge`, as the W3C capabilities object spells
+-         them.
+-     entry #headless   the browser arguments which select headless mode, if the browser has one
+-         `--headless=new` for Chrome and Edge (the supported spelling since the old `--headless`
+-         became its alias), the single-dashed `-headless` for Firefox, and nothing for Safari, which
+-         has no headless mode: asking for one is a no-op rather than an error.
+-   entry .Local   a browser and the driver program which drives it, as a pure value
++         Перечисление программ-драйверов, которые может запустить `WebDriver.Local`, в виде данных, а
++         не подклассов: `Chromedriver`, `Geckodriver`, `Safaridriver` и `Edgedriver`. Каждая знает
++         команду, которая запускает её на порту, возможность `browserName`, на которую отзывается её
++         браузер, и аргументы, переводящие этот браузер в headless-режим. Добавление браузера — это
++         новый кейс, поскольку жизненный цикл процесса у всех одинаков.
++     entry #command   команда оболочки, которая запускает драйвер, слушающий на порту
++         `chromedriver --port=N` и `msedgedriver --port=N` принимают порт через знак равенства;
++         `geckodriver --port N` и `safaridriver --port N` — отдельным аргументом. Исполняемый файл
++         драйвера должен находиться в пути поиска.
++     entry #browserName   возможность `browserName`, на которую отзывается браузер драйвера
++         `chrome`, `firefox`, `safari` или `MicrosoftEdge`, как их пишет объект возможностей W3C.
++     entry #headless   аргументы браузера, выбирающие headless-режим, если он у браузера есть
++         `--headless=new` для Chrome и Edge (поддерживаемое написание с тех пор, как старый
++         `--headless` стал его псевдонимом), `-headless` с одним дефисом для Firefox и ничего для
++         Safari, у которого нет headless-режима: запрос этого режима ничего не делает, а не является ошибкой.
++   entry .Local   браузер и управляющая им программа-драйвер в виде чистого значения
+
+=   entry .Local   a browser and the driver program which drives it, as a pure value
+-     detail
++     detail
+
+-         A `WebDriver.Local` names a browser to drive by its `WebDriver.Driver`, the port the driver
+-         should listen on (`4444` unless `#on` says otherwise), the arguments the browser is launched
+-         with and, optionally, a capabilities object to send in place of the generated one. It holds
+-         no process, connection or session id, so it may be a `val` shared between tests and used for
+-         several sessions in turn; `.Chrome`, `.Firefox`, `.Safari` and `.Edge` are the four standard
+-         values.
++         `WebDriver.Local` указывает браузер для управления его `WebDriver.Driver`, порт, на котором
++         должен слушать драйвер (`4444`, если `#on` не задаёт другой), аргументы запуска браузера и,
++         при необходимости, объект возможностей, отправляемый вместо сгенерированного. Он не хранит ни
++         процесса, ни соединения, ни идентификатора сессии, поэтому может быть `val`, общим для тестов
++         и используемым для нескольких сессий по очереди; `.Chrome`, `.Firefox`, `.Safari` и `.Edge` —
++         четыре стандартных значения.
+
+=         values.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         values.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         values.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+-         val chrome: WebDriver.Local = WebDriver.Chrome.headless.on(4450).arguing(t"--window-size=1280,800")
++         val chrome: WebDriver.Local = WebDriver.Chrome.headless.on(4450).arguing(t"--window-size=1280,800")
+
+=         val chrome: WebDriver.Local = WebDriver.Chrome.headless.on(4450).arguing(t"--window-size=1280,800")
+=
+-         supervise:
++         supervise:
+
+-           chrome.session:
++           chrome.session:
+
+=           chrome.session:
+-             browser.navigateTo(url"https://example.com/")
++             browser.navigateTo(url"https://example.com/")
+
+-             browser.title()
++             browser.title()
+
+=             browser.title()
+-         ```
++         ```
+
+-         Opening a session forks the driver's command, polls its `GET /status` endpoint every 50
+-         milliseconds for up to five seconds until it answers, opens the session with
+-         `#capabilities`, and stops the driver when the block ends. A driver that cannot be forked
+-         raises `WebDriver.Error` with reason `SessionNotCreated`, and one that never starts listening
+-         raises one with reason `Timeout`. Two sessions on the same port at once will collide, so a
+-         test suite running sessions in parallel gives each its own with `#on`.
++         Открытие сессии запускает команду драйвера в отдельном процессе, опрашивает его конечную
++         точку `GET /status` каждые 50 миллисекунд в течение не более пяти секунд, пока тот не ответит,
++         открывает сессию с `#capabilities` и останавливает драйвер по завершении блока. Драйвер,
++         который не удаётся запустить, порождает `WebDriver.Error` с причиной `SessionNotCreated`, а
++         тот, что так и не начинает слушать, — с причиной `Timeout`. Две одновременные сессии на одном
++         порту столкнутся, поэтому набор тестов, запускающий сессии параллельно, даёт каждой свой порт
++         через `#on`.
+
+-     refer tarantula.WebDriver.Driver
++     refer tarantula.WebDriver.Driver
+
+=     refer tarantula.WebDriver.Driver
+-     refer tarantula.WebDriver.Session
++     refer tarantula.WebDriver.Session
+
+-     entry .Sessional   opens a session on a `WebDriver.Local`: forks the driver, waits, drives, stops
++     entry .Sessional   открывает сессию на `WebDriver.Local`: запускает драйвер, ждёт, управляет, останавливает
+
+=     entry .Sessional   opens a session on a `WebDriver.Local`: forks the driver, waits, drives, stops
+-       detail
++       detail
+
+-           The `aperture.Sessional` instance for `WebDriver.Local`, with `Self = Local` and `Result =
+-           Session^`. It needs an `Online`, an `Http.Backend`, a `WorkingDirectory`, an `Environment`
+-           (which the driver process inherits), a `Monitor`, loggers for `Http.Event` and `Exec.Event`,
+-           a `Tactic[WebDriver.Error]` and `Diagnostics`. The `.sessional` given constructs it, so a
+-           caller never names the class.
+-       entry #session   forks the driver, waits for it to listen, runs the block, and stops it
+-           Runs `lambda` with a fresh `WebDriver.Session` in scope, then aborts the driver's job in a
+-           `finally`. A failure to fork is reported as `WebDriver.Error` with reason
+-           `SessionNotCreated`; a driver that does not answer `GET /status` within five seconds as one
+-           with reason `Timeout`.
+-     entry .sessional   the given which lets `local.session: session ?=> …` resolve
+-         In the companion of `WebDriver.Local`, so it is found with no import whenever the contextual
+-         values it needs are in scope: `Online`, `Http.Backend`, `WorkingDirectory`, `Environment`,
+-         `Monitor`, `Http.Event is Loggable`, `Exec.Event is Loggable`, `Tactic[WebDriver.Error]` and
+-         `Diagnostics`.
+-     entry #driver   the driver program which drives this browser
+-     entry #port   the port the driver listens on; `4444` by default
+-     entry #arguments   the arguments the browser is launched with, such as `--headless=new`
+-     entry #requested   a capabilities object to send instead of the generated one, or `Unset`
+-     entry #on   the same browser with its driver on another port
+-         Each session on a port needs that port free, so sessions run concurrently each take their
+-         own: `WebDriver.Chrome.on(4451)`.
+-     entry #headless   the same browser launched without a window
+-         Appends the driver's headless arguments (`WebDriver.Driver#headless`) to `#arguments`; on
+-         Safari, which has no headless mode, it changes nothing.
+-     entry #arguing   the same browser with more launch arguments
+-         `WebDriver.Chrome.arguing(t"--window-size=1280,800", t"--lang=en")` appends the arguments
+-         the browser is started with, as `goog:chromeOptions`, `moz:firefoxOptions` or
+-         `ms:edgeOptions` says.
+-     entry #requesting   the same browser, with the capabilities object replaced wholesale
+-         For what `WebDriver.Local` does not model — proxies, timeouts, mobile emulation, a
+-         grid's extensions — the whole `POST /session` payload can be supplied as `Json`, replacing
+-         the generated `alwaysMatch` object.
+-     entry #capabilities   the `POST /session` payload: an `alwaysMatch` object naming the browser and its arguments
+-         The W3C shape, `{"capabilities": {"alwaysMatch": {…}}}`, with the browser's name and its
+-         vendor options object (`goog:chromeOptions`, `moz:firefoxOptions` or `ms:edgeOptions`,
+-         carrying `#arguments`; Safari takes only its name). Only `alwaysMatch` is generated, since
+-         `firstMatch` exists to let one request suit several drivers and a `Local` names exactly one.
+-         When `#requested` is set, it is returned instead.
+-   entry .Chrome   Chrome, through `chromedriver` on port 4444
+-       `WebDriver.Local(WebDriver.Driver.Chromedriver)`: `WebDriver.Chrome.headless.session: …` opens
+-       a headless Chrome session.
+-   entry .Firefox   Firefox, through `geckodriver` on port 4444
+-   entry .Safari   Safari, through `safaridriver` on port 4444
+-       Safari has no headless mode, so `WebDriver.Safari.headless` is the same as `WebDriver.Safari`.
+-   entry .Edge   Microsoft Edge, through `msedgedriver` on port 4444
+-   entry .Sessional   opens a session on a driver that is already listening
++           Экземпляр `aperture.Sessional` для `WebDriver.Local` с `Self = Local` и `Result =
++           Session^`. Ему нужны `Online`, `Http.Backend`, `WorkingDirectory`, `Environment`
++           (которое наследует процесс драйвера), `Monitor`, логгеры для `Http.Event` и `Exec.Event`,
++           `Tactic[WebDriver.Error]` и `Diagnostics`. Его создаёт given `.sessional`, поэтому
++           вызывающему коду не нужно называть класс.
++       entry #session   запускает драйвер, ждёт, пока тот начнёт слушать, выполняет блок и останавливает его
++           Выполняет `lambda` со свежей `WebDriver.Session` в области видимости, затем прерывает
++           задание драйвера в `finally`. Неудачный запуск процесса сообщается как `WebDriver.Error` с
++           причиной `SessionNotCreated`; драйвер, не ответивший на `GET /status` за пять секунд, — как
++           ошибка с причиной `Timeout`.
++     entry .sessional   given, благодаря которому разрешается `local.session: session ?=> …`
++         Находится в компаньоне `WebDriver.Local`, поэтому обнаруживается без импорта, когда в области
++         видимости есть нужные ему контекстные значения: `Online`, `Http.Backend`, `WorkingDirectory`,
++         `Environment`, `Monitor`, `Http.Event is Loggable`, `Exec.Event is Loggable`,
++         `Tactic[WebDriver.Error]` и `Diagnostics`.
++     entry #driver   программа-драйвер, управляющая этим браузером
++     entry #port   порт, на котором слушает драйвер; по умолчанию `4444`
++     entry #arguments   аргументы запуска браузера, такие как `--headless=new`
++     entry #requested   объект возможностей, отправляемый вместо сгенерированного, или `Unset`
++     entry #on   тот же браузер с драйвером на другом порту
++         Каждой сессии на порту нужен свободный порт, поэтому сессии, выполняемые одновременно,
++         берут каждая свой: `WebDriver.Chrome.on(4451)`.
++     entry #headless   тот же браузер, запускаемый без окна
++         Добавляет headless-аргументы драйвера (`WebDriver.Driver#headless`) к `#arguments`; в
++         Safari, у которого нет headless-режима, ничего не меняет.
++     entry #arguing   тот же браузер с дополнительными аргументами запуска
++         `WebDriver.Chrome.arguing(t"--window-size=1280,800", t"--lang=en")` добавляет аргументы,
++         с которыми запускается браузер, в соответствии с `goog:chromeOptions`, `moz:firefoxOptions`
++         или `ms:edgeOptions`.
++     entry #requesting   тот же браузер с полностью заменённым объектом возможностей
++         Для того, что `WebDriver.Local` не моделирует, — прокси, тайм-аутов, эмуляции мобильных
++         устройств, расширений сетки — всю полезную нагрузку `POST /session` можно передать как
++         `Json`, заменив сгенерированный объект `alwaysMatch`.
++     entry #capabilities   полезная нагрузка `POST /session`: объект `alwaysMatch`, называющий браузер и его аргументы
++         Форма W3C, `{"capabilities": {"alwaysMatch": {…}}}`, с именем браузера и объектом опций
++         производителя (`goog:chromeOptions`, `moz:firefoxOptions` или `ms:edgeOptions`, несущим
++         `#arguments`; Safari принимает только своё имя). Генерируется только `alwaysMatch`, поскольку
++         `firstMatch` существует, чтобы один запрос подходил нескольким драйверам, а `Local` называет
++         ровно один. Если задан `#requested`, возвращается он.
++   entry .Chrome   Chrome через `chromedriver` на порту 4444
++       `WebDriver.Local(WebDriver.Driver.Chromedriver)`: `WebDriver.Chrome.headless.session: …`
++       открывает сессию Chrome в headless-режиме.
++   entry .Firefox   Firefox через `geckodriver` на порту 4444
++   entry .Safari   Safari через `safaridriver` на порту 4444
++       У Safari нет headless-режима, поэтому `WebDriver.Safari.headless` — то же самое, что `WebDriver.Safari`.
++   entry .Edge   Microsoft Edge через `msedgedriver` на порту 4444
++   entry .Sessional   открывает сессию на драйвере, который уже слушает
+
+=   entry .Sessional   opens a session on a driver that is already listening
+-     detail
++     detail
+
+-         The `aperture.Sessional` instance for `WebDriver`, with `Self = WebDriver` and `Result =
+-         Session^`. It creates the session with `POST /session` and the driver's `#capabilities`,
+-         runs the block with the handle in scope, and deletes the session — which is what closes the
+-         browser — in a `finally`, swallowing a failure to delete, since a driver that has already
+-         died cannot tidy up and saying so would hide the block's own error. Launching a local driver
+-         (`WebDriver.Local.Sessional`) is composition over this. It needs an `Online`, an
+-         `Http.Backend`, a logger for `Http.Event`, a `Tactic[WebDriver.Error]` and `Diagnostics`.
+-     entry #session   creates the session, runs the block with it in scope, and deletes it
+-         The session's `Result` type is a fresh `Session^`: each call's handle is its own capability,
+-         so the block cannot return it or anything capturing it.
+-   entry .sessional   the given which lets `webDriver.session: session ?=> …` resolve
+-       In the companion of `WebDriver`, so it is found with no import when an `Online`, an
+-       `Http.Backend`, an `Http.Event is Loggable`, a `Tactic[WebDriver.Error]` and `Diagnostics` are
+-       in scope.
+-   entry .apply   a driver already listening at a base URL, with the capabilities to request
+-       `WebDriver(url"http://localhost:4444", capabilities)` drives a driver started by hand, or a
+-       Selenium grid, through the same `Session` interface as a local browser. The capabilities are
+-       sent verbatim as the `POST /session` payload; `WebDriver.Chrome.capabilities` is a ready-made
+-       one, and `t"{}".read[Json]` is enough for a driver that needs none.
++         Экземпляр `aperture.Sessional` для `WebDriver` с `Self = WebDriver` и `Result =
++         Session^`. Он создаёт сессию через `POST /session` с `#capabilities` драйвера, выполняет
++         блок с дескриптором в области видимости и удаляет сессию — именно это закрывает браузер — в
++         `finally`, подавляя неудачу удаления, поскольку уже умерший драйвер не может прибраться за
++         собой, а сообщение об этом скрыло бы собственную ошибку блока. Запуск локального драйвера
++         (`WebDriver.Local.Sessional`) строится как композиция поверх этого. Ему нужны `Online`,
++         `Http.Backend`, логгер для `Http.Event`, `Tactic[WebDriver.Error]` и `Diagnostics`.
++     entry #session   создаёт сессию, выполняет блок с ней в области видимости и удаляет её
++         Тип `Result` сессии — свежий `Session^`: дескриптор каждого вызова — отдельная возможность,
++         поэтому блок не может вернуть ни его, ни что-либо, что его захватывает.
++   entry .sessional   given, благодаря которому разрешается `webDriver.session: session ?=> …`
++       Находится в компаньоне `WebDriver`, поэтому обнаруживается без импорта, когда в области
++       видимости есть `Online`, `Http.Backend`, `Http.Event is Loggable`, `Tactic[WebDriver.Error]` и
++       `Diagnostics`.
++   entry .apply   драйвер, уже слушающий по базовому URL, с запрашиваемыми возможностями
++       `WebDriver(url"http://localhost:4444", capabilities)` управляет драйвером, запущенным вручную,
++       или сеткой Selenium через тот же интерфейс `Session`, что и локальным браузером. Возможности
++       отправляются дословно как полезная нагрузка `POST /session`; `WebDriver.Chrome.capabilities` —
++       готовый объект, а для драйвера, которому они не нужны, достаточно `t"{}".read[Json]`.
+
+=       one, and `t"{}".read[Json]` is enough for a driver that needs none.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       one, and `t"{}".read[Json]` is enough for a driver that needs none.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       one, and `t"{}".read[Json]` is enough for a driver that needs none.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       WebDriver(url"http://localhost:4444", WebDriver.Firefox.headless.capabilities).session:
++       WebDriver(url"http://localhost:4444", WebDriver.Firefox.headless.capabilities).session:
+
+=       WebDriver(url"http://localhost:4444", WebDriver.Firefox.headless.capabilities).session:
+-         browser.navigateTo(url"https://example.com/")
++         browser.navigateTo(url"https://example.com/")
+
+=       WebDriver(url"http://localhost:4444", WebDriver.Firefox.headless.capabilities).session:
+=         browser.navigateTo(url"https://example.com/")
+-         browser.title()
++         browser.title()
+
+=         browser.navigateTo(url"https://example.com/")
+=         browser.title()
+-       ```
++       ```
+
+-   entry #base   the URL the driver listens at; commands are addressed beneath `base/session/id`
+-   entry #capabilities   the JSON sent as the `POST /session` payload
+-   entry .Error   a failed WebDriver action: the W3C error code, the driver's message and its stack trace
++   entry #base   URL, на котором слушает драйвер; команды адресуются под `base/session/id`
++   entry #capabilities   JSON, отправляемый как полезная нагрузка `POST /session`
++   entry .Error   неудачное действие WebDriver: код ошибки W3C, сообщение драйвера и его трассировка стека
+
+=   entry .Error   a failed WebDriver action: the W3C error code, the driver's message and its stack trace
+-     detail
++     detail
+
+-         Error `↯/s.127.1`: _the WebDriver action failed because `reason`: `detail`_, with the
+-         `WebDriver.Error.Reason`'s number as its subcode. Every failure of a session arrives as
+-         this one type: an error object the driver returned in a 4xx or 5xx reply, a driver that
+-         could not be reached, a reply which was not the JSON the specification describes (reason
+-         `UnknownError`), a reply cut short, a driver that could not be started (`SessionNotCreated`)
+-         or one which never began listening (`Timeout`). It is raised through the
+-         `Tactic[WebDriver.Error]` in scope when the session was opened.
++         Ошибка `↯/s.127.1`: _the WebDriver action failed because `reason`: `detail`_, с номером
++         `WebDriver.Error.Reason` в качестве подкода. Любой сбой сессии приходит как этот единственный
++         тип: объект ошибки, возвращённый драйвером в ответе 4xx или 5xx, недоступный драйвер, ответ,
++         не являющийся JSON, который описывает спецификация (причина `UnknownError`), оборванный ответ,
++         драйвер, который не удалось запустить (`SessionNotCreated`), или драйвер, так и не начавший
++         слушать (`Timeout`). Ошибка порождается через `Tactic[WebDriver.Error]`, бывшую в области
++         видимости при открытии сессии.
+
+=         `Tactic[WebDriver.Error]` in scope when the session was opened.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `Tactic[WebDriver.Error]` in scope when the session was opened.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `Tactic[WebDriver.Error]` in scope when the session was opened.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         `Tactic[WebDriver.Error]` in scope when the session was opened.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         supervise:
++         supervise:
+
+=         `Tactic[WebDriver.Error]` in scope when the session was opened.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+=         `Tactic[WebDriver.Error]` in scope when the session was opened.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+=           WebDriver.Chrome.headless.session:
+-             browser.navigateTo(url"https://example.com/")
++             browser.navigateTo(url"https://example.com/")
+
+-             safely(browser.element(H2)).or:
++             safely(browser.element(H2)).or:
+
+-               browser.element(H1)
++               browser.element(H1)
+
+=               browser.element(H1)
+-         ```
++         ```
+
+-         The driver's own message is `#detail`, and its stack trace, one line per element, is
+-         `#browserStacktrace`. `#data` keeps the specification's optional extra object, which is
+-         what carries the prompt's text on an `UnexpectedAlertOpen`: exactly what a caller needs to
+-         decide whether to accept or dismiss it.
++         Собственное сообщение драйвера — это `#detail`, а его трассировка стека, по одной строке на
++         элемент, — `#browserStacktrace`. `#data` хранит необязательный дополнительный объект из
++         спецификации, который несёт текст диалога при `UnexpectedAlertOpen`: ровно то, что нужно
++         вызывающему коду, чтобы решить, принять диалог или отклонить.
+
+-     refer tarantula.WebDriver.Error.Reason
++     refer tarantula.WebDriver.Error.Reason
+
+-     entry .Reason   the W3C error code a driver reported, as an enumeration with stable numbers
++     entry .Reason   код ошибки W3C, сообщённый драйвером, в виде перечисления со стабильными номерами
+
+=     entry .Reason   the W3C error code a driver reported, as an enumeration with stable numbers
+-       detail
++       detail
+
+-           One case for every error code the WebDriver specification defines, with the code as the
+-           driver spells it in the `error` field of its error object:
++           По одному кейсу на каждый код ошибки, определённый спецификацией WebDriver, с кодом в том
++           написании, в каком драйвер передаёт его в поле `error` своего объекта ошибки:
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  W3C code
++           column  Кейс
++           column  Код
++           column  Сообщение
++           column  Код W3C
+
+-           row  `NoSuchElement`  1  _the requested element was not found_  `no such element`
++           row  `NoSuchElement`  1  _the requested element was not found_  `no such element`
+
+-           row  `StaleElement`  2  _the element is no longer attached to the page_  `stale element reference`
++           row  `StaleElement`  2  _the element is no longer attached to the page_  `stale element reference`
+
+-           row  `NoSuchWindow`  3  _the requested window was not found_  `no such window`
++           row  `NoSuchWindow`  3  _the requested window was not found_  `no such window`
+
+-           row  `JavascriptError`  4  _a JavaScript error occurred while evaluating it_  `javascript error`
++           row  `JavascriptError`  4  _a JavaScript error occurred while evaluating it_  `javascript error`
+
+-           row  `ScriptTimeout`  5  _the asynchronous script did not complete in time_  `script timeout`
++           row  `ScriptTimeout`  5  _the asynchronous script did not complete in time_  `script timeout`
+
+-           row  `Timeout`  6  _the operation timed out_  `timeout`
++           row  `Timeout`  6  _the operation timed out_  `timeout`
+
+-           row  `UnknownCommand`  7  _the WebDriver does not recognise the command_  `unknown command`
++           row  `UnknownCommand`  7  _the WebDriver does not recognise the command_  `unknown command`
+
+-           row  `Other(code)`  8  _the WebDriver reported the error code `code`_  any other, kept as `code`
++           row  `Other(code)`  8  _the WebDriver reported the error code `code`_  любой другой, сохраняется как `code`
+
+-           row  `ElementClickIntercepted`  9  _the click was intercepted by another element_  `element click intercepted`
++           row  `ElementClickIntercepted`  9  _the click was intercepted by another element_  `element click intercepted`
+
+-           row  `ElementNotInteractable`  10  _the element cannot be interacted with_  `element not interactable`
++           row  `ElementNotInteractable`  10  _the element cannot be interacted with_  `element not interactable`
+
+-           row  `InsecureCertificate`  11  _the page was served with an untrusted certificate_  `insecure certificate`
++           row  `InsecureCertificate`  11  _the page was served with an untrusted certificate_  `insecure certificate`
+
+-           row  `InvalidArgument`  12  _an argument to the command was not acceptable_  `invalid argument`
++           row  `InvalidArgument`  12  _an argument to the command was not acceptable_  `invalid argument`
+
+-           row  `InvalidCookieDomain`  13  _the cookie's domain does not match the current page_  `invalid cookie domain`
++           row  `InvalidCookieDomain`  13  _the cookie's domain does not match the current page_  `invalid cookie domain`
+
+-           row  `InvalidElementState`  14  _the element is in a state which forbids the action_  `invalid element state`
++           row  `InvalidElementState`  14  _the element is in a state which forbids the action_  `invalid element state`
+
+-           row  `InvalidSelector`  15  _the selector was not a valid one_  `invalid selector`
++           row  `InvalidSelector`  15  _the selector was not a valid one_  `invalid selector`
+
+-           row  `InvalidSessionId`  16  _the session is no longer active_  `invalid session id`
++           row  `InvalidSessionId`  16  _the session is no longer active_  `invalid session id`
+
+-           row  `MoveTargetOutOfBounds`  17  _the pointer target lies outside the viewport_  `move target out of bounds`
++           row  `MoveTargetOutOfBounds`  17  _the pointer target lies outside the viewport_  `move target out of bounds`
+
+-           row  `NoSuchAlert`  18  _no alert is currently open_  `no such alert`
++           row  `NoSuchAlert`  18  _no alert is currently open_  `no such alert`
+
+-           row  `NoSuchCookie`  19  _the requested cookie was not found_  `no such cookie`
++           row  `NoSuchCookie`  19  _the requested cookie was not found_  `no such cookie`
+
+-           row  `NoSuchFrame`  20  _the requested frame was not found_  `no such frame`
++           row  `NoSuchFrame`  20  _the requested frame was not found_  `no such frame`
+
+-           row  `NoSuchShadowRoot`  21  _the element has no shadow root_  `no such shadow root`
++           row  `NoSuchShadowRoot`  21  _the element has no shadow root_  `no such shadow root`
+
+-           row  `DetachedShadowRoot`  22  _the shadow root is no longer attached to the page_  `detached shadow root`
++           row  `DetachedShadowRoot`  22  _the shadow root is no longer attached to the page_  `detached shadow root`
+
+-           row  `SessionNotCreated`  23  _a new session could not be created_  `session not created`
++           row  `SessionNotCreated`  23  _a new session could not be created_  `session not created`
+
+-           row  `UnableToSetCookie`  24  _the cookie could not be set_  `unable to set cookie`
++           row  `UnableToSetCookie`  24  _the cookie could not be set_  `unable to set cookie`
+
+-           row  `UnableToCaptureScreen`  25  _the screenshot could not be taken_  `unable to capture screen`
++           row  `UnableToCaptureScreen`  25  _the screenshot could not be taken_  `unable to capture screen`
+
+-           row  `UnexpectedAlertOpen`  26  _an unexpected alert is open_  `unexpected alert open`
++           row  `UnexpectedAlertOpen`  26  _an unexpected alert is open_  `unexpected alert open`
+
+-           row  `UnknownError`  27  _the WebDriver encountered an unknown error_  `unknown error`
++           row  `UnknownError`  27  _the WebDriver encountered an unknown error_  `unknown error`
+
+-           row  `UnknownMethod`  28  _the command does not support the HTTP method used_  `unknown method`
++           row  `UnknownMethod`  28  _the command does not support the HTTP method used_  `unknown method`
+
+-           row  `UnsupportedOperation`  29  _the WebDriver does not support the operation_  `unsupported operation`
++           row  `UnsupportedOperation`  29  _the WebDriver does not support the operation_  `unsupported operation`
+
+=           row  `UnsupportedOperation`  29  _the WebDriver does not support the operation_  `unsupported operation`
+-           ```
++           ```
+
+-           The numbers are the error's subcode and are frozen: 1 to 8 keep the meanings they were
+-           first published with, which is why `Other` sits at 8 out of alphabetical order, and
+-           every code added since appends from 9. A code the enumeration does not know becomes
+-           `Other`, so decoding is total and the code a driver sent is never lost.
++           Номера являются подкодом ошибки и заморожены: коды с 1 по 8 сохраняют значения, с которыми
++           были впервые опубликованы, поэтому `Other` стоит на 8-м месте вне алфавитного порядка, а
++           каждый добавленный с тех пор код добавляется начиная с 9. Код, неизвестный перечислению,
++           становится `Other`, поэтому декодирование тотально и код, отправленный драйвером, никогда не
++           теряется.
+
+=           `Other`, so decoding is total and the code a driver sent is never lost.
+=
+-           ```scala fuel
++           ```scala fuel
+
+=           `Other`, so decoding is total and the code a driver sent is never lost.
+=
+=           ```scala fuel
+-           typecheck
++           typecheck
+
+=           `Other`, so decoding is total and the code a driver sent is never lost.
+=
+=           ```scala fuel
+=           typecheck
+-           ##
++           ##
+
+=           `Other`, so decoding is total and the code a driver sent is never lost.
+=
+=           ```scala fuel
+=           typecheck
+=           ##
+-           supervise:
++           supervise:
+
+=           `Other`, so decoding is total and the code a driver sent is never lost.
+=
+=           ```scala fuel
+=           typecheck
+=           ##
+=           supervise:
+-             WebDriver.Chrome.headless.session:
++             WebDriver.Chrome.headless.session:
+
+-               capture[WebDriver.Error](browser.element(Name[DomId](t"absent"))).reason
++               capture[WebDriver.Error](browser.element(Name[DomId](t"absent"))).reason
+
+-                 == WebDriver.Error.Reason.NoSuchElement
++                 == WebDriver.Error.Reason.NoSuchElement
+
+=                 == WebDriver.Error.Reason.NoSuchElement
+-           ```
++           ```
+
+-       entry .apply   decodes a W3C error code, such as `no such element`, to its `Reason`
+-           Total: an unrecognised code is `Other(code)`.
++       entry .apply   декодирует код ошибки W3C, такой как `no such element`, в его `Reason`
++           Тотально: нераспознанный код становится `Other(code)`.
+
+=           Total: an unrecognised code is `Other(code)`.
+=
+-           ```scala
++           ```scala
+
+=           Total: an unrecognised code is `Other(code)`.
+=
+=           ```scala
+-           import soundness.*
++           import soundness.*
+
+-           WebDriver.Error.Reason(t"stale element reference") == WebDriver.Error.Reason.StaleElement
++           WebDriver.Error.Reason(t"stale element reference") == WebDriver.Error.Reason.StaleElement
+
+=           WebDriver.Error.Reason(t"stale element reference") == WebDriver.Error.Reason.StaleElement
+-           ```
++           ```
+
+-       entry .Other   an error code the enumeration does not name, kept as the driver sent it
+-         entry #code0   the code exactly as the driver spelled it
+-       entry #number   the reason's frozen subcode, from 1 to 29
+-       entry #code   the code as the specification spells it, such as `no such element`
+-     entry .communicable   renders each `Reason` as a sentence, such as _the requested element was not found_
+-         The `Communicable` given for `WebDriver.Error.Reason`, in its companion's scope, which is
+-         what fills the `reason` in the error's message.
+-     entry #reason   the W3C error code the driver reported, as a `WebDriver.Error.Reason`
+-     entry #detail   the driver's message, or the raw reply when it was not a W3C error object
+-     entry #browserStacktrace   the driver's stack trace, one line per element; empty when it sent none
+-     entry #data   the error object's optional `data` member, which carries an open prompt's text
+-         On an `UnexpectedAlertOpen`, `data.text` is the prompt's text, so a caller can read it and
+-         decide between `WebDriver.Session#acceptAlert` and `WebDriver.Session#dismissAlert`.
++       entry .Other   код ошибки, который перечисление не называет, сохранённый в том виде, в каком его отправил драйвер
++         entry #code0   код в точности в том написании, в каком его передал драйвер
++       entry #number   замороженный подкод причины, от 1 до 29
++       entry #code   код в написании спецификации, например `no such element`
++     entry .communicable   отображает каждую `Reason` как предложение, например _the requested element was not found_
++         Given `Communicable` для `WebDriver.Error.Reason` в области видимости его компаньона; именно
++         он заполняет `reason` в сообщении ошибки.
++     entry #reason   код ошибки W3C, сообщённый драйвером, в виде `WebDriver.Error.Reason`
++     entry #detail   сообщение драйвера или необработанный ответ, если он не был объектом ошибки W3C
++     entry #browserStacktrace   трассировка стека драйвера, по одной строке на элемент; пуста, если драйвер её не прислал
++     entry #data   необязательный член `data` объекта ошибки, несущий текст открытого диалога
++         При `UnexpectedAlertOpen` `data.text` — это текст диалога, поэтому вызывающий код может
++         прочитать его и выбрать между `WebDriver.Session#acceptAlert` и `WebDriver.Session#dismissAlert`.
+
+=         decide between `WebDriver.Session#acceptAlert` and `WebDriver.Session#dismissAlert`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         decide between `WebDriver.Session#acceptAlert` and `WebDriver.Session#dismissAlert`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         decide between `WebDriver.Session#acceptAlert` and `WebDriver.Session#dismissAlert`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         decide between `WebDriver.Session#acceptAlert` and `WebDriver.Session#dismissAlert`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         supervise:
++         supervise:
+
+=         decide between `WebDriver.Session#acceptAlert` and `WebDriver.Session#dismissAlert`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+-             capture[WebDriver.Error](browser.title()).data.let(_.text.as[Text])
++             capture[WebDriver.Error](browser.title()).data.let(_.text.as[Text])
+
+=             capture[WebDriver.Error](browser.title()).data.let(_.text.as[Text])
+-         ```
++         ```
+
+-   entry .Element   a handle on a node of the page: a pure value, usable only with its session in scope
++   entry .Element   дескриптор узла страницы: чистое значение, пригодное только при сессии в области видимости
+
+=   entry .Element   a handle on a node of the page: a pure value, usable only with its session in scope
+-     detail
++     detail
+
+-         The opaque reference a driver returned for a DOM node, meaningful only to the session which
+-         produced it. It is a pure value holding neither a capability nor its session, so a `List`
+-         of them can be built and passed around freely; every operation on one — `click`,
+-         `innerText`, `value`, `attribute`, `element` and the other extensions in the `tarantula`
+-         package — takes the `WebDriver.Session` as a contextual parameter, so an element is inert
+-         outside its session's block.
++         Непрозрачная ссылка, которую драйвер вернул для узла DOM, имеющая смысл только для
++         создавшей её сессии. Это чистое значение, не хранящее ни возможности, ни своей сессии,
++         поэтому `List` таких ссылок можно свободно строить и передавать; каждая операция над ней —
++         `click`, `innerText`, `value`, `attribute`, `element` и другие расширения в пакете
++         `tarantula` — принимает `WebDriver.Session` как контекстный параметр, поэтому вне блока своей
++         сессии элемент бездействует.
+
+=         outside its session's block.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         outside its session's block.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         outside its session's block.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         outside its session's block.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         supervise:
++         supervise:
+
+=         outside its session's block.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+=         outside its session's block.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+=           WebDriver.Chrome.headless.session:
+-             browser.navigateTo(url"https://example.com/")
++             browser.navigateTo(url"https://example.com/")
+
+-             val menu: WebDriver.Element = browser.element(Name[DomId](t"menu"))
++             val menu: WebDriver.Element = browser.element(Name[DomId](t"menu"))
+
+-             val items: List[WebDriver.Element] = menu \ Li \ cls"item"
++             val items: List[WebDriver.Element] = menu \ Li \ cls"item"
+
+-             items.map(_.innerText())
++             items.map(_.innerText())
+
+=             items.map(_.innerText())
+-         ```
++         ```
+
+-         A leaked element is a dangling id rather than a live handle. One used after its page has
+-         changed raises `WebDriver.Error` with reason `StaleElement`.
++         Утёкший элемент — это висячий идентификатор, а не живой дескриптор. Элемент, использованный
++         после изменения его страницы, порождает `WebDriver.Error` с причиной `StaleElement`.
+
+=         changed raises `WebDriver.Error` with reason `StaleElement`.
+-     refer tarantula.WebDriver.Session
++     refer tarantula.WebDriver.Session
+
+-     refer tarantula.element
++     refer tarantula.element
+
+-     entry .encodable   encodes an element in the wire form a script argument or pointer origin takes
+-         The W3C _web element identifier_ form, `{"element-6066-11e4-a52e-4f735466cecf": id}`, so
+-         an element can be passed in `WebDriver.Session#execute`'s arguments as `element.in[Json]`,
+-         where the script sees the live DOM node.
+-     entry .\   every match for a locator beneath an element, or beneath each of a list of elements
+-         `element \ Li` asks the driver for every descendant matching any `Focusable` locator — an
+-         HTML tag, a `cls"…"` class list, a `Name[DomId]`, a `SelectorList`, an `XPath` or link
+-         text — and returns them in document order, an empty list for none. The second form, on a
+-         `List[WebDriver.Element]`, selects from every element found so far, so selections chain:
+-         `element \ Name[DomId](t"menu") \ Li \ cls"item"`. The protocol has no batch find, so the
+-         chained form makes one request per element, and nothing is deduplicated. It needs the
+-         `WebDriver.Session` in scope.
++     entry .encodable   кодирует элемент в форму передачи, которую принимает аргумент скрипта или начало отсчёта указателя
++         Форма W3C _web element identifier_, `{"element-6066-11e4-a52e-4f735466cecf": id}`, так что
++         элемент можно передать среди аргументов `WebDriver.Session#execute` как `element.in[Json]`,
++         и скрипт увидит живой узел DOM.
++     entry .\   все совпадения локатора под элементом или под каждым элементом списка
++         `element \ Li` запрашивает у драйвера всех потомков, соответствующих любому локатору
++         `Focusable`, — тегу HTML, списку классов `cls"…"`, `Name[DomId]`, `SelectorList`, `XPath`
++         или тексту ссылки — и возвращает их в порядке документа, а если их нет — пустой список.
++         Вторая форма, на `List[WebDriver.Element]`, выбирает из каждого найденного до сих пор
++         элемента, поэтому выборки выстраиваются в цепочку:
++         `element \ Name[DomId](t"menu") \ Li \ cls"item"`. В протоколе нет пакетного поиска, поэтому
++         цепочечная форма делает по одному запросу на элемент, и ничего не дедуплицируется. Ей нужна
++         `WebDriver.Session` в области видимости.
+
+-         It is spelled `\` rather than `/` because symbolism's generic `/`, which `soundness`
+-         exports, would claim that name for every receiver. Both forms are in the companion of
+-         `WebDriver.Element`, so they need no import.
+-     entry #elementId   the driver's opaque id for the node
+-   entry .ShadowRoot   the open shadow root an element hosts, as a handle for finding elements within it
++         Записывается как `\`, а не `/`, потому что обобщённый `/` из symbolism, который экспортирует
++         `soundness`, занял бы это имя для каждого получателя. Обе формы находятся в компаньоне
++         `WebDriver.Element`, поэтому импорт им не нужен.
++     entry #elementId   непрозрачный идентификатор узла у драйвера
++   entry .ShadowRoot   открытый теневой корень, размещённый в элементе, как дескриптор для поиска элементов внутри него
+
+=   entry .ShadowRoot   the open shadow root an element hosts, as a handle for finding elements within it
+-     detail
++     detail
+
+-         Reached with `element.shadowRoot()`. The protocol addresses a shadow root separately from
+-         an element, and only finding is valid against one, so it is a separate pure handle: search
+-         it with `\` for every match or `element` for exactly one, with the `WebDriver.Session` in
+-         scope. Only *open* shadow roots are reachable; asking for a closed one raises
+-         `WebDriver.Error` with reason `NoSuchShadowRoot`, and using one whose host has left the
+-         page raises `DetachedShadowRoot`.
++         Получается через `element.shadowRoot()`. Протокол адресует теневой корень отдельно от
++         элемента, и к нему применим только поиск, поэтому это отдельный чистый дескриптор: в нём
++         ищут через `\` все совпадения или через `element` ровно одно, с `WebDriver.Session` в
++         области видимости. Доступны только *открытые* теневые корни; запрос закрытого порождает
++         `WebDriver.Error` с причиной `NoSuchShadowRoot`, а использование корня, чей хост покинул
++         страницу, порождает `DetachedShadowRoot`.
+
+=         page raises `DetachedShadowRoot`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         page raises `DetachedShadowRoot`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         page raises `DetachedShadowRoot`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         page raises `DetachedShadowRoot`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         supervise:
++         supervise:
+
+=         page raises `DetachedShadowRoot`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+-             val root: WebDriver.ShadowRoot = browser.element(Name[DomId](t"widget")).shadowRoot()
++             val root: WebDriver.ShadowRoot = browser.element(Name[DomId](t"widget")).shadowRoot()
+
+-             root.element(Button).click()
++             root.element(Button).click()
+
+-             (root \ Li).length
++             (root \ Li).length
+
+=             (root \ Li).length
+-         ```
++         ```
+
+-     entry .\   every match for a locator within a shadow root, in document order
+-         `root \ Button` returns every element in the shadow tree matching any `Focusable`
+-         locator, or an empty list. It needs the `WebDriver.Session` in scope, and lives in the
+-         companion of `WebDriver.ShadowRoot`, so it needs no import.
+-     entry #shadowId   the driver's opaque id for the shadow root
+-   entry .Session   a live WebDriver session: one browser, its windows and cookies, confined to its block
++     entry .\   все совпадения локатора внутри теневого корня, в порядке документа
++         `root \ Button` возвращает все элементы теневого дерева, соответствующие любому локатору
++         `Focusable`, или пустой список. Ему нужна `WebDriver.Session` в области видимости, и он
++         находится в компаньоне `WebDriver.ShadowRoot`, поэтому импорт ему не нужен.
++     entry #shadowId   непрозрачный идентификатор теневого корня у драйвера
++   entry .Session   живая сессия WebDriver: один браузер, его окна и cookie, ограниченные своим блоком
+
+=   entry .Session   a live WebDriver session: one browser, its windows and cookies, confined to its block
+-     detail
++     detail
+
+-         The near end of a conversation with a driver, addressed beneath `base/session/id`. A
+-         session is never constructed directly: `session` on a `WebDriver` or a `WebDriver.Local`
+-         opens one, lends it to the block as a contextual value, and deletes it — closing the
+-         browser — when the block ends. Inside the block, `browser` names it.
++         Ближний конец разговора с драйвером, адресуемый под `base/session/id`. Сессия никогда не
++         создаётся напрямую: `session` на `WebDriver` или `WebDriver.Local` открывает её, одалживает
++         блоку как контекстное значение и удаляет — закрывая браузер — по завершении блока. Внутри
++         блока её называет `browser`.
+
+-         It is a capability, so capture checking confines it, and every closure over it, to the
+-         block which owns it: returning the session, or a lambda which uses it, is a compile error.
+-         What its commands return — `Text`, `Data`, `Json`, `WebDriver.Element`s, rectangles — is
+-         pure data, since every command is a complete round trip.
++         Это возможность, поэтому проверка захвата ограничивает её и каждое замыкание над ней блоком,
++         который ею владеет: вернуть сессию или использующую её лямбду — ошибка компиляции. То, что
++         возвращают её команды, — `Text`, `Data`, `Json`, `WebDriver.Element`, прямоугольники, — это
++         чистые данные, поскольку каждая команда — законченный обмен запросом и ответом.
+
+-         A script is grown one stage at a time: open a session, navigate, find, act, and read the
+-         result back.
++         Скрипт выращивается по одной стадии за раз: открыть сессию, перейти на страницу, найти,
++         действовать и прочитать результат.
+
+=         result back.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         result back.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         typecheck
+-         frame
++         frame
+
+-           label Open a session
++           label Открытие сессии
+
+=           label Open a session
+-           code
++           code
+
+=           label Open a session
+=           code
+-               supervise:
++               supervise:
+
+=           label Open a session
+=           code
+=               supervise:
+-                 WebDriver.Chrome.headless.session:
++                 WebDriver.Chrome.headless.session:
+
+=                 WebDriver.Chrome.headless.session:
+-                   browser.title()
++                   browser.title()
+
+=                 WebDriver.Chrome.headless.session:
+=                   browser.title()
+-         frame
++         frame
+
+-           label Navigate to a page
++           label Переход на страницу
+
+=           label Navigate to a page
+-           code
++           code
+
+=           label Navigate to a page
+=           code
+-               supervise:
++               supervise:
+
+=           label Navigate to a page
+=           code
+=               supervise:
+-                 WebDriver.Chrome.headless.session:
++                 WebDriver.Chrome.headless.session:
+
+=           label Navigate to a page
+=           code
+=               supervise:
+=                 WebDriver.Chrome.headless.session:
+-                   browser.navigateTo(url"https://example.com/search")
++                   browser.navigateTo(url"https://example.com/search")
+
+=                   browser.navigateTo(url"https://example.com/search")
+-                   browser.title()
++                   browser.title()
+
+=                   browser.navigateTo(url"https://example.com/search")
+=                   browser.title()
+-         frame
++         frame
+
+-           label Find a field and type into it
++           label Поиск поля и ввод текста в него
+
+=           label Find a field and type into it
+-           code
++           code
+
+=           label Find a field and type into it
+=           code
+-               supervise:
++               supervise:
+
+=           label Find a field and type into it
+=           code
+=               supervise:
+-                 WebDriver.Chrome.headless.session:
++                 WebDriver.Chrome.headless.session:
+
+=           label Find a field and type into it
+=           code
+=               supervise:
+=                 WebDriver.Chrome.headless.session:
+-                   browser.navigateTo(url"https://example.com/search")
++                   browser.navigateTo(url"https://example.com/search")
+
+-                   val field = browser.element(Name[DomId](t"query"))
++                   val field = browser.element(Name[DomId](t"query"))
+
+-                   field.value(t"spiders")
++                   field.value(t"spiders")
+
+-                   field.property(t"value")
++                   field.property(t"value")
+
+=                   field.property(t"value")
+-         frame
++         frame
+
+-           label Submit, and wait for the results
++           label Отправка и ожидание результатов
+
+=           label Submit, and wait for the results
+-           code
++           code
+
+-               import retryTenacities.exponentialTenTimesTenacity
++               import retryTenacities.exponentialTenTimesTenacity
+
+=
+-               supervise:
++               supervise:
+
+=
+=               supervise:
+-                 WebDriver.Chrome.headless.session:
++                 WebDriver.Chrome.headless.session:
+
+=
+=               supervise:
+=                 WebDriver.Chrome.headless.session:
+-                   browser.navigateTo(url"https://example.com/search")
++                   browser.navigateTo(url"https://example.com/search")
+
+-                   browser.element(Name[DomId](t"query")).value(t"spiders")
++                   browser.element(Name[DomId](t"query")).value(t"spiders")
+
+-                   browser.press(Keypress.Enter)
++                   browser.press(Keypress.Enter)
+
+-                   browser.awaitElements(cls"result").map(_.innerText())
++                   browser.awaitElements(cls"result").map(_.innerText())
+
+=                   browser.awaitElements(cls"result").map(_.innerText())
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         Every command raises `WebDriver.Error` through the `Tactic` in scope when the session was
+-         opened, and needs nothing further. The waits (`#awaitElement`, `#awaitElements`,
+-         `#awaitUntil`) additionally take a `Tenacity`, a `Monitor` and a `Tactic[Tenacity.Error]`
+-         at the call.
++         Каждая команда порождает `WebDriver.Error` через `Tactic`, бывшую в области видимости при
++         открытии сессии, и больше ничего не требует. Ожидания (`#awaitElement`, `#awaitElements`,
++         `#awaitUntil`) дополнительно принимают в месте вызова `Tenacity`, `Monitor` и
++         `Tactic[Tenacity.Error]`.
+
+-     refer tarantula.browser
++     refer tarantula.browser
+
+-     refer tarantula.WebDriver.Element
++     refer tarantula.WebDriver.Element
+
+-     refer tarantula.WebDriver.Error
++     refer tarantula.WebDriver.Error
+
+-     entry .Rect   the bounding box of an element or a window, in CSS pixels
++     entry .Rect   ограничивающий прямоугольник элемента или окна в CSS-пикселях
+
+=     entry .Rect   the bounding box of an element or a window, in CSS pixels
+-       detail
++       detail
+
+-           Returned by the `windowRect`, `maximize`, `minimize` and `fullscreen` commands of a
+-           `WebDriver.Session` and by the `rect` extension on an element, and taken by
+-           `windowRect(rect)` to move and resize the window.
++           Возвращается командами `windowRect`, `maximize`, `minimize` и `fullscreen` у
++           `WebDriver.Session` и расширением `rect` у элемента; принимается `windowRect(rect)`, чтобы
++           переместить окно и изменить его размер.
+
+=           `windowRect(rect)` to move and resize the window.
+=
+-           ```scala fuel
++           ```scala fuel
+
+=           `windowRect(rect)` to move and resize the window.
+=
+=           ```scala fuel
+-           typecheck
++           typecheck
+
+=           `windowRect(rect)` to move and resize the window.
+=
+=           ```scala fuel
+=           typecheck
+-           ##
++           ##
+
+=           `windowRect(rect)` to move and resize the window.
+=
+=           ```scala fuel
+=           typecheck
+=           ##
+-           supervise:
++           supervise:
+
+-             WebDriver.Chrome.session:
++             WebDriver.Chrome.session:
+
+-               browser.windowRect(WebDriver.Session.Rect(0.0, 0.0, 1280.0, 800.0))
++               browser.windowRect(WebDriver.Session.Rect(0.0, 0.0, 1280.0, 800.0))
+
+-               browser.windowRect().width
++               browser.windowRect().width
+
+=               browser.windowRect().width
+-           ```
++           ```
+
+-       entry #x   the left edge, from the viewport's or the screen's origin
+-       entry #y   the top edge, from the viewport's or the screen's origin
+-       entry #width   the width, in CSS pixels
+-       entry #height   the height, in CSS pixels
+-     entry .cm   a length in centimetres, as the `Quantity[Metres[1]]` a print's page and margins take
+-         `WebDriver.Session.cm(1.5)` is fifteen millimetres. Any length quantity will do in a
+-         `Page` or `Margin` — `21.0*Centi(Metre)`, `8.5*Inch` — so this is only a convenience.
+-     entry .Page   the paper size a print is laid out on; US Letter by default
++       entry #x   левый край относительно начала координат области просмотра или экрана
++       entry #y   верхний край относительно начала координат области просмотра или экрана
++       entry #width   ширина в CSS-пикселях
++       entry #height   высота в CSS-пикселях
++     entry .cm   длина в сантиметрах как `Quantity[Metres[1]]`, которую принимают страница и поля печати
++         `WebDriver.Session.cm(1.5)` — это пятнадцать миллиметров. В `Page` или `Margin` подойдёт
++         любая величина длины — `21.0*Centi(Metre)`, `8.5*Inch`, — так что это лишь удобство.
++     entry .Page   размер бумаги, на которой раскладывается печать; по умолчанию US Letter
+
+=     entry .Page   the paper size a print is laid out on; US Letter by default
+-       detail
++       detail
+
+-           Lengths are `Quantity[Metres[1]]`, so they can be written in any unit, and are sent to
+-           the driver in the centimetres the protocol requires. The defaults are the
+-           specification's own: 21.59cm by 27.94cm.
++           Длины — это `Quantity[Metres[1]]`, поэтому их можно записывать в любых единицах; драйверу
++           они отправляются в сантиметрах, как требует протокол. Значения по умолчанию взяты из
++           спецификации: 21,59 см на 27,94 см.
+
+=           specification's own: 21.59cm by 27.94cm.
+=
+-           ```scala
++           ```scala
+
+=           specification's own: 21.59cm by 27.94cm.
+=
+=           ```scala
+-           import soundness.*
++           import soundness.*
+
+-           val a4 = WebDriver.Session.Page(WebDriver.Session.cm(21.0), WebDriver.Session.cm(29.7))
++           val a4 = WebDriver.Session.Page(WebDriver.Session.cm(21.0), WebDriver.Session.cm(29.7))
+
+=           val a4 = WebDriver.Session.Page(WebDriver.Session.cm(21.0), WebDriver.Session.cm(29.7))
+-           ```
++           ```
+
+-       entry #width   the page's width, as a length
+-       entry #height   the page's height, as a length
+-     entry .Margin   the four margins of a printed page; one centimetre each by default
++       entry #width   ширина страницы как длина
++       entry #height   высота страницы как длина
++     entry .Margin   четыре поля печатной страницы; по умолчанию каждое по одному сантиметру
+
+=     entry .Margin   the four margins of a printed page; one centimetre each by default
+-       detail
++       detail
+
+-           Lengths are `Quantity[Metres[1]]`, sent to the driver in centimetres. `.uniform` makes
+-           four equal margins.
+-       entry .uniform   four equal margins of the given length
++           Длины — это `Quantity[Metres[1]]`, отправляемые драйверу в сантиметрах. `.uniform` создаёт
++           четыре равных поля.
++       entry .uniform   четыре равных поля заданной длины
+
+=       entry .uniform   four equal margins of the given length
+-           ```scala
++           ```scala
+
+=       entry .uniform   four equal margins of the given length
+=           ```scala
+-           import soundness.*
++           import soundness.*
+
+-           WebDriver.Session.Margin.uniform(WebDriver.Session.cm(0.5))
++           WebDriver.Session.Margin.uniform(WebDriver.Session.cm(0.5))
+
+=           WebDriver.Session.Margin.uniform(WebDriver.Session.cm(0.5))
+-           ```
++           ```
+
+-       entry #top   the top margin
+-       entry #bottom   the bottom margin
+-       entry #left   the left margin
+-       entry #right   the right margin
+-     entry .Orientation   whether a page is printed `Portrait` or `Landscape`
+-       entry #name   the orientation as the protocol spells it: `portrait` or `landscape`
+-     entry .Print   the options `WebDriver.Session#printPage` takes: orientation, scale, paper, margins, pages
++       entry #top   верхнее поле
++       entry #bottom   нижнее поле
++       entry #left   левое поле
++       entry #right   правое поле
++     entry .Orientation   печатается ли страница как `Portrait` или `Landscape`
++       entry #name   ориентация в написании протокола: `portrait` или `landscape`
++     entry .Print   параметры, которые принимает `WebDriver.Session#printPage`: ориентация, масштаб, бумага, поля, страницы
+
+=     entry .Print   the options `WebDriver.Session#printPage` takes: orientation, scale, paper, margins, pages
+-       detail
++       detail
+
+-           Every field has the specification's default: `Portrait`, a scale of `1.0`, no
+-           background graphics, a US Letter `Page`, one-centimetre `Margin`s, shrinking to fit, and
+-           every page. `pageRanges` is the protocol's own textual form, such as `List(t"1-3",
+-           t"5")`, since a range there may be open-ended.
++           У каждого поля значение по умолчанию из спецификации: `Portrait`, масштаб `1.0`, без
++           фоновой графики, `Page` формата US Letter, `Margin` по одному сантиметру, сжатие по размеру
++           и все страницы. `pageRanges` — собственная текстовая форма протокола, например `List(t"1-3",
++           t"5")`, поскольку диапазон в ней может быть открытым.
+
+=           t"5")`, since a range there may be open-ended.
+=
+-           ```scala fuel
++           ```scala fuel
+
+=           t"5")`, since a range there may be open-ended.
+=
+=           ```scala fuel
+-           typecheck
++           typecheck
+
+=           t"5")`, since a range there may be open-ended.
+=
+=           ```scala fuel
+=           typecheck
+-           ##
++           ##
+
+-           import WebDriver.Session.{Print, Orientation, Margin, cm}
++           import WebDriver.Session.{Print, Orientation, Margin, cm}
+
+=           import WebDriver.Session.{Print, Orientation, Margin, cm}
+=
+-           supervise:
++           supervise:
+
+=           import WebDriver.Session.{Print, Orientation, Margin, cm}
+=
+=           supervise:
+-             WebDriver.Chrome.headless.session:
++             WebDriver.Chrome.headless.session:
+
+-               browser.navigateTo(url"https://example.com/")
++               browser.navigateTo(url"https://example.com/")
+
+-               browser.printPage:
++               browser.printPage:
+
+-                 Print(orientation = Orientation.Landscape, margin = Margin.uniform(cm(0.5)))
++                 Print(orientation = Orientation.Landscape, margin = Margin.uniform(cm(0.5)))
+
+=                 Print(orientation = Orientation.Landscape, margin = Margin.uniform(cm(0.5)))
+-           ```
++           ```
+
+-       entry #orientation   `Portrait` or `Landscape`
+-       entry #scale   the scale factor, from 0.1 to 2.0; `1.0` by default
+-       entry #background   whether background colours and images are printed; `false` by default
+-       entry #page   the paper size, as a `WebDriver.Session.Page`
+-       entry #margin   the margins, as a `WebDriver.Session.Margin`
+-       entry #shrinkToFit   whether content is shrunk to fit the page width; `true` by default
+-       entry #pageRanges   the pages to print, as text such as `1-3` or `5`; every page when empty
+-     entry .Timeouts   the three timeouts a session keeps, in milliseconds
++       entry #orientation   `Portrait` или `Landscape`
++       entry #scale   коэффициент масштабирования от 0.1 до 2.0; по умолчанию `1.0`
++       entry #background   печатаются ли фоновые цвета и изображения; по умолчанию `false`
++       entry #page   размер бумаги в виде `WebDriver.Session.Page`
++       entry #margin   поля в виде `WebDriver.Session.Margin`
++       entry #shrinkToFit   сжимается ли содержимое по ширине страницы; по умолчанию `true`
++       entry #pageRanges   страницы для печати в виде текста, например `1-3` или `5`; если пусто — все страницы
++     entry .Timeouts   три тайм-аута сессии в миллисекундах
+
+=     entry .Timeouts   the three timeouts a session keeps, in milliseconds
+-       detail
++       detail
+
+-           `implicit` is how long a find command retries before reporting `NoSuchElement`, and is
+-           how a script waits for a page to settle without sleeping; `pageLoad` bounds navigation
+-           and `script` bounds `WebDriver.Session#execute` and `WebDriver.Session#executeAsync`. An `Unset` field is left as the
+-           driver has it.
++           `implicit` — это то, как долго команда поиска повторяет попытки, прежде чем сообщить
++           `NoSuchElement`, и именно так скрипт ждёт, пока страница устоится, без засыпания; `pageLoad`
++           ограничивает навигацию, а `script` ограничивает `WebDriver.Session#execute` и
++           `WebDriver.Session#executeAsync`. Поле со значением `Unset` остаётся таким, как его задал драйвер.
+
+=           driver has it.
+=
+-           ```scala fuel
++           ```scala fuel
+
+=           driver has it.
+=
+=           ```scala fuel
+-           typecheck
++           typecheck
+
+=           driver has it.
+=
+=           ```scala fuel
+=           typecheck
+-           ##
++           ##
+
+=           driver has it.
+=
+=           ```scala fuel
+=           typecheck
+=           ##
+-           supervise:
++           supervise:
+
+=           driver has it.
+=
+=           ```scala fuel
+=           typecheck
+=           ##
+=           supervise:
+-             WebDriver.Chrome.headless.session:
++             WebDriver.Chrome.headless.session:
+
+-               browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
++               browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
+
+-               browser.timeouts().pageLoad
++               browser.timeouts().pageLoad
+
+=               browser.timeouts().pageLoad
+-           ```
++           ```
+
+-           The implicit timeout covers find commands and nothing else: a button becoming enabled
+-           or a heading's text changing is waited for with `WebDriver.Session#awaitUntil`.
+-       entry #implicit   how long a find retries before giving up, or `Unset` to leave it as it is
+-       entry #pageLoad   how long a navigation may take, or `Unset` to leave it as it is
+-       entry #script   how long a script may run, or `Unset` to leave it as it is
+-     entry .Action   one step of a keyboard or pointer input sequence, for `WebDriver.Session#perform`
++           Неявный тайм-аут покрывает команды поиска и ничего больше: того, что кнопка станет
++           доступной или текст заголовка изменится, ждут с помощью `WebDriver.Session#awaitUntil`.
++       entry #implicit   как долго поиск повторяет попытки, прежде чем сдаться, или `Unset`, чтобы оставить как есть
++       entry #pageLoad   сколько может длиться навигация, или `Unset`, чтобы оставить как есть
++       entry #script   сколько может выполняться скрипт, или `Unset`, чтобы оставить как есть
++     entry .Action   один шаг последовательности ввода клавиатуры или указателя для `WebDriver.Session#perform`
+
+=     entry .Action   one step of a keyboard or pointer input sequence, for `WebDriver.Session#perform`
+-       detail
++       detail
+
+-           The W3C `/actions` endpoint is the only way to send a modifier, a chord, a hover or a
+-           drag, and an `Action` is one step of it: a key going down or up, a pause, a pointer
+-           button pressed or released, or a pointer movement. A list of steps is performed against
+-           one input source, a `WebDriver.Session.Action.Source`.
++           Конечная точка W3C `/actions` — единственный способ отправить модификатор, аккорд, наведение
++           или перетаскивание, а `Action` — один её шаг: нажатие или отпускание клавиши, пауза,
++           нажатие или отпускание кнопки указателя либо перемещение указателя. Список шагов
++           выполняется над одним источником ввода, `WebDriver.Session.Action.Source`.
+
+=           one input source, a `WebDriver.Session.Action.Source`.
+=
+-           ```scala fuel
++           ```scala fuel
+
+=           one input source, a `WebDriver.Session.Action.Source`.
+=
+=           ```scala fuel
+-           typecheck
++           typecheck
+
+=           one input source, a `WebDriver.Session.Action.Source`.
+=
+=           ```scala fuel
+=           typecheck
+-           ##
++           ##
+
+-           import WebDriver.Session.Action
++           import WebDriver.Session.Action
+
+=           import WebDriver.Session.Action
+=
+-           supervise:
++           supervise:
+
+=           import WebDriver.Session.Action
+=
+=           supervise:
+-             WebDriver.Chrome.headless.session:
++             WebDriver.Chrome.headless.session:
+
+-               val target = browser.element(Name[DomId](t"menu"))
++               val target = browser.element(Name[DomId](t"menu"))
+
+-               browser.perform
++               browser.perform
+
+-                 ( Action.Source.Pointer,
++                 ( Action.Source.Pointer,
+
+-                   List(Action.PointerMove(0, 0, origin = target), Action.Pause(500)) )
++                   List(Action.PointerMove(0, 0, origin = target), Action.Pause(500)) )
+
+=                   List(Action.PointerMove(0, 0, origin = target), Action.Pause(500)) )
+-           ```
++           ```
+
+-           Plain text entry into a field is simpler and faster with the `value` extension on an
+-           element, and keypresses are simplest with `WebDriver.Session#press`, which builds the
+-           steps with `.steps`.
+-       entry .Source   which input source a sequence of actions drives: `Key` or `Pointer`
++           Простой ввод текста в поле проще и быстрее выполняется расширением `value` у элемента, а
++           нажатия клавиш проще всего отправлять через `WebDriver.Session#press`, который строит шаги с
++           помощью `.steps`.
++       entry .Source   какой источник ввода приводит в действие последовательность действий: `Key` или `Pointer`
+
+=       entry .Source   which input source a sequence of actions drives: `Key` or `Pointer`
+-         detail
++         detail
+
+-             One `perform` call drives one source. A "none" source also exists in the
+-             specification, but it can only pause, which either of these can do; two sources in
+-             lockstep need the assembled JSON passed to `WebDriver.Session#actions`.
+-         entry #id   the source's id in the sequence: `keyboard` or `pointer`
+-         entry #kind   the source's type: `key` or `pointer`
+-       entry .LeftButton   the left mouse button, `0`, as the specification numbers buttons
+-       entry .MiddleButton   the middle mouse button, `1` in the DOM's numbering
+-       entry .RightButton   the right mouse button, `2` in the DOM's numbering, not `1` as one might guess
+-       entry .codepoint   the character a `Keypress` types, or the private-use codepoint for a named key
+-           A character key is itself; `Enter`, `Tab`, `Backspace`, `Escape`, the arrows, `Home`,
+-           `End`, `PageUp`, `PageDown`, `Insert`, `Delete` and `F1` to `F12` are the codepoints the
+-           specification assigns them in Unicode's private use area, from U+E000. A modifier on its
+-           own, a function key outside 1 to 12, or a terminal escape sequence is `Unset`.
+-       entry .steps   a `Keypress` as the key actions which produce it, modifiers held around it
++             Один вызов `perform` приводит в действие один источник. В спецификации есть ещё источник
++             «none», но он умеет только делать паузу, что может любой из этих двух; для двух
++             источников, работающих синхронно, нужно передать собранный JSON в
++             `WebDriver.Session#actions`.
++         entry #id   идентификатор источника в последовательности: `keyboard` или `pointer`
++         entry #kind   тип источника: `key` или `pointer`
++       entry .LeftButton   левая кнопка мыши, `0`, в нумерации кнопок спецификации
++       entry .MiddleButton   средняя кнопка мыши, `1` в нумерации DOM
++       entry .RightButton   правая кнопка мыши, `2` в нумерации DOM, а не `1`, как можно было бы предположить
++       entry .codepoint   символ, который набирает `Keypress`, или кодовая точка частного использования для именованной клавиши
++           Символьная клавиша — это сам символ; `Enter`, `Tab`, `Backspace`, `Escape`, стрелки,
++           `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete` и `F1`–`F12` — это кодовые точки,
++           которые спецификация назначает им в области частного использования Unicode, начиная с
++           U+E000. Модификатор сам по себе, функциональная клавиша за пределами 1–12 или
++           управляющая последовательность терминала — это `Unset`.
++       entry .steps   `Keypress` в виде производящих его действий клавиш, с удерживаемыми вокруг модификаторами
+
+=       entry .steps   a `Keypress` as the key actions which produce it, modifiers held around it
+-         detail
++         detail
+
+-             A modified keypress becomes its modifier pressed, the inner keypress struck, and the
+-             modifier released, nested to any depth, since the protocol has no command for "type
+-             this with control held". A keypress with no browser counterpart is no steps at all.
++             Нажатие с модификатором превращается в нажатие модификатора, удар по внутреннему нажатию
++             клавиши и отпускание модификатора, с вложенностью любой глубины, поскольку в протоколе
++             нет команды «набрать это с зажатым Control». Нажатие клавиши, у которого нет аналога в
++             браузере, не даёт никаких шагов.
+
+-             ```scala fuel
++             ```scala fuel
+
+=             ```scala fuel
+-             frame
++             frame
+
+-               label A named key
++               label Именованная клавиша
+
+=               label A named key
+-               code
++               code
+
+-                   WebDriver.Session.Action.steps(Keypress.Enter)
++                   WebDriver.Session.Action.steps(Keypress.Enter)
+
+-                   // KeyDown(""), KeyUp("")
++                   // KeyDown(""), KeyUp("")
+
+=                   // KeyDown(""), KeyUp("")
+-             frame
++             frame
+
+-               label With Control held
++               label С зажатым Control
+
+=               label With Control held
+-               code
++               code
+
+-                   WebDriver.Session.Action.steps(Keypress.Ctrl('A'))
++                   WebDriver.Session.Action.steps(Keypress.Ctrl('A'))
+
+-                   // KeyDown(""), KeyDown("A"), KeyUp("A"), KeyUp("")
++                   // KeyDown(""), KeyDown("A"), KeyUp("A"), KeyUp("")
+
+=                   // KeyDown(""), KeyDown("A"), KeyUp("A"), KeyUp("")
+-             frame
++             frame
+
+-               label With Control and Shift held
++               label С зажатыми Control и Shift
+
+=               label With Control and Shift held
+-               code
++               code
+
+-                   WebDriver.Session.Action.steps(Keypress.Ctrl(Keypress.Shift(Keypress.Enter)))
++                   WebDriver.Session.Action.steps(Keypress.Ctrl(Keypress.Shift(Keypress.Enter)))
+
+-                   // KeyDown(""), KeyDown(""), KeyDown(""),
++                   // KeyDown(""), KeyDown(""), KeyDown(""),
+
+-                   // KeyUp(""), KeyUp(""), KeyUp("")
++                   // KeyUp(""), KeyUp(""), KeyUp("")
+
+-             ##
++             ##
+
+-             ```
++             ```
+
+-       entry .encodable   encodes an action as the specification's JSON, such as `{"type":"keyDown","value":"a"}`
+-           Written by hand, since the discriminator is a `type` field with camel-cased values and
+-           each variant carries its own keys; a `PointerMove` with no origin is relative to the
++       entry .encodable   кодирует действие в JSON спецификации, например `{"type":"keyDown","value":"a"}`
++           Написан вручную, поскольку дискриминатор — это поле `type` со значениями в camelCase, а
++           каждый вариант несёт свои ключи; `PointerMove` без начала отсчёта задаётся относительно
+
+-           `viewport`.
++           `viewport`.
+
+-       entry .KeyDown   presses a key, by the character or codepoint it types
+-         entry #value   the key, as a character or a private-use codepoint from `WebDriver.Session.Action.codepoint`
+-       entry .KeyUp   releases a key, by the character or codepoint it types
+-         entry #value   the key, as a character or a private-use codepoint from `WebDriver.Session.Action.codepoint`
+-       entry .Pause   waits for a number of milliseconds before the next step
+-         entry #duration   the pause, in milliseconds
+-       entry .PointerDown   presses a pointer button; the left one by default
+-         entry #button   the button, numbered as the DOM does: `0` left, `1` middle, `2` right
+-       entry .PointerUp   releases a pointer button; the left one by default
+-         entry #button   the button, numbered as the DOM does: `0` left, `1` middle, `2` right
+-       entry .PointerMove   moves the pointer, relative to the viewport or to the centre of an element
+-         entry #x   the horizontal offset, in CSS pixels
+-         entry #y   the vertical offset, in CSS pixels
+-         entry #duration   how long the movement takes, in milliseconds; `100` by default
+-         entry #origin   the element whose centre the offsets are from, or `Unset` for the viewport
+-     entry #sessionId   the id the driver gave this session when it was created
+-     entry #capabilities   what the driver agreed to, which may differ from what was asked for
+-         The negotiated capabilities object from the driver's reply to `POST /session`: it names
+-         the browser and version which answered and says whether optional behaviour, such as
+-         `setWindowRect` or `acceptInsecureCerts`, is available. Vendor keys (`moz:*`, `goog:*`)
+-         are left as `Json`; `#browserName`, `#browserVersion` and `#platformName` read the common
+-         ones.
+-     entry #browserName   the name of the browser which answered, from the negotiated capabilities
+-     entry #browserVersion   the version of the browser which answered, or `Unset` if the driver did not say
+-     entry #platformName   the operating system the browser runs on, or `Unset` if the driver did not say
+-     entry #navigateTo   loads a URL in the current window, and waits for it to load
+-         Takes an `HttpUrl`, such as the result of `url"https://…"`, or any URL type which is
+-         `Abstractable across Urls to Text`. The overload for `HttpUrl` exists because the
+-         interpolator's result has the singleton type `Url["https"]`, which the generic form,
+-         declared for `Url["http" | "https"]`, would reject.
++       entry .KeyDown   нажимает клавишу по символу или кодовой точке, которую она набирает
++         entry #value   клавиша в виде символа или кодовой точки частного использования из `WebDriver.Session.Action.codepoint`
++       entry .KeyUp   отпускает клавишу по символу или кодовой точке, которую она набирает
++         entry #value   клавиша в виде символа или кодовой точки частного использования из `WebDriver.Session.Action.codepoint`
++       entry .Pause   ждёт заданное число миллисекунд перед следующим шагом
++         entry #duration   пауза в миллисекундах
++       entry .PointerDown   нажимает кнопку указателя; по умолчанию левую
++         entry #button   кнопка в нумерации DOM: `0` левая, `1` средняя, `2` правая
++       entry .PointerUp   отпускает кнопку указателя; по умолчанию левую
++         entry #button   кнопка в нумерации DOM: `0` левая, `1` средняя, `2` правая
++       entry .PointerMove   перемещает указатель относительно области просмотра или центра элемента
++         entry #x   горизонтальное смещение в CSS-пикселях
++         entry #y   вертикальное смещение в CSS-пикселях
++         entry #duration   сколько длится перемещение, в миллисекундах; по умолчанию `100`
++         entry #origin   элемент, от центра которого отсчитываются смещения, или `Unset` для области просмотра
++     entry #sessionId   идентификатор, который драйвер дал этой сессии при её создании
++     entry #capabilities   то, на что согласился драйвер, — может отличаться от запрошенного
++         Согласованный объект возможностей из ответа драйвера на `POST /session`: он называет
++         ответивший браузер и его версию и сообщает, доступно ли необязательное поведение, такое как
++         `setWindowRect` или `acceptInsecureCerts`. Ключи производителей (`moz:*`, `goog:*`)
++         остаются в виде `Json`; `#browserName`, `#browserVersion` и `#platformName` читают общие
++         ключи.
++     entry #browserName   имя ответившего браузера из согласованных возможностей
++     entry #browserVersion   версия ответившего браузера или `Unset`, если драйвер её не сообщил
++     entry #platformName   операционная система, на которой работает браузер, или `Unset`, если драйвер её не сообщил
++     entry #navigateTo   загружает URL в текущем окне и ждёт завершения загрузки
++         Принимает `HttpUrl`, например результат `url"https://…"`, или любой тип URL, который является
++         `Abstractable across Urls to Text`. Перегрузка для `HttpUrl` существует потому, что
++         результат интерполятора имеет синглтон-тип `Url["https"]`, который обобщённая форма,
++         объявленная для `Url["http" | "https"]`, отвергла бы.
+
+=         declared for `Url["http" | "https"]`, would reject.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         declared for `Url["http" | "https"]`, would reject.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         declared for `Url["http" | "https"]`, would reject.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         declared for `Url["http" | "https"]`, would reject.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         supervise:
++         supervise:
+
+=         declared for `Url["http" | "https"]`, would reject.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+=         declared for `Url["http" | "https"]`, would reject.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+=           WebDriver.Chrome.headless.session:
+-             browser.navigateTo(url"https://example.com/")
++             browser.navigateTo(url"https://example.com/")
+
+-             browser.url[HttpUrl]()
++             browser.url[HttpUrl]()
+
+=             browser.url[HttpUrl]()
+-         ```
++         ```
+
+-     entry #url   the current window's URL, as a URL type of the caller's choosing
+-         `browser.url[HttpUrl]()`, or any type `Instantiable across Urls from Text`.
+-     entry #back   goes back one page in the current window's history
+-     entry #forward   goes forward one page in the current window's history
+-     entry #refresh   reloads the current page
+-     entry #title   the current page's title
+-     entry #source   the current page's markup, as the browser serialises its DOM
+-         The DOM as it now stands, serialised, not the bytes the server sent: whatever the page's
+-         scripts have changed is included.
+-     entry #screenshotData   a PNG of the current viewport, or of one element, as raw bytes
+-         `screenshotData()` captures the viewport and `screenshotData(element)` one element. The
+-         bytes are those the driver sent, decoded from Base64. The `screenshot` extension in the
+-         `tarantula.image` component decodes them further, into a `Raster in Png`.
+-     entry #window   the handle of the current window or tab
+-     entry #windows   the handles of every open window and tab, in no particular order
+-     entry #closeWindow   closes the current window, returning the handles of those which remain
+-         Commands go to no window until `#switchTo` selects another; closing the last one ends the
+-         browser's session as far as the driver is concerned.
+-     entry #switchTo   makes another window or tab, by its handle, the target of every command
+-         Only the current window responds to commands, so a handle from `#newWindow` or `#windows`
+-         is passed here before the window can be used.
++     entry #url   URL текущего окна в виде типа URL, выбранного вызывающим кодом
++         `browser.url[HttpUrl]()` или любой тип `Instantiable across Urls from Text`.
++     entry #back   переходит на одну страницу назад в истории текущего окна
++     entry #forward   переходит на одну страницу вперёд в истории текущего окна
++     entry #refresh   перезагружает текущую страницу
++     entry #title   заголовок текущей страницы
++     entry #source   разметка текущей страницы в том виде, в каком браузер сериализует свой DOM
++         DOM в его нынешнем состоянии, сериализованный, а не байты, присланные сервером: всё, что
++         изменили скрипты страницы, включено.
++     entry #screenshotData   PNG текущей области просмотра или одного элемента в виде необработанных байтов
++         `screenshotData()` снимает область просмотра, а `screenshotData(element)` — один элемент.
++         Байты — те, что прислал драйвер, декодированные из Base64. Расширение `screenshot` в
++         компоненте `tarantula.image` декодирует их дальше, в `Raster in Png`.
++     entry #window   дескриптор текущего окна или вкладки
++     entry #windows   дескрипторы всех открытых окон и вкладок, в произвольном порядке
++     entry #closeWindow   закрывает текущее окно и возвращает дескрипторы оставшихся
++         Команды не направляются ни в какое окно, пока `#switchTo` не выберет другое; закрытие
++         последнего окна, с точки зрения драйвера, завершает сессию браузера.
++     entry #switchTo   делает другое окно или вкладку, по дескриптору, целью каждой команды
++         На команды отвечает только текущее окно, поэтому дескриптор из `#newWindow` или `#windows`
++         передаётся сюда, прежде чем окном можно будет пользоваться.
+
+=         is passed here before the window can be used.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         is passed here before the window can be used.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         is passed here before the window can be used.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         is passed here before the window can be used.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         supervise:
++         supervise:
+
+=         is passed here before the window can be used.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+-             val original = browser.window()
++             val original = browser.window()
+
+-             val tab = browser.newWindow()
++             val tab = browser.newWindow()
+
+-             browser.switchTo(tab)
++             browser.switchTo(tab)
+
+=             browser.switchTo(tab)
+-             browser.navigateTo(url"https://example.com/")
++             browser.navigateTo(url"https://example.com/")
+
+-             browser.closeWindow()
++             browser.closeWindow()
+
+-             browser.switchTo(original)
++             browser.switchTo(original)
+
+=             browser.switchTo(original)
+-         ```
++         ```
+
+-     entry #newWindow   opens a new tab, or a window, and returns its handle without switching to it
+-         `newWindow()` opens a tab and `newWindow(tab = false)` a window. As the specification
+-         says, the current window is left where it was: pass the handle to `#switchTo` to use it.
+-     entry #windowRect   the current window's position and size, or moves and resizes it
+-         `windowRect()` reads the window's `WebDriver.Session.Rect`; `windowRect(rect)` asks for a
+-         new one, which a window manager may not grant in full, and which a headless browser may
+-         ignore.
+-     entry #maximize   maximises the current window, returning the geometry it actually took
+-     entry #minimize   minimises the current window, returning the geometry it actually took
+-     entry #fullscreen   makes the current window full-screen, returning the geometry it actually took
+-     entry #frame   enters a frame, by its element or its index, as the target of every command
+-         Commands address the current browsing context, so entering a frame is a change of mode
+-         rather than an argument to each command. `#parentFrame` steps back out one level, and
+-         `#topFrame` returns to the top-level document from any depth. An absent frame raises
+-         `WebDriver.Error` with reason `NoSuchFrame`.
++     entry #newWindow   открывает новую вкладку или окно и возвращает его дескриптор, не переключаясь на него
++         `newWindow()` открывает вкладку, а `newWindow(tab = false)` — окно. Как и сказано в
++         спецификации, текущее окно остаётся прежним: чтобы воспользоваться новым, передайте
++         дескриптор в `#switchTo`.
++     entry #windowRect   положение и размер текущего окна, или перемещает окно и меняет его размер
++         `windowRect()` читает `WebDriver.Session.Rect` окна; `windowRect(rect)` запрашивает новый,
++         который оконный менеджер может предоставить не полностью, а браузер в headless-режиме может
++         проигнорировать.
++     entry #maximize   разворачивает текущее окно и возвращает геометрию, которую оно фактически приняло
++     entry #minimize   сворачивает текущее окно и возвращает геометрию, которую оно фактически приняло
++     entry #fullscreen   переводит текущее окно в полноэкранный режим и возвращает геометрию, которую оно фактически приняло
++     entry #frame   входит во фрейм, по его элементу или индексу, как в цель каждой команды
++         Команды адресуют текущий контекст просмотра, поэтому вход во фрейм — это смена режима, а не
++         аргумент каждой команды. `#parentFrame` выходит на один уровень назад, а `#topFrame`
++         возвращает к документу верхнего уровня с любой глубины. Отсутствующий фрейм порождает
++         `WebDriver.Error` с причиной `NoSuchFrame`.
+
+=         `WebDriver.Error` with reason `NoSuchFrame`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `WebDriver.Error` with reason `NoSuchFrame`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `WebDriver.Error` with reason `NoSuchFrame`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         `WebDriver.Error` with reason `NoSuchFrame`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         supervise:
++         supervise:
+
+=         `WebDriver.Error` with reason `NoSuchFrame`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+-             browser.frame(browser.element(Iframe))
++             browser.frame(browser.element(Iframe))
+
+-             browser.element(H1).innerText()
++             browser.element(H1).innerText()
+
+-             browser.topFrame()
++             browser.topFrame()
+
+=             browser.topFrame()
+-         ```
++         ```
+
+-     entry #parentFrame   leaves the current frame for the one which contains it
+-     entry #topFrame   returns to the top-level document from a frame at any depth
+-         Sends an explicit `null` frame id, which the protocol distinguishes from an absent one.
+-     entry #acceptAlert   accepts the open alert, confirm or prompt, as clicking its OK button would
+-         While a prompt is open every other command fails with `WebDriver.Error` reason
+-         `UnexpectedAlertOpen`, whose `WebDriver.Error#data` carries the prompt's text; with no prompt open this
+-         raises `NoSuchAlert`.
+-     entry #dismissAlert   dismisses the open alert, confirm or prompt, as its Cancel button would
+-     entry #alertText   the open prompt's message, or types an answer into it
+-         `alertText()` reads the message of the open alert, confirm or prompt; `alertText(text)`
+-         types into a `prompt` before `#acceptAlert` submits it.
+-     entry #timeouts   the session's timeouts, or sets them
+-         `timeouts()` reads the `WebDriver.Session.Timeouts` in force; `timeouts(timeouts)` sets
+-         those which are not `Unset`, leaving the rest as they were.
+-     entry #cookies   every cookie visible to the current page
+-         Each a telekinesis `Cookie.Value`, whose fields are the names the protocol uses. It has
+-         no `sameSite`, so that attribute is neither read nor set.
+-     entry #cookie   the cookie of the given name visible to the current page
+-         Raises `WebDriver.Error` with reason `NoSuchCookie` if there is none.
+-     entry #addCookie   sets a cookie on the current page's domain
+-         Takes a `Cookie.Value`. A cookie for another domain raises `WebDriver.Error` with reason
+-         `InvalidCookieDomain`, so navigate to the domain first. A cookie which needs a `sameSite`
+-         attribute can be set with `#execute` instead.
+-     entry #deleteCookie   deletes the cookie of the given name
+-     entry #deleteCookies   deletes every cookie visible to the current page
+-     entry #perform   performs a sequence of `WebDriver.Session.Action`s on one input source
+-         Sends the steps as a single sequence to the `/actions` endpoint, on the keyboard or the
+-         pointer source. Keys and buttons left held stay held until `#releaseActions`.
++     entry #parentFrame   покидает текущий фрейм ради того, который его содержит
++     entry #topFrame   возвращает к документу верхнего уровня из фрейма любой глубины
++         Отправляет явный идентификатор фрейма `null`, который протокол отличает от отсутствующего.
++     entry #acceptAlert   принимает открытый alert, confirm или prompt, как это сделало бы нажатие его кнопки OK
++         Пока открыт диалог, любая другая команда завершается неудачей с `WebDriver.Error` с причиной
++         `UnexpectedAlertOpen`, чей `WebDriver.Error#data` несёт текст диалога; если диалог не
++         открыт, порождается `NoSuchAlert`.
++     entry #dismissAlert   отклоняет открытый alert, confirm или prompt, как это сделала бы его кнопка Cancel
++     entry #alertText   сообщение открытого диалога, или вводит в него ответ
++         `alertText()` читает сообщение открытого alert, confirm или prompt; `alertText(text)`
++         вводит текст в `prompt`, прежде чем `#acceptAlert` его отправит.
++     entry #timeouts   тайм-ауты сессии, или устанавливает их
++         `timeouts()` читает действующие `WebDriver.Session.Timeouts`; `timeouts(timeouts)`
++         устанавливает те, что не равны `Unset`, оставляя остальные как были.
++     entry #cookies   все cookie, видимые текущей странице
++         Каждый — это `Cookie.Value` из telekinesis, чьи поля носят имена, используемые протоколом. У
++         него нет `sameSite`, поэтому этот атрибут не читается и не устанавливается.
++     entry #cookie   cookie с заданным именем, видимый текущей странице
++         Порождает `WebDriver.Error` с причиной `NoSuchCookie`, если такого нет.
++     entry #addCookie   устанавливает cookie на домене текущей страницы
++         Принимает `Cookie.Value`. Cookie для другого домена порождает `WebDriver.Error` с причиной
++         `InvalidCookieDomain`, поэтому сначала перейдите на этот домен. Cookie, которому нужен
++         атрибут `sameSite`, можно установить через `#execute`.
++     entry #deleteCookie   удаляет cookie с заданным именем
++     entry #deleteCookies   удаляет все cookie, видимые текущей странице
++     entry #perform   выполняет последовательность `WebDriver.Session.Action` над одним источником ввода
++         Отправляет шаги одной последовательностью в конечную точку `/actions`, на источник клавиатуры
++         или указателя. Клавиши и кнопки, оставленные нажатыми, остаются нажатыми до `#releaseActions`.
+
+=         pointer source. Keys and buttons left held stay held until `#releaseActions`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         pointer source. Keys and buttons left held stay held until `#releaseActions`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         pointer source. Keys and buttons left held stay held until `#releaseActions`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+-         import WebDriver.Session.Action
++         import WebDriver.Session.Action
+
+=         import WebDriver.Session.Action
+=
+-         supervise:
++         supervise:
+
+=         import WebDriver.Session.Action
+=
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+-             browser.perform
++             browser.perform
+
+-               ( Action.Source.Pointer,
++               ( Action.Source.Pointer,
+
+-                 List(Action.PointerMove(10, 10), Action.PointerDown(), Action.PointerUp()) )
++                 List(Action.PointerMove(10, 10), Action.PointerDown(), Action.PointerUp()) )
+
+=                 List(Action.PointerMove(10, 10), Action.PointerDown(), Action.PointerUp()) )
+-         ```
++         ```
+
+-     entry #actions   sends an assembled `/actions` payload, for sources moving in lockstep
+-         The escape hatch beneath `#perform`, for the rare chord across keyboard and pointer: the
+-         `Json` is sent as the request body, `{"actions": […]}`, unchanged.
+-     entry #press   types a sequence of keypresses, with their modifiers held around them
+-         Each `Keypress` — a character, a named key such as `Keypress.Enter` or
+-         `Keypress.FunctionKey(3)`, or one wrapped in `Ctrl`, `Shift`, `Alt` or `Meta` — becomes
+-         the key actions of `WebDriver.Session.Action.steps`, all performed on the keyboard source
+-         in one request. Filling a field with plain text is better done with the `value`
+-         extension on an element: one request rather than several actions per character.
++     entry #actions   отправляет собранную полезную нагрузку `/actions` для источников, работающих синхронно
++         Запасной выход под `#perform` для редкого аккорда из клавиатуры и указателя: `Json`
++         отправляется как тело запроса, `{"actions": […]}`, без изменений.
++     entry #press   набирает последовательность нажатий клавиш, удерживая вокруг них их модификаторы
++         Каждый `Keypress` — символ, именованная клавиша, такая как `Keypress.Enter` или
++         `Keypress.FunctionKey(3)`, или клавиша, обёрнутая в `Ctrl`, `Shift`, `Alt` или `Meta`, —
++         становится действиями клавиш из `WebDriver.Session.Action.steps`, и все они выполняются на
++         источнике клавиатуры одним запросом. Заполнять поле простым текстом лучше расширением `value`
++         у элемента: один запрос вместо нескольких действий на символ.
+
+=         extension on an element: one request rather than several actions per character.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         extension on an element: one request rather than several actions per character.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         extension on an element: one request rather than several actions per character.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         extension on an element: one request rather than several actions per character.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         supervise:
++         supervise:
+
+=         extension on an element: one request rather than several actions per character.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+-             browser.element(Name[DomId](t"query")).click()
++             browser.element(Name[DomId](t"query")).click()
+
+-             browser.press(Keypress.Ctrl('A'), Keypress.Backspace, Keypress.Enter)
++             browser.press(Keypress.Ctrl('A'), Keypress.Backspace, Keypress.Enter)
+
+=             browser.press(Keypress.Ctrl('A'), Keypress.Backspace, Keypress.Enter)
+-         ```
++         ```
+
+-     entry #releaseActions   releases every key and button left held, and clears the input state
+-     entry #printPage   the current page printed as a PDF, in raw bytes
+-         Takes `WebDriver.Session.Print` options, the specification's defaults when none are given.
+-         This is what the page would print as, not what is rendered: `#screenshotData` captures
+-         that. Not every driver implements it — Safari does not — and one which does not raises
+-         `WebDriver.Error` with reason `UnknownCommand` or `UnsupportedOperation`.
+-     entry #execute   runs a JavaScript function body in the page and returns its result as `Json`
+-         The escape hatch for anything the protocol does not model. The script is a function body,
+-         so it uses `return`, and its arguments are `arguments[0]`, `arguments[1]` and so on: a
+-         `WebDriver.Element` passed as `element.in[Json]` arrives as its live DOM node, and an
+-         element returned comes back in the wire form. A script which throws raises
+-         `WebDriver.Error` with reason `JavascriptError`.
++     entry #releaseActions   отпускает все клавиши и кнопки, оставленные нажатыми, и очищает состояние ввода
++     entry #printPage   текущая страница, напечатанная в PDF, в виде необработанных байтов
++         Принимает параметры `WebDriver.Session.Print`, а если их не передать — значения по умолчанию
++         из спецификации. Это то, как страница была бы напечатана, а не то, что отображено: это
++         снимает `#screenshotData`. Не каждый драйвер это реализует — Safari нет, — и тот, что не
++         реализует, порождает `WebDriver.Error` с причиной `UnknownCommand` или `UnsupportedOperation`.
++     entry #execute   выполняет тело функции JavaScript на странице и возвращает её результат как `Json`
++         Запасной выход для всего, что протокол не моделирует. Скрипт — это тело функции, поэтому в
++         нём используется `return`, а его аргументы — `arguments[0]`, `arguments[1]` и так далее:
++         `WebDriver.Element`, переданный как `element.in[Json]`, приходит как живой узел DOM, а
++         возвращённый элемент приходит обратно в форме передачи. Скрипт, выбрасывающий исключение,
++         порождает `WebDriver.Error` с причиной `JavascriptError`.
+
+=         `WebDriver.Error` with reason `JavascriptError`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `WebDriver.Error` with reason `JavascriptError`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `WebDriver.Error` with reason `JavascriptError`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         `WebDriver.Error` with reason `JavascriptError`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         supervise:
++         supervise:
+
+=         `WebDriver.Error` with reason `JavascriptError`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+-             val heading = browser.element(H1)
++             val heading = browser.element(H1)
+
+-             browser.execute(t"return arguments[0].offsetHeight", List(heading.in[Json])).as[Int]
++             browser.execute(t"return arguments[0].offsetHeight", List(heading.in[Json])).as[Int]
+
+=             browser.execute(t"return arguments[0].offsetHeight", List(heading.in[Json])).as[Int]
+-         ```
++         ```
+
+-     entry #executeAsync   runs asynchronous JavaScript, returning the value it passes to its callback
+-         As `#execute`, but the script is given a callback as its last argument and the command
+-         completes when the script calls it; one which does not within the `script` timeout raises
+-         `WebDriver.Error` with reason `ScriptTimeout`.
+-     entry #element   the one element a locator matches, at page scope or beneath an element or shadow root
+-         `browser.element(H1)` asks the driver for the first match for any `Focusable` locator: an
+-         HTML tag, a `cls"…"` class list, a `Name[DomId]`, a `SelectorList`, an `XPath`, or `Text`
+-         as link text. Nothing matching raises `WebDriver.Error` with reason `NoSuchElement`, after
+-         the session's implicit timeout. The forms taking a `WebDriver.Element` or a
+-         `WebDriver.ShadowRoot` search beneath it, and are usually written through the `element`
+-         extension: `menu.element(Li)`.
++     entry #executeAsync   выполняет асинхронный JavaScript и возвращает значение, переданное им в свой обратный вызов
++         Как `#execute`, но скрипт получает обратный вызов последним аргументом, и команда
++         завершается, когда скрипт его вызывает; скрипт, который не сделает этого в пределах
++         тайм-аута `script`, порождает `WebDriver.Error` с причиной `ScriptTimeout`.
++     entry #element   единственный элемент, соответствующий локатору, в области страницы или под элементом либо теневым корнем
++         `browser.element(H1)` запрашивает у драйвера первое совпадение для любого локатора
++         `Focusable`: тега HTML, списка классов `cls"…"`, `Name[DomId]`, `SelectorList`, `XPath` или
++         `Text` как текста ссылки. Отсутствие совпадений порождает `WebDriver.Error` с причиной
++         `NoSuchElement` по истечении неявного тайм-аута сессии. Формы, принимающие
++         `WebDriver.Element` или `WebDriver.ShadowRoot`, ищут под ним и обычно записываются через
++         расширение `element`: `menu.element(Li)`.
+
+=         extension: `menu.element(Li)`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         extension: `menu.element(Li)`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         extension: `menu.element(Li)`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         extension: `menu.element(Li)`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         supervise:
++         supervise:
+
+=         extension: `menu.element(Li)`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+-             browser.element(Name[DomId](t"greeting")).innerText()
++             browser.element(Name[DomId](t"greeting")).innerText()
+
+-             browser.element(unsafely(SelectorList.parse(t"nav li.active")))
++             browser.element(unsafely(SelectorList.parse(t"nav li.active")))
+
+=             browser.element(unsafely(SelectorList.parse(t"nav li.active")))
+-         ```
++         ```
+
+-     entry #elements   every element a locator matches, at page scope or beneath an element or shadow root
+-         As `#element`, but returns every match in document order, and an empty list rather than
+-         an error for none. `browser \ Li` is the same at page scope.
+-     entry #\   every element a locator matches at page scope, as `browser \ Li`
+-         `#elements` by another name. Selection is `\` rather than `/`, since symbolism's generic
+-         `/`, which `soundness` exports, claims the name for every receiver. On the result, `\`
+-         again selects beneath each element found: `browser \ Ul \ Li`.
+-     entry #activeElement   the element which has the focus
+-     entry #awaitElements   every match for a locator, polled until there is at least one
+-         The protocol has no wait command beyond the implicit timeout for finds, so this polls
+-         `POST /elements` under the `Tenacity` in scope, which is the caller's choice of schedule,
+-         and raises `Tenacity.Error` when the policy gives up. It also needs a `Monitor`. It
+-         polls the plural endpoint deliberately: that reports absence as an empty list, where the
+-         singular one raises an error that, being routed to the session's own tactic, could not be
+-         caught here to drive a retry.
++     entry #elements   все элементы, соответствующие локатору, в области страницы или под элементом либо теневым корнем
++         Как `#element`, но возвращает все совпадения в порядке документа, а при их отсутствии —
++         пустой список вместо ошибки. `browser \ Li` — то же самое в области страницы.
++     entry #\   все элементы, соответствующие локатору в области страницы, как `browser \ Li`
++         Это `#elements` под другим именем. Выбор записывается как `\`, а не `/`, поскольку
++         обобщённый `/` из symbolism, который экспортирует `soundness`, занимает это имя для каждого
++         получателя. На результате `\` снова выбирает под каждым найденным элементом:
++         `browser \ Ul \ Li`.
++     entry #activeElement   элемент, находящийся в фокусе
++     entry #awaitElements   все совпадения локатора, опрашиваемые, пока не найдётся хотя бы одно
++         В протоколе нет команды ожидания, кроме неявного тайм-аута для поиска, поэтому этот метод
++         опрашивает `POST /elements` под `Tenacity` в области видимости — расписанием по выбору
++         вызывающего кода — и порождает `Tenacity.Error`, когда политика сдаётся. Ему также нужен
++         `Monitor`. Он намеренно опрашивает конечную точку во множественном числе: та сообщает об
++         отсутствии пустым списком, тогда как конечная точка в единственном числе порождает ошибку,
++         которую, поскольку она направляется в собственную тактику сессии, нельзя было бы перехватить
++         здесь, чтобы повторить попытку.
+
+=         caught here to drive a retry.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         caught here to drive a retry.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         caught here to drive a retry.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         caught here to drive a retry.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import retryTenacities.exponentialTenTimesTenacity
++         import retryTenacities.exponentialTenTimesTenacity
+
+=         caught here to drive a retry.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import retryTenacities.exponentialTenTimesTenacity
+=
+-         supervise:
++         supervise:
+
+=         caught here to drive a retry.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import retryTenacities.exponentialTenTimesTenacity
+=
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+-             browser.awaitElements(cls"result").length
++             browser.awaitElements(cls"result").length
+
+=             browser.awaitElements(cls"result").length
+-         ```
++         ```
+
+-     entry #awaitElement   the first match for a locator, polled until there is one
+-         As `#awaitElements`, returning the first element found; needs a `Tenacity`, a `Monitor`
+-         and a `Tactic[Tenacity.Error]`.
+-     entry #awaitUntil   polls a condition under the `Tenacity` in scope until it holds
+-         The general wait, for anything the caller can evaluate without raising: a title, a count
+-         of elements, an attribute, a cookie. The condition is re-evaluated at each attempt, and
+-         `Tenacity.Error` is raised when the policy gives up.
++     entry #awaitElement   первое совпадение локатора, опрашиваемое, пока оно не появится
++         Как `#awaitElements`, но возвращает первый найденный элемент; нужны `Tenacity`, `Monitor`
++         и `Tactic[Tenacity.Error]`.
++     entry #awaitUntil   опрашивает условие под `Tenacity` в области видимости, пока оно не выполнится
++         Общее ожидание для всего, что вызывающий код может вычислить, не порождая ошибок: заголовка,
++         количества элементов, атрибута, cookie. Условие вычисляется заново при каждой попытке, а
++         когда политика сдаётся, порождается `Tenacity.Error`.
+
+=         `Tenacity.Error` is raised when the policy gives up.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `Tenacity.Error` is raised when the policy gives up.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `Tenacity.Error` is raised when the policy gives up.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         `Tenacity.Error` is raised when the policy gives up.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import retryTenacities.exponentialTenTimesTenacity
++         import retryTenacities.exponentialTenTimesTenacity
+
+=         `Tenacity.Error` is raised when the policy gives up.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import retryTenacities.exponentialTenTimesTenacity
+=
+-         supervise:
++         supervise:
+
+=         `Tenacity.Error` is raised when the policy gives up.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import retryTenacities.exponentialTenTimesTenacity
+=
+=         supervise:
+-           WebDriver.Chrome.headless.session:
++           WebDriver.Chrome.headless.session:
+
+-             browser.element(Button).click()
++             browser.element(Button).click()
+
+-             browser.awaitUntil(browser.title() == t"Done")
++             browser.awaitUntil(browser.title() == t"Done")
+
+=             browser.awaitUntil(browser.title() == t"Done")
+-         ```
++         ```
+
+-     entry #shadowRoot   the open shadow root an element hosts
+-         Usually written through the `shadowRoot` extension on the element. A closed or absent
+-         shadow root raises `WebDriver.Error` with reason `NoSuchShadowRoot`.
+-     entry #click   clicks an element at its centre, scrolling it into view first
+-         Usually written through the `click` extension: `button.click()`. An element covered by
+-         another raises `WebDriver.Error` with reason `ElementClickIntercepted`, and one which
+-         cannot be clicked `ElementNotInteractable`.
+-     entry #clear   empties an editable element, such as an input or a text area
+-     entry #value   types text into an element, as the keyboard would
+-         Usually written through the `value` extension: `field.value(t"search terms")`. Text is
+-         appended to what is already there; `#clear` it first to replace it.
+-     entry #innerText   an element's rendered text, by the `innerText` algorithm
+-         What a reader sees, with hidden text omitted and line breaks where the layout puts them,
+-         rather than the DOM's `textContent`. Named `innerText` rather than `text`, which is
+-         already an extension in the `soundness` umbrella.
+-     entry #tagName   an element's tag name, such as `h1`
+-     entry #role   an element's computed ARIA role, such as `button` or `heading`
+-     entry #label   an element's computed accessible name, as a screen reader would announce it
+-     entry #enabled   whether a form control is enabled
+-     entry #selected   whether a checkbox, radio button or option is selected
+-     entry #attribute   an attribute as the markup has it, or `Unset` if the element has none
+-         Differs from `#property` as soon as a script touches the node: the `value` attribute of
+-         an input is what the page was served with, its property what the field holds now.
+-     entry #property   a live DOM property of an element, or `Unset` if it has none
+-     entry #css   the computed value of a CSS property on an element, such as `color`
+-     entry #rect   an element's bounding box, as a `WebDriver.Session.Rect` in CSS pixels
+-     entry #displayed   whether an element is displayed, by the specification's displayedness check
+-         The W3C specification dropped the JSON Wire Protocol's `displayed` command, so this runs
+-         the element's `getClientRects().length > 0` as a script, as every conforming client does.
++     entry #shadowRoot   открытый теневой корень, размещённый в элементе
++         Обычно записывается через расширение `shadowRoot` у элемента. Закрытый или отсутствующий
++         теневой корень порождает `WebDriver.Error` с причиной `NoSuchShadowRoot`.
++     entry #click   щёлкает по центру элемента, предварительно прокрутив его в область видимости
++         Обычно записывается через расширение `click`: `button.click()`. Элемент, перекрытый другим,
++         порождает `WebDriver.Error` с причиной `ElementClickIntercepted`, а элемент, по которому
++         нельзя щёлкнуть, — `ElementNotInteractable`.
++     entry #clear   очищает редактируемый элемент, например поле ввода или текстовую область
++     entry #value   вводит текст в элемент, как это сделала бы клавиатура
++         Обычно записывается через расширение `value`: `field.value(t"search terms")`. Текст
++         добавляется к уже имеющемуся; чтобы заменить его, сначала выполните `#clear`.
++     entry #innerText   отображаемый текст элемента по алгоритму `innerText`
++         То, что видит читатель, — без скрытого текста и с переносами строк там, где их ставит
++         раскладка, — а не `textContent` из DOM. Назван `innerText`, а не `text`, который уже
++         является расширением в зонтичном модуле `soundness`.
++     entry #tagName   имя тега элемента, например `h1`
++     entry #role   вычисленная роль ARIA элемента, например `button` или `heading`
++     entry #label   вычисленное доступное имя элемента, как его объявил бы экранный диктор
++     entry #enabled   включён ли элемент управления формы
++     entry #selected   выбран ли флажок, переключатель или вариант списка
++     entry #attribute   атрибут в том виде, в каком он есть в разметке, или `Unset`, если у элемента его нет
++         Отличается от `#property`, как только скрипт затрагивает узел: атрибут `value` поля ввода —
++         это то, с чем страница была отдана, а его свойство — то, что поле содержит сейчас.
++     entry #property   живое свойство DOM элемента или `Unset`, если его нет
++     entry #css   вычисленное значение свойства CSS у элемента, например `color`
++     entry #rect   ограничивающий прямоугольник элемента в виде `WebDriver.Session.Rect` в CSS-пикселях
++     entry #displayed   отображается ли элемент, по проверке отображаемости из спецификации
++         Спецификация W3C отказалась от команды `displayed` из JSON Wire Protocol, поэтому этот метод
++         выполняет `getClientRects().length > 0` элемента как скрипт, как это делает любой
++         соответствующий спецификации клиент.
+
+- entry .browser   the `WebDriver.Session` in scope, so that commands read as `browser.title()`
+-     Inside a `session` block the handle is a contextual value; `browser` names it, with its
+-     capture set kept as the session's own, so whatever it returns is confined to the same
+-     block. It is a method taking the session as a named contextual parameter, not a `summon`,
+-     which would mint a fresh capability rather than refer to the one the block owns.
++ entry .browser   `WebDriver.Session` в области видимости, чтобы команды читались как `browser.title()`
++     Внутри блока `session` дескриптор — это контекстное значение; `browser` называет его, сохраняя
++     его множество захвата собственным множеством сессии, поэтому всё, что он возвращает, ограничено
++     тем же блоком. Это метод, принимающий сессию как именованный контекстный параметр, а не
++     `summon`, который создал бы свежую возможность вместо ссылки на ту, которой владеет блок.
+
+=     which would mint a fresh capability rather than refer to the one the block owns.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     which would mint a fresh capability rather than refer to the one the block owns.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     which would mint a fresh capability rather than refer to the one the block owns.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     which would mint a fresh capability rather than refer to the one the block owns.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     supervise:
++     supervise:
+
+=     which would mint a fresh capability rather than refer to the one the block owns.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     supervise:
+-       WebDriver.Chrome.headless.session:
++       WebDriver.Chrome.headless.session:
+
+=     which would mint a fresh capability rather than refer to the one the block owns.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     supervise:
+=       WebDriver.Chrome.headless.session:
+-         browser.navigateTo(url"https://example.com/")
++         browser.navigateTo(url"https://example.com/")
+
+-         browser.source().length
++         browser.source().length
+
+=         browser.source().length
+-     ```
++     ```
+
+- entry .click   clicks an element at its centre, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`, delegating to `WebDriver.Session#click`. An element
+-     covered by another raises `WebDriver.Error` with reason `ElementClickIntercepted`.
++ entry .click   щёлкает по центру элемента через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`, делегирующее `WebDriver.Session#click`. Элемент,
++     перекрытый другим, порождает `WebDriver.Error` с причиной `ElementClickIntercepted`.
+
+=     covered by another raises `WebDriver.Error` with reason `ElementClickIntercepted`.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     covered by another raises `WebDriver.Error` with reason `ElementClickIntercepted`.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     covered by another raises `WebDriver.Error` with reason `ElementClickIntercepted`.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     covered by another raises `WebDriver.Error` with reason `ElementClickIntercepted`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     supervise:
++     supervise:
+
+=     covered by another raises `WebDriver.Error` with reason `ElementClickIntercepted`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     supervise:
+-       WebDriver.Chrome.headless.session:
++       WebDriver.Chrome.headless.session:
+
+-         browser.element(Button).click()
++         browser.element(Button).click()
+
+=         browser.element(Button).click()
+-     ```
++     ```
+
+- entry .clear   empties an editable element, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`, delegating to `WebDriver.Session#clear`.
++ entry .clear   очищает редактируемый элемент через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`, делегирующее `WebDriver.Session#clear`.
+
+- entry .innerText   an element's rendered text, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`: what a reader sees, by the `innerText` algorithm,
+-     rather than the DOM's `textContent`. It is not called `text`, since `text` is already an
+-     extension in the `soundness` umbrella.
++ entry .innerText   отображаемый текст элемента через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`: то, что видит читатель, по алгоритму `innerText`, а не
++     `textContent` из DOM. Оно не называется `text`, поскольку `text` уже является расширением в
++     зонтичном модуле `soundness`.
+
+- entry .tagName   an element's tag name, such as `h1`, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`, delegating to `WebDriver.Session#tagName`.
++ entry .tagName   имя тега элемента, например `h1`, через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`, делегирующее `WebDriver.Session#tagName`.
+
+- entry .enabled   whether a form control is enabled, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`, delegating to `WebDriver.Session#enabled`.
++ entry .enabled   включён ли элемент управления формы, через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`, делегирующее `WebDriver.Session#enabled`.
+
+- entry .selected   whether a checkbox, radio button or option is selected
+-     An extension on `WebDriver.Element`, delegating to `WebDriver.Session#selected`; it needs
+-     the session in scope.
++ entry .selected   выбран ли флажок, переключатель или вариант списка
++     Расширение для `WebDriver.Element`, делегирующее `WebDriver.Session#selected`; ему нужна
++     сессия в области видимости.
+
+- entry .displayed   whether an element is displayed, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`. The W3C protocol has no displayedness command, so
+-     `WebDriver.Session#displayed` evaluates one as a script.
++ entry .displayed   отображается ли элемент, через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`. В протоколе W3C нет команды проверки отображаемости, поэтому
++     `WebDriver.Session#displayed` вычисляет её как скрипт.
+
+- entry .role   an element's computed ARIA role, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`, delegating to `WebDriver.Session#role`.
++ entry .role   вычисленная роль ARIA элемента через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`, делегирующее `WebDriver.Session#role`.
+
+- entry .label   an element's computed accessible name, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`, delegating to `WebDriver.Session#label`: the name a
+-     screen reader would announce, from its text, its `aria-label` or its associated `<label>`.
++ entry .label   вычисленное доступное имя элемента через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`, делегирующее `WebDriver.Session#label`: имя, которое
++     объявил бы экранный диктор, — из его текста, его `aria-label` или связанного с ним `<label>`.
+
+-     The `soundness` umbrella also exports wisteria's `label`, the name of a field or case
+-     within a derivation, so under `import soundness.*` the two names collide and
+-     `element.label()` may not resolve; `browser.label(element)` reaches the same command
+-     without the extension.
++     Зонтичный модуль `soundness` также экспортирует `label` из wisteria — имя поля или кейса в
++     деривации, поэтому при `import soundness.*` эти два имени конфликтуют и `element.label()`
++     может не разрешиться; `browser.label(element)` обращается к той же команде без расширения.
+
+- entry .cssValue   the computed value of a CSS property on an element, such as `color`
+-     An extension on `WebDriver.Element`, delegating to `WebDriver.Session#css`; it needs the
+-     session in scope.
++ entry .cssValue   вычисленное значение свойства CSS у элемента, например `color`
++     Расширение для `WebDriver.Element`, делегирующее `WebDriver.Session#css`; ему нужна сессия в
++     области видимости.
+
+=     session in scope.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     session in scope.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     session in scope.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     session in scope.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     supervise:
++     supervise:
+
+=     session in scope.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     supervise:
+-       WebDriver.Chrome.headless.session:
++       WebDriver.Chrome.headless.session:
+
+-         browser.element(H1).cssValue(t"font-size")
++         browser.element(H1).cssValue(t"font-size")
+
+=         browser.element(H1).cssValue(t"font-size")
+-     ```
++     ```
+
+- entry .shadowRoot   the open shadow root an element hosts, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`, returning a `WebDriver.ShadowRoot` to search with `\`
+-     or `element`. A closed or absent root raises `WebDriver.Error` with reason
++ entry .shadowRoot   открытый теневой корень, размещённый в элементе, через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`, возвращающее `WebDriver.ShadowRoot` для поиска через `\`
++     или `element`. Закрытый или отсутствующий корень порождает `WebDriver.Error` с причиной
+
+-     `NoSuchShadowRoot`.
++     `NoSuchShadowRoot`.
+
+- entry .rect   an element's bounding box in CSS pixels, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`, returning a `WebDriver.Session.Rect`.
++ entry .rect   ограничивающий прямоугольник элемента в CSS-пикселях через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`, возвращающее `WebDriver.Session.Rect`.
+
+- entry .value   types text into an element, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`, delegating to `WebDriver.Session#value`. The text is
+-     appended to what the field already holds, and is one request however long it is; named
+-     keys and chords need `WebDriver.Session#press`.
++ entry .value   вводит текст в элемент через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`, делегирующее `WebDriver.Session#value`. Текст добавляется к
++     тому, что поле уже содержит, и занимает один запрос, какой бы длины он ни был; для
++     именованных клавиш и аккордов нужен `WebDriver.Session#press`.
+
+=     keys and chords need `WebDriver.Session#press`.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     keys and chords need `WebDriver.Session#press`.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     keys and chords need `WebDriver.Session#press`.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     keys and chords need `WebDriver.Session#press`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     supervise:
++     supervise:
+
+=     keys and chords need `WebDriver.Session#press`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     supervise:
+-       WebDriver.Chrome.headless.session:
++       WebDriver.Chrome.headless.session:
+
+-         val field = browser.element(Name[DomId](t"query"))
++         val field = browser.element(Name[DomId](t"query"))
+
+-         field.clear()
++         field.clear()
+
+-         field.value(t"search terms")
++         field.value(t"search terms")
+
+-         field.property(t"value")
++         field.property(t"value")
+
+=         field.property(t"value")
+-     ```
++     ```
+
+- entry .screenshotData   a PNG of one element, as raw bytes, through the `WebDriver.Session` in scope
+-     An extension on `WebDriver.Element`. The `screenshot` extension, in `tarantula.image`,
+-     decodes the same bytes into a `Raster in Png`.
++ entry .screenshotData   PNG одного элемента в виде необработанных байтов через `WebDriver.Session` в области видимости
++     Расширение для `WebDriver.Element`. Расширение `screenshot` в `tarantula.image` декодирует те же
++     байты в `Raster in Png`.
+
+- entry .attribute   an element's attribute as the markup has it, or `Unset` if it has none
+-     An extension on `WebDriver.Element`, needing the session in scope. It differs from
+-     `property` once a script touches the node: an input's `value` attribute is what the page
+-     was served with, its `value` property what the field holds now.
++ entry .attribute   атрибут элемента в том виде, в каком он есть в разметке, или `Unset`, если его нет
++     Расширение для `WebDriver.Element`, которому нужна сессия в области видимости. Оно отличается от
++     `property`, как только скрипт затрагивает узел: атрибут `value` поля ввода — это то, с чем
++     страница была отдана, а свойство `value` — то, что поле содержит сейчас.
+
+- entry .property   a live DOM property of an element, or `Unset` if it has none
+-     An extension on `WebDriver.Element`, needing the session in scope.
++ entry .property   живое свойство DOM элемента или `Unset`, если его нет
++     Расширение для `WebDriver.Element`, которому нужна сессия в области видимости.
+
+=     An extension on `WebDriver.Element`, needing the session in scope.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     An extension on `WebDriver.Element`, needing the session in scope.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     An extension on `WebDriver.Element`, needing the session in scope.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     An extension on `WebDriver.Element`, needing the session in scope.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     supervise:
++     supervise:
+
+=     An extension on `WebDriver.Element`, needing the session in scope.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     supervise:
+-       WebDriver.Chrome.headless.session:
++       WebDriver.Chrome.headless.session:
+
+-         val box = browser.element(Name[DomId](t"agree"))
++         val box = browser.element(Name[DomId](t"agree"))
+
+-         box.click()
++         box.click()
+
+-         (box.attribute(t"checked"), box.property(t"checked"))
++         (box.attribute(t"checked"), box.property(t"checked"))
+
+=         (box.attribute(t"checked"), box.property(t"checked"))
+-     ```
++     ```
+
+- entry .element   the one element a locator matches beneath an element or a shadow root
+-     An extension on `WebDriver.Element` and on `WebDriver.ShadowRoot`, taking any `Focusable`
+-     locator and needing the session in scope: `menu.element(Li)`. Nothing matching raises
+-     `WebDriver.Error` with reason `NoSuchElement`; `\` returns every match instead, and an
+-     empty list for none.
++ entry .element   единственный элемент, соответствующий локатору, под элементом или теневым корнем
++     Расширение для `WebDriver.Element` и `WebDriver.ShadowRoot`, принимающее любой локатор
++     `Focusable` и требующее сессию в области видимости: `menu.element(Li)`. Отсутствие совпадений
++     порождает `WebDriver.Error` с причиной `NoSuchElement`; `\` вместо этого возвращает все
++     совпадения, а при их отсутствии — пустой список.
+
+=     empty list for none.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     empty list for none.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     empty list for none.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     empty list for none.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     supervise:
++     supervise:
+
+=     empty list for none.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     supervise:
+-       WebDriver.Chrome.headless.session:
++       WebDriver.Chrome.headless.session:
+
+-         val form = browser.element(Form)
++         val form = browser.element(Form)
+
+-         form.element(Name[DomId](t"submit")).click()
++         form.element(Name[DomId](t"submit")).click()
+
+=         form.element(Name[DomId](t"submit")).click()
+-     ```
++     ```
+
+- entry .screenshot   a screenshot of the viewport or of one element, decoded as a `Raster in Png`
+-     An extension on `WebDriver.Session` and on `WebDriver.Element`, in the `tarantula.image`
+-     component, which keeps the image codec out of browser automation: `screenshotData`,
+-     decoded by hallucination's PNG codec. A screenshot the codec cannot read is thrown, as it
+-     would mean the driver sent something which was not a PNG.
++ entry .screenshot   снимок экрана области просмотра или одного элемента, декодированный как `Raster in Png`
++     Расширение для `WebDriver.Session` и `WebDriver.Element` в компоненте `tarantula.image`, который
++     держит кодек изображений отдельно от автоматизации браузера: это `screenshotData`,
++     декодированный PNG-кодеком из hallucination. Снимок, который кодек не может прочитать,
++     выбрасывается как исключение, поскольку это означало бы, что драйвер прислал не PNG.
+
+=     would mean the driver sent something which was not a PNG.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     would mean the driver sent something which was not a PNG.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     would mean the driver sent something which was not a PNG.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     would mean the driver sent something which was not a PNG.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     supervise:
++     supervise:
+
+=     would mean the driver sent something which was not a PNG.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     supervise:
+-       WebDriver.Chrome.headless.session:
++       WebDriver.Chrome.headless.session:
+
+=     would mean the driver sent something which was not a PNG.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     supervise:
+=       WebDriver.Chrome.headless.session:
+-         browser.navigateTo(url"https://example.com/")
++         browser.navigateTo(url"https://example.com/")
+
+-         val page: Raster in Png = browser.screenshot()
++         val page: Raster in Png = browser.screenshot()
+
+-         val heading: Raster in Png = browser.element(H1).screenshot()
++         val heading: Raster in Png = browser.element(H1).screenshot()
+
+=         val heading: Raster in Png = browser.element(H1).screenshot()
+-     ```
++     ```

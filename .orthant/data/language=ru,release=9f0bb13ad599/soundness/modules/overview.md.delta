@@ -1,0 +1,32 @@
+orthant 1 language
+
+- - [JSON](json.md) — parsing, typed access, building, schemas and validation
+- - [YAML](yaml.md) — parsing, tags, anchors and encoding
+- - [XML](xml.md) — nodes, namespaces, XPath and schemas
+- - [CBOR](cbor.md) — binary JSON-like encoding, with tags and diagnostic notation
+- - [CSV](csv.md) — rows, headers and formats, decoded to case classes
+- - [TEL](tel.md) — the indentation-based data language, its schemas and editing
+- - [Protocol Buffers](protobuf.md) — messages, fields and compatibility
+- - [Markdown](markdown.md) — parsing, rendering and writing back
+- - [Base Encoding](base-encoding.md) — Base64, hexadecimal and other alphabets
+- - [Binary Data](binary-data.md) — describing, reading and writing a binary layout
+- - [Compression](compression.md) — compressing values and streams
+- - [Archives](archives.md) — ZIP, tar and ar
+- - [Hashing](hashing.md) — digests, checksums and fast hashing
+- - [Cryptography](cryptography.md) — encryption, signing, keys and certificates
+- - [Media Types](media-types.md) — media types, and types that know theirs
++ - [JSON](json.md) — разбор, типизированный доступ, построение, схемы и валидация
++ - [YAML](yaml.md) — разбор, теги, якоря и кодирование
++ - [XML](xml.md) — узлы, пространства имён, XPath и схемы
++ - [CBOR](cbor.md) — двоичное JSON-подобное кодирование с тегами и диагностической нотацией
++ - [CSV](csv.md) — строки, заголовки и форматы, декодируемые в case-классы
++ - [TEL](tel.md) — язык данных на основе отступов, его схемы и редактирование
++ - [Protocol Buffers](protobuf.md) — сообщения, поля и совместимость
++ - [Markdown](markdown.md) — разбор, отображение и обратная запись
++ - [Базовые кодировки](base-encoding.md) — Base64, шестнадцатеричная и другие алфавиты
++ - [Двоичные данные](binary-data.md) — описание, чтение и запись двоичной раскладки
++ - [Сжатие](compression.md) — сжатие значений и потоков данных
++ - [Архивы](archives.md) — ZIP, tar и ar
++ - [Хеширование](hashing.md) — дайджесты, контрольные суммы и быстрое хеширование
++ - [Криптография](cryptography.md) — шифрование, подписи, ключи и сертификаты
++ - [Медиатипы](media-types.md) — медиатипы и типы, знающие свой медиатип

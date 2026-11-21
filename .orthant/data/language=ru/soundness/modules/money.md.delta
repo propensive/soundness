@@ -1,0 +1,614 @@
+orthant 1 language
+
+- ## Money
++ ## Деньги
+
+- ### About
++ ### Обзор
+
+- Money is a fixed-point amount of a particular currency, and the currency is part of its type. A
+- `Money in "EUR"` and a `Money in "GBP"` cannot be added together, because adding euros to
+- pounds is not a sum but a mistake. Making the currency a type parameter is how that
+- [impossible state](../../philosophy/impossible-states.md) is ruled out.
++ Деньги — это сумма с фиксированной точкой в определённой валюте, и валюта входит в её тип.
++ `Money in "EUR"` и `Money in "GBP"` нельзя сложить, потому что сложение евро с фунтами — это не
++ сумма, а ошибка. Валюта в виде параметра типа исключает это
++ [невозможное состояние](../../philosophy/impossible-states.md).
+
+- Within one currency, amounts add, subtract, scale, divide and compare. An amount splits into
+- equal shares without losing a penny, and a price carries its tax beside its principal.
++ В пределах одной валюты суммы складываются, вычитаются, масштабируются, делятся и сравниваются.
++ Сумма делится на равные доли без потери единого пенни, а цена несёт свой налог рядом с основной
++ суммой.
+
+- Thirty-seven currencies are defined, each as a value which constructs amounts. An amount is
+- written with either its symbol or its ISO code, as a style in scope decides.
++ Определено тридцать семь валют, каждая — в виде значения, которое создаёт суммы. Сумма
++ записывается либо своим символом, либо кодом ISO — как решит стиль, находящийся в области
++ видимости.
+
+- ### On money
++ ### О деньгах
+
+- The two classic mistakes with money are of representation and of confusion.
++ Две классические ошибки с деньгами — ошибка представления и ошибка путаницы.
+
+- Representing an amount as a floating-point number invites rounding errors: `0.1 + 0.2` is not
+- `0.3` in binary floating point. Money belongs in whole numbers of the currency's smallest unit.
++ Представление суммы числом с плавающей точкой влечёт ошибки округления: `0.1 + 0.2` не равно
++ `0.3` в двоичной арифметике с плавающей точкой. Деньгам место в целых числах наименьшей единицы
++ валюты.
+
+- An amount without its currency is a number pretending to be money. A program which adds a
+- figure in dollars to a figure in euros produces a result which looks plausible, and means
+- nothing.
++ Сумма без валюты — это число, притворяющееся деньгами. Программа, которая складывает число в
++ долларах с числом в евро, получает результат, который выглядит правдоподобно и ничего не значит.
+
+- Here an amount is stored as a whole number of *minor units*, such as cents or pence, and the
+- currency is part of the type, so an operation across currencies does not compile. Division and
+- allocation are done as accounting requires: a split produces shares which differ by at most one
+- minor unit, and which sum exactly to the original.
++ Здесь сумма хранится как целое число *младших единиц*, таких как центы или пенсы, а валюта входит
++ в тип, поэтому операция над разными валютами не компилируется. Деление и распределение
++ выполняются так, как требует бухгалтерия: при разделении получаются доли, различающиеся не более
++ чем на одну младшую единицу и в сумме дающие ровно исходную величину.
+
+- Everything comes from the `soundness` package. The currencies in use are imported by name, and
+- the last import lets the samples print their results:
++ Всё берётся из пакета `soundness`. Используемые валюты импортируются по имени, а последний импорт
++ позволяет примерам печатать результаты:
+
+= the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import scala.language.experimental.into
++ import scala.language.experimental.into
+
+- import currencies.{Eur, Gbp}
++ import currencies.{Eur, Gbp}
+
+- import currencyStyles.localCurrencyStyle
++ import currencyStyles.localCurrencyStyle
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Amounts
++ ### Суммы
+
+- A currency constructs an amount from a decimal number, rounding to the nearest minor unit. The
+- type records the currency:
++ Валюта создаёт сумму из десятичного числа, округляя до ближайшей младшей единицы. Тип фиксирует
++ валюту:
+
+= type records the currency:
+=
+- ```scala
++ ```scala
+
+- val price: Money in "EUR" = Eur(3.01)
++ val price: Money in "EUR" = Eur(3.01)
+
+= val price: Money in "EUR" = Eur(3.01)
+- ```
++ ```
+
+= val price: Money in "EUR" = Eur(3.01)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val price: Money in "EUR" = Eur(3.01)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val price: Money in "EUR" = Eur(3.01)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(price.show)
++ Out.println(price.show)
+
+= Out.println(price.show)
+- ```
++ ```
+
+- ### Arithmetic
++ ### Арифметика
+
+- Amounts of one currency combine with the usual operators. Multiplying or dividing by a number
+- scales an amount:
++ Суммы одной валюты комбинируются обычными операторами. Умножение или деление на число
++ масштабирует сумму:
+
+= scales an amount:
+=
+- ```scala fuel
++ ```scala fuel
+
+= scales an amount:
+=
+= ```scala fuel
+- run
++ run
+
+= scales an amount:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Eur(3.01) + Eur(0.02)).show)
++ Out.println((Eur(3.01) + Eur(0.02)).show)
+
+- Out.println((Eur(3.01)*3.0).show)
++ Out.println((Eur(3.01)*3.0).show)
+
+- Out.println((Eur(3.01)/3).show)
++ Out.println((Eur(3.01)/3).show)
+
+- Out.println((-Eur(1.99)).show)
++ Out.println((-Eur(1.99)).show)
+
+- Out.println((Eur(1.01) >= Eur(1.01)).inspect)
++ Out.println((Eur(1.01) >= Eur(1.01)).inspect)
+
+= Out.println((Eur(1.01) >= Eur(1.01)).inspect)
+- ```
++ ```
+
+- Mixing currencies does not compile:
++ Смешение валют не компилируется:
+
+= Mixing currencies does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Mixing currencies does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Mixing currencies does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Mixing currencies does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Eur(1.00) + Gbp(1.00)
++ Eur(1.00) + Gbp(1.00)
+
+= Eur(1.00) + Gbp(1.00)
+- ```
++ ```
+
+- There is no built-in exchange rate. Converting between currencies is a business decision, with
+- a time and a source, and not an arithmetic identity, so it is left to the program to define.
++ Встроенного обменного курса нет. Перевод из одной валюты в другую — деловое решение, у которого
++ есть время и источник, а не арифметическое тождество, поэтому его определение оставлено программе.
+
+- Underneath, an amount is a `Long` of minor units, so its `toString` is a `Long`'s: the raw
+- count, with no currency and no decimal point. An amount is written out with `show` and the
+- [currency style](#rendering).
++ Внутри сумма — это `Long` из младших единиц, поэтому её `toString` — это `toString` у `Long`:
++ голое число, без валюты и без десятичной точки. Сумма выводится с помощью `show` и
++ [стиля валюты](#rendering).
+
+- The operators come from the [typeclasses](numbers.md#overloading-the-operators) which make `+`
+- and `*` available to any type.
++ Операторы берутся из [классов типов](numbers.md#overloading-the-operators), которые делают `+` и
++ `*` доступными для любого типа.
+
+- ### Other currencies
++ ### Другие валюты
+
+- A currency which is not among those provided is defined in one line, which gives its ISO code,
+- its name, its symbol and the number of minor units in a major one:
++ Валюта, которой нет среди предоставленных, определяется одной строкой, задающей её код ISO,
++ название, символ и число младших единиц в старшей:
+
+= its name, its symbol and the number of minor units in a major one:
+=
+- ```scala
++ ```scala
+
+- given Nok: ("NOK" is Currency of "Norwegian Krone" in "kr" over 100) = Currency()
++ given Nok: ("NOK" is Currency of "Norwegian Krone" in "kr" over 100) = Currency()
+
+= given Nok: ("NOK" is Currency of "Norwegian Krone" in "kr" over 100) = Currency()
+- ```
++ ```
+
+- Each part of the type has its place:
++ У каждой части типа своё место:
+
+= Each part of the type has its place:
+=
+- ```tabular
++ ```tabular
+
+- column  Position
+- column  Gives
+- column  Here
+- row  before `is`  the ISO code  `"NOK"`
+- row  after `of`  the name  `"Norwegian Krone"`
+- row  after `in`  the symbol  `"kr"`
+- row  after `over`  the minor units in a major one  `100`
++ column  Позиция
++ column  Задаёт
++ column  Здесь
++ row  перед `is`  код ISO  `"NOK"`
++ row  после `of`  название  `"Norwegian Krone"`
++ row  после `in`  символ  `"kr"`
++ row  после `over`  число младших единиц в старшей  `100`
+
+= row  after `over`  the minor units in a major one  `100`
+- ```
++ ```
+
+- ### Splitting
++ ### Разделение
+
+- `share` divides an amount into a number of parts which sum exactly to the whole. Any remainder
+- is distributed one minor unit at a time. This is the allocation problem which naive division
+- gets wrong: three equal shares of €3.01 would lose a cent.
++ `share` делит сумму на несколько частей, в сумме дающих ровно целое. Любой остаток
++ распределяется по одной младшей единице. Это задача распределения, которую наивное деление
++ решает неверно: при трёх равных долях от €3.01 потерялся бы цент.
+
+= gets wrong: three equal shares of €3.01 would lose a cent.
+=
+- ```scala fuel
++ ```scala fuel
+
+= gets wrong: three equal shares of €3.01 would lose a cent.
+=
+= ```scala fuel
+- run
++ run
+
+= gets wrong: three equal shares of €3.01 would lose a cent.
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Eur(3.01).share(3).map(_.show).join(t", "))
++ Out.println(Eur(3.01).share(3).map(_.show).join(t", "))
+
+= Out.println(Eur(3.01).share(3).map(_.show).join(t", "))
+- ```
++ ```
+
+- ### Prices and tax
++ ### Цены и налог
+
+- Three parties look at the same price, and see different numbers:
++ Три стороны смотрят на одну и ту же цену и видят разные числа:
+
+= Three parties look at the same price, and see different numbers:
+=
+- ```tabular
++ ```tabular
+
+- column  Party
+- column  Cares about
+- column  Member of a `Price`
+- row  the seller  the amount excluding tax  `principal`
+- row  the buyer  the amount including tax  `inclusive`
+- row  the tax authority  the difference  `tax`
++ column  Сторона
++ column  Интересуется
++ column  Член `Price`
++ row  продавец  суммой без налога  `principal`
++ row  покупатель  суммой с налогом  `inclusive`
++ row  налоговый орган  разницей  `tax`
+
+= row  the tax authority  the difference  `tax`
+- ```
++ ```
+
+- Hold all three in one type, and it is easy to add tax to a figure which already had it, or to
+- report the wrong one. Arithmetic cannot catch that mistake, because every one of those numbers
+- is a valid amount of money.
++ Если хранить все три в одном типе, легко добавить налог к числу, которое уже его включало, или
++ указать в отчёте не то число. Арифметика не может поймать такую ошибку, потому что каждое из этих
++ чисел — допустимая денежная сумма.
+
+- A `Price` is therefore a principal amount, and the tax on it, kept apart, so that either is
+- available exactly and need not be reconstructed by division. `tax` builds a price from a rate,
+- and `inclusive` gives the total:
++ Поэтому `Price` — это основная сумма и налог на неё, хранимые раздельно, так что каждая из них
++ доступна точно и её не нужно восстанавливать делением. `tax` строит цену по ставке, а
++ `inclusive` даёт итог:
+
+= and `inclusive` gives the total:
+=
+- ```scala
++ ```scala
+
+- val priced = Gbp(2.30).tax(0.2)
++ val priced = Gbp(2.30).tax(0.2)
+
+= val priced = Gbp(2.30).tax(0.2)
+- ```
++ ```
+
+= val priced = Gbp(2.30).tax(0.2)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val priced = Gbp(2.30).tax(0.2)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val priced = Gbp(2.30).tax(0.2)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(priced.principal.show)
++ Out.println(priced.principal.show)
+
+- Out.println(priced.tax.show)
++ Out.println(priced.tax.show)
+
+- Out.println(priced.inclusive.show)
++ Out.println(priced.inclusive.show)
+
+= Out.println(priced.inclusive.show)
+- ```
++ ```
+
+- Tax is rounded *up* to the minor unit. That is what tax authorities require, and what naive
+- rounding gets wrong in exactly the cases which matter. Twenty per cent of £2.94 is £0.588,
+- which is charged as £0.59:
++ Налог округляется *вверх* до младшей единицы. Этого требуют налоговые органы, и именно это
++ наивное округление делает неверно в тех случаях, которые важны. Двадцать процентов от £2.94 — это
++ £0.588, что взимается как £0.59:
+
+= which is charged as £0.59:
+=
+- ```scala fuel
++ ```scala fuel
+
+= which is charged as £0.59:
+=
+= ```scala fuel
+- run
++ run
+
+= which is charged as £0.59:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Gbp(2.94).tax(0.2).tax.show)
++ Out.println(Gbp(2.94).tax(0.2).tax.show)
+
+= Out.println(Gbp(2.94).tax(0.2).tax.show)
+- ```
++ ```
+
+- A `Price` deliberately has no `show`. Whether to display the amount with or without tax is a
+- decision the application must make explicitly, by showing the member it means.
++ У `Price` намеренно нет `show`. Показывать ли сумму с налогом или без — решение, которое
++ приложение должно принять явно, выводя тот член, который имеется в виду.
+
+- ### Rendering
++ ### Отображение
+
+- An amount is shown through the currency style in scope. The local style uses the currency's
+- symbol, and the generic style its ISO code:
++ Сумма выводится с помощью стиля валюты, находящегося в области видимости. Локальный стиль
++ использует символ валюты, а обобщённый — её код ISO:
+
+= symbol, and the generic style its ISO code:
+=
+- ```scala fuel
++ ```scala fuel
+
+= symbol, and the generic style its ISO code:
+=
+= ```scala fuel
+- run
++ run
+
+= symbol, and the generic style its ISO code:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Received ${Eur(3.01)}")
++ Out.println(t"Received ${Eur(3.01)}")
+
+- locally:
++ locally:
+
+-   import currencyStyles.genericCurrencyStyle
++   import currencyStyles.genericCurrencyStyle
+
+-   Out.println(t"Received ${Eur(3.01)}")
++   Out.println(t"Received ${Eur(3.01)}")
+
+=   Out.println(t"Received ${Eur(3.01)}")
+- ```
++ ```
+
+- [Internationalization](internationalization.md) covers the wider question of presenting values
+- for a particular locale.
++ Более широкий вопрос представления значений для конкретной локали рассматривается в разделе
++ [Интернационализация](internationalization.md).
+
+- ### Identifiers
++ ### Идентификаторы
+
+- The identifying numbers of finance are checked here too. An
+- [ISIN](https://en.wikipedia.org/wiki/International_Securities_Identification_Number) is the
+- international identifier of a security. The `isin"…"` [interpolator] validates one at
+- [compiletime], including its checksum, and `Isin(…)` does the same at runtime:
++ Здесь проверяются и идентификационные номера финансового мира.
++ [ISIN](https://en.wikipedia.org/wiki/International_Securities_Identification_Number) —
++ международный идентификатор ценной бумаги. [Интерполятор][интерполятор] `isin"…"` проверяет его
++ во [время компиляции][время компиляции], включая контрольную сумму, а `Isin(…)` делает то же
++ самое во время выполнения:
+
+= [compiletime], including its checksum, and `Isin(…)` does the same at runtime:
+=
+- ```scala
++ ```scala
+
+- val security = isin"GB00BH4HKS39"
++ val security = isin"GB00BH4HKS39"
+
+= val security = isin"GB00BH4HKS39"
+- ```
++ ```
+
+= val security = isin"GB00BH4HKS39"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- isin"GB00BH4HKS3"
++ isin"GB00BH4HKS3"
+
+= isin"GB00BH4HKS3"
+- ```
++ ```
+
+- An `Isin.Error` says which rule was broken, so a rejected identifier can be reported
+- precisely, and not merely as "invalid":
++ `Isin.Error` сообщает, какое правило нарушено, поэтому об отвергнутом идентификаторе можно
++ сообщить точно, а не просто как о «недопустимом»:
+
+= precisely, and not merely as "invalid":
+=
+- ```tabular
++ ```tabular
+
+- column  Reason
+- column  Rule
+- row  `WrongLength`  an ISIN is 12 characters long
+- row  `BadCountryCode`  it begins with a valid country code
+- row  `InvalidCharacter`  every character is a digit or an uppercase letter
+- row  `LuhnCheck`  its last digit passes the Luhn check
++ column  Причина
++ column  Правило
++ row  `WrongLength`  длина ISIN — 12 символов
++ row  `BadCountryCode`  он начинается с допустимого кода страны
++ row  `InvalidCharacter`  каждый символ — цифра или заглавная буква
++ row  `LuhnCheck`  его последняя цифра проходит проверку Луна
+
+= row  `LuhnCheck`  its last digit passes the Luhn check
+- ```
++ ```
+
+- An `Isin` is an [opaque type] over a `Long`. A validated identifier costs nothing to hold or
+- compare, and cannot be confused with an unvalidated string.
++ `Isin` — это [непрозрачный тип] поверх `Long`. Проверенный идентификатор ничего не стоит хранить
++ или сравнивать, и его нельзя спутать с непроверенной строкой.
+
+- `Luhn` checks the [Luhn digit](https://en.wikipedia.org/wiki/Luhn_algorithm) which card
+- numbers use:
++ `Luhn` проверяет [контрольную цифру Луна](https://en.wikipedia.org/wiki/Luhn_algorithm), которую
++ используют номера карт:
+
+= numbers use:
+=
+- ```scala fuel
++ ```scala fuel
+
+= numbers use:
+=
+= ```scala fuel
+- run
++ run
+
+= numbers use:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Luhn.check(17893729974L).inspect)
++ Out.println(Luhn.check(17893729974L).inspect)
+
+- Out.println(Luhn.check(17893729975L).inspect)
++ Out.println(Luhn.check(17893729975L).inspect)
+
+= Out.println(Luhn.check(17893729975L).inspect)
+- ```
++ ```
+
+- ### Related
++ ### Связанное
+
+- - [Quantities](quantities.md) treats a currency as a unit, and [testing](testing.md) checks that an invalid currency literal fails to compile.
++ - [Величины](quantities.md) рассматривает валюту как единицу, а [тестирование](testing.md) проверяет, что недопустимый литерал валюты не компилируется.
