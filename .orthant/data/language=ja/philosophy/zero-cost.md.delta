@@ -1,0 +1,240 @@
+orthant 1 language
+
+- # Zero Cost
++ # ゼロコスト
+
+- Soundness pays for its safety at compiletime, not at runtime. Opaque types, inlining,
+- and type-level computation mean that the guarantees a type carries — the units on a
+- quantity, a validated name, a checked path — usually compile down to the bare value they
+- wrap, with no wrapper object allocated and no check left to run. Safety is therefore not
+- a tax on performance: the very code that is provably correct is also as fast as the
+- unchecked version a careless programmer would have written by hand.
++ Soundness はその安全性の代価を、実行時ではなくコンパイル時に払う。
++ 不透明型、インライン化、型レベルの計算によって、型が持つ保証（量の単位、検証された名前、検査されたパス）は、たいていそれが包む裸の値にまでコンパイルされ、ラッパーオブジェクトがアロケーションされることも、実行すべき検査が残ることもない。
++ したがって安全性は性能に課される税ではない。正しいと証明できるコードそのものが、不注意なプログラマーが手で書いたであろう検査なしの版と同じだけ速い。
+
+- ## What the types cost at runtime
++ ## 型が実行時に払うコスト
+
+- Nothing, in the common case, because they are not there. An opaque type is its underlying
+- representation with a different name for the compiler's purposes only:
++ よくある場合には、何もない。型はそこに存在しないからである。
++ 不透明型は、コンパイラのためだけに別の名前を与えられた、その下にある表現である。
+
+= representation with a different name for the compiler's purposes only:
+=
+- ```scala fuel
++ ```scala fuel
+
+= representation with a different name for the compiler's purposes only:
+=
+= ```scala fuel
+- parse
++ parse
+
+= representation with a different name for the compiler's purposes only:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- into opaque type Text <: Matchable & caps.Pure = String & caps.Pure
++ into opaque type Text <: Matchable & caps.Pure = String & caps.Pure
+
+- opaque type Quantity[units <: Measure] = Double
++ opaque type Quantity[units <: Measure] = Double
+
+- opaque type Unset <: Matchable & caps.Pure = Null & caps.Pure
++ opaque type Unset <: Matchable & caps.Pure = Null & caps.Pure
+
+- opaque type Location = Long          // latitude and longitude, packed
++ opaque type Location = Long          // latitude and longitude, packed
+
+- opaque type Isin = Long              // a validated security identifier
++ opaque type Isin = Long              // a validated security identifier
+
+= opaque type Isin = Long              // a validated security identifier
+- ```
++ ```
+
+- `Optional[value]` is then simply `Unset | value` — a union with a null-backed sentinel,
+- so an absent value costs one null reference and a present one costs exactly the value.
++ すると `Optional[value]` は単に `Unset | value`、つまり null を裏付けとする番兵とのユニオンなので、存在しない値のコストは一つの null 参照であり、存在する値のコストはちょうどその値である。
+
+- A `Quantity[Metres[1]]` is a `Double`. A million of them in an array is a million
+- doubles, not a million objects. The units exist while the code is being typechecked and
+- are gone by the time it runs.
++ `Quantity[Metres[1]]` は `Double` である。
++ 配列の中の百万個のそれは百万個の double であり、百万個のオブジェクトではない。
++ 単位はコードが型検査される間は存在し、実行される時までには消えている。
+
+- The same reasoning covers the operations. They are `inline`, so a dimensional calculation
+- becomes the arithmetic instructions the equivalent bare-`Double` code would have produced
+- — no wrapper to allocate, no typeclass method to dispatch to:
++ 同じ論理が操作にも当てはまる。
++ 操作は `inline` なので、次元を持つ計算は、等価な裸の `Double` のコードが生み出したであろう算術命令になる。アロケーションするラッパーも、ディスパッチする型クラスのメソッドもない。
+
+= — no wrapper to allocate, no typeclass method to dispatch to:
+=
+- ```scala fuel
++ ```scala fuel
+
+= — no wrapper to allocate, no typeclass method to dispatch to:
+=
+= ```scala fuel
+- parse
++ parse
+
+= — no wrapper to allocate, no typeclass method to dispatch to:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def displacement
++ def displacement
+
+-     ( initial: Quantity[Metres[1] & Seconds[-1]],
++     ( initial: Quantity[Metres[1] & Seconds[-1]],
+
+-       time:    Quantity[Seconds[1]],
++       time:    Quantity[Seconds[1]],
+
+-       accel:   Quantity[Metres[1] & Seconds[-2]] )
++       accel:   Quantity[Metres[1] & Seconds[-2]] )
+
+- :   Quantity[Metres[1]] =
++ :   Quantity[Metres[1]] =
+
+-   initial*time + 0.5*accel*time*time
++   initial*time + 0.5*accel*time*time
+
+=   initial*time + 0.5*accel*time*time
+- ```
++ ```
+
+- Every dimension in that signature is checked as the code compiles. None of it survives
+- into the bytecode.
++ そのシグネチャのすべての次元は、コードのコンパイル時に検査される。
++ そのどれもバイトコードには残らない。
+
+- ## The claim is tested, not asserted
++ ## この主張は表明されるのではなく、テストされる
+
+- A performance claim that is only stated tends to stop being true — an inline annotation
+- removed, a typeclass method that no longer specialises, and the guarantee is quietly
+- gone while the documentation still promises it.
++ 述べられるだけの性能の主張は、やがて真でなくなりがちである。インラインのアノテーションが取り除かれたり、型クラスのメソッドがもはや特殊化されなくなったりすると、ドキュメントがなお約束している間に、保証はひっそりと消えている。
+
+- So the test suite reads the compiled bytecode and fails if the guarantee has lapsed. It
+- parses the classfile, walks the instructions of representative calculations, and asserts
+- that no virtual or interface dispatch to a typeclass operation survives and that no
+- boxing appears:
++ そこでテストスイートは、コンパイルされたバイトコードを読み、保証が失われていれば失敗する。
++ クラスファイルをパースし、代表的な計算の命令をたどり、型クラスの操作への仮想ディスパッチやインターフェースディスパッチが一つも残っていないこと、そしてボックス化が現れないことを表明する。
+
+= boxing appears:
+=
+- ```scala fuel
++ ```scala fuel
+
+= boxing appears:
+=
+= ```scala fuel
+- parse
++ parse
+
+= boxing appears:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def callsTypeclassOp(bytecode: Bytecode): Boolean =
++ def callsTypeclassOp(bytecode: Bytecode): Boolean =
+
+-   val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
++   val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
+
+-   bytecode.instructions.exists: instruction =>
++   bytecode.instructions.exists: instruction =>
+
+-     instruction.opcode match
++     instruction.opcode match
+
+-       case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.has(name)
++       case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.has(name)
+
+-       case Bytecode.Opcode.Invokeinterface(_, name, _, _) => ops.has(name)
++       case Bytecode.Opcode.Invokeinterface(_, name, _, _) => ops.has(name)
+
+-       case _                                              => false
++       case _                                              => false
+
+=       case _                                              => false
+- ```
++ ```
+
+- The [metaprogramming](../en/modules/metaprogramming.md) module exists partly to make this
+- possible: if a claim about what the compiler emitted is worth making, it is worth
+- checking on every build.
++ [メタプログラミング](../en/modules/metaprogramming.md)モジュールは、一部にはこれを可能にするために存在する。コンパイラが何を出力したかについての主張が述べる価値のあるものなら、それはビルドのたびに検査する価値がある。
+
+- ## Where the cost is not zero
++ ## コストがゼロでない場合
+
+- Being honest about this matters more than the claim itself.
++ これについて正直であることは、主張そのものよりも重要である。
+
+- **Checked arithmetic costs what it checks.** Importing `arithmeticOptions.checkedOverflow`
+- adds a real test to every addition. The default is unchecked, so the cost is paid only
+- where it is asked for — but where it is asked for, it is paid.
++ **検査付きの算術は、検査する分だけのコストがかかる。**
++ `arithmeticOptions.checkedOverflow` をインポートすると、すべての加算に本物の検査が加わる。
++ デフォルトは検査なしなので、コストは求められた場所でだけ払われる。しかし求められた場所では払われる。
+
+- **Validation costs once, at construction.** Turning text into a `Port` parses and range-checks
+- it. The saving is that nothing downstream checks again, not that the first check is free.
++ **検証のコストは、構築時に一度かかる。**
++ テキストを `Port` に変えると、それをパースし範囲を検査する。
++ 節約になるのは、下流の何も再び検査しないことであって、最初の検査がただであることではない。
+
+- **Some safety is genuinely structural.** A `Stream`'s single-ownership discipline is
+- enforced by the type system at no runtime cost, but the buffering and windowing that make
+- it zero-copy are real machinery. Capture checking proves the machinery is safe; it does
+- not make it disappear.
++ **一部の安全性は本当に構造的である。**
++ `Stream` の単一所有の規律は型システムによって実行時のコストなしに強制されるが、それをゼロコピーにするバッファリングとウィンドウ処理は本物の仕組みである。
++ キャプチャ検査はその仕組みが安全であることを証明するが、それを消し去るわけではない。
+
+- **Compiletime is the bill.** Type-level computation, inlining and macro expansion are work
+- done on every build to avoid work on every run. A Soundness project compiles more slowly
+- than a loosely-typed equivalent, and `-Xmax-inlines` is a setting that occasionally has to
+- be raised. That is the trade, stated in the direction it actually runs.
++ **請求書はコンパイル時に来る。**
++ 型レベルの計算、インライン化、マクロの展開は、実行のたびの作業を避けるために、ビルドのたびに行われる作業である。
++ Soundness のプロジェクトは、緩く型付けされた等価なものよりもコンパイルが遅く、`-Xmax-inlines` はときおり引き上げなければならない設定である。
++ これがトレードオフであり、実際に向かう方向で述べたものである。
+
+- ## Why this principle is load-bearing
++ ## この原則が重要な理由
+
+- Without it, every other principle in this collection becomes a negotiation. A team that
+- believes safety costs performance will reach for the unchecked type in the inner loop —
+- and the inner loop is exactly where a mistake is most expensive.
++ これがなければ、この文書群の他のすべての原則が交渉事になる。
++ 安全性が性能を犠牲にすると信じるチームは、内側のループで検査なしの型に手を伸ばす。そして内側のループこそ、誤りが最も高くつく場所である。
+
+- If the safe version is also the fast version, the question never arises. That is why
+- "zero cost" is treated as a design constraint on new abstractions rather than as a happy
+- observation about existing ones: an abstraction that cannot be made to disappear is
+- reconsidered before it is added.
++ 安全な版が速い版でもあるなら、その問いはそもそも生じない。
++ それが、「ゼロコスト」が既存の抽象についての喜ばしい観察としてではなく、新しい抽象に対する設計上の制約として扱われる理由である。消し去ることのできない抽象は、加えられる前に再考される。
+
+- See [correctness](correctness.md) for what the compiletime bill buys, and
+- [optionality](optionality.md) for the most pervasive instance of a wrapper removed.
++ コンパイル時の請求書で何が買えるかについては[正しさ](correctness.md)を、取り除かれたラッパーの最も広く行き渡った例については[オプショナル性](optionality.md)を参照のこと。

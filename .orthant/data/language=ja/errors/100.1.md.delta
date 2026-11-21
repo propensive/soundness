@@ -1,0 +1,69 @@
+orthant 1 language
+
+- # `↯/s.100.1` — `Dns.Error`
++ # `↯/s.100.1` — `Dns.Error`
+
+- Raised when a DNS message or name cannot be decoded, encoded or resolved.
++ DNS のメッセージや名前をデコード、エンコード、または名前解決できないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Urticose's `Dns` vocabulary decodes RFC 1035 wire messages (`data.as[Dns.Message]`), parses
+- names from their presentation form (`Dns.Name.parse`), encodes messages back to bytes, resolves
+- names through the platform resolver (`Dns.resolve`) and, in coaxial, exchanges queries with a
+- nameserver. The message is `the DNS message is not valid because $reason`.
++ Urticose の `Dns` の語彙は、RFC 1035 のワイヤ上のメッセージをデコードし（`data.as[Dns.Message]`）、名前をそのプレゼンテーション形式からパースし（`Dns.Name.parse`）、メッセージをバイトにエンコードし直し、プラットフォームのリゾルバーを通して名前を解決し（`Dns.resolve`）、coaxial ではネームサーバーとクエリをやり取りする。
++ メッセージは `the DNS message is not valid because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.100.1.1`  `Truncated`  The message ended inside a field: a header, a name, a question or a record's data.  `[↯/s.100.1.1] the DNS message is not valid because the message ends at offset 12, inside a field`  Check that the whole datagram was received; a UDP reply longer than the receive buffer is cut short, so raise the buffer size (`Socket.Option.DatagramSize`) or retry over TCP.
+- row  `↯/s.100.1.2`  `BadPointer`  A compressed name points forward, to itself, or past the end of the message. RFC 1035 allows a pointer only to a *prior* occurrence of a name.  `[↯/s.100.1.2] the DNS message is not valid because the name pointer at offset 12 points forward`  The sender's compression is broken; the message cannot be read.
+- row  `↯/s.100.1.3`  `BadLabel`  A label byte uses one of the reserved label types (`0x40` or `0x80`) rather than a length or a pointer.  `[↯/s.100.1.3] the DNS message is not valid because the label at offset 20 has unsupported type 64`  Extended label types are not supported; the message cannot be read.
+- row  `↯/s.100.1.4`  `LongLabel`  A label is longer than 63 octets of UTF-8. Checked when a name is constructed (`Dns.Name(…)`, `Dns.Name.parse`, `+`, `prefix`), so that encoding a message is total.  `[↯/s.100.1.4] the DNS message is not valid because the label aaaa… is longer than 63 octets`  Shorten the label; a DNS-SD instance name is limited to 63 bytes of UTF-8.
+- row  `↯/s.100.1.5`  `LongName`  A name's labels, with their length bytes and the terminator, exceed 255 octets.  `[↯/s.100.1.5] the DNS message is not valid because the name a.b.c… is longer than 255 octets`  Shorten the name.
+- row  `↯/s.100.1.6`  `EmptyLabel`  A name in presentation form contains an empty label, such as `a..b` or `.a`.  `[↯/s.100.1.6] the DNS message is not valid because the name a..b contains an empty label`  Remove the doubled or leading dot; a *trailing* dot is allowed and denotes the root.
+- row  `↯/s.100.1.7`  `BadEscape`  A backslash in a name in presentation form is not followed by a character or three decimal digits in the range 0–255.  `[↯/s.100.1.7] the DNS message is not valid because the name a\9b contains a malformed escape sequence`  Write a literal backslash as `\\`, a literal dot as `\.`, and an arbitrary character code as `\DDD`.
+- row  `↯/s.100.1.8`  `BadRdata`  A record's data length disagrees with its typed body: an `A` record that is not four bytes, an `AAAA` not sixteen, a name or `SRV` fields that overrun the declared length.  `[↯/s.100.1.8] the DNS message is not valid because the A record data at offset 40 is malformed`  The sender's record is malformed; the message cannot be read.
+- row  `↯/s.100.1.9`  `LongString`  A `TXT` character-string is longer than 255 octets; checked when `Dns.Rdata.Txt` is constructed.  `[↯/s.100.1.9] the DNS message is not valid because a character-string of 300 octets exceeds 255`  Split long `TXT` content into several strings.
+- row  `↯/s.100.1.10`  `Trailing`  Bytes remain after the last section of the message.  `[↯/s.100.1.10] the DNS message is not valid because the message has trailing bytes from offset 60`  Decode exactly one datagram's worth of data.
+- row  `↯/s.100.1.11`  `Unresolved`  `Dns.resolve` could not resolve the name through the platform's resolver.  `[↯/s.100.1.11] the DNS message is not valid because the name nonexistent.example could not be resolved`  Check the name and the machine's DNS configuration.
+- row  `↯/s.100.1.12`  `Timeout`  No response to a query arrived before the timeout.  `[↯/s.100.1.12] the DNS message is not valid because no response arrived before the timeout`  Check that the nameserver is reachable, or lengthen `Socket.Option.Timeout`.
+- row  `↯/s.100.1.13`  `Mismatch`  A response's ID or question does not match the query it was received for.  `[↯/s.100.1.13] the DNS message is not valid because the response with ID 4660 does not answer the query`  A stray or spoofed datagram was received; retry the query.
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.100.1.1`  `Truncated`  メッセージがフィールドの途中で終わった。ヘッダー、名前、質問、レコードのデータのいずれかである。  `[↯/s.100.1.1] the DNS message is not valid because the message ends at offset 12, inside a field`  データグラム全体を受信したことを確かめる。受信バッファーより長い UDP の応答は途中で切れるので、バッファーのサイズ（`Socket.Option.DatagramSize`）を大きくするか、TCP で再試行する。
++ row  `↯/s.100.1.2`  `BadPointer`  圧縮された名前が、前方、自分自身、またはメッセージの末尾より先を指している。RFC 1035 がポインターに許すのは、名前の*以前の*出現を指すことだけである。  `[↯/s.100.1.2] the DNS message is not valid because the name pointer at offset 12 points forward`  送信側の圧縮が壊れている。メッセージは読めない。
++ row  `↯/s.100.1.3`  `BadLabel`  ラベルのバイトが、長さやポインターではなく、予約されたラベルの種類（`0x40` または `0x80`）の一つを使っている。  `[↯/s.100.1.3] the DNS message is not valid because the label at offset 20 has unsupported type 64`  拡張ラベルの種類はサポートされていない。メッセージは読めない。
++ row  `↯/s.100.1.4`  `LongLabel`  ラベルが UTF-8 で 63 オクテットより長い。名前の構築時（`Dns.Name(…)`、`Dns.Name.parse`、`+`、`prefix`）に検査されるので、メッセージのエンコードは全域的である。  `[↯/s.100.1.4] the DNS message is not valid because the label aaaa… is longer than 63 octets`  ラベルを短くする。DNS-SD のインスタンス名は UTF-8 で 63 バイトに制限されている。
++ row  `↯/s.100.1.5`  `LongName`  名前のラベルが、その長さのバイトと終端を含めて 255 オクテットを超える。  `[↯/s.100.1.5] the DNS message is not valid because the name a.b.c… is longer than 255 octets`  名前を短くする。
++ row  `↯/s.100.1.6`  `EmptyLabel`  プレゼンテーション形式の名前が、`a..b` や `.a` のような空のラベルを含む。  `[↯/s.100.1.6] the DNS message is not valid because the name a..b contains an empty label`  重複したドットや先頭のドットを取り除く。*末尾の*ドットは許されており、ルートを表す。
++ row  `↯/s.100.1.7`  `BadEscape`  プレゼンテーション形式の名前の中のバックスラッシュの後に、文字も、0–255 の範囲の三桁の十進数字も続いていない。  `[↯/s.100.1.7] the DNS message is not valid because the name a\9b contains a malformed escape sequence`  リテラルのバックスラッシュは `\\`、リテラルのドットは `\.`、任意の文字コードは `\DDD` と書く。
++ row  `↯/s.100.1.8`  `BadRdata`  レコードのデータ長が、その型付きの本体と一致しない。四バイトでない `A` レコード、十六バイトでない `AAAA`、宣言された長さをはみ出す名前や `SRV` のフィールドである。  `[↯/s.100.1.8] the DNS message is not valid because the A record data at offset 40 is malformed`  送信側のレコードが不正である。メッセージは読めない。
++ row  `↯/s.100.1.9`  `LongString`  `TXT` の文字列が 255 オクテットより長い。`Dns.Rdata.Txt` の構築時に検査される。  `[↯/s.100.1.9] the DNS message is not valid because a character-string of 300 octets exceeds 255`  長い `TXT` の内容をいくつかの文字列に分ける。
++ row  `↯/s.100.1.10`  `Trailing`  メッセージの最後のセクションの後にバイトが残っている。  `[↯/s.100.1.10] the DNS message is not valid because the message has trailing bytes from offset 60`  ちょうど一つのデータグラム分のデータをデコードする。
++ row  `↯/s.100.1.11`  `Unresolved`  `Dns.resolve` が、プラットフォームのリゾルバーを通して名前を解決できなかった。  `[↯/s.100.1.11] the DNS message is not valid because the name nonexistent.example could not be resolved`  名前とマシンの DNS の構成を確かめる。
++ row  `↯/s.100.1.12`  `Timeout`  タイムアウトまでにクエリへの応答が届かなかった。  `[↯/s.100.1.12] the DNS message is not valid because no response arrived before the timeout`  ネームサーバーに到達できることを確かめるか、`Socket.Option.Timeout` を長くする。
++ row  `↯/s.100.1.13`  `Mismatch`  応答の ID や質問が、それを受信したクエリと一致しない。  `[↯/s.100.1.13] the DNS message is not valid because the response with ID 4660 does not answer the query`  迷い込んだ、あるいは偽装されたデータグラムを受信した。クエリを再試行する。
+
+- ```
++ ```
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/urticose/src/dns/urticose.Dns.scala`
++ - ソース：`lib/urticose/src/dns/urticose.Dns.scala`

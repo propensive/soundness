@@ -1,0 +1,45 @@
+orthant 1 language
+
+-       layering.rank.at(2)       // 0: no dependencies, so the first layer
+-       layering.rank.at(8)       // 2: two layers down, by the longest path
+-       layering.layers.at(Sec)   // the vertices of the second layer, in drawn order
+-       layering.links.at(Prim)   // the (upper, lower) positions joined between layers 0 and 1
++       layering.rank.at(2)       // 0: no dependencies, so the first layer
++       layering.rank.at(8)       // 2: two layers down, by the longest path
++       layering.layers.at(Sec)   // the vertices of the second layer, in drawn order
++       layering.links.at(Prim)   // the (upper, lower) positions joined between layers 0 and 1
+
+=       layering.crossings        // 0: no link crosses another
+=       ```
+=
++       層とリンクは `Ordinal` で読む `Sequence` であり、`rank` と `position` は `Map` である。
++       そのため、どの読み取りも `Optional` を返す。
++       存在しない層や、グラフにないノードに対しては `Unset` である。
+
+-       The layers and links are `Sequence`s, read by `Ordinal`, and `rank` and `position` are
+-       `Map`s, so each read answers an `Optional`: `Unset` for a layer which is not there, or a
+-       node which is not in the graph. `dendrology`'s `LayeredDagDiagram` assigns columns to a
+-       layering and renders it; a different drawing takes `layers` and `links` directly.
++       `dendrology` の `LayeredDagDiagram` は、層構造に列を割り当てて描画する。別の描画方法では、`layers` と `links` を直接使う。
+
+-   entry .Vertex   a slot in a layer: a node of the graph, or the point where a longer edge passes through
+-       An enum: `Real(value)` is a node of the graph, and `Virtual(source, target)` is where the
+-       edge from `source` to `target`, spanning several layers, passes through this one. A
+-       drawing gives a virtual vertex a column and draws the edge through it.
+-   entry #layers   the layers, top down, each a `Sequence` of `Layering.Vertex` in drawn order
+-   entry #links   `links(i)` joins layer `i` to layer `i + 1`, as pairs of positions within each
+-       A `Sequence` with one `List` of links for each layer but the last. Every link joins
+-       adjacent layers: an edge spanning more is broken at its virtual vertices.
+-   entry #rank   each node's layer, as a `Map`
+-   entry #position   each node's position within its layer, as a `Map`
+-   entry #crossings   how many pairs of links cross, over the whole layering
++   entry .Vertex   層の中の位置：グラフのノード、またはより長いエッジが通過する点
++       列挙型である：`Real(value)` はグラフのノードであり、`Virtual(source, target)` は、いくつもの層にまたがる `source` から `target` へのエッジがこの層を通過する場所である。
++       描画は仮想の頂点に列を与え、エッジがそこを通るように描く。
++   entry #layers   上から順の層。それぞれは描画順の `Layering.Vertex` の `Sequence` である
++   entry #links   `links(i)` は層 `i` と層 `i + 1` を結ぶ。それぞれの層の中での位置の組として表す
++       最後の層を除く各層に、リンクの `List` を一つずつ持つ `Sequence` である。
++       すべてのリンクは隣接する層を結ぶ：それより多くの層にまたがるエッジは、その仮想の頂点で分割される。
++   entry #rank   各ノードの層。`Map` として返す
++   entry #position   各ノードの、その層の中での位置。`Map` として返す
++   entry #crossings   層構造全体で、交差するリンクの組がいくつあるか

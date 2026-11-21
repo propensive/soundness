@@ -1,0 +1,21 @@
+orthant 1 language
+
+= to the group, to the one sender, or not at all:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+-   val group = Multicast(ip"224.0.0.251", udp"mdns")
++   val group = Multicast(ip"224.0.0.251", udp"mdns")
+
+- A nameserver is an `Endpoint` of a UDP port. `ask` sends a
+- [`Dns.Message`](network-addresses.md#dns-names-and-messages), and returns the reply which
+- answers it. Given a name and a type of record, which is `A` by default, it asks the common
+- question directly, and returns the records which answer it:
++ ネームサーバーは UDP ポートの `Endpoint` である。
++ `ask` は [`Dns.Message`](network-addresses.md#dns-names-and-messages) を送り、それに答える返信を返す。
++ 名前とレコードの種類（既定は `A`）を与えると、よくある問い合わせを直接行い、それに答えるレコードを返す。
+
+- val addresses = resolver.ask(dns"example.com").map(_.rdata)
++ val addresses = resolver.ask(dns"example.com").map(_.rdata)

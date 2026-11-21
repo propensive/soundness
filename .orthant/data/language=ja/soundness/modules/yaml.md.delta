@@ -1,0 +1,909 @@
+orthant 1 language
+
+- ## YAML
++ ## YAML
+
+- ### About
++ ### 概要
+
+- [YAML](https://en.wikipedia.org/wiki/YAML) is handled in the same way as [JSON](json.md). Text
+- parses into a `Yaml` value. A `Yaml` value converts to and from case classes with
+- [derived][derivation] codecs. The `y"…"` [interpolator] writes YAML which is checked at
+- [compiletime].
++ [YAML](https://en.wikipedia.org/wiki/YAML) は [JSON](json.md) と同じように扱われる。
++ テキストは `Yaml` の値にパースされる。
++ `Yaml` の値は、[導出された][導出]コーデックによってケースクラスとの間で変換される。
++ `y"…"` [補間子]は、[コンパイル時]に検査される YAML を書く。
+
+- The parser covers the language as it is really used: block and flow styles, quoting, block
+- scalars, tags, anchors and aliases, and streams of several documents. A `Yaml` value is written
+- back out as clean block-style text.
++ パーサーは、実際に使われているとおりの言語を扱う。ブロックスタイルとフロースタイル、引用、ブロックスカラー、タグ、アンカーとエイリアス、そして複数の文書からなるストリームである。
++ `Yaml` の値は、きれいなブロックスタイルのテキストとして書き戻される。
+
+- Navigation, updating through lenses, tracking of source positions, and collecting several
+- decoding errors at once all have the same shape as they do for JSON. Knowing one format is
+- knowing the other.
++ ナビゲーション、レンズによる更新、ソース上の位置の追跡、複数のデコードエラーの一括収集は、どれも JSON の場合と同じ形をしている。
++ 一方の形式を知ることは、もう一方を知ることである。
+
+- ### On YAML
++ ### YAML について
+
+- YAML is the configuration language of half the modern toolchain, and it is notoriously easy to
+- consume badly. Its indentation is structure. Its scalars are typed by guesswork. Its extras,
+- such as anchors, tags and multi-document files, defeat casual parsers. A consumer typically
+- reads it into an untyped tree and picks values out by string key, discovering any mismatch at
+- [runtime].
++ YAML は現代のツールチェーンの半分の設定言語であり、まずい読み方をしやすいことで悪名高い。
++ そのインデントは構造である。
++ そのスカラーは当て推量で型付けされる。
++ アンカー、タグ、複数文書のファイルといったその付加機能は、手軽なパーサーを打ち負かす。
++ 利用者はたいてい、それを型のない木に読み込み、文字列のキーで値を取り出し、食い違いを[実行時]に見つける。
+
+- Here the language is parsed properly, and the untyped tree is then left behind. A document
+- decodes into the case class it should be. If it cannot, a typed error names what was missing or
+- of the wrong type and, with tracking on, the line and column where it sat. Decoding straight to
+- a typed value, through the same derivation as every other format, is
+- [correctness](../../philosophy/correctness.md) with one definition of the data.
++ ここでは言語を正しくパースし、その後、型のない木は置き去りにする。
++ 文書は、それがなるべきケースクラスにデコードされる。
++ それができなければ、型付きのエラーが、何が欠けていたか、または何の型が誤っていたかを名指し、追跡が有効であれば、それがあった行と列も名指す。
++ 他のすべての形式と同じ導出を通じて型付きの値に直接デコードすることは、データの定義が一つだけである[正しさ](../../philosophy/correctness.md)である。
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception, and
+- the last import lets them print their results:
++ すべては `soundness` パッケージから得られる。
++ 例はどんなエラーも例外として投げ、最後のインポートは例が結果を表示できるようにする。
+
+= the last import lets them print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Parsing and decoding
++ ### パースとデコード
+
+- `read[Yaml]` parses text into a `Yaml` value, and `as` decodes it to a Scala type. Reading
+- straight to a type, with `read[Person in Yaml]`, combines the two steps. Flow style and block
+- style give the same result:
++ `read[Yaml]` はテキストを `Yaml` の値にパースし、`as` はそれを Scala の型にデコードする。
++ `read[Person in Yaml]` で型に直接読むと、二つの段階が組み合わさる。
++ フロースタイルとブロックスタイルは同じ結果を与える。
+
+= style give the same result:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- val hamlet = t"{name: Hamlet, age: 30}".read[Yaml].as[Person]
++ val hamlet = t"{name: Hamlet, age: 30}".read[Yaml].as[Person]
+
+- val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
++ val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
+
+= val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
+- ```
++ ```
+
+= val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(hamlet.inspect)
++ Out.println(hamlet.inspect)
+
+- Out.println(horatio.inspect)
++ Out.println(horatio.inspect)
+
+= Out.println(horatio.inspect)
+- ```
++ ```
+
+- A document which lacks a required field, or holds a value of the wrong type, does not decode,
+- and the error says why:
++ 必須のフィールドを欠く文書や、誤った型の値を持つ文書はデコードされず、エラーがその理由を述べる。
+
+= and the error says why:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and the error says why:
+=
+= ```scala fuel
+- run
++ run
+
+= and the error says why:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= and the error says why:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"name: Ophelia".read[Person in Yaml]
++ t"name: Ophelia".read[Person in Yaml]
+
+= t"name: Ophelia".read[Person in Yaml]
+- ```
++ ```
+
+= t"name: Ophelia".read[Person in Yaml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= t"name: Ophelia".read[Person in Yaml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"{name: Yorick, age: unknown}".read[Person in Yaml]
++ t"{name: Yorick, age: unknown}".read[Person in Yaml]
+
+= t"{name: Yorick, age: unknown}".read[Person in Yaml]
+- ```
++ ```
+
+- A stream of several documents, separated by `---`, reads as a list:
++ `---` で区切られた複数の文書からなるストリームは、リストとして読まれる。
+
+= A stream of several documents, separated by `---`, reads as a list:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A stream of several documents, separated by `---`, reads as a list:
+=
+= ```scala fuel
+- run
++ run
+
+= A stream of several documents, separated by `---`, reads as a list:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int]).inspect)
++ Out.println(t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int]).inspect)
+
+= Out.println(t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int]).inspect)
+- ```
++ ```
+
+- A source need not be text held in memory. The parser reads straight from a
+- [stream](streams.md) of bytes or characters, refilling as it goes, without first joining the
+- input together. A large document is therefore parsed without ever being held whole, and a `---`
+- marker which is split across two chunks is still a document boundary.
++ ソースはメモリに保持されたテキストでなくてよい。
++ パーサーは、バイトや文字の[ストリーム](streams.md)から直接、入力を先に連結することなく、進みながらリフィルして読む。
++ そのため、大きな文書は丸ごと保持されることなくパースされ、二つのチャンクにまたがって分割された `---` のマーカーも、やはり文書の境界である。
+
+- ### Encoding
++ ### エンコード
+
+- `in[Yaml]` encodes a value as `Yaml`, and `show` writes it as block-style text, in the
+- formatting in scope:
++ `in[Yaml]` は値を `Yaml` としてエンコードし、`show` はそれをスコープ内の書式でブロックスタイルのテキストとして書く。
+
+= formatting in scope:
+=
+- ```scala
++ ```scala
+
+- import formatting.blockYamlFormatting
++ import formatting.blockYamlFormatting
+
+= import formatting.blockYamlFormatting
+- ```
++ ```
+
+= import formatting.blockYamlFormatting
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import formatting.blockYamlFormatting
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import formatting.blockYamlFormatting
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Person(t"Hamlet", 30).in[Yaml].show)
++ Out.println(Person(t"Hamlet", 30).in[Yaml].show)
+
+= Out.println(Person(t"Hamlet", 30).in[Yaml].show)
+- ```
++ ```
+
+- `in[Text over Yaml]` encodes a value straight to YAML text, in the `Yaml.Formatting` in scope,
+- and `in[Data over Yaml]` writes the same text as bytes, in the `Codepage` in scope.
++ `in[Text over Yaml]` は値をスコープ内の `Yaml.Formatting` で直接 YAML のテキストにエンコードし、`in[Data over Yaml]` は同じテキストをスコープ内の `Codepage` でバイトとして書く。
+
+- The `@name` annotation renames a field in the document, exactly as it does for
+- [JSON](json.md#renaming-fields). An enumeration encodes with a discriminator field, chosen by
+- importing `yamlByTypeDiscriminable` or `yamlByKindDiscriminable`, as a
+- [tagged union](json.md#tagged-unions) does.
++ `@name` アノテーションは、[JSON](json.md#renaming-fields) の場合とまったく同じように、文書の中のフィールドの名前を変える。
++ 列挙型は、[タグ付きユニオン](json.md#tagged-unions)と同じように、`yamlByTypeDiscriminable` または `yamlByKindDiscriminable` をインポートして選ぶ判別子フィールドとともにエンコードされる。
+
+- ### Optional fields
++ ### オプショナルなフィールド
+
+- An `Optional` field has three policies, from the package `optionalityOptions`, as
+- [Decoding](decoding.md#policies-for-optional-fields) describes:
++ `Optional` のフィールドには、[デコード](decoding.md#policies-for-optional-fields)が説明するとおり、パッケージ `optionalityOptions` による三つのポリシーがある。
+
+= [Decoding](decoding.md#policies-for-optional-fields) describes:
+=
+- ```tabular
++ ```tabular
+
+- column  A key which is
+- column  Reads as
+- column  Unless
+- row  omitted from the mapping  `Unset`  `strictYamlAbsence` makes it an error
+- row  given an explicit `null`  `Unset`  `strictYamlNulls` hands it to the inner decoder
+- row  present but rejected by the inner decoder  an error  `lenientYamlFaults` reads it as `Unset`
++ column  キーが
++ column  読まれる値
++ column  ただし
++ row  マッピングから省かれている  `Unset`  `strictYamlAbsence` はこれをエラーにする
++ row  明示的な `null` を与えられている  `Unset`  `strictYamlNulls` はこれを内側のデコーダーに渡す
++ row  存在するが内側のデコーダーに拒否される  エラー  `lenientYamlFaults` はこれを `Unset` として読む
+
+= row  present but rejected by the inner decoder  an error  `lenientYamlFaults` reads it as `Unset`
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- case class Member(name: Text, age: Optional[Int])
++ case class Member(name: Text, age: Optional[Int])
+
+- val fool = t"name: Fool\nage: null".read[Yaml].as[Member]
++ val fool = t"name: Fool\nage: null".read[Yaml].as[Member]
+
+- val strict =
++ val strict =
+
+-   import optionalityOptions.strictYamlNulls
++   import optionalityOptions.strictYamlNulls
+
+-   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
++   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
+
+=   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
+- ```
++ ```
+
+=   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(fool.inspect)
++ Out.println(fool.inspect)
+
+- Out.println(strict.inspect)
++ Out.println(strict.inspect)
+
+= Out.println(strict.inspect)
+- ```
++ ```
+
+- ### Scalars, quoting and block styles
++ ### スカラー、引用、ブロックスタイル
+
+- Most of YAML's surprises live in its scalars. Each style is handled as the specification says:
++ YAML の意外な点のほとんどは、そのスカラーにある。
++ 各スタイルは仕様が述べるとおりに扱われる。
+
+= Most of YAML's surprises live in its scalars. Each style is handled as the specification says:
+=
+- ```tabular
++ ```tabular
+
+- column  Scalar
+- column  Resolves as
+- row  plain `true`  a boolean
+- row  plain `42`  an integer
+- row  plain `~` or `null`  a null
+- row  `'…'`, single-quoted  text, taking no escapes; a quote is doubled to include one
+- row  `"…"`, double-quoted  text, taking the full escape set
++ column  スカラー
++ column  解決される値
++ row  プレーンな `true`  真偽値
++ row  プレーンな `42`  整数
++ row  プレーンな `~` または `null`  null
++ row  `'…'`、単一引用符  エスケープを受け付けないテキスト。引用符を含めるには二重にする
++ row  `"…"`、二重引用符  すべてのエスケープを受け付けるテキスト
+
+= row  `"…"`, double-quoted  text, taking the full escape set
+- ```
++ ```
+
+- A quoted scalar is always text, so `"42"` stays a string:
++ 引用されたスカラーは常にテキストなので、`"42"` は文字列のままである。
+
+= A quoted scalar is always text, so `"42"` stays a string:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A quoted scalar is always text, so `"42"` stays a string:
+=
+= ```scala fuel
+- run
++ run
+
+= A quoted scalar is always text, so `"42"` stays a string:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= A quoted scalar is always text, so `"42"` stays a string:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"""age: "42"""".read[Yaml].as[Map[Text, Int]]
++ t"""age: "42"""".read[Yaml].as[Map[Text, Int]]
+
+= t"""age: "42"""".read[Yaml].as[Map[Text, Int]]
+- ```
++ ```
+
+- A block scalar carries its own handling of newlines. It has a style indicator, and an optional
+- *chomping* indicator for the trailing newline:
++ ブロックスカラーは、改行の扱いを自身で持つ。
++ スタイルの指示子と、末尾の改行に対する任意の*チョンプ*指示子を持つ。
+
+= *chomping* indicator for the trailing newline:
+=
+- ```tabular
++ ```tabular
+
+- column  Indicator
+- column  Effect
+- row  `|`  keeps line breaks
+- row  `>`  folds line breaks into spaces
+- row  no chomping indicator  keeps one trailing newline
+- row  `-`  strips the trailing newline
+- row  `+`  keeps every trailing newline
++ column  指示子
++ column  効果
++ row  `|`  改行を保つ
++ row  `>`  改行を空白に折りたたむ
++ row  チョンプ指示子なし  末尾の改行を一つ保つ
++ row  `-`  末尾の改行を取り除く
++ row  `+`  末尾の改行をすべて保つ
+
+= row  `+`  keeps every trailing newline
+- ```
++ ```
+
+= row  `+`  keeps every trailing newline
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `+`  keeps every trailing newline
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `+`  keeps every trailing newline
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"text: |\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
++ Out.println(t"text: |\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
+
+- Out.println(t"text: >\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
++ Out.println(t"text: >\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
+
+- Out.println(t"text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
++ Out.println(t"text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
+
+= Out.println(t"text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
+- ```
++ ```
+
+- Comments are ignored wherever they may appear, whether after a scalar or on a line of their
+- own. Leading whitespace, trailing whitespace and whitespace at the end of a line are all
+- treated as the specification requires.
++ コメントは、スカラーの後であれ独立した行であれ、現れうる場所ではどこでも無視される。
++ 先頭の空白、末尾の空白、行末の空白は、どれも仕様が要求するとおりに扱われる。
+
+- ### Tags
++ ### タグ
+
+- A tag overrides the type which a scalar's content would otherwise be given. It is how YAML says
+- "this number is a string", and the reverse:
++ タグは、スカラーの内容に本来与えられるはずの型を上書きする。
++ これは、YAML が「この数は文字列である」と、あるいはその逆を述べる方法である。
+
+= "this number is a string", and the reverse:
+=
+- ```tabular
++ ```tabular
+
+- column  Tag
+- column  Resolves a scalar as
+- row  `!!str`, `!`, `!!`  text
+- row  `!!int`  an integer
+- row  `!!float`  a decimal
+- row  `!!bool`  a boolean, from `true`, `True` or `TRUE`, and likewise `false`
+- row  `!!null`  a null
++ column  タグ
++ column  スカラーの解決結果
++ row  `!!str`、`!`、`!!`  テキスト
++ row  `!!int`  整数
++ row  `!!float`  小数
++ row  `!!bool`  `true`、`True`、`TRUE` からの真偽値。`false` も同様
++ row  `!!null`  null
+
+= row  `!!null`  a null
+- ```
++ ```
+
+= row  `!!null`  a null
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `!!null`  a null
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `!!null`  a null
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"!!str 42".read[Yaml].as[Text])
++ Out.println(t"!!str 42".read[Yaml].as[Text])
+
+- Out.println(t"!!int \"42\"".read[Yaml].as[Int].show)
++ Out.println(t"!!int \"42\"".read[Yaml].as[Int].show)
+
+- Out.println(t"!!float 7".read[Yaml].as[Double].inspect)
++ Out.println(t"!!float 7".read[Yaml].as[Double].inspect)
+
+= Out.println(t"!!float 7".read[Yaml].as[Double].inspect)
+- ```
++ ```
+
+- ### Anchors and aliases
++ ### アンカーとエイリアス
+
+- An anchor names a node, and an alias refers back to it, so a document need not repeat itself.
+- Aliases are resolved as the document is read, whatever the anchored node was: a scalar, a flow
+- sequence or mapping, or a whole block.
++ アンカーはノードに名前を付け、エイリアスはそれを参照し返すので、文書は同じことを繰り返さなくてよい。
++ エイリアスは、アンカーの付いたノードがスカラー、フローのシーケンスやマッピング、あるいはブロック全体のいずれであっても、文書が読まれるときに解決される。
+
+= sequence or mapping, or a whole block.
+=
+- ```scala
++ ```scala
+
+- case class Inner(n: Int)
++ case class Inner(n: Int)
+
+= case class Inner(n: Int)
+- ```
++ ```
+
+= case class Inner(n: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Inner(n: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Inner(n: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]].inspect)
++ Out.println(t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]].inspect)
+
+- Out.println(t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]].inspect)
++ Out.println(t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]].inspect)
+
+= Out.println(t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]].inspect)
+- ```
++ ```
+
+- This is what makes YAML configuration files terse, and what makes a naive parser get them
+- wrong.
++ これが YAML の設定ファイルを簡潔にするものであり、素朴なパーサーがそれを読み誤る原因である。
+
+- ### Writing YAML literally
++ ### YAML をリテラルとして書く
+
+- The `y"…"` interpolator writes YAML directly. It is checked at compiletime, and values are
+- substituted into it. The same literal takes a document apart in a pattern, as
+- [`j"…"`](json.md#matching-json) does:
++ `y"…"` 補間子は YAML を直接書く。
++ それはコンパイル時に検査され、値がその中に埋め込まれる。
++ 同じリテラルは、[`j"…"`](json.md#matching-json) と同じように、パターンの中で文書を分解する。
+
+= [`j"…"`](json.md#matching-json) does:
+=
+- ```scala
++ ```scala
+
+- val name = t"Hamlet"
++ val name = t"Hamlet"
+
+- val person = y"""
++ val person = y"""
+
+-   name: $name
++   name: $name
+
+-   age: 30
++   age: 30
+
+- """.as[Person]
++ """.as[Person]
+
+= """.as[Person]
+- ```
++ ```
+
+= """.as[Person]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= """.as[Person]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= """.as[Person]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(person.inspect)
++ Out.println(person.inspect)
+
+= Out.println(person.inspect)
+- ```
++ ```
+
+- ### Navigating and updating
++ ### ナビゲーションと更新
+
+- With dynamic access enabled, a field is read as a member, and assigning to a field gives a new
+- document. Assigning `Unset` removes a field:
++ 動的アクセスを有効にすると、フィールドはメンバーとして読まれ、フィールドへの代入は新しい文書を与える。
++ `Unset` を代入するとフィールドが取り除かれる。
+
+= document. Assigning `Unset` removes a field:
+=
+- ```scala
++ ```scala
+
+- import dynamicAccess.dynamicYaml
++ import dynamicAccess.dynamicYaml
+
+- val doc = t"{name: Hamlet, age: 30}".read[Yaml]
++ val doc = t"{name: Hamlet, age: 30}".read[Yaml]
+
+= val doc = t"{name: Hamlet, age: 30}".read[Yaml]
+- ```
++ ```
+
+= val doc = t"{name: Hamlet, age: 30}".read[Yaml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val doc = t"{name: Hamlet, age: 30}".read[Yaml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val doc = t"{name: Hamlet, age: 30}".read[Yaml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(doc.name.as[Text])
++ Out.println(doc.name.as[Text])
+
+- Out.println((doc.age = 31).show)
++ Out.println((doc.age = 31).show)
+
+= Out.println((doc.age = 31).show)
+- ```
++ ```
+
+- The import grants the permission `Yaml is Dynamical` to the rest of its scope.
+- `dynamically[Yaml]:` grants it to a single block instead, as
+- [JSON](json.md#fields-as-members) describes.
++ このインポートは、そのスコープの残りに `Yaml is Dynamical` のパーミッションを与える。
++ `dynamically[Yaml]:` は、[JSON](json.md#fields-as-members) が説明するとおり、代わりに一つのブロックにそれを与える。
+
+- A deeper change goes through a [lens](optics.md), with optics such as `Each` and `Filter` to
+- reach many elements at once:
++ より深い変更は[レンズ](optics.md)を通じて行い、`Each` や `Filter` のようなオプティクスで多くの要素に一度に届く。
+
+= reach many elements at once:
+=
+- ```scala
++ ```scala
+
+- val older = doc.lens(_.age = 31.in[Yaml])
++ val older = doc.lens(_.age = 31.in[Yaml])
+
+= val older = doc.lens(_.age = 31.in[Yaml])
+- ```
++ ```
+
+- ### Positions and accumulated errors
++ ### 位置と蓄積されたエラー
+
+- Bringing `parsing.trackPositions` into scope switches on tracking, as it does for
+- [JSON](json.md#source-positions). Every value then remembers its line and column, so a decoding
+- failure can point into the source file. That is the difference between "field missing" and
+- "field missing at line 12".
++ `parsing.trackPositions` をスコープに入れると、[JSON](json.md#source-positions) の場合と同じように追跡が有効になる。
++ するとすべての値が自身の行と列を記憶するので、デコードの失敗がソースファイルの中を指し示せる。
++ それが「フィールドがない」と「12 行目にフィールドがない」の違いである。
+
+= "field missing at line 12".
+=
+- ```scala
++ ```scala
+
+- import parsing.trackPositions
++ import parsing.trackPositions
+
+- val tracked = t"{a: 1, b: 2}".read[Yaml]
++ val tracked = t"{a: 1, b: 2}".read[Yaml]
+
+- val position = tracked.locate(YamlPath()(t"a"))
++ val position = tracked.locate(YamlPath()(t"a"))
+
+= val position = tracked.locate(YamlPath()(t"a"))
+- ```
++ ```
+
+- Under a strategy which [accumulates failures](errors.md#accumulating-failures), decoding
+- collects every fault in a document instead of stopping at the first. Each is tagged with its
+- path, such as `#/age` or `#/email`, so the problems of a whole configuration file are reported
+- together.
++ [失敗を蓄積する](errors.md#accumulating-failures)戦略のもとでは、デコードは最初の誤りで止まる代わりに、文書の中のすべての誤りを集める。
++ それぞれは `#/age` や `#/email` のようなパスでタグ付けされるので、設定ファイル全体の問題がまとめて報告される。
+
+- ### Numbers
++ ### 数
+
+- A YAML number, like a JSON one, has no limit on its precision. A number beyond the range of a
+- `Long` or a `Double` is kept exactly, as a binary-coded decimal. A long identifier or a precise
+- decimal read from a configuration file is therefore never silently rounded on the way through.
++ YAML の数は、JSON の数と同じく、精度に上限がない。
++ `Long` や `Double` の範囲を超える数は、二進化十進数として正確に保持される。
++ そのため、設定ファイルから読んだ長い識別子や精密な小数が、途中で黙って丸められることは決してない。
+
+- ### Skipping the tree
++ ### 木を省く
+
+- The conversions above all go through the tree. Text is parsed to a `Yaml` and decoded, or a
+- value is encoded to a `Yaml` and written out. A record can instead carry a *direct* parser and
+- printer, derived once into its companion with `derives Yaml.Direct`. A single import then
+- selects the route for every record in scope, as it does for
+- [JSON](json.md#skipping-the-tree):
++ 上の変換はすべて木を通る。
++ テキストは `Yaml` にパースされてデコードされるか、値が `Yaml` にエンコードされて書き出される。
++ 代わりに、レコードは*直接の*パーサーとプリンターを持つことができ、それらは `derives Yaml.Direct` でそのコンパニオンに一度だけ導出される。
++ そうすれば、[JSON](json.md#skipping-the-tree) の場合と同じように、一つのインポートがスコープ内のすべてのレコードに対して経路を選ぶ。
+
+= [JSON](json.md#skipping-the-tree):
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  For a record
+- column  For any other type
+- row  `codecs.direct`  a direct parser and printer  the tree codecs, unless it has a direct instance of its own
+- row  `codecs.derived`  the tree codecs, even where a direct instance is in scope  the tree codecs
+- row  `codecs.strict`  a direct parser and printer  a compile error naming the type, unless it has a direct instance of its own
++ column  インポート
++ column  レコードに対して
++ column  その他の型に対して
++ row  `codecs.direct`  直接のパーサーとプリンター  独自の直接のインスタンスを持たなければ木のコーデック
++ row  `codecs.derived`  直接のインスタンスがスコープにあっても木のコーデック  木のコーデック
++ row  `codecs.strict`  直接のパーサーとプリンター  独自の直接のインスタンスを持たなければ、型を名指すコンパイルエラー
+
+= row  `codecs.strict`  a direct parser and printer  a compile error naming the type, unless it has a direct instance of its own
+- ```
++ ```
+
+- A type which is not a record is an enumeration or a sealed hierarchy. The modes are
+- alternatives, so import one at a time.
++ レコードでない型とは、列挙型またはシールされた階層である。
++ これらのモードは択一なので、一度に一つだけインポートする。
+
+- A direct printer writes a record's text straight from its fields, with no tree built. The text
+- is the same as `show` writes.
++ 直接のプリンターは、木を組み立てずに、レコードのテキストをそのフィールドから直接書く。
++ そのテキストは `show` が書くものと同じである。
+
+- A direct parser reads the fields straight from the nodes of the parsed document. No `Yaml` is
+- built around any of them, and no codec is looked up for each field. The document is still
+- parsed whole first, though. Anchors and aliases mean that a node may refer back to any earlier
+- one, so a record cannot be read before the whole document is held.
++ 直接のパーサーは、パースされた文書のノードから直接フィールドを読む。
++ どのノードの周りにも `Yaml` は組み立てられず、フィールドごとにコーデックを探すこともない。
++ ただし、文書はやはりまず丸ごとパースされる。
++ アンカーとエイリアスがあるため、ノードはそれより前の任意のノードを参照し返しうるので、文書全体が保持されるまでレコードを読むことはできない。
+
+- ### Conformance
++ ### 適合性
+
+- The parser is checked against the [YAML test suite](https://github.com/yaml/yaml-test-suite),
+- the community's shared collection of cases, including those designed to break parsers. Cases
+- outside the supported subset are recorded as known gaps, not quietly skipped, so the coverage
+- is stated and not merely claimed.
++ パーサーは、パーサーを壊すために作られたものを含む、コミュニティが共有するケースの集まりである [YAML テストスイート](https://github.com/yaml/yaml-test-suite)に照らして検査されている。
++ サポートされる部分集合の外にあるケースは、黙って飛ばされるのではなく既知の欠落として記録されるので、対応範囲は単に主張されるのではなく明示されている。
+
+- ### YAML over HTTP
++ ### HTTP 上の YAML
+
+- A `Yaml` value is a request body or a response body, with the media type `application/yaml`,
+- and a body is parsed back to `Yaml` on arrival. A YAML API is therefore consumed and offered
+- with the same code as a [JSON one](json.md#json-over-http). Only the format's type differs.
++ `Yaml` の値は、メディアタイプ `application/yaml` を持つリクエストの本文やレスポンスの本文であり、本文は到着時に `Yaml` にパースし直される。
++ そのため、YAML の API は [JSON の API](json.md#json-over-http) と同じコードで利用し、提供できる。
++ 異なるのは形式の型だけである。
+
+- ### Related
++ ### 関連
+
+- - [Annotations](annotations.md), [CBOR](cbor.md), [CSV](csv.md), [XML](xml.md), [network addresses](network-addresses.md) and [OpenAPI](openapi.md) share YAML's codecs and carry its documents.
++ - [アノテーション](annotations.md)、[CBOR](cbor.md)、[CSV](csv.md)、[XML](xml.md)、[ネットワークアドレス](network-addresses.md)、[OpenAPI](openapi.md) は、YAML のコーデックを共有し、その文書を扱う。

@@ -1,0 +1,24 @@
+orthant 1 language
+
+- Internally, a permutation is stored as its
+- [inversion table](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) in
+- factorial-base form, which is a single integer that uniquely identifies it. That makes permutations compact to store and to
+- enumerate: `Permutation.bySize(n)` gives all `n!` of them, as a lazy
+- [chain](collections.md#lazy-chains). A permutation of *n* elements occupies
+- O(*n* log *n*) space, which is the least possible, since there are *n*! of them to tell apart.
++ 内部では、置換は階乗進法の形式の [反転表](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics))として格納される。これは置換を一意に識別する単一の整数である。
++ そのため置換は、格納するのにも列挙するのにもコンパクトである。`Permutation.bySize(n)` はその `n!` 個すべてを遅延[チェーン](collections.md#lazy-chains)として与える。
++ *n* 個の要素の置換は O(*n* log *n*) の領域を占め、これは可能な最小である。区別すべき置換が *n*! 個あるからである。
+
+- Out.println((Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
+- Out.println(shuffle.inversions.inspect)
++ Out.println((Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
++ Out.println(shuffle.inversions.inspect)
+
+- A permutation leaves alone every position after the last one it moves, so `shuffle`, whose
+- sixth index stays in place, is a permutation of five. Applying one to a longer sequence is
+- therefore not an error: it rearranges the leading positions it covers, and leaves the rest
+- where they were. A single index is mapped the same way, with `shuffle(3)`.
++ 置換は、自身が動かす最後の位置より後のすべての位置をそのままにするので、六番目のインデックスが動かない `shuffle` は五つの要素の置換である。
++ したがって、置換をより長い列に適用するのは誤りではない。置換は自身が覆う先頭の位置を並べ替え、残りは元の場所に残す。
++ 一つのインデックスも、`shuffle(3)` で同じように写される。

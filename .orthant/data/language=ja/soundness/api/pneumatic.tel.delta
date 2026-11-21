@@ -1,0 +1,1572 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base pneumatic
++ base pneumatic
+
+- import soundness
++ import soundness
+
+- info   compression formats as types: DEFLATE, gzip, zlib, Brotli, XZ, LZMA2 and LZW, over values and streams
++ info   型としての圧縮フォーマット：値とストリームに対する DEFLATE、gzip、zlib、Brotli、XZ、LZMA2、LZW
+
+- detail
++ detail
+
+-     _Pneumatic_ compresses and decompresses bytes through one pair of verbs, `compress` and
+-     `decompress`, for every format it knows. A format is a **type** — `Gzip`, `Zlib`,
+-     `Deflate`, `Brotli`, `Xz`, `Lzma2` or `Lzw` — and the verb takes it as a type argument,
+-     so the format is checked where the code compiles rather than parsed from a string or a
+-     flag at runtime. Each format's companion holds a `Compression` given, which is the
+-     typeclass behind the verbs, and nothing else about a codec need be constructed, fed or
+-     finished by hand.
++     _Pneumatic_ は、知っているすべてのフォーマットについて、`compress` と `decompress` という一対の動詞でバイトを圧縮し、展開する。
++     フォーマットは**型**（`Gzip`、`Zlib`、`Deflate`、`Brotli`、`Xz`、`Lzma2`、`Lzw`）であり、動詞はそれを型引数として受け取る。そのため、フォーマットは実行時に文字列やフラグからパースされるのではなく、コードのコンパイル時に検査される。
++     各フォーマットのコンパニオンには、動詞の背後にある型クラスである `Compression` の given があり、コーデックについてそれ以外に手で構築したり、データを与えたり、終了させたりする必要のあるものはない。
+
+-     The same verbs work on a whole `Data` value, on a lazy `Chain[Data]` of chunks, and on a
+-     streaming `Stream[Data] over Credit`, where they become pipeline stages: the bytes are
+-     transformed as they flow, and nothing larger than the pipeline's buffers is held (except
+-     by the formats whose algorithm needs the whole value, which `Brotli` does). All three forms
+-     are driven through one `Duct` per format, so they agree byte for byte and interoperate
+-     freely: a value compressed as a whole decompresses as a stream, and a stream's output
+-     decompresses as a value.
++     同じ動詞は、`Data` の値全体に対しても、チャンクの遅延 `Chain[Data]` に対しても、ストリームする `Stream[Data] over Credit` に対しても働く。ストリームに対してはパイプラインの段階となり、バイトは流れながら変換され、パイプラインのバッファより大きなものは保持されない（ただし、`Brotli` のように、アルゴリズムが値全体を必要とするフォーマットは除く）。
++     三つの形はどれもフォーマットごとに一つの `Duct` を通して駆動されるので、バイト単位で一致し、自由に相互運用できる。値全体として圧縮したものはストリームとして展開でき、ストリームの出力は値として展開できる。
+
+=     decompresses as a value.
+=
+-     ```scala
++     ```scala
+
+=     decompresses as a value.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import charsets.utf8Charset
++     import charsets.utf8Charset
+
+-     import textSanitizers.skipSanitizer
++     import textSanitizers.skipSanitizer
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val payload: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
++     val payload: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
+
+-     val compressed: Data = payload.compress[Gzip]
++     val compressed: Data = payload.compress[Gzip]
+
+-     compressed.decompress[Gzip].utf8   // t"the quick brown fox jumps over the lazy dog"
++     compressed.decompress[Gzip].utf8   // t"the quick brown fox jumps over the lazy dog"
+
+-     payload.compress[Xz].decompress[Xz] == payload   // true
++     payload.compress[Xz].decompress[Xz] == payload   // true
+
+=     payload.compress[Xz].decompress[Xz] == payload   // true
+-     ```
++     ```
+
+-     The pipeline form puts the compressor and decompressor on either side of a file, a socket
+-     or an HTTP body. Here a stream grows one stage at a time, from reading the bytes to
+-     writing them compressed:
++     パイプラインの形では、圧縮器と展開器をファイル、ソケット、HTTP の本文の両側に置く。
++     ここでは、バイトを読むところから圧縮して書き出すところまで、ストリームが一段階ずつ伸びていく。
+
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     frame
++     frame
+
+-       label The bytes, as a stream of chunks
++       label チャンクのストリームとしてのバイト
+
+=       label The bytes, as a stream of chunks
+-       code
++       code
+
+-           val source: Stream[Data] over Credit = payload.stream
++           val source: Stream[Data] over Credit = payload.stream
+
+=           val source: Stream[Data] over Credit = payload.stream
+-     frame
++     frame
+
+-       label Compressed as they flow
++       label 流れながら圧縮する
+
+=       label Compressed as they flow
+-       code
++       code
+
+-           val source: Stream[Data] over Credit = payload.stream.compress[Gzip]
++           val source: Stream[Data] over Credit = payload.stream.compress[Gzip]
+
+=           val source: Stream[Data] over Credit = payload.stream.compress[Gzip]
+-     frame
++     frame
+
+-       label Decompressed again, downstream of the compressor
++       label 圧縮器の下流で、再び展開する
+
+=       label Decompressed again, downstream of the compressor
+-       code
++       code
+
+-           val source: Stream[Data] over Credit = payload.stream.compress[Gzip].decompress[Gzip]
++           val source: Stream[Data] over Credit = payload.stream.compress[Gzip].decompress[Gzip]
+
+=           val source: Stream[Data] over Credit = payload.stream.compress[Gzip].decompress[Gzip]
+-     frame
++     frame
+
+-       label Read back as text at the end of the pipeline
++       label パイプラインの終わりでテキストとして読み戻す
+
+=       label Read back as text at the end of the pipeline
+-       code
++       code
+
+-           val text: Text = payload.stream.compress[Gzip].decompress[Gzip].read[Text]
++           val text: Text = payload.stream.compress[Gzip].decompress[Gzip].read[Text]
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     Every pipeline stage takes a `Buffering` contextual value, which sizes the duct's buffers;
+-     `Buffering.standard` is in implicit scope, so no import is needed unless another policy is
+-     wanted.
++     パイプラインのどの段階も、ダクトのバッファの大きさを決める `Buffering` のコンテキスト値を受け取る。`Buffering.standard` は暗黙のスコープにあるので、別のポリシーが欲しいのでなければインポートは要らない。
+
+-     The formats, and what each is for:
++     フォーマットと、それぞれの用途は次のとおりである。
+
+-     - `Deflate` is the raw DEFLATE bit stream, `Zlib` the same stream in its two-byte header and
+-       Adler-32 trailer, and `Gzip` the same stream in the header and CRC-32 trailer of a `.gz`
+-       file. They are the formats of HTTP content encoding, ZIP entries and PNG chunks, and the
+-       fastest of the set. `gzip` and `gunzip` are one-shot extensions on `Data` for the
+-       commonest of them.
+-     - `Brotli` compresses smaller than DEFLATE at comparable speed, and is the modern web's
+-       content encoding. `Brotli.prefix` and `Brotli.continuation` encode a value relative to a
+-       base the receiver already holds.
+-     - `Xz` is the high-ratio codec, LZMA2 in the `.xz` container with a CRC-64 check, matching
+-       the `xz` command-line tool; `Lzma2` is the same codec without the container, as `Deflate`
+-       is to `Gzip`. Both take a preset from 0 (fastest) to 9 (smallest), defaulting to 6.
+-     - `Lzw` is the compression of TIFF and PDF streams, which the JDK does not implement.
++     - `Deflate` は生の DEFLATE のビットストリームであり、`Zlib` は同じストリームを二バイトのヘッダーと Adler-32 のトレーラーで包んだもの、`Gzip` は同じストリームを `.gz` ファイルのヘッダーと CRC-32 のトレーラーで包んだものである。これらは HTTP のコンテンツエンコーディング、ZIP のエントリー、PNG のチャンクのフォーマットであり、この中で最も速い。`gzip` と `gunzip` は、その中で最もよく使われるもののための、`Data` に対するワンショットの拡張である。
++     - `Brotli` は同程度の速度で DEFLATE より小さく圧縮し、現代のウェブのコンテンツエンコーディングである。`Brotli.prefix` と `Brotli.continuation` は、受け手がすでに持っている基準に対して相対的に値をエンコードする。
++     - `Xz` は高い圧縮率のコーデックで、CRC-64 の検査付きの `.xz` コンテナーに入った LZMA2 であり、`xz` コマンドラインツールと一致する。`Lzma2` は、`Deflate` が `Gzip` に対してそうであるように、コンテナーなしの同じコーデックである。どちらも 0（最も速い）から 9（最も小さい）までのプリセットを受け取り、デフォルトは 6 である。
++     - `Lzw` は TIFF と PDF のストリームの圧縮であり、JDK はこれを実装していない。
+
+-     Corrupt or truncated input is reported by the decoders as a thrown `IllegalStateException`
+-     whose message begins _the compressed data is corrupt_, _the XZ data is corrupt_, _the
+-     LZMA2 data is corrupt_ or _the Brotli data is corrupt_; there is no `Error` type to handle
+-     through a `Tactic`, so a decoder reading untrusted input is wrapped in a `safely` or a
+-     `try` at the call site.
++     壊れた入力や途中で切れた入力は、デコーダーが `IllegalStateException` を投げて報告する。そのメッセージは _the compressed data is corrupt_、_the XZ data is corrupt_、_the LZMA2 data is corrupt_、_the Brotli data is corrupt_ のいずれかで始まる。
++     `Tactic` を通して処理する `Error` の型はないので、信頼できない入力を読むデコーダーは、呼び出し箇所で `safely` または `try` で包む。
+
+-     The library is one package in several components, so a consumer of one format need not
+-     compile the others:
++     ライブラリは複数のコンポーネントに分かれた一つのパッケージなので、一つのフォーマットの利用者が他のフォーマットをコンパイルする必要はない。
+
+-     - `pneumatic.core` — `Compression`, `Compressor`, the `compress`/`decompress` extensions,
+-       and the pure-Scala DEFLATE engines ported from JZlib. Every platform.
+-     - `pneumatic.flate` — `Deflate`, `Gzip`, `Zlib`, `gzip` and `gunzip`. It is compiled twice:
+-       on the JVM over `java.util.zip` (native zlib and its CRC-32 intrinsics), and for Scala.js,
+-       Scala Native and WASI over the pure-Scala engines in `core`. The output of the two is
+-       byte-identical, and the pure engines are exercised by the JVM test suite as well.
+-     - `pneumatic.brotli` — `Brotli`, with its 122 KB static dictionary.
+-     - `pneumatic.lzma` — `Xz` and `Lzma2`.
+-     - `pneumatic.lzw` — `Lzw`.
++     - `pneumatic.core`：`Compression`、`Compressor`、`compress`/`decompress` の拡張、そして JZlib から移植した純粋な Scala の DEFLATE エンジン。すべてのプラットフォーム。
++     - `pneumatic.flate`：`Deflate`、`Gzip`、`Zlib`、`gzip`、`gunzip`。二回コンパイルされる。JVM では `java.util.zip`（ネイティブの zlib とその CRC-32 のイントリンシック）の上に、Scala.js、Scala Native、WASI では `core` の純粋な Scala のエンジンの上に作られる。両者の出力はバイト単位で同一であり、純粋なエンジンは JVM のテストスイートでも検証される。
++     - `pneumatic.brotli`：`Brotli` と、その 122 KB の静的辞書。
++     - `pneumatic.lzma`：`Xz` と `Lzma2`。
++     - `pneumatic.lzw`：`Lzw`。
+
+-     Everything is exported to the `soundness` umbrella, so `import soundness.*` brings in the
+-     formats and the verbs, and every `Compression` given resolves through its format's
+-     companion without an import.
++     すべては `soundness` アンブレラにエクスポートされるので、`import soundness.*` がフォーマットと動詞を取り込み、どの `Compression` の given もインポートなしでそのフォーマットのコンパニオンを通して解決される。
+
+- refer pneumatic.Compression
++ refer pneumatic.Compression
+
+- refer pneumatic.compress
++ refer pneumatic.compress
+
+- refer pneumatic.decompress
++ refer pneumatic.decompress
+
+- refer pneumatic.Gzip
++ refer pneumatic.Gzip
+
+- refer pneumatic.Brotli
++ refer pneumatic.Brotli
+
+- refer pneumatic.Xz
++ refer pneumatic.Xz
+
+- entry .Compression   the typeclass a compression format implements: a compressor and a decompressor duct
++ entry .Compression   圧縮フォーマットが実装する型クラス：圧縮器と展開器のダクト
+
+= entry .Compression   the typeclass a compression format implements: a compressor and a decompressor duct
+-   detail
++   detail
+
+-       `format is Compression` is what `compress[format]` and `decompress[format]` summon. A
+-       format is a type extending `Compressor`, and its companion holds the given: `Gzip.compression`,
+-       `Zlib.compression`, `Deflate.compression`, `Brotli.compression`, `Xz.compression`,
+-       `Lzma2.compression` and `Lzw.compression`, each in implicit scope through the companion.
++       `format is Compression` は、`compress[format]` と `decompress[format]` が召喚するものである。
++       フォーマットは `Compressor` を継承する型であり、そのコンパニオンが given を持つ。`Gzip.compression`、`Zlib.compression`、`Deflate.compression`、`Brotli.compression`、`Xz.compression`、`Lzma2.compression`、`Lzw.compression` であり、それぞれコンパニオンを通して暗黙のスコープにある。
+
+-       The typeclass has two abstract members, `#compressor` and `#decompressor`, each a factory
+-       for a fresh `Duct[Data, Data]` stage; the `Chain` forms `#compress` and `#decompress` are
+-       derived from them by driving the chunks through the same duct, which is how the
+-       whole-value, chain and stream forms are kept byte-for-byte identical. A format with a
+-       cheaper chunk-by-chunk driver (`Xz`, `Lzma2`, `Lzw`, `Brotli`) overrides the two derived
+-       members, but the contract is the same.
++       この型クラスには二つの抽象メンバー `#compressor` と `#decompressor` があり、それぞれ新しい `Duct[Data, Data]` の段階を作るファクトリーである。`Chain` の形である `#compress` と `#decompress` は、同じダクトにチャンクを通すことでそれらから導出され、これによって値全体、チェーン、ストリームの形がバイト単位で同一に保たれる。
++       チャンクごとのより安価な駆動方法を持つフォーマット（`Xz`、`Lzma2`、`Lzw`、`Brotli`）は導出された二つのメンバーをオーバーライドするが、契約は同じである。
+
+-       A new format is a sealed trait and a companion given:
++       新しいフォーマットは、シールされたトレイトとコンパニオンの given からなる。
+
+=       A new format is a sealed trait and a companion given:
+=
+-       ```scala
++       ```scala
+
+=       A new format is a sealed trait and a companion given:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       sealed trait Identity extends Compressor
++       sealed trait Identity extends Compressor
+
+-       object Identity:
++       object Identity:
+
+-         given compression: Identity is Compression:
++         given compression: Identity is Compression:
+
+-           def compressor()(using Buffering): (Duct[Data, Data] {
++           def compressor()(using Buffering): (Duct[Data, Data] {
+
+=           def compressor()(using Buffering): (Duct[Data, Data] {
+-             type Transport = Credit
++             type Transport = Credit
+
+=           def compressor()(using Buffering): (Duct[Data, Data] {
+=             type Transport = Credit
+-             type Upstream = Credit })^ =
++             type Upstream = Credit })^ =
+
+-             Deflate.compression.compressor()
++             Deflate.compression.compressor()
+
+-           def decompressor()(using Buffering): (Duct[Data, Data] {
++           def decompressor()(using Buffering): (Duct[Data, Data] {
+
+=           def decompressor()(using Buffering): (Duct[Data, Data] {
+-             type Transport = Credit
++             type Transport = Credit
+
+=           def decompressor()(using Buffering): (Duct[Data, Data] {
+=             type Transport = Credit
+-             type Upstream = Credit })^ =
++             type Upstream = Credit })^ =
+
+-             Deflate.compression.decompressor()
++             Deflate.compression.decompressor()
+
+=             Deflate.compression.decompressor()
+-       ```
++       ```
+
+-       The same bytes, under each format: raw DEFLATE is the fastest, gzip adds the framing a
+-       `.gz` file carries, Brotli is smaller at a similar speed, and XZ is the smallest at the
+-       highest cost:
++       同じバイトを各フォーマットで圧縮すると次のようになる。生の DEFLATE が最も速く、gzip は `.gz` ファイルが持つフレーミングを加え、Brotli は同程度の速度でより小さく、XZ は最も高いコストで最も小さい。
+
+=       highest cost:
+=
+-       ```scala
++       ```scala
+
+=       highest cost:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       highest cost:
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       import charsets.utf8Charset
+=
+-       val payload: Data = (t"the quick brown fox " * 40).in[Data]
++       val payload: Data = (t"the quick brown fox " * 40).in[Data]
+
+=       val payload: Data = (t"the quick brown fox " * 40).in[Data]
+-       ```
++       ```
+
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative DEFLATE
++       alternative DEFLATE
+
+=       alternative DEFLATE
+-         code
++         code
+
+-             payload.compress[Deflate].length
++             payload.compress[Deflate].length
+
+-       alternative Gzip
++       alternative Gzip
+
+=       alternative Gzip
+-         code
++         code
+
+-             payload.compress[Gzip].length   // ten bytes of header and eight of trailer more
++             payload.compress[Gzip].length   // ten bytes of header and eight of trailer more
+
+-       alternative Brotli
++       alternative Brotli
+
+=       alternative Brotli
+-         code
++         code
+
+-             payload.compress[Brotli].length
++             payload.compress[Brotli].length
+
+-       alternative XZ
++       alternative XZ
+
+=       alternative XZ
+-         code
++         code
+
+-             payload.compress[Xz].length
++             payload.compress[Xz].length
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-   refer pneumatic.Compressor
++   refer pneumatic.Compressor
+
+=   refer pneumatic.Compressor
+-   refer pneumatic.compress
++   refer pneumatic.compress
+
+=   refer pneumatic.compress
+-   refer pneumatic.decompress
++   refer pneumatic.decompress
+
+-   entry #Self   the format this instance serves, a subtype of `Compressor`
+-   entry #compress   a lazy chain of chunks, compressed chunk by chunk
+-       `compression.compress(chain)` is what `chain.compress[format]` calls. The default
+-       implementation adapts the chain to a stream, runs it through `#compressor`, and yields one
+-       output chunk per refill of the duct; the result is a lazy `Chain[Data]`, so nothing is
+-       compressed until it is consumed. The chunk boundaries of the output bear no relation to
+-       those of the input.
+-   entry #decompress   a lazy chain of compressed chunks, decompressed chunk by chunk
+-       `compression.decompress(chain)` is what `chain.decompress[format]` calls, through
+-       `#decompressor`. Input may be split at any byte boundary: a gzip header or an LZMA2 chunk
+-       header fed one byte at a time is reassembled by the stage. Corrupt input throws
+-       `IllegalStateException` when the chain is forced, not when it is built.
+-   entry #compressor   a fresh compressing `Duct[Data, Data]` stage, for a streaming pipeline
+-       The factory `stream.compress[format]` and `data.compress[format]` use. It takes a
+-       `Buffering` and returns a duct whose `Transport` and `Upstream` are both `Credit`: demand
+-       passes through unchanged, since a compression ratio cannot be known ahead, and the duct's
+-       own bounded buffer absorbs expansion. Each call makes a new duct with its own state, so
+-       a duct is never shared between two streams.
+-   entry #decompressor   a fresh decompressing `Duct[Data, Data]` stage, for a streaming pipeline
+-       The factory `stream.decompress[format]` and `data.decompress[format]` use, taking a
+-       `Buffering`. The DEFLATE family stops at the end of its stream and consumes a gzip
+-       trailer without verifying it; `Xz` verifies the CRC-32, CRC-64 or SHA-256 check of every
+-       block, and a truncated stream is an error.
++   entry #Self   このインスタンスが扱うフォーマット。`Compressor` の部分型である
++   entry #compress   チャンクの遅延チェーンを、チャンクごとに圧縮する
++       `compression.compress(chain)` は、`chain.compress[format]` が呼ぶものである。
++       デフォルトの実装はチェーンをストリームに適合させ、それを `#compressor` に通し、ダクトのリフィルごとに出力のチャンクを一つ生み出す。結果は遅延 `Chain[Data]` なので、消費されるまでは何も圧縮されない。
++       出力のチャンクの境界は、入力のチャンクの境界とは関係がない。
++   entry #decompress   圧縮されたチャンクの遅延チェーンを、チャンクごとに展開する
++       `compression.decompress(chain)` は、`chain.decompress[format]` が `#decompressor` を通して呼ぶものである。
++       入力は任意のバイトの境界で分割されていてよい。一バイトずつ与えられた gzip のヘッダーや LZMA2 のチャンクのヘッダーは、段階によって組み立て直される。
++       壊れた入力は、チェーンが組み立てられたときではなく、強制されたときに `IllegalStateException` を投げる。
++   entry #compressor   ストリームのパイプラインのための、圧縮する新しい `Duct[Data, Data]` の段階
++       `stream.compress[format]` と `data.compress[format]` が使うファクトリーである。
++       `Buffering` を受け取り、`Transport` と `Upstream` がどちらも `Credit` であるダクトを返す。圧縮率は前もって分からないので要求はそのまま通り抜け、膨張はダクト自身の上限のあるバッファが吸収する。
++       呼び出すたびに独自の状態を持つ新しいダクトが作られるので、ダクトが二つのストリームの間で共有されることはない。
++   entry #decompressor   ストリームのパイプラインのための、展開する新しい `Duct[Data, Data]` の段階
++       `stream.decompress[format]` と `data.decompress[format]` が使うファクトリーで、`Buffering` を受け取る。
++       DEFLATE の一族はそのストリームの終わりで止まり、gzip のトレーラーを検証せずに消費する。`Xz` はすべてのブロックの CRC-32、CRC-64、SHA-256 の検査を検証し、途中で切れたストリームはエラーとなる。
+
+- entry .Compressor   the marker type every compression format extends
+-     `Deflate`, `Gzip`, `Zlib`, `Brotli`, `Xz`, `Lzma2` and `Lzw` are each a `sealed trait
+-     extends Compressor`, with no instances: a format is named only as a type argument, as in
+-     `compress[Gzip]`, and the bound `format <: Compressor` on the verbs keeps an unrelated type
+-     out of that position. The format's behaviour lives entirely in its `Compression` given.
++ entry .Compressor   すべての圧縮フォーマットが継承するマーカーの型
++     `Deflate`、`Gzip`、`Zlib`、`Brotli`、`Xz`、`Lzma2`、`Lzw` はそれぞれインスタンスを持たない `sealed trait extends Compressor` である。フォーマットは `compress[Gzip]` のように型引数としてのみ名指しされ、動詞にある上限 `format <: Compressor` が、無関係な型がその位置に来るのを防ぐ。
++     フォーマットの動作は、すべてその `Compression` の given の中にある。
+
+- entry .compress   `value.compress[Format]`: compresses a value, a chain of chunks or a stream
++ entry .compress   `value.compress[Format]`：値、チャンクのチェーン、またはストリームを圧縮する
+
+= entry .compress   `value.compress[Format]`: compresses a value, a chain of chunks or a stream
+-   detail
++   detail
+
+-       Three extension methods share the name, chosen by the receiver:
++       三つの拡張メソッドが同じ名前を共有し、レシーバによって選ばれる。
+
+-       - on a `Data`, the whole value is compressed through the format's duct and returned as a
+-         `Data`;
+-       - on a `Chain[Data]`, a lazy chain of chunks is returned, compressed as it is forced;
+-       - on a `Stream[Data] over Credit`, the format's compressor becomes a stage of the
+-         pipeline, and the result is another `Stream[Data] over Credit`. The receiver is
+-         consumed: it may not be read again after the stage is attached.
++       - `Data` に対しては、値全体がフォーマットのダクトを通して圧縮され、`Data` として返される。
++       - `Chain[Data]` に対しては、強制されるにつれて圧縮されるチャンクの遅延チェーンが返される。
++       - `Stream[Data] over Credit` に対しては、フォーマットの圧縮器がパイプラインの段階となり、結果は別の `Stream[Data] over Credit` となる。レシーバは消費されるので、段階を接続した後で再び読むことはできない。
+
+-       Each needs a `format is Compression`, found in the format's companion, and the `Data` and
+-       `Stream` forms a `Buffering`, for which `Buffering.standard` is in implicit scope.
++       それぞれはフォーマットのコンパニオンにある `format is Compression` を必要とし、`Data` と `Stream` の形はさらに `Buffering` を必要とする。`Buffering` には `Buffering.standard` が暗黙のスコープにある。
+
+=       `Stream` forms a `Buffering`, for which `Buffering.standard` is in implicit scope.
+=
+-       ```scala
++       ```scala
+
+=       `Stream` forms a `Buffering`, for which `Buffering.standard` is in implicit scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Stream` forms a `Buffering`, for which `Buffering.standard` is in implicit scope.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       `Stream` forms a `Buffering`, for which `Buffering.standard` is in implicit scope.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
++       val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+
+-       val whole: Data = payload.compress[Gzip]
++       val whole: Data = payload.compress[Gzip]
+
+-       val chunks: Chain[Data] = Chain(payload).compress[Gzip]
++       val chunks: Chain[Data] = Chain(payload).compress[Gzip]
+
+-       val stream: Stream[Data] over Credit = payload.stream.compress[Gzip]
++       val stream: Stream[Data] over Credit = payload.stream.compress[Gzip]
+
+-       chunks.flat.to[List] == whole.to[List]   // true: the forms agree byte for byte
++       chunks.flat.to[List] == whole.to[List]   // true: the forms agree byte for byte
+
+=       chunks.flat.to[List] == whole.to[List]   // true: the forms agree byte for byte
+-       ```
++       ```
+
+-       An explicit XZ or LZMA2 preset, or an LZW `earlyChange` setting, is not expressible
+-       through the verb: `Xz.compress(chain, preset)`, `Xz.compressor(preset)`,
+-       `Lzma2.compress(chain, preset)` and `Lzw.compress(chain, earlyChange)` take the
+-       parameter directly.
++       XZ や LZMA2 のプリセット、あるいは LZW の `earlyChange` の設定を明示することは、動詞では表現できない。`Xz.compress(chain, preset)`、`Xz.compressor(preset)`、`Lzma2.compress(chain, preset)`、`Lzw.compress(chain, earlyChange)` は、そのパラメーターを直接受け取る。
+
+=       parameter directly.
+-   refer pneumatic.decompress
++   refer pneumatic.decompress
+
+=   refer pneumatic.decompress
+-   refer pneumatic.Compression
++   refer pneumatic.Compression
+
+- entry .decompress   `value.decompress[Format]`: decompresses a value, a chain of chunks or a stream
++ entry .decompress   `value.decompress[Format]`：値、チャンクのチェーン、またはストリームを展開する
+
+= entry .decompress   `value.decompress[Format]`: decompresses a value, a chain of chunks or a stream
+-   detail
++   detail
+
+-       The inverse of `compress`, with the same three receivers: a `Data` decompresses to a
+-       `Data`, a `Chain[Data]` to a lazy `Chain[Data]`, and a `Stream[Data] over Credit` gains
+-       the format's decompressor as a stage, consuming the receiver. Each needs a `format is
+-       Compression` from the format's companion, and the `Data` and `Stream` forms a `Buffering`.
++       `compress` の逆であり、同じ三つのレシーバを持つ。`Data` は `Data` に展開され、`Chain[Data]` は遅延 `Chain[Data]` に展開され、`Stream[Data] over Credit` にはフォーマットの展開器が段階として加わり、レシーバは消費される。
++       それぞれはフォーマットのコンパニオンにある `format is Compression` を必要とし、`Data` と `Stream` の形はさらに `Buffering` を必要とする。
+
+=       Compression` from the format's companion, and the `Data` and `Stream` forms a `Buffering`.
+=
+-       ```scala
++       ```scala
+
+=       Compression` from the format's companion, and the `Data` and `Stream` forms a `Buffering`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       Compression` from the format's companion, and the `Data` and `Stream` forms a `Buffering`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       Compression` from the format's companion, and the `Data` and `Stream` forms a `Buffering`.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
++       val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+
+=       val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+-       payload.compress[Brotli].decompress[Brotli] == payload   // true
++       payload.compress[Brotli].decompress[Brotli] == payload   // true
+
+-       payload.compress[Brotli].stream.decompress[Brotli].read[Data] == payload
++       payload.compress[Brotli].stream.decompress[Brotli].read[Data] == payload
+
+=       payload.compress[Brotli].stream.decompress[Brotli].read[Data] == payload
+-       ```
++       ```
+
+-       The forms interoperate: what `compress` produced as a whole decompresses through a
+-       stream, and the other way round. Input which is not in the named format, is corrupt, or
+-       is truncated throws an `IllegalStateException` — when the `Data` form returns, or when
+-       the chain or stream is forced — with a message naming the format and the fault; a
+-       decoder over untrusted bytes is wrapped in `safely` or a `try`. Raw `Lzma2` carries no
+-       dictionary size, so `decompress[Lzma2]` assumes the preset-6 dictionary of 8 MiB;
+-       `Lzma2.decompress(chain, dictSize)` takes another.
++       形どうしは相互運用できる。`compress` が値全体として生み出したものはストリームを通して展開でき、その逆もできる。
++       指定したフォーマットでない入力、壊れた入力、途中で切れた入力は、フォーマットと誤りを示すメッセージとともに `IllegalStateException` を投げる。`Data` の形では戻るときに、チェーンやストリームでは強制されたときに投げる。信頼できないバイトに対するデコーダーは `safely` または `try` で包む。
++       生の `Lzma2` は辞書のサイズを持たないので、`decompress[Lzma2]` はプリセット 6 の 8 MiB の辞書を仮定する。`Lzma2.decompress(chain, dictSize)` は別のサイズを受け取る。
+
+=       `Lzma2.decompress(chain, dictSize)` takes another.
+-   refer pneumatic.compress
++   refer pneumatic.compress
+
+=   refer pneumatic.compress
+-   refer pneumatic.Compression
++   refer pneumatic.Compression
+
+- entry .Deflate   the raw DEFLATE stream, with no header or checksum
++ entry .Deflate   ヘッダーもチェックサムもない、生の DEFLATE のストリーム
+
+= entry .Deflate   the raw DEFLATE stream, with no header or checksum
+-   detail
++   detail
+
+-       `Deflate` names the bare DEFLATE bit stream of RFC 1951: the compressed blocks alone,
+-       with none of the framing `Zlib` and `Gzip` put around them. It is the form ZIP entries,
+-       PNG chunks and HTTP's `deflate` content encoding (in practice) carry, and the one to use
+-       when the container supplies its own length and checksum.
++       `Deflate` は RFC 1951 の素の DEFLATE のビットストリームを指す。圧縮されたブロックだけからなり、`Zlib` や `Gzip` がその周りに付けるフレーミングを一切持たない。
++       これは ZIP のエントリー、PNG のチャンク、そして（実際には）HTTP の `deflate` コンテンツエンコーディングが運ぶ形であり、コンテナーが独自の長さとチェックサムを提供する場合に使う。
+
+=       when the container supplies its own length and checksum.
+=
+-       ```scala
++       ```scala
+
+=       when the container supplies its own length and checksum.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       when the container supplies its own length and checksum.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       when the container supplies its own length and checksum.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
++       val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+
+-       payload.compress[Deflate].decompress[Deflate] == payload   // true
++       payload.compress[Deflate].decompress[Deflate] == payload   // true
+
+=       payload.compress[Deflate].decompress[Deflate] == payload   // true
+-       ```
++       ```
+
+-       The deflater has a single compression level, zlib's default of 6: there is no parameter
+-       to choose another. On the JVM the stream is produced by `java.util.zip`; elsewhere by
+-       the pure-Scala port in `pneumatic.core`, with byte-identical output. A corrupt stream
+-       throws `IllegalStateException`, _the compressed data is corrupt: …_, as it is read.
++       デフレーターの圧縮レベルは zlib のデフォルトである 6 の一つだけで、別のレベルを選ぶパラメーターはない。
++       JVM ではストリームは `java.util.zip` によって生成され、それ以外では `pneumatic.core` にある純粋な Scala の移植によって、バイト単位で同一の出力として生成される。
++       壊れたストリームは、読まれるときに `IllegalStateException`（_the compressed data is corrupt: …_）を投げる。
+
+-   refer pneumatic.Zlib
++   refer pneumatic.Zlib
+
+=   refer pneumatic.Zlib
+-   refer pneumatic.Gzip
++   refer pneumatic.Gzip
+
+-   entry .compression   the `Deflate is Compression` given, in implicit scope through the companion
+-       Its compressor is a raw deflater and its decompressor a raw inflater, each a
+-       `Duct[Data, Data]` over `Credit`, built fresh for every stream and needing a `Buffering`.
++   entry .compression   `Deflate is Compression` の given。コンパニオンを通して暗黙のスコープにある
++       その圧縮器は生のデフレーター、展開器は生のインフレーターであり、それぞれ `Credit` 上の `Duct[Data, Data]` で、ストリームごとに新しく作られ、`Buffering` を必要とする。
+
+- entry .Gzip   DEFLATE in the framing of a `.gz` file: header, CRC-32 and length trailer
++ entry .Gzip   `.gz` ファイルのフレーミングに入った DEFLATE：ヘッダー、CRC-32、長さのトレーラー
+
+= entry .Gzip   DEFLATE in the framing of a `.gz` file: header, CRC-32 and length trailer
+-   detail
++   detail
+
+-       `Gzip` is the format of `.gz` files, of `tar.gz` archives and of HTTP's `gzip` content
+-       encoding (RFC 1952): a ten-byte header, a raw DEFLATE stream, then the CRC-32 and length
+-       of the original bytes. Compressing writes the minimal header, with no name, comment or
+-       timestamp; decompressing accepts any header, including the optional extra, name, comment
+-       and header-checksum fields, consumes the trailer and does not verify it.
++       `Gzip` は、`.gz` ファイル、`tar.gz` アーカイブ、そして HTTP の `gzip` コンテンツエンコーディング（RFC 1952）のフォーマットである。十バイトのヘッダー、生の DEFLATE のストリーム、そして元のバイトの CRC-32 と長さからなる。
++       圧縮では、名前、コメント、タイムスタンプのない最小限のヘッダーを書く。展開では、省略可能な extra、名前、コメント、ヘッダーのチェックサムのフィールドを含むどのようなヘッダーも受け入れ、トレーラーを消費するが検証はしない。
+
+=       and header-checksum fields, consumes the trailer and does not verify it.
+=
+-       ```scala
++       ```scala
+
+=       and header-checksum fields, consumes the trailer and does not verify it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       and header-checksum fields, consumes the trailer and does not verify it.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+-       import textSanitizers.skipSanitizer
++       import textSanitizers.skipSanitizer
+
+=       import textSanitizers.skipSanitizer
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val payload: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
++       val payload: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
+
+-       payload.compress[Gzip].decompress[Gzip].utf8   // t"the quick brown fox jumps over the lazy dog"
++       payload.compress[Gzip].decompress[Gzip].utf8   // t"the quick brown fox jumps over the lazy dog"
+
+-       payload.stream.compress[Gzip].decompress[Gzip].read[Text]
++       payload.stream.compress[Gzip].decompress[Gzip].read[Text]
+
+=       payload.stream.compress[Gzip].decompress[Gzip].read[Text]
+-       ```
++       ```
+
+-       The stream decompressor reassembles a header or trailer however the input is chunked, so
+-       a gzip stream arriving a byte at a time decodes. `gzip` and `gunzip` are the one-shot
+-       extensions on `Data` for the same transformation. On the JVM the DEFLATE stream and the
+-       CRC-32 come from `java.util.zip`; elsewhere from the pure-Scala port, byte-identically.
++       ストリームの展開器は、入力がどうチャンクに分かれていてもヘッダーやトレーラーを組み立て直すので、一バイトずつ届く gzip のストリームもデコードできる。
++       `gzip` と `gunzip` は、同じ変換のための `Data` に対するワンショットの拡張である。
++       JVM では DEFLATE のストリームと CRC-32 は `java.util.zip` から得られ、それ以外では純粋な Scala の移植からバイト単位で同一に得られる。
+
+-   refer pneumatic.gzip
++   refer pneumatic.gzip
+
+-   refer pneumatic.gunzip
++   refer pneumatic.gunzip
+
+=   refer pneumatic.gunzip
+-   refer pneumatic.Deflate
++   refer pneumatic.Deflate
+
+-   entry .compression   the `Gzip is Compression` given, in implicit scope through the companion
+-       Its compressor writes the header, the raw DEFLATE stream and the CRC-32 and size trailer;
+-       its decompressor parses the header with a small state machine ahead of the inflater and
+-       skips the eight-byte trailer after it finishes. Each is a `Duct[Data, Data]` over
+-       `Credit` needing a `Buffering`.
++   entry .compression   `Gzip is Compression` の given。コンパニオンを通して暗黙のスコープにある
++       その圧縮器はヘッダー、生の DEFLATE のストリーム、CRC-32 とサイズのトレーラーを書く。展開器はインフレーターの前で小さな状態機械によってヘッダーをパースし、インフレーターが終わった後で八バイトのトレーラーを読み飛ばす。
++       それぞれ `Credit` 上の `Duct[Data, Data]` であり、`Buffering` を必要とする。
+
+- entry .Zlib   DEFLATE in the zlib wrapper: a two-byte header and an Adler-32 trailer
++ entry .Zlib   zlib のラッパーに入った DEFLATE：二バイトのヘッダーと Adler-32 のトレーラー
+
+= entry .Zlib   DEFLATE in the zlib wrapper: a two-byte header and an Adler-32 trailer
+-   detail
++   detail
+
+-       `Zlib` is the format of RFC 1950, the deflater's own framing: two bytes declaring the
+-       method and window, the DEFLATE stream, and an Adler-32 checksum of the original bytes. It
+-       is the compression inside PNG's `IDAT` chunks, of git's loose objects and packfile
+-       entries, and of PDF's `FlateDecode` streams.
++       `Zlib` は RFC 1950 のフォーマットで、デフレーター自身のフレーミングである。方式とウィンドウを宣言する二バイト、DEFLATE のストリーム、そして元のバイトの Adler-32 のチェックサムからなる。
++       これは PNG の `IDAT` チャンクの内部、git のルーズオブジェクトとパックファイルのエントリー、そして PDF の `FlateDecode` ストリームの圧縮である。
+
+=       entries, and of PDF's `FlateDecode` streams.
+=
+-       ```scala
++       ```scala
+
+=       entries, and of PDF's `FlateDecode` streams.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       entries, and of PDF's `FlateDecode` streams.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       entries, and of PDF's `FlateDecode` streams.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
++       val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+
+-       payload.compress[Zlib].decompress[Zlib] == payload   // true
++       payload.compress[Zlib].decompress[Zlib] == payload   // true
+
+=       payload.compress[Zlib].decompress[Zlib] == payload   // true
+-       ```
++       ```
+
+-       Besides the `Compression` given, `.inflate` decodes one zlib stream which begins at an
+-       offset in a larger value and reports how many bytes it consumed, for the containers
+-       which concatenate zlib streams without framing them.
++       `Compression` の given のほかに、`.inflate` は、より大きな値の中のあるオフセットから始まる一つの zlib のストリームをデコードし、それが消費したバイト数を報告する。これは、zlib のストリームをフレーミングせずに連結するコンテナーのためのものである。
+
+=       which concatenate zlib streams without framing them.
+-   refer pneumatic.Deflate
++   refer pneumatic.Deflate
+
+=   refer pneumatic.Deflate
+-   refer pneumatic.Gzip
++   refer pneumatic.Gzip
+
+-   entry .compression   the `Zlib is Compression` given, in implicit scope through the companion
+-       Its compressor and decompressor are the deflater and inflater with the zlib wrapper
+-       enabled, each a `Duct[Data, Data]` over `Credit` needing a `Buffering`.
+-   entry .inflate   inflates the one zlib stream starting at an offset, with the count of bytes it consumed
+-       `Zlib.inflate(data, offset)` decodes the zlib stream which begins at `offset` in `data`
+-       and returns a pair: the decompressed bytes, and the number of compressed bytes the stream
+-       occupied, so the next thing in `data` can be found. This is the shape git's packfiles
+-       have — object after object, each a zlib stream, with no length recorded between them —
+-       and is what a packfile reader needs where `decompress[Zlib]` would decode the first
+-       stream and discard the rest.
++   entry .compression   `Zlib is Compression` の given。コンパニオンを通して暗黙のスコープにある
++       その圧縮器と展開器は zlib のラッパーを有効にしたデフレーターとインフレーターであり、それぞれ `Credit` 上の `Duct[Data, Data]` で、`Buffering` を必要とする。
++   entry .inflate   あるオフセットから始まる一つの zlib のストリームを展開し、消費したバイト数とともに返す
++       `Zlib.inflate(data, offset)` は、`data` の `offset` から始まる zlib のストリームをデコードし、組を返す。展開したバイトと、ストリームが占めていた圧縮されたバイトの数であり、後者によって `data` の次のものを見つけられる。
++       これは git のパックファイルが持つ形（オブジェクトが次々と並び、それぞれが zlib のストリームで、その間に長さは記録されていない）であり、`decompress[Zlib]` では最初のストリームをデコードして残りを捨ててしまう場面で、パックファイルのリーダーが必要とするものである。
+
+=       stream and discard the rest.
+=
+-       ```scala
++       ```scala
+
+=       stream and discard the rest.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       stream and discard the rest.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val first: Data = Data(1, 2, 3).compress[Zlib]
++       val first: Data = Data(1, 2, 3).compress[Zlib]
+
+-       val second: Data = Data(4, 5, 6).compress[Zlib]
++       val second: Data = Data(4, 5, 6).compress[Zlib]
+
+-       val packed: Data = Chain(first, second).flat.to[Array]
++       val packed: Data = Chain(first, second).flat.to[Array]
+
+-       val (one, consumed) = Zlib.inflate(packed, 0)
++       val (one, consumed) = Zlib.inflate(packed, 0)
+
+-       val (two, _) = Zlib.inflate(packed, consumed)
++       val (two, _) = Zlib.inflate(packed, consumed)
+
+-       one.to[List] == List[Byte](1, 2, 3) && two.to[List] == List[Byte](4, 5, 6)
++       one.to[List] == List[Byte](1, 2, 3) && two.to[List] == List[Byte](4, 5, 6)
+
+=       one.to[List] == List[Byte](1, 2, 3) && two.to[List] == List[Byte](4, 5, 6)
+-       ```
++       ```
+
+-       A stream which ends before its data is complete throws `IllegalStateException`, _the
+-       compressed data is truncated_.
++       データが完結する前に終わるストリームは `IllegalStateException`（_the compressed data is truncated_）を投げる。
+
+- entry .gzip   `data.gzip`: a whole value compressed as gzip, in one call
+-     An extension on `Data` which compresses the whole value in the `Gzip` format and returns
+-     the result as one `Data`; `data.compress[Gzip]` is the same transformation through the
+-     duct. It needs nothing in scope. On the JVM it runs over `java.util.zip`, elsewhere over
+-     the pure-Scala deflater, so it is available on every platform; `bitumen` uses it to gzip a
+-     whole tar archive.
++ entry .gzip   `data.gzip`：値全体を一回の呼び出しで gzip として圧縮したもの
++     `Data` に対する拡張で、値全体を `Gzip` フォーマットで圧縮し、結果を一つの `Data` として返す。`data.compress[Gzip]` は、ダクトを通した同じ変換である。
++     スコープに何も必要としない。
++     JVM では `java.util.zip` の上で、それ以外では純粋な Scala のデフレーターの上で動くので、すべてのプラットフォームで使える。`bitumen` は tar アーカイブ全体を gzip するのにこれを使う。
+
+=     whole tar archive.
+=
+-     ```scala
++     ```scala
+
+=     whole tar archive.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
++     val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+
+-     payload.gzip.gunzip == payload   // true
++     payload.gzip.gunzip == payload   // true
+
+=     payload.gzip.gunzip == payload   // true
+-     ```
++     ```
+
+- entry .gunzip   `data.gunzip`: a whole gzip value decompressed, in one call
+-     An extension on `Data` which decompresses a whole `Gzip` value and returns the original
+-     bytes as one `Data`, with no contextual values needed; `data.decompress[Gzip]` is the same
+-     transformation through the duct. Input which is not gzip throws `IllegalStateException`.
++ entry .gunzip   `data.gunzip`：gzip の値全体を一回の呼び出しで展開したもの
++     `Data` に対する拡張で、`Gzip` の値全体を展開し、元のバイトを一つの `Data` として返す。コンテキスト値は要らない。`data.decompress[Gzip]` は、ダクトを通した同じ変換である。
++     gzip でない入力は `IllegalStateException` を投げる。
+
+- entry .Xz   LZMA2 in the `.xz` container, with a CRC-64 check: what the `xz` tool produces
++ entry .Xz   CRC-64 の検査付きの `.xz` コンテナーに入った LZMA2：`xz` ツールが生成するもの
+
+= entry .Xz   LZMA2 in the `.xz` container, with a CRC-64 check: what the `xz` tool produces
+-   detail
++   detail
+
+-       `Xz` is the high-ratio codec: the LZMA2 algorithm inside the `.xz` container of XZ Utils,
+-       as a pure-Scala port of the public-domain algorithm, so it runs on every platform. A
+-       value compressed with the default preset decodes with the `xz` command-line tool and the
+-       tool's output decodes here, including streams it wrote with a CRC-32, SHA-256 or no
+-       check; the check of every block is verified on decoding, so a corrupted payload is
+-       detected. The compressor writes a CRC-64 check, as `xz` does by default.
++       `Xz` は高い圧縮率のコーデックである。XZ Utils の `.xz` コンテナーの中の LZMA2 アルゴリズムであり、パブリックドメインのアルゴリズムを純粋な Scala に移植したものなので、すべてのプラットフォームで動く。
++       デフォルトのプリセットで圧縮した値は `xz` コマンドラインツールでデコードでき、そのツールの出力はここでデコードできる。ツールが CRC-32、SHA-256 の検査付きで、あるいは検査なしで書いたストリームも含む。デコード時にはすべてのブロックの検査が検証されるので、壊れたペイロードは検出される。
++       圧縮器は、`xz` がデフォルトで行うのと同じく、CRC-64 の検査を書く。
+
+=       detected. The compressor writes a CRC-64 check, as `xz` does by default.
+=
+-       ```scala
++       ```scala
+
+=       detected. The compressor writes a CRC-64 check, as `xz` does by default.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       detected. The compressor writes a CRC-64 check, as `xz` does by default.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       detected. The compressor writes a CRC-64 check, as `xz` does by default.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       detected. The compressor writes a CRC-64 check, as `xz` does by default.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = (t"the quick brown fox " * 40).in[Data]
++       val payload: Data = (t"the quick brown fox " * 40).in[Data]
+
+-       payload.compress[Xz].decompress[Xz] == payload   // true
++       payload.compress[Xz].decompress[Xz] == payload   // true
+
+-       payload.compress[Xz].length < payload.length     // true
++       payload.compress[Xz].length < payload.length     // true
+
+=       payload.compress[Xz].length < payload.length     // true
+-       ```
++       ```
+
+-       The preset, 0 to 9, trades speed for ratio: 0 to 3 use a fast greedy encoder and 4 to 9
+-       a price-based one which weighs every candidate match, and a higher preset also means a
+-       larger dictionary, from 256 KiB at preset 0 to 64 MiB at preset 9. `compress[Xz]` uses
+-       `.DefaultPreset`, 6; `.compress` and `.compressor` take a preset of the caller's choice.
+-       The encoder is streaming and bounded in memory: it buffers at most one dictionary's worth
+-       of input, emits each as a self-contained block, and closes the stream with its index and
+-       footer, so a long input becomes a multi-block `.xz` stream. The decoder is a streaming
+-       state machine too, and decompresses a 4 MB payload at about the speed of the reference
+-       Java implementation.
++       0 から 9 までのプリセットは、速度と圧縮率を引き換えにする。0 から 3 は速い貪欲なエンコーダーを、4 から 9 はすべての候補のマッチを比較検討する価格ベースのエンコーダーを使い、プリセットが高いほど辞書も大きくなる。辞書はプリセット 0 の 256 KiB からプリセット 9 の 64 MiB までである。
++       `compress[Xz]` は `.DefaultPreset` の 6 を使い、`.compress` と `.compressor` は呼び出し側が選んだプリセットを受け取る。
++       エンコーダーはストリーム処理を行い、メモリの使用量には上限がある。最大で辞書一つ分の入力をバッファし、それぞれを自己完結したブロックとして出力し、インデックスとフッターでストリームを閉じるので、長い入力は複数ブロックの `.xz` ストリームになる。
++       デコーダーもストリーム処理の状態機械であり、4 MB のペイロードを参照実装の Java 版とほぼ同じ速度で展開する。
+
+-       `Lzma2` is the same codec without the container framing, standing to `Xz` as `Deflate`
+-       stands to `Gzip`. Corrupt input throws `IllegalStateException`: _the data is not in XZ
+-       format: bad magic bytes_ for something which is not `.xz` at all, _the XZ data is
+-       corrupt: integrity check failed_ for a check mismatch, and _the XZ data is corrupt:
+-       truncated_ for a stream which ends early. A stream using a filter other than LZMA2 (the
+-       BCJ branch filters, delta) throws _this XZ stream uses an unsupported filter_.
++       `Lzma2` はコンテナーのフレーミングのない同じコーデックであり、`Deflate` が `Gzip` に対してそうであるように、`Xz` に対応する。
++       壊れた入力は `IllegalStateException` を投げる。まったく `.xz` でないものには _the data is not in XZ format: bad magic bytes_、検査の不一致には _the XZ data is corrupt: integrity check failed_、早く終わりすぎるストリームには _the XZ data is corrupt: truncated_ となる。
++       LZMA2 以外のフィルター（BCJ の分岐フィルター、delta）を使うストリームは _this XZ stream uses an unsupported filter_ を投げる。
+
+-   refer pneumatic.Lzma2
++   refer pneumatic.Lzma2
+
+=   refer pneumatic.Lzma2
+-   refer pneumatic.Compression
++   refer pneumatic.Compression
+
+-   entry .DefaultPreset   the preset `compress[Xz]` uses: 6, the `xz` tool's default
+-       An `inline val` of 6: an 8 MiB dictionary and the price-based encoder, within a few
+-       percent of the `xz` tool's ratio on text and ahead of it on repetitive data.
+-   entry .compression   the `Xz is Compression` given, in implicit scope through the companion
+-       Its compressor encodes at `.DefaultPreset` with a CRC-64 check, and its decompressor
+-       accepts any check type and verifies it. The `Chain` forms drive an engine chunk by chunk
+-       rather than through the duct, with the same output.
+-   entry .compressor   a compressing duct at an explicit preset, 0 to 9
+-       `Xz.compressor(preset)` is the streaming stage `compress[Xz]` would use, at the chosen
+-       preset instead of 6, for a pipeline built with `viaDuct`. It needs a `Buffering`. A preset
+-       outside 0 to 9 is clamped.
+-   entry .compress   compresses a chain of chunks at an explicit preset, 0 to 9
+-       `Xz.compress(chain, preset)` is `chain.compress[Xz]` at the chosen preset: a lazy
+-       `Chain[Data]` of `.xz` bytes, which decodes with `decompress[Xz]`, since the container
+-       records everything the decoder needs.
++   entry .DefaultPreset   `compress[Xz]` が使うプリセット：`xz` ツールのデフォルトである 6
++       6 という `inline val` である。8 MiB の辞書と価格ベースのエンコーダーを使い、テキストでは `xz` ツールの圧縮率の数パーセント以内に収まり、繰り返しの多いデータではそれを上回る。
++   entry .compression   `Xz is Compression` の given。コンパニオンを通して暗黙のスコープにある
++       その圧縮器は CRC-64 の検査付きで `.DefaultPreset` でエンコードし、展開器はどの種類の検査も受け入れて検証する。
++       `Chain` の形は、ダクトを通さずにエンジンをチャンクごとに駆動し、同じ出力を生む。
++   entry .compressor   明示したプリセット（0 から 9）で圧縮するダクト
++       `Xz.compressor(preset)` は、`compress[Xz]` が使うストリームの段階を、6 の代わりに選んだプリセットで使うもので、`viaDuct` で組み立てるパイプラインのためのものである。
++       `Buffering` を必要とする。
++       0 から 9 の範囲外のプリセットはその範囲に丸められる。
++   entry .compress   明示したプリセット（0 から 9）で、チャンクのチェーンを圧縮する
++       `Xz.compress(chain, preset)` は、選んだプリセットでの `chain.compress[Xz]` である。`.xz` のバイトの遅延 `Chain[Data]` を返し、コンテナーはデコーダーが必要とするすべてを記録しているので、`decompress[Xz]` でデコードできる。
+
+=       records everything the decoder needs.
+=
+-       ```scala
++       ```scala
+
+=       records everything the decoder needs.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       records everything the decoder needs.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       records everything the decoder needs.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       records everything the decoder needs.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = (t"the quick brown fox " * 40).in[Data]
++       val payload: Data = (t"the quick brown fox " * 40).in[Data]
+
+-       Xz.compress(Chain(payload), 1).decompress[Xz].flat.to[List] == payload.to[List]
++       Xz.compress(Chain(payload), 1).decompress[Xz].flat.to[List] == payload.to[List]
+
+=       Xz.compress(Chain(payload), 1).decompress[Xz].flat.to[List] == payload.to[List]
+-       ```
++       ```
+
+-   entry .decompress   decompresses a chain of `.xz` chunks
+-       `Xz.decompress(chain)` is `chain.decompress[Xz]` as a method on the companion, for code
+-       which holds the format as a value rather than a type argument. The check type and
+-       dictionary size are read from the stream.
++   entry .decompress   `.xz` のチャンクのチェーンを展開する
++       `Xz.decompress(chain)` は、コンパニオンのメソッドとしての `chain.decompress[Xz]` であり、フォーマットを型引数ではなく値として保持するコードのためのものである。
++       検査の種類と辞書のサイズはストリームから読まれる。
+
+- entry .Lzma2   raw LZMA2 with no container: the codec inside `.xz`, as `Deflate` is to `Gzip`
++ entry .Lzma2   コンテナーのない生の LZMA2：`Deflate` が `Gzip` に対してそうであるような、`.xz` の中のコーデック
+
+= entry .Lzma2   raw LZMA2 with no container: the codec inside `.xz`, as `Deflate` is to `Gzip`
+-   detail
++   detail
+
+-       `Lzma2` is the chunked LZMA stream which `.xz` carries, without the container's magic
+-       bytes, block headers, index and checks: each chunk declares its own uncompressed and
+-       compressed sizes and whether the dictionary, state and properties reset at its start,
+-       and a control byte of zero ends the stream. It is the form to use inside a container of
+-       one's own, or for a format (such as 7z) which frames LZMA2 itself.
++       `Lzma2` は `.xz` が運ぶチャンク化された LZMA のストリームであり、コンテナーのマジックバイト、ブロックのヘッダー、インデックス、検査を持たない。各チャンクは自身の圧縮前と圧縮後のサイズ、そしてその開始時に辞書、状態、プロパティがリセットされるかどうかを宣言し、ゼロの制御バイトがストリームを終える。
++       これは独自のコンテナーの中で、あるいは LZMA2 を自らフレーミングするフォーマット（7z など）のために使う形である。
+
+=       one's own, or for a format (such as 7z) which frames LZMA2 itself.
+=
+-       ```scala
++       ```scala
+
+=       one's own, or for a format (such as 7z) which frames LZMA2 itself.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       one's own, or for a format (such as 7z) which frames LZMA2 itself.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       one's own, or for a format (such as 7z) which frames LZMA2 itself.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       one's own, or for a format (such as 7z) which frames LZMA2 itself.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = (t"the quick brown fox " * 40).in[Data]
++       val payload: Data = (t"the quick brown fox " * 40).in[Data]
+
+-       payload.compress[Lzma2].decompress[Lzma2] == payload   // true
++       payload.compress[Lzma2].decompress[Lzma2] == payload   // true
+
+=       payload.compress[Lzma2].decompress[Lzma2] == payload   // true
+-       ```
++       ```
+
+-       What the container would have recorded, the caller must know: a raw LZMA2 stream does
+-       not say which dictionary size it was encoded with, so `decompress[Lzma2]` assumes the
+-       dictionary of `.DefaultPreset` (8 MiB), and a stream encoded at another preset with
+-       `.compress` or `.compressor` is decoded with `.decompress` or `.decompressor` given the
+-       dictionary size that preset used: 256 KiB, 1 MiB, 2 MiB, 4 MiB, 4 MiB, 8 MiB, 8 MiB,
+-       16 MiB, 32 MiB and 64 MiB for presets 0 to 9. A size too small for the stream's
+-       backward references fails as corrupt, _the LZMA data is corrupt: invalid match distance_.
++       コンテナーが記録していたはずのことは、呼び出し側が知っていなければならない。生の LZMA2 のストリームは、どの辞書のサイズでエンコードされたかを示さないので、`decompress[Lzma2]` は `.DefaultPreset` の辞書（8 MiB）を仮定する。別のプリセットで `.compress` や `.compressor` によってエンコードされたストリームは、そのプリセットが使った辞書のサイズを与えて `.decompress` または `.decompressor` でデコードする。プリセット 0 から 9 に対する辞書のサイズは、256 KiB、1 MiB、2 MiB、4 MiB、4 MiB、8 MiB、8 MiB、16 MiB、32 MiB、64 MiB である。
++       ストリームの後方参照に対して小さすぎるサイズは、壊れたものとして失敗する（_the LZMA data is corrupt: invalid match distance_）。
+
+-       Unlike `Xz`, the raw encoder buffers its whole input before encoding, since there is no
+-       block framing to segment it by; the decoder is incremental and holds no more than one
+-       chunk's compressed payload. Corrupt input throws `IllegalStateException` with a message
+-       beginning _the LZMA2 data is corrupt_.
++       `Xz` と違い、生のエンコーダーは、分割に使うブロックのフレーミングがないので、エンコードする前に入力全体をバッファする。デコーダーは逐次的であり、一つのチャンクの圧縮されたペイロードより多くを保持しない。
++       壊れた入力は、_the LZMA2 data is corrupt_ で始まるメッセージとともに `IllegalStateException` を投げる。
+
+-   refer pneumatic.Xz
++   refer pneumatic.Xz
+
+-   entry .UncompressedSizeMax   the most uncompressed bytes one LZMA2 chunk may carry: 2 MiB
+-   entry .CompressedSizeMax   the most compressed bytes one LZMA chunk may carry: 64 KiB
+-   entry .DefaultPreset   the preset `compress[Lzma2]` uses, and whose 8 MiB dictionary `decompress[Lzma2]` assumes: 6
+-   entry .compression   the `Lzma2 is Compression` given, in implicit scope through the companion
+-       Its compressor encodes at `.DefaultPreset` and its decompressor assumes that preset's
+-       8 MiB dictionary. The `Chain` forms drive an engine chunk by chunk rather than through the
+-       duct, with the same output.
+-   entry .compressor   a compressing duct at an explicit preset, 0 to 9
+-       `Lzma2.compressor(preset)` is the streaming stage `compress[Lzma2]` would use, at the
+-       chosen preset, for a pipeline built with `viaDuct`; it needs a `Buffering`. Its output
+-       must be decoded with the dictionary size of that preset.
+-   entry .compress   compresses a chain of chunks at an explicit preset, 0 to 9
+-       `Lzma2.compress(chain, preset)`: a lazy `Chain[Data]` of raw LZMA2, to be decoded with
+-       `.decompress(chain, dictSize)` given the preset's dictionary size, which the stream does
+-       not record.
++   entry .UncompressedSizeMax   一つの LZMA2 のチャンクが運べる圧縮前のバイトの最大数：2 MiB
++   entry .CompressedSizeMax   一つの LZMA のチャンクが運べる圧縮後のバイトの最大数：64 KiB
++   entry .DefaultPreset   `compress[Lzma2]` が使い、その 8 MiB の辞書を `decompress[Lzma2]` が仮定するプリセット：6
++   entry .compression   `Lzma2 is Compression` の given。コンパニオンを通して暗黙のスコープにある
++       その圧縮器は `.DefaultPreset` でエンコードし、展開器はそのプリセットの 8 MiB の辞書を仮定する。
++       `Chain` の形は、ダクトを通さずにエンジンをチャンクごとに駆動し、同じ出力を生む。
++   entry .compressor   明示したプリセット（0 から 9）で圧縮するダクト
++       `Lzma2.compressor(preset)` は、`compress[Lzma2]` が使うストリームの段階を、選んだプリセットで使うもので、`viaDuct` で組み立てるパイプラインのためのものである。`Buffering` を必要とする。
++       その出力は、そのプリセットの辞書のサイズでデコードしなければならない。
++   entry .compress   明示したプリセット（0 から 9）で、チャンクのチェーンを圧縮する
++       `Lzma2.compress(chain, preset)`：生の LZMA2 の遅延 `Chain[Data]` である。ストリームはプリセットの辞書のサイズを記録しないので、それを与えて `.decompress(chain, dictSize)` でデコードする。
+
+=       not record.
+=
+-       ```scala
++       ```scala
+
+=       not record.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       not record.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       not record.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       not record.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = (t"the quick brown fox " * 40).in[Data]
++       val payload: Data = (t"the quick brown fox " * 40).in[Data]
+
+-       val encoded: Chain[Data] = Lzma2.compress(Chain(payload), 1)
++       val encoded: Chain[Data] = Lzma2.compress(Chain(payload), 1)
+
+-       Lzma2.decompress(encoded, 1 << 20).flat.to[List] == payload.to[List]   // preset 1: 1 MiB
++       Lzma2.decompress(encoded, 1 << 20).flat.to[List] == payload.to[List]   // preset 1: 1 MiB
+
+=       Lzma2.decompress(encoded, 1 << 20).flat.to[List] == payload.to[List]   // preset 1: 1 MiB
+-       ```
++       ```
+
+-   entry .decompressor   a decompressing duct for a stream encoded with a known dictionary size
+-       `Lzma2.decompressor(dictSize)` is the streaming stage `decompress[Lzma2]` would use,
+-       with the dictionary size in bytes the producer used instead of the assumed 8 MiB; it
+-       needs a `Buffering`.
+-   entry .decompress   decompresses a chain of raw LZMA2 chunks with a known dictionary size
+-       `Lzma2.decompress(chain, dictSize)` decodes a stream produced at a preset other than 6,
+-       given that preset's dictionary size in bytes; `chain.decompress[Lzma2]` is the same call
+-       with 8 MiB.
++   entry .decompressor   既知の辞書のサイズでエンコードされたストリームのための、展開するダクト
++       `Lzma2.decompressor(dictSize)` は、`decompress[Lzma2]` が使うストリームの段階を、仮定する 8 MiB の代わりに生成側が使った辞書のサイズ（バイト単位）で使うものである。`Buffering` を必要とする。
++   entry .decompress   既知の辞書のサイズで、生の LZMA2 のチャンクのチェーンを展開する
++       `Lzma2.decompress(chain, dictSize)` は、6 以外のプリセットで生成されたストリームを、そのプリセットの辞書のサイズ（バイト単位）を与えてデコードする。`chain.decompress[Lzma2]` は、8 MiB での同じ呼び出しである。
+
+- entry .Lzw   the LZW compression of TIFF and PDF streams, written from the specification
++ entry .Lzw   TIFF と PDF のストリームの LZW 圧縮。仕様から書き起こしたもの
+
+= entry .Lzw   the LZW compression of TIFF and PDF streams, written from the specification
+-   detail
++   detail
+
+-       `Lzw` is Lempel-Ziv-Welch as TIFF's compression scheme 5 and PDF's `LZWDecode` filter
+-       define it: 8-bit input symbols, MSB-first codes starting at 9 bits and widening to 12, a clear code
+-       of 256 and an end-of-information code of 257. The JDK has no implementation of it, so
+-       this one is written from the specification and runs on every platform.
++       `Lzw` は、TIFF の圧縮方式 5 と PDF の `LZWDecode` フィルターが定義する Lempel-Ziv-Welch である。8 ビットの入力シンボル、9 ビットから始まり 12 ビットまで広がる MSB ファーストの符号、256 のクリア符号、257 の情報終了符号からなる。
++       JDK にはその実装がないので、これは仕様から書き起こしたものであり、すべてのプラットフォームで動く。
+
+=       this one is written from the specification and runs on every platform.
+=
+-       ```scala
++       ```scala
+
+=       this one is written from the specification and runs on every platform.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       this one is written from the specification and runs on every platform.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       this one is written from the specification and runs on every platform.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       this one is written from the specification and runs on every platform.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = (t"the quick brown fox " * 40).in[Data]
++       val payload: Data = (t"the quick brown fox " * 40).in[Data]
+
+-       payload.compress[Lzw].decompress[Lzw] == payload   // true
++       payload.compress[Lzw].decompress[Lzw] == payload   // true
+
+=       payload.compress[Lzw].decompress[Lzw] == payload   // true
+-       ```
++       ```
+
+-       The one parameter is `earlyChange`: whether both sides widen their codes one table entry
+-       sooner than the arithmetic strictly requires. It is on in `compress[Lzw]`, since it is
+-       what TIFF, PDF and every known encoder produce; a format which states the other setting
+-       (PDF's `EarlyChange 0`) uses `.compress`, `.decompress`, `.compressor` or
+-       `.decompressor` with it off. Both sides must agree, or the output is garbage with no
+-       error raised.
++       唯一のパラメーターは `earlyChange` で、両側が算術的に厳密に必要なときよりも表のエントリー一つ分早く符号を広げるかどうかを表す。
++       TIFF、PDF、そして知られているすべてのエンコーダーが生成するものなので、`compress[Lzw]` ではこれが有効である。もう一方の設定を指定するフォーマット（PDF の `EarlyChange 0`）は、これを無効にして `.compress`、`.decompress`、`.compressor`、`.decompressor` を使う。
++       両側が一致していなければならず、そうでなければ、エラーが発生することなく出力が意味のないものになる。
+
+=       error raised.
+-   refer pneumatic.Compression
++   refer pneumatic.Compression
+
+-   entry .compression   the `Lzw is Compression` given, with `earlyChange` on, in implicit scope through the companion
+-       The TIFF and PDF default. Its compressor and decompressor are `Duct[Data, Data]` stages
+-       over `Credit` needing a `Buffering`; the `Chain` forms drive the engine chunk by chunk.
+-   entry .compressor   a compressing duct with `earlyChange` chosen explicitly
+-       `Lzw.compressor(earlyChange)` is the streaming stage for a pipeline built with
+-       `viaDuct`; it needs a `Buffering`. `compress[Lzw]` is the same with `earlyChange = true`.
+-   entry .decompressor   a decompressing duct with `earlyChange` chosen explicitly
+-       `Lzw.decompressor(earlyChange)` is the streaming stage for a pipeline built with
+-       `viaDuct`; it needs a `Buffering`. `decompress[Lzw]` is the same with `earlyChange = true`.
+-   entry .compress   compresses a chain of chunks, with `earlyChange` on unless given as `false`
+-       `Lzw.compress(chain, earlyChange = true)`: a lazy `Chain[Data]`, each input chunk's
+-       codes emitted as it is consumed.
++   entry .compression   `earlyChange` を有効にした `Lzw is Compression` の given。コンパニオンを通して暗黙のスコープにある
++       TIFF と PDF のデフォルトである。
++       その圧縮器と展開器は `Credit` 上の `Duct[Data, Data]` の段階で、`Buffering` を必要とする。`Chain` の形はエンジンをチャンクごとに駆動する。
++   entry .compressor   `earlyChange` を明示的に選んで圧縮するダクト
++       `Lzw.compressor(earlyChange)` は、`viaDuct` で組み立てるパイプラインのためのストリームの段階である。`Buffering` を必要とする。
++       `compress[Lzw]` は `earlyChange = true` での同じものである。
++   entry .decompressor   `earlyChange` を明示的に選んで展開するダクト
++       `Lzw.decompressor(earlyChange)` は、`viaDuct` で組み立てるパイプラインのためのストリームの段階である。`Buffering` を必要とする。
++       `decompress[Lzw]` は `earlyChange = true` での同じものである。
++   entry .compress   チャンクのチェーンを圧縮する。`false` が与えられない限り `earlyChange` は有効
++       `Lzw.compress(chain, earlyChange = true)`：遅延 `Chain[Data]` であり、入力の各チャンクの符号は、それが消費されるときに出力される。
+
+=       codes emitted as it is consumed.
+=
+-       ```scala
++       ```scala
+
+=       codes emitted as it is consumed.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       codes emitted as it is consumed.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       codes emitted as it is consumed.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       codes emitted as it is consumed.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = (t"the quick brown fox " * 40).in[Data]
++       val payload: Data = (t"the quick brown fox " * 40).in[Data]
+
+-       val late: Chain[Data] = Lzw.compress(Chain(payload), earlyChange = false)
++       val late: Chain[Data] = Lzw.compress(Chain(payload), earlyChange = false)
+
+-       Lzw.decompress(late, earlyChange = false).flat.to[List] == payload.to[List]
++       Lzw.decompress(late, earlyChange = false).flat.to[List] == payload.to[List]
+
+=       Lzw.decompress(late, earlyChange = false).flat.to[List] == payload.to[List]
+-       ```
++       ```
+
+-   entry .decompress   decompresses a chain of chunks, with `earlyChange` on unless given as `false`
+-       `Lzw.decompress(chain, earlyChange = true)`: the inverse of `.compress` at the same
+-       setting, as a lazy `Chain[Data]`.
++   entry .decompress   チャンクのチェーンを展開する。`false` が与えられない限り `earlyChange` は有効
++       `Lzw.decompress(chain, earlyChange = true)`：同じ設定での `.compress` の逆であり、遅延 `Chain[Data]` として返す。
+
+- entry .Brotli   the Brotli format of RFC 7932: the web's content encoding, with relative encoding against a base
++ entry .Brotli   RFC 7932 の Brotli フォーマット：ウェブのコンテンツエンコーディング。基準に対する相対的なエンコードを備える
+
+= entry .Brotli   the Brotli format of RFC 7932: the web's content encoding, with relative encoding against a base
+-   detail
++   detail
+
+-       `Brotli` compresses smaller than DEFLATE at a comparable speed, and is the `br` content
+-       encoding of HTTP. The decoder is a faithful port of Google's reference decoder, with the
+-       format's 122 KB static dictionary, so it decodes anything a browser or server emits; the
+-       encoder is a fast, specification-compliant path. Both are pure Scala, on every platform.
++       `Brotli` は同程度の速度で DEFLATE より小さく圧縮し、HTTP の `br` コンテンツエンコーディングである。
++       デコーダーは Google の参照デコーダーを忠実に移植したもので、フォーマットの 122 KB の静的辞書を備えるので、ブラウザやサーバーが出力するものは何でもデコードできる。エンコーダーは、仕様に準拠した高速な経路である。
++       どちらも純粋な Scala であり、すべてのプラットフォームで動く。
+
+=       encoder is a fast, specification-compliant path. Both are pure Scala, on every platform.
+=
+-       ```scala
++       ```scala
+
+=       encoder is a fast, specification-compliant path. Both are pure Scala, on every platform.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       encoder is a fast, specification-compliant path. Both are pure Scala, on every platform.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       encoder is a fast, specification-compliant path. Both are pure Scala, on every platform.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       encoder is a fast, specification-compliant path. Both are pure Scala, on every platform.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+=       import strategies.throwUnsafely
+=
+-       val payload: Data = (t"the quick brown fox " * 40).in[Data]
++       val payload: Data = (t"the quick brown fox " * 40).in[Data]
+
+=       val payload: Data = (t"the quick brown fox " * 40).in[Data]
+-       payload.compress[Brotli].decompress[Brotli] == payload   // true
++       payload.compress[Brotli].decompress[Brotli] == payload   // true
+
+-       payload.compress[Brotli].length < payload.compress[Gzip].length
++       payload.compress[Brotli].length < payload.compress[Gzip].length
+
+=       payload.compress[Brotli].length < payload.compress[Gzip].length
+-       ```
++       ```
+
+-       Both directions need the whole value before producing any output — the decoder because
+-       a backward reference may reach across the entire window, the encoder because it chooses
+-       its framing from the total length — so a Brotli stage in a pipeline buffers everything
+-       it is given and emits on flush, where a DEFLATE stage emits as it goes. It is still the
+-       same stage, and interoperates with the whole-value form.
++       どちらの方向も、出力を生み出す前に値全体を必要とする。デコーダーは後方参照がウィンドウ全体にまたがりうるから、エンコーダーは全体の長さからフレーミングを選ぶからである。そのため、パイプラインの中の Brotli の段階は、DEFLATE の段階が進みながら出力するのに対し、与えられたものをすべてバッファしてフラッシュのときに出力する。
++       それでも同じ段階であり、値全体の形と相互運用できる。
+
+-       Brotli can also encode a value *relative to* a base the receiver already holds, which is
+-       how a successor differing from its predecessor by a few edits costs a few bytes.
+-       `.continuation` encodes the new value against a window preloaded with the base, as the
+-       headerless tail of a stream; `.prefix` is the priming stream which puts the base in a
+-       decoder's window, whose bytes are fixed by the format and two parameters alone, so both
+-       sides build it without transmitting it. Decoding the prefix and the continuation as one
+-       stream yields the base followed by the successor.
++       Brotli は、受け手がすでに持っている基準に*対して相対的に*値をエンコードすることもできる。これにより、前任から数か所の編集だけ異なる後続は、数バイトのコストで済む。
++       `.continuation` は、基準をあらかじめ読み込んだウィンドウに対して新しい値をエンコードし、ヘッダーのないストリームの末尾とする。`.prefix` は基準をデコーダーのウィンドウに置く準備のストリームであり、そのバイトはフォーマットと二つのパラメーターだけで決まるので、両側はそれを送信せずに組み立てられる。
++       プレフィックスと継続を一つのストリームとしてデコードすると、基準に続いて後続が得られる。
+
+-       Corrupt input throws `IllegalStateException` with a message beginning _the Brotli data
+-       is corrupt_.
++       壊れた入力は、_the Brotli data is corrupt_ で始まるメッセージとともに `IllegalStateException` を投げる。
+
+=       is corrupt_.
+-   refer pneumatic.Compression
++   refer pneumatic.Compression
+
+=   refer pneumatic.Compression
+-   refer pneumatic.Gzip
++   refer pneumatic.Gzip
+
+-   entry .Window   the largest window Brotli allows, as WBITS: 24, the default for `.prefix` and `.continuation`
+-       A window of `2^24 - 16` bytes. The prefix is never transmitted, so the widest window
+-       costs nothing and only widens what a continuation may reference.
+-   entry .Block   the largest meta-block Brotli allows: `1 << 24` bytes, the default for `.prefix`
+-   entry .continuation   encodes a value against a window already holding a base
+-       `Brotli.continuation(base, next, window = Brotli.Window)` is the meta-block(s) for `next`
+-       alone, with no stream header, byte-aligned and ending with the last-block flag, whose
+-       backward references may reach up to `2^window - 16` bytes back, into `base`. It is a
+-       valid tail of any stream which leaves `base` in the decoder's window, and in particular
+-       of `.prefix(base, window, block)`. `window` is WBITS, 10 to 24, and must be the value
+-       the receiver's prefix declares. An empty `next` gives the empty last meta-block.
++   entry .Window   Brotli が許す最大のウィンドウ。WBITS で 24。`.prefix` と `.continuation` のデフォルト
++       `2^24 - 16` バイトのウィンドウである。
++       プレフィックスは決して送信されないので、最も広いウィンドウでもコストはかからず、継続が参照できる範囲が広がるだけである。
++   entry .Block   Brotli が許す最大のメタブロック：`1 << 24` バイト。`.prefix` のデフォルト
++   entry .continuation   すでに基準を保持しているウィンドウに対して値をエンコードする
++       `Brotli.continuation(base, next, window = Brotli.Window)` は、ストリームのヘッダーを持たない `next` だけのメタブロックであり、バイト境界に揃えられ、最後のブロックのフラグで終わる。その後方参照は最大で `2^window - 16` バイト前、つまり `base` の中まで届く。
++       これは、デコーダーのウィンドウに `base` を残すどのストリームに対しても、とりわけ `.prefix(base, window, block)` に対して、有効な末尾である。
++       `window` は 10 から 24 の WBITS であり、受け手のプレフィックスが宣言する値でなければならない。
++       空の `next` は空の最後のメタブロックになる。
+
+=       the receiver's prefix declares. An empty `next` gives the empty last meta-block.
+=
+-       ```scala
++       ```scala
+
+=       the receiver's prefix declares. An empty `next` gives the empty last meta-block.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       the receiver's prefix declares. An empty `next` gives the empty last meta-block.
+=
+=       ```scala
+=       import soundness.*
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+=       the receiver's prefix declares. An empty `next` gives the empty last meta-block.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val base: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
++       val base: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
+
+-       val next: Data = t"the quick brown fox jumped over the lazy dog".in[Data]
++       val next: Data = t"the quick brown fox jumped over the lazy dog".in[Data]
+
+-       val continuation: Data = Brotli.continuation(base, next)
++       val continuation: Data = Brotli.continuation(base, next)
+
+-       val decoded: Data = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
++       val decoded: Data = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+
+-       decoded.length == base.length + next.length   // true: the base, then the successor
++       decoded.length == base.length + next.length   // true: the base, then the successor
+
+=       decoded.length == base.length + next.length   // true: the base, then the successor
+-       ```
++       ```
+
+-       A continuation decoded against the wrong base decodes without error to the wrong bytes:
+-       nothing in the format identifies the base, so the sender and receiver must agree on it
+-       by other means. A successor which does not compress against its base falls back to
+-       stored meta-blocks.
+-   entry .prefix   the priming stream which leaves a base in a decoder's window
+-       `Brotli.prefix(base, window = Brotli.Window, block = Brotli.Block)` is a stream header
+-       declaring `window` (WBITS, 10 to 24), then `base` as uncompressed meta-blocks of at most
+-       `block` bytes (1 to `2^24`), then the empty metadata meta-block, the byte `0x06`. Its
+-       bytes are determined by RFC 7932 and the three arguments alone, so a receiver holding
+-       `base` builds the identical prefix locally. It is not a complete stream — it awaits a
+-       `.continuation` — so decoding it alone fails; an empty base primes to two bytes, and a
+-       base of 4,096 bytes to `3 + 4096 + 1` by default.
+-   entry .compression   the `Brotli is Compression` given, in implicit scope through the companion
+-       Its compressor and decompressor are buffering `Duct[Data, Data]` stages over `Credit`,
+-       needing a `Buffering`, which accumulate the whole input and produce their output on
+-       flush. The `Chain` forms feed the engine every chunk and yield the result as one chunk.
++       誤った基準に対してデコードした継続は、エラーなしに誤ったバイトにデコードされる。フォーマットの中に基準を識別するものは何もないので、送り手と受け手は他の手段で基準について合意しなければならない。
++       基準に対して圧縮されない後続は、格納されたメタブロックに頼る。
++   entry .prefix   基準をデコーダーのウィンドウに残す準備のストリーム
++       `Brotli.prefix(base, window = Brotli.Window, block = Brotli.Block)` は、`window`（10 から 24 の WBITS）を宣言するストリームのヘッダー、続いて最大 `block` バイト（1 から `2^24`）の圧縮されていないメタブロックとしての `base`、そして空のメタデータのメタブロックであるバイト `0x06` からなる。
++       そのバイトは RFC 7932 と三つの引数だけで決まるので、`base` を持つ受け手は同一のプレフィックスをローカルで組み立てられる。
++       これは完全なストリームではなく `.continuation` を待つものなので、単独でデコードすると失敗する。空の基準は二バイトに、4,096 バイトの基準はデフォルトで `3 + 4096 + 1` バイトになる。
++   entry .compression   `Brotli is Compression` の given。コンパニオンを通して暗黙のスコープにある
++       その圧縮器と展開器は、`Credit` 上のバッファする `Duct[Data, Data]` の段階であり、`Buffering` を必要とする。入力全体を蓄積し、フラッシュのときに出力を生み出す。
++       `Chain` の形は、すべてのチャンクをエンジンに与え、結果を一つのチャンクとして生み出す。

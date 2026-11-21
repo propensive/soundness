@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.87.4` — Missing `Parametric` value
++ # `↯/s.87.4` — `Parametric` の値の欠落
+
+- Raised at compile time by Legerdemain's `query` macro when no
+- contextual `Parametric` instance is available for the inferred key
+- type.
++ 推論されたキーの型に対して、利用できるコンテキストの `Parametric` インスタンスがないときに、Legerdemain の `query` マクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- The macro requires a `Parametric` typeclass instance to encode the
+- key into a query string. If none is in scope, the macro halts.
++ マクロは、キーをクエリ文字列にエンコードするために `Parametric` 型クラスのインスタンスを必要とする。
++ スコープに一つもなければ、マクロは停止する。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.87.4] could not find a contextual Parametric value for sonnet
++ [↯/s.87.4] could not find a contextual Parametric value for sonnet
+
+= [↯/s.87.4] could not find a contextual Parametric value for sonnet
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Bring an appropriate `given Parametric` into scope, or change the
+- key type to one that has a `Parametric` instance.
++ 適切な `given Parametric` をスコープに持ち込むか、キーの型を `Parametric` インスタンスを持つ型に変える。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/legerdemain/src/query/legerdemain.internal.scala`
++ - ソース：`lib/legerdemain/src/query/legerdemain.internal.scala`

@@ -1,0 +1,64 @@
+orthant 1 language
+
+- # `↯/s.83.1` — `Dsv.Error`
++ # `↯/s.83.1` — `Dsv.Error`
+
+- Raised when Caesura cannot parse a row of delimiter-separated values.
++ Caesura が区切り値の行をパースできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Caesura parses CSV/TSV/DSV against a `DsvFormat`. The parser raises
+- this error on malformed input. The message is `could not parse row
+- data because $reason`.
++ Caesura は CSV/TSV/DSV を `DsvFormat` に従ってパースする。
++ パーサーは不正な形の入力に対してこのエラーを発生させる。
++ メッセージは `could not parse row data because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.83.1.1` — `MisplacedQuote`
++ ### `↯/s.83.1.1` — `MisplacedQuote`
+
+- A quote character appeared after the start of a cell, where the
+- parser was not expecting one.
++ パーサーが予期していない、セルの先頭より後の位置に引用符が現れた。
+
+- **Example.** `[↯/s.83.1.1] could not parse row data because a quote was found after the start of a cell`
++ **例。** `[↯/s.83.1.1] could not parse row data because a quote was found after the start of a cell`
+
+- **Resolution.** Either escape the quote according to the format's
+- quoting rules, or quote the entire field.
++ **解決方法。** 形式の引用規則に従って引用符をエスケープするか、フィールド全体を引用する。
+
+- ### `↯/s.83.1.2` — `Absent`
++ ### `↯/s.83.1.2` — `Absent`
+
+- The row has no cell at the position the decoder expected.
++ デコーダーが期待した位置に、行のセルがない。
+
+- **Example.** `[↯/s.83.1.2] could not decode the cell because the cell was absent`
++ **例。** `[↯/s.83.1.2] could not decode the cell because the cell was absent`
+
+- **Resolution.** Check that the row has as many columns as the target type has fields, remembering that a nested case class spans several columns. A trailing `Optional` field may legitimately be absent.
++ **解決方法。** 入れ子のケースクラスが複数の列にまたがることに留意して、行が対象の型のフィールドと同じ数の列を持つことを確認する。末尾の `Optional` フィールドは正当に存在しないことがある。
+
+- ### `↯/s.83.1.3` — `Unparseable`
++ ### `↯/s.83.1.3` — `Unparseable`
+
+- A cell's text could not be read as the type the field declares.
++ セルのテキストを、フィールドが宣言する型として読めなかった。
+
+- **Example.** `[↯/s.83.1.3] could not decode the cell because the value abc could not be parsed as Int`
++ **例。** `[↯/s.83.1.3] could not decode the cell because the value abc could not be parsed as Int`
+
+- **Resolution.** Correct the data, or widen the field's type. Under an accruing strategy every bad cell in the file is reported at once.
++ **解決方法。** データを修正するか、フィールドの型を広げる。蓄積型の戦略の下では、ファイル中のすべての不正なセルが一度に報告される。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/caesura/src/core/caesura.Dsv.scala`
++ - ソース：`lib/caesura/src/core/caesura.Dsv.scala`

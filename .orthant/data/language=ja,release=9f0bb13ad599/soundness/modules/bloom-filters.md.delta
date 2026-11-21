@@ -1,0 +1,9 @@
+orthant 1 language
+
+- Any [digestible](hashing.md#hashing-your-own-types) value can be added, and the hash algorithm
+- is chosen as a type. A filter can be filled in place while it is new, and is then frozen. A
+- frozen filter is [immutable]: `+` and `++` give a new filter and leave the old one unchanged, so
+- frozen filters are shared and accumulated as safely as any other value.
++ [ダイジェスト可能](hashing.md#hashing-your-own-types)な値なら何でも追加でき、ハッシュアルゴリズムは型として選ぶ。
++ フィルターは新しいうちはその場で埋めることができ、その後で凍結される。
++ 凍結されたフィルターは[不変]である。`+` と `++` は新しいフィルターを返して古いものを変えないので、凍結されたフィルターは他のどんな値とも同じく安全に共有され、蓄積される。

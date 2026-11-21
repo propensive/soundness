@@ -1,0 +1,147 @@
+orthant 1 language
+
+- # Declarative Context
++ # 宣言的なコンテキスト
+
+- Soundness configures behaviour declaratively, through contextual values in scope rather
+- than through arguments threaded by hand or flags consulted at runtime. Choosing an
+- output format, an error strategy, a character encoding, or a particular implementation
+- is a matter of bringing the right `given` into scope, after which the choice applies
+- automatically to everything within that scope. Because the configuration is
+- declarative, it is independent of control flow and easy to reason about: what is in
+- scope determines what happens, wherever the affected code runs.
++ Soundness は振る舞いを宣言的に構成する。手で引き回す引数や、実行時に参照するフラグを通じてではなく、スコープにあるコンテキスト値を通じてである。
++ 出力形式、エラーの戦略、文字のエンコーディング、特定の実装を選ぶことは、正しい `given` をスコープに持ち込むことであり、その後その選択はそのスコープ内のすべてに自動的に適用される。
++ 構成は宣言的なので、制御フローから独立しており、推論しやすい。影響を受けるコードがどこで実行されても、スコープにあるものが何が起きるかを決める。
+
+- The power of the approach is that scope is a precise instrument. A given imported at the
+- top of a file configures the file; one declared inside a block configures only that
+- block, overriding any wider choice; and a `locally` block confines an exception to a few
+- lines. [Delimited scopes](delimited-scopes.md#scope-is-a-precise-instrument) shows all three in one
+- example.
++ この手法の力は、スコープが精密な道具であることにある。
++ ファイルの先頭でインポートした given はそのファイルを構成する。ブロックの中で宣言した given はそのブロックだけを構成し、より広い選択を上書きする。そして `locally` ブロックは例外を数行に閉じ込める。
++ [区切られたスコープ](delimited-scopes.md#scope-is-a-precise-instrument)は、三つすべてを一つの例で示す。
+
+- Configuration composes like the code it configures. A project defines its house choices
+- once and shares them with `export`, so `import myproject.conventions.*` equips any file
+- with the team's error strategy, encodings and formats — configuration as a library,
+- versioned and reviewed like one.
++ 構成は、それが構成するコードと同じように合成できる。
++ プロジェクトは自身の標準の選択を一度定義し、`export` で共有するので、`import myproject.conventions.*` はどのファイルにもチームのエラーの戦略、エンコーディング、形式を備えさせる。ライブラリとしての構成であり、ライブラリと同じようにバージョン管理され、レビューされる。
+
+- Two pieces of tooling keep the approach honest. Contextual values that represent
+- capabilities or configuration extend the `Findable` marker, which the Soundness compiler
+- plugin uses to distinguish *findable* context — things a user is expected to supply or
+- import — from internal machinery. And when a required given is missing, importing
+- `explainMissingContext` turns the compiler's bare "no implicit found" into a diagnosis:
+- it searches the classpath for the instances that *would* satisfy the search and names
+- the imports that provide them, so the response to a missing context is a one-line
+- import, not an archaeology session.
++ 二つの道具がこの手法を誠実に保つ。
++ ケイパビリティや構成を表すコンテキスト値は `Findable` マーカーを継承し、Soundness のコンパイラプラグインはそれを使って、*見つけられる*コンテキスト（ユーザーが与えるかインポートすることが期待されるもの）を内部の仕組みから区別する。
++ そして必要な given がないとき、`explainMissingContext` をインポートすると、コンパイラの素っ気ない "no implicit found" が診断に変わる。それは探索を満たす*はずの*インスタンスをクラスパスから探し、それらを提供するインポートを名指すので、コンテキストの欠如への対応は考古学の調査ではなく、一行のインポートになる。
+
+- ## What goes into scope
++ ## スコープに入るもの
+
+- The range is worth seeing at once, because the uniformity is the point. A single
+- mechanism carries choices that other designs would spread across constructor arguments,
+- global settings, builder methods and runtime flags:
++ その範囲は一度に見ておく価値がある。統一性こそが要点だからである。
++ 一つの仕組みが、他の設計ならコンストラクターの引数、グローバルな設定、ビルダーのメソッド、実行時のフラグに散らばらせるような選択を運ぶ。
+
+- ```tabular
++ ```tabular
+
+- column  Choice
+- column  Import
+- row  what a failure does  `strategies.throwUnsafely`
+- row  how text becomes bytes  `codepages.utf8Codepage`
+- row  how JSON is rendered  `formatting.compactJsonFormatting`
+- row  how dates are shown  `dateFormats.iso8601DateFormat`
+- row  how a boolean is shown  `affirmations.yesNoAffirmation`
+- row  what a task runs on  `threads.virtualThreads`
+- row  what happens to unfinished tasks  `probates.cancelProbate`
+- row  which HTTP transport is used  `httpBackends.soundnessHttp`
+- row  which filesystem implementation  `filesystemBackends.javaBaseFilesystem`
+- row  which calendar a date literal means  `calendars.gregorianCalendar`
++ column  選択
++ column  インポート
++ row  失敗が何をするか  `strategies.throwUnsafely`
++ row  テキストがどうバイトになるか  `codepages.utf8Codepage`
++ row  JSON がどう描画されるか  `formatting.compactJsonFormatting`
++ row  日付がどう表示されるか  `dateFormats.iso8601DateFormat`
++ row  真偽値がどう表示されるか  `affirmations.yesNoAffirmation`
++ row  タスクが何の上で実行されるか  `threads.virtualThreads`
++ row  終わっていないタスクがどうなるか  `probates.cancelProbate`
++ row  どの HTTP トランスポートを使うか  `httpBackends.soundnessHttp`
++ row  どのファイルシステムの実装か  `filesystemBackends.javaBaseFilesystem`
++ row  日付リテラルがどの暦を意味するか  `calendars.gregorianCalendar`
+
+- ```
++ ```
+
+- One idiom to learn, and the same reasoning — "what is in scope determines what happens" —
+- applies to all of them.
++ 覚えるイディオムは一つであり、同じ推論（「スコープにあるものが何が起きるかを決める」）がそのすべてに当てはまる。
+
+- ## Naming makes the choice legible
++ ## 名前が選択を読めるものにする
+
+- A given is named for what it *selects*, not for its type, because the import line is what
+- a reader sees. `import strategies.throwUnsafely` says something about the code below it;
+- `import strategies.given` would not.
++ given は、その型ではなく、それが*選ぶ*ものにちなんで名付けられる。インポートの行こそ読み手が目にするものだからである。
++ `import strategies.throwUnsafely` はその下のコードについて何かを述べる。`import strategies.given` は何も述べない。
+
+- This is why the convention matters more here than elsewhere: a contextual value is
+- invoked without being written at the call site, so the import is the only place its
+- choice is visible. A poorly-named given makes contextual configuration exactly as opaque
+- as its critics claim it is.
++ これが、この慣習が他の場所よりもここで重要な理由である。コンテキスト値は呼び出し箇所に書かれることなく使われるので、その選択が見える場所はインポートだけである。
++ 名前の悪い given は、コンテキストによる構成を、批判者が主張するとおりに不透明なものにしてしまう。
+
+- ## What it costs
++ ## コスト
+
+- The honest objection to contextual configuration is action at a distance, and it is not
+- wrong.
++ コンテキストによる構成への誠実な異論は遠隔作用であり、それは誤りではない。
+
+- **The effect is not local to the call site.** A `json.show` renders differently depending
+- on an import possibly a hundred lines above, and nothing at the call site says so. A
+- reader must know to look. The mitigation is scope precision — the narrower the scope, the
+- closer the given is to what it affects — but the tension is real, and a given imported
+- file-wide genuinely is action at a distance.
++ **効果は呼び出し箇所に局所的ではない。** `json.show` は、もしかすると百行も上にあるインポートによって描画が変わり、呼び出し箇所にはそのことを示すものが何もない。
++ 読み手は、見るべきだと知っていなければならない。
++ 緩和策はスコープの精度である。スコープが狭いほど、given はそれが影響するものに近くなる。しかし緊張関係は現実のものであり、ファイル全体にインポートした given は本当に遠隔作用である。
+
+- **Ambiguity is a compile error, and a confusing one.** Two givens of the same type in
+- scope make the code ambiguous, which is safe but reported in terms of implicit
+- resolution rather than "you have chosen two JSON formats". Importing two convention
+- bundles that disagree produces exactly this.
++ **曖昧さはコンパイルエラーであり、しかもわかりにくいものである。** スコープにある同じ型の二つの given はコードを曖昧にする。それは安全だが、「二つの JSON 形式を選んでいる」ではなく、暗黙の解決の観点から報告される。
++ 食い違う二つの慣習のバンドルをインポートすると、まさにこれが起きる。
+
+- **Refactoring can silently change behaviour.** Moving a function to another file moves it
+- out of one set of imports and into another. The types still check; the behaviour may
+- differ. This is the sharpest edge of the approach, and the reason a project's conventions
+- are better collected into one shared object than assembled ad hoc per file.
++ **リファクタリングが黙って振る舞いを変えることがある。** 関数を別のファイルに移すと、それはあるインポートの集合から出て、別の集合に入る。
++ 型は依然として検査を通るが、振る舞いは異なるかもしれない。
++ これはこの手法の最も鋭い刃であり、プロジェクトの慣習をファイルごとにその場しのぎで組み立てるよりも、一つの共有オブジェクトに集めるほうがよい理由である。
+
+- **There is no runtime override.** Because the configuration is resolved as the code
+- compiles, it cannot be changed by a command-line flag or a configuration file without
+- threading the decision explicitly. Where runtime configurability is genuinely wanted, the
+- value must be an ordinary parameter — and recognising which of the two a given choice
+- needs is a design decision, not an automatic one.
++ **実行時の上書きはない。** 構成はコードのコンパイル時に解決されるので、判断を明示的に引き回さない限り、コマンドラインオプションや構成ファイルで変えることはできない。
++ 実行時の構成可能性が本当に必要な場所では、値は普通のパラメーターでなければならない。そしてある選択がその二つのどちらを必要とするかを見極めることは、設計上の判断であり、自動的に決まるものではない。
+
+- See [delimited scopes](delimited-scopes.md) for how the scope is established, and
+- [honest signatures](honest-signatures.md) for why the requirements being in the signature
+- is what makes this legible at all.
++ スコープがどのように確立されるかについては[区切られたスコープ](delimited-scopes.md)を、要件がシグネチャにあることがそもそもこれを読めるものにする理由については[正直なシグネチャ](honest-signatures.md)を参照すること。

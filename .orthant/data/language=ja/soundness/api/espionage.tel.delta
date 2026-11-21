@@ -1,0 +1,2556 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base espionage
++ base espionage
+
+- import soundness
++ import soundness
+
+- info   a client for the Agent Client Protocol, version 1: drive a coding agent through sessions, prompts and tool calls
++ info   Agent Client Protocol バージョン 1 のクライアント：セッション、プロンプト、ツール呼び出しを通してコーディングエージェントを動かす
+
+- detail
++ detail
+
+-     _Espionage_ is the client half of the [Agent Client
+-     Protocol](https://agentclientprotocol.com/), version 1: the role an editor plays towards a
+-     coding agent such as Claude Code or Gemini CLI, here for programmatic use. A program
+-     launches an agent as a subprocess (or reaches one behind a pair of streams), opens a
+-     session, sends prompts, and watches the agent's work stream back — message chunks,
+-     thoughts, tool calls, plans — while answering the requests the agent makes of it:
+-     permission to act, file reads and writes, terminals.
++     _Espionage_ は [Agent Client Protocol](https://agentclientprotocol.com/) バージョン 1 のクライアント側である。
++     これは Claude Code や Gemini CLI のようなコーディングエージェントに対してエディターが果たす役割であり、ここではそれをプログラムから使う。
++     プログラムはエージェントをサブプロセスとして起動し（あるいはストリームの組の向こうにいるエージェントに到達し）、セッションを開き、プロンプトを送り、エージェントの作業がストリームとして戻ってくるのを見守る。メッセージのチャンク、思考、ツール呼び出し、計画などである。
++     その間、エージェントがクライアントに求めるリクエスト、すなわち行動のパーミッション、ファイルの読み書き、端末に答える。
+
+-     The protocol is JSON-RPC in both directions at once, and a prompt is not a function call
+-     but a **turn**: one long-lived request whose response arrives only after everything the
+-     agent did inside it. The library models the turn directly. `Acp.connect` takes two blocks:
+-     the first registers handlers on a lent `Acp.Registry` with the combinators `Acp.updated`,
+-     `Acp.permission`, `Acp.readFile`, `Acp.writeFile` and `Acp.terminals`; the second holds the
+-     live `Acp.Connection`, whose `prompt` blocks until the agent reports a `StopReason` while
+-     the turn's updates stream concurrently to the registered handler. The capabilities the
+-     client advertises at `initialize` are derived from what was registered, so the declaration
+-     can never disagree with the implementation.
++     このプロトコルは両方向に同時に流れる JSON-RPC であり、プロンプトは関数呼び出しではなく**ターン**である。
++     ターンとは一つの長寿命なリクエストであり、その応答はエージェントがその中で行ったすべてのことの後にようやく届く。
++     このライブラリはターンを直接モデル化する。
++     `Acp.connect` は二つのブロックを取る。
++     一つ目は、コンビネーター `Acp.updated`、`Acp.permission`、`Acp.readFile`、`Acp.writeFile`、`Acp.terminals` を使って、貸し出された `Acp.Registry` にハンドラを登録する。
++     二つ目は生きた `Acp.Connection` を保持する。その `prompt` はエージェントが `StopReason` を報告するまでブロックし、その間ターンの更新は登録されたハンドラに並行してストリームとして届く。
++     クライアントが `initialize` で告知するケイパビリティは登録されたものから導出されるので、宣言が実装と食い違うことはありえない。
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     import environments.javaBaseEnvironment
++     import environments.javaBaseEnvironment
+
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+-     import probates.awaitProbate
++     import probates.awaitProbate
+
+-     import stdios.javaLangSystemStdio
++     import stdios.javaLangSystemStdio
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+-     import workingDirectories.javaBaseWorkingDirectory
++     import workingDirectories.javaBaseWorkingDirectory
+
+-     supervise:
++     supervise:
+
+-       Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
++       Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
+
+-         Acp.updated:
++         Acp.updated:
+
+=         Acp.updated:
+-           Acp.update match
++           Acp.update match
+
+=         Acp.updated:
+=           Acp.update match
+-             case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
++             case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+
+-             case other                                           => ()
++             case other                                           => ()
+
+-         Acp.permission:
++         Acp.permission:
+
+=         Acp.permission:
+-           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
++           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+
+=         Acp.permission:
+=           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+-           . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
++           . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+
+-       . apply:
++       . apply:
+
+-           val session = Acp.connection.newSession(t"/workspace")
++           val session = Acp.connection.newSession(t"/workspace")
+
+-           Acp.connection.prompt(session.sessionId, t"Fix the failing test")
++           Acp.connection.prompt(session.sessionId, t"Fix the failing test")
+
+-     ```
++     ```
+
+-     A connection needs, as contextual values, a `Monitor` (it runs a reader task and a writer
+-     task, so it sits inside `supervise`), a `Probate`, `Diagnostics`, a `WorkingDirectory` and
+-     an `Environment` for launching the agent, and a `Tactic[Acp.Error]`. Every handler is lent
+-     the session id it concerns and its payloads, read with the contextual accessors
+-     `Acp.sessionId`, `Acp.update`, `Acp.toolCall`, `Acp.options`, `Acp.path`, `Acp.line`,
+-     `Acp.limit` and `Acp.content`, and an `Emit[Acp.Error]`, so a fault raised in a handler
+-     becomes an error response to the agent rather than a hung turn.
++     接続にはコンテキスト値として次のものが必要である。
++     `Monitor`（読み取りタスクと書き込みタスクを実行するので `supervise` の内側に置く）、`Probate`、`Diagnostics`、エージェントを起動するための `WorkingDirectory` と `Environment`、そして `Tactic[Acp.Error]` である。
++     すべてのハンドラには、扱うセッションの id とそのペイロード（コンテキストのアクセサー `Acp.sessionId`、`Acp.update`、`Acp.toolCall`、`Acp.options`、`Acp.path`、`Acp.line`、`Acp.limit`、`Acp.content` で読む）、そして `Emit[Acp.Error]` が貸し出される。
++     そのため、ハンドラで発生させた誤りは、ターンを止めてしまうのではなく、エージェントへのエラー応答になる。
+
+-     Every message type is a case class or enum nested in `Acp`, each with its JSON codec in
+-     its companion: `SessionUpdate` and its eight cases, `ToolCall` and `ToolCallUpdate`,
+-     `PermissionOption`, `StopReason`, the capability records, and the content blocks, which
+-     ACP adopts from the Model Context Protocol and which are re-exported here from
+-     `synesthesia.Content`, so content crosses between the two protocols without translation.
++     すべてのメッセージ型は `Acp` の中に入れ子になったケースクラスまたは列挙型であり、それぞれコンパニオンに JSON コーデックを持つ。
++     `SessionUpdate` とその八つのケース、`ToolCall` と `ToolCallUpdate`、`PermissionOption`、`StopReason`、ケイパビリティのレコード、そしてコンテンツブロックである。
++     コンテンツブロックは ACP が Model Context Protocol から採り入れたものであり、ここでは `synesthesia.Content` から再エクスポートされている。そのためコンテンツは変換なしに二つのプロトコルの間を行き来する。
+
+-     Several of `Acp`'s members — `update`, `path`, `content`, `options`, `line`, `connection`,
+-     `Cancelled` — are names other libraries use too, which is why the umbrella exports `Acp`
+-     and not its contents. Write them as `Acp.update`, or `import Acp.*` inside the object which
+-     uses them, as the demo does.
++     `Acp` のメンバーのいくつか（`update`、`path`、`content`、`options`、`line`、`connection`、`Cancelled`）はほかのライブラリも使う名前であり、アンブレラが `Acp` をエクスポートし、その中身をエクスポートしないのはそのためである。
++     それらは `Acp.update` のように書くか、デモのように、それを使うオブジェクトの内側で `import Acp.*` と書く。
+
+-     The stdio framing is newline-delimited JSON, one compact UTF-8 message per line, split on
+-     the raw linefeed byte before any decoding. A message is delivered the moment its newline
+-     arrives: the framer peeks at the terminator and advances past it without asking for more
+-     input, so on a live pipe it never waits for the agent's next message to deliver this one.
+-     Blank lines, and the remnant of a `\r\n` terminator, are skipped.
++     標準入出力のフレーミングは改行区切りの JSON であり、一行に一つのコンパクトな UTF-8 メッセージを置き、デコードの前に生の改行バイトで分割する。
++     メッセージはその改行が届いた瞬間に配送される。
++     フレーマーは終端を覗き見て、それ以上の入力を求めずにその先へ進むので、生きたパイプ上でこのメッセージを配送するためにエージェントの次のメッセージを待つことはない。
++     空行と、`\r\n` 終端の残りは読み飛ばされる。
+
+-     The library has two source sets:
++     このライブラリには二つのソースセットがある。
+
+-     - `espionage.core` — `Acp` and the `@rpc` wire traits (`Acp.Agent`, `Acp.Client` and their
+-       parts). It is built for the JVM only, since it depends on obligatory's JSON-RPC
+-       support, and needs capture checking.
+-     - `espionage.demo` — `DemoAcpClient`, a complete command-line client, not published as a
+-       library.
++     - `espionage.core` — `Acp` と `@rpc` ワイヤトレイト（`Acp.Agent`、`Acp.Client` とその部品）。obligatory の JSON-RPC サポートに依存するため JVM 向けにだけビルドされ、キャプチャ検査を必要とする。
++     - `espionage.demo` — `DemoAcpClient`。完全なコマンドラインクライアントであり、ライブラリとしては公開されない。
+
+-     `Acp` and the wire traits are exported to the `soundness` umbrella; the demo is not. The
+-     library takes no choice-package givens of its own, but a connection needs the named
+-     imports above (`threads`, `probates`, `workingDirectories`, `environments`, and an error
+-     strategy), because `import soundness.*` imports no givens.
++     `Acp` とワイヤトレイトは `soundness` アンブレラにエクスポートされるが、デモはエクスポートされない。
++     このライブラリは独自の選択パッケージの given を持たないが、`import soundness.*` は given をインポートしないので、接続には上記の名前付きインポート（`threads`、`probates`、`workingDirectories`、`environments`、そしてエラー戦略）が必要である。
+
+- refer espionage.Acp
++ refer espionage.Acp
+
+- refer espionage.Acp.connect
++ refer espionage.Acp.connect
+
+- refer espionage.Acp.Connection
++ refer espionage.Acp.Connection
+
+- refer espionage.Acp.SessionUpdate
++ refer espionage.Acp.SessionUpdate
+
+- refer espionage.Acp.Error
++ refer espionage.Acp.Error
+
+- refer synesthesia.Content
++ refer synesthesia.Content
+
+- entry .Acp   the Agent Client Protocol: its message types, the handler registry, `connect`, and the connection
++ entry .Acp   Agent Client Protocol：そのメッセージ型、ハンドラのレジストリ、`connect`、そして接続
+
+-   detail
++   detail
+
+-       `Acp` holds the whole client. Its members fall into four groups:
++       `Acp` はクライアント全体を保持する。
++       そのメンバーは四つの群に分かれる。
+
+-       - the **protocol types**, one case class or enum per ACP structure, each with its JSON
+-         codec in its companion: the capability records (`ClientCapabilities`,
+-         `AgentCapabilities`, …), sessions (`McpServer`, `SessionMode`, `NewSessionResult`),
+-         turns (`StopReason`, `PromptResult`), updates (`SessionUpdate` and its cases), tool
+-         calls (`ToolCall`, `ToolCallUpdate`, `ToolCallContent`), plans, permissions and the
+-         filesystem and terminal results, together with the content blocks re-exported from
+-         `synesthesia.Content`;
+-       - the **handler side**: the handler types (`UpdateHandler`, `PermissionHandler`,
+-         `ReadFileHandler`, `WriteFileHandler`, and the `Terminals` bundle), the contextual
+-         accessors a handler reads (`sessionId`, `update`, `toolCall`, `options`, `path`,
+-         `line`, `limit`, `content`), the registration combinators (`updated`, `permission`,
+-         `readFile`, `writeFile`, `terminals`, `capabilities`) and the `Registry` they write to;
+-       - the **connection side**: `Endpoint`, which says where the agent is, `connect`, which
+-         opens the exchange, `Connection`, the handle it lends, reached as `connection`, and
+-         `Observer`, which sees the raw traffic;
+-       - `Error`, which the connection raises and a handler emits.
++       - **プロトコルの型**。ACP の構造ごとに一つのケースクラスまたは列挙型があり、それぞれコンパニオンに JSON コーデックを持つ：ケイパビリティのレコード（`ClientCapabilities`、`AgentCapabilities`、…）、セッション（`McpServer`、`SessionMode`、`NewSessionResult`）、ターン（`StopReason`、`PromptResult`）、更新（`SessionUpdate` とそのケース）、ツール呼び出し（`ToolCall`、`ToolCallUpdate`、`ToolCallContent`）、計画、パーミッション、ファイルシステムと端末の結果、そして `synesthesia.Content` から再エクスポートされたコンテンツブロック。
++       - **ハンドラ側**。ハンドラの型（`UpdateHandler`、`PermissionHandler`、`ReadFileHandler`、`WriteFileHandler`、および `Terminals` の束）、ハンドラが読むコンテキストのアクセサー（`sessionId`、`update`、`toolCall`、`options`、`path`、`line`、`limit`、`content`）、登録コンビネーター（`updated`、`permission`、`readFile`、`writeFile`、`terminals`、`capabilities`）、そしてそれらが書き込む `Registry`。
++       - **接続側**。エージェントの居場所を示す `Endpoint`、やりとりを開く `connect`、それが貸し出すハンドルであり `connection` として到達する `Connection`、そして生のトラフィックを見る `Observer`。
++       - 接続が発生させ、ハンドラが送出する `Error`。
+
+=       - `Error`, which the connection raises and a handler emits.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       - `Error`, which the connection raises and a handler emits.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       - `Error`, which the connection raises and a handler emits.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       - `Error`, which the connection raises and a handler emits.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       object Client:
++       object Client:
+
+-         import Acp.*
++         import Acp.*
+
+=         import Acp.*
+=
+-         def register(using Acp.Registry^): Unit =
++         def register(using Acp.Registry^): Unit =
+
+-           updated:
++           updated:
+
+-             update match
++             update match
+
+-               case AgentMessageChunk(TextContent(text, _)) => Out.print(text)
++               case AgentMessageChunk(TextContent(text, _)) => Out.print(text)
+
+-               case call: ToolCall                          => Out.println(call.title)
++               case call: ToolCall                          => Out.println(call.title)
+
+-               case _                                       => ()
++               case _                                       => ()
+
+-           readFile:
++           readFile:
+
+-             t"contents of $path"
++             t"contents of $path"
+
+=             t"contents of $path"
+-       ```
++       ```
+
+-       Registration is possible wherever an `Acp.Registry^` is in scope — the first block of
+-       `connect`, or a helper such as `register` above which takes one — so a client can split
+-       its handlers across methods.
++       登録は `Acp.Registry^` がスコープにある場所ならどこでも可能である。
++       `connect` の一つ目のブロックでも、上の `register` のようにそれを受け取るヘルパーでもよい。
++       そのためクライアントはハンドラをいくつものメソッドに分割できる。
+
+-   refer espionage.Acp.connect
++   refer espionage.Acp.connect
+
+-   refer espionage.Acp.Connection
++   refer espionage.Acp.Connection
+
+-   refer espionage.Acp.Registry
++   refer espionage.Acp.Registry
+
+-   refer espionage.Acp.SessionUpdate
++   refer espionage.Acp.SessionUpdate
+
+-   entry .version   the protocol version this library implements: `1`
+-       ACP versions are a single integer, incremented only for breaking changes. The client
+-       sends this at `initialize`, and `Connection#initialize` aborts with
+-       `Acp.Error.Reason.Incompatible` if the agent answers with any other.
++   entry .version   このライブラリが実装するプロトコルのバージョン：`1`
++       ACP のバージョンは単一の整数であり、互換性を破る変更のときにだけ増える。
++       クライアントは `initialize` でこれを送り、エージェントがほかのバージョンで答えると `Connection#initialize` は `Acp.Error.Reason.Incompatible` で中断する。
+
+-   entry .Icon   an icon's source, MIME type, sizes and theme; re-exported from `synesthesia.Content`
+-       `Acp.Icon` is `synesthesia.Content.Icon`, shared with MCP, whose page has the full account.
+-   entry .Annotations   audience, priority and modification hints on content; re-exported from `synesthesia.Content`
+-       `Acp.Annotations` is `synesthesia.Content.Annotations`.
+-   entry .Role   who a piece of content is for, `User` or `Assistant`; re-exported from `synesthesia.Content`
+-       `Acp.Role` is `synesthesia.Content.Role`.
+-   entry .ContentBlock   a block of content: text, image, audio, resource link or embedded resource; re-exported from `synesthesia.Content`
+-       `Acp.ContentBlock` is `synesthesia.Content.ContentBlock`, whose page has the full
+-       account. A prompt is a `List[ContentBlock]`, and every message and thought chunk an agent
+-       streams carries one. It is discriminated on the wire by its `type` member.
+-   entry .TextContent   a block of text, with optional annotations; re-exported from `synesthesia.Content`
+-       `Acp.TextContent` is `synesthesia.Content.TextContent`. The usual pattern for streamed
+-       text is `case Acp.AgentMessageChunk(Acp.TextContent(text, _))`, and
+-       `Connection#prompt(sessionId, text)` wraps its text in one.
+-   entry .ImageContent   a Base64 image with its MIME type, and an optional URI; re-exported from `synesthesia.Content`
+-       `Acp.ImageContent` is `synesthesia.Content.ImageContent`. Its `uri` member is ACP's
+-       addition to MCP's shape, and vanishes from the wire when unset. An agent accepts images
+-       in a prompt only if its `PromptCapabilities#image` says so.
+-   entry .AudioContent   Base64 audio with its MIME type; re-exported from `synesthesia.Content`
+-       `Acp.AudioContent` is `synesthesia.Content.AudioContent`. An agent accepts audio in a
+-       prompt only if its `PromptCapabilities#audio` says so.
+-   entry .ResourceLink   a link to a resource by URI, with its name and optional metadata; re-exported from `synesthesia.Content`
+-       `Acp.ResourceLink` is `synesthesia.Content.ResourceLink`.
+-   entry .EmbeddedResource   a resource's contents carried inline; re-exported from `synesthesia.Content`
+-       `Acp.EmbeddedResource` is `synesthesia.Content.EmbeddedResource`. An agent accepts
+-       embedded context in a prompt only if its `PromptCapabilities#embeddedContext` says so.
+-   entry .Contents   a resource's contents, as text or as a blob; re-exported from `synesthesia.Content`
+-       `Acp.Contents` is `synesthesia.Content.Contents`.
+-   entry .ResourceContents   the common shape of a resource's contents: URI, MIME type and metadata; re-exported from `synesthesia.Content`
+-       `Acp.ResourceContents` is `synesthesia.Content.ResourceContents`.
+-   entry .TextResourceContents   a resource's contents as text; re-exported from `synesthesia.Content`
+-       `Acp.TextResourceContents` is `synesthesia.Content.TextResourceContents`.
+-   entry .BlobResourceContents   a resource's contents as a Base64 blob; re-exported from `synesthesia.Content`
+-       `Acp.BlobResourceContents` is `synesthesia.Content.BlobResourceContents`.
++   entry .Icon   アイコンのソース、MIME タイプ、サイズ、テーマ。`synesthesia.Content` から再エクスポートされている
++       `Acp.Icon` は MCP と共有される `synesthesia.Content.Icon` であり、詳しい説明はそのページにある。
++   entry .Annotations   コンテンツに付ける対象者、優先度、更新のヒント。`synesthesia.Content` から再エクスポートされている
++       `Acp.Annotations` は `synesthesia.Content.Annotations` である。
++   entry .Role   コンテンツが誰に向けたものか、`User` または `Assistant`。`synesthesia.Content` から再エクスポートされている
++       `Acp.Role` は `synesthesia.Content.Role` である。
++   entry .ContentBlock   コンテンツのブロック：テキスト、画像、音声、リソースリンク、埋め込みリソース。`synesthesia.Content` から再エクスポートされている
++       `Acp.ContentBlock` は `synesthesia.Content.ContentBlock` であり、詳しい説明はそのページにある。
++       プロンプトは `List[ContentBlock]` であり、エージェントがストリームとして送るメッセージや思考のチャンクはどれも一つのブロックを運ぶ。
++       ワイヤ上ではその `type` メンバーで判別される。
++   entry .TextContent   テキストのブロック。オプショナルなアノテーションを伴う。`synesthesia.Content` から再エクスポートされている
++       `Acp.TextContent` は `synesthesia.Content.TextContent` である。
++       ストリームとして届くテキストの通常のパターンは `case Acp.AgentMessageChunk(Acp.TextContent(text, _))` であり、`Connection#prompt(sessionId, text)` はそのテキストをこれで包む。
++   entry .ImageContent   MIME タイプを伴う Base64 の画像と、オプショナルな URI。`synesthesia.Content` から再エクスポートされている
++       `Acp.ImageContent` は `synesthesia.Content.ImageContent` である。
++       その `uri` メンバーは ACP が MCP の形に追加したものであり、設定されていなければワイヤから消える。
++       エージェントがプロンプト内の画像を受け付けるのは、その `PromptCapabilities#image` がそう示す場合に限られる。
++   entry .AudioContent   MIME タイプを伴う Base64 の音声。`synesthesia.Content` から再エクスポートされている
++       `Acp.AudioContent` は `synesthesia.Content.AudioContent` である。
++       エージェントがプロンプト内の音声を受け付けるのは、その `PromptCapabilities#audio` がそう示す場合に限られる。
++   entry .ResourceLink   URI によるリソースへのリンク。その名前とオプショナルなメタデータを伴う。`synesthesia.Content` から再エクスポートされている
++       `Acp.ResourceLink` は `synesthesia.Content.ResourceLink` である。
++   entry .EmbeddedResource   インラインで運ばれるリソースの内容。`synesthesia.Content` から再エクスポートされている
++       `Acp.EmbeddedResource` は `synesthesia.Content.EmbeddedResource` である。
++       エージェントがプロンプト内の埋め込みコンテキストを受け付けるのは、その `PromptCapabilities#embeddedContext` がそう示す場合に限られる。
++   entry .Contents   テキストまたはブロブとしてのリソースの内容。`synesthesia.Content` から再エクスポートされている
++       `Acp.Contents` は `synesthesia.Content.Contents` である。
++   entry .ResourceContents   リソースの内容に共通する形：URI、MIME タイプ、メタデータ。`synesthesia.Content` から再エクスポートされている
++       `Acp.ResourceContents` は `synesthesia.Content.ResourceContents` である。
++   entry .TextResourceContents   テキストとしてのリソースの内容。`synesthesia.Content` から再エクスポートされている
++       `Acp.TextResourceContents` は `synesthesia.Content.TextResourceContents` である。
++   entry .BlobResourceContents   Base64 のブロブとしてのリソースの内容。`synesthesia.Content` から再エクスポートされている
++       `Acp.BlobResourceContents` は `synesthesia.Content.BlobResourceContents` である。
+
+-   entry .Envelope   the two members of any JSON-RPC message which decide how it is handled
++   entry .Envelope   JSON-RPC メッセージの扱い方を決める二つのメンバー
+
+=   entry .Envelope   the two members of any JSON-RPC message which decide how it is handled
+-     detail
++     detail
+
+-         A message read only for its `method`, which a response lacks, and its `id`, which a
+-         notification lacks. Both are optional, so every message decodes: no method means a
+-         response, and no id a notification. The exchange's reader uses it to route each
+-         message without knowing its shape.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder; a malformed envelope throws `Json.Error`
+-     entry #method   the method the message names, or `Unset` for a response
+-     entry #id   the id the message correlates on, as raw JSON, or `Unset` for a notification
++         `method`（応答にはない）と `id`（通知にはない）だけを読み取ったメッセージである。
++         どちらもオプショナルなので、どのメッセージもデコードできる。メソッドがなければ応答、id がなければ通知である。
++         やりとりの読み取り側はこれを使って、メッセージの形を知らずに各メッセージを振り分ける。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なエンベロープは `Json.Error` を投げる
++     entry #method   メッセージが指定するメソッド。応答では `Unset`
++     entry #id   メッセージが対応付けに使う id。生の JSON として持つ。通知では `Unset`
+
+-   entry .FsCapabilities   whether the client serves the agent's file reads and writes
++   entry .FsCapabilities   クライアントがエージェントのファイルの読み書きに応じるかどうか
+
+=   entry .FsCapabilities   whether the client serves the agent's file reads and writes
+-     detail
++     detail
+
+-         Part of `ClientCapabilities`. `Acp.connect` sets `#readTextFile` exactly when a
+-         `readFile` handler was registered and `#writeTextFile` exactly when a `writeFile`
+-         handler was, so a conformant agent never asks for an operation the client cannot do.
+-     entry #readTextFile   `true` if the client answers `fs/read_text_file`
+-     entry #writeTextFile   `true` if the client answers `fs/write_text_file`
++         `ClientCapabilities` の一部である。
++         `Acp.connect` は、`readFile` ハンドラが登録されているときにだけ `#readTextFile` を、`writeFile` ハンドラが登録されているときにだけ `#writeTextFile` を設定する。そのため、仕様に準拠したエージェントがクライアントにできない操作を求めることはない。
++     entry #readTextFile   クライアントが `fs/read_text_file` に答えるなら `true`
++     entry #writeTextFile   クライアントが `fs/write_text_file` に答えるなら `true`
+
+-   entry .ClientCapabilities   what the client tells the agent it can do, at `initialize`
++   entry .ClientCapabilities   クライアントが `initialize` でエージェントに伝える、自分にできること
+
+=   entry .ClientCapabilities   what the client tells the agent it can do, at `initialize`
+-     detail
++     detail
+
+-         Derived by `Acp.connect` from the registrations: `#fs` is present if either
+-         filesystem handler was registered, and `#terminal` is `true` if a `Terminals` bundle
+-         was. The `capabilities` combinator adjusts the derived value, last, for a client which
+-         must declare something the registrations do not imply.
++         `Acp.connect` が登録から導出する。
++         どちらかのファイルシステムハンドラが登録されていれば `#fs` が存在し、`Terminals` の束が登録されていれば `#terminal` は `true` である。
++         `capabilities` コンビネーターは、登録からは導かれないものを宣言しなければならないクライアントのために、導出された値を最後に調整する。
+
+=         must declare something the registrations do not imply.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         must declare something the registrations do not imply.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         must declare something the registrations do not imply.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         must declare something the registrations do not imply.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         import soundness.*
+=
+-         def register(using Acp.Registry^): Unit =
++         def register(using Acp.Registry^): Unit =
+
+-           Acp.readFile(t"")
++           Acp.readFile(t"")
+
+-           Acp.capabilities(_.copy(terminal = Unset))
++           Acp.capabilities(_.copy(terminal = Unset))
+
+=           Acp.capabilities(_.copy(terminal = Unset))
+-         ```
++         ```
+
+-     entry #fs   the filesystem capabilities, or `Unset` if the client serves no file operations
+-     entry #terminal   `true` if the client offers terminals, or `Unset`
++     entry #fs   ファイルシステムのケイパビリティ。クライアントがファイル操作に応じないなら `Unset`
++     entry #terminal   クライアントが端末を提供するなら `true`、そうでなければ `Unset`
+
+-   entry .PromptCapabilities   which kinds of content an agent accepts in a prompt
++   entry .PromptCapabilities   エージェントがプロンプト内で受け付けるコンテンツの種類
+
+=   entry .PromptCapabilities   which kinds of content an agent accepts in a prompt
+-     detail
++     detail
+
+-         Reported by the agent in `AgentCapabilities#promptCapabilities`. Text and resource
+-         links are always accepted; images, audio and embedded resources only where the
+-         agent says so.
+-     entry #image   whether `ImageContent` may appear in a prompt
+-     entry #audio   whether `AudioContent` may appear in a prompt
+-     entry #embeddedContext   whether `EmbeddedResource` content may appear in a prompt
++         エージェントが `AgentCapabilities#promptCapabilities` で報告する。
++         テキストとリソースリンクは常に受け付けられる。画像、音声、埋め込みリソースはエージェントがそう示す場合に限られる。
++     entry #image   プロンプトに `ImageContent` を含めてよいかどうか
++     entry #audio   プロンプトに `AudioContent` を含めてよいかどうか
++     entry #embeddedContext   プロンプトに `EmbeddedResource` のコンテンツを含めてよいかどうか
+
+-   entry .McpCapabilities   which MCP transports, beyond stdio, the agent can connect to
+-     entry #http   whether the agent connects to MCP servers over HTTP
+-     entry #sse   whether the agent connects to MCP servers over server-sent events
++   entry .McpCapabilities   エージェントが接続できる、標準入出力以外の MCP トランスポート
++     entry #http   エージェントが HTTP で MCP サーバーに接続するかどうか
++     entry #sse   エージェントが server-sent events で MCP サーバーに接続するかどうか
+
+-   entry .AgentCapabilities   what the agent tells the client it can do, at `initialize`
++   entry .AgentCapabilities   エージェントが `initialize` でクライアントに伝える、自分にできること
+
+=   entry .AgentCapabilities   what the agent tells the client it can do, at `initialize`
+-     detail
++     detail
+
+-         The agent's half of the capability negotiation, kept by the connection after the
+-         handshake and read as `Connection#agentCapabilities`. A client checks `#loadSession`
+-         before calling `Connection#loadSession`, and `#promptCapabilities` before putting
+-         anything but text and resource links in a prompt.
+-     entry #loadSession   whether the agent can resume a session with `session/load`
+-     entry #promptCapabilities   which content kinds the agent accepts in a prompt
+-     entry #mcpCapabilities   which MCP transports the agent can connect to
++         ケイパビリティのネゴシエーションのエージェント側であり、ハンドシェイクの後で接続が保持し、`Connection#agentCapabilities` として読む。
++         クライアントは `Connection#loadSession` を呼ぶ前に `#loadSession` を確認し、テキストとリソースリンク以外のものをプロンプトに入れる前に `#promptCapabilities` を確認する。
++     entry #loadSession   エージェントが `session/load` でセッションを再開できるかどうか
++     entry #promptCapabilities   エージェントがプロンプト内で受け付けるコンテンツの種類
++     entry #mcpCapabilities   エージェントが接続できる MCP トランスポート
+
+-   entry .AuthMethod   one way the agent offers to authenticate the client
++   entry .AuthMethod   エージェントが提示する、クライアントを認証する方法の一つ
+
+=   entry .AuthMethod   one way the agent offers to authenticate the client
+-     detail
++     detail
+
+-         Listed in `InitializeResult#authMethods`, and so in `Connection#authMethods`. When a
+-         request fails with `Acp.Error.Reason.AuthRequired`, the client answers with
+-         `Connection#authenticate(method.id)`.
+-     entry #id   the identifier to pass to `Connection#authenticate`
+-     entry #name   the method's display name
+-     entry #description   a longer description, if the agent gives one
++         `InitializeResult#authMethods` に、したがって `Connection#authMethods` に列挙される。
++         リクエストが `Acp.Error.Reason.AuthRequired` で失敗したとき、クライアントは `Connection#authenticate(method.id)` で応じる。
++     entry #id   `Connection#authenticate` に渡す識別子
++     entry #name   方法の表示名
++     entry #description   より長い説明（エージェントが与えた場合）
+
+-   entry .InitializeResult   the agent's answer to `initialize`: its protocol version, capabilities and auth methods
++   entry .InitializeResult   `initialize` に対するエージェントの応答：そのプロトコルバージョン、ケイパビリティ、認証方法
+
+=   entry .InitializeResult   the agent's answer to `initialize`: its protocol version, capabilities and auth methods
+-     detail
++     detail
+
+-         What `Connection#initialize` returns. `Acp.connect` performs the handshake itself, so a
+-         client reads the agent's answer as `Connection#agentCapabilities` and
+-         `Connection#authMethods` rather than handling this directly.
+-     entry .decodable   the derived JSON decoder; a malformed result throws `Json.Error`
+-     entry #protocolVersion   the version the agent speaks, which must be `Acp.version`
+-     entry #agentCapabilities   what the agent can do, if it says
+-     entry #authMethods   the ways the agent offers to authenticate, if any
+-     entry #_meta   the agent's implementation-defined metadata, as raw JSON
++         `Connection#initialize` が返すものである。
++         `Acp.connect` はハンドシェイクを自分で行うので、クライアントはこれを直接扱うのではなく、エージェントの応答を `Connection#agentCapabilities` と `Connection#authMethods` として読む。
++     entry .decodable   導出された JSON デコーダー。不正な結果は `Json.Error` を投げる
++     entry #protocolVersion   エージェントが話すバージョン。`Acp.version` でなければならない
++     entry #agentCapabilities   エージェントにできること（示された場合）
++     entry #authMethods   エージェントが提示する認証の方法（あれば）
++     entry #_meta   エージェントの実装定義のメタデータ。生の JSON として持つ
+
+-   entry .EnvVariable   an environment variable, by name and value
++   entry .EnvVariable   名前と値で示す環境変数
+
+=   entry .EnvVariable   an environment variable, by name and value
+-     detail
++     detail
+
+-         Carried by `McpServer#env` for an MCP server the agent launches, and by a terminal the
+-         agent asks the client to create (`Terminals#create`).
+-     entry #name   the variable's name
+-     entry #value   the variable's value
++         エージェントが起動する MCP サーバーについては `McpServer#env` が、エージェントがクライアントに作成を求める端末については（`Terminals#create`）これを運ぶ。
++     entry #name   変数の名前
++     entry #value   変数の値
+
+-   entry .McpServer   an MCP server the client wants the agent to connect to, by its launch command
++   entry .McpServer   クライアントがエージェントに接続させたい MCP サーバー。その起動コマンドで示す
+
+=   entry .McpServer   an MCP server the client wants the agent to connect to, by its launch command
+-     detail
++     detail
+
+-         Passed to `Connection#newSession` or `Connection#loadSession`: the agent launches each
+-         server with the stdio transport and makes its tools available within the session.
++         `Connection#newSession` または `Connection#loadSession` に渡す。
++         エージェントは各サーバーを標準入出力のトランスポートで起動し、そのツールをセッション内で使えるようにする。
+
+=         server with the stdio transport and makes its tools available within the session.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         server with the stdio transport and makes its tools available within the session.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         server with the stdio transport and makes its tools available within the session.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         server with the stdio transport and makes its tools available within the session.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         val server = Acp.McpServer(t"files", t"mcp-files", List(t"--root", t"/workspace"))
++         val server = Acp.McpServer(t"files", t"mcp-files", List(t"--root", t"/workspace"))
+
+-         Acp.connection.newSession(t"/workspace", List(server))
++         Acp.connection.newSession(t"/workspace", List(server))
+
+=         Acp.connection.newSession(t"/workspace", List(server))
+-         ```
++         ```
+
+-     entry #name   the server's name, as the agent will refer to it
+-     entry #command   the command which launches the server
+-     entry #args   the command's arguments
+-     entry #env   environment variables to set for the server
++     entry #name   エージェントがそれを参照するときのサーバーの名前
++     entry #command   サーバーを起動するコマンド
++     entry #args   コマンドの引数
++     entry #env   サーバーのために設定する環境変数
+
+-   entry .SessionMode   one mode an agent can work in, such as asking before every edit
+-     entry #id   the identifier to pass to `Connection#setMode`
+-     entry #name   the mode's display name
+-     entry #description   a longer description, if the agent gives one
++   entry .SessionMode   エージェントが作業できるモードの一つ。編集のたびに確認するモードなど
++     entry #id   `Connection#setMode` に渡す識別子
++     entry #name   モードの表示名
++     entry #description   より長い説明（エージェントが与えた場合）
+
+-   entry .SessionModeState   the modes a session offers, and which is current
++   entry .SessionModeState   セッションが提供するモードと、現在のモード
+
+=   entry .SessionModeState   the modes a session offers, and which is current
+-     detail
++     detail
+
+-         Reported in `NewSessionResult#modes`. The current mode changes with
+-         `Connection#setMode`, or at the agent's own initiative, reported as a
+-         `CurrentModeUpdate`.
+-     entry #currentModeId   the id of the mode the session is in
+-     entry #availableModes   every mode the session may switch to
++         `NewSessionResult#modes` で報告される。
++         現在のモードは `Connection#setMode` によって、あるいはエージェント自身の判断で変わり、後者は `CurrentModeUpdate` として報告される。
++     entry #currentModeId   セッションが現在いるモードの id
++     entry #availableModes   セッションが切り替えられるすべてのモード
+
+-   entry .NewSessionResult   the agent's answer to `session/new`: the session's id, and its modes
++   entry .NewSessionResult   `session/new` に対するエージェントの応答：セッションの id とそのモード
+
+=   entry .NewSessionResult   the agent's answer to `session/new`: the session's id, and its modes
+-     detail
++     detail
+
+-         Returned by `Connection#newSession`. `#sessionId` is what every later call about the
+-         session — `prompt`, `cancel`, `setMode`, `loadSession` — takes, and what every handler
+-         is lent as `Acp.sessionId`.
+-     entry .decodable   the derived JSON decoder; a malformed result throws `Json.Error`
+-     entry #sessionId   the new session's identifier
+-     entry #modes   the session's modes, if the agent offers any
+-     entry #_meta   the agent's implementation-defined metadata, as raw JSON
++         `Connection#newSession` が返す。
++         `#sessionId` は、そのセッションに関する以後のすべての呼び出し（`prompt`、`cancel`、`setMode`、`loadSession`）が取るものであり、すべてのハンドラに `Acp.sessionId` として貸し出されるものである。
++     entry .decodable   導出された JSON デコーダー。不正な結果は `Json.Error` を投げる
++     entry #sessionId   新しいセッションの識別子
++     entry #modes   セッションのモード（エージェントが提供する場合）
++     entry #_meta   エージェントの実装定義のメタデータ。生の JSON として持つ
+
+-   entry .StopReason   why a prompt turn ended: `EndTurn`, `MaxTokens`, `MaxTurnRequests`, `Refusal` or `Cancelled`
++   entry .StopReason   プロンプトのターンが終わった理由：`EndTurn`、`MaxTokens`、`MaxTurnRequests`、`Refusal`、`Cancelled`
+
+=   entry .StopReason   why a prompt turn ended: `EndTurn`, `MaxTokens`, `MaxTurnRequests`, `Refusal` or `Cancelled`
+-     detail
++     detail
+
+-         What `Connection#prompt` returns, once the agent has finished everything it did in the
+-         turn. `EndTurn` means the agent finished; `MaxTokens` and `MaxTurnRequests` that it ran
+-         out of budget, in tokens or in model requests; `Refusal` that it declined to go on;
+-         and `Cancelled` that the client cancelled the turn with `Connection#cancel`, which the
+-         agent is obliged to answer this way. On the wire the cases are `end_turn`,
+-         `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
++         エージェントがそのターンで行ったすべてを終えた時点で `Connection#prompt` が返すものである。
++         `EndTurn` はエージェントが完了したことを意味する。
++         `MaxTokens` と `MaxTurnRequests` は、トークンまたはモデルへのリクエストの予算を使い果たしたことを意味する。
++         `Refusal` は続行を断ったことを意味する。
++         `Cancelled` はクライアントが `Connection#cancel` でターンを取り消したことを意味し、エージェントはこの方法で答える義務がある。
++         ワイヤ上でのケースは `end_turn`、`max_tokens`、`max_turn_requests`、`refusal`、`cancelled` である。
+
+=         `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         Acp.connection.prompt(sessionId, t"Run the tests") match
++         Acp.connection.prompt(sessionId, t"Run the tests") match
+
+-           case Acp.StopReason.EndTurn   => Out.println(t"done")
++           case Acp.StopReason.EndTurn   => Out.println(t"done")
+
+-           case Acp.StopReason.Cancelled => Out.println(t"cancelled")
++           case Acp.StopReason.Cancelled => Out.println(t"cancelled")
+
+-           case other                    => Out.println(t"stopped: $other")
++           case other                    => Out.println(t"stopped: $other")
+
+=           case other                    => Out.println(t"stopped: $other")
+-         ```
++         ```
+
+-     entry .encodable   encodes a stop reason as its wire string
+-     entry .decodable   decodes a stop reason from its wire string, raising `Json.Error` for any other
+-         Needs a `Tactic[Json.Error]`, which an unknown string raises through with the reason
+-         `OutOfRange`.
++     entry .encodable   停止理由をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   停止理由をワイヤ上の文字列からデコードする。それ以外の文字列には `Json.Error` を発生させる
++         `Tactic[Json.Error]` を必要とし、未知の文字列はそれを通して理由 `OutOfRange` のエラーを発生させる。
+
+-   entry .PromptResult   the agent's answer to `session/prompt`: why the turn ended
++   entry .PromptResult   `session/prompt` に対するエージェントの応答：ターンが終わった理由
+
+=   entry .PromptResult   the agent's answer to `session/prompt`: why the turn ended
+-     detail
++     detail
+
+-         `Connection#prompt` returns only its `#stopReason`.
+-     entry .decodable   the derived JSON decoder; a malformed result throws `Json.Error`
+-     entry #stopReason   why the turn ended
+-     entry #_meta   the agent's implementation-defined metadata, as raw JSON
++         `Connection#prompt` はその `#stopReason` だけを返す。
++     entry .decodable   導出された JSON デコーダー。不正な結果は `Json.Error` を投げる
++     entry #stopReason   ターンが終わった理由
++     entry #_meta   エージェントの実装定義のメタデータ。生の JSON として持つ
+
+-   entry .ToolKind   the kind of a tool call: read, edit, delete, move, search, execute, think, fetch or other
++   entry .ToolKind   ツール呼び出しの種類：読み取り、編集、削除、移動、検索、実行、思考、取得、その他
+
+=   entry .ToolKind   the kind of a tool call: read, edit, delete, move, search, execute, think, fetch or other
+-     detail
++     detail
+
+-         Reported in `ToolCall#kind`, so that a client can show a tool call with a fitting icon
+-         or decide how cautious to be about permitting it. The cases are `Read`, `Edit`,
+-         `Delete`, `Move`, `Search`, `Execute`, `Think`, `Fetch` and `Other`; on the wire each
+-         is its lower-case name.
+-     entry .encodable   encodes a kind as its wire string
+-     entry .decodable   decodes a kind from its wire string; an unknown kind is `Other`
+-         Unlike the other enums' decoders, it never fails: the protocol lets agents add kinds,
+-         so one this library does not know reads as `ToolKind.Other`.
++         `ToolCall#kind` で報告される。これによりクライアントは、ツール呼び出しをふさわしいアイコンで表示したり、それを認めることにどれだけ慎重になるかを決めたりできる。
++         ケースは `Read`、`Edit`、`Delete`、`Move`、`Search`、`Execute`、`Think`、`Fetch`、`Other` であり、ワイヤ上ではそれぞれ小文字の名前になる。
++     entry .encodable   種類をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   種類をワイヤ上の文字列からデコードする。未知の種類は `Other` になる
++         ほかの列挙型のデコーダーと違い、これは決して失敗しない。
++         プロトコルはエージェントが種類を追加することを認めているので、このライブラリが知らない種類は `ToolKind.Other` として読まれる。
+
+-   entry .ToolCallStatus   where a tool call has got to: `Pending`, `InProgress`, `Completed`, `Failed` or `Cancelled`
++   entry .ToolCallStatus   ツール呼び出しの進み具合：`Pending`、`InProgress`、`Completed`、`Failed`、`Cancelled`
+
+=   entry .ToolCallStatus   where a tool call has got to: `Pending`, `InProgress`, `Completed`, `Failed` or `Cancelled`
+-     detail
++     detail
+
+-         Reported in `ToolCall#status` and updated by `ToolCallUpdate#status`. On the wire the
+-         cases are `pending`, `in_progress`, `completed`, `failed` and `cancelled`.
+-     entry .encodable   encodes a status as its wire string
+-     entry .decodable   decodes a status from its wire string, raising `Json.Error` for any other
++         `ToolCall#status` で報告され、`ToolCallUpdate#status` で更新される。
++         ワイヤ上でのケースは `pending`、`in_progress`、`completed`、`failed`、`cancelled` である。
++     entry .encodable   状態をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   状態をワイヤ上の文字列からデコードする。それ以外の文字列には `Json.Error` を発生させる
+
+-   entry .ToolCallLocation   a file, and optionally a line, that a tool call is working on
++   entry .ToolCallLocation   ツール呼び出しが作業しているファイルと、場合によってはその行
+
+=   entry .ToolCallLocation   a file, and optionally a line, that a tool call is working on
+-     detail
++     detail
+
+-         Listed in `ToolCall#locations`, so that a client can follow the agent through the
+-         files it reads and edits.
+-     entry #path   the file's absolute path
+-     entry #line   the line within it, if the agent says
++         `ToolCall#locations` に列挙される。これによりクライアントは、エージェントが読み、編集するファイルを追いかけられる。
++     entry #path   ファイルの絶対パス
++     entry #line   その中の行（エージェントが示した場合）
+
+-   entry .ToolCallContent   what a tool call produced: content, a file diff, or a terminal
++   entry .ToolCallContent   ツール呼び出しが生み出したもの：コンテンツ、ファイルの差分、または端末
+
+=   entry .ToolCallContent   what a tool call produced: content, a file diff, or a terminal
+-     detail
++     detail
+
+-         A sealed hierarchy of three cases, discriminated on the wire by a `type` member:
+-         `ToolContent` (`content`) wraps an ordinary `ContentBlock`; `ToolDiff` (`diff`) is a
+-         structured edit to one file; `ToolTerminal` (`terminal`) refers to a terminal the
+-         client created for the agent, whose output the client can show.
++         三つのケースからなるシールされた階層であり、ワイヤ上では `type` メンバーで判別される。
++         `ToolContent`（`content`）は通常の `ContentBlock` を包む。
++         `ToolDiff`（`diff`）は一つのファイルへの構造化された編集である。
++         `ToolTerminal`（`terminal`）はクライアントがエージェントのために作成した端末を参照し、クライアントはその出力を表示できる。
+
+=         client created for the agent, whose output the client can show.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         client created for the agent, whose output the client can show.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         client created for the agent, whose output the client can show.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         client created for the agent, whose output the client can show.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         def describe(content: Acp.ToolCallContent): Text = content match
++         def describe(content: Acp.ToolCallContent): Text = content match
+
+-           case Acp.ToolContent(Acp.TextContent(text, _)) => text
++           case Acp.ToolContent(Acp.TextContent(text, _)) => text
+
+-           case Acp.ToolContent(_)                        => t"(content)"
++           case Acp.ToolContent(_)                        => t"(content)"
+
+-           case Acp.ToolDiff(path, _, _)                  => t"edited $path"
++           case Acp.ToolDiff(path, _, _)                  => t"edited $path"
+
+-           case Acp.ToolTerminal(terminalId)              => t"terminal $terminalId"
++           case Acp.ToolTerminal(terminalId)              => t"terminal $terminalId"
+
+=           case Acp.ToolTerminal(terminalId)              => t"terminal $terminalId"
+-         ```
++         ```
+
+-     entry .encodable   encodes any of the three cases with its `type` discriminator
+-     entry .decodable   decodes by the `type` member, raising `Json.Error` for an unknown type
++     entry .encodable   三つのケースのいずれかを、その `type` 判別子とともにエンコードする
++     entry .decodable   `type` メンバーによってデコードする。未知の種類には `Json.Error` を発生させる
+
+-   entry .ToolContent   tool output as an ordinary content block
++   entry .ToolContent   通常のコンテンツブロックとしてのツールの出力
+
+=   entry .ToolContent   tool output as an ordinary content block
+-     detail
++     detail
+
+-         A `ToolCallContent` case, `type` `content` on the wire.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder; malformed content throws `Json.Error`
+-     entry #content   the content block
++         `ToolCallContent` のケースであり、ワイヤ上では `type` が `content` である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正なコンテンツは `Json.Error` を投げる
++     entry #content   コンテンツブロック
+
+-   entry .ToolDiff   tool output as a structured edit to one file: its old text and its new
++   entry .ToolDiff   一つのファイルへの構造化された編集としてのツールの出力：その古いテキストと新しいテキスト
+
+=   entry .ToolDiff   tool output as a structured edit to one file: its old text and its new
+-     detail
++     detail
+
+-         A `ToolCallContent` case, `type` `diff` on the wire. `#oldText` is `Unset` for a file
+-         the tool created.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder; a malformed diff throws `Json.Error`
+-     entry #path   the file's absolute path
+-     entry #oldText   the file's text before the edit, or `Unset` for a new file
+-     entry #newText   the file's text after the edit
++         `ToolCallContent` のケースであり、ワイヤ上では `type` が `diff` である。
++         ツールが作成したファイルでは `#oldText` は `Unset` である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー。不正な差分は `Json.Error` を投げる
++     entry #path   ファイルの絶対パス
++     entry #oldText   編集前のファイルのテキスト。新しいファイルなら `Unset`
++     entry #newText   編集後のファイルのテキスト
+
+-   entry .ToolTerminal   tool output as a reference to a terminal the client created
++   entry .ToolTerminal   クライアントが作成した端末への参照としてのツールの出力
+
+=   entry .ToolTerminal   tool output as a reference to a terminal the client created
+-     detail
++     detail
+
+-         A `ToolCallContent` case, `type` `terminal` on the wire. The id is one `Terminals#create`
+-         returned, so the client can show that terminal's output alongside the tool call.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #terminalId   the terminal's id
++         `ToolCallContent` のケースであり、ワイヤ上では `type` が `terminal` である。
++         その id は `Terminals#create` が返したものなので、クライアントはその端末の出力をツール呼び出しと並べて表示できる。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #terminalId   端末の id
+
+-   entry .ToolCall   a tool call as the agent first reports it: the `tool_call` session update
++   entry .ToolCall   エージェントが最初に報告する時点のツール呼び出し：`tool_call` セッション更新
+
+=   entry .ToolCall   a tool call as the agent first reports it: the `tool_call` session update
+-     detail
++     detail
+
+-         A `SessionUpdate` case. Only the id and the title are required; everything else may be
+-         filled in later by a `ToolCallUpdate` with the same `#toolCallId`, so a client which
+-         displays tool calls keeps them by id and merges each update in.
++         `SessionUpdate` のケースである。
++         必須なのは id とタイトルだけであり、それ以外はすべて、同じ `#toolCallId` を持つ `ToolCallUpdate` によって後から埋められてよい。
++         そのため、ツール呼び出しを表示するクライアントはそれらを id で保持し、各更新をそこに統合する。
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=
+-         def register(using Acp.Registry^): Unit = Acp.updated:
++         def register(using Acp.Registry^): Unit = Acp.updated:
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=
+=         def register(using Acp.Registry^): Unit = Acp.updated:
+-           Acp.update match
++           Acp.update match
+
+-             case call: Acp.ToolCall =>
++             case call: Acp.ToolCall =>
+
+-               Out.println(t"${call.title} (${call.kind.let(_.show).or(t"unknown")})")
++               Out.println(t"${call.title} (${call.kind.let(_.show).or(t"unknown")})")
+
+-             case update: Acp.ToolCallUpdate =>
++             case update: Acp.ToolCallUpdate =>
+
+-               Out.println(t"${update.toolCallId}: ${update.status.let(_.show).or(t"unchanged")}")
++               Out.println(t"${update.toolCallId}: ${update.status.let(_.show).or(t"unchanged")}")
+
+-             case _ => ()
++             case _ => ()
+
+=             case _ => ()
+-         ```
++         ```
+
+-     entry .decodable   the derived JSON decoder; a malformed tool call throws `Json.Error`
+-     entry #toolCallId   the id later updates and permission requests refer to it by
+-     entry #title   a human-readable description of what the tool is doing
+-     entry #kind   the kind of tool, if the agent says
+-     entry #status   where the call has got to, if the agent says
+-     entry #content   what the call has produced so far
+-     entry #locations   the files the call is working on
+-     entry #rawInput   the tool's input, as raw JSON
+-     entry #rawOutput   the tool's output, as raw JSON
++     entry .decodable   導出された JSON デコーダー。不正なツール呼び出しは `Json.Error` を投げる
++     entry #toolCallId   後の更新やパーミッションのリクエストがこれを参照するのに使う id
++     entry #title   ツールが何をしているかを人間が読める形で記述したもの
++     entry #kind   ツールの種類（エージェントが示した場合）
++     entry #status   呼び出しの進み具合（エージェントが示した場合）
++     entry #content   呼び出しがこれまでに生み出したもの
++     entry #locations   呼び出しが作業しているファイル
++     entry #rawInput   生の JSON としてのツールの入力
++     entry #rawOutput   生の JSON としてのツールの出力
+
+-   entry .ToolCallUpdate   a later report about a tool call, or the tool call a permission request concerns
++   entry .ToolCallUpdate   ツール呼び出しについての後からの報告、またはパーミッションのリクエストが扱うツール呼び出し
+
+=   entry .ToolCallUpdate   a later report about a tool call, or the tool call a permission request concerns
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `tool_call_update` on the wire. Every member but
+-         `#toolCallId` is optional, and a member which is present replaces what was reported
+-         before, so `#content` is the whole content, not an addition to it. The same shape
+-         carries the tool call a permission request is about, lent to a permission handler as
+-         `Acp.toolCall`.
+-     entry .decodable   the derived JSON decoder; a malformed update throws `Json.Error`
+-     entry #toolCallId   the id of the tool call being updated
+-     entry #title   a new title, or `Unset` to keep the old
+-     entry #kind   a new kind, or `Unset` to keep the old
+-     entry #status   a new status, or `Unset` to keep the old
+-     entry #content   the call's whole content, replacing what was reported, or `Unset` to keep it
+-     entry #locations   the call's whole list of locations, or `Unset` to keep it
+-     entry #rawInput   the tool's input, as raw JSON, or `Unset` to keep it
+-     entry #rawOutput   the tool's output, as raw JSON, or `Unset` to keep it
++         `SessionUpdate` のケースであり、ワイヤ上では `tool_call_update` である。
++         `#toolCallId` 以外のメンバーはすべてオプショナルであり、存在するメンバーは以前に報告されたものを置き換える。
++         そのため `#content` はコンテンツ全体であり、それへの追加ではない。
++         同じ形が、パーミッションのリクエストが対象とするツール呼び出しも運び、パーミッションハンドラに `Acp.toolCall` として貸し出される。
++     entry .decodable   導出された JSON デコーダー。不正な更新は `Json.Error` を投げる
++     entry #toolCallId   更新されるツール呼び出しの id
++     entry #title   新しいタイトル。古いものを保つなら `Unset`
++     entry #kind   新しい種類。古いものを保つなら `Unset`
++     entry #status   新しい状態。古いものを保つなら `Unset`
++     entry #content   報告済みのものを置き換える、呼び出しのコンテンツ全体。保つなら `Unset`
++     entry #locations   呼び出しの位置のリスト全体。保つなら `Unset`
++     entry #rawInput   生の JSON としてのツールの入力。保つなら `Unset`
++     entry #rawOutput   生の JSON としてのツールの出力。保つなら `Unset`
+
+-   entry .PlanPriority   how important a step of the agent's plan is: `High`, `Medium` or `Low`
+-     entry .encodable   encodes a priority as its wire string
+-     entry .decodable   decodes a priority from its wire string, raising `Json.Error` for any other
++   entry .PlanPriority   エージェントの計画の一ステップの重要度：`High`、`Medium`、`Low`
++     entry .encodable   優先度をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   優先度をワイヤ上の文字列からデコードする。それ以外の文字列には `Json.Error` を発生させる
+
+-   entry .PlanStatus   where a step of the agent's plan has got to: `Pending`, `InProgress` or `Completed`
+-     entry .encodable   encodes a status as its wire string
+-     entry .decodable   decodes a status from its wire string, raising `Json.Error` for any other
++   entry .PlanStatus   エージェントの計画の一ステップの進み具合：`Pending`、`InProgress`、`Completed`
++     entry .encodable   状態をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   状態をワイヤ上の文字列からデコードする。それ以外の文字列には `Json.Error` を発生させる
+
+-   entry .PlanEntry   one step of the agent's plan: what it is, how important, and how far along
+-     entry #content   a human-readable description of the step
+-     entry #priority   how important the step is
+-     entry #status   where the step has got to
++   entry .PlanEntry   エージェントの計画の一ステップ：その内容、重要度、進み具合
++     entry #content   ステップを人間が読める形で記述したもの
++     entry #priority   ステップの重要度
++     entry #status   ステップの進み具合
+
+-   entry .AvailableCommand   a slash command the agent offers in a session, with its description
++   entry .AvailableCommand   エージェントがセッションで提供するスラッシュコマンドと、その説明
+
+=   entry .AvailableCommand   a slash command the agent offers in a session, with its description
+-     detail
++     detail
+
+-         Listed in an `AvailableCommandsUpdate`, so that a client can offer the commands for
+-         completion as the user types a prompt.
+-     entry #name   the command's name, without its slash
+-     entry #description   what the command does
+-     entry #input   the command's input specification, as raw JSON, if it takes input
++         `AvailableCommandsUpdate` に列挙される。これによりクライアントは、ユーザーがプロンプトを入力する際にコマンドを補完候補として提示できる。
++     entry #name   スラッシュを除いたコマンドの名前
++     entry #description   コマンドが何をするか
++     entry #input   コマンドが入力を取る場合の、生の JSON としての入力の仕様
+
+-   entry .SessionUpdate   one `session/update` notification: something the agent reports about a session as it works
++   entry .SessionUpdate   一つの `session/update` 通知：作業中のエージェントがセッションについて報告するもの
+
+=   entry .SessionUpdate   one `session/update` notification: something the agent reports about a session as it works
+-     detail
++     detail
+
+-         A sealed hierarchy of the eight things an agent streams during a turn — and, during
+-         `Connection#loadSession`, replays from a resumed one — discriminated on the wire by
+-         the `sessionUpdate` member:
++         エージェントがターン中にストリームとして送る（そして `Connection#loadSession` の間には再開したセッションから再生する）八つのものからなるシールされた階層であり、ワイヤ上では `sessionUpdate` メンバーで判別される。
+
+-         ```tabular
++         ```tabular
+
+-         column  Case
++         column  ケース
+
+-         column  `sessionUpdate`
++         column  `sessionUpdate`
+
+-         column  Update
+-         row  `UserMessageChunk`  `user_message_chunk`  a piece of the user's own message, in a replayed session
+-         row  `AgentMessageChunk`  `agent_message_chunk`  a piece of the agent's answer
+-         row  `AgentThoughtChunk`  `agent_thought_chunk`  a piece of its reasoning
+-         row  `ToolCall`  `tool_call`  a tool call reported
+-         row  `ToolCallUpdate`  `tool_call_update`  a later change to a tool call
+-         row  `Plan`  `plan`  the agent's plan, in full
+-         row  `AvailableCommandsUpdate`  `available_commands_update`  the slash commands now offered
+-         row  `CurrentModeUpdate`  `current_mode_update`  the session's mode has changed
++         column  更新
++         row  `UserMessageChunk`  `user_message_chunk`  再生されたセッションでの、ユーザー自身のメッセージの一部
++         row  `AgentMessageChunk`  `agent_message_chunk`  エージェントの回答の一部
++         row  `AgentThoughtChunk`  `agent_thought_chunk`  その推論の一部
++         row  `ToolCall`  `tool_call`  報告されたツール呼び出し
++         row  `ToolCallUpdate`  `tool_call_update`  ツール呼び出しへの後からの変更
++         row  `Plan`  `plan`  エージェントの計画の全体
++         row  `AvailableCommandsUpdate`  `available_commands_update`  現在提供されているスラッシュコマンド
++         row  `CurrentModeUpdate`  `current_mode_update`  セッションのモードが変わった
+
+=         row  `CurrentModeUpdate`  `current_mode_update`  the session's mode has changed
+-         ```
++         ```
+
+-         Updates reach the handler registered with `Acp.updated` in the order the agent sent
+-         them: they are dispatched on the connection's reader task itself, not on spawned
+-         tasks, since the order of chunks matters. A handler should therefore return promptly,
+-         and must not block on a request of the same connection.
++         更新は、エージェントが送った順に `Acp.updated` で登録されたハンドラに届く。
++         チャンクの順序が重要なので、更新は起動された別のタスクではなく、接続の読み取りタスクそのものでディスパッチされる。
++         そのためハンドラは速やかに戻るべきであり、同じ接続のリクエストでブロックしてはならない。
+
+=         and must not block on a request of the same connection.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         and must not block on a request of the same connection.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         and must not block on a request of the same connection.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         and must not block on a request of the same connection.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         and must not block on a request of the same connection.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=
+-         def register(using Acp.Registry^): Unit = Acp.updated:
++         def register(using Acp.Registry^): Unit = Acp.updated:
+
+=         and must not block on a request of the same connection.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=
+=         def register(using Acp.Registry^): Unit = Acp.updated:
+-           Acp.update match
++           Acp.update match
+
+=         def register(using Acp.Registry^): Unit = Acp.updated:
+=           Acp.update match
+-             case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
++             case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+
+-             case Acp.AgentThoughtChunk(Acp.TextContent(text, _)) => Out.print(t"(thinking) $text")
++             case Acp.AgentThoughtChunk(Acp.TextContent(text, _)) => Out.print(t"(thinking) $text")
+
+-             case Acp.Plan(entries)                               => entries.each { entry => Out.println(entry.content) }
++             case Acp.Plan(entries)                               => entries.each { entry => Out.println(entry.content) }
+
+-             case Acp.CurrentModeUpdate(modeId)                   => Out.println(t"mode: $modeId")
++             case Acp.CurrentModeUpdate(modeId)                   => Out.println(t"mode: $modeId")
+
+-             case _                                               => ()
++             case _                                               => ()
+
+=             case _                                               => ()
+-         ```
++         ```
+
+-     refer espionage.Acp.updated
++     refer espionage.Acp.updated
+
+-     refer espionage.Acp.update
++     refer espionage.Acp.update
+
+-     entry .encodable   encodes any update with its `sessionUpdate` discriminator
+-     entry .decodable   decodes by the `sessionUpdate` member, raising `Json.Error` for an unknown kind
++     entry .encodable   任意の更新を、その `sessionUpdate` 判別子とともにエンコードする
++     entry .decodable   `sessionUpdate` メンバーによってデコードする。未知の種類には `Json.Error` を発生させる
+
+-   entry .UserMessageChunk   a piece of the user's message, as an agent replays a resumed session
++   entry .UserMessageChunk   エージェントが再開したセッションを再生するときの、ユーザーのメッセージの一部
+
+=   entry .UserMessageChunk   a piece of the user's message, as an agent replays a resumed session
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `user_message_chunk` on the wire.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #content   the piece of content
++         `SessionUpdate` のケースであり、ワイヤ上では `user_message_chunk` である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #content   コンテンツの一部
+
+-   entry .AgentMessageChunk   a piece of the agent's answer, streamed as it is written
++   entry .AgentMessageChunk   書かれるそばからストリームとして届く、エージェントの回答の一部
+
+=   entry .AgentMessageChunk   a piece of the agent's answer, streamed as it is written
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `agent_message_chunk` on the wire. A turn's answer arrives as
+-         many chunks, in order; printing each `TextContent` as it arrives shows the answer as
+-         the agent writes it.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #content   the piece of content, usually a `TextContent`
++         `SessionUpdate` のケースであり、ワイヤ上では `agent_message_chunk` である。
++         ターンの回答は多数のチャンクとして順に届く。
++         届いた `TextContent` をそのつど出力すれば、エージェントが書くとおりに回答が表示される。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #content   コンテンツの一部。通常は `TextContent`
+
+-   entry .AgentThoughtChunk   a piece of the agent's reasoning, streamed as it thinks
++   entry .AgentThoughtChunk   考えるそばからストリームとして届く、エージェントの推論の一部
+
+=   entry .AgentThoughtChunk   a piece of the agent's reasoning, streamed as it thinks
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `agent_thought_chunk` on the wire: text a client may show
+-         apart from the answer, or not at all.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #content   the piece of content
++         `SessionUpdate` のケースであり、ワイヤ上では `agent_thought_chunk` である。
++         クライアントはこのテキストを回答とは別に表示してもよいし、まったく表示しなくてもよい。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #content   コンテンツの一部
+
+-   entry .Plan   the agent's plan for the turn, in full
++   entry .Plan   そのターンに対するエージェントの計画の全体
+
+=   entry .Plan   the agent's plan for the turn, in full
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `plan` on the wire. Each report is the whole plan, replacing
+-         the last, not a change to it.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #entries   the plan's steps, in order
++         `SessionUpdate` のケースであり、ワイヤ上では `plan` である。
++         各報告は計画の全体であり、直前のものを置き換える。それへの変更ではない。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #entries   計画のステップ（順に）
+
+-   entry .AvailableCommandsUpdate   the slash commands the agent now offers in the session
++   entry .AvailableCommandsUpdate   エージェントがセッションで現在提供しているスラッシュコマンド
+
+=   entry .AvailableCommandsUpdate   the slash commands the agent now offers in the session
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `available_commands_update` on the wire. Each report is the
+-         whole list.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #availableCommands   the commands now offered
++         `SessionUpdate` のケースであり、ワイヤ上では `available_commands_update` である。
++         各報告はリストの全体である。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #availableCommands   現在提供されているコマンド
+
+-   entry .CurrentModeUpdate   the session's mode has changed
++   entry .CurrentModeUpdate   セッションのモードが変わったこと
+
+=   entry .CurrentModeUpdate   the session's mode has changed
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `current_mode_update` on the wire, sent when the mode changes
+-         at the agent's initiative or in answer to `Connection#setMode`.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #currentModeId   the id of the mode the session is now in
++         `SessionUpdate` のケースであり、ワイヤ上では `current_mode_update` である。
++         モードがエージェントの判断で、あるいは `Connection#setMode` に応じて変わったときに送られる。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #currentModeId   セッションが現在いるモードの id
+
+-   entry .PermissionOptionKind   what choosing a permission option means: allow or reject, once or always
++   entry .PermissionOptionKind   パーミッションの選択肢を選ぶことの意味：一度だけ、または常に、認めるか拒否するか
+
+=   entry .PermissionOptionKind   what choosing a permission option means: allow or reject, once or always
+-     detail
++     detail
+
+-         The cases are `AllowOnce`, `AllowAlways`, `RejectOnce` and `RejectAlways` (on the wire
+-         `allow_once`, `allow_always`, `reject_once` and `reject_always`). The kinds let a
+-         client pick an option by policy rather than by the agent's wording:
++         ケースは `AllowOnce`、`AllowAlways`、`RejectOnce`、`RejectAlways` である（ワイヤ上では `allow_once`、`allow_always`、`reject_once`、`reject_always`）。
++         これらの種類により、クライアントはエージェントの言い回しではなくポリシーによって選択肢を選べる。
+
+=         client pick an option by policy rather than by the agent's wording:
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         client pick an option by policy rather than by the agent's wording:
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         client pick an option by policy rather than by the agent's wording:
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         client pick an option by policy rather than by the agent's wording:
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         def allowOnce(using Acp.Registry^): Unit = Acp.permission:
++         def allowOnce(using Acp.Registry^): Unit = Acp.permission:
+
+=         def allowOnce(using Acp.Registry^): Unit = Acp.permission:
+-           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
++           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+
+=         def allowOnce(using Acp.Registry^): Unit = Acp.permission:
+=           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+-           . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
++           . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+
+=           . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+-         ```
++         ```
+
+-     entry .encodable   encodes a kind as its wire string
+-     entry .decodable   decodes a kind from its wire string, raising `Json.Error` for any other
++     entry .encodable   種類をそのワイヤ上の文字列としてエンコードする
++     entry .decodable   種類をワイヤ上の文字列からデコードする。それ以外の文字列には `Json.Error` を発生させる
+
+-   entry .PermissionOption   one answer the agent offers to a permission request
++   entry .PermissionOption   パーミッションのリクエストに対してエージェントが提示する回答の一つ
+
+=   entry .PermissionOption   one answer the agent offers to a permission request
+-     detail
++     detail
+
+-         A permission handler is lent the offered options as `Acp.options`, and answers with
+-         `Acp.Selected(option.optionId)` for the one it chooses.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #optionId   the id to answer with, in `Selected`
+-     entry #name   the option's label, to show the user
+-     entry #kind   what choosing the option means
++         パーミッションハンドラには提示された選択肢が `Acp.options` として貸し出され、ハンドラは選んだものについて `Acp.Selected(option.optionId)` で答える。
++     entry .encodable   導出された JSON エンコーダー
++     entry .decodable   導出された JSON デコーダー
++     entry #optionId   `Selected` で答えるときの id
++     entry #name   ユーザーに表示する選択肢のラベル
++     entry #kind   その選択肢を選ぶことの意味
+
+-   entry .RequestPermissionOutcome   the answer to a permission request: `Selected(optionId)` or `Cancelled`
++   entry .RequestPermissionOutcome   パーミッションのリクエストへの回答：`Selected(optionId)` または `Cancelled`
+
+=   entry .RequestPermissionOutcome   the answer to a permission request: `Selected(optionId)` or `Cancelled`
+-     detail
++     detail
+
+-         A permission handler's result. `Selected` names one of the options offered;
+-         `Cancelled` declines to choose. `Cancelled` is also the answer the protocol requires to
+-         every permission request pending when its turn is cancelled, and the connection
+-         supplies it itself: a request which arrives after `Connection#cancel` is answered
+-         `Cancelled` without calling the handler, and one already in the handler when the
+-         cancellation arrives is answered `Cancelled` when the handler returns, its selection
+-         discarded. On the wire the outcome is discriminated by an `outcome` member.
+-     entry .encodable   encodes an outcome with its `outcome` discriminator
+-     entry .decodable   decodes by the `outcome` member, raising `Json.Error` for an unknown outcome
++         パーミッションハンドラの結果である。
++         `Selected` は提示された選択肢の一つを指定し、`Cancelled` は選ぶことを断る。
++         `Cancelled` は、ターンが取り消されたときに保留中のすべてのパーミッションのリクエストに対してプロトコルが要求する回答でもあり、接続がそれを自分で与える。
++         `Connection#cancel` の後に届いたリクエストにはハンドラを呼ばずに `Cancelled` で答え、取り消しが届いた時点ですでにハンドラの中にあるリクエストには、ハンドラが戻ったときにその選択を捨てて `Cancelled` で答える。
++         ワイヤ上では、結果は `outcome` メンバーで判別される。
++     entry .encodable   結果を、その `outcome` 判別子とともにエンコードする
++     entry .decodable   `outcome` メンバーによってデコードする。未知の結果には `Json.Error` を発生させる
+
+-   entry .Selected   the permission answer which chooses one of the offered options
+-     entry #optionId   the chosen option's id, from `PermissionOption#optionId`
++   entry .Selected   提示された選択肢の一つを選ぶパーミッションの回答
++     entry #optionId   `PermissionOption#optionId` から取った、選ばれた選択肢の id
+
+-   entry .Cancelled   the permission answer which chooses nothing, required for a cancelled turn
+-       A `RequestPermissionOutcome`. A handler returns it to decline, and it is the answer to
+-       a request for which no handler was registered. It is distinct from
+-       `StopReason.Cancelled`, which is how a cancelled turn ends.
++   entry .Cancelled   何も選ばないパーミッションの回答。取り消されたターンでは必須
++       `RequestPermissionOutcome` である。
++       ハンドラは断るときにこれを返し、ハンドラが登録されていないリクエストへの回答もこれである。
++       これは、取り消されたターンの終わり方である `StopReason.Cancelled` とは別物である。
+
+-   entry .RequestPermissionResult   the client's response to `session/request_permission`, wrapping the outcome
+-     entry #outcome   the handler's answer, or `Cancelled`
++   entry .RequestPermissionResult   `session/request_permission` に対するクライアントの応答。結果を包む
++     entry #outcome   ハンドラの回答、または `Cancelled`
+
+-   entry .ReadTextFileResult   the client's response to `fs/read_text_file`: the file's content
+-     entry #content   the text read
++   entry .ReadTextFileResult   `fs/read_text_file` に対するクライアントの応答：ファイルの内容
++     entry #content   読み取ったテキスト
+
+-   entry .CreateTerminalResult   the client's response to `terminal/create`: the new terminal's id
+-     entry #terminalId   the id `Terminals#create` returned
++   entry .CreateTerminalResult   `terminal/create` に対するクライアントの応答：新しい端末の id
++     entry #terminalId   `Terminals#create` が返した id
+
+-   entry .TerminalExitStatus   how a terminal's command ended: its exit code, or the signal which killed it
+-     entry #exitCode   the command's exit code, if it exited
+-     entry #signal   the name of the signal which killed it, if one did
++   entry .TerminalExitStatus   端末のコマンドがどう終わったか：その終了コード、またはそれを終了させたシグナル
++     entry #exitCode   コマンドが終了した場合の終了コード
++     entry #signal   シグナルによって終了させられた場合の、そのシグナルの名前
+
+-   entry .TerminalOutputResult   a terminal's output so far, and its exit status if it has finished
+-     entry #output   the output captured so far
+-     entry #truncated   whether output was dropped from the start to stay within the byte limit
+-     entry #exitStatus   how the command ended, or `Unset` while it runs
++   entry .TerminalOutputResult   これまでの端末の出力と、終了していればその終了状態
++     entry #output   これまでに取り込まれた出力
++     entry #truncated   バイト数の上限に収めるために出力が先頭から捨てられたかどうか
++     entry #exitStatus   コマンドがどう終わったか。実行中は `Unset`
+
+-   entry .Terminals   the five terminal operations a client offers an agent, supplied together
++   entry .Terminals   クライアントがエージェントに提供する五つの端末操作。まとめて与える
+
+=   entry .Terminals   the five terminal operations a client offers an agent, supplied together
+-     detail
++     detail
+
+-         The protocol advertises terminal support as a single capability, so the operations are
+-         all or nothing: a client implements this trait and registers it with `Acp.terminals`,
+-         and `ClientCapabilities#terminal` is then `true`. Each method is called on a task of
+-         its own, with the session id it concerns; the terminal ids are the client's to mint.
++         プロトコルは端末のサポートを単一のケイパビリティとして告知するので、操作はすべてか無かである。
++         クライアントはこのトレイトを実装して `Acp.terminals` で登録し、そうすると `ClientCapabilities#terminal` は `true` になる。
++         各メソッドは、扱うセッションの id とともにそれぞれ専用のタスクで呼ばれる。
++         端末の id を作り出すのはクライアントの役目である。
+
+=         its own, with the session id it concerns; the terminal ids are the client's to mint.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         its own, with the session id it concerns; the terminal ids are the client's to mint.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         its own, with the session id it concerns; the terminal ids are the client's to mint.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         its own, with the session id it concerns; the terminal ids are the client's to mint.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         def register(using Acp.Registry^): Unit = Acp.terminals:
++         def register(using Acp.Registry^): Unit = Acp.terminals:
+
+-           new Acp.Terminals:
++           new Acp.Terminals:
+
+-             def create
++             def create
+
+-               ( sessionId:       Text,
++               ( sessionId:       Text,
+
+-                 command:         Text,
++                 command:         Text,
+
+-                 args:            List[Text],
++                 args:            List[Text],
+
+-                 env:             List[Acp.EnvVariable],
++                 env:             List[Acp.EnvVariable],
+
+-                 cwd:             Optional[Text],
++                 cwd:             Optional[Text],
+
+-                 outputByteLimit: Optional[Long] )
++                 outputByteLimit: Optional[Long] )
+
+-             :   Text =
++             :   Text =
+
+-               t"term1"
++               t"term1"
+
+-             def output(sessionId: Text, terminalId: Text): Acp.TerminalOutputResult =
++             def output(sessionId: Text, terminalId: Text): Acp.TerminalOutputResult =
+
+-               Acp.TerminalOutputResult(t"", false)
++               Acp.TerminalOutputResult(t"", false)
+
+-             def waitForExit(sessionId: Text, terminalId: Text): Acp.TerminalExitStatus =
++             def waitForExit(sessionId: Text, terminalId: Text): Acp.TerminalExitStatus =
+
+-               Acp.TerminalExitStatus(0)
++               Acp.TerminalExitStatus(0)
+
+-             def kill(sessionId: Text, terminalId: Text): Unit = ()
++             def kill(sessionId: Text, terminalId: Text): Unit = ()
+
+-             def release(sessionId: Text, terminalId: Text): Unit = ()
++             def release(sessionId: Text, terminalId: Text): Unit = ()
+
+=             def release(sessionId: Text, terminalId: Text): Unit = ()
+-         ```
++         ```
+
+-         A request for a terminal operation when no bundle was registered is answered with a
+-         `MethodNotFound` error, so a misbehaving agent is told rather than left waiting.
+-     entry #create   starts a command in a new terminal, returning the terminal's id
+-         Called with the command, its arguments and environment, an optional working directory,
+-         and an optional limit in bytes on the output to retain; the oldest output beyond it
+-         is dropped, and `TerminalOutputResult#truncated` reports that.
+-     entry #output   the terminal's output so far, and its exit status if it has finished
+-     entry #waitForExit   blocks until the terminal's command exits, returning how it ended
+-     entry #kill   kills the terminal's command, keeping the terminal for its output
+-     entry #release   kills the command if it still runs, and frees the terminal
++         束が登録されていないときの端末操作のリクエストには `MethodNotFound` エラーで答えるので、ふるまいのおかしいエージェントは待たされたままにならず、そのことを知らされる。
++     entry #create   新しい端末でコマンドを開始し、端末の id を返す
++         コマンド、その引数と環境、オプショナルな作業ディレクトリー、保持する出力のバイト数のオプショナルな上限を与えて呼ばれる。
++         上限を超えた最も古い出力は捨てられ、`TerminalOutputResult#truncated` がそれを報告する。
++     entry #output   これまでの端末の出力と、終了していればその終了状態
++     entry #waitForExit   端末のコマンドが終了するまでブロックし、どう終わったかを返す
++     entry #kill   端末のコマンドを終了させる。出力のために端末は残す
++     entry #release   コマンドがまだ実行中なら終了させ、端末を解放する
+
+-   entry .Turned1   a handler's context: the session id, one tagged payload, and an error emitter
+-       `(sessionId: Text aka "sessionId", payload: payload, emit: Emit[Acp.Error]^) ?=> result`.
+-       Each payload is tagged with `aka`, so that the contextual accessors (`Acp.update`, and
+-       so on) find it by name. Everything lent is a context parameter and the result is pure,
+-       so nothing lent to a handler can leave it. `UpdateHandler` is one.
+-   entry .Turned2   a handler's context: the session id, two tagged payloads, and an error emitter
+-       As `Turned1`, with two payloads. `PermissionHandler` and `WriteFileHandler` are ones.
+-   entry .Turned3   a handler's context: the session id, three tagged payloads, and an error emitter
+-       As `Turned1`, with three payloads. `ReadFileHandler` is one.
++   entry .Turned1   ハンドラのコンテキスト：セッションの id、タグ付きのペイロード一つ、エラーのエミッター
++       `(sessionId: Text aka "sessionId", payload: payload, emit: Emit[Acp.Error]^) ?=> result`。
++       各ペイロードには `aka` でタグが付けられているので、コンテキストのアクセサー（`Acp.update` など）は名前でそれを見つける。
++       貸し出されるものはすべてコンテキストパラメーターであり、結果は純粋なので、ハンドラに貸し出されたものがそこから外へ出ることはできない。
++       `UpdateHandler` はその一つである。
++   entry .Turned2   ハンドラのコンテキスト：セッションの id、タグ付きのペイロード二つ、エラーのエミッター
++       `Turned1` と同じで、ペイロードを二つ持つ。
++       `PermissionHandler` と `WriteFileHandler` がそれである。
++   entry .Turned3   ハンドラのコンテキスト：セッションの id、タグ付きのペイロード三つ、エラーのエミッター
++       `Turned1` と同じで、ペイロードを三つ持つ。
++       `ReadFileHandler` がそれである。
+
+-   entry .UpdateHandler   the handler `Acp.updated` takes: sees each `SessionUpdate`, returns nothing
+-       Lent `Acp.sessionId` and `Acp.update`. It runs on the connection's reader task, in the
+-       order the agent sent the updates.
+-   entry .PermissionHandler   the handler `Acp.permission` takes: chooses among the offered options
+-       Lent `Acp.sessionId`, `Acp.toolCall` (the `ToolCallUpdate` the request concerns) and
+-       `Acp.options`, and returns a `RequestPermissionOutcome`. It runs on a task of its own,
+-       so it may block — waiting for the user, for minutes — without stalling the turn's
+-       updates.
+-   entry .ReadFileHandler   the handler `Acp.readFile` takes: returns a file's text
+-       Lent `Acp.sessionId`, `Acp.path`, and the optional `Acp.line` (one-based) to start at and
+-       `Acp.limit` on the number of lines, and returns the text. It may serve the client's own
+-       view of the file, such as an editor's unsaved buffer.
+-   entry .WriteFileHandler   the handler `Acp.writeFile` takes: writes a file's text
+-       Lent `Acp.sessionId`, `Acp.path` and `Acp.content`, and returns nothing.
++   entry .UpdateHandler   `Acp.updated` が取るハンドラ：各 `SessionUpdate` を見て、何も返さない
++       `Acp.sessionId` と `Acp.update` が貸し出される。
++       接続の読み取りタスクで、エージェントが更新を送った順に実行される。
++   entry .PermissionHandler   `Acp.permission` が取るハンドラ：提示された選択肢から選ぶ
++       `Acp.sessionId`、`Acp.toolCall`（リクエストが扱う `ToolCallUpdate`）、`Acp.options` が貸し出され、`RequestPermissionOutcome` を返す。
++       専用のタスクで実行されるので、ターンの更新を滞らせることなく（ユーザーを数分待つなどして）ブロックしてよい。
++   entry .ReadFileHandler   `Acp.readFile` が取るハンドラ：ファイルのテキストを返す
++       `Acp.sessionId`、`Acp.path`、そしてオプショナルな、読み始める行 `Acp.line`（1 起点）と行数の上限 `Acp.limit` が貸し出され、テキストを返す。
++       エディターの未保存のバッファーのような、クライアント自身から見たファイルの内容を返してもよい。
++   entry .WriteFileHandler   `Acp.writeFile` が取るハンドラ：ファイルのテキストを書き込む
++       `Acp.sessionId`、`Acp.path`、`Acp.content` が貸し出され、何も返さない。
+
+-   entry .connection   the live connection `Acp.connect` lends to its second block
+-       `Acp.connection` reads the `Acp.Connection` context parameter, with its singleton type,
+-       so `Acp.connection.prompt(…)` is a call on the very connection in scope. It is
+-       available only inside `connect`'s second block, or a method which takes a `using
+-       Acp.Connection`.
+-   entry .sessionId   in a handler, the id of the session the request or update concerns
+-       Every handler is lent it.
+-   entry .update   in an update handler, the `SessionUpdate` being reported
+-   entry .toolCall   in a permission handler, the tool call the agent wants permission for
+-       A `ToolCallUpdate`: its id, and whatever the agent says of the call it is about to make.
+-   entry .options   in a permission handler, the answers the agent offers, as `PermissionOption`s
+-   entry .path   in a file handler, the absolute path of the file to read or write
+-   entry .line   in a read handler, the one-based line to start reading at, or `Unset` for the start
+-   entry .limit   in a read handler, the most lines to return, or `Unset` for no limit
+-   entry .content   in a write handler, the text to write
+-       Not to be confused with the `#content` members of the content-carrying records: this is
+-       the accessor, and needs a write handler's context.
++   entry .connection   `Acp.connect` が二つ目のブロックに貸し出す生きた接続
++       `Acp.connection` は `Acp.Connection` コンテキストパラメーターをそのシングルトン型のまま読むので、`Acp.connection.prompt(…)` はスコープにあるまさにその接続に対する呼び出しである。
++       `connect` の二つ目のブロック、または `using Acp.Connection` を取るメソッドの内側でだけ使える。
++   entry .sessionId   ハンドラの中での、リクエストや更新が扱うセッションの id
++       すべてのハンドラにこれが貸し出される。
++   entry .update   更新ハンドラの中での、報告されている `SessionUpdate`
++   entry .toolCall   パーミッションハンドラの中での、エージェントがパーミッションを求めているツール呼び出し
++       `ToolCallUpdate` であり、その id と、エージェントがこれから行う呼び出しについて述べることを持つ。
++   entry .options   パーミッションハンドラの中での、エージェントが提示する回答。`PermissionOption` として
++   entry .path   ファイルハンドラの中での、読み書きするファイルの絶対パス
++   entry .line   読み取りハンドラの中での、読み始める 1 起点の行。先頭からなら `Unset`
++   entry .limit   読み取りハンドラの中での、返す行数の上限。上限がなければ `Unset`
++   entry .content   書き込みハンドラの中での、書き込むテキスト
++       コンテンツを運ぶレコードの `#content` メンバーと混同しないこと。
++       こちらはアクセサーであり、書き込みハンドラのコンテキストを必要とする。
+
+-   entry .updated   registers the handler for `session/update`: sees every update of every session
+-       An `UpdateHandler`, lent `Acp.sessionId` and `Acp.update`. Registering none discards the
+-       updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
++   entry .updated   `session/update` のハンドラを登録する：すべてのセッションのすべての更新を見る
++       `Acp.sessionId` と `Acp.update` が貸し出される `UpdateHandler` である。
++       何も登録しなければ更新は捨てられる。
++       `Acp.connect` の一つ目のブロックのように、スコープに `Acp.Registry` が必要である。
+
+=       updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       def register(using Acp.Registry^): Unit = Acp.updated:
++       def register(using Acp.Registry^): Unit = Acp.updated:
+
+-         Acp.update match
++         Acp.update match
+
+-           case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
++           case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+
+-           case _                                               => ()
++           case _                                               => ()
+
+=           case _                                               => ()
+-       ```
++       ```
+
+-   entry .permission   registers the handler for `session/request_permission`
+-       A `PermissionHandler`, lent `Acp.sessionId`, `Acp.toolCall` and `Acp.options`, and
+-       returning `Acp.Selected(optionId)` or `Acp.Cancelled`. With no handler registered, every
+-       request is answered `Cancelled`. A request in a cancelled turn is answered `Cancelled`
+-       whatever the handler says.
+-   entry .readFile   registers the handler for `fs/read_text_file`, and advertises the capability
+-       A `ReadFileHandler`, lent `Acp.path`, `Acp.line` and `Acp.limit`, returning the text.
+-       Registering it sets `FsCapabilities#readTextFile`.
++   entry .permission   `session/request_permission` のハンドラを登録する
++       `Acp.sessionId`、`Acp.toolCall`、`Acp.options` が貸し出され、`Acp.Selected(optionId)` または `Acp.Cancelled` を返す `PermissionHandler` である。
++       ハンドラが登録されていなければ、すべてのリクエストに `Cancelled` で答える。
++       取り消されたターンのリクエストには、ハンドラが何を返しても `Cancelled` で答える。
++   entry .readFile   `fs/read_text_file` のハンドラを登録し、そのケイパビリティを告知する
++       `Acp.path`、`Acp.line`、`Acp.limit` が貸し出され、テキストを返す `ReadFileHandler` である。
++       これを登録すると `FsCapabilities#readTextFile` が設定される。
+
+=       Registering it sets `FsCapabilities#readTextFile`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       Registering it sets `FsCapabilities#readTextFile`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       Registering it sets `FsCapabilities#readTextFile`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       Registering it sets `FsCapabilities#readTextFile`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+-       def files(using Acp.Registry^): Unit = Acp.readFile:
++       def files(using Acp.Registry^): Unit = Acp.readFile:
+
+-         Acp.path.as[Path on Linux].open[File]()(file.read[Text])
++         Acp.path.as[Path on Linux].open[File]()(file.read[Text])
+
+=         Acp.path.as[Path on Linux].open[File]()(file.read[Text])
+-       ```
++       ```
+
+-   entry .writeFile   registers the handler for `fs/write_text_file`, and advertises the capability
+-       A `WriteFileHandler`, lent `Acp.path` and `Acp.content`. Registering it sets
+-       `FsCapabilities#writeTextFile`.
+-   entry .terminals   registers the `Terminals` bundle, and advertises the terminal capability
+-       The five terminal operations are registered together, since the protocol advertises
+-       them as one capability. Registering them sets `ClientCapabilities#terminal`.
+-   entry .capabilities   adjusts the client capabilities derived from the registrations, last, at initialization
+-       An escape hatch: `Acp.capabilities(adjust)` is applied to the derived
+-       `ClientCapabilities` just before `initialize` is sent, so a client may withdraw a
+-       capability, or declare one it serves by other means. The derived declaration is right
+-       for almost every client.
++   entry .writeFile   `fs/write_text_file` のハンドラを登録し、そのケイパビリティを告知する
++       `Acp.path` と `Acp.content` が貸し出される `WriteFileHandler` である。
++       これを登録すると `FsCapabilities#writeTextFile` が設定される。
++   entry .terminals   `Terminals` の束を登録し、端末のケイパビリティを告知する
++       プロトコルは五つの端末操作を一つのケイパビリティとして告知するので、それらはまとめて登録される。
++       これを登録すると `ClientCapabilities#terminal` が設定される。
++   entry .capabilities   登録から導出されたクライアントのケイパビリティを、初期化時に最後に調整する
++       逃げ道である。
++       `Acp.capabilities(adjust)` は `initialize` が送られる直前に導出された `ClientCapabilities` に適用されるので、クライアントはケイパビリティを取り下げたり、別の手段で提供するケイパビリティを宣言したりできる。
++       導出された宣言はほとんどすべてのクライアントにとって正しい。
+
+-   entry .connect   connects to an agent for the duration of a block: registers handlers, initializes, lends a connection
++   entry .connect   ブロックの実行中エージェントに接続する：ハンドラを登録し、初期化し、接続を貸し出す
+
+=   entry .connect   connects to an agent for the duration of a block: registers handlers, initializes, lends a connection
+-     detail
++     detail
+
+-         `Acp.connect(agent, observer)(register)(lambda)`. The first block registers the
+-         client's handlers on the lent `Acp.Registry`; when it returns, the registry is consumed
+-         and the client's capabilities are derived from it, so nothing can be registered once
+-         the exchange begins. Then the exchange opens — a writer task drains outgoing messages
+-         onto the agent's input, and a reader task routes what comes back — and `initialize` is
+-         exchanged, raising `Acp.Error` with reason `Incompatible` if the agent speaks a
+-         protocol version other than `Acp.version`. The second block then runs with a live,
+-         initialized `Acp.Connection`, reached as `Acp.connection`, and its value is the value
+-         of `connect`. When it returns, the exchange is torn down and a subprocess agent is
+-         killed, so nothing outlives the agent it speaks to.
++         `Acp.connect(agent, observer)(register)(lambda)`。
++         一つ目のブロックは、貸し出された `Acp.Registry` にクライアントのハンドラを登録する。
++         それが戻るとレジストリは消費され、クライアントのケイパビリティがそこから導出されるので、やりとりが始まった後には何も登録できない。
++         次にやりとりが開かれる。書き込みタスクが送信メッセージをエージェントの入力へと流し出し、読み取りタスクが戻ってくるものを振り分ける。そして `initialize` が交わされ、エージェントが `Acp.version` 以外のプロトコルバージョンを話す場合は理由 `Incompatible` の `Acp.Error` を発生させる。
++         その後、二つ目のブロックが、`Acp.connection` として到達できる初期化済みの生きた `Acp.Connection` とともに実行され、その値が `connect` の値になる。
++         それが戻るとやりとりは破棄され、サブプロセスのエージェントは終了させられるので、話し相手のエージェントより長く生き残るものはない。
+
+=         killed, so nothing outlives the agent it speaks to.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         killed, so nothing outlives the agent it speaks to.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         killed, so nothing outlives the agent it speaks to.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         killed, so nothing outlives the agent it speaks to.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=         import environments.javaBaseEnvironment
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-         import probates.awaitProbate
++         import probates.awaitProbate
+
+-         import stdios.javaLangSystemStdio
++         import stdios.javaLangSystemStdio
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         import threads.virtualThreads
++         import threads.virtualThreads
+
+-         import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+-         val reason: Acp.StopReason = supervise:
++         val reason: Acp.StopReason = supervise:
+
+-           Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
++           Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
+
+-             Acp.updated:
++             Acp.updated:
+
+-               Acp.update match
++               Acp.update match
+
+-                 case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
++                 case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+
+-                 case _                                               => ()
++                 case _                                               => ()
+
+-           . apply:
++           . apply:
+
+-               val session = Acp.connection.newSession(t"/workspace")
++               val session = Acp.connection.newSession(t"/workspace")
+
+-               Acp.connection.prompt(session.sessionId, t"Explain this repository")
++               Acp.connection.prompt(session.sessionId, t"Explain this repository")
+
+=               Acp.connection.prompt(session.sessionId, t"Explain this repository")
+-         ```
++         ```
+
+-         It needs a `Monitor` (so it sits inside `supervise`), a `Probate`, `Diagnostics`, a
+-         `WorkingDirectory` and an `Environment` (for launching a subprocess agent), and a
+-         `Tactic[Acp.Error]`. A subprocess which cannot be launched raises `Acp.Error` with
+-         reason `Internal` and the launch failure's message. The connection block may capture
+-         the monitor freely — a block which prompts on one task and cancels from another, say
+-         — since a monitor is a shared capability.
++         これには `Monitor`（そのため `supervise` の内側に置く）、`Probate`、`Diagnostics`、（サブプロセスのエージェントを起動するための）`WorkingDirectory` と `Environment`、そして `Tactic[Acp.Error]` が必要である。
++         起動できないサブプロセスは、理由 `Internal` と起動失敗のメッセージを持つ `Acp.Error` を発生させる。
++         モニターは共有されるケイパビリティなので、接続のブロックはそれを自由にキャプチャしてよい。たとえば、あるタスクでプロンプトを送り、別のタスクから取り消すブロックである。
+
+-         Messages from the agent are routed by kind. Responses are correlated with the requests
+-         awaiting them, so several requests may be in flight and answered in any order.
+-         `session/update` notifications are dispatched on the reader task, in order. Requests —
+-         permissions, file operations, terminals — are each dispatched on a spawned task, so a
+-         permission handler waiting on the user stalls neither the updates nor the responses.
+-         A request for a method this library does not model is answered `Method not found`, and
+-         an unmodelled notification is ignored.
++         エージェントからのメッセージは種類によって振り分けられる。
++         応答はそれを待っているリクエストと対応付けられるので、複数のリクエストを同時に送信中にでき、任意の順序で答えられてよい。
++         `session/update` 通知は読み取りタスクで順にディスパッチされる。
++         リクエスト（パーミッション、ファイル操作、端末）はそれぞれ起動されたタスクでディスパッチされるので、ユーザーを待っているパーミッションハンドラが更新も応答も滞らせることはない。
++         このライブラリがモデル化していないメソッドへのリクエストには `Method not found` で答え、モデル化されていない通知は無視される。
+
+-         `observer`, if given, sees every message in both directions as it crosses the
+-         transport; the default is `Acp.Observer.Silent`.
++         `observer` が与えられれば、それはトランスポートを通過するすべてのメッセージを両方向で見る。
++         既定値は `Acp.Observer.Silent` である。
+
+-     refer espionage.Acp.Endpoint
++     refer espionage.Acp.Endpoint
+
+-     refer espionage.Acp.Connection
++     refer espionage.Acp.Connection
+
+-     refer espionage.Acp.Registry
++     refer espionage.Acp.Registry
+
+-     refer espionage.Acp.Observer
++     refer espionage.Acp.Observer
+
+-   entry .Observer   a hook on the raw traffic: every message as it crosses the transport
++   entry .Observer   生のトラフィックへのフック：トランスポートを通過するすべてのメッセージ
+
+=   entry .Observer   a hook on the raw traffic: every message as it crosses the transport
+-     detail
++     detail
+
+-         An agent's standard output is the wire, and a client may want a log or a protocol
+-         trace of what it exchanges: an observer sees each message as its JSON text — inbound
+-         before parsing, so a message which fails to decode is observed too, and outbound
+-         before framing, so both directions read alike. It is passed to `Acp.connect` as
+-         `observer`.
++         エージェントの標準出力はワイヤそのものであり、クライアントはやりとりのログやプロトコルのトレースを取りたいことがある。
++         オブザーバーは各メッセージをその JSON テキストとして見る。
++         受信側は解析の前に見るので、デコードに失敗したメッセージも観測される。送信側はフレーミングの前に見るので、両方向が同じように読める。
++         これは `observer` として `Acp.connect` に渡す。
+
+=         `observer`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `observer`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `observer`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         `observer`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         val trace = new Acp.Observer:
++         val trace = new Acp.Observer:
+
+-           def received(message: Text): Unit = Err.println(t"← $message")
++           def received(message: Text): Unit = Err.println(t"← $message")
+
+-           def sent(message: Text): Unit = Err.println(t"→ $message")
++           def sent(message: Text): Unit = Err.println(t"→ $message")
+
+=           def sent(message: Text): Unit = Err.println(t"→ $message")
+-         ```
++         ```
+
+-         The writer task calls `#sent` and the reader task `#received`, at once, so an
+-         implementation must be safe to call from two threads. It is a shared, durable
+-         capability.
+-     entry .Silent   the observer which does nothing, as a pure value; `connect`'s default
+-     entry .silent   the given which supplies `Silent` contextually; in implicit scope
+-     entry #received   called with each message read from the agent, before it is parsed
+-     entry #sent   called with each message sent to the agent, as its encoded body, before it is framed
++         書き込みタスクが `#sent` を、読み取りタスクが `#received` を同時に呼ぶので、実装は二つのスレッドから呼んでも安全でなければならない。
++         これは共有される、持続的なケイパビリティである。
++     entry .Silent   何もしないオブザーバー。純粋な値であり、`connect` の既定値
++     entry .silent   `Silent` をコンテキストで与える given。暗黙のスコープにある
++     entry #received   エージェントから読み取った各メッセージを、解析の前に受け取って呼ばれる
++     entry #sent   エージェントに送る各メッセージを、エンコードされた本体として、フレーミングの前に受け取って呼ばれる
+
+-   entry .Endpoint   where to find an agent this process can speak to: a command to launch, or a pair of streams
++   entry .Endpoint   このプロセスが話せるエージェントの居場所：起動するコマンド、またはストリームの組
+
+=   entry .Endpoint   where to find an agent this process can speak to: a command to launch, or a pair of streams
+-     detail
++     detail
+
+-         A plain value saying where the agent is, holding no channel of its own: the channel is
+-         opened when `Acp.connect` begins and closed when it ends. `Endpoint.Process(command)` is
+-         an agent launched as a subprocess, whose standard input and output carry the protocol,
+-         and `Endpoint.Streams(input, output)` one already running behind a pair of `java.io`
+-         streams — in this process, behind a socket, or a fixture in a test. `Endpoint(command)`
+-         and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
++         エージェントの居場所を示す単純な値であり、それ自身はチャネルを持たない。
++         チャネルは `Acp.connect` が始まるときに開かれ、終わるときに閉じられる。
++         `Endpoint.Process(command)` はサブプロセスとして起動されるエージェントであり、その標準入出力がプロトコルを運ぶ。
++         `Endpoint.Streams(input, output)` は `java.io` ストリームの組の向こうですでに実行中のエージェントである。このプロセス内、ソケットの向こう、あるいはテストのフィクスチャなどである。
++         `Endpoint(command)` と `Endpoint.streams(input, output)` はそれぞれを作り、`Endpoint` に拡大する。
+
+=         and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         val launched: Acp.Endpoint = Acp.Endpoint(sh"claude-code-acp")
++         val launched: Acp.Endpoint = Acp.Endpoint(sh"claude-code-acp")
+
+-         val gemini: Acp.Endpoint = Acp.Endpoint(sh"gemini --experimental-acp")
++         val gemini: Acp.Endpoint = Acp.Endpoint(sh"gemini --experimental-acp")
+
+=         val gemini: Acp.Endpoint = Acp.Endpoint(sh"gemini --experimental-acp")
+-         ```
++         ```
+
+-         A subprocess agent is launched with a silent exec log, since its standard output is
+-         the wire, and is killed, not waited for, when the connection ends.
++         サブプロセスのエージェントは、その標準出力がワイヤそのものなので、実行ログを出さない設定で起動され、接続が終わると、終了を待たれることなく終了させられる。
+
+=         the wire, and is killed, not waited for, when the connection ends.
+-     refer espionage.Acp.connect
++     refer espionage.Acp.connect
+
+-     entry .apply   an agent launched as a subprocess: `Acp.Endpoint(command)`
+-         Takes a guillotine `Command`, written with `sh"…"`.
+-     entry .streams   an agent already running behind an input and an output stream
+-         Which stream is which is from this process's point of view: `input` is what the agent
+-         writes, `output` what it reads. Each message the agent writes is delivered as soon as
+-         its terminating newline arrives, so a fixture writing to a pipe need only flush after
+-         each line.
++     entry .apply   サブプロセスとして起動されるエージェント：`Acp.Endpoint(command)`
++         `sh"…"` で書いた guillotine の `Command` を取る。
++     entry .streams   入力ストリームと出力ストリームの向こうですでに実行中のエージェント
++         どちらのストリームがどちらかは、このプロセスから見たものである。`input` はエージェントが書くもの、`output` はエージェントが読むものである。
++         エージェントが書く各メッセージは終端の改行が届いた時点で配送されるので、パイプに書き込むフィクスチャは各行の後でフラッシュするだけでよい。
+
+-   entry .Error   a fault in an ACP exchange, or one the agent reported, by its JSON-RPC reason
++   entry .Error   ACP のやりとりにおける誤り、またはエージェントが報告した誤り。その JSON-RPC の理由で示す
+
+=   entry .Error   a fault in an ACP exchange, or one the agent reported, by its JSON-RPC reason
+-     detail
++     detail
+
+-         Error `↯/s.125.1`: _the ACP operation failed because `reason`_, numbered by reason (148.1 for
+-         `Parse` through 148.7 for `Incompatible`). Each `Reason` carries the JSON-RPC wire
+-         code the protocol assigns it: `Parse` −32700, `InvalidRequest` −32600,
+-         `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603 and `AuthRequired`
+-         −32000; `Incompatible` is this library's own, raised by `Acp.connect` when the agent
+-         answers `initialize` with another protocol version.
++         エラー `↯/s.125.1`：_the ACP operation failed because `reason`_。理由ごとに番号が振られる（`Parse` の 148.1 から `Incompatible` の 148.7 まで）。
++         各 `Reason` は、プロトコルがそれに割り当てる JSON-RPC のワイヤコードを持つ：`Parse` は −32700、`InvalidRequest` は −32600、`MethodNotFound` は −32601、`InvalidParams` は −32602、`Internal` は −32603、`AuthRequired` は −32000。
++         `Incompatible` はこのライブラリ独自のものであり、エージェントが別のプロトコルバージョンで `initialize` に答えたときに `Acp.connect` が発生させる。
+
+-         The connection's requests raise one, through the `Tactic[Acp.Error]` in scope, for an
+-         error response from the agent, with the reason recovered from the wire code by
+-         `.reason` (a code outside the standard set is `Internal`) and the agent's message as
+-         `#details`. An agent which needs authentication answers with `AuthRequired`; the client
+-         then calls `Connection#authenticate`.
++         接続のリクエストは、エージェントからのエラー応答に対して、スコープにある `Tactic[Acp.Error]` を通してこれを発生させる。
++         理由は `.reason` によってワイヤコードから復元され（標準の集合の外にあるコードは `Internal` になる）、エージェントのメッセージは `#details` になる。
++         認証を必要とするエージェントは `AuthRequired` で答え、クライアントはそこで `Connection#authenticate` を呼ぶ。
+
+-         A handler raises one through the `Emit[Acp.Error]` it is lent, and the client answers
+-         the agent's request with an error response carrying the reason's code and `#response`
+-         as the message:
++         ハンドラは貸し出された `Emit[Acp.Error]` を通してこれを発生させ、クライアントはエージェントのリクエストに、理由のコードとメッセージとしての `#response` を持つエラー応答で答える。
+
+=         as the message:
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         as the message:
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         as the message:
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         as the message:
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         import soundness.*
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-         def register(using Acp.Registry^): Unit = Acp.readFile:
++         def register(using Acp.Registry^): Unit = Acp.readFile:
+
+-           if Acp.path.starts(t"/secret") then
++           if Acp.path.starts(t"/secret") then
+
+-             raise(Acp.Error(Acp.Error.Reason.InvalidParams, t"not readable"))
++             raise(Acp.Error(Acp.Error.Reason.InvalidParams, t"not readable"))
+
+-           t""
++           t""
+
+=           t""
+-         ```
++         ```
+
+-         Constructing one needs `Diagnostics` in scope, as every fulminate error does.
+-     entry .Reason   why the operation failed, each with its JSON-RPC wire `code` and its `number`
++         これを構築するには、すべての fulminate のエラーと同じく、スコープに `Diagnostics` が必要である。
++     entry .Reason   操作が失敗した理由。それぞれ JSON-RPC のワイヤ `code` と `number` を持つ
+
+=     entry .Reason   why the operation failed, each with its JSON-RPC wire `code` and its `number`
+-       detail
++       detail
+
+-           Each case has a JSON-RPC wire code beside its `number`:
++           各ケースは `number` と並んで JSON-RPC のワイヤコードを持つ。
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
+-           row  `Parse`  1  _the message could not be parsed as JSON_  wire code −32700
+-           row  `InvalidRequest`  2  _the message was not a valid JSON-RPC request_  wire code −32600
+-           row  `MethodNotFound`  3  _the method name was not recognised_  wire code −32601
+-           row  `InvalidParams`  4  _the parameters were not valid for the requested method_  wire code −32602
+-           row  `Internal`  5  _an internal error occurred_  wire code −32603
+-           row  `AuthRequired`  6  _the agent requires authentication_  wire code −32000
+-           row  `Incompatible`  7  _the agent does not support the protocol version this client implements_  no wire code
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  備考
++           row  `Parse`  1  _the message could not be parsed as JSON_  ワイヤコード −32700
++           row  `InvalidRequest`  2  _the message was not a valid JSON-RPC request_  ワイヤコード −32600
++           row  `MethodNotFound`  3  _the method name was not recognised_  ワイヤコード −32601
++           row  `InvalidParams`  4  _the parameters were not valid for the requested method_  ワイヤコード −32602
++           row  `Internal`  5  _an internal error occurred_  ワイヤコード −32603
++           row  `AuthRequired`  6  _the agent requires authentication_  ワイヤコード −32000
++           row  `Incompatible`  7  _the agent does not support the protocol version this client implements_  ワイヤコードなし
+
+-           ```
++           ```
+
+-       entry #number   the sub-number of error `↯/s.125.1`
+-       entry #code   the JSON-RPC wire code, or `0` for `Incompatible`, which has none
+-     entry .reason   the reason a wire code names, or `Unset` for a code outside the standard set
+-         The inverse of `Reason#code`, for reading an error response. `0` is never a wire code,
+-         so it never yields `Incompatible`.
+-     entry .communicable   renders a reason as its message, _the agent requires authentication_ and the like
+-     entry #reason   why the operation failed
+-     entry #details   the agent's message, or the message given when the error was raised, if any
+-     entry #response   the message sent in an error response: the details, or the reason's description
++       entry #number   エラー `↯/s.125.1` の副番号
++       entry #code   JSON-RPC のワイヤコード。ワイヤコードを持たない `Incompatible` では `0`
++     entry .reason   ワイヤコードが示す理由。標準の集合の外にあるコードなら `Unset`
++         `Reason#code` の逆であり、エラー応答を読むためのものである。
++         `0` は決してワイヤコードではないので、`Incompatible` を返すことはない。
++     entry .communicable   理由をそのメッセージ（_the agent requires authentication_ など）として描画する
++     entry #reason   操作が失敗した理由
++     entry #details   エージェントのメッセージ、またはエラーを発生させたときに与えたメッセージ（あれば）
++     entry #response   エラー応答で送るメッセージ：詳細、または理由の説明
+
+-   entry .Registry   where a client's handlers are recorded, lent to the first block of `connect`
++   entry .Registry   クライアントのハンドラが記録される場所。`connect` の一つ目のブロックに貸し出される
+
+=   entry .Registry   where a client's handlers are recorded, lent to the first block of `connect`
+-     detail
++     detail
+
+-         The target of the registration combinators: `Acp.connect` makes one, lends it to the
+-         registration block as a context parameter, and consumes it when the block returns, so
+-         registration after the exchange begins is impossible by construction. Its constructor
+-         is private, and it is a capability which cannot escape the block. A method of one's
+-         own which registers handlers takes it as `using Acp.Registry^`.
++         登録コンビネーターの書き込み先である。
++         `Acp.connect` はこれを一つ作り、コンテキストパラメーターとして登録ブロックに貸し出し、ブロックが戻ると消費する。そのため、やりとりが始まった後の登録は構造上不可能である。
++         そのコンストラクターは private であり、ブロックから逃げ出せないケイパビリティである。
++         ハンドラを登録する独自のメソッドは、これを `using Acp.Registry^` として取る。
+
+-         Its slots — one public `var` per combinator, named for it with a trailing `0` — are
+-         public only because the inline combinators assign them, and each handler slot is
+-         typed `AnyRef | Null`: a union mentioning a context-function type would freshen its
+-         capture sets at every adaptation, so the typed boundary is the combinator's parameter,
+-         where a handler closing over the registry is rejected. Register through the
+-         combinators, not the slots.
++         そのスロット（コンビネーターごとに一つの public な `var` で、コンビネーターの名前の末尾に `0` を付けた名前を持つ）が public なのは、inline のコンビネーターがそれらに代入するからにすぎない。また各ハンドラのスロットは `AnyRef | Null` と型付けされている。
++         コンテキスト関数型を含むユニオンは、適応のたびにそのキャプチャ集合を新たにしてしまうので、型付きの境界はコンビネーターのパラメーターに置かれ、そこでレジストリを閉じ込めるハンドラは拒否される。
++         登録はスロットではなくコンビネーターを通して行う。
+
+=         combinators, not the slots.
+-     refer espionage.Acp.connect
++     refer espionage.Acp.connect
+
+-     refer espionage.Acp.ClientCapabilities
++     refer espionage.Acp.ClientCapabilities
+
+-     entry .Slot   the box a registered handler is kept in
++     entry .Slot   登録されたハンドラを保持する箱
+
+=     entry .Slot   the box a registered handler is kept in
+-       detail
++       detail
+
+-           A context-function value adapts to any expected type which is not a context
+-           function by being applied, so a handler cannot inhabit an `Optional` or `AnyRef`
+-           slot directly: `Slot[handler](value)` holds it intact, and the service unboxes it
+-           when it dispatches.
+-       entry #value   the handler
+-     entry #updated0   the `updated` handler, boxed, or `null`
+-     entry #permission0   the `permission` handler, boxed, or `null`
+-     entry #readFile0   the `readFile` handler, boxed, or `null`
+-     entry #writeFile0   the `writeFile` handler, boxed, or `null`
+-     entry #terminal0   the `terminals` bundle, boxed, or `null`
+-     entry #adjust0   the `capabilities` adjustment, or `Unset`
++           コンテキスト関数の値は、コンテキスト関数ではない任意の期待型に対して、適用されることで適応する。そのためハンドラを `Optional` や `AnyRef` のスロットに直接入れることはできない。
++           `Slot[handler](value)` はそれを損なわずに保持し、サービスはディスパッチするときにそれを取り出す。
++       entry #value   ハンドラ
++     entry #updated0   箱に入った `updated` ハンドラ、または `null`
++     entry #permission0   箱に入った `permission` ハンドラ、または `null`
++     entry #readFile0   箱に入った `readFile` ハンドラ、または `null`
++     entry #writeFile0   箱に入った `writeFile` ハンドラ、または `null`
++     entry #terminal0   箱に入った `terminals` の束、または `null`
++     entry #adjust0   `capabilities` の調整、または `Unset`
+
+-   entry .Connection   the client's handle on a running agent, lent by `connect` for the duration of a block
++   entry .Connection   実行中のエージェントに対するクライアントのハンドル。ブロックの実行中 `connect` が貸し出す
+
+=   entry .Connection   the client's handle on a running agent, lent by `connect` for the duration of a block
+-     detail
++     detail
+
+-         What `Acp.connect` lends its second block, reached as `Acp.connection`. It is a
+-         capability, disposed of when the block returns, so it cannot outlive the agent it
+-         speaks to. Its constructor is private.
++         `Acp.connect` が二つ目のブロックに貸し出すものであり、`Acp.connection` として到達する。
++         これはケイパビリティであり、ブロックが戻ると破棄されるので、話し相手のエージェントより長く生き残ることはできない。
++         そのコンストラクターは private である。
+
+-         A request blocks its caller until the agent's response arrives, but never blocks the
+-         reader, so several may be in flight at once, on different tasks, and be answered out
+-         of order: one task may hold a prompt turn open while another cancels it.
++         リクエストはエージェントの応答が届くまで呼び出し側をブロックするが、読み取り側をブロックすることは決してない。そのため複数のリクエストを異なるタスクで同時に送信中にでき、順不同で答えられてよい。
++         あるタスクがプロンプトのターンを開いたままにしている間に、別のタスクがそれを取り消すこともできる。
+
+=         of order: one task may hold a prompt turn open while another cancels it.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         of order: one task may hold a prompt turn open while another cancels it.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         of order: one task may hold a prompt turn open while another cancels it.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         of order: one task may hold a prompt turn open while another cancels it.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         val session = Acp.connection.newSession(t"/workspace")
++         val session = Acp.connection.newSession(t"/workspace")
+
+-         val turn = async(Acp.connection.prompt(session.sessionId, t"Refactor the parser"))
++         val turn = async(Acp.connection.prompt(session.sessionId, t"Refactor the parser"))
+
+-         Acp.connection.cancel(session.sessionId)
++         Acp.connection.cancel(session.sessionId)
+
+-         turn.await()   // Acp.StopReason.Cancelled
++         turn.await()   // Acp.StopReason.Cancelled
+
+=         turn.await()   // Acp.StopReason.Cancelled
+-         ```
++         ```
+
+-         Every request raises `Acp.Error`, through the `Tactic[Acp.Error]` in scope, for an
+-         error response. The connection is obligatory's `JsonRpc` underneath, with `#Origin`
+-         the agent's interface `Acp.Agent`, and `#send` sends a message of a method this library
+-         does not model.
++         すべてのリクエストは、エラー応答に対して、スコープにある `Tactic[Acp.Error]` を通して `Acp.Error` を発生させる。
++         接続の下にあるのは obligatory の `JsonRpc` であり、その `#Origin` はエージェントのインターフェース `Acp.Agent` である。`#send` は、このライブラリがモデル化していないメソッドのメッセージを送る。
+
+=         does not model.
+-     refer espionage.Acp.connect
++     refer espionage.Acp.connect
+
+-     refer espionage.Acp.Agent
++     refer espionage.Acp.Agent
+
+-     entry #Origin   the far end of the connection: `Acp.Agent`
+-     entry #lifecycle   the generated client for `Acp.Agent.Lifecycle`: `initialize` and `authenticate`
+-         Calling it directly bypasses the error conversion and version check the connection's
+-         own methods make.
+-     entry #sessions   the generated client for `Acp.Agent.Session`: the `session/*` methods
+-         As `#lifecycle`, prefer the connection's own methods.
+-     entry #send   sends a message exactly as given, minting no id and awaiting no answer
+-         The raw seam for an extension method or a notification this library does not model.
+-         A request sent this way has its response routed nowhere, so it is for notifications.
+-     entry #initialize   the handshake: sends the protocol version and the client's capabilities
+-         `Acp.connect` calls it before lending the connection, so a client does not. It raises
+-         `Acp.Error` with reason `Incompatible` if the agent answers with a protocol version
+-         other than `Acp.version`, and records the agent's answer for `#agentCapabilities` and
+-         `#authMethods`.
+-     entry #authenticate   authenticates with one of the methods the agent offered, by its id
+-         For an agent which answered a request with `Acp.Error.Reason.AuthRequired`: the id is
+-         an `AuthMethod#id` from `#authMethods`.
+-     entry #newSession   opens a session in a working directory, with optional MCP servers
+-         `newSession(cwd, mcpServers)` returns a `NewSessionResult`, whose `sessionId` every
+-         later call about the session takes. `cwd` should be an absolute path: the agent works
+-         relative to it.
+-     entry #loadSession   resumes a session by its id, replaying its history through the update handler
+-         The agent replays the whole conversation as `session/update` notifications — routed to
+-         the handler registered with `Acp.updated`, `UserMessageChunk`s included — before this
+-         returns. Only an agent whose `AgentCapabilities#loadSession` is `true` supports it.
+-     entry #prompt   one prompt turn: blocks until the agent reports why the turn ended
+-         `prompt(sessionId, content)` takes a `List[ContentBlock]`, and `prompt(sessionId,
+-         text)` a single `TextContent`. It returns the `StopReason` once the agent has finished
+-         everything it did in the turn, while the turn's updates stream concurrently to the
+-         update handler. Opening a turn clears the session's cancellation, so a client may
+-         prompt again after cancelling.
+-     entry #cancel   cancels the session's current turn
+-         A notification, not a request: the turn's outcome is the in-flight `#prompt`, which the
+-         agent must complete with `StopReason.Cancelled`. Permission requests pending when this
+-         is called, and any which arrive before the next turn opens, are answered `Cancelled`,
+-         as the protocol requires.
+-     entry #setMode   switches the session to one of its modes, by id
+-         The ids are the `SessionMode#id`s in `NewSessionResult#modes`.
+-     entry #agentCapabilities   what the agent reported it can do, at initialization
+-     entry #authMethods   the ways the agent offered to authenticate, at initialization
++     entry #Origin   接続の向こう側：`Acp.Agent`
++     entry #lifecycle   `Acp.Agent.Lifecycle` に対して生成されたクライアント：`initialize` と `authenticate`
++         これを直接呼ぶと、接続自身のメソッドが行うエラー変換とバージョン確認を迂回することになる。
++     entry #sessions   `Acp.Agent.Session` に対して生成されたクライアント：`session/*` メソッド
++         `#lifecycle` と同じく、接続自身のメソッドを優先すること。
++     entry #send   与えられたとおりのメッセージを送る。id を作らず、回答も待たない
++         このライブラリがモデル化していない拡張メソッドや通知のための、生の継ぎ目である。
++         この方法で送ったリクエストの応答はどこにも振り分けられないので、これは通知のためのものである。
++     entry #initialize   ハンドシェイク：プロトコルバージョンとクライアントのケイパビリティを送る
++         `Acp.connect` は接続を貸し出す前にこれを呼ぶので、クライアントは呼ばない。
++         エージェントが `Acp.version` 以外のプロトコルバージョンで答えると理由 `Incompatible` の `Acp.Error` を発生させ、`#agentCapabilities` と `#authMethods` のためにエージェントの応答を記録する。
++     entry #authenticate   エージェントが提示した方法の一つで、その id によって認証する
++         リクエストに `Acp.Error.Reason.AuthRequired` で答えたエージェントのためのものである。id は `#authMethods` にある `AuthMethod#id` である。
++     entry #newSession   作業ディレクトリーでセッションを開く。オプショナルな MCP サーバーを伴う
++         `newSession(cwd, mcpServers)` は `NewSessionResult` を返し、その `sessionId` を、そのセッションに関する以後のすべての呼び出しが取る。
++         `cwd` は絶対パスであるべきである。エージェントはそれを基準に作業する。
++     entry #loadSession   id でセッションを再開し、その履歴を更新ハンドラを通して再生する
++         エージェントは、これが戻る前に、会話全体を `session/update` 通知として再生する。それらは `UserMessageChunk` も含めて `Acp.updated` で登録されたハンドラに振り分けられる。
++         これをサポートするのは `AgentCapabilities#loadSession` が `true` のエージェントだけである。
++     entry #prompt   一つのプロンプトのターン：エージェントがターンの終わった理由を報告するまでブロックする
++         `prompt(sessionId, content)` は `List[ContentBlock]` を取り、`prompt(sessionId, text)` は単一の `TextContent` を取る。
++         エージェントがそのターンで行ったすべてを終えた時点で `StopReason` を返し、その間ターンの更新は更新ハンドラに並行してストリームとして届く。
++         ターンを開くとセッションの取り消し状態が解除されるので、クライアントは取り消した後に再びプロンプトを送れる。
++     entry #cancel   セッションの現在のターンを取り消す
++         リクエストではなく通知である。ターンの結果は送信中の `#prompt` であり、エージェントはそれを `StopReason.Cancelled` で完了させなければならない。
++         これが呼ばれた時点で保留中のパーミッションのリクエスト、および次のターンが開く前に届いたものには、プロトコルの要求どおり `Cancelled` で答える。
++     entry #setMode   セッションを、id で指定したモードの一つに切り替える
++         id は `NewSessionResult#modes` にある `SessionMode#id` である。
++     entry #agentCapabilities   初期化時にエージェントが報告した、エージェントにできること
++     entry #authMethods   初期化時にエージェントが提示した認証の方法
+
+-   entry .Agent   the agent's whole interface, as the client calls it: `Acp.Agent.Lifecycle` and `Acp.Agent.Session`
++   entry .Agent   クライアントから呼ぶ、エージェントのインターフェース全体：`Acp.Agent.Lifecycle` と `Acp.Agent.Session`
+
+=   entry .Agent   the agent's whole interface, as the client calls it: `Acp.Agent.Lifecycle` and `Acp.Agent.Session`
+-     detail
++     detail
+
+-         The union of the client→agent wire traits, and the `JsonRpc` `Origin` of an
+-         `Acp.Connection`. Nothing implements it on the client side: it is the type of the far
+-         end.
+-     entry .Lifecycle   the wire trait for `initialize` and `authenticate`, the client→agent handshake
++         クライアント→エージェント方向のワイヤトレイトの合併であり、`Acp.Connection` の `JsonRpc` の `Origin` である。
++         クライアント側でこれを実装するものはない。これは向こう側の型である。
++     entry .Lifecycle   `initialize` と `authenticate`、すなわちクライアント→エージェント方向のハンドシェイクのワイヤトレイト
+
+=     entry .Lifecycle   the wire trait for `initialize` and `authenticate`, the client→agent handshake
+-       detail
++       detail
+
+-           One of the `@rpc` traits which, together, make up the agent's interface `Acp.Agent`;
+-           split out so that obligatory's `JsonRpc.proxy` generates a class of manageable size per
+-           trait. `Acp.Connection#lifecycle` is the generated client for it. A program needs it
+-           only to build a connection of its own; `Acp.Connection` wraps it.
++           合わせてエージェントのインターフェース `Acp.Agent` を構成する `@rpc` トレイトの一つである。
++           obligatory の `JsonRpc.proxy` がトレイトごとに扱いやすい大きさのクラスを生成するように分割されている。
++           `Acp.Connection#lifecycle` はこれに対して生成されたクライアントである。
++           プログラムがこれを必要とするのは独自の接続を作るときだけであり、`Acp.Connection` がこれを包んでいる。
+
+-       refer espionage.Acp.Agent
++       refer espionage.Acp.Agent
+
+-       entry #initialize   sends `initialize` with the protocol version and client capabilities
+-       entry #authenticate   sends `authenticate` with an auth method's id
+-     entry .Session   the wire trait for the `session/*` methods the client calls on the agent
+-         `session/new`, `session/load`, `session/prompt`, `session/cancel` (a notification, so
+-         returning `Unit`) and `session/set_mode`, each a method of that name, taking the
+-         protocol's own parameter names and types. `Acp.Connection#sessions` is the generated
+-         client for it, and `Acp.Connection`'s `newSession`, `loadSession`, `prompt`, `cancel` and
+-         `setMode` wrap it.
++       entry #initialize   プロトコルバージョンとクライアントのケイパビリティを伴って `initialize` を送る
++       entry #authenticate   認証方法の id を伴って `authenticate` を送る
++     entry .Session   クライアントがエージェントに対して呼ぶ `session/*` メソッドのワイヤトレイト
++         `session/new`、`session/load`、`session/prompt`、`session/cancel`（通知なので `Unit` を返す）、`session/set_mode` であり、それぞれがその名前のメソッドとして、プロトコル自身のパラメーター名と型を取る。
++         `Acp.Connection#sessions` はこれに対して生成されたクライアントであり、`Acp.Connection` の `newSession`、`loadSession`、`prompt`、`cancel`、`setMode` がこれを包んでいる。
+
+-   entry .Client   the client's whole interface, as the agent calls it: session, filesystem and terminal methods
++   entry .Client   エージェントから呼ぶ、クライアントのインターフェース全体：セッション、ファイルシステム、端末のメソッド
+
+=   entry .Client   the client's whole interface, as the agent calls it: session, filesystem and terminal methods
+-     detail
++     detail
+
+-         The union of `Acp.Client.Session`, `Acp.Client.Fs` and `Acp.Client.Terminal`. The service
+-         `Acp.connect` builds implements it, with one generated JSON-RPC dispatcher per part, so
+-         a program implements it itself only to serve the protocol by other means than
+-         `Acp.connect`.
+-     entry .Session   the wire trait for what the agent calls on the client about a session
+-         `session/update`, the protocol's only notification in this direction, and
+-         `session/request_permission`, a request the agent blocks on. Implemented by the service
+-         `Acp.connect` builds, which routes them to the handlers registered with `Acp.updated` and
+-         `Acp.permission`.
+-     entry .Fs   the wire trait for the agent's filesystem requests: `fs/read_text_file` and `fs/write_text_file`
+-         Implemented by the service `Acp.connect` builds, which routes them to the handlers
+-         registered with `Acp.readFile` and `Acp.writeFile`, and answers `MethodNotFound` for one
+-         which was not registered.
+-     entry .Terminal   the wire trait for the agent's terminal requests: `terminal/create`, `output`, `wait_for_exit`, `kill`, `release`
+-         Implemented by the service `Acp.connect` builds, which routes them to the `Acp.Terminals`
+-         bundle registered with `Acp.terminals`, and answers `MethodNotFound` if none was.
++         `Acp.Client.Session`、`Acp.Client.Fs`、`Acp.Client.Terminal` の合併である。
++         `Acp.connect` が作るサービスがこれを実装し、部品ごとに生成された JSON-RPC ディスパッチャーを一つずつ持つ。そのため、プログラムがこれを自分で実装するのは、`Acp.connect` 以外の手段でプロトコルを提供するときだけである。
++     entry .Session   エージェントがセッションについてクライアントに対して呼ぶもののワイヤトレイト
++         この方向での唯一の通知である `session/update` と、エージェントがブロックして待つリクエストである `session/request_permission`。
++         `Acp.connect` が作るサービスがこれを実装し、それらを `Acp.updated` と `Acp.permission` で登録されたハンドラに振り分ける。
++     entry .Fs   エージェントのファイルシステムリクエストのワイヤトレイト：`fs/read_text_file` と `fs/write_text_file`
++         `Acp.connect` が作るサービスがこれを実装し、それらを `Acp.readFile` と `Acp.writeFile` で登録されたハンドラに振り分け、登録されていないものには `MethodNotFound` で答える。
++     entry .Terminal   エージェントの端末リクエストのワイヤトレイト：`terminal/create`、`output`、`wait_for_exit`、`kill`、`release`
++         `Acp.connect` が作るサービスがこれを実装し、それらを `Acp.terminals` で登録された `Acp.Terminals` の束に振り分け、束が登録されていなければ `MethodNotFound` で答える。

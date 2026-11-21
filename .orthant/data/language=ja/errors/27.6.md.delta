@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.27.6` — `S8` value below `Byte.MinValue`
++ # `↯/s.27.6` — `Byte.MinValue` を下回る `S8` の値
+
+- Raised at compile time by Hypotenuse's `s8` macro when the value
+- is below `-128`.
++ 値が `-128` を下回るとき、Hypotenuse の `s8` マクロによってコンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- An `S8` (signed 8-bit) cannot represent values below `Byte.MinValue`.
++ `S8`（符号付き 8 ビット）は `Byte.MinValue` を下回る値を表せない。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.27.6] an S8 may not be less than -128
++ [↯/s.27.6] an S8 may not be less than -128
+
+= [↯/s.27.6] an S8 may not be less than -128
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Provide a value in the range `-128`–`127`.
++ `-128`〜`127` の範囲の値を与える。
+
+- ## See also
++ ## 関連項目
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - その他の整数リテラルのエラー：[ファミリー](README.md#families)
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

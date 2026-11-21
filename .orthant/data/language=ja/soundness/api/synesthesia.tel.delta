@@ -1,0 +1,3640 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base synesthesia
++ base synesthesia
+
+- import soundness
++ import soundness
+
+- info   Model Context Protocol servers whose tools, resources and prompts are annotated Scala methods
++ info   ツール、リソース、プロンプトがアノテーション付きの Scala メソッドである Model Context Protocol サーバー
+
+- detail
++ detail
+
+-     _Synesthesia_ implements the [Model Context Protocol](https://modelcontextprotocol.io/),
+-     the protocol by which an AI assistant's harness reaches a server for **tools** it can call,
+-     **resources** it can read and **prompts** it can use. A server is an object extending
+-     `Mcp.Server` whose capabilities are ordinary methods marked with annotations: a `@tool`
+-     method is a callable tool, with its input and output schemas derived from its parameter
+-     and result types; a `@resource("uri")` method serves content at a URI; a `@prompt` method
+-     returns a conversation written with the `human"…"` and `agent"…"` interpolators. The
+-     protocol itself — JSON-RPC over the streamable HTTP transport, sessions, the listings the
+-     client discovers — is generated from those definitions by the `Mcp.Specification` macro, so
+-     the description a model reads can never disagree with the code it calls.
++     _Synesthesia_ は [Model Context Protocol](https://modelcontextprotocol.io/) を実装する。
++     これは、AI アシスタントのハーネスがサーバーに接続し、呼び出せる **ツール**、読める **リソース**、使える **プロンプト** を得るためのプロトコルである。
++     サーバーは `Mcp.Server` を継承するオブジェクトで、そのケイパビリティはアノテーションで印を付けた普通のメソッドである。
++     `@tool` メソッドは呼び出し可能なツールで、その入力と出力のスキーマはパラメーターと結果の型から導出される。
++     `@resource("uri")` メソッドは URI でコンテンツを提供する。
++     `@prompt` メソッドは `human"…"` と `agent"…"` の補間子で書いた会話を返す。
++     プロトコルそのもの、すなわちストリーミング可能な HTTP トランスポート上の JSON-RPC、セッション、クライアントが発見する一覧は、`Mcp.Specification` マクロがこれらの定義から生成する。
++     そのため、モデルが読む説明が、モデルが呼び出すコードと食い違うことは決してない。
+
+=     the description a model reads can never disagree with the code it calls.
+=
+-     ```scala
++     ```scala
+
+=     the description a model reads can never disagree with the code it calls.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
++     val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
+
+-     object AssistantTools extends Mcp.Server():
++     object AssistantTools extends Mcp.Server():
+
+=     object AssistantTools extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object AssistantTools extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"assistant-tools"
++       def name: Text = t"assistant-tools"
+
+-       def description: Text = t"Utilities for the assistant"
++       def description: Text = t"Utilities for the assistant"
+
+=       def description: Text = t"Utilities for the assistant"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"Utilities for the assistant"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+=       def description: Text = t"Utilities for the assistant"
+=       def version: Semver = v"1.0.0"
+=       def prompts: List[Mcp.Prompt] = Nil
+=
+-       @tool
++       @tool
+
+-       @about("Look up the color of a named thing")
++       @about("Look up the color of a named thing")
+
+-       def color(name: Text): Text = colors.at(name).or(t"unknown")
++       def color(name: Text): Text = colors.at(name).or(t"unknown")
+
+=       def color(name: Text): Text = colors.at(name).or(t"unknown")
+-     ```
++     ```
+
+-     The server is mounted in an HTTP handler by calling `AssistantTools.serve`, which answers
+-     `POST`ed JSON-RPC requests, streams server-sent events to a `GET`, and ends a session on
+-     `DELETE`. A tool which takes a `using Mcp.Client` can talk back to the client while it runs:
+-     `log` streams progress and `elicit` asks the user for structured input, its form a schema
+-     derived from a case class.
++     サーバーは、HTTP ハンドラの中で `AssistantTools.serve` を呼び出すことでマウントされる。
++     これは `POST` された JSON-RPC リクエストに応答し、`GET` に対してサーバー送信イベントをストリームし、`DELETE` でセッションを終える。
++     `using Mcp.Client` を取るツールは、実行中にクライアントへ話しかけることができる。
++     `log` は進捗をストリームし、`elicit` はユーザーに構造化された入力を求める。
++     その入力フォームは、ケースクラスから導出されたスキーマである。
+
+-     The library has two source sets:
++     このライブラリには二つのソースセットがある。
+
+-     - `synesthesia.content` — the content-block vocabulary shared with the Agent Client
+-       Protocol: `Content` (text, image, audio, resource-link and embedded-resource blocks,
+-       resource contents, `Icon`, `Annotations`, `Role`) and the `@about` annotation. It depends
+-       only on JSON, so an ACP client can use it without an HTTP server.
+-     - `synesthesia.core` — JVM-only: `Mcp` with its protocol records, `Mcp.Server`,
+-       `Mcp.Client`, `Mcp.Interface`, `Mcp.Specification`; the `@tool`, `@resource`, `@prompt`,
+-       `@title` and `@ui` annotations; `Discourse` and the `human`/`agent` interpolators.
++     - `synesthesia.content` — Agent Client Protocol と共有するコンテンツブロックの語彙。`Content`（テキスト、画像、音声、リソースリンク、埋め込みリソースのブロック、リソースの内容、`Icon`、`Annotations`、`Role`）と `@about` アノテーションからなる。JSON にのみ依存するので、ACP クライアントは HTTP サーバーなしでこれを使える。
++     - `synesthesia.core` — JVM 専用。プロトコルのレコードを持つ `Mcp`、`Mcp.Server`、`Mcp.Client`、`Mcp.Interface`、`Mcp.Specification`、`@tool`、`@resource`、`@prompt`、`@title`、`@ui` の各アノテーション、`Discourse` と `human`/`agent` 補間子からなる。
+
+-     Everything is exported to the `soundness` umbrella, where `Content` is spelled `McpContent`
+-     (`Content` in the umbrella is gesticulate's media-typed payload); its members are also
+-     reachable as `Mcp.TextContent` and so on, since `Mcp` re-exports them. `Mcp.Server#serve`
+-     needs the contextual values an HTTP handler has — a `Monitor`, a `Probate`, an `Online`
+-     and the `Http.Request` — and deriving a specification needs a `Tactic[Json.Error]` and a
+-     `Tactic[Mcp.Error]`, which `strategies.throwUnsafely` supplies.
++     すべては `soundness` アンブレラにエクスポートされ、そこでは `Content` は `McpContent` と綴られる（アンブレラの `Content` は gesticulate のメディアタイプ付きペイロードである）。
++     `Mcp` がそのメンバーを再エクスポートするので、それらは `Mcp.TextContent` などとしても参照できる。
++     `Mcp.Server#serve` は HTTP ハンドラが持つコンテキスト値、すなわち `Monitor`、`Probate`、`Online`、`Http.Request` を必要とする。
++     仕様の導出には `Tactic[Json.Error]` と `Tactic[Mcp.Error]` が必要で、これは `strategies.throwUnsafely` が与える。
+
+- refer synesthesia.Mcp
++ refer synesthesia.Mcp
+
+- refer synesthesia.Content
++ refer synesthesia.Content
+
+- refer synesthesia.tool
++ refer synesthesia.tool
+
+- refer synesthesia.resource
++ refer synesthesia.resource
+
+- refer synesthesia.prompt
++ refer synesthesia.prompt
+
+- entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, servers, clients and sessions
++ entry .Mcp   Model Context Protocol。そのレコード、JSON-RPC インターフェース、サーバー、クライアント、セッション
+
+= entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, servers, clients and sessions
+-   detail
++   detail
+
+-       `Mcp` is the home of everything the protocol defines. Its records — `Tool`, `Resource`,
+-       `Prompt`, `CallTool`, `Initialize`, `ServerCapabilities` and the rest — are case classes
+-       mirroring the protocol's JSON objects field for field, each encodable to and decodable
+-       from `Json` by derivation, with `Optional` fields absent from the wire when `Unset`. Its
+-       enumerations (`LoggingLevel`, `TaskStatus`, `Role`, …) carry hand-written codecs to the
+-       protocol's lowercase spellings, and its sum types (`ContentBlock`, `Reference`) encode
+-       with a `type` discriminator.
++       `Mcp` は、プロトコルが定義するすべてのものの置き場である。
++       そのレコード、すなわち `Tool`、`Resource`、`Prompt`、`CallTool`、`Initialize`、`ServerCapabilities` などは、プロトコルの JSON オブジェクトをフィールドごとに写したケースクラスである。
++       それぞれ導出によって `Json` へエンコードでき、`Json` からデコードでき、`Optional` のフィールドは `Unset` のときワイヤ上に現れない。
++       その列挙型（`LoggingLevel`、`TaskStatus`、`Role`、…）は、プロトコルの小文字の綴りへの手書きのコーデックを持ち、その直和型（`ContentBlock`、`Reference`）は `type` 判別子付きでエンコードされる。
+
+-       The server side is four pieces. A program's own server extends `.Server` and marks its
+-       methods `@tool`, `@resource` or `@prompt`; the `.Specification` macro reads those
+-       annotations into the listings and the dispatch; `.Interface` is the JSON-RPC
+-       implementation of `.Api` for one session, built over that specification; and `.send`
+-       maps one HTTP request onto it. A tool which takes a `using Mcp.Client` reaches the
+-       client through `.Client`.
++       サーバー側は四つの部品からなる。
++       プログラム自身のサーバーは `.Server` を継承し、そのメソッドに `@tool`、`@resource`、`@prompt` の印を付ける。
++       `.Specification` マクロはそれらのアノテーションを読み、一覧とディスパッチにする。
++       `.Interface` は、その仕様の上に構築された、一つのセッションのための `.Api` の JSON-RPC 実装である。
++       そして `.send` は一つの HTTP リクエストをそれに対応づける。
++       `using Mcp.Client` を取るツールは、`.Client` を通じてクライアントに到達する。
+
+=       client through `.Client`.
+=
+-       ```scala
++       ```scala
+
+=       client through `.Client`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       client through `.Client`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       object Pyrus extends Mcp.Server():
++       object Pyrus extends Mcp.Server():
+
+-         class Session() extends Mcp.Session
++         class Session() extends Mcp.Session
+
+-         def initialize(): Session = new Session()
++         def initialize(): Session = new Session()
+
+-         def name: Text = t"Pyrus"
++         def name: Text = t"Pyrus"
+
+-         def description: Text = t"A simple server"
++         def description: Text = t"A simple server"
+
+-         def version: Semver = v"1.0.0"
++         def version: Semver = v"1.0.0"
+
+-         def prompts: List[Mcp.Prompt] = Nil
++         def prompts: List[Mcp.Prompt] = Nil
+
+-         @tool
++         @tool
+
+-         def color(name: Text): Text = t"purple"
++         def color(name: Text): Text = t"purple"
+
+-       val spec = summon[Pyrus.type is Mcp.Specification]
++       val spec = summon[Pyrus.type is Mcp.Specification]
+
+-       spec.tools().map(_.name)   // List(t"color")
++       spec.tools().map(_.name)   // List(t"color")
+
+=       spec.tools().map(_.name)   // List(t"color")
+-       ```
++       ```
+
+-       The content-block vocabulary (`TextContent`, `ImageContent`, `AudioContent`,
+-       `ResourceLink`, `EmbeddedResource`, the resource contents, `Icon`, `Annotations` and
+-       `Role`) is defined in `Content` and re-exported here, so MCP code writes
+-       `Mcp.TextContent`. The protocol version spoken is `.version`, `2025-11-25`.
++       コンテンツブロックの語彙（`TextContent`、`ImageContent`、`AudioContent`、`ResourceLink`、`EmbeddedResource`、リソースの内容、`Icon`、`Annotations`、`Role`）は `Content` で定義され、ここで再エクスポートされるので、MCP のコードは `Mcp.TextContent` と書く。
++       話すプロトコルのバージョンは `.version` で、`2025-11-25` である。
+
+-   refer synesthesia.Mcp.Server
++   refer synesthesia.Mcp.Server
+
+-   refer synesthesia.Mcp.Specification
++   refer synesthesia.Mcp.Specification
+
+-   refer synesthesia.Mcp.Client
++   refer synesthesia.Mcp.Client
+
+-   refer synesthesia.Content
++   refer synesthesia.Content
+
+-   entry .version   the protocol version this implementation speaks: `2025-11-25`
+-       Sent as the `Mcp-Protocol-Version` header of every response and as the
+-       `protocolVersion` of an `Initialize` result.
+-   entry .Cursor   a pagination cursor, as `Text`
+-       The opaque token a listing (`ListTools`, `ListResources`, `ListPrompts`, `ListTasks`)
+-       returns as `nextCursor` and a client passes back to continue. The server's own listings
+-       are never paginated, so it is always `Unset`.
+-   entry .send   answers one HTTP request of the streamable HTTP transport against an interface
++   entry .version   この実装が話すプロトコルのバージョン。`2025-11-25`
++       すべてのレスポンスの `Mcp-Protocol-Version` ヘッダーとして、また `Initialize` の結果の `protocolVersion` として送られる。
++   entry .Cursor   ページ送りのカーソル。`Text` として表す
++       一覧（`ListTools`、`ListResources`、`ListPrompts`、`ListTasks`）が `nextCursor` として返し、クライアントが続きを得るために送り返す不透明なトークン。
++       サーバー自身の一覧はページ分けされないので、これは常に `Unset` である。
++   entry .send   ストリーミング可能な HTTP トランスポートの一つの HTTP リクエストに、インターフェースに対して応答する
+
+=   entry .send   answers one HTTP request of the streamable HTTP transport against an interface
+-     detail
++     detail
+
+-         `Mcp.send(sessionId, server, interface)(dispatch)` maps a request to the protocol's
+-         transport: `OPTIONS` answers `204 No Content`; `GET` answers `200 OK` with the
+-         interface's event stream as server-sent events, kept alive and uncached; `POST` reads
+-         the body as JSON, passes it to `dispatch` (normally `JsonRpc.serve(interface)`), and
+-         answers the result as JSON, or `202 Accepted` when the dispatch produced nothing (a
+-         notification). Any other method, including `DELETE`, answers `405 Method Not Allowed`;
+-         `Mcp.Server#serve` handles `DELETE` itself before reaching here. Every response carries
+-         the `Mcp-Protocol-Version` and `Mcp-Session-Id` headers.
++         `Mcp.send(sessionId, server, interface)(dispatch)` は、リクエストをプロトコルのトランスポートに対応づける。
++         `OPTIONS` には `204 No Content` で応答する。
++         `GET` には、インターフェースのイベントストリームをサーバー送信イベントとして、キープアライブ付き、キャッシュなしで `200 OK` で応答する。
++         `POST` は本文を JSON として読み、それを `dispatch`（通常は `JsonRpc.serve(interface)`）に渡し、結果を JSON として応答する。ディスパッチが何も生成しなかった場合（通知）は `202 Accepted` で応答する。
++         `DELETE` を含むそれ以外のメソッドには `405 Method Not Allowed` で応答する。
++         `Mcp.Server#serve` は、ここに到達する前に `DELETE` を自分で処理する。
++         すべてのレスポンスは `Mcp-Protocol-Version` と `Mcp-Session-Id` のヘッダーを持つ。
+
+-         A failure is a JSON-RPC error in a `200 OK` body, under the request's `id` so the
+-         client can match it: a body which does not parse is `-32700`, one which is not a valid
+-         request `-32600`, an `Mcp.Error` (an unknown tool, a missing parameter) `-32602`, an
+-         unknown method `-32601`, and any other exception `-32603`. A tool's own exception is
+-         not a failure here: `Mcp.Interface` answers it as a result marked `isError`.
++         失敗は、`200 OK` の本文の中の JSON-RPC エラーであり、クライアントが照合できるようリクエストの `id` の下に置かれる。
++         パースできない本文は `-32700`、有効なリクエストでない本文は `-32600`、`Mcp.Error`（未知のツール、欠けたパラメーター）は `-32602`、未知のメソッドは `-32601`、その他の例外は `-32603` である。
++         ツール自身の例外はここでは失敗ではない。
++         `Mcp.Interface` はそれを `isError` の印が付いた結果として応答する。
+
+-         It needs a `Monitor`, a `Probate`, an `Online` and the `Http.Request` in scope, as an
+-         HTTP handler body has. `Mcp.Server#serve` calls it; a program calls it directly only
+-         to put its own dispatch in front of the interface.
+-   entry .ParseError   the JSON-RPC error code `-32700`: the request body did not parse
+-   entry .InvalidRequest   the JSON-RPC error code `-32600`: the body was not a valid request
+-   entry .MethodNotFound   the JSON-RPC error code `-32601`: no such method
+-   entry .InvalidParams   the JSON-RPC error code `-32602`: an unknown tool or a missing parameter
+-       The code `Mcp.send` answers an `Mcp.Error` with.
+-   entry .InternalError   the JSON-RPC error code `-32603`: an unexpected exception in the server
+-   entry .UrlElicitationRequired   the JSON-RPC error code `-32042`: the request needs a URL elicitation first
+-   entry .TextInt   a JSON-RPC identifier which may be a string or an integer
++         これには、HTTP ハンドラの本体が持つように、`Monitor`、`Probate`、`Online`、`Http.Request` がスコープに必要である。
++         `Mcp.Server#serve` がこれを呼び出す。
++         プログラムがこれを直接呼び出すのは、インターフェースの前に独自のディスパッチを置く場合だけである。
++   entry .ParseError   JSON-RPC エラーコード `-32700`。リクエスト本文がパースできなかった
++   entry .InvalidRequest   JSON-RPC エラーコード `-32600`。本文が有効なリクエストではなかった
++   entry .MethodNotFound   JSON-RPC エラーコード `-32601`。そのようなメソッドはない
++   entry .InvalidParams   JSON-RPC エラーコード `-32602`。未知のツール、または欠けたパラメーター
++       `Mcp.send` が `Mcp.Error` に応答するときのコード。
++   entry .InternalError   JSON-RPC エラーコード `-32603`。サーバー内の予期しない例外
++   entry .UrlElicitationRequired   JSON-RPC エラーコード `-32042`。リクエストには先に URL による入力要求が必要である
++   entry .TextInt   文字列または整数のいずれかでありうる JSON-RPC 識別子
+
+=   entry .TextInt   a JSON-RPC identifier which may be a string or an integer
+-     detail
++     detail
+
+-         Request ids and progress tokens in the protocol may be either a string or a number.
+-         `TextInt(id: Text | Int)` holds either, encodes as whichever it holds, and decodes a
+-         JSON number as an `Int` and anything else as `Text`. It is the one type in `Mcp` with
+-         an `Inspectable` of its own (`.inspectable`), since a derivation cannot render a
+-         `Text | Int` field; `Mcp.TextInt(42).inspect` is `TextInt(id:42)`.
+-     entry .encodable   writes the id as a JSON string or number, by which it holds
+-     entry .decodable   reads a JSON number as an `Int` and any other value as `Text`
+-     entry .inspectable   renders the id showing which side of the union it came from
+-         `TextInt(id:42)` for an integer and `TextInt(id:t"abc")` for text. Needed because the
+-         structural derivation has no instance for a `Text | Int` field and would fall back to
+-         `toString`.
+-     entry #id   the identifier, as `Text` or `Int`
+-   entry .TaskAugmented   a request's optional `task` metadata, asking for it to run as a task
+-     entry #task   the `TaskMetadata`, if the request is to be a task
+-   entry .TaskMetadata   the metadata a request carries to run as a task: a time-to-live
+-     entry #ttl   how long, in milliseconds, the task's result is kept, if given
+-   entry .RelatedTaskMetadata   the id of the task a message relates to
+-     entry #taskId   the related task's id
+-   entry .BaseMetadata   a name and an optional human-readable title, the base of every named record
++         プロトコルのリクエスト id と進捗トークンは、文字列でも数値でもよい。
++         `TextInt(id: Text | Int)` はそのどちらかを保持し、保持しているものとしてエンコードし、JSON の数値を `Int` として、それ以外を `Text` としてデコードする。
++         これは `Mcp` の中で独自の `Inspectable`（`.inspectable`）を持つ唯一の型である。導出では `Text | Int` のフィールドを描画できないからである。
++         `Mcp.TextInt(42).inspect` は `TextInt(id:42)` である。
++     entry .encodable   保持しているものに応じて、id を JSON の文字列または数値として書く
++     entry .decodable   JSON の数値を `Int` として、それ以外の値を `Text` として読む
++     entry .inspectable   id を、ユニオンのどちら側から来たかがわかるように描画する
++         整数なら `TextInt(id:42)`、テキストなら `TextInt(id:t"abc")` となる。
++         構造的な導出は `Text | Int` のフィールドのインスタンスを持たず、`toString` に頼ってしまうので、これが必要である。
++     entry #id   識別子。`Text` または `Int` として表す
++   entry .TaskAugmented   リクエストのオプショナルな `task` メタデータ。タスクとして実行するよう求める
++     entry #task   リクエストがタスクとなる場合の `TaskMetadata`
++   entry .TaskMetadata   リクエストがタスクとして実行するために持つメタデータ。生存期間
++     entry #ttl   与えられていれば、タスクの結果を保持する時間（ミリ秒）
++   entry .RelatedTaskMetadata   メッセージが関係するタスクの id
++     entry #taskId   関係するタスクの id
++   entry .BaseMetadata   名前とオプショナルな人間向けのタイトル。名前を持つすべてのレコードの基礎
+
+=   entry .BaseMetadata   a name and an optional human-readable title, the base of every named record
+-     detail
++     detail
+
+-         The two fields every tool, prompt, resource and implementation shares. Its companion
+-         holds the derived JSON codecs (an `Encodable`, and a `Decodable` needing a
+-         `Tactic[Json.Error]`), anchored once so that every record which embeds it reuses them.
+-     entry #name   the programmatic name
+-     entry #title   a human-readable title, if given
+-   entry .Implementation   the name, version and description of a client or server program
++         すべてのツール、プロンプト、リソース、実装が共有する二つのフィールド。
++         そのコンパニオンは導出された JSON コーデック（`Encodable` と、`Tactic[Json.Error]` を必要とする `Decodable`）を保持する。
++         これらは一度だけ固定されるので、これを埋め込むすべてのレコードがそれを再利用する。
++     entry #name   プログラム上の名前
++     entry #title   与えられていれば、人間向けのタイトル
++   entry .Implementation   クライアントまたはサーバーのプログラムの名前、バージョン、説明
+
+=   entry .Implementation   the name, version and description of a client or server program
+-     detail
++     detail
+
+-         What each side sends about itself when the session is initialised: a client in
+-         `initialize`, and a server in its `Initialize` reply, where `Mcp.Interface` builds it
+-         from the server's `name` and `version`. The companion holds anchored derived JSON
+-         codecs; decoding needs a `Tactic[Json.Error]`.
+-     entry #name   the program's name
+-     entry #title   a human-readable title, if given
+-     entry #icons   icons representing the program, if given
+-     entry #version   the program's version, as text
+-     entry #description   a description of the program, if given
+-     entry #websiteUrl   the program's website, if given
+-   entry .ClientInfo   a client's name, title, version, description and icons
+-     entry #name   the client's name
+-     entry #title   the client's title
+-     entry #version   the client's version
+-     entry #description   a description of the client
+-     entry #icons   icons representing the client, if given
+-   entry .ServerInfo   a server's name, title, version, description, icons and website
+-     entry #name   the server's name
+-     entry #title   the server's title
+-     entry #version   the server's version
+-     entry #description   a description of the server
+-     entry #icons   icons representing the server, if given
+-     entry #websiteUrl   the server's website, as an `HttpUrl`
+-   entry .Initialize   the server's reply to `initialize`: version, capabilities, identity and instructions
++         セッションの初期化時に各側が自分について送るもの。
++         クライアントは `initialize` で、サーバーは `Initialize` の返答で送り、後者では `Mcp.Interface` がサーバーの `name` と `version` からこれを構築する。
++         コンパニオンは固定された導出 JSON コーデックを保持する。デコードには `Tactic[Json.Error]` が必要である。
++     entry #name   プログラムの名前
++     entry #title   与えられていれば、人間向けのタイトル
++     entry #icons   与えられていれば、プログラムを表すアイコン
++     entry #version   プログラムのバージョン。テキストとして表す
++     entry #description   与えられていれば、プログラムの説明
++     entry #websiteUrl   与えられていれば、プログラムのウェブサイト
++   entry .ClientInfo   クライアントの名前、タイトル、バージョン、説明、アイコン
++     entry #name   クライアントの名前
++     entry #title   クライアントのタイトル
++     entry #version   クライアントのバージョン
++     entry #description   クライアントの説明
++     entry #icons   与えられていれば、クライアントを表すアイコン
++   entry .ServerInfo   サーバーの名前、タイトル、バージョン、説明、アイコン、ウェブサイト
++     entry #name   サーバーの名前
++     entry #title   サーバーのタイトル
++     entry #version   サーバーのバージョン
++     entry #description   サーバーの説明
++     entry #icons   与えられていれば、サーバーを表すアイコン
++     entry #websiteUrl   サーバーのウェブサイト。`HttpUrl` として表す
++   entry .Initialize   `initialize` へのサーバーの返答。バージョン、ケイパビリティ、識別情報、指示
+
+=   entry .Initialize   the server's reply to `initialize`: version, capabilities, identity and instructions
+-     detail
++     detail
+
+-         `Mcp.Interface#initialize` answers with `Mcp.version`, a default `ServerCapabilities()`
+-         (tools, prompts and resources, each with list-change notifications), an
+-         `Implementation` of the server's name and version, and the server's `description` as
+-         the instructions.
+-     entry #protocolVersion   the protocol version the server speaks
+-     entry #capabilities   what the server can do, as `ServerCapabilities`
+-     entry #serverInfo   the server's identity, as an `Implementation`
+-     entry #instructions   text for the model about how to use the server, if given
+-   entry .ListChanged   a capability flag: whether a list-changed notification is sent
+-     entry #listChanged   whether the server notifies when the list changes, if stated
+-   entry .Resources   the resources capability: subscription and list-change support
+-     entry #subscribe   whether a client may subscribe to a resource, `true` by default
+-     entry #listChanged   whether the server notifies when the resource list changes, `true` by default
+-   entry .Sampling   a client's sampling capability: context inclusion and tool use
+-     entry #context   the client's support for including context, if stated
+-     entry #tools   the client's support for tools during sampling, if stated
+-   entry .Elicitation   a client's elicitation capability: form and URL modes
+-     entry #form   whether the client can show a form, if stated
+-     entry #url   whether the client can open a URL, if stated
+-   entry .RequestsElicitation   the elicitation requests a task may make
+-     entry #create   whether `elicitation/create` may run as a task, if stated
+-   entry .Call   whether `tools/call` may run as a task
+-     entry #call   the capability's value, if stated
+-   entry .RequestsSampling   the sampling requests a task may make
+-     entry #createMessage   whether `sampling/createMessage` may run as a task, if stated
+-   entry .Tasks   the tasks capability: listing, cancelling and which requests may be tasks
+-     entry #list   whether tasks may be listed, if stated
+-     entry #cancel   whether tasks may be cancelled, if stated
+-     entry #requests   which requests may run as tasks, as `Requests`, if stated
+-   entry .ListTasks   the reply to `tasks/list`: tasks and a continuation cursor
+-     entry #nextCursor   the cursor for the next page, if there is one
+-     entry #tasks   the tasks, as a list of `Task`
+-   entry .Requests   which requests may run as tasks: sampling, elicitation and tool calls
+-     entry #sampling   sampling requests, as `RequestsSampling`, if stated
+-     entry #elicitation   elicitation requests, as `RequestsElicitation`, if stated
+-     entry #tools   tool calls, as `Call`, if stated
+-   entry .ServerCapabilities   what a server offers: tools, prompts, resources, logging, completions, tasks
++         `Mcp.Interface#initialize` は、`Mcp.version`、デフォルトの `ServerCapabilities()`（ツール、プロンプト、リソースで、それぞれ一覧変更の通知付き）、サーバーの名前とバージョンの `Implementation`、そして指示としてのサーバーの `description` で応答する。
++     entry #protocolVersion   サーバーが話すプロトコルのバージョン
++     entry #capabilities   サーバーにできること。`ServerCapabilities` として表す
++     entry #serverInfo   サーバーの識別情報。`Implementation` として表す
++     entry #instructions   与えられていれば、サーバーの使い方についてのモデル向けのテキスト
++   entry .ListChanged   ケイパビリティのフラグ。一覧変更の通知が送られるかどうか
++     entry #listChanged   示されていれば、一覧が変わったときにサーバーが通知するかどうか
++   entry .Resources   リソースのケイパビリティ。購読と一覧変更のサポート
++     entry #subscribe   クライアントがリソースを購読できるかどうか。デフォルトは `true`
++     entry #listChanged   リソースの一覧が変わったときにサーバーが通知するかどうか。デフォルトは `true`
++   entry .Sampling   クライアントのサンプリングのケイパビリティ。コンテキストの包含とツールの使用
++     entry #context   示されていれば、コンテキストを含めることへのクライアントのサポート
++     entry #tools   示されていれば、サンプリング中のツールへのクライアントのサポート
++   entry .Elicitation   クライアントの入力要求のケイパビリティ。フォームと URL のモード
++     entry #form   示されていれば、クライアントがフォームを表示できるかどうか
++     entry #url   示されていれば、クライアントが URL を開けるかどうか
++   entry .RequestsElicitation   タスクが行える入力要求のリクエスト
++     entry #create   示されていれば、`elicitation/create` をタスクとして実行できるかどうか
++   entry .Call   `tools/call` をタスクとして実行できるかどうか
++     entry #call   示されていれば、ケイパビリティの値
++   entry .RequestsSampling   タスクが行えるサンプリングのリクエスト
++     entry #createMessage   示されていれば、`sampling/createMessage` をタスクとして実行できるかどうか
++   entry .Tasks   タスクのケイパビリティ。一覧、キャンセル、どのリクエストがタスクになれるか
++     entry #list   示されていれば、タスクを一覧できるかどうか
++     entry #cancel   示されていれば、タスクをキャンセルできるかどうか
++     entry #requests   示されていれば、どのリクエストをタスクとして実行できるか。`Requests` として表す
++   entry .ListTasks   `tasks/list` への返答。タスクと続きのカーソル
++     entry #nextCursor   次のページがあれば、そのカーソル
++     entry #tasks   タスク。`Task` のリストとして表す
++   entry .Requests   どのリクエストをタスクとして実行できるか。サンプリング、入力要求、ツール呼び出し
++     entry #sampling   示されていれば、サンプリングのリクエスト。`RequestsSampling` として表す
++     entry #elicitation   示されていれば、入力要求のリクエスト。`RequestsElicitation` として表す
++     entry #tools   示されていれば、ツール呼び出し。`Call` として表す
++   entry .ServerCapabilities   サーバーが提供するもの。ツール、プロンプト、リソース、ロギング、補完、タスク
+
+=   entry .ServerCapabilities   what a server offers: tools, prompts, resources, logging, completions, tasks
+-     detail
++     detail
+
+-         The defaults describe what `Mcp.Interface` implements: `prompts` and `tools` with
+-         list-change notifications and `resources` with subscription, and no experimental,
+-         logging, completion or task capabilities.
+-     entry #experimental   experimental capabilities, by name, if any
+-     entry #logging   the logging capability, if offered
+-     entry #completions   the argument-completion capability, if offered
+-     entry #prompts   the prompts capability, with list-change notification by default
+-     entry #resources   the resources capability, as `Resources`, with its defaults
+-     entry #tools   the tools capability, with list-change notification by default
+-     entry #tasks   the tasks capability, if offered
+-   entry .ClientCapabilities   what a client offers: roots, sampling, elicitation and tasks
+-     entry #experimental   experimental capabilities, by name, if any
+-     entry #roots   whether the client exposes filesystem roots, if stated
+-     entry #sampling   the client's sampling capability, if offered
+-     entry #elicitation   the client's elicitation capability, if offered
+-     entry #tasks   the client's tasks capability, if offered
+-   entry .Context   the arguments already given, for completing another
+-     entry #arguments   the arguments by name, if any
+-   entry .ListResources   the reply to `resources/list`: resources and a continuation cursor
+-     entry #nextCursor   the cursor for the next page, if there is one
+-     entry #resources   the resources, as a list of `Resource`
+-   entry .ListResourceTemplates   the reply to `resources/templates/list`
+-     entry #nextCursor   the cursor for the next page, if there is one
+-     entry #resourceTemplates   the templates, as a list of `ResourceTemplate`
+-   entry .ReadResource   the reply to `resources/read`: the resource's contents
++         デフォルトは `Mcp.Interface` が実装するものを表す。
++         一覧変更の通知付きの `prompts` と `tools`、購読付きの `resources` で、実験的な機能、ロギング、補完、タスクのケイパビリティはない。
++     entry #experimental   あれば、名前ごとの実験的なケイパビリティ
++     entry #logging   提供されていれば、ロギングのケイパビリティ
++     entry #completions   提供されていれば、引数補完のケイパビリティ
++     entry #prompts   プロンプトのケイパビリティ。デフォルトで一覧変更の通知付き
++     entry #resources   リソースのケイパビリティ。`Resources` としてそのデフォルト付きで表す
++     entry #tools   ツールのケイパビリティ。デフォルトで一覧変更の通知付き
++     entry #tasks   提供されていれば、タスクのケイパビリティ
++   entry .ClientCapabilities   クライアントが提供するもの。ルート、サンプリング、入力要求、タスク
++     entry #experimental   あれば、名前ごとの実験的なケイパビリティ
++     entry #roots   示されていれば、クライアントがファイルシステムのルートを公開するかどうか
++     entry #sampling   提供されていれば、クライアントのサンプリングのケイパビリティ
++     entry #elicitation   提供されていれば、クライアントの入力要求のケイパビリティ
++     entry #tasks   提供されていれば、クライアントのタスクのケイパビリティ
++   entry .Context   別の引数を補完するための、すでに与えられた引数
++     entry #arguments   あれば、名前ごとの引数
++   entry .ListResources   `resources/list` への返答。リソースと続きのカーソル
++     entry #nextCursor   次のページがあれば、そのカーソル
++     entry #resources   リソース。`Resource` のリストとして表す
++   entry .ListResourceTemplates   `resources/templates/list` への返答
++     entry #nextCursor   次のページがあれば、そのカーソル
++     entry #resourceTemplates   テンプレート。`ResourceTemplate` のリストとして表す
++   entry .ReadResource   `resources/read` への返答。リソースの内容
+
+=   entry .ReadResource   the reply to `resources/read`: the resource's contents
+-     detail
++     detail
+
+-         `Mcp.Interface#resources/read` answers a single `Contents`, text or binary according
+-         to how the `@resource` method's result type streams.
+-     entry #contents   the contents, each text or a Base64 blob
+-   entry .Resource   a resource as listed: its name, URI, description, MIME type and metadata
++         `Mcp.Interface#resources/read` は、`@resource` メソッドの結果の型がどのようにストリームされるかに応じて、テキストまたはバイナリの `Contents` を一つ返す。
++     entry #contents   内容。それぞれテキストか Base64 の blob
++   entry .Resource   一覧に載るリソース。その名前、URI、説明、MIME タイプ、メタデータ
+
+=   entry .Resource   a resource as listed: its name, URI, description, MIME type and metadata
+-     detail
++     detail
+
+-         The `Mcp.Specification` macro builds one for each `@resource` method: `name` is the
+-         method's name, `uri` the annotation's, `title` and `description` from `@title` and
+-         `@about`, and `mimeType` the annotation's, or `text/html;profile=mcp-app` when a tool's
+-         `@ui` names the URI, or `text/plain` for a text result and `application/octet-stream`
+-         for a binary one.
+-     entry #name   the resource's name
+-     entry #uri   where the resource is read from
+-     entry #title   a human-readable title, if given
+-     entry #description   a description, if given
+-     entry #icons   icons representing the resource, if given
+-     entry #mimeType   the resource's MIME type, if known
+-     entry #annotations   audience and priority hints, as `Annotations`
+-     entry #size   the resource's size in bytes, if known
+-     entry #_meta   protocol metadata, if any
+-   entry .ResourceTemplate   a family of resources, described by a URI template
++         `Mcp.Specification` マクロは、`@resource` メソッドごとに一つを構築する。
++         `name` はメソッドの名前、`uri` はアノテーションのもの、`title` と `description` は `@title` と `@about` から得る。
++         `mimeType` はアノテーションのもの、あるいはツールの `@ui` がその URI を指すときは `text/html;profile=mcp-app`、あるいはテキストの結果なら `text/plain`、バイナリの結果なら `application/octet-stream` である。
++     entry #name   リソースの名前
++     entry #uri   リソースを読む場所
++     entry #title   与えられていれば、人間向けのタイトル
++     entry #description   与えられていれば、説明
++     entry #icons   与えられていれば、リソースを表すアイコン
++     entry #mimeType   わかっていれば、リソースの MIME タイプ
++     entry #annotations   対象者と優先度のヒント。`Annotations` として表す
++     entry #size   わかっていれば、リソースのバイト単位のサイズ
++     entry #_meta   あれば、プロトコルのメタデータ
++   entry .ResourceTemplate   URI テンプレートで記述されるリソースの族
+
+=   entry .ResourceTemplate   a family of resources, described by a URI template
+-     detail
++     detail
+
+-         Listed by `resources/templates/list`, which `Mcp.Interface` does not yet implement.
+-     entry #name   the template's name
+-     entry #title   a human-readable title, if given
+-     entry #icons   icons, if given
+-     entry #uriTemplate   the RFC 6570 template its resources' URIs match
+-     entry #description   a description, if given
+-     entry #mimeType   the MIME type of its resources, if they share one
+-     entry #annotations   audience and priority hints, as `Annotations`
+-     entry #_meta   protocol metadata, if any
+-   entry .ListPrompts   the reply to `prompts/list`: prompts and a continuation cursor
+-     entry #nextCursor   the cursor for the next page, if there is one
+-     entry #prompts   the prompts, as a list of `Prompt`
+-   entry .Complete   the reply to `completion/complete`
+-     entry #completion   the completion values, as `Completion`
+-   entry .Completion   suggested values for an argument, with a total and whether there are more
+-     entry #values   the suggested values
+-     entry #total   how many there are in all, if known
+-     entry #hasMore   whether more exist than were returned, if known
+-   entry .TaskSupport   whether a tool may, must or must not run as a task
++         `resources/templates/list` で一覧に載るが、`Mcp.Interface` はまだそれを実装していない。
++     entry #name   テンプレートの名前
++     entry #title   与えられていれば、人間向けのタイトル
++     entry #icons   与えられていれば、アイコン
++     entry #uriTemplate   そのリソースの URI が一致する RFC 6570 テンプレート
++     entry #description   与えられていれば、説明
++     entry #mimeType   リソースが MIME タイプを共有していれば、その MIME タイプ
++     entry #annotations   対象者と優先度のヒント。`Annotations` として表す
++     entry #_meta   あれば、プロトコルのメタデータ
++   entry .ListPrompts   `prompts/list` への返答。プロンプトと続きのカーソル
++     entry #nextCursor   次のページがあれば、そのカーソル
++     entry #prompts   プロンプト。`Prompt` のリストとして表す
++   entry .Complete   `completion/complete` への返答
++     entry #completion   補完の値。`Completion` として表す
++   entry .Completion   引数の候補の値。総数と、さらにあるかどうかを伴う
++     entry #values   候補の値
++     entry #total   わかっていれば、全部でいくつあるか
++     entry #hasMore   わかっていれば、返されたより多くが存在するかどうか
++   entry .TaskSupport   ツールがタスクとして実行してよいか、しなければならないか、してはならないか
+
+=   entry .TaskSupport   whether a tool may, must or must not run as a task
+-     detail
++     detail
+
+-         `Forbidden`, `Optional` and `Required`, encoded as `forbidden`, `optional` and
+-         `required`; any other text fails to decode with a `Json.Error`.
+-     entry .encodable   writes the case as its lowercase name
+-     entry .decodable   reads `forbidden`, `optional` or `required`, raising `Json.Error` for anything else
+-   entry .LoggingLevel   the syslog severities a log message may carry
++         `Forbidden`、`Optional`、`Required` で、`forbidden`、`optional`、`required` としてエンコードされる。
++         それ以外のテキストは `Json.Error` でデコードに失敗する。
++     entry .encodable   ケースを小文字の名前として書く
++     entry .decodable   `forbidden`、`optional`、`required` を読み、それ以外には `Json.Error` を発生させる
++   entry .LoggingLevel   ログメッセージが持ちうる syslog の重大度
+
+=   entry .LoggingLevel   the syslog severities a log message may carry
+-     detail
++     detail
+
+-         `Debug`, `Info`, `Notice`, `Warning`, `Error`, `Critical`, `Alert` and `Emergency`,
+-         encoded as their lowercase names. `Mcp.Client#log` sends at `Info`, and
+-         `logging/setLevel` sets the level an `Mcp.Interface` holds.
+-     entry .encodable   writes the case as its lowercase name
+-     entry .decodable   reads a lowercase level name, raising `Json.Error` for anything else
+-   entry .LoggingMessage   a log notification: level, logger name and data
+-     entry #level   the severity, as `LoggingLevel`
+-     entry #logger   the logger's name, if given
+-     entry #data   the message, as JSON
+-   entry .TaskStatus   the state of a task: working, awaiting input, completed, failed or cancelled
++         `Debug`、`Info`、`Notice`、`Warning`、`Error`、`Critical`、`Alert`、`Emergency` で、小文字の名前としてエンコードされる。
++         `Mcp.Client#log` は `Info` で送り、`logging/setLevel` は `Mcp.Interface` が保持するレベルを設定する。
++     entry .encodable   ケースを小文字の名前として書く
++     entry .decodable   小文字のレベル名を読み、それ以外には `Json.Error` を発生させる
++   entry .LoggingMessage   ログの通知。レベル、ロガー名、データ
++     entry #level   重大度。`LoggingLevel` として表す
++     entry #logger   与えられていれば、ロガーの名前
++     entry #data   メッセージ。JSON として表す
++   entry .TaskStatus   タスクの状態。実行中、入力待ち、完了、失敗、キャンセル済み
+
+=   entry .TaskStatus   the state of a task: working, awaiting input, completed, failed or cancelled
+-     detail
++     detail
+
+-         `Working`, `InputRequired`, `Completed`, `Failed` and `Cancelled`, encoded as `working`,
+-         `input_required`, `completed`, `failed` and `cancelled`.
+-     entry .encodable   writes the case as its wire spelling
+-     entry .decodable   reads a wire spelling, raising `Json.Error` for anything else
+-   entry .PromptArgument   an argument a prompt takes: name, title, description and whether required
++         `Working`、`InputRequired`、`Completed`、`Failed`、`Cancelled` で、`working`、`input_required`、`completed`、`failed`、`cancelled` としてエンコードされる。
++     entry .encodable   ケースをそのワイヤ上の綴りとして書く
++     entry .decodable   ワイヤ上の綴りを読み、それ以外には `Json.Error` を発生させる
++   entry .PromptArgument   プロンプトが取る引数。名前、タイトル、説明、必須かどうか
+
+=   entry .PromptArgument   an argument a prompt takes: name, title, description and whether required
+-     detail
++     detail
+
+-         Built by the `Mcp.Specification` macro from each parameter of a `@prompt` method, with
+-         its `title` and `description` from the parameter's own `@title` and `@about`.
+-     entry #name   the argument's name
+-     entry #title   a human-readable title, if given
+-     entry #description   a description, if given
+-     entry #required   whether the argument must be supplied, if stated
+-   entry .Prompt   a prompt as listed: its name, title, description and arguments
++         `Mcp.Specification` マクロが `@prompt` メソッドの各パラメーターから構築し、その `title` と `description` はパラメーター自身の `@title` と `@about` から得る。
++     entry #name   引数の名前
++     entry #title   与えられていれば、人間向けのタイトル
++     entry #description   与えられていれば、説明
++     entry #required   示されていれば、引数を与えなければならないかどうか
++   entry .Prompt   一覧に載るプロンプト。その名前、タイトル、説明、引数
+
+=   entry .Prompt   a prompt as listed: its name, title, description and arguments
+-     detail
++     detail
+
+-         The `Mcp.Specification` macro builds one for each `@prompt` method, named after it,
+-         with `title` and `description` from `@title` and `@about` and an argument for each
+-         parameter; a method with no parameters has `arguments` `Unset`. The abstract
+-         `Mcp.Server#prompts` is a list of these.
+-     entry #name   the prompt's name
+-     entry #title   a human-readable title, if given
+-     entry #icons   icons, if given
+-     entry #description   a description, if given
+-     entry #arguments   the arguments the prompt takes, if any
+-     entry #_meta   protocol metadata, if any
+-   entry .Argument   a name and value, as given to `completion/complete`
+-     entry #name   the argument's name
+-     entry #value   the value typed so far
+-   entry .Reference   what a completion is for: a prompt or a resource template
++         `Mcp.Specification` マクロは `@prompt` メソッドごとに、その名前を付けた一つを構築する。
++         `title` と `description` は `@title` と `@about` から得て、パラメーターごとに一つの引数を持つ。
++         パラメーターのないメソッドでは `arguments` は `Unset` である。
++         抽象メソッド `Mcp.Server#prompts` はこれらのリストである。
++     entry #name   プロンプトの名前
++     entry #title   与えられていれば、人間向けのタイトル
++     entry #icons   与えられていれば、アイコン
++     entry #description   与えられていれば、説明
++     entry #arguments   あれば、プロンプトが取る引数
++     entry #_meta   あれば、プロトコルのメタデータ
++   entry .Argument   `completion/complete` に与えられる名前と値
++     entry #name   引数の名前
++     entry #value   これまでに入力された値
++   entry .Reference   補完の対象。プロンプトまたはリソーステンプレート
+
+=   entry .Reference   what a completion is for: a prompt or a resource template
+-     detail
++     detail
+
+-         A sealed sum of `PromptReference` and `ResourceTemplateReference`, encoded with a
+-         `type` discriminator of `ref/prompt` or `ref/resource`.
+-     entry .encodable   writes the reference with its `type` discriminator
+-     entry .decodable   reads a reference by its `type`, raising `Json.Error` for an unknown one
+-   entry .PromptReference   a reference to a prompt by name
+-     entry #name   the prompt's name
+-     entry #title   the prompt's title, if given
+-   entry .ResourceTemplateReference   a reference to a resource template by URI
+-     entry #uri   the template's URI
+-   entry .PromptMessage   one message of a prompt: a role and a content block
++         `PromptReference` と `ResourceTemplateReference` のシールされた直和型で、`ref/prompt` または `ref/resource` の `type` 判別子付きでエンコードされる。
++     entry .encodable   参照をその `type` 判別子付きで書く
++     entry .decodable   参照をその `type` によって読み、未知のものには `Json.Error` を発生させる
++   entry .PromptReference   名前によるプロンプトへの参照
++     entry #name   プロンプトの名前
++     entry #title   与えられていれば、プロンプトのタイトル
++   entry .ResourceTemplateReference   URI によるリソーステンプレートへの参照
++     entry #uri   テンプレートの URI
++   entry .PromptMessage   プロンプトの一つのメッセージ。ロールとコンテンツブロック
+
+=   entry .PromptMessage   one message of a prompt: a role and a content block
+-     detail
++     detail
+
+-         `Mcp.Interface#prompts/get` makes a `Discourse.Human` message a `User` `TextContent` and an
+-         `Discourse.Agent` message an `Assistant` one.
+-     entry #role   who speaks, as `Role`
+-     entry #content   what is said, as a `ContentBlock`
+-   entry .GetPrompt   the reply to `prompts/get`: a description and the messages
+-     entry #description   a description of the prompt, if given
+-     entry #messages   the messages, as a list of `PromptMessage`
+-   entry .CallTool   the reply to `tools/call`: content, structured content and whether it is an error
++         `Mcp.Interface#prompts/get` は、`Discourse.Human` のメッセージを `User` の `TextContent` に、`Discourse.Agent` のメッセージを `Assistant` のものにする。
++     entry #role   話し手。`Role` として表す
++     entry #content   話される内容。`ContentBlock` として表す
++   entry .GetPrompt   `prompts/get` への返答。説明とメッセージ
++     entry #description   与えられていれば、プロンプトの説明
++     entry #messages   メッセージ。`PromptMessage` のリストとして表す
++   entry .CallTool   `tools/call` への返答。コンテンツ、構造化コンテンツ、エラーかどうか
+
+=   entry .CallTool   the reply to `tools/call`: content, structured content and whether it is an error
+-     detail
++     detail
+
+-         `Mcp.Interface#tools/call` answers a tool's result both as `structuredContent`, a JSON
+-         object `{"result": …}` of the result's encoding, and as a `TextContent` of that JSON.
+-         A tool which throws answers `CallTool(List(TextContent(message)), isError = true)`, a
+-         result the model can read and act on rather than a protocol failure.
++         `Mcp.Interface#tools/call` は、ツールの結果を、結果のエンコーディングによる JSON オブジェクト `{"result": …}` である `structuredContent` と、その JSON の `TextContent` の両方として応答する。
++         例外を投げたツールは `CallTool(List(TextContent(message)), isError = true)` で応答する。これはプロトコルの失敗ではなく、モデルが読んで対処できる結果である。
+
+=         result the model can read and act on rather than a protocol failure.
+=
+-         ```scala
++         ```scala
+
+=         result the model can read and act on rather than a protocol failure.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Mcp.CallTool(List(Mcp.TextContent(t"boom")), isError = true)
++         Mcp.CallTool(List(Mcp.TextContent(t"boom")), isError = true)
+
+=         Mcp.CallTool(List(Mcp.TextContent(t"boom")), isError = true)
+-         ```
++         ```
+
+-     entry #content   the result as content blocks, for the model to read
+-     entry #structuredContent   the result as JSON matching the tool's output schema, if given
+-     entry #isError   whether the tool itself failed, if stated
+-   entry .ListTools   the reply to `tools/list`: tools and a continuation cursor
+-     entry #nextCursor   the cursor for the next page, if there is one
+-     entry #tools   the tools, as a list of `Tool`
+-   entry .ListRoots   the reply to `roots/list`: the client's filesystem roots
+-     entry #roots   the roots, as a list of `Root`
+-   entry .Root   a filesystem root the client exposes: a URI and a name
+-     entry #uri   the root's URI
+-     entry #name   the root's name, if given
+-     entry #_meta   protocol metadata, if any
+-   entry .Tool   a tool as listed: name, schemas, title, description, execution and annotations
++     entry #content   モデルが読むための、コンテンツブロックとしての結果
++     entry #structuredContent   与えられていれば、ツールの出力スキーマに一致する JSON としての結果
++     entry #isError   示されていれば、ツール自身が失敗したかどうか
++   entry .ListTools   `tools/list` への返答。ツールと続きのカーソル
++     entry #nextCursor   次のページがあれば、そのカーソル
++     entry #tools   ツール。`Tool` のリストとして表す
++   entry .ListRoots   `roots/list` への返答。クライアントのファイルシステムのルート
++     entry #roots   ルート。`Root` のリストとして表す
++   entry .Root   クライアントが公開するファイルシステムのルート。URI と名前
++     entry #uri   ルートの URI
++     entry #name   与えられていれば、ルートの名前
++     entry #_meta   あれば、プロトコルのメタデータ
++   entry .Tool   一覧に載るツール。名前、スキーマ、タイトル、説明、実行方式、アノテーション
+
+=   entry .Tool   a tool as listed: name, schemas, title, description, execution and annotations
+-     detail
++     detail
+
+-         The `Mcp.Specification` macro builds one for each `@tool` method. `name` is the
+-         method's name; `inputSchema` is a `JsonSchema.Object` with a property per parameter
+-         (each schema derived from the parameter's type, its `description` from the parameter's
+-         `@about`) whose `required` list omits every parameter typed `Optional` or carrying a
+-         default argument; `outputSchema` is an object with the one required property `result`,
+-         the schema of the result type; `title` and `description` come from `@title` and
+-         `@about`; and `_meta` names the resource a `@ui` annotation points to, as
+-         `{"ui": {"visibility": ["model", "app"], "resourceUri": "…"}}`.
+-     entry #name   the tool's name
+-     entry #inputSchema   the JSON schema of the tool's arguments
+-     entry #outputSchema   the JSON schema of the tool's structured result, if given
+-     entry #title   a human-readable title, if given
+-     entry #icons   icons, if given
+-     entry #description   a description, for the model to decide when to call it, if given
+-     entry #execution   whether the tool may run as a task, if stated
+-     entry #annotations   behavioural hints, as `ToolAnnotations`, if given
+-     entry #_meta   protocol metadata, if any; a `@ui` tool's user-interface resource is named here
+-   entry .ToolExecution   how a tool executes: its task support
+-     entry #taskSupport   whether the tool may run as a task, if stated
+-   entry .ToolAnnotations   hints about a tool's behaviour: read-only, destructive, idempotent, open-world
+-     entry #title   a human-readable title, if given
+-     entry #readOnlyHint   whether the tool changes nothing, if stated
+-     entry #destructiveHint   whether the tool may make destructive changes, if stated
+-     entry #idempotentHint   whether repeating a call with the same arguments has no further effect, if stated
+-     entry #openWorldHint   whether the tool reaches outside its own closed world, if stated
+-   entry .ToolChoice   how a sampling request lets the model choose tools
+-     entry #mode   the mode, as `Mode`, if stated
+-   entry .Mode   whether a sampling model may, must or must not use tools
++         `Mcp.Specification` マクロは、`@tool` メソッドごとに一つを構築する。
++         `name` はメソッドの名前である。
++         `inputSchema` はパラメーターごとにプロパティを持つ `JsonSchema.Object` で（各スキーマはパラメーターの型から導出され、その `description` はパラメーターの `@about` から得る）、その `required` のリストは、`Optional` 型のパラメーターと、デフォルト引数を持つパラメーターをすべて除く。
++         `outputSchema` は、結果の型のスキーマである必須のプロパティ `result` を一つだけ持つオブジェクトである。
++         `title` と `description` は `@title` と `@about` から得る。
++         そして `_meta` は、`@ui` アノテーションが指すリソースを `{"ui": {"visibility": ["model", "app"], "resourceUri": "…"}}` として示す。
++     entry #name   ツールの名前
++     entry #inputSchema   ツールの引数の JSON スキーマ
++     entry #outputSchema   与えられていれば、ツールの構造化された結果の JSON スキーマ
++     entry #title   与えられていれば、人間向けのタイトル
++     entry #icons   与えられていれば、アイコン
++     entry #description   与えられていれば、モデルがいつ呼び出すかを決めるための説明
++     entry #execution   示されていれば、ツールをタスクとして実行できるかどうか
++     entry #annotations   与えられていれば、振る舞いのヒント。`ToolAnnotations` として表す
++     entry #_meta   あれば、プロトコルのメタデータ。`@ui` ツールのユーザーインターフェースのリソースはここで示される
++   entry .ToolExecution   ツールの実行方式。そのタスクのサポート
++     entry #taskSupport   示されていれば、ツールをタスクとして実行できるかどうか
++   entry .ToolAnnotations   ツールの振る舞いについてのヒント。読み取り専用、破壊的、冪等、開いた世界
++     entry #title   与えられていれば、人間向けのタイトル
++     entry #readOnlyHint   示されていれば、ツールが何も変更しないかどうか
++     entry #destructiveHint   示されていれば、ツールが破壊的な変更を行いうるかどうか
++     entry #idempotentHint   示されていれば、同じ引数で呼び出しを繰り返してもそれ以上の効果がないかどうか
++     entry #openWorldHint   示されていれば、ツールが自分の閉じた世界の外に到達するかどうか
++   entry .ToolChoice   サンプリングのリクエストが、モデルにツールをどう選ばせるか
++     entry #mode   示されていれば、モード。`Mode` として表す
++   entry .Mode   サンプリングのモデルがツールを使ってよいか、使わなければならないか、使ってはならないか
+
+=   entry .Mode   whether a sampling model may, must or must not use tools
+-     detail
++     detail
+
+-         `Auto`, `Required` and `None`, encoded as `auto`, `required` and `none`.
+-     entry .encodable   writes the case as its lowercase name
+-     entry .decodable   reads `auto`, `required` or `none`, raising `Json.Error` for anything else
+-   entry .SamplingMessage   a message in a sampling request: a role and content blocks
+-     entry #role   who speaks, as `Role`
+-     entry #content   the message's blocks, each a `SamplingMessageContentBlock`
+-     entry #_meta   protocol metadata, if any
+-   entry .SamplingMessageContentBlock   the blocks a sampling message may hold, as a union type
++         `Auto`、`Required`、`None` で、`auto`、`required`、`none` としてエンコードされる。
++     entry .encodable   ケースを小文字の名前として書く
++     entry .decodable   `auto`、`required`、`none` を読み、それ以外には `Json.Error` を発生させる
++   entry .SamplingMessage   サンプリングのリクエストの中のメッセージ。ロールとコンテンツブロック
++     entry #role   話し手。`Role` として表す
++     entry #content   メッセージのブロック。それぞれ `SamplingMessageContentBlock`
++     entry #_meta   あれば、プロトコルのメタデータ
++   entry .SamplingMessageContentBlock   サンプリングのメッセージが持ちうるブロック。ユニオン型として表す
+
+=   entry .SamplingMessageContentBlock   the blocks a sampling message may hold, as a union type
+-     detail
++     detail
+
+-         `TextContent | ImageContent | AudioContent | ToolUseContent | ToolResultContent`. It is
+-         a type alias rather than a sealed trait, because three of its members belong to
+-         `Content`, in a component this one builds on; its JSON codecs live in the companion of
+-         `ToolUseContent`, the first member defined here, which is in the union's implicit
+-         scope. They encode with a `type` discriminator of `text`, `image`, `audio`, `tool_use`
+-         or `tool_result`.
+-   entry .ToolUseContent   a model's request to call a tool, in a sampling message
++         `TextContent | ImageContent | AudioContent | ToolUseContent | ToolResultContent` である。
++         シールされたトレイトではなく型エイリアスなのは、そのメンバーのうち三つが、このコンポーネントが土台とするコンポーネントの `Content` に属するからである。
++         その JSON コーデックは、ここで定義される最初のメンバーである `ToolUseContent` のコンパニオンにあり、それはユニオンの暗黙のスコープに含まれる。
++         これらは `text`、`image`、`audio`、`tool_use`、`tool_result` の `type` 判別子付きでエンコードされる。
++   entry .ToolUseContent   サンプリングのメッセージの中の、ツールを呼び出すモデルのリクエスト
+
+=   entry .ToolUseContent   a model's request to call a tool, in a sampling message
+-     detail
++     detail
+
+-         The companion also anchors the JSON codecs of `SamplingMessageContentBlock`, the union
+-         this is a member of, since a type alias has no companion of its own.
+-     entry .encodable   writes any `SamplingMessageContentBlock` with its `type` discriminator
+-     entry .decodable   reads a `SamplingMessageContentBlock` by its `type`, raising `Json.Error` for an unknown one
+-     entry #id   the id the result will be matched by
+-     entry #name   the tool to call
+-     entry #input   the arguments, as JSON
+-   entry .ToolResultContent   the result of a tool call, in a sampling message
+-     entry #toolUseId   the id of the `ToolUseContent` this answers
+-     entry #content   the result as content blocks
+-     entry #structuredContent   the result as JSON, if given
+-     entry #isError   whether the tool failed, if stated
+-   entry .ModelPreferences   a server's preferences for which model samples: hints and priorities
+-     entry #hints   model names to prefer, in order, if given
+-     entry #costPriority   how much to weigh cost, from 0 to 1, if given
+-     entry #speedPriority   how much to weigh speed, from 0 to 1, if given
+-     entry #intelligencePriority   how much to weigh capability, from 0 to 1, if given
+-   entry .ModelHint   a hint naming a model or family to prefer
+-     entry #name   the model's name or a substring of it, if given
+-   entry .CreateMessage   the reply to `sampling/createMessage`: the model's message
+-     entry #role   who speaks, as `Role`
+-     entry #content   the message's blocks, each a `SamplingMessageContentBlock`
+-     entry #model   the name of the model which answered
+-     entry #stopReason   why generation stopped, if given
+-   entry .Task   a long-running request: its id, status, timestamps and polling interval
+-     entry #taskId   the task's id
+-     entry #status   the task's state, as `TaskStatus`
+-     entry #statusMessage   a human-readable account of the state, if given
+-     entry #createdAt   when the task was created, as an ISO 8601 timestamp
+-     entry #lastUpdatedAt   when the task last changed, as an ISO 8601 timestamp
+-     entry #ttl   how long the result is kept, in milliseconds, if given
+-     entry #pollInterval   how often to poll, in milliseconds, if suggested
+-   entry .CreateTaskResult   the reply to a request which became a task
+-     entry #task   the task created, as `Task`
+-   entry .ElicitAction   what the user did with an elicitation: accepted, declined or cancelled
++         型エイリアスは自分のコンパニオンを持たないので、このコンパニオンは、これがメンバーであるユニオン `SamplingMessageContentBlock` の JSON コーデックも固定する。
++     entry .encodable   任意の `SamplingMessageContentBlock` をその `type` 判別子付きで書く
++     entry .decodable   `SamplingMessageContentBlock` をその `type` によって読み、未知のものには `Json.Error` を発生させる
++     entry #id   結果の照合に使われる id
++     entry #name   呼び出すツール
++     entry #input   引数。JSON として表す
++   entry .ToolResultContent   サンプリングのメッセージの中の、ツール呼び出しの結果
++     entry #toolUseId   これが応答する `ToolUseContent` の id
++     entry #content   コンテンツブロックとしての結果
++     entry #structuredContent   与えられていれば、JSON としての結果
++     entry #isError   示されていれば、ツールが失敗したかどうか
++   entry .ModelPreferences   どのモデルがサンプリングするかについてのサーバーの希望。ヒントと優先度
++     entry #hints   与えられていれば、優先するモデル名。順に並べる
++     entry #costPriority   与えられていれば、コストをどれだけ重視するか。0 から 1 まで
++     entry #speedPriority   与えられていれば、速度をどれだけ重視するか。0 から 1 まで
++     entry #intelligencePriority   与えられていれば、能力をどれだけ重視するか。0 から 1 まで
++   entry .ModelHint   優先するモデルまたはモデルの系統を示すヒント
++     entry #name   与えられていれば、モデルの名前またはその部分文字列
++   entry .CreateMessage   `sampling/createMessage` への返答。モデルのメッセージ
++     entry #role   話し手。`Role` として表す
++     entry #content   メッセージのブロック。それぞれ `SamplingMessageContentBlock`
++     entry #model   応答したモデルの名前
++     entry #stopReason   与えられていれば、生成が止まった理由
++   entry .Task   長時間実行されるリクエスト。その id、状態、タイムスタンプ、ポーリング間隔
++     entry #taskId   タスクの id
++     entry #status   タスクの状態。`TaskStatus` として表す
++     entry #statusMessage   与えられていれば、状態についての人間向けの説明
++     entry #createdAt   タスクが作られた時刻。ISO 8601 のタイムスタンプとして表す
++     entry #lastUpdatedAt   タスクが最後に変わった時刻。ISO 8601 のタイムスタンプとして表す
++     entry #ttl   与えられていれば、結果を保持する時間（ミリ秒）
++     entry #pollInterval   提案されていれば、ポーリングの頻度（ミリ秒）
++   entry .CreateTaskResult   タスクになったリクエストへの返答
++     entry #task   作られたタスク。`Task` として表す
++   entry .ElicitAction   ユーザーが入力要求に対して行ったこと。承諾、辞退、キャンセル
+
+=   entry .ElicitAction   what the user did with an elicitation: accepted, declined or cancelled
+-     detail
++     detail
+
+-         `Accept`, `Decline` and `Cancel`, encoded as `accept`, `decline` and `cancel`.
+-     entry .encodable   writes the case as its lowercase name
+-     entry .decodable   reads `accept`, `decline` or `cancel`, raising `Json.Error` for anything else
+-   entry .ElicitResult   the client's reply to `elicitation/create`: the action and any content
+-     entry #action   what the user did, as `ElicitAction`
+-     entry #content   the submitted values, as JSON, if accepted
+-   entry .ElicitRequest   a request for user input: a form or a URL
+-       A sealed sum of `ElicitRequestForm` and `ElicitRequestUrl`.
+-   entry .ElicitRequestForm   an elicitation asking the user to fill in a form described by a schema
+-     entry #message   what to ask the user
+-     entry #requestedSchema   the JSON schema of the values wanted
+-     entry #mode   the elicitation mode, if given
+-   entry .ElicitRequestUrl   an elicitation asking the user to visit a URL
+-     entry #mode   the elicitation mode
+-     entry #message   what to ask the user
+-     entry #elicitationId   the id by which completion is reported
+-     entry #url   the URL to open
+-   entry .ElicitationComplete   the notification that a URL elicitation finished
+-     entry #elicitationId   the id of the elicitation which finished
+-   entry .Api   the JSON-RPC interface of an MCP server: every method a client may call, as `@rpc` methods
++         `Accept`、`Decline`、`Cancel` で、`accept`、`decline`、`cancel` としてエンコードされる。
++     entry .encodable   ケースを小文字の名前として書く
++     entry .decodable   `accept`、`decline`、`cancel` を読み、それ以外には `Json.Error` を発生させる
++   entry .ElicitResult   `elicitation/create` へのクライアントの返答。アクションとあれば内容
++     entry #action   ユーザーが行ったこと。`ElicitAction` として表す
++     entry #content   承諾された場合、送信された値。JSON として表す
++   entry .ElicitRequest   ユーザー入力の要求。フォームまたは URL
++       `ElicitRequestForm` と `ElicitRequestUrl` のシールされた直和型。
++   entry .ElicitRequestForm   スキーマで記述されたフォームへの記入をユーザーに求める入力要求
++     entry #message   ユーザーに尋ねること
++     entry #requestedSchema   求める値の JSON スキーマ
++     entry #mode   与えられていれば、入力要求のモード
++   entry .ElicitRequestUrl   URL を訪れるようユーザーに求める入力要求
++     entry #mode   入力要求のモード
++     entry #message   ユーザーに尋ねること
++     entry #elicitationId   完了を報告するための id
++     entry #url   開く URL
++   entry .ElicitationComplete   URL による入力要求が終わったことの通知
++     entry #elicitationId   終わった入力要求の id
++   entry .Api   MCP サーバーの JSON-RPC インターフェース。クライアントが呼び出せるすべてのメソッドを `@rpc` メソッドとして表す
+
+=   entry .Api   the JSON-RPC interface of an MCP server: every method a client may call, as `@rpc` methods
+-     detail
++     detail
+
+-         The `JsonRpc` trait which declares the protocol's server-side methods, each marked
+-         `@rpc` and named as the protocol spells it: `ping`, `initialize`,
+-         `completion/complete`, `logging/setLevel`, `prompts/get`, `prompts/list`,
+-         `resources/list`, `resources/templates/list`, `resources/read`,
+-         `resources/subscribe`, `resources/unsubscribe`, `tools/call`, `tools/list`,
+-         `tasks/get`, `tasks/result`, `tasks/list`, `tasks/cancel`, and the notifications
+-         `notifications/cancelled`, `notifications/progress`, `notifications/initialized`,
+-         `notifications/roots/list_changed`, `notifications/tasks/status`,
+-         `notifications/resources/list_changed`, `notifications/resources/updated`,
+-         `notifications/prompts/list_changed`, `notifications/tools/list_changed` and
+-         `notifications/message`. Each takes the request's parameters by name, with a trailing
+-         `_meta: Optional[Json]`, and returns the protocol's result record (`Initialize`,
+-         `ListTools`, `CallTool`, `GetPrompt`, …) or `Unit` for a notification. Its `Origin`
+-         is `Mcp.Client`.
++         プロトコルのサーバー側のメソッドを宣言する `JsonRpc` トレイト。
++         各メソッドは `@rpc` の印が付き、プロトコルの綴りどおりに名付けられている。
++         `ping`、`initialize`、`completion/complete`、`logging/setLevel`、`prompts/get`、`prompts/list`、`resources/list`、`resources/templates/list`、`resources/read`、`resources/subscribe`、`resources/unsubscribe`、`tools/call`、`tools/list`、`tasks/get`、`tasks/result`、`tasks/list`、`tasks/cancel`、そして通知の `notifications/cancelled`、`notifications/progress`、`notifications/initialized`、`notifications/roots/list_changed`、`notifications/tasks/status`、`notifications/resources/list_changed`、`notifications/resources/updated`、`notifications/prompts/list_changed`、`notifications/tools/list_changed`、`notifications/message` である。
++         それぞれリクエストのパラメーターを名前で取り、末尾に `_meta: Optional[Json]` を持ち、プロトコルの結果のレコード（`Initialize`、`ListTools`、`CallTool`、`GetPrompt`、…）を返すか、通知なら `Unit` を返す。
++         その `Origin` は `Mcp.Client` である。
+
+-         `Mcp.Interface` is the implementation; `JsonRpc.serve(interface)` dispatches a JSON
+-         request to the method of that name, and an unknown method is a `JsonRpc.Error`, which
+-         `Mcp.send` answers as `-32601`.
+-     entry #Origin   the other side of the interface: `Mcp.Client`
+-     entry #ping   answers a liveness check with nothing
+-     entry #initialize   begins a session: takes the client's version, capabilities and identity, answers `Initialize`
+-   entry .Interface   the implementation of `Mcp.Api` for one session, over a server's specification
++         `Mcp.Interface` がその実装である。
++         `JsonRpc.serve(interface)` は JSON のリクエストをその名前のメソッドにディスパッチし、未知のメソッドは `JsonRpc.Error` となり、`Mcp.send` はそれを `-32601` として応答する。
++     entry #Origin   インターフェースの相手側。`Mcp.Client`
++     entry #ping   死活確認に何も返さずに応答する
++     entry #initialize   セッションを始める。クライアントのバージョン、ケイパビリティ、識別情報を取り、`Initialize` で応答する
++   entry .Interface   サーバーの仕様の上に構築された、一つのセッションのための `Mcp.Api` の実装
+
+=   entry .Interface   the implementation of `Mcp.Api` for one session, over a server's specification
+-     detail
++     detail
+
+-         `Mcp.Interface(sessionId, server)` is the object which answers a session's JSON-RPC
+-         calls. It is built once per session id and cached, so a second call with the same id
+-         returns the same interface; `Mcp.Server#terminate` evicts it, which also ends its
+-         event stream so an open `GET` finishes. It needs a `server.type is Mcp.Specification`,
+-         which the `Mcp.Specification.mcpSpecification` macro derives.
++         `Mcp.Interface(sessionId, server)` は、セッションの JSON-RPC 呼び出しに応答するオブジェクトである。
++         これはセッション id ごとに一度だけ構築されてキャッシュされるので、同じ id で再び呼び出すと同じインターフェースが返る。
++         `Mcp.Server#terminate` はそれを追い出し、そのイベントストリームも終わらせるので、開いている `GET` は終了する。
++         これには `server.type is Mcp.Specification` が必要で、それは `Mcp.Specification.mcpSpecification` マクロが導出する。
+
+-         The listings answer from the specification: `tools/list` is `spec.tools()`,
+-         `resources/list` is `spec.resources()`, `prompts/list` is `spec.prompts()`, each
+-         unpaginated. `tools/call` runs `spec.invokeTool` under its own supervision and
+-         answers `CallTool` with the result as `structuredContent` and as text; a tool which
+-         throws answers a result marked `isError` carrying the exception's message, while an
+-         `Mcp.Error` (an unknown tool, a missing required parameter) is rethrown for `Mcp.send`
+-         to answer as a JSON-RPC error. `prompts/get` runs `spec.invokePrompt` and turns each
+-         `Discourse.Human` into a `User` message and each `Discourse.Agent` into an `Assistant` one.
+-         `resources/read` answers `spec.invokeResource`. `initialize` answers the server's
+-         name, version and description with the default `ServerCapabilities`, and
+-         `logging/setLevel` records the level. `ping`, `notifications/initialized`,
+-         `notifications/cancelled` and `notifications/progress` accept and do nothing;
+-         `tasks/list` is always empty.
++         一覧は仕様から応答する。
++         `tools/list` は `spec.tools()`、`resources/list` は `spec.resources()`、`prompts/list` は `spec.prompts()` で、いずれもページ分けされない。
++         `tools/call` は `spec.invokeTool` を独自の監督下で実行し、結果を `structuredContent` とテキストとして持つ `CallTool` で応答する。
++         例外を投げたツールは、例外のメッセージを持つ `isError` の印が付いた結果で応答する。一方、`Mcp.Error`（未知のツール、欠けた必須パラメーター）は再び投げられ、`Mcp.send` が JSON-RPC エラーとして応答する。
++         `prompts/get` は `spec.invokePrompt` を実行し、各 `Discourse.Human` を `User` のメッセージに、各 `Discourse.Agent` を `Assistant` のメッセージに変える。
++         `resources/read` は `spec.invokeResource` で応答する。
++         `initialize` はサーバーの名前、バージョン、説明とデフォルトの `ServerCapabilities` で応答し、`logging/setLevel` はレベルを記録する。
++         `ping`、`notifications/initialized`、`notifications/cancelled`、`notifications/progress` は受け付けて何もしない。
++         `tasks/list` は常に空である。
+
+-         Completion, resource templates, subscriptions, tasks and the remaining notifications
+-         are not implemented, and a call to one throws `NotImplementedError`, which
+-         `Mcp.send` answers as `-32603`.
++         補完、リソーステンプレート、購読、タスク、残りの通知は実装されておらず、それらを呼び出すと `NotImplementedError` が投げられ、`Mcp.send` はそれを `-32603` として応答する。
+
+=         `Mcp.send` answers as `-32603`.
+=
+-         ```scala
++         ```scala
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+-         object Pyrus extends Mcp.Server():
++         object Pyrus extends Mcp.Server():
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+-           class Session() extends Mcp.Session
++           class Session() extends Mcp.Session
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+-           def initialize(): Session = new Session()
++           def initialize(): Session = new Session()
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+-           def name: Text = t"Pyrus"
++           def name: Text = t"Pyrus"
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+-           def description: Text = t"A simple server"
++           def description: Text = t"A simple server"
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+-           def version: Semver = v"1.0.0"
++           def version: Semver = v"1.0.0"
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+=           def version: Semver = v"1.0.0"
+-           def prompts: List[Mcp.Prompt] = Nil
++           def prompts: List[Mcp.Prompt] = Nil
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+=           def version: Semver = v"1.0.0"
+=           def prompts: List[Mcp.Prompt] = Nil
+=
+-           @tool
++           @tool
+
+-           def greet(name: Text, greeting: Optional[Text]): Text = t"${greeting.or(t"Hello")}, $name"
++           def greet(name: Text, greeting: Optional[Text]): Text = t"${greeting.or(t"Hello")}, $name"
+
+-         val interface = Mcp.Interface(t"session-1", Pyrus)
++         val interface = Mcp.Interface(t"session-1", Pyrus)
+
+-         interface.`tools/call`(t"greet", t"""{"name": "Hamlet"}""".read[Json], Unset).structuredContent
++         interface.`tools/call`(t"greet", t"""{"name": "Hamlet"}""".read[Json], Unset).structuredContent
+
+-         // {"result": "Hello, Hamlet"}
++         // {"result": "Hello, Hamlet"}
+
+=         // {"result": "Hello, Hamlet"}
+-         ```
++         ```
+
+-         The interface is `Streamable` as server-sent events (`.streamable`), which is how
+-         `Mcp.send` answers a `GET`.
++         インターフェースはサーバー送信イベントとして `Streamable` であり（`.streamable`）、`Mcp.send` はこれによって `GET` に応答する。
+
+-     refer synesthesia.Mcp.Api
++     refer synesthesia.Mcp.Api
+
+=     refer synesthesia.Mcp.Api
+-     refer synesthesia.Mcp.Specification
++     refer synesthesia.Mcp.Specification
+
+-     refer synesthesia.Mcp.send
++     refer synesthesia.Mcp.send
+
+-     entry .apply   the interface for a session id, built over a server or found in the cache
+-         `Mcp.Interface(sessionId, server)` needs a `server.type is Mcp.Specification` in
+-         scope, derived by the macro given in `Mcp.Specification`; the interface is
+-         remembered by id until `Mcp.Server#terminate` forgets it.
+-     entry .streamable   streams the interface's outgoing messages as server-sent events
+-         The `Streamable by Array[Sse]` given `Mcp.send` uses to answer a `GET` with the
+-         session's event stream, needing a `Credit` for metering.
+-     entry #server   the server the interface dispatches to
+-     entry #spec   the derived `Mcp.Specification` of that server
+-     entry #ping   answers a liveness check with nothing
+-     entry #initialize   answers `Initialize` with the protocol version, default capabilities and the server's identity
+-   entry .Client   the client as seen from a tool: logging, elicitation and sampling back to it
++     entry .apply   セッション id のインターフェース。サーバーの上に構築するか、キャッシュから見つける
++         `Mcp.Interface(sessionId, server)` には、`Mcp.Specification` にあるマクロの given が導出する `server.type is Mcp.Specification` がスコープに必要である。
++         インターフェースは、`Mcp.Server#terminate` がそれを忘れるまで id によって記憶される。
++     entry .streamable   インターフェースの送出メッセージをサーバー送信イベントとしてストリームする
++         `Mcp.send` がセッションのイベントストリームで `GET` に応答するために使う `Streamable by Array[Sse]` の given で、計量のための `Credit` を必要とする。
++     entry #server   インターフェースがディスパッチする先のサーバー
++     entry #spec   そのサーバーの導出された `Mcp.Specification`
++     entry #ping   死活確認に何も返さずに応答する
++     entry #initialize   プロトコルのバージョン、デフォルトのケイパビリティ、サーバーの識別情報を持つ `Initialize` で応答する
++   entry .Client   ツールから見たクライアント。ロギング、入力要求、サンプリングでクライアントに働きかける
+
+=   entry .Client   the client as seen from a tool: logging, elicitation and sampling back to it
+-     detail
++     detail
+
+-         A tool or prompt method which declares a second parameter list `(using client:
+-         Mcp.Client)` receives the client of the session which called it, and can speak to it
+-         while the call runs. `#log` sends a `notifications/message` the client shows as
+-         progress; `#elicit[Form](message)` asks the user to fill in a form whose fields are
+-         those of a case class, and returns what they submitted as JSON.
++         二つ目のパラメーターリスト `(using client: Mcp.Client)` を宣言するツールやプロンプトのメソッドは、それを呼び出したセッションのクライアントを受け取り、呼び出しの実行中にそれと話すことができる。
++         `#log` は、クライアントが進捗として表示する `notifications/message` を送る。
++         `#elicit[Form](message)` は、フィールドがケースクラスのフィールドであるフォームへの記入をユーザーに求め、送信されたものを JSON として返す。
+
+=         those of a case class, and returns what they submitted as JSON.
+=
+-         ```scala
++         ```scala
+
+=         those of a case class, and returns what they submitted as JSON.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         object Deployer extends Mcp.Server():
++         object Deployer extends Mcp.Server():
+
+=         object Deployer extends Mcp.Server():
+-           class Session() extends Mcp.Session
++           class Session() extends Mcp.Session
+
+=         object Deployer extends Mcp.Server():
+=           class Session() extends Mcp.Session
+-           def initialize(): Session = new Session()
++           def initialize(): Session = new Session()
+
+-           def name: Text = t"deployer"
++           def name: Text = t"deployer"
+
+-           def description: Text = t"Deploys the application"
++           def description: Text = t"Deploys the application"
+
+=           def description: Text = t"Deploys the application"
+-           def version: Semver = v"1.0.0"
++           def version: Semver = v"1.0.0"
+
+=           def description: Text = t"Deploys the application"
+=           def version: Semver = v"1.0.0"
+-           def prompts: List[Mcp.Prompt] = Nil
++           def prompts: List[Mcp.Prompt] = Nil
+
+=           def description: Text = t"Deploys the application"
+=           def version: Semver = v"1.0.0"
+=           def prompts: List[Mcp.Prompt] = Nil
+=
+-           @tool
++           @tool
+
+-           def deploy(target: Text)(using client: Mcp.Client): Text =
++           def deploy(target: Text)(using client: Mcp.Client): Text =
+
+-             client.log(t"Preparing deployment to $target")
++             client.log(t"Preparing deployment to $target")
+
+-             case class Confirmation(proceed: Boolean)
++             case class Confirmation(proceed: Boolean)
+
+-             client.elicit[Confirmation](t"Deploy to production?")
++             client.elicit[Confirmation](t"Deploy to production?")
+
+-             t"deployed to $target"
++             t"deployed to $target"
+
+=             t"deployed to $target"
+-         ```
++         ```
+
+-         The client-side `@rpc` methods it is implemented over (`ping`,
+-         `notifications/message`, `elicitation/create`) are protected; a tool uses the three
+-         public methods.
+-     entry #log   sends a message to the client at `Info` level, as a `notifications/message`
+-         The message is sent under the logger name `updates`, as `{"message": …}`, so the
+-         client shows it as progress while the tool runs.
+-     entry #elicit   asks the user for structured input, as a form described by a type's schema
+-         `client.elicit[Form](message)` sends an `elicitation/create` in `form` mode, with the
+-         JSON schema derived from `Form` (any type which is `Schematic over JsonSchema`, such
+-         as a case class), and returns the client's reply as `Json`.
+-     entry #sample   asks the client's model to generate; not yet implemented
+-         Calling it throws `NotImplementedError`.
+-   entry .Specification   what the macro derives from a server: its listings and its dispatch
++         これが実装の土台とするクライアント側の `@rpc` メソッド（`ping`、`notifications/message`、`elicitation/create`）は protected である。
++         ツールは三つの public メソッドを使う。
++     entry #log   クライアントに `Info` レベルのメッセージを `notifications/message` として送る
++         メッセージはロガー名 `updates` の下で `{"message": …}` として送られるので、クライアントはツールの実行中にそれを進捗として表示する。
++     entry #elicit   型のスキーマで記述されたフォームとして、ユーザーに構造化された入力を求める
++         `client.elicit[Form](message)` は、`Form`（ケースクラスなど、`Schematic over JsonSchema` である任意の型）から導出した JSON スキーマ付きで、`form` モードの `elicitation/create` を送り、クライアントの返答を `Json` として返す。
++     entry #sample   クライアントのモデルに生成を求める。まだ実装されていない
++         呼び出すと `NotImplementedError` が投げられる。
++   entry .Specification   マクロがサーバーから導出するもの。その一覧とディスパッチ
+
+=   entry .Specification   what the macro derives from a server: its listings and its dispatch
+-     detail
++     detail
+
+-         A `server.type is Mcp.Specification` is the compiled form of a server's annotations.
+-         `#tools()`, `#resources()` and `#prompts()` are the listings the client discovers,
+-         and `#invokeTool`, `#invokeResource` and `#invokePrompt` dispatch a call by name to
+-         the annotated method, decoding its arguments from JSON and encoding its result. It is
+-         derived by the inline given `.mcpSpecification`, which is in implicit scope for every
+-         `Mcp.Server` subtype and needs a `Tactic[Json.Error]` and a `Tactic[Mcp.Error]` at
+-         the point it is summoned — `Mcp.Server#serve` takes it as a `using` parameter, so a
+-         handler which calls `serve` needs those tactics, which `strategies.throwUnsafely`
+-         supplies.
++         `server.type is Mcp.Specification` は、サーバーのアノテーションをコンパイルした形である。
++         `#tools()`、`#resources()`、`#prompts()` はクライアントが発見する一覧である。
++         `#invokeTool`、`#invokeResource`、`#invokePrompt` は呼び出しを名前によってアノテーション付きのメソッドにディスパッチし、その引数を JSON からデコードし、その結果をエンコードする。
++         これはインラインの given `.mcpSpecification` によって導出される。
++         この given はすべての `Mcp.Server` のサブタイプの暗黙のスコープにあり、召喚される場所で `Tactic[Json.Error]` と `Tactic[Mcp.Error]` を必要とする。
++         `Mcp.Server#serve` はこれを `using` パラメーターとして取るので、`serve` を呼び出すハンドラにはそれらの戦術が必要であり、`strategies.throwUnsafely` がそれを与える。
+
+=         supplies.
+=
+-         ```scala
++         ```scala
+
+=         supplies.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+-         object Pyrus extends Mcp.Server():
++         object Pyrus extends Mcp.Server():
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+-           class Session() extends Mcp.Session
++           class Session() extends Mcp.Session
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+-           def initialize(): Session = new Session()
++           def initialize(): Session = new Session()
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+-           def name: Text = t"Pyrus"
++           def name: Text = t"Pyrus"
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+-           def description: Text = t"A simple server"
++           def description: Text = t"A simple server"
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+-           def version: Semver = v"1.0.0"
++           def version: Semver = v"1.0.0"
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+=           def version: Semver = v"1.0.0"
+-           def prompts: List[Mcp.Prompt] = Nil
++           def prompts: List[Mcp.Prompt] = Nil
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+=           def version: Semver = v"1.0.0"
+=           def prompts: List[Mcp.Prompt] = Nil
+=
+-           @tool
++           @tool
+
+-           @about("Greets someone")
++           @about("Greets someone")
+
+-           def greet(@about("whom to greet") name: Text, greeting: Optional[Text], punctuation: Text = "!")
++           def greet(@about("whom to greet") name: Text, greeting: Optional[Text], punctuation: Text = "!")
+
+-           :   Text =
++           :   Text =
+
+-             t"${greeting.or(t"Hello")}, $name$punctuation"
++             t"${greeting.or(t"Hello")}, $name$punctuation"
+
+-         val spec = summon[Pyrus.type is Mcp.Specification]
++         val spec = summon[Pyrus.type is Mcp.Specification]
+
+-         spec.tools().head.inputSchema   // required: List(t"name"); `greeting` and `punctuation` optional
++         spec.tools().head.inputSchema   // required: List(t"name"); `greeting` and `punctuation` optional
+
+=         spec.tools().head.inputSchema   // required: List(t"name"); `greeting` and `punctuation` optional
+-         ```
++         ```
+
+-         What the macro requires of a method, each a compile error when missing: a `@tool`
+-         parameter and result type must each be `Schematic over JsonSchema` (_There was no JSON
+-         schema for `name`_) and the parameter decodable from JSON; a `@resource` method takes
+-         no parameters (_MCP resource methods cannot have any parameters_) and its result must
+-         be `Streamable by Text` or `Streamable by Data`; a `@prompt` method must return
+-         `List[Discourse]`. A method may have one parameter list, or two where the second is
+-         `(using Mcp.Client)`. Annotations on an overridden method are seen through the
+-         override.
++         マクロがメソッドに求めることは次のとおりで、欠けていればそれぞれコンパイルエラーになる。
++         `@tool` のパラメーターと結果の型は、それぞれ `Schematic over JsonSchema` でなければならず（_There was no JSON schema for `name`_）、パラメーターは JSON からデコード可能でなければならない。
++         `@resource` メソッドはパラメーターを取らず（_MCP resource methods cannot have any parameters_）、その結果は `Streamable by Text` または `Streamable by Data` でなければならない。
++         `@prompt` メソッドは `List[Discourse]` を返さなければならない。
++         メソッドはパラメーターリストを一つ持つか、二つ目が `(using Mcp.Client)` である場合は二つ持つことができる。
++         オーバーライドされたメソッドのアノテーションは、オーバーライドを通して見える。
+
+-         The derivation is capture-clean, so a server object may live in a module compiled with
+-         capture checking.
++         この導出はキャプチャ検査に関してクリーンなので、サーバーのオブジェクトはキャプチャ検査付きでコンパイルされるモジュールに置くことができる。
+
+-     refer synesthesia.Mcp.Server
++     refer synesthesia.Mcp.Server
+
+-     refer synesthesia.Mcp.Interface
++     refer synesthesia.Mcp.Interface
+
+-     entry .mcpSpecification   the inline given which derives a specification for any `Mcp.Server` subtype
+-         In implicit scope through the `Specification` companion, so no import is needed. It
+-         is a macro, expanded where it is summoned, and needs a `Tactic[Json.Error]` and a
+-         `Tactic[Mcp.Error]` there; it halts with _could not find a contextual
+-         `Tactic[Mcp.Error]` instance_ if one is absent.
+-     entry #tools   the server's tools, one `Mcp.Tool` per `@tool` method
+-     entry #resources   the server's resources, one `Mcp.Resource` per `@resource` method
+-     entry #prompts   the server's prompts, one `Mcp.Prompt` per `@prompt` method
+-     entry #invokeTool   calls a tool by name with JSON arguments, returning its result as `{"result": …}`
+-         Raises `Mcp.Error(UnknownMethod)` for a name no `@tool` method has and
+-         `Mcp.Error(MissingParameter)` for a required argument the JSON lacks; an argument
+-         typed `Optional` is `Unset` when absent and one with a default takes it. The tool's
+-         own exception propagates.
+-     entry #invokeResource   reads a resource by URI, as text or a Base64 blob
+-         Raises `Mcp.Error(UnknownResource)` for a URI no `@resource` method declares. A
+-         result which streams as text is a `TextResourceContents`; one which streams as bytes
+-         is a `BlobResourceContents`, Base64-encoded.
+-     entry #invokePrompt   runs a prompt by name with text arguments, returning its `Discourse` messages
+-         Raises `Mcp.Error(UnknownMethod)` for an unknown name and
+-         `Mcp.Error(MissingParameter)` for a required argument not given.
+-   entry .Server   the base of an MCP server: identity, sessions, and the annotated methods which are its capabilities
++     entry .mcpSpecification   任意の `Mcp.Server` のサブタイプの仕様を導出するインラインの given
++         `Specification` のコンパニオンを通じて暗黙のスコープにあるので、import は不要である。
++         これは召喚された場所で展開されるマクロで、そこに `Tactic[Json.Error]` と `Tactic[Mcp.Error]` を必要とする。
++         それがなければ、_could not find a contextual `Tactic[Mcp.Error]` instance_ で停止する。
++     entry #tools   サーバーのツール。`@tool` メソッドごとに一つの `Mcp.Tool`
++     entry #resources   サーバーのリソース。`@resource` メソッドごとに一つの `Mcp.Resource`
++     entry #prompts   サーバーのプロンプト。`@prompt` メソッドごとに一つの `Mcp.Prompt`
++     entry #invokeTool   JSON の引数でツールを名前によって呼び出し、その結果を `{"result": …}` として返す
++         どの `@tool` メソッドも持たない名前には `Mcp.Error(UnknownMethod)` を、JSON に欠けている必須の引数には `Mcp.Error(MissingParameter)` を発生させる。
++         `Optional` 型の引数は、ないときは `Unset` になり、デフォルトを持つ引数はそれを取る。
++         ツール自身の例外は伝播する。
++     entry #invokeResource   URI でリソースを読む。テキストまたは Base64 の blob として表す
++         どの `@resource` メソッドも宣言しない URI には `Mcp.Error(UnknownResource)` を発生させる。
++         テキストとしてストリームされる結果は `TextResourceContents` であり、バイトとしてストリームされる結果は Base64 でエンコードされた `BlobResourceContents` である。
++     entry #invokePrompt   テキストの引数でプロンプトを名前によって実行し、その `Discourse` のメッセージを返す
++         未知の名前には `Mcp.Error(UnknownMethod)` を、与えられていない必須の引数には `Mcp.Error(MissingParameter)` を発生させる。
++   entry .Server   MCP サーバーの基礎。識別情報、セッション、そしてそのケイパビリティであるアノテーション付きのメソッド
+
+=   entry .Server   the base of an MCP server: identity, sessions, and the annotated methods which are its capabilities
+-     detail
++     detail
+
+-         A server is an object (or class) extending `Mcp.Server()` which gives its `#name`,
+-         `#description`, `#version` and `#prompts`, defines its `#Session` type and
+-         `#initialize()` to make one, and marks methods with `@tool`, `@resource` and
+-         `@prompt`. The `Mcp.Specification` macro turns those into the protocol, and `#serve`
+-         answers an HTTP request with it. Watch one grow:
++         サーバーは `Mcp.Server()` を継承するオブジェクト（またはクラス）で、その `#name`、`#description`、`#version`、`#prompts` を与え、`#Session` 型と、それを作る `#initialize()` を定義し、メソッドに `@tool`、`@resource`、`@prompt` の印を付ける。
++         `Mcp.Specification` マクロはそれらをプロトコルに変え、`#serve` はそれによって HTTP リクエストに応答する。
++         サーバーが育っていく様子を見てみよう。
+
+=         answers an HTTP request with it. Watch one grow:
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         ```scala fuel
+-         frame
++         frame
+
+-           label A server with nothing to offer
++           label 何も提供しないサーバー
+
+=           label A server with nothing to offer
+-           code
++           code
+
+=           label A server with nothing to offer
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               object Library extends Mcp.Server():
++               object Library extends Mcp.Server():
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+-                 class Session() extends Mcp.Session
++                 class Session() extends Mcp.Session
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+-                 def initialize(): Session = new Session()
++                 def initialize(): Session = new Session()
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+-                 def name: Text = t"library"
++                 def name: Text = t"library"
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+-                 def description: Text = t"The Globe's library"
++                 def description: Text = t"The Globe's library"
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+-                 def version: Semver = v"1.0.0"
++                 def version: Semver = v"1.0.0"
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+-                 def prompts: List[Mcp.Prompt] = Nil
++                 def prompts: List[Mcp.Prompt] = Nil
+
+=                 def prompts: List[Mcp.Prompt] = Nil
+-         frame
++         frame
+
+-           label A tool: its name, parameter and result schemas come from the signature
++           label ツール。その名前、パラメーターと結果のスキーマはシグネチャから得られる
+
+=           label A tool: its name, parameter and result schemas come from the signature
+-           code
++           code
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               object Library extends Mcp.Server():
++               object Library extends Mcp.Server():
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+-                 class Session() extends Mcp.Session
++                 class Session() extends Mcp.Session
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+-                 def initialize(): Session = new Session()
++                 def initialize(): Session = new Session()
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+-                 def name: Text = t"library"
++                 def name: Text = t"library"
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+-                 def description: Text = t"The Globe's library"
++                 def description: Text = t"The Globe's library"
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+-                 def version: Semver = v"1.0.0"
++                 def version: Semver = v"1.0.0"
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+-                 def prompts: List[Mcp.Prompt] = Nil
++                 def prompts: List[Mcp.Prompt] = Nil
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+-                 @tool
++                 @tool
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+-                 @about("Find books by an author")
++                 @about("Find books by an author")
+
+-                 def byAuthor(author: Text): List[Text] = List(t"Hamlet")
++                 def byAuthor(author: Text): List[Text] = List(t"Hamlet")
+
+=                 def byAuthor(author: Text): List[Text] = List(t"Hamlet")
+-         frame
++         frame
+
+-           label An optional and a defaulted parameter are not required
++           label オプショナルなパラメーターとデフォルト付きのパラメーターは必須ではない
+
+=           label An optional and a defaulted parameter are not required
+-           code
++           code
+
+=           label An optional and a defaulted parameter are not required
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               object Library extends Mcp.Server():
++               object Library extends Mcp.Server():
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+-                 class Session() extends Mcp.Session
++                 class Session() extends Mcp.Session
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+-                 def initialize(): Session = new Session()
++                 def initialize(): Session = new Session()
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+-                 def name: Text = t"library"
++                 def name: Text = t"library"
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+-                 def description: Text = t"The Globe's library"
++                 def description: Text = t"The Globe's library"
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+-                 def version: Semver = v"1.0.0"
++                 def version: Semver = v"1.0.0"
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+-                 def prompts: List[Mcp.Prompt] = Nil
++                 def prompts: List[Mcp.Prompt] = Nil
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+-                 @tool
++                 @tool
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+-                 @about("Find books by an author")
++                 @about("Find books by an author")
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+-                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
++                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+-                 :   List[Text] =
++                 :   List[Text] =
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+-                   List(t"Hamlet")
++                   List(t"Hamlet")
+
+=                   List(t"Hamlet")
+-         frame
++         frame
+
+-           label A resource, served at a URI with a MIME type
++           label URI で MIME タイプ付きで提供されるリソース
+
+=           label A resource, served at a URI with a MIME type
+-           code
++           code
+
+=           label A resource, served at a URI with a MIME type
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               object Library extends Mcp.Server():
++               object Library extends Mcp.Server():
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+-                 class Session() extends Mcp.Session
++                 class Session() extends Mcp.Session
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+-                 def initialize(): Session = new Session()
++                 def initialize(): Session = new Session()
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+-                 def name: Text = t"library"
++                 def name: Text = t"library"
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+-                 def description: Text = t"The Globe's library"
++                 def description: Text = t"The Globe's library"
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+-                 def version: Semver = v"1.0.0"
++                 def version: Semver = v"1.0.0"
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+-                 def prompts: List[Mcp.Prompt] = Nil
++                 def prompts: List[Mcp.Prompt] = Nil
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+-                 @tool
++                 @tool
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+-                 @about("Find books by an author")
++                 @about("Find books by an author")
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+-                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
++                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+-                 :   List[Text] =
++                 :   List[Text] =
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+-                   List(t"Hamlet")
++                   List(t"Hamlet")
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+-                 @resource("library://rules", mimeType = t"text/markdown")
++                 @resource("library://rules", mimeType = t"text/markdown")
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+=                 @resource("library://rules", mimeType = t"text/markdown")
+-                 @about("The lending rules")
++                 @about("The lending rules")
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+=                 @resource("library://rules", mimeType = t"text/markdown")
+=                 @about("The lending rules")
+-                 def rules: Text = t"# Rules\n\nReturn books within three weeks."
++                 def rules: Text = t"# Rules\n\nReturn books within three weeks."
+
+=                 def rules: Text = t"# Rules\n\nReturn books within three weeks."
+-         frame
++         frame
+
+-           label A prompt, and a tool which talks back to the client
++           label プロンプトと、クライアントに話しかけるツール
+
+=           label A prompt, and a tool which talks back to the client
+-           code
++           code
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               object Library extends Mcp.Server():
++               object Library extends Mcp.Server():
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+-                 class Session() extends Mcp.Session
++                 class Session() extends Mcp.Session
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+-                 def initialize(): Session = new Session()
++                 def initialize(): Session = new Session()
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+-                 def name: Text = t"library"
++                 def name: Text = t"library"
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+-                 def description: Text = t"The Globe's library"
++                 def description: Text = t"The Globe's library"
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+-                 def version: Semver = v"1.0.0"
++                 def version: Semver = v"1.0.0"
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+-                 def prompts: List[Mcp.Prompt] = Nil
++                 def prompts: List[Mcp.Prompt] = Nil
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+-                 @tool
++                 @tool
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+-                 @about("Find books by an author")
++                 @about("Find books by an author")
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+-                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
++                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+-                 :   List[Text] =
++                 :   List[Text] =
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+-                   List(t"Hamlet")
++                   List(t"Hamlet")
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+-                 @resource("library://rules", mimeType = t"text/markdown")
++                 @resource("library://rules", mimeType = t"text/markdown")
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+=                 @resource("library://rules", mimeType = t"text/markdown")
+-                 @about("The lending rules")
++                 @about("The lending rules")
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+=                 @resource("library://rules", mimeType = t"text/markdown")
+=                 @about("The lending rules")
+-                 def rules: Text = t"# Rules\n\nReturn books within three weeks."
++                 def rules: Text = t"# Rules\n\nReturn books within three weeks."
+
+-                 @prompt
++                 @prompt
+
+-                 def recommend(topic: Text): List[Discourse] =
++                 def recommend(topic: Text): List[Discourse] =
+
+-                   List(human"Recommend three books about $topic from the library.")
++                   List(human"Recommend three books about $topic from the library.")
+
+=                   List(human"Recommend three books about $topic from the library.")
+=
+-                 @tool
++                 @tool
+
+-                 def reserve(book: Text)(using client: Mcp.Client): Text =
++                 def reserve(book: Text)(using client: Mcp.Client): Text =
+
+-                   client.log(t"Checking availability of $book")
++                   client.log(t"Checking availability of $book")
+
+-                   case class Confirmation(proceed: Boolean)
++                   case class Confirmation(proceed: Boolean)
+
+-                   client.elicit[Confirmation](t"Reserve $book for a week?")
++                   client.elicit[Confirmation](t"Reserve $book for a week?")
+
+-                   t"reserved $book"
++                   t"reserved $book"
+
+=                   t"reserved $book"
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         A session is made by `#initialize()` the first time a session id is seen and kept in
+-         `#session`; the server keeps per-client state there. `#terminate` forgets a session
+-         and its `Mcp.Interface`, which `#serve` does on a `DELETE`. The server mounts in an
+-         HTTP handler:
++         セッションは、あるセッション id が初めて現れたときに `#initialize()` によって作られ、`#session` に保持される。
++         サーバーはクライアントごとの状態をそこに保持する。
++         `#terminate` はセッションとその `Mcp.Interface` を忘れ、`#serve` は `DELETE` に対してこれを行う。
++         サーバーは HTTP ハンドラの中にマウントされる。
+
+=         HTTP handler:
+=
+-         ```scala fuel
++         ```scala fuel
+
+-         typecheck
++         typecheck
+
+=         typecheck
+-         ##
++         ##
+
+-         def serve(): Unit = supervise:
++         def serve(): Unit = supervise:
+
+-           SocketServer(8080).handle:
++           SocketServer(8080).handle:
+
+-             request.path match
++             request.path match
+
+-               case % /: t"mcp" => Library.serve
++               case % /: t"mcp" => Library.serve
+
+-               case _           => Http.Response(Http.NotFound)(t"Not found")
++               case _           => Http.Response(Http.NotFound)(t"Not found")
+
+=               case _           => Http.Response(Http.NotFound)(t"Not found")
+-         ```
++         ```
+
+-         A subclass's own member named `terminate` taking one `Text` collides with
+-         `#terminate` and must be renamed or marked `override`.
++         サブクラス自身の、`Text` を一つ取る `terminate` という名前のメンバーは `#terminate` と衝突するので、名前を変えるか `override` の印を付けなければならない。
+
+=         `#terminate` and must be renamed or marked `override`.
+-     refer synesthesia.Mcp.Specification
++     refer synesthesia.Mcp.Specification
+
+-     refer synesthesia.Mcp.Client
++     refer synesthesia.Mcp.Client
+
+-     refer synesthesia.Mcp.Session
++     refer synesthesia.Mcp.Session
+
+-     refer synesthesia.tool
++     refer synesthesia.tool
+
+-     refer synesthesia.resource
++     refer synesthesia.resource
+
+-     refer synesthesia.prompt
++     refer synesthesia.prompt
+
+-     entry #Session   the type of this server's per-client state, a subtype of `Mcp.Session`
+-         Each server declares its own, usually `class Session() extends Mcp.Session` with
+-         whatever fields the server keeps for one client.
+-     entry #Origin   the other side of the protocol: `Mcp.Client`
+-     entry #session   the session of an id, created with `initialize()` the first time it is asked for
+-         Sessions are kept in a table keyed by the `Mcp-Session-Id` header's value until
+-         `#terminate` removes them.
+-     entry #terminate   ends a session: forgets its state and its `Mcp.Interface`, answering whether it was known
+-         Evicting the interface ends its event stream, so a client's open `GET` finishes.
+-         `#serve` calls it for a `DELETE` request.
+-     entry #initialize   makes a fresh `Session` for a new client; abstract
+-     entry #serve   answers one HTTP request of the streamable HTTP transport
+-         Needs `this.type is Mcp.Specification` (derived by the macro, given a
+-         `Tactic[Json.Error]` and `Tactic[Mcp.Error]`), a `Monitor`, a `Probate`, an `Online`
+-         and the `Http.Request`, as a handler body has. A `DELETE` with an `Mcp-Session-Id`
+-         naming a known session terminates it and answers `204 No Content`; an unknown id
+-         answers `404 Not Found`, and no id `400 Bad Request`. Every other request takes its
+-         session from the header (or a fresh UUID), finds or builds the session's
+-         `Mcp.Interface`, and hands over to `Mcp.send` with `JsonRpc.serve(interface)` as the
+-         dispatch. A `JsonRpc.Error` escaping the transport answers as an unfulfilled response
+-         with the error's message.
+-     entry #name   the server's name, sent as its `Implementation` on `initialize`; abstract
+-     entry #description   what the server is for, sent as the `instructions` on `initialize`; abstract
+-     entry #version   the server's version, as a `Semver`; abstract
+-     entry #prompts   the server's prompt listing, as `Mcp.Prompt`s; abstract
+-         The derived specification lists `@prompt` methods itself, so a server with none
+-         gives `Nil`.
+-   entry .Session   the marker trait a server's per-client state extends
+-       A server's `Session` type is a subtype of this, made by `Mcp.Server#initialize()` for
+-       each new session id and kept by `Mcp.Server#session` until the session is terminated.
+-   entry .Error   raised when a call names no tool, prompt or resource, or omits a required parameter
++     entry #Session   このサーバーのクライアントごとの状態の型。`Mcp.Session` のサブタイプ
++         各サーバーは独自のものを宣言する。
++         通常は `class Session() extends Mcp.Session` で、サーバーが一つのクライアントについて保持するフィールドを持つ。
++     entry #Origin   プロトコルの相手側。`Mcp.Client`
++     entry #session   ある id のセッション。初めて求められたときに `initialize()` で作られる
++         セッションは、`#terminate` が削除するまで、`Mcp-Session-Id` ヘッダーの値をキーとする表に保持される。
++     entry #terminate   セッションを終える。その状態と `Mcp.Interface` を忘れ、それが既知だったかどうかを返す
++         インターフェースを追い出すとそのイベントストリームが終わるので、クライアントの開いている `GET` は終了する。
++         `#serve` は `DELETE` リクエストに対してこれを呼び出す。
++     entry #initialize   新しいクライアントのために新しい `Session` を作る。抽象メソッド
++     entry #serve   ストリーミング可能な HTTP トランスポートの一つの HTTP リクエストに応答する
++         `this.type is Mcp.Specification`（`Tactic[Json.Error]` と `Tactic[Mcp.Error]` があればマクロが導出する）、`Monitor`、`Probate`、`Online`、そして `Http.Request` を、ハンドラの本体が持つように必要とする。
++         既知のセッションを示す `Mcp-Session-Id` 付きの `DELETE` はそれを終了させ、`204 No Content` で応答する。
++         未知の id には `404 Not Found` で、id がなければ `400 Bad Request` で応答する。
++         それ以外のリクエストは、ヘッダー（または新しい UUID）からセッションを得て、セッションの `Mcp.Interface` を見つけるか構築し、`JsonRpc.serve(interface)` をディスパッチとして `Mcp.send` に引き渡す。
++         トランスポートから漏れ出た `JsonRpc.Error` は、エラーのメッセージを持つ未履行のレスポンスとして応答される。
++     entry #name   サーバーの名前。`initialize` でその `Implementation` として送られる。抽象メソッド
++     entry #description   サーバーの用途。`initialize` で `instructions` として送られる。抽象メソッド
++     entry #version   サーバーのバージョン。`Semver` として表す。抽象メソッド
++     entry #prompts   サーバーのプロンプトの一覧。`Mcp.Prompt` として表す。抽象メソッド
++         導出された仕様は `@prompt` メソッドを自分で一覧に載せるので、プロンプトを持たないサーバーは `Nil` を与える。
++   entry .Session   サーバーのクライアントごとの状態が継承するマーカートレイト
++       サーバーの `Session` 型はこれのサブタイプであり、新しいセッション id ごとに `Mcp.Server#initialize()` によって作られ、セッションが終了するまで `Mcp.Server#session` によって保持される。
++   entry .Error   呼び出しがツール、プロンプト、リソースのいずれも示さないとき、または必須のパラメーターを省いたときに発生する
+
+=   entry .Error   raised when a call names no tool, prompt or resource, or omits a required parameter
+-     detail
++     detail
+
+-         Error `↯/s.124.1`: _the MCP operation failed because `reason`_. Raised by a derived
+-         `Mcp.Specification`'s dispatch, and answered by `Mcp.send` as the JSON-RPC error
+-         `-32602` under the request's id, so a protocol mistake is distinct from a tool's own
+-         failure (which is a `CallTool` marked `isError`). Deriving a specification needs a
+-         `Tactic[Mcp.Error]` in scope, and `Mcp.Interface` rethrows the error unscoped.
+-     entry .Reason   why the operation failed
+-         `UnknownMethod` (1): _the method name does not match any registered tool or prompt_;
+-         `UnknownResource` (2): _the URI does not match any registered resource_;
+-         `MissingParameter` (3): _a required parameter was not present in the input_.
+-     entry .communicable   renders each reason as its message
+-     entry #reason   which of the three failures this was
+-   entry .Icon   an icon's source, MIME type, sizes and theme; re-exported from `Content`
+-       `Mcp.Icon` is `synesthesia.Content.Icon`, whose page has the full account.
+-   entry .Contents   a resource's contents, text or blob; re-exported from `Content`
+-       `Mcp.Contents` is `synesthesia.Content.Contents`, whose page has the full account.
+-   entry .ResourceContents   the base of a resource's contents: URI, MIME type and metadata; re-exported from `Content`
+-       `Mcp.ResourceContents` is `synesthesia.Content.ResourceContents`.
+-   entry .TextResourceContents   a resource's contents as text; re-exported from `Content`
+-       `Mcp.TextResourceContents` is `synesthesia.Content.TextResourceContents`.
+-   entry .BlobResourceContents   a resource's contents as a Base64 blob; re-exported from `Content`
+-       `Mcp.BlobResourceContents` is `synesthesia.Content.BlobResourceContents`.
+-   entry .Annotations   audience, priority and modification hints; re-exported from `Content`
+-       `Mcp.Annotations` is `synesthesia.Content.Annotations`.
+-   entry .Role   who speaks, `User` or `Assistant`; re-exported from `Content`
+-       `Mcp.Role` is `synesthesia.Content.Role`, whose page has the full account.
+-   entry .ContentBlock   a block of content: text, image, audio, resource link or embedded resource; re-exported from `Content`
+-       `Mcp.ContentBlock` is `synesthesia.Content.ContentBlock`, whose page has the full account.
+-   entry .TextContent   a block of text; re-exported from `Content`
+-       `Mcp.TextContent` is `synesthesia.Content.TextContent`.
+-   entry .ImageContent   a Base64 image with its MIME type; re-exported from `Content`
+-       `Mcp.ImageContent` is `synesthesia.Content.ImageContent`.
+-   entry .AudioContent   Base64 audio with its MIME type; re-exported from `Content`
+-       `Mcp.AudioContent` is `synesthesia.Content.AudioContent`.
+-   entry .ResourceLink   a link to a resource by URI; re-exported from `Content`
+-       `Mcp.ResourceLink` is `synesthesia.Content.ResourceLink`.
+-   entry .EmbeddedResource   a resource's contents carried inline; re-exported from `Content`
+-       `Mcp.EmbeddedResource` is `synesthesia.Content.EmbeddedResource`.
++         エラー `↯/s.124.1`: _the MCP operation failed because `reason`_。
++         導出された `Mcp.Specification` のディスパッチが発生させ、`Mcp.send` がリクエストの id の下で JSON-RPC エラー `-32602` として応答する。
++         そのため、プロトコル上の誤りは、ツール自身の失敗（`isError` の印が付いた `CallTool`）とは区別される。
++         仕様の導出には `Tactic[Mcp.Error]` がスコープに必要であり、`Mcp.Interface` はこのエラーをスコープ外へ再び投げる。
++     entry .Reason   操作が失敗した理由
++         `UnknownMethod`（1）: _the method name does not match any registered tool or prompt_。
++         `UnknownResource`（2）: _the URI does not match any registered resource_。
++         `MissingParameter`（3）: _a required parameter was not present in the input_。
++     entry .communicable   各理由をそのメッセージとして描画する
++     entry #reason   三つの失敗のうちどれであったか
++   entry .Icon   アイコンのソース、MIME タイプ、サイズ、テーマ。`Content` から再エクスポートされる
++       `Mcp.Icon` は `synesthesia.Content.Icon` であり、そのページに詳しい説明がある。
++   entry .Contents   リソースの内容。テキストまたは blob。`Content` から再エクスポートされる
++       `Mcp.Contents` は `synesthesia.Content.Contents` であり、そのページに詳しい説明がある。
++   entry .ResourceContents   リソースの内容の基礎。URI、MIME タイプ、メタデータ。`Content` から再エクスポートされる
++       `Mcp.ResourceContents` は `synesthesia.Content.ResourceContents` である。
++   entry .TextResourceContents   テキストとしてのリソースの内容。`Content` から再エクスポートされる
++       `Mcp.TextResourceContents` は `synesthesia.Content.TextResourceContents` である。
++   entry .BlobResourceContents   Base64 の blob としてのリソースの内容。`Content` から再エクスポートされる
++       `Mcp.BlobResourceContents` は `synesthesia.Content.BlobResourceContents` である。
++   entry .Annotations   対象者、優先度、更新のヒント。`Content` から再エクスポートされる
++       `Mcp.Annotations` は `synesthesia.Content.Annotations` である。
++   entry .Role   話し手。`User` または `Assistant`。`Content` から再エクスポートされる
++       `Mcp.Role` は `synesthesia.Content.Role` であり、そのページに詳しい説明がある。
++   entry .ContentBlock   コンテンツのブロック。テキスト、画像、音声、リソースリンク、埋め込みリソース。`Content` から再エクスポートされる
++       `Mcp.ContentBlock` は `synesthesia.Content.ContentBlock` であり、そのページに詳しい説明がある。
++   entry .TextContent   テキストのブロック。`Content` から再エクスポートされる
++       `Mcp.TextContent` は `synesthesia.Content.TextContent` である。
++   entry .ImageContent   MIME タイプ付きの Base64 の画像。`Content` から再エクスポートされる
++       `Mcp.ImageContent` は `synesthesia.Content.ImageContent` である。
++   entry .AudioContent   MIME タイプ付きの Base64 の音声。`Content` から再エクスポートされる
++       `Mcp.AudioContent` は `synesthesia.Content.AudioContent` である。
++   entry .ResourceLink   URI によるリソースへのリンク。`Content` から再エクスポートされる
++       `Mcp.ResourceLink` は `synesthesia.Content.ResourceLink` である。
++   entry .EmbeddedResource   インラインで運ばれるリソースの内容。`Content` から再エクスポートされる
++       `Mcp.EmbeddedResource` は `synesthesia.Content.EmbeddedResource` である。
+
+- entry .Content   the content-block vocabulary MCP and the Agent Client Protocol share
++ entry .Content   MCP と Agent Client Protocol が共有するコンテンツブロックの語彙
+
+= entry .Content   the content-block vocabulary MCP and the Agent Client Protocol share
+-   detail
++   detail
+
+-       The JSON representations of content which both protocols exchange: a `ContentBlock` is
+-       text, an image, audio, a link to a resource or an embedded resource, each a case class
+-       encoded with a `type` discriminator; a resource's contents are `TextResourceContents` or
+-       `BlobResourceContents`, wrapped as `Contents`; and `Icon`, `Annotations` and `Role` are
+-       the records they share. It lives in the `synesthesia.content` source set, which depends
+-       only on JSON, so an ACP client — which spawns agents as subprocesses and has no use for
+-       an HTTP server — can share these types with an MCP server.
++       両方のプロトコルがやり取りするコンテンツの JSON 表現である。`ContentBlock` はテキスト、画像、音声、リソースへのリンク、埋め込まれたリソースのいずれかで、それぞれ `type` 判別子付きでエンコードされるケースクラスである。リソースの内容は `TextResourceContents` か `BlobResourceContents` で、`Contents` として包まれる。そして `Icon`、`Annotations`、`Role` はそれらが共有するレコードである。
++       これは JSON だけに依存する `synesthesia.content` ソースセットにあるので、エージェントをサブプロセスとして起動し、HTTP サーバーを必要としない ACP クライアントも、これらの型を MCP サーバーと共有できる。
+
+=       an HTTP server — can share these types with an MCP server.
+=
+-       ```scala
++       ```scala
+
+=       an HTTP server — can share these types with an MCP server.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       an HTTP server — can share these types with an MCP server.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val block: Content.ContentBlock = Content.TextContent(t"Hello")
++       val block: Content.ContentBlock = Content.TextContent(t"Hello")
+
+-       block.in[Json].show                         // {"type": "text", "text": "Hello"}
++       block.in[Json].show                         // {"type": "text", "text": "Hello"}
+
+-       t"""{"type": "image", "data": "iVBORw0…", "mimeType": "image/png"}""".read[Json].as[Content.ContentBlock]
++       t"""{"type": "image", "data": "iVBORw0…", "mimeType": "image/png"}""".read[Json].as[Content.ContentBlock]
+
+=       t"""{"type": "image", "data": "iVBORw0…", "mimeType": "image/png"}""".read[Json].as[Content.ContentBlock]
+-       ```
++       ```
+
+-       Every member is re-exported from `Mcp`, so MCP code writes `Mcp.TextContent`; in the
+-       `soundness` umbrella the object itself is spelled `McpContent`, since `Content` there
+-       is gesticulate's media-typed payload. The records' JSON codecs are derived once in their
+-       companions and are in implicit scope; decoding needs a `Tactic[Json.Error]`.
++       すべてのメンバーは `Mcp` から再エクスポートされるので、MCP のコードは `Mcp.TextContent` と書く。`soundness` アンブレラでは、`Content` が gesticulate のメディアタイプ付きペイロードであるため、このオブジェクト自体は `McpContent` と綴られる。
++       レコードの JSON コーデックはコンパニオンで一度導出され、暗黙のスコープにある。デコードには `Tactic[Json.Error]` が必要である。
+
+-   refer synesthesia.Mcp
++   refer synesthesia.Mcp
+
+-   entry .Icon   an icon: its source, MIME type, sizes and theme
++   entry .Icon   アイコン。そのソース、MIME タイプ、サイズ、テーマ
+
+=   entry .Icon   an icon: its source, MIME type, sizes and theme
+-     detail
++     detail
+
+-         Carried by implementations, tools, resources and prompts to show alongside them. The
+-         companion holds derived JSON codecs.
+-     entry #src   the icon's URI or data URI
+-     entry #mimeType   the icon's MIME type, if given
+-     entry #sizes   the sizes available, as `WxH` texts, if given
+-     entry #theme   the theme the icon suits, `light` or `dark`, if given
+-   entry .Contents   a resource's contents, as text or as a blob
++         実装、ツール、リソース、プロンプトが、それらと並べて表示するために持つ。
++         コンパニオンは導出された JSON コーデックを保持する。
++     entry #src   アイコンの URI またはデータ URI
++     entry #mimeType   アイコンの MIME タイプ（与えられていれば）
++     entry #sizes   利用できるサイズで、`WxH` のテキストとして（与えられていれば）
++     entry #theme   アイコンが合うテーマで、`light` または `dark`（与えられていれば）
++   entry .Contents   リソースの内容で、テキストまたは blob として
+
+=   entry .Contents   a resource's contents, as text or as a blob
+-     detail
++     detail
+
+-         Wraps a `TextResourceContents | BlobResourceContents`, so that a `ReadResource` can
+-         list either. It encodes as whichever it holds (`.encodable`) and decodes by trying
+-         text first (`.decodable`).
+-     entry .encodable   writes the text or blob contents it holds
+-     entry .decodable   reads text contents, or blob contents if the JSON has no `text`
+-     entry #contents   the contents, `TextResourceContents` or `BlobResourceContents`
+-   entry .ResourceContents   the base of a resource's contents: URI, MIME type and metadata
+-     entry #uri   the resource's URI
+-     entry #mimeType   the resource's MIME type, if known
+-     entry #_meta   protocol metadata, if any
+-   entry .TextResourceContents   a resource's contents as text
++         `TextResourceContents | BlobResourceContents` を包み、`ReadResource` がどちらでも列挙できるようにする。
++         保持しているもののとおりにエンコードし（`.encodable`）、まずテキストとして試すことでデコードする（`.decodable`）。
++     entry .encodable   保持しているテキストまたは blob の内容を書き出す
++     entry .decodable   テキストの内容を読み、JSON に `text` がなければ blob の内容を読む
++     entry #contents   内容で、`TextResourceContents` または `BlobResourceContents`
++   entry .ResourceContents   リソースの内容の基底。URI、MIME タイプ、メタデータ
++     entry #uri   リソースの URI
++     entry #mimeType   リソースの MIME タイプ（分かっていれば）
++     entry #_meta   プロトコルのメタデータ（あれば）
++   entry .TextResourceContents   テキストとしてのリソースの内容
+
+=   entry .TextResourceContents   a resource's contents as text
+-     detail
++     detail
+
+-         What a derived `Mcp.Specification` answers for a `@resource` method whose result
+-         streams as `Text`; its `mimeType` is the annotation's, or `text/plain`. The companion
+-         holds derived JSON codecs.
+-     entry #uri   the resource's URI
+-     entry #mimeType   the resource's MIME type, if known
+-     entry #text   the contents
+-     entry #_meta   protocol metadata, if any
+-   entry .BlobResourceContents   a resource's contents as a Base64 blob
++         結果が `Text` としてストリームされる `@resource` メソッドに対して、導出された `Mcp.Specification` が応答するものである。その `mimeType` はアノテーションのもの、または `text/plain` である。
++         コンパニオンは導出された JSON コーデックを保持する。
++     entry #uri   リソースの URI
++     entry #mimeType   リソースの MIME タイプ（分かっていれば）
++     entry #text   内容
++     entry #_meta   プロトコルのメタデータ（あれば）
++   entry .BlobResourceContents   Base64 の blob としてのリソースの内容
+
+=   entry .BlobResourceContents   a resource's contents as a Base64 blob
+-     detail
++     detail
+
+-         What a derived `Mcp.Specification` answers for a `@resource` method whose result
+-         streams as `Data`; its `mimeType` is the annotation's, or `application/octet-stream`.
+-         The companion holds derived JSON codecs.
+-     entry #uri   the resource's URI
+-     entry #mimeType   the resource's MIME type, if known
+-     entry #blob   the contents, Base64-encoded
+-     entry #_meta   protocol metadata, if any
+-   entry .Annotations   hints about content: its audience, priority and last modification
++         結果が `Data` としてストリームされる `@resource` メソッドに対して、導出された `Mcp.Specification` が応答するものである。その `mimeType` はアノテーションのもの、または `application/octet-stream` である。
++         コンパニオンは導出された JSON コーデックを保持する。
++     entry #uri   リソースの URI
++     entry #mimeType   リソースの MIME タイプ（分かっていれば）
++     entry #blob   Base64 でエンコードされた内容
++     entry #_meta   プロトコルのメタデータ（あれば）
++   entry .Annotations   コンテンツについてのヒント。対象者、優先度、最終更新
+
+=   entry .Annotations   hints about content: its audience, priority and last modification
+-     detail
++     detail
+
+-         The companion holds derived JSON codecs.
+-     entry #audience   who the content is for, as `Role`s, if given
+-     entry #priority   how important it is, from 0 to 1, if given
+-     entry #lastModified   when it last changed, as an ISO 8601 timestamp, if given
+-   entry .Role   who a message is from: the user or the assistant
++         コンパニオンは導出された JSON コーデックを保持する。
++     entry #audience   コンテンツが誰のためのものかで、`Role` として（与えられていれば）
++     entry #priority   どれだけ重要かで、0 から 1 まで（与えられていれば）
++     entry #lastModified   最後に変更された時刻で、ISO 8601 のタイムスタンプとして（与えられていれば）
++   entry .Role   メッセージが誰からのものか。ユーザーまたはアシスタント
+
+=   entry .Role   who a message is from: the user or the assistant
+-     detail
++     detail
+
+-         `User` and `Assistant`, encoded as `user` and `assistant`; `Mcp.Interface` makes a
+-         `Discourse.Human` prompt message a `User` one and an `Discourse.Agent` message an `Assistant` one.
+-     entry .encodable   writes `user` or `assistant`
+-     entry .decodable   reads `user` or `assistant`, raising `Json.Error` for anything else
+-   entry .ContentBlock   a block of content: text, an image, audio, a resource link or an embedded resource
++         `User` と `Assistant` で、`user` と `assistant` としてエンコードされる。`Mcp.Interface` は `Discourse.Human` のプロンプトメッセージを `User` のものに、`Discourse.Agent` のメッセージを `Assistant` のものにする。
++     entry .encodable   `user` または `assistant` を書き出す
++     entry .decodable   `user` または `assistant` を読み、それ以外に対しては `Json.Error` を発生させる
++   entry .ContentBlock   コンテンツのブロック。テキスト、画像、音声、リソースリンク、埋め込まれたリソース
+
+=   entry .ContentBlock   a block of content: text, an image, audio, a resource link or an embedded resource
+-     detail
++     detail
+
+-         The sealed sum of `TextContent`, `ImageContent`, `AudioContent`, `ResourceLink` and
+-         `EmbeddedResource`, encoded with a `type` discriminator of `text`, `image`, `audio`,
+-         `resource_link` or `resource`. A tool's result and a prompt's messages are lists of
+-         these.
++         `TextContent`、`ImageContent`、`AudioContent`、`ResourceLink`、`EmbeddedResource` のシールされた直和であり、`text`、`image`、`audio`、`resource_link`、`resource` のいずれかの `type` 判別子付きでエンコードされる。
++         ツールの結果やプロンプトのメッセージは、これらのリストである。
+
+=         these.
+=
+-         ```scala
++         ```scala
+
+=         these.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val blocks: List[Content.ContentBlock] =
++         val blocks: List[Content.ContentBlock] =
+
+-           List(Content.TextContent(t"Hello"), Content.ResourceLink(t"readme", t"docs://readme"))
++           List(Content.TextContent(t"Hello"), Content.ResourceLink(t"readme", t"docs://readme"))
+
+-         blocks.map:
++         blocks.map:
+
+-           case Content.TextContent(text, _)      => t"text: $text"
++           case Content.TextContent(text, _)      => t"text: $text"
+
+-           case Content.ImageContent(_, mime, _, _) => t"image of $mime"
++           case Content.ImageContent(_, mime, _, _) => t"image of $mime"
+
+-           case Content.AudioContent(_, mime, _)  => t"audio of $mime"
++           case Content.AudioContent(_, mime, _)  => t"audio of $mime"
+
+-           case Content.ResourceLink(name, uri, _, _, _, _, _, _, _) => t"link to $uri"
++           case Content.ResourceLink(name, uri, _, _, _, _, _, _, _) => t"link to $uri"
+
+-           case Content.EmbeddedResource(_, _, _) => t"an embedded resource"
++           case Content.EmbeddedResource(_, _, _) => t"an embedded resource"
+
+=           case Content.EmbeddedResource(_, _, _) => t"an embedded resource"
+-         ```
++         ```
+
+-     entry .encodable   writes a block with its `type` discriminator
+-     entry .decodable   reads a block by its `type`, raising `Json.Error` for an unknown one
+-   entry .TextContent   a block of text, with optional annotations
++     entry .encodable   `type` 判別子付きでブロックを書き出す
++     entry .decodable   `type` によってブロックを読み、未知のものに対しては `Json.Error` を発生させる
++   entry .TextContent   テキストのブロックで、任意でアノテーションを伴う
+
+=   entry .TextContent   a block of text, with optional annotations
+-     detail
++     detail
+
+-         The companion holds derived JSON codecs.
+-     entry #text   the text
+-     entry #annotations   audience and priority hints, if given
+-   entry .ImageContent   an image as Base64 data with its MIME type
++         コンパニオンは導出された JSON コーデックを保持する。
++     entry #text   テキスト
++     entry #annotations   対象者と優先度のヒント（与えられていれば）
++   entry .ImageContent   MIME タイプを伴う Base64 データとしての画像
+
+=   entry .ImageContent   an image as Base64 data with its MIME type
+-     detail
++     detail
+
+-         The `uri` field is defined by the Agent Client Protocol, not by MCP; being
+-         `Optional`, it is absent from the MCP wire when `Unset`. The companion holds derived
+-         JSON codecs.
+-     entry #data   the image, Base64-encoded
+-     entry #mimeType   the image's MIME type
+-     entry #uri   where the image came from, if given (an ACP field)
+-     entry #annotations   audience and priority hints, if given
+-   entry .AudioContent   audio as Base64 data with its MIME type
++         `uri` フィールドは MCP ではなく Agent Client Protocol によって定義される。`Optional` なので、`Unset` のときは MCP のワイヤ上には現れない。
++         コンパニオンは導出された JSON コーデックを保持する。
++     entry #data   Base64 でエンコードされた画像
++     entry #mimeType   画像の MIME タイプ
++     entry #uri   画像の出どころ（与えられていれば。ACP のフィールド）
++     entry #annotations   対象者と優先度のヒント（与えられていれば）
++   entry .AudioContent   MIME タイプを伴う Base64 データとしての音声
+
+=   entry .AudioContent   audio as Base64 data with its MIME type
+-     detail
++     detail
+
+-         The companion holds derived JSON codecs.
+-     entry #data   the audio, Base64-encoded
+-     entry #mimeType   the audio's MIME type
+-     entry #annotations   audience and priority hints, if given
+-   entry .ResourceLink   a link to a resource the client may read, by URI
++         コンパニオンは導出された JSON コーデックを保持する。
++     entry #data   Base64 でエンコードされた音声
++     entry #mimeType   音声の MIME タイプ
++     entry #annotations   対象者と優先度のヒント（与えられていれば）
++   entry .ResourceLink   クライアントが URI で読めるリソースへのリンク
+
+=   entry .ResourceLink   a link to a resource the client may read, by URI
+-     detail
++     detail
+
+-         The companion holds derived JSON codecs.
+-     entry #name   the resource's name
+-     entry #uri   the resource's URI
+-     entry #title   a human-readable title, if given
+-     entry #description   a description, if given
+-     entry #icons   icons, if given
+-     entry #mimeType   the resource's MIME type, if known
+-     entry #annotations   audience and priority hints, if given
+-     entry #size   the resource's size in bytes, if known
+-     entry #_meta   protocol metadata, if any
+-   entry .EmbeddedResource   a resource's contents carried inline in a message
++         コンパニオンは導出された JSON コーデックを保持する。
++     entry #name   リソースの名前
++     entry #uri   リソースの URI
++     entry #title   人が読めるタイトル（与えられていれば）
++     entry #description   説明（与えられていれば）
++     entry #icons   アイコン（与えられていれば）
++     entry #mimeType   リソースの MIME タイプ（分かっていれば）
++     entry #annotations   対象者と優先度のヒント（与えられていれば）
++     entry #size   バイト単位のリソースのサイズ（分かっていれば）
++     entry #_meta   プロトコルのメタデータ（あれば）
++   entry .EmbeddedResource   メッセージの中にインラインで運ばれるリソースの内容
+
+=   entry .EmbeddedResource   a resource's contents carried inline in a message
+-     detail
++     detail
+
+-         The companion holds derived JSON codecs.
+-     entry #resource   the contents, as `Contents`
+-     entry #annotations   audience and priority hints, if given
+-     entry #_meta   protocol metadata, if any
++         コンパニオンは導出された JSON コーデックを保持する。
++     entry #resource   `Contents` としての内容
++     entry #annotations   対象者と優先度のヒント（与えられていれば）
++     entry #_meta   プロトコルのメタデータ（あれば）
+
+- entry .about   the `@about("…")` annotation: the description of a tool, resource, prompt or parameter
+-     On a `@tool`, `@resource` or `@prompt` method, `@about` supplies the `description` the
+-     model reads when deciding whether to use it. On a tool's parameter, it becomes that
+-     property's `description` in the input schema; on a prompt's parameter, the
+-     `PromptArgument`'s description. It is defined in the `synesthesia.content` source set,
+-     so the Agent Client Protocol's types may use it too.
++ entry .about   `@about("…")` アノテーション。ツール、リソース、プロンプト、パラメーターの説明
++     `@tool`、`@resource`、`@prompt` メソッドでは、`@about` は、モデルがそれを使うかどうかを決めるときに読む `description` を与える。
++     ツールのパラメーターでは、入力スキーマにおけるそのプロパティの `description` になる。プロンプトのパラメーターでは、`PromptArgument` の説明になる。
++     これは `synesthesia.content` ソースセットで定義されているので、Agent Client Protocol の型も使える。
+
+=     so the Agent Client Protocol's types may use it too.
+=
+-     ```scala
++     ```scala
+
+=     so the Agent Client Protocol's types may use it too.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Greeter extends Mcp.Server():
++     object Greeter extends Mcp.Server():
+
+=     object Greeter extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object Greeter extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"greeter"
++       def name: Text = t"greeter"
+
+-       def description: Text = t"Greets people"
++       def description: Text = t"Greets people"
+
+=       def description: Text = t"Greets people"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"Greets people"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+=       def description: Text = t"Greets people"
+=       def version: Semver = v"1.0.0"
+=       def prompts: List[Mcp.Prompt] = Nil
+=
+-       @tool
++       @tool
+
+-       @about("Greets someone")
++       @about("Greets someone")
+
+-       def greet(@about("whom to greet") name: Text): Text = t"Hello, $name"
++       def greet(@about("whom to greet") name: Text): Text = t"Hello, $name"
+
+=       def greet(@about("whom to greet") name: Text): Text = t"Hello, $name"
+-     ```
++     ```
+
+- entry .tool   the `@tool` annotation: a method is a tool the client may call
+-     A `@tool` method of an `Mcp.Server` is listed by `tools/list` and called by `tools/call`.
+-     Its name is the method's; its input schema has a property per parameter, derived from the
+-     parameter's type (which must be `Schematic over JsonSchema` and decodable from JSON), and
+-     requires every parameter which is neither `Optional` nor defaulted; its output schema is
+-     an object with the one property `result`, the schema of the result type. The result is
+-     answered as `{"result": …}` in the `CallTool`'s `structuredContent` and as text. A method
+-     may take a second parameter list `(using client: Mcp.Client)` to log to, or elicit input
+-     from, the client while it runs. A tool which throws answers a `CallTool` marked `isError`
+-     with the exception's message.
++ entry .tool   `@tool` アノテーション。メソッドが、クライアントが呼び出せるツールであることを示す
++     `Mcp.Server` の `@tool` メソッドは、`tools/list` によって列挙され、`tools/call` によって呼び出される。
++     その名前はメソッドの名前である。入力スキーマはパラメーターごとにプロパティを持ち、それはパラメーターの型（`Schematic over JsonSchema` で、JSON からデコードできなければならない）から導出され、`Optional` でもデフォルト値付きでもないすべてのパラメーターを必須とする。出力スキーマは、結果の型のスキーマを持つ一つのプロパティ `result` を持つオブジェクトである。
++     結果は、`CallTool` の `structuredContent` の中では `{"result": …}` として、またテキストとして応答される。
++     メソッドは二番目のパラメーターリスト `(using client: Mcp.Client)` を取ることができ、実行中にクライアントへログを送ったり、クライアントから入力を求めたりできる。
++     例外を投げるツールは、`isError` の印が付き、例外のメッセージを持つ `CallTool` で応答する。
+
+=     with the exception's message.
+=
+-     ```scala
++     ```scala
+
+=     with the exception's message.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Runs extends Mcp.Server():
++     object Runs extends Mcp.Server():
+
+=     object Runs extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object Runs extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"runs"
++       def name: Text = t"runs"
+
+-       def description: Text = t"Lists runs"
++       def description: Text = t"Lists runs"
+
+=       def description: Text = t"Lists runs"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"Lists runs"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+=       def description: Text = t"Lists runs"
+=       def version: Semver = v"1.0.0"
+=       def prompts: List[Mcp.Prompt] = Nil
+=
+-       @tool
++       @tool
+
+-       @about(t"Lists recent runs")
++       @about(t"Lists recent runs")
+
+-       def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit: Int = 20)
++       def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit: Int = 20)
+
+-       :   List[Text] =
++       :   List[Text] =
+
+-         Nil
++         Nil
+
+=         Nil
+-     ```
++     ```
+
+-     Here `workspace` and `limit` are not required: a client may omit them, and the method
+-     sees `Unset` and `20`. `@title` gives the tool a title and `@ui` names the resource
+-     which is its user interface.
++     ここで `workspace` と `limit` は必須ではない。クライアントはそれらを省略でき、メソッドは `Unset` と `20` を受け取る。
++     `@title` はツールにタイトルを与え、`@ui` はそのユーザーインターフェースであるリソースを名指しする。
+
+- entry .resource   the `@resource("uri")` annotation: a method's result is served at a URI
+-     A `@resource(uri)` method of an `Mcp.Server` takes no parameters and returns anything
+-     `Streamable by Text` or `Streamable by Data`: it is listed by `resources/list` as an
+-     `Mcp.Resource` named after the method and read by `resources/read` with that URI, as
+-     `TextResourceContents` or, Base64-encoded, `BlobResourceContents`. The second parameter,
+-     `mimeType`, gives the type reported; without it, a resource whose URI a tool's `@ui`
+-     names is `text/html;profile=mcp-app`, a text resource `text/plain` and a binary one
+-     `application/octet-stream`.
++ entry .resource   `@resource("uri")` アノテーション。メソッドの結果が URI で提供される
++     `Mcp.Server` の `@resource(uri)` メソッドはパラメーターを取らず、`Streamable by Text` または `Streamable by Data` である任意のものを返す。それはメソッドにちなんで名付けられた `Mcp.Resource` として `resources/list` によって列挙され、その URI で `resources/read` によって、`TextResourceContents` として、または Base64 でエンコードされて `BlobResourceContents` として読まれる。
++     二番目のパラメーター `mimeType` は報告される型を与える。それがなければ、ツールの `@ui` がその URI を名指しするリソースは `text/html;profile=mcp-app`、テキストのリソースは `text/plain`、バイナリのものは `application/octet-stream` である。
+
+=     `application/octet-stream`.
+=
+-     ```scala
++     ```scala
+
+=     `application/octet-stream`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Documentation extends Mcp.Server():
++     object Documentation extends Mcp.Server():
+
+=     object Documentation extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object Documentation extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"documentation"
++       def name: Text = t"documentation"
+
+-       def description: Text = t"The project's documentation"
++       def description: Text = t"The project's documentation"
+
+=       def description: Text = t"The project's documentation"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"The project's documentation"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+-       @resource("docs://readme", mimeType = t"text/markdown")
++       @resource("docs://readme", mimeType = t"text/markdown")
+
+-       @about("The project readme")
++       @about("The project readme")
+
+-       def readme: Text = t"# Readme\n\nStart with `make build`."
++       def readme: Text = t"# Readme\n\nStart with `make build`."
+
+=       def readme: Text = t"# Readme\n\nStart with `make build`."
+-     ```
++     ```
+
+-     A method with parameters is a compile error, _MCP resource methods cannot have any
+-     parameters_, and so is a result type which does not stream.
++     パラメーターを持つメソッドはコンパイルエラー _MCP resource methods cannot have any parameters_ になり、ストリームしない結果型も同様である。
+
+- entry .prompt   the `@prompt` annotation: a method returns a conversation template
+-     A `@prompt` method of an `Mcp.Server` returns a `List[Discourse]`, written with the
+-     `human"…"` and `agent"…"` interpolators, and is listed by `prompts/list` as an
+-     `Mcp.Prompt` named after it, with a `PromptArgument` per parameter, and run by
+-     `prompts/get` with the arguments as text. Each `Discourse.Human` message becomes a `User`
+-     `PromptMessage` and each `Discourse.Agent` an `Assistant` one.
++ entry .prompt   `@prompt` アノテーション。メソッドが会話のテンプレートを返す
++     `Mcp.Server` の `@prompt` メソッドは、`human"…"` と `agent"…"` の補間子で書かれた `List[Discourse]` を返す。それはメソッドにちなんで名付けられ、パラメーターごとに `PromptArgument` を持つ `Mcp.Prompt` として `prompts/list` によって列挙され、引数をテキストとして `prompts/get` によって実行される。
++     各 `Discourse.Human` メッセージは `User` の `PromptMessage` に、各 `Discourse.Agent` は `Assistant` のものになる。
+
+=     `PromptMessage` and each `Discourse.Agent` an `Assistant` one.
+=
+-     ```scala
++     ```scala
+
+=     `PromptMessage` and each `Discourse.Agent` an `Assistant` one.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Reviews extends Mcp.Server():
++     object Reviews extends Mcp.Server():
+
+=     object Reviews extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object Reviews extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"reviews"
++       def name: Text = t"reviews"
+
+-       def description: Text = t"Review prompts"
++       def description: Text = t"Review prompts"
+
+=       def description: Text = t"Review prompts"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"Review prompts"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+-       @prompt
++       @prompt
+
+-       def review(topic: Text): List[Discourse] =
++       def review(topic: Text): List[Discourse] =
+
+-         List(human"Please review the $topic and summarize any problems.")
++         List(human"Please review the $topic and summarize any problems.")
+
+=         List(human"Please review the $topic and summarize any problems.")
+-     ```
++     ```
+
+- entry .title   the `@title("…")` annotation: a human-readable title for a tool, resource, prompt or argument
+-     Becomes the `title` of the listed `Mcp.Tool`, `Mcp.Resource` or `Mcp.Prompt`, or of a
+-     prompt parameter's `PromptArgument`, where `@about` gives the description.
++ entry .title   `@title("…")` アノテーション。ツール、リソース、プロンプト、引数の人が読めるタイトル
++     列挙される `Mcp.Tool`、`Mcp.Resource`、`Mcp.Prompt`、またはプロンプトのパラメーターの `PromptArgument` の `title` になる。説明は `@about` が与える。
+
+- entry .ui   the `@ui("uri")` annotation: names the resource which is a tool's user interface
+-     On a `@tool` method, `@ui(uri)` adds `{"ui": {"visibility": ["model", "app"],
+-     "resourceUri": uri}}` to the tool's `_meta`, telling an MCP-apps client which resource
+-     to show for it, and makes the `@resource` with that URI default to the MIME type
+-     `text/html;profile=mcp-app`.
++ entry .ui   `@ui("uri")` アノテーション。ツールのユーザーインターフェースであるリソースを名指しする
++     `@tool` メソッドでは、`@ui(uri)` はツールの `_meta` に `{"ui": {"visibility": ["model", "app"], "resourceUri": uri}}` を加え、MCP アプリのクライアントにそのツールのためにどのリソースを表示するかを伝える。そして、その URI を持つ `@resource` のデフォルトの MIME タイプを `text/html;profile=mcp-app` にする。
+
+=     `text/html;profile=mcp-app`.
+=
+-     ```scala
++     ```scala
+
+=     `text/html;profile=mcp-app`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import htmlDoms.whatwg
++     import htmlDoms.whatwg
+
+-     import htmlDoms.whatwg.*
++     import htmlDoms.whatwg.*
+
+-     object App extends Mcp.Server():
++     object App extends Mcp.Server():
+
+=     object App extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object App extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"app"
++       def name: Text = t"app"
+
+-       def description: Text = t"An MCP app"
++       def description: Text = t"An MCP app"
+
+=       def description: Text = t"An MCP app"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"An MCP app"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+=       def description: Text = t"An MCP app"
+=       def version: Semver = v"1.0.0"
+=       def prompts: List[Mcp.Prompt] = Nil
+=
+-       @tool
++       @tool
+
+-       @ui("ui://html/content")
++       @ui("ui://html/content")
+
+-       def reverse(text: Text): Text = text.reverse
++       def reverse(text: Text): Text = text.reverse
+
+-       @resource("ui://html/content")
++       @resource("ui://html/content")
+
+-       @title("User interface")
++       @title("User interface")
+
+-       def content: Text = Html(Head(Title("MCP App")), Body(H1("Hello world"))).show
++       def content: Text = Html(Head(Title("MCP App")), Body(H1("Hello world"))).show
+
+=       def content: Text = Html(Head(Title("MCP App")), Body(H1("Hello world"))).show
+-     ```
++     ```
+
+- entry .Discourse   one message of a prompt's conversation: from the human or from the agent
++ entry .Discourse   プロンプトの会話の一つのメッセージ。人間から、またはエージェントから
+
+= entry .Discourse   one message of a prompt's conversation: from the human or from the agent
+-   detail
++   detail
+
+-       The sealed sum of `Human` and `Agent`, each carrying a `Text` message. A `@prompt` method
+-       returns a `List[Discourse]`, most easily written with the `human"…"` and `agent"…"`
+-       interpolators; `Mcp.Interface` turns each into a `PromptMessage` with the `User` or
+-       `Assistant` role and a `TextContent`.
++       `Human` と `Agent` のシールされた直和で、それぞれが `Text` のメッセージを運ぶ。
++       `@prompt` メソッドは `List[Discourse]` を返し、それは `human"…"` と `agent"…"` の補間子で書くのが最も簡単である。`Mcp.Interface` はそれぞれを、`User` または `Assistant` のロールと `TextContent` を持つ `PromptMessage` に変える。
+
+=       `Assistant` role and a `TextContent`.
+=
+-       ```scala
++       ```scala
+
+=       `Assistant` role and a `TextContent`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val conversation: List[Discourse] =
++       val conversation: List[Discourse] =
+
+-         List(human"What is the capital of France?", agent"Paris.", human"And of Spain?")
++         List(human"What is the capital of France?", agent"Paris.", human"And of Spain?")
+
+=         List(human"What is the capital of France?", agent"Paris.", human"And of Spain?")
+-       ```
++       ```
+
+-   entry .Human   a prompt message from the user
+-       `Human(message)`, as `human"…"` makes it. It inspects structurally, as
+-       `Human(message:t"hello")`.
+-   entry .Agent   a prompt message from the assistant
+-       `Agent(message)`, as `agent"…"` makes it.
++   entry .Human   ユーザーからのプロンプトメッセージ
++       `human"…"` が作るような `Human(message)` である。
++       `Human(message:t"hello")` のように構造的に表示される。
++   entry .Agent   アシスタントからのプロンプトメッセージ
++       `agent"…"` が作るような `Agent(message)` である。
+
+- entry .human   the `human"…"` interpolator: a `Human` message, with substitutions shown as text
+-     Each `$substitution` must be `Showable`, and is rendered with its `Showable`; a value
+-     with no `Showable` is a compile error, _could not find a contextual `T is Showable`
+-     instance_. The result is a `Discourse`.
++ entry .human   `human"…"` 補間子。置換をテキストとして示した `Human` メッセージ
++     各 `$substitution` は `Showable` でなければならず、その `Showable` で描画される。`Showable` を持たない値はコンパイルエラー _could not find a contextual `T is Showable` instance_ になる。
++     結果は `Discourse` である。
+
+=     instance_. The result is a `Discourse`.
+=
+-     ```scala
++     ```scala
+
+=     instance_. The result is a `Discourse`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val topic = t"parser"
++     val topic = t"parser"
+
+-     human"Please review the $topic."   // Discourse.Human(t"Please review the parser.")
++     human"Please review the $topic."   // Discourse.Human(t"Please review the parser.")
+
+=     human"Please review the $topic."   // Discourse.Human(t"Please review the parser.")
+-     ```
++     ```
+
+- entry .agent   the `agent"…"` interpolator: an `Agent` message, with substitutions shown as text
+-     As `human"…"`, making an `Discourse.Agent`: the assistant's side of a prompt's conversation.
++ entry .agent   `agent"…"` 補間子。置換をテキストとして示した `Agent` メッセージ
++     `human"…"` と同様で、`Discourse.Agent`、つまりプロンプトの会話のアシスタントの側を作る。
+
+=     As `human"…"`, making an `Discourse.Agent`: the assistant's side of a prompt's conversation.
+=
+-     ```scala
++     ```scala
+
+=     As `human"…"`, making an `Discourse.Agent`: the assistant's side of a prompt's conversation.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     agent"I have reviewed the parser and found no problems."
++     agent"I have reviewed the parser and found no problems."
+
+=     agent"I have reviewed the parser and found no problems."
+-     ```
++     ```
+
+- entry .internal   the macro implementations behind `human"…"`, `agent"…"` and `Mcp.Specification`
++ entry .internal   `human"…"`、`agent"…"`、`Mcp.Specification` の背後にあるマクロの実装
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the macros have a stable home.
+-   entry .prompt   the macro behind `human"…"` and `agent"…"`
+-       Concatenates the literal parts with each substitution's `Showable` rendering and
+-       splices a `Discourse.Human` or an `Discourse.Agent`.
+-   entry .spec   the macro behind `Mcp.Specification.mcpSpecification`
+-       Reads the `@tool`, `@resource` and `@prompt` methods of a server type (including
+-       annotations on overridden methods), derives their schemas, and splices an
+-       `Mcp.Specification` with the listings and the dispatch.
++       直接使うためのものではない。このオブジェクトは、マクロが安定した置き場所を持つために存在する。
++   entry .prompt   `human"…"` と `agent"…"` の背後にあるマクロ
++       リテラル部分を各置換の `Showable` による描画と連結し、`Discourse.Human` または `Discourse.Agent` をスプライスする。
++   entry .spec   `Mcp.Specification.mcpSpecification` の背後にあるマクロ
++       サーバー型の `@tool`、`@resource`、`@prompt` メソッドを（オーバーライドされたメソッドのアノテーションも含めて）読み、それらのスキーマを導出し、一覧とディスパッチを持つ `Mcp.Specification` をスプライスする。

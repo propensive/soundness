@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.68.3` — Missing `Nominative` instance
++ # `↯/s.68.3` — `Nominative` インスタンスがない
+
+- Raised at compile time by Nomenclature's `parse` macro when no
+- `Nominative` instance is in scope for the requested system.
++ 求められた体系に対する `Nominative` インスタンスがスコープ内にないとき、Nomenclature の `parse` マクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- The macro expands name parsing against a system specified by type;
+- without a `given Nominative`, it cannot proceed.
++ マクロは、型で指定された体系に照らして名前のパースを展開する。`given Nominative` がなければ、先に進めない。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.68.3] Couldn't find a `Nominative` instance on system
++ [↯/s.68.3] Couldn't find a `Nominative` instance on system
+
+= [↯/s.68.3] Couldn't find a `Nominative` instance on system
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Bring a `given Nominative` for the system into scope, or provide
+- one.
++ その体系に対する `given Nominative` をスコープに入れるか、自分で用意する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/nomenclature/src/core/nomenclature.protointernal.scala`
++ - ソース：`lib/nomenclature/src/core/nomenclature.protointernal.scala`

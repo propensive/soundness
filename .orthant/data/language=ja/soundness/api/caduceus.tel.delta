@@ -1,0 +1,841 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base caduceus
++ base caduceus
+
+- import soundness
++ import soundness
+
+- info   email composed from typed parts and sent through a courier chosen by what is in scope
++ info   型付きの部品から組み立て、スコープにあるものによって選ばれるクーリエを通じて送る電子メール
+
+- detail
++ detail
+
+-     _Caduceus_ composes an email from typed parts — a body of text, HTML or both, inline
+-     content and attachments — and sends it through a `Courier`, the delivery service, which
+-     is a contextual value. The MIME structure follows from the content (`multipart/alternative`
+-     for text with HTML, `multipart/related` with inlines, `multipart/mixed` with
+-     attachments), and the addresses are urticose's `EmailAddress`es, checked as the code
+-     compiles when written as `email"…"` literals.
++     _Caduceus_ は型付きの部品（テキスト、HTML、またはその両方の本文、インラインのコンテンツ、添付ファイル）から電子メールを組み立て、配送サービスである `Courier` を通じて送る。`Courier` はコンテキスト値である。
++     MIME の構造はコンテンツから決まり（HTML 付きのテキストなら `multipart/alternative`、インラインがあれば `multipart/related`、添付ファイルがあれば `multipart/mixed`）、アドレスは urticose の `EmailAddress` であり、`email"…"` リテラルとして書けばコードのコンパイル時に検査される。
+
+-     Anything `Sendable` — `Text`, a document with a media type such as an HTML page, or a
+-     composed `Email` — is sent with `send`, which takes the subject and recipients and needs
+-     a `Courier` and a `Sender` in scope:
++     `Sendable` であるもの（`Text`、HTML ページのようなメディアタイプを持つ文書、組み立てた `Email`）は何でも `send` で送れる。`send` は件名と受信者を取り、スコープ内に `Courier` と `Sender` を必要とする。
+
+=     a `Courier` and a `Sender` in scope:
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     a `Courier` and a `Sender` in scope:
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     a `Courier` and a `Sender` in scope:
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     a `Courier` and a `Sender` in scope:
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+=     a `Courier` and a `Sender` in scope:
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+-     import couriers.resendCourier
++     import couriers.resendCourier
+
+=     a `Courier` and a `Sender` in scope:
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=     import couriers.resendCourier
+-     import internetAccess.online
++     import internetAccess.online
+
+=     a `Courier` and a `Sender` in scope:
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=     import couriers.resendCourier
+=     import internetAccess.online
+-     import httpBackends.javaNetHttp
++     import httpBackends.javaNetHttp
+
+=     a `Courier` and a `Sender` in scope:
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=     import couriers.resendCourier
+=     import internetAccess.online
+=     import httpBackends.javaNetHttp
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     given Sender = Sender(email"noreply@example.com")
++     given Sender = Sender(email"noreply@example.com")
+
+=     given Sender = Sender(email"noreply@example.com")
+-     given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
++     given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
+
+-     val receipt: Resend.Receipt =
++     val receipt: Resend.Receipt =
+
+-       t"Your order has shipped.".send(subject = t"Shipping", to = email"customer@example.com")
++       t"Your order has shipped.".send(subject = t"Shipping", to = email"customer@example.com")
+
+=       t"Your order has shipped.".send(subject = t"Shipping", to = email"customer@example.com")
+-     ```
++     ```
+
+-     The result of `send` is the courier's own `Result` type: the Resend courier returns a
+-     `Resend.Receipt`, and another courier may return something else, or `Unit`.
++     `send` の結果はクーリエ自身の `Result` 型である。Resend のクーリエは `Resend.Receipt` を返し、別のクーリエは別のもの、あるいは `Unit` を返すことがある。
+
+-     The library has two source sets:
++     ライブラリには二つのソースセットがある。
+
+-     - `caduceus.core` — `Email`, `Envelope`, `Sender`, `Courier`, the `Sendable` and
+-       `Attachable` typeclasses and the `send` extension. It needs a courier to do anything.
+-     - `caduceus.resend` — `Resend` and the `couriers.resendCourier` given, which delivers
+-       through the [Resend](https://resend.com/) HTTP API. JVM only, since it needs an HTTP
+-       client.
++     - `caduceus.core`：`Email`、`Envelope`、`Sender`、`Courier`、`Sendable` と `Attachable` の型クラス、そして `send` 拡張。何かをするにはクーリエが必要である。
++     - `caduceus.resend`：`Resend` と、[Resend](https://resend.com/) の HTTP API を通じて配送する `couriers.resendCourier` の given。HTTP クライアントを必要とするので JVM 専用である。
+
+-     Everything is exported to the `soundness` umbrella. A courier is selected by importing
+-     it by name from the `couriers` choice package, since `import couriers.*` does not import
+-     givens; the package merges with the umbrella's own.
++     すべては `soundness` アンブレラにエクスポートされる。
++     `import couriers.*` は given をインポートしないので、クーリエは `couriers` 選択パッケージから名前でインポートして選ぶ。このパッケージはアンブレラ自身のものと統合される。
+
+- refer caduceus.Email
++ refer caduceus.Email
+
+- refer caduceus.Courier
++ refer caduceus.Courier
+
+- refer caduceus.send
++ refer caduceus.send
+
+- refer caduceus.couriers
++ refer caduceus.couriers
+
+- refer urticose.EmailAddress
++ refer urticose.EmailAddress
+
+- entry .send   sends any `Sendable` value as an email, with a subject and recipients, through the `Courier` in scope
+-     `value.send(subject, to, cc, bcc, replyTo)` turns the value into an `Email` with its
+-     `Sendable`, builds an `Envelope` from the `Sender` in scope and the arguments, and hands
+-     both to the `Courier` in scope. Each of `to`, `cc`, `bcc` and `replyTo` takes either one
+-     `EmailAddress` or a `List` of them; all but `to` default to none.
++ entry .send   任意の `Sendable` な値を、件名と受信者を付けて、スコープ内の `Courier` を通じて電子メールとして送る
++     `value.send(subject, to, cc, bcc, replyTo)` は、値をその `Sendable` で `Email` に変え、スコープ内の `Sender` と引数から `Envelope` を作り、その両方をスコープ内の `Courier` に渡す。
++     `to`、`cc`、`bcc`、`replyTo` はそれぞれ、一つの `EmailAddress` かその `List` を取る。`to` 以外はすべて既定で空である。
+
+=     `EmailAddress` or a `List` of them; all but `to` default to none.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     `EmailAddress` or a `List` of them; all but `to` default to none.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     `EmailAddress` or a `List` of them; all but `to` default to none.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     `EmailAddress` or a `List` of them; all but `to` default to none.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+=     `EmailAddress` or a `List` of them; all but `to` default to none.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+-     import couriers.resendCourier
++     import couriers.resendCourier
+
+=     `EmailAddress` or a `List` of them; all but `to` default to none.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=     import couriers.resendCourier
+-     import internetAccess.online
++     import internetAccess.online
+
+=     `EmailAddress` or a `List` of them; all but `to` default to none.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=     import couriers.resendCourier
+=     import internetAccess.online
+-     import httpBackends.javaNetHttp
++     import httpBackends.javaNetHttp
+
+=     `EmailAddress` or a `List` of them; all but `to` default to none.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import soundness.*
+=     import couriers.resendCourier
+=     import internetAccess.online
+=     import httpBackends.javaNetHttp
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     given Sender = Sender(email"reports@example.com")
++     given Sender = Sender(email"reports@example.com")
+
+=     given Sender = Sender(email"reports@example.com")
+-     given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
++     given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
+
+-     t"Sales rose 4% in August.".send
++     t"Sales rose 4% in August.".send
+
+-       ( subject = t"Monthly report",
++       ( subject = t"Monthly report",
+
+-         to      = List(email"romeo@example.com", email"juliet@example.com"),
++         to      = List(email"romeo@example.com", email"juliet@example.com"),
+
+-         cc      = email"archive@example.com" )
++         cc      = email"archive@example.com" )
+
+=         cc      = email"archive@example.com" )
+-     ```
++     ```
+
+-     The result type is the courier's `Result`, and failures are the courier's to report: the
+-     Resend courier raises `Courier.Error`.
++     結果の型はクーリエの `Result` であり、失敗を報告するのはクーリエの役目である。Resend のクーリエは `Courier.Error` を発生させる。
+
+- entry .Sender   the address emails are sent from, as a contextual value
++ entry .Sender   電子メールの送信元のアドレス。コンテキスト値として
+
+= entry .Sender   the address emails are sent from, as a contextual value
+-   detail
++   detail
+
+-       `given Sender = Sender(email"noreply@example.com")`: `send` takes the envelope's `from`
+-       address from the `Sender` in scope, so it is chosen once for a program or a scope
+-       rather than repeated at every send.
+-   entry #email   the sender's address
++       `given Sender = Sender(email"noreply@example.com")`：`send` はエンベロープの `from` のアドレスをスコープ内の `Sender` から取るので、送信のたびに繰り返すのではなく、プログラムまたはスコープに対して一度だけ選ぶ。
++   entry #email   送信者のアドレス
+
+- entry .Envelope   who an email is from and to, and its subject: what a courier needs beside the message
++ entry .Envelope   電子メールの送信者と受信者、そして件名：メッセージのほかにクーリエが必要とするもの
+
+= entry .Envelope   who an email is from and to, and its subject: what a courier needs beside the message
+-   detail
++   detail
+
+-       The metadata of a `Document[Email]`: the sender, the `to`, `cc`, `bcc` and `replyTo`
+-       recipients, and the subject. `send` builds it from its arguments and the `Sender` in
+-       scope; a `Courier` reads it from the document's `metadata`.
+-   entry .many   one value or a list of them, as a list
+-       `Envelope.many(address)` is `List(address)`, and `Envelope.many(addresses)` is the list
+-       itself. It is how `send` accepts either form for each recipient field.
+-   entry #from   the sender's address
+-   entry #to   the primary recipients
+-   entry #cc   the recipients of a copy
+-   entry #bcc   the recipients of a blind copy, not shown to the others
+-   entry #replyTo   the addresses a reply should go to, if not the sender
+-   entry #subject   the subject line
++       `Document[Email]` のメタデータ。送信者、`to`、`cc`、`bcc`、`replyTo` の受信者、そして件名である。
++       `send` は引数とスコープ内の `Sender` からそれを作り、`Courier` は文書の `metadata` からそれを読む。
++   entry .many   一つの値またはそのリストを、リストとしたもの
++       `Envelope.many(address)` は `List(address)` であり、`Envelope.many(addresses)` はリストそのものである。
++       これによって、`send` は受信者の各フィールドでどちらの形も受け入れる。
++   entry #from   送信者のアドレス
++   entry #to   主な受信者
++   entry #cc   写しの受信者
++   entry #bcc   他の受信者には示されない、ブラインドの写しの受信者
++   entry #replyTo   送信者でない場合に、返信が送られるべきアドレス
++   entry #subject   件名の行
+
+- entry .Email   an email message: headers, a body of text or HTML or both, inline content and attachments
++ entry .Email   電子メールのメッセージ：ヘッダー、テキストか HTML かその両方の本文、インラインのコンテンツ、添付ファイル
+
+= entry .Email   an email message: headers, a body of text or HTML or both, inline content and attachments
+-   detail
++   detail
+
+-       An `Email` is a map of extra headers and an `Email.Message`, which nests an
+-       `Email.Content` (an `Email.Body` and any `Email.Inline`s) inside a list of
+-       attachments, each an `Asset`. Each layer reports its own MIME content type, derived
+-       from what it holds. An email is `Documentary` with an `Envelope` as its metadata, so a
+-       courier receives a `Document[Email]`.
++       `Email` は追加のヘッダーのマップと `Email.Message` からなり、`Email.Message` は `Email.Content`（`Email.Body` と任意の数の `Email.Inline`）を、それぞれが `Asset` である添付ファイルのリストの中に入れ子にする。
++       各階層は、保持するものから導いた自身の MIME のコンテンツタイプを報告する。
++       電子メールは `Envelope` をメタデータとする `Documentary` なので、クーリエは `Document[Email]` を受け取る。
+
+=       courier receives a `Document[Email]`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Text alone
++         label テキストだけ
+
+=         label Text alone
+-         code
++         code
+
+=         label Text alone
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             val email = Email(t"Sales rose 4% in August.")
++             val email = Email(t"Sales rose 4% in August.")
+
+-             email.message.contentType   // media"text/plain"
++             email.message.contentType   // media"text/plain"
+
+=             email.message.contentType   // media"text/plain"
+-       frame
++       frame
+
+-         label Text with HTML
++         label HTML 付きのテキスト
+
+=         label Text with HTML
+-         code
++         code
+
+=         label Text with HTML
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Text with HTML
+=         code
+=             import soundness.*
+=
+-             val body = Email.Body(t"Sales rose 4%.", t"<p>Sales rose <b>4%</b>.</p>")
++             val body = Email.Body(t"Sales rose 4%.", t"<p>Sales rose <b>4%</b>.</p>")
+
+-             val email = Email(Map(), Email.Message(Email.Content(body)))
++             val email = Email(Map(), Email.Message(Email.Content(body)))
+
+-             email.message.contentType   // media"multipart/alternative"
++             email.message.contentType   // media"multipart/alternative"
+
+=             email.message.contentType   // media"multipart/alternative"
+-       frame
++       frame
+
+-         label With an attachment
++         label 添付ファイル付き
+
+=         label With an attachment
+-         code
++         code
+
+=         label With an attachment
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label With an attachment
+=         code
+=             import soundness.*
+=
+-             val body = Email.Body(t"Sales rose 4%.", t"<p>Sales rose <b>4%</b>.</p>")
++             val body = Email.Body(t"Sales rose 4%.", t"<p>Sales rose <b>4%</b>.</p>")
+
+-             val report = Asset(t"report.csv", media"text/csv", Chain(t"month,sales".in[Data]))
++             val report = Asset(t"report.csv", media"text/csv", Chain(t"month,sales".in[Data]))
+
+-             val email = Email(Map(), Email.Message(Email.Content(body))).attach(report)
++             val email = Email(Map(), Email.Message(Email.Content(body))).attach(report)
+
+-             email.message.contentType   // media"multipart/mixed"
++             email.message.contentType   // media"multipart/mixed"
+
+=             email.message.contentType   // media"multipart/mixed"
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       An email reports its parts back with `#text`, `#html`, `#inlines` and `#attachments`,
+-       so a composed message can be checked before it is sent.
++       電子メールは `#text`、`#html`、`#inlines`、`#attachments` で部品を報告し返すので、組み立てたメッセージを送る前に確かめられる。
+
+-   refer caduceus.Sendable
++   refer caduceus.Sendable
+
+-   refer caduceus.Attachable
++   refer caduceus.Attachable
+
+-   refer caduceus.Envelope
++   refer caduceus.Envelope
+
+-   entry .apply   an email made from any `Sendable` value: `Email(t"hello")`
+-       Uses the value's `Sendable`: text becomes a plain-text body, an HTML document an
+-       HTML-only body, and an `Email` is itself. The result has no headers, inlines or
+-       attachments.
+-   entry .Body   the body of an email: text, HTML, or both as alternatives
++   entry .apply   任意の `Sendable` な値から作った電子メール：`Email(t"hello")`
++       値の `Sendable` を使う。テキストはプレーンテキストの本文に、HTML 文書は HTML だけの本文になり、`Email` はそれ自身である。
++       結果にはヘッダーも、インラインも、添付ファイルもない。
++   entry .Body   電子メールの本文：テキスト、HTML、またはその両方を代替としたもの
+
+=   entry .Body   the body of an email: text, HTML, or both as alternatives
+-     detail
++     detail
+
+-         An enumeration of three cases: `TextOnly(content)`, `HtmlOnly(content)` and
+-         `Alternatives(textContent, htmlContent)`. The last is sent as
+-         `multipart/alternative`, so a client which can display HTML shows it and any other
+-         shows the text.
++         三つのケースの列挙型である：`TextOnly(content)`、`HtmlOnly(content)`、`Alternatives(textContent, htmlContent)`。
++         最後のものは `multipart/alternative` として送られるので、HTML を表示できるクライアントはそれを示し、それ以外はテキストを示す。
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         Email.Body(t"hello").contentType                   // media"text/plain"
++         Email.Body(t"hello").contentType                   // media"text/plain"
+
+-         Email.Body.HtmlOnly(t"<p>hello</p>").contentType   // media"text/html"
++         Email.Body.HtmlOnly(t"<p>hello</p>").contentType   // media"text/html"
+
+-         Email.Body(t"hello", t"<p>hello</p>").html         // t"<p>hello</p>"
++         Email.Body(t"hello", t"<p>hello</p>").html         // t"<p>hello</p>"
+
+-         ```
++         ```
+
+-     entry .apply   a text body, or text and HTML alternatives: `Email.Body(text, html)`
+-     entry #html   the HTML version, or `Unset` for a text-only body
+-     entry #text   the text version, or `Unset` for an HTML-only body
+-     entry #contentType   `text/plain`, `text/html` or `multipart/alternative`, by which versions the body has
+-   entry .Inline   content referred to from an HTML body by its content ID, such as an embedded image
++     entry .apply   テキストの本文、またはテキストと HTML の代替：`Email.Body(text, html)`
++     entry #html   HTML 版。テキストだけの本文なら `Unset`
++     entry #text   テキスト版。HTML だけの本文なら `Unset`
++     entry #contentType   本文が持つ版によって、`text/plain`、`text/html`、または `multipart/alternative`
++   entry .Inline   埋め込み画像のように、HTML の本文からコンテンツ ID で参照されるコンテンツ
+
+=   entry .Inline   content referred to from an HTML body by its content ID, such as an embedded image
+-     detail
++     detail
+
+-         An inline part has a content ID, `cid`, which the HTML refers to as `cid:…`, a media
+-         type, and a body. Its presence makes the content `multipart/related`. The Resend
+-         courier does not send inline parts.
+-     entry #cid   the content ID the HTML refers to
+-     entry #contentType   the media type of the inline content
+-     entry #body   the inline content
+-   entry .Content   a body with any inline content it refers to
++         インラインの部品は、HTML が `cid:…` として参照するコンテンツ ID `cid`、メディアタイプ、本体を持つ。
++         それがあるとコンテンツは `multipart/related` になる。
++         Resend のクーリエはインラインの部品を送らない。
++     entry #cid   HTML が参照するコンテンツ ID
++     entry #contentType   インラインのコンテンツのメディアタイプ
++     entry #body   インラインのコンテンツ
++   entry .Content   本文と、それが参照するインラインのコンテンツ
+
+=   entry .Content   a body with any inline content it refers to
+-     detail
++     detail
+
+-         `Email.Content(body, inlines*)`.
+-     entry #body   the text or HTML body
+-     entry #inlines   the inline parts the body refers to
+-     entry #contentType   `multipart/related` if there are inlines, and otherwise the body's type
+-   entry .Message   the content of an email with its attachments
+-     entry #content   the body and its inline parts
+-     entry #attachments   the attached files, in order
+-     entry #contentType   `multipart/mixed` if there are attachments, and otherwise the content's type
+-   entry #headers   additional headers, by name
+-   entry #message   the body, inline content and attachments
+-   entry #Self   the documentary type, `Email` itself
+-   entry #Metadata   the metadata of an email document: an `Envelope`
+-   entry #html   the HTML version of the body, or `Unset` if there is none
+-   entry #text   the text version of the body, or `Unset` if there is none
+-   entry #inlines   the inline parts of the content
+-   entry #attachments   the attached files, in the order they were attached
+-   entry #attach   the email with an attachment added at the end
+-       Takes any `Attachable` value: an `Asset`, or anything with a name, a media type and a
+-       byte stream. The email is immutable, so `attach` returns a new one.
++         `Email.Content(body, inlines*)`。
++     entry #body   テキストまたは HTML の本文
++     entry #inlines   本文が参照するインラインの部品
++     entry #contentType   インラインがあれば `multipart/related`、なければ本文の型
++   entry .Message   電子メールのコンテンツと、その添付ファイル
++     entry #content   本文とそのインラインの部品
++     entry #attachments   添付したファイル。順に並ぶ
++     entry #contentType   添付ファイルがあれば `multipart/mixed`、なければコンテンツの型
++   entry #headers   追加のヘッダー。名前ごと
++   entry #message   本文、インラインのコンテンツ、添付ファイル
++   entry #Self   文書の型。`Email` そのもの
++   entry #Metadata   電子メールの文書のメタデータ：`Envelope`
++   entry #html   本文の HTML 版。なければ `Unset`
++   entry #text   本文のテキスト版。なければ `Unset`
++   entry #inlines   コンテンツのインラインの部品
++   entry #attachments   添付したファイル。添付した順に並ぶ
++   entry #attach   末尾に添付ファイルを加えた電子メール
++       任意の `Attachable` な値を取る：`Asset`、または名前とメディアタイプとバイトストリームを持つ何かである。
++       電子メールは不変なので、`attach` は新しい電子メールを返す。
+
+=       byte stream. The email is immutable, so `attach` returns a new one.
+=
+-       ```scala
++       ```scala
+
+=       byte stream. The email is immutable, so `attach` returns a new one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val report = Asset(t"report.csv", media"text/csv", Chain(t"month,sales".in[Data]))
++       val report = Asset(t"report.csv", media"text/csv", Chain(t"month,sales".in[Data]))
+
+-       Email(t"The report is attached.").attach(report).attachments.map(_.name)
++       Email(t"The report is attached.").attach(report).attachments.map(_.name)
+
+=       Email(t"The report is attached.").attach(report).attachments.map(_.name)
+-       ```
++       ```
+
+- entry .Sendable   a typeclass for values which can be sent as an email
++ entry .Sendable   電子メールとして送れる値のための型クラス
+
+= entry .Sendable   a typeclass for values which can be sent as an email
+-   detail
++   detail
+
+-       `value.send(…)` and `Email(value)` accept any value with a `Sendable`, which turns it
+-       into an `Email`. Instances are given for `Text`, for `Email` itself, and for any
+-       document with a media type which streams as text, such as an HTML page from
+-       honeycomb. A new type is made sendable by mapping it to one that already is:
++       `value.send(…)` と `Email(value)` は、値を `Email` に変える `Sendable` を持つ任意の値を受け入れる。
++       インスタンスは、`Text`、`Email` そのもの、そして honeycomb の HTML ページのように、テキストとしてストリームされるメディアタイプを持つ任意の文書に対して与えられている。
++       新しい型は、すでに送れる型に写すことで送れるようにする。
+
+=       honeycomb. A new type is made sendable by mapping it to one that already is:
+=
+-       ```scala
++       ```scala
+
+=       honeycomb. A new type is made sendable by mapping it to one that already is:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Report(title: Text, body: Text)
++       case class Report(title: Text, body: Text)
+
+-       given Report is Sendable = Sendable.text.contramap(_.body)
++       given Report is Sendable = Sendable.text.contramap(_.body)
+
+=       given Report is Sendable = Sendable.text.contramap(_.body)
+-       ```
++       ```
+
+-   entry .text   text is sent as a plain-text body
+-   entry .document   a document with a media type is sent as its text, HTML-only if it is `text/html`
+-       For any type with a `Media` and a `Streamable by Text`: a document whose media type is
+-       `text/html` becomes an `HtmlOnly` body, and any other a text body. The document is read
+-       in full when the email is made.
+-   entry .email   an email is sent as itself
+-   entry #email   the value as an email
+-   entry #contramap   a `Sendable` for another type, which converts it to this one first
++   entry .text   テキストはプレーンテキストの本文として送られる
++   entry .document   メディアタイプを持つ文書はそのテキストとして送られ、`text/html` なら HTML だけになる
++       `Media` と `Streamable by Text` を持つ任意の型について、メディアタイプが `text/html` である文書は `HtmlOnly` の本文に、それ以外はテキストの本文になる。
++       文書は電子メールを作るときに全体が読まれる。
++   entry .email   電子メールはそれ自身として送られる
++   entry #email   電子メールとしての値
++   entry #contramap   別の型に対する `Sendable`。まずその型をこの型に変換する
+
+- entry .Attachable   a typeclass for values which can be attached to an email
++ entry .Attachable   電子メールに添付できる値のための型クラス
+
+= entry .Attachable   a typeclass for values which can be attached to an email
+-   detail
++   detail
+
+-       `Email#attach` takes any value with an `Attachable`, which turns it into an `Asset`: a
+-       name, a media type and the bytes. An `Asset` is attachable as itself, and any value
+-       which has a name (`Nominable`), a media type (`Media`) and a byte stream is attachable
+-       without further work.
+-   entry .generic   attaches any value which has a name, a media type and a byte stream
+-       For types with a `Nominable`, a `Media` and a `Streamable by Data`: the asset takes the
+-       value's name as its filename, its media type, and its bytes as a stream.
+-   entry .asset   an `Asset` is attached as itself
+-   entry #attachment   the value as an asset to attach
+-   entry #contramap   an `Attachable` for another type, which converts it to this one first
++       `Email#attach` は、値を `Asset`（名前、メディアタイプ、バイト）に変える `Attachable` を持つ任意の値を取る。
++       `Asset` はそれ自身として添付でき、名前（`Nominable`）、メディアタイプ（`Media`）、バイトストリームを持つ値は、それ以上の手間なしに添付できる。
++   entry .generic   名前、メディアタイプ、バイトストリームを持つ任意の値を添付する
++       `Nominable`、`Media`、`Streamable by Data` を持つ型について、アセットは値の名前をファイル名とし、そのメディアタイプを取り、そのバイトをストリームとして取る。
++   entry .asset   `Asset` はそれ自身として添付される
++   entry #attachment   添付するアセットとしての値
++   entry #contramap   別の型に対する `Attachable`。まずその型をこの型に変換する
+
+- entry .Courier   a delivery service for email, chosen as a contextual value
++ entry .Courier   電子メールの配送サービス。コンテキスト値として選ぶ
+
+= entry .Courier   a delivery service for email, chosen as a contextual value
+-   detail
++   detail
+
+-       A `Courier` sends a `Document[Email]` — the email and its `Envelope` — and returns a
+-       `Result` of its own choosing. The provided one is `couriers.resendCourier`; another
+-       service plugs in by implementing the one method:
++       `Courier` は `Document[Email]`（電子メールとその `Envelope`）を送り、自身が選ぶ `Result` を返す。
++       提供されているのは `couriers.resendCourier` である。別のサービスは、一つのメソッドを実装することで差し込める。
+
+=       service plugs in by implementing the one method:
+=
+-       ```scala
++       ```scala
+
+=       service plugs in by implementing the one method:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       class DryRunCourier() extends Courier:
++       class DryRunCourier() extends Courier:
+
+-         type Result = Text
++         type Result = Text
+
+-         def send(message: Document[Email]): Text =
++         def send(message: Document[Email]): Text =
+
+-           t"would send ${message.metadata.subject} from ${message.metadata.from}"
++           t"would send ${message.metadata.subject} from ${message.metadata.from}"
+
+=           t"would send ${message.metadata.subject} from ${message.metadata.from}"
+-       ```
++       ```
+
+-       A courier is a capability: it is built from other capabilities (an HTTP client, a
+-       `Tactic`) and retains them.
++       クーリエはケイパビリティである。他のケイパビリティ（HTTP クライアント、`Tactic`）から作られ、それらを保持する。
+
+-   refer caduceus.couriers
++   refer caduceus.couriers
+
+-   entry .Error   raised when a courier cannot deliver an email
++   entry .Error   クーリエが電子メールを配送できないときに発生する
+
+=   entry .Error   raised when a courier cannot deliver an email
+-     detail
++     detail
+
+-         Error `↯/s.107.1`: _unable to send email from `from` to `to` with subject `subject`_. The
+-         Resend courier raises it for any failure to connect, an HTTP error status, or a
+-         response it cannot read. The `to` is the first of the envelope's primary recipients.
+-     entry #from   the sender's address
+-     entry #to   the first primary recipient's address
+-     entry #subject   the subject of the email
+-   entry #send   delivers an email with its envelope, returning the courier's `Result`
++         エラー `↯/s.107.1`：_unable to send email from `from` to `to` with subject `subject`_。
++         Resend のクーリエは、接続の失敗、HTTP のエラーステータス、読めないレスポンスのいずれに対してもこれを発生させる。
++         `to` はエンベロープの主な受信者の最初の一人である。
++     entry #from   送信者のアドレス
++     entry #to   最初の主な受信者のアドレス
++     entry #subject   電子メールの件名
++   entry #send   電子メールをそのエンベロープとともに配送し、クーリエの `Result` を返す
+
+- entry .Resend   the settings and results of the Resend courier
++ entry .Resend   Resend のクーリエの設定と結果
+
+= entry .Resend   the settings and results of the Resend courier
+-   detail
++   detail
+
+-       [Resend](https://resend.com/) is an email-delivery service with an HTTP API. Its
+-       courier, `couriers.resendCourier`, takes its API key from a `Resend.ApiKey` given and
+-       returns a `Resend.Receipt` for each email sent.
++       [Resend](https://resend.com/) は HTTP API を持つ電子メールの配送サービスである。
++       そのクーリエ `couriers.resendCourier` は API キーを `Resend.ApiKey` の given から取り、送った電子メールごとに `Resend.Receipt` を返す。
+
+-   refer caduceus.couriers.resendCourier
++   refer caduceus.couriers.resendCourier
+
+-   entry .ApiKey   the Resend API key, as a contextual value
++   entry .ApiKey   Resend の API キー。コンテキスト値として
+
+=   entry .ApiKey   the Resend API key, as a contextual value
+-     detail
++     detail
+
+-         `given Resend.ApiKey = Resend.ApiKey(t"re_…")`. It is sent as a bearer token with
+-         every request. Read it from the environment or a secret store rather than writing it
+-         into the source.
+-     entry #key   the key, as text
+-   entry .Receipt   Resend's acknowledgement of an email it has accepted
++         `given Resend.ApiKey = Resend.ApiKey(t"re_…")`。
++         すべてのリクエストでベアラートークンとして送られる。
++         ソースに書き込むのではなく、環境や秘密の保管庫から読む。
++     entry #key   キー。テキストとして
++   entry .Receipt   Resend が受け付けた電子メールに対する承認
+
+=   entry .Receipt   Resend's acknowledgement of an email it has accepted
+-     detail
++     detail
+
+-         Decoded from the JSON response to a send. The ID identifies the email in Resend's
+-         API and dashboard.
+-     entry #id   the email's ID at Resend
++         送信に対する JSON のレスポンスからデコードされる。
++         ID は Resend の API とダッシュボードで電子メールを識別する。
++     entry #id   Resend での電子メールの ID
+
+- entry .couriers   the provided email couriers, each a given to import by name
++ entry .couriers   提供されている電子メールのクーリエ。それぞれ名前でインポートする given
+
+= entry .couriers   the provided email couriers, each a given to import by name
+-   detail
++   detail
+
+-       A choice package, merged with the umbrella's `couriers`. Which service delivers email
+-       is decided by the `Courier` given in scope, and `import soundness.*` brings none in:
+-       one is imported by name.
++       アンブレラの `couriers` と統合される選択パッケージ。
++       どのサービスが電子メールを配送するかはスコープ内の `Courier` の given で決まり、`import soundness.*` は何も持ち込まないので、一つを名前でインポートする。
+
+=       one is imported by name.
+=
+-       ```scala
++       ```scala
+
+=       one is imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       ```scala
+=       import soundness.*
+-       import couriers.resendCourier
++       import couriers.resendCourier
+
+=       import couriers.resendCourier
+-       ```
++       ```
+
+-   entry .resendCourier   delivers email through the Resend HTTP API, returning a `Resend.Receipt`
+-       Posts each email, with its text and HTML bodies, its extra headers and its
+-       attachments (encoded in Base64), to `https://api.resend.com/emails`, authorised by the
+-       `Resend.ApiKey` in scope. It needs a `Tactic[Courier.Error]`, `Online` (from
+-       `internetAccess`), an `Http.Client` (such as `httpBackends.javaNetHttp`) and the
+-       API key, and logs its HTTP requests as `Http.Event`s.
++   entry .resendCourier   Resend の HTTP API を通じて電子メールを配送し、`Resend.Receipt` を返す
++       各電子メールを、そのテキストと HTML の本文、追加のヘッダー、添付ファイル（Base64 でエンコードしたもの）とともに、スコープ内の `Resend.ApiKey` で認可して `https://api.resend.com/emails` に POST する。
++       `Tactic[Courier.Error]`、`Online`（`internetAccess` から）、`Http.Client`（`httpBackends.javaNetHttp` など）、API キーを必要とし、HTTP リクエストを `Http.Event` としてログに記録する。
+
+=       API key, and logs its HTTP requests as `Http.Event`s.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       ##
+=       import soundness.*
+-       import couriers.resendCourier
++       import couriers.resendCourier
+
+-       import internetAccess.online
++       import internetAccess.online
+
+-       import httpBackends.javaNetHttp
++       import httpBackends.javaNetHttp
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       given Sender = Sender(email"noreply@example.com")
++       given Sender = Sender(email"noreply@example.com")
+
+-       given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
++       given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
+
+-       Email(t"hello").send(subject = t"Greetings", to = email"friend@example.com").id
++       Email(t"hello").send(subject = t"Greetings", to = email"friend@example.com").id
+
+=       Email(t"hello").send(subject = t"Greetings", to = email"friend@example.com").id
+-       ```
++       ```
+
+-       A failed connection, an error status or an unreadable response raises
+-       `Courier.Error`; the underlying reason is printed to standard output first. Inline
+-       parts are not sent, and an email with no `to` recipient fails rather than raising.
++       接続の失敗、エラーステータス、読めないレスポンスは `Courier.Error` を発生させる。その前に、根本の理由が標準出力に印字される。
++       インラインの部品は送られず、`to` の受信者がいない電子メールは、エラーを発生させずに失敗する。

@@ -1,0 +1,68 @@
+orthant 1 language
+
+- # `↯/s.101.2` — `Socket.Error`
++ # `↯/s.101.2` — `Socket.Error`
+
+- Raised when an established socket connection fails during use.
++ 確立されたソケット接続が使用中に失敗したときに発生する。
+
+- ## Cause
++ ## 原因
+
+- This is distinct from a failure to connect, which is a `ConnectError`. A `Socket.Error`
+- means the connection was made and then failed — during an accept, a transmission, or a
+- close.
++ これは接続の失敗とは別のものであり、そちらは `ConnectError` である。
++ `Socket.Error` は、接続が行われた後で、受け入れ、送信、クローズのいずれかの間に失敗したことを意味する。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.101.2.1` — `Accept`
++ ### `↯/s.101.2.1` — `Accept`
+
+- **Example.** `[↯/s.101.2.1] a new connection could not be accepted`
++ **例。** `[↯/s.101.2.1] a new connection could not be accepted`
+
+- ### `↯/s.101.2.2` — `Transmit`
++ ### `↯/s.101.2.2` — `Transmit`
+
+- **Example.** `[↯/s.101.2.2] data could not be transmitted to the connection`
++ **例。** `[↯/s.101.2.2] data could not be transmitted to the connection`
+
+- ### `↯/s.101.2.3` — `Close`
++ ### `↯/s.101.2.3` — `Close`
+
+- **Example.** `[↯/s.101.2.3] the connection could not be closed cleanly`
++ **例。** `[↯/s.101.2.3] the connection could not be closed cleanly`
+
+- ### `↯/s.101.2.4` — `Handshake`
++ ### `↯/s.101.2.4` — `Handshake`
+
+- **Example.** `[↯/s.101.2.4] the TLS handshake with the peer failed`
++ **例。** `[↯/s.101.2.4] the TLS handshake with the peer failed`
+
+- ### `↯/s.101.2.5` — `Timeout`
++ ### `↯/s.101.2.5` — `Timeout`
+
+- A datagram exchange (`Socket.Backend#exchangeUdp`) or a receive on a socket configured with
+- `Socket.Option.Timeout` waited the whole timeout without a datagram arriving.
++ データグラムのやり取り（`Socket.Backend#exchangeUdp`）、または `Socket.Option.Timeout` を設定したソケットでの受信が、データグラムが届かないままタイムアウトまで待った。
+
+- **Example.** `[↯/s.101.2.5] no response arrived before the timeout`
++ **例。** `[↯/s.101.2.5] no response arrived before the timeout`
+
+- ## Resolution
++ ## 解決方法
+
+- The reason distinguishes the operation that failed. A connection failing during
+- transmission is usually the peer closing, a timeout, or the network; retrying is reasonable
+- where the protocol is idempotent.
++ 理由は、失敗した操作を区別する。
++ 送信中に接続が失敗するのは、ふつうは相手が閉じたか、タイムアウトか、ネットワークが原因である。プロトコルが冪等であれば、再試行するのが妥当である。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/coaxial/src/core/coaxial.Socket.scala`
++ - ソース：`lib/coaxial/src/core/coaxial.Socket.scala`

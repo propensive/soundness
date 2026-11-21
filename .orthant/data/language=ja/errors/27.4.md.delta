@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.27.4` — Hex literal contains non-hex character
++ # `↯/s.27.4` — 十六進リテラルが十六進でない文字を含んでいる
+
+- Raised at compile time by Hypotenuse's `hex"…"` literal macro when
+- the body contains a character that is not a hexadecimal digit.
++ 本体が十六進の数字でない文字を含んでいるとき、Hypotenuse の `hex"…"` リテラルのマクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- Hex literals admit only `0`-`9`, `a`-`f`, and `A`-`F`.
++ 十六進リテラルが受け入れるのは `0`-`9`、`a`-`f`、`A`-`F` だけである。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.27.4] xy is not a valid hexadecimal character
++ [↯/s.27.4] xy is not a valid hexadecimal character
+
+= [↯/s.27.4] xy is not a valid hexadecimal character
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Remove or correct the offending character.
++ 問題の文字を取り除くか、直す。
+
+- ## See also
++ ## 関連項目
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - 他の二進リテラルと十六進リテラルのエラー：[ファミリー](README.md#families)
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

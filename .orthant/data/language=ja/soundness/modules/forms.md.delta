@@ -1,0 +1,271 @@
+orthant 1 language
+
+- ## Forms
++ ## フォーム
+
+- ### About
++ ### 概要
+
+- An HTML form is a user interface to a data type, and here one is generated from the type
+- itself. A case class produces a form, with a labeled input for each field, and a widget
+- chosen by the field's type. A submission is decoded back into the case class, and any
+- failures of validation are attached to the fields which caused them. Nested case classes
+- become nested fieldsets, so the form mirrors the structure of the data.
++ HTML フォームはデータ型に対するユーザーインターフェースであり、ここではフォームが型そのものから生成される。
++ ケースクラスからは、各フィールドにラベル付きの入力を持ち、フィールドの型によってウィジェットが選ばれたフォームが作られる。
++ 送信内容はケースクラスへとデコードし直され、検証の失敗はそれを引き起こしたフィールドに結び付けられる。
++ 入れ子のケースクラスは入れ子のフィールドセットになるので、フォームはデータの構造を映し出す。
+
+- ### On forms
++ ### フォームについて
+
+- Forms are written twice in most web applications: once as HTML inputs, and again as the
+- parsing and validation of what comes back. The two halves are kept consistent by hand. Every
+- change to the data, such as a new field, a renamed one or a stricter type, must be made in
+- both, or the form drifts from the data it claims to collect.
++ ほとんどの Web アプリケーションでは、フォームは二度書かれる。
++ 一度は HTML の入力として、もう一度は返ってきたもののパースと検証としてである。
++ 二つの半分は手作業で整合性が保たれる。
++ 新しいフィールド、名前の変わったフィールド、より厳しい型など、データへの変更はすべて両方に加えなければならず、そうしなければフォームは、集めると称するデータからずれていく。
+
+- [Deriving][derivation] both halves from one type removes the duplication. The type says what
+- fields exist, and what each accepts. The widgets follow from the types of the fields.
+- Decoding a submission applies the same validated types which govern the rest of the program,
+- so a malformed email address fails at the form, with a message which points at the email
+- field. That is [correctness](../../philosophy/correctness.md) through a single source of truth.
++ 一つの型から両方の半分を[導出]すれば、重複がなくなる。
++ 型は、どのフィールドが存在し、それぞれが何を受け付けるかを述べる。
++ ウィジェットはフィールドの型から決まる。
++ 送信内容のデコードには、プログラムの他の部分を支配するのと同じ検証済みの型が適用されるので、不正な形式のメールアドレスは、メールのフィールドを指すメッセージとともにフォームで失敗する。
++ これは、唯一の情報源による[正しさ](../../philosophy/correctness.md)である。
+
+- Everything comes from the `soundness` package. The last import lets the samples print their
+- results:
++ すべては `soundness` パッケージから得られる。
++ 最後のインポートは、サンプルが結果を表示できるようにする。
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import formulations.postFormulation
++ import formulations.postFormulation
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Rendering a form
++ ### フォームの描画
+
+- `elicit` renders the form for a type as [HTML](html.md), ready to serve. `edit` renders it
+- filled in from an existing value:
++ `elicit` は、型に対するフォームを、そのまま提供できる [HTML](html.md) として描画する。
++ `edit` は、既存の値で埋めたフォームを描画する。
+
+= filled in from an existing value:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, email: EmailAddress)
++ case class Person(name: Text, email: EmailAddress)
+
+- case class Troupe(leader: Person, name: Text)
++ case class Troupe(leader: Person, name: Text)
+
+- val form = elicit[Troupe](validation = Validation(), submit = t"Save")
++ val form = elicit[Troupe](validation = Validation(), submit = t"Save")
+
+= val form = elicit[Troupe](validation = Validation(), submit = t"Save")
+- ```
++ ```
+
+= val form = elicit[Troupe](validation = Validation(), submit = t"Save")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val form = elicit[Troupe](validation = Validation(), submit = t"Save")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val form = elicit[Troupe](validation = Validation(), submit = t"Save")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(form.show)
++ Out.println(form.show)
+
+= Out.println(form.show)
+- ```
++ ```
+
+- Each field appears with a label derived from its name, so `leader` becomes "Leader". A nested
+- case class becomes a `<fieldset>` with a legend, so the structure of the form explains
+- itself.
++ 各フィールドには、その名前から導出されたラベルが付くので、`leader` は「Leader」になる。
++ 入れ子のケースクラスは凡例付きの `<fieldset>` になるので、フォームの構造は自らを説明する。
+
+- The widget for each field is chosen by its type:
++ 各フィールドのウィジェットは、その型によって選ばれる。
+
+- ```tabular
++ ```tabular
+
+- column  Field type
+- column  Widget
+- column  Rendered as
+- row  `Boolean`  `Checkbox`  a checkbox
+- row  an enumeration  `Combobox`  a text input with a `<datalist>` of the cases
+- row  `Reference[entity]`  `Dropdown`  a `<select>` of the listed entities
+- row  any other type encodable as `Text`  `Field`  a text input
+- row  a case class  none  a `<fieldset>` of its fields
++ column  フィールドの型
++ column  ウィジェット
++ column  描画結果
++ row  `Boolean`  `Checkbox`  チェックボックス
++ row  [列挙型]  `Combobox`  ケースの `<datalist>` を伴うテキスト入力
++ row  `Reference[entity]`  `Dropdown`  列挙されたエンティティの `<select>`
++ row  `Text` としてエンコードできるその他の型  `Field`  テキスト入力
++ row  ケースクラス  なし  そのフィールドからなる `<fieldset>`
+
+= row  a case class  none  a `<fieldset>` of its fields
+- ```
++ ```
+
+- ### Submissions
++ ### 送信内容
+
+- A submission arrives as a `Query`: the pairs of keys and values of a form post, in which
+- nested fields are dotted, as in `leader.name`. `as` decodes it to the type:
++ 送信内容は `Query` として届く。
++ これはフォームの POST のキーと値の組であり、入れ子のフィールドは `leader.name` のようにドットでつながれる。
++ `as` はそれを型へとデコードする。
+
+= nested fields are dotted, as in `leader.name`. `as` decodes it to the type:
+=
+- ```scala
++ ```scala
+
+- val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
++ val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
+
+= val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
+- ```
++ ```
+
+= val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val query = t"leader.name=Quince&leader.email=quince%40example.com&name=Mechanicals".as[Query]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(query.as[Troupe].inspect)
++ Out.println(query.as[Troupe].inspect)
+
+= Out.println(query.as[Troupe].inspect)
+- ```
++ ```
+
+- The fields are decoded through the same types which are used everywhere. An
+- [`EmailAddress`](network-addresses.md#email-addresses) must parse, and a
+- [`Name`](names.md) must satisfy its rules. The validation of a form is therefore not a
+- separate set of rules. It is the type system doing its usual work at the boundary, and a
+- failure carries a pointer to the field at fault:
++ フィールドは、あらゆる場所で使われるのと同じ型を通じてデコードされる。
++ [`EmailAddress`](network-addresses.md#email-addresses) はパースできなければならず、[`Name`](names.md) はその規則を満たさなければならない。
++ したがって、フォームの検証は別個の規則の集まりではない。
++ それは型システムが境界でいつもの仕事をしているのであり、失敗は問題のあるフィールドへのポインターを持つ。
+
+= failure carries a pointer to the field at fault:
+=
+- ```scala fuel
++ ```scala fuel
+
+= failure carries a pointer to the field at fault:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- t"leader.name=Quince&leader.email=nobody&name=Mechanicals".as[Query].as[Troupe]
++ t"leader.name=Quince&leader.email=nobody&name=Mechanicals".as[Query].as[Troupe]
+
+= t"leader.name=Quince&leader.email=nobody&name=Mechanicals".as[Query].as[Troupe]
+- ```
++ ```
+
+- [Decoding](decoding.md#requiring-a-value) explains how a field's type decides whether the
+- field is required.
++ フィールドの型がそのフィールドを必須にするかどうかをどう決めるかは、[デコード](decoding.md#requiring-a-value)で説明している。
+
+- ### The form cycle
++ ### フォームのサイクル
+
+- A form is a loop: render, submit, and render again with errors, until the value is complete.
+- `elicit` takes the submitted `Query` and the state of validation, so the form which is
+- rendered again shows what was entered, with the faults attached to their fields.
++ フォームはループである。
++ 値が完成するまで、描画し、送信し、エラー付きで再び描画する。
++ `elicit` は送信された `Query` と検証の状態を受け取るので、再び描画されたフォームは入力された内容を示し、誤りはそれぞれのフィールドに結び付けられる。
+
+- A [server](http-server.md#responses) handler runs the loop, by decoding on success and
+- rendering again on failure. It therefore deals in values, not in requests. The
+- [HTTP client](http-client.md#posting-a-body) posts a `Query` as a form submission.
++ [サーバー](http-server.md#responses)のハンドラは、成功すればデコードし、失敗すれば再び描画することで、このループを回す。
++ したがって、それはリクエストではなく値を扱う。
++ [HTTP クライアント](http-client.md#posting-a-body)は、`Query` をフォームの送信として POST する。
+
+- ### Customizing appearance
++ ### 外観のカスタマイズ
+
+- How a form and its rows are rendered is a `Formulation`: the frame around the widgets, and
+- the placement of labels and error messages. `postFormulation` gives a plain, unstyled
+- rendering. An application supplies its own, to match its design, without touching how fields
+- are derived. [CSS](css.md) styles the result.
++ フォームとその行がどう描画されるかは `Formulation` が決める。
++ ウィジェットを囲む枠と、ラベルやエラーメッセージの配置である。
++ `postFormulation` は、装飾のない素朴な描画を与える。
++ アプリケーションは、フィールドの導出方法には手を触れずに、自分のデザインに合わせて独自のものを用意する。
++ 結果のスタイルは [CSS](css.md) で付ける。

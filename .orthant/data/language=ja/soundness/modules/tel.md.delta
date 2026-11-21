@@ -1,0 +1,1801 @@
+orthant 1 language
+
+- ## TEL
++ ## TEL
+
+- ### About
++ ### 概要
+
+- [TEL](https://github.com/propensive/tel), the Typed Element Language, is a tree-structured
+- data language, written with indentation, which has schemas. Soundness is its reference
+- implementation.
++ [TEL](https://github.com/propensive/tel)、すなわち Typed Element Language は、インデントで書かれ、スキーマを持つ木構造のデータ言語である。
++ Soundness はその参照実装である。
+
+- A TEL document parses into a `Tel` value, which preserves its presentation: comments, layout
+- and blank lines survive being read and written. It decodes into case classes with
+- [derived][derivation] codecs. A schema, which can itself be written in TEL, assigns types to a
+- document and validates it, and a document typed by a schema is navigated with the compiler
+- checking each field.
++ TEL 文書は `Tel` 値にパースされ、その値は見た目を保存する。
++ コメント、レイアウト、空行は、読み書きを経ても残る。
++ TEL 文書は、[導出された][導出]コーデックによってケースクラスにデコードされる。
++ スキーマは、それ自体 TEL で書くことができ、文書に型を割り当てて検証する。
++ スキーマによって型付けされた文書は、コンパイラが各フィールドを検査しながらナビゲートされる。
+
+- Beside the text form there is BinTEL, a compact binary encoding of the same data. It is guided
+- by the schema, written as bytes for storage and transmission, and has a content hash for
+- integrity.
++ テキストの形のほかに、同じデータのコンパクトなバイナリエンコーディングである BinTEL がある。
++ それはスキーマに導かれ、保存と伝送のためにバイトとして書かれ、完全性のための内容ハッシュを持つ。
+
+- ### On TEL
++ ### TEL について
+
+- Configuration languages force a choice. YAML is friendly to people, and ambiguous. JSON is
+- rigorous, and noisy. A schema language can be bolted onto either afterwards. TEL is designed to
+- be all three at once:
++ 設定言語は選択を強いる。
++ YAML は人に優しいが、曖昧である。
++ JSON は厳密だが、うるさい。
++ スキーマ言語は、どちらにも後からボルトで留めることができる。
++ TEL は、その三つすべてを同時に満たすように設計されている。
+
+- - structured by indentation, for people;
+- - typed by a schema, for machines;
+- - preserving of presentation, so that a program which modifies a configuration file does not
+-   destroy its comments and formatting.
++ - 人のために、インデントで構造化される。
++ - 機械のために、スキーマで型付けされる。
++ - 見た目を保存するので、設定ファイルを修正するプログラムが、そのコメントや書式を破壊しない。
+
+- A TEL document is a tree of *compounds*. A compound is a keyword, its *atoms*, which are
+- separated by spaces, and its children, which are indented beneath it. The schema assigns each
+- compound a type, and that typing is carried through to Scala. Typing a document against its
+- schema at [compiletime] is
+- [safety by construction](../../philosophy/safety-by-construction.md) applied to configuration.
++ TEL 文書は*コンパウンド*の木である。
++ コンパウンドは、キーワード、空白で区切られたその*アトム*、そしてその下にインデントされた子からなる。
++ スキーマは各コンパウンドに型を割り当て、その型付けは Scala まで持ち越される。
++ [コンパイル時]に文書をそのスキーマに対して型付けすることは、設定に適用された[構築による安全性](../../philosophy/safety-by-construction.md)である。
+
+- Everything comes from the `soundness` package. The last import lets the samples print their
+- results:
++ すべては `soundness` パッケージから来る。
++ 最後のインポートは、サンプルが結果を出力できるようにする。
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### The language
++ ### 言語
+
+- Each line is a compound: a keyword, then its atoms. Indentation nests one compound inside
+- another:
++ 各行はコンパウンドであり、キーワードの後にそのアトムが続く。
++ インデントは、あるコンパウンドを別のコンパウンドの中に入れ子にする。
+
+= another:
+=
+- ```
++ ```
+
+- name Hamlet
++ name Hamlet
+
+- age 30
++ age 30
+
+- address
++ address
+
+-   street 1 High Street
++   street 1 High Street
+
+-   city Elsinore
++   city Elsinore
+
+=   city Elsinore
+- ```
++ ```
+
+- ### Parsing and decoding
++ ### パースとデコード
+
+- `read[Tel]` parses text into a `Tel`, and `as` decodes it to a case class. Each field is read
+- from the child compound with the matching keyword. `read[Person in Tel]` does both steps at
+- once:
++ `read[Tel]` はテキストを `Tel` にパースし、`as` はそれをケースクラスにデコードする。
++ 各フィールドは、一致するキーワードを持つ子のコンパウンドから読まれる。
++ `read[Person in Tel]` は、両方の段階を一度に行う。
+
+= once:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- val hamlet = t"name Hamlet\nage 30\n".read[Tel].as[Person]
++ val hamlet = t"name Hamlet\nage 30\n".read[Tel].as[Person]
+
+- val horatio = t"name Horatio\nage 32\n".read[Person in Tel]
++ val horatio = t"name Horatio\nage 32\n".read[Person in Tel]
+
+= val horatio = t"name Horatio\nage 32\n".read[Person in Tel]
+- ```
++ ```
+
+= val horatio = t"name Horatio\nage 32\n".read[Person in Tel]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val horatio = t"name Horatio\nage 32\n".read[Person in Tel]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val horatio = t"name Horatio\nage 32\n".read[Person in Tel]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(hamlet.inspect)
++ Out.println(hamlet.inspect)
+
+- Out.println(horatio.inspect)
++ Out.println(horatio.inspect)
+
+= Out.println(horatio.inspect)
+- ```
++ ```
+
+- A document which lacks a field, or holds a value of the wrong type, does not decode:
++ フィールドを欠く文書や、誤った型の値を持つ文書は、デコードされない。
+
+= A document which lacks a field, or holds a value of the wrong type, does not decode:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A document which lacks a field, or holds a value of the wrong type, does not decode:
+=
+= ```scala fuel
+- run
++ run
+
+= A document which lacks a field, or holds a value of the wrong type, does not decode:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= A document which lacks a field, or holds a value of the wrong type, does not decode:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"name Ophelia\n".read[Person in Tel]
++ t"name Ophelia\n".read[Person in Tel]
+
+= t"name Ophelia\n".read[Person in Tel]
+- ```
++ ```
+
+= t"name Ophelia\n".read[Person in Tel]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= t"name Ophelia\n".read[Person in Tel]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"name Yorick\nage unknown\n".read[Person in Tel]
++ t"name Yorick\nage unknown\n".read[Person in Tel]
+
+= t"name Yorick\nage unknown\n".read[Person in Tel]
+- ```
++ ```
+
+- A single source may hold several documents in sequence, and is read as a list of them with
+- `read[List[Tel]]`.
++ 一つのソースは複数の文書を順に持つことができ、`read[List[Tel]]` でそれらのリストとして読まれる。
+
+- ### Encoding
++ ### エンコード
+
+- `in[Tel]` produces a `Tel` from a value, with a compound for each field, ready to be written
+- out or embedded in a larger document. `show` writes a `Tel` as text:
++ `in[Tel]` は値から `Tel` を生み出し、各フィールドに一つのコンパウンドを作るので、そのまま書き出すことも、より大きな文書に埋め込むこともできる。
++ `show` は `Tel` をテキストとして書く。
+
+= out or embedded in a larger document. `show` writes a `Tel` as text:
+=
+- ```scala fuel
++ ```scala fuel
+
+= out or embedded in a larger document. `show` writes a `Tel` as text:
+=
+= ```scala fuel
+- run
++ run
+
+= out or embedded in a larger document. `show` writes a `Tel` as text:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Person(t"Hamlet", 30).in[Tel].show)
++ Out.println(Person(t"Hamlet", 30).in[Tel].show)
+
+= Out.println(Person(t"Hamlet", 30).in[Tel].show)
+- ```
++ ```
+
+- `in[Text over Tel]` encodes a value straight to its TEL text, and `in[Data over Tel]` writes
+- the same text as bytes, in the `Codepage` in scope.
++ `in[Text over Tel]` は値をその TEL テキストに直接エンコードし、`in[Data over Tel]` は同じテキストを、スコープ内の `Codepage` でバイトとして書く。
+
+- `show` renders a `Tel` into one `Text`. A large document need not be held in memory before it
+- is sent:
++ `show` は `Tel` を一つの `Text` に描画する。
++ 大きな文書は、送る前にメモリーに保持しなくてよい。
+
+= is sent:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  Serializes on
+- column  Hands out
+- row  `show`  the caller's thread  one `Text`
+- row  `Tel.emit[Text](document, f)`  the caller's thread  each block of text to `f`, as it fills
+- row  `Tel.emit[Data](document, f)`  the caller's thread  each block as UTF-8 bytes to `f`, as it fills
+- row  `Tel.lend(document)`  the caller's thread  each block lent to a function, not copied
+- row  `Tel.emit(document)`  a fiber  the text, through an iterator
+- row  `Streamable` by `Text`  a fiber  the text, as a stream
++ column  形式
++ column  直列化を行う場所
++ column  渡すもの
++ row  `show`  呼び出し側のスレッド  一つの `Text`
++ row  `Tel.emit[Text](document, f)`  呼び出し側のスレッド  テキストの各ブロックを、満たされるたびに `f` へ
++ row  `Tel.emit[Data](document, f)`  呼び出し側のスレッド  各ブロックを UTF-8 のバイトとして、満たされるたびに `f` へ
++ row  `Tel.lend(document)`  呼び出し側のスレッド  各ブロックを、コピーせずに関数へ貸し出す
++ row  `Tel.emit(document)`  ファイバー  イテレーターを通じたテキスト
++ row  `Text` による `Streamable`  ファイバー  ストリームとしてのテキスト
+
+= row  `Streamable` by `Text`  a fiber  the text, as a stream
+- ```
++ ```
+
+- The push forms suit writing to a file, a [socket](sockets.md) or an `OutputStream`. The pull
+- forms suit a consumer which asks for each block:
++ プッシュ形式は、ファイル、[ソケット](sockets.md)、`OutputStream` への書き込みに向いている。
++ プルの形式は、各ブロックを求める利用者に向いている。
+
+= forms suit a consumer which asks for each block:
+=
+- ```scala fuel
++ ```scala fuel
+
+= forms suit a consumer which asks for each block:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= forms suit a consumer which asks for each block:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import probates.cancelProbate
++ import probates.cancelProbate
+
+- val outgoing = Person(t"Hamlet", 30).in[Tel]
++ val outgoing = Person(t"Hamlet", 30).in[Tel]
+
+- Tel.emit[Data](outgoing, chunk => socket.write(chunk))
++ Tel.emit[Data](outgoing, chunk => socket.write(chunk))
+
+- Tel.lend(outgoing): region =>
++ Tel.lend(outgoing): region =>
+
+-   interval => region.visit(interval)(index => sink.put(region(index)))
++   interval => region.visit(interval)(index => sink.put(region(index)))
+
+- supervise:
++ supervise:
+
+-   Tel.emit(outgoing).each(chunk => out.write(chunk))
++   Tel.emit(outgoing).each(chunk => out.write(chunk))
+
+=   Tel.emit(outgoing).each(chunk => out.write(chunk))
+- ```
++ ```
+
+- [JSON](json.md#formatting) describes each of these forms.
++ [JSON](json.md#formatting) で、これらの形式それぞれを説明する。
+
+- ### Optional fields
++ ### オプショナルなフィールド
+
+- An `Optional` field has two policies, from the package `optionalityOptions`, as
+- [Decoding](decoding.md#policies-for-optional-fields) describes:
++ `Optional` のフィールドには、[デコード](decoding.md#policies-for-optional-fields)で説明するとおり、`optionalityOptions` パッケージからの二つのポリシーがある。
+
+= [Decoding](decoding.md#policies-for-optional-fields) describes:
+=
+- ```tabular
++ ```tabular
+
+- column  A field whose keyword is
+- column  Reads as
+- column  Unless
+- row  missing, or present with neither an atom nor a child  `Unset`  `strictTelAbsence` makes it an error
+- row  present but rejected by the inner decoder  an error  `lenientTelFaults` reads it as `Unset`
++ column  キーワードが次のようなフィールド
++ column  読まれる値
++ column  ただし
++ row  存在しない、または存在するがアトムも子もない  `Unset`  `strictTelAbsence` ではエラーになる
++ row  存在するが、内側のデコーダーに拒否される  エラー  `lenientTelFaults` では `Unset` として読まれる
+
+= row  present but rejected by the inner decoder  an error  `lenientTelFaults` reads it as `Unset`
+- ```
++ ```
+
+- A missing keyword and an empty one are TEL's two spellings of absence. Under
+- `strictTelAbsence`, absence is a `Tel.Error.Reason.Absent`, and the field is marked as required
+- in the derived schema. The direct parser enforces the policy for absence only.
++ 存在しないキーワードと空のキーワードは、TEL における存在しないことの二つの書き方である。
++ `strictTelAbsence` のもとでは、存在しないことは `Tel.Error.Reason.Absent` であり、そのフィールドは導出されたスキーマで必須として示される。
++ 直接パーサーは、存在しないことについてのポリシーだけを強制する。
+
+= in the derived schema. The direct parser enforces the policy for absence only.
+=
+- ```scala
++ ```scala
+
+- case class Flags(active: Boolean, verbose: Optional[Boolean])
++ case class Flags(active: Boolean, verbose: Optional[Boolean])
+
+- val tolerant =
++ val tolerant =
+
+-   import optionalityOptions.lenientTelFaults
++   import optionalityOptions.lenientTelFaults
+
+-   t"active false\nverbose maybe\n".read[Tel].as[Flags]
++   t"active false\nverbose maybe\n".read[Tel].as[Flags]
+
+=   t"active false\nverbose maybe\n".read[Tel].as[Flags]
+- ```
++ ```
+
+=   t"active false\nverbose maybe\n".read[Tel].as[Flags]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"active false\nverbose maybe\n".read[Tel].as[Flags]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"active false\nverbose maybe\n".read[Tel].as[Flags]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(tolerant.inspect)
++ Out.println(tolerant.inspect)
+
+= Out.println(tolerant.inspect)
+- ```
++ ```
+
+- ### Writing TEL literally
++ ### TEL をリテラルで書く
+
+- The `tel"…"` [interpolator] writes a literal document. It is parsed at compiletime, and each
+- substitution is encoded through its own static type:
++ `tel"…"` [補間子]は、リテラルの文書を書く。
++ それはコンパイル時にパースされ、各埋め込みはそれ自身の静的な型を通じてエンコードされる。
+
+= substitution is encoded through its own static type:
+=
+- ```scala
++ ```scala
+
+- val name = t"Hamlet"
++ val name = t"Hamlet"
+
+- val contact = tel"name $name"
++ val contact = tel"name $name"
+
+= val contact = tel"name $name"
+- ```
++ ```
+
+- The same syntax is a pattern, which binds the values it names:
++ 同じ構文はパターンでもあり、それが名指す値を束縛する。
+
+= The same syntax is a pattern, which binds the values it names:
+=
+- ```scala
++ ```scala
+
+- val matched = contact match
++ val matched = contact match
+
+-   case tel"name $name" => name.as[Text]
++   case tel"name $name" => name.as[Text]
+
+-   case _               => t"anonymous"
++   case _               => t"anonymous"
+
+=   case _               => t"anonymous"
+- ```
++ ```
+
+=   case _               => t"anonymous"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _               => t"anonymous"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _               => t"anonymous"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(contact.show)
++ Out.println(contact.show)
+
+- Out.println(matched)
++ Out.println(matched)
+
+= Out.println(matched)
+- ```
++ ```
+
+- A malformed literal is a compile error, positioned at the offending part of the literal, not
+- at the start of the string.
++ 不正なリテラルはコンパイルエラーになり、その位置は文字列の先頭ではなく、リテラルの問題のある部分に置かれる。
+
+- ### Verified navigation
++ ### 検証済みのナビゲーション
+
+- `verify` checks a document against the shape of a type, and gives it that type. Its fields are
+- then navigated with full compiletime checking:
++ `verify` は文書を型の形に対して検査し、文書にその型を与える。
++ その後、そのフィールドは、コンパイル時の完全な検査を伴ってナビゲートされる。
+
+= then navigated with full compiletime checking:
+=
+- ```scala
++ ```scala
+
+- case class Castle(name: Text, city: Text)
++ case class Castle(name: Text, city: Text)
+
+- case class Residence(prince: Person, castle: Castle)
++ case class Residence(prince: Person, castle: Castle)
+
+- val doc = Residence(Person(t"Hamlet", 30), Castle(t"Kronborg", t"Elsinore")).in[Tel]
++ val doc = Residence(Person(t"Hamlet", 30), Castle(t"Kronborg", t"Elsinore")).in[Tel]
+
+= val doc = Residence(Person(t"Hamlet", 30), Castle(t"Kronborg", t"Elsinore")).in[Tel]
+- ```
++ ```
+
+= val doc = Residence(Person(t"Hamlet", 30), Castle(t"Kronborg", t"Elsinore")).in[Tel]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val doc = Residence(Person(t"Hamlet", 30), Castle(t"Kronborg", t"Elsinore")).in[Tel]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val doc = Residence(Person(t"Hamlet", 30), Castle(t"Kronborg", t"Elsinore")).in[Tel]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(doc.verify[Residence].castle.city.as[Text])
++ Out.println(doc.verify[Residence].castle.city.as[Text])
+
+= Out.println(doc.verify[Residence].castle.city.as[Text])
+- ```
++ ```
+
+- A misspelled field, or a field the type does not have, does not compile:
++ 綴りを誤ったフィールドや、型が持たないフィールドは、コンパイルできない。
+
+= A misspelled field, or a field the type does not have, does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A misspelled field, or a field the type does not have, does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= A misspelled field, or a field the type does not have, does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= A misspelled field, or a field the type does not have, does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- doc.verify[Residence].castle.town
++ doc.verify[Residence].castle.town
+
+= doc.verify[Residence].castle.town
+- ```
++ ```
+
+- Unverified, dynamic access reaches into a document whose shape is known only informally. It is
+- enabled by `import dynamicAccess.dynamicTel` or, for a single block, by `dynamically[Tel]:`, so
+- the checked and unchecked styles stay visibly distinct, as they do for
+- [JSON](json.md#fields-as-members).
++ 検証されない動的なアクセスは、形が非公式にしかわかっていない文書の中へ入り込む。
++ それは `import dynamicAccess.dynamicTel` で、あるいは一つのブロックに限って `dynamically[Tel]:` で有効になるので、[JSON](json.md#fields-as-members) の場合と同じように、検査されるスタイルと検査されないスタイルははっきりと区別されたままである。
+
+- A keyword may legitimately repeat, which an accessor for a single value cannot express.
+- `fields` gives every matching child, in document order:
++ キーワードは正当に繰り返されることがあり、それは単一の値のためのアクセサーでは表せない。
++ `fields` は、一致するすべての子を文書の順に与える。
+
+= `fields` gives every matching child, in document order:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `fields` gives every matching child, in document order:
+=
+= ```scala fuel
+- run
++ run
+
+= `fields` gives every matching child, in document order:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"item 1\nitem 2\nitem 3\n".read[Tel].fields(t"item").map(_.primaryAtom).to[List].inspect)
++ Out.println(t"item 1\nitem 2\nitem 3\n".read[Tel].fields(t"item").map(_.primaryAtom).to[List].inspect)
+
+= Out.println(t"item 1\nitem 2\nitem 3\n".read[Tel].fields(t"item").map(_.primaryAtom).to[List].inspect)
+- ```
++ ```
+
+- ### Paths
++ ### パス
+
+- A location in a document is a `Telp`, a TEL path. Its first character chooses the delimiter.
+- Each further component names a keyword, or selects one occurrence of a repeatable keyword by a
+- key value or an index. A `telp"…"` literal is checked at compiletime, and a path is the same
+- path whichever delimiter writes it:
++ 文書の中の位置は `Telp`、すなわち TEL パスである。
++ その最初の文字が区切り文字を選ぶ。
++ それ以降の各構成要素は、キーワードを名指すか、繰り返し可能なキーワードの一つの出現を、キーの値または添字によって選ぶ。
++ `telp"…"` のリテラルはコンパイル時に検査され、パスはどの区切り文字で書かれても同じパスである。
+
+= path whichever delimiter writes it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= path whichever delimiter writes it:
+=
+= ```scala fuel
+- run
++ run
+
+= path whichever delimiter writes it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((telp"/castle/city" == telp".castle.city").inspect)
++ Out.println((telp"/castle/city" == telp".castle.city").inspect)
+
+= Out.println((telp"/castle/city" == telp".castle.city").inspect)
+- ```
++ ```
+
+- A literal which is not a path does not compile:
++ パスでないリテラルは、コンパイルできない。
+
+= A literal which is not a path does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A literal which is not a path does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= A literal which is not a path does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= A literal which is not a path does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- telp"castle/city"
++ telp"castle/city"
+
+= telp"castle/city"
+- ```
++ ```
+
+- The path which a decoding error is tagged with, such as `/castle/city`, is itself a `Telp`.
++ `/castle/city` のように、デコードのエラーにタグとして付けられるパスも、それ自体 `Telp` である。
+
+- ### Editing without destroying the file
++ ### ファイルを壊さずに編集する
+
+- A TEL document keeps its comments, blank lines and layout so that a program can change one
+- value and write the file back, without reformatting everything a person wrote.
++ TEL 文書はコメント、空行、レイアウトを保持するので、プログラムは、人が書いたものをすべて整形し直すことなく、一つの値を変えてファイルを書き戻せる。
+
+- `modify` replaces a field's compound, or appends it where the field is absent:
++ `modify` はフィールドのコンパウンドを置き換えるか、そのフィールドがなければ追加する。
+
+= `modify` replaces a field's compound, or appends it where the field is absent:
+=
+- ```scala
++ ```scala
+
+- import dynamicAccess.dynamicTel
++ import dynamicAccess.dynamicTel
+
+- val document = t"# The account holder\nname Hamlet\n\nage 30\n".read[Tel]
++ val document = t"# The account holder\nname Hamlet\n\nage 30\n".read[Tel]
+
+- val renamed = document.modify("name", Tel.scalar(t"Horatio"))
++ val renamed = document.modify("name", Tel.scalar(t"Horatio"))
+
+= val renamed = document.modify("name", Tel.scalar(t"Horatio"))
+- ```
++ ```
+
+= val renamed = document.modify("name", Tel.scalar(t"Horatio"))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val renamed = document.modify("name", Tel.scalar(t"Horatio"))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val renamed = document.modify("name", Tel.scalar(t"Horatio"))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(renamed.show)
++ Out.println(renamed.show)
+
+= Out.println(renamed.show)
+- ```
++ ```
+
+- Finer edits are *mutations*, addressed by a pointer. A mutation changes exactly what it names,
+- and leaves the surrounding presentation alone. It may rewrite a single atom of a line, attach a
+- remark to a compound, or insert or remove a child:
++ より細かい編集は、ポインターで指し示される*ミューテーション*である。
++ ミューテーションは、それが名指すものだけを正確に変え、まわりの見た目には手を付けない。
++ それは行の一つのアトムを書き換えたり、コンパウンドにリマークを付けたり、子を挿入または削除したりできる。
+
+= remark to a compound, or insert or remove a child:
+=
+- ```scala
++ ```scala
+
+- val pointer = Tel.Pointer.of(t"name")
++ val pointer = Tel.Pointer.of(t"name")
+
+- val mutated = Tel.Mutation(document, List(Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Horatio")))
++ val mutated = Tel.Mutation(document, List(Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Horatio")))
+
+= val mutated = Tel.Mutation(document, List(Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Horatio")))
+- ```
++ ```
+
+= val mutated = Tel.Mutation(document, List(Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Horatio")))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val mutated = Tel.Mutation(document, List(Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Horatio")))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val mutated = Tel.Mutation(document, List(Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Horatio")))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(mutated.show)
++ Out.println(mutated.show)
+
+= Out.println(mutated.show)
+- ```
++ ```
+
+- The result is a document, not a string, so a sequence of edits composes, and the file is
+- written once at the end.
++ 結果は文字列ではなく文書なので、一連の編集は合成でき、ファイルは最後に一度だけ書かれる。
+
+- ### Schemas
++ ### スキーマ
+
+- A `Tels` is a TEL schema: the structure a document must have, with named definitions of
+- records, scalars and selects, which compose in layers. A schema is derived from a Scala type,
+- or is itself read from a TEL document, since the schema language is TEL:
++ `Tels` は TEL のスキーマである。
++ 文書が持たなければならない構造であり、レコード、スカラー、セレクトの名前付きの定義を持ち、それらはレイヤーとして合成される。
++ スキーマ言語は TEL なので、スキーマは Scala の型から導出されるか、それ自体 TEL 文書から読まれる。
+
+= or is itself read from a TEL document, since the schema language is TEL:
+=
+- ```scala
++ ```scala
+
+- val schema = Tels.tels[Person](t"person")
++ val schema = Tels.tels[Person](t"person")
+
+= val schema = Tels.tels[Person](t"person")
+- ```
++ ```
+
+- Each record or select in a derived schema is named after its type's simple name. Where two
+- different types reached from the root share a simple name, such as `Phrase.Code` and
+- `Element.Code`, each is qualified by its enclosing type, as `PhraseCode` and `ElementCode`. A
+- derived schema whose names cannot be told apart is rejected (E210), as a hand-written one with
+- two definitions of one name is.
++ 導出されたスキーマの各レコードやセレクトは、その型の単純名にちなんで名付けられる。
++ ルートから到達する二つの異なる型が、`Phrase.Code` と `Element.Code` のように単純名を共有するときは、それぞれが外側の型で修飾され、`PhraseCode` と `ElementCode` になる。
++ 名前を区別できない導出されたスキーマは、一つの名前に二つの定義を持つ手書きのスキーマと同じように拒否される（E210）。
+
+- `Tel.Type.assign` types a document against a schema. It validates the document, and reports
+- failures as typed errors, each with a path to the offending element. Under a strategy which
+- [accumulates failures](errors.md#accumulating-failures), every fault in a document is collected
+- and reported together.
++ `Tel.Type.assign` は、文書をスキーマに対して型付けする。
++ それは文書を検証し、失敗を型付きのエラーとして報告し、それぞれが問題のある要素へのパスを持つ。
++ [失敗を蓄積する](errors.md#accumulating-failures)戦略のもとでは、文書のすべての誤りが集められ、まとめて報告される。
+
+- A schema is built in *layers*: a base structure, and overlays which add or refine fields. This
+- is how a schema shared between several programs is extended by one of them without forking it,
+- and how the fields of an optional feature appear only where the feature is in use.
++ スキーマは*レイヤー*として組み立てられる。
++ 基本の構造と、フィールドを追加したり細分化したりするオーバーレイである。
++ これにより、いくつかのプログラムの間で共有されるスキーマを、そのうちの一つがフォークすることなく拡張でき、任意の機能のフィールドを、その機能が使われているところにだけ現れるようにできる。
+
+- The values of fields are checked by named *validators*. The built-in registry covers the kinds
+- a configuration language needs: `string`, which accepts anything, `identifier`, which accepts
+- kebab-case names and rejects a leading hyphen, and the numeric and enumerated kinds. A schema
+- may name validators of its own, so that a constraint of the domain lives in the schema, not in
+- every program which reads it.
++ フィールドの値は、名前の付いた*バリデーター*によって検査される。
++ 組み込みのレジストリは、設定言語が必要とする種類を網羅する。
++ 何でも受け付ける `string`、ケバブケースの名前を受け付けて先頭のハイフンを拒否する `identifier`、そして数値と列挙の種類である。
++ スキーマは独自のバリデーターを名指せるので、ドメインの制約は、それを読むすべてのプログラムではなく、スキーマの中に置かれる。
+
+- A scalar may also be constrained by one or more RE2 *patterns*, which must match the whole
+- value, and which combine by intersection:
++ スカラーは、一つ以上の RE2 の*パターン*でも制約できる。
++ パターンは値全体にマッチしなければならず、交差によって組み合わされる。
+
+= value, and which combine by intersection:
+=
+- ```
++ ```
+
+- scalar Code
++ scalar Code
+
+-   pattern [A-Z]{2}-[0-9]{4}
++   pattern [A-Z]{2}-[0-9]{4}
+
+=   pattern [A-Z]{2}-[0-9]{4}
+- ```
++ ```
+
+- Patterns are the one constraint whose meaning a schema can inspect. A validator is just a name,
+- so a layer may only ever add validators. But RE2 excludes backreferences and lookaround, which
+- makes it decidable whether one pattern's language contains another's. A layer may therefore
+- *replace* a scalar's patterns, provided the new language is contained in the old. Widening is
+- rejected, and so is a containment which the analysis cannot prove within its budget. The check
+- fails closed, so a layer can never loosen what the base accepted.
+- [Patterns](patterns.md) describes the RE2 engine.
++ パターンは、スキーマがその意味を検査できる唯一の制約である。
++ バリデーターは単なる名前なので、レイヤーはバリデーターを追加することしかできない。
++ しかし RE2 は後方参照と先読み・後読みを含まないので、あるパターンの言語が別のパターンの言語を含むかどうかを決定できる。
++ したがって、新しい言語が古い言語に含まれるかぎり、レイヤーはスカラーのパターンを*置き換え*られる。
++ 拡大は拒否され、解析がその予算内で証明できない包含も拒否される。
++ 検査は安全側に倒れて失敗するので、レイヤーが基本の受け付けたものを緩めることは決してない。
++ RE2 エンジンについては[パターン](patterns.md)で説明する。
+
+- ### Recovering from errors
++ ### エラーからの回復
+
+- A language structured by indentation is easy to get slightly wrong, and a parser which gives up
+- at the first mistake is unhelpful to a person editing a file. Parsing therefore recovers, and
+- the schema informs the recovery. A line which is indented ambiguously is attached to the
+- candidate which the schema admits. A `child` keyword which is valid inside `parent`, but not at
+- the root, is recovered to the deeper position.
++ インデントで構造化された言語は少し間違えやすく、最初の誤りで諦めるパーサーは、ファイルを編集している人の役に立たない。
++ そこでパースは回復し、スキーマが回復の手がかりを与える。
++ 曖昧にインデントされた行は、スキーマが許す候補に結び付けられる。
++ `parent` の中では有効だがルートでは有効でない `child` キーワードは、より深い位置に回復される。
+
+- Errors are reported with their line and column. A document whose faults were recovered still
+- yields a tree, which is what an editor, a [language server](lsp.md), or a tool reporting
+- several problems at once requires.
++ エラーはその行と列とともに報告される。
++ 誤りから回復した文書もなお木を生み出し、それは、エディター、[言語サーバー](lsp.md)、あるいは複数の問題を一度に報告するツールが必要とするものである。
+
+- ### Typed records from a schema
++ ### スキーマからの型付きレコード
+
+- Where the schema is authoritative, a `Tel.Provider` reads it at compiletime, and produces typed
+- records from matching documents. The provider is an object, declared in a file of its own,
+- which holds the schema. Each field is read as its schema declares it:
++ スキーマが権威を持つところでは、`Tel.Provider` がコンパイル時にそれを読み、一致する文書から型付きのレコードを生み出す。
++ プロバイダーはオブジェクトであり、専用のファイルで宣言され、スキーマを保持する。
++ 各フィールドは、スキーマが宣言するとおりに読まれる。
+
+= which holds the schema. Each field is read as its schema declares it:
+=
+- ```tabular
++ ```tabular
+
+- column  The schema declares
+- column  The field reads as
+- row  a scalar  the type its validator names
+- row  an optional field  an `Optional`, absent where the document omits it
+- row  a required field  its value, failing with a `Tel.Provider.Error` when it is missing
+- row  a repeatable field  a `List` of every occurrence
+- row  a struct, or a reference to a record definition  a nested record
+- row  a select  one optional field per variant
+- row  a *flag*, a keyword with no value  a `Boolean`: `true` where present, `false` where not
++ column  スキーマが宣言するもの
++ column  フィールドの読まれ方
++ row  スカラー  そのバリデーターが名指す型
++ row  オプショナルなフィールド  `Optional`。文書が省略したところでは存在しない
++ row  必須のフィールド  その値。存在しなければ `Tel.Provider.Error` で失敗する
++ row  繰り返し可能なフィールド  すべての出現の `List`
++ row  構造体、またはレコード定義への参照  入れ子のレコード
++ row  セレクト  バリアントごとに一つのオプショナルなフィールド
++ row  *フラグ*、すなわち値のないキーワード  `Boolean`。存在すれば `true`、しなければ `false`
+
+= row  a *flag*, a keyword with no value  a `Boolean`: `true` where present, `false` where not
+- ```
++ ```
+
+- A missing required field fails through the [tactic] of the code which reads it. The built-in
+- scalars are provided:
++ 存在しない必須のフィールドは、それを読むコードの[戦術]を通じて失敗する。
++ 組み込みのスカラーが提供されている。
+
+= scalars are provided:
+=
+- ```tabular
++ ```tabular
+
+- column  Scalar
+- column  Validator
+- column  Reads as
++ column  スカラー
++ column  バリデーター
++ column  読まれ方
+
+- row  `String`  `string`  `Text`
++ row  `String`  `string`  `Text`
+
+- row  `Identifier`  `identifier`  `Text`
++ row  `Identifier`  `identifier`  `Text`
+
+- row  `TypeName`  `type-name`  `Text`
++ row  `TypeName`  `type-name`  `Text`
+
+- row  `Sigil`  `sigil`  `Char`, failing on an atom of more than one character
++ row  `Sigil`  `sigil`  `Char`。二文字以上のアトムでは失敗する
+
+= row  `Sigil`  `sigil`  `Char`, failing on an atom of more than one character
+- ```
++ ```
+
+- A custom validator is read through a given with the same label, in scope where `record` is
+- called, such as
+- `given ("handle" is Intensional in Tel.Provider from Tel to Handle) = Intensional(…)`.
++ 独自のバリデーターは、`record` が呼ばれるところのスコープにある、同じラベルを持つ given を通じて読まれる。
++ たとえば `given ("handle" is Intensional in Tel.Provider from Tel to Handle) = Intensional(…)` である。
+
+- A provider, and a record read through it:
++ プロバイダーと、それを通じて読んだレコードは次のとおりである。
+
+= A provider, and a record read through it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A provider, and a record read through it:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A provider, and a record read through it:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- object ContactRecords extends Tel.Provider(Tels.tels[Person](t"person"))
++ object ContactRecords extends Tel.Provider(Tels.tels[Person](t"person"))
+
+= object ContactRecords extends Tel.Provider(Tels.tels[Person](t"person"))
+- ```
++ ```
+
+= object ContactRecords extends Tel.Provider(Tels.tels[Person](t"person"))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= ```
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val record = ContactRecords.record(t"name Hamlet\nage 30\n".read[Tel])
++ val record = ContactRecords.record(t"name Hamlet\nage 30\n".read[Tel])
+
+- val recordName: Text = record.name
++ val recordName: Text = record.name
+
+- val recordAge: Int = record.age
++ val recordAge: Int = record.age
+
+= val recordAge: Int = record.age
+- ```
++ ```
+
+- A field which the schema does not describe is a compile error. The shape of the data is taken
+- from the schema and checked by the compiler, with no Scala type restating it.
+- [JSON](json.md#typed-records-from-a-schema) and
+- [XML](xml.md#typed-records-from-an-xml-schema) have the same facility, and
+- [Records](records.md) describes the records themselves.
++ スキーマが記述しないフィールドはコンパイルエラーになる。
++ データの形はスキーマから取られてコンパイラが検査し、それを繰り返し述べる Scala の型はない。
++ [JSON](json.md#typed-records-from-a-schema) と [XML](xml.md#typed-records-from-an-xml-schema) にも同じ機能があり、レコードそのものについては[レコード](records.md)で説明する。
+
+- ### BinTEL
++ ### BinTEL
+
+- A typed document encodes to BinTEL, a compact binary form guided by the schema, and decodes
+- back. A *value hash* fingerprints the content, for integrity checks:
++ 型付きの文書は、スキーマに導かれたコンパクトなバイナリ形式である BinTEL にエンコードされ、またデコードされて戻る。
++ *値ハッシュ*は、完全性の検査のために内容のフィンガープリントを取る。
+
+= back. A *value hash* fingerprints the content, for integrity checks:
+=
+- ```scala
++ ```scala
+
+- val binary = document.bintel(schema)
++ val binary = document.bintel(schema)
+
+- val hash = document.valueHash(schema)
++ val hash = document.valueHash(schema)
+
+= val hash = document.valueHash(schema)
+- ```
++ ```
+
+- The value hash is taken over the document's content, not its bytes. Two documents which differ
+- only in comments, whitespace or the order of keys have the same hash, while a document whose
+- values differ does not. It is therefore usable as a cache key, or to detect a change, where
+- hashing the file would report a change whenever someone reflowed it.
++ 値ハッシュは、文書のバイトではなく内容に対して取られる。
++ コメント、空白、キーの順序だけが異なる二つの文書は同じハッシュを持ち、値が異なる文書は異なるハッシュを持つ。
++ したがってこれは、ファイルをハッシュすると誰かが整形し直すたびに変更を報告してしまうところで、キャッシュのキーとして、あるいは変更の検出に使える。
+
+- A *self-contained* BinTEL frame carries its schema with it, so a document can travel to a
+- reader which has never seen its schema, and still be decoded:
++ *自己完結型*の BinTEL フレームは、スキーマを伴って運ぶので、文書はそのスキーマを見たことのない読み手のところへ移動しても、なおデコードされる。
+
+= reader which has never seen its schema, and still be decoded:
+=
+- ```scala
++ ```scala
+
+- val greeting = t"name Hamlet\n".read[Tel]
++ val greeting = t"name Hamlet\n".read[Tel]
+
+- val greetingSchema = t"name greeting\n\ndocument\n  field name Identifier\n".read[Tel]
++ val greetingSchema = t"name greeting\n\ndocument\n  field name Identifier\n".read[Tel]
+
+- val frame = Bintel.selfContained(greeting, greetingSchema)
++ val frame = Bintel.selfContained(greeting, greetingSchema)
+
+= val frame = Bintel.selfContained(greeting, greetingSchema)
+- ```
++ ```
+
+- The alternative is to send the data alone, and identify the schema by its *signature*. A
+- signature is a short fingerprint computed from the schema itself, so a reader can confirm that
+- it holds the right schema before it decodes a byte of data. A schema with no layers has a
+- signature of thirty-three bytes.
++ もう一つの方法は、データだけを送り、スキーマをその*シグネチャ*で識別することである。
++ シグネチャはスキーマ自身から計算される短いフィンガープリントなので、読み手は、データの 1 バイトもデコードする前に、正しいスキーマを持っていることを確かめられる。
++ レイヤーのないスキーマのシグネチャは 33 バイトである。
+
+- Numbers in BinTEL are encoded in a variable number of bytes, and values are typed by the
+- schema, not tagged in the stream, which is where the compactness comes from. Every framed
+- document also declares its own length, immediately after the magic number. A reader can
+- therefore delimit, skip or forward documents without holding their schema, and several
+- documents may share one stream:
++ BinTEL の数値は可変数のバイトでエンコードされ、値はストリームの中でタグ付けされるのではなくスキーマによって型付けされる。
++ コンパクトさはそこから来る。
++ フレームに収められたすべての文書は、マジックナンバーの直後に自身の長さも宣言する。
++ したがって読み手は、スキーマを持たずに文書を区切り、読み飛ばし、転送でき、複数の文書が一つのストリームを共有できる。
+
+= documents may share one stream:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Reads
+- row  `Bintel.decodeStream`  every document, in order
+- row  `Bintel.decodeDocument`  one document, reporting where its continuation begins
+- row  `Bintel.decodeWholeDocument`  one document, insisting that nothing follows
++ column  メソッド
++ column  読むもの
++ row  `Bintel.decodeStream`  すべての文書を順に
++ row  `Bintel.decodeDocument`  一つの文書。その続きがどこから始まるかを報告する
++ row  `Bintel.decodeWholeDocument`  一つの文書。後に何も続かないことを要求する
+
+= row  `Bintel.decodeWholeDocument`  one document, insisting that nothing follows
+- ```
++ ```
+
+- ### RaTEL
++ ### RaTEL
+
+- BinTEL is read from front to back. *RaTEL*, the random-access encoding, is read in place: it
+- lays a document out as tables of fixed-width rows, one table for each record type, with sorted
+- indexes beside them. A program which [maps the file](filesystem.md#positional-access) finds one
+- record by touching that record and nothing else, and several programs which map it share one
+- copy. It is the form for a large document which one program writes and others consult.
++ BinTEL は先頭から末尾へ読まれる。
++ ランダムアクセスのエンコーディングである *RaTEL* は、その場で読まれる。
++ それは文書を、レコード型ごとに一つの、固定幅の行のテーブルとしてレイアウトし、その隣にソートされた索引を置く。
++ [ファイルをマップする](filesystem.md#positional-access)プログラムは、そのレコードだけに触れて一つのレコードを見つけ、それをマップする複数のプログラムは一つのコピーを共有する。
++ これは、あるプログラムが書き、他のプログラムが参照する大きな文書のための形式である。
+
+- A schema says how its records are found. A record's `key` field gives the records of a
+- repeatable field a *primary index*, and an `index` beneath the field declares another, over one
+- or more paths into each record. A scalar with a standard encoding, such as `u32`, is stored in
+- its row at a fixed width, and one marked `intern` has each distinct value stored once:
++ スキーマは、そのレコードがどのように見つかるかを述べる。
++ レコードの `key` フィールドは、繰り返し可能なフィールドのレコードに*主索引*を与え、フィールドの下の `index` は、各レコードへの一つ以上のパスにわたる別の索引を宣言する。
++ `u32` のような標準のエンコーディングを持つスカラーは、その行に固定幅で格納され、`intern` と示されたスカラーは、異なる値をそれぞれ一度だけ格納する。
+
+= its row at a fixed width, and one marked `intern` has each distinct value stored once:
+=
+- ```scala
++ ```scala
+
+- val castSchema = t"""
++ val castSchema = t"""
+
+-   tel 1.0 specification.tel/tels:2.1.0
++   tel 1.0 specification.tel/tels:2.1.0
+
+-   name cast
++   name cast
+
+-   scalar Count
++   scalar Count
+
+-     encoding u32
++     encoding u32
+
+-   record Role
++   record Role
+
+-     field name String key
++     field name String key
+
+-     field play String
++     field play String
+
+-     field lines Count optional
++     field lines Count optional
+
+-   document
++   document
+
+-     field role Role repeatable
++     field role Role repeatable
+
+-       index /play
++       index /play
+
+- """.read[Tel].as[Tels]
++ """.read[Tel].as[Tels]
+
+- val cast = t"role Hamlet\n  play Hamlet\n  lines 1506\nrole Viola\n  play Twelfth Night\n".read[Tel]
++ val cast = t"role Hamlet\n  play Hamlet\n  lines 1506\nrole Viola\n  play Twelfth Night\n".read[Tel]
+
+= val cast = t"role Hamlet\n  play Hamlet\n  lines 1506\nrole Viola\n  play Twelfth Night\n".read[Tel]
+- ```
++ ```
+
+- `ratel` encodes a document under its schema as a `Ratel`, an image which carries the schema
+- with it. An image is `Encodable in Data`, so it is
+- [published](filesystem.md#publishing-versions) like any other value:
++ `ratel` は、スキーマのもとで文書を `Ratel` としてエンコードする。
++ これはスキーマを伴って運ぶイメージである。
++ イメージは `Encodable in Data` なので、他のどんな値とも同じように[公開](filesystem.md#publishing-versions)される。
+
+= [published](filesystem.md#publishing-versions) like any other value:
+=
+- ```scala
++ ```scala
+
+- val image: Ratel = cast.ratel(castSchema)
++ val image: Ratel = cast.ratel(castSchema)
+
+- file.claim[Ratel](_.publish(image))
++ file.claim[Ratel](_.publish(image))
+
+= file.claim[Ratel](_.publish(image))
+- ```
++ ```
+
+- A file is opened as `Ratel`, like a file in any other form. It is mapped for the length of
+- the block, and the block is given a reader, `ratel`. Opening checks only what decides how the
+- rest is read: the header, the schema and its signature, and the directories of tables and
+- indexes. Records are then read as they are asked for. `/` gives the records of a repeatable
+- field, `find` looks one up by its key with a binary search of the primary index, and `where`
+- gives those with a value at an indexed path:
++ ファイルは、他のどんな形式のファイルとも同じように、`Ratel` として開かれる。
++ それはブロックの間マップされ、ブロックには読み手 `ratel` が与えられる。
++ 開くときに検査するのは、残りがどう読まれるかを決めるものだけである。
++ ヘッダー、スキーマとそのシグネチャ、そしてテーブルと索引のディレクトリである。
++ その後、レコードは求められるたびに読まれる。
++ `/` は繰り返し可能なフィールドのレコードを与え、`find` は主索引の二分探索によってキーでレコードを一つ探し、`where` は索引付きのパスにある値を持つレコードを与える。
+
+= gives those with a value at an indexed path:
+=
+- ```scala
++ ```scala
+
+= ```scala
+- file.open[Ratel]():
++ file.open[Ratel]():
+
+-   val roles = ratel.root / t"role"
++   val roles = ratel.root / t"role"
+
+-   val hamlet = roles.find(t"Hamlet")
++   val hamlet = roles.find(t"Hamlet")
+
+-   val lines = hamlet.let(_.text(t"lines"))
++   val lines = hamlet.let(_.text(t"lines"))
+
+-   val twelfth = roles.where(t"/play", t"Twelfth Night")
++   val twelfth = roles.where(t"/play", t"Twelfth Night")
+
+=   val twelfth = roles.where(t"/play", t"Twelfth Night")
+- ```
++ ```
+
+- An image in memory, and a `Terrain` view which is already in hand, such as the one a
+- [published](filesystem.md#publishing-versions) reader lends, are opened the same way, as
+- `image.open[Ratel]()` and `view.open[Ratel]()`.
++ メモリー上のイメージと、[公開](filesystem.md#publishing-versions)の読み手が貸し出すもののような、すでに手元にある `Terrain` ビューも、`image.open[Ratel]()` と `view.open[Ratel]()` として同じように開かれる。
+
+- A `Ratel.Row` reads its members by keyword:
++ `Ratel.Row` は、そのメンバーをキーワードで読む。
+
+= A `Ratel.Row` reads its members by keyword:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Reads
+- row  `text`  a scalar, as its text, or `Unset` if it is absent
+- row  `data`  a scalar, as the bytes which are stored
+- row  `texts`  the values of a repeatable scalar
+- row  `flag`, `count`  whether a flag is present, and how many times
+- row  `record`  a struct which is not repeatable, as another row
+- row  `/`  the records of a repeatable struct, as a `Ratel.Rows`
+- row  `has`  whether an optional member is present
+- row  `as`  the whole record, decoded as a value
++ column  メソッド
++ column  読むもの
++ row  `text`  スカラーをそのテキストとして。存在しなければ `Unset`
++ row  `data`  スカラーを、格納されているバイトとして
++ row  `texts`  繰り返し可能なスカラーの値
++ row  `flag`、`count`  フラグが存在するかどうかと、その回数
++ row  `record`  繰り返し可能でない構造体を、別の行として
++ row  `/`  繰り返し可能な構造体のレコードを、`Ratel.Rows` として
++ row  `has`  オプショナルなメンバーが存在するかどうか
++ row  `as`  レコード全体を、値としてデコードして
+
+= row  `as`  the whole record, decoded as a value
+- ```
++ ```
+
+- A `Ratel.Rows` has a `size`, is read by position or with `each`, and has `find`, `where` and
+- `sorted`, which gives its records in the order of their keys. A row is a plain value which
+- says where a record lies, and is read through the reader which its block is given, so it is
+- read only while its image is open. Its type, `Ratel.Row of brand`, carries the brand of that
+- reader. Each accessor asks for the reader with that brand, so where several images are open a
+- row is read through its own, and a row which is taken to where its reader is not in scope
+- does not compile there. `as` decodes one record, and whatever it holds, through the same
+- typeclasses as a TEL document:
++ `Ratel.Rows` は `size` を持ち、位置によって、あるいは `each` で読まれ、`find`、`where`、そしてキーの順にレコードを与える `sorted` を持つ。
++ 行は、レコードがどこにあるかを述べるただの値であり、そのブロックに与えられた読み手を通じて読まれるので、そのイメージが開いている間だけ読まれる。
++ その型 `Ratel.Row of brand` は、その読み手のブランドを持つ。
++ 各アクセサーはそのブランドを持つ読み手を求めるので、複数のイメージが開いているところでは、行は自分の読み手を通じて読まれ、読み手がスコープにない場所へ持ち出された行は、そこではコンパイルできない。
++ `as` は一つのレコードと、それが保持するものすべてを、TEL 文書と同じ型クラスを通じてデコードする。
+
+= typeclasses as a TEL document:
+=
+- ```scala
++ ```scala
+
+- case class Role(name: Text, play: Text, lines: Optional[Int])
++ case class Role(name: Text, play: Text, lines: Optional[Int])
+
+- val role = file.open[Ratel]():
++ val role = file.open[Ratel]():
+
+-   (ratel.root / t"role").find(t"Hamlet").let(_.as[Role])
++   (ratel.root / t"role").find(t"Hamlet").let(_.as[Role])
+
+=   (ratel.root / t"role").find(t"Hamlet").let(_.as[Role])
+- ```
++ ```
+
+- An object which extends `Ratel.Provider` with a schema reads the records of an image without
+- a case class for each. It gives the root of an open image as a record whose members are those
+- of the schema's document, each typed as the schema types it, and each read in place when it is
+- selected:
++ スキーマを伴って `Ratel.Provider` を継承するオブジェクトは、それぞれのためのケースクラスなしに、イメージのレコードを読む。
++ それは開いたイメージのルートを、メンバーがスキーマの文書のメンバーであるレコードとして与え、各メンバーはスキーマが型付けするとおりに型付けされ、選択されたときにその場で読まれる。
+
+- <!-- doccheck: skip -->
++ <!-- doccheck: skip -->
+
+= <!-- doccheck: skip -->
+- ```scala
++ ```scala
+
+- object Cast extends Ratel.Provider(castSchema)
++ object Cast extends Ratel.Provider(castSchema)
+
+=
+- file.open[Ratel]():
++ file.open[Ratel]():
+
+-   val cast = Cast()
++   val cast = Cast()
+
+-   val hamlet = cast.role(t"Hamlet")            // an optional record, by its key
++   val hamlet = cast.role(t"Hamlet")            // an optional record, by its key
+
+-   val play: Optional[Text] = hamlet.let(_.play)
++   val play: Optional[Text] = hamlet.let(_.play)
+
+-   val lines: Optional[Long] = hamlet.let(_.lines)
++   val lines: Optional[Long] = hamlet.let(_.lines)
+
+-   val comedy = cast.role.where(_.play = t"Twelfth Night")
++   val comedy = cast.role.where(_.play = t"Twelfth Night")
+
+=   val comedy = cast.role.where(_.play = t"Twelfth Night")
+- ```
++ ```
+
+- A `Ratel.Provider` is a [specification](records.md#defining-a-specification), as
+- `Tel.Provider` is, whose records are read in the context of an open image. A scalar is read
+- through the `Intensional` instance named by its encoding, or by its first validator if it has
+- none: as `Text`, or as `Int`, `Long` or `Double` if its encoding is a standard codec whose
+- every value one of them holds exactly, as `u32` is by `Long`, or as a type of your own, by an
+- instance of your own. A flag is a `Boolean`, and a repeatable flag the `Long` number of times
+- it occurs. A struct is a nested record, a repeatable scalar a `List`, and a repeatable struct
+- a `Ratel.Table`, which has the `size`, `each` and `sorted` of a `Ratel.Rows`, and is
+- applied to a key or a position. Its `where` finds records by a secondary index, and names the
+- indexed scalar as a [lens](optics.md) names what it updates, by a path which ends in an
+- assignment, such as `_.play = t"Twelfth Night"` or `_.author.born = 1564L`: the path is
+- checked against the record, and the value against the type its member is read as. Each variant of a select is a member which is absent unless
+- it is the one chosen, and a member which is optional is an `Optional`. A member the schema
+- does not declare is not a member of the record, and does not compile. The provider's object
+- must be compiled before the code which uses it, so it is written in a file of its own.
+- Opening an image which was written with another schema raises a `Ratel.Error`, of
+- `Mismatched`.
++ `Ratel.Provider` は、`Tel.Provider` と同じく[仕様](records.md#defining-a-specification)であり、そのレコードは開いたイメージのコンテキストで読まれる。
++ スカラーは、そのエンコーディング、エンコーディングがなければ最初のバリデーターが名指す `Intensional` インスタンスを通じて読まれる。
++ `Text` として、エンコーディングが、そのすべての値を `Int`、`Long`、`Double` のいずれかが正確に保持する標準のコーデックであれば（`u32` は `Long` が保持する）その型として、あるいは独自のインスタンスによって独自の型として読まれる。
++ フラグは `Boolean` であり、繰り返し可能なフラグは、それが出現する回数を表す `Long` である。
++ 構造体は入れ子のレコード、繰り返し可能なスカラーは `List`、繰り返し可能な構造体は `Ratel.Table` である。
++ `Ratel.Table` は `Ratel.Rows` の `size`、`each`、`sorted` を持ち、キーまたは位置に適用される。
++ その `where` は副次的な索引によってレコードを見つけ、[レンズ](optics.md)が更新するものを名指すのと同じように、`_.play = t"Twelfth Night"` や `_.author.born = 1564L` のような、代入で終わるパスによって索引付きのスカラーを名指す。
++ パスはレコードに対して検査され、値はそのメンバーが読まれる型に対して検査される。
++ セレクトの各バリアントは、選ばれたものでないかぎり存在しないメンバーであり、オプショナルなメンバーは `Optional` である。
++ スキーマが宣言しないメンバーはレコードのメンバーではなく、コンパイルできない。
++ プロバイダーのオブジェクトは、それを使うコードより前にコンパイルされなければならないので、専用のファイルに書かれる。
++ 別のスキーマで書かれたイメージを開くと、`Mismatched` の `Ratel.Error` が発生する。
+
+- A reader which opens a file it did not write trusts nothing in it: every offset is checked
+- before it is followed, and a fault is raised as a `Ratel.Error`, by the access which meets it,
+- while other records remain readable. The reader's `verify` checks the whole image at once, its
+- digests, its indexes against its rows and its value hash, and opening with `Ratel.Flag.Verify`
+- does so before the block runs. `materialise` gives the whole document back as the model it was
+- written from, so the three encodings convert between one another without loss. An encoding
+- which is the application's own is bound to its codec with `Ratel.Flag.Codecs`.
++ 自分が書いたのではないファイルを開く読み手は、その中の何も信頼しない。
++ すべてのオフセットはたどる前に検査され、誤りはそれに出会ったアクセスによって `Ratel.Error` として発生し、他のレコードは読めるままである。
++ 読み手の `verify` は、イメージ全体、すなわちそのダイジェスト、行に対する索引、値ハッシュを一度に検査し、`Ratel.Flag.Verify` を付けて開くと、ブロックが実行される前にそれを行う。
++ `materialise` は、文書全体を、それが書かれた元のモデルとして返すので、三つのエンコーディングは互いに損失なく変換される。
++ アプリケーション独自のエンコーディングは、`Ratel.Flag.Codecs` でそのコーデックに結び付けられる。
+
+- ### Acceptances
++ ### アクセプタンス
+
+- Two peers may hold different libraries of schemas. A reader then tells a writer what it can
+- consume, with an *acceptance*. An acceptance is a small TEL document which lists, in order of
+- preference, the compositions the reader accepts, each as a schema signature. Beside each it
+- lists the further layers or atoms which the reader can resolve, and would like included if the
+- writer holds them, named by a prefix of their hash.
++ 二つのピアは、異なるスキーマのライブラリを持っていることがある。
++ そのとき読み手は、何を消費できるかを*アクセプタンス*で書き手に伝える。
++ アクセプタンスは小さな TEL 文書であり、読み手が受け付ける合成を、好みの順に、それぞれスキーマのシグネチャとして列挙する。
++ その隣には、読み手が解決でき、書き手が持っていれば含めてほしい追加のレイヤーやアトムを、そのハッシュの接頭辞で名指して列挙する。
+
+- The message is itself TEL, so it travels in three forms:
++ このメッセージ自体が TEL なので、三つの形で運ばれる。
+
+= The message is itself TEL, so it travels in three forms:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  Written by
+- column  Read back by
+- row  TEL text  `acceptance.encode`  `as[Tel.Acceptance]` on the text
+- row  framed BinTEL  `acceptance.framed`  `Tel.Acceptance(framed)`
+- row  one BASE-256 word  `acceptance.text`  `Tel.Acceptance(text)`
++ column  形式
++ column  書くもの
++ column  読み戻すもの
++ row  TEL テキスト  `acceptance.encode`  テキストに対する `as[Tel.Acceptance]`
++ row  フレームに収めた BinTEL  `acceptance.framed`  `Tel.Acceptance(framed)`
++ row  一つの BASE-256 の語  `acceptance.text`  `Tel.Acceptance(text)`
+
+= row  one BASE-256 word  `acceptance.text`  `Tel.Acceptance(text)`
+- ```
++ ```
+
+- The BinTEL form may also be the bare root of the document, for an embedding which already
+- knows what it is carrying. In full:
++ BinTEL の形は、何を運んでいるかをすでに知っている埋め込みのために、文書のむき出しのルートであってもよい。
++ 完全な形では次のようになる。
+
+= knows what it is carrying. In full:
+=
+- ```scala fuel
++ ```scala fuel
+
+= knows what it is carrying. In full:
+=
+= ```scala fuel
+- parse
++ parse
+
+= knows what it is carrying. In full:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val acceptance = Tel.Acceptance
++ val acceptance = Tel.Acceptance
+
+-   ( Tel.Acceptance.Alternative
++   ( Tel.Acceptance.Alternative
+
+-       ( Tel.Acceptance.Signature(contact.signature(List(t"with-address"))),
++       ( Tel.Acceptance.Signature(contact.signature(List(t"with-address"))),
+
+-         components = List(Tel.Acceptance.Component(contact.prefix(t"with-phone"))) ),
++         components = List(Tel.Acceptance.Component(contact.prefix(t"with-phone"))) ),
+
+-     Tel.Acceptance.Alternative(Tel.Acceptance.Signature(contact.signature(List())), selfContained = true) )
++     Tel.Acceptance.Alternative(Tel.Acceptance.Signature(contact.signature(List())), selfContained = true) )
+
+- val asText = acceptance.encode
++ val asText = acceptance.encode
+
+- val asBintel = acceptance.framed
++ val asBintel = acceptance.framed
+
+- val asWord = acceptance.text
++ val asWord = acceptance.text
+
+- val fromText = acceptance.encode.as[Tel.Acceptance]
++ val fromText = acceptance.encode.as[Tel.Acceptance]
+
+- val fromBintel = Tel.Acceptance(acceptance.framed)
++ val fromBintel = Tel.Acceptance(acceptance.framed)
+
+- val fromWord = Tel.Acceptance(acceptance.text)
++ val fromWord = Tel.Acceptance(acceptance.text)
+
+= val fromWord = Tel.Acceptance(acceptance.text)
+- ```
++ ```
+
+- Here `contact` is a `SchemaSignature.Lineage`: a base schema, with its layers and atoms and
+- their hashes. A signature for any selection of layers is computed from it, and a writer decodes
+- against it the signatures which a reader sends.
++ ここで `contact` は `SchemaSignature.Lineage` である。
++ これは基本のスキーマと、そのレイヤーやアトムとそれらのハッシュである。
++ レイヤーの任意の選択に対するシグネチャはここから計算され、書き手は、読み手が送るシグネチャをこれに対してデコードする。
+
+- A writer which holds a value under some composition serves the first alternative it can, with
+- the richest composition that alternative permits. The reader takes the first alternative whose
+- schema the arriving document's schema is a subtype of:
++ ある合成のもとで値を持つ書き手は、提供できる最初の選択肢を、その選択肢が許す最も豊かな合成で提供する。
++ 読み手は、届いた文書のスキーマがそのスキーマの部分型である最初の選択肢を取る。
+
+= schema the arriving document's schema is a subtype of:
+=
+- ```scala fuel
++ ```scala fuel
+
+= schema the arriving document's schema is a subtype of:
+=
+= ```scala fuel
+- parse
++ parse
+
+= schema the arriving document's schema is a subtype of:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val served = Tel.Acceptance.serve(acceptance, contact, composition, element)
++ val served = Tel.Acceptance.serve(acceptance, contact, composition, element)
+
+- served.let: served =>
++ served.let: served =>
+
+-   Tel.Acceptance.receive(acceptance, library, served.document)
++   Tel.Acceptance.receive(acceptance, library, served.document)
+
+=   Tel.Acceptance.receive(acceptance, library, served.document)
+- ```
++ ```
+
+- Compatibility is the subtype relation on composed schemas:
++ 互換性とは、合成されたスキーマの上の部分型関係である。
+
+= Compatibility is the subtype relation on composed schemas:
+=
+- ```tabular
++ ```tabular
+
+- column  Definition
+- column  A subtype
+- row  record  extends it
+- row  select  narrows it
+- row  scalar  tightens it
++ column  定義
++ column  部分型
++ row  レコード  それを拡張する
++ row  セレクト  それを狭める
++ row  スカラー  それを厳しくする
+
+= row  scalar  tightens it
+- ```
++ ```
+
+- `Tels.Subtyping.subtype` decides it, and `check` reports the first premise which fails.
+- `Tels.Projection` restricts a document to what a supertype can address.
++ `Tels.Subtyping.subtype` がそれを判定し、`check` は失敗する最初の前提を報告する。
++ `Tels.Projection` は、文書を上位型が扱えるものに制限する。
+
+- #### Acceptances from Scala types
++ #### Scala の型からのアクセプタンス
+
+- Where the formats are Scala types, the acceptance and the reading of it are derived. Each
+- type's required fields form the base which a reader requires. Its optional fields are offered
+- as atoms, so two types which agree on their required fields interoperate, however their
+- optional fields differ.
++ 形式が Scala の型であるところでは、アクセプタンスとその読み込みは導出される。
++ 各型の必須のフィールドが、読み手が要求する基本をなす。
++ そのオプショナルなフィールドはアトムとして提供されるので、必須のフィールドについて一致する二つの型は、オプショナルなフィールドがどう異なっていても相互に運用できる。
+
+- A field can instead be offered as part of a named layer. A layer is declared once, as an object
+- whose name is part of its type, and a field is assigned to it with `@assign`:
++ フィールドは、代わりに名前の付いたレイヤーの一部として提供することもできる。
++ レイヤーは、名前が型の一部であるオブジェクトとして一度だけ宣言され、フィールドは `@assign` でそれに割り当てられる。
+
+= whose name is part of its type, and a field is assigned to it with `@assign`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= whose name is part of its type, and a field is assigned to it with `@assign`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= whose name is part of its type, and a field is assigned to it with `@assign`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- object withPhone extends Tel.Layer("with-phone")
++ object withPhone extends Tel.Layer("with-phone")
+
+- case class Contact(name: Text, email: Optional[Text], @assign(withPhone) phone: Optional[Text])
++ case class Contact(name: Text, email: Optional[Text], @assign(withPhone) phone: Optional[Text])
+
+- case class ContactV1(name: Text, email: Optional[Text])
++ case class ContactV1(name: Text, email: Optional[Text])
+
+= case class ContactV1(name: Text, email: Optional[Text])
+- ```
++ ```
+
+- A tuple names the accepted types, in order of preference, and what arrives is decoded to their
+- union:
++ タプルは受け付ける型を好みの順に名指し、届いたものはそれらのユニオンにデコードされる。
+
+= union:
+=
+- ```scala fuel
++ ```scala fuel
+
+= union:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= union:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val accepting = Tel.Acceptance[(Contact, ContactV1)]()
++ val accepting = Tel.Acceptance[(Contact, ContactV1)]()
+
+- send(accepting.acceptance.framed)
++ send(accepting.acceptance.framed)
+
+- accepting.read(reply) match
++ accepting.read(reply) match
+
+-   case contact: Contact   => contact.name
++   case contact: Contact   => contact.name
+
+-   case contact: ContactV1 => contact.name
++   case contact: ContactV1 => contact.name
+
+=   case contact: ContactV1 => contact.name
+- ```
++ ```
+
+- A layer can never add a case to a sum, but it can take cases away. A case of an `enum`, or of a
+- sealed trait, which is annotated `@retract` remains a variant of the base, and the named layer
+- excludes it. A reader which accepts that layer thereby says that it will never receive the
+- case. A case may be retracted from several layers, though a layer cannot retract every case of
+- a sum:
++ レイヤーは直和型にケースを追加することは決してできないが、ケースを取り除くことはできる。
++ `@retract` のアノテーションが付いた `enum` やシールされたトレイトのケースは、基本のバリアントのままであり、名前の付いたレイヤーがそれを除外する。
++ そのレイヤーを受け付ける読み手は、それによって、そのケースを決して受け取らないと述べる。
++ ケースは複数のレイヤーから取り除くことができるが、レイヤーが直和型のすべてのケースを取り除くことはできない。
+
+= a sum:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a sum:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= a sum:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- object lean extends Tel.Layer("lean")
++ object lean extends Tel.Layer("lean")
+
+- enum Message:
++ enum Message:
+
+-   @retract(lean) case Ping
++   @retract(lean) case Ping
+
+-   @retract(lean) case Data(payload: Text)
++   @retract(lean) case Data(payload: Text)
+
+-   case Stop
++   case Stop
+
+=   case Stop
+- ```
++ ```
+
+- A writer answers from a value with `contact.fulfil(accepting.acceptance)`. It leaves out any
+- layer which retracts a case the value uses, so that what it serves is always valid under the
+- layers it names.
++ 書き手は、値から `contact.fulfil(accepting.acceptance)` で応答する。
++ それは、値が使うケースを取り除くレイヤーをすべて除外するので、提供するものは、それが名指すレイヤーのもとで常に有効である。
+
+- ### Related
++ ### 関連
+
+- - [Daemons](daemons.md) and [RPC](rpc.md) carry BinTEL messages, and [optics](optics.md) updates a TEL document.
++ - [デーモン](daemons.md)と [RPC](rpc.md) は BinTEL のメッセージを運び、[オプティクス](optics.md)は TEL 文書を更新する。

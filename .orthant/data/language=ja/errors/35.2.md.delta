@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.35.2` — Encoding not available
++ # `↯/s.35.2` — 利用できないエンコーディング
+
+- Raised at compile time by Hieroglyph's `enc"…"` macro when the
+- named encoding is not supported by the JVM.
++ 名指しされたエンコーディングを JVM がサポートしていないときに、Hieroglyph の `enc"…"` マクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- The macro looks up the encoding via `Encoding.unapply`. If the JVM
+- does not recognise the name, the macro halts.
++ マクロは `Encoding.unapply` を通してエンコーディングを探す。
++ JVM がその名前を認識しなければ、マクロは停止する。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.35.2] the encoding XYZ-9 was not available
++ [↯/s.35.2] the encoding XYZ-9 was not available
+
+= [↯/s.35.2] the encoding XYZ-9 was not available
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Use a JVM-supported encoding name. Standard encodings like
+- `UTF-8`, `ISO-8859-1`, and `US-ASCII` are always present.
++ JVM がサポートするエンコーディングの名前を使う。
++ `UTF-8`、`ISO-8859-1`、`US-ASCII` のような標準のエンコーディングは常に存在する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/hieroglyph/src/core/hieroglyph.internal.scala`
++ - ソース：`lib/hieroglyph/src/core/hieroglyph.internal.scala`

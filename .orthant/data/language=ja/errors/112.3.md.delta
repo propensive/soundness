@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.112.3` — Missing `Probate` instance
++ # `↯/s.112.3` — `Probate` インスタンスがない
+
+- Raised at compile time by Obligatory's `rpc` macro when no
+- contextual `Probate` instance is available.
++ コンテキストの `Probate` インスタンスが利用できないときに、Obligatory の `rpc` マクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- The macro requires a `Probate` to track and clean up resources
+- allocated by the RPC machinery.
++ このマクロは、RPC の仕組みがアロケーションしたリソースを追跡して後片付けするために、`Probate` を必要とする。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.112.3] a contextual `Probate` instance is required
++ [↯/s.112.3] a contextual `Probate` instance is required
+
+= [↯/s.112.3] a contextual `Probate` instance is required
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Bring a `Probate` into scope at the call site (e.g. via a `Daemon`
+- or similar resource scope).
++ 呼び出し箇所のスコープに `Probate` を入れる（たとえば `Daemon` や同様のリソースのスコープを通じて）。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/obligatory/src/json/obligatory.internal.scala`
++ - ソース：`lib/obligatory/src/json/obligatory.internal.scala`

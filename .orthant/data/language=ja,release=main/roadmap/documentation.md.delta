@@ -1,0 +1,53 @@
+orthant 1 language
+
+- The prose exists in three parallel systems today: the topic guides in `doc/work/soundness/modules/` — the
+- direction of travel, and where the substantial writing happens — the legacy per-module
+- templates in `lib/*/doc/`, inherited from when each module was its own repository, and a
+- separate copy of the philosophy material under `web/res/content/`. Three systems means
+- divergence, and divergence means one of them is lying. This track collapses them to one,
+- completes coverage, and adds the layer that prose cannot provide: generated, searchable API
+- documentation — infrastructure that fluence and LIRA's API-derived versioning also depend on.
+- It ends with the strongest learnability test there is: an agent, given only the documentation,
+- builds and deploys a working application.
++ 散文は現在、三つの並行するシステムに存在する。`doc/work/soundness/modules/` のトピックガイド（進むべき方向であり、実質的な執筆はここで行われる）、各モジュールがそれぞれのリポジトリだった頃から受け継いだ `lib/*/doc/` のモジュールごとの旧来のテンプレート、そして `web/res/content/` の下にある哲学の資料の別のコピーである。
++ 三つのシステムがあれば食い違いが生じ、食い違いがあればそのどれかが嘘をついている。
++ このトラックはそれらを一つにまとめ、網羅を完成させ、散文では与えられない層を加える。生成され、検索できる API ドキュメントであり、fluence と LIRA の API に基づくバージョン管理もこの基盤に依存している。
++ このトラックは、学びやすさの最も強い試験で終わる。ドキュメントだけを与えられたエージェントが、動くアプリケーションをビルドしてデプロイすることである。
+
+- `doc/work/standards/messages.md` was a self-declared stub, despite the message convention being
+- load-bearing across every module. The standard is now written: register, structure, vocabulary,
+- what a message must not contain, composition through `Communicable`, and log events.
++ メッセージの規約はすべてのモジュールにわたって重要な役割を担っているにもかかわらず、`doc/work/standards/messages.md` は自ら書きかけであると宣言していた。
++ 標準は今では書かれている。文体、構造、語彙、メッセージが含んではならないもの、`Communicable` による合成、そしてログイベントである。
+
+-     grep -c 'Stub' doc/work/standards/messages.md    # 0
++     grep -c 'Stub' doc/work/standards/messages.md    # 0
+
+- Done: #1791 (2026-08-14)
+- Baseline was 92 files of per-module readme boilerplate, and 98 `lib/*/doc/` directories
+- (measured 2026-08-01). The boilerplate predated the monorepo; whatever in `lib/*/doc/` was
+- worth keeping moved into `doc/work/soundness/modules/` topics, and the rest was deleted rather than left to
+- mislead. No `lib/*/doc/` directory remains, and the boilerplate phrase matches nothing.
++ 完了：#1791（2026-08-14）
++ 基準値は、モジュールごとの readme の定型文のファイルが 92 個、`lib/*/doc/` ディレクトリが 98 個だった（2026-08-01 に測定）。
++ 定型文はモノレポより前からあった。`lib/*/doc/` のうち残す価値のあったものは `doc/work/soundness/modules/` のトピックに移り、残りは誤解を招くまま放置されるのではなく削除された。
++ `lib/*/doc/` ディレクトリは一つも残っておらず、定型文の文句はどれにもマッチしない。
+
+- Done: #2306 (2026-10-21)
+- Baseline was 99 topics in `doc/work/soundness/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
++ 完了：#2306（2026-10-21）
++ 基準値は、`doc/work/soundness/modules/` のトピックが 99 個で、144 個のライブラリのうち 1 個が網羅されていなかった（2026-09-25 に測定。2026-08-01 には 91 個のトピックで 35 個が網羅されていなかった）。2026-10-21 には 101 個のトピックが 145 個のうち 145 個を網羅している
+
+- Every published module is covered by at least one `doc/work/soundness/modules/` topic, and a coverage script
+- maps modules to topics so orphans are visible: `etc/check-doc-coverage.py`, run by `make
+- build`, exits non-zero on an orphan. The last one, burdock, is covered by `packaging.md`; the
+- `COVERED_BY` entry that named that topic for ziggurat (a library #1973 removed) now names
+- burdock.
++ 公開されるすべてのモジュールは少なくとも一つの `doc/work/soundness/modules/` のトピックで網羅され、網羅のスクリプトがモジュールをトピックに対応付けるので、孤立したものが見える。`make build` が実行する `etc/check-doc-coverage.py` は、孤立したものがあればゼロ以外で終了する。
++ 最後の一つである burdock は `packaging.md` で網羅されている。そのトピックを ziggurat（#1973 が削除したライブラリ）のために名指していた `COVERED_BY` の項目は、今では burdock を名指している。
+
+- The prose under `web/res/content/` duplicates philosophy material by hand: ten pages, last
+- touched in #801, each an older and shorter copy of a `doc/work/philosophy/` page. The website
+- renders from `doc/` — one source, no parallel copies.
++ `web/res/content/` の下の散文は、哲学の資料を手作業で複製している。十個のページで、最後に手が入ったのは #801 であり、それぞれが `doc/work/philosophy/` のページの古く短いコピーである。
++ Web サイトは `doc/` から描画される。情報源は一つで、並行するコピーはない。

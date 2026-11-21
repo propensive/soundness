@@ -1,0 +1,17 @@
+orthant 1 language
+
+- # `SN-982` — Blank line before multi-line case (retired)
++ # `SN-982` — 複数行の case の前の空行（廃止）
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ このエラーはもう存在しない。
++ このページは、コードが再利用されないように、また古いリリースからの参照が引き続き解決できるように残されている。
+
+- ## What became of it
++ ## その後
+
+- This Decorum rule was withdrawn. The house style no longer requires a blank line before
+- a multi-line `case` clause.
++ この Decorum の規則は取り下げられた。
++ このプロジェクトのスタイルは、複数行の `case` 節の前に空行を求めなくなった。

@@ -1,0 +1,40 @@
+orthant 1 language
+
+- # `↯/s.87.1` — Query parameter type mismatch
++ # `↯/s.87.1` — クエリパラメーターの型の不一致
+
+- Raised at compiletime when a named query parameter is given a value of the wrong type.
++ 名前付きのクエリパラメーターに誤った型の値が与えられたとき、コンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- Legerdemain builds query strings from named arguments, checking each value against the type
+- the parameter was declared to take.
++ Legerdemain は名前付き引数からクエリ文字列を組み立て、各値を、そのパラメーターが受け取ると宣言された型に照らして検査する。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.87.1] the parameter <key> takes values of <type>
++ [↯/s.87.1] the parameter <key> takes values of <type>
+
+= [↯/s.87.1] the parameter <key> takes values of <type>
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Supply a value of the declared type, or change the parameter's declaration.
++ 宣言された型の値を与えるか、パラメーターの宣言を変更する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/legerdemain/src/query/legerdemain.internal.scala`
++ - ソース：`lib/legerdemain/src/query/legerdemain.internal.scala`

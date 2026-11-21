@@ -1,0 +1,472 @@
+orthant 1 language
+
+- ## Metaprogramming
++ ## メタプログラミング
+
+- ### About
++ ### 概要
+
+- Much of the machinery which runs at [compiletime] here rests on a small set of tools for writing
+- and debugging macros. They are available to any project which does the same:
++ ここで[コンパイル時]に動く仕組みの多くは、マクロを書いてデバッグするための小さな道具一式の上に成り立っている。
++ 同じことをするどのプロジェクトでも、これらを使える。
+
+= and debugging macros. They are available to any project which does the same:
+=
+- ```tabular
++ ```tabular
+
+- column  Tool
+- column  Does
+- row  `every`  collects *all* the given instances of a type visible at a call site
+- row  `reify`  turns a type-level collection into a runtime value
+- row  `Syntax.name`  renders a type as it would be written under the caller's imports
+- row  `Introspect`  displays a macro expansion as an inspectable tree
+- row  `Classfile`  reads compiled bytecode back, for the rare work that must see what the compiler produced
++ column  道具
++ column  働き
++ row  `every`  呼び出し箇所から見える、ある型の given インスタンスを*すべて*集める
++ row  `reify`  型レベルのコレクションを実行時の値に変える
++ row  `Syntax.name`  型を、呼び出し側のインポートの下で書かれるとおりに描画する
++ row  `Introspect`  マクロの展開を、検査できる木として表示する
++ row  `Classfile`  コンパイル済みのバイトコードを読み戻す。コンパイラが生成したものを見なければならない稀な作業のためのものである
+
+= row  `Classfile`  reads compiled bytecode back, for the rare work that must see what the compiler produced
+- ```
++ ```
+
+- Collecting every given is the mechanism behind pluggable configuration throughout these
+- libraries.
++ すべての given を集めることは、これらのライブラリ全体で差し替え可能な設定を支える仕組みである。
+
+- ### On metaprogramming
++ ### メタプログラミングについて
+
+- Scala 3's macros are principled, and short of tools. A macro author stares at expansions with
+- `println`, renders types with a `show` which ignores the caller's imports, and cannot ask an
+- innocent question, "which givens of this type are in scope?", because implicit search answers
+- with one given, or with an ambiguity. These gaps are generic, and every macro project fills them
+- again.
++ Scala 3 のマクロは原理に基づいているが、道具が足りない。
++ マクロの作者は `println` で展開を凝視し、呼び出し側のインポートを無視する `show` で型を描画する。そして「この型のどの given がスコープにあるか」という素朴な問いを発することもできない。暗黙の探索は一つの given か、曖昧さで答えるからである。
++ これらの欠落は汎用的なものであり、あらゆるマクロのプロジェクトが改めてそれを埋めている。
+
+- Here they are filled once. Macros which check code as it compiles are how much of
+- [safety by construction](../../philosophy/safety-by-construction.md) is achieved elsewhere.
++ ここでは、それを一度だけ埋める。
++ コンパイル時にコードを検査するマクロは、他の場所で[構築による安全性](../../philosophy/safety-by-construction.md)の多くを実現する手段である。
+
+- Everything comes from the `soundness` package, and the second import lets the samples print
+- their results:
++ すべては `soundness` パッケージから来る。二つ目のインポートは、サンプルが結果を出力できるようにする。
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Every given in scope
++ ### スコープにあるすべての given
+
+- Implicit search finds *the* [given]. `every` finds *all of them*. It is a compiletime search
+- which returns their list, and it includes instances which would be ambiguous against each
+- other:
++ 暗黙の探索は*その*[given]を見つける。
++ `every` は*そのすべて*を見つける。
++ これはそれらのリストを返すコンパイル時の探索であり、互いに曖昧になるインスタンスも含む。
+
+= other:
+=
+- ```scala
++ ```scala
+
+- case class Plugin(name: Text)
++ case class Plugin(name: Text)
+
+- given alpha: Plugin = Plugin(t"alpha")
++ given alpha: Plugin = Plugin(t"alpha")
+
+- given beta: Plugin = Plugin(t"beta")
++ given beta: Plugin = Plugin(t"beta")
+
+= given beta: Plugin = Plugin(t"beta")
+- ```
++ ```
+
+= given beta: Plugin = Plugin(t"beta")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= given beta: Plugin = Plugin(t"beta")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= given beta: Plugin = Plugin(t"beta")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- every[Plugin].values.each(plugin => Out.println(plugin.name))
++ every[Plugin].values.each(plugin => Out.println(plugin.name))
+
+= every[Plugin].values.each(plugin => Out.println(plugin.name))
+- ```
++ ```
+
+- This inverts the usual flow of configuration. Instead of one value which names all the options,
+- each option is declared as a given where it applies, and the consumer collects whatever is in
+- scope. It is how [socket options](sockets.md) accumulate, how every [log sink](logging.md)
+- receives events, and how [terminal features](terminal.md) are switched on.
++ これは設定の通常の流れを逆転させる。
++ すべてのオプションを名指しする一つの値の代わりに、各オプションを適用される場所で given として宣言し、利用者はスコープにあるものを何でも集める。
++ [ソケットのオプション](sockets.md)が蓄積されるのも、すべての[ログのシンク](logging.md)がイベントを受け取るのも、[端末の機能](terminal.md)が有効になるのも、この仕組みによる。
+
+- ### Type-level values
++ ### 型レベルの値
+
+- A type parameter is to typechecking what an ordinary parameter is to execution: a way of passing
+- information to the place which will use it. Types are the poorer medium. Type-level operations
+- are far less expressive than those on values, and code written in them is harder to write and to
+- read. Macros close the gap. The logic is written as ordinary code over values, which happens to
+- *run* at compiletime. One thing is then missing: a way to carry a collection between the two
+- worlds.
++ 型パラメーターと型検査の関係は、通常のパラメーターと実行の関係と同じである。どちらも、情報をそれを使う場所へ渡す手段である。
++ 型はより貧しい媒体である。
++ 型レベルの演算は値に対する演算よりはるかに表現力が乏しく、それで書かれたコードは書くのも読むのも難しい。
++ マクロがその隔たりを埋める。
++ ロジックは値に対する通常のコードとして書かれ、それがたまたまコンパイル時に*実行される*。
++ そうすると欠けているものが一つある。二つの世界の間でコレクションを運ぶ手段である。
+
+- The type-level collections do that. A macro which is parameterized by static data, such as a
+- list of names or a mapping, carries the data in a type, and *reifies* it to a runtime value:
++ 型レベルのコレクションがそれを行う。
++ 名前のリストや対応表のような静的なデータでパラメーター化されたマクロは、そのデータを型の中に運び、実行時の値へと*具象化*する。
+
+= list of names or a mapping, carries the data in a type, and *reifies* it to a runtime value:
+=
+- ```scala fuel
++ ```scala fuel
+
+= list of names or a mapping, carries the data in a type, and *reifies* it to a runtime value:
+=
+= ```scala fuel
+- run
++ run
+
+= list of names or a mapping, carries the data in a type, and *reifies* it to a runtime value:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(reify[TypeList[("one", "two", "three")]].inspect)
++ Out.println(reify[TypeList[("one", "two", "three")]].inspect)
+
+- Out.println(reify[TypeSet["yes" | "no" | "maybe"]].inspect)
++ Out.println(reify[TypeSet["yes" | "no" | "maybe"]].inspect)
+
+= Out.println(reify[TypeSet["yes" | "no" | "maybe"]].inspect)
+- ```
++ ```
+
+- Each runtime value has a type-level form:
++ 実行時の値にはそれぞれ型レベルの形がある。
+
+= Each runtime value has a type-level form:
+=
+- ```tabular
++ ```tabular
+
+- column  Value
+- column  Type-level form
+- row  an `Int`, `String`, `Double` or `Boolean`  its singleton type
+- row  a `List`  a `Tuple`, under `TypeList`
+- row  a `Set`  a union, under `TypeSet`
+- row  a `Map`  a tuple of pairs, under `TypeMap`
++ column  値
++ column  型レベルの形
++ row  `Int`、`String`、`Double` または `Boolean`  そのシングルトン型
++ row  `List`  `TypeList` の下の `Tuple`
++ row  `Set`  `TypeSet` の下のユニオン
++ row  `Map`  `TypeMap` の下のペアのタプル
+
+= row  a `Map`  a tuple of pairs, under `TypeMap`
+- ```
++ ```
+
+- `reify` has a second form, which takes a `Type` rather than a static type parameter, for use
+- inside a macro implementation where the type is known only abstractly. `reifyAs` fixes the type
+- of the result where inference needs the help.
++ `reify` には、静的な型パラメーターではなく `Type` を取る第二の形がある。これは、型が抽象的にしか分からないマクロの実装の内部で使うためのものである。
++ `reifyAs` は、推論に助けが必要な場合に結果の型を固定する。
+
+- The data stays in the type system, where macros can inspect it, until the moment a value is
+- needed.
++ データは値が必要になる瞬間まで型システムの中にとどまり、そこではマクロがそれを検査できる。
+
+- ### Abstracting over containers
++ ### コンテナーの抽象化
+
+- Many types are *containers* in the same sense. An [`Optional`](optional-values.md), an
+- `Attempt`, a [`Task`](concurrency.md) and a [collection](collections.md) all allow a value to be
+- put in, mapped over, and flat-mapped through. Writing an operation once over all of them needs
+- those capabilities as values, and not as methods which happen to share names.
++ 多くの型は同じ意味で*コンテナー*である。
++ [`Optional`](optional-values.md)、`Attempt`、[`Task`](concurrency.md)、[コレクション](collections.md)はいずれも、値を入れ、写像し、flat-map で通すことができる。
++ それらすべてに対して一つの操作を一度だけ書くには、それらの能力が、たまたま名前を共有するメソッドとしてではなく、値として必要である。
+
+- `Functor` supplies `point`, which lifts a value into the container, and mapping. `Monad` adds
+- `bind`, which is `flatMap` under a name which does not collide with the method the container
+- already has. Instances are constructed for any type which provides the needed methods, so a
+- container written without any of this in mind takes part anyway.
++ `Functor` は、値をコンテナーに持ち上げる `point` と、写像を提供する。
++ `Monad` は `bind` を加える。これは、コンテナーが既に持つメソッドと衝突しない名前の下での `flatMap` である。
++ インスタンスは必要なメソッドを提供する任意の型に対して構築されるので、これらを全く意識せずに書かれたコンテナーも、それでも参加できる。
+
+- Two operations follow at once, and are the reason this is worth having. `sequence` turns a
+- collection of containers inside out:
++ 二つの操作がすぐに導かれ、それがこれを持つ価値のある理由である。
++ `sequence` はコンテナーのコレクションを裏返す。
+
+= collection of containers inside out:
+=
+- ```scala fuel
++ ```scala fuel
+
+= collection of containers inside out:
+=
+= ```scala fuel
+- run
++ run
+
+= collection of containers inside out:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List[Option[Int]](Some(1), Some(2), Some(3)).sequence.inspect)
++ Out.println(List[Option[Int]](Some(1), Some(2), Some(3)).sequence.inspect)
+
+- Out.println(List[Option[Int]](Some(1), None, Some(3)).sequence.inspect)
++ Out.println(List[Option[Int]](Some(1), None, Some(3)).sequence.inspect)
+
+= Out.println(List[Option[Int]](Some(1), None, Some(3)).sequence.inspect)
+- ```
++ ```
+
+- `traverse` maps a function which may fail over a collection, and gathers the results in one
+- container, not in a collection of containers. This is the shape of "parse all of these, and fail
+- if any of them fails":
++ `traverse` は、失敗するかもしれない関数をコレクションに写像し、結果をコンテナーのコレクションではなく一つのコンテナーにまとめる。
++ これは「これらすべてをパースし、どれか一つでも失敗すれば失敗する」という形である。
+
+= if any of them fails":
+=
+- ```scala
++ ```scala
+
+- def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
++ def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+
+= def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+- ```
++ ```
+
+= def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List(t"1", t"2", t"3").traverse(parseNumber).inspect)
++ Out.println(List(t"1", t"2", t"3").traverse(parseNumber).inspect)
+
+- Out.println(List(t"1", t"2", t"x").traverse(parseNumber).inspect)
++ Out.println(List(t"1", t"2", t"x").traverse(parseNumber).inspect)
+
+= Out.println(List(t"1", t"2", t"x").traverse(parseNumber).inspect)
+- ```
++ ```
+
+- Both work on any collection, and the result keeps the shape of the collection. A `List` of
+- `Option`s sequences to an `Option` of a `List`, and a `Set` to an `Option` of a `Set`.
++ どちらも任意のコレクションに対して動き、結果はコレクションの形を保つ。
++ `Option` の `List` は `List` の `Option` に、`Set` は `Set` の `Option` に sequence される。
+
+- ### Types as source text
++ ### ソーステキストとしての型
+
+- A type rendered in an error message or in generated code should read as the *user* would write
+- it, with their imports respected and infix syntax used where the type is infix. `Syntax.name`
+- does that, and covers the full grammar of types:
++ エラーメッセージや生成されたコードの中で描画される型は、*ユーザー*が書くとおりに読めるべきである。つまり、そのインポートが尊重され、型が中置であれば中置構文が使われるべきである。
++ `Syntax.name` はそれを行い、型の文法全体を扱う。
+
+= does that, and covers the full grammar of types:
+=
+- ```scala fuel
++ ```scala fuel
+
+= does that, and covers the full grammar of types:
+=
+= ```scala fuel
+- run
++ run
+
+= does that, and covers the full grammar of types:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Syntax.name[Int | String & Double])
++ Out.println(Syntax.name[Int | String & Double])
+
+- Out.println(Syntax.name[(text: Text) => text.type])
++ Out.println(Syntax.name[(text: Text) => text.type])
+
+- Out.println(Syntax.name[Addable by Int to Double])
++ Out.println(Syntax.name[Addable by Int to Double])
+
+= Out.println(Syntax.name[Addable by Int to Double])
+- ```
++ ```
+
+- Error messages from a macro built with it read as Scala, not as compiler internals.
++ これを使って作られたマクロのエラーメッセージは、コンパイラの内部表現ではなく Scala として読める。
+
+- ### Inspecting expansions
++ ### 展開の検査
+
+- `Introspect.syntax` captures the tree of an expression, as the compiler sees it, with its tags,
+- nodes and types. The result is a value which renders as a navigable diagram.
+- `Introspect.semantics` does the same for the flags and members of a symbol:
++ `Introspect.syntax` は、式の木を、コンパイラが見るとおりに、そのタグ、ノード、型とともに捕らえる。
++ 結果は、たどることのできる図として描画される値である。
++ `Introspect.semantics` は、シンボルのフラグとメンバーについて同じことを行う。
+
+= `Introspect.semantics` does the same for the flags and members of a symbol:
+=
+- ```scala
++ ```scala
+
+- val x = 5
++ val x = 5
+
+- val tree = Introspect.syntax(true):
++ val tree = Introspect.syntax(true):
+
+-   1 + x
++   1 + x
+
+=   1 + x
+- ```
++ ```
+
+- For a macro author, this replaces archaeology with `println` by a structured view of what an
+- expansion actually produced. Both work from *outside* a macro too, on any expression in ordinary
+- code, which makes them useful for answering questions about the language itself. Introspecting
+- `1 + x`, as above, shows an `Apply` of a `Select` over a `Literal` and an `Ident`. Doing the
+- same for a `val y: 5 = 5` shows a single `Literal`, because the [singleton type] let the
+- compiler fold the addition away.
++ マクロの作者にとって、これは `println` による発掘作業を、展開が実際に生成したものの構造化された眺めに置き換える。
++ どちらもマクロの*外*からも、通常のコードの任意の式に対して動くので、言語そのものに関する問いに答えるのにも役立つ。
++ 上のように `1 + x` を内省すると、`Literal` と `Ident` の上の `Select` の `Apply` が示される。
++ `val y: 5 = 5` について同じことをすると、一つの `Literal` だけが示される。[シングルトン型]によって、コンパイラが加算を畳み込んで消したからである。
+
+- Inside a macro, where a `Quotes` is available, the `syntax` and `semantics` extension methods do
+- the same for an `Expr` or a `Symbol`. The result is colored through a `TastyPalette`, so it
+- reads well at a terminal.
++ `Quotes` が利用できるマクロの内部では、拡張メソッド `syntax` と `semantics` が `Expr` や `Symbol` について同じことを行う。
++ 結果は `TastyPalette` を通して色付けされるので、端末で読みやすい。
+
+- A macro which must fail does so with `halt`, which takes a `Message`. The compile errors of a
+- macro are therefore built from the same structured messages as [runtime errors](errors.md),
+- with their substitutions highlighted where the compiler's output supports it, and they can be
+- attached to a position in the source.
++ 失敗しなければならないマクロは、`Message` を取る `halt` で失敗する。
++ したがってマクロのコンパイルエラーは、[実行時のエラー](errors.md)と同じ構造化されたメッセージから作られ、コンパイラの出力が対応している場合はその埋め込みが強調表示され、ソースの位置に結び付けることもできる。
+
+- ### Down to bytecode
++ ### バイトコードまで
+
+- Occasionally the question is not what the compiler *typed*, but what it *emitted*: whether a
+- combinator inlines away, or what a hot path compiles to. A classfile parses into typed methods
+- and instructions, and each instruction carries the state of the operand stack, reconstructed:
++ ときに問いは、コンパイラが何を*型付けした*かではなく、何を*出力した*かである。あるコンビネーターがインライン化で消えるかどうか、あるいはホットパスが何にコンパイルされるか、といったことである。
++ クラスファイルは型付きのメソッドと命令にパースされ、各命令は再構成されたオペランドスタックの状態を持つ。
+
+= and instructions, and each instruction carries the state of the operand stack, reconstructed:
+=
+- ```scala
++ ```scala
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- val methods = Classfile[Exit].let(_.methods.map(_.name))
++ val methods = Classfile[Exit].let(_.methods.map(_.name))
+
+= val methods = Classfile[Exit].let(_.methods.map(_.name))
+- ```
++ ```
+
+- The `bytecode` of each method is its JVM instructions, with their stack states, ready to render.
+- A quoted expression can also be compiled and disassembled in one step. This is the foundation
+- for performance work which must verify what the optimizer did, and not assume it.
++ 各メソッドの `bytecode` は、スタックの状態を伴うその JVM 命令であり、すぐに描画できる。
++ クォート式をコンパイルして逆アセンブルすることも一度にできる。
++ これは、オプティマイザーが何をしたかを仮定せずに検証しなければならない性能の作業の土台である。
+
+- ### Related
++ ### 関連
+
+- - [Staging](staging.md) runs quoted code in another environment.
+- - [Derivation](derivation.md) generates typeclass instances from the structure of a type.
+- - [Annotations](annotations.md) reads annotations without a macro.
+- - [Compiler](compiler.md) runs the Scala compiler as a library.
+- - [Classpath](classpath.md) describes the classloaders which a classfile is read through.
+- - [Interpolation](interpolation.md) and [records](records.md) are built with these tools.
++ - [ステージング](staging.md)は、クォートされたコードを別の環境で実行する。
++ - [導出](derivation.md)は、型の構造から型クラスのインスタンスを生成する。
++ - [アノテーション](annotations.md)は、マクロなしにアノテーションを読む。
++ - [コンパイラ](compiler.md)は、Scala コンパイラをライブラリとして実行する。
++ - [クラスパス](classpath.md)は、クラスファイルを読むのに通すクラスローダーを説明する。
++ - [補間](interpolation.md)と[レコード](records.md)は、これらの道具で作られている。

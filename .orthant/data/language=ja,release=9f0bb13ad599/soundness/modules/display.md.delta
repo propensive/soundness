@@ -1,0 +1,22 @@
+orthant 1 language
+
+- column  Tried
+- column  Rendering
+- row  1  the type's own `Inspectable` instance
+- row  2  its `Encodable in Text` instance, between `⸤` and `⸥`
+- row  3  its `Showable` instance, between `⸢` and `⸣`
+- row  4  for an `Optional`, the value it holds, between `｢` and `｣`, or `○` if it is unset
+- row  5  a structural rendering derived from its shape
+- row  6  a last-resort rendering, its `toString` between `“` and `”`
++ column  順序
++ column  描画
++ row  1  その型自身の `Inspectable` インスタンス
++ row  2  その型の `Encodable in Text` インスタンス。`⸤` と `⸥` の間に置く
++ row  3  その型の `Showable` インスタンス。`⸢` と `⸣` の間に置く
++ row  4  `Optional` なら、それが保持する値を `｢` と `｣` の間に置いたもの。未設定なら `○`
++ row  5  その形から導出された構造的な描画
++ row  6  最後の手段としての描画。その `toString` を `“` と `”` の間に置く
+
+- The brackets mark a rendering which was borrowed from another typeclass, or from `toString`, and
+- is not the type's own.
++ 括弧は、その描画が型自身のものではなく、別の型クラスや `toString` から借りたものであることを示す。

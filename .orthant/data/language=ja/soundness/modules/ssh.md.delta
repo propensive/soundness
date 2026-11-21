@@ -1,0 +1,650 @@
+orthant 1 language
+
+- ## SSH
++ ## SSH
+
+- ### About
++ ### 概要
+
+- This is a native SSH-2 client, built in stages. This release has the wire encoding, the two
+- files which every client reads, which are `known_hosts` and `~/.ssh/config`, and the transport
+- layer: the key exchange and encrypted packets over a connection. It has public-key
+- authentication, and the connection protocol which runs commands.
++ これは段階的に作られているネイティブの SSH-2 クライアントである。
++ このリリースには、ワイヤのエンコーディング、すべてのクライアントが読む二つのファイル（`known_hosts` と `~/.ssh/config`）、そしてトランスポート層、つまり接続上の鍵交換と暗号化されたパケットがある。
++ 公開鍵認証と、コマンドを実行する接続プロトコルもある。
+
+- ### On SSH
++ ### SSH について
+
+- Programs usually reach SSH by spawning the `ssh` binary, and then they depend on its presence,
+- its version, and its configuration on the machine they happen to run on. A client in the same
+- process depends on none of those. It checks the host key against a policy which is stated in
+- the code, and takes its identities from loaded keys or from an agent.
++ プログラムはふつう `ssh` バイナリを起動して SSH を使い、そうするとたまたま動いているマシン上でのその存在、そのバージョン、その構成に依存することになる。
++ 同じプロセスの中のクライアントは、そのどれにも依存しない。
++ それはコードの中で述べられたポリシーに照らしてホスト鍵を検査し、読み込んだ鍵やエージェントから身元を得る。
+
+- Everything comes from the `soundness` package. The other imports choose encodings and an error
+- [strategy], and let the samples print their results:
++ すべては `soundness` パッケージから来る。
++ 他のインポートはエンコーディングとエラーの[戦略]を選び、サンプルが結果を表示できるようにする。
+
+= [strategy], and let the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import providers.javaBaseProvider
++ import providers.javaBaseProvider
+
+- import alphabets.base64Standard
++ import alphabets.base64Standard
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- The samples which parse files and encode messages run here. Those which open a connection need a
+- server, so they are compiled but not run.
++ ファイルをパースしメッセージをエンコードするサンプルはここで実行される。
++ 接続を開くものはサーバーを必要とするので、コンパイルはされるが実行はされない。
+
+- ### Host keys
++ ### ホスト鍵
+
+- A `known_hosts` file records the key which each host has presented before. Reading it gives a
+- `KnownHosts`. `verify` takes a host, and the key it now presents, as the blob which OpenSSH
+- writes after the key type, and answers with a `KnownHosts.Verdict`:
++ `known_hosts` ファイルは、それぞれのホストが以前に提示した鍵を記録する。
++ それを読むと `KnownHosts` が得られる。
++ `verify` はホストと、それが今提示している鍵を、OpenSSH が鍵の種類の後に書く blob として受け取り、`KnownHosts.Verdict` で答える。
+
+= writes after the key type, and answers with a `KnownHosts.Verdict`:
+=
+- ```scala
++ ```scala
+
+- val hosts = KnownHosts(t"""github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl""")
++ val hosts = KnownHosts(t"""github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl""")
+
+- val key = t"AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl".deserialize[Base64]
++ val key = t"AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl".deserialize[Base64]
+
+= val key = t"AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl".deserialize[Base64]
+- ```
++ ```
+
+= val key = t"AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl".deserialize[Base64]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val key = t"AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl".deserialize[Base64]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val key = t"AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl".deserialize[Base64]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(hosts.verify(t"github.com", 22, t"ssh-ed25519", key).inspect)
++ Out.println(hosts.verify(t"github.com", 22, t"ssh-ed25519", key).inspect)
+
+- Out.println(hosts.verify(t"gitlab.com", 22, t"ssh-ed25519", key).inspect)
++ Out.println(hosts.verify(t"gitlab.com", 22, t"ssh-ed25519", key).inspect)
+
+= Out.println(hosts.verify(t"gitlab.com", 22, t"ssh-ed25519", key).inspect)
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Verdict
+- column  When
+- row  `Revoked`  an entry for the host carries this key with the `@revoked` marker
+- row  `Known`  otherwise, an entry for the host carries this key
+- row  `Changed`  the host has unrevoked entries of this key's type, but not this key
+- row  `Unknown`  the host has no unrevoked entries of this key's type
++ column  判定
++ column  条件
++ row  `Revoked`  そのホストの項目がこの鍵を `@revoked` マーカー付きで持っている
++ row  `Known`  それ以外で、そのホストの項目がこの鍵を持っている
++ row  `Changed`  そのホストにはこの鍵の種類の失効していない項目があるが、この鍵はない
++ row  `Unknown`  そのホストにはこの鍵の種類の失効していない項目がない
+
+= row  `Unknown`  the host has no unrevoked entries of this key's type
+- ```
++ ```
+
+- An entry with the `@cert-authority` marker takes no part in the verdict. The syntax of the file
+- is understood as OpenSSH writes it:
++ `@cert-authority` マーカー付きの項目は判定に関わらない。
++ ファイルの構文は、OpenSSH が書くとおりに理解される。
+
+= is understood as OpenSSH writes it:
+=
+- ```tabular
++ ```tabular
+
+- column  Syntax
+- column  Means
+- row  `*.example.com`, `?`  a hostname pattern, matched case-insensitively
+- row  `!excluded`  a negated pattern
+- row  `[host]:port`  an entry for a non-default port
+- row  `|1|salt|hash`  a hashed entry: an HMAC-SHA1 of the hostname under the salt
+- row  `@revoked`  a marker revoking the line's key
+- row  `@cert-authority`  a marker for a certificate authority's key
++ column  構文
++ column  意味
++ row  `*.example.com`, `?`  ホスト名のパターン。大文字小文字を区別せずにマッチする
++ row  `!excluded`  否定のパターン
++ row  `[host]:port`  既定でないポートの項目
++ row  `|1|salt|hash`  ハッシュ化された項目：ソルトのもとでのホスト名の HMAC-SHA1
++ row  `@revoked`  その行の鍵を失効させるマーカー
++ row  `@cert-authority`  認証局の鍵を示すマーカー
+
+= row  `@cert-authority`  a marker for a certificate authority's key
+- ```
++ ```
+
+- A line which is not a key is skipped, as OpenSSH skips it.
++ 鍵でない行は、OpenSSH が読み飛ばすのと同じく読み飛ばされる。
+
+- ### Client configuration
++ ### クライアントの構成
+
+- `~/.ssh/config` says how to reach a host. `SshConfig` reads its `Host` blocks, and resolves the
+- hostname, user, port and identity files for a destination. As in OpenSSH, the first value found
+- wins:
++ `~/.ssh/config` はホストへの到達方法を述べる。
++ `SshConfig` はその `Host` ブロックを読み、宛先についてホスト名、ユーザー、ポート、身元のファイルを解決する。
++ OpenSSH と同じく、最初に見つかった値が勝つ。
+
+= wins:
+=
+- ```scala
++ ```scala
+
+- val config = SshConfig(t"""
++ val config = SshConfig(t"""
+
+- Host work
++ Host work
+
+-   HostName git.example.com
++   HostName git.example.com
+
+-   User hamlet
++   User hamlet
+
+-   Port 2222
++   Port 2222
+
+-   IdentityFile ~/.ssh/id_work
++   IdentityFile ~/.ssh/id_work
+
+- """)
++ """)
+
+- config.resolve(t"work")
++ config.resolve(t"work")
+
+= config.resolve(t"work")
+- ```
++ ```
+
+= config.resolve(t"work")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= config.resolve(t"work")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= config.resolve(t"work")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(config.resolve(t"work").inspect)
++ Out.println(config.resolve(t"work").inspect)
+
+= Out.println(config.resolve(t"work").inspect)
+- ```
++ ```
+
+- ### The transport
++ ### トランスポート
+
+- An `Ssh.Transport` over a connected `Duplex` performs the identification exchange and the key
+- exchange with `connect`. It checks the server's host key against the `Ssh.HostKeys` policy in
+- scope, which is a `KnownHosts` file, or `Ssh.HostKeys.trustOnFirstUse(known)`. It then moves
+- encrypted packets with `send` and `receive`. The algorithms offered are `Ssh.Algorithms`, whose
+- default prefers Curve25519, Ed25519 and ChaCha20-Poly1305:
++ 接続済みの `Duplex` 上の `Ssh.Transport` は、`connect` で識別情報の交換と鍵交換を行う。
++ それはサーバーのホスト鍵を、スコープ内の `Ssh.HostKeys` ポリシーに照らして検査する。ポリシーは `KnownHosts` ファイルか、`Ssh.HostKeys.trustOnFirstUse(known)` である。
++ その後は `send` と `receive` で暗号化されたパケットをやり取りする。
++ 提示されるアルゴリズムは `Ssh.Algorithms` であり、その既定は Curve25519、Ed25519、ChaCha20-Poly1305 を優先する。
+
+= default prefers Curve25519, Ed25519 and ChaCha20-Poly1305:
+=
+- ```scala fuel
++ ```scala fuel
+
+= default prefers Curve25519, Ed25519 and ChaCha20-Poly1305:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= default prefers Curve25519, Ed25519 and ChaCha20-Poly1305:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= default prefers Curve25519, Ed25519 and ChaCha20-Poly1305:
+=
+= ```scala fuel
+= typecheck
+= ##
+- import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
++ import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
+
+= default prefers Curve25519, Ed25519 and ChaCha20-Poly1305:
+=
+= ```scala fuel
+= typecheck
+= ##
+= import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
+=
+- given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
++ given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+
+= given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+=
+- Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
++ Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+
+= given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+=
+= Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+-   val transport = Ssh.Transport(duplex, t"github.com", 22)
++   val transport = Ssh.Transport(duplex, t"github.com", 22)
+
+= given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+=
+= Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+=   val transport = Ssh.Transport(duplex, t"github.com", 22)
+-   transport.connect()
++   transport.connect()
+
+-   transport.service(t"ssh-userauth")
++   transport.service(t"ssh-userauth")
+
+-   val negotiated = transport.negotiated
++   val negotiated = transport.negotiated
+
+=   val negotiated = transport.negotiated
+- ```
++ ```
+
+- Against GitHub, `negotiated` would be
+- `Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519", t"chacha20-poly1305@openssh.com")`.
++ GitHub に対しては、`negotiated` は `Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519", t"chacha20-poly1305@openssh.com")` になるはずである。
+
+- ### Running commands
++ ### コマンドの実行
+
+- A session on an `Ssh.Endpoint` assembles everything above. It connects, checks the host key
+- against the `Ssh.HostKeys` policy in scope, authenticates with the signers of the endpoint, and
+- lends an `Ssh.Session` which runs commands over channels of the connection protocol. Here the
+- key is read from `keyText`, the content of a private key file:
++ `Ssh.Endpoint` 上のセッションは、上のすべてを組み合わせる。
++ それは接続し、スコープ内の `Ssh.HostKeys` ポリシーに照らしてホスト鍵を検査し、エンドポイントの署名者で認証し、接続プロトコルのチャンネル上でコマンドを実行する `Ssh.Session` を貸し出す。
++ ここでは鍵を、秘密鍵ファイルの内容である `keyText` から読む。
+
+= key is read from `keyText`, the content of a private key file:
+=
+- ```scala fuel
++ ```scala fuel
+
+= key is read from `keyText`, the content of a private key file:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= key is read from `keyText`, the content of a private key file:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= key is read from `keyText`, the content of a private key file:
+=
+= ```scala fuel
+= typecheck
+= ##
+- import cloaks.heapCloak
++ import cloaks.heapCloak
+
+= import cloaks.heapCloak
+- import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
++ import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
+
+= import cloaks.heapCloak
+= import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
+=
+- given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
++ given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+
+= given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+=
+- val key = keyText.read[PrivateKey[Ed25519] in Pem]
++ val key = keyText.read[PrivateKey[Ed25519] in Pem]
+
+- val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
++ val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
+
+= val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", List(Ssh.Signer(key)))
+=
+- endpoint.session: ssh ?=>
++ endpoint.session: ssh ?=>
+
+-   val result = ssh.exec(t"uname -a")
++   val result = ssh.exec(t"uname -a")
+
+-   val output: Text = result.stdout.read[Text]
++   val output: Text = result.stdout.read[Text]
+
+-   val status: Optional[Int] = result.status
++   val status: Optional[Int] = result.status
+
+=   val status: Optional[Int] = result.status
+- ```
++ ```
+
+- `exec` writes the input, collects both output streams, and waits for the exit status. The
+- command may be a `Text` which the remote shell interprets, or a [`Command`](processes.md),
+- whose arguments are quoted one by one, so a value with spaces or shell characters stays a
+- single argument:
++ `exec` は入力を書き込み、両方の出力ストリームを集め、終了ステータスを待つ。
++ コマンドは、リモートのシェルが解釈する `Text` でも、[`Command`](processes.md) でもよい。後者の引数は一つずつ引用されるので、空白やシェルの文字を含む値も一つの引数のままである。
+
+= single argument:
+=
+- ```scala fuel
++ ```scala fuel
+
+= single argument:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= single argument:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= single argument:
+=
+= ```scala fuel
+= typecheck
+= ##
+- import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
++ import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
+
+= single argument:
+=
+= ```scala fuel
+= typecheck
+= ##
+= import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
+=
+- given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
++ given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+
+- val branch = t"feature/one two"
++ val branch = t"feature/one two"
+
+- val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", Nil)
++ val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", Nil)
+
+= val endpoint = Ssh.Endpoint(t"example.com", 22, t"hamlet", Nil)
+=
+- endpoint.session: ssh ?=>
++ endpoint.session: ssh ?=>
+
+-   ssh.exec(sh"git log -1 --format=%s $branch").stdout.read[Text]
++   ssh.exec(sh"git log -1 --format=%s $branch").stdout.read[Text]
+
+=   ssh.exec(sh"git log -1 --format=%s $branch").stdout.read[Text]
+- ```
++ ```
+
+- For a protocol which interleaves reading and writing, `ssh.channel` lends the channel itself.
+- Its `stdout()` is a lazy chain of chunks, and its `write` and `eof` drive the input of the
+- command.
++ 読み書きを交互に行うプロトコルのためには、`ssh.channel` がチャンネルそのものを貸し出す。
++ その `stdout()` はチャンクの遅延した連鎖であり、その `write` と `eof` がコマンドの入力を駆動する。
+
+- ### Git over SSH
++ ### SSH 上の Git
+
+- The native [Git](git.md#choosing-a-backend) backend reaches remote repositories through this
+- client, with the `gitTransports.soundnessSsh` transport. No `ssh` binary is spawned. The host
+- key is checked against the `Ssh.HostKeys` policy in scope, and the identities come from
+- `Ssh.Credentials`, which are loaded keys, or everything which an `ssh-agent` holds:
++ ネイティブの [Git](git.md#choosing-a-backend) バックエンドは、`gitTransports.soundnessSsh` トランスポートで、このクライアントを通してリモートのリポジトリに到達する。
++ `ssh` バイナリは起動されない。
++ ホスト鍵はスコープ内の `Ssh.HostKeys` ポリシーに照らして検査され、身元は `Ssh.Credentials` から来る。これは読み込んだ鍵か、`ssh-agent` が保持するすべてである。
+
+= `Ssh.Credentials`, which are loaded keys, or everything which an `ssh-agent` holds:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Ssh.Credentials`, which are loaded keys, or everything which an `ssh-agent` holds:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= `Ssh.Credentials`, which are loaded keys, or everything which an `ssh-agent` holds:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import gitBackends.soundnessGit, gitTransports.soundnessSsh
++ import gitBackends.soundnessGit, gitTransports.soundnessSsh
+
+- import pathInterfaces.pathOnLinux, temporaryDirectories.javaBaseTemporaryDirectory
++ import pathInterfaces.pathOnLinux, temporaryDirectories.javaBaseTemporaryDirectory
+
+- given Ssh.Credentials = Ssh.Credentials.agent(t"/tmp/ssh-agent.sock")
++ given Ssh.Credentials = Ssh.Credentials.agent(t"/tmp/ssh-agent.sock")
+
+= given Ssh.Credentials = Ssh.Credentials.agent(t"/tmp/ssh-agent.sock")
+- given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
++ given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+
+- val directory = temporaryDirectory[Path on Linux] / "soundness"
++ val directory = temporaryDirectory[Path on Linux] / "soundness"
+
+- Git.clone(t"git@github.com:propensive/soundness.git", directory)
++ Git.clone(t"git@github.com:propensive/soundness.git", directory)
+
+= Git.clone(t"git@github.com:propensive/soundness.git", directory)
+- ```
++ ```
+
+- ### Authentication
++ ### 認証
+
+- A connected transport authenticates with public keys, as RFC 4252 describes. An `Ssh.Signer`
+- is a loaded `PrivateKey` of a cipher which OpenSSH knows, or a key held by an `ssh-agent`,
+- which signs without ever releasing the key. The first signer which the server accepts wins:
++ 接続済みのトランスポートは、RFC 4252 が述べるとおり公開鍵で認証する。
++ `Ssh.Signer` は、OpenSSH が知っている暗号方式の読み込み済みの `PrivateKey` か、`ssh-agent` が保持する鍵である。後者は鍵を決して手放さずに署名する。
++ サーバーが受け入れた最初の署名者が勝つ。
+
+= which signs without ever releasing the key. The first signer which the server accepts wins:
+=
+- ```scala fuel
++ ```scala fuel
+
+= which signs without ever releasing the key. The first signer which the server accepts wins:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= which signs without ever releasing the key. The first signer which the server accepts wins:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= which signs without ever releasing the key. The first signer which the server accepts wins:
+=
+= ```scala fuel
+= typecheck
+= ##
+- import cloaks.heapCloak
++ import cloaks.heapCloak
+
+= import cloaks.heapCloak
+=
+- val key = keyText.read[PrivateKey[Ed25519] in Pem]
++ val key = keyText.read[PrivateKey[Ed25519] in Pem]
+
+- val agent = Ssh.Agent(t"/tmp/ssh-agent.sock")
++ val agent = Ssh.Agent(t"/tmp/ssh-agent.sock")
+
+= val agent = Ssh.Agent(t"/tmp/ssh-agent.sock")
+=
+- Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
++ Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+
+= val agent = Ssh.Agent(t"/tmp/ssh-agent.sock")
+=
+= Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+-   val transport = Ssh.Transport(duplex, t"github.com", 22)
++   val transport = Ssh.Transport(duplex, t"github.com", 22)
+
+= val agent = Ssh.Agent(t"/tmp/ssh-agent.sock")
+=
+= Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+=   val transport = Ssh.Transport(duplex, t"github.com", 22)
+-   transport.connect()
++   transport.connect()
+
+-   transport.authenticate(t"git", Ssh.Signer(key) :: agent.identities())
++   transport.authenticate(t"git", Ssh.Signer(key) :: agent.identities())
+
+=   transport.authenticate(t"git", Ssh.Signer(key) :: agent.identities())
+- ```
++ ```
+
+- ### The wire encoding
++ ### ワイヤのエンコーディング
+
+- Every SSH message is a sequence of the types which RFC 4251 defines. They are read and written
+- with `Wire.Reader` and `Wire.Writer`:
++ すべての SSH メッセージは、RFC 4251 が定義する型の並びである。
++ それらは `Wire.Reader` と `Wire.Writer` で読み書きされる。
+
+= with `Wire.Reader` and `Wire.Writer`:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- ##
++ ##
+
+- val writer = Wire.Writer()
++ val writer = Wire.Writer()
+
+- writer.text(t"ssh-userauth")
++ writer.text(t"ssh-userauth")
+
+- writer.names(List(t"curve25519-sha256", t"ecdh-sha2-nistp256"))
++ writer.names(List(t"curve25519-sha256", t"ecdh-sha2-nistp256"))
+
+- val name: Text = Wire.Reader(writer.data).text()
++ val name: Text = Wire.Reader(writer.data).text()
+
+= val name: Text = Wire.Reader(writer.data).text()
+- ```
++ ```
+
+- The reader gives back `t"ssh-userauth"`, the first field which was written.
++ リーダーは、最初に書き込まれたフィールドである `t"ssh-userauth"` を返す。
+
+- ### Related
++ ### 関連
+
+- - [Git](git.md) uses this client as a transport for its native backend.
+- - [Cryptography](cryptography.md) describes the keys which sign an authentication.
+- - [Sockets](sockets.md) describes the `Duplex` connection which a transport runs over.
+- - [Processes](processes.md) describes the `sh"…"` commands which `exec` quotes.
+- - [Base encoding](base-encoding.md) describes the Base64 in which keys are written.
++ - [Git](git.md) は、ネイティブのバックエンドのトランスポートとしてこのクライアントを使う。
++ - [暗号](cryptography.md) は、認証に署名する鍵を説明する。
++ - [ソケット](sockets.md) は、トランスポートがその上で動く `Duplex` 接続を説明する。
++ - [プロセス](processes.md) は、`exec` が引用する `sh"…"` コマンドを説明する。
++ - [Base エンコーディング](base-encoding.md) は、鍵が書かれる Base64 を説明する。

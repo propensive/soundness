@@ -1,0 +1,598 @@
+orthant 1 language
+
+- ## Money
++ ## 金額
+
+- ### About
++ ### 概要
+
+- Money is a fixed-point amount of a particular currency, and the currency is part of its type. A
+- `Money in "EUR"` and a `Money in "GBP"` cannot be added together, because adding euros to
+- pounds is not a sum but a mistake. Making the currency a type parameter is how that
+- [impossible state](../../philosophy/impossible-states.md) is ruled out.
++ 金額は特定の通貨の固定小数点の量であり、通貨はその型の一部である。
++ `Money in "EUR"` と `Money in "GBP"` は足し合わせられない。ユーロをポンドに足すことは和ではなく誤りだからである。
++ 通貨を型パラメーターにすることで、その[不可能な状態](../../philosophy/impossible-states.md)が排除される。
+
+- Within one currency, amounts add, subtract, scale, divide and compare. An amount splits into
+- equal shares without losing a penny, and a price carries its tax beside its principal.
++ 一つの通貨の中では、金額は足し、引き、拡大縮小し、割り、比較できる。
++ 金額は一ペニーも失わずに等分でき、価格はその本体価格と並べて税を運ぶ。
+
+- Thirty-seven currencies are defined, each as a value which constructs amounts. An amount is
+- written with either its symbol or its ISO code, as a style in scope decides.
++ 37 の通貨が定義されており、それぞれが金額を構築する値である。
++ 金額は、スコープにあるスタイルの決定に従い、その記号か ISO コードのどちらかで書かれる。
+
+- ### On money
++ ### 金額について
+
+- The two classic mistakes with money are of representation and of confusion.
++ 金額に関する古典的な二つの誤りは、表現の誤りと混同の誤りである。
+
+- Representing an amount as a floating-point number invites rounding errors: `0.1 + 0.2` is not
+- `0.3` in binary floating point. Money belongs in whole numbers of the currency's smallest unit.
++ 金額を浮動小数点数で表すと、丸め誤差を招く。二進浮動小数点では `0.1 + 0.2` は `0.3` ではない。
++ 金額は、その通貨の最小単位の整数で表すべきものである。
+
+- An amount without its currency is a number pretending to be money. A program which adds a
+- figure in dollars to a figure in euros produces a result which looks plausible, and means
+- nothing.
++ 通貨のない金額は、金額のふりをした数である。
++ ドルの数字にユーロの数字を足すプログラムは、もっともらしく見えるが何の意味もない結果を生む。
+
+- Here an amount is stored as a whole number of *minor units*, such as cents or pence, and the
+- currency is part of the type, so an operation across currencies does not compile. Division and
+- allocation are done as accounting requires: a split produces shares which differ by at most one
+- minor unit, and which sum exactly to the original.
++ ここでは、金額はセントやペンスのような*補助単位*の整数として保存され、通貨は型の一部なので、通貨をまたぐ操作はコンパイルされない。
++ 除算と配分は会計が求めるとおりに行われる。分割は、互いに高々一補助単位しか違わず、合計がちょうど元の金額になる配分を生成する。
+
+- Everything comes from the `soundness` package. The currencies in use are imported by name, and
+- the last import lets the samples print their results:
++ すべては `soundness` パッケージから来る。
++ 使う通貨は名前でインポートし、最後のインポートによってサンプルは結果を出力できる。
+
+= the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import scala.language.experimental.into
++ import scala.language.experimental.into
+
+- import currencies.{Eur, Gbp}
++ import currencies.{Eur, Gbp}
+
+- import currencyStyles.localCurrencyStyle
++ import currencyStyles.localCurrencyStyle
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Amounts
++ ### 金額
+
+- A currency constructs an amount from a decimal number, rounding to the nearest minor unit. The
+- type records the currency:
++ 通貨は十進数から金額を構築し、最も近い補助単位に丸める。
++ 型が通貨を記録する。
+
+= type records the currency:
+=
+- ```scala
++ ```scala
+
+- val price: Money in "EUR" = Eur(3.01)
++ val price: Money in "EUR" = Eur(3.01)
+
+= val price: Money in "EUR" = Eur(3.01)
+- ```
++ ```
+
+= val price: Money in "EUR" = Eur(3.01)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val price: Money in "EUR" = Eur(3.01)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val price: Money in "EUR" = Eur(3.01)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(price.show)
++ Out.println(price.show)
+
+= Out.println(price.show)
+- ```
++ ```
+
+- ### Arithmetic
++ ### 算術
+
+- Amounts of one currency combine with the usual operators. Multiplying or dividing by a number
+- scales an amount:
++ 一つの通貨の金額は、通常の演算子で組み合わせられる。
++ 数を掛けたり数で割ったりすると、金額が拡大縮小される。
+
+= scales an amount:
+=
+- ```scala fuel
++ ```scala fuel
+
+= scales an amount:
+=
+= ```scala fuel
+- run
++ run
+
+= scales an amount:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Eur(3.01) + Eur(0.02)).show)
++ Out.println((Eur(3.01) + Eur(0.02)).show)
+
+- Out.println((Eur(3.01)*3.0).show)
++ Out.println((Eur(3.01)*3.0).show)
+
+- Out.println((Eur(3.01)/3).show)
++ Out.println((Eur(3.01)/3).show)
+
+- Out.println((-Eur(1.99)).show)
++ Out.println((-Eur(1.99)).show)
+
+- Out.println((Eur(1.01) >= Eur(1.01)).inspect)
++ Out.println((Eur(1.01) >= Eur(1.01)).inspect)
+
+= Out.println((Eur(1.01) >= Eur(1.01)).inspect)
+- ```
++ ```
+
+- Mixing currencies does not compile:
++ 通貨を混ぜるとコンパイルされない。
+
+= Mixing currencies does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Mixing currencies does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Mixing currencies does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Mixing currencies does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Eur(1.00) + Gbp(1.00)
++ Eur(1.00) + Gbp(1.00)
+
+= Eur(1.00) + Gbp(1.00)
+- ```
++ ```
+
+- There is no built-in exchange rate. Converting between currencies is a business decision, with
+- a time and a source, and not an arithmetic identity, so it is left to the program to define.
++ 組み込みの為替レートはない。
++ 通貨間の換算は、時刻と出所を伴うビジネス上の判断であり、算術上の恒等式ではないので、定義はプログラムに任されている。
+
+- Underneath, an amount is a `Long` of minor units, so its `toString` is a `Long`'s: the raw
+- count, with no currency and no decimal point. An amount is written out with `show` and the
+- [currency style](#rendering).
++ 内部では金額は補助単位の `Long` なので、その `toString` は `Long` のものである。通貨も小数点もない、生の数である。
++ 金額は `show` と[通貨のスタイル](#rendering)によって書き出す。
+
+- The operators come from the [typeclasses](numbers.md#overloading-the-operators) which make `+`
+- and `*` available to any type.
++ 演算子は、`+` と `*` をどの型でも使えるようにする[型クラス](numbers.md#overloading-the-operators)から来る。
+
+- ### Other currencies
++ ### その他の通貨
+
+- A currency which is not among those provided is defined in one line, which gives its ISO code,
+- its name, its symbol and the number of minor units in a major one:
++ 用意されていない通貨は、ISO コード、名前、記号、そして主単位あたりの補助単位の数を与える一行で定義する。
+
+= its name, its symbol and the number of minor units in a major one:
+=
+- ```scala
++ ```scala
+
+- given Nok: ("NOK" is Currency of "Norwegian Krone" in "kr" over 100) = Currency()
++ given Nok: ("NOK" is Currency of "Norwegian Krone" in "kr" over 100) = Currency()
+
+= given Nok: ("NOK" is Currency of "Norwegian Krone" in "kr" over 100) = Currency()
+- ```
++ ```
+
+- Each part of the type has its place:
++ 型の各部分には、それぞれの位置がある。
+
+= Each part of the type has its place:
+=
+- ```tabular
++ ```tabular
+
+- column  Position
+- column  Gives
+- column  Here
+- row  before `is`  the ISO code  `"NOK"`
+- row  after `of`  the name  `"Norwegian Krone"`
+- row  after `in`  the symbol  `"kr"`
+- row  after `over`  the minor units in a major one  `100`
++ column  位置
++ column  与えるもの
++ column  ここでは
++ row  `is` の前  ISO コード  `"NOK"`
++ row  `of` の後  名前  `"Norwegian Krone"`
++ row  `in` の後  記号  `"kr"`
++ row  `over` の後  主単位あたりの補助単位  `100`
+
+= row  after `over`  the minor units in a major one  `100`
+- ```
++ ```
+
+- ### Splitting
++ ### 分割
+
+- `share` divides an amount into a number of parts which sum exactly to the whole. Any remainder
+- is distributed one minor unit at a time. This is the allocation problem which naive division
+- gets wrong: three equal shares of €3.01 would lose a cent.
++ `share` は金額を、合計がちょうど全体になるいくつかの部分に分ける。
++ 余りは一補助単位ずつ分配される。
++ これは素朴な除算が誤る配分の問題である。€3.01 を三つに等分すると一セントが失われてしまう。
+
+= gets wrong: three equal shares of €3.01 would lose a cent.
+=
+- ```scala fuel
++ ```scala fuel
+
+= gets wrong: three equal shares of €3.01 would lose a cent.
+=
+= ```scala fuel
+- run
++ run
+
+= gets wrong: three equal shares of €3.01 would lose a cent.
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Eur(3.01).share(3).map(_.show).join(t", "))
++ Out.println(Eur(3.01).share(3).map(_.show).join(t", "))
+
+= Out.println(Eur(3.01).share(3).map(_.show).join(t", "))
+- ```
++ ```
+
+- ### Prices and tax
++ ### 価格と税
+
+- Three parties look at the same price, and see different numbers:
++ 三者が同じ価格を見て、異なる数字を見る。
+
+= Three parties look at the same price, and see different numbers:
+=
+- ```tabular
++ ```tabular
+
+- column  Party
+- column  Cares about
+- column  Member of a `Price`
+- row  the seller  the amount excluding tax  `principal`
+- row  the buyer  the amount including tax  `inclusive`
+- row  the tax authority  the difference  `tax`
++ column  当事者
++ column  関心を持つもの
++ column  `Price` のメンバー
++ row  売り手  税抜きの金額  `principal`
++ row  買い手  税込みの金額  `inclusive`
++ row  税務当局  その差  `tax`
+
+= row  the tax authority  the difference  `tax`
+- ```
++ ```
+
+- Hold all three in one type, and it is easy to add tax to a figure which already had it, or to
+- report the wrong one. Arithmetic cannot catch that mistake, because every one of those numbers
+- is a valid amount of money.
++ 三つすべてを一つの型に入れると、すでに税を含む数字にさらに税を足したり、誤った数字を報告したりしやすい。
++ 算術ではその誤りを捉えられない。それらの数字はどれも正当な金額だからである。
+
+- A `Price` is therefore a principal amount, and the tax on it, kept apart, so that either is
+- available exactly and need not be reconstructed by division. `tax` builds a price from a rate,
+- and `inclusive` gives the total:
++ そのため `Price` は本体価格と、それにかかる税を分けて保持し、どちらも正確に得られ、除算によって再構成する必要がないようにしている。
++ `tax` は税率から価格を構築し、`inclusive` は合計を与える。
+
+= and `inclusive` gives the total:
+=
+- ```scala
++ ```scala
+
+- val priced = Gbp(2.30).tax(0.2)
++ val priced = Gbp(2.30).tax(0.2)
+
+= val priced = Gbp(2.30).tax(0.2)
+- ```
++ ```
+
+= val priced = Gbp(2.30).tax(0.2)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val priced = Gbp(2.30).tax(0.2)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val priced = Gbp(2.30).tax(0.2)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(priced.principal.show)
++ Out.println(priced.principal.show)
+
+- Out.println(priced.tax.show)
++ Out.println(priced.tax.show)
+
+- Out.println(priced.inclusive.show)
++ Out.println(priced.inclusive.show)
+
+= Out.println(priced.inclusive.show)
+- ```
++ ```
+
+- Tax is rounded *up* to the minor unit. That is what tax authorities require, and what naive
+- rounding gets wrong in exactly the cases which matter. Twenty per cent of £2.94 is £0.588,
+- which is charged as £0.59:
++ 税は補助単位に*切り上げ*られる。
++ それは税務当局が求めることであり、素朴な丸めがまさに重要な場合に誤ることである。
++ £2.94 の 20 パーセントは £0.588 であり、£0.59 として課される。
+
+= which is charged as £0.59:
+=
+- ```scala fuel
++ ```scala fuel
+
+= which is charged as £0.59:
+=
+= ```scala fuel
+- run
++ run
+
+= which is charged as £0.59:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Gbp(2.94).tax(0.2).tax.show)
++ Out.println(Gbp(2.94).tax(0.2).tax.show)
+
+= Out.println(Gbp(2.94).tax(0.2).tax.show)
+- ```
++ ```
+
+- A `Price` deliberately has no `show`. Whether to display the amount with or without tax is a
+- decision the application must make explicitly, by showing the member it means.
++ `Price` には意図的に `show` がない。
++ 金額を税込みで表示するか税抜きで表示するかは、アプリケーションが、意図するメンバーを表示することによって明示的に決めなければならない判断である。
+
+- ### Rendering
++ ### 描画
+
+- An amount is shown through the currency style in scope. The local style uses the currency's
+- symbol, and the generic style its ISO code:
++ 金額は、スコープにある通貨のスタイルを通じて表示される。
++ ローカルのスタイルは通貨の記号を使い、汎用のスタイルは ISO コードを使う。
+
+= symbol, and the generic style its ISO code:
+=
+- ```scala fuel
++ ```scala fuel
+
+= symbol, and the generic style its ISO code:
+=
+= ```scala fuel
+- run
++ run
+
+= symbol, and the generic style its ISO code:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Received ${Eur(3.01)}")
++ Out.println(t"Received ${Eur(3.01)}")
+
+- locally:
++ locally:
+
+-   import currencyStyles.genericCurrencyStyle
++   import currencyStyles.genericCurrencyStyle
+
+-   Out.println(t"Received ${Eur(3.01)}")
++   Out.println(t"Received ${Eur(3.01)}")
+
+=   Out.println(t"Received ${Eur(3.01)}")
+- ```
++ ```
+
+- [Internationalization](internationalization.md) covers the wider question of presenting values
+- for a particular locale.
++ 特定のロケールに向けて値を提示するという、より広い問題は[国際化](internationalization.md)で扱う。
+
+- ### Identifiers
++ ### 識別子
+
+- The identifying numbers of finance are checked here too. An
+- [ISIN](https://en.wikipedia.org/wiki/International_Securities_Identification_Number) is the
+- international identifier of a security. The `isin"…"` [interpolator] validates one at
+- [compiletime], including its checksum, and `Isin(…)` does the same at runtime:
++ 金融の識別番号もここで検査される。
++ [ISIN](https://en.wikipedia.org/wiki/International_Securities_Identification_Number) は証券の国際的な識別子である。
++ `isin"…"` [補間子]はそれを[コンパイル時]にチェックサムを含めて検証し、`Isin(…)` は同じことを実行時に行う。
+
+= [compiletime], including its checksum, and `Isin(…)` does the same at runtime:
+=
+- ```scala
++ ```scala
+
+- val security = isin"GB00BH4HKS39"
++ val security = isin"GB00BH4HKS39"
+
+= val security = isin"GB00BH4HKS39"
+- ```
++ ```
+
+= val security = isin"GB00BH4HKS39"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- isin"GB00BH4HKS3"
++ isin"GB00BH4HKS3"
+
+= isin"GB00BH4HKS3"
+- ```
++ ```
+
+- An `Isin.Error` says which rule was broken, so a rejected identifier can be reported
+- precisely, and not merely as "invalid":
++ `Isin.Error` はどの規則が破られたかを示すので、拒否された識別子は単に「無効」としてではなく、正確に報告できる。
+
+= precisely, and not merely as "invalid":
+=
+- ```tabular
++ ```tabular
+
+- column  Reason
+- column  Rule
+- row  `WrongLength`  an ISIN is 12 characters long
+- row  `BadCountryCode`  it begins with a valid country code
+- row  `InvalidCharacter`  every character is a digit or an uppercase letter
+- row  `LuhnCheck`  its last digit passes the Luhn check
++ column  理由
++ column  規則
++ row  `WrongLength`  ISIN は 12 文字である
++ row  `BadCountryCode`  正当な国コードで始まる
++ row  `InvalidCharacter`  すべての文字が数字か大文字のアルファベットである
++ row  `LuhnCheck`  最後の数字が Luhn チェックを通る
+
+= row  `LuhnCheck`  its last digit passes the Luhn check
+- ```
++ ```
+
+- An `Isin` is an [opaque type] over a `Long`. A validated identifier costs nothing to hold or
+- compare, and cannot be confused with an unvalidated string.
++ `Isin` は `Long` の上の[不透明型]である。
++ 検証済みの識別子は保持するにも比較するにもコストがかからず、検証されていない文字列と取り違えることはない。
+
+- `Luhn` checks the [Luhn digit](https://en.wikipedia.org/wiki/Luhn_algorithm) which card
+- numbers use:
++ `Luhn` は、カード番号が使う [Luhn ディジット](https://en.wikipedia.org/wiki/Luhn_algorithm)を検査する。
+
+= numbers use:
+=
+- ```scala fuel
++ ```scala fuel
+
+= numbers use:
+=
+= ```scala fuel
+- run
++ run
+
+= numbers use:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Luhn.check(17893729974L).inspect)
++ Out.println(Luhn.check(17893729974L).inspect)
+
+- Out.println(Luhn.check(17893729975L).inspect)
++ Out.println(Luhn.check(17893729975L).inspect)
+
+= Out.println(Luhn.check(17893729975L).inspect)
+- ```
++ ```
+
+- ### Related
++ ### 関連
+
+- - [Quantities](quantities.md) treats a currency as a unit, and [testing](testing.md) checks that an invalid currency literal fails to compile.
++ - [量](quantities.md)は通貨を単位として扱い、[テスト](testing.md)は不正な通貨のリテラルがコンパイルに失敗することを検査する。

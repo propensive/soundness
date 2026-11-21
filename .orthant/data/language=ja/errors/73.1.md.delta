@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.73.1` — Time literal: hour value above 12
++ # `↯/s.73.1` — 時刻のリテラル：12 を超える時の値
+
+- Raised by Aviation's `validTime` macro when an hour value exceeds
+- 12.
++ 時の値が 12 を超えるときに、Aviation の `validTime` マクロが発生させる。
+
+- ## Cause
++ ## 原因
+
+- The literal time syntax uses 12-hour notation, qualified by `am`/
+- `pm`. Hours above 12 cannot be encoded.
++ リテラルの時刻の構文は、`am`/`pm` で修飾した 12 時間表記を使う。
++ 12 を超える時はエンコードできない。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.73.1] a time cannot have an hour value above 12
++ [↯/s.73.1] a time cannot have an hour value above 12
+
+= [↯/s.73.1] a time cannot have an hour value above 12
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Use an hour value 0–12; specify `am`/`pm` to disambiguate.
++ 0–12 の時の値を使い、曖昧さをなくすために `am`/`pm` を指定する。
+
+- ## See also
++ ## 関連項目
+
+- - The other time literal errors: [Families](README.md#families)
+- - Source: `lib/aviation/src/core/aviation.internal.scala`
++ - その他の時刻のリテラルのエラー：[系列](README.md#families)
++ - ソース：`lib/aviation/src/core/aviation.internal.scala`

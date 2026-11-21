@@ -1,0 +1,468 @@
+orthant 1 language
+
+- ## Debugging
++ ## デバッグ
+
+- ### About
++ ### 概要
+
+- A JVM can be debugged from another JVM over the
+- [Java Debug Wire Protocol](https://docs.oracle.com/en/java/javase/21/docs/specs/jdwp/jdwp-spec.html),
+- and these types speak it directly over a socket. A debuggee is launched under the debug agent,
+- or attached to where it already runs. The [session] which results sets breakpoints, steps
+- threads, reads frames and variables, evaluates expressions in the stopped program, and receives
+- the events of the VM as typed values. Nothing depends on `com.sun.jdi`.
++ JVM は、[Java Debug Wire Protocol](https://docs.oracle.com/en/java/javase/21/docs/specs/jdwp/jdwp-spec.html) を通じて別の JVM からデバッグでき、これらの型はソケット越しにそのプロトコルを直接話す。
++ デバッグ対象はデバッグエージェントの下で起動されるか、すでに動いている場所にアタッチされる。
++ その結果得られる[セッション]は、ブレークポイントを設定し、スレッドをステップ実行し、フレームと変数を読み、停止したプログラムの中で式を評価し、VM のイベントを型付きの値として受け取る。
++ `com.sun.jdi` には何も依存しない。
+
+- The same session serves an editor over the
+- [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/).
++ 同じセッションが、[Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/) を通じてエディターにも提供される。
+
+- ### On debugging from the outside
++ ### 外側からのデバッグについて
+
+- The JVM's own debugging interface is a Java API which wraps a wire protocol, and it shows. The
+- types are mutable, the errors are unchecked, and the shape of a session, which is to connect,
+- suspend, request, resume and disconnect, is left to the caller to get right. Anything built on
+- it inherits all this, which is why debuggers are large programs and not small ones.
++ JVM 自身のデバッグインターフェースはワイヤプロトコルを包んだ Java API であり、それがよく表れている。
++ 型は可変で、エラーは検査されず、接続し、中断し、リクエストし、再開し、切断するというセッションの形を正しく守ることは呼び出し側に任されている。
++ その上に作られるものはすべてこれを受け継ぐ。デバッガーが小さなプログラムではなく大きなプログラムになるのはそのためである。
+
+- The protocol underneath is simple: length-prefixed packets, big-endian, with the widths of
+- identifiers negotiated once at the start of the connection. Modeling it directly gives typed
+- identifiers which cannot be confused with each other, a session confined to a scope by
+- [capture checking](../../philosophy/capture-checking.md), and events as a stream to consume and
+- not callbacks to register.
++ その下にあるプロトコルは単純である。長さを接頭辞に持つビッグエンディアンのパケットで、識別子の幅は接続の開始時に一度だけ取り決められる。
++ これを直接モデル化すると、互いに取り違えられない型付きの識別子、[キャプチャ検査](../../philosophy/capture-checking.md)によってスコープに閉じ込められたセッション、そして登録するコールバックではなく消費するストリームとしてのイベントが得られる。
+
+- Everything comes from the `soundness` package. A session runs its reader as a task, so it needs
+- a [thread model](concurrency.md) in scope and lives inside `supervise`:
++ すべては `soundness` パッケージから来る。
++ セッションはリーダーをタスクとして実行するので、スコープ内に[スレッドモデル](concurrency.md)が必要であり、`supervise` の中で動く：
+
+- ```scala fuel
++ ```scala fuel
+
+- feature experimental.captureChecking
++ feature experimental.captureChecking
+
+- ##
++ ##
+
+- import soundness.*
++ import soundness.*
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import socketBackends.javaBaseSockets
++ import socketBackends.javaBaseSockets
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.basicTermcap
++ import termcapDefinitions.basicTermcap
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import workingDirectories.javaBaseWorkingDirectory
++ import workingDirectories.javaBaseWorkingDirectory
+
+= import workingDirectories.javaBaseWorkingDirectory
+- ```
++ ```
+
+- The samples on this page launch and connect to other processes, so they are compiled but not
+- run.
++ このページのサンプルは別のプロセスを起動して接続するので、コンパイルはされるが実行はされない。
+
+- ### Opening a session
++ ### セッションを開く
+
+- A `Debuggee` describes a program to run under the debug agent: a command, the port to listen on,
+- and whether the VM should suspend before running `main`, which a breakpoint in initialization
+- needs. Its `session` method lends a `Debug` [capability] to a block, which is reached through
+- `debug`:
++ `Debuggee` は、デバッグエージェントの下で実行するプログラムを記述する。コマンド、待ち受けるポート、そして `main` を実行する前に VM を中断するかどうかである。初期化中のブレークポイントにはこの中断が必要である。
++ その `session` メソッドは `Debug` [ケイパビリティ]をブロックに貸し出し、それには `debug` を通じて到達する：
+
+= `debug`:
+=
+- ```scala
++ ```scala
+
+- def inspect(classpath: Text): List[Text] = supervise:
++ def inspect(classpath: Text): List[Text] = supervise:
+
+-   val target: Debuggee = Debuggee(sh"java -cp $classpath com.example.Main", port = 5005)
++   val target: Debuggee = Debuggee(sh"java -cp $classpath com.example.Main", port = 5005)
+
+-   target.session:
++   target.session:
+
+-     debug.threads().map(debug.name(_))
++     debug.threads().map(debug.name(_))
+
+=     debug.threads().map(debug.name(_))
+- ```
++ ```
+
+- The command is launched with the agent option inserted, and the connection waits for the VM to
+- begin listening. When the block ends, whether it returns or fails, everything is torn down: the
+- socket is closed and the process is stopped.
++ コマンドはエージェントのオプションを挿入して起動され、接続は VM が待ち受けを始めるのを待つ。
++ ブロックが終わると、正常に返っても失敗しても、すべてが破棄される。ソケットは閉じられ、プロセスは停止される。
+
+- A `Debugger` opens the same kind of session against an endpoint where a suspended VM is already
+- listening, for attaching to something which is already running.
++ `Debugger` は、中断された VM がすでに待ち受けているエンドポイントに対して同じ種類のセッションを開く。すでに動いているものにアタッチするためである。
+
+- The session handle is a capability confined to its block. It cannot escape, and so cannot be used
+- after the debuggee has gone.
++ セッションのハンドルは、そのブロックに閉じ込められたケイパビリティである。
++ 外へ逃げられないので、デバッグ対象がなくなった後に使われることはない。
+
+- ### Threads and frames
++ ### スレッドとフレーム
+
+- The threads of the VM are listed, named, suspended and resumed, individually or together. The
+- call stack of a suspended thread reads as frames paired with their locations:
++ VM のスレッドは、個別にまたはまとめて、一覧され、名前を得られ、中断され、再開される。
++ 中断されたスレッドのコールスタックは、位置と組になったフレームとして読める：
+
+= call stack of a suspended thread reads as frames paired with their locations:
+=
+- ```scala
++ ```scala
+
+- def stacks()(using Debug): Unit =
++ def stacks()(using Debug): Unit =
+
+-   debug.suspend()
++   debug.suspend()
+
+-   debug.threads().each: thread =>
++   debug.threads().each: thread =>
+
+-     debug.frames(thread).each: (frame, location) =>
++     debug.frames(thread).each: (frame, location) =>
+
+-       Out.println(t"${debug.name(thread)}: ${location.index}")
++       Out.println(t"${debug.name(thread)}: ${location.index}")
+
+-   debug.resume()
++   debug.resume()
+
+=   debug.resume()
+- ```
++ ```
+
+- ### Breakpoints
++ ### ブレークポイント
+
+- A breakpoint is set on a source file and line, or on a class and method. It takes a *handler*,
+- which runs whenever a thread stops there.
++ ブレークポイントは、ソースファイルと行、またはクラスとメソッドに設定する。
++ ブレークポイントは*ハンドラ*を受け取り、スレッドがそこで停止するたびにそれが実行される。
+
+- The handler is lent a `Halt`: a view of the stopped thread, with its `frames()`, its
+- `variables()`, and the exception in flight if that is why it stopped. A `Halt` cannot outlive
+- the stop, since once the thread resumes, every identifier it handed out may be stale. A handler
+- which wants the thread left suspended says so with `remain()`. Otherwise the thread resumes when
+- the handler returns:
++ ハンドラには `Halt` が貸し出される。これは停止したスレッドのビューで、その `frames()`、その `variables()`、そして停止の理由がそれであれば送出中の例外を持つ。
++ `Halt` は停止より長く生きられない。スレッドが再開すると、それが渡した識別子はすべて古くなっているかもしれないからである。
++ スレッドを中断したままにしておきたいハンドラは、`remain()` でそう伝える。
++ そうでなければ、スレッドはハンドラが返ったときに再開する：
+
+= the handler returns:
+=
+- ```scala
++ ```scala
+
+- def watch()(using Debug): Unit =
++ def watch()(using Debug): Unit =
+
+-   debug.breakpoint(t"Main.scala", Ordinal.uniary(42)): stop ?=>
++   debug.breakpoint(t"Main.scala", Ordinal.uniary(42)): stop ?=>
+
+-     stop.variables().each: variable =>
++     stop.variables().each: variable =>
+
+-       Out.println(t"${variable.name}: ${variable.erased}")
++       Out.println(t"${variable.name}: ${variable.erased}")
+
+-   debug.breakpoint(t"com.example.Ledger", t"deposit"): stop ?=>
++   debug.breakpoint(t"com.example.Ledger", t"deposit"): stop ?=>
+
+-     stop.remain()
++     stop.remain()
+
+=     stop.remain()
+- ```
++ ```
+
+- Breakpoints on inlined code work by position. The file and line are where the code was written,
+- not where the compiler placed it, recovered from the source maps which the compiler records.
++ インライン化されたコード上のブレークポイントは位置によって働く。
++ ファイルと行は、コンパイラがコードを置いた場所ではなく、コードが書かれた場所であり、コンパイラが記録するソースマップから復元される。
+
+- Each kind of request runs its handler on a different event:
++ リクエストの種類ごとに、ハンドラは異なるイベントで実行される：
+
+= Each kind of request runs its handler on a different event:
+=
+- ```tabular
++ ```tabular
+
+- column  Request
+- column  Runs when
+- column  Event kind
+- row  `breakpoint`  a thread reaches a source line, a method's entry or a location  `Breakpoint`
+- row  `logpoint`  a thread reaches a location, printing a message and resuming at once  `Breakpoint`
+- row  `watch`  a field is written, or with `access = true` read  `FieldModified`, `FieldAccess`
+- row  `exceptions`  an exception is thrown  `Exception`
+- row  `step`  a stepping thread lands  `SingleStep`
++ column  リクエスト
++ column  実行されるとき
++ column  イベントの種類
++ row  `breakpoint`  スレッドがソースの行、メソッドの入口、またはある位置に達したとき  `Breakpoint`
++ row  `logpoint`  スレッドがある位置に達したとき。メッセージを出力し、ただちに再開する  `Breakpoint`
++ row  `watch`  フィールドが書き込まれたとき。`access = true` なら読まれたとき  `FieldModified`, `FieldAccess`
++ row  `exceptions`  例外が投げられたとき  `Exception`
++ row  `step`  ステップ実行中のスレッドが到達したとき  `SingleStep`
+
+= row  `step`  a stepping thread lands  `SingleStep`
+- ```
++ ```
+
+- A breakpoint returns the identifier of its request, which is what later clears it. The *suspend
+- policy* decides how much of the VM stops when the breakpoint is hit:
++ ブレークポイントは、そのリクエストの識別子を返し、後でそれを使って解除する。
++ *中断ポリシー*は、ブレークポイントに当たったときに VM のどこまでが停止するかを決める：
+
+= policy* decides how much of the VM stops when the breakpoint is hit:
+=
+- ```tabular
++ ```tabular
+
+- column  Suspend policy
+- column  Stops
+- row  `Jdwp.SuspendPolicy.All`  the whole VM
+- row  `Jdwp.SuspendPolicy.EventThread`  only the thread that hit it
+- row  `Jdwp.SuspendPolicy.None`  nothing at all
++ column  中断ポリシー
++ column  停止するもの
++ row  `Jdwp.SuspendPolicy.All`  VM 全体
++ row  `Jdwp.SuspendPolicy.EventThread`  それに当たったスレッドだけ
++ row  `Jdwp.SuspendPolicy.None`  何も停止しない
+
+= row  `Jdwp.SuspendPolicy.None`  nothing at all
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- def once(location: Jdwp.Location)(using Debug): Unit =
++ def once(location: Jdwp.Location)(using Debug): Unit =
+
+-   val request = debug.breakpoint(location, Jdwp.SuspendPolicy.EventThread)
++   val request = debug.breakpoint(location, Jdwp.SuspendPolicy.EventThread)
+
+-   debug.clear(Jdwp.EventKind.Breakpoint, request)
++   debug.clear(Jdwp.EventKind.Breakpoint, request)
+
+=   debug.clear(Jdwp.EventKind.Breakpoint, request)
+- ```
++ ```
+
+- ### Stepping
++ ### ステップ実行
+
+- Stepping is a request against a suspended thread, with a handler for where it lands. The *depth*
+- says whether to step into a call (`Jdwp.StepDepth.Into`), over it (`Over`), or out of the
+- current frame (`Out`). An inlined call steps as the source reads, into the inlined body line by
+- line, and not as the bytecode was laid out:
++ ステップ実行は中断されたスレッドに対するリクエストで、到達した場所のためのハンドラを伴う。
++ *深さ*は、呼び出しの中へ入る（`Jdwp.StepDepth.Into`）か、それを飛び越す（`Over`）か、現在のフレームから出る（`Out`）かを示す。
++ インライン化された呼び出しは、バイトコードの配置どおりではなく、ソースの読みどおりに、インライン化された本体の中へ一行ずつステップする：
+
+= line, and not as the bytecode was laid out:
+=
+- ```scala
++ ```scala
+
+- def stepOver(thread: ThreadId)(using Debug): Unit =
++ def stepOver(thread: ThreadId)(using Debug): Unit =
+
+-   debug.step(thread, Jdwp.StepDepth.Over): stop ?=>
++   debug.step(thread, Jdwp.StepDepth.Over): stop ?=>
+
+-     stop.frames().head.let: (frame, location) =>
++     stop.frames().head.let: (frame, location) =>
+
+-       Out.println(stop.describe(location)(0))
++       Out.println(stop.describe(location)(0))
+
+=       Out.println(stop.describe(location)(0))
+- ```
++ ```
+
+- ### Evaluating expressions
++ ### 式の評価
+
+- With the `Evaluator` in scope, an expression is compiled against the locals of the stopped frame
+- and injected into the running debuggee. So `total + 1` in a handler means what it would mean at
+- that line of the source. A debugger's console and hover use this, and it is also how an editor
+- shows the type which the compiler inferred for a name.
++ `Evaluator` がスコープ内にあれば、式は停止したフレームのローカル変数に対してコンパイルされ、動いているデバッグ対象に注入される。
++ そのため、ハンドラ中の `total + 1` は、ソースのその行で意味するのと同じことを意味する。
++ デバッガーのコンソールとホバーはこれを使い、エディターがコンパイラの推論した名前の型を表示するのもこの仕組みによる。
+
+- ### Events
++ ### イベント
+
+- Underneath the handlers, the VM reports what happened as composite events. `events` is the
+- [stream](streams.md) of them, so the main loop of a debugger can be an ordinary traversal:
++ ハンドラの下では、VM は起きたことをコンポジットイベントとして報告する。
++ `events` はそれらの[ストリーム](streams.md)なので、デバッガーのメインループは普通の走査でよい：
+
+= [stream](streams.md) of them, so the main loop of a debugger can be an ordinary traversal:
+=
+- ```scala
++ ```scala
+
+- def trace()(using Debug): Unit =
++ def trace()(using Debug): Unit =
+
+-   debug.events.each: composite =>
++   debug.events.each: composite =>
+
+-     composite.events.each:
++     composite.events.each:
+
+-       case Jdwp.Event.Breakpoint(request, thread, location) => Out.println(t"stopped at ${location.index}")
++       case Jdwp.Event.Breakpoint(request, thread, location) => Out.println(t"stopped at ${location.index}")
+
+-       case Jdwp.Event.SingleStep(request, thread, location) => Out.println(t"stepped to ${location.index}")
++       case Jdwp.Event.SingleStep(request, thread, location) => Out.println(t"stepped to ${location.index}")
+
+-       case other                                            => ()
++       case other                                            => ()
+
+=       case other                                            => ()
+- ```
++ ```
+
+- Requests and replies are correlated asynchronously. Many commands may be in flight at once, and
+- an event which arrives during one does not disturb it.
++ リクエストとリプライは非同期に対応付けられる。
++ 多くのコマンドが同時に送られている状態でもよく、あるコマンドの最中に届いたイベントはそれを乱さない。
+
+- ### Serving an editor
++ ### エディターへの提供
+
+- `Dap.listen` serves the session over the Debug Adapter Protocol on a TCP port. Any editor which
+- speaks it, which is VS Code and most others, can launch, stop, step, inspect variables and
+- evaluate through this implementation. Completions, hover types and inline-aware stepping all
+- pass through to the editor.
++ `Dap.listen` は、TCP ポート上で Debug Adapter Protocol を通じてセッションを提供する。
++ このプロトコルを話すエディター、つまり VS Code やほかの大半のエディターは、この実装を通じて起動、停止、ステップ実行、変数の検査、評価ができる。
++ 補完、ホバーでの型表示、インライン化を考慮したステップ実行は、すべてエディターまで届く。
+
+- ### The protocol vocabulary
++ ### プロトコルの語彙
+
+- `Jdwp` holds the model of the protocol itself, for work below the level which the session
+- exposes. The identifier types are tagged views of one [opaque type]. They cost nothing
+- at [runtime], and cannot be interchanged at [compiletime]:
++ `Jdwp` は、セッションが公開するレベルより下の作業のために、プロトコルそのもののモデルを保持する。
++ 識別子の型は、一つの[不透明型]にタグを付けたビューである。
++ [実行時]にはコストがかからず、[コンパイル時]には取り違えられない：
+
+= at [runtime], and cannot be interchanged at [compiletime]:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Identifies
+- row  `ObjectId`  an object
+- row  `ThreadId`  a thread
+- row  `ThreadGroupId`  a thread group
+- row  `StringId`  a string object
+- row  `ClassLoaderId`  a class loader
+- row  `ReferenceTypeId`  a class, interface or array type
+- row  `MethodId`  a method
+- row  `FieldId`  a field
+- row  `FrameId`  a stack frame
++ column  型
++ column  識別するもの
++ row  `ObjectId`  オブジェクト
++ row  `ThreadId`  スレッド
++ row  `ThreadGroupId`  スレッドグループ
++ row  `StringId`  文字列オブジェクト
++ row  `ClassLoaderId`  クラスローダー
++ row  `ReferenceTypeId`  クラス、インターフェース、または配列型
++ row  `MethodId`  メソッド
++ row  `FieldId`  フィールド
++ row  `FrameId`  スタックフレーム
+
+= row  `FrameId`  a stack frame
+- ```
++ ```
+
+- Beside them sit `Jdwp.Location`, the tagged `Jdwp.Value`s, the `Jdwp.Modifier`s which constrain
+- an event request, and the `Jdwp.Event`s which a suspended VM sends back.
++ その隣には、`Jdwp.Location`、タグ付きの `Jdwp.Value`、イベントリクエストを制約する `Jdwp.Modifier`、そして中断された VM が送り返す `Jdwp.Event` がある。
+
+- `Jdwp.Reader` and `Jdwp.Writer` are the hand-written big-endian codecs. They know the sizes of
+- identifiers negotiated with the VM when the session opened, which is why they are constructed
+- with those sizes rather than assuming them.
++ `Jdwp.Reader` と `Jdwp.Writer` は、手書きのビッグエンディアンのコーデックである。
++ これらはセッションを開いたときに VM と取り決めた識別子のサイズを知っている。それらのサイズを仮定せず、そのサイズを与えて構築されるのはそのためである。
+
+- ### Related
++ ### 関連
+
+- - [Processes](processes.md) describes the `sh"…"` commands which a debuggee is launched with.
+- - [Concurrency](concurrency.md) describes `supervise` and the thread models a session runs
+-   under.
+- - [Sockets](sockets.md) describes the TCP connections which the protocols travel over.
+- - [LSP](lsp.md) serves an editor over the sibling Language Server Protocol.
+- - [Stack traces](stack-traces.md) describes the frames of a stopped program as values.
+- - [Capture checking](../../philosophy/capture-checking.md) explains how a session handle is
+-   confined to its block.
+- - [Filesystem](filesystem.md) describes the handles whose shape a debugging session shares.
++ - [プロセス](processes.md)は、デバッグ対象を起動する `sh"…"` コマンドを説明する。
++ - [並行性](concurrency.md)は、`supervise` と、セッションが動くスレッドモデルを説明する。
++ - [ソケット](sockets.md)は、プロトコルが通る TCP 接続を説明する。
++ - [LSP](lsp.md) は、兄弟にあたる Language Server Protocol を通じてエディターに提供する。
++ - [スタックトレース](stack-traces.md)は、停止したプログラムのフレームを値として説明する。
++ - [キャプチャ検査](../../philosophy/capture-checking.md)は、セッションのハンドルがどのようにそのブロックに閉じ込められるかを説明する。
++ - [ファイルシステム](filesystem.md)は、デバッグセッションと同じ形をしたハンドルを説明する。

@@ -1,0 +1,965 @@
+orthant 1 language
+
+- ## Tables
++ ## 表
+
+- ### About
++ ### 概要
+
+- Tabular data is drawn in a terminal by a layout engine which takes the hard part seriously:
+- fitting columns of uneven content into a fixed width.
++ 表形式のデータは、難しい部分を真剣に扱うレイアウトエンジンによって端末に描かれる。
++ その難しい部分とは、内容の長さがまちまちな列を固定された幅に収めることである。
+
+- A table is defined in one of two ways. Implicitly, a sequence of case classes becomes a
+- table with a column for each field. Explicitly, each column is named, with its alignment and
+- its *sizing strategy*: wrap as a paragraph, truncate with an ellipsis, or collapse entirely
+- when space runs short. The result is drawn with box characters, in a style chosen in scope.
++ 表は二つの方法のいずれかで定義する。
++ 暗黙的には、ケースクラスの列が、各フィールドに一つの列を持つ表になる。
++ 明示的には、各列に名前を付け、その揃えと*サイズ決定方式*を与える。段落として折り返すか、省略記号で切り詰めるか、場所が足りなくなったときに丸ごと折りたたむかである。
++ 結果は、スコープ内で選んだスタイルで、罫線素片の文字を使って描かれる。
+
+- ### On tables
++ ### 表について
+
+- Most tables in a terminal are format strings: fixed widths, guessed when the program was
+- written, which truncate or overflow when the data disagrees. Real layout is a negotiation.
+- Some columns matter more than others. A column of prose can wrap where a column of
+- identifiers cannot. Below some width, a column is better dropped than mangled. A layout
+- engine can conduct that negotiation, and a format string cannot.
++ 端末の表のほとんどは書式文字列である。プログラムを書いたときに見積もった固定幅であり、データがそれに合わないと切り詰められるかはみ出す。
++ 本当のレイアウトは交渉である。
++ ある列は他の列より重要である。
++ 散文の列は折り返せるが、識別子の列は折り返せない。
++ ある幅を下回ると、列はめちゃくちゃにされるより取り除かれる方がよい。
++ レイアウトエンジンはその交渉を行えるが、書式文字列にはできない。
+
+- Here the layout is computed each time a table is drawn. Each column declares how it may
+- shrink, and the engine distributes the width which is available, wrapping with
+- [hyphenation](hyphenation.md) where wrapping is allowed. Separating a table's columns from
+- its data, and from its width, is [decoupling](../../philosophy/decoupling.md), and it is what
+- lets one definition be drawn at any width.
++ ここでは、表を描くたびにレイアウトを計算する。
++ 各列はどのように縮められるかを宣言し、エンジンは使える幅を分配し、折り返しが許される場所では [ハイフネーション](hyphenation.md) を使って折り返す。
++ 表の列をそのデータから、そしてその幅から切り離すことは [分離](../../philosophy/decoupling.md) であり、それによって一つの定義をどんな幅でも描ける。
+
+- Everything comes from the `soundness` package. A style, a metric for the width of text, and
+- a policy for a table which does not fit are in scope:
++ すべては `soundness` パッケージから来る。
++ スタイル、テキストの幅の測り方、そして収まらない表に対するポリシーをスコープに置く。
+
+= a policy for a table which does not fit are in scope:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import tableStyles.thickTableStyle
++ import tableStyles.thickTableStyle
+
+- import textMetrics.uniformMetric
++ import textMetrics.uniformMetric
+
+- import columnAttenuation.ignoreAttenuation
++ import columnAttenuation.ignoreAttenuation
+
+- import hyphenations.englishHyphenation
++ import hyphenations.englishHyphenation
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.basicTermcap
++ import termcapDefinitions.basicTermcap
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- ### A table from a case class
++ ### ケースクラスからの表
+
+- A sequence of case classes is tabulated directly, with a column for each field, titled from
+- the names of the fields:
++ ケースクラスの列は直接表にでき、各フィールドに一つの列ができ、列の見出しはフィールドの名前から付けられる。
+
+= the names of the fields:
+=
+- ```scala
++ ```scala
+
+- case class Codebase(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
++ case class Codebase(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
+
+- val libraries = List
++ val libraries = List
+
+-   ( Codebase(t"wisteria", t"Wisteria", 581, 2017,
++   ( Codebase(t"wisteria", t"Wisteria", 581, 2017,
+
+-         t"Simple, fast and transparent generic derivation for typeclasses"),
++         t"Simple, fast and transparent generic derivation for typeclasses"),
+
+-     Codebase(t"quantitative", t"Quantitative", 1271, 2023,
++     Codebase(t"quantitative", t"Quantitative", 1271, 2023,
+
+-         t"Statically-checked physical units with seamless syntax"),
++         t"Statically-checked physical units with seamless syntax"),
+
+-     Codebase(t"turbulence", t"Turbulence", 1047, 2022,
++     Codebase(t"turbulence", t"Turbulence", 1047, 2022,
+
+-         t"Simple tools for working with data streams"),
++         t"Simple tools for working with data streams"),
+
+-     Codebase(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
++     Codebase(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
+
+=     Codebase(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
+- ```
++ ```
+
+- `grid` lays the table out at a width, and `render` gives its lines:
++ `grid` は表をある幅でレイアウトし、`render` はその行を与える。
+
+= `grid` lays the table out at a width, and `render` gives its lines:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `grid` lays the table out at a width, and `render` gives its lines:
+=
+= ```scala fuel
+- run
++ run
+
+= `grid` lays the table out at a width, and `render` gives its lines:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- libraries.tabulation.grid(100).render.each(Out.println(_))
++ libraries.tabulation.grid(100).render.each(Out.println(_))
+
+= libraries.tabulation.grid(100).render.each(Out.println(_))
+- ```
++ ```
+
+- Numeric columns are aligned to the right by default, and text to the left. The whole table
+- is `Printable`, so printing it at the terminal's own width needs nothing more than
+- `Out.println`.
++ 数値の列は既定で右揃え、テキストは左揃えになる。
++ 表全体は `Printable` なので、端末自身の幅で印字するには `Out.println` だけで足りる。
+
+- Three types are at work, and knowing which is which explains where each decision is made:
++ 三つの型が働いており、どれがどれかを知れば、それぞれの決定がどこでなされるかが分かる。
+
+= Three types are at work, and knowing which is which explains where each decision is made:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Holds
+- column  Made with
+- row  `Scaffold`  how a type is put into columns — their content, order and parameters — but no data  `Scaffold[Row](columns…)`
+- row  `Tabulation`  data arranged by a scaffold: textual values, one per row and column, no longer referring to the row type  `scaffold.tabulate(rows)`
+- row  `Grid`  a tabulation fitted to a particular width, where a column may shrink or vanish  `tabulation.grid(width)`
++ column  型
++ column  保持するもの
++ column  作り方
++ row  `Scaffold`  型をどう列に分けるか（列の内容、順序、パラメーター）。データは持たない  `Scaffold[Row](columns…)`
++ row  `Tabulation`  足場によって並べられたデータ：行と列ごとに一つのテキストの値で、もはや行の型を参照しない  `scaffold.tabulate(rows)`
++ row  `Grid`  特定の幅に合わせた表形式のデータ。列は縮んだり消えたりすることがある  `tabulation.grid(width)`
+
+= row  `Grid`  a tabulation fitted to a particular width, where a column may shrink or vanish  `tabulation.grid(width)`
+- ```
++ ```
+
+- `tabulation`, above, derived a scaffold for `Codebase` and applied it, in one step. The
+- sections below take the stages separately, which is what gives control over both the layout
+- and the width.
++ 上の `tabulation` は、`Codebase` の足場を導出して適用することを一度に行った。
++ 以下の節では段階を別々に扱い、それによってレイアウトと幅の両方を制御できる。
+
+- ### Explicit columns
++ ### 明示的な列
+
+- Columns which are defined by hand choose their titles, content, alignment and sizing. The
+- sizings are in the package `columnar`:
++ 手で定義する列は、見出し、内容、揃え、サイズを自分で選ぶ。
++ サイズ決定方式はパッケージ `columnar` にある。
+
+= sizings are in the package `columnar`:
+=
+- ```tabular
++ ```tabular
+
+- column  Sizing
+- column  The column
+- row  `Paragraph`  wraps, with hyphenation, but no narrower than its longest word
+- row  `Collapsible(threshold)`  keeps its natural width, and vanishes when the slack falls below `threshold`
+- row  `Fixed(width)`  is always `width` wide, truncating its content with an ellipsis
+- row  `Shortened(width)`  shrinks from its natural width, truncating its content with an ellipsis
++ column  サイズ決定方式
++ column  その列は
++ row  `Paragraph`  ハイフネーションを使って折り返すが、最も長い単語より狭くはならない
++ row  `Collapsible(threshold)`  自然な幅を保ち、スラックが `threshold` を下回ると消える
++ row  `Fixed(width)`  常に幅 `width` であり、内容を省略記号で切り詰める
++ row  `Shortened(width)`  自然な幅から縮み、内容を省略記号で切り詰める
+
+= row  `Shortened(width)`  shrinks from its natural width, truncating its content with an ellipsis
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- val table = Scaffold[Codebase]
++ val table = Scaffold[Codebase]
+
+-   ( Column(t"Name")(_.name),
++   ( Column(t"Name")(_.name),
+
+-     Column(t"Identifier", sizing = columnar.Collapsible(0.9))(_.id),
++     Column(t"Identifier", sizing = columnar.Collapsible(0.9))(_.id),
+
+-     Column(t"LoC", sizing = columnar.Collapsible(0.3))(_.linesOfCode),
++     Column(t"LoC", sizing = columnar.Collapsible(0.3))(_.linesOfCode),
+
+-     Column(t"Year", sizing = columnar.Collapsible(0.5))(_.year),
++     Column(t"Year", sizing = columnar.Collapsible(0.5))(_.year),
+
+-     Column(t"Description", textAlign = TextAlignment.Justify,
++     Column(t"Description", textAlign = TextAlignment.Justify,
+
+-         sizing = columnar.Paragraph)(_.description) )
++         sizing = columnar.Paragraph)(_.description) )
+
+=         sizing = columnar.Paragraph)(_.description) )
+- ```
++ ```
+
+- Each column is a title, and a function from the type of a row to the value of a cell. The
+- functions here return a mixture of `Text` and `Int`, with no type annotation between them.
+- That works because the *title* fixes the textual type. A `Textual` instance is found for the
+- type of the title. That instance names the [typeclass], usually `Showable`, which converts
+- other values into it, and the result of each function is shown through it.
++ 各列は、見出しと、行の型からセルの値への関数である。
++ ここでの関数は `Text` と `Int` を混ぜて返しており、その間に型注釈はない。
++ それが機能するのは、*見出し*がテキストの型を決めるからである。
++ 見出しの型に対する `Textual` インスタンスが見つけられる。
++ そのインスタンスは、他の値をそれに変換する[型クラス]（ふつうは `Showable`）を名指し、各関数の結果はそれを通じて表示される。
+
+- The table's own type of cell is then the least upper bound of its columns'. So `table`,
+- above, is a `Scaffold[Codebase, Text]`. Writing the titles as `e"Name"` instead of `t"Name"`
+- would have made it a `Scaffold[Codebase, Teletype]`, with color and style available in every
+- cell, as [Terminal](terminal.md#styled-text) describes.
++ そして、表自身のセルの型は、その列のセルの型の最小上界である。
++ そのため上の `table` は `Scaffold[Codebase, Text]` である。
++ 見出しを `t"Name"` ではなく `e"Name"` と書いていれば、[端末](terminal.md#styled-text) で説明するとおり、すべてのセルで色とスタイルが使える `Scaffold[Codebase, Teletype]` になっていた。
+
+- The thresholds of the `Collapsible` columns are meaningful only relative to each other. They
+- are compared against the *slack* at which the layout is working, which is the number the
+- [layout algorithm](#the-layout-algorithm) searches for:
++ `Collapsible` の列のしきい値は、互いに比べたときにだけ意味を持つ。
++ しきい値は、レイアウトが働いている*スラック*と比べられる。スラックは [レイアウトのアルゴリズム](#the-layout-algorithm) が探す数である。
+
+= [layout algorithm](#the-layout-algorithm) searches for:
+=
+- ```tabular
++ ```tabular
+
+- column  Slack
++ column  スラック
+
+- column  Identifier (`0.9`)
++ column  Identifier (`0.9`)
+
+- column  Year (`0.5`)
++ column  Year (`0.5`)
+
+- column  LoC (`0.3`)
++ column  LoC (`0.3`)
+
+- row  `0.6`  hidden  shown  shown
+- row  `0.4`  hidden  hidden  shown
+- row  `0.2`  hidden  hidden  hidden
++ row  `0.6`  非表示  表示  表示
++ row  `0.4`  非表示  非表示  表示
++ row  `0.2`  非表示  非表示  非表示
+
+= row  `0.2`  hidden  hidden  hidden
+- ```
++ ```
+
+- ### Renderings at different widths
++ ### さまざまな幅での描画
+
+- Here is the same table, with the same data, laid out at four widths. At 100 characters,
+- *Identifier* is already gone. It is the collapsible column whose threshold is closest to
+- `1`, so it is the first to go:
++ これは同じ表を同じデータで、四つの幅でレイアウトしたものである。
++ 100 文字では、*Identifier* はすでに消えている。
++ それはしきい値が最も `1` に近い折りたたみ可能な列なので、最初に消える。
+
+= `1`, so it is the first to go:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `1`, so it is the first to go:
+=
+= ```scala fuel
+- run
++ run
+
+= `1`, so it is the first to go:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- table.tabulate(libraries).grid(100).render.each(Out.println(_))
++ table.tabulate(libraries).grid(100).render.each(Out.println(_))
+
+= table.tabulate(libraries).grid(100).render.each(Out.println(_))
+- ```
++ ```
+
+- At 80, no further column need be dropped. The description wraps instead:
++ 80 では、それ以上の列を取り除く必要はない。
++ 代わりに説明が折り返される。
+
+= At 80, no further column need be dropped. The description wraps instead:
+=
+- ```scala fuel
++ ```scala fuel
+
+= At 80, no further column need be dropped. The description wraps instead:
+=
+= ```scala fuel
+- run
++ run
+
+= At 80, no further column need be dropped. The description wraps instead:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- table.tabulate(libraries).grid(80).render.each(Out.println(_))
++ table.tabulate(libraries).grid(80).render.each(Out.println(_))
+
+= table.tabulate(libraries).grid(80).render.each(Out.println(_))
+- ```
++ ```
+
+- At 60, *Year* goes, since it has the next-highest threshold, and the justification of the
+- description becomes visible, as the lines stretch to the full width:
++ 60 では、しきい値が次に高い *Year* が消え、行が幅いっぱいに伸びるので、説明の両端揃えが見えるようになる。
+
+= description becomes visible, as the lines stretch to the full width:
+=
+- ```scala fuel
++ ```scala fuel
+
+= description becomes visible, as the lines stretch to the full width:
+=
+= ```scala fuel
+- run
++ run
+
+= description becomes visible, as the lines stretch to the full width:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- table.tabulate(libraries).grid(60).render.each(Out.println(_))
++ table.tabulate(libraries).grid(60).render.each(Out.println(_))
+
+= table.tabulate(libraries).grid(60).render.each(Out.println(_))
+- ```
++ ```
+
+- And at 40, only two columns remain, and a description may run to four lines:
++ そして 40 では、二つの列だけが残り、説明は四行に及ぶことがある。
+
+= And at 40, only two columns remain, and a description may run to four lines:
+=
+- ```scala fuel
++ ```scala fuel
+
+= And at 40, only two columns remain, and a description may run to four lines:
+=
+= ```scala fuel
+- run
++ run
+
+= And at 40, only two columns remain, and a description may run to four lines:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- table.tabulate(libraries).grid(40).render.each(Out.println(_))
++ table.tabulate(libraries).grid(40).render.each(Out.println(_))
+
+= table.tabulate(libraries).grid(40).render.each(Out.println(_))
+- ```
++ ```
+
+- ### The layout algorithm
++ ### レイアウトのアルゴリズム
+
+- The scaffold does not decide the widths. It delegates to each column, passing a `Double`
+- between `0` and `1`. That number is the *slack* on the column, which is simply the opposite
+- of pressure. Given a slack, a column reports the width which it would take, and a column
+- under enough pressure may report that it will not be drawn at all. A column of prose shrinks
+- smoothly as its text reflows. A column of identifiers cannot shrink past its content, and
+- either holds its width or disappears.
++ 足場は幅を決めない。
++ `0` から `1` までの `Double` を渡して、それぞれの列に委ねる。
++ その数は列に対する*スラック*であり、単に圧力の反対である。
++ スラックを与えられると、列は自分が取る幅を報告し、十分な圧力の下にある列は、まったく描かれないと報告することもある。
++ 散文の列は、テキストが流し直されるにつれて滑らかに縮む。
++ 識別子の列は内容より狭くは縮めず、幅を保つか消えるかのどちらかである。
+
+- Adding up those widths gives the table's width at that slack, and from there it is a search.
+- The slack is raised where the table fits, and lowered where it does not, hunting for the
+- highest slack at which the table still fits the space available.
++ それらの幅を足し合わせるとそのスラックでの表の幅が得られ、そこからは探索である。
++ 表が収まればスラックを上げ、収まらなければ下げて、表がまだ使える場所に収まる最も高いスラックを探す。
+
+- That maximum usually sits *just after* a column has been hidden, which tends to leave space
+- unused: the column which vanished freed more room than the survivors needed. A second pass
+- therefore raises the slack on the remaining columns, without bringing back the ones already
+- removed, and lets them spread into what is left. In practice this gives markedly better
+- results than stopping at the first fit.
++ その最大値はふつう、列が隠された*直後*にあり、そのため場所が使われずに残りやすい。消えた列が、残った列が必要とする以上の余地を空けたからである。
++ そこで二回目のパスで、すでに取り除いた列を戻さずに、残った列のスラックを上げ、残りの場所に広がらせる。
++ 実際には、これは最初に収まったところで止めるよりも目に見えてよい結果を与える。
+
+- The search rests on one requirement, which any custom `Columnar` must honor: a column must
+- respond *monotonically* to slack. Decreasing the slack may leave a column the same width,
+- but must never make it wider. `Paragraph`, `Collapsible`, `Fixed` and `Shortened` are simply
+- the strategies which are provided. The concept is open, and a sizing strategy which responds
+- to slack in some other way is an ordinary implementation of the same interface.
++ 探索は一つの要件に基づいており、独自の `Columnar` はそれを守らなければならない。列はスラックに対して*単調に*応答しなければならない。
++ スラックを減らしても列の幅が変わらないことはあってよいが、決して広くしてはならない。
++ `Paragraph`、`Collapsible`、`Fixed`、`Shortened` は、単に提供されている方式にすぎない。
++ この概念は開かれており、別の仕方でスラックに応答するサイズ決定方式は、同じインターフェースの通常の実装である。
+
+- ### Styles
++ ### スタイル
+
+- The box drawing is a `Table.Style` given. The style is a change of import, not of the code
+- which defines the table. `thinRoundedTableStyle` draws light rules throughout, with rounded
+- corners:
++ 罫線の描画は `Table.Style` の given である。
++ スタイルはインポートの変更であり、表を定義するコードの変更ではない。
++ `thinRoundedTableStyle` は全体に細い罫線を描き、角を丸くする。
+
+= corners:
+=
+- ```scala
++ ```scala
+
+- val few = libraries.excerpt(0, 2)
++ val few = libraries.excerpt(0, 2)
+
+= val few = libraries.excerpt(0, 2)
+- ```
++ ```
+
+= val few = libraries.excerpt(0, 2)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val few = libraries.excerpt(0, 2)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val few = libraries.excerpt(0, 2)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import tableStyles.thinRoundedTableStyle
++   import tableStyles.thinRoundedTableStyle
+
+=   import tableStyles.thinRoundedTableStyle
+-   table.tabulate(few).grid(50).render.each(Out.println(_))
++   table.tabulate(few).grid(50).render.each(Out.println(_))
+
+=   import tableStyles.thinRoundedTableStyle
+=   table.tabulate(few).grid(50).render.each(Out.println(_))
+- ```
++ ```
+
+- `horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
++ `horizontalTableStyle` は横の罫線を残し、縦の罫線を取り除く。
+
+= `horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
+=
+= ```scala fuel
+- run
++ run
+
+= `horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= `horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import tableStyles.horizontalTableStyle
++   import tableStyles.horizontalTableStyle
+
+=   import tableStyles.horizontalTableStyle
+-   table.tabulate(few).grid(50).render.each(Out.println(_))
++   table.tabulate(few).grid(50).render.each(Out.println(_))
+
+=   import tableStyles.horizontalTableStyle
+=   table.tabulate(few).grid(50).render.each(Out.println(_))
+- ```
++ ```
+
+- `verticalTableStyle` does the opposite:
++ `verticalTableStyle` はその逆を行う。
+
+= `verticalTableStyle` does the opposite:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `verticalTableStyle` does the opposite:
+=
+= ```scala fuel
+- run
++ run
+
+= `verticalTableStyle` does the opposite:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= `verticalTableStyle` does the opposite:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import tableStyles.verticalTableStyle
++   import tableStyles.verticalTableStyle
+
+=   import tableStyles.verticalTableStyle
+-   table.tabulate(few).grid(50).render.each(Out.println(_))
++   table.tabulate(few).grid(50).render.each(Out.println(_))
+
+=   import tableStyles.verticalTableStyle
+=   table.tabulate(few).grid(50).render.each(Out.println(_))
+- ```
++ ```
+
+- And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
++ そして `minimalTableStyle` は見出しの下に一本の罫線だけを残し、他には何も残さない。
+
+= And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
+=
+- ```scala fuel
++ ```scala fuel
+
+= And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
+=
+= ```scala fuel
+- run
++ run
+
+= And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import tableStyles.minimalTableStyle
++   import tableStyles.minimalTableStyle
+
+=   import tableStyles.minimalTableStyle
+-   table.tabulate(few).grid(50).render.each(Out.println(_))
++   table.tabulate(few).grid(50).render.each(Out.println(_))
+
+=   import tableStyles.minimalTableStyle
+=   table.tabulate(few).grid(50).render.each(Out.println(_))
+- ```
++ ```
+
+- `midOnlyTableStyle` is the same, but reserves blank lines above and below, where the outer
+- rules would be, so the table keeps its vertical spacing without drawing them.
++ `midOnlyTableStyle` も同じだが、外側の罫線があるはずの上下に空行を確保するので、表は罫線を描かずに縦の間隔を保つ。
+
+- Styled terminal text works as the content of a cell in every style. A table of highlighted
+- or colored values is laid out by its visible width, not by the length of its escape codes.
++ スタイル付きの端末テキストは、どのスタイルでもセルの内容として機能する。
++ 強調表示や色付けをした値の表は、エスケープコードの長さではなく、見える幅でレイアウトされる。
+
+- ### Alignment
++ ### 揃え
+
+- Each column states how its content sits within the width which it is given, as a
+- `TextAlignment`:
++ 各列は、与えられた幅の中で内容をどう置くかを `TextAlignment` として示す。
+
+= `TextAlignment`:
+=
+- ```tabular
++ ```tabular
+
+- column  Alignment
+- column  Pads
+- row  `Left`  on the right
+- row  `Right`  on the left
+- row  `Center`  on both sides, putting the odd column on the right where it cannot be split evenly
+- row  `Justify`  between words, so that every line but the last reaches the full width
++ column  揃え
++ column  パディングを入れる場所
++ row  `Left`  右側
++ row  `Right`  左側
++ row  `Center`  両側。均等に分けられないときは、余った一桁を右側に置く
++ row  `Justify`  単語の間。最後の行を除くすべての行が幅いっぱいになる
+
+= row  `Justify`  between words, so that every line but the last reaches the full width
+- ```
++ ```
+
+- `Justify` is the setting of a newspaper, which suits a column of prose and nothing else.
++ `Justify` は新聞の組み方であり、散文の列に適し、他には適さない。
+
+- Vertical alignment matters as soon as one cell wraps. A wrapped cell makes its whole row
+- taller, and the other cells in that row sit at the top, the middle or the bottom of the extra
+- height, according to their `VerticalAlignment`: `Top`, `Middle` or `Bottom`.
++ 一つのセルが折り返されるとすぐに、縦の揃えが重要になる。
++ 折り返されたセルは行全体を高くし、その行の他のセルは、その `VerticalAlignment`（`Top`、`Middle`、`Bottom`）に従って、増えた高さの上、中央、下に置かれる。
+
+- ### Titles
++ ### 見出し
+
+- A derived table titles its columns from the names of the fields, capitalized, so
+- `linesOfCode` becomes `Lines of code`. Where that is not the title which is wanted, a
+- `Table.Relabelling` overrides it by name. The Scala field keeps its name, and the table gets
+- its own:
++ 導出された表は、フィールドの名前を大文字で始めたものを列の見出しにするので、`linesOfCode` は `Lines of code` になる。
++ それが望む見出しでない場合は、`Table.Relabelling` が名前によってそれを上書きする。
++ Scala のフィールドは名前を保ち、表は独自の名前を得る。
+
+= its own:
+=
+- ```scala
++ ```scala
+
+- given relabelling: Table.Relabelling[Codebase]:
++ given relabelling: Table.Relabelling[Codebase]:
+
+-   def relabelling() = Map(t"linesOfCode" -> t"LoC")
++   def relabelling() = Map(t"linesOfCode" -> t"LoC")
+
+=   def relabelling() = Map(t"linesOfCode" -> t"LoC")
+- ```
++ ```
+
+- A column which is defined explicitly names itself. `retitle` renames one after the fact,
+- which is useful where a table's definition is shared, and one caller wants a different
+- heading.
++ 明示的に定義した列は自分で名前を付ける。
++ `retitle` は後から列の名前を変え、表の定義が共有されていて、ある呼び出し側だけが別の見出しを望む場合に役立つ。
+
+- ### Reusing a column definition
++ ### 列の定義の再利用
+
+- A `Column` has a type parameter for the type of row which it reads from, which would make a
+- column defined for one type useless for another. `contramap` adapts it. A column which is
+- defined once, with its alignment, sizing and title, then serves every type which can produce
+- the value it displays:
++ `Column` には読み出す行の型のための型パラメーターがあり、そのままでは、ある型のために定義した列は別の型には役立たない。
++ `contramap` がそれを適合させる。
++ 揃え、サイズ決定、見出しとともに一度定義した列は、それが表示する値を作り出せるすべての型に使える。
+
+= the value it displays:
+=
+- ```scala
++ ```scala
+
+- val nameColumn = Column[Text, Text, Text](t"Name")(identity)
++ val nameColumn = Column[Text, Text, Text](t"Name")(identity)
+
+- val codebaseName = nameColumn.contramap[Codebase](_.name)
++ val codebaseName = nameColumn.contramap[Codebase](_.name)
+
+= val codebaseName = nameColumn.contramap[Codebase](_.name)
+- ```
++ ```
+
+- ### Tabulating something that is not a case class
++ ### ケースクラスでないものを表にする
+
+- A sequence of anything with a `Tabulable` instance is tabulated, so a list of plain integers,
+- or of text, is drawn as a table of one column, without a wrapper type. That instance is also
+- where a type whose columns are not its fields takes part, such as a
+- [record](records.md) read from a schema, or a value whose columns for display are computed.
++ `Tabulable` インスタンスを持つものの列は何でも表にできるので、ただの整数やテキストのリストは、包む型なしに一列の表として描かれる。
++ そのインスタンスは、スキーマから読んだ [レコード](records.md) や、表示用の列が計算で求められる値のような、列がフィールドでない型が参加する場所でもある。
+
+- ### Lists in columns
++ ### 列に並べたリスト
+
+- Not every arrangement of text in columns is a table. A list of short items, such as file
+- names or the entries of a legend, reads best when it is laid out as `ls` lays out a
+- directory: in as many columns as the width allows, with no titles and no rules. `columnate`
+- does this for a list of textual values, and gives one line for each row:
++ テキストを列に並べたものがすべて表であるわけではない。
++ ファイル名や凡例の項目のような短い項目のリストは、`ls` がディレクトリを並べるように、幅が許すだけ多くの列に、見出しも罫線もなしに並べると最も読みやすい。
++ `columnate` はテキストの値のリストに対してこれを行い、行ごとに一つの行を与える。
+
+= does this for a list of textual values, and gives one line for each row:
+=
+- ```scala fuel
++ ```scala fuel
+
+= does this for a list of textual values, and gives one line for each row:
+=
+= ```scala fuel
+- run
++ run
+
+= does this for a list of textual values, and gives one line for each row:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum").columnate(24).each(Out.println(_))
++ List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum").columnate(24).each(Out.println(_))
+
+= List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum").columnate(24).each(Out.println(_))
+- ```
++ ```
+
+- The number of columns is the greatest at which the content of every column fits, with `gap`
+- cells between neighbors. Columns of equal width, each as wide as the widest item, are
+- preferred. A layout with one more column is admitted when the items which fall into some
+- column happen to be narrower, and that column can shrink. Whatever width is then spare is
+- shared back out among the shrunk columns, toward equality, without any column growing beyond
+- the widest item. The parameters of `columnate` are:
++ 列の数は、隣り合う列の間に `gap` 個のセルを空けて、すべての列の内容が収まる最大の数である。
++ それぞれが最も広い項目と同じ幅である、等しい幅の列が優先される。
++ ある列に入る項目がたまたま狭く、その列を縮められる場合は、列が一つ多いレイアウトが認められる。
++ そのとき余る幅は、どの列も最も広い項目より広くならないように、等しくなる方向で、縮めた列に分け戻される。
++ `columnate` のパラメーターは次のとおりである。
+
+= the widest item. The parameters of `columnate` are:
+=
+- ```tabular
++ ```tabular
+
+- column  Parameter
+- column  Default
+- column  Effect
+- row  `width`  none  the width to fill
+- row  `gap`  `2`  the cells between neighbouring columns
+- row  `uniform`  `false`  when `true`, considers only equal-width layouts
+- row  `downward`  `false`  when `true`, reads the items down each column rather than across each row
+- row  `align`  `TextAlignment.Left`  how each cell is padded within its column
++ column  パラメーター
++ column  既定値
++ column  効果
++ row  `width`  なし  埋める幅
++ row  `gap`  `2`  隣り合う列の間のセル
++ row  `uniform`  `false`  `true` のとき、等しい幅のレイアウトだけを考える
++ row  `downward`  `false`  `true` のとき、項目を行ごとに横へではなく、列ごとに下へ読む
++ row  `align`  `TextAlignment.Left`  各セルを列の中でどうパディングするか
+
+= row  `align`  `TextAlignment.Left`  how each cell is padded within its column
+- ```
++ ```
+
+- A row which is aligned to the left has no trailing padding after its last item.
++ 左揃えの行は、最後の項目の後ろにパディングを持たない。
+
+- ### When the table does not fit
++ ### 表が収まらないとき
+
+- Below some width, no arrangement of columns is satisfactory, and what should happen then is
+- a policy, not a fixed behavior. The `columnAttenuation` given decides:
++ ある幅を下回ると、どの列の並べ方も満足できるものにならず、そのときどうすべきかは固定された動作ではなくポリシーである。
++ `columnAttenuation` の given がそれを決める。
+
+= a policy, not a fixed behavior. The `columnAttenuation` given decides:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  A table which does not fit
+- row  `columnAttenuation.ignoreAttenuation`  is drawn anyway, as well as the width allows
+- row  `columnAttenuation.failAttenuation`  raises a `Table.Error`, instead of producing something misleading
++ column  インポート
++ column  収まらない表は
++ row  `columnAttenuation.ignoreAttenuation`  それでも、幅が許す限りうまく描かれる
++ row  `columnAttenuation.failAttenuation`  誤解を招くものを作る代わりに `Table.Error` を発生させる
+
+= row  `columnAttenuation.failAttenuation`  raises a `Table.Error`, instead of producing something misleading
+- ```
++ ```
+
+- The limit is not abstract. In the table above, the *Description* column can never be
+- narrower than the longest single word which it contains, `Statically-checked`. Below 37
+- characters, no slack will make it fit, however much the rest collapses.
++ その限界は抽象的なものではない。
++ 上の表では、*Description* の列は、その中の最も長い一語 `Statically-checked` より狭くはなれない。
++ 37 文字を下回ると、残りがどれだけ折りたたまれても、どんなスラックでも収まらない。
+
+- `Table.Error` is a checked [error](errors.md#recovering) like any other. It carries the
+- minimum width which the table needed, and the width which it was given, so a handler can say
+- something useful, and need not merely fail:
++ `Table.Error` は他と同じ検査される [エラー](errors.md#recovering) である。
++ 表が必要とした最小の幅と、与えられた幅を運ぶので、ハンドラは単に失敗するだけでなく、役に立つことを言える。
+
+= something useful, and need not merely fail:
+=
+- ```scala
++ ```scala
+
+- def narrow(): Unit =
++ def narrow(): Unit =
+
+-   import columnAttenuation.failAttenuation
++   import columnAttenuation.failAttenuation
+
+-   recover:
++   recover:
+
+-     case Table.Error(minimum, available) =>
++     case Table.Error(minimum, available) =>
+
+-       Out.println(t"The table needs a width of at least $minimum to be shown.")
++       Out.println(t"The table needs a width of at least $minimum to be shown.")
+
+-   . protect:
++   . protect:
+
+-       Out.println(table.tabulate(libraries).grid(30))
++       Out.println(table.tabulate(libraries).grid(30))
+
+=       Out.println(table.tabulate(libraries).grid(30))
+- ```
++ ```
+
+=       Out.println(table.tabulate(libraries).grid(30))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=       Out.println(table.tabulate(libraries).grid(30))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=       Out.println(table.tabulate(libraries).grid(30))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- narrow()
++ narrow()
+
+= narrow()
+- ```
++ ```
+
+- A report which is written to a file, where nobody will see that the columns were mangled,
+- wants the failure. An interactive display, where the user can widen the window, wants the
+- table drawn. And since `ignoreAttenuation` cannot fail, choosing it requires no error
+- handling at all.
++ 列がめちゃくちゃにされたことに誰も気づかないファイルに書き出すレポートは、失敗を望む。
++ ユーザーがウィンドウを広げられる対話的な表示は、表が描かれることを望む。
++ そして `ignoreAttenuation` は失敗しえないので、それを選べばエラー処理はまったく要らない。
+
+- ### Related
++ ### 関連
+
+- - [Terminal](terminal.md) styles the text in a cell, and draws live interfaces.
+- - [CSV](csv.md) reads the rows which a table displays.
+- - [Hyphenation](hyphenation.md) breaks the words of a wrapped column.
+- - [Text](text.md#padding-and-fitting) pads and fits single values.
+- - [Charts](charts.md) draws the same data as a picture.
+- - [Catalogs](catalogs.md), [daemons](daemons.md), [display](display.md) and [trees](trees.md) lay out values as text in the same spirit.
++ - [端末](terminal.md) はセルのテキストにスタイルを付け、動的なインターフェースを描く。
++ - [CSV](csv.md) は表が表示する行を読む。
++ - [ハイフネーション](hyphenation.md) は折り返す列の単語を分割する。
++ - [テキスト](text.md#padding-and-fitting) は単一の値をパディングし、収める。
++ - [チャート](charts.md) は同じデータを絵として描く。
++ - [カタログ](catalogs.md)、[デーモン](daemons.md)、[表示](display.md)、[ツリー](trees.md) は、同じ精神で値をテキストとしてレイアウトする。

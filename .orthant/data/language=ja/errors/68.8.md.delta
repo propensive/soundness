@@ -1,0 +1,41 @@
+orthant 1 language
+
+- # `↯/s.68.8` — Name is not valid in any namespace in scope
++ # `↯/s.68.8` — 名前がスコープ内のどの名前空間でも正当でない
+
+- Raised at compiletime when a name literal satisfies none of the namespaces available.
++ 名前のリテラルが、利用できるどの名前空間も満たさないとき、コンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- An `n"…"` literal is resolved against the namespaces in scope. This error means no namespace
+- in scope admits it.
++ `n"…"` リテラルは、スコープ内の名前空間に照らして解決される。
++ このエラーは、スコープ内のどの名前空間もそれを受け入れないことを意味する。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.68.8] the name my/name is not a valid identifier in any namespace in scope
++ [↯/s.68.8] the name my/name is not a valid identifier in any namespace in scope
+
+= [↯/s.68.8] the name my/name is not a valid identifier in any namespace in scope
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Correct the name, or bring the intended namespace into scope so that its rules apply.
++ 名前を直すか、意図した名前空間をスコープに入れて、その規則が適用されるようにする。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/nomenclature/src/core/nomenclature.protointernal.scala`
++ - ソース：`lib/nomenclature/src/core/nomenclature.protointernal.scala`

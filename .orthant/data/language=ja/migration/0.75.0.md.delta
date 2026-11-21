@@ -1,0 +1,1047 @@
+orthant 1 language
+
+- # Changes since 0.74.0
++ # 0.74.0 からの変更点
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.74.0 to the next release. Each entry states precisely what changed; see `AGENTS.md` for the
+- format. Entries are grouped by module, most-recently-added last within a module.
++ このファイルは、Soundness のライブラリを使うコードを 0.74.0 から次のリリースへ更新する LLM エージェントが読むものである。
++ 各項目は何が変わったかを正確に述べる。形式については `AGENTS.md` を参照のこと。
++ 項目はモジュールごとにまとめ、各モジュールの中では最後に追加したものを最後に置く。
+
+- ## proscenium
++ ## proscenium
+
+- - `Array.thaw[element: ClassTag](array: Array[element]^{caps.any.rd}): Array[element]^` is
+-   new: an exclusive copy of any readable array, the inverse of `Array.freeze`. Write through it
+-   with `copy(index) = value` and freeze it again; the source is never changed. Code that built
+-   `scala.collection.mutable.ArrayBuffer.from(xs.stdlib)` to edit several slots and then
+-   `Array.from(buffer)` should thaw, write and freeze instead. (#2337)
+- - `Array.concat` gains a three-operand overload, `concat[element: ClassTag](left, middle,
+-   right: Array[element]^{caps.any.rd}): Array[element]^{}`, beside the two-operand form, for
+-   splicing. A splice `Array.from(xs.stdlib.take(i) ++ ys.stdlib ++ xs.stdlib.drop(i + 1))` is
+-   `Array.concat(xs.before(i.z), ys, xs.after(i.z))`. (#2337)
++ - `Array.thaw[element: ClassTag](array: Array[element]^{caps.any.rd}): Array[element]^` が新しく加わった。読み取り可能な任意の配列の排他的なコピーで、`Array.freeze` の逆である。`copy(index) = value` でそれに書き込み、ふたたび凍結する。元の配列が変更されることはない。複数のスロットを編集するために `scala.collection.mutable.ArrayBuffer.from(xs.stdlib)` を作り、そのあと `Array.from(buffer)` としていたコードは、代わりに解凍し、書き込み、凍結するべきである。(#2337)
++ - `Array.concat` に、二つのオペランドを取る形と並んで、スプライスのための三つのオペランドを取るオーバーロード `concat[element: ClassTag](left, middle, right: Array[element]^{caps.any.rd}): Array[element]^{}` が加わった。スプライス `Array.from(xs.stdlib.take(i) ++ ys.stdlib ++ xs.stdlib.drop(i + 1))` は `Array.concat(xs.before(i.z), ys, xs.after(i.z))` となる。(#2337)
+
+- - `List.quoted[element: Type](elements: List[Expr[element]])(using Quotes): Expr[List[element]]`
+-   and `Array.quoted[element: Type](elements: List[Expr[element]] | Array[Expr[element]]^{})(using
+-   Quotes): Expr[Array[element]^{}]` (two overloads) are new: the native counterparts of
+-   `Expr.ofList`, for macro code holding lifted elements. `Expr.ofList(xs.stdlib)` wrapped in
+-   `List.from(…)` is `List.quoted(xs)`; `'{Array.from(${Expr.ofList(xs.stdlib)})}` is
+-   `Array.quoted(xs)`, which resolves the element's `ClassTag` at the expansion site.
+-   `gigantism.Lifts.list` is unchanged and now delegates to `List.quoted`. (#2339)
+- - The prelude no longer exports `scala.Iterator`: `export scala.{Iterable, Iterator}` is now
+-   `export scala.Iterable`. In a file compiled against Soundness, a bare `Iterator` now means
+-   `murmuration.Iterator` (through `import rudiments.*` or `import soundness.*`); a file that
+-   imports neither and used the bare name must add `import murmuration.Iterator`, or write
+-   `scala.collection.Iterator` where a stdlib iterator is genuinely meant. (#2235)
++ - `List.quoted[element: Type](elements: List[Expr[element]])(using Quotes): Expr[List[element]]` と `Array.quoted[element: Type](elements: List[Expr[element]] | Array[Expr[element]]^{})(using Quotes): Expr[Array[element]^{}]`（二つのオーバーロード）が新しく加わった。持ち上げた要素を保持するマクロコードのための、`Expr.ofList` のネイティブな対応物である。`List.from(…)` で包んだ `Expr.ofList(xs.stdlib)` は `List.quoted(xs)` となり、`'{Array.from(${Expr.ofList(xs.stdlib)})}` は `Array.quoted(xs)` となる。後者は要素の `ClassTag` を展開箇所で解決する。`gigantism.Lifts.list` は変わらず、現在は `List.quoted` に委譲する。(#2339)
++ - プレリュードは `scala.Iterator` をエクスポートしなくなった。`export scala.{Iterable, Iterator}` は `export scala.Iterable` になった。Soundness に対してコンパイルされるファイルでは、修飾なしの `Iterator` は（`import rudiments.*` または `import soundness.*` を通して）`murmuration.Iterator` を意味するようになった。どちらもインポートせずに修飾なしの名前を使っていたファイルは、`import murmuration.Iterator` を加えるか、本当に標準ライブラリのイテレーターを意図する箇所では `scala.collection.Iterator` と書かなければならない。(#2235)
+
+- ## denominative
++ ## denominative
+
+- - `Omissible` gains an instance for the frozen array, `Omissible.frozenArray`, gated on
+-   `Dysasymptotic.LinearSize` like `Definable.frozenArray`, so `xs.omit(ordinal)` (in
+-   `rudiments` and the umbrella) now resolves on an `Array[element]^{}` under `import
+-   denominative.dysasymptotics.linearSize`: a copy without the slot at `ordinal`, or the array
+-   unchanged when `ordinal` is out of range. Previously `omit` was available only on `Map` and
+-   `Ledger`. (#2337)
+- - `Interval` gains `all(predicate)`, with a branded overload on `Interval in form` whose
+-   predicate receives `Ordinal in form`: `xs.extent.all: i => xs(i) == ys.readUnchecked(i.n0)`
+-   replaces `xs.stdlib.indices.forall`. (#2337)
++ - `Omissible` に凍結済み配列のインスタンス `Omissible.frozenArray` が加わった。`Definable.frozenArray` と同じく `Dysasymptotic.LinearSize` で制限されるので、`import denominative.dysasymptotics.linearSize` のもとで、`xs.omit(ordinal)`（`rudiments` とアンブレラにある）が `Array[element]^{}` に対して解決されるようになった。結果は `ordinal` のスロットを除いたコピーで、`ordinal` が範囲外なら配列はそのままである。以前は `omit` は `Map` と `Ledger` でしか使えなかった。(#2337)
++ - `Interval` に `all(predicate)` が加わった。`Interval in form` に対するブランド付きのオーバーロードもあり、その述語は `Ordinal in form` を受け取る。`xs.extent.all: i => xs(i) == ys.readUnchecked(i.n0)` が `xs.stdlib.indices.forall` に代わる。(#2337)
+
+- ## hypotenuse
++ ## hypotenuse
+
+- - `hypotenuse.maximize` and `hypotenuse.minimize` (both the `Traversable`-receiver and the
+-   `Iterable`-receiver overloads) are removed. They are now `rudiments.maximize` and
+-   `rudiments.minimize` (exported by the umbrella), on any `Traversable` receiver, with the
+-   key constrained by symbolism's `Comparable` rather than by `Commensurable against` itself:
+-   every numeric key still works, and a `Text`, `String`, `Ordinal` or any other `Comparable`
+-   key now does too. The result is unchanged, `Optional[element]` (`Unset` on an empty
+-   receiver), and the first of several elements with equal keys is chosen. A by-name import
+-   `import hypotenuse.{maximize, minimize}` must become `import rudiments.{maximize, minimize}`;
+-   with `import rudiments.*` or `import soundness.*` nothing changes. (#2337)
++ - `hypotenuse.maximize` と `hypotenuse.minimize`（`Traversable` をレシーバとするオーバーロードと `Iterable` をレシーバとするオーバーロードの両方）は削除された。これらは現在 `rudiments.maximize` と `rudiments.minimize`（アンブレラがエクスポートする）であり、任意の `Traversable` レシーバに対して使える。キーは `Commensurable against` 自身ではなく symbolism の `Comparable` で制約される。数値のキーはすべて引き続き使え、`Text`、`String`、`Ordinal` その他の `Comparable` なキーも使えるようになった。結果は変わらず `Optional[element]`（空のレシーバでは `Unset`）であり、キーが等しい要素が複数あるときは最初のものが選ばれる。名前によるインポート `import hypotenuse.{maximize, minimize}` は `import rudiments.{maximize, minimize}` にしなければならない。`import rudiments.*` または `import soundness.*` を使っていれば何も変わらない。(#2337)
+
+- ## stenography
++ ## stenography
+
+- - `Syntax.name` now renders a capability's `except` restriction: `Text^{alpha.except[Reader]}`
+-   was written as `Text^{alpha}`, dropping the restriction silently, and is now written in full,
+-   matching the existing `x.only[…]` and `x.rd` forms. Code comparing rendered type names (tests,
+-   golden files) against the truncated form must expect the restriction.
++ - `Syntax.name` はケイパビリティの `except` 制限を描画するようになった。`Text^{alpha.except[Reader]}` は `Text^{alpha}` と書かれ、制限が黙って落とされていたが、現在は既存の `x.only[…]` や `x.rd` の形と同じく、完全な形で書かれる。描画された型名を切り詰められた形と比較するコード（テスト、ゴールデンファイル）は、制限を含む形を期待しなければならない。
+
+=   golden files) against the truncated form must expect the restriction.
+=
+- ## obligatory
++ ## obligatory
+
+- - `frames[frame]` (the extension that applies a `Framable` framer) now also has a `Chain[element]`
+-   receiver beside the `Iterator[element]^` one, returning the same one-shot
+-   `Iterator[element]^{framable}`. `stream.chain.stdlib.iterator.frames[Linefeed]` is
+-   `stream.chain.frames[Linefeed]`. (#2341)
+- - `Framable.frames(frame: => Optional[data]): Iterator[data]^{frame, caps.any}` and the
+-   `frames[frame]` extension return `murmuration.Iterator`; the extension's iterator receiver is
+-   taken as `consume`. (#2235)
++ - `frames[frame]`（`Framable` なフレーマーを適用する拡張）に、`Iterator[element]^` のレシーバと並んで `Chain[element]` のレシーバが加わった。返すのは同じワンショットの `Iterator[element]^{framable}` である。`stream.chain.stdlib.iterator.frames[Linefeed]` は `stream.chain.frames[Linefeed]` となる。(#2341)
++ - `Framable.frames(frame: => Optional[data]): Iterator[data]^{frame, caps.any}` と `frames[frame]` 拡張は `murmuration.Iterator` を返す。拡張のイテレーターのレシーバは `consume` として受け取られる。(#2235)
+
+- ## plutocrat
++ ## plutocrat
+
+- - `share(right: Int): List[Money in currency]` (on `Money in currency`) now returns `right`
+-   amounts of the receiver's currency that differ by at most one minor unit and sum exactly to the
+-   receiver, the larger first: `Eur(3.01).share(3)` is `List(Eur(1.01), Eur(1.00), Eur(1.00))`.
+-   It previously divided the packed representation, currency code included, so each share was
+-   not a valid amount of that currency and only their raw sum recovered the original. No call
+-   site changes; code that worked around the old results should use them directly.
++ - `share(right: Int): List[Money in currency]`（`Money in currency` に対するもの）は、レシーバの通貨の金額を `right` 個返すようになった。それらは互いに最大で最小単位一つ分しか違わず、合計はちょうどレシーバに等しく、大きいものが先に来る。`Eur(3.01).share(3)` は `List(Eur(1.01), Eur(1.00), Eur(1.00))` である。以前は通貨コードを含む詰め込まれた表現を割っていたので、各取り分はその通貨の正しい金額ではなく、生の値の合計だけが元の金額に戻った。呼び出し箇所に変更はない。古い結果を回避していたコードは、結果をそのまま使うべきである。
+
+- ## murmuration
++ ## murmuration
+
+- - `murmuration.Iterator[+element]` is new, exported by rudiments and the umbrella: a
+-   separation-checked, non-allocating one-shot iterator that replaces `scala.Iterator`
+-   throughout Soundness. It extends `caps.Stateful`, so a value of type `Iterator[e]^` is
+-   exclusive: an `update def` advances it, a `consume def` takes it over, and the compiler
+-   rejects a second use of a consumed one. There is no `hasNext`/`next()` pair. Read one with
+-   - a terminal operation (an `update def`, draining in place): `each(lambda)`,
+-     `fold(initial)(lambda)`, `exists(p)`, `all(p)`, `count(p)`, `size`,
+-     `seek[result](p)(absent: => result)(present: element => result)`, `option: Option[e]`,
+-     `chain: Chain[e]` (lazy), `to[result]` (via `Reshapable`);
+-   - `update def next(): element | Iterator.Exhausted`, for a stateful consumer that holds the
+-     iterator in a field: one call advances and yields, and the caller matches on
+-     `Iterator.Exhausted` first (`case Iterator.Exhausted => … case value: Int => …`);
+-   - the moving style, `consume def pull: Iterator.Pull[element]`, which yields
+-     `Iterator.Exhausted` or an `Iterator.Cursor[element]^` owning the iterator; `cursor.value`
+-     reads the element and `consume cursor.pull` advances. Branch with a typed pattern
+-     (`case cursor: Iterator.Cursor[Int]`; backtick a class type parameter) and read `value`
+-     before `pull`. `Exhausted` is a pure `null`-backed opaque, so a step allocates nothing.
+-   Lazy combinators are `consume def`s returning a fresh iterator: `map`, `filter`,
+-   `sweep(partialFunction)`, `keep(n)`/`skip(n)`, `keep(p)`/`skip(p)`, `zip(consume that)`,
+-   `indexed` (pairs with an `Int` index), `trace(initial)(lambda)` (`scanLeft`),
+-   `excerpt(from, until)`, `batched(n): Iterator[List[e]]^`, `deduplicate(key)`, `distinct`,
+-   `concat(consume that)` (`++`), and `flatMap(lambda)(using inner is Traversable)`, whose
+-   lambda returns a pure *collection*, not an iterator. A combinator's result captures its
+-   lambda (`Iterator[e2]^{lambda, caps.any}`), so a capturing lambda makes the result exclusive.
+-   The companion has `empty`, `apply(elements*)`, `range(start, end)`, `fill(n)(elem)`,
+-   `tabulate(n)(lambda)`, `continually(elem)`, `iterate(initial)(lambda)`, `array(array)`, and
+-   `from(…)` for a `scala.collection.Iterator`, a `java.util.Iterator` or a
+-   `java.util.Enumeration`; `consume def stdlib: scala.collection.Iterator[e]` hands one out to
+-   a stdlib or JDK API, and is a tagged bridge like every `xs.stdlib`.
+-   Implementations write `new Iterator[e]:` with `update def advance(): Boolean` (move and
+-   materialise the element into a `var`) and `def current: e` (a plain read), and inherit the
+-   rest. The old anonymous `new scala.Iterator[e] { def hasNext; def next() }` with
+-   `@untrackedCaptures var`s becomes this, with plain `var`s.
+-   Migration of stdlib call sites: `it.hasNext`/`it.next()` → `next()` match or `pull`;
+-   `it.toList`/`List.from(it)` → `it.to[List]`; `it ++ that` → `it.concat(that)`;
+-   `it.take(n)`/`drop(n)` → `keep(n)`/`skip(n)`; `takeWhile`/`dropWhile` → `keep(p)`/`skip(p)`;
+-   `collect` → `sweep`; `zipWithIndex` → `indexed`; `grouped(n)` → `batched(n)`;
+-   `scanLeft` → `trace`; `slice` → `excerpt`; `find(p)` → `seek(p)(Unset)(identity(_))`;
+-   `nextOption()` → `option`; `foreach` → `each`; `forall` → `all`. (#2235)
+- - `Traversable.traverse(self)` now returns `Iterator[Operand]^` (the new type, exclusive) and
+-   `Reshapable.reshape(elements: Iterator[Operand]^)` takes it; an instance of either written
+-   outside Soundness must be re-typed accordingly. `Reshapable.build(elements, builder)` is a
+-   new helper for strict instances backed by a stdlib `Builder`. (#2235)
++ - `murmuration.Iterator[+element]` が新しく加わり、rudiments とアンブレラがエクスポートする。分離検査される、アロケーションを行わないワンショットのイテレーターで、Soundness 全体で `scala.Iterator` に代わる。`caps.Stateful` を継承するので、`Iterator[e]^` 型の値は排他的である。`update def` がそれを進め、`consume def` がそれを引き取り、コンパイラは消費済みのものを二度使うことを拒否する。`hasNext`/`next()` の組はない。次のいずれかで読む。
++   - 終端操作（その場で使い切る `update def`）：`each(lambda)`、`fold(initial)(lambda)`、`exists(p)`、`all(p)`、`count(p)`、`size`、`seek[result](p)(absent: => result)(present: element => result)`、`option: Option[e]`、`chain: Chain[e]`（遅延）、`to[result]`（`Reshapable` を通して）。
++   - イテレーターをフィールドに保持する状態を持つ消費者のための `update def next(): element | Iterator.Exhausted`。一回の呼び出しで進めて値を返し、呼び出し側はまず `Iterator.Exhausted` に対してマッチする（`case Iterator.Exhausted => … case value: Int => …`）。
++   - 移動スタイルの `consume def pull: Iterator.Pull[element]`。これは `Iterator.Exhausted` か、イテレーターを所有する `Iterator.Cursor[element]^` を返す。`cursor.value` が要素を読み、`consume cursor.pull` が進める。型付きパターン（`case cursor: Iterator.Cursor[Int]`。クラスの型パラメーターはバッククォートで囲む）で分岐し、`pull` の前に `value` を読む。`Exhausted` は `null` を基にした純粋な不透明型なので、一歩進めても何もアロケーションしない。
++   遅延コンビネーターは新しいイテレーターを返す `consume def` である。`map`、`filter`、`sweep(partialFunction)`、`keep(n)`/`skip(n)`、`keep(p)`/`skip(p)`、`zip(consume that)`、`indexed`（`Int` のインデックスと組にする）、`trace(initial)(lambda)`（`scanLeft`）、`excerpt(from, until)`、`batched(n): Iterator[List[e]]^`、`deduplicate(key)`、`distinct`、`concat(consume that)`（`++`）、そして `flatMap(lambda)(using inner is Traversable)` がある。最後のもののラムダは、イテレーターではなく純粋な*コレクション*を返す。
++   コンビネーターの結果はそのラムダを捕捉する（`Iterator[e2]^{lambda, caps.any}`）ので、捕捉を行うラムダは結果を排他的にする。
++   コンパニオンには `empty`、`apply(elements*)`、`range(start, end)`、`fill(n)(elem)`、`tabulate(n)(lambda)`、`continually(elem)`、`iterate(initial)(lambda)`、`array(array)`、そして `scala.collection.Iterator`、`java.util.Iterator`、`java.util.Enumeration` のための `from(…)` がある。
++   `consume def stdlib: scala.collection.Iterator[e]` はイテレーターを標準ライブラリや JDK の API に渡すもので、すべての `xs.stdlib` と同じくタグ付きの橋渡しである。
++   実装は `new Iterator[e]:` と書き、`update def advance(): Boolean`（移動して要素を `var` に実体化する）と `def current: e`（単なる読み取り）を定義し、残りを継承する。
++   `@untrackedCaptures var` を使った、以前の無名の `new scala.Iterator[e] { def hasNext; def next() }` は、普通の `var` を使ったこの形になる。
++   標準ライブラリの呼び出し箇所の移行：`it.hasNext`/`it.next()` → `next()` のマッチまたは `pull`、`it.toList`/`List.from(it)` → `it.to[List]`、`it ++ that` → `it.concat(that)`、`it.take(n)`/`drop(n)` → `keep(n)`/`skip(n)`、`takeWhile`/`dropWhile` → `keep(p)`/`skip(p)`、`collect` → `sweep`、`zipWithIndex` → `indexed`、`grouped(n)` → `batched(n)`、`scanLeft` → `trace`、`slice` → `excerpt`、`find(p)` → `seek(p)(Unset)(identity(_))`、`nextOption()` → `option`、`foreach` → `each`、`forall` → `all`。(#2235)
++ - `Traversable.traverse(self)` は `Iterator[Operand]^`（新しい型で、排他的）を返すようになり、`Reshapable.reshape(elements: Iterator[Operand]^)` はそれを受け取る。Soundness の外で書かれたどちらかのインスタンスは、それに合わせて型を書き直さなければならない。`Reshapable.build(elements, builder)` は、標準ライブラリの `Builder` を基にした正格なインスタンスのための新しいヘルパーである。(#2235)
+
+- ## vacuous
++ ## vacuous
+
+- - `compact` on an iterator of `Optional`s now takes and returns `murmuration.Iterator` (`extension
+-   [value](consume iterator: Iterator[Optional[value]]^) def compact: Iterator[value]^`). (#2235)
++ - `Optional` のイテレーターに対する `compact` は、`murmuration.Iterator` を受け取って返すようになった（`extension [value](consume iterator: Iterator[Optional[value]]^) def compact: Iterator[value]^`）。(#2235)
+
+- ## rudiments
++ ## rudiments
+
+- - The `each` and `all` extensions whose receiver was a `scala.Iterator` are removed: the
+-   iterator's own `each`/`all` methods take their place. The `Traversable` extensions (`each`,
+-   `all`, `fuse`, `seek`, `reap`, `sweep`, `where`, `indexed`, `head`, `last`, `lead`,
+-   `leading`, `trailing`, `locate`, `total`, `product`, `reduce`, `occupied`) are unchanged in
+-   signature but now drive `murmuration.Iterator`. `sorted` and `ordered` on an iterator take it
+-   as `consume`. (#2235)
++ - レシーバが `scala.Iterator` だった `each` と `all` の拡張は削除された。イテレーター自身の `each`/`all` メソッドがその代わりとなる。`Traversable` の拡張（`each`、`all`、`fuse`、`seek`、`reap`、`sweep`、`where`、`indexed`、`head`、`last`、`lead`、`leading`、`trailing`、`locate`、`total`、`product`、`reduce`、`occupied`）のシグネチャは変わらないが、現在は `murmuration.Iterator` を駆動する。イテレーターに対する `sorted` と `ordered` は、それを `consume` として受け取る。(#2235)
+
+- ## acyclicity
++ ## acyclicity
+
+- - `Nodal.nodes(self): Iterator[Operand]^`, `Nodal.successors(self, node): Iterator[Operand]^`
+-   and `Bidirectional.predecessors(self, node): Iterator[Operand]^` now return
+-   `murmuration.Iterator` (exclusive); every provided instance (`Dag`, `Digraph`, `Hasse`,
+-   `Topology`, `Map`, `Ledger`) follows. A user instance returning a stdlib iterator wraps it with
+-   `Iterator.from(…)`. (#2235)
+- - The extension `dot` on `Dag[Text]` is `def dot: Dot raises Name.Error`, where before it was
+-   `def dot: Dot` and threw `Name.Error` for a node whose text is not a DOT identifier (empty,
+-   or containing `"` or a newline). A call site needs a `Tactic[Name.Error]` in scope. (#2350)
++ - `Nodal.nodes(self): Iterator[Operand]^`、`Nodal.successors(self, node): Iterator[Operand]^`、`Bidirectional.predecessors(self, node): Iterator[Operand]^` は `murmuration.Iterator`（排他的）を返すようになった。提供されているすべてのインスタンス（`Dag`、`Digraph`、`Hasse`、`Topology`、`Map`、`Ledger`）もこれに従う。標準ライブラリのイテレーターを返すユーザーのインスタンスは、それを `Iterator.from(…)` で包む。(#2235)
++ - `Dag[Text]` に対する拡張 `dot` は `def dot: Dot raises Name.Error` になった。以前は `def dot: Dot` であり、テキストが DOT の識別子でないノード（空、または `"` や改行を含む）に対して `Name.Error` を投げていた。呼び出し箇所には、スコープ内に `Tactic[Name.Error]` が必要である。(#2350)
+
+- ## bitumen
++ ## bitumen
+
+- - `Tarfile.read`, `Tar.Handle.entries`, `Arfile.read` and `Ar.Handle.entries` return a fresh
+-   `Iterator[…]^` rather than `Iterator[…]^{tactic}`: the iterator is a new mutable object, and
+-   its mutability no longer rides on a tactic capture (which is empty for the pure ambient
+-   strategies). A binding typed `Iterator[Tar.Entry]^{tactic}` becomes `Iterator[Tar.Entry]^`.
+-   (#2328)
++ - `Tarfile.read`、`Tar.Handle.entries`、`Arfile.read`、`Ar.Handle.entries` は、`Iterator[…]^{tactic}` ではなく新しい `Iterator[…]^` を返す。イテレーターは新しい可変オブジェクトであり、その可変性は戦術の捕捉（純粋なアンビエント戦略では空である）に乗らなくなった。`Iterator[Tar.Entry]^{tactic}` と型付けされた束縛は `Iterator[Tar.Entry]^` になる。(#2328)
+
+- - `Ar#serialize`, `Tar#serialize`, `Tar#dataBlocks` and `Archive.Body#chunks` return
+-   `murmuration.Iterator[Data]^` (`chunks` as `Iterator[Data]^{this, caps.any}`). `Arfile.Member`
+-   and `Tarfile.Member` are now `Traversable by Data` so an archive's members may be streamed
+-   with `each` or `stream`. (#2235)
++ - `Ar#serialize`、`Tar#serialize`、`Tar#dataBlocks`、`Archive.Body#chunks` は `murmuration.Iterator[Data]^`（`chunks` は `Iterator[Data]^{this, caps.any}`）を返す。`Arfile.Member` と `Tarfile.Member` は `Traversable by Data` になったので、アーカイブのメンバーを `each` や `stream` でストリームとして扱える。(#2235)
+
+- ## breviloquence, locomotion, stratiform, ypsiloid
++ ## breviloquence, locomotion, stratiform, ypsiloid
+
+- - `Cbor.emit`, `Protobuf.emit`, `Tel.emit` and `Yaml.emit` return `Iterator[…]^`
+-   (`murmuration.Iterator`). Consumers that called the stdlib `toList`/`mkString` on the
+-   result use `.to[List]`/`.to[List].join`, or drain it with `.stream`/`.each`. (#2235)
++ - `Cbor.emit`、`Protobuf.emit`、`Tel.emit`、`Yaml.emit` は `Iterator[…]^`（`murmuration.Iterator`）を返す。結果に対して標準ライブラリの `toList`/`mkString` を呼んでいた利用者は、`.to[List]`/`.to[List].join` を使うか、`.stream`/`.each` で使い切る。(#2235)
+
+- ## caesura
++ ## caesura
+
+- - `Sheet` construction from a `Dsv` iterator takes the iterator as `consume`; `Dsv` row readers
+-   are `murmuration.Iterator` implementations. (#2235)
++ - `Dsv` のイテレーターからの `Sheet` の構築は、イテレーターを `consume` として受け取る。`Dsv` の行リーダーは `murmuration.Iterator` の実装である。(#2235)
+
+- ## gossamer
++ ## gossamer
+
+- - `Joinable.Assembly.assemble(parts: Iterator[Part]^)` and `Source.traverse` now use
+-   `murmuration.Iterator`; `join` with a separator builds the interleaving through the iterator's
+-   `concat`/`flatMap` rather than a stdlib `flatMap`. (#2235)
++ - `Joinable.Assembly.assemble(parts: Iterator[Part]^)` と `Source.traverse` は `murmuration.Iterator` を使うようになった。区切りを伴う `join` は、標準ライブラリの `flatMap` ではなく、イテレーターの `concat`/`flatMap` を通して交互の並びを作る。(#2235)
+
+- ## honeycomb, xylophone
++ ## honeycomb, xylophone
+
+- - `Html.HtmlParser.fromIterator(input: Iterator[BaseText]^, permissive)`,
+-   `XmlParser.fromIterator(input: Iterator[BaseText]^)` and `fromIteratorTracked` take a
+-   `murmuration.Iterator`; `Attributes#keys`, `values` and `iterator` return one. (#2235)
+- - `honeycomb.ClassList.apply[name <: Label: Reifiable to List[String]](): ClassList of name` is
+-   `inline def apply[name <: Label](): ClassList of name`: a macro which checks each string
+-   literal of `name` (a literal or a union of literals) against `CssClass`'s identifier rules at
+-   expansion. A label which is not a CSS identifier (`ClassList["1bad"]()`) is now a compile
+-   error where before `apply` threw `Name.Error` at runtime; a type argument which is not made of
+-   string literals is also a compile error. (#2350)
++ - `Html.HtmlParser.fromIterator(input: Iterator[BaseText]^, permissive)`、`XmlParser.fromIterator(input: Iterator[BaseText]^)`、`fromIteratorTracked` は `murmuration.Iterator` を受け取る。`Attributes#keys`、`values`、`iterator` はそれを返す。(#2235)
++ - `honeycomb.ClassList.apply[name <: Label: Reifiable to List[String]](): ClassList of name` は `inline def apply[name <: Label](): ClassList of name` になった。これは `name`（リテラル、またはリテラルのユニオン）の各文字列リテラルを、展開時に `CssClass` の識別子の規則に照らして検査するマクロである。CSS の識別子でないラベル（`ClassList["1bad"]()`）は、以前は `apply` が実行時に `Name.Error` を投げていたが、現在はコンパイルエラーになる。文字列リテラルからなるのでない型引数もコンパイルエラーになる。(#2350)
+
+=   string literals is also a compile error. (#2350)
+=
+- ## jacinta
++ ## jacinta
+
+- - `Json.Parser.parse`, `Json.Parser.parseTracked`, `Json.Ast.parse` and `Json.Ast.parse(input,
+-   holes)` take `consume input: Iterator[Data]^` (`murmuration.Iterator`) and declare their error
+-   with an explicit `(using Tactic[Parse.Error])` rather than `raises Parse.Error` (identical for
+-   a caller that has a tactic in scope). (#2235)
++ - `Json.Parser.parse`、`Json.Parser.parseTracked`、`Json.Ast.parse`、`Json.Ast.parse(input, holes)` は `consume input: Iterator[Data]^`（`murmuration.Iterator`）を受け取り、エラーを `raises Parse.Error` ではなく明示的な `(using Tactic[Parse.Error])` で宣言する（スコープ内に戦術を持つ呼び出し側にとっては同じである）。(#2235)
+
+- ## profanity, ultimatum
++ ## profanity, ultimatum
+
+- - `Interaction.apply(events: Iterator[Terminal.Event]^, state)`, `Interactivity.apply(iterator:
+-   Iterator[event]^): Interactivity[event]^{iterator}`, `Interactivity#eventIterator():
+-   Iterator[event]^{this}` and `Form#run(events: Iterator[Terminal.Event]^)` use
+-   `murmuration.Iterator`; a hand-rolled event source is now `new Iterator[Terminal.Event]:` with
+-   `advance()`/`current`. An `Interactivity` implementation declares `eventIterator()` as
+-   returning `Iterator[event]^{this}`: the events it hands out are captured by the
+-   `Interactivity`, and may be the same iterator on every call. (#2235)
++ - `Interaction.apply(events: Iterator[Terminal.Event]^, state)`、`Interactivity.apply(iterator: Iterator[event]^): Interactivity[event]^{iterator}`、`Interactivity#eventIterator(): Iterator[event]^{this}`、`Form#run(events: Iterator[Terminal.Event]^)` は `murmuration.Iterator` を使う。手書きのイベント源は、`advance()`/`current` を持つ `new Iterator[Terminal.Event]:` になった。`Interactivity` の実装は `eventIterator()` を `Iterator[event]^{this}` を返すものとして宣言する。それが渡すイベントは `Interactivity` に捕捉され、呼び出しのたびに同じイテレーターであってもよい。(#2235)
+
+- ## sibylline
++ ## sibylline
+
+- - `Llm.Response#events: Iterator[Event]^{this, caps.any}` and `text: Iterator[Text]^{this,
+-   caps.any}` return `murmuration.Iterator`; `Llm.Response`'s constructor takes its source as a
+-   `scala.collection.Iterator[Event]` (the transport boundary). (#2235)
++ - `Llm.Response#events: Iterator[Event]^{this, caps.any}` と `text: Iterator[Text]^{this, caps.any}` は `murmuration.Iterator` を返す。`Llm.Response` のコンストラクターは、その源を `scala.collection.Iterator[Event]`（トランスポートの境界）として受け取る。(#2235)
+
+- ## ulysses
++ ## ulysses
+
+- - `Bibliography#lookup(prefix): Iterator[Data]^` returns `murmuration.Iterator`. (#2235)
++ - `Bibliography#lookup(prefix): Iterator[Data]^` は `murmuration.Iterator` を返す。(#2235)
+
+- ## zephyrine
++ ## zephyrine
+
+- - `Stream.apply(iterator: Iterator[medium]^)`, `Cursor.apply(iterator: Iterator[data]^)` and
+-   the `stream` extension take `murmuration.Iterator`; `Producer#iterator` is a `def` returning
+-   `Iterator[medium]^`. A source written as an anonymous `scala.Iterator` becomes `new
+-   Iterator[Data]:` with `advance()`/`current`. (#2235)
++ - `Stream.apply(iterator: Iterator[medium]^)`、`Cursor.apply(iterator: Iterator[data]^)`、`stream` 拡張は `murmuration.Iterator` を受け取る。`Producer#iterator` は `Iterator[medium]^` を返す `def` である。無名の `scala.Iterator` として書かれた源は、`advance()`/`current` を持つ `new Iterator[Data]:` になる。(#2235)
+
+- ## guillotine
++ ## guillotine
+
+- - The line-at-a-time result of a process is now `Chain[Text]` rather than `Iterator[Text]`:
+-   `sh"…".exec[Chain[Text]]()` replaces `exec[Iterator[Text]]()`, and the `Intelligible` results
+-   of the POSIX commands that produce lines (`cat`, `grep`, `head`, `ls`, `man`, `sed`, `sort`,
+-   `strings`, `tail`, `uniq`) are `Chain[Text]`. The chain is lazy and memoizing, so lines still
+-   arrive as the process writes them; an exclusive `murmuration.Iterator` cannot be the result
+-   type of an erased evidence given. (#2235)
+- - `guillotine.Computable#compute(process: Subprocess^): Self` is `compute(process:
+-   Subprocess^)(using Tactic[Truncation.Error]): Self`: an output read which is cut short is
+-   raised rather than thrown. A method with a `using` clause is not a single abstract method,
+-   so an instance written as a lambda (`job => …`) no longer converts: write it as
+-   `Computable((job, tactic) => …)` through the new factory `Computable.apply[self](lambda:
+-   (Subprocess^, Tactic[Truncation.Error]) => self): (self is Computable)^{lambda}`, binding
+-   `given Tactic[Truncation.Error] = tactic` in the body where a read needs it, or as an
+-   explicit `new Computable`. The provided instances (`Chain[Text]`, `List[Text]`, `Text`,
+-   `String`, `Data`, `Exit`, `Unit`, `Stderr`, `Instantiable`) and `Computable#map` are
+-   unchanged in use. (#2350)
+- - `guillotine.Job#await()(using computable: (result is Computable)^)` is `await()(using
+-   computable: (result is Computable)^, truncation: Tactic[Truncation.Error])`, and the timed
+-   `await(duration)` likewise adds `truncation: Tactic[Truncation.Error]` and captures it in its
+-   result. A call with no such tactic in scope mitigates it to its own error or declares
+-   `raises Truncation.Error`. `Executable#exec()` and the inline `apply()` are unchanged in
+-   signature: they report a cut-short read as `Exec.Error(command)` (the last command of a
+-   `Pipeline`) through their existing `Tactic[Exec.Error]`, where before it was thrown as
+-   `Truncation.Error`. (#2350)
++ - プロセスの一行ずつの結果は `Iterator[Text]` ではなく `Chain[Text]` になった。`exec[Iterator[Text]]()` の代わりに `sh"…".exec[Chain[Text]]()` を使い、行を出力する POSIX コマンド（`cat`、`grep`、`head`、`ls`、`man`、`sed`、`sort`、`strings`、`tail`、`uniq`）の `Intelligible` な結果は `Chain[Text]` である。チェーンは遅延かつメモ化を行うので、行は今もプロセスが書くそばから届く。排他的な `murmuration.Iterator` は、消去された証拠の given の結果型になれない。(#2235)
++ - `guillotine.Computable#compute(process: Subprocess^): Self` は `compute(process: Subprocess^)(using Tactic[Truncation.Error]): Self` になった。途中で切れた出力の読み取りは、投げられるのではなく発生させられる。`using` 節を持つメソッドは単一抽象メソッドではないので、ラムダとして書いたインスタンス（`job => …`）は変換されなくなった。新しいファクトリー `Computable.apply[self](lambda: (Subprocess^, Tactic[Truncation.Error]) => self): (self is Computable)^{lambda}` を通して `Computable((job, tactic) => …)` と書き、読み取りが必要な本体で `given Tactic[Truncation.Error] = tactic` を束縛するか、明示的な `new Computable` として書く。提供されているインスタンス（`Chain[Text]`、`List[Text]`、`Text`、`String`、`Data`、`Exit`、`Unit`、`Stderr`、`Instantiable`）と `Computable#map` の使い方は変わらない。(#2350)
++ - `guillotine.Job#await()(using computable: (result is Computable)^)` は `await()(using computable: (result is Computable)^, truncation: Tactic[Truncation.Error])` になり、時間制限付きの `await(duration)` も同様に `truncation: Tactic[Truncation.Error]` を加えて、それを結果に捕捉する。スコープ内にそのような戦術がない呼び出しは、それを自分のエラーへと緩和するか、`raises Truncation.Error` を宣言する。`Executable#exec()` とインラインの `apply()` のシグネチャは変わらない。これらは途中で切れた読み取りを、既存の `Tactic[Exec.Error]` を通して `Exec.Error(command)`（`Pipeline` の最後のコマンド）として報告する。以前は `Truncation.Error` として投げられていた。(#2350)
+
+- ## contingency
++ ## contingency
+
+- - `Emit` (and so every `Tactic`) now extends `scala.caps.Control` rather than
+-   `scala.caps.SharedCapability`. A `Control` capability may retain only `Control` capabilities,
+-   so a `handle`/`recover` case body may raise into an outer tactic but may no longer capture a
+-   non-control shared capability such as a `Loggable` logger: move the logging out of the case
+-   body (log the recovered value after the `handle`, or raise a richer error). `Emit.apply`'s
+-   handler is `error ->{caps.any.only[caps.Control]} Unit` (was `only[caps.SharedCapability]`).
+-   (#2328)
+- - `ThrowTactic[error, success]` is `ThrowTactic[-error]`: the phantom second type parameter is
+-   gone, and the class is contravariant. `ThrowTactic[Hazard, Any]^` is `ThrowTactic[Hazard]^{}`,
+-   `ThrowTactic[E, R]()` is `ThrowTactic[E]()`, and `unsafely`/`throwErrors` blocks that named it
+-   (`ThrowTactic[error, success]^ ?=> …`) name `ThrowTactic[error]^`. (#2328)
+- - The ambient strategies are pure values: `strategies.throwUnsafely: ThrowTactic[Hazard]^{}`
+-   (was `[success] => ThrowTactic[Hazard, success]^`), `strategies.uncheckedErrors: [error] =>
+-   (erased error is Unchecked) => UncheckedTactic[error]^{}`, `strategies.fatalErrors: [exception:
+-   Fatal] => FatalTactic[exception]^{}`; `strategies.throwSafely: [error] => (erased canThrow:
+-   CanThrow[error]) => ThrowTactic[error]^{canThrow}` retains its `CanThrow` evidence. The static
+-   instances are `ThrowTactic.ambient` and `UncheckedTactic.ambient`. Code that passed
+-   `strategies.throwSafely[E, Any]` passes `strategies.throwSafely[E]`. `ThrowTactic`,
+-   `UncheckedTactic` and `FatalTactic` no longer extend `scala.caps.SharedUnscoped`, so a
+-   consumer needs no Proscala-only classifier for them (the fork's supplementary library is still
+-   needed for `scala.Spreadable`). (#2328)
+- - `deferRecover`, `deferMitigate`, `deferHandle` and `deferAccrue` are new: forms of `recover`,
+-   `mitigate`, `handle` and `accrue` that name the handled error set as a type argument,
+-   `deferRecover[errors <: Hazard](handler): Recovery[[result] =>> Tactic[errors] ?=> result]`,
+-   `deferMitigate[errors](handler)`, `deferHandle[errors](handler): Handler[[result] =>>
+-   Emit[errors] ?=> result]` and `deferAccrue[accrual, errors](initial)(combine)(handler)`.
+-   `.protect` is unchanged. Use them inside the body of an `inline def` (or a lambda within one),
+-   where the original forms do not compile (#534): a transparent call is not expanded while an
+-   inline body is typed, so `recover { … }` is only `Recovery[?]` there. A `defer…` body is typed
+-   as `Tactic[errors] ?=> result` at definition; one tactic of the union serves every raise, since
+-   `Tactic` is contravariant, and a raise outside `errors` is still rejected. The handler must have
+-   a case for each member of `errors`, or `.protect` reports "the `recover` handler has no case
+-   for …". They are separate names, not overloads: an overload would make `val r = recover { … }`
+-   ambiguous. Existing code is unchanged. (#534)
++ - `Emit`（したがってすべての `Tactic`）は、`scala.caps.SharedCapability` ではなく `scala.caps.Control` を継承するようになった。`Control` ケイパビリティは `Control` ケイパビリティしか保持できないので、`handle`/`recover` のケース本体は外側の戦術へ発生させることはできるが、`Loggable` なロガーのような制御でない共有ケイパビリティはもう捕捉できない。ロギングはケース本体の外へ移す（回復した値を `handle` の後でログに記録するか、より詳しいエラーを発生させる）。`Emit.apply` のハンドラは `error ->{caps.any.only[caps.Control]} Unit`（以前は `only[caps.SharedCapability]`）である。(#2328)
++ - `ThrowTactic[error, success]` は `ThrowTactic[-error]` になった。幻の型である二番目の型パラメーターはなくなり、クラスは反変である。`ThrowTactic[Hazard, Any]^` は `ThrowTactic[Hazard]^{}`、`ThrowTactic[E, R]()` は `ThrowTactic[E]()` となり、それを名指ししていた `unsafely`/`throwErrors` のブロック（`ThrowTactic[error, success]^ ?=> …`）は `ThrowTactic[error]^` を名指しする。(#2328)
++ - アンビエント戦略は純粋な値である。`strategies.throwUnsafely: ThrowTactic[Hazard]^{}`（以前は `[success] => ThrowTactic[Hazard, success]^`）、`strategies.uncheckedErrors: [error] => (erased error is Unchecked) => UncheckedTactic[error]^{}`、`strategies.fatalErrors: [exception: Fatal] => FatalTactic[exception]^{}` であり、`strategies.throwSafely: [error] => (erased canThrow: CanThrow[error]) => ThrowTactic[error]^{canThrow}` は `CanThrow` の証拠を保持する。静的なインスタンスは `ThrowTactic.ambient` と `UncheckedTactic.ambient` である。`strategies.throwSafely[E, Any]` を渡していたコードは `strategies.throwSafely[E]` を渡す。`ThrowTactic`、`UncheckedTactic`、`FatalTactic` は `scala.caps.SharedUnscoped` を継承しなくなったので、利用者はそれらのために Proscala 専用の分類子を必要としない（フォークの補助ライブラリは `scala.Spreadable` のために引き続き必要である）。(#2328)
++ - `deferRecover`、`deferMitigate`、`deferHandle`、`deferAccrue` が新しく加わった。これらは扱うエラーの集合を型引数として名指しする `recover`、`mitigate`、`handle`、`accrue` の形で、`deferRecover[errors <: Hazard](handler): Recovery[[result] =>> Tactic[errors] ?=> result]`、`deferMitigate[errors](handler)`、`deferHandle[errors](handler): Handler[[result] =>> Emit[errors] ?=> result]`、`deferAccrue[accrual, errors](initial)(combine)(handler)` である。`.protect` は変わらない。元の形がコンパイルできない `inline def` の本体（またはその中のラムダ）の中で使う (#534)。インライン本体が型付けされる間は透過的な呼び出しが展開されないので、そこでは `recover { … }` は `Recovery[?]` でしかない。`defer…` の本体は定義の時点で `Tactic[errors] ?=> result` として型付けされる。`Tactic` は反変なので、ユニオンの一つの戦術がすべての発生に使え、`errors` の外の発生は引き続き拒否される。ハンドラは `errors` の各メンバーに対するケースを持たなければならず、そうでなければ `.protect` が "the `recover` handler has no case for …" と報告する。これらはオーバーロードではなく別の名前である。オーバーロードにすると `val r = recover { … }` が曖昧になるからである。既存のコードは変わらない。(#534)
+
+- ## anticipation
++ ## anticipation
+
+- - `anticipation.DurableUnscoped` is removed; every type that extended it (`LogSink`,
+-   `parasite.Supervisor`, `parasite.Threading`, `parasite.threads`, `parasite.supervisors`,
+-   `surveillance.Watcher`, `surveillance.watchers`, `urticose.Internet`, `octogenarian.Git.Activity`,
+-   `espionage.Acp.Observer`, `exegesis.Lsp.Observer`) extends `anticipation.Durable`. A consumer
+-   that declared its own ambient capability `DurableUnscoped` declares it `Durable` and provides it
+-   through a given that is a value (or an object), not a polymorphic method: a value is a static
+-   capability, visible from every level, which is what the level exemption used to buy. (#2328)
+- - Capture-checked Soundness now requires Scala 3.10 (Proscala's 3.10 builds); the 3.9 builds no
+-   longer compile it. (#2328)
++ - `anticipation.DurableUnscoped` は削除された。それを継承していたすべての型（`LogSink`、`parasite.Supervisor`、`parasite.Threading`、`parasite.threads`、`parasite.supervisors`、`surveillance.Watcher`、`surveillance.watchers`、`urticose.Internet`、`octogenarian.Git.Activity`、`espionage.Acp.Observer`、`exegesis.Lsp.Observer`）は `anticipation.Durable` を継承する。自分のアンビエントなケイパビリティを `DurableUnscoped` と宣言していた利用者は、それを `Durable` と宣言し、多相メソッドではなく値（またはオブジェクト）である given を通して提供する。値は静的なケイパビリティであり、すべてのレベルから見える。これがかつてレベルの免除によって得ていたものである。(#2328)
++ - キャプチャ検査される Soundness には Scala 3.10（Proscala の 3.10 ビルド）が必要になった。3.9 のビルドではもうコンパイルできない。(#2328)
+
+- ## octogenarian
++ ## octogenarian
+
+- - `Git.Repo#fetch`, `Git.Repo#push`, `Git.Repo#pull`, `Git.clone` and `Git.cloneCommit` take
+-   `activity: Optional[Activity^] = Unset` rather than `activity: Activity^ = Activity()`: a
+-   fresh capability minted in a default argument cannot reach the call site without a level
+-   exemption, which `Activity` (now plain `Durable`) no longer has. Callers that passed an
+-   `Activity` pass it unchanged; callers relying on the default are unaffected; a caller that
+-   wants the progress object creates it (`val activity: Git.Activity^ = Git.Activity()`) and
+-   passes it. (#2328)
++ - `Git.Repo#fetch`、`Git.Repo#push`、`Git.Repo#pull`、`Git.clone`、`Git.cloneCommit` は、`activity: Activity^ = Activity()` ではなく `activity: Optional[Activity^] = Unset` を受け取る。デフォルト引数の中で生み出された新しいケイパビリティは、レベルの免除なしには呼び出し箇所に届かず、`Activity`（現在は単なる `Durable`）にはもうその免除がない。`Activity` を渡していた呼び出し側はそのまま渡す。デフォルトに頼っていた呼び出し側は影響を受けない。進捗オブジェクトがほしい呼び出し側は、それを作り（`val activity: Git.Activity^ = Git.Activity()`）、渡す。(#2328)
+
+- ## espionage, exegesis
++ ## espionage, exegesis
+
+- - `Acp.connect`, `Lsp.proxy`, `Lsp.listen` and `Lsp.Proxy.run` take `observer:
+-   Optional[Observer^] = Unset` rather than `observer: Observer = Observer.Silent`, for the
+-   reason `Git.Activity` does (a default argument of capability type minted a fresh capability
+-   in a default getter, which only the retired level exemption let reach the call site). A caller
+-   that passed an observer passes it unchanged; the default is the silent observer as before.
+-   (#2328)
++ - `Acp.connect`、`Lsp.proxy`、`Lsp.listen`、`Lsp.Proxy.run` は、`observer: Observer = Observer.Silent` ではなく `observer: Optional[Observer^] = Unset` を受け取る。理由は `Git.Activity` と同じである（ケイパビリティ型のデフォルト引数は、デフォルトのゲッターの中で新しいケイパビリティを生み出し、それが呼び出し箇所に届くのは、廃止されたレベルの免除があったからにすぎない）。オブザーバーを渡していた呼び出し側はそのまま渡す。デフォルトは以前と同じく何も報告しないオブザーバーである。(#2328)
+
+- ## contingency (ambient strategies)
++ ## contingency（アンビエント戦略）
+
+- - Library code no longer discharges its own obligations with `strategies.throwUnsafely`; the
+-   ambient strategies are for a program's entry points and prototyping. Consumers are unaffected
+-   except where a signature became honest, listed per library below. (#2328 follow-up)
++ - ライブラリのコードは、自分の義務を `strategies.throwUnsafely` で片付けることをやめた。アンビエント戦略は、プログラムのエントリーポイントとプロトタイピングのためのものである。利用者は、以下にライブラリごとに挙げる、シグネチャが正直になった箇所を除いて影響を受けない。(#2328 follow-up)
+
+- ## distillate
++ ## distillate
+
+- - `Requirable` (and its `Requirable.decodable` given) is removed: nothing used it. A consumer
+-   that summoned `value is Requirable` to test whether an empty text decodes writes
+-   `safely(t"".as[value]).present` directly. (#2328 follow-up)
++ - `Requirable`（とその `Requirable.decodable` given）は削除された。何も使っていなかったからである。空のテキストがデコードできるかを調べるために `value is Requirable` を召喚していた利用者は、直接 `safely(t"".as[value]).present` と書く。(#2328 follow-up)
+
+- ## archimedes
++ ## archimedes
+
+- - `Ergo.unsafeInterpolate(parts, atoms)` takes `(using erased unsafe: Unsafe)`, as its name
+-   requires; `Ergo.unsafe(input)`, which had no callers, is removed — use
+-   `unsafely(Ergo.parse(input))`. (#2328 follow-up)
++ - `Ergo.unsafeInterpolate(parts, atoms)` は、その名前が求めるとおり `(using erased unsafe: Unsafe)` を受け取る。呼び出し元のなかった `Ergo.unsafe(input)` は削除された。`unsafely(Ergo.parse(input))` を使う。(#2328 follow-up)
+
+- ## xenophile
++ ## xenophile
+
+- - `WitDialect.worlds(source)` declares `raises Wit.Error` instead of throwing it; a caller that
+-   tolerated an unparsable file writes `safely(WitDialect.worlds(source))`. `CHeader.Dialect`,
+-   `WitDialect` and `WebIdlDialect`'s `parse` are total, as `TypescriptDialect.parse` was: a
+-   source that does not parse defines nothing (an empty `Map`) rather than throwing. (#2328
+-   follow-up)
++ - `WitDialect.worlds(source)` は `Wit.Error` を投げる代わりに `raises Wit.Error` を宣言する。解析できないファイルを許容していた呼び出し側は `safely(WitDialect.worlds(source))` と書く。`CHeader.Dialect`、`WitDialect`、`WebIdlDialect` の `parse` は、`TypescriptDialect.parse` がそうであったように全域的である。解析できないソースは、例外を投げるのではなく何も定義しない（空の `Map`）。(#2328 follow-up)
+
+=   follow-up)
+=
+- ## obligatory
++ ## obligatory
+
+- - `JsonRpc.Request` and `JsonRpc.Failure` gain companion `Json.Decodable` givens (pure
+-   derivation anchors), so `safely(json.as[JsonRpc.Request])` works at a use site. The
+-   `JsonRpc.serve` macro no longer needs a `Tactic[JsonRpc.Error]` at its expansion site: an
+-   unknown method is thrown from the dispatcher (as a `JsonRpc.Error`) for the serving loop to
+-   report, exactly as before when the expansion site imported `strategies.throwUnsafely`. A
+-   decode failure inside the dispatcher is likewise thrown as a `Json.Error`. (#2328 follow-up)
++ - `JsonRpc.Request` と `JsonRpc.Failure` にコンパニオンの `Json.Decodable` given（純粋な導出のアンカー）が加わったので、使用箇所で `safely(json.as[JsonRpc.Request])` が使える。`JsonRpc.serve` マクロは展開箇所で `Tactic[JsonRpc.Error]` を必要としなくなった。未知のメソッドはディスパッチャーから（`JsonRpc.Error` として）投げられ、サービスループがそれを報告する。これは、以前に展開箇所が `strategies.throwUnsafely` をインポートしていたときとまったく同じである。ディスパッチャー内でのデコードの失敗も同様に `Json.Error` として投げられる。(#2328 follow-up)
+
+=   decode failure inside the dispatcher is likewise thrown as a `Json.Error`. (#2328 follow-up)
+=
+- ## jacinta
++ ## jacinta
+
+- - `Json.Provider.fieldsOf(schema)` and `Json.Provider.memberOf(document, node, limit)` take
+-   `(using Tactic[Json.Error])` instead of throwing: a caller at macro time wraps them in
+-   `safely(…).or(halt(…))` or a `HaltTactic`; `Json.Provider#fields` is unchanged (it throws, as
+-   a schema read at expansion must). (#2328 follow-up)
+- - `Json#updateDynamic(field: String)[value: Encodable in Json](value: value)` and
+-   `Json#updateDynamic(field: String)[value](unset: Unset.type)` return `Json` with no tactic,
+-   where before each was `Json raises Json.Error`. A field is set, replaced or removed on an
+-   object; applying either to a non-object `Json` is a programming error (it throws a
+-   `ClassCastException`) rather than raising `Json.Error`. A caller that handled `Json.Error`
+-   around `updateDynamic` alone has nothing to handle. (#2350)
++ - `Json.Provider.fieldsOf(schema)` と `Json.Provider.memberOf(document, node, limit)` は、例外を投げる代わりに `(using Tactic[Json.Error])` を受け取る。マクロ時の呼び出し側はそれらを `safely(…).or(halt(…))` または `HaltTactic` で包む。`Json.Provider#fields` は変わらない（展開時のスキーマの読み取りはそうでなければならないので、例外を投げる）。(#2328 follow-up)
++ - `Json#updateDynamic(field: String)[value: Encodable in Json](value: value)` と `Json#updateDynamic(field: String)[value](unset: Unset.type)` は戦術なしで `Json` を返す。以前はどちらも `Json raises Json.Error` であった。フィールドの設定、置き換え、削除はオブジェクトに対して行われる。オブジェクトでない `Json` にどちらかを適用するのはプログラミングの誤りであり、`Json.Error` を発生させるのではなく `ClassCastException` を投げる。`updateDynamic` の周りだけで `Json.Error` を扱っていた呼び出し側には、扱うものがなくなる。(#2350)
+
+- ## apoplexy
++ ## apoplexy
+
+- - `apoplexy.unsafeHttpUrl(text)(using Unsafe)` is new, called by the generated code for a value
+-   the macro validated at expansion; it is not exported to `soundness`. (#2328 follow-up)
++ - `apoplexy.unsafeHttpUrl(text)(using Unsafe)` が新しく加わった。マクロが展開時に検証した値に対して、生成されたコードが呼び出すものである。`soundness` にはエクスポートされない。(#2328 follow-up)
+
+=   the macro validated at expansion; it is not exported to `soundness`. (#2328 follow-up)
+=
+- ## galilei
++ ## galilei
+
+- - `Explorable#children(path)` takes `(using Tactic[Io.Error])`, and so does the `children`
+-   extension on a `Path`: a listing is strict, so a backend failure is reported through the
+-   caller's tactic rather than thrown. A caller with no tactic in scope writes
+-   `safely(path.children)` or declares `raises Io.Error`. (#2328 follow-up)
++ - `Explorable#children(path)` は `(using Tactic[Io.Error])` を受け取り、`Path` に対する `children` 拡張も同様である。一覧の取得は正格なので、バックエンドの失敗は投げられるのではなく呼び出し側の戦術を通して報告される。スコープ内に戦術を持たない呼び出し側は、`safely(path.children)` と書くか、`raises Io.Error` を宣言する。(#2328 follow-up)
+
+- ## exegesis
++ ## exegesis
+
+- - `Lsp.listen` takes `Tactic[Framing.Error]` and `Tactic[Truncation.Error]` (a malformed frame
+-   or a truncated standard stream is reported, not thrown); `Lsp.proxy` and `Lsp.Proxy.run` take
+-   those and a `Tactic[Lsp.Error]`. `LspSessional` (and so `Lsp.Server#session`) takes a
+-   `Tactic[Lsp.Error]`, and a server that fails to launch is reported as
+-   `Lsp.Error(Reason.Unstarted, details)` rather than thrown as an `Exec.Error`.
+- - `rewrite.result(method)` and `rewrite.notification(method)` take
+-   `Tactic[Json.Error] ?=> Json => Json`: a rewriter decodes under the tactic the proxy supplies
+-   at each call, and a message it cannot read passes through unchanged. The registered rewriters
+-   are `Lsp.Proxy.Rewriter` instances.
+- - The client proxies (`JsonRpc#proxy`, and so `Lsp.Connection`'s members) summon each result's
+-   decoder inside the generated method, under the call's own tactic; a missing decoder is now
+-   reported where the proxy is *used*, by the compiler's own "no given instance" message.
+-   (#2328 follow-up)
++ - `Lsp.listen` は `Tactic[Framing.Error]` と `Tactic[Truncation.Error]` を受け取る（不正なフレームや途中で切れた標準ストリームは、投げられるのではなく報告される）。`Lsp.proxy` と `Lsp.Proxy.run` はそれらと `Tactic[Lsp.Error]` を受け取る。`LspSessional`（したがって `Lsp.Server#session`）は `Tactic[Lsp.Error]` を受け取り、起動に失敗したサーバーは、`Exec.Error` として投げられるのではなく `Lsp.Error(Reason.Unstarted, details)` として報告される。
++ - `rewrite.result(method)` と `rewrite.notification(method)` は `Tactic[Json.Error] ?=> Json => Json` を受け取る。書き換え器は、プロキシが呼び出しごとに与える戦術のもとでデコードし、読めないメッセージは変更されずに通過する。登録された書き換え器は `Lsp.Proxy.Rewriter` のインスタンスである。
++ - クライアントのプロキシ（`JsonRpc#proxy`、したがって `Lsp.Connection` のメンバー）は、各結果のデコーダーを生成されたメソッドの中で、その呼び出し自身の戦術のもとで召喚する。デコーダーがない場合は、プロキシが*使われる*箇所で、コンパイラ自身の "no given instance" メッセージによって報告されるようになった。(#2328 follow-up)
+
+- ## espionage
++ ## espionage
+
+- - `Acp.connect`'s streams and sink are minted inside the exchange's reader and writer tasks,
+-   each under that task's tactic; no signature changes. (#2328 follow-up)
++ - `Acp.connect` のストリームとシンクは、やり取りのリーダーとライターのタスクの中で、それぞれそのタスクの戦術のもとで生み出される。シグネチャの変更はない。(#2328 follow-up)
+
+- ## vivisection
++ ## vivisection
+
+- - `Dap.listen` takes `Tactic[Framing.Error]` and `Tactic[Truncation.Error]`, as `Lsp.listen`
+-   does. (#2328 follow-up)
++ - `Dap.listen` は、`Lsp.listen` と同じく `Tactic[Framing.Error]` と `Tactic[Truncation.Error]` を受け取る。(#2328 follow-up)
+
+=   does. (#2328 follow-up)
+=
+- ## obligatory
++ ## obligatory
+
+- - The `JsonRpc.serve` dispatcher summons each parameter's decoder inside the generated
+-   dispatcher, under its per-call tactic (a missing decoder is reported by the compiler's own
+-   message at the `serve` site). (#2328 follow-up)
+- - `Grpc.Channel(connection, authority, defaults)`: the `Host` of the HTTP/2 requests it builds
+-   (unused by the transport, which sends `authority` as `:authority`) is `Localhost` when the
+-   part of `authority` before the first `:` is not a `Host`, where before the constructor threw
+-   the decoding error. (#2350)
++ - `JsonRpc.serve` のディスパッチャーは、各パラメーターのデコーダーを、生成されたディスパッチャーの中で呼び出しごとの戦術のもとで召喚する（デコーダーがない場合は、`serve` の箇所でコンパイラ自身のメッセージによって報告される）。(#2328 follow-up)
++ - `Grpc.Channel(connection, authority, defaults)`：それが組み立てる HTTP/2 リクエストの `Host`（トランスポートは使わず、`authority` を `:authority` として送る）は、`authority` の最初の `:` より前の部分が `Host` でないとき `Localhost` になる。以前はコンストラクターがデコードのエラーを投げていた。(#2350)
+
+=   the decoding error. (#2350)
+=
+- ## hellenism
++ ## hellenism
+
+- - `Classpath.streamable`/`source` and `Resource.streamable`/`source` declare what they retain:
+-   `(path is Streamable by Data)^{classpath, truncation}` over the `Tactic[Classpath.Error]`
+-   and `Tactic[Truncation.Error]` they are summoned under (`^{tactic}` over a
+-   `Tactic[Truncation.Error | Classpath.Error]` for a `Resource`). A summon with no truncation
+-   tactic in scope — reading a bundled resource — writes `unsafely(cp"…".read[Data])`.
+-   (#2328 follow-up)
+- - `LocalClasspath.of(classloader)(using System)`, for a classloader which is not a
+-   `URLClassLoader` over local entries, returns `LocalClasspath()` (no entries) when the
+-   `java.class.path` property is undefined, where before it threw `Property.Error`. (#2350)
++ - `Classpath.streamable`/`source` と `Resource.streamable`/`source` は、保持するものを宣言する。召喚されるときの `Tactic[Classpath.Error]` と `Tactic[Truncation.Error]` に対する `(path is Streamable by Data)^{classpath, truncation}` である（`Resource` では `Tactic[Truncation.Error | Classpath.Error]` に対する `^{tactic}`）。スコープ内に切り詰めの戦術がない召喚、つまり同梱されたリソースの読み取りは、`unsafely(cp"…".read[Data])` と書く。(#2328 follow-up)
++ - `LocalClasspath.of(classloader)(using System)` は、ローカルのエントリーに対する `URLClassLoader` でないクラスローダーについて、`java.class.path` プロパティが未定義なら `LocalClasspath()`（エントリーなし）を返す。以前は `Property.Error` を投げていた。(#2350)
+
+- ## coaxial, scintillate
++ ## coaxial, scintillate
+
+- - `coaxial.streamsDuplex(in, out, negotiated)(shutdown)` is public: a `Duplex` over a blocking
+-   `InputStream`/`OutputStream` pair, whose read side ends at EOF. scintillate's `Http2Serve.serve`
+-   and `serveSession` take a `Tactic[Async.Error]` (for the connection's start), and the
+-   per-stream daemons report their own faults. (#2328 follow-up)
+- - `coaxial.Socket.Backend`'s `listenTcp(port, interface, options): ServerSocket` and
+-   `listenDomain(address, options): ServerSocket` are `… raises Bind.Error`; its
+-   `dialTcp(endpoint, interface, options): Exchange`, `dialTcpPort(port, interface, options):
+-   Exchange`, `dialDomain(address, options): Exchange`, `duplexTcp(endpoint, interface,
+-   options): Duplex` and `duplexDomain(address, options): Duplex` are `… raises Socket.Error`.
+-   The JVM and Scala Native backends classify the `java.io.IOException` they threw before:
+-   a bind failure as `Bind.Error(PortInUse | PermissionDenied | AddressUnavailable)` by the
+-   JDK's message, and a connect failure as `Socket.Error(Dns | Refused | Timeout | Connect)`
+-   (`Handshake` for a TLS failure); the native backend raises `Unsupported` for a Unix-domain
+-   socket where before it threw `UnsupportedOperationException`. A user backend adds the
+-   clauses and raises rather than throws. (#2350)
+- - `coaxial.Socket.Error.Reason` gains `Connect` (6), `Refused` (7), `Dns` (8) and
+-   `Unsupported` (9); `coaxial.Bind.Error.Reason` gains `Unsupported` (4). (#2350)
+- - `coaxial.Bindable#bind(socket, interface): Binding` is `bind(socket, interface): Binding
+-   raises Bind.Error`; `coaxial.Connectable#connect(endpoint, interface): Duplex` is `connect(…):
+-   Duplex raises Socket.Error`; `coaxial.Routable#connect(endpoint, interface): Connection`
+-   (which `Serviceable` extends) is `connect(…): Connection raises Socket.Error`. An instance
+-   adds the clause. A `Connectable` can no longer be written as a lambda (a method with a
+-   context-function result is not a single abstract method): an instance over a connection that
+-   cannot fail to open is `Connectable((endpoint, interface) => duplex)` through the new
+-   `Connectable.apply[self](lambda: (self, Optional[MacAddress]) -> Duplex): self is
+-   Connectable`. (#2350)
+- - The coaxial extensions `endpoint.transmit(input)`, `endpoint.duplex(lambda)`,
+-   `endpoint.duplex(lambda)(interface)`, `endpoint.react(initial)(handle)`,
+-   `endpoint.exchange(initial)(handle)(interact)` and the datagram `endpoint.transmit(message)`
+-   take a `Tactic[Socket.Error]` (as a `using` parameter beside their existing ones), through
+-   which a connection that could not be made is raised, where before the backend's exception
+-   was thrown. `endpoint.listen`/`listenOn` are unchanged in signature: their declared
+-   `Bind.Error` is now actually raised for a bind failure. The given
+-   `coaxial.connectableSessional` likewise takes `socketError: Tactic[Socket.Error]`. (#2350)
+- - `telekinesis.Http2.Endpoint#connect()` takes `socketError: Tactic[Socket.Error]` beside
+-   `monitor`, `probate` and `asyncError`, and raises the socket's failure through it (before,
+-   the failure cancelled the connection's readiness and surfaced as `Async.Error(Cancelled)`).
+-   `Http2.EndpointSessional` and its given `Http2.sessional`, the given `Http2.Client.http2`,
+-   `obligatory.GrpcSessional` and its given `Grpc.Endpoint.sessional`, `Grpc.Channel.apply`,
+-   `embarcadero.Containerd.apply`, `perihelion.WsSessional` and its given `wsSessional`, and
+-   `vivisection.Debugger.Sessional` and its given `Debugger.sessional` all take a
+-   `socketError: Tactic[Socket.Error]` likewise. (#2350)
+- - `telekinesis`'s socket-backed HTTP clients map a `Socket.Error` onto `Connect.Error` by reason
+-   (`Dns`, `Refused`, `Timeout`, `Ssl(Handshake)`, else `Unknown`) where before they matched
+-   the JDK exception's message; a TLS failure other than a handshake failure (a protocol, peer
+-   or key failure) is now reported as `Ssl(Handshake)` rather than `Ssl(Protocol | Peer |
+-   Key)`. (#2350)
+- - `susurration.Ssh.Error.Reason` gains `Unreachable(reason: Socket.Error.Reason)` (14), raised
+-   by `Ssh.Endpoint`'s session when the connection cannot be made, where before the socket's
+-   exception was thrown; an agent socket that cannot be opened is `Reason.Agent`. (#2350)
++ - `coaxial.streamsDuplex(in, out, negotiated)(shutdown)` は公開された。ブロッキングする `InputStream`/`OutputStream` の組に対する `Duplex` で、読み取り側は EOF で終わる。scintillate の `Http2Serve.serve` と `serveSession` は（接続の開始のために）`Tactic[Async.Error]` を受け取り、ストリームごとのデーモンは自分の障害を自分で報告する。(#2328 follow-up)
++ - `coaxial.Socket.Backend` の `listenTcp(port, interface, options): ServerSocket` と `listenDomain(address, options): ServerSocket` は `… raises Bind.Error` になり、`dialTcp(endpoint, interface, options): Exchange`、`dialTcpPort(port, interface, options): Exchange`、`dialDomain(address, options): Exchange`、`duplexTcp(endpoint, interface, options): Duplex`、`duplexDomain(address, options): Duplex` は `… raises Socket.Error` になった。JVM と Scala Native のバックエンドは、以前に投げていた `java.io.IOException` を分類する。バインドの失敗は JDK のメッセージによって `Bind.Error(PortInUse | PermissionDenied | AddressUnavailable)` に、接続の失敗は `Socket.Error(Dns | Refused | Timeout | Connect)`（TLS の失敗では `Handshake`）になる。ネイティブのバックエンドは、Unix ドメインソケットに対して、以前は `UnsupportedOperationException` を投げていたところで `Unsupported` を発生させる。ユーザーのバックエンドはこの節を加え、例外を投げる代わりに発生させる。(#2350)
++ - `coaxial.Socket.Error.Reason` に `Connect` (6)、`Refused` (7)、`Dns` (8)、`Unsupported` (9) が加わり、`coaxial.Bind.Error.Reason` に `Unsupported` (4) が加わった。(#2350)
++ - `coaxial.Bindable#bind(socket, interface): Binding` は `bind(socket, interface): Binding raises Bind.Error` に、`coaxial.Connectable#connect(endpoint, interface): Duplex` は `connect(…): Duplex raises Socket.Error` に、`coaxial.Routable#connect(endpoint, interface): Connection`（`Serviceable` が継承する）は `connect(…): Connection raises Socket.Error` になった。インスタンスはこの節を加える。`Connectable` はもうラムダとして書けない（コンテキスト関数を結果とするメソッドは単一抽象メソッドではない）。開くのに失敗しえない接続に対するインスタンスは、新しい `Connectable.apply[self](lambda: (self, Optional[MacAddress]) -> Duplex): self is Connectable` を通して `Connectable((endpoint, interface) => duplex)` と書く。(#2350)
++ - coaxial の拡張 `endpoint.transmit(input)`、`endpoint.duplex(lambda)`、`endpoint.duplex(lambda)(interface)`、`endpoint.react(initial)(handle)`、`endpoint.exchange(initial)(handle)(interact)` と、データグラムの `endpoint.transmit(message)` は、（既存のものと並ぶ `using` パラメーターとして）`Tactic[Socket.Error]` を受け取り、張れなかった接続はそれを通して発生させられる。以前はバックエンドの例外が投げられていた。`endpoint.listen`/`listenOn` のシグネチャは変わらないが、宣言されている `Bind.Error` が、バインドの失敗に対して実際に発生させられるようになった。given の `coaxial.connectableSessional` も同様に `socketError: Tactic[Socket.Error]` を受け取る。(#2350)
++ - `telekinesis.Http2.Endpoint#connect()` は `monitor`、`probate`、`asyncError` と並んで `socketError: Tactic[Socket.Error]` を受け取り、ソケットの失敗をそれを通して発生させる（以前は失敗が接続の準備を取り消し、`Async.Error(Cancelled)` として表に出ていた）。`Http2.EndpointSessional` とその given の `Http2.sessional`、given の `Http2.Client.http2`、`obligatory.GrpcSessional` とその given の `Grpc.Endpoint.sessional`、`Grpc.Channel.apply`、`embarcadero.Containerd.apply`、`perihelion.WsSessional` とその given の `wsSessional`、そして `vivisection.Debugger.Sessional` とその given の `Debugger.sessional` も、すべて同様に `socketError: Tactic[Socket.Error]` を受け取る。(#2350)
++ - `telekinesis` のソケットを基にした HTTP クライアントは、`Socket.Error` を理由によって `Connect.Error` に対応づける（`Dns`、`Refused`、`Timeout`、`Ssl(Handshake)`、それ以外は `Unknown`）。以前は JDK の例外のメッセージに対してマッチしていた。ハンドシェイクの失敗以外の TLS の失敗（プロトコル、相手、鍵の失敗）は、`Ssl(Protocol | Peer | Key)` ではなく `Ssl(Handshake)` として報告されるようになった。(#2350)
++ - `susurration.Ssh.Error.Reason` に `Unreachable(reason: Socket.Error.Reason)` (14) が加わった。接続を張れないときに `Ssh.Endpoint` のセッションが発生させるもので、以前はソケットの例外が投げられていた。開けないエージェントのソケットは `Reason.Agent` である。(#2350)
+
+- ## ambience
++ ## ambience
+
+- - The given `ambience.Property.javaClassVersion` is `(tactic: Tactic[Property.Error]) =>
+-   (("java.class.version" is Property of Int)^{tactic})`, keyed by the property
+-   `java.class.version`, where before it was `("java.runtime.version" is Property of Int)` (the
+-   wrong key: `java.runtime.version` is not an integer) and threw on an unparsable value.
+-   Summoning it needs a `Tactic[Property.Error]` in scope. (#2350)
++ - given の `ambience.Property.javaClassVersion` は、プロパティ `java.class.version` をキーとする `(tactic: Tactic[Property.Error]) => (("java.class.version" is Property of Int)^{tactic})` になった。以前は `("java.runtime.version" is Property of Int)` であり（キーが誤っていた。`java.runtime.version` は整数ではない）、解析できない値に対して例外を投げていた。これを召喚するには、スコープ内に `Tactic[Property.Error]` が必要である。(#2350)
+
+- ## cataclysm
++ ## cataclysm
+
+- - `cataclysm.SelectorList.read(text: Text): SelectorList` is
+-   `SelectorList.unsafeRead(text: Text)(using erased unsafe: Unsafe): SelectorList`: the
+-   non-raising parse the `css"…"` interpolator's expansion calls, gated by `Unsafe` as the
+-   assertion that the text was validated at expansion. Code which called `read` on arbitrary
+-   text calls the new `SelectorList.parse(text: Text)(using Tactic[Css.Error]): SelectorList`
+-   instead. (#2350)
++ - `cataclysm.SelectorList.read(text: Text): SelectorList` は `SelectorList.unsafeRead(text: Text)(using erased unsafe: Unsafe): SelectorList` になった。`css"…"` 補間子の展開が呼び出す、エラーを発生させない解析であり、テキストが展開時に検証されたことの表明として `Unsafe` で制限される。任意のテキストに対して `read` を呼んでいたコードは、代わりに新しい `SelectorList.parse(text: Text)(using Tactic[Css.Error]): SelectorList` を呼ぶ。(#2350)
+
+- ## telekinesis
++ ## telekinesis
+
+- - The given `telekinesis.domainSocketHttpClient` is `(Tactic[Truncation.Error],
+-   Tactic[Connect.Error]) => Http.Client onto DomainSocket`, where before it took only the
+-   `Tactic[Truncation.Error]`: a malformed HTTP response from the socket is raised as
+-   `Connect.Error(Connect.Error.Reason.Unknown)` through the new tactic rather than thrown as
+-   `Http.Response.Error`. A summon needs a `Tactic[Connect.Error]` in scope. (#2350)
++ - given の `telekinesis.domainSocketHttpClient` は `(Tactic[Truncation.Error], Tactic[Connect.Error]) => Http.Client onto DomainSocket` になった。以前は `Tactic[Truncation.Error]` だけを受け取っていた。ソケットからの不正な HTTP レスポンスは、`Http.Response.Error` として投げられるのではなく、新しい戦術を通して `Connect.Error(Connect.Error.Reason.Unknown)` として発生させられる。召喚には、スコープ内に `Tactic[Connect.Error]` が必要である。(#2350)
+
+- ## superlunary, sedentary, exoskeleton
++ ## superlunary, sedentary, exoskeleton
+
+- - `superlunary.Rig#stage(path: Path on Linux): Target` and `Rig#invoke[output](stage:
+-   Stage[output, Form, Target]): Result[output]` (abstract) are `stage(path: Path on
+-   Linux)(using Tactic[Rig.Error]): Target` and `invoke[output](stage: Stage[output, Form,
+-   Target])(using Tactic[Rig.Error]): Result[output]`; an implementation adds the clause and
+-   raises a `Rig.Error` where before it threw. `Rig.Error.Reason` gains `Staging` (4: the
+-   staged code could not be built or deployed) and `Invocation` (5: the staged code could not
+-   be invoked), which the provided rigs (`superlunary.Jvm`, `superlunary.Isolation`,
+-   `sedentary.Bench`, `Stress`, `Profile`, `exoskeleton.Enclave`) raise through `dispatch`'s
+-   existing `raises Rig.Error` for a `Link.Error`, `Async.Error`, `Exec.Error`, `Bench.Error`
+-   or `Name.Error` that was thrown before. (#2350)
++ - `superlunary.Rig#stage(path: Path on Linux): Target` と `Rig#invoke[output](stage: Stage[output, Form, Target]): Result[output]`（抽象）は、`stage(path: Path on Linux)(using Tactic[Rig.Error]): Target` と `invoke[output](stage: Stage[output, Form, Target])(using Tactic[Rig.Error]): Result[output]` になった。実装はこの節を加え、以前は例外を投げていたところで `Rig.Error` を発生させる。`Rig.Error.Reason` に `Staging`（4：ステージングされたコードをビルドまたはデプロイできなかった）と `Invocation`（5：ステージングされたコードを呼び出せなかった）が加わった。提供されているリグ（`superlunary.Jvm`、`superlunary.Isolation`、`sedentary.Bench`、`Stress`、`Profile`、`exoskeleton.Enclave`）は、以前は投げられていた `Link.Error`、`Async.Error`、`Exec.Error`、`Bench.Error`、`Name.Error` に対して、`dispatch` の既存の `raises Rig.Error` を通してこれらを発生させる。(#2350)
+
+- ## aviation
++ ## aviation
+
+- - `Monthstamp - day` (the `monthstampSubtraction` inline operator) is a compile error, naming
+-   the operand, when its year, month or day is not a literal, or when the `RomanCalendar` in
+-   scope is not one of `calendars.gregorianCalendar`, `julianCalendar`, `papalCutover` or
+-   `britishCutover` (or a local `val`/`given` alias of one, which is followed to its
+-   right-hand side); where before a non-literal date was checked at runtime and `Moment.Error`
+-   thrown. A literal date is checked at expansion as before. A date computed at runtime is
+-   built with the calendar's `jdn(year, month, day)` under a `Tactic[Moment.Error]`. The
+-   witness `Monthstamp.monthstampSubtractable` (a pure `Subtractable`) is unchanged, and
+-   panics (not raises) when `subtract` is called directly with a day the month does not have.
+-   (#2350, #2372)
++ - `Monthstamp - day`（インライン演算子 `monthstampSubtraction`）は、年、月、日のいずれかがリテラルでないとき、またはスコープ内の `RomanCalendar` が `calendars.gregorianCalendar`、`julianCalendar`、`papalCutover`、`britishCutover` のいずれか（またはそれらの一つのローカルな `val`/`given` の別名で、その右辺がたどられる）でないとき、そのオペランドを名指しするコンパイルエラーになる。以前はリテラルでない日付は実行時に検査され、`Moment.Error` が投げられていた。リテラルの日付は以前と同じく展開時に検査される。実行時に計算される日付は、`Tactic[Moment.Error]` のもとで暦の `jdn(year, month, day)` を使って組み立てる。証人の `Monthstamp.monthstampSubtractable`（純粋な `Subtractable`）は変わらず、その月にない日を指定して `subtract` を直接呼ぶと、エラーを発生させるのではなくパニックする。(#2350, #2372)
+
+- ## polyvinyl, jacinta, xylophone, stratiform
++ ## polyvinyl, jacinta, xylophone, stratiform
+
+- - `polyvinyl.Specification#fields: List[(Text, Member)]` (abstract) is `fields(using
+-   Tactic[Specification.Error]): List[(Text, Member)]`, where `polyvinyl.Specification.Error(detail:
+-   Message)(using Diagnostics)` is new: a schema which cannot be read is raised, and the
+-   `record`/`tuple` macros halt with its message at the use site, where before the provider's
+-   reading threw during expansion. An implementation adds the clause (a fixed list needs no
+-   tactic). `Json.Provider#fields`, `Xml.Provider#fields` and `Tel.Provider#fields` follow, each
+-   mitigating its format's errors (`Json.Error`; `Xsd.Error` and `Parse.Error`; `Tel.Error` and
+-   `Tels.Resolution.Error`) into `Specification.Error`. (#2369)
+- - `xylophone.Xml.Provider.Schema` is a trait, `def xsd(using Tactic[Specification.Error]): Xsd`,
+-   where before it was `class Schema(val xsd: Xsd)`; its conversions from `Xsd`, `Xml`, `Text` and
+-   any `Readable to Text` source are unchanged in use, but parse lazily, under that tactic.
+-   `Xml.Provider#xsd: Xsd` (a `val`) is `def xsd(using Tactic[Specification.Error]): Xsd`; the
+-   schema is read once, by the macro, and a provider whose schema never parsed panics at its
+-   first runtime use. (#2369)
++ - `polyvinyl.Specification#fields: List[(Text, Member)]`（抽象）は `fields(using Tactic[Specification.Error]): List[(Text, Member)]` になり、`polyvinyl.Specification.Error(detail: Message)(using Diagnostics)` が新しく加わった。読めないスキーマは発生させられ、`record`/`tuple` マクロは使用箇所でそのメッセージとともに停止する。以前はプロバイダーの読み取りが展開中に例外を投げていた。実装はこの節を加える（固定のリストには戦術は要らない）。`Json.Provider#fields`、`Xml.Provider#fields`、`Tel.Provider#fields` もこれに従い、それぞれ自分の形式のエラー（`Json.Error`、`Xsd.Error` と `Parse.Error`、`Tel.Error` と `Tels.Resolution.Error`）を `Specification.Error` へと緩和する。(#2369)
++ - `xylophone.Xml.Provider.Schema` は、以前の `class Schema(val xsd: Xsd)` ではなく、`def xsd(using Tactic[Specification.Error]): Xsd` を持つトレイトになった。`Xsd`、`Xml`、`Text`、任意の `Readable to Text` の源からの変換の使い方は変わらないが、解析はその戦術のもとで遅延して行われる。`Xml.Provider#xsd: Xsd`（`val`）は `def xsd(using Tactic[Specification.Error]): Xsd` になった。スキーマはマクロによって一度だけ読まれ、スキーマが一度も解析できなかったプロバイダーは、実行時に初めて使われたときにパニックする。(#2369)
+
+- ## galilei, bitumen, zeppelin
++ ## galilei, bitumen, zeppelin
+
+- - `galilei.Handle` is an abstract class whose endpoints take the truncation tactic at the call:
+-   `reader()(using Tactic[Truncation.Error]): Chain[Data]`, `writer(data: Chain[Data])(using
+-   Emit[Truncation.Error]): Unit`, `source()(using Tactic[Truncation.Error]): (Stream[Data] over
+-   Credit)^` and `intake()(using Emit[Truncation.Error]): Intake[Data] over Credit`, where before
+-   it was `class Handle(reader: () => Chain[Data], writer: Chain[Data] => Unit)(source:
+-   Spring[Data]^, intake: () => Intake[Data] over Credit)` with field thunks that threw a read
+-   or write cut short. A backend constructs `new Handle` implementing the four methods;
+-   `Handle.whole(reader, writer)` (no longer `inline`) still builds one from whole-content
+-   functions. The extensions `handle.stream`, `handle.read[result]` and `handle.write(source)`
+-   and the givens `Handle.streamable`, `Handle.writable` and `Handle.sink` take or retain a
+-   `Tactic[Truncation.Error]` (`Emit` for writes); a site with only a `Tactic[Io.Error]` maps it
+-   with `summon[Tactic[Io.Error]].contramap(error => Io.Error(path, operation,
+-   Io.Error.Reason.Physical)(using error.diagnostics))`, as `Path#read`, `Path#write` and the
+-   WASI `copy` now do. (#2369)
+- - `bitumen.Archive.Tree.contents[plane](path)(using FilesystemBackend on plane)` is
+-   `contents[plane: Filesystem](path)(using FilesystemBackend on plane)`: it mitigates a
+-   truncated read into `Io.Error(path, Read, Physical)`, which needs the plane's filesystem.
+-   (#2369)
++ - `galilei.Handle` は、エンドポイントが呼び出しの時点で切り詰めの戦術を受け取る抽象クラスになった。`reader()(using Tactic[Truncation.Error]): Chain[Data]`、`writer(data: Chain[Data])(using Emit[Truncation.Error]): Unit`、`source()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^`、`intake()(using Emit[Truncation.Error]): Intake[Data] over Credit` である。以前は `class Handle(reader: () => Chain[Data], writer: Chain[Data] => Unit)(source: Spring[Data]^, intake: () => Intake[Data] over Credit)` であり、そのフィールドのサンクは途中で切れた読み取りや書き込みに対して例外を投げていた。バックエンドは四つのメソッドを実装した `new Handle` を構築する。`Handle.whole(reader, writer)`（もう `inline` ではない）は、内容全体を扱う関数から引き続きハンドルを作る。拡張の `handle.stream`、`handle.read[result]`、`handle.write(source)` と、given の `Handle.streamable`、`Handle.writable`、`Handle.sink` は、`Tactic[Truncation.Error]`（書き込みでは `Emit`）を受け取るか保持する。`Tactic[Io.Error]` しか持たない箇所は、`Path#read`、`Path#write`、WASI の `copy` が現在そうしているように、`summon[Tactic[Io.Error]].contramap(error => Io.Error(path, operation, Io.Error.Reason.Physical)(using error.diagnostics))` でそれを対応づける。(#2369)
++ - `bitumen.Archive.Tree.contents[plane](path)(using FilesystemBackend on plane)` は `contents[plane: Filesystem](path)(using FilesystemBackend on plane)` になった。途中で切れた読み取りを `Io.Error(path, Read, Physical)` へと緩和するので、プレーンのファイルシステムが必要になる。(#2369)
+
+- ## zephyrine, turbulence
++ ## zephyrine, turbulence
+
+- - `turbulence.Truncation` (and `Truncation.Error(total: Bytes)`) is `zephyrine.Truncation`,
+-   exported to the umbrella from zephyrine; `turbulence` re-exports it, so `import turbulence.*`
+-   and `import soundness.*` still resolve `Truncation`. (#2369)
+- - `zephyrine.Spring[medium]#apply(): (Stream[medium] over Credit)^` is `apply()(using
+-   Tactic[Truncation.Error]): (Stream[medium] over Credit)^`: a pull takes the tactic a source cut
+-   short raises through, at the pull. A method with a `using` clause is not a single abstract
+-   method, so a spring written as a lambda (`() => stream`) no longer converts: write `new
+-   Spring[Data]: def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = …`
+-   (a factory taking a function would lose the fresh result a method may mint). The given
+-   `turbulence.Streamable.spring` retains the tactic it is summoned under. (#2369)
+- - `telekinesis.Http.Body#stream: (Stream[Data] over Credit)^` is `stream(using
+-   Tactic[Truncation.Error])`; `Http.Response#successBody` likewise; `Http.Request#query` is a
+-   `def query(using Tactic[Truncation.Error]): Query` rather than a `lazy val` (a form-encoded
+-   body is pulled to read it); `Http.Request.serialize(request)(using Buffering)` and
+-   `Http.Response.serialize(response, includeBody, version)(using Buffering)` take a
+-   `Tactic[Truncation.Error]` beside the `Buffering`; `Parameter#apply()` takes one beside the
+-   request; and the `Receivable` givens (`text`, `streamable`, `instantiable`) and
+-   `Receivable.apply` retain one. `Http.Response.streamable` retains a `Tactic[Truncation.Error]`
+-   beside its `Tactic[Http.Error]`; the given `telekinesis.requestTransmissible` takes one. A
+-   caller with only a `Tactic[Connect.Error]` (or its own error) writes `given
+-   Tactic[Truncation.Error] = summon[Tactic[Connect.Error]].contramap(…)`, as the socket client
+-   does; `Http2.Connection#fetch` takes a `Tactic[Truncation.Error]` beside its `Http2.Error` and
+-   `Async.Error` tactics, and the given `Http2.Client.http2` retains one. (#2369)
+- - `gesticulate.Multipart.parse[input: Streamable by Data over Credit](input, boundary)` takes its
+-   evidence as a capturing `using` parameter, `(using streamable: (input is Streamable by Data
+-   over Credit)^, tactic: Tactic[Multipart.Error])`, and returns `Multipart` rather than
+-   `Multipart raises Multipart.Error` (the same tactic, explicitly); `Multipart.Error.Reason`
+-   gains `Truncated` (6), which `scintillate.Acceptable.multipart` raises for a request body cut
+-   short. The given `gesticulate.Part.streamable` retains a `Tactic[Truncation.Error]`. (#2369)
+- - `perihelion.Websocket.Error.Reason` gains `Truncated` (11, close code 1006), raised when the
+-   connection's body is cut short; `apoplexy.Api.jsonOf(response)` and `Api.dataOf(response)`
+-   take a `Tactic[Truncation.Error]`, as do the `record()`/`tuple()` operations and the generated
+-   `.call()` readers at their expansion site; the `Conformant` givens retain one; a truncated
+-   OAuth token response is `OAuth.Error(InvalidJsonResponse)`; a truncated gRPC response is
+-   `Grpc.Error(Internal)`; a truncated JSON-RPC HTTP request is a `-32700` failure. (#2369)
++ - `turbulence.Truncation`（と `Truncation.Error(total: Bytes)`）は `zephyrine.Truncation` になり、zephyrine からアンブレラへエクスポートされる。`turbulence` はそれを再エクスポートするので、`import turbulence.*` と `import soundness.*` では引き続き `Truncation` が解決される。(#2369)
++ - `zephyrine.Spring[medium]#apply(): (Stream[medium] over Credit)^` は `apply()(using Tactic[Truncation.Error]): (Stream[medium] over Credit)^` になった。プルは、途中で切れた源が発生させるための戦術を、プルの時点で受け取る。`using` 節を持つメソッドは単一抽象メソッドではないので、ラムダとして書いたスプリング（`() => stream`）は変換されなくなった。`new Spring[Data]: def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = …` と書く（関数を受け取るファクトリーでは、メソッドが生み出せる新しい結果が失われてしまう）。given の `turbulence.Streamable.spring` は、召喚されるときの戦術を保持する。(#2369)
++ - `telekinesis.Http.Body#stream: (Stream[Data] over Credit)^` は `stream(using Tactic[Truncation.Error])` になり、`Http.Response#successBody` も同様である。`Http.Request#query` は `lazy val` ではなく `def query(using Tactic[Truncation.Error]): Query` になった（フォームエンコードされた本文は、それを読むためにプルされる）。`Http.Request.serialize(request)(using Buffering)` と `Http.Response.serialize(response, includeBody, version)(using Buffering)` は `Buffering` と並んで `Tactic[Truncation.Error]` を受け取り、`Parameter#apply()` はリクエストと並んでそれを受け取り、`Receivable` の given（`text`、`streamable`、`instantiable`）と `Receivable.apply` はそれを保持する。`Http.Response.streamable` は `Tactic[Http.Error]` と並んで `Tactic[Truncation.Error]` を保持し、given の `telekinesis.requestTransmissible` はそれを受け取る。`Tactic[Connect.Error]`（または自分のエラー）しか持たない呼び出し側は、ソケットのクライアントがそうしているように、`given Tactic[Truncation.Error] = summon[Tactic[Connect.Error]].contramap(…)` と書く。`Http2.Connection#fetch` は `Http2.Error` と `Async.Error` の戦術と並んで `Tactic[Truncation.Error]` を受け取り、given の `Http2.Client.http2` はそれを保持する。(#2369)
++ - `gesticulate.Multipart.parse[input: Streamable by Data over Credit](input, boundary)` は、その証拠を捕捉を行う `using` パラメーター `(using streamable: (input is Streamable by Data over Credit)^, tactic: Tactic[Multipart.Error])` として受け取り、`Multipart raises Multipart.Error` ではなく `Multipart` を返す（戦術は同じで、明示的になっただけである）。`Multipart.Error.Reason` に `Truncated` (6) が加わり、`scintillate.Acceptable.multipart` は途中で切れたリクエスト本文に対してそれを発生させる。given の `gesticulate.Part.streamable` は `Tactic[Truncation.Error]` を保持する。(#2369)
++ - `perihelion.Websocket.Error.Reason` に `Truncated`（11、クローズコード 1006）が加わった。接続の本文が途中で切れたときに発生させられる。`apoplexy.Api.jsonOf(response)` と `Api.dataOf(response)` は `Tactic[Truncation.Error]` を受け取り、展開箇所での `record()`/`tuple()` の操作と生成された `.call()` のリーダーも同様である。`Conformant` の given はそれを保持する。途中で切れた OAuth トークンのレスポンスは `OAuth.Error(InvalidJsonResponse)`、途中で切れた gRPC のレスポンスは `Grpc.Error(Internal)`、途中で切れた JSON-RPC の HTTP リクエストは `-32700` の失敗になる。(#2369)
+
+- ## kaleidoscope
++ ## kaleidoscope
+
+- - `kaleidoscope.Regex#to[form: Regex.Engine]: Regex in form` is `private[kaleidoscope]`; a
+-   regex is retagged for the RE2 engine with the new `Regex#re2: Regex in Re2 raises
+-   Motif.Error`, which parses the pattern into its praxinoscope form at the retag and raises a
+-   pattern outside the RE2 subset there, where before `to[Re2]` retagged without a check and the
+-   pattern's first use threw `Motif.Error`. A `Regex in Re2` is thus always an admitted pattern;
+-   `Regex.Engine.motif` panics (a defect) for one that is not. (#2369)
++ - `kaleidoscope.Regex#to[form: Regex.Engine]: Regex in form` は `private[kaleidoscope]` になった。正規表現を RE2 エンジン用にタグ付けし直すには、新しい `Regex#re2: Regex in Re2 raises Motif.Error` を使う。これはタグ付けし直す時点でパターンを praxinoscope の形に解析し、RE2 のサブセットの外にあるパターンをそこで発生させる。以前は `to[Re2]` が検査なしにタグを付け替え、パターンを初めて使ったときに `Motif.Error` が投げられていた。したがって `Regex in Re2` は常に受理されたパターンである。`Regex.Engine.motif` は、そうでないものに対してパニック（欠陥）する。(#2369)
+
+- ## mosquito
++ ## mosquito
+
+- - `Vector` gains scalar and element-wise multiplication and division, as four new inline
+-   givens in its companion beside `addable`, `subtractable` and `negatable`:
+-   `Vector.scalarMultiplicable` and `Vector.scalarDivisible` (`[value, size <: Int, left <:
+-   Vector[value, size], scalar, result] => (value is Multiplicable by scalar to result,
+-   ClassTag[result]) => left is Multiplicable { type Operand = scalar; type Result =
+-   Vector[result, size] }`, and the same with `Divisible`), and `Vector.vectorMultiplicable`
+-   and `Vector.vectorDivisible` (`Operand = right <: Vector[value2, size]`, requiring `value is
+-   Multiplicable by value2 to result`). So `v*2`, `v/2.0`, `v*w` and `v/w` compile for any
+-   element type with the operation, `v*w` being the element-wise (Hadamard) product of two
+-   vectors of the same size — the scalar product remains `v.dot(w)` — and a size mismatch is a
+-   compile error. These expressions were compile errors before ("value * is not a member"),
+-   so no existing code changes meaning. Like the other instances they resolve the element
+-   arithmetic at the expansion site, so a `Vector[Double, n]` scales without boxing.
+- - `Matrix` gains unary negation: `Matrix.negatable` (`[element, rows <: Int, columns <: Int,
+-   matrix <: Matrix[element, rows, columns], result] => (element is Negatable to result,
+-   ClassTag[result]) => matrix is Negatable { type Result = Matrix[result, rows, columns] }`),
+-   so `-m` is the matrix of negated elements, where it did not compile before.
+- - `Vector.negatable` now negates through an inline loop over the storage (as the other
+-   instances do) rather than `map`; its signature and result are unchanged.
+- - `Vector.apply` is `transparent inline def apply[tuple <: Tuple](tuple: tuple)` and summons
+-   the `ClassTag` of the element type in its body; it was `def apply(tuple: Tuple)(using
+-   ClassTag[Tuple.Union[tuple.type]])`. `Vector(1, 2, 3)` and `Vector(Mono(42))` are written as
+-   before and infer the same types (`Vector[Int, 3]`, `Vector[Int, 1]`), and a tuple of mixed
+-   element types is still rejected; only a call that passed the `ClassTag` explicitly
+-   (`Vector(tuple)(using classTag)`) or named the method as a value changes. The point is that
+-   the inferred element type is now the reduced `Double`, not `Tuple.Union[(Double, Double)]`,
+-   which erased to `Object` and made every arithmetic instance over a constructed vector read its
+-   elements through boxing generic array access; now `Vector(2.0, 4.0)/2.0` is a `daload`/`ddiv`
+-   loop like a vector of declared type.
+- - These `Vector` members are now `inline`: `element(index)`, `apply(index)`, `map` (whose
+-   function is an `inline fn: left => left2` parameter), `unitary`, and both `cross`es; and
+-   these `Matrix` members: `apply(row, column)`, `row`, `column`, `transpose`, `submatrix`,
+-   `trace`, `frobeniusNorm`, and the constructors `Matrix.identity` and `Matrix.zero`; and in
+-   `Affine`: the accessors `a`…`f`, `transform` and `andThen` (`Affine.apply` and
+-   `Affine.identity` stay ordinary methods: inlined inside the opaque scope they would expand
+-   to a `Matrix` at the call site). Signatures
+-   and results are unchanged; on a concrete element type (`Double`, `Int`, a quantity) each now
+-   compiles to typed array access and primitive arithmetic where it boxed before. They can no
+-   longer be used as method values (eta-expanded) or overridden. `row` and `column` take a
+-   `ClassTag` of the element if one is in scope at the call site and copy with typed access,
+-   falling back to the reflective copy (which asks nothing of the caller) otherwise.
++ - `Vector` に、スカラーとの乗除算と要素ごとの乗除算が、コンパニオン内の `addable`、`subtractable`、`negatable` と並ぶ四つの新しいインライン given として加わった。`Vector.scalarMultiplicable` と `Vector.scalarDivisible`（`[value, size <: Int, left <: Vector[value, size], scalar, result] => (value is Multiplicable by scalar to result, ClassTag[result]) => left is Multiplicable { type Operand = scalar; type Result = Vector[result, size] }`、および `Divisible` を使った同じもの）と、`Vector.vectorMultiplicable` と `Vector.vectorDivisible`（`Operand = right <: Vector[value2, size]` で、`value is Multiplicable by value2 to result` を要求する）である。したがって、その演算を持つ任意の要素型について `v*2`、`v/2.0`、`v*w`、`v/w` がコンパイルできる。`v*w` は同じサイズの二つのベクトルの要素ごとの（アダマール）積であり、スカラー積は引き続き `v.dot(w)` である。サイズの不一致はコンパイルエラーになる。これらの式は以前はコンパイルエラー（"value * is not a member"）だったので、既存のコードの意味が変わることはない。他のインスタンスと同じく、要素の演算を展開箇所で解決するので、`Vector[Double, n]` はボックス化なしに拡大縮小できる。
++ - `Matrix` に単項の符号反転 `Matrix.negatable`（`[element, rows <: Int, columns <: Int, matrix <: Matrix[element, rows, columns], result] => (element is Negatable to result, ClassTag[result]) => matrix is Negatable { type Result = Matrix[result, rows, columns] }`）が加わった。したがって `-m` は、以前はコンパイルできなかったが、要素の符号を反転した行列になる。
++ - `Vector.negatable` は、`map` ではなく（他のインスタンスと同じく）ストレージに対するインラインのループで符号を反転するようになった。シグネチャと結果は変わらない。
++ - `Vector.apply` は `transparent inline def apply[tuple <: Tuple](tuple: tuple)` になり、要素型の `ClassTag` を本体の中で召喚する。以前は `def apply(tuple: Tuple)(using ClassTag[Tuple.Union[tuple.type]])` であった。`Vector(1, 2, 3)` と `Vector(Mono(42))` は以前と同じく書け、同じ型（`Vector[Int, 3]`、`Vector[Int, 1]`）が推論され、要素型が混在したタプルは引き続き拒否される。変わるのは、`ClassTag` を明示的に渡していた呼び出し（`Vector(tuple)(using classTag)`）か、メソッドを値として名指ししていた呼び出しだけである。要点は、推論される要素型が `Tuple.Union[(Double, Double)]` ではなく簡約された `Double` になったことである。前者は `Object` に消去され、組み立てたベクトルに対する演算のインスタンスがすべて、ボックス化を伴う汎用の配列アクセスで要素を読んでいた。現在は `Vector(2.0, 4.0)/2.0` が、型を宣言したベクトルと同じく `daload`/`ddiv` のループになる。
++ - `Vector` の次のメンバーが `inline` になった。`element(index)`、`apply(index)`、`map`（その関数は `inline fn: left => left2` パラメーター）、`unitary`、そして両方の `cross` である。`Matrix` の次のメンバーも同様である。`apply(row, column)`、`row`、`column`、`transpose`、`submatrix`、`trace`、`frobeniusNorm`、そしてコンストラクターの `Matrix.identity` と `Matrix.zero` である。`Affine` では、アクセサーの `a`…`f`、`transform`、`andThen` である（`Affine.apply` と `Affine.identity` は通常のメソッドのままである。不透明型のスコープの中でインライン化されると、呼び出し箇所で `Matrix` へと展開されてしまうからである）。シグネチャと結果は変わらない。具体的な要素型（`Double`、`Int`、量）では、以前はボックス化していたところが、どれも型付きの配列アクセスとプリミティブの演算にコンパイルされるようになった。メソッド値として使う（イータ展開する）ことや、オーバーライドすることはもうできない。`row` と `column` は、呼び出し箇所のスコープに要素の `ClassTag` があればそれを受け取って型付きのアクセスでコピーし、なければ（呼び出し側に何も求めない）リフレクションによるコピーに戻る。
+
+- ## symbolism
++ ## symbolism
+
+- - `Rootable.sqrt`, `Rootable.cbrt`, `Rootable.sqrtFloat` and `Rootable.cbrtFloat` are `inline
+-   given`s of the singleton types of four new objects — `Rootable.DoubleSquareRoot`,
+-   `Rootable.DoubleCubeRoot`, `Rootable.FloatSquareRoot`, `Rootable.FloatCubeRoot` — each with an
+-   `inline def root`, where they were lambda-built instances typed `Double is Rootable[2] to
+-   Double` etc. Summoning `Double is Rootable[2] to Double` still finds them; `x.sqrt` on a
+-   `Double` now inlines to `Math.sqrt(x)` with nothing boxed or allocated, as `+` on primitives
+-   does through `Addable`'s objects. Code that named the given's *type* as the trait refinement
+-   (`val r: Double is Rootable[2] to Double = Rootable.sqrt`) still compiles, by widening.
++ - `Rootable.sqrt`、`Rootable.cbrt`、`Rootable.sqrtFloat`、`Rootable.cbrtFloat` は、四つの新しいオブジェクト `Rootable.DoubleSquareRoot`、`Rootable.DoubleCubeRoot`、`Rootable.FloatSquareRoot`、`Rootable.FloatCubeRoot` のシングルトン型の `inline given` になった。各オブジェクトは `inline def root` を持つ。以前は `Double is Rootable[2] to Double` などと型付けされた、ラムダで組み立てたインスタンスであった。`Double is Rootable[2] to Double` を召喚すれば引き続きそれらが見つかる。`Double` に対する `x.sqrt` は、プリミティブに対する `+` が `Addable` のオブジェクトを通してそうなるように、何もボックス化もアロケーションもせずに `Math.sqrt(x)` へとインライン化されるようになった。given の*型*をトレイトの細分化として名指ししていたコード（`val r: Double is Rootable[2] to Double = Rootable.sqrt`）は、拡大によって引き続きコンパイルできる。
+
+- ## serpentine, galilei, hellenism, octogenarian, zeppelin, ambience, urticose
++ ## serpentine, galilei, hellenism, octogenarian, zeppelin, ambience, urticose
+
+- - `serpentine.Radical` is split in two top-level typeclasses, each `extends Typeclass,
+-   Planar` with `type Self` the root type and `type Plane` the filesystem: `Radical` keeps
+-   `def encode(self: Self): Text` and is pure; the new `serpentine.Eradicable` has `def
+-   decode(text: Text): Self` and `def length(text: Text): Int`, neither of which declares
+-   `raises Path.Error` any more. A root type that had one `given … is Radical on …` with all
+-   three methods now provides two givens, and a `Eradicable` that can fail is a capturing given
+-   taking the tactic: `given eradicable: (tactic: Tactic[Path.Error]) => ((Root is Eradicable on
+-   Fs)^{tactic})`. Both are exported by `soundness` and `soundness.serpentine`. The provided
+-   instances follow: galilei `%.type is Eradicable on Posix/Linux/MacOs` and `Drive is Eradicable on
+-   Windows` and `(%.type | Drive) is Eradicable on Local` (all take `Tactic[Path.Error]`),
+-   hellenism `Classpath.type is Eradicable on Classpath` and octogenarian `Git.Hash is Eradicable on
+-   Git.Notes` (both take the tactic), and the pure zeppelin `%.type is Eradicable on Zip`,
+-   ambience `%.type is Eradicable on plane <: Searchpath` and urticose `%.type is Eradicable on
+-   Www`. (#2372)
+- - The serpentine `Path` givens take the pair instead of one `Radical`: `Path.decodable` and
+-   `Path.decodable2` are `[filesystem: Filesystem, root] => (radical: root is Radical on
+-   filesystem, eradicable: (root is Eradicable on filesystem)^) => ((Path on filesystem) is
+-   Decodable in Text)^{eradicable}`; `Path.instantiable` likewise returns `(… is Instantiable
+-   across Paths from Text)^{eradicable}`; `Path.trustedInstantiable` takes `eradicable: (tactic:
+-   Tactic[Path.Error]) ?=> (root is Eradicable on filesystem)^{tactic}` and returns `(… from
+-   Paths.Trusted)^{eradicable}`; `Path.quotient` takes `(eradicable: (root is Eradicable on
+-   filesystem)^)` and no tactic. A call site that summoned a decodable under a
+-   `Tactic[Path.Error]` is unchanged: the tactic now reaches the instance through the
+-   `Eradicable` given instead of through `decode`'s `raises`. (#2372)
+- - `urticose.Url#path: Path on Www` and `telekinesis.Http.Request#path: Path on Www under
+-   %.type` no longer run the decode under an internal `unsafely`: the `Www` eradicable is pure,
+-   so nothing observable changes. (#2372)
++ - `serpentine.Radical` は二つのトップレベルの型クラスに分割された。どちらも `extends Typeclass, Planar` であり、`type Self` はルートの型、`type Plane` はファイルシステムである。`Radical` は `def encode(self: Self): Text` を残して純粋になり、新しい `serpentine.Eradicable` は `def decode(text: Text): Self` と `def length(text: Text): Int` を持ち、どちらももう `raises Path.Error` を宣言しない。三つのメソッドすべてを持つ `given … is Radical on …` を一つ持っていたルートの型は、二つの given を提供するようになり、失敗しうる `Eradicable` は戦術を受け取る捕捉を行う given になる：`given eradicable: (tactic: Tactic[Path.Error]) => ((Root is Eradicable on Fs)^{tactic})`。どちらも `soundness` と `soundness.serpentine` がエクスポートする。提供されているインスタンスもこれに従う。galilei の `%.type is Eradicable on Posix/Linux/MacOs`、`Drive is Eradicable on Windows`、`(%.type | Drive) is Eradicable on Local`（すべて `Tactic[Path.Error]` を受け取る）、hellenism の `Classpath.type is Eradicable on Classpath` と octogenarian の `Git.Hash is Eradicable on Git.Notes`（どちらも戦術を受け取る）、そして純粋な zeppelin の `%.type is Eradicable on Zip`、ambience の `%.type is Eradicable on plane <: Searchpath`、urticose の `%.type is Eradicable on Www` である。(#2372)
++ - serpentine の `Path` の given は、一つの `Radical` の代わりにこの組を受け取る。`Path.decodable` と `Path.decodable2` は `[filesystem: Filesystem, root] => (radical: root is Radical on filesystem, eradicable: (root is Eradicable on filesystem)^) => ((Path on filesystem) is Decodable in Text)^{eradicable}` になった。`Path.instantiable` も同様に `(… is Instantiable across Paths from Text)^{eradicable}` を返す。`Path.trustedInstantiable` は `eradicable: (tactic: Tactic[Path.Error]) ?=> (root is Eradicable on filesystem)^{tactic}` を受け取り、`(… from Paths.Trusted)^{eradicable}` を返す。`Path.quotient` は `(eradicable: (root is Eradicable on filesystem)^)` を受け取り、戦術は受け取らない。`Tactic[Path.Error]` のもとでデコーダーを召喚していた呼び出し箇所は変わらない。戦術は、`decode` の `raises` を通してではなく、`Eradicable` の given を通してインスタンスに届くようになった。(#2372)
++ - `urticose.Url#path: Path on Www` と `telekinesis.Http.Request#path: Path on Www under %.type` は、デコードを内部の `unsafely` のもとで実行しなくなった。`Www` の eradicable は純粋なので、観測できる変化はない。(#2372)
+
+- ## parasite, ambience
++ ## parasite, ambience
+
+- - `parasite.Os` (an empty marker object, the `Target` of the `Interceptable` givens
+-   `parasite.Shutdown.interceptable`, `parasite.Fault.interceptable` and
+-   `parasite.GarbageCollection.interceptable`) is removed. Its replacement as the target is the
+-   new `ambience.Vm` (exported as `soundness.Vm`): the three givens now have `type Target =
+-   Vm.type`, so `Os.intercept[Shutdown]`, `Os.intercept[Fault]` and
+-   `Os.intercept[GarbageCollection]` become `Vm.intercept[Shutdown]`, `Vm.intercept[Fault]` and
+-   `Vm.intercept[GarbageCollection]`. Code importing `parasite.*` alone must also import
+-   `ambience.Vm`; `soundness.*` provides it. `soundness.Os` is now `ambience.Os`, an enum of
+-   operating systems (see below), and is no longer an `intercept` target. (#2367)
+- - `parasite.core` now depends on `ambience.core` (and so, transitively, on `serpentine.core`,
+-   `anticipation.path` and `anticipation.print`). (#2367)
+- - `ambience.Os` is new: `enum Os { case Linux, MacOs, Windows, FreeBsd, OpenBsd, NetBsd,
+-   Solaris, Aix; case Other(name: Text) }` with `Os.decodable: Os is Decodable in Text`, which
+-   matches the lowercased prefix of a JVM `os.name` (`linux`; `mac` or `darwin`; `windows`;
+-   `freebsd`; `openbsd`; `netbsd`; `sunos` or `solaris`; `aix`) and yields `Other(name)` for
+-   anything else. `ambience.System.os(using System): Os` and `ambience.System.architecture(using
+-   System): Architecture` are new: the running platform from the `os.name` and `os.arch`
+-   properties, panicking (not raising) if a property is undefined, as `System.properties.os.arch()`
+-   does. `System.properties.os.name()` is unchanged and still yields `Text`. Code that tests
+-   `System.properties.os.name()` for a substring (`"mac"`, `"win"`, `"linux"`) can match on
+-   `System.os` instead. (#2367)
+- - `ambience.Architecture.decodable` now decodes `t"arm64"` as `Architecture.Arm(64)`; it
+-   previously yielded `Architecture.Other(t"arm64")`. Code matching `Other(t"arm64")` must match
+-   `Arm(64)`. (#2367)
+- - `parasite.Shutdown.interceptable.register` (reached through `Vm.intercept[Shutdown]`) now
+-   catches and discards any `Exception` thrown by the action; previously it propagated on the
+-   shutdown-hook thread, where the JVM printed its stack trace. Shutdown actions run on a thread
+-   of their own, concurrently with other hooks and in no defined order; this is unchanged.
+-   (#2366)
++ - `parasite.Os`（空のマーカーオブジェクトで、`Interceptable` の given である `parasite.Shutdown.interceptable`、`parasite.Fault.interceptable`、`parasite.GarbageCollection.interceptable` の `Target`）は削除された。ターゲットとしてそれに代わるのは新しい `ambience.Vm`（`soundness.Vm` としてエクスポートされる）である。三つの given は `type Target = Vm.type` を持つようになったので、`Os.intercept[Shutdown]`、`Os.intercept[Fault]`、`Os.intercept[GarbageCollection]` は `Vm.intercept[Shutdown]`、`Vm.intercept[Fault]`、`Vm.intercept[GarbageCollection]` になる。`parasite.*` だけをインポートしているコードは、`ambience.Vm` もインポートしなければならない。`soundness.*` はそれを提供する。`soundness.Os` は現在 `ambience.Os`、つまりオペレーティングシステムの enum（下記参照）であり、もう `intercept` のターゲットではない。(#2367)
++ - `parasite.core` は `ambience.core` に（したがって推移的に `serpentine.core`、`anticipation.path`、`anticipation.print` に）依存するようになった。(#2367)
++ - `ambience.Os` が新しく加わった。`enum Os { case Linux, MacOs, Windows, FreeBsd, OpenBsd, NetBsd, Solaris, Aix; case Other(name: Text) }` であり、`Os.decodable: Os is Decodable in Text` を持つ。これは JVM の `os.name` を小文字にした接頭辞（`linux`、`mac` または `darwin`、`windows`、`freebsd`、`openbsd`、`netbsd`、`sunos` または `solaris`、`aix`）にマッチし、それ以外には `Other(name)` を返す。`ambience.System.os(using System): Os` と `ambience.System.architecture(using System): Architecture` が新しく加わった。`os.name` と `os.arch` のプロパティから実行中のプラットフォームを得るもので、プロパティが未定義なら、`System.properties.os.arch()` と同じく（エラーを発生させるのではなく）パニックする。`System.properties.os.name()` は変わらず、引き続き `Text` を返す。`System.properties.os.name()` に部分文字列（`"mac"`、`"win"`、`"linux"`）が含まれるかを調べていたコードは、代わりに `System.os` に対してマッチできる。(#2367)
++ - `ambience.Architecture.decodable` は `t"arm64"` を `Architecture.Arm(64)` とデコードするようになった。以前は `Architecture.Other(t"arm64")` を返していた。`Other(t"arm64")` にマッチしていたコードは `Arm(64)` にマッチしなければならない。(#2367)
++ - `parasite.Shutdown.interceptable.register`（`Vm.intercept[Shutdown]` を通して使われる）は、アクションが投げた `Exception` をすべて捕らえて捨てるようになった。以前はシャットダウンフックのスレッド上で伝播し、JVM がそのスタックトレースを表示していた。シャットダウンのアクションは専用のスレッドの上で、他のフックと並行に、定まらない順序で実行される。これは変わらない。(#2366)
+
+- ## burdock
++ ## burdock
+
+- - The cache of verified dependency JARs moves from `~/.cache/burdock/<sha256>.jar` to
+-   `~/.cache/soundness/jars/<sha256>.jar` (under `$XDG_CACHE_HOME` instead of `~/.cache` where
+-   the bootstrap honours it, as before). `burdock.Bootstrap.cacheDir()`, `externalize` and the
+-   repackager all use the new location; nothing migrates an existing `~/.cache/burdock`, so
+-   the first launch after upgrading re-downloads every requirement, and the old directory can be
+-   deleted. (#2371)
++ - 検証済みの依存 JAR のキャッシュは、`~/.cache/burdock/<sha256>.jar` から `~/.cache/soundness/jars/<sha256>.jar` へ移った（ブートストラップが `$XDG_CACHE_HOME` に従う場合は、以前と同じく `~/.cache` の代わりにその下になる）。`burdock.Bootstrap.cacheDir()`、`externalize`、再パッケージ化を行うものは、すべて新しい場所を使う。既存の `~/.cache/burdock` を移行するものは何もないので、更新後の最初の起動ではすべての要求物を再ダウンロードし、古いディレクトリは削除してよい。(#2371)
+
+=   deleted. (#2371)
+=
+- ## galilei
++ ## galilei
+
+- - `galilei.core` now depends on `gastronomy.core` (for the new `galilei.Cas`, a content-addressed
+-   store; additive). A consumer excluding gastronomy from its classpath must now include it.
+-   (#2360)
+- - `galilei.FilesystemBackend` has a new abstract method, `def realPath(path: Path on
+-   Plane)(using Tactic[Io.Error]): Text` (the entry's `realpath(3)`), which the JVM, native and
+-   WASI backends implement (WASI raises `Io.Error` with `Reason.Unsupported`). A consumer that
+-   implements its own backend must add it. `Path#canonical()` (additive) is built on it.
+-   (#2357)
++ - `galilei.core` は `gastronomy.core` に依存するようになった（コンテンツアドレス方式のストアである新しい `galilei.Cas` のためで、追加のみの変更である）。クラスパスから gastronomy を除外していた利用者は、それを含めなければならない。(#2360)
++ - `galilei.FilesystemBackend` に新しい抽象メソッド `def realPath(path: Path on Plane)(using Tactic[Io.Error]): Text`（エントリーの `realpath(3)`）が加わり、JVM、ネイティブ、WASI のバックエンドがそれを実装する（WASI は `Reason.Unsupported` を伴う `Io.Error` を発生させる）。自分のバックエンドを実装している利用者はそれを加えなければならない。`Path#canonical()`（追加）はこれを基にしている。(#2357)
+
+- ## gastronomy, galilei
++ ## gastronomy, galilei
+
+- - `gastronomy.checksum` is now `extension [source](source: source) def checksum[hash <:
+-   Algorithm](using checksummable: (source is Checksummable)^, hashed: Hash in hash, erased
+-   weakness: Permit[HashWeakness[hash]]): Digest in hash`, over the new typeclass
+-   `gastronomy.Checksummable` (`def checksum(digestion: Digestion^, value: Self): Unit`), where
+-   before it was `extension [source: Streamable by Data over Credit](source: source) def
+-   checksum[hash <: Algorithm](using Hash in hash, erased Permit[HashWeakness[hash]])`. Every
+-   `Streamable by Data over Credit` source still checksums identically, through
+-   `Checksummable.streamable`. galilei's `Platform.pathChecksummable` makes any `Path on
+-   <platform>` checksummable (a file by its bytes; a directory by its regular files in
+-   relative-path order, each as length-prefixed relative path and content; it takes the
+-   `DereferenceSymlinks` in scope and raises `Io.Error`), so `path.checksum[Sha2[256]]`, which
+-   did not compile, now does. (#2359)
++ - `gastronomy.checksum` は、新しい型クラス `gastronomy.Checksummable`（`def checksum(digestion: Digestion^, value: Self): Unit`）に対する `extension [source](source: source) def checksum[hash <: Algorithm](using checksummable: (source is Checksummable)^, hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]]): Digest in hash` になった。以前は `extension [source: Streamable by Data over Credit](source: source) def checksum[hash <: Algorithm](using Hash in hash, erased Permit[HashWeakness[hash]])` であった。`Streamable by Data over Credit` なすべての源は、`Checksummable.streamable` を通して引き続き同じチェックサムになる。galilei の `Platform.pathChecksummable` は任意の `Path on <platform>` をチェックサム可能にする（ファイルはそのバイトで、ディレクトリはその中の通常ファイルを相対パスの順に、それぞれ長さを前置した相対パスと内容として扱う。スコープ内の `DereferenceSymlinks` を受け取り、`Io.Error` を発生させる）。したがって、以前はコンパイルできなかった `path.checksum[Sha2[256]]` がコンパイルできるようになった。(#2359)
+
+- ## exoskeleton
++ ## exoskeleton
+
+- - For a flag declared `repeatable = true`, `Commandline.locate`, `Commandline.at` and
+-   `Commandline.read` (and so `Flag#apply`, `value`, `require` and `validate`) now yield the
+-   operands of every occurrence of the flag, in command-line order, where before they yielded the
+-   first occurrence's only; a flag not declared repeatable is unchanged. `Interpretable.decoder`
+-   still reads the first operand, so `Flag[Text]` is unaffected; the new `Interpretable.list`
+-   (`[element] => (element: (element is Interpretable)^) => (List[element] is
+-   Interpretable)^{element}`: every operand interpreted as `element`, `Unset` if any fails)
+-   reads them all. The new `inline given`s `Interpretable.optionalInt`, `optionalLong` and
+-   `optionalDouble` (`Optional[Int] is Interpretable` etc.: pure, `Unset` on a malformed operand)
+-   are the pure reading `Flag.apply` needs under capture checking, and `inline def
+-   Interpretable.optional[operand]: Optional[operand] is Interpretable` makes the same for any
+-   `operand: Decodable in Text`. (#2363, #2364)
++ - `repeatable = true` と宣言されたフラグについて、`Commandline.locate`、`Commandline.at`、`Commandline.read`（したがって `Flag#apply`、`value`、`require`、`validate`）は、フラグのすべての出現のオペランドをコマンドラインの順に返すようになった。以前は最初の出現のオペランドだけを返していた。繰り返し可能と宣言されていないフラグは変わらない。`Interpretable.decoder` は引き続き最初のオペランドを読むので、`Flag[Text]` は影響を受けない。新しい `Interpretable.list`（`[element] => (element: (element is Interpretable)^) => (List[element] is Interpretable)^{element}`：すべてのオペランドを `element` として解釈し、どれかが失敗すれば `Unset`）はそれらをすべて読む。新しい `inline given` の `Interpretable.optionalInt`、`optionalLong`、`optionalDouble`（`Optional[Int] is Interpretable` など。純粋で、不正なオペランドでは `Unset`）は、キャプチャ検査のもとで `Flag.apply` が必要とする純粋な読み取りであり、`inline def Interpretable.optional[operand]: Optional[operand] is Interpretable` は、任意の `operand: Decodable in Text` について同じものを作る。(#2363, #2364)
+
+- ## turbulence, parasite
++ ## turbulence, parasite
+
+- - `turbulence.Stdio.divert[result](stdio: Stdio)(block: => result): result` is now a diversion of
+-   the calling *thread*, not of the JVM: the first call installs one dispatcher on each of
+-   `System.out` and `System.err` for the life of the JVM, through which a write reaches the
+-   `Stdio` the writing thread is diverted to, or the original stream where it is not. A thread
+-   started under a diversion inherits it, and a parasite task runs under the diversion of the
+-   thread that spawned it. Previously `divert` replaced the JVM's streams for every thread.
+-   `Stdio.capture` follows. `Stdio.diverted: Optional[Stdio]` is new. `System.out` is not the
+-   same object after the first diversion as before it. (#2355)
+- - `parasite.core` now depends on `turbulence.stdio`. (#2355)
++ - `turbulence.Stdio.divert[result](stdio: Stdio)(block: => result): result` は、JVM ではなく呼び出した*スレッド*の転送になった。最初の呼び出しが、JVM の存続期間にわたって `System.out` と `System.err` のそれぞれに一つのディスパッチャーを設置し、書き込みはそれを通して、書き込むスレッドの転送先の `Stdio` に、転送されていなければ元のストリームに届く。転送のもとで開始されたスレッドはそれを受け継ぎ、parasite のタスクは、それを生成したスレッドの転送のもとで実行される。以前は `divert` がすべてのスレッドについて JVM のストリームを置き換えていた。`Stdio.capture` もこれに従う。`Stdio.diverted: Optional[Stdio]` が新しく加わった。最初の転送の後の `System.out` は、それ以前と同じオブジェクトではない。(#2355)
++ - `parasite.core` は `turbulence.stdio` に依存するようになった。(#2355)
+
+- ## scintillate, telekinesis
++ ## scintillate, telekinesis
+
+- - `scintillate.SocketServer` no longer treats a request carrying `Upgrade: h2c` (with
+-   `Connection: Upgrade`) as a protocol upgrade: its body is framed by `Content-Length` or chunking
+-   as for any other request, where before it was the whole remainder of the connection, so a
+-   handler that read it hung. (#2343)
+- - `telekinesis.httpBackends.javaNetHttp` sends a request to a cleartext `http://` origin as
+-   HTTP/1.1 (`HttpRequest.Builder.version(HTTP_1_1)`, per request), so it no longer offers the
+-   `h2c` upgrade; `https://` requests are unchanged and may still negotiate HTTP/2. (#2343)
++ - `scintillate.SocketServer` は、（`Connection: Upgrade` を伴って）`Upgrade: h2c` を持つリクエストをプロトコルのアップグレードとして扱わなくなった。その本文は、他のリクエストと同じく `Content-Length` またはチャンク化によってフレーミングされる。以前は接続の残り全体が本文とされたので、それを読むハンドラは止まったままになっていた。(#2343)
++ - `telekinesis.httpBackends.javaNetHttp` は、平文の `http://` のオリジンへのリクエストを（リクエストごとの `HttpRequest.Builder.version(HTTP_1_1)` によって）HTTP/1.1 で送るので、`h2c` へのアップグレードを提案しなくなった。`https://` のリクエストは変わらず、引き続き HTTP/2 を交渉しうる。(#2343)
+
+=   `h2c` upgrade; `https://` requests are unchanged and may still negotiate HTTP/2. (#2343)
+=
+- ## hellenism
++ ## hellenism
+
+- - `hellenism.Classpath.Entry` has a new abstract member `def path: Optional[Text]`: the path of
+-   a `Directory` or a `Jar`, `Unset` for a `Url` or the `JavaRuntime`. `Entry` is sealed, so no
+-   consumer implements it. (#2352)
+- - `LocalClasspath + path` (`LocalClasspath.paths`) now classifies by content through the new
+-   `Classpath.Entry.classify[path: Abstractable across Paths to Text](path)(using
+-   Tactic[Path.Error], Tactic[Io.Error], DereferenceSymlinks): Entry.Directory | Entry.Jar` (in
+-   `hellenism.jvm`): a directory, or a path that does not exist, is a `Directory`; a file is a
+-   `Jar` only if it ends with a ZIP end-of-central-directory record, and otherwise raises
+-   `Io.Error` with `Reason.InvalidData`. Previously any existing non-directory was a `Jar` and a
+-   nonexistent path raised `Io.Error`. (#2352)
++ - `hellenism.Classpath.Entry` に新しい抽象メンバー `def path: Optional[Text]` が加わった。`Directory` または `Jar` のパスで、`Url` や `JavaRuntime` では `Unset` である。`Entry` はシールされているので、それを実装する利用者はいない。(#2352)
++ - `LocalClasspath + path`（`LocalClasspath.paths`）は、新しい `Classpath.Entry.classify[path: Abstractable across Paths to Text](path)(using Tactic[Path.Error], Tactic[Io.Error], DereferenceSymlinks): Entry.Directory | Entry.Jar`（`hellenism.jvm` にある）を通して、内容によって分類するようになった。ディレクトリ、または存在しないパスは `Directory` である。ファイルは ZIP の中央ディレクトリ終端レコードで終わる場合にだけ `Jar` であり、そうでなければ `Reason.InvalidData` を伴う `Io.Error` を発生させる。以前は、存在するディレクトリでないものはすべて `Jar` であり、存在しないパスは `Io.Error` を発生させていた。(#2352)
+
+- ## build
++ ## build
+
+- - The pinned compiler is Proscala `1.0.7` (`3.10.0-pro-1.0.7`, was `3.10.0-pro-1.0.5`). Soundness's
+-   published artifacts are compiled with it, so a consumer compiling against them pins the same
+-   build. No library's API changes.
+- - The pinned `xek` builder (`etc/xek.tsv`), which packages ethereal applications and the
+-   `xek`-built test fixtures, is `1.5.0` (was `1.4.0`). No library's API changes.
++ - 固定されたコンパイラは Proscala `1.0.7`（`3.10.0-pro-1.0.7`、以前は `3.10.0-pro-1.0.5`）である。Soundness の公開アーティファクトはこれでコンパイルされているので、それらに対してコンパイルする利用者も同じビルドに固定する。どのライブラリの API も変わらない。
++ - ethereal のアプリケーションと `xek` でビルドされるテストのフィクスチャをパッケージ化する、固定された `xek` ビルダー（`etc/xek.tsv`）は `1.5.0`（以前は `1.4.0`）である。どのライブラリの API も変わらない。
+
+- ## frontier
++ ## frontier
+
+- - Under `import soundness.*` (or `frontier.context.explainMissingContext`), a contextual search
+-   inside the body of an `inline def` — including the lambdas it contains, such as a derivation
+-   rule's `conjunction` — now resolves the same instance a plain `def` would, with the same
+-   inference. Before, the catch-all was accepted unexpanded there and shadowed the companion
+-   given, so `join`, `cut`, `to[List]`, `all`, `list(ordinal)`, `.let` and `TypeTest` patterns
+-   inside inline bodies failed at the call site with "contextual value resolves without the
+-   catch-all". Code that moved such operations out of inline bodies into ordinary methods as a
+-   workaround may move them back. The fix is in the compiler (Proscala 1.0.7's `searchdiag`
+-   patch: a `@diagnostic` candidate that was not expanded fails the search), so it needs the
+-   1.0.7 toolchain pinned under `## build`; nothing in the Soundness API changed. The same fix
+-   lets a splice inside an inline given summon its `Type[…]` evidence. (#2422)
++ - `import soundness.*`（または `frontier.context.explainMissingContext`）のもとで、`inline def` の本体の中、つまりそれが含むラムダ（導出規則の `conjunction` など）も含めた中でのコンテキストの探索は、通常の `def` と同じインスタンスを、同じ推論で解決するようになった。以前はそこでキャッチオールが展開されないまま受理され、コンパニオンの given を覆い隠していたので、インライン本体の中の `join`、`cut`、`to[List]`、`all`、`list(ordinal)`、`.let` や `TypeTest` パターンが、呼び出し箇所で "contextual value resolves without the catch-all" として失敗していた。回避策としてそのような操作をインライン本体から通常のメソッドへ移していたコードは、元に戻してよい。修正はコンパイラにあり（Proscala 1.0.7 の `searchdiag` パッチ：展開されなかった `@diagnostic` の候補は探索を失敗させる）、そのため `## build` の下で固定された 1.0.7 のツールチェーンを必要とする。Soundness の API は何も変わっていない。同じ修正により、インラインの given の中のスプライスがその `Type[…]` の証拠を召喚できるようになる。(#2422)

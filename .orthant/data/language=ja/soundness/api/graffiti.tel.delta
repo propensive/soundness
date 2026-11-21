@@ -1,0 +1,1299 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base graffiti
++ base graffiti
+
+- import soundness
++ import soundness
+
+- info   web pages composed from archetype traits: each adds a feature, its CSS and its metadata
++ info   アーキタイプのトレイトから組み立てる Web ページ。各トレイトが機能、その CSS、そのメタデータを加える
+
+- detail
++ detail
+
+-     _Graffiti_ assembles a web page from reusable parts. A page is a class extending
+-     `Archetype` which mixes in the features it wants — a `Masthead`, a `Hero` banner,
+-     `Breadcrumbs`, a `VersoPanel` beside the content, a `Colophon` at the foot, `Keywords` and
+-     a `Favicon` in the head — and supplies its one obligation, `content`, the central matter.
+-     Each feature trait contributes its own markup, its own CSS rules and its own `<head>`
+-     metadata by wrapping what the traits listed before it produced, so mixing them nests them
+-     in the order they are listed, and independent features never collide. The result is a
+-     complete HTML document, typed with honeycomb's element vocabulary, which renders to text
+-     with `html`, streams, and serves directly as an HTTP response.
++     _Graffiti_ は再利用可能な部品から Web ページを組み立てる。
++     ページは `Archetype` を継承するクラスであり、欲しい機能（`Masthead`、`Hero` バナー、`Breadcrumbs`、コンテンツの横の `VersoPanel`、末尾の `Colophon`、head の中の `Keywords` と `Favicon`）をミックスインし、唯一の義務である中心の内容 `content` を与える。
++     各機能のトレイトは、それより前に列挙されたトレイトが生成したものを包むことで、自身のマークアップ、自身の CSS ルール、自身の `<head>` のメタデータを寄与する。このためミックスインすると列挙した順にネストし、独立した機能どうしが衝突することはない。
++     結果は honeycomb の要素の語彙で型付けされた完全な HTML 文書であり、`html` でテキストへ描画でき、ストリームでき、HTTP のレスポンスとして直接提供できる。
+
+=     with `html`, streams, and serves directly as an HTTP response.
+=
+-     ```scala
++     ```scala
+
+=     with `html`, streams, and serves directly as an HTTP response.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     with `html`, streams, and serves directly as an HTTP response.
+=
+=     ```scala
+=     import soundness.*
+-     import htmlDoms.whatwg.*
++     import htmlDoms.whatwg.*
+
+-     import formatting.indentedCssFormatting
++     import formatting.indentedCssFormatting
+
+-     class Welcome extends Archetype, Mainstay, Masthead, Colophon, Headline(t"Welcome"):
++     class Welcome extends Archetype, Mainstay, Masthead, Colophon, Headline(t"Welcome"):
+
+-       def content: Html of (? <: Flow) = P("Hello, world!")
++       def content: Html of (? <: Flow) = P("Hello, world!")
+
+-       override def masthead: Html of (? <: Flow) = Strong("Example Site")
++       override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+-       override def colophon: Html of (? <: Flow) = P("Copyright 2026")
++       override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+
+-     Welcome().html.show
++     Welcome().html.show
+
+-     Welcome().css.show
++     Welcome().css.show
+
+=     Welcome().css.show
+-     ```
++     ```
+
+-     Because the page is a class, the compiler sees its structure: a page without `content`
+-     does not compile, a slot given an element which does not belong there is a type error,
+-     and two features which each define a slot of the same name are reported where they are
+-     combined. Each feature exposes hooks a page overrides directly — a slot (`masthead`,
+-     `verso`, `hero`), a setting (`versoWidth`, `menuGap`) and a rule set (`mastheadStyles`,
+-     `menuStyles`) — so a page adjusts a feature without touching its markup or calling
+-     `super`. Every layout uses only logical CSS properties, so setting `direction` to
+-     `HDir.Rtl` mirrors the page with the stylesheet unchanged.
++     ページはクラスなので、コンパイラはその構造を見ることができる。`content` のないページはコンパイルできず、そこに属さない要素を与えられたスロットは型エラーになり、同じ名前のスロットをそれぞれ定義する二つの機能は、組み合わされた場所で報告される。
++     各機能は、ページが直接オーバーライドするフックを公開する。スロット（`masthead`、`verso`、`hero`）、設定（`versoWidth`、`menuGap`）、ルールセット（`mastheadStyles`、`menuStyles`）である。このためページは、マークアップに触れたり `super` を呼んだりせずに機能を調整できる。
++     すべてのレイアウトは論理 CSS プロパティだけを使うので、`direction` を `HDir.Rtl` にすると、スタイルシートを変えずにページが左右反転する。
+
+-     There is one source set, `graffiti.core`, which builds on honeycomb (HTML), cataclysm
+-     (CSS) and parasite, and compiles for every platform honeycomb does; nothing in it exists
+-     only on Scala.js. Everything, including the `urlText` given, is exported to the
+-     `soundness` umbrella. A page needs honeycomb's element constructors in scope
+-     (`import htmlDoms.whatwg.*`) and, to render its stylesheet, a CSS formatting choice such
+-     as `formatting.indentedCssFormatting`; the `cataclysm.formatting.indentedCssFormatting`
+-     import inside the library renders the inline `<style>` element.
++     ソースセットは `graffiti.core` 一つで、honeycomb（HTML）、cataclysm（CSS）、parasite の上に構築され、honeycomb が対応するすべてのプラットフォーム向けにコンパイルされる。Scala.js にしか存在しないものは含まれない。
++     `urlText` の given を含め、すべてが `soundness` アンブレラにエクスポートされる。
++     ページには honeycomb の要素コンストラクターがスコープにあること（`import htmlDoms.whatwg.*`）が必要であり、スタイルシートを描画するには `formatting.indentedCssFormatting` のような CSS の書式の選択が必要である。ライブラリ内部の `cataclysm.formatting.indentedCssFormatting` のインポートは、インラインの `<style>` 要素を描画する。
+
+- refer graffiti.Archetype
++ refer graffiti.Archetype
+
+- refer graffiti.Dashboard
++ refer graffiti.Dashboard
+
+- refer honeycomb.Html
++ refer honeycomb.Html
+
+- refer cataclysm.Css
++ refer cataclysm.Css
+
+- entry .Archetype   the base of every page: its content, title, direction, stylesheet and the seams features compose through
++ entry .Archetype   すべてのページの基盤。コンテンツ、タイトル、書字方向、スタイルシート、そして機能が組み合わさるための継ぎ目
+
+= entry .Archetype   the base of every page: its content, title, direction, stylesheet and the seams features compose through
+-   detail
++   detail
+
+-       A concrete page extends `Archetype` and the feature traits it wants, and defines
+-       `#content`. The traits compose through three protected seams: `#frame`, the wrapping
+-       pipeline, which a layout trait overrides as some decoration of `super.frame`;
+-       `#styles`, the stylesheet accumulator, overridden as `super.styles + ownRules`; and
+-       `#head`, the `<head>` accumulator, overridden as a fragment of a new element and
+-       `super.head`. A page author rarely touches them: each feature exposes its own hooks
+-       instead.
++       具体的なページは `Archetype` と欲しい機能のトレイトを継承し、`#content` を定義する。
++       トレイトは三つの protected な継ぎ目を通じて組み合わさる。`#frame` は包み込みのパイプラインで、レイアウトのトレイトはこれを `super.frame` に何らかの装飾を施したものとしてオーバーライドする。`#styles` はスタイルシートのアキュムレーターで、`super.styles + ownRules` としてオーバーライドされる。`#head` は `<head>` のアキュムレーターで、新しい要素と `super.head` のフラグメントとしてオーバーライドされる。
++       ページの作者がこれらに触れることはまれで、代わりに各機能が独自のフックを公開する。
+
+-       The whole page is `#document`, a `Document[Html]` with a doctype, or `html` (honeycomb's
+-       extension, through `.renderable`): `<html>` with a `<head>` of the `#pageTitle`, the
+-       stylesheet — inline in a `<style>`, or a `<link>` to `#stylesheetUrl` when one is
+-       given — and the accumulated metadata, and a `<body>` whose `dir` is `#direction`,
+-       holding the framed content. The assembly is final, so a page cannot override it and
+-       silently lose its stylesheet or its direction; `#css` is the stylesheet alone, for
+-       serving at `#stylesheetUrl`.
++       ページ全体は `#document`（doctype を持つ `Document[Html]`）か、`html`（`.renderable` を通じた honeycomb の拡張メソッド）である。これは `<html>` で、`#pageTitle`、スタイルシート（`<style>` 内にインラインで、あるいは `#stylesheetUrl` が与えられていればそれへの `<link>` として）、蓄積されたメタデータからなる `<head>` と、`dir` が `#direction` であり枠付けされたコンテンツを保持する `<body>` を持つ。
++       この組み立ては final なので、ページがこれをオーバーライドしてスタイルシートや書字方向を黙って失うことはない。`#css` は `#stylesheetUrl` で提供するためのスタイルシート単体である。
+
+=       serving at `#stylesheetUrl`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label The bare page: content, and nothing else
++         label 最小のページ：コンテンツだけ
+
+=         label The bare page: content, and nothing else
+-         code
++         code
+
+=         label The bare page: content, and nothing else
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label The bare page: content, and nothing else
+=         code
+=             import soundness.*
+-             import htmlDoms.whatwg.*
++             import htmlDoms.whatwg.*
+
+-             class Guide extends Archetype:
++             class Guide extends Archetype:
+
+=             class Guide extends Archetype:
+-               def content: Html of (? <: Flow) = P("The guide")
++               def content: Html of (? <: Flow) = P("The guide")
+
+-             Guide().html   // <html><head><title></title><style></style></head><body dir="ltr"><p>The guide</p></body></html>
++             Guide().html   // <html><head><title></title><style></style></head><body dir="ltr"><p>The guide</p></body></html>
+
+=             Guide().html   // <html><head><title></title><style></style></head><body dir="ltr"><p>The guide</p></body></html>
+-       frame
++       frame
+
+-         label A headline sets the title and puts an <h1> above the content
++         label 見出しはタイトルを設定し、コンテンツの上に <h1> を置く
+
+=         label A headline sets the title and puts an <h1> above the content
+-         code
++         code
+
+=         label A headline sets the title and puts an <h1> above the content
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A headline sets the title and puts an <h1> above the content
+=         code
+=             import soundness.*
+-             import htmlDoms.whatwg.*
++             import htmlDoms.whatwg.*
+
+-             class Guide extends Archetype, Headline(t"Guide"):
++             class Guide extends Archetype, Headline(t"Guide"):
+
+=             class Guide extends Archetype, Headline(t"Guide"):
+-               def content: Html of (? <: Flow) = P("The guide")
++               def content: Html of (? <: Flow) = P("The guide")
+
+-             Guide().html   // <title>Guide</title> … <h1 class="graffiti-headline">Guide</h1><p>The guide</p>
++             Guide().html   // <title>Guide</title> … <h1 class="graffiti-headline">Guide</h1><p>The guide</p>
+
+=             Guide().html   // <title>Guide</title> … <h1 class="graffiti-headline">Guide</h1><p>The guide</p>
+-       frame
++       frame
+
+-         label A landmark wraps what came before it
++         label ランドマークはそれより前のものを包む
+
+=         label A landmark wraps what came before it
+-         code
++         code
+
+=         label A landmark wraps what came before it
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A landmark wraps what came before it
+=         code
+=             import soundness.*
+-             import htmlDoms.whatwg.*
++             import htmlDoms.whatwg.*
+
+-             class Guide extends Archetype, Headline(t"Guide"), Mainstay:
++             class Guide extends Archetype, Headline(t"Guide"), Mainstay:
+
+=             class Guide extends Archetype, Headline(t"Guide"), Mainstay:
+-               def content: Html of (? <: Flow) = P("The guide")
++               def content: Html of (? <: Flow) = P("The guide")
+
+-             Guide().html   // <main class="graffiti-mainstay"><h1 …>Guide</h1><p>The guide</p></main>
++             Guide().html   // <main class="graffiti-mainstay"><h1 …>Guide</h1><p>The guide</p></main>
+
+=             Guide().html   // <main class="graffiti-mainstay"><h1 …>Guide</h1><p>The guide</p></main>
+-       frame
++       frame
+
+-         label A masthead listed after the landmark sits outside it
++         label ランドマークの後に列挙したマストヘッドはその外に置かれる
+
+=         label A masthead listed after the landmark sits outside it
+-         code
++         code
+
+=         label A masthead listed after the landmark sits outside it
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A masthead listed after the landmark sits outside it
+=         code
+=             import soundness.*
+-             import htmlDoms.whatwg.*
++             import htmlDoms.whatwg.*
+
+-             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead:
++             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead:
+
+=             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead:
+-               def content: Html of (? <: Flow) = P("The guide")
++               def content: Html of (? <: Flow) = P("The guide")
+
+=             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead:
+=               def content: Html of (? <: Flow) = P("The guide")
+-               override def masthead: Html of (? <: Flow) = Strong("Example Site")
++               override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+-             Guide().html   // <header class="graffiti-masthead"><strong>Example Site</strong></header><main …>…</main>
++             Guide().html   // <header class="graffiti-masthead"><strong>Example Site</strong></header><main …>…</main>
+
+=             Guide().html   // <header class="graffiti-masthead"><strong>Example Site</strong></header><main …>…</main>
+-       frame
++       frame
+
+-         label Metadata goes to the head, and a linked stylesheet replaces the inline one
++         label メタデータは head に入り、リンクしたスタイルシートがインラインのものに代わる
+
+=         label Metadata goes to the head, and a linked stylesheet replaces the inline one
+-         code
++         code
+
+=         label Metadata goes to the head, and a linked stylesheet replaces the inline one
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Metadata goes to the head, and a linked stylesheet replaces the inline one
+=         code
+=             import soundness.*
+-             import htmlDoms.whatwg.*
++             import htmlDoms.whatwg.*
+
+-             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead, StandardMetadata(t"A guide"):
++             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead, StandardMetadata(t"A guide"):
+
+=             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead, StandardMetadata(t"A guide"):
+-               def content: Html of (? <: Flow) = P("The guide")
++               def content: Html of (? <: Flow) = P("The guide")
+
+=             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead, StandardMetadata(t"A guide"):
+=               def content: Html of (? <: Flow) = P("The guide")
+-               override def masthead: Html of (? <: Flow) = Strong("Example Site")
++               override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+-               override def stylesheetUrl: Optional[Text] = t"/site.css"
++               override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+-             Guide().html   // <head><title>Guide</title><link rel="stylesheet" href="/site.css"><meta name="description" …><meta name="viewport" …></head>
++             Guide().html   // <head><title>Guide</title><link rel="stylesheet" href="/site.css"><meta name="description" …><meta name="viewport" …></head>
+
+-             Guide().css    // the stylesheet to serve at /site.css
++             Guide().css    // the stylesheet to serve at /site.css
+
+=             Guide().css    // the stylesheet to serve at /site.css
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       A page is also a response body in its own right: it declares the media type
+-       `text/html` (`.media`) and streams its rendered document (`.streamable`), so an HTTP
+-       handler returns it directly and the `Content-Type` header follows from the value. A
+-       `Css` value serves the same way, as `text/css`, which is all a linked stylesheet needs.
++       ページはそれ自体でレスポンスの本文でもある。メディアタイプ `text/html` を宣言し（`.media`）、描画した文書をストリームする（`.streamable`）ので、HTTP のハンドラはそれを直接返し、`Content-Type` ヘッダーは値から決まる。
++       `Css` の値も同じように `text/css` として提供され、リンクされたスタイルシートに必要なのはそれだけである。
+
+=       `Css` value serves the same way, as `text/css`, which is all a linked stylesheet needs.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+-       def site(): Unit = supervise:
++       def site(): Unit = supervise:
+
+-         SocketServer(8080).handle:
++         SocketServer(8080).handle:
+
+-           request.target match
++           request.target match
+
+-             case t"/"         => Http.Response(Http.Ok)(Guide())
++             case t"/"         => Http.Response(Http.Ok)(Guide())
+
+-             case t"/site.css" => Http.Response(Http.Ok)(Guide().css)
++             case t"/site.css" => Http.Response(Http.Ok)(Guide().css)
+
+-             case _            => Http.Response(Http.NotFound)(t"No such page")
++             case _            => Http.Response(Http.NotFound)(t"No such page")
+
+=             case _            => Http.Response(Http.NotFound)(t"No such page")
+-       ```
++       ```
+
+-   refer graffiti.Headline
++   refer graffiti.Headline
+
+=   refer graffiti.Headline
+-   refer graffiti.Mainstay
++   refer graffiti.Mainstay
+
+=   refer graffiti.Headline
+=   refer graffiti.Mainstay
+-   refer graffiti.Masthead
++   refer graffiti.Masthead
+
+=   refer graffiti.Masthead
+-   refer graffiti.VersoPanel
++   refer graffiti.VersoPanel
+
+-   refer graffiti.StandardMetadata
++   refer graffiti.StandardMetadata
+
+-   entry .media   every page's media type: `text/html; charset=UTF-8`
+-       The `Media` given for any `page <: Archetype`, in implicit scope, from which a
+-       `Servable` is synthesised wherever an HTTP handler returns a page.
+-   entry .renderable   renders any page as its complete `<html>` element
+-       The `Renderable in "html"` given for any `page <: Archetype`, in implicit scope: it is
+-       what honeycomb's `page.html` extension calls, giving the `<html>` element with its
+-       `<head>` (title, stylesheet, metadata) and `<body dir="…">`. A page which defines its
+-       own `html` member shadows the extension rather than failing to compile.
+-   entry .streamable   streams any page's rendered document as text
+-       The `Streamable by Text` given for any `page <: Archetype`, needing a `Monitor` and a
+-       `Probate` in scope: the page's `document` is rendered as it is streamed, within the
+-       supervising scope a server runs under, with nothing buffered. `page.read[Text]` under
+-       `supervise` is the whole document, doctype first.
+-   entry #content   the central matter of the page; the one member a concrete page must define
+-       Flow content: a `P`, a `Div`, a fragment of several. Every feature's `frame` wraps or
+-       flanks this.
+-   entry #pageTitle   the document's `<title>`; empty unless overridden or set by `Headline` or `Dashboard`
+-   entry #direction   the writing direction, `HDir.Ltr` by default
+-       Set as `dir` on the `<body>`, since `<html>` admits no global attributes here. Every
+-       layout uses only logical properties (`inline-size`, `inline-start`), so `HDir.Rtl`
+-       swaps verso and recto in the browser and the emitted CSS is byte-for-byte the same.
+-   entry #frame   the wrapping pipeline: the content as framed by every feature so far; protected
+-       `content` at the base. A layout trait overrides it as a decoration of `super.frame`,
+-       so features nest in linearization order; a page author uses the features' hooks
+-       instead.
+-   entry #styles   the stylesheet accumulator: every feature's rules so far; protected
+-       Empty at the base; each feature overrides it as `super.styles + ownRules`. `css` is
+-       its final value.
+-   entry #head   the `<head>` metadata accumulator: every feature's elements so far; protected
+-       An empty fragment at the base; a metadata trait overrides it as a fragment of its own
+-       `<meta>` or `<link>` and `super.head`.
+-   entry #stylesheetUrl   where the stylesheet is served, if the page links it rather than embedding it
+-       `Unset` by default, so the stylesheet is embedded in a `<style>` element and the page
+-       is self-contained. When set, the head refers to it with `<link rel="stylesheet">`
+-       instead, and the application serves `css` at that address, so a site with many pages
+-       serves one stylesheet.
++   entry .media   すべてのページのメディアタイプ：`text/html; charset=UTF-8`
++       任意の `page <: Archetype` に対する、暗黙のスコープにある `Media` の given である。HTTP のハンドラがページを返すところでは、ここから `Servable` が合成される。
++   entry .renderable   任意のページを完全な `<html>` 要素として描画する
++       任意の `page <: Archetype` に対する、暗黙のスコープにある `Renderable in "html"` の given である。honeycomb の `page.html` 拡張メソッドが呼ぶのはこれであり、`<head>`（タイトル、スタイルシート、メタデータ）と `<body dir="…">` を持つ `<html>` 要素を与える。
++       独自の `html` メンバーを定義するページは、コンパイルに失敗するのではなく、拡張メソッドを隠す。
++   entry .streamable   任意のページの描画された文書をテキストとしてストリームする
++       任意の `page <: Archetype` に対する `Streamable by Text` の given で、スコープに `Monitor` と `Probate` を必要とする。ページの `document` は、サーバーが動作する監督スコープの中で、ストリームされるにつれて描画され、何もバッファーされない。
++       `supervise` の下での `page.read[Text]` は、doctype から始まる文書全体である。
++   entry #content   ページの中心の内容。具体的なページが定義しなければならない唯一のメンバー
++       フローコンテンツである。`P`、`Div`、あるいはいくつかからなるフラグメントなどである。
++       すべての機能の `frame` はこれを包むか、その両脇に置かれる。
++   entry #pageTitle   文書の `<title>`。オーバーライドされるか、`Headline` や `Dashboard` が設定しない限り空である
++   entry #direction   書字方向。既定では `HDir.Ltr`
++       `<html>` はここではグローバル属性を受け付けないので、`<body>` の `dir` として設定される。
++       すべてのレイアウトは論理プロパティ（`inline-size`、`inline-start`）だけを使うので、`HDir.Rtl` はブラウザの中で verso と recto を入れ替え、出力される CSS はバイト単位で同じである。
++   entry #frame   包み込みのパイプライン。これまでのすべての機能によって枠付けされたコンテンツ。protected
++       基盤では `content` である。
++       レイアウトのトレイトはこれを `super.frame` の装飾としてオーバーライドするので、機能は線形化の順にネストする。ページの作者は代わりに機能のフックを使う。
++   entry #styles   スタイルシートのアキュムレーター。これまでのすべての機能のルール。protected
++       基盤では空であり、各機能はこれを `super.styles + ownRules` としてオーバーライドする。
++       `css` はその最終的な値である。
++   entry #head   `<head>` のメタデータのアキュムレーター。これまでのすべての機能の要素。protected
++       基盤では空のフラグメントであり、メタデータのトレイトはこれを、自身の `<meta>` または `<link>` と `super.head` のフラグメントとしてオーバーライドする。
++   entry #stylesheetUrl   ページがスタイルシートを埋め込むのではなくリンクする場合に、それが提供される場所
++       既定では `Unset` なので、スタイルシートは `<style>` 要素に埋め込まれ、ページは自己完結する。
++       設定すると、head は代わりに `<link rel="stylesheet">` でそれを参照し、アプリケーションはそのアドレスで `css` を提供するので、多くのページを持つサイトも一つのスタイルシートを提供すればよい。
+
+=       serves one stylesheet.
+=
+-       ```scala
++       ```scala
+
+=       serves one stylesheet.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       serves one stylesheet.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Linked extends Archetype, VersoPanel:
++       class Linked extends Archetype, VersoPanel:
+
+=       class Linked extends Archetype, VersoPanel:
+-         def content: Html of (? <: Flow) = P("body")
++         def content: Html of (? <: Flow) = P("body")
+
+-         override def stylesheetUrl: Optional[Text] = t"/site.css"
++         override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+-       Linked().html   // <link rel="stylesheet" href="/site.css"> in the head, and no <style>
++       Linked().html   // <link rel="stylesheet" href="/site.css"> in the head, and no <style>
+
+=       Linked().html   // <link rel="stylesheet" href="/site.css"> in the head, and no <style>
+-       ```
++       ```
+
+-   entry #css   the page's whole stylesheet, as structured `Css`; final
+-       The accumulated rules of every feature, for serving at `stylesheetUrl` or rendering
+-       with `show` (which needs a CSS formatting choice such as
+-       `formatting.indentedCssFormatting`). It is final: a page restyles a feature through
+-       that feature's rule hook, such as `mastheadStyles`, not by overriding this.
+-   entry #document   the page as a `Document[Html]` with a leading doctype; final
+-       The form served over HTTP and streamed by `.streamable`: the doctype, then the
+-       `<html>` element `html` renders.
++   entry #css   ページのスタイルシート全体。構造化された `Css` である。final
++       すべての機能が蓄積したルールで、`stylesheetUrl` で提供するか、`show` で描画するためのものである（`show` には `formatting.indentedCssFormatting` のような CSS の書式の選択が必要である）。
++       これは final である。ページは、これをオーバーライドするのではなく、`mastheadStyles` のようなその機能のルールのフックを通じて機能のスタイルを変える。
++   entry #document   先頭に doctype を持つ `Document[Html]` としてのページ。final
++       HTTP で提供され、`.streamable` によってストリームされる形である。doctype の後に、`html` が描画する `<html>` 要素が続く。
+
+- entry .Headline   sets the document title and prepends a top-level heading
++ entry .Headline   文書のタイトルを設定し、最上位の見出しを先頭に置く
+
+= entry .Headline   sets the document title and prepends a top-level heading
+-   detail
++   detail
+
+-       `Headline(title)` makes `pageTitle` the title and puts an `<h1 class="graffiti-headline">`
+-       at the head of the frame, so it appears above whatever the features listed before it
+-       built. It fills no slot of its own.
++       `Headline(title)` は `pageTitle` をそのタイトルにし、`<h1 class="graffiti-headline">` をフレームの先頭に置くので、それより前に列挙された機能が構築したものの上に表示される。
++       独自のスロットは埋めない。
+
+=       built. It fills no slot of its own.
+=
+-       ```scala
++       ```scala
+
+=       built. It fills no slot of its own.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       built. It fills no slot of its own.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Welcome extends Archetype, Headline(t"Welcome"):
++       class Welcome extends Archetype, Headline(t"Welcome"):
+
+=       class Welcome extends Archetype, Headline(t"Welcome"):
+-         def content: Html of (? <: Flow) = P("Hello, world!")
++         def content: Html of (? <: Flow) = P("Hello, world!")
+
+-       Welcome().html   // <title>Welcome</title> … <h1 class="graffiti-headline">Welcome</h1><p>Hello, world!</p>
++       Welcome().html   // <title>Welcome</title> … <h1 class="graffiti-headline">Welcome</h1><p>Hello, world!</p>
+
+=       Welcome().html   // <title>Welcome</title> … <h1 class="graffiti-headline">Welcome</h1><p>Hello, world!</p>
+-       ```
++       ```
+
+-   entry .headlineClass   the CSS class of the heading: `graffiti-headline`
+-   entry #heading   the rendered heading, an `<h1>`; protected, override to restructure it
+-   entry #headlineStyles   this feature's rules, a margin below the heading; protected, override to restyle it
++   entry .headlineClass   見出しの CSS クラス：`graffiti-headline`
++   entry #heading   描画された見出し、`<h1>`。protected で、構造を変えるにはオーバーライドする
++   entry #headlineStyles   この機能のルール、見出しの下のマージン。protected で、スタイルを変えるにはオーバーライドする
+
+- entry .TopMenu   a horizontal navigation bar across the top of the page, reusable as `menu`
++ entry .TopMenu   ページ上部にわたる横方向のナビゲーションバー。`menu` として再利用できる
+
+= entry .TopMenu   a horizontal navigation bar across the top of the page, reusable as `menu`
+-   detail
++   detail
+
+-       Prepends a `<nav class="graffiti-top-menu">` of the `#menuItems`, laid out as a flex row
+-       with `#menuGap` between items. The rendered bar is also `#menu`, a helper a page may
+-       place elsewhere — in a side panel, say — instead of or as well as at the top.
++       `#menuItems` からなる `<nav class="graffiti-top-menu">` を先頭に置き、項目の間に `#menuGap` を空けた flex の行として配置する。
++       描画されたバーは `#menu` でもあり、これはページが上部の代わりに、あるいは上部に加えて、別の場所（たとえばサイドパネル）に置けるヘルパーである。
+
+=       place elsewhere — in a side panel, say — instead of or as well as at the top.
+=
+-       ```scala
++       ```scala
+
+=       place elsewhere — in a side panel, say — instead of or as well as at the top.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       place elsewhere — in a side panel, say — instead of or as well as at the top.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Manual extends Archetype, VersoPanel, TopMenu, Headline(t"Manual"):
++       class Manual extends Archetype, VersoPanel, TopMenu, Headline(t"Manual"):
+
+-         def content: Html of (? <: Flow) = P("Chapter one")
++         def content: Html of (? <: Flow) = P("Chapter one")
+
+-         override def menuItems: List[Html of (? <: Phrasing)] = List(Strong("Home"), Strong("About"))
++         override def menuItems: List[Html of (? <: Phrasing)] = List(Strong("Home"), Strong("About"))
+
+-         override def verso: Html of (? <: Flow) = menu
++         override def verso: Html of (? <: Flow) = menu
+
+=         override def verso: Html of (? <: Flow) = menu
+-       ```
++       ```
+
+-   entry .menuClass   the CSS class of the bar: `graffiti-top-menu`
+-   entry #menuItems   the bar's links, phrasing elements; empty until overridden
+-   entry #menuGap   the spacing between items, `1rem` by default
+-   entry #menu   the rendered `<nav>`; protected, a helper a page may reuse to fill another slot
+-   entry #menuStyles   this feature's rules, a flex row with `menuGap`; protected, override to restyle it
++   entry .menuClass   バーの CSS クラス：`graffiti-top-menu`
++   entry #menuItems   バーのリンク。フレージング要素である。オーバーライドされるまでは空
++   entry #menuGap   項目の間の間隔。既定では `1rem`
++   entry #menu   描画された `<nav>`。protected で、ページが別のスロットを埋めるために再利用できるヘルパー
++   entry #menuStyles   この機能のルール、`menuGap` を持つ flex の行。protected で、スタイルを変えるにはオーバーライドする
+
+- entry .VersoPanel   a side panel on the inline-start edge, beside the content
++ entry .VersoPanel   インラインの始端側、コンテンツの横にあるサイドパネル
+
+= entry .VersoPanel   a side panel on the inline-start edge, beside the content
+-   detail
++   detail
+
+-       The verso page of a spread: the left in left-to-right text, the right in right-to-left.
+-       The content and an `<aside class="graffiti-verso">` of the `#verso` slot are placed in a
+-       two-column grid whose source order is panel-then-content, so the grid follows the
+-       writing direction and `direction = HDir.Rtl` mirrors it with no change to the CSS. The
+-       panel is `#versoWidth` wide with `#versoGap` before the content. It is independent of
+-       `RectoPanel`: a page may mix in both, in either order.
++       見開きの verso のページ、つまり左から右へのテキストでは左、右から左へのテキストでは右である。
++       コンテンツと、`#verso` スロットからなる `<aside class="graffiti-verso">` は、ソース順がパネル、コンテンツの順である二列のグリッドに配置される。このためグリッドは書字方向に従い、`direction = HDir.Rtl` は CSS を一切変えずにそれを反転する。
++       パネルの幅は `#versoWidth` で、コンテンツの前に `#versoGap` を空ける。
++       `RectoPanel` とは独立しており、ページは両方を、どちらの順でもミックスインできる。
+
+=       `RectoPanel`: a page may mix in both, in either order.
+=
+-       ```scala
++       ```scala
+
+=       `RectoPanel`: a page may mix in both, in either order.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `RectoPanel`: a page may mix in both, in either order.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class WideVerso extends Archetype, VersoPanel:
++       class WideVerso extends Archetype, VersoPanel:
+
+=       class WideVerso extends Archetype, VersoPanel:
+-         def content: Html of (? <: Flow) = P("body")
++         def content: Html of (? <: Flow) = P("body")
+
+-         override def verso: Html of (? <: Flow) = P("A table of contents")
++         override def verso: Html of (? <: Flow) = P("A table of contents")
+
+-         override def versoWidth = 20.0*Rem
++         override def versoWidth = 20.0*Rem
+
+-       WideVerso().css   // .graffiti-verso { inline-size: 20rem }
++       WideVerso().css   // .graffiti-verso { inline-size: 20rem }
+
+=       WideVerso().css   // .graffiti-verso { inline-size: 20rem }
+-       ```
++       ```
+
+=       ```
+-   refer graffiti.RectoPanel
++   refer graffiti.RectoPanel
+
+-   entry .layoutClass   the CSS class of the grid container: `graffiti-verso-layout`
+-   entry .versoClass   the CSS class of the panel: `graffiti-verso`
+-   entry .contentClass   the CSS class of the content column: `graffiti-verso-content`
+-   entry #verso   the panel's content; empty until overridden
+-   entry #versoWidth   the panel's inline size, `16rem` by default
+-   entry #versoGap   the gap between panel and content, `1rem` by default
+-   entry #versoArrangement   how panel and content are arranged, a grid `<div>`; protected, override to change the container
+-   entry #versoStyles   this feature's rules, the grid and the panel's width; protected, override to restyle it
++   entry .layoutClass   グリッドのコンテナーの CSS クラス：`graffiti-verso-layout`
++   entry .versoClass   パネルの CSS クラス：`graffiti-verso`
++   entry .contentClass   コンテンツの列の CSS クラス：`graffiti-verso-content`
++   entry #verso   パネルの内容。オーバーライドされるまでは空
++   entry #versoWidth   パネルのインラインサイズ。既定では `16rem`
++   entry #versoGap   パネルとコンテンツの間の間隔。既定では `1rem`
++   entry #versoArrangement   パネルとコンテンツをどう配置するか、グリッドの `<div>`。protected で、コンテナーを変えるにはオーバーライドする
++   entry #versoStyles   この機能のルール、グリッドとパネルの幅。protected で、スタイルを変えるにはオーバーライドする
+
+- entry .RectoPanel   a side panel on the inline-end edge, beside the content
++ entry .RectoPanel   インラインの終端側、コンテンツの横にあるサイドパネル
+
+= entry .RectoPanel   a side panel on the inline-end edge, beside the content
+-   detail
++   detail
+
+-       The recto page of a spread: the right in left-to-right text, the left in right-to-left.
+-       The content and an `<aside class="graffiti-recto">` of the `#recto` slot are placed in
+-       a two-column grid whose source order is content-then-panel, using only logical
+-       properties, so `direction = HDir.Rtl` mirrors it for free. The panel is `#rectoWidth`
+-       wide with `#rectoGap` after the content. `FoldableRectoPanel` refines it with a fold.
++       見開きの recto のページ、つまり左から右へのテキストでは右、右から左へのテキストでは左である。
++       コンテンツと、`#recto` スロットからなる `<aside class="graffiti-recto">` は、ソース順がコンテンツ、パネルの順である二列のグリッドに、論理プロパティだけを使って配置されるので、`direction = HDir.Rtl` は手間なしにそれを反転する。
++       パネルの幅は `#rectoWidth` で、コンテンツの後に `#rectoGap` を空ける。
++       `FoldableRectoPanel` は、これを折りたたみで細分化する。
+
+=       wide with `#rectoGap` after the content. `FoldableRectoPanel` refines it with a fold.
+-   refer graffiti.VersoPanel
++   refer graffiti.VersoPanel
+
+-   refer graffiti.FoldableRectoPanel
++   refer graffiti.FoldableRectoPanel
+
+-   entry .layoutClass   the CSS class of the grid container: `graffiti-recto-layout`
+-   entry .rectoClass   the CSS class of the panel: `graffiti-recto`
+-   entry .contentClass   the CSS class of the content column: `graffiti-recto-content`
+-   entry #recto   the panel's content; empty until overridden
+-   entry #rectoWidth   the panel's inline size, `16rem` by default
+-   entry #rectoGap   the gap between content and panel, `1rem` by default
+-   entry #rectoArrangement   how content and panel are arranged, a grid `<div>`; protected, override to change the container
+-   entry #rectoStyles   this feature's rules, the grid and the panel's width; protected, override to restyle it
++   entry .layoutClass   グリッドのコンテナーの CSS クラス：`graffiti-recto-layout`
++   entry .rectoClass   パネルの CSS クラス：`graffiti-recto`
++   entry .contentClass   コンテンツの列の CSS クラス：`graffiti-recto-content`
++   entry #recto   パネルの内容。オーバーライドされるまでは空
++   entry #rectoWidth   パネルのインラインサイズ。既定では `16rem`
++   entry #rectoGap   コンテンツとパネルの間の間隔。既定では `1rem`
++   entry #rectoArrangement   コンテンツとパネルをどう配置するか、グリッドの `<div>`。protected で、コンテナーを変えるにはオーバーライドする
++   entry #rectoStyles   この機能のルール、グリッドとパネルの幅。protected で、スタイルを変えるにはオーバーライドする
+
+- entry .FoldableRectoPanel   a recto panel which can fold away, by CSS alone
++ entry .FoldableRectoPanel   CSS だけで折りたためる recto パネル
+
+= entry .FoldableRectoPanel   a recto panel which can fold away, by CSS alone
+-   detail
++   detail
+
+-       Adds nothing structural over `RectoPanel`: it layers further rules onto the stylesheet,
+-       clipping the panel's overflow and bounding its inline size at `#maxRectoWidth` with a
+-       transition, so a script or a hover rule which lowers that size folds the panel shut. It
+-       shows how a feature refines another purely through its rules.
++       `RectoPanel` に構造的なものは何も加えない。スタイルシートにさらにルールを重ね、パネルのはみ出しを切り取り、そのインラインサイズを遷移付きで `#maxRectoWidth` に制限するので、そのサイズを下げるスクリプトやホバーのルールがパネルを閉じる。
++       これは、ある機能がルールだけを通じて別の機能を細分化する方法を示している。
+
+=       shows how a feature refines another purely through its rules.
+-   refer graffiti.RectoPanel
++   refer graffiti.RectoPanel
+
+-   entry #maxRectoWidth   the inline size the panel folds down from, `16rem` by default
+-   entry #foldedStyles   the fold's rules, over `RectoPanel`'s; protected, override to change the fold
++   entry #maxRectoWidth   パネルが折りたたまれる前のインラインサイズ。既定では `16rem`
++   entry #foldedStyles   `RectoPanel` のルールの上に重なる折りたたみのルール。protected で、折りたたみを変えるにはオーバーライドする
+
+- entry .Breadcrumbs   a breadcrumb trail of path segments, before the content
++ entry .Breadcrumbs   コンテンツの前に置く、パスのセグメントからなるパンくずリスト
+
+= entry .Breadcrumbs   a breadcrumb trail of path segments, before the content
+-   detail
++   detail
+
+-       `Breadcrumbs(segments*)` prepends a `<nav class="graffiti-breadcrumbs">` holding an
+-       `<ol>` with one `<li>` per segment, as a flex row.
++       `Breadcrumbs(segments*)` は、セグメントごとに一つの `<li>` を持つ `<ol>` を保持する `<nav class="graffiti-breadcrumbs">` を、flex の行として先頭に置く。
+
+=       `<ol>` with one `<li>` per segment, as a flex row.
+=
+-       ```scala
++       ```scala
+
+=       `<ol>` with one `<li>` per segment, as a flex row.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `<ol>` with one `<li>` per segment, as a flex row.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay:
++       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay:
+
+=       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay:
+-         def content: Html of (? <: Flow) = P("The guide")
++         def content: Html of (? <: Flow) = P("The guide")
+
+-       Guide().html   // <main><nav class="graffiti-breadcrumbs"><ol><li>home</li><li>docs</li></ol></nav><p>The guide</p></main>
++       Guide().html   // <main><nav class="graffiti-breadcrumbs"><ol><li>home</li><li>docs</li></ol></nav><p>The guide</p></main>
+
+=       Guide().html   // <main><nav class="graffiti-breadcrumbs"><ol><li>home</li><li>docs</li></ol></nav><p>The guide</p></main>
+-       ```
++       ```
+
+-   entry .crumbsClass   the CSS class of the trail: `graffiti-breadcrumbs`
+-   entry #breadcrumbs   the rendered trail, a `<nav>`; protected, override to restructure it
+-   entry #breadcrumbStyles   this feature's rules, a flex row; protected, override to restyle it
++   entry .crumbsClass   パンくずリストの CSS クラス：`graffiti-breadcrumbs`
++   entry #breadcrumbs   描画されたパンくずリスト、`<nav>`。protected で、構造を変えるにはオーバーライドする
++   entry #breadcrumbStyles   この機能のルール、flex の行。protected で、スタイルを変えるにはオーバーライドする
+
+- entry .Logo   a phrasing-level mark, `logo`, for a page or another feature to place anywhere
++ entry .Logo   ページや別の機能がどこにでも置ける、フレージングレベルのマーク `logo`
+
+= entry .Logo   a phrasing-level mark, `logo`, for a page or another feature to place anywhere
+-   detail
++   detail
+
+-       Contributes no structure of its own: `#logo` is a `<span class="graffiti-logo">` of the
+-       `#logoText`, rendered bold, which a page drops into a masthead, a menu or a panel.
++       独自の構造は何も寄与しない。`#logo` は `#logoText` からなる太字で描画される `<span class="graffiti-logo">` で、ページはこれをマストヘッド、メニュー、パネルに入れる。
+
+=       `#logoText`, rendered bold, which a page drops into a masthead, a menu or a panel.
+=
+-       ```scala
++       ```scala
+
+=       `#logoText`, rendered bold, which a page drops into a masthead, a menu or a panel.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `#logoText`, rendered bold, which a page drops into a masthead, a menu or a panel.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Branded extends Archetype, Masthead, Logo:
++       class Branded extends Archetype, Masthead, Logo:
+
+=       class Branded extends Archetype, Masthead, Logo:
+-         def content: Html of (? <: Flow) = P("body")
++         def content: Html of (? <: Flow) = P("body")
+
+-         override def logoText: Text = t"Example"
++         override def logoText: Text = t"Example"
+
+-         override def masthead: Html of (? <: Flow) = logo
++         override def masthead: Html of (? <: Flow) = logo
+
+=         override def masthead: Html of (? <: Flow) = logo
+-       ```
++       ```
+
+-   entry .logoClass   the CSS class of the mark: `graffiti-logo`
+-   entry #logoText   the logo's wording; empty until overridden
+-   entry #logo   the rendered mark, a `<span>`; protected, for placing wherever the page likes
+-   entry #logoStyles   this feature's rules, bold text; protected, override to restyle it
++   entry .logoClass   マークの CSS クラス：`graffiti-logo`
++   entry #logoText   ロゴの文言。オーバーライドされるまでは空
++   entry #logo   描画されたマーク、`<span>`。protected で、ページの好きな場所に置くためのもの
++   entry #logoStyles   この機能のルール、太字のテキスト。protected で、スタイルを変えるにはオーバーライドする
+
+- entry .Masthead   a `<header>` masthead at the top of the page, filled through the `masthead` slot
++ entry .Masthead   ページ上部の `<header>` のマストヘッド。`masthead` スロットを通じて埋める
+
+= entry .Masthead   a `<header>` masthead at the top of the page, filled through the `masthead` slot
+-   detail
++   detail
+
+-       Prepends a `<header class="graffiti-masthead">` of the `#masthead` slot — often a logo,
+-       a headline and a menu — laid out as a flex row, before whatever the features listed
+-       earlier built. Listed after `Mainstay`, it sits outside the `<main>` landmark.
++       `#masthead` スロット（多くの場合ロゴ、見出し、メニュー）からなる `<header class="graffiti-masthead">` を、flex の行として配置し、それより前に列挙された機能が構築したものの前に置く。
++       `Mainstay` の後に列挙すると、`<main>` ランドマークの外に置かれる。
+
+=       earlier built. Listed after `Mainstay`, it sits outside the `<main>` landmark.
+=
+-       ```scala
++       ```scala
+
+=       earlier built. Listed after `Mainstay`, it sits outside the `<main>` landmark.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       earlier built. Listed after `Mainstay`, it sits outside the `<main>` landmark.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Welcome extends Archetype, Mainstay, Masthead:
++       class Welcome extends Archetype, Mainstay, Masthead:
+
+=       class Welcome extends Archetype, Mainstay, Masthead:
+-         def content: Html of (? <: Flow) = P("Hello, world!")
++         def content: Html of (? <: Flow) = P("Hello, world!")
+
+=         def content: Html of (? <: Flow) = P("Hello, world!")
+-         override def masthead: Html of (? <: Flow) = Strong("Example Site")
++         override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+=         override def masthead: Html of (? <: Flow) = Strong("Example Site")
+-       ```
++       ```
+
+-   refer graffiti.Colophon
++   refer graffiti.Colophon
+
+=   refer graffiti.Colophon
+-   refer graffiti.Mainstay
++   refer graffiti.Mainstay
+
+-   entry .mastheadClass   the CSS class of the header: `graffiti-masthead`
+-   entry #masthead   the masthead's content; empty until overridden
+-   entry #mastheadStyles   this feature's rules, a flex row with a gap; protected, override to restyle it
++   entry .mastheadClass   ヘッダーの CSS クラス：`graffiti-masthead`
++   entry #masthead   マストヘッドの内容。オーバーライドされるまでは空
++   entry #mastheadStyles   この機能のルール、間隔を持つ flex の行。protected で、スタイルを変えるにはオーバーライドする
+
+=   entry #mastheadStyles   this feature's rules, a flex row with a gap; protected, override to restyle it
+-       ```scala
++       ```scala
+
+=   entry #mastheadStyles   this feature's rules, a flex row with a gap; protected, override to restyle it
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=   entry #mastheadStyles   this feature's rules, a flex row with a gap; protected, override to restyle it
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Welcome extends Archetype, Masthead:
++       class Welcome extends Archetype, Masthead:
+
+=       class Welcome extends Archetype, Masthead:
+-         def content: Html of (? <: Flow) = P("Hello, world!")
++         def content: Html of (? <: Flow) = P("Hello, world!")
+
+-       class Branded extends Welcome:
++       class Branded extends Welcome:
+
+-         override def mastheadStyles: Css =
++         override def mastheadStyles: Css =
+
+-           super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
++           super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
+
+=           super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
+-       ```
++       ```
+
+- entry .Colophon   a `<footer>` colophon at the foot of the page, filled through the `colophon` slot
++ entry .Colophon   ページ末尾の `<footer>` のコロフォン。`colophon` スロットを通じて埋める
+
+= entry .Colophon   a `<footer>` colophon at the foot of the page, filled through the `colophon` slot
+-   detail
++   detail
+
+-       Appends a `<footer class="graffiti-colophon">` of the `#colophon` slot — a sitemap, a
+-       copyright line, contact details — after whatever the features listed earlier built,
+-       with a margin above it.
++       `#colophon` スロット（サイトマップ、著作権表示の行、連絡先）からなる `<footer class="graffiti-colophon">` を、それより前に列挙された機能が構築したものの後に、上にマージンを空けて追加する。
+
+=       with a margin above it.
+=
+-       ```scala
++       ```scala
+
+=       with a margin above it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       with a margin above it.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Welcome extends Archetype, Mainstay, Colophon:
++       class Welcome extends Archetype, Mainstay, Colophon:
+
+=       class Welcome extends Archetype, Mainstay, Colophon:
+-         def content: Html of (? <: Flow) = P("Hello, world!")
++         def content: Html of (? <: Flow) = P("Hello, world!")
+
+-         override def colophon: Html of (? <: Flow) = P("Copyright 2026")
++         override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+
+=         override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+-       ```
++       ```
+
+=       ```
+-   refer graffiti.Masthead
++   refer graffiti.Masthead
+
+-   entry .colophonClass   the CSS class of the footer: `graffiti-colophon`
+-   entry #colophon   the colophon's content; empty until overridden
+-   entry #colophonStyles   this feature's rules, the margin and padding; protected, override to restyle it
++   entry .colophonClass   フッターの CSS クラス：`graffiti-colophon`
++   entry #colophon   コロフォンの内容。オーバーライドされるまでは空
++   entry #colophonStyles   この機能のルール、マージンとパディング。protected で、スタイルを変えるにはオーバーライドする
+
+- entry .Mainstay   wraps the content so far in a `<main>` landmark
++ entry .Mainstay   これまでのコンテンツを `<main>` ランドマークで包む
+
+= entry .Mainstay   wraps the content so far in a `<main>` landmark
+-   detail
++   detail
+
+-       Wraps the frame built by the features listed before it in a
+-       `<main class="graffiti-mainstay">`. List it before the page chrome (`Masthead`,
+-       `Colophon`) so the landmark encloses the content but not the chrome; listed after
+-       them, it would enclose the masthead too. It adds no rules.
++       それより前に列挙された機能が構築したフレームを `<main class="graffiti-mainstay">` で包む。
++       ページの枠（`Masthead`、`Colophon`）より前に列挙すれば、ランドマークはコンテンツを囲み、枠は囲まない。それらの後に列挙すると、マストヘッドも囲むことになる。
++       ルールは加えない。
+
+=       them, it would enclose the masthead too. It adds no rules.
+=
+-       ```scala
++       ```scala
+
+=       them, it would enclose the masthead too. It adds no rules.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       them, it would enclose the masthead too. It adds no rules.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
++       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
+
+=       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
+-         def content: Html of (? <: Flow) = P("The guide")
++         def content: Html of (? <: Flow) = P("The guide")
+
+=         def content: Html of (? <: Flow) = P("The guide")
+-         override def masthead: Html of (? <: Flow) = Strong("Example Site")
++         override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+-       Guide().html   // <header>…</header><main><nav>…</nav><p>The guide</p></main>
++       Guide().html   // <header>…</header><main><nav>…</nav><p>The guide</p></main>
+
+=       Guide().html   // <header>…</header><main><nav>…</nav><p>The guide</p></main>
+-       ```
++       ```
+
+-   entry .mainstayClass   the CSS class of the landmark: `graffiti-mainstay`
++   entry .mainstayClass   ランドマークの CSS クラス：`graffiti-mainstay`
+
+- entry .Hero   a prominent banner introducing the page, headed by the trait parameter
++ entry .Hero   ページを紹介する目立つバナー。トレイトのパラメーターを見出しとする
+
+= entry .Hero   a prominent banner introducing the page, headed by the trait parameter
+-   detail
++   detail
+
+-       `Hero(headline)` prepends a `<section class="graffiti-hero">` holding an `<h1>` of the
+-       headline and whatever the `#hero` slot supplies beneath it, centred with generous
+-       vertical padding.
++       `Hero(headline)` は、見出しの `<h1>` とその下に `#hero` スロットが与えるものを保持する `<section class="graffiti-hero">` を、中央揃えでたっぷりとした縦のパディングを付けて先頭に置く。
+
+=       vertical padding.
+=
+-       ```scala
++       ```scala
+
+=       vertical padding.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       vertical padding.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Landing extends Archetype, Hero(t"Build pages from parts"):
++       class Landing extends Archetype, Hero(t"Build pages from parts"):
+
+-         def content: Html of (? <: Flow) = P("Welcome aboard")
++         def content: Html of (? <: Flow) = P("Welcome aboard")
+
+-         override def hero: Html of (? <: Flow) = P("Compose, don't template")
++         override def hero: Html of (? <: Flow) = P("Compose, don't template")
+
+=         override def hero: Html of (? <: Flow) = P("Compose, don't template")
+-       ```
++       ```
+
+-   entry .heroClass   the CSS class of the banner: `graffiti-hero`
+-   entry #hero   further banner material beneath the headline; empty until overridden
+-   entry #heroBanner   the rendered banner, a `<section>`; protected, override to restructure it
+-   entry #heroStyles   this feature's rules, padding and centred text; protected, override to restyle it
++   entry .heroClass   バナーの CSS クラス：`graffiti-hero`
++   entry #hero   見出しの下に置くバナーの追加の内容。オーバーライドされるまでは空
++   entry #heroBanner   描画されたバナー、`<section>`。protected で、構造を変えるにはオーバーライドする
++   entry #heroStyles   この機能のルール、パディングと中央揃えのテキスト。protected で、スタイルを変えるにはオーバーライドする
+
+- entry .Description   adds a `<meta name="description">` to the head
+-     `Description(text)` contributes the description element and nothing to the body.
+-     `StandardMetadata` supplies the same together with a viewport.
++ entry .Description   head に `<meta name="description">` を加える
++     `Description(text)` は description の要素を寄与し、本文には何も寄与しない。
++     `StandardMetadata` は、これと同じものをビューポートとともに与える。
+
+- entry .Viewport   adds a responsive `<meta name="viewport">` to the head
++ entry .Viewport   head にレスポンシブな `<meta name="viewport">` を加える
+
+= entry .Viewport   adds a responsive `<meta name="viewport">` to the head
+-   detail
++   detail
+
+-       The directive is `#viewport`, `width=device-width, initial-scale=1` unless overridden.
+-       `StandardMetadata` extends this trait.
+-   entry #viewport   the viewport directive, `width=device-width, initial-scale=1` by default
++       指示は `#viewport` で、オーバーライドしない限り `width=device-width, initial-scale=1` である。
++       `StandardMetadata` はこのトレイトを継承する。
++   entry #viewport   ビューポートの指示。既定では `width=device-width, initial-scale=1`
+
+- entry .Keywords   adds a `<meta name="keywords">` to the head, from the trait parameters
+-     `Keywords(words*)` joins the words with `, ` as the element's content.
++ entry .Keywords   トレイトのパラメーターから、head に `<meta name="keywords">` を加える
++     `Keywords(words*)` は単語を `, ` で連結して要素の内容にする。
+
+- entry .Author   adds a `<meta name="author">` to the head
+-     `Author(name)` contributes the author element and nothing to the body.
++ entry .Author   head に `<meta name="author">` を加える
++     `Author(name)` は author の要素を寄与し、本文には何も寄与しない。
+
+- entry .ThemeColor   adds a `<meta name="theme-color">` to the head
+-     `ThemeColor(color)` takes the colour as CSS colour text, such as `t"#336699"`.
++ entry .ThemeColor   head に `<meta name="theme-color">` を加える
++     `ThemeColor(color)` は色を、`t"#336699"` のような CSS の色のテキストとして受け取る。
+
+- entry .Favicon   adds a `<link rel="icon">` to the head
+-     `Favicon(href)` takes the icon's address as `Text` — a path such as `t"/icon.png"` as
+-     readily as a URL — through the `urlText` given.
++ entry .Favicon   head に `<link rel="icon">` を加える
++     `Favicon(href)` はアイコンのアドレスを `Text` として、`urlText` の given を通じて受け取る。URL と同じように、`t"/icon.png"` のようなパスも受け付ける。
+
+- entry .Canonical   adds a `<link rel="canonical">` to the head
+-     `Canonical(href)` takes the canonical address as `Text`, through the `urlText` given.
++ entry .Canonical   head に `<link rel="canonical">` を加える
++     `Canonical(href)` は正規のアドレスを `Text` として、`urlText` の given を通じて受け取る。
+
+- entry .StandardMetadata   the metadata nearly every page wants: a description and a responsive viewport
+-     `StandardMetadata(description)` extends `Viewport` and adds a `<meta name="description">`
+-     from its parameter, so a page mixes in one trait instead of wiring each element. Add
+-     `Keywords`, `Author`, `Favicon`, `Canonical` and `ThemeColor` alongside it as needed.
++ entry .StandardMetadata   ほぼすべてのページが必要とするメタデータ。説明とレスポンシブなビューポート
++     `StandardMetadata(description)` は `Viewport` を継承し、そのパラメーターから `<meta name="description">` を加えるので、ページは各要素を配線する代わりに一つのトレイトをミックスインすればよい。
++     必要に応じて `Keywords`、`Author`、`Favicon`、`Canonical`、`ThemeColor` を併せて加える。
+
+=     `Keywords`, `Author`, `Favicon`, `Canonical` and `ThemeColor` alongside it as needed.
+=
+-     ```scala
++     ```scala
+
+=     `Keywords`, `Author`, `Favicon`, `Canonical` and `ThemeColor` alongside it as needed.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `Keywords`, `Author`, `Favicon`, `Canonical` and `ThemeColor` alongside it as needed.
+=
+=     ```scala
+=     import soundness.*
+-     import htmlDoms.whatwg.*
++     import htmlDoms.whatwg.*
+
+-     class Landing extends Archetype, Hero(t"Build pages from parts"),
++     class Landing extends Archetype, Hero(t"Build pages from parts"),
+
+-         StandardMetadata(t"Pages composed from archetypes"), Author(t"William Shakespeare"),
++         StandardMetadata(t"Pages composed from archetypes"), Author(t"William Shakespeare"),
+
+-         Keywords(t"scala", t"html"), Favicon(t"/icon.png"),
++         Keywords(t"scala", t"html"), Favicon(t"/icon.png"),
+
+-         Canonical(t"https://example.com/"), ThemeColor(t"#336699"):
++         Canonical(t"https://example.com/"), ThemeColor(t"#336699"):
+
+-       override def pageTitle: Text = t"Example"
++       override def pageTitle: Text = t"Example"
+
+-       def content: Html of (? <: Flow) = P("Welcome aboard")
++       def content: Html of (? <: Flow) = P("Welcome aboard")
+
+-     Landing().html
++     Landing().html
+
+=     Landing().html
+-     ```
++     ```
+
+- entry .Dashboard   a dashboard view: a brand in the masthead and cards in a responsive grid
++ entry .Dashboard   ダッシュボードのビュー。マストヘッドのブランド名と、レスポンシブなグリッドのカード
+
+= entry .Dashboard   a dashboard view: a brand in the masthead and cards in a responsive grid
+-   detail
++   detail
+
+-       An archetype composed from `Mainstay` and `Masthead`. It titles the document after
+-       `#brand`, shows the brand in the masthead, and lays `#cards` out as the content in a
+-       grid of `<article class="graffiti-card">` tiles, each rendered by `#card`. A concrete
+-       dashboard supplies only the brand and the cards.
++       `Mainstay` と `Masthead` から組み立てたアーキタイプである。
++       文書のタイトルを `#brand` にちなんで付け、ブランド名をマストヘッドに表示し、`#cards` をコンテンツとして `<article class="graffiti-card">` のタイルのグリッドに配置する。各タイルは `#card` が描画する。
++       具体的なダッシュボードが与えるのは、ブランド名とカードだけである。
+
+=       dashboard supplies only the brand and the cards.
+=
+-       ```scala
++       ```scala
+
+=       dashboard supplies only the brand and the cards.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       dashboard supplies only the brand and the cards.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Admin extends Dashboard:
++       class Admin extends Dashboard:
+
+-         def brand: Text = t"Admin"
++         def brand: Text = t"Admin"
+
+-         def cards: List[Dashboard.Card] =
++         def cards: List[Dashboard.Card] =
+
+-           List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
++           List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
+
+-       Admin().html
++       Admin().html
+
+=       Admin().html
+-       ```
++       ```
+
+=       ```
+-   refer graffiti.Mainstay
++   refer graffiti.Mainstay
+
+=       ```
+=   refer graffiti.Mainstay
+-   refer graffiti.Masthead
++   refer graffiti.Masthead
+
+-   entry .gridClass   the CSS class of the grid: `graffiti-dashboard`
+-   entry .cardClass   the CSS class of a tile: `graffiti-card`
+-   entry .Card   one tile of a dashboard: a heading and its own flow content
+-     entry #heading   the tile's heading, rendered as an `<h2>`
+-     entry #body   the tile's content
+-   entry #brand   the name shown in the masthead and used as the title; abstract
+-   entry #cards   the tiles, as `Dashboard.Card`s; abstract
+-   entry #card   renders one tile as an `<article>`; protected, override to restructure it
+-   entry #dashboardStyles   this view's rules, the grid and the tiles' borders; protected, override to restyle it
++   entry .gridClass   グリッドの CSS クラス：`graffiti-dashboard`
++   entry .cardClass   タイルの CSS クラス：`graffiti-card`
++   entry .Card   ダッシュボードの一つのタイル。見出しと独自のフローコンテンツ
++     entry #heading   タイルの見出し。`<h2>` として描画される
++     entry #body   タイルの内容
++   entry #brand   マストヘッドに表示され、タイトルとして使われる名前。abstract
++   entry #cards   `Dashboard.Card` としてのタイル。abstract
++   entry #card   一つのタイルを `<article>` として描画する。protected で、構造を変えるにはオーバーライドする
++   entry #dashboardStyles   このビューのルール、グリッドとタイルの枠線。protected で、スタイルを変えるにはオーバーライドする
+
+- entry .urlText   lets a `Text` be given where honeycomb wants a URL attribute, such as `href`
+-     The `Text is Attributive to Whatwg.Url` given, at the package's top level and exported
+-     to the `soundness` umbrella. honeycomb types `href` as a URL attribute and accepts an
+-     `HttpUrl` or anything abstractable to one, but a favicon or canonical address is
+-     naturally an arbitrary path such as `/icon.png`, so `Favicon` and `Canonical` take
+-     `Text` and this given passes it through unchanged. It is in scope with
+-     `import soundness.*`; outside the umbrella, import it by name.
++ entry .urlText   honeycomb が `href` のような URL 属性を求めるところに `Text` を与えられるようにする
++     `Text is Attributive to Whatwg.Url` の given で、パッケージの最上位にあり、`soundness` アンブレラにエクスポートされる。
++     honeycomb は `href` を URL 属性として型付けし、`HttpUrl` かそれへ抽象化できるものを受け付けるが、ファビコンや正規のアドレスは本来 `/icon.png` のような任意のパスである。そこで `Favicon` と `Canonical` は `Text` を受け取り、この given がそれをそのまま通す。
++     `import soundness.*` でスコープに入る。アンブレラの外では名前でインポートする。

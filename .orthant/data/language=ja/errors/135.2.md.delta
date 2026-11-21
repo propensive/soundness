@@ -1,0 +1,51 @@
+orthant 1 language
+
+- # `↯/s.135.2` — `Api.Error`
++ # `↯/s.135.2` — `Api.Error`
+
+- Raised when a request to a described API does not succeed.
++ 記述された API へのリクエストが成功しないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- This is a failure of the call rather than of the specification: a non-success status, or a
+- response body that does not match what the specification declared.
++ これは仕様の失敗ではなく、呼び出しの失敗である。成功でないステータスか、仕様が宣言したものに一致しないレスポンスの本文である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.135.2.1`  `Status`  `[↯/s.135.2.1] the server responded with an unsuccessful status, <code>`
++ row  `↯/s.135.2.1`  `Status`  `[↯/s.135.2.1] the server responded with an unsuccessful status, <code>`
+
+- row  `↯/s.135.2.2`  `Malformed`  `[↯/s.135.2.2] the response body was not valid JSON`
++ row  `↯/s.135.2.2`  `Malformed`  `[↯/s.135.2.2] the response body was not valid JSON`
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- A status failure carries the status, so a caller can distinguish a client fault from a server
+- one. A body that does not match its declared schema means the service and its specification
+- have diverged.
++ ステータスの失敗はステータスを持つので、呼び出し側はクライアントの誤りとサーバーの誤りを区別できる。
++ 宣言されたスキーマに一致しない本文は、サービスとその仕様が乖離したことを意味する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/apoplexy/src/core/apoplexy.Api.scala`
++ - ソース：`lib/apoplexy/src/core/apoplexy.Api.scala`

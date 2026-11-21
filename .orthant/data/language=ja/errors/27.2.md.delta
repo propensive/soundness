@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.27.2` — Binary literal contains non-binary character
++ # `↯/s.27.2` — 2 進リテラルが 2 進数でない文字を含む
+
+- Raised at compile time by Hypotenuse's `bin"…"` literal macro when
+- the body contains a character that is not `0` or `1`.
++ 本体が `0` でも `1` でもない文字を含むときに、Hypotenuse の `bin"…"` リテラルマクロによってコンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- Binary literals must be exclusively `0` and `1`.
++ 2 進リテラルは `0` と `1` だけで構成されなければならない。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.27.2] a binary value can only contain characters '0' or '1'
++ [↯/s.27.2] a binary value can only contain characters '0' or '1'
+
+= [↯/s.27.2] a binary value can only contain characters '0' or '1'
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Remove or correct the offending character.
++ 問題の文字を取り除くか修正する。
+
+- ## See also
++ ## 関連項目
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - そのほかの 2 進および 16 進リテラルのエラー：[ファミリー](README.md#families)
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

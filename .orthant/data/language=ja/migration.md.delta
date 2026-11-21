@@ -1,0 +1,54 @@
+orthant 1 language
+
+- # Migration notes
++ # 移行ノート
+
+- Soundness moves quickly and renames, moves and reshapes its API between releases. Downstream
+- code is expected to be upgraded by an LLM agent rather than by hand, so from the 0.64.0
+- release onwards every release ships a machine-oriented record of what changed.
++ Soundness は速く動き、リリースの間に API の名前を変え、移動し、形を変える。
++ 下流のコードは手作業ではなく LLM エージェントによってアップグレードされることを想定しているので、0.64.0 のリリース以降、すべてのリリースには何が変わったかを機械向けに記録したものが同梱される。
+
+- ## How it works
++ ## 仕組み
+
+- - The changes since the last release accumulate in `doc/migration/<version>.md`, named from
+-   the start after the release they will be part of (for example `doc/migration/0.71.0.md`
+-   after Soundness 0.70.0). Every PR that makes a material change to the public API or
+-   observable behaviour adds an entry to it; the first such change after a release creates it.
+- - Tagging the release publishes the file as it stands, so no change has to merge first. The
+-   release refuses to run while `<version>.md` is missing, or while another version's notes are
+-   unreleased, so the notes cannot be skipped or stranded under the wrong version. Released
+-   files are not edited afterwards except to correct mistakes.
+- - The result is one file per release, each describing exactly the changes between the
+-   previous release and that one.
++ - 前回のリリース以降の変更は `doc/migration/<version>.md` に蓄積される。このファイルは最初から、それが含まれることになるリリースにちなんで名付けられる（たとえば Soundness 0.70.0 の後なら `doc/migration/0.71.0.md`）。公開 API や観察可能な動作に実質的な変更を加えるすべての PR は、そこにエントリーを追加する。リリース後の最初のそのような変更がファイルを作成する。
++ - リリースにタグを付けると、ファイルはその時点の内容のまま公開されるので、先にマージしなければならない変更はない。`<version>.md` が存在しない間や、別のバージョンのノートが未リリースである間は、リリースは実行を拒否するので、ノートが飛ばされたり、誤ったバージョンの下に取り残されたりすることはない。リリース済みのファイルは、誤りを訂正する場合を除いて、後から編集されない。
++ - その結果、リリースごとに一つのファイルがあり、それぞれが前のリリースとそのリリースの間の変更を正確に記述する。
+
+- ## Upgrading downstream code
++ ## 下流のコードのアップグレード
+
+- To upgrade a project from version `A` to version `B`, instruct an LLM agent to read every file
+- `doc/migration/<v>.md` with `A < v <= B`, in ascending version order, and to apply the changes
+- each one describes to the project's code. For example, moving from 0.64.0 to 0.67.0 means
+- reading `0.65.0.md`, `0.66.0.md` and `0.67.0.md`, in that order.
++ プロジェクトをバージョン `A` からバージョン `B` にアップグレードするには、LLM エージェントに、`A < v <= B` であるすべてのファイル `doc/migration/<v>.md` をバージョンの昇順に読み、それぞれが記述する変更をプロジェクトのコードに適用するよう指示する。
++ たとえば 0.64.0 から 0.67.0 へ移るには、`0.65.0.md`、`0.66.0.md`、`0.67.0.md` をこの順に読む。
+
+- ## What the files contain
++ ## ファイルの内容
+
+- The files are written for an intelligent LLM, not for people. They are precise, dense and
+- complete: every rename, move, signature change, removal, changed default and changed
+- behaviour that a consumer of a Soundness library could observe. They say *what* changed,
+- with fully-qualified old and new names and exact semantics, and leave working out *how* to
+- adapt a particular codebase to the agent reading them, except where the adaptation is not
+- deducible from the change itself. `AGENTS.md` at the repository root specifies the format
+- and the rules for maintaining them.
++ ファイルは人間のためではなく、知的な LLM のために書かれている。
++ それらは正確で、密度が高く、完全である。
++ Soundness ライブラリの利用者が観察しうる、すべての名前の変更、移動、シグネチャの変更、削除、デフォルトの変更、動作の変更を含む。
++ それらは*何が*変わったかを、完全修飾された新旧の名前と正確な意味とともに述べ、特定のコードベースを*どのように*適応させるかを考えるのは、それを読むエージェントに任せる。
++ ただし、適応の方法が変更そのものから導けない場合は除く。
++ リポジトリのルートにある `AGENTS.md` が、形式とそれらを保守するための規則を定めている。

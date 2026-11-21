@@ -1,0 +1,41 @@
+orthant 1 language
+
+- # `↯/s.73.4` — `Timespan.Error`
++ # `↯/s.73.4` — `Timespan.Error`
+
+- Raised when a text value does not parse as an ISO-8601 duration.
++ テキストの値が ISO-8601 の継続時間としてパースできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- `Timespan`'s `Decodable` instance and the `dur"…"` interpolator share one
+- parser. When it rejects the input — a bare `P`, a missing designator, or
+- components out of order — this error carries the offending text. The
+- message is `$text is not a recognized duration`.
++ `Timespan` の `Decodable` インスタンスと `dur"…"` 補間子は、一つのパーサーを共有する。
++ パーサーが入力（裸の `P`、指示子の欠落、順序の誤った成分）を拒否すると、このエラーが問題のテキストを持つ。
++ メッセージは `$text is not a recognized duration` である。
+
+- This was a variant of `↯/s.73.3` until durations were separated from moments:
+- a duration has no date, no clock time and no timezone, so a failure to read
+- one is not a failure to determine a moment.
++ これは、継続時間がモーメントから分離されるまでは `↯/s.73.3` のバリアントだった。
++ 継続時間には日付も時刻もタイムゾーンもないので、それを読むことの失敗は、モーメントを決定することの失敗ではない。
+
+- **Example.** `[↯/s.73.4] P is not a recognized duration`
++ **例。** `[↯/s.73.4] P is not a recognized duration`
+
+- **Resolution.** Supply a complete ISO-8601 duration, such as `P1Y2M3DT4H5M6S`
+- for one year, two months, three days, four hours, five minutes and six
+- seconds. A `dur"…"` literal is checked at compile time and cannot raise this.
++ **解決方法。** 一年二か月三日四時間五分六秒を表す `P1Y2M3DT4H5M6S` のような、完全な ISO-8601 の継続時間を与える。
++ `dur"…"` リテラルはコンパイル時に検査されるので、これを発生させることはない。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/aviation/src/core/aviation.Timespan.scala`
+- - Related: `↯/s.73.3` (`Moment.Error`)
++ - ソース：`lib/aviation/src/core/aviation.Timespan.scala`
++ - 関連：`↯/s.73.3`（`Moment.Error`）

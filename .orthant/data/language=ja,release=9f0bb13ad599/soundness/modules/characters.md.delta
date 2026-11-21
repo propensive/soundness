@@ -1,0 +1,16 @@
+orthant 1 language
+
+- row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`
++ row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`
+
+- Every charset uses the sanitizer in scope.
++ すべての文字セットは、スコープ内のサニタイザーを使う。
+
+- Encoding has the opposite problem: a character which the encoding has no bytes for, such as `é`
+- in ASCII. By default a `Codepage` writes the encoding's substitute, `?`, in its place. With
+- `encodingSanitizers.strictEncodingSanitizer` imported, it raises a `Codepage.Error` which names
+- the character instead.
++ エンコードには逆の問題がある。
++ ASCII における `é` のように、エンコーディングにバイトがない文字である。
++ デフォルトでは、`Codepage` はその代わりにエンコーディングの代替文字 `?` を書く。
++ `encodingSanitizers.strictEncodingSanitizer` をインポートすると、代わりにその文字を名指す `Codepage.Error` を発生させる。

@@ -1,0 +1,513 @@
+orthant 1 language
+
+- ## Base Encoding
++ ## 基数エンコーディング
+
+- ### About
++ ### 概要
+
+- Binary data often has to travel through a channel which carries only text: a URL, a JSON
+- string, an email header. A
+- [base encoding](https://en.wikipedia.org/wiki/Binary-to-text_encoding) maps bytes onto a safe
+- set of characters, so that they survive the trip.
++ バイナリデータは、テキストしか運ばない経路を通らなければならないことが多い。URL、JSON の文字列、メールのヘッダーなどである。
++ [基数エンコーディング](https://en.wikipedia.org/wiki/Binary-to-text_encoding)は、バイトを安全な文字の集合に対応させ、その経路を無事に通れるようにする。
+
+- Bytes are serialized to text, and back, in Base64, Base32, hexadecimal and the smaller bases.
+- The encoding is named as a type, and its set of characters, called its *alphabet*, is chosen
+- in scope.
++ バイトは、Base64、Base32、16 進数、そしてさらに小さな基数で、テキストへと直列化され、またテキストから戻される。
++ エンコーディングは型として名指され、その文字の集合、つまり*アルファベット*はスコープ内で選ばれる。
+
+- ### On base encoding
++ ### 基数エンコーディングについて
+
+- "Base64" is not one thing. The standard alphabet, the URL-safe alphabet, and the variants used
+- by MIME, by bcrypt and by IMAP all encode the same bytes into different characters, and mixing
+- them corrupts the result. Decoding raises a further question: what to do with a character
+- which is not in the alphabet at all. Most APIs bury these choices in flags, or fix them
+- silently.
++ 「Base64」は一つのものではない。
++ 標準のアルファベット、URL セーフのアルファベット、そして MIME、bcrypt、IMAP が使うバリアントは、どれも同じバイトを異なる文字にエンコードし、それらを混ぜると結果が壊れる。
++ デコードにはさらに別の問題がある。アルファベットにまったく含まれない文字をどうするかである。
++ ほとんどの API は、これらの選択をフラグの中に埋もれさせるか、黙って固定してしまう。
+
+- Here the encoding is a type, and the alphabet is an explicit value:
++ ここでは、エンコーディングは型であり、アルファベットは明示的な値である：
+
+- - The base, which is how many bits each character carries, is a type parameter.
+- - The alphabet is a [given], brought into scope by import, so the standard and the URL-safe
+-   forms of Base64 differ by one line.
+- - Decoding validates each character, and reports one which is outside the alphabet as a typed
+-   error.
++ - 基数、つまり各文字がいくつのビットを運ぶかは、型パラメーターである。
++ - アルファベットは [given] であり、インポートによってスコープに持ち込まれるので、Base64 の標準形と URL セーフ形は一行だけ異なる。
++ - デコードは各文字を検証し、アルファベットの外にある文字を型付きのエラーとして報告する。
+
+- Naming the alphabet by import, instead of passing a flag, is the
+- [declarative context](../../philosophy/declarative-context.md) style used throughout.
++ フラグを渡す代わりにインポートでアルファベットを名指すのは、全体を通じて使われている[宣言的なコンテキスト](../../philosophy/declarative-context.md)のスタイルである。
+
+- The word "encoding" is used for two different jobs, and it is worth being precise about which
+- this is. What happens here is *serialization*. Bytes become text, and nothing about the
+- meaning of the bytes is consulted or preserved: the same bytes serialize identically, whether
+- they were an image or a signature. Turning a *value* into JSON or XML is the other job. It is
+- [encoding](json.md), and it needs to know what the value is. The operations here are named
+- accordingly: `serialize` and `deserialize`.
++ 「エンコーディング」という語は二つの異なる仕事に使われるので、これがどちらであるかを正確にしておく価値がある。
++ ここで行われるのは*直列化*である。
++ バイトがテキストになり、バイトの意味については何も参照されず、何も保存されない。同じバイトは、それが画像であっても署名であっても、同じように直列化される。
++ *値*を JSON や XML に変えるのはもう一つの仕事である。
++ それは[エンコード](json.md)であり、値が何であるかを知る必要がある。
++ ここでの操作はそれに応じて名付けられている。`serialize` と `deserialize` である。
+
+- Everything comes from the `soundness` package. The last import lets the samples print their
+- results:
++ すべては `soundness` パッケージから来る。
++ 最後のインポートは、サンプルが結果を出力できるようにする：
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Serializing bytes
++ ### バイトを直列化する
+
+- `serialize` writes bytes as text in a named encoding. The characters come from the alphabet in
+- scope:
++ `serialize` は、名指したエンコーディングでバイトをテキストとして書く。
++ 文字はスコープ内のアルファベットから来る：
+
+= scope:
+=
+- ```scala
++ ```scala
+
+- import alphabets.base64Standard
++ import alphabets.base64Standard
+
+- val bytes = t"Hello".in[Data]
++ val bytes = t"Hello".in[Data]
+
+= val bytes = t"Hello".in[Data]
+- ```
++ ```
+
+= val bytes = t"Hello".in[Data]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val bytes = t"Hello".in[Data]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val bytes = t"Hello".in[Data]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(bytes.serialize[Base64])
++ Out.println(bytes.serialize[Base64])
+
+= Out.println(bytes.serialize[Base64])
+- ```
++ ```
+
+- `serialize` works on any value which encodes to bytes, not only on raw bytes. A value with an
+- `Encodable in Data` instance, such as a [digest](hashing.md), is serialized directly.
++ `serialize` は生のバイトだけでなく、バイトにエンコードされるあらゆる値に使える。
++ [ダイジェスト](hashing.md)のように `Encodable in Data` インスタンスを持つ値は、直接直列化される。
+
+- With no alphabet for the base in scope, there is nothing to serialize with:
++ その基数のアルファベットがスコープ内になければ、直列化に使うものがない：
+
+= With no alphabet for the base in scope, there is nothing to serialize with:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- bytes.serialize[Base32]
++ bytes.serialize[Base32]
+
+= bytes.serialize[Base32]
+- ```
++ ```
+
+- ### Deserializing
++ ### 逆直列化
+
+- `deserialize` reads text back to bytes, in the same encoding. A character outside the alphabet
+- raises a `Serialization.Error`, so deserializing needs a [strategy] in scope:
++ `deserialize` は、同じエンコーディングでテキストをバイトに読み戻す。
++ アルファベットの外の文字は `Serialization.Error` を発生させるので、逆直列化にはスコープ内に[戦略]が必要である：
+
+= raises a `Serialization.Error`, so deserializing needs a [strategy] in scope:
+=
+- ```scala
++ ```scala
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+= import strategies.throwUnsafely
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import strategies.throwUnsafely
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import strategies.throwUnsafely
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"SGVsbG8=".deserialize[Base64].utf8)
++ Out.println(t"SGVsbG8=".deserialize[Base64].utf8)
+
+= Out.println(t"SGVsbG8=".deserialize[Base64].utf8)
+- ```
++ ```
+
+= Out.println(t"SGVsbG8=".deserialize[Base64].utf8)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(t"SGVsbG8=".deserialize[Base64].utf8)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- t"SGVsbG8!".deserialize[Base64]
++ t"SGVsbG8!".deserialize[Base64]
+
+= t"SGVsbG8!".deserialize[Base64]
+- ```
++ ```
+
+- ### Choosing an alphabet
++ ### アルファベットを選ぶ
+
+- The alphabet in scope decides the exact characters. `base64Standard` and `base64Url` are the
+- common choices. The URL-safe form is unpadded, and avoids `+` and `/`, which have a meaning in
+- a URL:
++ スコープ内のアルファベットが、正確な文字を決める。
++ よく使われる選択は `base64Standard` と `base64Url` である。
++ URL セーフ形はパディングを持たず、URL の中で意味を持つ `+` と `/` を避ける：
+
+= a URL:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a URL:
+=
+= ```scala fuel
+- run
++ run
+
+= a URL:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ##
+- locally:
++ locally:
+
+-   import alphabets.base64Url
++   import alphabets.base64Url
+
+-   Out.println(bytes.serialize[Base64])
++   Out.println(bytes.serialize[Base64])
+
+=
+- locally:
++ locally:
+
+-   import alphabets.hexLowerCase
++   import alphabets.hexLowerCase
+
+-   Out.println(bytes.serialize[Hex])
++   Out.println(bytes.serialize[Hex])
+
+=   Out.println(bytes.serialize[Hex])
+- ```
++ ```
+
+- A *strict* alphabet accepts only its own characters when decoding. A tolerant one also accepts
+- recognized equivalents, such as hexadecimal in either case. The strictness of a decode is
+- therefore a choice between imports: `hexLowerCase` reads either case, and `hexStrictLowerCase`
+- only its own.
++ *厳格な*アルファベットは、デコードの際に自身の文字だけを受け付ける。
++ 許容的なアルファベットは、大文字小文字どちらの 16 進数のような、認識される同等の文字も受け付ける。
++ したがって、デコードの厳格さはインポートの選択である。`hexLowerCase` は大文字小文字どちらも読み、`hexStrictLowerCase` は自身の文字だけを読む。
+
+- The full set is in the package `alphabets`:
++ 全体はパッケージ `alphabets` にある：
+
+= The full set is in the package `alphabets`:
+=
+- ```tabular
++ ```tabular
+
+- column  Base
+- column  Given
+- column  Variant
+- column  Padded
+- column  Also accepts
+- row  `Base64`  `base64Standard`  standard  yes
+- row  `Base64`  `base64Unpadded`  standard, unpadded  no
+- row  `Base64`  `base64Url`  URL-safe, with `-` and `_`  no
+- row  `Base64`  `base64Xml`  XML, with `+` and `-`, padded with `.`  yes
+- row  `Base64`  `base64Imap`  IMAP, with `+` and `,`  no
+- row  `Base64`  `base64Yui`  YUI, with `.` and `_`  no
+- row  `Base64`  `base64Radix64`  Radix-64  yes
+- row  `Base64`  `base64Bcrypt`  bcrypt, with `.` and `/` first  no
+- row  `Base64`  `base64Sasl`  SASL, with `+` and `,`  no
+- row  `Base64`  `base64Uuencoding`  uuencoding  no
+- row  `Base32`  `base32StrictUpperCase`  standard, upper-case  yes
+- row  `Base32`  `base32StrictLowerCase`  standard, lower-case  yes
+- row  `Base32`  `base32UpperCase`  standard, upper-case  yes  lower case
+- row  `Base32`  `base32LowerCase`  standard, lower-case  yes  upper case
+- row  `Base32`  `base32ExtendedHexUpperCase`  extended hex, upper-case  yes  lower case
+- row  `Base32`  `base32ExtendedHexLowerCase`  extended hex, lower-case  yes  upper case
+- row  `Base32`  `base32ZBase32`  z-base-32  yes
+- row  `Base32`  `base32ZBase32Unpadded`  z-base-32, unpadded  no
+- row  `Base32`  `base32Geohash`  Geohash  no
+- row  `Base32`  `base32WordSafe`  word-safe  no
+- row  `Base32`  `base32Crockford`  Crockford  no  lower case; `o` and `O` as `0`; `i`, `I`, `l` and `L` as `1`
+- row  `Hex`  `hexStrictUpperCase`  upper-case  no
+- row  `Hex`  `hexStrictLowerCase`  lower-case  no
+- row  `Hex`  `hexUpperCase`  upper-case  no  lower case
+- row  `Hex`  `hexLowerCase`  lower-case  no  upper case
+- row  `Hex`  `hexBioctal`  bioctal  no
+- row  `Octal`  `octalStandard`  standard  no
+- row  `Quaternary`  `quaternaryStandard`  `0123`  no
+- row  `Quaternary`  `quaternaryDnaNucleotide`  DNA nucleotides, `ATCG`  no
+- row  `Binary`  `binaryStandard`  `01`  no
++ column  基数
++ column  given
++ column  バリアント
++ column  パディング
++ column  ほかに受け付けるもの
++ row  `Base64`  `base64Standard`  標準  あり
++ row  `Base64`  `base64Unpadded`  標準、パディングなし  なし
++ row  `Base64`  `base64Url`  URL セーフ、`-` と `_` を使う  なし
++ row  `Base64`  `base64Xml`  XML、`+` と `-` を使い、`.` でパディングする  あり
++ row  `Base64`  `base64Imap`  IMAP、`+` と `,` を使う  なし
++ row  `Base64`  `base64Yui`  YUI、`.` と `_` を使う  なし
++ row  `Base64`  `base64Radix64`  Radix-64  あり
++ row  `Base64`  `base64Bcrypt`  bcrypt、`.` と `/` が先頭  なし
++ row  `Base64`  `base64Sasl`  SASL、`+` と `,` を使う  なし
++ row  `Base64`  `base64Uuencoding`  uuencoding  なし
++ row  `Base32`  `base32StrictUpperCase`  標準、大文字  あり
++ row  `Base32`  `base32StrictLowerCase`  標準、小文字  あり
++ row  `Base32`  `base32UpperCase`  標準、大文字  あり  小文字
++ row  `Base32`  `base32LowerCase`  標準、小文字  あり  大文字
++ row  `Base32`  `base32ExtendedHexUpperCase`  拡張 16 進、大文字  あり  小文字
++ row  `Base32`  `base32ExtendedHexLowerCase`  拡張 16 進、小文字  あり  大文字
++ row  `Base32`  `base32ZBase32`  z-base-32  あり
++ row  `Base32`  `base32ZBase32Unpadded`  z-base-32、パディングなし  なし
++ row  `Base32`  `base32Geohash`  Geohash  なし
++ row  `Base32`  `base32WordSafe`  word-safe  なし
++ row  `Base32`  `base32Crockford`  Crockford  なし  小文字。`o` と `O` を `0` として、`i`、`I`、`l`、`L` を `1` として
++ row  `Hex`  `hexStrictUpperCase`  大文字  なし
++ row  `Hex`  `hexStrictLowerCase`  小文字  なし
++ row  `Hex`  `hexUpperCase`  大文字  なし  小文字
++ row  `Hex`  `hexLowerCase`  小文字  なし  大文字
++ row  `Hex`  `hexBioctal`  bioctal  なし
++ row  `Octal`  `octalStandard`  標準  なし
++ row  `Quaternary`  `quaternaryStandard`  `0123`  なし
++ row  `Quaternary`  `quaternaryDnaNucleotide`  DNA のヌクレオチド、`ATCG`  なし
++ row  `Binary`  `binaryStandard`  `01`  なし
+
+= row  `Binary`  `binaryStandard`  `01`  no
+- ```
++ ```
+
+- ### Other bases
++ ### ほかの基数
+
+- The same `serialize` and `deserialize` handle every base, each with alphabets of its own. The
+- base is the number of bits which each character carries:
++ 同じ `serialize` と `deserialize` がすべての基数を扱い、それぞれが固有のアルファベットを持つ。
++ 基数とは、各文字が運ぶビットの数である：
+
+= base is the number of bits which each character carries:
+=
+- ```tabular
++ ```tabular
+
+- column  Encoding
+- column  Bits per character
++ column  エンコーディング
++ column  1 文字あたりのビット数
+
+- row  `Base64`  6
++ row  `Base64`  6
+
+- row  `Base32`  5
++ row  `Base32`  5
+
+- row  `Hex`  4
++ row  `Hex`  4
+
+- row  `Octal`  3
++ row  `Octal`  3
+
+- row  `Quaternary`  2
++ row  `Quaternary`  2
+
+- row  `Binary`  1
++ row  `Binary`  1
+
+= row  `Binary`  1
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
++ import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
+
+= import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
+- ```
++ ```
+
+= import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(bytes.serialize[Hex])
++ Out.println(bytes.serialize[Hex])
+
+- Out.println(bytes.serialize[Binary])
++ Out.println(bytes.serialize[Binary])
+
+- Out.println(bytes.serialize[Quaternary])
++ Out.println(bytes.serialize[Quaternary])
+
+= Out.println(bytes.serialize[Quaternary])
+- ```
++ ```
+
+- A hexadecimal literal for bytes is written with the `hex"…"` interpolator, as
+- [binary data](binary-data.md#reading) shows.
++ バイトの 16 進数リテラルは、[バイナリデータ](binary-data.md#reading)が示すように、`hex"…"` 補間子で書く。
+
+- ### Encoding a stream
++ ### ストリームのエンコード
+
+- An alphabet is also a stage of a [stream](streams.md#composing-a-pipeline). Bytes are encoded
+- as they flow, without being gathered first, which is what a base-encoded body written to a
+- socket requires, or a large file prepared for transport as text:
++ アルファベットは[ストリーム](streams.md#composing-a-pipeline)の段階でもある。
++ バイトは先に集められることなく、流れながらエンコードされる。ソケットに書き込む基数エンコードされた本文や、テキストとして転送するために準備する大きなファイルに必要なのはこれである：
+
+= socket requires, or a large file prepared for transport as text:
+=
+- ```scala
++ ```scala
+
+- val encoded = bytes.stream.via(summon[Alphabet[Hex]])
++ val encoded = bytes.stream.via(summon[Alphabet[Hex]])
+
+= val encoded = bytes.stream.via(summon[Alphabet[Hex]])
+- ```
++ ```
+
+- The streaming form and the whole-value form agree byte for byte. That includes the boundaries
+- where a Base64 group of three bytes, or a Base32 group of five, straddles two chunks. Decoding
+- runs in the same way, so a stream may be encoded on one side and decoded on the other, with
+- neither side holding the whole of it.
++ ストリーム形式と値全体の形式は、バイト単位で一致する。
++ これには、Base64 の 3 バイトのグループや Base32 の 5 バイトのグループが二つのチャンクにまたがる境界も含まれる。
++ デコードも同じように動くので、ストリームを一方の側でエンコードし、もう一方の側でデコードでき、どちらの側もその全体を保持する必要はない。
+
+- ### Related
++ ### 関連
+
+- - [CBOR](cbor.md), [cryptography](cryptography.md), [SSH](ssh.md), [geography](geography.md) and [text](text.md) encode bytes and coordinates in these alphabets.
++ - [CBOR](cbor.md)、[暗号](cryptography.md)、[SSH](ssh.md)、[地理](geography.md)、[テキスト](text.md)は、これらのアルファベットでバイトや座標をエンコードする。

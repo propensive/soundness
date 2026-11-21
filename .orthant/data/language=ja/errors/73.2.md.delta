@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.73.2` — Time literal: minute value above 59
++ # `↯/s.73.2` — 時刻のリテラル：59 を超える分の値
+
+- Raised by Aviation's `validTime` macro when a time literal's minute
+- component is 60 or more.
++ 時刻のリテラルの分の部分が 60 以上のときに、Aviation の `validTime` マクロが発生させる。
+
+- ## Cause
++ ## 原因
+
+- The macro decodes literal `Double` values into a `Clockface`. The
+- fractional part is interpreted as two minute digits; a value of 60
+- or more is invalid.
++ マクロは、リテラルの `Double` の値を `Clockface` にデコードする。
++ 小数部は二桁の分として解釈され、60 以上の値は正しくない。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.73.2] a time cannot have a minute value above 59
++ [↯/s.73.2] a time cannot have a minute value above 59
+
+= [↯/s.73.2] a time cannot have a minute value above 59
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Use a minute value 0–59 in the literal.
++ リテラルでは 0–59 の分の値を使う。
+
+- ## See also
++ ## 関連項目
+
+- - The other time literal errors: [Families](README.md#families)
+- - Source: `lib/aviation/src/core/aviation.internal.scala`
++ - ほかの時刻のリテラルのエラー：[ファミリー](README.md#families)
++ - ソース：`lib/aviation/src/core/aviation.internal.scala`

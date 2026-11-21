@@ -1,0 +1,450 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base larceny
++ base larceny
+
+- import soundness
++ import soundness
+
+- info   a compiler plugin which captures the compile errors and warnings of a block as values, for testing
++ info   テストのために、ブロックのコンパイルエラーと警告を値として捕らえるコンパイラプラグイン
+
+- detail
++ detail
+
+-     _Larceny_ makes the failure to compile testable. Code wrapped in `demilitarize` is compiled
+-     separately, and the errors and warnings that fall inside it are delivered to the program as
+-     a `List[CompileError]` instead of failing the build. A test can then assert that an invalid
+-     literal, a wrong-currency addition or an undeclared relation genuinely does not compile:
+-     where invariants live in types, the impossibility is the feature, and this is how it is
+-     tested.
++     _Larceny_ は、コンパイルに失敗することをテスト可能にする。
++     `demilitarize` で包まれたコードは別にコンパイルされ、その内側に入るエラーと警告は、ビルドを失敗させる代わりに `List[CompileError]` としてプログラムに届けられる。
++     これによりテストは、不正なリテラル、通貨の異なる加算、宣言されていない関係が本当にコンパイルされないことを表明できる。不変条件が型の中にある場合、その不可能性こそが機能であり、これがそのテストの方法である。
+
+=     tested.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     tested.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     tested.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     tested.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+-     test(m"a type error is captured as an error"):
++     test(m"a type error is captured as an error"):
+
+=     test(m"a type error is captured as an error"):
+-       demilitarize:
++       demilitarize:
+
+=       demilitarize:
+-         val int: Int = "not an int"
++         val int: Int = "not an int"
+
+-       . map(_.reason)
++       . map(_.reason)
+
+=       . map(_.reason)
+-     . assert(_ == List(CompileError.Reason.TypeMismatch))
++     . assert(_ == List(CompileError.Reason.TypeMismatch))
+
+=       . map(_.reason)
+=     . assert(_ == List(CompileError.Reason.TypeMismatch))
+-     ```
++     ```
+
+-     The library is a compiler plugin, and `demilitarize` does nothing without it: the plugin
+-     must be enabled for every compilation whose sources use it, by passing its jar to the
+-     compiler as `-Xplugin:<path to the larceny plugin jar>` (the jar's `plugin.properties`
+-     names `larceny.LarcenyPlugin`). The plugin is published as a standalone artifact rather
+-     than in a Soundness bundle, because a `-Xplugin` jar must declare exactly one plugin; it
+-     must also be on the compile classpath, since `demilitarize` and `CompileError` are ordinary
+-     symbols. Soundness's own test modules add both.
++     このライブラリはコンパイラプラグインであり、`demilitarize` はそれなしでは何もしない。プラグインは、ソースがそれを使うすべてのコンパイルで、その jar を `-Xplugin:<path to the larceny plugin jar>` としてコンパイラに渡すことで有効にしなければならない（jar の `plugin.properties` が `larceny.LarcenyPlugin` を名指しする）。
++     `-Xplugin` の jar はちょうど一つのプラグインを宣言しなければならないので、プラグインは Soundness のバンドルの中ではなく単独の成果物として公開される。また `demilitarize` と `CompileError` は通常のシンボルなので、コンパイルのクラスパスにもなければならない。
++     Soundness 自身のテストモジュールは両方を加えている。
+
+-     The plugin runs after parsing and before typing. For each compilation unit containing a
+-     `demilitarize` block, it compiles the same source again in a sub-compilation, on the same
+-     classpath and with the same language settings, prelude (`-Yimports`, `-Yno-predef`),
+-     `-Ycc-new`, `-Z` features, `-preview`, warning flags (`-deprecation`, `-feature`,
+-     `-unchecked`, `-Wall`, `-Wunused`, `-Wconf`) and other plugins, but without itself. The
+-     diagnostics whose point falls inside each block are captured and replaced, in the main
+-     compilation, by code constructing the corresponding `CompileError` values; typing then sees
+-     only those constructions, so the build succeeds as long as nothing outside a
+-     `demilitarize` block is wrong. `-Werror` is deliberately not propagated, so warnings are
+-     captured as warnings.
++     プラグインはパースの後、型付けの前に実行される。
++     `demilitarize` ブロックを含むコンパイル単位ごとに、プラグインは同じソースをサブコンパイルで再びコンパイルする。クラスパスは同じで、言語設定、プレリュード（`-Yimports`、`-Yno-predef`）、`-Ycc-new`、`-Z` の機能、`-preview`、警告のフラグ（`-deprecation`、`-feature`、`-unchecked`、`-Wall`、`-Wunused`、`-Wconf`）、他のプラグインも同じだが、プラグイン自身は含まない。
++     それぞれのブロックの内側に位置する診断は捕らえられ、メインのコンパイルでは、対応する `CompileError` の値を構築するコードに置き換えられる。型付けはその構築だけを見るので、`demilitarize` ブロックの外側に誤りがない限りビルドは成功する。
++     `-Werror` は意図的に伝播されないので、警告は警告として捕らえられる。
+
+-     An error in an early phase stops later phases running. So that one failing block cannot
+-     hide the diagnostics of another, the plugin replaces each block containing an error with
+-     `{}` and recompiles, as many times as needed, which is why a file with many
+-     `demilitarize` blocks compiles more slowly than its size suggests. Within one block, an
+-     error suppresses that block's late-phase warnings (deprecation among them), which are
+-     never reached.
++     初期のフェーズのエラーは、後のフェーズの実行を止める。
++     失敗する一つのブロックが別のブロックの診断を隠さないように、プラグインはエラーを含む各ブロックを `{}` で置き換えて、必要なだけ何度も再コンパイルする。多くの `demilitarize` ブロックを持つファイルがその大きさから想像されるより遅くコンパイルされるのはそのためである。
++     一つのブロックの中では、エラーはそのブロックの後期フェーズの警告（非推奨の警告もその一つ）を抑制し、それらには決して到達しない。
+
+-     Inside a `demilitarize` block, calls through inline extension sugar may dealias opaque
+-     collections in proxy types and report a spurious mismatch between `scala.collection` and
+-     `proscenium` types; call the underlying method directly in such a block.
++     `demilitarize` ブロックの内側では、インラインの拡張メソッドの糖衣構文を通じた呼び出しが、プロキシ型の中の不透明なコレクションのエイリアスを展開し、`scala.collection` の型と `proscenium` の型の間の見せかけの不一致を報告することがある。そのようなブロックでは、基礎となるメソッドを直接呼ぶこと。
+
+-     The library is the single JVM-only source set `larceny.plugin`, which depends on the Scala
+-     compiler and nothing of Soundness's. `CompileError` and `demilitarize` are exported to the
+-     `soundness` umbrella.
++     このライブラリは、JVM 専用の単一のソースセット `larceny.plugin` であり、Scala コンパイラに依存し、Soundness の何にも依存しない。
++     `CompileError` と `demilitarize` は `soundness` アンブレラにエクスポートされる。
+
+- refer larceny.demilitarize
++ refer larceny.demilitarize
+
+- refer larceny.CompileError
++ refer larceny.CompileError
+
+- refer larceny.LarcenyPlugin
++ refer larceny.LarcenyPlugin
+
+- entry .demilitarize   compiles a block separately and returns its compile errors and warnings as values
+-     `demilitarize(code)` is rewritten by the larceny plugin, before typing, into the
+-     `List[CompileError]` of every diagnostic whose point lies inside `code`, in the order the
+-     compiler reported them. Code which compiles cleanly gives an empty list. The block itself
+-     is never typed in the main compilation, so it may contain anything that parses.
++ entry .demilitarize   ブロックを別にコンパイルし、そのコンパイルエラーと警告を値として返す
++     `demilitarize(code)` は型付けの前に larceny プラグインによって、`code` の内側に位置するすべての診断の `List[CompileError]` に、コンパイラが報告した順で書き換えられる。
++     きれいにコンパイルされるコードは空のリストを返す。
++     ブロック自体はメインのコンパイルで型付けされることがないので、パースできるものなら何を含んでもよい。
+
+=     is never typed in the main compilation, so it may contain anything that parses.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     is never typed in the main compilation, so it may contain anything that parses.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     is never typed in the main compilation, so it may contain anything that parses.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     is never typed in the main compilation, so it may contain anything that parses.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+-     @deprecated("superseded by `current`", "0.1.0")
++     @deprecated("superseded by `current`", "0.1.0")
+
+-     def obsolete(): Int = 42
++     def obsolete(): Int = 42
+
+-     test(m"warnings can be filtered out, leaving the errors"):
++     test(m"warnings can be filtered out, leaving the errors"):
+
+=     test(m"warnings can be filtered out, leaving the errors"):
+-       demilitarize:
++       demilitarize:
+
+-         obsolete()
++         obsolete()
+
+=         obsolete()
+-         val int: Int = "not an int"
++         val int: Int = "not an int"
+
+-       . filter(_.error).map(_.reason)
++       . filter(_.error).map(_.reason)
+
+=       . filter(_.error).map(_.reason)
+-     . assert(_ == List(CompileError.Reason.TypeMismatch))
++     . assert(_ == List(CompileError.Reason.TypeMismatch))
+
+=       . filter(_.error).map(_.reason)
+=     . assert(_ == List(CompileError.Reason.TypeMismatch))
+-     ```
++     ```
+
+-     Without the plugin enabled the call is an ordinary method, and returns an empty list:
+-     every assertion of a failure would then fail, rather than silently pass. A block with an
+-     error reports none of its own late-phase warnings, since compilation of the block stops
+-     at the error.
++     プラグインが有効でなければ、呼び出しは通常のメソッドであり、空のリストを返す。そのとき、失敗の表明はすべて、黙って成功するのではなく失敗する。
++     エラーを持つブロックは、自身の後期フェーズの警告を一つも報告しない。ブロックのコンパイルはそのエラーで止まるからである。
+
+- entry .procrastinate   defers compiling a block of source to run time, through the `Subcompiler`
+-     The plugin rewrites `procrastinate(code)` into a call on `Subcompiler` carrying the
+-     block's source text and the classpath, so that the code is compiled when the program runs
+-     rather than when it is built. Without the plugin it returns its argument.
++ entry .procrastinate   ソースのブロックのコンパイルを、`Subcompiler` を通じて実行時まで遅らせる
++     プラグインは `procrastinate(code)` を、ブロックのソーステキストとクラスパスを運ぶ `Subcompiler` の呼び出しに書き換え、コードがビルド時ではなくプログラムの実行時にコンパイルされるようにする。
++     プラグインがなければ、引数を返す。
+
+- entry .CompileError   one diagnostic captured by `demilitarize`: its reason, message, position and severity
++ entry .CompileError   `demilitarize` が捕らえた一つの診断。その理由、メッセージ、位置、重大度
+
+= entry .CompileError   one diagnostic captured by `demilitarize`: its reason, message, position and severity
+-   detail
++   detail
+
+-       A case class describing a single compiler error, warning or informational message from
+-       within a `demilitarize` block. `#reason` is the compiler's own message identifier, as a
+-       `CompileError.Reason`, which is the most robust thing to assert on; `#message` is its
+-       full text; `#focus` is the source text the diagnostic spans; and `#importance` says
+-       whether it is an error, a warning or information.
++       `demilitarize` ブロックの内側からの、一つのコンパイラのエラー、警告、または情報メッセージを記述するケースクラスである。
++       `#reason` はコンパイラ自身のメッセージ識別子で、`CompileError.Reason` として表され、表明の対象として最も頑健なものである。`#message` はその全文である。`#focus` は診断が及ぶソーステキストである。そして `#importance` は、それがエラー、警告、情報のいずれであるかを示す。
+
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+-       ##
++       ##
+
+-       import soundness.*
++       import soundness.*
+
+-       @deprecated("superseded by `current`", "0.1.0")
++       @deprecated("superseded by `current`", "0.1.0")
+
+-       def obsolete(): Int = 42
++       def obsolete(): Int = 42
+
+-       test(m"a deprecation warning names the deprecated method"):
++       test(m"a deprecation warning names the deprecated method"):
+
+-         demilitarize:
++         demilitarize:
+
+-           obsolete()
++           obsolete()
+
+-         . map(_.message)
++         . map(_.message)
+
+-       . assert(_.exists(_.contains("obsolete")))
++       . assert(_.exists(_.contains("obsolete")))
+
+-       ```
++       ```
+
+-       Positions are taken from the user's source even for a diagnostic raised inside an
+-       inline or macro expansion: the plugin takes the narrowest position in the compilation
+-       unit which lies within the call site, so `#focus` is, for example, the bad splice in an
+-       interpolator rather than the whole literal.
++       インライン展開やマクロ展開の内側で発生した診断であっても、位置はユーザーのソースから取られる。プラグインは、呼び出し箇所の中にあるコンパイル単位の最も狭い位置を取るので、たとえば `#focus` はリテラル全体ではなく、補間子の中の誤ったスプライスになる。
+
+-   refer larceny.demilitarize
++   refer larceny.demilitarize
+
+-   refer larceny.CompileError.Reason
++   refer larceny.CompileError.Reason
+
+-   entry .apply   a `CompileError` from a reason ordinal, message, focus, start, offset and severity level
+-       The form the plugin generates. An ordinal newer than `CompileError.Reason` knows becomes
+-       `NoExplanation`, and a level outside the known range an `Error`, so that a diagnostic
+-       from a newer compiler is still captured rather than silently dropped.
+-   entry .Importance   the severity of a captured diagnostic: `Info`, `Warning` or `Error`
++   entry .apply   理由の序数、メッセージ、フォーカス、開始位置、オフセット、重大度のレベルからの `CompileError`
++       プラグインが生成する形である。
++       `CompileError.Reason` が知っているより新しい序数は `NoExplanation` になり、既知の範囲外のレベルは `Error` になる。これにより、より新しいコンパイラからの診断も、黙って捨てられるのではなく捕らえられる。
++   entry .Importance   捕らえられた診断の重大度。`Info`、`Warning`、`Error`
+
+=   entry .Importance   the severity of a captured diagnostic: `Info`, `Warning` or `Error`
+-     detail
++     detail
+
+-         An enum whose cases mirror the Scala compiler's diagnostic levels and are named as
+-         `anthology.Importance`'s are. It is restated here because the plugin depends on
+-         nothing of Soundness's.
+-     entry .apply   the importance for a compiler diagnostic level, treating an unknown level as `Error`
+-   entry .Reason   the compiler's identifier for the kind of a diagnostic, such as `TypeMismatch`
++         ケースが Scala コンパイラの診断レベルを反映し、`anthology.Importance` のものと同じように名付けられた列挙型である。
++         プラグインは Soundness の何にも依存しないので、ここで改めて定義されている。
++     entry .apply   コンパイラの診断レベルに対する重大度。未知のレベルは `Error` として扱う
++   entry .Reason   診断の種類に対するコンパイラの識別子。`TypeMismatch` など
+
+=   entry .Reason   the compiler's identifier for the kind of a diagnostic, such as `TypeMismatch`
+-     detail
++     detail
+
+-         An enum with one case for each of the Scala 3 compiler's `ErrorMessageID`s, in the
+-         same order, so that a captured diagnostic can be matched by kind rather than by the
+-         wording of its message: `TypeMismatch`, `NotAMember`, `MissingImplicitArgument`,
+-         `AmbiguousOverload`, `PatternMatchExhaustivity`, `MatchCaseUnreachable`, and so on.
+-         `NoExplanation` is the reason of a diagnostic with no specific identifier, which
+-         includes every error a macro raises with `halt` and every `compiletime.error`. The
+-         cases marked _old_ in the source are retired identifiers kept for their position.
++         Scala 3 コンパイラの各 `ErrorMessageID` に対して一つのケースを同じ順で持つ列挙型であり、捕らえられた診断を、メッセージの文言ではなく種類によってマッチできるようにする。`TypeMismatch`、`NotAMember`、`MissingImplicitArgument`、`AmbiguousOverload`、`PatternMatchExhaustivity`、`MatchCaseUnreachable` などである。
++         `NoExplanation` は特定の識別子を持たない診断の理由であり、マクロが `halt` で発生させるすべてのエラーと、すべての `compiletime.error` を含む。
++         ソースで _old_ と印の付いたケースは、位置のために残されている廃止された識別子である。
+
+-         ```scala fuel
++         ```scala fuel
+
+-         typecheck
++         typecheck
+
+-         ##
++         ##
+
+-         import soundness.*
++         import soundness.*
+
+-         test(m"a missing member is reported by its reason"):
++         test(m"a missing member is reported by its reason"):
+
+-           demilitarize:
++           demilitarize:
+
+-             t"text".noSuchMember
++             t"text".noSuchMember
+
+-           . map(_.reason)
++           . map(_.reason)
+
+-         . assert(_ == List(CompileError.Reason.NotAMember))
++         . assert(_ == List(CompileError.Reason.NotAMember))
+
+-         ```
++         ```
+
+-   entry .Id   an extractor matching a `CompileError` by its `CompileError.Reason`
+-       `case CompileError.Id(reason) =>` binds the error's reason; it always matches. It was
+-       formerly the separate type `CompileErrorId`.
+-   entry #reason   the compiler's identifier for the kind of diagnostic, as a `CompileError.Reason`
+-   entry #message   the full text of the diagnostic, as the compiler wrote it
+-   entry #focus   the source text spanned by the diagnostic's position
+-   entry #start   the offset in the source file at which the diagnostic's span starts
+-   entry #offset   the distance of the diagnostic's point from the start of its span
+-   entry #importance   whether the diagnostic is an error, a warning or information
+-   entry #point   the offset in the source file of the diagnostic's point: `#start` plus `#offset`
+-   entry #warning   whether the diagnostic is a warning
+-   entry #error   whether the diagnostic is an error
++   entry .Id   `CompileError` をその `CompileError.Reason` によってマッチする抽出子
++       `case CompileError.Id(reason) =>` はエラーの理由を束縛し、常にマッチする。
++       以前は別の型 `CompileErrorId` だった。
++   entry #reason   診断の種類に対するコンパイラの識別子で、`CompileError.Reason` として
++   entry #message   コンパイラが書いたとおりの診断の全文
++   entry #focus   診断の位置が及ぶソーステキスト
++   entry #start   診断のスパンが始まる、ソースファイル内のオフセット
++   entry #offset   スパンの開始から診断の指す点までの距離
++   entry #importance   診断がエラー、警告、情報のいずれであるか
++   entry #point   診断の指す点の、ソースファイル内のオフセット。`#start` に `#offset` を加えたもの
++   entry #warning   診断が警告であるかどうか
++   entry #error   診断がエラーであるかどうか
+
+- entry .LarcenyPlugin   the compiler plugin class, named in larceny's `plugin.properties`
++ entry .LarcenyPlugin   larceny の `plugin.properties` で名指しされるコンパイラプラグインのクラス
+
+= entry .LarcenyPlugin   the compiler plugin class, named in larceny's `plugin.properties`
+-   detail
++   detail
+
+-       The `StandardPlugin` the compiler instantiates when larceny's jar is passed with
+-       `-Xplugin:`. It installs a single phase, `LarcenyTransformer`, and is not used directly.
++       larceny の jar が `-Xplugin:` で渡されたときにコンパイラがインスタンス化する `StandardPlugin` である。
++       単一のフェーズ `LarcenyTransformer` を組み込み、直接は使われない。
+
+-   refer larceny.LarcenyTransformer
++   refer larceny.LarcenyTransformer
+
+-   entry #name   the plugin's name, `larceny`
++   entry #name   プラグインの名前、`larceny`
+
+- entry .LarcenyTransformer   the plugin phase which finds `demilitarize` blocks and substitutes their errors
++ entry .LarcenyTransformer   `demilitarize` ブロックを見つけ、そのエラーを代入するプラグインのフェーズ
+
+= entry .LarcenyTransformer   the plugin phase which finds `demilitarize` blocks and substitutes their errors
+-   hidden
++   hidden
+
+= entry .LarcenyTransformer   the plugin phase which finds `demilitarize` blocks and substitutes their errors
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. A phase named `errorcap`, running after `parser` and before
+-       `typer`, which collects the regions of every `demilitarize` block in a unit, runs the
+-       `Subcompiler` over the unit's source, and rewrites each block into the construction of
+-       its captured `CompileError`s.
+-   entry .isLarceny   whether a `-Xplugin` path (jar or directory) is the larceny plugin itself
+-       Read from the path's `plugin.properties`; it is how the plugin keeps itself out of its
+-       own sub-compilations, which would otherwise recurse.
+-   entry #phaseName   the phase's name, `errorcap`
++       直接使うためのものではない。
++       `parser` の後、`typer` の前に実行される `errorcap` という名前のフェーズで、単位の中のすべての `demilitarize` ブロックの領域を集め、単位のソースに対して `Subcompiler` を実行し、各ブロックを、捕らえた `CompileError` の構築に書き換える。
++   entry .isLarceny   `-Xplugin` のパス（jar またはディレクトリ）が larceny プラグイン自身であるかどうか
++       パスの `plugin.properties` から読まれる。これは、プラグインが自身のサブコンパイルに自分を含めないための仕組みであり、そうしなければ再帰してしまう。
++   entry #phaseName   フェーズの名前、`errorcap`
+
+- entry .Subcompiler   the sub-compilation that compiles a source and collects its diagnostics
++ entry .Subcompiler   ソースをコンパイルしてその診断を集めるサブコンパイル
+
+= entry .Subcompiler   the sub-compilation that compiles a source and collects its diagnostics
+-   hidden
++   hidden
+
+= entry .Subcompiler   the sub-compilation that compiles a source and collects its diagnostics
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. `.compile` compiles a source with a fresh compiler, collecting
+-       every diagnostic as a `CompileError`; given regions, it blanks each one containing an
+-       error and recompiles until no new errors appear, so that one block's error cannot hide
+-       another's diagnostics.
+-   entry .compile   compiles a source and returns its diagnostics as `CompileError`s
+-   entry .CustomReporter   the compiler reporter which records diagnostics as `CompileError`s
++       直接使うためのものではない。
++       `.compile` は新しいコンパイラでソースをコンパイルし、すべての診断を `CompileError` として集める。領域が与えられると、エラーを含む各領域を空にして、新しいエラーが現れなくなるまで再コンパイルし、一つのブロックのエラーが別のブロックの診断を隠せないようにする。
++   entry .compile   ソースをコンパイルし、その診断を `CompileError` として返す
++   entry .CustomReporter   診断を `CompileError` として記録するコンパイラのレポーター
+
+=   entry .CustomReporter   the compiler reporter which records diagnostics as `CompileError`s
+-     detail
++     detail
+
+-         Places each diagnostic at the narrowest position in the compilation unit's own source
+-         which lies within the user's call site.
+-     entry #errors   the diagnostics recorded so far
+-     entry #doReport   records one diagnostic as a `CompileError`
++         各診断を、ユーザーの呼び出し箇所の中にある、コンパイル単位自身のソースの最も狭い位置に置く。
++     entry #errors   これまでに記録された診断
++     entry #doReport   一つの診断を `CompileError` として記録する

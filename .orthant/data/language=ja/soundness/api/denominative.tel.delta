@@ -1,0 +1,2140 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base denominative
++ base denominative
+
+- import soundness
++ import soundness
+
+- info   ordinals, intervals and confined indexes: counting and indexing by proof rather than by integer
++ info   序数、区間、限定されたインデックス：整数ではなく証明による数え上げとインデックス付け
+
+- detail
++ detail
+
+-     _Denominative_ is how Soundness counts and indexes. Its central type is `Ordinal`, a
+-     position — first, second, third — which is a different type from `Int` altogether, so an
+-     off-by-one error is a type error: there is no zeroth ordinal, the first is `Prim`, then
+-     `Sec`, `Ter`, `Quat`, `Quin`, `Sen` and `Sept`, and a number crosses into an ordinal only by
+-     saying which convention it came from (`0.z` reads a zero-based index, `1.u` a one-based
+-     count; both are `Prim`). A range of ordinals is an `Interval` (`Ter thru Sen`, `Ter till
+-     Sen`, `Ter span 3`), and a located range of characters in a source is a `Span`.
++     _Denominative_ は Soundness における数え方とインデックスの付け方である。
++     中心となる型は `Ordinal` であり、これは位置（一番目、二番目、三番目）を表す、`Int` とはまったく異なる型である。
++     そのため off-by-one エラーは型エラーになる。
++     零番目の序数は存在せず、最初は `Prim`、続いて `Sec`、`Ter`、`Quat`、`Quin`、`Sen`、`Sept` であり、数値が序数になるのは、それがどの慣習から来たかを明示したときだけである（`0.z` は 0 始まりのインデックス、`1.u` は 1 始まりの個数として読み、どちらも `Prim` になる）。
++     序数の範囲は `Interval`（`Ter thru Sen`、`Ter till Sen`、`Ter span 3`）であり、ソース中の位置を持つ文字の範囲は `Span` である。
+
+-     The second idea is the *confined* ordinal, `Ordinal in xs.type`: an ordinal whose type
+-     records the collection it has been proved to index. Only a combinator which has already
+-     established the bound can mint one — `xs.extent` (the whole range, branded), `ordinal
+-     .within(xs)`, `xs.spot(p)`, `xs.prefix(p)`, rudiments' `confine` and `pick` — and reading
+-     with one goes through a total `apply` which yields a bare element, where an unproven index
+-     yields an `Optional`. A counting loop is therefore written without a counter and without a
+-     bounds check on either side:
++     第二の考え方は*限定された*序数 `Ordinal in xs.type` である。
++     これは、インデックスとして有効だと証明されたコレクションを型に記録した序数である。
++     これを生成できるのは、すでに境界を確立したコンビネーターだけである。
++     `xs.extent`（ブランド付きの全範囲）、`ordinal .within(xs)`、`xs.spot(p)`、`xs.prefix(p)`、rudiments の `confine` と `pick` がそれにあたる。
++     限定された序数による読み取りは全域的な `apply` を通り、裸の要素を返す。
++     証明のないインデックスは `Optional` を返す。
++     したがって、数え上げのループはカウンターなしで、どちら側にも境界検査なしで書ける。
+
+=     bounds check on either side:
+=
+-     ```scala
++     ```scala
+
+=     bounds check on either side:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val array = Array(10, 20, 30)
++     val array = Array(10, 20, 30)
+
+=     val array = Array(10, 20, 30)
+-     var total = 0
++     var total = 0
+
+-     array.extent.each { ordinal => total += array(ordinal) }   // total is 60; array(ordinal) is an Int, not an Optional
++     array.extent.each { ordinal => total += array(ordinal) }   // total is 60; array(ordinal) is an Int, not an Optional
+
+=     array.extent.each { ordinal => total += array(ordinal) }   // total is 60; array(ordinal) is an Int, not an Optional
+-     ```
++     ```
+
+-     The typeclasses which make a value countable and indexable live here: `Countable` (its
+-     `size`, and the ordinals derived from it: `gamut`, `extent`, `limit`, `ult`, `pen`, `ant`),
+-     `Vacuiscible` (emptiness alone, `nil`, O(1) everywhere), `Applicable` (`contains` and
+-     `access` by an index or key, behind rudiments' `apply`, `at`, `defines`, `confine` and
+-     `pick`), `Definable` and `Omissible` (the copy-on-write `define` and `omit`), and
+-     `Terminable` and `Truncable` (`last` and `lead`). Their instances cover the frozen
+-     `Array[e]^{}` and `Data`, `Sequence`, `Text`, `Set`, `Map`, `Ledger`, the stdlib
+-     `IndexedSeq` and a few mutable buffers — and, behind an acknowledgement, `List` and `Chain`.
++     値を数えられるものにし、インデックス付け可能にする型クラスはここにある。
++     `Countable`（その `size` と、そこから導かれる序数 `gamut`、`extent`、`limit`、`ult`、`pen`、`ant`）、`Vacuiscible`（空であることだけを扱う `nil`。どこでも O(1)）、`Applicable`（インデックスやキーによる `contains` と `access`。rudiments の `apply`、`at`、`defines`、`confine`、`pick` の背後にある）、`Definable` と `Omissible`（コピーオンライトの `define` と `omit`）、そして `Terminable` と `Truncable`（`last` と `lead`）である。
++     これらのインスタンスは、凍結済みの `Array[e]^{}` と `Data`、`Sequence`、`Text`、`Set`、`Map`、`Ledger`、標準ライブラリの `IndexedSeq`、いくつかの可変バッファを対象とし、承認があれば `List` と `Chain` も対象とする。
+
+-     That acknowledgement is the third idea. An operation is *dysasymptotic* when its cost grows
+-     with data outside its subject: `size` is free on a `Sequence` but a traversal on a `List`,
+-     `last` on a `List` walks to its end, `at` on a `List` walks from its head, and `size` on a
+-     `Chain` forces the whole stream and may never return. Such instances take a plain marker
+-     type in a `using` position — `Dysasymptotic.LinearSize`, `LinearAccess`, `UnboundedSize`,
+-     `LinearScan` — and a file opts in by importing the matching given from the
+-     `dysasymptotics` package *by name* (`import dysasymptotics.linearSize`; a wildcard import
+-     does not bring givens into scope), ideally in the block that accepts the cost, with a
+-     comment saying why it is acceptable. Every acknowledgement is greppable, and `nil` is
+-     never gated. A `.stdlib.length` which dodges the gate hides the cost; open the gate instead.
++     その承認が第三の考え方である。
++     演算のコストがその対象の外にあるデータに応じて増えるとき、その演算は*漸近外*（dysasymptotic）である。
++     `size` は `Sequence` では無償だが `List` では走査になり、`List` の `last` は末尾まで辿り、`List` の `at` は先頭から辿り、`Chain` の `size` はストリーム全体を強制評価するので戻らないこともある。
++     このようなインスタンスは `using` の位置で単純なマーカー型（`Dysasymptotic.LinearSize`、`LinearAccess`、`UnboundedSize`、`LinearScan`）を受け取る。
++     ファイルは、対応する given を `dysasymptotics` パッケージから*名前で*インポートすることでこれを選択する（`import dysasymptotics.linearSize`。ワイルドカードのインポートは given をスコープに持ち込まない）。
++     インポートは、なるべくコストを受け入れるブロックの中で、それが許容できる理由を述べるコメントとともに行う。
++     すべての承認は grep で探せ、`nil` は決してゲートされない。
++     ゲートを回避する `.stdlib.length` はコストを隠してしまう。
++     代わりにゲートを開くこと。
+
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     frame
++     frame
+
+-       label A list's size is a traversal, so it is not simply available
++       label リストのサイズは走査なので、単純には得られない
+
+=       label A list's size is a traversal, so it is not simply available
+-       code
++       code
+
+=       label A list's size is a traversal, so it is not simply available
+=       code
+-           locally:
++           locally:
+
+=           locally:
+-             val numbers: List[Int] = List(3, 1, 2)
++             val numbers: List[Int] = List(3, 1, 2)
+
+-             numbers.size   // does not compile
++             numbers.size   // does not compile
+
+=             numbers.size   // does not compile
+-     frame
++     frame
+
+-       label Acknowledge the linear cost, by name
++       label 線形のコストを名前で承認する
+
+=       label Acknowledge the linear cost, by name
+-       code
++       code
+
+=       label Acknowledge the linear cost, by name
+=       code
+-           locally:
++           locally:
+
+-             import dysasymptotics.linearSize   // the lists here are short
++             import dysasymptotics.linearSize   // the lists here are short
+
+=             import dysasymptotics.linearSize   // the lists here are short
+-             val numbers: List[Int] = List(3, 1, 2)
++             val numbers: List[Int] = List(3, 1, 2)
+
+-             numbers.size   // 3
++             numbers.size   // 3
+
+=             numbers.size   // 3
+-     frame
++     frame
+
+-       label Positional access is a different acknowledgement
++       label 位置によるアクセスは別の承認である
+
+=       label Positional access is a different acknowledgement
+-       code
++       code
+
+=       label Positional access is a different acknowledgement
+=       code
+-           locally:
++           locally:
+
+-             import dysasymptotics.{linearSize, linearAccess}
++             import dysasymptotics.{linearSize, linearAccess}
+
+=             import dysasymptotics.{linearSize, linearAccess}
+-             val numbers: List[Int] = List(3, 1, 2)
++             val numbers: List[Int] = List(3, 1, 2)
+
+-             numbers.size        // 3
++             numbers.size        // 3
+
+-             numbers.at(Ter)     // 2
++             numbers.at(Ter)     // 2
+
+-             numbers.last        // 2
++             numbers.last        // 2
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     The library is one source set, `denominative.core`, compiled for the JVM, Scala.js and
+-     Scala Native, sitting just above vacuous and prepositional and below rudiments: the
+-     `Optional`-returning reads (`at`, `apply`, `pick`, `confine`, `head`, `last`) are rudiments'
+-     and concordance's extensions over these typeclasses. Everything is exported to the
+-     `soundness` umbrella, where the `dysasymptotics` and `ordinalTextualizables` choice
+-     packages merge with the umbrella's own; `thru`, `till` and `tabulate` are re-declared
+-     there (and `each` in rudiments' umbrella file) rather than exported, since an export
+-     forwards only one overload of an extension and both the plain and the confined overload
+-     must be reachable. A file which
+-     imports `denominative.*` directly must not also import `rudiments.*` wholesale for the
+-     same names.
++     このライブラリは単一のソースセット `denominative.core` であり、JVM、Scala.js、Scala Native 向けにコンパイルされ、vacuous と prepositional のすぐ上、rudiments の下に位置する。
++     `Optional` を返す読み取り（`at`、`apply`、`pick`、`confine`、`head`、`last`）は、これらの型クラスに対する rudiments と concordance の拡張である。
++     すべては `soundness` アンブレラにエクスポートされ、`dysasymptotics` と `ordinalTextualizables` の選択パッケージはアンブレラ自身のものと統合される。
++     `thru`、`till`、`tabulate` はエクスポートではなくアンブレラで再宣言されている（`each` は rudiments のアンブレラファイルで再宣言されている）。
++     エクスポートは拡張の一つのオーバーロードしか転送せず、通常のオーバーロードと限定されたオーバーロードの両方に到達できなければならないからである。
++     `denominative.*` を直接インポートするファイルは、同じ名前のために `rudiments.*` をまるごとインポートしてはならない。
+
+- refer denominative.Ordinal
++ refer denominative.Ordinal
+
+- refer denominative.Interval
++ refer denominative.Interval
+
+- refer denominative.Countable
++ refer denominative.Countable
+
+- refer denominative.Applicable
++ refer denominative.Applicable
+
+- refer denominative.dysasymptotics
++ refer denominative.dysasymptotics
+
+- entry .Prim   the first ordinal
+-     `Ordinal.zerary(0)`, also `0.z` and `1.u`. From "primary". The seven named ordinals are
+-     `Prim`, `Sec`, `Ter`, `Quat`, `Quin`, `Sen` and `Sept`; beyond them an ordinal is written
+-     `7.z` (the eighth) or `8.u`. They are stable values, not inline definitions, so they may be
+-     used as patterns: `case Prim => …`.
++ entry .Prim   最初の序数
++     `Ordinal.zerary(0)`。`0.z` や `1.u` とも書く。
++     「primary」に由来する。
++     名前を持つ七つの序数は `Prim`、`Sec`、`Ter`、`Quat`、`Quin`、`Sen`、`Sept` であり、それより先の序数は `7.z`（八番目）や `8.u` と書く。
++     これらは inline 定義ではなく安定した値なので、パターンとして使える（`case Prim => …`）。
+
+- entry .Sec   the second ordinal, `1.z`
+- entry .Ter   the third ordinal, `2.z`
+- entry .Quat   the fourth ordinal, `3.z`
+- entry .Quin   the fifth ordinal, `4.z`
+- entry .Sen   the sixth ordinal, `5.z`
+- entry .Sept   the seventh ordinal, `6.z`
+-     The last of the named ordinals; the eighth is `7.z`. Note that `7.z` is the *eighth*
+-     position (index 7), while `Sept` is the seventh (index 6).
++ entry .Sec   二番目の序数、`1.z`
++ entry .Ter   三番目の序数、`2.z`
++ entry .Quat   四番目の序数、`3.z`
++ entry .Quin   五番目の序数、`4.z`
++ entry .Sen   六番目の序数、`5.z`
++ entry .Sept   七番目の序数、`6.z`
++     名前を持つ序数の最後であり、八番目は `7.z` である。
++     `7.z` は*八番目*の位置（インデックス 7）であり、`Sept` は七番目（インデックス 6）であることに注意する。
+
+- entry .z   `n.z`: the ordinal at zero-based index `n`, so `0.z` is `Prim`
+-     An inline extension on `Int`, recording that the number came from a zero-based convention
+-     — a wire protocol, a JVM array index — at the point it enters. `n.z.n0` is `n` again.
++ entry .z   `n.z`：0 始まりのインデックス `n` にある序数。`0.z` は `Prim` である
++     `Int` に対する inline 拡張であり、その数値が 0 始まりの慣習（ワイヤプロトコル、JVM の配列インデックス）から来たことを、序数に入るその地点で記録する。
++     `n.z.n0` は再び `n` になる。
+
+- entry .u   `n.u`: the ordinal at one-based count `n`, so `1.u` is `Prim`
+-     The counterpart of `z` for a one-based convention — a specification's "the 3rd field", a
+-     line number. `n.u.n1` is `n` again.
++ entry .u   `n.u`：1 始まりの個数 `n` にある序数。`1.u` は `Prim` である
++     1 始まりの慣習（仕様書の「3 番目のフィールド」、行番号）のための `z` の対である。
++     `n.u.n1` は再び `n` になる。
+
+- entry .nil   `xs.nil`: whether a value is empty, in O(1) for every shape
+-     Over `Vacuiscible`, which every `Countable` extends: `List`, `Chain`, `Set`, `Map`, `Text`,
+-     the frozen array, `Option`, a `StringBuilder`, … Never gated: a `List`'s emptiness is one
+-     pointer test, so `list.nil` needs no acknowledgement where `list.size` does, and
+-     `!xs.nil` is the idiom the standard library's `nonEmpty` becomes.
++ entry .nil   `xs.nil`：値が空かどうか。どの形でも O(1)
++     `Vacuiscible` に基づき、すべての `Countable` がこれを継承する。
++     `List`、`Chain`、`Set`、`Map`、`Text`、凍結済みの配列、`Option`、`StringBuilder`、… が対象である。
++     決してゲートされない。
++     `List` が空かどうかはポインター一つの検査なので、`list.size` には承認が必要でも `list.nil` には必要ない。
++     標準ライブラリの `nonEmpty` は `!xs.nil` という慣用句になる。
+
+- entry .size   `xs.size`: the number of elements of any `Countable` value
+-     O(1) on `Sequence`, `Set`, `Map`, `Ledger`, `Text`, the frozen array and the stdlib
+-     `IndexedSeq`; on a `List` it is a traversal and resolves only under `import
+-     dysasymptotics.linearSize`, and on a `Chain` it forces the whole stream and resolves only
+-     under `unboundedSize`. An `Int` counts itself (`5.size` is `5`), and an `Option` has size
+-     zero or one.
++ entry .size   `xs.size`：任意の `Countable` な値の要素数
++     `Sequence`、`Set`、`Map`、`Ledger`、`Text`、凍結済みの配列、標準ライブラリの `IndexedSeq` では O(1) である。
++     `List` では走査であり、`import dysasymptotics.linearSize` のもとでのみ解決される。
++     `Chain` ではストリーム全体を強制評価し、`unboundedSize` のもとでのみ解決される。
++     `Int` は自分自身を数え（`5.size` は `5`）、`Option` のサイズは 0 か 1 である。
+
+- entry .gamut   `xs.gamut`: the whole range of a countable value as an `Interval`, from `Prim`
+-     `Interval.initial(xs.size)`: the ordinals `Prim` up to but excluding `xs.limit`. An
+-     unbranded interval; `extent` is the same range confined to the value, which is what a loop
+-     wants. Gated as `size` is on a `List` or `Chain`.
++ entry .gamut   `xs.gamut`：数えられる値の全範囲を `Prim` から始まる `Interval` として返す
++     `Interval.initial(xs.size)`、すなわち `Prim` から `xs.limit` の手前までの序数である。
++     ブランドのない区間である。
++     `extent` は同じ範囲をその値に限定したものであり、ループが必要とするのはそちらである。
++     `List` や `Chain` では `size` と同様にゲートされる。
+
+- entry .extent   `xs.extent`: the whole range of a value as an interval confined to it, `Interval in xs.type`
+-     The branded `gamut`. Iterating it (`xs.extent.each`, `xs.extent.tabulate`, `xs.extent.all`)
+-     hands the lambda ordinals typed `Ordinal in xs.type`, and `xs(ordinal)` on such an ordinal
+-     is total: a bare element, no bounds check, no `Optional`. `capped(n)`, `beyond(n)`, and
+-     `start thru end` from two confined ordinals narrow it without losing the brand. Sound for
+-     an immutable receiver on a stable path (a `val`); a mutable countable which shrinks after
+-     the brand is minted invalidates it, and a receiver which is an expression rather than a
+-     `val` has no stable path to brand.
++ entry .extent   `xs.extent`：値の全範囲を、その値に限定された区間 `Interval in xs.type` として返す
++     ブランド付きの `gamut` である。
++     これを反復すると（`xs.extent.each`、`xs.extent.tabulate`、`xs.extent.all`）、ラムダには `Ordinal in xs.type` 型の序数が渡され、そのような序数に対する `xs(ordinal)` は全域的である。
++     裸の要素を返し、境界検査も `Optional` もない。
++     `capped(n)`、`beyond(n)`、そして二つの限定された序数からの `start thru end` は、ブランドを失わずに範囲を狭める。
++     安定したパス（`val`）上の不変なレシーバに対して健全である。
++     ブランドの生成後に縮む可変の数えられる値はブランドを無効にし、`val` ではなく式であるレシーバにはブランドを付ける安定したパスがない。
+
+=     `val` has no stable path to brand.
+=
+-     ```scala
++     ```scala
+
+=     `val` has no stable path to brand.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val text = t"hello"
++     val text = t"hello"
+
+-     var count = 0
++     var count = 0
+
+-     text.extent.each: ordinal =>
++     text.extent.each: ordinal =>
+
+-       val char: Char = text(ordinal)   // total: the ordinal is confined to `text`
++       val char: Char = text(ordinal)   // total: the ordinal is confined to `text`
+
+-       if char == 'l' then count += 1
++       if char == 'l' then count += 1
+
+=       if char == 'l' then count += 1
+-     ```
++     ```
+
+- entry .iterate   `xs.iterate { i => … }`: visits every confined ordinal of a value, or of a confined sub-interval
+-     The older spelling of `xs.extent.each`, branding through the receiver rather than the
+-     interval; equivalent, and `xs.iterate(range)` takes an `Interval in xs.type` (from
+-     `extent.capped`, `prefix`, `thru`) to visit part of it. The lambda's ordinal is `Ordinal
+-     in xs.type`, so `xs(i)` inside is total. Compiles to a tight integer loop.
++ entry .iterate   `xs.iterate { i => … }`：値の、または限定された部分区間の、限定された序数をすべて訪れる
++     `xs.extent.each` の古い書き方であり、区間ではなくレシーバを通じてブランドを付ける。
++     両者は等価であり、`xs.iterate(range)` は `Interval in xs.type`（`extent.capped`、`prefix`、`thru` から得る）を受け取って、その一部を訪れる。
++     ラムダの序数は `Ordinal in xs.type` なので、内部の `xs(i)` は全域的である。
++     密な整数ループにコンパイルされる。
+
+- entry .tabulate   `xs.tabulate { i => … }` or `range.tabulate { i => … }`: one element per ordinal, as a `Sequence`
+-     The collecting counterpart of `iterate` and `each`: builds a `Sequence` with one element
+-     per position, in order, with the lambda's ordinal confined to the value (or to the
+-     branded interval's value) so reads inside are bare. `array.tabulate { i => array(i) +
+-     i.n0 }` on `Array(10, 20, 30)` is `Sequence(10, 21, 32)`; `Interval.initial(3).tabulate
+-     (_.n1)` is `Sequence(1, 2, 3)`. Replaces `zipWithIndex` (a raw `Int`) and a mutable
+-     builder. Three overloads: over a `Countable`, over a plain `Interval`, and over an
+-     `Interval in form`.
++ entry .tabulate   `xs.tabulate { i => … }` または `range.tabulate { i => … }`：序数ごとに一つの要素を `Sequence` として返す
++     `iterate` と `each` に対応する収集版である。
++     位置ごとに一つの要素を順に持つ `Sequence` を構築し、ラムダの序数はその値（またはブランド付き区間の値）に限定されるので、内部の読み取りは裸の要素を返す。
++     `Array(10, 20, 30)` に対する `array.tabulate { i => array(i) + i.n0 }` は `Sequence(10, 21, 32)` であり、`Interval.initial(3).tabulate (_.n1)` は `Sequence(1, 2, 3)` である。
++     `zipWithIndex`（生の `Int`）と可変のビルダーを置き換える。
++     オーバーロードは三つある。
++     `Countable` に対するもの、通常の `Interval` に対するもの、`Interval in form` に対するものである。
+
+- entry .spot   `xs.spot(p)`: the first confined ordinal satisfying a predicate, or `Unset`
+-     The safe form of a guarded forward scan whose caller consumes the stopping index: the
+-     predicate sees `Ordinal in xs.type` and the result is `Optional[Ordinal in xs.type]`, so a
+-     read inside `let` is total. `xs.spot(after)(p)` resumes the scan from the limit of an
+-     already-scanned branded interval — the second phase of a two-phase scan. An `Ordinal in
+-     xs.type` stored from `spot(…).or(…)` keeps its brand, so `xs(index)` remains total.
++ entry .spot   `xs.spot(p)`：述語を満たす最初の限定された序数、または `Unset`
++     停止したインデックスを呼び出し元が使う、ガード付きの前方走査の安全な形である。
++     述語は `Ordinal in xs.type` を受け取り、結果は `Optional[Ordinal in xs.type]` なので、`let` の内部での読み取りは全域的である。
++     `xs.spot(after)(p)` は、すでに走査したブランド付き区間の上限から走査を再開する。
++     これは二段階走査の第二段階である。
++     `spot(…).or(…)` から保存された `Ordinal in xs.type` はブランドを保つので、`xs(index)` は全域的なままである。
+
+- entry .prefix   `xs.prefix(p)`: the longest leading run of indexes satisfying a predicate, as a confined interval
+-     The result's `limit` is the stopping index, so `xs.prefix(p)` replaces `while i < size &&
+-     p(i) do i += 1` loops whose callers then slice or resume from `i`. The two-argument form
+-     `xs.prefix(after)(p)` *extends* `after` by the next run — cumulative, so that an empty run
+-     cannot lose its anchor (every empty `Interval` normalises to position zero) and the limit
+-     is always the resume point. A multi-stage scan reads as consecutive stages:
++ entry .prefix   `xs.prefix(p)`：述語を満たすインデックスの最長の先頭部分を、限定された区間として返す
++     結果の `limit` は停止したインデックスである。
++     そのため `xs.prefix(p)` は、呼び出し元が `i` から切り出したり再開したりする `while i < size && p(i) do i += 1` のループを置き換える。
++     二引数の形 `xs.prefix(after)(p)` は、`after` を次の連続部分で*延長*する。
++     これは累積的なので、空の連続部分がアンカーを失うことはなく（空の `Interval` はすべて位置 0 に正規化される）、上限は常に再開地点になる。
++     多段階の走査は、連続する段階として読める。
+
+=     is always the resume point. A multi-stage scan reads as consecutive stages:
+=
+-     ```scala
++     ```scala
+
+=     is always the resume point. A multi-stage scan reads as consecutive stages:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val text = t"  42;"
++     val text = t"  42;"
+
+-     val spaces = text.prefix(text(_) == ' ')               // Interval in text.type: positions 0 and 1
++     val spaces = text.prefix(text(_) == ' ')               // Interval in text.type: positions 0 and 1
+
+-     val digits = text.prefix(spaces)(text(_).isDigit)     // positions 0 to 3, cumulatively
++     val digits = text.prefix(spaces)(text(_).isDigit)     // positions 0 to 3, cumulatively
+
+-     digits.limit.n0                                        // 4: where the terminator starts
++     digits.limit.n0                                        // 4: where the terminator starts
+
+=     digits.limit.n0                                        // 4: where the terminator starts
+-     ```
++     ```
+
+-     Named `prefix` rather than `lead`, which is the complement of `last`.
++     `lead` ではなく `prefix` という名前なのは、`lead` が `last` の補だからである。
+
+- entry .pare   `xs.pare(floor)(p)`: the interval left after trimming a trailing run, never below `floor` elements
+-     The trailing-trim shape: `while count > 1 && xs(count - 1) == 0 do count -= 1` becomes
+-     `xs.pare(1)(xs(_) == 0)`, a confined `Interval in xs.type` from `Prim` to the trimmed
+-     length.
++ entry .pare   `xs.pare(floor)(p)`：末尾の連続部分を削ったあとに残る区間。`floor` 個の要素を下回ることはない
++     末尾を削る形である。
++     `while count > 1 && xs(count - 1) == 0 do count -= 1` は `xs.pare(1)(xs(_) == 0)` になり、`Prim` から削られた長さまでの限定された `Interval in xs.type` を返す。
+
+- entry .retrace   `xs.retrace { i => … }`: `iterate` in reverse, from the last confined ordinal down to the first
++ entry .retrace   `xs.retrace { i => … }`：逆順の `iterate`。最後の限定された序数から最初の序数まで
+
+- entry .each   `interval.each { i => … }`: visits every ordinal of an interval, in order
+-     Two overloads: over a plain `Interval`, the lambda receives a plain `Ordinal`; over a
+-     confined `Interval in form` (from `extent`, `capped`, `beyond`, `prefix`, or `thru`/`till`
+-     on confined endpoints) it receives `Ordinal in form`, so a read inside is total and returns
+-     a bare element. This is the combinator which replaces `var i = 0; while i < xs.length do
+-     … i += 1`, and it compiles to the same tight loop. A same-named `each` on an unrelated type,
+-     reached through a companion the file imports, can outrank the confined overload and
+-     silently strip the brand — the read becomes `Optional` again with no error — which is why
+-     that name is kept off other receivers.
++ entry .each   `interval.each { i => … }`：区間のすべての序数を順に訪れる
++     オーバーロードは二つある。
++     通常の `Interval` に対しては、ラムダは通常の `Ordinal` を受け取る。
++     限定された `Interval in form`（`extent`、`capped`、`beyond`、`prefix`、または限定された端点に対する `thru`/`till` から得る）に対しては `Ordinal in form` を受け取るので、内部の読み取りは全域的であり、裸の要素を返す。
++     これは `var i = 0; while i < xs.length do … i += 1` を置き換えるコンビネーターであり、同じ密なループにコンパイルされる。
++     ファイルがインポートしたコンパニオンを通じて届く、無関係な型に対する同名の `each` は、限定されたオーバーロードより優先されることがあり、ブランドを黙って剥がしてしまう（読み取りはエラーなしに再び `Optional` になる）。
++     そのため、この名前は他のレシーバでは使わないようにしている。
+
+- entry .all   `interval.all(p)`: whether every ordinal satisfies the predicate, stopping at the first that does not
+-     With the same two overloads as `each`, so `xs.extent.all { i => xs(i) == ys.readUnchecked
+-     (i.n0) }` reads totally. The replacement for `xs.stdlib.indices.forall`.
++ entry .all   `interval.all(p)`：すべての序数が述語を満たすかどうか。満たさない最初の序数で止まる
++     `each` と同じ二つのオーバーロードを持つので、`xs.extent.all { i => xs(i) == ys.readUnchecked (i.n0) }` は全域的に読める。
++     `xs.stdlib.indices.forall` の代わりとなる。
+
+- entry .thru   `start thru end`: the interval from one ordinal to another, end inclusive
+-     `Ter thru Sen` is `Ter, Quat, Quin, Sen`. Two ordinals confined to the same value bound an
+-     interval confined to it — every ordinal between two valid indexes is itself valid — which
+-     is the only way to build a confined interval that does not start at `Prim`. Both overloads
+-     are package-level, so that neither outranks the other through the opaque type's implicit
+-     scope.
++ entry .thru   `start thru end`：ある序数から別の序数までの区間。終端を含む
++     `Ter thru Sen` は `Ter, Quat, Quin, Sen` である。
++     同じ値に限定された二つの序数は、その値に限定された区間を境界づける。
++     二つの有効なインデックスの間にある序数はどれも有効だからである。
++     これが、`Prim` から始まらない限定された区間を作る唯一の方法である。
++     どちらのオーバーロードもパッケージレベルにあるので、不透明型の暗黙のスコープを通じて一方が他方より優先されることはない。
+
+- entry .till   `start till end`: the interval from one ordinal to another, end exclusive
+-     `Ter till Sen` is `Ter, Quat, Quin`; `Sec till Sec` is empty. Confined endpoints give a
+-     confined interval, as with `thru`.
++ entry .till   `start till end`：ある序数から別の序数までの区間。終端を含まない
++     `Ter till Sen` は `Ter, Quat, Quin` であり、`Sec till Sec` は空である。
++     `thru` と同様に、限定された端点からは限定された区間が得られる。
+
+- entry .capped   `range.capped(n)`: at most the first `n` ordinals of a confined interval, brand preserved
+-     A sub-interval of a valid extent is itself valid, so clamping keeps the proof:
+-     `array.extent.capped(2).each { i => … array(i) … }` reads the first two positions totally.
+-     A negative `n` is treated as zero.
++ entry .capped   `range.capped(n)`：限定された区間の最初の高々 `n` 個の序数。ブランドは保たれる
++     有効な範囲の部分区間はそれ自体有効なので、切り詰めても証明は保たれる。
++     `array.extent.capped(2).each { i => … array(i) … }` は最初の二つの位置を全域的に読む。
++     負の `n` は 0 として扱われる。
+
+- entry .beyond   `range.beyond(n)`: a confined interval without its first `n` ordinals, brand preserved
+-     The complement of `capped`; together they bound a window at both ends without an
+-     `Optional` in the way. Named `beyond` because `skip`, `keep` and `after` are rudiments'
+-     segment vocabulary and a top-level name in the umbrella may be owned by one module only.
++ entry .beyond   `range.beyond(n)`：最初の `n` 個の序数を除いた限定された区間。ブランドは保たれる
++     `capped` の補であり、両者を組み合わせると、`Optional` に邪魔されずに窓の両端を境界づけられる。
++     `beyond` という名前なのは、`skip`、`keep`、`after` が rudiments の区分の語彙であり、アンブレラのトップレベルの名前は一つのモジュールしか所有できないからである。
+
+- entry .limit   `xs.limit`: the exclusive upper bound of a countable value, the ordinal one past its last element
+-     `xs.size.z`. Gated as `size` is on a `List` or `Chain`. Not confined: it is not a valid
+-     index, though it is a safe place for a scan to *start*.
++ entry .limit   `xs.limit`：数えられる値の、上限を含まない境界。最後の要素の一つ先の序数
++     `xs.size.z` である。
++     `List` や `Chain` では `size` と同様にゲートされる。
++     限定されてはいない。
++     有効なインデックスではないが、走査を*始める*には安全な位置である。
+
+- entry .ult   `xs.ult`: the ordinal of the last ("ultimate") element, confined to the value, or `Unset`
+-     `Optional[Ordinal in xs.type]`, so `xs.ult.let(xs(_))` reads the last element totally. On a
+-     receiver typed `& Populated` (a `List(a, b)` literal, an `occupied` result) it adapts and
+-     returns the bare `Ordinal in xs.type`, so `xs(xs.ult)` needs no `let`. An ordinal rather
+-     than an element: the element is rudiments' `last`. Gated as `size` is on a `List` or
+-     `Chain`.
++ entry .ult   `xs.ult`：最後の（「ultimate」の）要素の序数。値に限定されるか、`Unset`
++     `Optional[Ordinal in xs.type]` なので、`xs.ult.let(xs(_))` は最後の要素を全域的に読む。
++     `& Populated` と型付けされたレシーバ（`List(a, b)` のリテラル、`occupied` の結果）では適応して裸の `Ordinal in xs.type` を返すので、`xs(xs.ult)` に `let` は要らない。
++     要素ではなく序数であり、要素のほうは rudiments の `last` である。
++     `List` や `Chain` では `size` と同様にゲートされる。
+
+- entry .pen   `xs.pen`: the ordinal of the penultimate element, confined, or `Unset` if there are fewer than two
++ entry .pen   `xs.pen`：最後から二番目の要素の序数。限定されるか、二つ未満なら `Unset`
+
+- entry .ant   `xs.ant`: the ordinal of the antepenultimate element, confined, or `Unset` if there are fewer than three
++ entry .ant   `xs.ant`：最後から三番目の要素の序数。限定されるか、三つ未満なら `Unset`
+
+- entry .coextent   `xs.coextent(ys)`: a `Coextent` token if the two values have the same size, else `Unset`
+-     One brand cannot serve two receivers — `Ordinal in xs.type & Ordinal in ys.type` is not a
+-     subtype of either — so a parallel read goes through the token instead, which carries the
+-     one size check and transfers an ordinal between the brands: `shared(i)` turns an `Ordinal
+-     in xs.type` into an `Ordinal in ys.type`, and `shared.each { (i, j) => … }` iterates with
+-     an index proven against both.
++ entry .coextent   `xs.coextent(ys)`：二つの値のサイズが同じなら `Coextent` トークン、そうでなければ `Unset`
++     一つのブランドは二つのレシーバに使えない（`Ordinal in xs.type & Ordinal in ys.type` はどちらの部分型でもない）。
++     そのため並行した読み取りは代わりにトークンを通る。
++     トークンは一度のサイズ検査を担い、ブランド間で序数を移す。
++     `shared(i)` は `Ordinal in xs.type` を `Ordinal in ys.type` に変え、`shared.each { (i, j) => … }` は両方に対して証明されたインデックスで反復する。
+
+=     an index proven against both.
+=
+-     ```scala
++     ```scala
+
+=     an index proven against both.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     an index proven against both.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val left = Array(1, 2, 3)
++     val left = Array(1, 2, 3)
+
+=     an index proven against both.
+=
+=     ```scala
+=     import soundness.*
+=
+=     val left = Array(1, 2, 3)
+-     val right = Array(10, 20, 30)
++     val right = Array(10, 20, 30)
+
+=     an index proven against both.
+=
+=     ```scala
+=     import soundness.*
+=
+=     val left = Array(1, 2, 3)
+=     val right = Array(10, 20, 30)
+-     var total = 0
++     var total = 0
+
+=     an index proven against both.
+=
+=     ```scala
+=     import soundness.*
+=
+=     val left = Array(1, 2, 3)
+=     val right = Array(10, 20, 30)
+=     var total = 0
+=
+-     left.coextent(right).let: shared =>
++     left.coextent(right).let: shared =>
+
+-       shared.each { (i, j) => total += left(i)*right(j) }   // both reads total; total is 140
++       shared.each { (i, j) => total += left(i)*right(j) }   // both reads total; total is 140
+
+=       shared.each { (i, j) => total += left(i)*right(j) }   // both reads total; total is 140
+-     ```
++     ```
+
+- entry .aka   `value.aka["label"]`: a value tagged with a label type, for named contextual parameters
+-     The infix type `subject aka "label"` and the extension which makes one. A lambda written
+-     `(state aka "state", next aka "next") ?=> …` receives its arguments as contextual values
+-     which the names `state` and `next` select, which is how `Interval#fuse` and rudiments'
+-     `fuse` and `each` offer `state`, `next` and `ordinal` without a parameter list. Unwrapped
+-     with `()`.
++ entry .aka   `value.aka["label"]`：ラベル型でタグ付けされた値。名前付きのコンテキストパラメーターのためのもの
++     中置型 `subject aka "label"` と、それを作る拡張である。
++     `(state aka "state", next aka "next") ?=> …` と書いたラムダは、引数をコンテキスト値として受け取り、名前 `state` と `next` がそれを選ぶ。
++     `Interval#fuse` や rudiments の `fuse` と `each` は、こうしてパラメーターリストなしに `state`、`next`、`ordinal` を提供する。
++     `()` で取り出す。
+
+- entry .Ordinal   a position — first, second, third — as a type distinct from `Int`, with no zeroth
+-     `Ordinal` is the opaque type `denominative.internal.Ordinal`, exported here, represented
+-     as the zero-based `Int` it stands for but never interchangeable with one. An `Int` becomes
+-     an ordinal only by naming its convention — `n.z` for a zero-based index, `n.u` for a
+-     one-based count, or `Ordinal.zerary(n)` and `Ordinal.uniary(n)` — and an ordinal becomes
+-     an `Int` again only through `n0` or `n1`, so the convention is written at both crossings
+-     and an off-by-one error has nowhere to hide. The first seven are named: `Prim`, `Sec`,
+-     `Ter`, `Quat`, `Quin`, `Sen` and `Sept`.
++ entry .Ordinal   位置（一番目、二番目、三番目）を、`Int` とは別の型として表す。零番目はない
++     `Ordinal` はここでエクスポートされる不透明型 `denominative.internal.Ordinal` である。
++     それが表す 0 始まりの `Int` で表現されるが、決して `Int` と交換可能ではない。
++     `Int` が序数になるのは慣習を明示したときだけであり（0 始まりのインデックスなら `n.z`、1 始まりの個数なら `n.u`、または `Ordinal.zerary(n)` と `Ordinal.uniary(n)`）、序数が再び `Int` になるのは `n0` か `n1` を通したときだけである。
++     そのため、両方の境界で慣習が書かれ、off-by-one エラーが隠れる場所はない。
++     最初の七つには名前がある。
++     `Prim`、`Sec`、`Ter`、`Quat`、`Quin`、`Sen`、`Sept` である。
+
+=     `Ter`, `Quat`, `Quin`, `Sen` and `Sept`.
+=
+-     ```scala
++     ```scala
+
+=     `Ter`, `Quat`, `Quin`, `Sen` and `Sept`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val third: Ordinal = Ter
++     val third: Ordinal = Ter
+
+-     third.n0               // 2
++     third.n0               // 2
+
+-     third.n1               // 3
++     third.n1               // 3
+
+-     third + 2              // Quin
++     third + 2              // Quin
+
+-     Quin - Ter             // 2: the distance between two ordinals is an Int
++     Quin - Ter             // 2: the distance between two ordinals is an Int
+
+-     third.next             // Quat
++     third.next             // Quat
+
+-     (Ter thru Quin).size   // 3
++     (Ter thru Quin).size   // 3
+
+=     (Ter thru Quin).size   // 3
+-     ```
++     ```
+
+-     Arithmetic is through symbolism's `+` and `-`: adding or subtracting an `Int` gives an
+-     `Ordinal`, subtracting one ordinal from another gives the `Int` distance, and ordinals
+-     compare with `<`, `<=` and the rest through `Comparable` (or, with no typeclass in the
+-     way, the inline `le`, `lt`, `ge` and `gt`). All of these live in the opaque type's own
+-     implicit scope, so they need no import.
++     算術は symbolism の `+` と `-` による。
++     `Int` を足したり引いたりすると `Ordinal` になり、序数から序数を引くと `Int` の距離になる。
++     序数は `Comparable` を通じて `<`、`<=` などで比較される（型クラスが邪魔なら inline の `le`、`lt`、`ge`、`gt` を使う）。
++     これらはすべて不透明型自身の暗黙のスコープにあるので、インポートは要らない。
+
+-     A *confined* ordinal, `Ordinal in xs.type`, is an `Ordinal` whose type records that it
+-     has been proved to index `xs`: `extent`, `spot`, `prefix`, `ult`, `within` and rudiments'
+-     `confine` mint them, and reading `xs` at one is total. Arithmetic on a confined ordinal
+-     is allowed (its branded `+` and `-` are in the companion too), but the result is a plain
+-     `Ordinal`, since it may have left the proven range; `within` re-confines it.
++     *限定された*序数 `Ordinal in xs.type` は、`xs` のインデックスとして有効だと証明されたことを型に記録した `Ordinal` である。
++     `extent`、`spot`、`prefix`、`ult`、`within`、rudiments の `confine` がこれを生成し、それによる `xs` の読み取りは全域的である。
++     限定された序数に対する算術は許される（ブランド付きの `+` と `-` もコンパニオンにある）が、結果は通常の `Ordinal` になる。
++     証明された範囲から出たかもしれないからである。
++     `within` で再び限定できる。
+
+-     An ordinal renders as text only through a `Textualizable` chosen by name from the
+-     `ordinalTextualizables` package, since no one rendering — `3rd`, `ter`, `2♯` — is right
+-     everywhere.
++     序数をテキストとして描画するには、`ordinalTextualizables` パッケージから名前で選んだ `Textualizable` を使うしかない。
++     `3rd`、`ter`、`2♯` のどの描画も、あらゆる場面で正しいわけではないからである。
+
+- entry .Interval   a contiguous range of ordinals, from a start ordinal for a number of positions
+-     `Interval` is the opaque type `denominative.internal.Interval`, exported here: a start
+-     `Ordinal` and a size packed into one `Long`, so an interval costs no allocation. It is
+-     written `Ter thru Sen` (end inclusive), `Ter till Sen` (end exclusive) or `Ter span 3` (a
+-     start and a size), or built from integers with `Interval.zerary(start, end)`,
+-     `Interval.sized(start, count)` and `Interval.initial(size)`. An empty interval normalises
+-     to position zero with size zero, whatever start it was asked for.
++ entry .Interval   序数の連続した範囲。開始の序数から、ある数の位置にわたる
++     `Interval` はここでエクスポートされる不透明型 `denominative.internal.Interval` である。
++     開始の `Ordinal` とサイズを一つの `Long` に詰めたものなので、区間にはアロケーションのコストがかからない。
++     `Ter thru Sen`（終端を含む）、`Ter till Sen`（終端を含まない）、`Ter span 3`（開始とサイズ）と書くか、整数から `Interval.zerary(start, end)`、`Interval.sized(start, count)`、`Interval.initial(size)` で構築する。
++     空の区間は、どの開始位置を求められても、位置 0、サイズ 0 に正規化される。
+
+=     to position zero with size zero, whatever start it was asked for.
+=
+-     ```scala
++     ```scala
+
+=     to position zero with size zero, whatever start it was asked for.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val range: Interval = Ter thru Sen
++     val range: Interval = Ter thru Sen
+
+-     range.start            // Ter
++     range.start            // Ter
+
+-     range.end              // Sen
++     range.end              // Sen
+
+-     range.limit            // Sept: one past the end
++     range.limit            // Sept: one past the end
+
+-     range.size             // 4
++     range.size             // 4
+
+-     range.contains(Quin)   // true
++     range.contains(Quin)   // true
+
+=     range.contains(Quin)   // true
+-     var total = 0
++     var total = 0
+
+-     range.each { ordinal => total += ordinal.n1 }   // total is 18
++     range.each { ordinal => total += ordinal.n1 }   // total is 18
+
+=     range.each { ordinal => total += ordinal.n1 }   // total is 18
+-     ```
++     ```
+
+-     An interval may be *confined*, `Interval in xs.type`, when every ordinal in it is a valid
+-     index of `xs`: `xs.extent`, `xs.prefix(…)`, `xs.pare(…)(…)`, `capped`, `beyond`, and
+-     `thru` or `till` between two confined ordinals produce one. Iterating a confined interval
+-     with `each`, `all` or `tabulate` hands the lambda confined ordinals, so every read inside
+-     is total. The plain `xs.gamut` is the same range without the brand.
++     区間のすべての序数が `xs` の有効なインデックスであるとき、その区間は*限定*されうる（`Interval in xs.type`）。
++     `xs.extent`、`xs.prefix(…)`、`xs.pare(…)(…)`、`capped`、`beyond`、そして二つの限定された序数の間の `thru` や `till` がこれを作る。
++     限定された区間を `each`、`all`、`tabulate` で反復すると、ラムダには限定された序数が渡されるので、内部の読み取りはすべて全域的である。
++     通常の `xs.gamut` は、同じ範囲をブランドなしで表したものである。
+
+- entry .Span   a located range of characters in a source — an offset, a line, lines or an area — in one `Long`
+-     `Span` is the opaque type `denominative.internal.Span`, exported here: a position in a
+-     source text, packed into a single `Long` tagged by a `Span.Mode` in its top three bits, so
+-     that a parser can record a position on every node it builds at no allocation cost. The
+-     five modes are `Empty` (no position: `Span.empty`, all zero, so an absent span needs no
+-     `Optional`), `Offset` (a character offset and a length, for sources without lines), `Line`
+-     (a line, a column and a length within that line), `Lines` (whole lines) and `Area` (a
+-     start line and column to an end line and column).
++ entry .Span   ソース中の位置を持つ文字の範囲（オフセット、行、複数行、領域）を一つの `Long` で表す
++     `Span` はここでエクスポートされる不透明型 `denominative.internal.Span` である。
++     ソーステキスト中の位置を、上位 3 ビットの `Span.Mode` でタグ付けした一つの `Long` に詰めたものであり、パーサーは構築するすべてのノードに、アロケーションのコストなしで位置を記録できる。
++     モードは五つある。
++     `Empty`（位置なし。`Span.empty` はすべて 0 なので、存在しないスパンに `Optional` は要らない）、`Offset`（文字オフセットと長さ。行のないソース向け）、`Line`（行、列、その行の中での長さ）、`Lines`（行全体）、`Area`（開始の行と列から終了の行と列まで）である。
+
+=     start line and column to an end line and column).
+=
+-     ```scala
++     ```scala
+
+=     start line and column to an end line and column).
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val span: Span = Span.line(3.z, 7.z, 4)
++     val span: Span = Span.line(3.z, 7.z, 4)
+
+-     span.mode          // Span.Mode.Line
++     span.mode          // Span.Mode.Line
+
+-     span.startLine     // 3.z
++     span.startLine     // 3.z
+
+-     span.endColumn     // 11.z
++     span.endColumn     // 11.z
+
+-     span.length        // 4
++     span.length        // 4
+
+-     span.offset        // Unset: a line-mode span carries no offset
++     span.offset        // Unset: a line-mode span carries no offset
+
+=     span.offset        // Unset: a line-mode span carries no offset
+-     ```
++     ```
+
+-     Every accessor which a mode does not carry returns `Unset`. Lines, columns and offsets are
+-     zero-based ordinals; the field widths limit an `Offset` span to offsets below 2³¹, a `Line`
+-     span to 2²³ lines and 2¹⁹ columns, and an `Area` to 2²² lines, 2¹⁴ columns and 2¹¹ lines of
+-     extent. The XML, TEL, YAML and source-code parsers record their nodes' positions as spans.
++     モードが持たないアクセサーはすべて `Unset` を返す。
++     行、列、オフセットは 0 始まりの序数である。
++     フィールドの幅により、`Offset` スパンは 2³¹ 未満のオフセット、`Line` スパンは 2²³ 行と 2¹⁹ 列、`Area` は 2²² 行、2¹⁴ 列、2¹¹ 行の広がりに制限される。
++     XML、TEL、YAML、ソースコードのパーサーは、ノードの位置をスパンとして記録する。
+
+- entry .Coextent   evidence that two values have the same size, transferring a confined ordinal between them
+-     `Coextent[form1, form2]` is the opaque type `denominative.internal.Coextent`, exported
+-     here, and represented by the shared size. It is minted only by `xs.coextent(ys)`, which
+-     makes the one size check and returns `Unset` when the sizes differ. A confined ordinal can
+-     carry the brand of one value only — `Ordinal in xs.type & Ordinal in ys.type` is not a
+-     subtype of either — so a parallel read of two values goes through the token: applying it
+-     to an `Ordinal in xs.type` gives an `Ordinal in ys.type`, `invert` gives the token the
+-     other way round, and its `each` iterates the shared extent with an ordinal proven against
+-     each value.
++ entry .Coextent   二つの値のサイズが同じであることの証拠。限定された序数をその間で移す
++     `Coextent[form1, form2]` はここでエクスポートされる不透明型 `denominative.internal.Coextent` であり、共通のサイズで表現される。
++     これを生成するのは `xs.coextent(ys)` だけであり、一度のサイズ検査を行い、サイズが異なれば `Unset` を返す。
++     限定された序数は一つの値のブランドしか持てない（`Ordinal in xs.type & Ordinal in ys.type` はどちらの部分型でもない）ので、二つの値の並行した読み取りはトークンを通る。
++     トークンを `Ordinal in xs.type` に適用すると `Ordinal in ys.type` が得られ、`invert` は逆向きのトークンを返し、その `each` は共通の範囲を、それぞれの値に対して証明された序数で反復する。
+
+=     each value.
+=
+-     ```scala
++     ```scala
+
+=     each value.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     each value.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val left = Array(1, 2, 3)
++     val left = Array(1, 2, 3)
+
+=     each value.
+=
+=     ```scala
+=     import soundness.*
+=
+=     val left = Array(1, 2, 3)
+-     val right = Array(10, 20, 30)
++     val right = Array(10, 20, 30)
+
+=     each value.
+=
+=     ```scala
+=     import soundness.*
+=
+=     val left = Array(1, 2, 3)
+=     val right = Array(10, 20, 30)
+-     var total = 0
++     var total = 0
+
+=     each value.
+=
+=     ```scala
+=     import soundness.*
+=
+=     val left = Array(1, 2, 3)
+=     val right = Array(10, 20, 30)
+=     var total = 0
+=
+-     left.coextent(right).let: shared =>
++     left.coextent(right).let: shared =>
+
+-       left.extent.each { i => total += left(i)*right(shared(i)) }   // total is 140
++       left.extent.each { i => total += left(i)*right(shared(i)) }   // total is 140
+
+=       left.extent.each { i => total += left(i)*right(shared(i)) }   // total is 140
+-     ```
++     ```
+
+- entry .internal   the opaque representations of `Ordinal`, `Interval`, `Span` and `Coextent`, and their operations
++ entry .internal   `Ordinal`、`Interval`、`Span`、`Coextent` の不透明な表現と、その演算
+
+= entry .internal   the opaque representations of `Ordinal`, `Interval`, `Span` and `Coextent`, and their operations
+-   detail
++   detail
+
+-       The object which defines the four opaque types, so that their representations — `Int`,
+-       `Long`, `Long` and `Int` — are visible only here. The types are exported to the
+-       `denominative` package, and their operations are extension methods in this object,
+-       which is part of each opaque type's implicit scope: a user never names `internal`, and
+-       `ordinal.n0`, `interval.size` or `span.mode` resolve with no import.
++       四つの不透明型を定義するオブジェクトであり、その表現（`Int`、`Long`、`Long`、`Int`）はここでしか見えない。
++       型は `denominative` パッケージにエクスポートされ、演算はこのオブジェクトの拡張メソッドである。
++       このオブジェクトは各不透明型の暗黙のスコープの一部なので、ユーザーが `internal` を名指すことはなく、`ordinal.n0`、`interval.size`、`span.mode` はインポートなしに解決される。
+
+-       Branded extensions (taking `Ordinal in form` or `Interval in form`) are deliberately
+-       *not* here: inside this object an opaque type is its representation, so a refinement of
+-       it would collapse. `thru`, `till`, `capped`, `beyond`, `each`, `all` and `tabulate` are
+-       package-level in `denominative` for that reason.
++       ブランド付きの拡張（`Ordinal in form` や `Interval in form` を受け取るもの）は、意図的にここには*置かない*。
++       このオブジェクトの内部では不透明型はその表現そのものなので、その細分化は潰れてしまうからである。
++       そのため、`thru`、`till`、`capped`、`beyond`、`each`、`all`、`tabulate` は `denominative` のパッケージレベルにある。
+
+-   refer denominative.Ordinal
++   refer denominative.Ordinal
+
+-   refer denominative.Interval
++   refer denominative.Interval
+
+-   refer denominative.Span
++   refer denominative.Span
+
+-   refer denominative.Coextent
++   refer denominative.Coextent
+
+-   entry .Ordinal   the opaque ordinal, represented by its zero-based index
++   entry .Ordinal   不透明な序数。0 始まりのインデックスで表現される
+
+=   entry .Ordinal   the opaque ordinal, represented by its zero-based index
+-     detail
++     detail
+
+-         The type which `denominative.Ordinal` exports, with its companion: the integer
+-         constructors and the arithmetic and ordering instances, all in implicit scope.
+-     entry .zerary   `Ordinal.zerary(n)`: the ordinal at zero-based index `n`, as `n.z` writes it
+-     entry .uniary   `Ordinal.uniary(n)`: the ordinal at one-based count `n`, as `n.u` writes it
+-     entry .addable   `ordinal + n`: an `Ordinal` moved forward by an `Int` number of positions
+-     entry .subtractable   `ordinal - other`: the `Int` distance from one ordinal to another
+-     entry .subtractable2   `ordinal - n`: an `Ordinal` moved back by an `Int` number of positions
+-         The result is not clamped: `Prim - 1` is an ordinal before the first, which no
+-         collection will accept as an index. `previous` clamps at `Prim` instead.
+-     entry .comparable   ordinals compare by position, as their zero-based indexes do
+-         Makes `<`, `<=`, `>`, `>=`, `max`, `min` and sorting available for ordinals.
+-     entry .brandedAddable   `ordinal + n` on a confined `Ordinal in form`, giving a plain `Ordinal`
+-         A typeclass's `Self` is exact, so the unbranded `.addable` is not found for a confined
+-         receiver; this twin is, and it drops the brand, since arithmetic may leave the proven
+-         range. Re-confine the result with `within`.
+-     entry .brandedSubtractable   `ordinal - other` between confined ordinals, giving the `Int` distance
+-     entry .brandedSubtractable2   `ordinal - n` on a confined `Ordinal in form`, giving a plain `Ordinal`
+-   entry .Interval   the opaque interval, a start and a size packed into a `Long`
++         `denominative.Ordinal` がエクスポートする型と、そのコンパニオンである。
++         整数からのコンストラクターと、算術と順序のインスタンスがあり、すべて暗黙のスコープにある。
++     entry .zerary   `Ordinal.zerary(n)`：0 始まりのインデックス `n` にある序数。`n.z` と同じ
++     entry .uniary   `Ordinal.uniary(n)`：1 始まりの個数 `n` にある序数。`n.u` と同じ
++     entry .addable   `ordinal + n`：`Int` の数の位置だけ前に進めた `Ordinal`
++     entry .subtractable   `ordinal - other`：ある序数から別の序数までの `Int` の距離
++     entry .subtractable2   `ordinal - n`：`Int` の数の位置だけ後ろに戻した `Ordinal`
++         結果は切り詰められない。
++         `Prim - 1` は最初より前の序数であり、どのコレクションもインデックスとして受け付けない。
++         `previous` は代わりに `Prim` で切り詰める。
++     entry .comparable   序数は、0 始まりのインデックスと同様に位置で比較される
++         序数に対して `<`、`<=`、`>`、`>=`、`max`、`min`、ソートを使えるようにする。
++     entry .brandedAddable   限定された `Ordinal in form` に対する `ordinal + n`。通常の `Ordinal` を返す
++         型クラスの `Self` は厳密なので、限定されたレシーバに対してはブランドのない `.addable` が見つからない。
++         こちらの対は見つかり、ブランドを捨てる。
++         算術によって証明された範囲から出るかもしれないからである。
++         結果は `within` で再び限定する。
++     entry .brandedSubtractable   限定された序数どうしの `ordinal - other`。`Int` の距離を返す
++     entry .brandedSubtractable2   限定された `Ordinal in form` に対する `ordinal - n`。通常の `Ordinal` を返す
++   entry .Interval   不透明な区間。開始とサイズを一つの `Long` に詰めたもの
+
+=   entry .Interval   the opaque interval, a start and a size packed into a `Long`
+-     detail
++     detail
+
+-         The type which `denominative.Interval` exports, with its companion of constructors.
+-     entry .sized   `Interval.sized(start, count)`: `count` positions from zero-based `start`; empty if `count` ≤ 0
+-     entry .initial   `Interval.initial(size)`: the first `size` positions, `Prim` onwards
+-         The range of every valid index of a value of that size, which is how `gamut` is built.
+-     entry .apply   `Interval(start, end)` from two ordinals, end inclusive; `Interval()` is empty
+-     entry .zerary   `Interval.zerary(start, end)`: from zero-based `start` to zero-based `end`, end exclusive
+-   entry .Span   the opaque source span, a mode and its fields packed into a `Long`
++         `denominative.Interval` がエクスポートする型と、そのコンストラクターのコンパニオンである。
++     entry .sized   `Interval.sized(start, count)`：0 始まりの `start` から `count` 個の位置。`count` ≤ 0 なら空
++     entry .initial   `Interval.initial(size)`：最初の `size` 個の位置。`Prim` から始まる
++         そのサイズの値のすべての有効なインデックスの範囲であり、`gamut` はこうして作られる。
++     entry .apply   二つの序数からの `Interval(start, end)`。終端を含む。`Interval()` は空
++     entry .zerary   `Interval.zerary(start, end)`：0 始まりの `start` から 0 始まりの `end` まで。終端を含まない
++   entry .Span   不透明なソーススパン。モードとそのフィールドを一つの `Long` に詰めたもの
+
+=   entry .Span   the opaque source span, a mode and its fields packed into a `Long`
+-     detail
++     detail
+
+-         The type which `denominative.Span` exports, with its companion of constructors. Each
+-         constructor masks its fields to their widths, so an out-of-range line or column is
+-         truncated rather than rejected.
+-     entry .Mode   which fields a `Span` carries: `Empty`, `Offset`, `Line`, `Lines` or `Area`
+-         An enum, comparable with `==`. `Empty` is absence; `Offset` is a character offset and
+-         a length; `Line` a line, a column and a length; `Lines` a start line and a line count;
+-         `Area` a start line and column and an end line and column.
+-     entry .equality   `CanEqual[Span, Span]`, so two spans compare with `==`
+-     entry .empty   the span which records no position, all bits zero
+-     entry .offset   `Span.offset(start, length)`: `length` characters from offset `start`, for a source without lines
+-     entry .line   `Span.line(line, column, length)`: `length` characters within one line
+-     entry .lines   `Span.lines(startLine, lineCount)`: a run of whole lines
+-     entry .area   `Span.area(startLine, startColumn, endLine, endColumn)`: a region across lines
+-         The end line is stored as a delta from the start, so an end line before the start
+-         is treated as the start line.
+-   entry .Coextent   the opaque same-size token, represented by the shared size
++         `denominative.Span` がエクスポートする型と、そのコンストラクターのコンパニオンである。
++         各コンストラクターはフィールドをその幅でマスクするので、範囲外の行や列は拒否されるのではなく切り捨てられる。
++     entry .Mode   `Span` が持つフィールドの種類：`Empty`、`Offset`、`Line`、`Lines`、`Area`
++         `==` で比較できる列挙型である。
++         `Empty` は位置がないこと、`Offset` は文字オフセットと長さ、`Line` は行、列、長さ、`Lines` は開始行と行数、`Area` は開始の行と列と、終了の行と列である。
++     entry .equality   `CanEqual[Span, Span]`。二つのスパンを `==` で比較できる
++     entry .empty   位置を記録しないスパン。すべてのビットが 0
++     entry .offset   `Span.offset(start, length)`：オフセット `start` から `length` 文字。行のないソース向け
++     entry .line   `Span.line(line, column, length)`：一行の中の `length` 文字
++     entry .lines   `Span.lines(startLine, lineCount)`：連続した行全体
++     entry .area   `Span.area(startLine, startColumn, endLine, endColumn)`：複数行にわたる領域
++         終了行は開始行からの差分として保存されるので、開始より前の終了行は開始行として扱われる。
++   entry .Coextent   不透明な同サイズのトークン。共通のサイズで表現される
+
+=   entry .Coextent   the opaque same-size token, represented by the shared size
+-     detail
++     detail
+
+-         The type which `denominative.Coextent` exports. Its operations are extensions in its
+-         companion rather than at package level, because `each` and `size` are already
+-         package-level names in `denominative`.
+-     entry .apply   `shared(ordinal)`: an `Ordinal in form1` transferred to an `Ordinal in form2`
+-     entry .invert   the same token with its two brands swapped, to transfer the other way
+-     entry .size   the size the two values share
+-     entry .each   `shared.each { (i, j) => … }`: every shared position, proven against both values
+-         A tight integer loop; the lambda receives the same position typed once for each
+-         value, so `left(i)` and `right(j)` are both total.
+-   entry .span   `start span size`: the interval of `size` positions beginning at `start`
+-       `Ter span 3` is `Ter thru Quin`. Infix.
+-   entry .le   whether this ordinal is at or before another, without a typeclass
+-   entry .lt   whether this ordinal is strictly before another, without a typeclass
+-   entry .ge   whether this ordinal is at or after another, without a typeclass
+-   entry .gt   whether this ordinal is strictly after another, without a typeclass
+-       The four comparisons are inline extensions which compile to a single integer
+-       comparison, and which work on a confined ordinal as well as a plain one.
+-   entry .next   the ordinal after this one; on an interval, the ordinal after its end (its `limit`)
+-   entry .previous   the ordinal before this one, clamped at `Prim`; on an interval, the one before its start
+-   entry .n0   the ordinal as a zero-based `Int` index: `Prim.n0` is `0`
+-       The crossing back to integers for an API which counts from zero — a JVM array, a
+-       `String` offset, a wire format. `n.z.n0 == n`.
+-   entry .n1   the ordinal as a one-based `Int` count: `Prim.n1` is `1`
+-       The crossing back to integers for a human-facing number — a line number, "the 3rd
+-       field". `n.u.n1 == n`.
+-   entry .subsequent   the interval of `size` positions immediately after an ordinal, or after an interval's end
+-       `Prim.subsequent(3)` is `Sec thru Quat`.
+-   entry .preceding   the interval of up to `size` positions immediately before an ordinal or an interval
+-       Clamped at `Prim`: `Sec.preceding(5)` is just `Prim`.
+-   entry .within   `ordinal.within(xs)`: the ordinal confined to `xs` if it indexes it, else `Unset`
+-       The one bounds check that turns a plain `Ordinal` into an `Ordinal in xs.type`, after
+-       which reads of `xs` at it are total. `xs` needs a `Countable` instance and a stable path
+-       (a `val`). On a confined ordinal it re-confines to another value.
++         `denominative.Coextent` がエクスポートする型である。
++         その演算はパッケージレベルではなくコンパニオンの拡張である。
++         `each` と `size` はすでに `denominative` のパッケージレベルの名前だからである。
++     entry .apply   `shared(ordinal)`：`Ordinal in form1` を `Ordinal in form2` に移したもの
++     entry .invert   二つのブランドを入れ替えた同じトークン。逆向きに移すためのもの
++     entry .size   二つの値に共通のサイズ
++     entry .each   `shared.each { (i, j) => … }`：共通のすべての位置。両方の値に対して証明される
++         密な整数ループである。
++         ラムダは同じ位置を値ごとに一度ずつ型付けして受け取るので、`left(i)` と `right(j)` はどちらも全域的である。
++   entry .span   `start span size`：`start` から始まる `size` 個の位置の区間
++       `Ter span 3` は `Ter thru Quin` である。
++       中置で使う。
++   entry .le   この序数が別の序数と同じ位置かそれより前かどうか。型クラスを使わない
++   entry .lt   この序数が別の序数より厳密に前かどうか。型クラスを使わない
++   entry .ge   この序数が別の序数と同じ位置かそれより後かどうか。型クラスを使わない
++   entry .gt   この序数が別の序数より厳密に後かどうか。型クラスを使わない
++       四つの比較は一つの整数比較にコンパイルされる inline 拡張であり、通常の序数にも限定された序数にも使える。
++   entry .next   この序数の次の序数。区間では、その終端の次の序数（`limit`）
++   entry .previous   この序数の前の序数。`Prim` で切り詰める。区間では、その開始の前の序数
++   entry .n0   序数を 0 始まりの `Int` インデックスとして返す：`Prim.n0` は `0`
++       0 から数える API（JVM の配列、`String` のオフセット、ワイヤ形式）のために整数へ戻る境界である。
++       `n.z.n0 == n` である。
++   entry .n1   序数を 1 始まりの `Int` の個数として返す：`Prim.n1` は `1`
++       人間向けの数（行番号、「3 番目のフィールド」）のために整数へ戻る境界である。
++       `n.u.n1 == n` である。
++   entry .subsequent   序数の直後、または区間の終端の直後にある `size` 個の位置の区間
++       `Prim.subsequent(3)` は `Sec thru Quat` である。
++   entry .preceding   序数または区間の直前にある、高々 `size` 個の位置の区間
++       `Prim` で切り詰められる。
++       `Sec.preceding(5)` は `Prim` だけである。
++   entry .within   `ordinal.within(xs)`：序数が `xs` のインデックスとして有効なら `xs` に限定した序数、そうでなければ `Unset`
++       通常の `Ordinal` を `Ordinal in xs.type` に変える唯一の境界検査であり、それ以降、その序数での `xs` の読み取りは全域的である。
++       `xs` には `Countable` インスタンスと安定したパス（`val`）が必要である。
++       限定された序数に対しては、別の値に限定し直す。
+
+=       (a `val`). On a confined ordinal it re-confines to another value.
+=
+-       ```scala
++       ```scala
+
+=       (a `val`). On a confined ordinal it re-confines to another value.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val array = Array(10, 20, 30)
++       val array = Array(10, 20, 30)
+
+-       Sec.within(array).let(array(_))    // 20
++       Sec.within(array).let(array(_))    // 20
+
+-       Sept.within(array).let(array(_))   // Unset
++       Sept.within(array).let(array(_))   // Unset
+
+=       Sept.within(array).let(array(_))   // Unset
+-       ```
++       ```
+
+-   entry .start   the first ordinal of an interval
+-   entry .size   the number of ordinals in an interval
+-   entry .end   the last ordinal of an interval, inclusive
+-       For an empty interval this is the ordinal before `Prim`; test `nil` first.
+-   entry .limit   the ordinal one past an interval's end, exclusive
+-   entry .contains   whether an ordinal lies within an interval
+-   entry .fuse   `interval.fuse(initial)(…)`: a fold over an interval with `state` and `next` as contextual names
+-       The lambda is a context function of `state` (the accumulated value) and `next` (the
+-       current ordinal), each tagged with `aka` so that the names select them without a
+-       parameter list: `(Sec span 3).fuse(0)(state + next.n0)` is `1 + 2 + 3`, which is `6`.
+-   entry .nil   whether an interval is empty
+-   entry .bits   a span's raw `Long` encoding, for storing or transmitting it
+-   entry .vacant   whether a span is `Span.empty`, recording no position
+-   entry .exists   whether a span records a position of any mode
+-   entry .mode   which of the five `Span.Mode`s a span is in
+-   entry .startLine   the zero-based line a span starts on, or `Unset` for an `Offset` or `Empty` span
+-   entry .startColumn   the zero-based column a span starts at, or `Unset` unless it is a `Line` or `Area` span
+-   entry .endLine   the zero-based line a span ends on, inclusive, or `Unset` for an `Offset` or `Empty` span
+-   entry .endColumn   the column a span ends at, or `Unset` unless it is a `Line` or `Area` span
+-       For a `Line` span it is the start column plus the length, so the column just after the
+-       last character.
+-   entry .length   a span's length in characters, or `Unset` unless it is an `Offset` or `Line` span
+-   entry .offset   a span's zero-based character offset, or `Unset` unless it is an `Offset` span
+-   entry .lineCount   how many lines a span covers, or `Unset` for an `Offset` or `Empty` span
+-   entry .singleLine   whether a span lies on one line: a `Line` span, or an `Area` within one line
++   entry .start   区間の最初の序数
++   entry .size   区間の序数の個数
++   entry .end   区間の最後の序数。終端を含む
++       空の区間では `Prim` の前の序数になるので、先に `nil` を検査すること。
++   entry .limit   区間の終端の一つ先の序数。終端を含まない
++   entry .contains   序数が区間の中にあるかどうか
++   entry .fuse   `interval.fuse(initial)(…)`：`state` と `next` をコンテキストの名前とする区間上の畳み込み
++       ラムダは `state`（累積値）と `next`（現在の序数）のコンテキスト関数であり、それぞれ `aka` でタグ付けされているので、パラメーターリストなしに名前で選べる。
++       `(Sec span 3).fuse(0)(state + next.n0)` は `1 + 2 + 3`、すなわち `6` である。
++   entry .nil   区間が空かどうか
++   entry .bits   スパンの生の `Long` エンコーディング。保存や送信のためのもの
++   entry .vacant   スパンが位置を記録しない `Span.empty` かどうか
++   entry .exists   スパンがいずれかのモードで位置を記録しているかどうか
++   entry .mode   スパンが五つの `Span.Mode` のどれであるか
++   entry .startLine   スパンが始まる 0 始まりの行。`Offset` や `Empty` のスパンでは `Unset`
++   entry .startColumn   スパンが始まる 0 始まりの列。`Line` か `Area` のスパンでなければ `Unset`
++   entry .endLine   スパンが終わる 0 始まりの行（その行を含む）。`Offset` や `Empty` のスパンでは `Unset`
++   entry .endColumn   スパンが終わる列。`Line` か `Area` のスパンでなければ `Unset`
++       `Line` スパンでは開始列に長さを足したもの、つまり最後の文字の直後の列である。
++   entry .length   スパンの文字数での長さ。`Offset` か `Line` のスパンでなければ `Unset`
++   entry .offset   スパンの 0 始まりの文字オフセット。`Offset` スパンでなければ `Unset`
++   entry .lineCount   スパンが覆う行数。`Offset` や `Empty` のスパンでは `Unset`
++   entry .singleLine   スパンが一行に収まっているかどうか：`Line` スパン、または一行内の `Area`
+
+- entry .protointernal   the opaque `Tagged` type behind `aka`
++ entry .protointernal   `aka` の背後にある不透明型 `Tagged`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `subject aka label` is an alias of `Tagged[subject, label]`, and a
+-       tagged value is made with `value.aka["label"]` and unwrapped with `()`.
+-   entry .Tagged   a value tagged at the type level with a label, the representation of `aka`
++       直接使うものではない。
++       `subject aka label` は `Tagged[subject, label]` の別名であり、タグ付きの値は `value.aka["label"]` で作り、`()` で取り出す。
++   entry .Tagged   型レベルでラベルをタグ付けされた値。`aka` の表現
+
+=   entry .Tagged   a value tagged at the type level with a label, the representation of `aka`
+-     detail
++     detail
+
+-         An opaque alias of the value's own type, so tagging costs nothing at runtime.
+-     entry .apply   wraps a value as a `Tagged` with the given label; what `aka` calls
+-   entry .apply   `tagged()`: the value inside a `Tagged`, with its own purity restored
++         値自身の型の不透明な別名なので、タグ付けに実行時のコストはかからない。
++     entry .apply   値を、与えられたラベルを持つ `Tagged` として包む。`aka` が呼ぶもの
++   entry .apply   `tagged()`：`Tagged` の中の値。その値自身の純粋性が復元される
+
+- entry .Zerary   a pattern which matches an `Int` and binds it as a zero-based `Ordinal`
++ entry .Zerary   `Int` にマッチし、それを 0 始まりの `Ordinal` として束縛するパターン
+
+= entry .Zerary   a pattern which matches an `Int` and binds it as a zero-based `Ordinal`
+-   detail
++   detail
+
+-       `case Zerary(ordinal) =>` matches any `Int` and binds `ordinal` as `int.z`, which is how
+-       a match on an integer result — an index returned by a search, for instance — crosses into
+-       ordinals at the pattern rather than in the case body. The match always succeeds, so it
+-       is most useful as one case beside `Unset` in a match on an `Optional[Int]`.
++       `case Zerary(ordinal) =>` は任意の `Int` にマッチし、`ordinal` を `int.z` として束縛する。
++       これにより、整数の結果（たとえば検索が返したインデックス）に対するマッチは、case の本体ではなくパターンの時点で序数に移る。
++       マッチは常に成功するので、`Optional[Int]` に対するマッチで `Unset` と並ぶ一つの case として使うのが最も有用である。
+
+=       is most useful as one case beside `Unset` in a match on an `Optional[Int]`.
+=
+-       ```scala
++       ```scala
+
+=       is most useful as one case beside `Unset` in a match on an `Optional[Int]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val found: Optional[Int] = 4
++       val found: Optional[Int] = 4
+
+-       found.asMatchable match
++       found.asMatchable match
+
+-         case Zerary(position) => position.n1   // 5
++         case Zerary(position) => position.n1   // 5
+
+-         case _                => 0
++         case _                => 0
+
+=         case _                => 0
+-       ```
++       ```
+
+-   entry .Match   the always-succeeding, allocation-free result of `Zerary.unapply`
++   entry .Match   `Zerary.unapply` の、常に成功しアロケーションのない結果
+
+=   entry .Match   the always-succeeding, allocation-free result of `Zerary.unapply`
+-     detail
++     detail
+
+-         A value class, so a successful match allocates nothing.
+-     entry #int   the matched integer
+-     entry #isEmpty   always `false`: the match never fails
+-     entry #get   the matched integer as a zero-based `Ordinal`
+-   entry .unapply   matches an `Int`, yielding it as a zero-based `Ordinal`
++         値クラスなので、成功したマッチは何もアロケーションしない。
++     entry #int   マッチした整数
++     entry #isEmpty   常に `false`：マッチは決して失敗しない
++     entry #get   マッチした整数を 0 始まりの `Ordinal` として返す
++   entry .unapply   `Int` にマッチし、それを 0 始まりの `Ordinal` として返す
+
+- entry .Dysasymptotic   the marker types which gate an operation whose cost grows with data outside its subject
++ entry .Dysasymptotic   対象の外にあるデータに応じてコストが増える演算をゲートするマーカー型
+
+= entry .Dysasymptotic   the marker types which gate an operation whose cost grows with data outside its subject
+-   detail
++   detail
+
+-       An operation on a data structure is *dysasymptotic* when its cost grows (more than
+-       logarithmically) with data that is not its subject — the size of the containing
+-       structure, or the distance of the subject from the point of access — while the subject
+-       itself stays bounded. `size` on a `List` (the subject is one number, the cost is the
+-       whole list), `at(n)` on a `List` (one element, a walk of `n`), `size` on a `Chain` (one
+-       number, a stream forced to its end) are dysasymptotic; `fold` over a `List` is not, since
+-       its cost tracks its subject, however large. It is a property of the operation on a
+-       *representation*: `size` is free on a `Sequence`.
++       データ構造に対する演算は、対象自体は有界なまま、対象ではないデータ（それを含む構造のサイズや、アクセス地点から対象までの距離）に応じてコストが（対数的より速く）増えるとき、*漸近外*（dysasymptotic）である。
++       `List` の `size`（対象は一つの数だが、コストはリスト全体）、`List` の `at(n)`（一つの要素だが、`n` だけ辿る）、`Chain` の `size`（一つの数だが、ストリームを末尾まで強制評価する）は漸近外である。
++       `List` に対する `fold` はそうではない。
++       どれほど大きくても、そのコストは対象に比例するからである。
++       これは*表現*に対する演算の性質であり、`Sequence` では `size` は無償である。
+
+-       So such an operation's typeclass instance takes one of these marker types as a `using`
+-       parameter, and a program opts in by importing the matching given from the
+-       `dysasymptotics` package by name. They are plain markers, not capabilities: they carry
+-       no authority and constrain nothing but resolution, so every acknowledgement of a hidden
+-       cost is a greppable import, ideally block-scoped and commented.
++       そのため、このような演算の型クラスインスタンスは、これらのマーカー型のいずれかを `using` パラメーターとして受け取り、プログラムは対応する given を `dysasymptotics` パッケージから名前でインポートすることでこれを選択する。
++       これらは単純なマーカーであり、ケイパビリティではない。
++       何の権限も持たず、解決以外には何も制約しないので、隠れたコストの承認はすべて grep で探せるインポートになる。
++       インポートは、なるべくブロックのスコープに限定し、コメントを添える。
+
+=       cost is a greppable import, ideally block-scoped and commented.
+=
+-       ```scala
++       ```scala
+
+=       cost is a greppable import, ideally block-scoped and commented.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def summary(names: List[Text]): Text =
++       def summary(names: List[Text]): Text =
+
+-         import dysasymptotics.linearSize   // a short list of names
++         import dysasymptotics.linearSize   // a short list of names
+
+-         t"${names.size} names"
++         t"${names.size} names"
+
+=         t"${names.size} names"
+-       ```
++       ```
+
+-   refer denominative.dysasymptotics
++   refer denominative.dysasymptotics
+
+-   entry .LinearSize   the cost of a strict linked structure's length, or a whole rebuild for a bounded change
+-       Gates `size` on a `List` and everything derived from it (`gamut`, `limit`, `ult`, `pen`,
+-       `ant`, `extent`, `iterate`, `retrace`), `last` and `lead` on a `List`, and the
+-       copy-on-write edits of a frozen array (`define`, `omit`, `lead`, and appending or
+-       prepending an element), each of which copies the whole array. Enabled by
+-       `dysasymptotics.linearSize`.
+-   entry .LinearAccess   the cost of reaching a position in a strict linked structure by walking from its head
+-       Gates positional reads of a `List` (`at`, `apply` and `confine` with an ordinal) and
+-       `define` on a `List`, which rebuilds its prefix. The head is free: reading it is a
+-       bounded walk. Enabled by `dysasymptotics.linearAccess`.
+-   entry .UnboundedSize   the cost of forcing a lazy structure to its end, which never returns on an infinite one
+-       Gates `size`, `last` and `lead` on a `Chain`. Enabled by `dysasymptotics.unboundedSize`.
+-       Emptiness (`nil`) forces only the first cell and is never gated.
+-   entry .LinearScan   the cost of finding a subject by scanning a structure which keeps no index for it
+-       For instance the predecessors of a node in a graph which stores only successors: linear
+-       in the whole graph however few predecessors there are. Enabled by
+-       `dysasymptotics.linearScan`.
++   entry .LinearSize   正格な連結構造の長さのコスト、または有界な変更に対する全体の再構築のコスト
++       `List` の `size` とそこから導かれるすべて（`gamut`、`limit`、`ult`、`pen`、`ant`、`extent`、`iterate`、`retrace`）、`List` の `last` と `lead`、そして凍結済み配列のコピーオンライトの編集（`define`、`omit`、`lead`、要素の末尾への追加や先頭への追加）をゲートする。
++       これらの編集はどれも配列全体をコピーする。
++       `dysasymptotics.linearSize` で有効になる。
++   entry .LinearAccess   正格な連結構造のある位置に、先頭から辿って到達するコスト
++       `List` の位置による読み取り（序数による `at`、`apply`、`confine`）と、プレフィックスを再構築する `List` の `define` をゲートする。
++       先頭は無償である。
++       それを読むのは有界な辿りだからである。
++       `dysasymptotics.linearAccess` で有効になる。
++   entry .UnboundedSize   遅延構造を末尾まで強制評価するコスト。無限の構造では決して戻らない
++       `Chain` の `size`、`last`、`lead` をゲートする。
++       `dysasymptotics.unboundedSize` で有効になる。
++       空であるかどうか（`nil`）は最初のセルしか強制評価せず、決してゲートされない。
++   entry .LinearScan   対象のための索引を持たない構造を走査して対象を見つけるコスト
++       たとえば、後続ノードだけを保存するグラフにおけるノードの先行ノードである。
++       先行ノードがどれほど少なくても、グラフ全体に対して線形である。
++       `dysasymptotics.linearScan` で有効になる。
+
+- entry .dysasymptotics   the four acknowledgements of a hidden cost, each a given to import by name
++ entry .dysasymptotics   隠れたコストの四つの承認。それぞれ名前でインポートする given
+
+= entry .dysasymptotics   the four acknowledgements of a hidden cost, each a given to import by name
+-   detail
++   detail
+
+-       Importing one of these givens opens every operation gated on its `Dysasymptotic` marker
+-       within the import's scope. They must be imported by name — `import
+-       dysasymptotics.linearSize` — because a wildcard `import dysasymptotics.*` does not bring
+-       givens into scope. The package merges with the umbrella's own, so `import soundness.*`
+-       followed by the named import is all that is needed. Scope the import to the block that
+-       accepts the cost, with a comment saying why it is acceptable; and do not dodge a gate
+-       with `.stdlib.length` or the like, which hides the same cost where no one can find it.
++       これらの given のいずれかをインポートすると、そのインポートのスコープ内で、対応する `Dysasymptotic` マーカーでゲートされたすべての演算が開かれる。
++       名前でインポートしなければならない（`import dysasymptotics.linearSize`）。
++       ワイルドカードの `import dysasymptotics.*` は given をスコープに持ち込まないからである。
++       このパッケージはアンブレラ自身のものと統合されるので、`import soundness.*` に続けて名前でインポートすれば足りる。
++       インポートはコストを受け入れるブロックのスコープに限定し、それが許容できる理由を述べるコメントを添える。
++       また、`.stdlib.length` などでゲートを回避してはならない。
++       それは同じコストを誰にも見つけられない場所に隠すだけである。
+
+=       with `.stdlib.length` or the like, which hides the same cost where no one can find it.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Ungated: emptiness is O(1) on every shape
++         label ゲートなし：空かどうかはどの形でも O(1)
+
+=         label Ungated: emptiness is O(1) on every shape
+-         code
++         code
+
+=         label Ungated: emptiness is O(1) on every shape
+=         code
+-             locally:
++             locally:
+
+=         label Ungated: emptiness is O(1) on every shape
+=         code
+=             locally:
+-               val numbers: List[Int] = List(3, 1, 2)
++               val numbers: List[Int] = List(3, 1, 2)
+
+-               numbers.nil   // false
++               numbers.nil   // false
+
+=               numbers.nil   // false
+-       frame
++       frame
+
+-         label Gated: the size of a list is a traversal
++         label ゲートあり：リストのサイズは走査である
+
+=         label Gated: the size of a list is a traversal
+-         code
++         code
+
+=         label Gated: the size of a list is a traversal
+=         code
+-             locally:
++             locally:
+
+=         label Gated: the size of a list is a traversal
+=         code
+=             locally:
+-               val numbers: List[Int] = List(3, 1, 2)
++               val numbers: List[Int] = List(3, 1, 2)
+
+-               numbers.size   // does not compile
++               numbers.size   // does not compile
+
+=               numbers.size   // does not compile
+-       frame
++       frame
+
+-         label Acknowledged in the block that pays for it
++         label コストを支払うブロックで承認する
+
+=         label Acknowledged in the block that pays for it
+-         code
++         code
+
+=         label Acknowledged in the block that pays for it
+=         code
+-             locally:
++             locally:
+
+-               import dysasymptotics.linearSize   // three elements
++               import dysasymptotics.linearSize   // three elements
+
+=               import dysasymptotics.linearSize   // three elements
+-               val numbers: List[Int] = List(3, 1, 2)
++               val numbers: List[Int] = List(3, 1, 2)
+
+-               numbers.size   // 3
++               numbers.size   // 3
+
+=               numbers.size   // 3
+-       ##
++       ##
+
+=               numbers.size   // 3
+=       ##
+-       ```
++       ```
+
+-   refer denominative.Dysasymptotic
++   refer denominative.Dysasymptotic
+
+-   entry .linearSize   opens `size` and the size-derived operations on a `List`, and copying edits of a frozen array
+-   entry .linearAccess   opens positional access into a `List`: `at`, an ordinal `apply`, and `define`
+-   entry .unboundedSize   opens `size`, `last` and `lead` on a `Chain`, which never return on an infinite one
+-   entry .linearScan   opens operations which find their subject by scanning an unindexed structure
++   entry .linearSize   `List` の `size` とサイズから導かれる演算、そして凍結済み配列のコピーする編集を開く
++   entry .linearAccess   `List` への位置によるアクセスを開く：`at`、序数による `apply`、`define`
++   entry .unboundedSize   `Chain` の `size`、`last`、`lead` を開く。無限の `Chain` では決して戻らない
++   entry .linearScan   索引のない構造を走査して対象を見つける演算を開く
+
+- entry .ordinalTextualizables   the renderings of an `Ordinal` as text, each a given to import by name
++ entry .ordinalTextualizables   `Ordinal` のテキストとしての描画。それぞれ名前でインポートする given
+
+= entry .ordinalTextualizables   the renderings of an `Ordinal` as text, each a given to import by name
+-   detail
++   detail
+
+-       An `Ordinal` has no rendering in implicit scope, because none is right everywhere: a
+-       user-facing message wants `3rd`, a debugging trace wants both indexes, a protocol wants
+-       a bare number. Import exactly one of these givens by name — `import
+-       ordinalTextualizables.englishOrdinal` — and `ordinal.textual` uses it; a wildcard import does not
+-       bring givens into scope.
++       `Ordinal` の描画は暗黙のスコープにない。
++       どれもあらゆる場面で正しいわけではないからである。
++       ユーザー向けのメッセージは `3rd` を、デバッグ用のトレースは両方のインデックスを、プロトコルは裸の数値を求める。
++       これらの given のうち一つだけを名前でインポートすれば（`import ordinalTextualizables.englishOrdinal`）、`ordinal.textual` がそれを使う。
++       ワイルドカードのインポートは given をスコープに持ち込まない。
+
+=       bring givens into scope.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative English
++       alternative English
+
+=       alternative English
+-         code
++         code
+
+=       alternative English
+=         code
+-             locally:
++             locally:
+
+-               import ordinalTextualizables.englishOrdinal
++               import ordinalTextualizables.englishOrdinal
+
+-               Ter.textual   // t"3rd"
++               Ter.textual   // t"3rd"
+
+-       alternative Nominal
++       alternative Nominal
+
+=       alternative Nominal
+-         code
++         code
+
+=       alternative Nominal
+=         code
+-             locally:
++             locally:
+
+-               import ordinalTextualizables.nominalOrdinal
++               import ordinalTextualizables.nominalOrdinal
+
+-               Ter.textual   // t"ter"
++               Ter.textual   // t"ter"
+
+-       alternative Zero-based
++       alternative Zero-based
+
+=       alternative Zero-based
+-         code
++         code
+
+=       alternative Zero-based
+=         code
+-             locally:
++             locally:
+
+-               import ordinalTextualizables.zeraryOrdinal
++               import ordinalTextualizables.zeraryOrdinal
+
+-               Ter.textual   // t"2♯"
++               Ter.textual   // t"2♯"
+
+-       alternative Both indexes
++       alternative Both indexes
+
+=       alternative Both indexes
+-         code
++         code
+
+=       alternative Both indexes
+=         code
+-             locally:
++             locally:
+
+-               import ordinalTextualizables.intermediateOrdinal
++               import ordinalTextualizables.intermediateOrdinal
+
+-               Ter.textual   // t"⌞2⌟|⌞3⌟"
++               Ter.textual   // t"⌞2⌟|⌞3⌟"
+
+=               Ter.textual   // t"⌞2⌟|⌞3⌟"
+-       ##
++       ##
+
+=               Ter.textual   // t"⌞2⌟|⌞3⌟"
+=       ##
+-       ```
++       ```
+
+-   entry .nominalOrdinal   the ordinal's name — `prim`, `sec`, … `sept` — and `7.z` beyond the seventh
+-   entry .uniaryOrdinal   the one-based count marked with `♭`: `Prim` is `1♭`
+-   entry .zeraryOrdinal   the zero-based index marked with `♯`: `Prim` is `0♯`
+-   entry .unmarkedUniaryOrdinal   the bare one-based count: `Prim` is `1`
+-   entry .unmarkedZeraryOrdinal   the bare zero-based index: `Prim` is `0`
+-   entry .intermediateOrdinal   both indexes at once, zero-based then one-based: `Prim` is `⌞0⌟|⌞1⌟`
+-   entry .englishOrdinal   the English ordinal suffix: `1st`, `2nd`, `3rd`, `4th`, `11th`, `21st`
+-   entry .englishSuperscriptOrdinal   the English suffix in superscript: `1ˢᵗ`, `2ⁿᵈ`, `3ʳᵈ`, `4ᵗʰ`
+-   entry .frenchOrdinal   the French form: `1ᵉʳ`, then `2ᵉ`, `3ᵉ`, …
+-   entry .italianOrdinal   the Italian form: `1ᵒ`, `2ᵒ`, …
+-   entry .spanishOrdinal   the Spanish form: `1.ᵒ`, `2.ᵒ`, …
+-   entry .russianOrdinal   the Russian form: `1-й`, `2-й`, …
++   entry .nominalOrdinal   序数の名前（`prim`、`sec`、… `sept`）。七番目より先は `7.z`
++   entry .uniaryOrdinal   `♭` を付けた 1 始まりの個数：`Prim` は `1♭`
++   entry .zeraryOrdinal   `♯` を付けた 0 始まりのインデックス：`Prim` は `0♯`
++   entry .unmarkedUniaryOrdinal   印のない 1 始まりの個数：`Prim` は `1`
++   entry .unmarkedZeraryOrdinal   印のない 0 始まりのインデックス：`Prim` は `0`
++   entry .intermediateOrdinal   両方のインデックスを同時に、0 始まり、1 始まりの順で：`Prim` は `⌞0⌟|⌞1⌟`
++   entry .englishOrdinal   英語の序数の接尾辞：`1st`、`2nd`、`3rd`、`4th`、`11th`、`21st`
++   entry .englishSuperscriptOrdinal   上付き文字の英語の接尾辞：`1ˢᵗ`、`2ⁿᵈ`、`3ʳᵈ`、`4ᵗʰ`
++   entry .frenchOrdinal   フランス語の形：`1ᵉʳ`、続いて `2ᵉ`、`3ᵉ`、…
++   entry .italianOrdinal   イタリア語の形：`1ᵒ`、`2ᵒ`、…
++   entry .spanishOrdinal   スペイン語の形：`1.ᵒ`、`2.ᵒ`、…
++   entry .russianOrdinal   ロシア語の形：`1-й`、`2-й`、…
+
+- entry .Countable   a value with a size, and so a range of ordinals: `Self is Countable`
++ entry .Countable   サイズを持ち、したがって序数の範囲を持つ値：`Self is Countable`
+
+= entry .Countable   a value with a size, and so a range of ordinals: `Self is Countable`
+-   detail
++   detail
+
+-       `Countable` is the typeclass behind `size`, and through it behind every operation which
+-       derives ordinals from a size: `gamut`, `extent`, `limit`, `ult`, `pen`, `ant`, `iterate`,
+-       `retrace`, `tabulate`, `spot`, `prefix`, `pare`, `coextent` and `within`, and rudiments'
+-       segment operations. It extends `Vacuiscible`, so a countable value is also testable for
+-       emptiness, by default as `size == 0`.
++       `Countable` は `size` の背後にある型クラスであり、それを通じて、サイズから序数を導くすべての演算の背後にある。
++       `gamut`、`extent`、`limit`、`ult`、`pen`、`ant`、`iterate`、`retrace`、`tabulate`、`spot`、`prefix`、`pare`、`coextent`、`within`、そして rudiments の区分の演算である。
++       `Vacuiscible` を継承するので、数えられる値は空かどうかも検査でき、既定では `size == 0` として検査される。
+
+=       emptiness, by default as `size == 0`.
+=
+-       ```scala
++       ```scala
+
+=       emptiness, by default as `size == 0`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       t"hello".size              // 5
++       t"hello".size              // 5
+
+-       Set(1, 2, 3).size          // 3
++       Set(1, 2, 3).size          // 3
+
+-       Sequence(1, 2).limit       // Ter
++       Sequence(1, 2).limit       // Ter
+
+=       Sequence(1, 2).limit       // Ter
+-       ```
++       ```
+
+-       Instances exist, ungated, for the frozen array (and its `Sized` form), `Sequence`, `Set`,
+-       `Map`, `Ledger`, `Text`, the stdlib `IndexedSeq` and `Iterable`, `Option` (zero or one),
+-       `Int` (which counts itself), and the mutable `ArrayBuffer`, `HashMap`, `TrieMap` and
+-       `StringBuilder`. A `List`'s size is a traversal, so `.list` needs `import
+-       dysasymptotics.linearSize`; a `Chain`'s forces the whole stream, so `.chain` needs
+-       `import dysasymptotics.unboundedSize`. Neither gate applies to `nil`, which `Vacuiscible`
+-       answers in O(1) for both.
++       ゲートなしのインスタンスは、凍結済みの配列（とその `Sized` 形）、`Sequence`、`Set`、`Map`、`Ledger`、`Text`、標準ライブラリの `IndexedSeq` と `Iterable`、`Option`（0 か 1）、`Int`（自分自身を数える）、そして可変の `ArrayBuffer`、`HashMap`、`TrieMap`、`StringBuilder` にある。
++       `List` のサイズは走査なので、`.list` には `import dysasymptotics.linearSize` が必要である。
++       `Chain` のサイズはストリーム全体を強制評価するので、`.chain` には `import dysasymptotics.unboundedSize` が必要である。
++       どちらのゲートも `nil` には適用されず、`Vacuiscible` はどちらに対しても O(1) で答える。
+
+-       A confined ordinal minted over a mutable countable (`ArrayBuffer`, `StringBuilder`) is
+-       valid only while the value does not shrink; the brands are sound for immutable values
+-       held in a `val`.
++       可変の数えられる値（`ArrayBuffer`、`StringBuilder`）に対して生成された限定された序数は、その値が縮まない間だけ有効である。
++       ブランドが健全なのは、`val` に保持された不変な値に対してである。
+
+-   refer denominative.Vacuiscible
++   refer denominative.Vacuiscible
+
+-   refer denominative.size
++   refer denominative.size
+
+-   refer denominative.extent
++   refer denominative.extent
+
+-   entry #size   the number of elements in the value
+-   entry #nil   whether the value is empty; by default, whether its size is zero
+-   entry .frozenArray   a frozen `Array[e]^{}` counts its length, in O(1)
+-   entry .sizedFrozenArray   a `Sized[length]` frozen array, by its own instance
+-       A separate instance rather than a widening of `.frozenArray`: a type variable bounded by
+-       a capturing type would be elaborated as `array^{any.rd}` and fail evidence declared for
+-       the pure array.
+-   entry .int   an `Int` counts itself, so `5.extent` is the first five ordinals
+-   entry .arrayBuffer   a mutable `ArrayBuffer` counts its current length
+-   entry .option   an `Option` has size zero or one
+-   entry .list   a `List`'s size, by traversal; needs `dysasymptotics.linearSize` in scope
+-       Takes a `Dysasymptotic.LinearSize` as a `using` parameter, so `list.size`, `list.gamut`,
+-       `list.extent` and the rest fail to resolve until `import dysasymptotics.linearSize` is
+-       in scope. Subtype-parametric, so a `List[e] & Populated` matches.
+-   entry .iterable   any stdlib `Iterable` counts its size, at whatever cost its own `size` has
+-   entry .map   a `Map` counts its entries, in O(1)
+-   entry .ledger   a `Ledger` counts its entries, in O(1)
+-   entry .trieMap   a concurrent `TrieMap` counts its entries
+-   entry .hashMap   a mutable `HashMap` counts its entries
+-   entry .chain   a `Chain`'s size, by forcing the whole stream; needs `dysasymptotics.unboundedSize` in scope
+-       On an infinite chain this never returns, which is why the gate is the stronger
+-       `Dysasymptotic.UnboundedSize` rather than `LinearSize`.
+-   entry .stringBuilder   a `StringBuilder` counts its current length
+-   entry .set   a `Set` counts its elements, in O(1)
+-   entry .indexedSeq   a stdlib `IndexedSeq` counts its length, in O(1)
+-   entry .sequence   a `Sequence` counts its elements, in O(1)
+-   entry .text   a `Text` counts its UTF-16 code units, in O(1)
+-       The same count as `String#length`: a character outside the Basic Multilingual Plane
+-       counts as two.
++   entry #size   値の要素数
++   entry #nil   値が空かどうか。既定では、サイズが 0 かどうか
++   entry .frozenArray   凍結済みの `Array[e]^{}` はその長さを O(1) で数える
++   entry .sizedFrozenArray   `Sized[length]` の凍結済み配列。専用のインスタンスによる
++       `.frozenArray` を拡張したものではなく、別個のインスタンスである。
++       キャプチャする型で上限づけられた型変数は `array^{any.rd}` として展開され、純粋な配列に対して宣言された証拠に合わなくなるからである。
++   entry .int   `Int` は自分自身を数えるので、`5.extent` は最初の五つの序数である
++   entry .arrayBuffer   可変の `ArrayBuffer` は現在の長さを数える
++   entry .option   `Option` のサイズは 0 か 1 である
++   entry .list   走査による `List` のサイズ。スコープに `dysasymptotics.linearSize` が必要
++       `Dysasymptotic.LinearSize` を `using` パラメーターとして受け取るので、`list.size`、`list.gamut`、`list.extent` などは、`import dysasymptotics.linearSize` がスコープに入るまで解決されない。
++       部分型についてパラメトリックなので、`List[e] & Populated` もマッチする。
++   entry .iterable   標準ライブラリの任意の `Iterable` は、自身の `size` のコストでサイズを数える
++   entry .map   `Map` はエントリーを O(1) で数える
++   entry .ledger   `Ledger` はエントリーを O(1) で数える
++   entry .trieMap   並行の `TrieMap` はエントリーを数える
++   entry .hashMap   可変の `HashMap` はエントリーを数える
++   entry .chain   ストリーム全体を強制評価することによる `Chain` のサイズ。スコープに `dysasymptotics.unboundedSize` が必要
++       無限の `Chain` では決して戻らない。
++       そのため、ゲートは `LinearSize` ではなく、より強い `Dysasymptotic.UnboundedSize` である。
++   entry .stringBuilder   `StringBuilder` は現在の長さを数える
++   entry .set   `Set` は要素を O(1) で数える
++   entry .indexedSeq   標準ライブラリの `IndexedSeq` は長さを O(1) で数える
++   entry .sequence   `Sequence` は要素を O(1) で数える
++   entry .text   `Text` は UTF-16 のコードユニットを O(1) で数える
++       `String#length` と同じ数え方であり、基本多言語面の外にある文字は二つと数えられる。
+
+- entry .Vacuiscible   a value which can be tested for emptiness, in O(1) for every shape: `Self is Vacuiscible`
++ entry .Vacuiscible   空かどうかを、どの形でも O(1) で検査できる値：`Self is Vacuiscible`
+
+= entry .Vacuiscible   a value which can be tested for emptiness, in O(1) for every shape: `Self is Vacuiscible`
+-   detail
++   detail
+
+-       Emptiness alone, split from `Countable` so that a shape whose size is expensive — a
+-       `List`, a `Chain` — can still answer `nil` cheaply and ungated. An operation which needs
+-       only to know whether a value is empty should demand `Vacuiscible`, not `Countable`.
+-       Every `Countable` is `Vacuiscible` through `.countable`; `List` and `Chain` have their
+-       own instances, which win over the gated ones.
++       空であることだけを扱い、`Countable` から分離されている。
++       そのため、サイズのコストが高い形（`List`、`Chain`）でも、`nil` には安価に、ゲートなしで答えられる。
++       値が空かどうかだけを知ればよい演算は、`Countable` ではなく `Vacuiscible` を要求すべきである。
++       すべての `Countable` は `.countable` を通じて `Vacuiscible` であり、`List` と `Chain` は専用のインスタンスを持ち、それがゲートされたインスタンスに優先する。
+
+=       own instances, which win over the gated ones.
+=
+-       ```scala
++       ```scala
+
+=       own instances, which win over the gated ones.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val names: List[Text] = List(t"Hamlet")
++       val names: List[Text] = List(t"Hamlet")
+
+-       names.nil                 // false, with no dysasymptotics import
++       names.nil                 // false, with no dysasymptotics import
+
+-       Chain.from(List(1)).nil   // false: forces only the first cell
++       Chain.from(List(1)).nil   // false: forces only the first cell
+
+=       Chain.from(List(1)).nil   // false: forces only the first cell
+-       ```
++       ```
+
+-   refer denominative.nil
++   refer denominative.nil
+
+=   refer denominative.nil
+-   refer denominative.Countable
++   refer denominative.Countable
+
+-   entry #nil   whether the value has no elements
+-   entry .countable   every `Countable` is `Vacuiscible`, answering `nil` through its own instance
+-       Needed because implicit search for `X is Vacuiscible` consults the companions of
+-       `Vacuiscible` and its parents, never those of its subtypes, so `Countable`'s instances
+-       would otherwise not be found.
+-   entry .list   a `List`'s emptiness, one pointer test; ungated, unlike its size
+-   entry .chain   a `Chain`'s emptiness, forcing only its first cell; ungated, unlike its size
++   entry #nil   値が要素を持たないかどうか
++   entry .countable   すべての `Countable` は `Vacuiscible` であり、自身のインスタンスを通じて `nil` に答える
++       `X is Vacuiscible` の暗黙の探索は `Vacuiscible` とその親のコンパニオンを調べ、その部分型のコンパニオンは決して調べない。
++       そのため、これがなければ `Countable` のインスタンスは見つからない。
++   entry .list   `List` が空かどうか。ポインター一つの検査であり、サイズとは違ってゲートされない
++   entry .chain   `Chain` が空かどうか。最初のセルだけを強制評価し、サイズとは違ってゲートされない
+
+- entry .Applicable   a value which can be read at an index or key: `Self is Applicable by Operand to Result`
++ entry .Applicable   インデックスやキーで読み取れる値：`Self is Applicable by Operand to Result`
+
+= entry .Applicable   a value which can be read at an index or key: `Self is Applicable by Operand to Result`
+-   detail
++   detail
+
+-       `Applicable` is the read side of indexing: `#contains` says whether an index is valid
+-       and `#access` reads at a valid one. It is what rudiments' `xs(index)`, `xs.at(index)`,
+-       `xs.defines(key)`, `xs.confine(index)` and `xs.pick(index)` resolve, and the reason
+-       those reads can be total for a confined ordinal and `Optional` for any other: `access`
+-       itself is only ever called behind `contains` or behind a proof. The `Operand` is an
+-       `Ordinal` for positional shapes and the key type for keyed ones.
++       `Applicable` はインデックス付けの読み取り側である。
++       `#contains` はインデックスが有効かどうかを答え、`#access` は有効なインデックスで読み取る。
++       rudiments の `xs(index)`、`xs.at(index)`、`xs.defines(key)`、`xs.confine(index)`、`xs.pick(index)` が解決するのはこれであり、それらの読み取りが限定された序数に対しては全域的で、それ以外に対しては `Optional` になる理由もここにある。
++       `access` 自体は、必ず `contains` の後ろか証明の後ろでしか呼ばれない。
++       `Operand` は、位置による形では `Ordinal`、キーによる形ではキーの型である。
+
+=       `Ordinal` for positional shapes and the key type for keyed ones.
+=
+-       ```scala
++       ```scala
+
+=       `Ordinal` for positional shapes and the key type for keyed ones.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val numbers = Sequence(10, 20, 30)
++       val numbers = Sequence(10, 20, 30)
+
+-       val ages = Map(t"Hamlet" -> 30)
++       val ages = Map(t"Hamlet" -> 30)
+
+-       numbers.at(Sec)            // 20
++       numbers.at(Sec)            // 20
+
+-       numbers.at(Sept)           // Unset
++       numbers.at(Sept)           // Unset
+
+-       ages.at(t"Hamlet")         // 30
++       ages.at(t"Hamlet")         // 30
+
+-       ages.defines(t"Yorick")    // false
++       ages.defines(t"Yorick")    // false
+
+=       ages.defines(t"Yorick")    // false
+-       ```
++       ```
+
+-       Instances: the frozen array and its `Sized` form, `Sequence`, the stdlib `IndexedSeq`
+-       and `Text` (by `Char`), by ordinal; `Map`, `Ledger` and the mutable `HashMap`, by key;
+-       and `List`, by ordinal, behind `import dysasymptotics.linearAccess`, since reaching a
+-       position walks from the head.
++       インスタンスは次のとおりである。
++       凍結済みの配列とその `Sized` 形、`Sequence`、標準ライブラリの `IndexedSeq`、`Text`（`Char` による）は序数による。
++       `Map`、`Ledger`、可変の `HashMap` はキーによる。
++       `List` は序数によるが、`import dysasymptotics.linearAccess` が必要である。
++       位置に到達するには先頭から辿るからである。
+
+=       position walks from the head.
+-   refer denominative.Definable
++   refer denominative.Definable
+
+=   refer denominative.Definable
+-   refer denominative.Countable
++   refer denominative.Countable
+
+-   entry #contains   whether the index is valid for the value: in range, or a present key
+-   entry #access   the element at an index already known to be valid
+-       Unchecked: called on an invalid index it may throw. Reach it through rudiments'
+-       `apply`, `at` or `pick`, which check or prove the index first.
+-   entry .frozenArray   a frozen `Array[e]^{}` read at an ordinal, by a bounds check and an unchecked read
+-   entry .sizedFrozenArray   a `Sized[length]` frozen array read at a variable ordinal
+-       A literal index into a `Sized` array is checked at compile time and never reaches this
+-       instance; a variable ordinal is still a bounds-checked, `Optional` read.
+-   entry .indexedSeq   a stdlib `IndexedSeq` read at an ordinal
+-   entry .sequence   a `Sequence` read at an ordinal, in effectively constant time
+-   entry .list   a `List` read at an ordinal by walking from its head; needs `dysasymptotics.linearAccess`
+-   entry .text   a `Text` read at an ordinal, giving a `Char` (a UTF-16 code unit)
+-   entry .map   a `Map` read at a key, giving its value
+-   entry .ledger   a `Ledger` read at a key, giving its value
+-   entry .hashMap   a mutable `HashMap` read at a key, giving its value
++   entry #contains   インデックスがその値に対して有効かどうか：範囲内であるか、存在するキーであるか
++   entry #access   有効だとすでにわかっているインデックスにある要素
++       検査はしない。
++       無効なインデックスで呼ぶと例外を投げることがある。
++       インデックスを先に検査または証明する rudiments の `apply`、`at`、`pick` を通じて使うこと。
++   entry .frozenArray   序数による凍結済みの `Array[e]^{}` の読み取り。境界検査と検査なしの読み取りによる
++   entry .sizedFrozenArray   変数の序数による `Sized[length]` の凍結済み配列の読み取り
++       `Sized` 配列へのリテラルのインデックスはコンパイル時に検査され、このインスタンスには届かない。
++       変数の序数は依然として境界検査される `Optional` の読み取りである。
++   entry .indexedSeq   序数による標準ライブラリの `IndexedSeq` の読み取り
++   entry .sequence   序数による `Sequence` の読み取り。実質的に定数時間
++   entry .list   先頭から辿ることによる、序数での `List` の読み取り。`dysasymptotics.linearAccess` が必要
++   entry .text   序数による `Text` の読み取り。`Char`（UTF-16 のコードユニット）を返す
++   entry .map   キーによる `Map` の読み取り。その値を返す
++   entry .ledger   キーによる `Ledger` の読み取り。その値を返す
++   entry .hashMap   キーによる可変の `HashMap` の読み取り。その値を返す
+
+- entry .Definable   copy-on-write update at an index or key: `Self is Definable by Operand to Result`
++ entry .Definable   インデックスやキーでのコピーオンライトの更新：`Self is Definable by Operand to Result`
+
+= entry .Definable   copy-on-write update at an index or key: `Self is Definable by Operand to Result`
+-   detail
++   detail
+
+-       The write twin of `Applicable`, behind rudiments' `xs.define(index, value)`: a copy of
+-       the value in which reading at `index` gives `value`. It is total: an out-of-range
+-       ordinal returns the value unchanged, and an absent key adds an entry.
++       `Applicable` の書き込み側の対であり、rudiments の `xs.define(index, value)` の背後にある。
++       `index` で読むと `value` が得られる、値のコピーを返す。
++       全域的である。
++       範囲外の序数では値を変えずに返し、存在しないキーではエントリーを追加する。
+
+=       ordinal returns the value unchanged, and an absent key adds an entry.
+=
+-       ```scala
++       ```scala
+
+=       ordinal returns the value unchanged, and an absent key adds an entry.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Sequence(1, 2, 3).define(Sec, 20)        // Sequence(1, 20, 3)
++       Sequence(1, 2, 3).define(Sec, 20)        // Sequence(1, 20, 3)
+
+-       Sequence(1, 2, 3).define(Sept, 20)       // Sequence(1, 2, 3)
++       Sequence(1, 2, 3).define(Sept, 20)       // Sequence(1, 2, 3)
+
+-       Map(t"a" -> 1).define(t"b", 2)           // Map(t"a" -> 1, t"b" -> 2)
++       Map(t"a" -> 1).define(t"b", 2)           // Map(t"a" -> 1, t"b" -> 2)
+
+=       Map(t"a" -> 1).define(t"b", 2)           // Map(t"a" -> 1, t"b" -> 2)
+-       ```
++       ```
+
+-       Instances exist for `Sequence`, the stdlib `IndexedSeq`, `Map` and `Ledger`, ungated;
+-       for `List` behind `dysasymptotics.linearAccess`, since it rebuilds the prefix; and for
+-       the frozen array behind `dysasymptotics.linearSize`, since every edit copies the whole
+-       array.
++       インスタンスは、`Sequence`、標準ライブラリの `IndexedSeq`、`Map`、`Ledger` にゲートなしで存在する。
++       `List` には `dysasymptotics.linearAccess` のもとで存在する。
++       プレフィックスを再構築するからである。
++       凍結済みの配列には `dysasymptotics.linearSize` のもとで存在する。
++       どの編集も配列全体をコピーするからである。
+
+-   refer denominative.Applicable
++   refer denominative.Applicable
+
+-   refer denominative.Omissible
++   refer denominative.Omissible
+
+-   entry #define   the value with `result` at `index`
+-   entry .sequence   a `Sequence` with one position replaced; unchanged if the ordinal is out of range
+-   entry .frozenArray   a fresh frozen array with one position replaced; needs `dysasymptotics.linearSize`
+-       Needs a `ClassTag` for the element. The copy is fresh, so freezing it needs no proof.
+-   entry .list   a `List` with one position replaced, rebuilding its prefix; needs `dysasymptotics.linearAccess`
+-   entry .indexedSeq   a stdlib `IndexedSeq` with one position replaced
+-   entry .map   a `Map` with a key set to a value, added if absent
+-   entry .ledger   a `Ledger` with a key set to a value; a new key goes at the end of the order
++   entry #define   `index` に `result` を置いた値
++   entry .sequence   一つの位置を置き換えた `Sequence`。序数が範囲外なら変わらない
++   entry .frozenArray   一つの位置を置き換えた新しい凍結済み配列。`dysasymptotics.linearSize` が必要
++       要素の `ClassTag` が必要である。
++       コピーは新しいものなので、凍結するのに証明は要らない。
++   entry .list   一つの位置を置き換えた `List`。プレフィックスを再構築する。`dysasymptotics.linearAccess` が必要
++   entry .indexedSeq   一つの位置を置き換えた標準ライブラリの `IndexedSeq`
++   entry .map   キーに値を設定した `Map`。キーが存在しなければ追加する
++   entry .ledger   キーに値を設定した `Ledger`。新しいキーは順序の末尾に置かれる
+
+- entry .Omissible   copy-on-write removal at an index or key: `Self is Omissible by Operand`
++ entry .Omissible   インデックスやキーでのコピーオンライトの削除：`Self is Omissible by Operand`
+
+= entry .Omissible   copy-on-write removal at an index or key: `Self is Omissible by Operand`
+-   detail
++   detail
+
+-       The inverse of `define`, behind rudiments' `xs.omit(index)`. It is a typeclass of its
+-       own because linked and sequential shapes cannot offer it honestly: removing a position
+-       shifts every later index, so `List` and `Sequence` have no instance, and `omit` does not
+-       compile on them. The frozen array is the exception, since every edit of it copies the
+-       whole array anyway, so removing a slot costs what `define` does; it is gated on the same
+-       `dysasymptotics.linearSize`. An out-of-range ordinal, or an absent key, returns the value
+-       unchanged.
++       `define` の逆であり、rudiments の `xs.omit(index)` の背後にある。
++       独立した型クラスになっているのは、連結した形や連続した形ではこれを正直に提供できないからである。
++       位置を削除すると以降のすべてのインデックスがずれるので、`List` と `Sequence` にはインスタンスがなく、それらに対する `omit` はコンパイルされない。
++       凍結済みの配列は例外である。
++       どの編集もいずれにせよ配列全体をコピーするので、スロットの削除は `define` と同じコストになり、同じ `dysasymptotics.linearSize` でゲートされる。
++       範囲外の序数や存在しないキーでは、値を変えずに返す。
+
+=       unchanged.
+=
+-       ```scala
++       ```scala
+
+=       unchanged.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Map(t"a" -> 1, t"b" -> 2).omit(t"a")   // Map(t"b" -> 2)
++       Map(t"a" -> 1, t"b" -> 2).omit(t"a")   // Map(t"b" -> 2)
+
+=       Map(t"a" -> 1, t"b" -> 2).omit(t"a")   // Map(t"b" -> 2)
+-       ```
++       ```
+
+=       ```
+-   refer denominative.Definable
++   refer denominative.Definable
+
+-   entry #omit   the value without the element at `index`
+-   entry .frozenArray   a fresh frozen array one slot shorter; needs `dysasymptotics.linearSize` and a `ClassTag`
+-   entry .map   a `Map` without a key
+-   entry .ledger   a `Ledger` without a key, the remaining order kept
++   entry #omit   `index` にある要素を除いた値
++   entry .frozenArray   スロットが一つ少ない新しい凍結済み配列。`dysasymptotics.linearSize` と `ClassTag` が必要
++   entry .map   キーを除いた `Map`
++   entry .ledger   キーを除いた `Ledger`。残りの順序は保たれる
+
+- entry .Terminable   a value whose last element can be read: `Self is Terminable by Operand`
++ entry .Terminable   最後の要素を読み取れる値：`Self is Terminable by Operand`
+
+= entry .Terminable   a value whose last element can be read: `Self is Terminable by Operand`
+-   detail
++   detail
+
+-       The back end of a value, behind rudiments' `xs.last` (which returns `Unset` on an empty
+-       value, and a bare element on one typed `& Populated`). A separate typeclass from
+-       `Truncable` because the two costs differ: an array's last element is one read, while
+-       dropping it copies the array. `last` is gated wherever it is not a peek.
++       値の後端であり、rudiments の `xs.last` の背後にある（空の値では `Unset` を、`& Populated` と型付けされた値では裸の要素を返す）。
++       `Truncable` とは別の型クラスなのは、二つのコストが異なるからである。
++       配列の最後の要素は一度の読み取りだが、それを捨てると配列がコピーされる。
++       `last` は、それが単なる覗き見でない場所ではどこでもゲートされる。
+
+=       dropping it copies the array. `last` is gated wherever it is not a peek.
+=
+-       ```scala
++       ```scala
+
+=       dropping it copies the array. `last` is gated wherever it is not a peek.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Sequence(1, 2, 3).last   // 3
++       Sequence(1, 2, 3).last   // 3
+
+-       t"hello".last            // 'o'
++       t"hello".last            // 'o'
+
+=       t"hello".last            // 'o'
+-       ```
++       ```
+
+-       Instances: `Sequence`, the frozen array and its `Sized` form, `Text` (by `Char`) and the
+-       stdlib `IndexedSeq`, in O(1); `List` behind `dysasymptotics.linearSize`, since it walks
+-       to the end; and `Chain` behind `dysasymptotics.unboundedSize`, since it forces the whole
+-       stream.
++       インスタンスは次のとおりである。
++       `Sequence`、凍結済みの配列とその `Sized` 形、`Text`（`Char` による）、標準ライブラリの `IndexedSeq` は O(1) である。
++       `List` は `dysasymptotics.linearSize` のもとにある。
++       末尾まで辿るからである。
++       `Chain` は `dysasymptotics.unboundedSize` のもとにある。
++       ストリーム全体を強制評価するからである。
+
+-   refer denominative.Truncable
++   refer denominative.Truncable
+
+-   entry #last   the last element of a non-empty value
+-   entry .sequence   a `Sequence`'s last element, in O(1)
+-   entry .frozenArray   a frozen array's last slot, in O(1)
+-   entry .sizedFrozenArray   a `Sized[length]` frozen array's last slot, by its own instance
+-   entry .text   a `Text`'s last `Char`
+-   entry .indexedSeq   a stdlib `IndexedSeq`'s last element
+-   entry .list   a `List`'s last element, by walking to its end; needs `dysasymptotics.linearSize`
+-   entry .chain   a `Chain`'s last element, by forcing it to its end; needs `dysasymptotics.unboundedSize`
++   entry #last   空でない値の最後の要素
++   entry .sequence   `Sequence` の最後の要素。O(1)
++   entry .frozenArray   凍結済み配列の最後のスロット。O(1)
++   entry .sizedFrozenArray   `Sized[length]` の凍結済み配列の最後のスロット。専用のインスタンスによる
++   entry .text   `Text` の最後の `Char`
++   entry .indexedSeq   標準ライブラリの `IndexedSeq` の最後の要素
++   entry .list   末尾まで辿ることによる `List` の最後の要素。`dysasymptotics.linearSize` が必要
++   entry .chain   末尾まで強制評価することによる `Chain` の最後の要素。`dysasymptotics.unboundedSize` が必要
+
+- entry .Truncable   a value which can drop its last element: `Self is Truncable to Result`
++ entry .Truncable   最後の要素を捨てられる値：`Self is Truncable to Result`
+
+= entry .Truncable   a value which can drop its last element: `Self is Truncable to Result`
+-   detail
++   detail
+
+-       `last`'s complement, behind rudiments' `xs.lead`: everything but the last element, so
+-       that `lead` followed by `last` is the whole value. The `Result` is a plain type rather
+-       than `Self`, because dropping an element may empty the value and a `& Populated` brand
+-       must not survive.
++       `last` の補であり、rudiments の `xs.lead` の背後にある。
++       最後の要素以外のすべてを返すので、`lead` に `last` を続けると値全体になる。
++       `Result` は `Self` ではなく通常の型である。
++       要素を捨てると値が空になることがあり、`& Populated` のブランドが残ってはならないからである。
+
+=       must not survive.
+=
+-       ```scala
++       ```scala
+
+=       must not survive.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Sequence(1, 2, 3).lead   // Sequence(1, 2)
++       Sequence(1, 2, 3).lead   // Sequence(1, 2)
+
+-       t"hello".lead            // t"hell"
++       t"hello".lead            // t"hell"
+
+=       t"hello".lead            // t"hell"
+-       ```
++       ```
+
+-       Instances: `Sequence` (amortised O(1)), `Text` and the stdlib `IndexedSeq`, ungated;
+-       `List` and the frozen array behind `dysasymptotics.linearSize`, since each copies its
+-       whole structure; and `Chain` behind `dysasymptotics.unboundedSize`.
++       インスタンスは次のとおりである。
++       `Sequence`（償却 O(1)）、`Text`、標準ライブラリの `IndexedSeq` はゲートなしである。
++       `List` と凍結済みの配列は `dysasymptotics.linearSize` のもとにある。
++       どちらも構造全体をコピーするからである。
++       `Chain` は `dysasymptotics.unboundedSize` のもとにある。
+
+-   refer denominative.Terminable
++   refer denominative.Terminable
+
+-   entry #lead   the value without its last element
+-   entry .sequence   a `Sequence` without its last element, in amortised O(1)
+-   entry .text   a `Text` without its last `Char`
+-   entry .indexedSeq   a stdlib `IndexedSeq` without its last element
+-   entry .list   a `List` without its last element, copying its spine; needs `dysasymptotics.linearSize`
+-   entry .frozenArray   a fresh frozen array one slot shorter; needs `dysasymptotics.linearSize` and a `ClassTag`
+-       An empty array truncates to an empty array.
+-   entry .chain   a `Chain` without its last element; needs `dysasymptotics.unboundedSize`
++   entry #lead   最後の要素を除いた値
++   entry .sequence   最後の要素を除いた `Sequence`。償却 O(1)
++   entry .text   最後の `Char` を除いた `Text`
++   entry .indexedSeq   最後の要素を除いた標準ライブラリの `IndexedSeq`
++   entry .list   最後の要素を除いた `List`。その骨格をコピーする。`dysasymptotics.linearSize` が必要
++   entry .frozenArray   スロットが一つ少ない新しい凍結済み配列。`dysasymptotics.linearSize` と `ClassTag` が必要
++       空の配列は空の配列に切り詰められる。
++   entry .chain   最後の要素を除いた `Chain`。`dysasymptotics.unboundedSize` が必要

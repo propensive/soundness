@@ -1,0 +1,269 @@
+orthant 1 language
+
+- ## Internationalization
++ ## 国際化
+
+- ### About
++ ### 概要
+
+- A program which speaks several languages must supply a translation of every message, in
+- every language which it claims to support. The gaps are the bug: the missing French
+- translation is discovered by a French user.
++ 複数の言語を話すプログラムは、サポートすると主張するすべての言語で、すべてのメッセージの翻訳を提供しなければならない。
++ 抜けがバグである。フランス語の翻訳がないことは、フランス語のユーザーによって発見される。
+
+- Here the set of languages is tracked in the type of the multilingual value itself, so a set
+- of translations which lacks a required language is a compile error, not a fallback at
+- [runtime]. A multilingual value is a `Polyglot`, whose type parameter records exactly which
+- languages it has. Selecting a language needs a `Locale`, and a `Locale` for a language which
+- the value does not have does not typecheck.
++ ここでは、言語の集合は多言語の値そのものの型で追跡されるので、必要な言語を欠く翻訳の集まりは、[実行時]の代替ではなくコンパイルエラーになる。
++ 多言語の値は `Polyglot` であり、その型パラメーターは、それがどの言語を持つかを正確に記録する。
++ 言語を選ぶには `Locale` が必要であり、値が持たない言語の `Locale` は型検査を通らない。
+
+- ### On multilingual text
++ ### 多言語のテキストについて
+
+- The usual approach to translation is a resource bundle: a file of keyed strings for each
+- language, looked up by name at runtime. Nothing connects the keys in the code to the keys in
+- the files. A missing translation, a misspelled key, or a file for one language which lags
+- behind the others, all surface as fallbacks at runtime, usually in front of the one user who
+- chose that language.
++ 翻訳へのよくある取り組み方は、リソースバンドルである。言語ごとにキー付きの文字列のファイルを用意し、実行時に名前で引く。
++ コード内のキーとファイル内のキーを結び付けるものは何もない。
++ 翻訳の欠落、キーの綴りの誤り、ある言語のファイルがほかより遅れていることは、どれも実行時の代替として表れ、たいていはその言語を選んだ一人のユーザーの目の前で起きる。
+
+- Here the translations are in the code, and the set of languages is in the type:
++ ここでは、翻訳はコードの中にあり、言語の集合は型の中にある。
+
+- - Each language is a value, which lifts a translation into a `Polyglot` of that one language.
+- - Alternatives are combined with `|`, and the combined type records all the languages which
+-   were provided.
+- - Code which requires a particular set of languages states it in a type, and only a complete
+-   translation satisfies it.
++ - 各言語は値であり、翻訳をその一言語の `Polyglot` に持ち上げる。
++ - 選択肢は `|` で組み合わされ、組み合わせた型は提供されたすべての言語を記録する。
++ - 特定の言語の集合を必要とするコードはそれを型で述べ、完全な翻訳だけがそれを満たす。
+
+- A locale which is a type parameter, not a string at runtime, means that a missing
+- translation is a compile error, which is
+- [safety by construction](../../philosophy/safety-by-construction.md).
++ ロケールが実行時の文字列ではなく型パラメーターであるということは、翻訳の欠落がコンパイルエラーになるということであり、これは [構築による安全性](../../philosophy/safety-by-construction.md) である。
+
+- Everything comes from the `soundness` package. The second import lets the samples print
+- their results:
++ すべては `soundness` パッケージから来る。
++ 二つ目の import は、サンプルが結果を表示できるようにする。
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Providing translations
++ ### 翻訳を提供する
+
+- Each supported language is a value which wraps a translation: `en`, `fr`, `de`, `es` and
+- `pl`. Translations are combined with `|`, and the type records what has been provided:
++ サポートされる各言語は、翻訳を包む値である。`en`、`fr`、`de`、`es`、`pl` がある。
++ 翻訳は `|` で組み合わされ、型は何が提供されたかを記録する。
+
+= `pl`. Translations are combined with `|`, and the type records what has been provided:
+=
+- ```scala
++ ```scala
+
+- val greeting: Polyglot[Text, en & fr] = en(t"Hello") | fr(t"Bonjour")
++ val greeting: Polyglot[Text, en & fr] = en(t"Hello") | fr(t"Bonjour")
+
+= val greeting: Polyglot[Text, en & fr] = en(t"Hello") | fr(t"Bonjour")
+- ```
++ ```
+
+- A `Polyglot[Text, en & fr]` is a text which is available in English *and* in French.
+- Supplying only English where both are required does not compile. That is the point: the
+- demand for a French translation is enforced where the value is written, and is not
+- discovered by a French user.
++ `Polyglot[Text, en & fr]` は、英語 *と* フランス語で利用できるテキストである。
++ 両方が必要なところに英語だけを提供すると、コンパイルされない。
++ それが要点である。フランス語の翻訳の要求は、値が書かれるところで強制され、フランス語のユーザーによって発見されるのではない。
+
+= discovered by a French user.
+=
+- ```scala fuel
++ ```scala fuel
+
+= discovered by a French user.
+=
+= ```scala fuel
+- compile
++ compile
+
+= discovered by a French user.
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= discovered by a French user.
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- val incomplete: Polyglot[Text, en & fr] = en(t"Hello")
++ val incomplete: Polyglot[Text, en & fr] = en(t"Hello")
+
+= val incomplete: Polyglot[Text, en & fr] = en(t"Hello")
+- ```
++ ```
+
+- ### Selecting a language
++ ### 言語を選ぶ
+
+- A `Locale` names the language to read. Applying the polyglot, with a locale in scope, gives
+- the value for that language:
++ `Locale` は読む言語を名指しする。
++ ロケールがスコープにある状態で polyglot を適用すると、その言語の値が得られる。
+
+= the value for that language:
+=
+- ```scala fuel
++ ```scala fuel
+
+- run
++ run
+
+= run
+- ##
++ ##
+
+= run
+= ##
+- locally:
++ locally:
+
+-   given locale: Locale[en & fr] = Locale(fr)
++   given locale: Locale[en & fr] = Locale(fr)
+
+=   given locale: Locale[en & fr] = Locale(fr)
+-   Out.println(greeting())
++   Out.println(greeting())
+
+=
+- locally:
++ locally:
+
+-   given locale: Locale[en & fr] = Locale(en)
++   given locale: Locale[en & fr] = Locale(en)
+
+=   given locale: Locale[en & fr] = Locale(en)
+-   Out.println(greeting())
++   Out.println(greeting())
+
+=   Out.println(greeting())
+- ```
++ ```
+
+- The type of the locale must cover languages which the polyglot has, so asking a value for a
+- language which it does not have is a compile error:
++ ロケールの型は polyglot が持つ言語をまかなわなければならないので、値が持たない言語を求めるとコンパイルエラーになる。
+
+= language which it does not have is a compile error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= language which it does not have is a compile error:
+=
+= ```scala fuel
+- compile
++ compile
+
+= language which it does not have is a compile error:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= language which it does not have is a compile error:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+= errors show
+= ##
+- locally:
++ locally:
+
+-   given locale: Locale[en & de] = Locale(de)
++   given locale: Locale[en & de] = Locale(de)
+
+-   greeting()
++   greeting()
+
+=   greeting()
+- ```
++ ```
+
+- ### A locale from runtime data
++ ### 実行時のデータからのロケール
+
+- The user's language usually arrives at runtime, from an HTTP header, an
+- [environment variable](environment.md) or a setting. A language code is
+- [decoded](decoding.md#decoding-a-value) to a `Locale`, and a code which is not recognized
+- falls back to English:
++ ユーザーの言語はたいてい実行時に、HTTP のヘッダー、[環境変数](environment.md)、設定などから届く。
++ 言語コードは `Locale` に [デコード](decoding.md#decoding-a-value) され、認識されないコードは英語に代替される。
+
+= falls back to English:
+=
+- ```scala
++ ```scala
+
+- val locale = t"fr".as[Locale[en & pl & fr & de & es]]
++ val locale = t"fr".as[Locale[en & pl & fr & de & es]]
+
+= val locale = t"fr".as[Locale[en & pl & fr & de & es]]
+- ```
++ ```
+
+- With that locale in scope, every polyglot which covers those languages is read in the user's
+- language, and the completeness of every translation was already checked when the code was
+- compiled.
++ そのロケールがスコープにあれば、それらの言語をまかなうすべての polyglot はユーザーの言語で読まれ、すべての翻訳の完全さはコードのコンパイル時にすでに検査されている。
+
+- ### Beyond text
++ ### テキストを超えて
+
+- A `Polyglot` is generic in what it holds, and is not fixed to text. A date format, a
+- convention for currency, or a whole page of content can vary by language through the same
+- mechanism, with the same guarantee that no supported language is missing.
+- [Time](time.md#describing-recurrences) uses a locale to describe a recurrence in words, and
+- [Catalogs](catalogs.md) keeps translations in files where that is wanted.
++ `Polyglot` は保持するものについて汎用であり、テキストに固定されていない。
++ 日付の書式、通貨の慣習、あるいはページ全体の内容も、同じ仕組みで言語ごとに変えられ、サポートされる言語が欠けていないという同じ保証がある。
++ [時間](time.md#describing-recurrences) はロケールを使って繰り返しを言葉で記述し、[カタログ](catalogs.md) は、それが望ましい場合に翻訳をファイルに保持する。
+
+- ### Related
++ ### 関連
+
+- - [Display](display.md), [money](money.md) and [web pages](pages.md) render values for a locale.
++ - [表示](display.md)、[金額](money.md)、[ウェブページ](pages.md) は、ロケールに合わせて値を描画する。

@@ -1,0 +1,436 @@
+orthant 1 language
+
+- ## Classpaths
++ ## クラスパス
+
+- ### About
++ ### 概要
+
+- The JVM [classpath](https://en.wikipedia.org/wiki/Classpath) and its
+- [classloaders](https://en.wikipedia.org/wiki/Java_Classloader) are represented as values.
++ JVM の [クラスパス](https://en.wikipedia.org/wiki/Classpath) とその [クラスローダー](https://en.wikipedia.org/wiki/Java_Classloader) は、値として表現される。
+
+- A resource bundled on the classpath is read through a reference which the compiler checks. A
+- classpath is an [immutable] list of its entries, which are directories, JAR files and the Java
+- runtime, and the list can be inspected. A block of code can be run under a chosen classloader.
++ クラスパスに同梱されたリソースは、コンパイラが検査する参照を通して読む。
++ クラスパスはそのエントリー（ディレクトリ、JAR ファイル、Java ランタイム）の[不変]のリストであり、そのリストは調べられる。
++ コードのブロックを、選んだクラスローダーのもとで実行できる。
+
+- ### On the classpath
++ ### クラスパスについて
+
+- A program which asks for a bundled data file, such as a template, a lookup table or an icon,
+- asks the classpath, which searches the directories and archives the program was launched with.
+- The Java API for this returns `null` when a resource is absent, hands back a raw `InputStream`,
+- and exposes the hierarchy of classloaders as mutable state shared between threads. None of it is
+- typed. A missing resource is discovered only when the `null` is dereferenced.
++ テンプレート、参照表、アイコンなど、同梱されたデータファイルを求めるプログラムはクラスパスに尋ね、クラスパスはプログラムの起動時に与えられたディレクトリとアーカイブを探す。
++ そのための Java の API は、リソースがなければ `null` を返し、生の `InputStream` を返し、クラスローダーの階層をスレッド間で共有される可変の状態として公開する。
++ そのどれにも型がない。
++ リソースがないことは、その `null` を参照解決したときに初めて分かる。
+
+- Here a classpath resource is a [path](paths.md) like any other, and is read with the same
+- `read` as a file. A classpath is an immutable value whose entries can be listed. A classloader
+- is chosen explicitly, as a [contextual value], and not reached for implicitly. Typed entries and
+- classloaders give [honest signatures](../../philosophy/honest-signatures.md) to a part of the JVM
+- which usually has none.
++ ここでは、クラスパスのリソースはほかと同じ [パス](paths.md) であり、ファイルと同じ `read` で読む。
++ クラスパスは不変の値であり、そのエントリーを一覧できる。
++ クラスローダーは暗黙に取りに行くのではなく、[コンテキスト値]として明示的に選ぶ。
++ 型付きのエントリーとクラスローダーは、普通はそれを持たない JVM の一部に [正直なシグネチャ](../../philosophy/honest-signatures.md) を与える。
+
+- Everything comes from the `soundness` package. The other imports choose a classloader, a
+- [strategy](errors.md#choosing-a-strategy) for errors, and access to the system properties, and
+- let the samples print their results:
++ すべては `soundness` パッケージから来る。
++ ほかの import は、クラスローダー、エラーの [戦略](errors.md#choosing-a-strategy)、システムプロパティへのアクセスを選び、サンプルが結果を表示できるようにする。
+
+= let the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- Most of the samples on this page depend on the machine which runs them, so they are compiled but
+- not run.
++ このページのサンプルの大半は実行するマシンに依存するので、コンパイルはされるが実行はされない。
+
+- ### Reading a resource
++ ### リソースを読む
+
+- The `cp"…"` [interpolator] names a resource on the classpath, and checks the reference as the
+- code compiles. The result is a `Resource`, which is read like any other source: as raw bytes, as
+- text, or as a parsed value. The Scala library is on every classpath, so one of its classes makes
+- a resource which is always present:
++ `cp"…"` [補間子]はクラスパス上のリソースに名前を付け、コードのコンパイル時にその参照を検査する。
++ 結果は `Resource` であり、ほかのソースと同じように、生のバイトとして、テキストとして、あるいはパースされた値として読む。
++ Scala ライブラリはどのクラスパスにもあるので、そのクラスの一つを使えば常に存在するリソースが作れる。
+
+= a resource which is always present:
+=
+- ```scala
++ ```scala
+
+- val option = cp"/scala/Option.class".read[Data]
++ val option = cp"/scala/Option.class".read[Data]
+
+= val option = cp"/scala/Option.class".read[Data]
+- ```
++ ```
+
+- The resource is resolved against the classloader in scope, so the read needs no handle passed by
+- hand. A resource path can also be built from text at [runtime], by decoding it:
++ リソースはスコープ内のクラスローダーに対して解決されるので、読み込みにはハンドルを手で渡す必要がない。
++ リソースのパスは、[実行時]にテキストからデコードして組み立てることもできる。
+
+= hand. A resource path can also be built from text at [runtime], by decoding it:
+=
+- ```scala
++ ```scala
+
+- val same = t"/scala/Option.class".as[Path on Classpath]
++ val same = t"/scala/Option.class".as[Path on Classpath]
+
+= val same = t"/scala/Option.class".as[Path on Classpath]
+- ```
++ ```
+
+- The check at compiletime is against the classpath of the compiler. A reference to a resource
+- which is not there is a compile error:
++ コンパイル時の検査は、コンパイラのクラスパスに対して行われる。
++ そこにないリソースへの参照はコンパイルエラーになる。
+
+= which is not there is a compile error:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- cp"/scala/Nothing/Here.txt"
++ cp"/scala/Nothing/Here.txt"
+
+= cp"/scala/Nothing/Here.txt"
+- ```
++ ```
+
+- A classpath path is also *substantiable*. Its existence can be tested at runtime before it is
+- read, so a program can check for an optional resource rather than handle a failure.
++ クラスパスのパスは *substantiable* でもある。
++ 読む前に実行時にその存在を確かめられるので、プログラムは失敗を処理する代わりに、オプショナルなリソースの有無を確認できる。
+
+- ### Choosing a classloader
++ ### クラスローダーを選ぶ
+
+- A resource reference names a path, not a thing. Two classloaders may resolve the same path to
+- different resources, or one may resolve it to nothing at all. The choice cannot be implicit in
+- the reference, and comes from the context in which the resource is read. The `given
+- Classloader` in scope decides, and is chosen by import:
++ リソースの参照はパスに名前を付けるものであり、物に名前を付けるものではない。
++ 二つのクラスローダーが同じパスを異なるリソースに解決することもあれば、一方がそれを何にも解決しないこともある。
++ この選択は参照に暗黙に含めることができず、リソースを読む文脈から来る。
++ スコープ内の `given Classloader` が決め、それは import で選ぶ。
+
+= Classloader` in scope decides, and is chosen by import:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- import classloaders.systemClassloader
++ import classloaders.systemClassloader
+
+= import classloaders.systemClassloader
+- ```
++ ```
+
+- The `classloaders` package holds the standard choices:
++ `classloaders` パッケージには標準の選択肢がある。
+
+= The `classloaders` package holds the standard choices:
+=
+- ```tabular
++ ```tabular
+
+- column  Given
+- column  Resolves through
+- row  `threadContextClassloader`  the current thread's context classloader, which suits most applications
+- row  `systemClassloader`  the JVM's system classloader
+- row  `platformClassloader`  the JVM's platform classloader
+- row  `scalaClassloader`  the classloader that loaded the Scala library
++ column  given
++ column  解決に使うもの
++ row  `threadContextClassloader`  現在のスレッドのコンテキストクラスローダー。たいていのアプリケーションに適する
++ row  `systemClassloader`  JVM のシステムクラスローダー
++ row  `platformClassloader`  JVM のプラットフォームクラスローダー
++ row  `scalaClassloader`  Scala ライブラリを読み込んだクラスローダー
+
+= row  `scalaClassloader`  the classloader that loaded the Scala library
+- ```
++ ```
+
+- ### Inspecting the classpath
++ ### クラスパスを調べる
+
+- A `LocalClasspath` is the classpath as a list of entries. The classpath of the running program
+- is the value of the `java.class.path` property, which decodes to one. Reading the property needs
+- the `System` in scope, which was imported above:
++ `LocalClasspath` は、エントリーのリストとしてのクラスパスである。
++ 実行中のプログラムのクラスパスは `java.class.path` プロパティの値であり、これは `LocalClasspath` にデコードされる。
++ プロパティを読むにはスコープ内に `System` が必要であり、それは上で import してある。
+
+= the `System` in scope, which was imported above:
+=
+- ```scala
++ ```scala
+
+- val classpath = System.properties.java.`class`.path().as[LocalClasspath]
++ val classpath = System.properties.java.`class`.path().as[LocalClasspath]
+
+= val classpath = System.properties.java.`class`.path().as[LocalClasspath]
+- ```
++ ```
+
+- Its `entries` are typed, as one of four kinds of `Classpath.Entry`:
++ その `entries` は型付きで、四種類の `Classpath.Entry` のいずれかである。
+
+= Its `entries` are typed, as one of four kinds of `Classpath.Entry`:
+=
+- ```tabular
++ ```tabular
+
+- column  Entry
+- column  Represents
+- column  Its `path`
+- column  From `classify`
+- row  `Directory(path)`  a directory of classes and resources  the directory  a directory, or a path that does not yet exist
+- row  `Jar(path)`  an archive  the archive file  a file ending with a ZIP archive's trailer
+- row  `Url(url)`  a remote location  `Unset`  never
+- row  `JavaRuntime`  the JDK's own classes  `Unset`  never
++ column  エントリー
++ column  表すもの
++ column  その `path`
++ column  `classify` で得られる場合
++ row  `Directory(path)`  クラスとリソースのディレクトリ  そのディレクトリ  ディレクトリ、またはまだ存在しないパス
++ row  `Jar(path)`  アーカイブ  アーカイブファイル  ZIP アーカイブのトレーラーで終わるファイル
++ row  `Url(url)`  リモートの場所  `Unset`  なし
++ row  `JavaRuntime`  JDK 自身のクラス  `Unset`  なし
+
+= row  `JavaRuntime`  the JDK's own classes  `Unset`  never
+- ```
++ ```
+
+- The entries of a *local* classpath are known not to be URLs, so a match over them need not handle
+- that case:
++ *ローカル* なクラスパスのエントリーは URL でないと分かっているので、それに対するマッチはその場合を扱う必要がない。
+
+= that case:
+=
+- ```scala
++ ```scala
+
+- val descriptions = classpath.entries.map:
++ val descriptions = classpath.entries.map:
+
+-   case Classpath.Entry.Directory(path) => t"directory $path"
++   case Classpath.Entry.Directory(path) => t"directory $path"
+
+-   case Classpath.Entry.Jar(path)       => t"archive $path"
++   case Classpath.Entry.Jar(path)       => t"archive $path"
+
+-   case Classpath.Entry.JavaRuntime     => t"the Java runtime"
++   case Classpath.Entry.JavaRuntime     => t"the Java runtime"
+
+=   case Classpath.Entry.JavaRuntime     => t"the Java runtime"
+- ```
++ ```
+
+- An entry is classified by what is on disk, not by its name. `Classpath.Entry.classify(path)`
+- makes a nonexistent path a `Directory`, since it may become one. It makes a file which ends with
+- a ZIP trailer a `Jar`, which is what a launcher's executable with a shebang prefix is, though its
+- name does not end in `jar`. It raises an `Io.Error` for any other file.
++ エントリーは名前ではなく、ディスク上にあるもので分類される。
++ `Classpath.Entry.classify(path)` は、存在しないパスを `Directory` にする。それはいずれディレクトリになりうるからである。
++ ZIP のトレーラーで終わるファイルは `Jar` にする。shebang の接頭辞を持つランチャーの実行ファイルは、名前が `jar` で終わらなくても、まさにそれである。
++ それ以外のファイルに対しては `Io.Error` を発生させる。
+
+- `LocalClasspath.running` is the classpath which the running process was actually loaded from:
+- the entries of a `URLClassLoader`, then those of its parents, then `java.class.path`, in order
+- and each once. A tool which compiles or loads code against itself needs this:
++ `LocalClasspath.running` は、実行中のプロセスが実際に読み込まれたクラスパスである。
++ `URLClassLoader` のエントリー、次にその親のエントリー、次に `java.class.path` を、この順で、それぞれ一度ずつ並べる。
++ 自分自身に対してコードをコンパイルしたり読み込んだりするツールには、これが必要である。
+
+= and each once. A tool which compiles or loads code against itself needs this:
+=
+- ```scala
++ ```scala
+
+- import filesystemOptions.dereferenceSymlinks
++ import filesystemOptions.dereferenceSymlinks
+
+- val running = LocalClasspath.running()
++ val running = LocalClasspath.running()
+
+- val paths = running.entries.map(_.path)
++ val paths = running.entries.map(_.path)
+
+= val paths = running.entries.map(_.path)
+- ```
++ ```
+
+- ### Loading services
++ ### サービスを読み込む
+
+- The JVM's [service-provider](https://en.wikipedia.org/wiki/Service_provider_interface)
+- mechanism finds the implementations of an interface which are declared on the classpath.
+- `services` returns them, typed to the service:
++ JVM の [サービスプロバイダー](https://en.wikipedia.org/wiki/Service_provider_interface) の仕組みは、クラスパス上で宣言されたインターフェースの実装を見つける。
++ `services` はそれらを、サービスの型を付けて返す。
+
+= `services` returns them, typed to the service:
+=
+- ```scala
++ ```scala
+
+- val schemes = classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme)
++ val schemes = classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme)
+
+= val schemes = classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme)
+- ```
++ ```
+
+- ### Building a classloader
++ ### クラスローダーを組み立てる
+
+- A classpath builds a classloader over a chosen parent, which is the platform loader unless
+- another is given. The *delegation* of the loader says which side wins when it and its parent
+- both offer a class of the same name, and it is always spelled out. `Deferential` is the usual
+- order of the JVM, which defers to the parent, and so shares the parent's classes with the code
+- being loaded. `Preferential` prefers the entries of the classpath itself, which isolates a
+- plugin's versions of its libraries from its host's:
++ クラスパスは、選んだ親の上にクラスローダーを組み立てる。親は、別のものが与えられない限りプラットフォームローダーである。
++ ローダーの *委譲* は、ローダーとその親の両方が同じ名前のクラスを提供するときにどちらが勝つかを決めるもので、常に明示される。
++ `Deferential` は JVM の通常の順序であり、親に委ねるので、親のクラスを読み込まれるコードと共有する。
++ `Preferential` はクラスパス自身のエントリーを優先するので、プラグインが持つライブラリのバージョンを、そのホストのものから隔離する。
+
+= plugin's versions of its libraries from its host's:
+=
+- ```scala
++ ```scala
+
+- val contract = LocalClasspath(Classpath.Entry.Jar(t"/lib/contract.jar"))
++ val contract = LocalClasspath(Classpath.Entry.Jar(t"/lib/contract.jar"))
+
+- val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
++ val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
+
+- val shared = contract.classloader(Classloader.Delegation.Deferential)
++ val shared = contract.classloader(Classloader.Delegation.Deferential)
+
+- val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
++ val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
+
+= val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
+- ```
++ ```
+
+- Here the plugin sees the contract it was written against through its parent, while everything
+- else it bundles is its own.
++ ここでプラグインは、自分が対象として書かれた契約を親を通して見る一方、同梱するほかのものはすべて自分自身のものである。
+
+- A resource is read from a loader directly, by its path. The result is an [optional] value which
+- retains nothing, so the read can sit inside a `safely` block:
++ リソースは、ローダーからパスで直接読める。
++ 結果は何も保持しない[オプショナル]な値なので、読み込みを `safely` ブロックの中に置ける。
+
+= retains nothing, so the read can sit inside a `safely` block:
+=
+- ```scala
++ ```scala
+
+- val version = safely(isolated(t"META-INF/plugin.version"))
++ val version = safely(isolated(t"META-INF/plugin.version"))
+
+= val version = safely(isolated(t"META-INF/plugin.version"))
+- ```
++ ```
+
+- ### Running under a classloader
++ ### クラスローダーのもとで実行する
+
+- A `Classloader` value runs a block with itself installed as the context classloader of the
+- thread, and restores the previous one afterward. This confines a change of classloader to
+- exactly the code which needs it, such as the loading of a plugin:
++ `Classloader` の値は、自身をスレッドのコンテキストクラスローダーとして設定してブロックを実行し、その後で元のものを戻す。
++ これにより、クラスローダーの変更を、プラグインの読み込みのように、それを必要とするコードだけに正確に閉じ込められる。
+
+= exactly the code which needs it, such as the loading of a plugin:
+=
+- ```scala
++ ```scala
+
+- classloaders.systemClassloader.use:
++ classloaders.systemClassloader.use:
+
+-   Classloader[Option[Int]]
++   Classloader[Option[Int]]
+
+=   Classloader[Option[Int]]
+- ```
++ ```
+
+- `Classloader[T]` finds the classloader which loaded a type. That is how the classloader of a
+- plugin is reached from one of its classes.
++ `Classloader[T]` は、ある型を読み込んだクラスローダーを見つける。
++ プラグインのクラスローダーには、こうしてそのクラスの一つから到達する。
+
+- ### Related
++ ### 関連
+
+- - [Paths](paths.md) describes the path types which a classpath resource shares.
+- - [Streams](streams.md) describes `read`, and the forms a resource is read as.
+- - [Stack traces](stack-traces.md#resolving-frames-to-their-source) resolve frames through a
+-   classloader.
+- - [Compiler](compiler.md) compiles code against a classpath.
+- - [Packaging](packaging.md) builds the JAR files which become classpath entries.
+- - [Environment](environment.md) describes the system properties the classpath is read from.
++ - [パス](paths.md) は、クラスパスのリソースが共有するパスの型を説明する。
++ - [ストリーム](streams.md) は、`read` と、リソースを読む形式を説明する。
++ - [スタックトレース](stack-traces.md#resolving-frames-to-their-source) は、クラスローダーを通してフレームを解決する。
++ - [コンパイラ](compiler.md) は、クラスパスに対してコードをコンパイルする。
++ - [パッケージング](packaging.md) は、クラスパスのエントリーとなる JAR ファイルを組み立てる。
++ - [環境](environment.md) は、クラスパスを読み出すシステムプロパティを説明する。

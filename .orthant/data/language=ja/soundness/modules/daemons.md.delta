@@ -1,0 +1,826 @@
+orthant 1 language
+
+- ## Daemons
++ ## デーモン
+
+- ### About
++ ### 概要
+
+- A command-line tool on the JVM pays the JVM's startup cost on every invocation, and loses
+- the optimization which the just-in-time compiler had built up. That makes even a fast
+- program feel slow at the shell.
++ JVM 上のコマンドラインツールは、呼び出しのたびに JVM の起動コストを払い、ジャストインタイムコンパイラが積み上げてきた最適化を失う。
++ そのため、速いプログラムでさえシェルでは遅く感じられる。
+
+- Making the application resident removes the cost. The first invocation starts a daemon.
+- Every later one is dispatched to the running process by a small native launcher, with its
+- arguments, environment, working directory, standard streams and signals all forwarded
+- faithfully.
++ アプリケーションを常駐させれば、そのコストはなくなる。
++ 最初の呼び出しがデーモンを起動する。
++ それ以降の呼び出しはすべて、小さなネイティブのランチャーによって実行中のプロセスへ振り向けられ、引数、環境、作業ディレクトリ、標準ストリーム、シグナルがすべて忠実に転送される。
+
+- The change costs one word. The body of a
+- [command-line application](cli.md) which is wrapped in `cli`, instead of in `application`,
+- becomes a daemon. Packaging produces a single self-contained executable, which is the native
+- launcher with the application inside, and the launcher can verify and apply signed upgrades
+- of itself.
++ その変更に要するのは一語である。
++ [コマンドラインアプリケーション](cli.md)の本体を、`application` ではなく `cli` で包むと、それはデーモンになる。
++ パッケージングは、アプリケーションを内蔵したネイティブのランチャーという、単一の自己完結した実行ファイルを生み出し、ランチャーは自分自身の署名付きのアップグレードを検証して適用できる。
+
+- ### On daemonized applications
++ ### デーモン化したアプリケーションについて
+
+- The idea is old. Nailgun kept a JVM warm for exactly this reason. But the details decide
+- whether it can be trusted. Each invocation must behave *exactly* as a fresh process would:
+- with its own environment and working directory, its own standard input and exit code, and
+- with Ctrl-C reaching the right invocation, and not the daemon. And the daemon must manage
+- itself: starting on demand, shutting down when it is idle, and surviving upgrades.
++ この考えは古い。
++ Nailgun はまさにこの理由で JVM を温めておいた。
++ しかし、それが信頼できるかどうかは細部が決める。
++ 各呼び出しは、新しいプロセスと*まったく*同じように振る舞わなければならない。つまり、自分の環境と作業ディレクトリ、自分の標準入力と終了コードを持ち、Ctrl-C がデーモンではなく正しい呼び出しに届かなければならない。
++ そしてデーモンは自分自身を管理しなければならない。求めに応じて起動し、アイドルのときは終了し、アップグレードを生き延びることである。
+
+- Here those details are handled in a native launcher for each platform, and in a protocol
+- over a Unix domain [socket](sockets.md). The Scala application simply runs, with many
+- invocations at once, each with its own faithful context. A daemon which serves each
+- invocation against that invocation's own environment is
+- [declarative context](../../philosophy/declarative-context.md) taken seriously: nothing about
+- the caller is global.
++ ここでは、それらの細部は各プラットフォーム向けのネイティブのランチャーと、Unix ドメイン[ソケット](sockets.md)の上のプロトコルで扱われる。
++ Scala のアプリケーションは単に実行され、多くの呼び出しを同時に、それぞれ忠実なコンテキストとともに扱う。
++ 各呼び出しにその呼び出し自身の環境で応えるデーモンは、[宣言的なコンテキスト](../../philosophy/declarative-context.md)を真剣に受け止めたものである。呼び出し元についての何ものもグローバルではない。
+
+- The protocol is a [TEL](tel.md#bintel) schema, `ethereal-launcher`, whose text is
+- `Launcher.schemaText`. Every connection which the launcher opens begins with one BinTEL
+- document of that schema: an invocation with its arguments and environment, a signal, or a
+- request for an exit status. The daemon answers in kind. Both sides check the schema's
+- signature before reading a field, so a launcher and a daemon which were built against
+- different contracts refuse each other, instead of misreading each other.
++ プロトコルは [TEL](tel.md#bintel) のスキーマ `ethereal-launcher` であり、そのテキストは `Launcher.schemaText` である。
++ ランチャーが開くすべての接続は、そのスキーマの BinTEL 文書一つで始まる。引数と環境を伴う呼び出し、シグナル、あるいは終了ステータスのリクエストである。
++ デーモンは同じ形で答える。
++ 両者はフィールドを読む前にスキーマのシグネチャを検査するので、異なる契約に対してビルドされたランチャーとデーモンは、互いを読み誤るのではなく、互いを拒む。
+
+- Everything comes from the `soundness` package, beside the imports which a command-line
+- application needs:
++ すべては、コマンドラインアプリケーションが必要とするインポートと並んで、`soundness` パッケージから来る：
+
+= application needs:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import backstops.stackTraceBackstop
++ import backstops.stackTraceBackstop
+
+- import executives.completionsExecutive
++ import executives.completionsExecutive
+
+- import interpreters.posixInterpreter
++ import interpreters.posixInterpreter
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+= import threads.virtualThreads
+- ```
++ ```
+
+- The samples on this page define whole programs, so they are compiled but not run.
++ このページのサンプルはプログラム全体を定義するので、コンパイルはされるが実行はされない。
+
+- ### A daemon application
++ ### デーモンのアプリケーション
+
+- `cli` is the daemonized counterpart of `application`. It has the same body, and the same
+- structure for [completions](cli.md#tab-completions), and runs resident:
++ `cli` は `application` のデーモン化した対応物である。
++ 同じ本体と、[補完](cli.md#tab-completions)のための同じ構造を持ち、常駐して実行される：
+
+= structure for [completions](cli.md#tab-completions), and runs resident:
+=
+- ```scala
++ ```scala
+
+- @main
++ @main
+
+- def mytool(): Unit = cli:
++ def mytool(): Unit = cli:
+
+= def mytool(): Unit = cli:
+-   execute:
++   execute:
+
+-     Out.println(t"Hello world")
++     Out.println(t"Hello world")
+
+=     Out.println(t"Hello world")
+-     Exit.Ok
++     Exit.Ok
+
+=     Out.println(t"Hello world")
+=     Exit.Ok
+- ```
++ ```
+
+- `cli` takes no arguments. The launcher forwards them, with the environment, working
+- directory and standard streams of the shell which invoked it, and the body sees them through
+- the same `arguments`, `Out` and `Exit` as an ordinary application.
++ `cli` は引数を取らない。
++ ランチャーが、それを呼び出したシェルの環境、作業ディレクトリ、標準ストリームとともに引数を転送し、本体は普通のアプリケーションと同じ `arguments`、`Out`、`Exit` を通じてそれらを見る。
+
+- The first run starts the daemon. Later runs connect to it, and return at the speed of a
+- native tool. Tab completions gain the most: each request for completions is an invocation,
+- and a resident process answers in milliseconds.
++ 最初の実行がデーモンを起動する。
++ その後の実行はデーモンに接続し、ネイティブのツールの速さで戻る。
++ 最も得をするのはタブ補完である。補完のリクエストはそれぞれ一つの呼び出しであり、常駐するプロセスはミリ秒で答える。
+
+- #### Output
++ #### 出力
+
+- Output must go through `Out` and `Err`. Scala's own `println` writes to the JVM's global
+- `System.out`, which belongs to the *daemon* process, not to any client, so whatever it
+- prints reaches no user, and is ordinarily lost. `Out` and `Err` resolve the
+- [`Stdio`](streams.md#standard-streams) of the current invocation, which is the client's.
++ 出力は `Out` と `Err` を通さなければならない。
++ Scala 自身の `println` は JVM のグローバルな `System.out` に書くが、それはどのクライアントでもなく*デーモン*のプロセスに属するので、出力したものはどのユーザーにも届かず、普通は失われる。
++ `Out` と `Err` は、現在の呼び出しの [`Stdio`](streams.md#standard-streams) を解決し、それはクライアントのものである。
+
+- When the reader of that stream goes away, as in `mytool | head -1` once `head` has exited,
+- the launcher says so. The invocation's next write to the stream raises an `Egress.Error`,
+- which ends the invocation with status 141, as `SIGPIPE` would end a process writing to a
+- pipe.
++ そのストリームの読み手が去ると、たとえば `mytool | head -1` で `head` が終了すると、ランチャーがそれを伝える。
++ その呼び出しが次にストリームに書くと `Egress.Error` が発生し、それは、パイプに書くプロセスを `SIGPIPE` が終わらせるように、呼び出しをステータス 141 で終わらせる。
+
+- Code which cannot be changed, such as a library which prints to `System.out`, is redirected
+- with `Stdio.divert`. The diversion belongs to a *thread*, not to the JVM. It follows the
+- thread on which it is made, the threads which are started under it, and every task which is
+- spawned within it, so a daemon may divert around several clients at once, without their
+- output crossing.
++ `System.out` に出力するライブラリのような、変えられないコードは、`Stdio.divert` でリダイレクトする。
++ この迂回は JVM ではなく*スレッド*に属する。
++ 迂回はそれを作ったスレッド、そのもとで起動したスレッド、その中で生成したすべてのタスクに付いて回るので、デーモンは、出力を混線させることなく、複数のクライアントのために同時に迂回させられる。
+
+- Arguments and the values of environment variables arrive as text. A sequence of bytes in
+- either which is not valid UTF-8 is delivered with U+FFFD in its place. That is the
+- substitution which the JVM itself makes for its own arguments, so an application sees what it
+- would have seen if it were run directly.
++ 引数と環境変数の値はテキストとして届く。
++ そのどちらかの中の、有効な UTF-8 でないバイト列は、その代わりに U+FFFD を置いて届けられる。
++ これは JVM 自身が自分の引数に対して行う置換なので、アプリケーションは、直接実行された場合に見たはずのものを見る。
+
+- ### What the invocation knows about its client
++ ### 呼び出しがクライアントについて知っていること
+
+- The daemon holds a socket, not the client's process, so everything which it knows about the
+- invocation is what the launcher told it. The invocation's `resident`, a `Resident`, is its
+- handle on the daemon, and is where that knowledge is read:
++ デーモンが保持するのはソケットであってクライアントのプロセスではないので、呼び出しについてデーモンが知っていることはすべて、ランチャーが伝えたことである。
++ 呼び出しの `resident`（`Resident`）はデーモンへのハンドルであり、その知識はそこから読む：
+
+= handle on the daemon, and is where that knowledge is read:
+=
+- ```tabular
++ ```tabular
+
+- column  Member
+- column  Is
+- row  `resident.cliInput`, `cliOutput`, `cliError`  whether each standard stream is a `Terminus.Terminal` or a `Terminus.Pipe`
+- row  `resident.invokedAs`  the name the executable was invoked by: `argv[0]` as the caller supplied it
+- row  `resident.umask`  the invocation's file-creation mask
+- row  `resident.windowSize`  the client terminal's size, measured when the invocation began and on every resize
+- row  `resident.buildId`  the running build's identifier
++ column  メンバー
++ column  内容
++ row  `resident.cliInput`, `cliOutput`, `cliError`  各標準ストリームが `Terminus.Terminal` か `Terminus.Pipe` か
++ row  `resident.invokedAs`  実行ファイルが呼び出されたときの名前：呼び出し元が与えたとおりの `argv[0]`
++ row  `resident.umask`  呼び出しのファイル作成マスク
++ row  `resident.windowSize`  クライアントの端末の大きさ。呼び出しの開始時とリサイズのたびに測られる
++ row  `resident.buildId`  実行中のビルドの識別子
+
+= row  `resident.buildId`  the running build's identifier
+- ```
++ ```
+
+- One executable which is installed under several names, by symbolic links, can therefore
+- dispatch on `invokedAs`, while every alias shares one warm daemon:
++ したがって、シンボリックリンクによっていくつもの名前でインストールした一つの実行ファイルは、`invokedAs` で処理を振り分けられ、すべての別名が一つの温まったデーモンを共有する：
+
+= dispatch on `invokedAs`, while every alias shares one warm daemon:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- def multicall(): Unit = cli:
++ def multicall(): Unit = cli:
+
+= def multicall(): Unit = cli:
+-   execute:
++   execute:
+
+-     resident.invokedAs.let(_.cut(t"/").last) match
++     resident.invokedAs.let(_.cut(t"/").last) match
+
+-       case t"gunzip" => Out.println(t"decompressing")
++       case t"gunzip" => Out.println(t"decompressing")
+
+-       case _         => Out.println(t"compressing")
++       case _         => Out.println(t"compressing")
+
+=       case _         => Out.println(t"compressing")
+-     Exit.Ok
++     Exit.Ok
+
+=       case _         => Out.println(t"compressing")
+=     Exit.Ok
+- ```
++ ```
+
+- The [filesystem](filesystem.md#creation-masks) applies `umask` to whatever the invocation
+- creates. The invocation's `Termcap` reads the same measurement as `windowSize`, so
+- [tables](tables.md) and wrapped text fit the terminal as it is now.
++ [ファイルシステム](filesystem.md#creation-masks)は、呼び出しが作るものに `umask` を適用する。
++ 呼び出しの `Termcap` は `windowSize` と同じ測定値を読むので、[表](tables.md)と折り返したテキストは、いまの端末に合う。
+
+- ### Signals and shutdown
++ ### シグナルと終了
+
+- An invocation traps the signals which it cares about, and the response reaches the code of
+- that invocation, not the shared process. A trap sees a `Signal`: the interrupt itself, and
+- whatever the launcher attached to it. That is the terminal's new size, with `WINCH` and
+- `CONT`. On Windows, it is the time which the system allows after an event of closing, logging
+- off or shutting down, before it ends the client regardless:
++ 呼び出しは自分が関心を持つシグナルをトラップし、その応答は共有のプロセスではなく、その呼び出しのコードに届く。
++ トラップは `Signal` を見る。割り込みそのものと、ランチャーがそれに添えたものである。
++ それは、`WINCH` と `CONT` では端末の新しい大きさである。
++ Windows では、閉じる、ログオフする、シャットダウンするというイベントの後、システムがクライアントをかまわず終わらせる前に与える時間である：
+
+= off or shutting down, before it ends the client regardless:
+=
+- ```scala
++ ```scala
+
+- def longRunningWork(): Exit = Exit.Ok
++ def longRunningWork(): Exit = Exit.Ok
+
+- def watch(): Unit = cli:
++ def watch(): Unit = cli:
+
+= def watch(): Unit = cli:
+-   execute:
++   execute:
+
+-     trap:
++     trap:
+
+-       case Signal(Interrupt.Winch, columns, rows, _) =>
++       case Signal(Interrupt.Winch, columns, rows, _) =>
+
+-         Out.println(t"now ${columns.or(0)}×${rows.or(0)}")
++         Out.println(t"now ${columns.or(0)}×${rows.or(0)}")
+
+=         Out.println(t"now ${columns.or(0)}×${rows.or(0)}")
+-         SignalResponse.Accept
++         SignalResponse.Accept
+
+-       case Signal(WindowsSignal.Close, _, _, deadline) =>
++       case Signal(WindowsSignal.Close, _, _, deadline) =>
+
+=       case Signal(WindowsSignal.Close, _, _, deadline) =>
+-         SignalResponse.Accept
++         SignalResponse.Accept
+
+-       case Signal(_: UnixSignal, _, _, _) =>
++       case Signal(_: UnixSignal, _, _, _) =>
+
+=       case Signal(_: UnixSignal, _, _, _) =>
+-         SignalResponse.Accept
++         SignalResponse.Accept
+
+-     longRunningWork()
++     longRunningWork()
+
+=     longRunningWork()
+- ```
++ ```
+
+- The daemon retires itself after six idle hours, or when its state files are removed, or on
+- demand, through the built-in `'{admin}'` subcommand:
++ デーモンは、六時間アイドルが続いた後、その状態ファイルが取り除かれたとき、あるいは組み込みの `'{admin}'` サブコマンドを通じて求められたときに引退する：
+
+= demand, through the built-in `'{admin}'` subcommand:
+=
+- ```tabular
++ ```tabular
+
+- column  Subcommand
+- column  Effect
+- row  `pid`  reports the daemon's pid
+- row  `kill`  ends the daemon at once
+- row  `shutdown`  serves no further invocation, lets those in flight finish, then exits
++ column  サブコマンド
++ column  効果
++ row  `pid`  デーモンの pid を報告する
++ row  `kill`  デーモンをただちに終わらせる
++ row  `shutdown`  それ以上の呼び出しには応えず、処理中のものを終わらせてから終了する
+
+= row  `shutdown`  serves no further invocation, lets those in flight finish, then exits
+- ```
++ ```
+
+- A warm JVM which is held for a command that is rarely run can therefore be reclaimed,
+- without finding its pid. An executable which has been rebuilt displaces its daemon in the
+- same way as `shutdown`.
++ したがって、めったに実行しないコマンドのために保持されている温まった JVM は、その pid を探さなくても回収できる。
++ 再ビルドされた実行ファイルは、`shutdown` と同じようにしてそのデーモンを押しのける。
+
+- ### Asking for a cooked terminal
++ ### カノニカルモードの端末を求める
+
+- The launcher puts the terminal into raw mode before it connects, so that keypresses can be
+- forwarded to an interactive [terminal session](terminal.md#keyboard-input). That is wrong
+- for a command which just wants a line of input. Without the terminal driver's help there is
+- no echo, and Backspace arrives as a literal byte inside the line. `cooked` asks the launcher
+- for canonical mode for the duration of a block, and raw mode is restored afterwards:
++ ランチャーは接続する前に端末を raw モードにするので、キー押下を対話的な[端末セッション](terminal.md#keyboard-input)へ転送できる。
++ これは、一行の入力が欲しいだけのコマンドには不適切である。
++ 端末ドライバーの助けがなければエコーはなく、Backspace は行の中のリテラルのバイトとして届く。
++ `cooked` はブロックの間だけランチャーにカノニカルモードを求め、その後で raw モードが戻される：
+
+= for canonical mode for the duration of a block, and raw mode is restored afterwards:
+=
+- ```scala
++ ```scala
+
+- def ask(): Unit = cli:
++ def ask(): Unit = cli:
+
+= def ask(): Unit = cli:
+-   execute:
++   execute:
+
+-     val name = resident.cooked:
++     val name = resident.cooked:
+
+-       Out.println(t"Name?")
++       Out.println(t"Name?")
+
+-       java.io.BufferedReader(java.io.InputStreamReader(summon[Stdio].in)).readLine().nn.tt
++       java.io.BufferedReader(java.io.InputStreamReader(summon[Stdio].in)).readLine().nn.tt
+
+-     Out.println(t"Hello, $name")
++     Out.println(t"Hello, $name")
+
+=     Out.println(t"Hello, $name")
+-     Exit.Ok
++     Exit.Ok
+
+=     Out.println(t"Hello, $name")
+=     Exit.Ok
+- ```
++ ```
+
+- Echo and line editing then come from the terminal driver itself. A launcher with no such
+- channel, such as a pipe or an older launcher, lets the request expire harmlessly.
++ するとエコーと行の編集は端末ドライバー自身から来る。
++ パイプや古いランチャーのように、そのような経路を持たないランチャーは、そのリクエストを害なく失効させる。
+
+- ### The message bus
++ ### メッセージバス
+
+- Concurrent invocations of one daemon share a typed *bus*. An invocation broadcasts a
+- message, and others observe the stream. That is how "the running watch command notices that
+- another invocation just changed the configuration" is expressed. The type of message is the
+- type argument to `cli`, so every invocation of the daemon agrees on what can be sent:
++ 一つのデーモンへの並行する呼び出しは、型付きの*バス*を共有する。
++ ある呼び出しがメッセージをブロードキャストし、ほかの呼び出しがそのストリームを観察する。
++ 「実行中の watch コマンドが、別の呼び出しがたったいま設定を変えたことに気づく」はこのように表現する。
++ メッセージの型は `cli` の型引数なので、デーモンへのすべての呼び出しが、送れるものについて合意している：
+
+= type argument to `cli`, so every invocation of the daemon agrees on what can be sent:
+=
+- ```scala
++ ```scala
+
+- enum Notice:
++ enum Notice:
+
+-   case ConfigChanged
++   case ConfigChanged
+
+- def configure(): Unit = cli[Notice]:
++ def configure(): Unit = cli[Notice]:
+
+= def configure(): Unit = cli[Notice]:
+-   execute:
++   execute:
+
+-     resident.broadcast(Notice.ConfigChanged)
++     resident.broadcast(Notice.ConfigChanged)
+
+-     resident.bus.each:
++     resident.bus.each:
+
+-       case Notice.ConfigChanged => Out.println(t"another invocation changed the configuration")
++       case Notice.ConfigChanged => Out.println(t"another invocation changed the configuration")
+
+=       case Notice.ConfigChanged => Out.println(t"another invocation changed the configuration")
+-     Exit.Ok
++     Exit.Ok
+
+=       case Notice.ConfigChanged => Out.println(t"another invocation changed the configuration")
+=     Exit.Ok
+- ```
++ ```
+
+- ### Packaging
++ ### パッケージング
+
+- The distributable is assembled by the builder `xek`. It is published, with the launchers,
+- from [propensive/xek](https://github.com/propensive/xek), and is installed with
+- `curl -fsSL https://propensive.dev/xek | sh`. It joins the platform's native launcher, a
+- small configuration record and the application's JAR into one executable file:
++ 配布物はビルダー `xek` が組み立てる。
++ それはランチャーとともに [propensive/xek](https://github.com/propensive/xek) から公開されており、`curl -fsSL https://propensive.dev/xek | sh` でインストールする。
++ それはプラットフォームのネイティブのランチャー、小さな設定レコード、アプリケーションの JAR を一つの実行ファイルにまとめる：
+
+= small configuration record and the application's JAR into one executable file:
+=
+- ```sh
++ ```sh
+
+- xek build mytool.jar
++ xek build mytool.jar
+
+= xek build mytool.jar
+- ```
++ ```
+
+- That writes `mytool`, for the platform on which `xek` runs.
+- `xek build -p linux-x64 -p windows-x64 mytool.jar` builds for other platforms.
+- `xek build --polyglot mytool.jar` builds one file for all of them, which runs in `sh`, and
+- in PowerShell and `cmd.exe` once it is renamed, and unpacks the right launcher where it
+- runs. The flags which this page uses are:
++ これは、`xek` が動くプラットフォーム向けに `mytool` を書く。
++ `xek build -p linux-x64 -p windows-x64 mytool.jar` はほかのプラットフォーム向けにビルドする。
++ `xek build --polyglot mytool.jar` はそのすべてに向けた一つのファイルをビルドする。それは `sh` で動き、名前を変えれば PowerShell と `cmd.exe` でも動き、実行される場所で正しいランチャーを展開する。
++ このページが使うフラグは次のとおりである：
+
+= runs. The flags which this page uses are:
+=
+- ```tabular
++ ```tabular
+
+- column  Command
+- column  Flag
+- column  Effect
+- row  `xek build`  `-p` *platform*  builds for that platform; repeatable
+- row  `xek build`  `--polyglot`  builds one file for every platform
+- row  `xek build`  `--build-id` *n*  bakes in the build identifier, which must increase from release to release
+- row  `xek build`  `--public-key` *file*  bakes in the release key
+- row  `xek build`  `--recovery-key` *file*  bakes in the recovery key
+- row  `xek build`  `--app-id` *id*  bakes in the application identifier
+- row  `xek keygen`  `--out` *prefix*  writes `<prefix>.seed` and `<prefix>.pub`
+- row  `xek sign`  `--key` *seed*  signs with that key
+- row  `xek sign`  `--in` *file*, `--out` *file*  names the binary to sign and the signed result
+- row  `xek sign`  `--allow-downgrade`  permits the candidate to replace a newer build
+- row  `xek sign`  `--foreign-key`  permits signing with a key the binary does not carry
++ column  コマンド
++ column  フラグ
++ column  効果
++ row  `xek build`  `-p` *platform*  そのプラットフォーム向けにビルドする。繰り返し可
++ row  `xek build`  `--polyglot`  すべてのプラットフォーム向けに一つのファイルをビルドする
++ row  `xek build`  `--build-id` *n*  ビルド識別子を焼き込む。これはリリースごとに増えなければならない
++ row  `xek build`  `--public-key` *file*  リリース鍵を焼き込む
++ row  `xek build`  `--recovery-key` *file*  リカバリー鍵を焼き込む
++ row  `xek build`  `--app-id` *id*  アプリケーション識別子を焼き込む
++ row  `xek keygen`  `--out` *prefix*  `<prefix>.seed` と `<prefix>.pub` を書く
++ row  `xek sign`  `--key` *seed*  その鍵で署名する
++ row  `xek sign`  `--in` *file*, `--out` *file*  署名するバイナリと署名済みの結果を名指す
++ row  `xek sign`  `--allow-downgrade`  候補がより新しいビルドを置き換えることを許す
++ row  `xek sign`  `--foreign-key`  バイナリが持たない鍵で署名することを許す
+
+= row  `xek sign`  `--foreign-key`  permits signing with a key the binary does not carry
+- ```
++ ```
+
+- `xek --help` lists the rest.
++ 残りは `xek --help` が列挙する。
+
+- The launcher finds or fetches a suitable JVM, and starts the daemon when none is running.
+- Where a public key was built in, it accepts only signed binaries when the application
+- [upgrades itself](https://en.wikipedia.org/wiki/Digital_signature) in place.
+- [Packaging](packaging.md) covers the other forms of distributable.
++ ランチャーは適切な JVM を見つけるか取得し、何も動いていなければデーモンを起動する。
++ 公開鍵が組み込まれているところでは、アプリケーションがその場で[自身をアップグレードする](https://en.wikipedia.org/wiki/Digital_signature)とき、署名付きのバイナリだけを受け入れる。
++ [パッケージング](packaging.md)は、ほかの形の配布物を扱う。
+
+- ### Signing a release
++ ### リリースへの署名
+
+- An application can ship with a public key and an application identifier built in. The
+- launcher uses them to verify any candidate upgrade, before swapping it into place.
+- Verification happens in the launcher, before the JVM starts, so no Scala code in the running
+- application sits on the boundary of trust.
++ アプリケーションは、公開鍵とアプリケーション識別子を組み込んで出荷できる。
++ ランチャーはそれらを使って、どの候補のアップグレードも、所定の位置に入れ替える前に検証する。
++ 検証は JVM が起動する前にランチャーの中で行われるので、実行中のアプリケーションのどの Scala のコードも、信頼の境界に位置しない。
+
+- `xek` also signs releases. Its signing subcommands need Java 24 or later. It generates a
+- pair of keys:
++ `xek` はリリースへの署名も行う。
++ その署名のサブコマンドには Java 24 以降が必要である。
++ これは鍵の組を生成する：
+
+= pair of keys:
+=
+- ```sh
++ ```sh
+
+- xek keygen --out release-keys/myapp
++ xek keygen --out release-keys/myapp
+
+- xek keygen --out release-keys/myapp-recovery
++ xek keygen --out release-keys/myapp-recovery
+
+= xek keygen --out release-keys/myapp-recovery
+- ```
++ ```
+
+- Each writes a seed for a signing key, of 32 bytes, as `<prefix>.seed`, and an ML-DSA-44
+- public key, of 1312 bytes, as `<prefix>.pub`. **The seeds belong offline**, and the recovery
+- seed most of all. Anyone who holds the release seed can ship a binary which users' launchers
+- will accept. The recovery key exists so that losing or leaking the release seed does not
+- strand every installation. [Cryptography](cryptography.md#signing) describes ML-DSA
+- signatures.
++ それぞれが、32 バイトの署名鍵のシードを `<prefix>.seed` として、1312 バイトの ML-DSA-44 の公開鍵を `<prefix>.pub` として書く。
++ **シードはオフラインに置くべきものであり**、とりわけリカバリーのシードはそうである。
++ リリースのシードを持つ者は誰でも、ユーザーのランチャーが受け入れるバイナリを出荷できる。
++ リカバリー鍵は、リリースのシードを失ったり漏らしたりしても、すべてのインストールが立ち往生しないように存在する。
++ [暗号](cryptography.md#signing)は ML-DSA の署名を説明する。
+
+- Each release is then built and signed, in two steps. The build bakes in a build identifier,
+- both public keys, and the application's identifier:
++ それから各リリースは二段階でビルドされ署名される。
++ ビルドは、ビルド識別子、二つの公開鍵、アプリケーションの識別子を焼き込む：
+
+= both public keys, and the application's identifier:
+=
+- ```sh
++ ```sh
+
+- xek build --build-id 42 --public-key release-keys/myapp.pub \
++ xek build --build-id 42 --public-key release-keys/myapp.pub \
+
+-   --recovery-key release-keys/myapp-recovery.pub --app-id example/myapp \
++   --recovery-key release-keys/myapp-recovery.pub --app-id example/myapp \
+
+-   dist/myapp.jar dist/myapp
++   dist/myapp.jar dist/myapp
+
+=   dist/myapp.jar dist/myapp
+- ```
++ ```
+
+- `--build-id` is a 64-bit number which must increase from release to release. The launcher
+- rejects a candidate which is not newer than itself. A candidate which was built for another
+- application identifier is rejected, even when it is signed with the same key. Omitting
+- `--public-key` and `--app-id` produces a binary whose launcher rejects *every* upgrade,
+- which is the right default for a local build, where the upgrade path is never exercised.
++ `--build-id` は 64 ビットの数であり、リリースごとに増えなければならない。
++ ランチャーは、自分より新しくない候補を拒む。
++ 別のアプリケーション識別子向けにビルドされた候補は、同じ鍵で署名されていても拒まれる。
++ `--public-key` と `--app-id` を省くと、そのランチャーが*すべての*アップグレードを拒むバイナリができる。これは、アップグレードの経路が決して使われないローカルのビルドにとって正しい既定である。
+
+- Signing then produces the file to distribute:
++ そして署名が、配布するファイルを生み出す：
+
+= Signing then produces the file to distribute:
+=
+- ```sh
++ ```sh
+
+- xek sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
++ xek sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
+
+= xek sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
+- ```
++ ```
+
+- That output is at once a valid executable and a valid candidate for upgrade.
++ その出力は、有効な実行ファイルであると同時に、アップグレードの有効な候補でもある。
+
+- #### Staging an upgrade
++ #### アップグレードのステージング
+
+- The application stages a candidate by passing `Upgrade.stage` any source of bytes: a file,
+- an [HTTP response](http-client.md), a [stream](streams.md). It writes the candidate as
+- `<name>/.pending`, in the application's data directory, and returns. The launcher verifies
+- it at the start of the next invocation, swaps it into place, and starts a new daemon in
+- place of the old one, so nothing is interrupted:
++ アプリケーションは、`Upgrade.stage` に任意のバイトの供給源（ファイル、[HTTP レスポンス](http-client.md)、[ストリーム](streams.md)）を渡して候補をステージングする。
++ それは候補をアプリケーションのデータディレクトリに `<name>/.pending` として書き、戻る。
++ ランチャーは次の呼び出しの開始時にそれを検証し、所定の位置に入れ替え、古いデーモンの代わりに新しいデーモンを起動するので、何も中断されない：
+
+= place of the old one, so nothing is interrupted:
+=
+- ```scala
++ ```scala
+
+= place of the old one, so nothing is interrupted:
+=
+= ```scala
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+= place of the old one, so nothing is interrupted:
+=
+= ```scala
+= import environments.javaBaseEnvironment
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- def upgrade(): Text raises Upgrade.Error =
++ def upgrade(): Text raises Upgrade.Error =
+
+-   if !Upgrade.enabled then t"this build cannot be upgraded"
++   if !Upgrade.enabled then t"this build cannot be upgraded"
+
+-   else if Upgrade.pending then t"the upgrade will be applied the next time the command is run"
++   else if Upgrade.pending then t"the upgrade will be applied the next time the command is run"
+
+-   else
++   else
+
+-     Upgrade.stage(url"https://releases.example.com/myapp.signed".fetch())
++     Upgrade.stage(url"https://releases.example.com/myapp.signed".fetch())
+
+-     t"the upgrade will be applied the next time the command is run"
++     t"the upgrade will be applied the next time the command is run"
+
+=     t"the upgrade will be applied the next time the command is run"
+- ```
++ ```
+
+- `Upgrade.enabled` is false in a build with no key, or no application identifier, whose
+- launcher would refuse any candidate. `resident.buildId` is the identifier of the running
+- build, to compare with that of a release on offer.
++ 鍵やアプリケーション識別子のないビルドでは、そのランチャーがどの候補も拒むので、`Upgrade.enabled` は偽である。
++ `resident.buildId` は実行中のビルドの識別子であり、提供されているリリースのものと比較するためのものである。
+
+- The launcher records what it did with a candidate, and `Upgrade.outcome` reads the record
+- back: the `result`, the build identifiers `candidate` and `previous`, and `when` it
+- happened. The result is one of:
++ ランチャーは候補をどう扱ったかを記録し、`Upgrade.outcome` はその記録を読み戻す。`result`、ビルド識別子の `candidate` と `previous`、そしてそれがいつ（`when`）起きたかである。
++ 結果は次のいずれかである：
+
+= happened. The result is one of:
+=
+- ```tabular
++ ```tabular
+
+- column  Result
+- column  Meaning
+- row  `Applied`  the upgrade was applied
+- row  `Disabled`  the running executable does not accept upgrades
+- row  `NoRecord`  the candidate is not an XEK executable
+- row  `WrongApplication`  the candidate was built for another application
+- row  `BadSignature`  the candidate's signature does not verify
+- row  `NotNewer`  the candidate is not newer than the running executable
+- row  `SwapFailed`  the candidate could not be swapped into place
++ column  結果
++ column  意味
++ row  `Applied`  アップグレードが適用された
++ row  `Disabled`  実行中の実行ファイルはアップグレードを受け入れない
++ row  `NoRecord`  候補は XEK の実行ファイルではない
++ row  `WrongApplication`  候補は別のアプリケーション向けにビルドされた
++ row  `BadSignature`  候補の署名が検証されない
++ row  `NotNewer`  候補は実行中の実行ファイルより新しくない
++ row  `SwapFailed`  候補を所定の位置に入れ替えられなかった
+
+= row  `SwapFailed`  the candidate could not be swapped into place
+- ```
++ ```
+
+- `Upgrade.acknowledge()` clears the record, so that each outcome is reported once:
++ `Upgrade.acknowledge()` は記録を消去するので、各結果は一度だけ報告される：
+
+= `Upgrade.acknowledge()` clears the record, so that each outcome is reported once:
+=
+- ```scala
++ ```scala
+
+= `Upgrade.acknowledge()` clears the record, so that each outcome is reported once:
+=
+= ```scala
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+= `Upgrade.acknowledge()` clears the record, so that each outcome is reported once:
+=
+= ```scala
+= import environments.javaBaseEnvironment
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- def report(): Optional[Message] =
++ def report(): Optional[Message] =
+
+-   Upgrade.outcome.let: outcome =>
++   Upgrade.outcome.let: outcome =>
+
+-     Upgrade.acknowledge()
++     Upgrade.acknowledge()
+
+-     m"${outcome.result} (build ${outcome.candidate.show})"
++     m"${outcome.result} (build ${outcome.candidate.show})"
+
+=     m"${outcome.result} (build ${outcome.candidate.show})"
+- ```
++ ```
+
+- #### What the signature covers
++ #### 署名が覆うもの
+
+- What the signature covers is chosen so that each part of it defeats a specific attack:
++ 署名が覆うものは、その各部分が特定の攻撃を退けるように選ばれている：
+
+= What the signature covers is chosen so that each part of it defeats a specific attack:
+=
+- ```tabular
++ ```tabular
+
+- column  Signed part
+- column  Prevents
+- row  the launcher's own code  tampering with the launcher
+- row  the bundled JAR  tampering with the application
+- row  the build identifier  replaying an older, legitimately-signed release
+- row  the application identifier  installing another application's release in its place
+- row  the flag byte permitting a downgrade  turning it on after the fact
+- row  the keys themselves  substituting a different release key into an otherwise-legitimate binary
++ column  署名される部分
++ column  防ぐもの
++ row  ランチャー自身のコード  ランチャーの改竄
++ row  同梱の JAR  アプリケーションの改竄
++ row  ビルド識別子  正当に署名された古いリリースの再生
++ row  アプリケーション識別子  別のアプリケーションのリリースをその代わりにインストールすること
++ row  ダウングレードを許すフラグのバイト  後からそれを有効にすること
++ row  鍵そのもの  ほかの点では正当なバイナリに別のリリース鍵を差し込むこと
+
+= row  the keys themselves  substituting a different release key into an otherwise-legitimate binary
+- ```
++ ```
+
+- A deliberate rollback, such as shipping 42 over a broken 43, is signed with
+- `--allow-downgrade`, which sets that flag inside the signed payload.
++ 壊れた 43 の上に 42 を出荷するといった意図的なロールバックは、`--allow-downgrade` で署名する。これは署名されたペイロードの中にそのフラグを立てる。
+
+- The keys which a candidate is checked against are always those of the *running* binary, so
+- rotation of keys works as a chain. A release which is signed with the old key may carry a
+- new key as its `--public-key`, after which releases are signed with the new one. `xek sign`
+- asks for `--foreign-key` to sign with a key which the binary does not carry, since that is
+- otherwise almost always a mistake. A release which is signed with the recovery key is
+- accepted too, and may replace either key.
++ 候補を照らし合わせる鍵は常に*実行中の*バイナリのものなので、鍵のローテーションは連鎖として働く。
++ 古い鍵で署名したリリースは、新しい鍵を `--public-key` として持つことができ、その後のリリースは新しい鍵で署名される。
++ `xek sign` は、バイナリが持たない鍵で署名するには `--foreign-key` を求める。そうでなければそれはほとんど常に誤りだからである。
++ リカバリー鍵で署名したリリースも受け入れられ、どちらの鍵も置き換えられる。
+
+- ### Related
++ ### 関連
+
+- - [Command-line applications](cli.md) describes the body which `cli` runs.
+- - [Environment](environment.md#overriding-for-a-block) explains how each invocation sees its
+-   own environment.
+- - [Concurrency](concurrency.md) runs the invocations side by side.
+- - [Packaging](packaging.md) builds other kinds of distributable.
+- - [HTTP server](http-server.md), [LSP](lsp.md), [processes](processes.md) and [service discovery](service-discovery.md) describe what a daemon serves, launches and advertises.
++ - [コマンドラインアプリケーション](cli.md)は、`cli` が実行する本体を説明する。
++ - [環境](environment.md#overriding-for-a-block)は、各呼び出しがどのように自分の環境を見るかを説明する。
++ - [並行性](concurrency.md)は、呼び出しを並べて実行する。
++ - [パッケージング](packaging.md)は、ほかの種類の配布物をビルドする。
++ - [HTTP サーバー](http-server.md)、[LSP](lsp.md)、[プロセス](processes.md)、[サービスディスカバリー](service-discovery.md)は、デーモンが提供し、起動し、広告するものを説明する。

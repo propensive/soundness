@@ -1,0 +1,549 @@
+orthant 1 language
+
+- ## HTTP Server
++ ## HTTP サーバー
+
+- ### About
++ ### 概要
+
+- An HTTP server is a handler: a function from a request to a response, served on a port. One
+- is run with a single expression. The handler reads the request which is in scope, matches on
+- its method and path, and returns a typed response, whose `Content-Type` follows from the
+- value it carries.
++ HTTP サーバーはハンドラである。つまり、リクエストからレスポンスへの関数であり、ポートで提供される。
++ サーバーは一つの式で実行される。
++ ハンドラはスコープにあるリクエストを読み、そのメソッドとパスでマッチし、型付きのレスポンスを返す。レスポンスの `Content-Type` は、それが運ぶ値から決まる。
+
+- The server speaks modern HTTP/1.1, with keep-alive, pipelining, chunked bodies, TLS,
+- `100-continue` and protocol upgrades, on a virtual thread for each connection. It speaks
+- HTTP/2 on any connection whose TLS handshake negotiates it.
++ サーバーは現代的な HTTP/1.1 を話す。キープアライブ、パイプライン化、チャンク化された本文、TLS、`100-continue`、プロトコルのアップグレードを備え、接続ごとに一つの仮想スレッドで動く。
++ TLS のハンドシェイクで HTTP/2 がネゴシエートされた接続では、HTTP/2 を話す。
+
+- Two neighboring protocols sit above HTTP/1.1.
+- [WebSockets](https://en.wikipedia.org/wiki/WebSocket) upgrade a request into a stream of
+- messages, which is handled as a state machine. HTTP/2 carries many requests over one
+- connection, for browsers and for the protocols in the style of gRPC which require it.
++ HTTP/1.1 の上には、隣接する二つのプロトコルがある。
++ [WebSocket](https://en.wikipedia.org/wiki/WebSocket) はリクエストをメッセージのストリームにアップグレードし、それは状態機械として処理される。
++ HTTP/2 は一つの接続で多くのリクエストを運び、ブラウザや、それを必要とする gRPC 風のプロトコルのために使われる。
+
+- ### On serving HTTP
++ ### HTTP の提供について
+
+- Server frameworks tend to arrive as inversion of control: DSLs for routing, controller
+- classes, annotation processors, and a runtime which calls the application, instead of the
+- reverse. The protocol underneath is simpler than the frameworks suggest. A request arrives,
+- and a response is computed. A typed language can express that directly, with routing as
+- ordinary pattern matching, and content negotiation as [typeclasses][typeclass].
++ サーバーのフレームワークは、制御の反転として現れがちである。ルーティングのための DSL、コントローラーのクラス、アノテーションプロセッサー、そしてアプリケーションが呼ぶのではなくアプリケーションを呼ぶランタイムである。
++ その下にあるプロトコルは、フレームワークが思わせるより単純である。
++ リクエストが届き、レスポンスが計算される。
++ 型付きの言語はそれを直接表現でき、ルーティングは通常のパターンマッチとして、コンテントネゴシエーションは[型クラス]として表せる。
+
+- Here a handler is a block of code, and everything else is values. A handler which states what
+- it needs, and what it may fail with, has an
+- [honest signature](../../philosophy/honest-signatures.md), and that is why a server can be tested
+- without a socket.
++ ここではハンドラはコードのブロックであり、それ以外はすべて値である。
++ 何を必要とし、何で失敗しうるかを述べるハンドラは[正直なシグネチャ](../../philosophy/honest-signatures.md)を持ち、それゆえサーバーはソケットなしにテストできる。
+
+- Everything comes from the `soundness` package. The [concurrency](concurrency.md) context
+- which a server runs under is in scope:
++ すべては `soundness` パッケージから来る。
++ サーバーが実行される[並行性](concurrency.md)のコンテキストはスコープにある。
+
+= which a server runs under is in scope:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import webserverErrorPages.minimalErrorPage
++ import webserverErrorPages.minimalErrorPage
+
+= import webserverErrorPages.minimalErrorPage
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  Decides
+- row  `threads.virtualThreads`, `probates.awaitProbate`  how the server's tasks run, and what happens to them when their scope ends
+- row  `webserverErrorPages.minimalErrorPage`  what a client is sent when a handler fails
+- row  `logging.silentLogging`  that requests are not logged; [Logging](logging.md) has the alternatives
+- row  `formatting.compactJsonFormatting`  how a JSON body is written
+- row  `charsets`, `codepages`, `textSanitizers`  how bytes become text, and text becomes bytes
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception
++ column  インポート
++ column  決めること
++ row  `threads.virtualThreads`, `probates.awaitProbate`  サーバーのタスクがどう実行され、スコープが終わったときにそれらがどうなるか
++ row  `webserverErrorPages.minimalErrorPage`  ハンドラが失敗したときにクライアントに何が送られるか
++ row  `logging.silentLogging`  リクエストがログに記録されないこと。代わりの選択肢は[ロギング](logging.md)にある
++ row  `formatting.compactJsonFormatting`  JSON の本文がどう書かれるか
++ row  `charsets`, `codepages`, `textSanitizers`  バイト列がどうテキストになり、テキストがどうバイト列になるか
++ row  `strategies.throwUnsafely`  エラーが例外として投げられること
+
+= row  `strategies.throwUnsafely`  that an error is thrown as an exception
+- ```
++ ```
+
+- The samples on this page bind a port, so they are compiled but not run.
++ このページのサンプルはポートを束縛するので、コンパイルはされるが実行はされない。
+
+- ### A server
++ ### サーバー
+
+- `SocketServer` listens on a port, and runs the handler for each request. The port is bound
+- when `handle` is called, and the service which `handle` returns stops the server when it is
+- canceled. The service runs on tasks of the enclosing `supervise`, so the block lasts as long
+- as the server does.
++ `SocketServer` はポートで待ち受け、リクエストごとにハンドラを実行する。
++ ポートは `handle` が呼ばれたときに束縛され、`handle` が返すサービスは、キャンセルされるとサーバーを停止する。
++ サービスは外側の `supervise` のタスクで実行されるので、ブロックはサーバーと同じだけ続く。
+
+- Within the handler, `request` is the current request, with its method, target, headers,
+- cookies and body. Routing is therefore a `match`:
++ ハンドラの中では、`request` が現在のリクエストであり、そのメソッド、ターゲット、ヘッダー、クッキー、本文を持つ。
++ したがってルーティングは `match` である。
+
+- ```scala fuel
++ ```scala fuel
+
+= ```scala fuel
+- frame
++ frame
+
+-   label One response to every request
++   label すべてのリクエストに一つのレスポンス
+
+=   label One response to every request
+-   code
++   code
+
+-       def hello(): Unit = supervise:
++       def hello(): Unit = supervise:
+
+-         val server = SocketServer(8080).handle:
++         val server = SocketServer(8080).handle:
+
+-           Http.Response(Http.Ok)(t"Hello, world!")
++           Http.Response(Http.Ok)(t"Hello, world!")
+
+=           Http.Response(Http.Ok)(t"Hello, world!")
+- frame
++ frame
+
+-   label Routed on the request's target
++   label リクエストのターゲットでルーティング
+
+=   label Routed on the request's target
+-   code
++   code
+
+-       val homePage = t"<h1>Welcome</h1>"
++       val homePage = t"<h1>Welcome</h1>"
+
+-       def routed(): Unit = supervise:
++       def routed(): Unit = supervise:
+
+-         SocketServer(8080).handle:
++         SocketServer(8080).handle:
+
+-           request.target match
++           request.target match
+
+-             case t"/"       => Http.Response(Http.Ok)(homePage)
++             case t"/"       => Http.Response(Http.Ok)(homePage)
+
+-             case t"/status" => Http.Response(Http.Ok)(t"OK")
++             case t"/status" => Http.Response(Http.Ok)(t"OK")
+
+-             case _          => Http.Response(Http.NotFound)(t"No such page")
++             case _          => Http.Response(Http.NotFound)(t"No such page")
+
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- ### Responses
++ ### レスポンス
+
+- `Http.Response` takes a status, headers as named arguments, and a body. The body may be of any
+- type with a `Servable` instance, such as text, bytes, [HTML](html.md) or [JSON](json.md). The
+- instance supplies the media type, so what is served, and how it is labeled, cannot disagree:
++ `Http.Response` は、ステータス、名前付き引数としてのヘッダー、そして本文を取る。
++ 本文は、テキスト、バイト列、[HTML](html.md)、[JSON](json.md) など、`Servable` インスタンスを持つ任意の型でよい。
++ インスタンスがメディアタイプを提供するので、提供されるものとそのラベルが食い違うことはありえない。
+
+= instance supplies the media type, so what is served, and how it is labeled, cannot disagree:
+=
+- ```scala
++ ```scala
+
+- val status = Http.Response(Http.Ok, cacheControl = t"no-cache")(t"""{"status": "ok"}""".read[Json])
++ val status = Http.Response(Http.Ok, cacheControl = t"no-cache")(t"""{"status": "ok"}""".read[Json])
+
+- val moved = Http.Response(Http.Found, location = t"/elsewhere")()
++ val moved = Http.Response(Http.Found, location = t"/elsewhere")()
+
+= val moved = Http.Response(Http.Found, location = t"/elsewhere")()
+- ```
++ ```
+
+- The headers are checked as they are for a [request](http-client.md#headers): a header's value
+- must have the type which that header takes.
++ ヘッダーは[リクエスト](http-client.md#headers)の場合と同じように検査される。ヘッダーの値は、そのヘッダーが取る型を持たなければならない。
+
+- This is the `Content-Type` which each kind of body is served with:
++ 各種の本文が提供されるときの `Content-Type` は次のとおりである。
+
+= This is the `Content-Type` which each kind of body is served with:
+=
+- ```tabular
++ ```tabular
+
+- column  Body
++ column  本文
+
+- column  `Content-Type`
++ column  `Content-Type`
+
+- row  `Text`  `text/plain`
++ row  `Text`  `text/plain`
+
+- row  `Data`  `application/octet-stream`
++ row  `Data`  `application/octet-stream`
+
+- row  `Document[Html]`  `text/html; charset=UTF-8`
++ row  `Document[Html]`  `text/html; charset=UTF-8`
+
+- row  `Json`  `application/json; charset=UTF-8`
++ row  `Json`  `application/json; charset=UTF-8`
+
+- row  `Xml`  `application/xml; charset=UTF-8`
++ row  `Xml`  `application/xml; charset=UTF-8`
+
+- row  `Yaml`  `application/yaml; charset=UTF-8`
++ row  `Yaml`  `application/yaml; charset=UTF-8`
+
+- row  `Tel`  `application/vnd.tel`
++ row  `Tel`  `application/vnd.tel`
+
+- row  `Cbor`  `application/cbor`
++ row  `Cbor`  `application/cbor`
+
+- row  `Protobuf`  `application/protobuf`
++ row  `Protobuf`  `application/protobuf`
+
+- row  `Chain[Sse]`  `text/event-stream`
++ row  `Chain[Sse]`  `text/event-stream`
+
+- row  any other type with a `Media` instance  the media type it declares
++ row  `Media` インスタンスを持つその他の型  その型が宣言するメディアタイプ
+
+= row  any other type with a `Media` instance  the media type it declares
+- ```
++ ```
+
+- The instances for the format types are in the package `servables`.
+- [Media types](media-types.md#types-that-know-their-media-type) describes how a type of one's
+- own declares a media type.
++ 形式の型のインスタンスはパッケージ `servables` にある。
++ [メディアタイプ](media-types.md#types-that-know-their-media-type)は、自分の型がどうメディアタイプを宣言するかを記述する。
+
+- `Redirect`, `NotFound` and `NoCache` wrap content in the common shapes of response. The body
+- of a request is read as a typed value with `as`, whether it is a
+- [multipart](media-types.md#multipart) upload or a [form submission](forms.md#submissions).
+- `basicAuth` guards a response behind credentials, and [OAuth](oauth.md#in-a-web-application)
+- guards one behind a token.
++ `Redirect`、`NotFound`、`NoCache` は、内容をよくあるレスポンスの形で包む。
++ リクエストの本文は、[マルチパート](media-types.md#multipart)のアップロードでも[フォームの送信](forms.md#submissions)でも、`as` で型付きの値として読まれる。
++ `basicAuth` はレスポンスを資格情報の背後で守り、[OAuth](oauth.md#in-a-web-application) はトークンの背後で守る。
+
+- ### Request and response bodies
++ ### リクエストとレスポンスの本文
+
+- The body of a request is a [stream](streams.md), not a block of bytes which must arrive before
+- the handler runs. A large upload is consumed as it is received, and the body of a response is
+- framed from its stream a block at a time, so neither is held in memory.
++ リクエストの本文は[ストリーム](streams.md)であり、ハンドラが実行される前に届いていなければならないバイトのブロックではない。
++ 大きなアップロードは受信されるにつれて消費され、レスポンスの本文はそのストリームから一ブロックずつフレーミングされるので、どちらもメモリに保持されない。
+
+- The body belongs to the handler's scope. It is the connection's, and the connection ends. A
+- handler which wants to keep a body past its response therefore reads it into memory
+- explicitly, with `memoize`.
++ 本文はハンドラのスコープに属する。
++ それは接続のものであり、接続は終わる。
++ したがって、レスポンスの後まで本文を保持したいハンドラは、`memoize` で明示的にそれをメモリに読み込む。
+
+- ### WebSockets
++ ### WebSocket
+
+- A request is upgraded to a WebSocket by returning a `webSocket` handler, which treats the
+- connection as a state machine. Each incoming message produces a reply, a change of state, or
+- the end of the conversation. Messages are typed: raw frames, text, or any type carried over
+- JSON.
++ リクエストは `webSocket` ハンドラを返すことで WebSocket にアップグレードされる。このハンドラは接続を状態機械として扱う。
++ 届いたメッセージはそれぞれ、返信、状態の変化、または会話の終わりを生む。
++ メッセージは型付きである。生のフレーム、テキスト、あるいは JSON 上で運ばれる任意の型である。
+
+= JSON.
+=
+- ```scala
++ ```scala
+
+- case class Ping(value: Int)
++ case class Ping(value: Int)
+
+- def pinger(): Unit = supervise:
++ def pinger(): Unit = supervise:
+
+= def pinger(): Unit = supervise:
+-   SocketServer(8080).handle:
++   SocketServer(8080).handle:
+
+-     webSocket(): (ping: Ping over Json) =>
++     webSocket(): (ping: Ping over Json) =>
+
+-       Control.Reply(Ping(ping.value + 1).over[Json], ())
++       Control.Reply(Ping(ping.value + 1).over[Json], ())
+
+=       Control.Reply(Ping(ping.value + 1).over[Json], ())
+- ```
++ ```
+
+- A handler answers each message with a `Control`:
++ ハンドラは各メッセージに `Control` で答える。
+
+= A handler answers each message with a `Control`:
+=
+- ```tabular
++ ```tabular
+
+- column  Answer
+- column  Sends a message
+- column  Then
+- row  `Control.Reply(message, state)`  yes  carries on
+- row  `Control.Continue(state)`  no  carries on
+- row  `Control.Conclude(message, state)`  yes  closes
+- row  `Control.Terminate`  no  closes at once
++ column  答え
++ column  メッセージを送るか
++ column  その後
++ row  `Control.Reply(message, state)`  送る  続ける
++ row  `Control.Continue(state)`  送らない  続ける
++ row  `Control.Conclude(message, state)`  送る  閉じる
++ row  `Control.Terminate`  送らない  直ちに閉じる
+
+= row  `Control.Terminate`  no  closes at once
+- ```
++ ```
+
+- The handler's state, which is `()` here, is passed from one message to the next. Where a
+- state is optional, and is left out, the previous one carries over.
++ ハンドラの状態は、ここでは `()` であり、あるメッセージから次のメッセージへ渡される。
++ 状態が省略可能で省かれた場合は、前の状態が引き継がれる。
+
+- The implementation handles the protocol's sharp edges: masking, fragmentation, ping and pong,
+- validation of UTF-8, and close codes. It conforms to the
+- [Autobahn](https://github.com/crossbario/autobahn-testsuite) test suite.
++ 実装はプロトコルの厄介な部分を扱う。マスキング、断片化、ping と pong、UTF-8 の検証、クローズコードである。
++ [Autobahn](https://github.com/crossbario/autobahn-testsuite) のテストスイートに適合している。
+
+- ### HTTP/2
++ ### HTTP/2
+
+- A listening socket with TLS offers `h2`, and then `http/1.1`, by ALPN. The protocol which a
+- connection speaks follows from how it arrives:
++ TLS を持つ待ち受けソケットは、ALPN によって `h2`、次に `http/1.1` を提示する。
++ 接続が話すプロトコルは、それがどう届くかによって決まる。
+
+= connection speaks follows from how it arrives:
+=
+- ```tabular
++ ```tabular
+
+- column  Connection
+- column  Protocol
+- row  cleartext, to a `SocketServer`  HTTP/1.1
+- row  TLS, negotiating `h2`  HTTP/2
+- row  TLS, negotiating `http/1.1` or nothing  HTTP/1.1
+- row  cleartext h2c with prior knowledge, over an `Http2.Endpoint`  HTTP/2
++ column  接続
++ column  プロトコル
++ row  `SocketServer` への平文  HTTP/1.1
++ row  `h2` をネゴシエートする TLS  HTTP/2
++ row  `http/1.1` をネゴシエートするか何もネゴシエートしない TLS  HTTP/1.1
++ row  `Http2.Endpoint` 上の、事前知識を伴う平文の h2c  HTTP/2
+
+= row  cleartext h2c with prior knowledge, over an `Http2.Endpoint`  HTTP/2
+- ```
++ ```
+
+- The handler's contract is unchanged, so an existing application serves HTTP/2 with no
+- alteration:
++ ハンドラの契約は変わらないので、既存のアプリケーションは何も変更せずに HTTP/2 を提供する。
+
+= alteration:
+=
+- ```scala
++ ```scala
+
+- def secure(context: javax.net.ssl.SSLContext): Unit = supervise:
++ def secure(context: javax.net.ssl.SSLContext): Unit = supervise:
+
+-   SocketServer(8443, ssl = context).handle:
++   SocketServer(8443, ssl = context).handle:
+
+-     Http.Response(Http.Ok)(t"Hello over h2!")
++     Http.Response(Http.Ok)(t"Hello over h2!")
+
+=     Http.Response(Http.Ok)(t"Hello over h2!")
+- ```
++ ```
+
+- Each stream which a client initiates is handled on a virtual thread of its own, so the
+- requests which share one connection run concurrently. The engine implements flow control,
+- trailers, and full [HPACK](https://datatracker.ietf.org/doc/html/rfc7541) compression of
+- headers. It tolerates the types of frame which it does not act on, such as `PRIORITY`,
+- `PUSH_PROMISE` and extensions, and does not fail the connection.
+- [Streams](streams.md#tuning-backpressure) describes how its flow control applies
+- backpressure.
++ クライアントが開始する各ストリームはそれぞれ独自の仮想スレッドで処理されるので、一つの接続を共有するリクエストは並行して実行される。
++ エンジンは、フロー制御、トレーラー、そしてヘッダーの完全な [HPACK](https://datatracker.ietf.org/doc/html/rfc7541) 圧縮を実装している。
++ `PRIORITY`、`PUSH_PROMISE`、拡張など、処理の対象としない種類のフレームは許容し、接続を失敗させない。
++ [ストリーム](streams.md#tuning-backpressure)は、そのフロー制御がどうバックプレッシャーをかけるかを記述する。
+
+- Cleartext h2c with prior knowledge is the flavor used between services. It is spoken over an
+- `Http2.Endpoint`, which is also a transport for the [HTTP client](http-client.md), and which
+- carries the [gRPC](rpc.md) support built on top of it.
++ 事前知識を伴う平文の h2c は、サービス間で使われる流儀である。
++ これは `Http2.Endpoint` 上で話される。`Http2.Endpoint` は [HTTP クライアント](http-client.md)のトランスポートでもあり、その上に築かれた [gRPC](rpc.md) のサポートを運ぶ。
+
+- ### Front-ends
++ ### フロントエンド
+
+- Cleartext HTTP/1.1 connections are served by one of two front-ends. The choice is made by a
+- `Frontend` given, in scope when `handle` is called:
++ 平文の HTTP/1.1 の接続は、二つのフロントエンドのいずれかによって提供される。
++ その選択は、`handle` が呼ばれるときにスコープにある `Frontend` の given によってなされる。
+
+= `Frontend` given, in scope when `handle` is called:
+=
+- ```tabular
++ ```tabular
+
+- column  Front-end
+- column  Runs a handler
+- column  A blocking handler stalls
+- row  `frontends.threadPerConnectionFrontend`, the default  on its connection's virtual thread  only its own connection
+- row  `frontends.reactiveFrontend`  inline on one of a fixed fleet of selector threads  every connection on that loop
++ column  フロントエンド
++ column  ハンドラを実行する場所
++ column  ブロックするハンドラが止めるもの
++ row  `frontends.threadPerConnectionFrontend`（デフォルト）  その接続の仮想スレッド上  自分の接続だけ
++ row  `frontends.reactiveFrontend`  固定数のセレクタースレッドの一つの上でインラインに  そのループ上のすべての接続
+
+= row  `frontends.reactiveFrontend`  inline on one of a fixed fleet of selector threads  every connection on that loop
+- ```
++ ```
+
+- On the default front-end, a handler may block: on a [database](database.md), on a file, or on
+- another service. The reactive front-end is an event loop, in which each selector thread
+- serves a batch of ready connections each time it wakes:
++ デフォルトのフロントエンドでは、ハンドラはブロックしてよい。[データベース](database.md)、ファイル、あるいは別のサービスでブロックしてもよい。
++ リアクティブなフロントエンドはイベントループであり、各セレクタースレッドは起きるたびに準備のできた接続の一群を提供する。
+
+= serves a batch of ready connections each time it wakes:
+=
+- ```scala
++ ```scala
+
+- import frontends.reactiveFrontend
++ import frontends.reactiveFrontend
+
+- def reactive(): Unit = supervise:
++ def reactive(): Unit = supervise:
+
+= def reactive(): Unit = supervise:
+-   SocketServer(8080).handle:
++   SocketServer(8080).handle:
+
+-     Http.Response(Http.Ok)(t"Hello, world!")
++     Http.Response(Http.Ok)(t"Hello, world!")
+
+=     Http.Response(Http.Ok)(t"Hello, world!")
+- ```
++ ```
+
+- The reactive front-end serves small requests at about one and a half times the rate of the
+- default, and allocates less for each request, because nothing is scheduled for each request.
+- On a loopback benchmark it is level with Netty and Undertow.
++ リアクティブなフロントエンドは、小さなリクエストをデフォルトの約一・五倍の速度で提供し、リクエストごとのアロケーションも少ない。リクエストごとに何もスケジュールされないからである。
++ ループバックのベンチマークでは、Netty や Undertow と同等である。
+
+- The price is its contract. A handler which blocks stalls every connection on that loop. The
+- reactive front-end therefore suits handlers which compute their response from what they
+- already have, or which hand off to other tasks and answer from memory. Requests which the loop
+- cannot serve inline are handed to a virtual thread, and served by the default path: chunked
+- or oversized bodies, `Expect: 100-continue`, and protocol upgrades. A WebSocket handler
+- therefore works under either front-end.
++ その代価は契約である。
++ ブロックするハンドラは、そのループ上のすべての接続を止める。
++ したがってリアクティブなフロントエンドは、すでに持っているものからレスポンスを計算するハンドラや、他のタスクに引き渡してメモリから答えるハンドラに向いている。
++ ループがインラインで提供できないリクエストは仮想スレッドに引き渡され、デフォルトの経路で提供される。チャンク化された本文や大きすぎる本文、`Expect: 100-continue`、プロトコルのアップグレードである。
++ したがって WebSocket のハンドラはどちらのフロントエンドでも動く。
+
+- ### Related
++ ### 関連
+
+- - [HTTP client](http-client.md) makes requests with the same vocabulary of methods, statuses
+-   and headers.
+- - [HTML](html.md) and [JSON](json.md#json-over-http) describe the bodies most often served.
+- - [Forms](forms.md) renders an HTML form and reads its submission.
+- - [Sockets](sockets.md) is the layer beneath.
+- - [Daemons](daemons.md) keeps a server running as a service.
+- - [MCP](mcp.md), [web pages](pages.md), [patterns](patterns.md) and [cryptography](cryptography.md) describe what a server hosts, matches and secures.
++ - [HTTP クライアント](http-client.md)は、メソッド、ステータス、ヘッダーの同じ語彙でリクエストを行う。
++ - [HTML](html.md) と [JSON](json.md#json-over-http) は、最もよく提供される本文を記述する。
++ - [フォーム](forms.md)は HTML のフォームを描画し、その送信を読む。
++ - [ソケット](sockets.md)はその下のレイヤーである。
++ - [デーモン](daemons.md)はサーバーをサービスとして動かし続ける。
++ - [MCP](mcp.md)、[Web ページ](pages.md)、[パターン](patterns.md)、[暗号](cryptography.md)は、サーバーが提供するもの、マッチするもの、保護するものを記述する。

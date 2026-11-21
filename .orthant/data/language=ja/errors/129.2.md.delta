@@ -1,0 +1,63 @@
+orthant 1 language
+
+- # `↯/s.129.2` — `Ergo.Error`
++ # `↯/s.129.2` — `Ergo.Error`
+
+- Raised when a mathematical expression written in the Ergo shorthand cannot be parsed.
++ Ergo の略記法で書かれた数式をパースできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Ergo is a compact syntax for mathematical notation, expanded into MathML. This error covers
+- a malformed expression: unbalanced grouping, an unknown operator, or a missing operand.
++ Ergo は数学の記法のための簡潔な構文であり、MathML に展開される。
++ このエラーは、形の不正な式を対象とする。対応の取れていないグループ化、未知の演算子、オペランドの欠落である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.129.2.1`  `Empty`  `[↯/s.129.2.1] the expression was empty`
++ row  `↯/s.129.2.1`  `Empty`  `[↯/s.129.2.1] the expression was empty`
+
+- row  `↯/s.129.2.2`  `BadOpener`  `[↯/s.129.2.2] the expression must start with a bracket, not <char>`
++ row  `↯/s.129.2.2`  `BadOpener`  `[↯/s.129.2.2] the expression must start with a bracket, not <char>`
+
+- row  `↯/s.129.2.3`  `Unclosed`  `[↯/s.129.2.3] a group was not closed with <expected>`
++ row  `↯/s.129.2.3`  `Unclosed`  `[↯/s.129.2.3] a group was not closed with <expected>`
+
+- row  `↯/s.129.2.4`  `UnexpectedEnd`  `[↯/s.129.2.4] the expression ended unexpectedly`
++ row  `↯/s.129.2.4`  `UnexpectedEnd`  `[↯/s.129.2.4] the expression ended unexpectedly`
+
+- row  `↯/s.129.2.5`  `MissingBody`  `[↯/s.129.2.5] the <char> introducer must be followed by a group`
++ row  `↯/s.129.2.5`  `MissingBody`  `[↯/s.129.2.5] the <char> introducer must be followed by a group`
+
+- row  `↯/s.129.2.6`  `Unsupported`  `[↯/s.129.2.6] the <<label>> element has no ergo representation`
++ row  `↯/s.129.2.6`  `Unsupported`  `[↯/s.129.2.6] the <<label>> element has no ergo representation`
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- The message names the position and the construct at fault. Where an expression is genuinely
+- complex, writing the MathML directly is the alternative.
++ メッセージは、誤りのある位置と構成要素を名指しする。
++ 式が本当に複雑な場合は、MathML を直接書くのが代わりの方法である。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/archimedes/src/core/archimedes.Ergo.scala`
++ - ソース：`lib/archimedes/src/core/archimedes.Ergo.scala`

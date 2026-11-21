@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.68.4` — Bad type in `parse`
++ # `↯/s.68.4` — `parse` での不正な型
+
+- Raised at compile time by Nomenclature's `parse` macro when the
+- type constraint is not in the expected form.
++ 型の制約が期待された形でないときに、Nomenclature の `parse` マクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- The macro expects a specific type-level shape for the constraint
+- parameter. Other shapes cannot be analysed.
++ マクロは、制約のパラメーターについて特定の型レベルの形を期待する。
++ それ以外の形は解析できない。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.68.4] Bad type
++ [↯/s.68.4] Bad type
+
+= [↯/s.68.4] Bad type
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- The message is intentionally generic. Inspect the type the macro
+- is being applied to and confirm it matches the documented form.
++ このメッセージは意図的に汎用的である。
++ マクロが適用されている型を調べ、それが文書化された形に一致することを確かめる。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/nomenclature/src/core/nomenclature.protointernal.scala`
++ - ソース：`lib/nomenclature/src/core/nomenclature.protointernal.scala`

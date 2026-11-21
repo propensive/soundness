@@ -1,0 +1,19 @@
+orthant 1 language
+
+- # `SN-339` — `PositionalError` (retired)
++ # `SN-339` — `PositionalError`（廃止）
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ このエラーはもう存在しない。
++ このページは、コードが再利用されないように、また古いリリースからの参照がまだ解決できるように残してある。
+
+- ## What became of it
++ ## その後
+
+- Contextual's `Interpolator` API, which raised this error, was replaced by the
+- `Interpolable` typeclass and the `interpolation[…]` entry point. An interpolator now
+- reports a parse failure through its own error type, positioned by the `origins` the
+- macro is given, so there is no shared positional error to document.
++ このエラーを発生させていた Contextual の `Interpolator` API は、`Interpolable` 型クラスと `interpolation[…]` の入口に置き換えられた。
++ 補間子は今では、パースの失敗を自身のエラー型を通じて報告し、その位置はマクロに与えられる `origins` によって決まるので、文書化すべき共有の位置付きエラーはない。

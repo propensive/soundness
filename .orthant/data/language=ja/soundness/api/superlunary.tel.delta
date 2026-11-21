@@ -1,0 +1,941 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base superlunary
++ base superlunary
+
+- import soundness
++ import soundness
+
+- info   quoted Scala compiled at runtime and run elsewhere: in a fresh JVM, or an isolated classloader
++ info   実行時にコンパイルされ、別の場所で実行されるクォートされた Scala：新しい JVM で、または隔離されたクラスローダーで
+
+- detail
++ detail
+
+-     _Superlunary_ generalises Scala's staging so that quoted code — `'{…}` — runs in a
+-     different *environment* rather than the next phase of the same program. A `Rig` says how
+-     compiled code is deployed and invoked; its `dispatch` method takes a quoted block, splices
+-     in values from the enclosing scope, compiles the block at runtime (once per call site and
+-     tree), ships it, runs it, and carries its answer back. The values crossing the boundary are
+-     encoded by a `Stageable`: as JSON for the `Jvm` rig, as `Pojo` trees for `Isolation`.
++     _Superlunary_ は Scala のステージングを一般化し、クォートされたコード（`'{…}`）が同じプログラムの次の段階ではなく、別の *環境* で実行されるようにする。
++     `Rig` は、コンパイルされたコードをどう配備し、どう呼び出すかを表す。その `dispatch` メソッドはクォートされたブロックを受け取り、外側のスコープから値をスプライスし、ブロックを実行時にコンパイルし（呼び出し箇所と木ごとに一度）、送り出し、実行し、その答えを持ち帰る。
++     境界を越える値は `Stageable` によってエンコードされる。`Jvm` リグでは JSON として、`Isolation` では `Pojo` の木としてである。
+
+-     Because both sides are compiled together and delimited by quotes and splices, the contract
+-     between them is checked by the compiler: a reference to a local heap object cannot be
+-     written inside the quote, and a spliced value with no transportable form is rejected when
+-     the block compiles.
++     両側は一緒にコンパイルされ、クォートとスプライスで区切られるので、両者の間の契約はコンパイラによって検査される。ローカルのヒープオブジェクトへの参照はクォートの中に書けず、運搬可能な形式を持たない値をスプライスすると、ブロックのコンパイル時に拒否される。
+
+=     the block compiles.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     the block compiles.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     the block compiles.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     the block compiles.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import scala.quoted.*
++     import scala.quoted.*
+
+=     the block compiles.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+-     import soundness.*
++     import soundness.*
+
+=     the block compiles.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+-     import embeddings.automaticEmbedding
++     import embeddings.automaticEmbedding
+
+=     the block compiles.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+=     import embeddings.automaticEmbedding
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     the block compiles.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+=     import embeddings.automaticEmbedding
+=     import strategies.throwUnsafely
+-     import systems.javaBaseSystem
++     import systems.javaBaseSystem
+
+=     the block compiles.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+=     import embeddings.automaticEmbedding
+=     import strategies.throwUnsafely
+=     import systems.javaBaseSystem
+-     import temporaryDirectories.systemTemporaryDirectory
++     import temporaryDirectories.systemTemporaryDirectory
+
+-     case class Job(name: Text, size: Long)
++     case class Job(name: Text, size: Long)
+
+-     def runElsewhere(job: Job): Job = Jvm.dispatch:
++     def runElsewhere(job: Job): Job = Jvm.dispatch:
+
+=     def runElsewhere(job: Job): Job = Jvm.dispatch:
+-       '{
++       '{
+
+-           val name = ${job.name}
++           val name = ${job.name}
+
+-           Job(t"Processed: $name", ${job.size}*2)
++           Job(t"Processed: $name", ${job.size}*2)
+
+=           Job(t"Processed: $name", ${job.size}*2)
+-         }
++         }
+
+=           Job(t"Processed: $name", ${job.size}*2)
+=         }
+-     ```
++     ```
+
+-     Moving a computation elsewhere changes where it runs, not how it is called:
++     計算を別の場所に移しても、変わるのは実行される場所であり、呼び出し方ではない。
+
+=     Moving a computation elsewhere changes where it runs, not how it is called:
+=
+-     ```scala fuel
++     ```scala fuel
+
+-     alternative Local
++     alternative Local
+
+=     alternative Local
+-       code
++       code
+
+-           def process(job: Job): Job =
++           def process(job: Job): Job =
+
+-             val name = job.name
++             val name = job.name
+
+-             Job(t"Processed: $name", job.size*2)
++             Job(t"Processed: $name", job.size*2)
+
+-     alternative Isolated classloader
++     alternative Isolated classloader
+
+=     alternative Isolated classloader
+-       code
++       code
+
+-           def process(job: Job): Job = Isolation.dispatch:
++           def process(job: Job): Job = Isolation.dispatch:
+
+=           def process(job: Job): Job = Isolation.dispatch:
+-             '{
++             '{
+
+=           def process(job: Job): Job = Isolation.dispatch:
+=             '{
+-                 val name = ${job.name}
++                 val name = ${job.name}
+
+=           def process(job: Job): Job = Isolation.dispatch:
+=             '{
+=                 val name = ${job.name}
+-                 Job(t"Processed: $name", ${job.size}*2)
++                 Job(t"Processed: $name", ${job.size}*2)
+
+=           def process(job: Job): Job = Isolation.dispatch:
+=             '{
+=                 val name = ${job.name}
+=                 Job(t"Processed: $name", ${job.size}*2)
+-               }
++               }
+
+-     alternative Fresh JVM
++     alternative Fresh JVM
+
+=     alternative Fresh JVM
+-       code
++       code
+
+-           def process(job: Job): Job = Jvm.dispatch:
++           def process(job: Job): Job = Jvm.dispatch:
+
+=           def process(job: Job): Job = Jvm.dispatch:
+-             '{
++             '{
+
+=           def process(job: Job): Job = Jvm.dispatch:
+=             '{
+-                 val name = ${job.name}
++                 val name = ${job.name}
+
+=           def process(job: Job): Job = Jvm.dispatch:
+=             '{
+=                 val name = ${job.name}
+-                 Job(t"Processed: $name", ${job.size}*2)
++                 Job(t"Processed: $name", ${job.size}*2)
+
+=           def process(job: Job): Job = Jvm.dispatch:
+=             '{
+=                 val name = ${job.name}
+=                 Job(t"Processed: $name", ${job.size}*2)
+-               }
++               }
+
+=               }
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     A value spliced with `${…}` is converted to an `Expr` by `embeddings.automaticEmbedding`,
+-     which is imported by name: `import soundness.*` does not import givens. A dispatch also
+-     needs a `System` and a `TemporaryDirectory` in scope, and raises `Compiler.Error` (the
+-     staged code did not compile) and `Rig.Error` (it could not be marshalled, staged or
+-     invoked).
++     `${…}` でスプライスした値は `embeddings.automaticEmbedding` によって `Expr` に変換される。これは名前でインポートする。`import soundness.*` は given をインポートしないからである。
++     ディスパッチにはスコープに `System` と `TemporaryDirectory` も必要であり、`Compiler.Error`（ステージングされたコードがコンパイルできなかった）と `Rig.Error`（マーシャリング、ステージング、呼び出しのいずれかができなかった）を発生させる。
+
+-     The library has two source sets:
++     このライブラリには二つのソースセットがある。
+
+-     - `superlunary.core` — `Rig`, `Stage`, `Stageable`, `References` and the `embeddings`
+-       package: the machinery any rig is built from.
+-     - `superlunary.jvm` — the two provided rigs, `Jvm` and `Isolation`, and `Executor`, the
+-       entry point a `Jvm` subprocess runs.
++     - `superlunary.core`：`Rig`、`Stage`、`Stageable`、`References`、そして `embeddings` パッケージ。あらゆるリグを組み立てるための仕組みである。
++     - `superlunary.jvm`：提供される二つのリグ `Jvm` と `Isolation`、そして `Jvm` のサブプロセスが実行するエントリーポイントである `Executor`。
+
+-     Everything is exported to the `soundness` umbrella, and the `embeddings` choice package
+-     merges with the umbrella's own. `apoplexy.Executor` is deliberately not exported, since it
+-     would collide with `superlunary.Executor` there; `Executor` in the umbrella is this one.
++     すべては `soundness` アンブレラにエクスポートされ、`embeddings` 選択パッケージはアンブレラ自身のものと統合される。
++     `apoplexy.Executor` は意図的にエクスポートされない。そこで `superlunary.Executor` と衝突するからである。アンブレラにある `Executor` はこちらである。
+
+- refer superlunary.Rig
++ refer superlunary.Rig
+
+- refer superlunary.Jvm
++ refer superlunary.Jvm
+
+- refer superlunary.Isolation
++ refer superlunary.Isolation
+
+- refer superlunary.Stageable
++ refer superlunary.Stageable
+
+- refer superlunary.embeddings
++ refer superlunary.embeddings
+
+- entry .Rig   an environment quoted code can be compiled for and run in, with `dispatch` to run a block there
++ entry .Rig   クォートされたコードをコンパイルして実行できる環境。そこでブロックを実行する `dispatch` を持つ
+
+= entry .Rig   an environment quoted code can be compiled for and run in, with `dispatch` to run a block there
+-   detail
++   detail
+
+-       A rig is the *where* of a staged computation, as a value. `dispatch` does the hard parts
+-       before the rig sees anything — compiling the quoted block if it is not already compiled,
+-       capturing its spliced inputs and encoding them into one transportable `Form` — leaving
+-       the rig a narrow job: make compiled output available to its environment (`#stage`), and
+-       run it there given the encoded input, bringing back the encoded output (`#invoke`).
++       リグは、ステージングされた計算の *場所* を値として表したものである。
++       `dispatch` は、リグが何かを目にする前に難しい部分を済ませる。クォートされたブロックがまだコンパイルされていなければコンパイルし、スプライスされた入力を捕らえ、それらをひとつの運搬可能な `Form` にエンコードする。リグに残るのは狭い仕事である。コンパイルされた出力を環境で利用できるようにすること（`#stage`）と、エンコードされた入力を与えてそこで実行し、エンコードされた出力を持ち帰ること（`#invoke`）である。
+
+-       An implementation declares its `#Result` type (the bare output, or an `Optional`, or a
+-       `Task`, as suits the environment), its `#Transport` and `Form`, its `Target` (whatever
+-       `#stage` produces, such as a `LocalClasspath` or a `Classloader`), the `scalac` to compile
+-       with, and the two methods. It is constructed with the `Classloader` whose classpath the
+-       staged code is compiled against and linked with — normally the rig's own,
+-       `Classloader[MyRig.type]`, since under a test-running host the thread's context loader may
+-       be the host's.
++       実装は、`#Result` 型（環境に応じて、そのままの出力、`Optional`、`Task` など）、`#Transport` と `Form`、`Target`（`LocalClasspath` や `Classloader` など、`#stage` が生成するもの）、コンパイルに使う `scalac`、そして二つのメソッドを宣言する。
++       ステージングされたコードがコンパイルされ、リンクされるクラスパスを持つ `Classloader` を与えて構築する。通常はリグ自身のもの、`Classloader[MyRig.type]` である。テストを実行するホストのもとでは、スレッドのコンテキストローダーがホストのものである場合があるからである。
+
+=       be the host's.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       be the host's.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+-       substitute ???  ...
++       substitute ???  ...
+
+=       substitute ???  ...
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       object Subprocess extends Rig(using Classloader[Subprocess.type]):
++       object Subprocess extends Rig(using Classloader[Subprocess.type]):
+
+-         type Result[output] = output
++         type Result[output] = output
+
+-         type Form = Text
++         type Form = Text
+
+-         type Target = LocalClasspath
++         type Target = LocalClasspath
+
+-         type Transport = Json
++         type Transport = Json
+
+-         def stage(out: Path on Linux)(using Tactic[Rig.Error]): LocalClasspath = classpath(out)
++         def stage(out: Path on Linux)(using Tactic[Rig.Error]): LocalClasspath = classpath(out)
+
+-         val scalac: Scalac[3.6, Universe.Classfile] =
++         val scalac: Scalac[3.6, Universe.Classfile] =
+
+-           Scalac[3.6](List(scalacOptions.experimental))
++           Scalac[3.6](List(scalacOptions.experimental))
+
+-         protected def invoke[output](stage: Stage[output, Form, Target])(using Tactic[Rig.Error])
++         protected def invoke[output](stage: Stage[output, Form, Target])(using Tactic[Rig.Error])
+
+-         :   output =
++         :   output =
+
+-           stage.remote: input =>
++           stage.remote: input =>
+
+-             ???   // run `superlunary.Executor` on `stage.target()` with `input`; return its output
++             ???   // run `superlunary.Executor` on `stage.target()` with `input`; return its output
+
+=             ???   // run `superlunary.Executor` on `stage.target()` with `input`; return its output
+-       ```
++       ```
+
+-       `Jvm` and `Isolation` are the two provided rigs.
++       `Jvm` と `Isolation` が提供される二つのリグである。
+
+-   refer superlunary.Stage
++   refer superlunary.Stage
+
+-   refer superlunary.Stageable
++   refer superlunary.Stageable
+
+-   refer superlunary.Jvm
++   refer superlunary.Jvm
+
+-   refer superlunary.Isolation
++   refer superlunary.Isolation
+
+-   entry #dispatch   compiles a quoted block, runs it in this rig's environment, and returns its result
+-       `rig.dispatch('{ … })` takes a block which, given the `References` the splices allocate
+-       into and a `Quotes`, builds an `Expr[output]`. It needs a `Codepoint` (supplied
+-       automatically for the call site), a `System`, a `TemporaryDirectory` (where each
+-       compilation's classes are written, deleted at shutdown) and a `Stageable` matching the
+-       rig's `Transport` and `Form` (found in `Stageable`'s companion), and raises
+-       `Compiler.Error` and `Rig.Error`.
++   entry #dispatch   クォートされたブロックをコンパイルし、このリグの環境で実行し、その結果を返す
++       `rig.dispatch('{ … })` は、スプライスが割り当てる先の `References` と `Quotes` を与えられて `Expr[output]` を組み立てるブロックを受け取る。
++       `Codepoint`（呼び出し箇所に対して自動的に与えられる）、`System`、`TemporaryDirectory`（各コンパイルのクラスが書き込まれ、終了時に削除される場所）、そしてリグの `Transport` と `Form` に合う `Stageable`（`Stageable` のコンパニオンにある）が必要であり、`Compiler.Error` と `Rig.Error` を発生させる。
+
+-       Compilations are cached by the call site *and* a fingerprint of the staged tree's
+-       structure: one inline call site may expand to a different tree at each use, and each
+-       distinct tree compiles once, while calls that differ only in the data they splice share
+-       one compilation. A value spliced with `${…}` is evaluated once per dispatch and
+-       deserialized once per slot, however often the staged code reads it — even inside a hot
+-       loop — so the extracted instance is shared between evaluations.
++       コンパイルは呼び出し箇所 *と* ステージングされた木の構造のフィンガープリントによってキャッシュされる。ひとつの inline の呼び出し箇所は使われるたびに異なる木に展開されることがあり、異なる木はそれぞれ一度だけコンパイルされる。一方、スプライスするデータだけが異なる呼び出しはひとつのコンパイルを共有する。
++       `${…}` でスプライスした値は、ステージングされたコードがそれを何度読んでも（ホットループの中であっても）、ディスパッチごとに一度評価され、スロットごとに一度デシリアライズされるので、取り出されたインスタンスは評価の間で共有される。
+
+=       loop — so the extracted instance is shared between evaluations.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       loop — so the extracted instance is shared between evaluations.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+-       import scala.quoted.*
++       import scala.quoted.*
+
+=       import scala.quoted.*
+-       import soundness.*
++       import soundness.*
+
+=       import scala.quoted.*
+=       import soundness.*
+-       import embeddings.automaticEmbedding
++       import embeddings.automaticEmbedding
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+-       val count = 100
++       val count = 100
+
+-       Isolation.dispatch('{ "hello message"+(${count} + 1) })   // "hello message101"
++       Isolation.dispatch('{ "hello message"+(${count} + 1) })   // "hello message101"
+
+=       Isolation.dispatch('{ "hello message"+(${count} + 1) })   // "hello message101"
+-       ```
++       ```
+
+-       Names used inside the quote resolve against the imports outside it, but only static
+-       prefixes do: everything else must cross through a splice.
+-   entry #stage   makes the compiled classes in a directory available to the environment, as a `Target`
+-       Called once per new compilation, with the directory its classes were written to. A local
+-       rig may only name the directory (`#classpath`); a genuinely remote one must deploy it.
+-       A failure is a `Rig.Error`.
+-   entry #classpath   the classpath of the compiled output directory and the rig's own classloader's entries
+-       `classpath(out)` puts the directory first, followed by the entries of the classloader
+-       which loaded `Rig` itself, so the staged code links against the same libraries as the
+-       code which dispatched it.
+-   entry #Result   what `dispatch` returns for an output type: the output itself, or a wrapper of it
+-   entry #Transport   the type each spliced value and the result are encoded as: `Json`, `Pojo`, …
+-   entry #settings2   the staging compiler's settings, from `scalac`'s command-line arguments
+-       Used for the probe compilation which fingerprints a staged tree; not normally needed by
+-       a caller.
+-   entry #compiler2   the staging compiler used to fingerprint staged trees, over the rig's classloader
+-       Not normally needed by a caller.
+-   entry .Error   raised when a value cannot cross a rig's boundary, or the staged code cannot be run
++       クォートの中で使われる名前はその外側のインポートに対して解決されるが、そうなるのは静的な接頭辞だけである。それ以外はすべてスプライスを通って境界を越えなければならない。
++   entry #stage   ディレクトリにあるコンパイル済みのクラスを、`Target` として環境で利用できるようにする
++       新しいコンパイルのたびに一度、そのクラスが書き込まれたディレクトリを与えて呼ばれる。
++       ローカルのリグはディレクトリを指すだけでよい（`#classpath`）が、本当にリモートのリグはそれを配備しなければならない。
++       失敗は `Rig.Error` である。
++   entry #classpath   コンパイル出力のディレクトリと、リグ自身のクラスローダーのエントリーからなるクラスパス
++       `classpath(out)` はディレクトリを先頭に置き、その後に `Rig` 自体を読み込んだクラスローダーのエントリーを続けるので、ステージングされたコードはそれをディスパッチしたコードと同じライブラリにリンクされる。
++   entry #Result   出力の型に対して `dispatch` が返すもの：出力そのもの、またはそれを包むもの
++   entry #Transport   スプライスされた各値と結果がエンコードされる型：`Json`、`Pojo`、…
++   entry #settings2   `scalac` のコマンドライン引数から得られる、ステージング用コンパイラの設定
++       ステージングされた木のフィンガープリントを取るプローブのコンパイルに使われる。呼び出し側が通常必要とするものではない。
++   entry #compiler2   ステージングされた木のフィンガープリントを取るのに使う、リグのクラスローダー上のステージング用コンパイラ
++       呼び出し側が通常必要とするものではない。
++   entry .Error   値がリグの境界を越えられないとき、またはステージングされたコードを実行できないときに発生する
+
+=   entry .Error   raised when a value cannot cross a rig's boundary, or the staged code cannot be run
+-     detail
++     detail
+
+-         Error `↯/s.121.1`: _failed to perform a remote operation because `reason`_. This is a failure
+-         of the marshalling and deployment around the staged code, not of the code itself; a
+-         staged block which does not compile raises `Compiler.Error` instead. The reason is one
+-         of the cases of `Rig.Error.Reason`.
+-     entry #reason   why the remote operation failed
+-     entry .Reason   why a remote operation failed: serialization, deserialization, staging or invocation
+-         An enum, each with a number which completes the error code:
++         エラー `↯/s.121.1`：_failed to perform a remote operation because `reason`_。
++         これはステージングされたコードを取り巻くマーシャリングと配備の失敗であり、コード自体の失敗ではない。コンパイルできないステージングされたブロックは、代わりに `Compiler.Error` を発生させる。
++         理由は `Rig.Error.Reason` のケースのひとつである。
++     entry #reason   リモート操作が失敗した理由
++     entry .Reason   リモート操作が失敗した理由：シリアライズ、デシリアライズ、ステージング、呼び出し
++         列挙型であり、各ケースはエラーコードを完成させる番号を持つ。
+
+-         ```tabular
++         ```tabular
+
+-         column  Case
+-         column  Code
+-         column  Message
+-         column  Note
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
+
+-         row  `Serialization`  1  _the output could not be serialized_
++         row  `Serialization`  1  _the output could not be serialized_
+
+-         row  `Deserialization`  2  _the input could not be deserialized_
++         row  `Deserialization`  2  _the input could not be deserialized_
+
+-         row  `Unknown`  3  _of an unknown reason_  raised when a result fails to decode
++         row  `Unknown`  3  _of an unknown reason_  結果のデコードに失敗したときに発生する
+
+-         row  `Staging`  4  _the staged code could not be built or deployed_
++         row  `Staging`  4  _the staged code could not be built or deployed_
+
+-         row  `Invocation`  5  _the staged code could not be invoked_  as when the `Jvm` rig's subprocess fails
++         row  `Invocation`  5  _the staged code could not be invoked_  `Jvm` リグのサブプロセスが失敗したときなど
+
+-         ```
++         ```
+
+- entry .Jvm   the rig which runs dispatched code in a fresh JVM subprocess
+-     A `Rig` whose `Target` is a `LocalClasspath` and whose values cross as JSON text: the
+-     staged classes are compiled into a temporary directory, and each dispatch launches `java
+-     -classpath … superlunary.Executor` with the encoded input as its argument and reads the
+-     encoded result from its standard output. It gives full isolation at the cost of a JVM's
+-     start-up time per call. A subprocess which fails raises `Rig.Error` with the reason
+-     `Invocation`.
++ entry .Jvm   ディスパッチされたコードを新しい JVM のサブプロセスで実行するリグ
++     `Target` が `LocalClasspath` であり、値が JSON テキストとして境界を越える `Rig` である。ステージングされたクラスは一時ディレクトリにコンパイルされ、各ディスパッチはエンコードされた入力を引数として `java -classpath … superlunary.Executor` を起動し、エンコードされた結果をその標準出力から読む。
++     呼び出しごとに JVM の起動時間がかかる代わりに、完全な隔離が得られる。
++     失敗したサブプロセスは理由 `Invocation` の `Rig.Error` を発生させる。
+
+=     `Invocation`.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     `Invocation`.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     `Invocation`.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     `Invocation`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import scala.quoted.*
++     import scala.quoted.*
+
+=     `Invocation`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+-     import soundness.*
++     import soundness.*
+
+=     `Invocation`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+-     import embeddings.automaticEmbedding
++     import embeddings.automaticEmbedding
+
+=     `Invocation`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+=     import embeddings.automaticEmbedding
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     `Invocation`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+=     import embeddings.automaticEmbedding
+=     import strategies.throwUnsafely
+-     import systems.javaBaseSystem
++     import systems.javaBaseSystem
+
+=     `Invocation`.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+=     import embeddings.automaticEmbedding
+=     import strategies.throwUnsafely
+=     import systems.javaBaseSystem
+-     import temporaryDirectories.systemTemporaryDirectory
++     import temporaryDirectories.systemTemporaryDirectory
+
+-     case class Example(name: Text, count: Long)
++     case class Example(name: Text, count: Long)
+
+-     def fn(message: Example): Example = Jvm.dispatch:
++     def fn(message: Example): Example = Jvm.dispatch:
+
+=     def fn(message: Example): Example = Jvm.dispatch:
+-       '{
++       '{
+
+-           val name = ${message.name}
++           val name = ${message.name}
+
+-           Example(t"Processed: $name", ${message.count}*2)
++           Example(t"Processed: $name", ${message.count}*2)
+
+=           Example(t"Processed: $name", ${message.count}*2)
+-         }
++         }
+
+=           Example(t"Processed: $name", ${message.count}*2)
+=         }
+-     ```
++     ```
+
+-     Spliced values and the result need `Encodable in Json` and `Decodable in Json` instances
+-     (derived for case classes). It stages with Scala 3.6 and `-experimental`, against the
+-     classpath of the classloader which loaded it.
++     スプライスされた値と結果には `Encodable in Json` と `Decodable in Json` のインスタンス（ケースクラスに対しては導出される）が必要である。
++     Scala 3.6 と `-experimental` で、それを読み込んだクラスローダーのクラスパスに対してステージングする。
+
+- entry .Isolation   the rig which runs dispatched code in this process, under an isolated classloader
+-     A `Rig` whose `Target` is a `Classloader` and whose values cross as `Pojo` trees: the staged
+-     classes are loaded by a child-first (`Classloader.Delegation.Preferential`) classloader over
+-     the output directory and the rig's own classpath, and invoked directly. Cheap and contained,
+-     with no process start-up, but the staged code shares the JVM, its heap and its threads.
++ entry .Isolation   ディスパッチされたコードを、このプロセスの中で隔離されたクラスローダーのもとで実行するリグ
++     `Target` が `Classloader` であり、値が `Pojo` の木として境界を越える `Rig` である。ステージングされたクラスは、出力ディレクトリとリグ自身のクラスパスの上にある子優先（`Classloader.Delegation.Preferential`）のクラスローダーによって読み込まれ、直接呼び出される。
++     プロセスの起動がなく安価で閉じているが、ステージングされたコードは JVM、そのヒープ、そのスレッドを共有する。
+
+=     with no process start-up, but the staged code shares the JVM, its heap and its threads.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     with no process start-up, but the staged code shares the JVM, its heap and its threads.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     with no process start-up, but the staged code shares the JVM, its heap and its threads.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     with no process start-up, but the staged code shares the JVM, its heap and its threads.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import scala.quoted.*
++     import scala.quoted.*
+
+=     with no process start-up, but the staged code shares the JVM, its heap and its threads.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+-     import soundness.*
++     import soundness.*
+
+=     with no process start-up, but the staged code shares the JVM, its heap and its threads.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+-     import embeddings.automaticEmbedding
++     import embeddings.automaticEmbedding
+
+=     with no process start-up, but the staged code shares the JVM, its heap and its threads.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+=     import embeddings.automaticEmbedding
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     with no process start-up, but the staged code shares the JVM, its heap and its threads.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+=     import embeddings.automaticEmbedding
+=     import strategies.throwUnsafely
+-     import systems.javaBaseSystem
++     import systems.javaBaseSystem
+
+=     with no process start-up, but the staged code shares the JVM, its heap and its threads.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+=     import scala.quoted.*
+=     import soundness.*
+=     import embeddings.automaticEmbedding
+=     import strategies.throwUnsafely
+=     import systems.javaBaseSystem
+-     import temporaryDirectories.systemTemporaryDirectory
++     import temporaryDirectories.systemTemporaryDirectory
+
+-     Isolation.dispatch:
++     Isolation.dispatch:
+
+-       '{ t"computed in an isolated classloader" }
++       '{ t"computed in an isolated classloader" }
+
+=       '{ t"computed in an isolated classloader" }
+-     ```
++     ```
+
+-     Spliced values and the result need `Encodable in Pojo` and `Decodable in Pojo` instances.
++     スプライスされた値と結果には `Encodable in Pojo` と `Decodable in Pojo` のインスタンスが必要である。
+
+- entry .Stage   a compiled, deployed staged computation, as a rig's `invoke` receives it
++ entry .Stage   リグの `invoke` が受け取る、コンパイルされ配備されたステージングされた計算
+
+= entry .Stage   a compiled, deployed staged computation, as a rig's `invoke` receives it
+-   detail
++   detail
+
+-       A case class of the `#target` `stage` produced and `#remote`, which the rig calls with a
+-       function from the encoded input to the encoded output — the part which actually runs the
+-       code in the environment — and which does the encoding and decoding either side of it.
+-   entry #target   where the compiled code was staged: a classpath, a classloader, a deployment
+-   entry #remote   runs the computation, given the function that carries encoded input to encoded output
++       `stage` が生成した `#target` と `#remote` からなるケースクラスである。リグは `#remote` を、エンコードされた入力からエンコードされた出力への関数（環境で実際にコードを実行する部分）を与えて呼び、`#remote` はその前後でエンコードとデコードを行う。
++   entry #target   コンパイルされたコードがステージングされた場所：クラスパス、クラスローダー、配備先
++   entry #remote   エンコードされた入力をエンコードされた出力へ運ぶ関数を与えられて、計算を実行する
+
+- entry .Stageable   how values cross a rig's boundary: their `Transport` and the `Form` sent across
++ entry .Stageable   値がリグの境界をどう越えるか：その `Transport` と、送られる `Form`
+
+= entry .Stageable   how values cross a rig's boundary: their `Transport` and the `Form` sent across
+-   detail
++   detail
+
+-       A typeclass of four inline operations: `#embed` encodes a spliced value as a `Transport`
+-       value, `#serialize` turns an array of them into the single `Form` sent across,
+-       `#deserialize` reads one back, and `#extract` decodes a `Transport` value to its type.
+-       `dispatch` needs the instance whose `Transport` and `Form` match its rig's; both
+-       provided instances are in the companion, so need no import.
++       四つの inline 操作からなる型クラスである。`#embed` はスプライスされた値を `Transport` の値としてエンコードし、`#serialize` はその配列を送られるひとつの `Form` に変え、`#deserialize` はそれを読み戻し、`#extract` は `Transport` の値をその型にデコードする。
++       `dispatch` には、`Transport` と `Form` がそのリグのものと一致するインスタンスが必要である。提供される二つのインスタンスはどちらもコンパニオンにあるので、インポートは不要である。
+
+-   refer superlunary.Rig
++   refer superlunary.Rig
+
+-   refer superlunary.embeddings
++   refer superlunary.embeddings
+
+-   entry #Transport   the encoded form of one value: `Json` or `Pojo`
+-   entry #embed   encodes a value as a `Transport`, through its `Encodable` instance
+-   entry #serialize   joins an array of transported values into the one `Form` sent across
+-   entry #deserialize   splits a received `Form` back into an array of transported values
+-   entry #extract   decodes a transported value to its type, through its `Decodable` instance
+-   entry .json   transports values as JSON, sent as one JSON array in `Text`: the `Jvm` rig's form
+-       A malformed array raises `Rig.Error` with the reason `Deserialization`, and a value which
+-       does not decode, the reason `Unknown`. Each value needs an `Encodable in Json` and a
+-       `Decodable in Json`.
+-   entry .pojo   transports values as `Pojo` trees, sent as an array of them: the `Isolation` rig's form
+-       Each value needs an `Encodable in Pojo` and a `Decodable in Pojo`; the array is passed
+-       as it is, with no text in between.
++   entry #Transport   ひとつの値のエンコードされた形式：`Json` または `Pojo`
++   entry #embed   値をその `Encodable` インスタンスを通じて `Transport` としてエンコードする
++   entry #serialize   運搬される値の配列を、送られるひとつの `Form` に結合する
++   entry #deserialize   受け取った `Form` を、運搬される値の配列に分け戻す
++   entry #extract   運搬された値を、その `Decodable` インスタンスを通じてその型にデコードする
++   entry .json   値を JSON として運搬し、`Text` のひとつの JSON 配列として送る：`Jvm` リグの形式
++       不正な配列は理由 `Deserialization` の、デコードできない値は理由 `Unknown` の `Rig.Error` を発生させる。
++       各値には `Encodable in Json` と `Decodable in Json` が必要である。
++   entry .pojo   値を `Pojo` の木として運搬し、その配列として送る：`Isolation` リグの形式
++       各値には `Encodable in Pojo` と `Decodable in Pojo` が必要である。配列は間にテキストを挟まず、そのまま渡される。
+
+- entry .References   the spliced values of one staged block, allocated into an array as they are embedded
++ entry .References   ひとつのステージングされたブロックのスプライスされた値。埋め込まれるたびに配列に割り当てられる
+
+= entry .References   the spliced values of one staged block, allocated into an array as they are embedded
+-   detail
++   detail
+
+-       Inside a `dispatch` body each spliced value is embedded by `embeddings.automaticEmbedding`
+-       into the `References` in scope, which assigns it a slot; the staged code reads the slot
+-       from the array the rig binds as `#array`. A rig's machinery, not normally used directly.
+-   entry .apply   a new, empty set of references over a transport type
+-   entry .Boxed   a transported value already extracted, memoized in its array slot
++       `dispatch` の本体の中では、スプライスされた各値は `embeddings.automaticEmbedding` によってスコープにある `References` に埋め込まれ、スロットが割り当てられる。ステージングされたコードは、リグが `#array` として束縛する配列からそのスロットを読む。
++       リグの仕組みであり、通常は直接使わない。
++   entry .apply   運搬の型に対する、新しい空の参照の集合
++   entry .Boxed   すでに取り出され、その配列のスロットにメモ化された、運搬された値
+
+=   entry .Boxed   a transported value already extracted, memoized in its array slot
+-     detail
++     detail
+
+-         On first use a slot's raw transported value is replaced by a `Boxed` of its decoded
+-         value, so a splice read in a loop is decoded once per JVM rather than per iteration.
+-     entry #value   the decoded value
+-   entry #Transport   the transport type of the values held
+-   entry #update   binds the quoted array the staged code reads its values from
+-   entry #array   the quoted array of transported values, bound before any value is spliced
+-       Fails with a panic if read before the rig has bound it; the rig always binds it first.
+-   entry #current   the number of values allocated so far
+-   entry #allocate   adds a transported value, returning its slot number
+-   entry #apply   the allocated values, as an array in slot order
++         最初に使われたとき、スロットの生の運搬された値は、デコードされた値の `Boxed` で置き換えられる。そのため、ループの中で読まれるスプライスは、反復ごとではなく JVM ごとに一度だけデコードされる。
++     entry #value   デコードされた値
++   entry #Transport   保持する値の運搬の型
++   entry #update   ステージングされたコードが値を読むクォートされた配列を束縛する
++   entry #array   運搬された値のクォートされた配列。値がスプライスされる前に束縛される
++       リグが束縛する前に読むとパニックして失敗する。リグは常に最初にこれを束縛する。
++   entry #current   これまでに割り当てられた値の数
++   entry #allocate   運搬された値を追加し、そのスロット番号を返す
++   entry #apply   割り当てられた値を、スロットの順の配列として
+
+- entry .embeddings   the conversion which carries a spliced value into staged code, a given to import by name
++ entry .embeddings   スプライスされた値をステージングされたコードに運ぶ変換。名前でインポートする given
+
+= entry .embeddings   the conversion which carries a spliced value into staged code, a given to import by name
+-   detail
++   detail
+
+-       A `${value}` splice inside a `dispatch` block needs `value` to become an `Expr`, and
+-       that conversion is `automaticEmbedding`. `import soundness.*` does not import givens, so
+-       it is imported by name.
++       `dispatch` ブロックの中の `${value}` というスプライスには、`value` が `Expr` になることが必要であり、その変換が `automaticEmbedding` である。
++       `import soundness.*` は given をインポートしないので、名前でインポートする。
+
+-       ```scala
++       ```scala
+
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       ```scala
+=       import soundness.*
+-       import embeddings.automaticEmbedding
++       import embeddings.automaticEmbedding
+
+=       import embeddings.automaticEmbedding
+-       ```
++       ```
+
+-   entry .automaticEmbedding   converts a spliced value into an `Expr` reading its transported slot
+-       An inline `Conversion[value, Expr[value]]`, needing the `References` and the `Stageable`
+-       a `dispatch` body supplies and a `Quotes`. It embeds the value through the `Stageable`,
+-       allocates it a slot, and returns code which reads the slot and decodes it on first use,
+-       memoizing the decoded value as a `References.Boxed`.
++   entry .automaticEmbedding   スプライスされた値を、その運搬されたスロットを読む `Expr` に変換する
++       inline の `Conversion[value, Expr[value]]` であり、`dispatch` の本体が与える `References` と `Stageable`、そして `Quotes` を必要とする。
++       値を `Stageable` を通じて埋め込み、スロットを割り当て、そのスロットを読んで最初の使用時にデコードするコードを返す。デコードされた値は `References.Boxed` としてメモ化される。
+
+- entry .deleteOnShutdown   queues a directory to be deleted, with its contents, when the JVM exits
+-     Rigs use it for each compilation's output directory. One shutdown hook drains the queue
+-     sequentially, rather than one hook per directory, so a run with many dispatches cannot
+-     exhaust the file-descriptor limit while it cleans up. Errors while deleting are ignored.
++ entry .deleteOnShutdown   JVM の終了時に、ディレクトリをその内容ごと削除するようキューに入れる
++     リグは各コンパイルの出力ディレクトリにこれを使う。
++     ディレクトリごとにひとつのフックではなく、ひとつのシャットダウンフックがキューを順に排出するので、多くのディスパッチを行う実行が、後片付けの間にファイルディスクリプタの上限を使い果たすことはない。
++     削除中のエラーは無視される。
+
+- entry .Executor   the entry point a `Jvm` rig's subprocess runs: invokes the staged code on its argument
++ entry .Executor   `Jvm` リグのサブプロセスが実行するエントリーポイント：ステージングされたコードをその引数に対して呼び出す
+
+= entry .Executor   the entry point a `Jvm` rig's subprocess runs: invokes the staged code on its argument
+-   hidden
++   hidden
+
+= entry .Executor   the entry point a `Jvm` rig's subprocess runs: invokes the staged code on its argument
+=   hidden
+-   detail
++   detail
+
+-       In `superlunary.jvm`; not for direct use. `main` loads the compiled class
+-       `Generated$Code$From$Quoted`, applies it to its first argument, and prints the result,
+-       with any other standard output suppressed so that only the result reaches the parent.
+-       This is `Executor` in the `soundness` umbrella; `apoplexy.Executor` is not exported, to
+-       avoid the collision.
+-   entry .run   applies the staged code to an encoded input, returning the encoded output
+-   entry .main   runs the staged code on the first argument, printing only its result
++       `superlunary.jvm` にある。直接使うものではない。
++       `main` はコンパイルされたクラス `Generated$Code$From$Quoted` を読み込み、それを最初の引数に適用して結果を出力する。他の標準出力はすべて抑制されるので、親に届くのは結果だけである。
++       これが `soundness` アンブレラにある `Executor` である。衝突を避けるため、`apoplexy.Executor` はエクスポートされない。
++   entry .run   ステージングされたコードをエンコードされた入力に適用し、エンコードされた出力を返す
++   entry .main   ステージングされたコードを最初の引数に対して実行し、その結果だけを出力する
+
+- entry .Executor2   an alternative subprocess entry point, reading its input from `INPUT_PARAMETERS`
++ entry .Executor2   入力を `INPUT_PARAMETERS` から読む、もうひとつのサブプロセスのエントリーポイント
+
+= entry .Executor2   an alternative subprocess entry point, reading its input from `INPUT_PARAMETERS`
+-   hidden
++   hidden
+
+= entry .Executor2   an alternative subprocess entry point, reading its input from `INPUT_PARAMETERS`
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. Like `Executor`, but takes the encoded input from the
+-       `INPUT_PARAMETERS` environment variable rather than an argument, and prints nothing.
+-   entry .main   runs the staged code on the input in `INPUT_PARAMETERS`
++       直接使うものではない。
++       `Executor` と同様だが、エンコードされた入力を引数ではなく環境変数 `INPUT_PARAMETERS` から受け取り、何も出力しない。
++   entry .main   `INPUT_PARAMETERS` にある入力に対して、ステージングされたコードを実行する

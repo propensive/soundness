@@ -1,0 +1,202 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base clavichord
++ base clavichord
+
+- import soundness
++ import soundness
+
+- info   a keypress as a value: a character, a named key, or either held with modifiers
++ info   値としてのキー押下：文字、名前付きのキー、またはそのどちらかを修飾キーとともに押したもの
+
+- detail
++ detail
+
+-     _Clavichord_ is the vocabulary of keys shared by everything in Soundness that reads or
+-     produces a keypress. Terminals and browsers agree on what a keypress *is* and disagree
+-     only on how it is encoded, so the model lives here, apart from either: profanity decodes
+-     a terminal's escape sequences into `Keypress` values, and tarantula renders them as the
+-     key actions the WebDriver protocol defines, without either knowing about the other.
++     _Clavichord_ は、Soundness の中でキー押下を読んだり生んだりするすべてのものが共有するキーの語彙である。
++     端末とブラウザは、キー押下が*何であるか*については一致しており、それがどうエンコードされるかについてだけ異なるので、モデルはどちらからも離れたここに置かれている。profanity は端末のエスケープシーケンスを `Keypress` の値へとデコードし、tarantula はそれを WebDriver プロトコルが定めるキー操作として描画し、どちらも互いのことを知らない。
+
+-     A `Keypress` is an ordinary character, a function key, one of the named editing keys, an
+-     otherwise unnamed escape sequence, or one of those wrapped in the modifiers held with it.
+-     A modifier accepts only what can meaningfully be modified, so the type rules out
+-     keypresses no keyboard can produce.
++     `Keypress` は、普通の文字、ファンクションキー、名前付きの編集キーの一つ、ほかに名前のないエスケープシーケンス、またはそれらのいずれかを、ともに押された修飾キーで包んだものである。
++     修飾キーは意味のある形で修飾できるものだけを受け付けるので、型はどのキーボードも生めないキー押下を排除する。
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     def describe(keypress: Keypress): Text = keypress match
++     def describe(keypress: Keypress): Text = keypress match
+
+-       case Keypress.CharKey(char)              => t"typed $char"
++       case Keypress.CharKey(char)              => t"typed $char"
+
+-       case Keypress.Ctrl('C')                  => t"interrupt"
++       case Keypress.Ctrl('C')                  => t"interrupt"
+
+-       case Keypress.Shift(Keypress.Enter)      => t"new line"
++       case Keypress.Shift(Keypress.Enter)      => t"new line"
+
+-       case Keypress.Up | Keypress.Down         => t"history"
++       case Keypress.Up | Keypress.Down         => t"history"
+
+-       case other                               => other.show
++       case other                               => other.show
+
+-     Keypress.Ctrl(Keypress.Alt(Keypress.Left)).show   // t"[⌃]+[⌥]+[←]"
++     Keypress.Ctrl(Keypress.Alt(Keypress.Left)).show   // t"[⌃]+[⌥]+[←]"
+
+-     ```
++     ```
+
+-     The library has a single source set, `clavichord.core`, for every platform, and
+-     everything is exported to the `soundness` umbrella.
++     ライブラリには、すべてのプラットフォームに共通の一つのソースセット `clavichord.core` があり、すべては `soundness` アンブレラにエクスポートされる。
+
+- refer clavichord.Keypress
++ refer clavichord.Keypress
+
+- entry .Keypress   a key as pressed: a character, a named or function key, or one held with modifiers
++ entry .Keypress   押されたキー：文字、名前付きのキーやファンクションキー、またはそれを修飾キーとともに押したもの
+
+-   detail
++   detail
+
+-       An enum whose cases are:
++       ケースが次のものである列挙型：
+
+-       - the named editing keys, `Tab`, `Enter`, `Backspace`, `Delete`, `Escape`, `Insert`,
+-         `Home`, `End`, `PageUp`, `PageDown`, `Left`, `Right`, `Up` and `Down`, each also a
+-         `Keypress.Editing`;
+-       - `CharKey(char)`, an ordinary character, with any shift already applied (a shifted
+-         `a` is `CharKey('A')`);
+-       - `FunctionKey(number)`, `F1` to `F12` and beyond;
+-       - `EscapeSeq(id, content*)`, an escape sequence with no other name, by its final
+-         identifying character and its parameters;
+-       - and the modifiers, which nest outwards in a fixed order: `Shift` of an editing or
+-         function key; `Alt` of those or a `Shift`; `Ctrl` of those, an `Alt`, or one of the
+-         characters a control code can carry (`'A'` to `'Z'`, `'['`, `'\\'`, `']'`, `'^'`,
+-         `'_'` and `'@'`); and `Meta` of any of the other modifiers or keys.
++       - 名前付きの編集キー `Tab`、`Enter`、`Backspace`、`Delete`、`Escape`、`Insert`、`Home`、`End`、`PageUp`、`PageDown`、`Left`、`Right`、`Up`、`Down`。それぞれ `Keypress.Editing` でもある。
++       - `CharKey(char)`。普通の文字で、シフトはすでに適用されている（シフトした `a` は `CharKey('A')` である）。
++       - `FunctionKey(number)`。`F1` から `F12`、そしてそれ以上。
++       - `EscapeSeq(id, content*)`。ほかに名前のないエスケープシーケンスで、最後の識別文字とパラメーターで表す。
++       - そして修飾キー。決まった順序で外側へ入れ子になる。編集キーまたはファンクションキーの `Shift`、それらまたは `Shift` の `Alt`、それら、`Alt`、または制御コードが運べる文字（`'A'` から `'Z'`、`'['`、`'\\'`、`']'`、`'^'`、`'_'`、`'@'`）の `Ctrl`、そしてほかのいずれかの修飾キーまたはキーの `Meta` である。
+
+-       The modifiers' parameter types follow that order, so `Shift(CharKey('a'))` and
+-       `Alt(Ctrl('C'))` do not compile: `Ctrl(Alt(Left))` is the one way to write that
+-       combination, and a match need consider only one.
++       修飾キーのパラメーターの型はその順序に従うので、`Shift(CharKey('a'))` と `Alt(Ctrl('C'))` はコンパイルされない。
++       その組み合わせを書く方法は `Ctrl(Alt(Left))` の一つだけであり、マッチは一つだけを考えればよい。
+
+=       combination, and a match need consider only one.
+=
+-       ```scala
++       ```scala
+
+=       combination, and a match need consider only one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Keypress.Ctrl('C')
++       Keypress.Ctrl('C')
+
+-       Keypress.Shift(Keypress.Enter)
++       Keypress.Shift(Keypress.Enter)
+
+-       Keypress.Meta(Keypress.Ctrl(Keypress.Alt(Keypress.Shift(Keypress.Home))))
++       Keypress.Meta(Keypress.Ctrl(Keypress.Alt(Keypress.Shift(Keypress.Home))))
+
+-       Keypress.Shift(Keypress.CharKey('a'))   // does not compile
++       Keypress.Shift(Keypress.CharKey('a'))   // does not compile
+
+=       Keypress.Shift(Keypress.CharKey('a'))   // does not compile
+-       ```
++       ```
+
+-       A keypress shows (`.showable`) with a Unicode symbol in square brackets for each key
+-       and modifier, joined to what it modifies with `+`.
++       キー押下は（`.showable` によって）、各キーと各修飾キーを角括弧で囲んだ Unicode の記号で表示され、修飾するものと `+` でつながれる。
+
+-   refer clavichord.Keypress.EditKey
++   refer clavichord.Keypress.EditKey
+
+-   entry .Editing   the marker trait of the fourteen named editing keys
+-       `Tab`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`, `Enter`, `Backspace`,
+-       `Escape`, `Left`, `Right`, `Up` and `Down` each extend it. It is a nominal marker
+-       rather than a union of the cases' singleton types so that it still admits them when
+-       they are reached through the umbrella's export forwarders, as `soundness.Keypress.Enter`.
+-   entry .EditKey   any one of the named editing keys: `Keypress & Keypress.Editing`
+-       The type of a key which `Shift`, `Alt`, `Ctrl` and `Meta` may wrap besides function
+-       keys, and the type to use for a method which handles only editing keys.
++   entry .Editing   十四個の名前付きの編集キーのマーカートレイト
++       `Tab`、`Home`、`End`、`PageUp`、`PageDown`、`Insert`、`Delete`、`Enter`、`Backspace`、`Escape`、`Left`、`Right`、`Up`、`Down` がそれぞれこれを継承する。
++       これはケースのシングルトン型のユニオンではなく名目的なマーカーであり、そのため `soundness.Keypress.Enter` のように、アンブレラのエクスポートのフォワーダーを通じて到達した場合でも、それらを受け入れる。
++   entry .EditKey   名前付きの編集キーのいずれか一つ：`Keypress & Keypress.Editing`
++       `Shift`、`Alt`、`Ctrl`、`Meta` がファンクションキーのほかに包めるキーの型であり、編集キーだけを扱うメソッドに使う型である。
+
+=       keys, and the type to use for a method which handles only editing keys.
+=
+-       ```scala
++       ```scala
+
+=       keys, and the type to use for a method which handles only editing keys.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val key: Keypress.EditKey = Keypress.PageDown
++       val key: Keypress.EditKey = Keypress.PageDown
+
+=       val key: Keypress.EditKey = Keypress.PageDown
+-       ```
++       ```
+
+-   entry .showable   shows a keypress with a bracketed Unicode symbol per key and modifier
+-       Shift is `[⇧]`, Alt `[⌥]`, Ctrl `[⌃]` and Meta `[⌘]`, each joined to what it
+-       modifies with `+`. The editing keys are `[⇥]`, `[↵]`, `[⌫]`, `[⌦]`, `[⎋]`, `[⎀]`, the
+-       arrows `[↑]` `[↓]` `[←]` `[→]`, `[↖]` for Home, `[↘]` for End, and `[⇞]` `[⇟]` for the
+-       page keys. A character is bracketed as itself, except a space, `[␣]`; a function key is
+-       `[F5]`; and an escape sequence is `[⎋R]`, showing its identifier but not its content.
++   entry .showable   キー押下を、キーと修飾キーごとに角括弧で囲んだ Unicode の記号で表示する
++       Shift は `[⇧]`、Alt は `[⌥]`、Ctrl は `[⌃]`、Meta は `[⌘]` で、それぞれ修飾するものと `+` でつながれる。
++       編集キーは `[⇥]`、`[↵]`、`[⌫]`、`[⌦]`、`[⎋]`、`[⎀]`、矢印の `[↑]` `[↓]` `[←]` `[→]`、Home の `[↖]`、End の `[↘]`、ページキーの `[⇞]` `[⇟]` である。
++       文字はそれ自体を角括弧で囲むが、空白は `[␣]` である。ファンクションキーは `[F5]`、エスケープシーケンスは `[⎋R]` で、その識別子は示すが内容は示さない。
+
+=       `[F5]`; and an escape sequence is `[⎋R]`, showing its identifier but not its content.
+=
+-       ```scala
++       ```scala
+
+=       `[F5]`; and an escape sequence is `[⎋R]`, showing its identifier but not its content.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Keypress.Shift(Keypress.Enter).show   // t"[⇧]+[↵]"
++       Keypress.Shift(Keypress.Enter).show   // t"[⇧]+[↵]"
+
+-       Keypress.Ctrl('C').show               // t"[⌃]+[C]"
++       Keypress.Ctrl('C').show               // t"[⌃]+[C]"
+
+-       Keypress.FunctionKey(12).show         // t"[F12]"
++       Keypress.FunctionKey(12).show         // t"[F12]"
+
+=       Keypress.FunctionKey(12).show         // t"[F12]"
+-       ```
++       ```

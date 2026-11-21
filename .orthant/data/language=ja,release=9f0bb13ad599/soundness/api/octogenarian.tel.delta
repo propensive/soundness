@@ -1,0 +1,60 @@
+orthant 1 language
+
+-     import filesystemOptions.createParents
++     import filesystemOptions.createParents
+
+-         import filesystemOptions.createParents
++         import filesystemOptions.createParents
+
+-         `Exec(event)` wraps a `guillotine.Exec.Event`, tagged `Log.Process`; `.execEvent`
+-         transcribes guillotine's events into it, so a `Commandline.Event is Loggable` in scope
+-         is all the backend needs. `logging.silentLogging` discards them.
+-     entry .execEvent   transcribes a guillotine `Exec.Event` into a `Commandline.Event`
+-     entry .communicable   renders an event as _git: `event`_
+-   entry .Outcome   what one `git` invocation produced: its exit status, standard output and standard error
+-     entry #exit   the exit status
+-     entry #stdout   standard output, as text
+-     entry #stderr   standard error, as text
+-     entry #ok   whether the exit status was zero
+-     entry #lines   standard output as non-empty lines
+-   entry .reason   reads git's standard error as a `Git.Error.Reason`
+-       Matches git's messages — stable enough to match on — for `NoRepository`, `Moved`,
+-       `RefExists`, `Locked`, `NoSuchRef`, `Unmerged`, `NoSuchObject`, `NothingToCommit`,
+-       `Detached`, `Dirty`, `NotFastForward`, `LeaseFailed`, `OutsideWorktree`, `Untracked`,
+-       `NoOperationInProgress`, `NoSuchRemote`, `RemoteExists`, `Unauthorized`, `Unreachable`,
+-       `RemoteRejected`, `InvalidConfig`, `NoteExists`, `BadSignature`, `SigningFailed`,
+-       `NoSuchWorktree` and `Conflict`; anything else is `Unexpected`.
++         `Exec(event)` は `guillotine.Exec.Event` を包み、`Log.Process` のタグが付く。
++         `.execEvent` が guillotine のイベントをこれに書き写すので、バックエンドに必要なのはスコープ内の `Commandline.Event is Loggable` だけである。
++         `logging.silentLogging` はそれらを捨てる。
++     entry .execEvent   guillotine の `Exec.Event` を `Commandline.Event` に書き写す
++     entry .communicable   イベントを _git: `event`_ として描画する
++   entry .Outcome   `git` の一回の呼び出しが生んだもの。終了ステータス、標準出力、標準エラー
++     entry #exit   終了ステータス
++     entry #stdout   標準出力、テキストとして
++     entry #stderr   標準エラー、テキストとして
++     entry #ok   終了ステータスがゼロだったかどうか
++     entry #lines   空でない行としての標準出力
++   entry .reason   git の標準エラーを `Git.Error.Reason` として読む
++       照合できるほど安定した git のメッセージを、`NoRepository`、`Moved`、`RefExists`、`Locked`、`NoSuchRef`、`Unmerged`、`NoSuchObject`、`NothingToCommit`、`Detached`、`Dirty`、`NotFastForward`、`LeaseFailed`、`OutsideWorktree`、`Untracked`、`NoOperationInProgress`、`NoSuchRemote`、`RemoteExists`、`Unauthorized`、`Unreachable`、`RemoteRejected`、`InvalidConfig`、`NoteExists`、`BadSignature`、`SigningFailed`、`NoSuchWorktree`、`Conflict` に照合する。
++       それ以外はすべて `Unexpected` である。
+
+=       alternative which runs the `git` command.
+=
+=       ```scala
+=       import soundness.*
+=       import gitBackends.soundnessGit
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       import filesystemOptions.createParents
++       import filesystemOptions.createParents
+
+=       name; `gitBackends.commandlineGit` is the alternative which runs the `git` command.
+=
+=       ```scala
+=       import soundness.*
+=       import gitBackends.soundnessGit
+=       import strategies.throwUnsafely
+=       import temporaryDirectories.javaBaseTemporaryDirectory
+-       import filesystemOptions.createParents
++       import filesystemOptions.createParents

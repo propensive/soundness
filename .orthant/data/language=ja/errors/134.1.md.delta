@@ -1,0 +1,54 @@
+orthant 1 language
+
+- # `↯/s.134.1` — `Yaml.Error`
++ # `↯/s.134.1` — `Yaml.Error`
+
+- Raised when a YAML document cannot be parsed, or cannot be read as the type asked for.
++ YAML の文書をパースできないとき、または求められた型として読めないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Ypsiloid reports both parse failures and conversion failures through this error. A parse
+- failure means the text is not well-formed YAML; a conversion failure means the document is
+- valid but does not have the shape the target type requires.
++ Ypsiloid は、パースの失敗と変換の失敗の両方をこのエラーで報告する。
++ パースの失敗は、テキストが正しい形の YAML でないことを意味する。変換の失敗は、文書は有効だが、対象の型が要求する形をしていないことを意味する。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.134.1.1`  `NotType`  `[↯/s.134.1.1] the YAML value had type <found> instead of <expected>`
++ row  `↯/s.134.1.1`  `NotType`  `[↯/s.134.1.1] the YAML value had type <found> instead of <expected>`
+
+- row  `↯/s.134.1.2`  `Absent`  `[↯/s.134.1.2] the YAML value was not present`
++ row  `↯/s.134.1.2`  `Absent`  `[↯/s.134.1.2] the YAML value was not present`
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- For a parse failure, check the document against the YAML specification — indentation and
+- block-scalar indicators are the usual culprits. For a conversion failure, compare the
+- document's shape with the type's fields; under an accruing strategy every mismatch is
+- reported at once, each with a path to the offending node.
++ パースの失敗については、文書を YAML の仕様に照らして確認する。よくある原因はインデントとブロックスカラーの指示子である。
++ 変換の失敗については、文書の形を型のフィールドと比較する。蓄積型の戦略の下では、すべての不一致が一度に、それぞれ違反したノードへのパスとともに報告される。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/ypsiloid/src/core/ypsiloid.Yaml.scala`
++ - ソース：`lib/ypsiloid/src/core/ypsiloid.Yaml.scala`

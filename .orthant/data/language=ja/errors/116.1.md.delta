@@ -1,0 +1,53 @@
+orthant 1 language
+
+- # `↯/s.116.1` — `Httpd.Error`
++ # `↯/s.116.1` — `Httpd.Error`
+
+- Raised when Scintillate cannot start an HTTP server on the
+- requested port.
++ Scintillate が要求されたポートで HTTP サーバーを開始できないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- The OS refused to bind the listener — typically because the port is
+- already in use, or it is privileged and the process lacks
+- permission.
++ OS がリスナーのバインドを拒否した。
++ 通常は、ポートがすでに使用中であるか、特権ポートであってプロセスにパーミッションがないためである。
+
+- This is **not** an HTTP 5xx response. That is
+- `Http.Status.Category.ServerError` in telekinesis, and it describes a
+- response the server sent; this describes a server that never started.
+- The error was called `ServerError` until the two were told apart.
++ これは HTTP の 5xx レスポンスでは**ない**。
++ それは telekinesis の `Http.Status.Category.ServerError` であり、サーバーが送ったレスポンスを記述する。
++ こちらは、一度も開始しなかったサーバーを記述する。
++ このエラーは、両者が区別されるまで `ServerError` と呼ばれていた。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.116.1] could not start an HTTP server on port 80
++ [↯/s.116.1] could not start an HTTP server on port 80
+
+= [↯/s.116.1] could not start an HTTP server on port 80
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Choose a different port, free the conflicting one, or run with
+- sufficient privilege.
++ 別のポートを選ぶか、競合しているポートを解放するか、十分な特権で実行する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/scintillate/src/server/scintillate.Httpd.scala`
++ - ソース：`lib/scintillate/src/server/scintillate.Httpd.scala`

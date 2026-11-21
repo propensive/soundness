@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # Changes since 0.67.0
++ # 0.67.0 からの変更
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.67.0 to the next release. Each entry states precisely what changed; see `AGENTS.md` for the
+- format. Entries are grouped by module, most-recently-added last within a module.
++ このファイルは、Soundness のライブラリを利用するコードを 0.67.0 から次のリリースへ更新するために、LLM エージェントが読む。
++ 各項目は何が変わったかを正確に述べる。形式については `AGENTS.md` を参照する。
++ 項目はモジュールごとにまとめられ、モジュール内では最も新しく追加されたものが最後に来る。
+
+- ## anticipation
++ ## anticipation
+
+- - `anticipation.Chroma#red` changed semantics: it is now `inline def red: Int = (chroma >>
+-   16)&255`, previously `inline def red: Int = chroma >> 16`. `green` and `blue` were already
+-   masked and are unchanged. Code must be audited where a `Chroma` was constructed by
+-   `Chroma(value: Int)` from an `Int` with any bit set above the low twenty-four (including a
+-   negative `Int`), since `red` previously returned those bits and now discards them. `Chroma`
+-   values originating from `Chroma(red: Int, green: Int, blue: Int)`, the `rgb"…"` interpolator,
+-   `iridescence.Pixel#chroma`, `iridescence.Rgb12#chroma` or `iridescence.Rgb32#chroma` are
+-   unaffected, as all of those already masked. (#2036)
++ - `anticipation.Chroma#red` の意味が変わった。今では `inline def red: Int = (chroma >> 16)&255` であり、以前は `inline def red: Int = chroma >> 16` だった。`green` と `blue` はすでにマスクされており、変わらない。`Chroma` が、下位 24 ビットより上のいずれかのビットが立った `Int`（負の `Int` を含む）から `Chroma(value: Int)` で構築されていた箇所では、コードを監査しなければならない。`red` は以前はそれらのビットを返していたが、今では捨てるからである。`Chroma(red: Int, green: Int, blue: Int)`、`rgb"…"` 補間子、`iridescence.Pixel#chroma`、`iridescence.Rgb12#chroma`、`iridescence.Rgb32#chroma` から生じた `Chroma` の値は影響を受けない。それらはすべてすでにマスクしていたからである。(#2036)
+
+- ## iridescence
++ ## iridescence
+
+- - `iridescence.Channel`, and the channel traits `iridescence.Red`, `iridescence.Green`,
+-   `iridescence.Blue`, `iridescence.Alpha`, `iridescence.Cyan`, `iridescence.Magenta`,
+-   `iridescence.Yellow`, `iridescence.Key` and `iridescence.Grey`, moved to `anticipation`:
+-   `anticipation.Channel`, `anticipation.Red`, and so on. All definitions, type parameters and
+-   match types are unchanged. The `soundness` umbrella exports the same names, now from
+-   `anticipation`, so code importing them through the umbrella needs no change; code importing
+-   `iridescence.*` for them must import `anticipation.*`. `Channel` remains `@unexported` and is
+-   reached as `anticipation.Channel`. (#2037)
++ - `iridescence.Channel` と、チャンネルのトレイト `iridescence.Red`、`iridescence.Green`、`iridescence.Blue`、`iridescence.Alpha`、`iridescence.Cyan`、`iridescence.Magenta`、`iridescence.Yellow`、`iridescence.Key`、`iridescence.Grey` は `anticipation` に移動し、`anticipation.Channel`、`anticipation.Red` などになった。すべての定義、型パラメーター、マッチ型は変わらない。`soundness` アンブレラは同じ名前を、今では `anticipation` からエクスポートするので、アンブレラを通じてそれらをインポートするコードは変更の必要がない。それらのために `iridescence.*` をインポートしているコードは、`anticipation.*` をインポートしなければならない。`Channel` は引き続き `@unexported` であり、`anticipation.Channel` として到達する。(#2037)
+
+- ## ultimatum
++ ## ultimatum
+
+- - `ultimatum.GaugePalette.hue(chroma: anticipation.Chroma): iridescence.Color in
+-   iridescence.Srgb` removed. Replace `hue(c)` with `c.color`, the extension `extension (chroma:
+-   anticipation.Chroma) def color: Color in Srgb` declared in `iridescence` and exported by the
+-   `soundness` umbrella as `color`. Results are identical. (#2036)
++ - `ultimatum.GaugePalette.hue(chroma: anticipation.Chroma): iridescence.Color in iridescence.Srgb` は削除された。`hue(c)` を `c.color` で置き換えること。これは `iridescence` で宣言され、`soundness` アンブレラが `color` としてエクスポートする拡張 `extension (chroma: anticipation.Chroma) def color: Color in Srgb` である。結果は同一である。(#2036)

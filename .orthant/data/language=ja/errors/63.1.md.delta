@@ -1,0 +1,75 @@
+orthant 1 language
+
+- # `↯/s.63.1` — `Fqcn.Error`
++ # `↯/s.63.1` — `Fqcn.Error`
+
+- Raised when a value is not a valid fully-qualified class name.
++ 値が正当な完全修飾クラス名でないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Digression validates FQCNs as a sequence of dot-separated identifier
+- segments, each conforming to Java identifier rules. The message is
+- `the class name $name is not valid because $reason`.
++ Digression は FQCN を、ドットで区切られた識別子のセグメントの並びとして検証し、各セグメントは Java の識別子の規則に従わなければならない。
++ メッセージは `the class name $name is not valid because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.63.1.1` — `InvalidChar`
++ ### `↯/s.63.1.1` — `InvalidChar`
+
+- A character in a name segment is not legal in a Java identifier.
++ 名前のセグメントの中のある文字が、Java の識別子として正当でない。
+
+- **Example.** `[↯/s.63.1.1] the class name globe.st-ge.Hamlet is not valid because a package name may not contain the character -`
++ **例。** `[↯/s.63.1.1] the class name globe.st-ge.Hamlet is not valid because a package name may not contain the character -`
+
+- **Resolution.** Remove or replace the offending character.
++ **解決方法。** 問題の文字を取り除くか置き換える。
+
+- ### `↯/s.63.1.2` — `InvalidStart`
++ ### `↯/s.63.1.2` — `InvalidStart`
+
+- A name segment starts with a character not legal as the first
+- character of an identifier (typically a digit).
++ 名前のセグメントが、識別子の最初の文字として正当でない文字（典型的には数字）で始まっている。
+
+- **Example.** `[↯/s.63.1.2] the class name globe.1stage.Hamlet is not valid because a package name may not start with the character 1`
++ **例。** `[↯/s.63.1.2] the class name globe.1stage.Hamlet is not valid because a package name may not start with the character 1`
+
+- **Resolution.** Begin each segment with a letter, `_`, or `$`.
++ **解決方法。** 各セグメントを英字、`_`、`$` のいずれかで始める。
+
+- ### `↯/s.63.1.3` — `EmptyName`
++ ### `↯/s.63.1.3` — `EmptyName`
+
+- A name segment is empty — typically caused by `..` in the input or a
+- leading or trailing dot.
++ 名前のセグメントが空である。典型的には、入力の中の `..` や、先頭または末尾のドットが原因である。
+
+- **Example.** `[↯/s.63.1.3] the class name globe..Hamlet is not valid because a package name cannot be empty`
++ **例。** `[↯/s.63.1.3] the class name globe..Hamlet is not valid because a package name cannot be empty`
+
+- **Resolution.** Remove the empty segment.
++ **解決方法。** 空のセグメントを取り除く。
+
+- ### `↯/s.63.1.4` — `JavaKeyword`
++ ### `↯/s.63.1.4` — `JavaKeyword`
+
+- A name segment is a reserved Java keyword.
++ 名前のセグメントが、Java の予約されたキーワードである。
+
+- **Example.** `[↯/s.63.1.4] the class name globe.class.Hamlet is not valid because a package name cannot be the Java keyword, class`
++ **例。** `[↯/s.63.1.4] the class name globe.class.Hamlet is not valid because a package name cannot be the Java keyword, class`
+
+- **Resolution.** Choose a non-keyword segment.
++ **解決方法。** キーワードでないセグメントを選ぶ。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/digression/src/core/digression.Fqcn.scala`
++ - ソース：`lib/digression/src/core/digression.Fqcn.scala`

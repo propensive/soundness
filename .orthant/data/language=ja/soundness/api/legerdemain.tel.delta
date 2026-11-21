@@ -1,0 +1,1064 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base legerdemain
++ base legerdemain
+
+- import soundness
++ import soundness
+
+- info   HTML forms derived from data types, and the form-encoded `Query` their submissions decode from
++ info   データ型から導出される HTML フォームと、その送信内容のデコード元となるフォームエンコードされた `Query`
+
+- detail
++ detail
+
+-     _Legerdemain_ treats an HTML form as a user interface to a data type. A case class gives a
+-     form — a labelled widget per field, chosen by the field's type, with nested case classes as
+-     nested fieldsets — and a submission, a `Query` of key–value pairs, decodes back into the
+-     case class, with any failure pointing at the field which caused it. The type is the single
+-     source of truth for both halves, so the form cannot drift from the data it collects.
++     _Legerdemain_ は HTML フォームをデータ型へのユーザーインターフェースとして扱う。
++     ケースクラスからフォームが得られる。各フィールドに対してその型に応じて選ばれたラベル付きのウィジェットがあり、ネストしたケースクラスはネストしたフィールドセットになる。
++     そして送信内容、すなわちキーと値の対からなる `Query` はケースクラスへデコードし直され、失敗があればその原因となったフィールドを指し示す。
++     型が両方の側の唯一の信頼できる情報源なので、フォームが収集するデータから乖離することはない。
+
+=     source of truth for both halves, so the form cannot drift from the data it collects.
+=
+-     ```scala
++     ```scala
+
+=     source of truth for both halves, so the form cannot drift from the data it collects.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     source of truth for both halves, so the form cannot drift from the data it collects.
+=
+=     ```scala
+=     import soundness.*
+-     import formulations.postFormulation
++     import formulations.postFormulation
+
+=     source of truth for both halves, so the form cannot drift from the data it collects.
+=
+=     ```scala
+=     import soundness.*
+=     import formulations.postFormulation
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     case class Person(name: Text, crowned: Boolean)
++     case class Person(name: Text, crowned: Boolean)
+
+-     case class Scene(speaker: Person, place: Text)
++     case class Scene(speaker: Person, place: Text)
+
+-     val form: Html of Flow = elicit[Scene](validation = Validation(), submit = t"Save")
++     val form: Html of Flow = elicit[Scene](validation = Validation(), submit = t"Save")
+
+-     val query = t"speaker.name=Macbeth&speaker.crowned=on&place=Dunsinane".as[Query]
++     val query = t"speaker.name=Macbeth&speaker.crowned=on&place=Dunsinane".as[Query]
+
+-     query.as[Scene]   // Scene(Person(t"Macbeth", true), t"Dunsinane")
++     query.as[Scene]   // Scene(Person(t"Macbeth", true), t"Dunsinane")
+
+=     query.as[Scene]   // Scene(Person(t"Macbeth", true), t"Dunsinane")
+-     ```
++     ```
+
+-     The pieces fit together through three typeclasses. `Elicitable` says which `Widget` a
+-     field's type is edited with — a `Field` for anything encodable as text, a `Checkbox` for a
+-     `Boolean`, a `Combobox` for an enumeration, a `Dropdown` for a stored `Reference`.
+-     `Formulaic` is derived for a product type from its fields' `Elicitable`s and produces the
+-     form's rows. `Formulation` decides how the form and each row are framed in HTML; the one
+-     standard choice is `formulations.postFormulation`, imported by name, since `import
+-     soundness.*` does not import givens.
++     各部分は三つの型クラスを通じて組み合わさる。
++     `Elicitable` は、フィールドの型をどの `Widget` で編集するかを表す。テキストとしてエンコードできるものには `Field`、`Boolean` には `Checkbox`、列挙型には `Combobox`、保存された `Reference` には `Dropdown` である。
++     `Formulaic` は直積型に対してそのフィールドの `Elicitable` から導出され、フォームの行を生成する。
++     `Formulation` は、フォームとその各行を HTML でどう囲むかを決める。標準の選択肢は `formulations.postFormulation` 一つで、`import soundness.*` は given をインポートしないので、名前でインポートする。
+
+-     The library has two source sets. `legerdemain.query` holds `Query` and `Parametric`: the
+-     form-encoded key–value structure, with no HTML in it, which the HTTP client and server
+-     use for URL query strings and form posts. `legerdemain.core` adds the widgets, the
+-     typeclasses, `elicit`, `edit` and the `formulations` package, and depends on honeycomb's
+-     HTML. Everything is exported to the `soundness` umbrella. Telekinesis builds the form
+-     cycle — render, submit, re-render with errors — on these, as `orchestrate`.
++     このライブラリには二つのソースセットがある。
++     `legerdemain.query` は `Query` と `Parametric` を持つ。これは HTML を含まない、フォームエンコードされたキーと値の構造であり、HTTP のクライアントとサーバーが URL のクエリ文字列とフォームの POST に使う。
++     `legerdemain.core` はウィジェット、型クラス、`elicit`、`edit`、`formulations` パッケージを加え、honeycomb の HTML に依存する。
++     すべてが `soundness` アンブレラにエクスポートされる。
++     Telekinesis はこれらの上にフォームのサイクル（描画し、送信し、エラーとともに再描画する）を `orchestrate` として構築する。
+
+- refer legerdemain.Query
++ refer legerdemain.Query
+
+- refer legerdemain.elicit
++ refer legerdemain.elicit
+
+- refer legerdemain.Formulaic
++ refer legerdemain.Formulaic
+
+- refer legerdemain.Formulation
++ refer legerdemain.Formulation
+
+- refer legerdemain.Elicitable
++ refer legerdemain.Elicitable
+
+- entry .elicit   renders the form for a type, optionally filled from a submitted `Query`, with its validation messages
+-     `elicit[Value](query, validation, submit)` renders the whole form for `Value`, which must
+-     be `Formulaic`, through the `Formulation` given in scope. `query` is what was submitted, to
+-     show the user's entries again (`Unset` for a blank form); `validation` holds the messages
+-     to attach to fields, keyed by each field's `Pointer` (`Validation()` for none); and
+-     `submit` is the submit button's label, or `Unset` for the formulation's default.
++ entry .elicit   型のフォームを描画する。必要に応じて送信された `Query` で値を埋め、検証メッセージを添える
++     `elicit[Value](query, validation, submit)` は、スコープにある `Formulation` の given を通じて、`Value` のフォーム全体を描画する。`Value` は `Formulaic` でなければならない。
++     `query` は送信された内容で、ユーザーの入力を再表示するためのものである（空のフォームには `Unset`）。`validation` は各フィールドの `Pointer` をキーとして、フィールドに付けるメッセージを保持する（なければ `Validation()`）。`submit` は送信ボタンのラベルで、`Unset` ならフォーミュレーションの既定のものになる。
+
+=     `submit` is the submit button's label, or `Unset` for the formulation's default.
+=
+-     ```scala
++     ```scala
+
+=     `submit` is the submit button's label, or `Unset` for the formulation's default.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `submit` is the submit button's label, or `Unset` for the formulation's default.
+=
+=     ```scala
+=     import soundness.*
+-     import formulations.postFormulation
++     import formulations.postFormulation
+
+=     `submit` is the submit button's label, or `Unset` for the formulation's default.
+=
+=     ```scala
+=     import soundness.*
+=     import formulations.postFormulation
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import strategies.throwUnsafely
+=
+-     case class Person(name: Text, email: Text)
++     case class Person(name: Text, email: Text)
+
+-     val blank = elicit[Person](validation = Validation(), submit = t"Register")
++     val blank = elicit[Person](validation = Validation(), submit = t"Register")
+
+-     val submitted = t"name=Hamlet".as[Query]
++     val submitted = t"name=Hamlet".as[Query]
+
+-     val again = elicit[Person](submitted, Validation(), t"Register")
++     val again = elicit[Person](submitted, Validation(), t"Register")
+
+=     val again = elicit[Person](submitted, Validation(), t"Register")
+-     ```
++     ```
+
+-     Each field is labelled from its name, split at its capitals and capitalised (`firstName`
+-     becomes _First name_), and a nested case class becomes a `<fieldset>` with the field's
+-     label as its legend. A field's widget is named by its dotted path, `speaker.name`, which is
+-     the key it is submitted under.
++     各フィールドのラベルはその名前から作られ、大文字の位置で区切って先頭を大文字にする（`firstName` は _First name_ になる）。ネストしたケースクラスは、フィールドのラベルを凡例とする `<fieldset>` になる。
++     フィールドのウィジェットにはドット区切りのパス `speaker.name` が名前として付き、これが送信時のキーになる。
+
+- entry .edit   renders the form for a value, filled with that value's fields
+-     An extension on any value which is both `Formulaic` and `Encodable in Query`:
+-     `value.edit(validation, submit)` is the form `elicit` renders, filled with the value's own
+-     fields encoded as a `Query`, for changing an existing record. It needs a `Formulation` in
+-     scope.
++ entry .edit   値のフォームを、その値のフィールドで埋めて描画する
++     `Formulaic` であり、かつ `Encodable in Query` でもある任意の値に対する拡張メソッドである。
++     `value.edit(validation, submit)` は `elicit` が描画するフォームを、値自身のフィールドを `Query` としてエンコードしたもので埋めたもので、既存のレコードを変更するためにある。
++     スコープに `Formulation` を必要とする。
+
+=     scope.
+=
+-     ```scala
++     ```scala
+
+=     scope.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     scope.
+=
+=     ```scala
+=     import soundness.*
+-     import formulations.postFormulation
++     import formulations.postFormulation
+
+=     import formulations.postFormulation
+=
+-     case class Person(name: Text, email: Text)
++     case class Person(name: Text, email: Text)
+
+-     Person(t"Bottom", t"bottom@example.com").edit(Validation(), t"Update")
++     Person(t"Bottom", t"bottom@example.com").edit(Validation(), t"Update")
+
+=     Person(t"Bottom", t"bottom@example.com").edit(Validation(), t"Update")
+-     ```
++     ```
+
+- entry .formulations   the standard ways to frame a form in HTML, each a given to import by name
++ entry .formulations   フォームを HTML で囲む標準の方法。それぞれ名前でインポートする given である
+
+= entry .formulations   the standard ways to frame a form in HTML, each a given to import by name
+-   detail
++   detail
+
+-       How a form and its rows are rendered is a `Formulation` in scope, and `import
+-       soundness.*` brings none in: one is imported by name, or an application defines its own
+-       to match its design.
++       フォームとその行がどう描画されるかは、スコープにある `Formulation` で決まる。`import soundness.*` はそれを一つも持ち込まない。名前で一つをインポートするか、アプリケーションが自身のデザインに合わせて独自のものを定義する。
+
+=       to match its design.
+=
+-       ```scala
++       ```scala
+
+=       to match its design.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import formulations.postFormulation
++       import formulations.postFormulation
+
+=       import formulations.postFormulation
+-       ```
++       ```
+
+-   entry .postFormulation   a plain, unstyled form which posts back to its own URL
+-       The form is a `<form action="." method="post">` holding the rows and a submit button
+-       labelled with the `submit` text, or _Submit_ if it is `Unset`. Each row is a `<div>`
+-       holding a `<p class="alert">` with the field's validation message, if any, a `<label>`
+-       around the legend and the widget, and a `<span class="required">*</span>`, so a
+-       stylesheet can style the alert and the marker. The marker is currently shown on every
+-       row, whether or not the field is required.
++   entry .postFormulation   自身の URL へ POST し返す、装飾のない素朴なフォーム
++       フォームは `<form action="." method="post">` で、行と、`submit` のテキスト（`Unset` なら _Submit_）をラベルとする送信ボタンを保持する。
++       各行は `<div>` で、フィールドの検証メッセージがあればそれを持つ `<p class="alert">`、凡例とウィジェットを囲む `<label>`、そして `<span class="required">*</span>` を保持するので、スタイルシートで警告とマーカーにスタイルを付けられる。
++       マーカーは現在、フィールドが必須かどうかにかかわらずすべての行に表示される。
+
+- entry .Formulation   how a form, and each labelled row of it, is framed in HTML
++ entry .Formulation   フォームと、そのラベル付きの各行を HTML でどう囲むか
+
+= entry .Formulation   how a form, and each labelled row of it, is framed in HTML
+-   detail
++   detail
+
+-       A `Formulation` is the presentation of a form, separate from how its fields are derived:
+-       `#form` wraps the rows and the submit button, and `#element` frames one widget with its
+-       legend and validation message. `elicit` and `edit` take one as a contextual value;
+-       `formulations.postFormulation` is the standard one, and an application defines its own
+-       for its own markup:
++       `Formulation` はフォームの見せ方であり、フィールドがどう導出されるかとは別のものである。`#form` は行と送信ボタンを包み、`#element` は一つのウィジェットをその凡例と検証メッセージとともに囲む。
++       `elicit` と `edit` はこれをコンテキスト値として受け取る。`formulations.postFormulation` が標準のものであり、アプリケーションは独自のマークアップのために独自のものを定義する。
+
+=       for its own markup:
+=
+-       ```scala
++       ```scala
+
+=       for its own markup:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import htmlDoms.whatwg, whatwg.*
++       import htmlDoms.whatwg, whatwg.*
+
+-       given Formulation:
++       given Formulation:
+
+-         def form(content: List[Html of Flow], submit: Optional[Text]): Html of Flow =
++         def form(content: List[Html of Flow], submit: Optional[Text]): Html of Flow =
+
+-           Form(method = t"post")(Html.Fragment(content*), Input.Submit(value = submit.or(t"Go")))
++           Form(method = t"post")(Html.Fragment(content*), Input.Submit(value = submit.or(t"Go")))
+
+-         def element
++         def element
+
+-           ( widget: Html of Phrasing, legend: Text, validation: Optional[Message], required: Boolean )
++           ( widget: Html of Phrasing, legend: Text, validation: Optional[Message], required: Boolean )
+
+-         :   Html of Flow =
++         :   Html of Flow =
+
+-           Div(Label(legend, widget))
++           Div(Label(legend, widget))
+
+=           Div(Label(legend, widget))
+-       ```
++       ```
+
+-       A `Formulation` is capture-tracked (`Findable`), so one may close over a capability.
++       `Formulation` はキャプチャ追跡される（`Findable`）ので、ケイパビリティを閉じ込められる。
+
+-   refer legerdemain.formulations
++   refer legerdemain.formulations
+
+-   entry #form      wraps a form's rows and its submit button, labelled with the text or a default
+-   entry #element   frames one widget with its legend, its validation message, and whether it is required
++   entry #form      フォームの行と送信ボタンを包む。ボタンのラベルはそのテキストか既定のものになる
++   entry #element   一つのウィジェットを、その凡例、検証メッセージ、必須かどうかとともに囲む
+
+- entry .Formulaic   a type which can be presented as form rows: derived for case classes, field by field
++ entry .Formulaic   フォームの行として提示できる型。ケースクラスに対してフィールドごとに導出される
+
+= entry .Formulaic   a type which can be presented as form rows: derived for case classes, field by field
+-   detail
++   detail
+
+-       `Formulaic` is the typeclass `elicit` and `edit` need. It is derived for a product type
+-       from its fields — each field must itself be `Formulaic` — and is given for any single
+-       value which is `Elicitable` and whose widget is `Renderable` as phrasing HTML. A
+-       derived product renders as a `<fieldset>` with a `<legend>`, so nesting in the data is
+-       nesting in the form.
++       `Formulaic` は `elicit` と `edit` が必要とする型クラスである。
++       直積型に対してはそのフィールドから導出され（各フィールド自身も `Formulaic` でなければならない）、`Elicitable` であってウィジェットがフレージング HTML として `Renderable` である任意の単一の値に対しては given として与えられる。
++       導出された直積型は `<legend>` 付きの `<fieldset>` として描画されるので、データのネストがそのままフォームのネストになる。
+
+-       `#fields` receives the `Pointer` of the value within the whole form, its legend, the
+-       part of the submitted `Query` under that pointer, the `Validation` and the `Formulation`;
+-       a single field looks up its own message in the validation by its pointer.
++       `#fields` は、フォーム全体の中での値の `Pointer`、その凡例、送信された `Query` のうちそのポインターの下にある部分、`Validation`、そして `Formulation` を受け取る。単一のフィールドは自身のメッセージを、そのポインターによって検証の中から探す。
+
+-   refer legerdemain.Elicitable
++   refer legerdemain.Elicitable
+
+=   refer legerdemain.Elicitable
+-   refer legerdemain.elicit
++   refer legerdemain.elicit
+
+-   entry .elicitable   a single field's row: its `Elicitable` widget, rendered and framed with its message
+-       Makes the widget for the value with the field's dotted name, legend and submitted value,
+-       renders it, and frames it with the formulation's `element`.
+-   entry .conjunction   derives the rows of a case class: a fieldset of each field's rows
+-       The derivation `Formulaic` uses for products. Each field's legend is its name split at
+-       the capitals and capitalised, and its pointer extends the parent's with the field's
+-       name.
+-   entry #fields   the form rows for a value, given its pointer, legend, submitted query, validation and formulation
++   entry .elicitable   単一のフィールドの行。その `Elicitable` のウィジェットを描画し、メッセージとともに囲む
++       フィールドのドット区切りの名前、凡例、送信された値から値のウィジェットを作り、それを描画し、フォーミュレーションの `element` で囲む。
++   entry .conjunction   ケースクラスの行を導出する。各フィールドの行からなるフィールドセットである
++       `Formulaic` が直積型に使う導出である。
++       各フィールドの凡例はその名前を大文字の位置で区切って先頭を大文字にしたもので、そのポインターは親のポインターをフィールドの名前で延長したものである。
++   entry #fields   値のフォームの行。ポインター、凡例、送信されたクエリ、検証、フォーミュレーションから作られる
+
+- entry .Elicitable   which widget edits a type, and how a value of it is entered as text
++ entry .Elicitable   型をどのウィジェットで編集するか、そしてその値をテキストとしてどう入力するか
+
+= entry .Elicitable   which widget edits a type, and how a value of it is entered as text
+-   detail
++   detail
+
+-       `value is Elicitable` says what a form field of type `value` looks like: its `Operand` is
+-       a `Widget` type, `#widget` makes one with a field's name, legend and current value, and
+-       `#input` gives the text a value is submitted as. The givens in the companion choose:
++       `value is Elicitable` は、型 `value` のフォームフィールドがどう見えるかを表す。その `Operand` は `Widget` 型であり、`#widget` はフィールドの名前、凡例、現在の値からウィジェットを作り、`#input` は値が送信されるときのテキストを与える。
++       コンパニオンの given が次のように選ぶ。
+
+-       - any `Encodable in Text` value — `Text`, numbers, validated types such as
+-         `EmailAddress` — is a text `Field` (`decodable`, in `Elicitable2`, at lower priority);
+-       - a `Boolean` is a `Checkbox`, submitted as `on` when checked (`boolean`);
+-       - an `Enumerable` type is a `Combobox` offering each value's name (`enumerable`);
+-       - a `Reference[Entity]` to a stored entity is a `Dropdown` of every stored entity,
+-         shown by its `Showable` rendering (`reference`).
++       - `Encodable in Text` である任意の値（`Text`、数値、`EmailAddress` のような検証済みの型）はテキストの `Field` になる（`Elicitable2` にある、優先度の低い `decodable`）。
++       - `Boolean` は `Checkbox` になり、チェックされているときは `on` として送信される（`boolean`）。
++       - `Enumerable` な型は、各値の名前を候補として示す `Combobox` になる（`enumerable`）。
++       - 保存されたエンティティへの `Reference[Entity]` は、保存されたすべてのエンティティからなる `Dropdown` になり、それぞれ `Showable` による描画で表示される（`reference`）。
+
+-       A type of one's own gets a different widget with a given of its own.
++       独自の型は、独自の given によって別のウィジェットを得る。
+
+-   refer legerdemain.Widget
++   refer legerdemain.Widget
+
+-   refer legerdemain.Formulaic
++   refer legerdemain.Formulaic
+
+-   entry .boolean      edits a `Boolean` with a `Checkbox`, entered as `on` when true and empty when false
+-   entry .enumerable   edits an `Enumerable` type with a `Combobox` of its values' names
+-       Each value is entered by its name, as `Enumerable` names it, and the combobox's list
+-       offers all of them.
+-   entry .reference    edits a `Reference` to a stored entity with a `Dropdown` of all such entities
+-       Needs the entity to be `Listable`, `Showable` and `Referenceable`, and its reference's
+-       operand to be `Encodable in Text`: every stored entity is enumerated, each option keyed
+-       by its encoded reference and labelled with the entity's `show`.
+-   entry #input    the text a value of this type is entered or submitted as
+-   entry #widget   the widget for a field, from its name, its legend and its current text
++   entry .boolean      `Boolean` を `Checkbox` で編集する。真のときは `on`、偽のときは空として入力される
++   entry .enumerable   `Enumerable` な型を、その値の名前からなる `Combobox` で編集する
++       各値は `Enumerable` が付ける名前で入力され、コンボボックスのリストはそのすべてを候補として示す。
++   entry .reference    保存されたエンティティへの `Reference` を、そのようなすべてのエンティティからなる `Dropdown` で編集する
++       エンティティが `Listable`、`Showable`、`Referenceable` であり、その参照のオペランドが `Encodable in Text` であることを必要とする。保存されたすべてのエンティティが列挙され、各選択肢はエンコードされた参照をキーとし、エンティティの `show` をラベルとする。
++   entry #input    この型の値が入力または送信されるときのテキスト
++   entry #widget   フィールドのウィジェット。その名前、凡例、現在のテキストから作られる
+
+- entry .Elicitable2   the lower-priority `Elicitable` given, for any type encodable as text
++ entry .Elicitable2   テキストとしてエンコードできる任意の型に対する、優先度の低い `Elicitable` の given
+
+= entry .Elicitable2   the lower-priority `Elicitable` given, for any type encodable as text
+-   detail
++   detail
+
+-       Mixed into the `Elicitable` companion so that the more specific givens there win.
+-   entry #decodable   edits any `Encodable in Text` value with a text `Field`, entered as its encoding
+-       Despite its name, it requires only that the type is `Encodable in Text`: the field shows
+-       the value's encoding, and the submission is decoded separately, through `Query`.
++       `Elicitable` のコンパニオンにミックスインされ、そこにあるより具体的な given が優先されるようにする。
++   entry #decodable   `Encodable in Text` である任意の値をテキストの `Field` で編集し、そのエンコードとして入力される
++       名前に反して、型が `Encodable in Text` であることしか要求しない。フィールドは値のエンコードを表示し、送信内容は `Query` を通じて別にデコードされる。
+
+- entry .Widget   a form control, with the name it is submitted under and its current value
++ entry .Widget   フォームのコントロール。送信時の名前と現在の値を持つ
+
+= entry .Widget   a form control, with the name it is submitted under and its current value
+-   detail
++   detail
+
+-       The common shape of `Field`, `Checkbox`, `Combobox`, `Dropdown` and `RadioGroup`: each is
+-       a case class with a `#name`, the field's dotted path in the form, and a `#value`, the text
+-       it holds, and each companion has a `Renderable` given which renders it as phrasing HTML.
+-   entry #name    the name the control is submitted under: the field's dotted path within the form
+-   entry #value   the text the control holds, from the submitted query or the value being edited
++       `Field`、`Checkbox`、`Combobox`、`Dropdown`、`RadioGroup` に共通する形である。それぞれ、フォーム内でのフィールドのドット区切りのパスである `#name` と、保持するテキストである `#value` を持つケースクラスであり、各コンパニオンにはそれをフレージング HTML として描画する `Renderable` の given がある。
++   entry #name    コントロールが送信されるときの名前。フォーム内でのフィールドのドット区切りのパスである
++   entry #value   コントロールが保持するテキスト。送信されたクエリか、編集中の値から得られる
+
+- entry .Field   a text input, the widget for any value encodable as text
++ entry .Field   テキスト入力。テキストとしてエンコードできる任意の値のウィジェット
+
+= entry .Field   a text input, the widget for any value encodable as text
+-   detail
++   detail
+
+-       Renders as `<input type="text">` with the widget's name and value; the label is
+-       rendered by the `Formulation` around it.
+-   entry .renderable   renders a field as an `<input type="text">`
+-   entry #label   the field's legend
+-   entry #name    the name the field is submitted under: its dotted path within the form
+-   entry #value   the text in the field
++       ウィジェットの名前と値を持つ `<input type="text">` として描画される。ラベルは、それを囲む `Formulation` によって描画される。
++   entry .renderable   フィールドを `<input type="text">` として描画する
++   entry #label   フィールドの凡例
++   entry #name    フィールドが送信されるときの名前。フォーム内でのドット区切りのパスである
++   entry #value   フィールド内のテキスト
+
+- entry .Checkbox   a checkbox, the widget for a `Boolean`
++ entry .Checkbox   チェックボックス。`Boolean` のウィジェット
+
+= entry .Checkbox   a checkbox, the widget for a `Boolean`
+-   detail
++   detail
+
+-       Renders as `<input type="checkbox">`, checked when its value is not empty. A checked box
+-       is submitted as `on` and an unchecked one not at all, which is why a `Boolean` decodes
+-       from a `Query` by whether its key is present.
+-   entry .renderable   renders a checkbox, checked if its value is non-empty
+-   entry #name    the name the box is submitted under: its dotted path within the form
+-   entry #value   `on` when checked, and empty otherwise
++       `<input type="checkbox">` として描画され、値が空でないときにチェックされる。
++       チェックされたボックスは `on` として送信され、チェックされていないものはまったく送信されない。このため `Boolean` は `Query` から、そのキーが存在するかどうかによってデコードされる。
++   entry .renderable   チェックボックスを描画する。値が空でなければチェックされる
++   entry #name    ボックスが送信されるときの名前。フォーム内でのドット区切りのパスである
++   entry #value   チェックされているときは `on`、それ以外は空
+
+- entry .Combobox   a text input with a list of suggestions, the widget for an enumeration
++ entry .Combobox   候補のリストを持つテキスト入力。列挙型のウィジェット
+
+= entry .Combobox   a text input with a list of suggestions, the widget for an enumeration
+-   detail
++   detail
+
+-       Renders as an `<input>` tied by its `list` attribute to a `<datalist>` of the options, so
+-       a browser suggests the values while still accepting typed text, which then must decode.
+-       The datalist's id is the widget's name, so the name must be a valid DOM id: a field whose
+-       name contains whitespace, or a lone enumeration at the root of a form (whose name is
+-       empty), cannot be rendered.
+-   entry .renderable   renders a combobox as an `<input>` and its `<datalist>`
+-   entry #name      the name the input is submitted under, and its datalist's id
+-   entry #options   the suggested values
+-   entry #value     the text in the input
++       `list` 属性によって選択肢の `<datalist>` と結び付いた `<input>` として描画されるので、ブラウザは値を候補として示しつつ、入力されたテキストも受け付ける。そのテキストはデコードできなければならない。
++       datalist の id はウィジェットの名前なので、名前は有効な DOM の id でなければならない。名前に空白を含むフィールドや、フォームのルートにある単独の列挙型（名前が空になる）は描画できない。
++   entry .renderable   コンボボックスを `<input>` とその `<datalist>` として描画する
++   entry #name      入力が送信されるときの名前であり、その datalist の id でもある
++   entry #options   候補となる値
++   entry #value     入力内のテキスト
+
+- entry .Dropdown   a selection from a fixed list of labelled options, the widget for a stored reference
++ entry .Dropdown   ラベル付きの選択肢からなる固定のリストからの選択。保存された参照のウィジェット
+
+= entry .Dropdown   a selection from a fixed list of labelled options, the widget for a stored reference
+-   detail
++   detail
+
+-       Renders as a `<select>` of `<option>`s, each submitting its `key` and showing its `value`.
+-   entry .renderable   renders a dropdown as a `<select>` of its options
+-   entry #name      the name the selection is submitted under
+-   entry #options   the options, each a submitted key and a displayed label
+-   entry #value     the key currently selected
++       `<option>` からなる `<select>` として描画され、それぞれが自身の `key` を送信し、`value` を表示する。
++   entry .renderable   ドロップダウンを、その選択肢からなる `<select>` として描画する
++   entry #name      選択が送信されるときの名前
++   entry #options   選択肢。それぞれ送信されるキーと表示されるラベルからなる
++   entry #value     現在選択されているキー
+
+- entry .RadioGroup   a set of radio buttons sharing one name, one of which is chosen
++ entry .RadioGroup   一つの名前を共有するラジオボタンの集まりで、そのうち一つが選ばれる
+
+= entry .RadioGroup   a set of radio buttons sharing one name, one of which is chosen
+-   detail
++   detail
+
+-       Renders as a `<label>` per option around an `<input type="radio">`. No standard
+-       `Elicitable` produces one; a type which should be chosen by radio buttons needs an
+-       `Elicitable` given whose `Operand` is `RadioGroup`.
+-   entry .renderable   renders a radio group as a labelled radio button per option
+-   entry #name      the name every button in the group is submitted under
+-   entry #options   the options, each with a key, a submitted value and a label
+-   entry #value     the value currently chosen
++       選択肢ごとに、`<input type="radio">` を囲む `<label>` として描画される。
++       これを生成する標準の `Elicitable` はない。ラジオボタンで選ばせたい型には、`Operand` が `RadioGroup` である `Elicitable` の given が必要である。
++   entry .renderable   ラジオグループを、選択肢ごとのラベル付きのラジオボタンとして描画する
++   entry #name      グループ内のすべてのボタンが送信されるときの名前
++   entry #options   選択肢。それぞれキー、送信される値、ラベルを持つ
++   entry #value     現在選ばれている値
+
+- entry .Query   form-encoded key–value pairs: a URL query string or a form submission, and their codecs
++ entry .Query   フォームエンコードされたキーと値の対。URL のクエリ文字列やフォームの送信内容と、そのコーデック
+
+= entry .Query   form-encoded key–value pairs: a URL query string or a form submission, and their codecs
+-   detail
++   detail
+
+-       A `Query` is an ordered list of `(key, value)` pairs of `Text`, as a query string
+-       `a=1&b=2` or an `application/x-www-form-urlencoded` body holds them. Nested data is
+-       flattened into dotted keys — `speaker.name` — so a case class encodes to a `Query` field
+-       by field and decodes from one, which is how form submissions and query parameters become
+-       typed values.
++       `Query` は `Text` の `(key, value)` の対を順序付きで並べたリストであり、クエリ文字列 `a=1&b=2` や `application/x-www-form-urlencoded` の本文が保持する形である。
++       ネストしたデータはドット区切りのキー（`speaker.name`）へ平坦化されるので、ケースクラスはフィールドごとに `Query` へエンコードされ、そこからデコードされる。こうしてフォームの送信内容やクエリパラメーターが型付きの値になる。
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label An empty query
++         label 空のクエリ
+
+=         label An empty query
+-         code
++         code
+
+=         label An empty query
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label An empty query
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             val query = Query()
++             val query = Query()
+
+-             query.show   // t""
++             query.show   // t""
+
+=             query.show   // t""
+-       frame
++       frame
+
+-         label One parameter
++         label パラメーター一つ
+
+=         label One parameter
+-         code
++         code
+
+=         label One parameter
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label One parameter
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             val query = Query(List(t"name" -> t"Nick Bottom"))
++             val query = Query(List(t"name" -> t"Nick Bottom"))
+
+-             query.show   // t"name=Nick+Bottom"
++             query.show   // t"name=Nick+Bottom"
+
+=             query.show   // t"name=Nick+Bottom"
+-       frame
++       frame
+
+-         label A second parameter appended
++         label 二つ目のパラメーターを追加
+
+=         label A second parameter appended
+-         code
++         code
+
+=         label A second parameter appended
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A second parameter appended
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             val query = Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com"))
++             val query = Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com"))
+
+-             query.show   // t"name=Nick+Bottom&email=bottom%40example.com"
++             query.show   // t"name=Nick+Bottom&email=bottom%40example.com"
+
+=             query.show   // t"name=Nick+Bottom&email=bottom%40example.com"
+-       frame
++       frame
+
+-         label Both nested under a prefix, then decoded
++         label 両方を接頭辞の下にネストし、デコードする
+
+=         label Both nested under a prefix, then decoded
+-         code
++         code
+
+=         label Both nested under a prefix, then decoded
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Both nested under a prefix, then decoded
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             case class Person(name: Text, email: Text)
++             case class Person(name: Text, email: Text)
+
+-             case class Scene(speaker: Person, place: Text)
++             case class Scene(speaker: Person, place: Text)
+
+-             val query =
++             val query =
+
+-               (Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com")))
++               (Query(List(t"name" -> t"Nick Bottom")) + Query(List(t"email" -> t"bottom@example.com")))
+
+-               . prefix(t"speaker") + Query(List(t"place" -> t"Athens"))
++               . prefix(t"speaker") + Query(List(t"place" -> t"Athens"))
+
+-             query.show       // t"speaker.name=Nick+Bottom&speaker.email=bottom%40example.com&place=Athens"
++             query.show       // t"speaker.name=Nick+Bottom&speaker.email=bottom%40example.com&place=Athens"
+
+-             query.as[Scene]  // Scene(Person(t"Nick Bottom", t"bottom@example.com"), t"Athens")
++             query.as[Scene]  // Scene(Person(t"Nick Bottom", t"bottom@example.com"), t"Athens")
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       Text decodes to a `Query` with `as[Query]` and a `Query` encodes, or `show`s, as the
+-       URL-encoded string. Any type which is `Encodable in Text` encodes to a `Query` of one
+-       unnamed value, and any case class whose fields encode does so field by field; decoding
+-       mirrors both, raising `Query.Error` for a missing parameter. Under an accruing strategy
+-       (`validate`), every missing or invalid field of a case class is reported, each with its
+-       dotted `Pointer`, and the case class's constructor runs only if every field decoded.
++       テキストは `as[Query]` で `Query` へデコードされ、`Query` は URL エンコードされた文字列としてエンコードされる、つまり `show` される。
++       `Encodable in Text` である任意の型は名前のない一つの値からなる `Query` へエンコードされ、フィールドがエンコードできる任意のケースクラスはフィールドごとにエンコードされる。デコードはその両方を鏡写しにし、パラメーターが欠けていれば `Query.Error` を発生させる。
++       蓄積型の戦略（`validate`）の下では、ケースクラスの欠けている、あるいは無効なフィールドがすべて、それぞれドット区切りの `Pointer` とともに報告され、ケースクラスのコンストラクターはすべてのフィールドがデコードできた場合にのみ実行される。
+
+-       Named parameters are read and written dynamically — `query.name`, `query.name = value`,
+-       `Query.make(name = value)` — when a `Parametric` given types the name.
++       名前付きのパラメーターは、`Parametric` の given がその名前に型を与えるとき、動的に読み書きされる（`query.name`、`query.name = value`、`Query.make(name = value)`）。
+
+-   refer legerdemain.Parametric
++   refer legerdemain.Parametric
+
+=   refer legerdemain.Parametric
+-   refer legerdemain.elicit
++   refer legerdemain.elicit
+
+-   entry .apply   an empty query, a query of one unnamed value, or one of the given pairs, in order
+-       `Query()` is empty, `Query(text)` holds the single value `text` with an empty key — the
+-       shape a value `Encodable in Text` encodes to — and `Query(pairs)` holds a list of `(key,
+-       value)` pairs as they are.
+-   entry .encodable   encodes a `Query` as URL-encoded text; and any encodable value or case class as a `Query`
+-       Two givens share the name. One renders a `Query` as `key=value` pairs joined by `&`, each
+-       key and value URL-encoded. The other, an inline given, makes any type `Encodable in
+-       Query`: a type `Encodable in Text` becomes a query of one unnamed value, and a case
+-       class encodes each field under its name, nested fields under dotted keys.
++   entry .apply   空のクエリ、名前のない一つの値からなるクエリ、または与えられた対を順に並べたクエリ
++       `Query()` は空である。`Query(text)` は空のキーを持つ単一の値 `text` を保持する。これは `Encodable in Text` である値がエンコードされる形である。`Query(pairs)` は `(key, value)` の対のリストをそのまま保持する。
++   entry .encodable   `Query` を URL エンコードされたテキストとしてエンコードし、また任意のエンコード可能な値やケースクラスを `Query` としてエンコードする
++       二つの given がこの名前を共有する。
++       一つは `Query` を `&` で連結した `key=value` の対として描画し、各キーと値は URL エンコードされる。
++       もう一つは inline の given で、任意の型を `Encodable in Query` にする。`Encodable in Text` である型は名前のない一つの値からなるクエリになり、ケースクラスは各フィールドをその名前の下に、ネストしたフィールドをドット区切りのキーの下にエンコードする。
+
+=       class encodes each field under its name, nested fields under dotted keys.
+=
+-       ```scala
++       ```scala
+
+=       class encodes each field under its name, nested fields under dotted keys.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       summon[Person is Encodable in Query].encoded(Person(t"Juliet", 13)).show   // t"name=Juliet&age=13"
++       summon[Person is Encodable in Query].encoded(Person(t"Juliet", 13)).show   // t"name=Juliet&age=13"
+
+=       summon[Person is Encodable in Query].encoded(Person(t"Juliet", 13)).show   // t"name=Juliet&age=13"
+-       ```
++       ```
+
+-   entry .decodable   decodes URL-encoded text as a `Query`; and a `Query` as any decodable value or case class
+-       Two givens share the name. One splits text on `&` and each part at its first `=`,
+-       URL-decoding both sides; a part with no `=` is a key with an empty value. The other, an
+-       inline given, makes any type `Decodable in Query`: a type `Decodable in Text` is decoded
+-       from the query's unnamed value, and a case class field by field from the parameters
+-       under its fields' names.
++   entry .decodable   URL エンコードされたテキストを `Query` としてデコードし、また `Query` を任意のデコード可能な値やケースクラスとしてデコードする
++       二つの given がこの名前を共有する。
++       一つはテキストを `&` で分割し、各部分を最初の `=` で分割して、両側を URL デコードする。`=` のない部分は空の値を持つキーである。
++       もう一つは inline の given で、任意の型を `Decodable in Query` にする。`Decodable in Text` である型はクエリの名前のない値からデコードされ、ケースクラスはそのフィールドの名前の下にあるパラメーターからフィールドごとにデコードされる。
+
+-       A missing value raises `Query.Error` with the reason `Missing`, unless the type has a
+-       `Default`, which is used after the error is raised. Under an accruing strategy, every
+-       missing field of a case class is raised, each focused at its dotted `Pointer`, and the
+-       constructor is not run on fallback values — so a refined type's constructor never
+-       reports phantom errors for fields the user did not fill in.
++       値が欠けていると、理由 `Missing` を持つ `Query.Error` が発生する。ただし型に `Default` があれば、エラーが発生した後にそれが使われる。
++       蓄積型の戦略の下では、ケースクラスの欠けているフィールドがすべてエラーとして発生し、それぞれドット区切りの `Pointer` にフォーカスされる。そしてコンストラクターは代替の値に対しては実行されない。このため細分化された型のコンストラクターが、ユーザーが入力しなかったフィールドについて幻のエラーを報告することはない。
+
+=       reports phantom errors for fields the user did not fill in.
+=
+-       ```scala
++       ```scala
+
+=       reports phantom errors for fields the user did not fill in.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       reports phantom errors for fields the user did not fill in.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       case class Person(name: Text, email: Text)
++       case class Person(name: Text, email: Text)
+
+-       t"name=Hamlet&email=a%40b.c".as[Query].as[Person]   // Person(t"Hamlet", t"a@b.c")
++       t"name=Hamlet&email=a%40b.c".as[Query].as[Person]   // Person(t"Hamlet", t"a@b.c")
+
+=       t"name=Hamlet&email=a%40b.c".as[Query].as[Person]   // Person(t"Hamlet", t"a@b.c")
+-       ```
++       ```
+
+-   entry .EncodableDerivation   the product derivation of `Encodable in Query`: each field encoded under its name
++   entry .EncodableDerivation   `Encodable in Query` の直積型の導出。各フィールドをその名前の下にエンコードする
+
+=   entry .EncodableDerivation   the product derivation of `Encodable in Query`: each field encoded under its name
+-     detail
++     detail
+
+-         Used by the inline `encodable` given for case classes; not normally named directly.
+-     entry .conjunction   encodes a product as the union of its fields' queries, each prefixed with the field's name
+-   entry .DecodableDerivation   the product derivation of `Decodable in Query`: each field decoded from its parameters
++         ケースクラスに対する inline の `encodable` の given が使う。通常は直接名指ししない。
++     entry .conjunction   直積型を、そのフィールドのクエリの和としてエンコードする。各クエリにはフィールドの名前が接頭辞として付く
++   entry .DecodableDerivation   `Decodable in Query` の直積型の導出。各フィールドをそのパラメーターからデコードする
+
+=   entry .DecodableDerivation   the product derivation of `Decodable in Query`: each field decoded from its parameters
+-     detail
++     detail
+
+-         Used by the inline `decodable` given for case classes; not normally named directly.
+-         It decodes the fields in a single traversal, focuses each field's errors at its
+-         `Pointer` (a nested record's error lands at `outer.inner`), and constructs the product
+-         only when every field decoded cleanly.
+-     entry .conjunction   decodes a product field by field, constructing it only if every field decoded
+-   entry .booleanEncodable   encodes a `Boolean` as a checkbox does: `on` when true, and nothing when false
+-   entry .booleanDecodable   decodes a `Boolean` as a checkbox's submission: true if the value is present at all
+-       An unchecked checkbox is not submitted, so a `Boolean` field is never missing: its
+-       absence is `false`.
+-   entry .showable   shows a `Query` as its URL-encoded query string, as `#queryString` gives it
+-   entry .inspectable   a debug rendering of a `Query`: `key = "value"` pairs, separated by commas, not URL-encoded
+-   entry .applyDynamicNamed   `Query.make(name = value, …)`: a query from named, typed parameters
+-       Each parameter name must have a `Parametric` given in scope saying what type its value
+-       takes, and each value must be `Encodable in Query`; both are checked as the code
+-       compiles. A value of the wrong type is a compile error, _the parameter `name` takes
+-       values of `T` but the provided value had type `U`_; a name with no `Parametric` is
+-       another (error `↯/s.87.4`), and a value with no encoding a third (error `↯/s.87.3`).
++         ケースクラスに対する inline の `decodable` の given が使う。通常は直接名指ししない。
++         フィールドを一度の走査でデコードし、各フィールドのエラーをその `Pointer` にフォーカスし（ネストしたレコードのエラーは `outer.inner` に置かれる）、すべてのフィールドが問題なくデコードできたときにのみ直積を構築する。
++     entry .conjunction   直積型をフィールドごとにデコードし、すべてのフィールドがデコードできた場合にのみ構築する
++   entry .booleanEncodable   `Boolean` をチェックボックスと同じようにエンコードする。真のときは `on`、偽のときは何もない
++   entry .booleanDecodable   `Boolean` をチェックボックスの送信内容としてデコードする。値が少しでも存在すれば真である
++       チェックされていないチェックボックスは送信されないので、`Boolean` のフィールドが欠けることはない。存在しないことが `false` である。
++   entry .showable   `Query` を、`#queryString` が与えるとおりの URL エンコードされたクエリ文字列として表示する
++   entry .inspectable   `Query` のデバッグ用の描画。カンマで区切られた `key = "value"` の対で、URL エンコードはされない
++   entry .applyDynamicNamed   `Query.make(name = value, …)`。名前付きの型付きパラメーターからクエリを作る
++       各パラメーター名には、その値がどの型を取るかを表す `Parametric` の given がスコープになければならず、各値は `Encodable in Query` でなければならない。どちらもコードのコンパイル時に検査される。
++       誤った型の値はコンパイルエラー _the parameter `name` takes values of `T` but the provided value had type `U`_ になる。`Parametric` のない名前は別のエラー（エラー `↯/s.87.4`）になり、エンコーディングのない値は三つ目のエラー（エラー `↯/s.87.3`）になる。
+
+=       another (error `↯/s.87.4`), and a value with no encoding a third (error `↯/s.87.3`).
+=
+-       ```scala
++       ```scala
+
+=       another (error `↯/s.87.4`), and a value with no encoding a third (error `↯/s.87.3`).
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       inline given ("key" is Parametric to Text) = !!
++       inline given ("key" is Parametric to Text) = !!
+
+-       inline given ("count" is Parametric to Int) = !!
++       inline given ("count" is Parametric to Int) = !!
+
+-       Query.make(key = t"hello world", count = 24).show   // t"key=hello+world&count=24"
++       Query.make(key = t"hello world", count = 24).show   // t"key=hello+world&count=24"
+
+=       Query.make(key = t"hello world", count = 24).show   // t"key=hello+world&count=24"
+-       ```
++       ```
+
+-       Telekinesis's `queryParameters.arbitraryQueryParameter`, imported by name, accepts any
+-       name with any value.
+-   entry .addable   `query + query`: the pairs of both, the left's first
+-   entry .Error   raised when a parameter a value needs is missing from a query
++       Telekinesis の `queryParameters.arbitraryQueryParameter` を名前でインポートすると、任意の名前と任意の値を受け付ける。
++   entry .addable   `query + query`。両方の対で、左のものが先に来る
++   entry .Error   値が必要とするパラメーターがクエリに欠けているときに発生する
+
+=   entry .Error   raised when a parameter a value needs is missing from a query
+-     detail
++     detail
+
+-         Error `↯/s.87.2`: _the query parameter could not be read because the parameter was not
+-         present in the query string_. Raised by the `Decodable in Query` givens when a value
+-         which is required has no parameter, and focused at that field's `Pointer` when a case
+-         class is decoded, so an accruing strategy reports every missing field of a form.
++         エラー `↯/s.87.2`：_the query parameter could not be read because the parameter was not present in the query string_。
++         必須の値にパラメーターがないとき `Decodable in Query` の given によって発生し、ケースクラスのデコード時にはそのフィールドの `Pointer` にフォーカスされるので、蓄積型の戦略はフォームの欠けているフィールドをすべて報告する。
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         case class Person(name: Text, email: Text)
++         case class Person(name: Text, email: Text)
+
+-         capture[Query.Error](t"name=Hamlet".as[Query].as[Person]).reason   // Query.Error.Reason.Missing
++         capture[Query.Error](t"name=Hamlet".as[Query].as[Person]).reason   // Query.Error.Reason.Missing
+
+-         ```
++         ```
+
+-     entry .Reason   why a query parameter could not be read: `Missing`, the only reason
++     entry .Reason   クエリパラメーターを読めなかった理由。唯一の理由は `Missing` である
+
+-       detail
++       detail
+
+-           `Missing` (1): the parameter was not present in the query string.
+-       entry #number   the reason's number, the second part of the error's code
+-     entry .communicable   renders a reason as a message: _the parameter was not present in the query string_
+-     entry #reason   the `Query.Error.Reason`
+-   entry #values   the query's `(key, value)` pairs, in order, with keys dotted for nested fields
+-   entry #append   a query with another's pairs after this one's
+-   entry #nil      whether the query holds no pairs
+-   entry #++       a query with another's pairs after this one's, as `#append`
+-   entry #selectDynamic   `query.name`: the parameter `name`, decoded to the type its `Parametric` names
+-       Needs `"name" is Parametric to Result` and `Result is Decodable in Query`; the part of the
+-       query under `name` (its own value and any dotted children) is decoded, raising
+-       `Query.Error` if it is missing.
+-   entry #updateDynamic   `query.name = value`: a query with the parameter `name` added, encoded from a typed value
+-       Needs `"name" is Parametric to Result` and the value to be `Encodable in Query`. A value
+-       encoding to one unnamed value is added under `name`; a structured one is added under
+-       `name.` and each of its own keys. The receiver is unchanged.
+-   entry #at      the value under a key, decoded from text, or `Unset` if there is none
+-       `query.at[Int](t"page")` is the value of the parameter `page` as an `Int`, or `Unset`
+-       when no `page` parameter has a value of its own. It needs a `Tactic` for the decoding.
+-   entry #as      the whole query decoded as a value, with errors focused at their `Pointer`s
+-       `query.as[Person]` decodes through `Person is Decodable in Query`, so a missing field
+-       raises `Query.Error` focused at that field's dotted pointer.
+-   entry #apply   the query's unnamed value, or `Unset`; or the part of the query under a key
+-       `query()` is the value of a query which holds exactly one pair with an empty key, and
+-       `Unset` otherwise. `query(t"speaker")` is the sub-query under `speaker`: the pair keyed
+-       `speaker` becomes the unnamed value and each key beginning `speaker.` loses that prefix.
++           `Missing` (1)：パラメーターがクエリ文字列に存在しなかった。
++       entry #number   理由の番号。エラーコードの二番目の部分である
++     entry .communicable   理由をメッセージとして描画する：_the parameter was not present in the query string_
++     entry #reason   `Query.Error.Reason`
++   entry #values   クエリの `(key, value)` の対を順に並べたもの。ネストしたフィールドのキーはドット区切りになる
++   entry #append   このクエリの対の後に別のクエリの対を続けたクエリ
++   entry #nil      クエリが対を一つも保持していないかどうか
++   entry #++       このクエリの対の後に別のクエリの対を続けたクエリ。`#append` と同じである
++   entry #selectDynamic   `query.name`。パラメーター `name` を、その `Parametric` が名指す型へデコードしたもの
++       `"name" is Parametric to Result` と `Result is Decodable in Query` を必要とする。クエリのうち `name` の下にある部分（それ自身の値とドット区切りの子）がデコードされ、欠けていれば `Query.Error` が発生する。
++   entry #updateDynamic   `query.name = value`。型付きの値からエンコードしたパラメーター `name` を加えたクエリ
++       `"name" is Parametric to Result` と、値が `Encodable in Query` であることを必要とする。
++       名前のない一つの値へエンコードされる値は `name` の下に加えられ、構造を持つ値は `name.` とその各キーの下に加えられる。
++       レシーバは変更されない。
++   entry #at      キーの下にある値をテキストからデコードしたもの。なければ `Unset`
++       `query.at[Int](t"page")` はパラメーター `page` の値を `Int` として返し、`page` パラメーターがそれ自身の値を持たないときは `Unset` を返す。
++       デコードのために `Tactic` を必要とする。
++   entry #as      クエリ全体を値としてデコードしたもの。エラーはその `Pointer` にフォーカスされる
++       `query.as[Person]` は `Person is Decodable in Query` を通じてデコードするので、欠けているフィールドはそのフィールドのドット区切りのポインターにフォーカスされた `Query.Error` を発生させる。
++   entry #apply   クエリの名前のない値、または `Unset`。あるいはキーの下にあるクエリの部分
++       `query()` は、空のキーを持つ対をちょうど一つ保持するクエリの値であり、それ以外では `Unset` である。
++       `query(t"speaker")` は `speaker` の下にある部分クエリである。キー `speaker` の対は名前のない値になり、`speaker.` で始まる各キーはその接頭辞を失う。
+
+=       `speaker` becomes the unnamed value and each key beginning `speaker.` loses that prefix.
+=
+-       ```scala
++       ```scala
+
+=       `speaker` becomes the unnamed value and each key beginning `speaker.` loses that prefix.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `speaker` becomes the unnamed value and each key beginning `speaker.` loses that prefix.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val query = t"speaker.name=Hamlet&speaker.email=a%40b.c&place=Elsinore".as[Query]
++       val query = t"speaker.name=Hamlet&speaker.email=a%40b.c&place=Elsinore".as[Query]
+
+-       query(t"speaker")             // the query name=Hamlet&email=a%40b.c
++       query(t"speaker")             // the query name=Hamlet&email=a%40b.c
+
+-       query(t"speaker")(t"name")()  // t"Hamlet"
++       query(t"speaker")(t"name")()  // t"Hamlet"
+
+=       query(t"speaker")(t"name")()  // t"Hamlet"
+-       ```
++       ```
+
+-   entry #prefix   the query with every key put under a prefix: `name` becomes `prefix.name`
+-       An unnamed value's key becomes the prefix itself, so a value encoded on its own and then
+-       prefixed is a named parameter.
+-   entry #queryString   the query as URL-encoded text, with an unnamed value written alone, without `=`
+-       Each pair is `key=value`, URL-encoded, joined with `&`; a pair with an empty key is
+-       written as its value alone.
++   entry #prefix   すべてのキーを接頭辞の下に置いたクエリ。`name` は `prefix.name` になる
++       名前のない値のキーは接頭辞そのものになるので、単独でエンコードされてから接頭辞を付けられた値は名前付きのパラメーターになる。
++   entry #queryString   URL エンコードされたテキストとしてのクエリ。名前のない値は `=` なしに単独で書かれる
++       各対は URL エンコードされた `key=value` で、`&` で連結される。空のキーを持つ対は値だけが書かれる。
+
+- entry .Parametric   the type a named query parameter takes, for `query.name` and `Query.make(name = …)`
++ entry .Parametric   名前付きのクエリパラメーターが取る型。`query.name` と `Query.make(name = …)` のためのもの
+
+= entry .Parametric   the type a named query parameter takes, for `query.name` and `Query.make(name = …)`
+-   detail
++   detail
+
+-       `"name" is Parametric to Result` declares that the query parameter `name` holds values of
+-       type `Result`. It is the evidence the dynamic accessors of `Query` need — `query.name`,
+-       `query.name = value` and `Query.make(name = value)` — so a parameter is read and written
+-       at a fixed type, checked as the code compiles. It carries no behaviour, so a given is
+-       written as an erased placeholder:
++       `"name" is Parametric to Result` は、クエリパラメーター `name` が型 `Result` の値を保持することを宣言する。
++       これは `Query` の動的なアクセサー（`query.name`、`query.name = value`、`Query.make(name = value)`）が必要とする証拠であり、パラメーターはコードのコンパイル時に検査される固定の型で読み書きされる。
++       振る舞いを持たないので、given は消去されたプレースホルダーとして書く。
+
+=       written as an erased placeholder:
+=
+-       ```scala
++       ```scala
+
+=       written as an erased placeholder:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       inline given ("page" is Parametric to Int) = !!
++       inline given ("page" is Parametric to Int) = !!
+
+=       inline given ("page" is Parametric to Int) = !!
+-       ```
++       ```
+
+-       Telekinesis's `queryParameters.arbitraryQueryParameter` gives every name every type, for
+-       code which wants dynamic access without declaring each parameter.
++       Telekinesis の `queryParameters.arbitraryQueryParameter` は、すべての名前にすべての型を与える。各パラメーターを宣言せずに動的にアクセスしたいコードのためのものである。
+
+-   refer legerdemain.Query
++   refer legerdemain.Query
+
+-   entry #Self   the parameter's name, as a literal `Label` type
++   entry #Self   パラメーターの名前。リテラルの `Label` 型である
+
+- entry .internal   the macro behind `Query.make`
++ entry .internal   `Query.make` の背後にあるマクロ
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the macro has a stable home.
+-   entry .query   the macro behind `Query.make(name = value, …)`: checks each name's `Parametric` and encodes each value
++       直接使うためのものではない。このオブジェクトは、マクロに安定した置き場所を与えるために存在する。
++   entry .query   `Query.make(name = value, …)` の背後にあるマクロ。各名前の `Parametric` を検査し、各値をエンコードする

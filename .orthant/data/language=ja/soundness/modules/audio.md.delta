@@ -1,0 +1,624 @@
+orthant 1 language
+
+- ## Audio
++ ## オーディオ
+
+- ### About
++ ### 概要
+
+- Audio is read and written as typed values, recorded from the inputs of the machine, and played
+- through its outputs. Reading a [WAV](https://en.wikipedia.org/wiki/WAV),
+- [AIFF](https://en.wikipedia.org/wiki/Audio_Interchange_File_Format), AIFC or AU file gives an
+- `Audio` value: an [immutable] block of
+- [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) samples which knows its sample rate,
+- its number of channels, its bit depth, and every sample it holds.
++ オーディオは型付きの値として読み書きされ、マシンの入力から録音され、出力を通じて再生される。
++ [WAV](https://en.wikipedia.org/wiki/WAV)、[AIFF](https://en.wikipedia.org/wiki/Audio_Interchange_File_Format)、AIFC、AU のファイルを読むと `Audio` の値が得られる。
++ これは [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) のサンプルの[不変]のブロックであり、サンプルレート、チャンネル数、ビット深度、そして保持するすべてのサンプルを知っている。
+
+- The format of the audio lives in its type. An `Audio in Wave` is distinct from an
+- `Audio in Aiff`, and converting between them, or between an audio value and its encoded bytes,
+- is one method. Recording and playback stream audio in chunks, with the channel layout, which is
+- mono, stereo or surround, carried in the type as well.
++ オーディオの形式はその型の中にある。
++ `Audio in Wave` は `Audio in Aiff` とは別のものであり、両者の間の変換や、オーディオの値とそのエンコードされたバイトの間の変換は、メソッド一つで行う。
++ 録音と再生はオーディオをチャンクごとにストリームし、モノラル、ステレオ、サラウンドといったチャンネルのレイアウトも型の中に運ぶ。
+
+- ### On audio
++ ### オーディオについて
+
+- Uncompressed audio is simple underneath: a grid of numbers, one for each sample of each channel,
+- played back at a fixed rate. The file formats differ mostly in their headers, and not in their
+- substance. Java's sound library exposes all of this through mutable objects and untyped formats,
+- where a wrong channel count or bit depth appears as noise rather than as an error.
++ 圧縮されていないオーディオは、内側では単純である。
++ 各チャンネルの各サンプルに一つずつの数を並べた表を、一定の速さで再生するものである。
++ ファイル形式の違いは主にヘッダーにあり、中身にはない。
++ Java のサウンドライブラリはこれらすべてを可変のオブジェクトと型のない形式を通じて晒しており、チャンネル数やビット深度を誤るとエラーではなくノイズとして現れる。
+
+- Here the same capability is presented as immutable, typed values. The format is part of the
+- type. The sample rate is a real [quantity](quantities.md) in hertz, not a bare number. Reading,
+- converting and writing are the same polymorphic operations used everywhere else. Since the
+- format is in the type, an unsupported conversion is a compile error, and such
+- [impossible states](../../philosophy/impossible-states.md) cannot be represented.
++ ここでは、同じ機能が不変の型付きの値として提示される。
++ 形式は型の一部である。
++ サンプルレートは、裸の数ではなく、ヘルツで表される本物の[量](quantities.md)である。
++ 読み込み、変換、書き込みは、ほかのあらゆる場所で使われるのと同じ多相の操作である。
++ 形式が型の中にあるので、サポートされない変換はコンパイルエラーになり、そのような[不可能な状態](../../philosophy/impossible-states.md)は表現できない。
+
+- Everything comes from the `soundness` package. The second import chooses a
+- [strategy](errors.md#choosing-a-strategy) for errors, and the third lets the samples print their
+- results. The `Decimalizer` fixes how many significant figures a [quantity](quantities.md) is
+- printed with:
++ すべては `soundness` パッケージから来る。
++ 二つ目のインポートはエラーの[戦略](errors.md#choosing-a-strategy)を選び、三つ目はサンプルが結果を表示できるようにする。
++ `Decimalizer` は、[量](quantities.md)を何桁の有効数字で表示するかを固定する。
+
+= printed with:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- given decimalizer: Decimalizer = Decimalizer(4)
++ given decimalizer: Decimalizer = Decimalizer(4)
+
+= given decimalizer: Decimalizer = Decimalizer(4)
+- ```
++ ```
+
+- ### Reading audio
++ ### オーディオの読み込み
+
+- Any source of bytes reads as audio when the expected format is named, as one of these types:
++ 期待する形式を次の型のいずれかとして示せば、どんなバイトのソースもオーディオとして読める。
+
+= Any source of bytes reads as audio when the expected format is named, as one of these types:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Type
+- column  Media type
++ column  形式
++ column  型
++ column  メディアタイプ
+
+- row  WAV  `Wave`  `audio/x-wav`
++ row  WAV  `Wave`  `audio/x-wav`
+
+- row  AIFF  `Aiff`  `audio/x-aiff`
++ row  AIFF  `Aiff`  `audio/x-aiff`
+
+- row  AIFC  `Aifc`  `audio/x-aifc`
++ row  AIFC  `Aifc`  `audio/x-aifc`
+
+- row  AU  `Au`  `audio/basic`
++ row  AU  `Au`  `audio/basic`
+
+- row  SND  `Snd`  `audio/basic`
++ row  SND  `Snd`  `audio/basic`
+
+= row  SND  `Snd`  `audio/basic`
+- ```
++ ```
+
+- These bytes are a complete WAV file, with one channel, 16-bit signed samples at 8 kHz, and four
+- frames holding the values 100, 200, 300 and 400. It is small enough to write down:
++ 次のバイトは完全な WAV ファイルであり、一つのチャンネル、8 kHz の 16 ビット符号付きのサンプル、そして値 100、200、300、400 を持つ四つのフレームからなる。
++ 書き下せるほど小さい。
+
+= frames holding the values 100, 200, 300 and 400. It is small enough to write down:
+=
+- ```scala
++ ```scala
+
+- val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
++ val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+
+-                 617461080000006400c8002c019001"""
++                 617461080000006400c8002c019001"""
+
+- val audio = wav.read[Audio in Wave]
++ val audio = wav.read[Audio in Wave]
+
+= val audio = wav.read[Audio in Wave]
+- ```
++ ```
+
+- The value knows its shape:
++ 値は自身の形を知っている。
+
+= The value knows its shape:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The value knows its shape:
+=
+= ```scala fuel
+- run
++ run
+
+= The value knows its shape:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(audio.channels.show)
++ Out.println(audio.channels.show)
+
+- Out.println(audio.frames.show)
++ Out.println(audio.frames.show)
+
+- Out.println(audio.bitsPerSample.show)
++ Out.println(audio.bitsPerSample.show)
+
+- Out.println(audio.sampleRate.show)
++ Out.println(audio.sampleRate.show)
+
+- Out.println(audio.duration.show)
++ Out.println(audio.duration.show)
+
+= Out.println(audio.duration.show)
+- ```
++ ```
+
+- The sample rate is printed in inverse seconds, which is hertz, and the duration in seconds.
++ サンプルレートは秒の逆数、つまりヘルツで表示され、長さは秒で表示される。
+
+- Reading can fail, since the bytes may not hold audio in the named format. It therefore draws on
+- the error strategy in scope, and raises an `Audio.Error` which names the format expected:
++ バイトが指定した形式のオーディオを保持していないことがあるので、読み込みは失敗しうる。
++ そのため、読み込みはスコープ内のエラーの戦略を利用し、期待した形式を示す `Audio.Error` を発生させる。
+
+= the error strategy in scope, and raises an `Audio.Error` which names the format expected:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the error strategy in scope, and raises an `Audio.Error` which names the format expected:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- wav.read[Audio in Aiff]
++ wav.read[Audio in Aiff]
+
+= wav.read[Audio in Aiff]
+- ```
++ ```
+
+- Applying an audio value to a channel and a frame gives that one sample:
++ オーディオの値をチャンネルとフレームに適用すると、その一つのサンプルが得られる。
+
+= Applying an audio value to a channel and a frame gives that one sample:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Applying an audio value to a channel and a frame gives that one sample:
+=
+= ```scala fuel
+- run
++ run
+
+= Applying an audio value to a channel and a frame gives that one sample:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(audio(0, 0).show)
++ Out.println(audio(0, 0).show)
+
+- Out.println(audio(0, 2).show)
++ Out.println(audio(0, 2).show)
+
+= Out.println(audio(0, 2).show)
+- ```
++ ```
+
+- Audio which is not already PCM is converted to 16-bit signed PCM as it is read, so every `Audio`
+- value has the same simple internal form, however it was stored. A file on disk reads the same
+- way through its handle, for the duration of a scope, as any [file](filesystem.md) does:
++ まだ PCM でないオーディオは読み込み時に 16 ビット符号付きの PCM に変換されるので、どのように格納されていたかにかかわらず、すべての `Audio` の値は同じ単純な内部形式を持つ。
++ ディスク上のファイルも、ほかのあらゆる[ファイル](filesystem.md)と同じく、スコープが続く間、そのハンドルを通じて同じように読める。
+
+= way through its handle, for the duration of a scope, as any [file](filesystem.md) does:
+=
+- ```scala
++ ```scala
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- val audioDirectory = temporaryDirectory[Path on Linux] / "audio" / Uuid().show
++ val audioDirectory = temporaryDirectory[Path on Linux] / "audio" / Uuid().show
+
+- val wavPath = audioDirectory / "tone.wav"
++ val wavPath = audioDirectory / "tone.wav"
+
+= val wavPath = audioDirectory / "tone.wav"
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- wavPath.create[File](CreateFlag.Parents): handle ?=>
++ wavPath.create[File](CreateFlag.Parents): handle ?=>
+
+-   handle.write(wav)
++   handle.write(wav)
+
+- Out.println(wavPath.open[File]()(file.read[Audio in Wave]).frames.show)
++ Out.println(wavPath.open[File]()(file.read[Audio in Wave]).frames.show)
+
+= Out.println(wavPath.open[File]()(file.read[Audio in Wave]).frames.show)
+- ```
++ ```
+
+- ### Converting and writing
++ ### 変換と書き込み
+
+- `to` re-expresses an audio value in another format, and reading it as `Data` produces the
+- encoded bytes. The audio survives the round trip:
++ `to` はオーディオの値を別の形式で表し直し、それを `Data` として読むとエンコードされたバイトが得られる。
++ オーディオは往復を経ても失われない。
+
+= encoded bytes. The audio survives the round trip:
+=
+- ```scala fuel
++ ```scala fuel
+
+= encoded bytes. The audio survives the round trip:
+=
+= ```scala fuel
+- run
++ run
+
+= encoded bytes. The audio survives the round trip:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val aiff: Data = audio.to[Aiff].read[Data]
++ val aiff: Data = audio.to[Aiff].read[Data]
+
+- Out.println(aiff.read[Audio in Aiff].frames.show)
++ Out.println(aiff.read[Audio in Aiff].frames.show)
+
+- Out.println(aiff.read[Audio in Aiff](0, 2).show)
++ Out.println(aiff.read[Audio in Aiff](0, 2).show)
+
+= Out.println(aiff.read[Audio in Aiff](0, 2).show)
+- ```
++ ```
+
+- Reading an `Audio` *as* bytes and reading bytes *as* an `Audio` are the same `read` operation,
+- in each direction. Writing a file is therefore reading its audio as `Data` and sending that to
+- the destination. Or the audio value itself is handed to the handle, since an `Audio` streams as
+- its encoded bytes:
++ `Audio` をバイト*として*読むことと、バイトを `Audio` *として*読むことは、向きが違うだけの同じ `read` の操作である。
++ したがって、ファイルの書き込みとは、そのオーディオを `Data` として読み、それを宛先に送ることである。
++ あるいは、`Audio` はエンコードされたバイトとしてストリームされるので、オーディオの値そのものをハンドルに渡してもよい。
+
+= its encoded bytes:
+=
+- ```scala fuel
++ ```scala fuel
+
+= its encoded bytes:
+=
+= ```scala fuel
+- run
++ run
+
+= its encoded bytes:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val aiffPath = audioDirectory / "tone.aiff"
++ val aiffPath = audioDirectory / "tone.aiff"
+
+- aiffPath.create[File](CreateFlag.Parents): handle ?=>
++ aiffPath.create[File](CreateFlag.Parents): handle ?=>
+
+-   handle.write(audio.to[Aiff])
++   handle.write(audio.to[Aiff])
+
+- Out.println(aiffPath.open[File]()(file.read[Audio in Aiff]).frames.show)
++ Out.println(aiffPath.open[File]()(file.read[Audio in Aiff]).frames.show)
+
+= Out.println(aiffPath.open[File]()(file.read[Audio in Aiff]).frames.show)
+- ```
++ ```
+
+- ### Channel layouts
++ ### チャンネルのレイアウト
+
+- A channel layout can be recorded in the type beside the format, written with `across`:
++ チャンネルのレイアウトは、`across` で書いて、形式と並べて型の中に記録できる。
+
+= A channel layout can be recorded in the type beside the format, written with `across`:
+=
+- ```tabular
++ ```tabular
+
+- column  Layout
+- column  Channels
++ column  レイアウト
++ column  チャンネル
+
+- row  `Monaural`  1
++ row  `Monaural`  1
+
+- row  `Stereo`  2
++ row  `Stereo`  2
+
+- row  `Surround[n]`  `n`, in a surround configuration
++ row  `Surround[n]`  `n`。サラウンドの構成で
+
+= row  `Surround[n]`  `n`, in a surround configuration
+- ```
++ ```
+
+- The layout is a [typeclass], so its channel count is known statically:
++ レイアウトは[型クラス]なので、そのチャンネル数は静的に分かる。
+
+= The layout is a [typeclass], so its channel count is known statically:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The layout is a [typeclass], so its channel count is known statically:
+=
+= ```scala fuel
+- run
++ run
+
+= The layout is a [typeclass], so its channel count is known statically:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Stereo is ChannelLayout].channels.show)
++ Out.println(summon[Stereo is ChannelLayout].channels.show)
+
+- Out.println(summon[Surround[6] is ChannelLayout].channels.show)
++ Out.println(summon[Surround[6] is ChannelLayout].channels.show)
+
+= Out.println(summon[Surround[6] is ChannelLayout].channels.show)
+- ```
++ ```
+
+- ### Recording
++ ### 録音
+
+- The rest of this page needs audio devices, so its samples are compiled but not run.
++ このページの残りはオーディオデバイスを必要とするので、そのサンプルはコンパイルはされるが実行はされない。
+
+- An input device is an `Audio.Feed`. The feeds of the machine are listed with `Audio.Feed.list`,
+- each with a `name`, a `vendor`, a `description`, and the `configurations` it offers. A feed
+- records at a chosen sample rate, bit depth and layout, and produces a `Recording` whose `stream`
+- yields audio in chunks until it is stopped. A machine may have no feeds at all, so the first one
+- is an [optional] value:
++ 入力デバイスは `Audio.Feed` である。
++ マシンのフィードは `Audio.Feed.list` で一覧され、それぞれが `name`、`vendor`、`description`、そして提供する `configurations` を持つ。
++ フィードは選んだサンプルレート、ビット深度、レイアウトで録音し、`Recording` を生む。その `stream` は、止められるまでオーディオをチャンクごとに与える。
++ マシンにはフィードがまったくないこともあるので、最初のフィードは[オプショナル]な値である。
+
+= is an [optional] value:
+=
+- ```scala
++ ```scala
+
+= is an [optional] value:
+=
+= ```scala
+- Audio.Feed.list.head.let: feed =>
++ Audio.Feed.list.head.let: feed =>
+
+-   if feed.supports[Stereo](44100.0*Hertz, 16) then
++   if feed.supports[Stereo](44100.0*Hertz, 16) then
+
+-     val recording = feed.record[Stereo](44100.0*Hertz, bits = 16)
++     val recording = feed.record[Stereo](44100.0*Hertz, bits = 16)
+
+-     val firstChunk: Optional[Audio across Stereo] = recording.stream.head
++     val firstChunk: Optional[Audio across Stereo] = recording.stream.head
+
+-     recording.stop()
++     recording.stop()
+
+=     recording.stop()
+- ```
++ ```
+
+- `supports` asks whether a feed can honor a configuration before recording begins. Recording from
+- a feed which is unavailable or misconfigured raises an `Audio.Feed.Error`. On macOS the JVM must
+- have been granted permission to use the microphone, or no feeds are available.
++ `supports` は、録音を始める前に、フィードがある構成に応えられるかどうかを問う。
++ 利用できないフィードや構成の誤ったフィードから録音すると、`Audio.Feed.Error` が発生する。
++ macOS では、JVM にマイクを使うパーミッションが与えられていなければならず、そうでなければフィードは一つも利用できない。
+
+- ### Playback
++ ### 再生
+
+- An output device is an `Audio.Outlet`, listed with `Audio.Outlet.list`. Playing an audio value
+- returns a `Playback`, which runs in the background. `await` blocks until it finishes, and `stop`
+- ends it early:
++ 出力デバイスは `Audio.Outlet` であり、`Audio.Outlet.list` で一覧される。
++ オーディオの値を再生すると、バックグラウンドで実行される `Playback` が返る。
++ `await` はそれが終わるまでブロックし、`stop` はそれを早めに終わらせる。
+
+= ends it early:
+=
+- ```scala
++ ```scala
+
+= ```scala
+- Audio.Outlet.list.head.let: outlet =>
++ Audio.Outlet.list.head.let: outlet =>
+
+-   val playback = outlet.play(audio)
++   val playback = outlet.play(audio)
+
+-   playback.await()
++   playback.await()
+
+=   playback.await()
+- ```
++ ```
+
+- Playing to an outlet which is unavailable, or which cannot accept the configuration of the
+- audio, raises an `Audio.Outlet.Error`.
++ 利用できないアウトレットや、オーディオの構成を受け付けられないアウトレットに再生すると、`Audio.Outlet.Error` が発生する。
+
+- ### Scoped lines
++ ### スコープ付きのライン
+
+- `record` and `play` suit open-ended use, where the device is held for as long as the program
+- wants it. Where the device should be held for exactly one block, a line is *opened* instead, as
+- [a file is](filesystem.md). The line lasts precisely as long as the scope. The layout and the
+- configuration are given as the form and its flags, which are `PcmFlag.Rate`, `PcmFlag.Bits` and
+- `PcmFlag.Chunk`:
++ `record` と `play` は、プログラムが望む限りデバイスを保持する、終わりの決まっていない使い方に向いている。
++ デバイスをちょうど一つのブロックの間だけ保持すべき場合は、代わりに、[ファイルと同じように](filesystem.md)ラインを*開く*。
++ ラインはスコープとまったく同じだけ続く。
++ レイアウトと構成は、形式とそのフラグ、つまり `PcmFlag.Rate`、`PcmFlag.Bits`、`PcmFlag.Chunk` として与える。
+
+= `PcmFlag.Chunk`:
+=
+- ```scala
++ ```scala
+
+= `PcmFlag.Chunk`:
+=
+= ```scala
+- Audio.Feed.list.head.let: feed =>
++ Audio.Feed.list.head.let: feed =>
+
+-   feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000), PcmFlag.Chunk(1024)): input ?=>
++   feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000), PcmFlag.Chunk(1024)): input ?=>
+
+-     input.stream.head
++     input.stream.head
+
+=
+- Audio.Outlet.list.head.let: outlet =>
++ Audio.Outlet.list.head.let: outlet =>
+
+-   outlet.open[Pcm](Write): out ?=>
++   outlet.open[Pcm](Write): out ?=>
+
+-     out.play(audio)
++     out.play(audio)
+
+=     out.play(audio)
+- ```
++ ```
+
+- Playing needs the `Write` grant, so a line opened for capture cannot be played to, and the
+- compiler says so, not the audio driver.
++ 再生には `Write` の権限が必要なので、録音のために開いたラインに再生することはできず、それを告げるのはオーディオドライバーではなくコンパイラである。
+
+- The two kinds of device side by side:
++ 二種類のデバイスを並べると次のようになる。
+
+= The two kinds of device side by side:
+=
+- ```tabular
++ ```tabular
+
+- column  Aspect
++ column  観点
+
+- column  `Audio.Feed`
++ column  `Audio.Feed`
+
+- column  `Audio.Outlet`
++ column  `Audio.Outlet`
+
+- row  Direction  input  output
+- row  Listed with  `Audio.Feed.list`  `Audio.Outlet.list`
+- row  Open-ended use  `record`, giving a `Recording`  `play`, giving a `Playback`
+- row  Scoped line  `open[Pcm](Read, …)`  `open[Pcm](Write, …)`
+- row  Error  `Audio.Feed.Error`  `Audio.Outlet.Error`
++ row  向き  入力  出力
++ row  一覧の方法  `Audio.Feed.list`  `Audio.Outlet.list`
++ row  終わりの決まっていない使い方  `record`。`Recording` を与える  `play`。`Playback` を与える
++ row  スコープ付きのライン  `open[Pcm](Read, …)`  `open[Pcm](Write, …)`
++ row  エラー  `Audio.Feed.Error`  `Audio.Outlet.Error`
+
+= row  Error  `Audio.Feed.Error`  `Audio.Outlet.Error`
+- ```
++ ```
+
+- ### Related
++ ### 関連
+
+- - [Quantities](quantities.md) describes the hertz and seconds in which a sample rate and a
+-   duration are measured.
+- - [Filesystem](filesystem.md) describes the handles which audio files are read and written
+-   through.
+- - [Binary data](binary-data.md) describes `hex"…"` and the `Data` which encoded audio is.
+- - [Streams](streams.md) describes `read`, which works in both directions here.
+- - [Media types](media-types.md) names the formats.
+- - [Images](images.md) carry their format in their type in the same way.
++ - [量](quantities.md)は、サンプルレートと長さを測るヘルツと秒を説明する。
++ - [ファイルシステム](filesystem.md)は、オーディオファイルを読み書きするハンドルを説明する。
++ - [バイナリデータ](binary-data.md)は、`hex"…"` と、エンコードされたオーディオである `Data` を説明する。
++ - [ストリーム](streams.md)は、ここでは両方向に働く `read` を説明する。
++ - [メディアタイプ](media-types.md)は形式を名付ける。
++ - [画像](images.md)も、同じように形式を型の中に運ぶ。

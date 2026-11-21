@@ -1,0 +1,482 @@
+orthant 1 language
+
+- ## Chemistry
++ ## 化学
+
+- ### About
++ ### 概要
+
+- The [periodic table](https://en.wikipedia.org/wiki/Periodic_table), chemical formulas and
+- chemical equations are modeled as values. All 118 elements are available by their symbols.
+- Elements combine into molecules, and molecules into formulas, with ordinary operators. An
+- equation joins two formulas with a typed reaction arrow, and can say whether it balances.
++ [周期表](https://en.wikipedia.org/wiki/Periodic_table)、化学式、化学反応式は値としてモデル化される。
++ 118 のすべての元素が、その元素記号で利用できる。
++ 元素は通常の演算子で分子に結合し、分子は化学式に結合する。
++ 反応式は型付きの反応の矢印で二つの化学式をつなぎ、釣り合っているかどうかを答えられる。
+
+- ### On chemical notation
++ ### 化学の記法について
+
+- Chemical notation is a small formal language. A molecule is a collection of atoms, in which
+- an atom may appear more than once, with a possible charge. A formula is a sum of molecules
+- with coefficients. An equation asserts a relationship between two formulas, which is
+- directed, reversible, or in equilibrium.
++ 化学の記法は小さな形式言語である。
++ 分子は原子の集まりであり、その中で一つの原子が複数回現れることがあり、電荷を持つこともある。
++ 化学式は係数付きの分子の和である。
++ 反応式は二つの化学式の間の関係を主張し、その関係は一方向か、可逆か、平衡のいずれかである。
+
+- Written as strings, none of that structure is available. `2H₂ + O₂` is just characters, and
+- whether an equation balances is not a question which a string can answer.
++ 文字列として書くと、その構造は何も利用できない。
++ `2H₂ + O₂` はただの文字であり、反応式が釣り合っているかどうかは、文字列が答えられる問いではない。
+
+- Here the structure is built from typed parts. Formulas are assembled by operators, not
+- parsed from text. They are written out with correct subscripts and superscripts. And they
+- can be interrogated: the two sides of an equation are compared atom by atom.
++ ここでは構造は型付きの部品から組み立てられる。
++ 化学式はテキストからパースされるのではなく、演算子によって組み立てられる。
++ 化学式は正しい下付き添字と上付き添字で書き出される。
++ そして問い合わせることができる。反応式の両辺は原子ごとに比較される。
+
+- Everything comes from the `soundness` package. The second import lets the samples print
+- their results:
++ すべては `soundness` パッケージから得られる。
++ 二番目のインポートで、例の結果を出力できるようにする。
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Elements
++ ### 元素
+
+- Every element is a value on `PeriodicTable`, with its atomic number, its symbol and its
+- name. Elements can also be reached by number, or by symbol, at [runtime]:
++ すべての元素は `PeriodicTable` 上の値であり、原子番号、元素記号、名前を持つ。
++ 元素には[実行時]に番号や元素記号で到達することもできる。
+
+= name. Elements can also be reached by number, or by symbol, at [runtime]:
+=
+- ```scala
++ ```scala
+
+- import PeriodicTable.{H, O, C, Na, Cl, Fe}
++ import PeriodicTable.{H, O, C, Na, Cl, Fe}
+
+= import PeriodicTable.{H, O, C, Na, Cl, Fe}
+- ```
++ ```
+
+= import PeriodicTable.{H, O, C, Na, Cl, Fe}
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import PeriodicTable.{H, O, C, Na, Cl, Fe}
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import PeriodicTable.{H, O, C, Na, Cl, Fe}
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(H.number.show)
++ Out.println(H.number.show)
+
+- Out.println(Fe.number.show)
++ Out.println(Fe.number.show)
+
+- Out.println(PeriodicTable(6).let(_.show).or(t"none"))
++ Out.println(PeriodicTable(6).let(_.show).or(t"none"))
+
+- Out.println(PeriodicTable(119).let(_.show).or(t"none"))
++ Out.println(PeriodicTable(119).let(_.show).or(t"none"))
+
+= Out.println(PeriodicTable(119).let(_.show).or(t"none"))
+- ```
++ ```
+
+- Looking an element up by number gives an [optional](optional-values.md) value, since a
+- number may have no element.
++ 番号で元素を引くと[オプショナル](optional-values.md)な値が得られる。番号に対応する元素がないこともあるからである。
+
+- ### Molecules
++ ### 分子
+
+- Atoms are bonded into a molecule with `*`, and an atom which is repeated takes its number as
+- a type argument. A molecule is written out with proper subscripts:
++ 原子は `*` で分子に結合され、繰り返される原子はその個数を型引数として取る。
++ 分子は正しい下付き添字で書き出される。
+
+= a type argument. A molecule is written out with proper subscripts:
+=
+- ```scala
++ ```scala
+
+- val water = H[2]*O
++ val water = H[2]*O
+
+= val water = H[2]*O
+- ```
++ ```
+
+= val water = H[2]*O
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val water = H[2]*O
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val water = H[2]*O
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(water.show)
++ Out.println(water.show)
+
+- Out.println((C*O[2]).show)
++ Out.println((C*O[2]).show)
+
+- Out.println((C[6]*H[12]*O[6]).show)
++ Out.println((C[6]*H[12]*O[6]).show)
+
+= Out.println((C[6]*H[12]*O[6]).show)
+- ```
++ ```
+
+- ### Formulas and equations
++ ### 化学式と反応式
+
+- A molecule with a coefficient is a term of a formula. Terms are added with `+`, and two
+- formulas are joined into an equation with a reaction arrow:
++ 係数付きの分子は化学式の項である。
++ 項は `+` で加えられ、二つの化学式は反応の矢印で反応式につながれる。
+
+= formulas are joined into an equation with a reaction arrow:
+=
+- ```scala
++ ```scala
+
+- val combustion = H[2]*2 + O[2] --> H[2]*O*2
++ val combustion = H[2]*2 + O[2] --> H[2]*O*2
+
+= val combustion = H[2]*2 + O[2] --> H[2]*O*2
+- ```
++ ```
+
+= val combustion = H[2]*2 + O[2] --> H[2]*O*2
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val combustion = H[2]*2 + O[2] --> H[2]*O*2
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val combustion = H[2]*2 + O[2] --> H[2]*O*2
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(combustion.show)
++ Out.println(combustion.show)
+
+= Out.println(combustion.show)
+- ```
++ ```
+
+- An equation knows whether its two sides contain the same atoms:
++ 反応式は、その両辺が同じ原子を含むかどうかを知っている。
+
+= An equation knows whether its two sides contain the same atoms:
+=
+- ```scala fuel
++ ```scala fuel
+
+= An equation knows whether its two sides contain the same atoms:
+=
+= ```scala fuel
+- run
++ run
+
+= An equation knows whether its two sides contain the same atoms:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(combustion.balanced.inspect)
++ Out.println(combustion.balanced.inspect)
+
+- Out.println((H[2] + O[2] --> H[2]*O).balanced.inspect)
++ Out.println((H[2] + O[2] --> H[2]*O).balanced.inspect)
+
+= Out.println((H[2] + O[2] --> H[2]*O).balanced.inspect)
+- ```
++ ```
+
+- Each side is a typed collection of atoms, not text, so balance is a real check, computed
+- from the structure. `atoms` gives that collection for either side. A formula thereby reports
+- its own composition, as the number of each element across every molecule and coefficient
+- which it contains. That is what computing a molar mass, or checking a proposed reaction,
+- needs.
++ それぞれの辺はテキストではなく原子の型付きの集まりなので、釣り合いは構造から計算される本物の検査である。
++ `atoms` はどちらの辺についてもその集まりを与える。
++ こうして化学式は、自らの組成を、それが含むすべての分子と係数にわたる各元素の数として報告する。
++ モル質量の計算や、提案された反応の検査に必要なのはこれである。
+
+- ### The reaction arrows
++ ### 反応の矢印
+
+- Five arrows are available. They mean different things, and are not variants of style:
++ 五つの矢印が利用できる。
++ それぞれ意味が異なり、スタイルの違いではない。
+
+= Five arrows are available. They mean different things, and are not variants of style:
+=
+- ```tabular
++ ```tabular
+
+- column  Arrow
+- column  Reaction
+- column  Renders as
+- row  `-->`  `Reaction.NetForward`, a net forward reaction  `→`
+- row  `<=>`  `Reaction.BothDirections`, a reaction proceeding in both directions  `⇄`
+- row  `<~>`  `Reaction.Equilibrium`, a reaction at equilibrium  `⇋`
++ column  矢印
++ column  反応
++ column  描画結果
++ row  `-->`  `Reaction.NetForward`、正味で正方向に進む反応  `→`
++ row  `<=>`  `Reaction.BothDirections`、両方向に進む反応  `⇄`
++ row  `<~>`  `Reaction.Equilibrium`、平衡にある反応  `⇋`
+
+- row  `<->`  `Reaction.Resonance`  `=`
++ row  `<->`  `Reaction.Resonance`  `=`
+
+- row  `===`  `Reaction.Stoichiometric`  `↔`
++ row  `===`  `Reaction.Stoichiometric`  `↔`
+
+= row  `===`  `Reaction.Stoichiometric`  `↔`
+- ```
++ ```
+
+- Which arrow a chemist writes carries information, and the equation keeps it.
++ 化学者がどの矢印を書くかは情報を持ち、反応式はそれを保持する。
+
+- ### Charge and state
++ ### 電荷と状態
+
+- An ion has its charge as part of the molecule. A charged species is therefore a distinct
+- value from its neutral counterpart, and the two cannot be confused when balancing. A unit
+- charge is a prefix `+` or `-`, and any other charge comes from `ion`:
++ イオンは、その電荷を分子の一部として持つ。
++ したがって荷電した化学種は、対応する中性のものとは別の値であり、釣り合いを取るときに両者を取り違えることはない。
++ 単位電荷は前置の `+` または `-` であり、それ以外の電荷は `ion` から得られる。
+
+= charge is a prefix `+` or `-`, and any other charge comes from `ion`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= charge is a prefix `+` or `-`, and any other charge comes from `ion`:
+=
+= ```scala fuel
+- run
++ run
+
+= charge is a prefix `+` or `-`, and any other charge comes from `ion`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((+Na).show)
++ Out.println((+Na).show)
+
+- Out.println((-(C[2]*H[3]*O[2])).show)
++ Out.println((-(C[2]*H[3]*O[2])).show)
+
+- Out.println(Fe.ion(3).show)
++ Out.println(Fe.ion(3).show)
+
+= Out.println(Fe.ion(3).show)
+- ```
++ ```
+
+- These are the sodium cation, acetate, and iron(III). Charges add as species combine, so
+- `+Na*(-Cl)` is neutral. That is what makes an ionic compound come out right, without its
+- charge being stated separately.
++ これらはナトリウムイオン、酢酸イオン、鉄(III) である。
++ 電荷は化学種が結合するにつれて加算されるので、`+Na*(-Cl)` は中性である。
++ これによって、電荷を別に述べなくても、イオン化合物が正しく得られる。
+
+- A molecule can also note its physical state. There are four states, each written as a
+- suffix:
++ 分子は物理的な状態を記すこともできる。
++ 状態は四つあり、それぞれ接尾辞として書かれる。
+
+= suffix:
+=
+- ```tabular
++ ```tabular
+
+- column  State
+- column  Case
+- column  Renders as
+- row  solid  `PhysicalState.Solid`  `(s)`
+- row  liquid  `PhysicalState.Liquid`  `(l)`
+- row  gas  `PhysicalState.Gas`  `(g)`
+- row  aqueous  `PhysicalState.Aqueous`  `(aq)`
++ column  状態
++ column  ケース
++ column  描画結果
++ row  固体  `PhysicalState.Solid`  `(s)`
++ row  液体  `PhysicalState.Liquid`  `(l)`
++ row  気体  `PhysicalState.Gas`  `(g)`
++ row  水溶液  `PhysicalState.Aqueous`  `(aq)`
+
+= row  aqueous  `PhysicalState.Aqueous`  `(aq)`
+- ```
++ ```
+
+- Physical state is an annotation, not part of identity. It affects how a species is written,
+- not what it is, so `H₂O(aq)` and `H₂O(l)` describe the same substance in different
+- conditions. `inState` applies a state, and the parentheses matter:
++ 物理的な状態は注記であって、同一性の一部ではない。
++ それは化学種がどう書かれるかに影響するが、それが何であるかには影響しないので、`H₂O(aq)` と `H₂O(l)` は異なる条件にある同じ物質を表す。
++ `inState` は状態を適用し、括弧が意味を持つ。
+
+= conditions. `inState` applies a state, and the parentheses matter:
+=
+- ```scala fuel
++ ```scala fuel
+
+= conditions. `inState` applies a state, and the parentheses matter:
+=
+= ```scala fuel
+- run
++ run
+
+= conditions. `inState` applies a state, and the parentheses matter:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(water.inState(PhysicalState.Aqueous).show)
++ Out.println(water.inState(PhysicalState.Aqueous).show)
+
+- Out.println((Na*Cl).inState(PhysicalState.Aqueous).show)
++ Out.println((Na*Cl).inState(PhysicalState.Aqueous).show)
+
+- Out.println((Na*Cl.inState(PhysicalState.Aqueous)).show)
++ Out.println((Na*Cl.inState(PhysicalState.Aqueous)).show)
+
+= Out.println((Na*Cl.inState(PhysicalState.Aqueous)).show)
+- ```
++ ```
+
+- Combining two molecules leaves the state of the result unset, because the state of a
+- combination cannot be inferred from the states of its parts. A state which is applied before
+- a bond is formed is therefore discarded by the bond, as the last line shows, and a state
+- must be applied to the finished species.
++ 二つの分子を結合すると、結果の状態は設定されないままになる。結合したものの状態は、その部分の状態から推論できないからである。
++ したがって、結合が形成される前に適用された状態は、最後の行が示すように結合によって捨てられ、状態は完成した化学種に適用しなければならない。
+
+- ### Building blocks
++ ### 構成要素
+
+- `Molecular` and `Formulable` are the two [typeclasses][typeclass] which the operators are
+- defined over:
++ `Molecular` と `Formulable` は、演算子がその上に定義される二つの[型クラス]である。
+
+= defined over:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Defined on
+- column  Yields
+- row  `a*b`  `Molecular`  a molecule bonding the atoms of both
+- row  `a*n`  `Molecular`  a formula term with coefficient `n`
+- row  `a**n`  `Molecular`  a molecule with every atom and the charge multiplied by `n`
+- row  `+a`, `-a`  `Molecular`  the molecule with its charge raised or lowered by one
+- row  `a.ion(n)`  `Molecular`  the molecule with charge `n`
+- row  `a.inState(state)`  `Molecular`  the molecule in a physical state
+- row  `a + b`  `Formulable`  a formula holding both
+- row  `a --> b`, and the other arrows  `Formulable`  an equation
++ column  操作
++ column  定義される型クラス
++ column  結果
++ row  `a*b`  `Molecular`  両方の原子を結合した分子
++ row  `a*n`  `Molecular`  係数 `n` を持つ化学式の項
++ row  `a**n`  `Molecular`  すべての原子と電荷を `n` 倍した分子
++ row  `+a`, `-a`  `Molecular`  電荷を一つ上げた、または下げた分子
++ row  `a.ion(n)`  `Molecular`  電荷 `n` を持つ分子
++ row  `a.inState(state)`  `Molecular`  物理的な状態にある分子
++ row  `a + b`  `Formulable`  両方を保持する化学式
++ row  `a --> b` とその他の矢印  `Formulable`  反応式
+
+= row  `a --> b`, and the other arrows  `Formulable`  an equation
+- ```
++ ```
+
+- An element is molecular, a molecule is molecular, and both are formulable. That is why an
+- element, a molecule and a full formula can all appear on either side of an equation, without
+- conversion.
++ 元素は molecular であり、分子も molecular であり、どちらも formulable である。
++ そのため、元素、分子、完全な化学式のいずれもが、変換なしに反応式のどちらの辺にも現れることができる。
+
+- ### Related
++ ### 関連
+
+- - [Quantities](quantities.md) describes the units, such as moles and grams, which chemical
+-   amounts are measured in.
+- - [Mathematical markup](mathematical-markup.md) typesets formulas of another kind.
+- - [Numbers](numbers.md#overloading-the-operators) explains how `*` and `+` are defined for
+-   types which are not numbers.
++ - [物理量](quantities.md)は、化学的な量を測るモルやグラムなどの単位を説明する。
++ - [数式マークアップ](mathematical-markup.md)は、別の種類の式を組版する。
++ - [数](numbers.md#overloading-the-operators)は、数ではない型に対して `*` と `+` がどう定義されるかを説明する。

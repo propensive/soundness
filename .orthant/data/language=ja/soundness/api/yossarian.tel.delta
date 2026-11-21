@@ -1,0 +1,1095 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base yossarian
++ base yossarian
+
+- import soundness
++ import soundness
+
+- info   a headless terminal emulator: ANSI and xterm output in, an inspectable screen of styled cells out
++ info   ヘッドレスな端末エミュレーター：ANSI と xterm の出力を受け取り、スタイル付きのセルからなる検査可能な画面を出す
+
+- detail
++ detail
+
+-     _Yossarian_ is a terminal with no window. A `Pty` consumes the text a program writes to its
+-     terminal — characters interleaved with ANSI and xterm escape sequences — and computes what a
+-     real terminal would show: a grid of cells, each holding one grapheme with its `Style` and
+-     any hyperlink, plus the cursor, the window title, the scroll region and the modes the
+-     program has set. The state is an immutable value, so a test keeps intermediate states,
+-     compares them, and asserts on what the screen *shows* rather than on the byte stream which
+-     produced it.
++     _Yossarian_ はウィンドウを持たない端末である。
++     `Pty` は、プログラムが端末に書き込むテキスト（ANSI と xterm のエスケープシーケンスが混じった文字）を消費し、本物の端末が表示するはずのものを計算する。それは、一つの書記素とその `Style` と任意のハイパーリンクを持つセルのグリッドであり、カーソル、ウィンドウタイトル、スクロール領域、プログラムが設定したモードも含む。
++     状態は不変の値なので、テストは途中の状態を保持し、比較し、それを生んだバイトストリームではなく画面が*表示する*ものについてアサートできる。
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val esc = 0x1b.toChar
++     val esc = 0x1b.toChar
+
+-     val pty = Pty(80, 24).consume(t"$esc[1;31mError$esc[0m: file not found")
++     val pty = Pty(80, 24).consume(t"$esc[1;31mError$esc[0m: file not found")
+
+-     pty.buffer.char(Prim, Prim)               // 'E'
++     pty.buffer.char(Prim, Prim)               // 'E'
+
+-     pty.buffer.style(Prim, Prim).bold         // true
++     pty.buffer.style(Prim, Prim).bold         // true
+
+-     pty.buffer.style(Prim, Prim).foreground   // Chroma(222, 56, 43)
++     pty.buffer.style(Prim, Prim).foreground   // Chroma(222, 56, 43)
+
+-     pty.cursor                                // the cell after the last character written
++     pty.cursor                                // the cell after the last character written
+
+-     ```
++     ```
+
+-     The emulator implements the vocabulary real programs and shells use: cursor addressing and
+-     movement, erasing, insertion and deletion of characters and lines, scroll regions, `SGR`
+-     styling with the sixteen-colour palette, the 256-colour cube and 24-bit colour, the
+-     alternate screen, cursor visibility, focus and bracketed-paste modes, window titles and
+-     `OSC 8` hyperlinks, and the device reports a program may ask for. Unicode is handled by
+-     grapheme cluster: a wide character occupies two cells, and a combining mark joins the cell
+-     to its left. Sequences which affect nothing a screen shows — keypad modes, character-set
+-     designations, keyboard-protocol negotiation, shell notifications — are accepted and
+-     ignored; a sequence the emulator cannot make sense of raises a `Pty.Error`.
++     エミュレーターは、実際のプログラムやシェルが使う語彙を実装している。
++     カーソルのアドレス指定と移動、消去、文字と行の挿入と削除、スクロール領域、16 色パレット・256 色キューブ・24 ビットカラーによる `SGR` のスタイル指定、代替画面、カーソルの表示状態、フォーカスモードとブラケットペーストモード、ウィンドウタイトルと `OSC 8` ハイパーリンク、そしてプログラムが求めうるデバイスレポートである。
++     Unicode は書記素クラスタ単位で扱われる。全角文字は二つのセルを占め、結合文字は左のセルに結合する。
++     画面に表示されるものに何も影響しないシーケンス（キーパッドモード、文字セットの指定、キーボードプロトコルのネゴシエーション、シェルの通知）は受け付けて無視する。エミュレーターが解釈できないシーケンスは `Pty.Error` を発生させる。
+
+-     Output read from a terminal arrives in chunks which may end partway through an escape
+-     sequence, so a `Pty` keeps an incomplete sequence and resumes it on the next `consume`:
+-     the screen is the same however the input is divided.
++     端末から読んだ出力はエスケープシーケンスの途中で終わりうるチャンクとして届くので、`Pty` は不完全なシーケンスを保持し、次の `consume` で再開する。
++     入力がどう分割されても、画面は同じになる。
+
+-     There is no scrollback: a line scrolled off the top of the screen (or of the scroll region)
+-     is gone, so a test which must see all of a long output should make the `Pty` tall enough to
+-     hold it.
++     スクロールバックはない。
++     画面（またはスクロール領域）の上端からスクロールして出た行は失われるので、長い出力をすべて見る必要のあるテストは、`Pty` をそれが収まる高さにすべきである。
+
+-     The library is one platform-neutral source set, `yossarian.core`. `Pty`, `Screen` and
+-     `Style` are exported to the `soundness` umbrella; `Screen` and `Style` are declared in
+-     `yossarian.internal`, where `Style` is an opaque type over a `Long`. The same `Screen`
+-     buffer, with a different cell style, backs ultimatum's text user interfaces.
++     ライブラリはプラットフォームに依存しない一つのソースセット `yossarian.core` である。
++     `Pty`、`Screen`、`Style` は `soundness` アンブレラにエクスポートされる。`Screen` と `Style` は `yossarian.internal` で宣言されており、そこで `Style` は `Long` の上の不透明型である。
++     同じ `Screen` バッファーが、異なるセルスタイルで ultimatum のテキストユーザーインターフェースを支えている。
+
+- refer yossarian.Pty
++ refer yossarian.Pty
+
+- refer yossarian.Screen
++ refer yossarian.Screen
+
+- refer yossarian.Style
++ refer yossarian.Style
+
+- entry .Pty   a terminal's state as an immutable value: its screen, cursor, modes and pending replies
++ entry .Pty   端末の状態を表す不変の値：画面、カーソル、モード、保留中の応答
+
+= entry .Pty   a terminal's state as an immutable value: its screen, cursor, modes and pending replies
+-   detail
++   detail
+
+-       A `Pty` is created at a size — width, then height, in cells — and transformed by
+-       `#consume`, which interprets text and escape sequences and returns the new terminal. The
+-       original is untouched: `#consume` copies the screen before writing, so earlier states
+-       may be kept and compared.
++       `Pty` はセル単位の大きさ（幅、次に高さ）で作られ、`#consume` によって変換される。`#consume` はテキストとエスケープシーケンスを解釈し、新しい端末を返す。
++       元の値は変わらない。`#consume` は書き込む前に画面をコピーするので、以前の状態を保持して比較できる。
+
+=       may be kept and compared.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       may be kept and compared.
+=
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A blank terminal
++         label 空の端末
+
+=         label A blank terminal
+-         code
++         code
+
+=         label A blank terminal
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A blank terminal
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label A blank terminal
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val esc = 0x1b.toChar
++             val esc = 0x1b.toChar
+
+-             val pty = Pty(10, 3)
++             val pty = Pty(10, 3)
+
+-             pty.buffer.render   // three lines of ten spaces
++             pty.buffer.render   // three lines of ten spaces
+
+=             pty.buffer.render   // three lines of ten spaces
+-       frame
++       frame
+
+-         label Some text, then a carriage return and a line feed
++         label テキスト、続いて復帰と改行
+
+=         label Some text, then a carriage return and a line feed
+-         code
++         code
+
+=         label Some text, then a carriage return and a line feed
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Some text, then a carriage return and a line feed
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Some text, then a carriage return and a line feed
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val esc = 0x1b.toChar
++             val esc = 0x1b.toChar
+
+-             val pty = Pty(10, 3).consume(t"hello\r\nworld")
++             val pty = Pty(10, 3).consume(t"hello\r\nworld")
+
+-             pty.buffer.render   // "hello     \nworld     \n          "
++             pty.buffer.render   // "hello     \nworld     \n          "
+
+=             pty.buffer.render   // "hello     \nworld     \n          "
+-       frame
++       frame
+
+-         label The cursor sent home, and a bold X written over the h
++         label カーソルを左上に戻し、h の上に太字の X を書く
+
+=         label The cursor sent home, and a bold X written over the h
+-         code
++         code
+
+=         label The cursor sent home, and a bold X written over the h
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label The cursor sent home, and a bold X written over the h
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label The cursor sent home, and a bold X written over the h
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val esc = 0x1b.toChar
++             val esc = 0x1b.toChar
+
+-             val pty = Pty(10, 3).consume(t"hello\r\nworld").consume(t"$esc[H$esc[1mX")
++             val pty = Pty(10, 3).consume(t"hello\r\nworld").consume(t"$esc[H$esc[1mX")
+
+-             pty.buffer.render                   // "Xello     \nworld     \n          "
++             pty.buffer.render                   // "Xello     \nworld     \n          "
+
+-             pty.buffer.style(Prim, Prim).bold   // true
++             pty.buffer.style(Prim, Prim).bold   // true
+
+=             pty.buffer.style(Prim, Prim).bold   // true
+-       frame
++       frame
+
+-         label The second line erased
++         label 二行目を消去する
+
+=         label The second line erased
+-         code
++         code
+
+=         label The second line erased
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label The second line erased
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label The second line erased
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val esc = 0x1b.toChar
++             val esc = 0x1b.toChar
+
+-             val pty = Pty(10, 3).consume(t"hello\r\nworld").consume(t"$esc[H$esc[1mX$esc[2;1H$esc[2K")
++             val pty = Pty(10, 3).consume(t"hello\r\nworld").consume(t"$esc[H$esc[1mX$esc[2;1H$esc[2K")
+
+-             pty.buffer.render   // "Xello     \n          \n          "
++             pty.buffer.render   // "Xello     \n          \n          "
+
+-             pty.cursor          // row two, column one: cell 10 of a ten-column screen
++             pty.cursor          // row two, column one: cell 10 of a ten-column screen
+
+=             pty.cursor          // row two, column one: cell 10 of a ten-column screen
+-       ##
++       ##
+
+=             pty.cursor          // row two, column one: cell 10 of a ten-column screen
+=       ##
+-       ```
++       ```
+
+-       A line feed returns the cursor to the first column as well as moving down, as a terminal
+-       in its usual newline mode does. Writing past the right-hand edge wraps lazily: the cursor
+-       waits on the last column and the next printable character goes to the start of the next
+-       line.
++       改行は、通常の改行モードの端末と同様に、カーソルを下に動かすとともに先頭の列に戻す。
++       右端を越える書き込みは遅延して折り返す。カーソルは最後の列で待機し、次の印字可能文字は次の行の先頭に行く。
+
+-       Some sequences make a terminal answer — a cursor position report (`CSI 6 n`), the primary
+-       and secondary device attributes — and the answers are put on `#output`, read back as
+-       `#stream`, so a program which interrogates its terminal can be tested against the replies
+-       it would really receive.
++       端末に応答させるシーケンスがある（カーソル位置レポート（`CSI 6 n`）、一次および二次のデバイス属性）。その応答は `#output` に置かれ、`#stream` として読み戻されるので、端末に問い合わせるプログラムを、実際に受け取るはずの応答に対してテストできる。
+
+-       Everything a program has set beyond the screen itself is in `#state`, a `Pty.State`.
++       プログラムが画面そのもの以外に設定したものはすべて、`Pty.State` である `#state` にある。
+
+=       Everything a program has set beyond the screen itself is in `#state`, a `Pty.State`.
+-   refer yossarian.Screen
++   refer yossarian.Screen
+
+=   refer yossarian.Screen
+-   refer yossarian.Style
++   refer yossarian.Style
+
+-   entry .apply   a blank terminal of the given width and height, with the default style
+-       `Pty(width, height)` makes a terminal whose every cell is a space in the default `Style`
+-       (white on black, both marked as the terminal's defaults), with the cursor at the top
+-       left and the scroll region covering the whole screen.
+-   entry .stream   every state a terminal passes through as it consumes a lazy stream of chunks
+-       `Pty.stream(pty, chunks)` lazily consumes each `Text` of the `Chain` in turn, giving the
+-       terminal after each one: a program's output read as a stream becomes a stream of
+-       screens. An escape sequence split across two chunks is resumed, as with `Pty#consume`.
+-       Raises `Pty.Error` as each chunk is consumed.
+-   entry .Error   raised when an escape sequence cannot be interpreted
++   entry .apply   指定した幅と高さの、既定のスタイルを持つ空の端末
++       `Pty(width, height)` は、すべてのセルが既定の `Style`（黒地に白で、両方とも端末の既定として印が付いている）の空白である端末を作る。カーソルは左上にあり、スクロール領域は画面全体を覆う。
++   entry .stream   遅延ストリームのチャンクを消費するにつれて端末が経るすべての状態
++       `Pty.stream(pty, chunks)` は `Chain` の各 `Text` を順に遅延して消費し、それぞれの後の端末を与える。ストリームとして読んだプログラムの出力が、画面のストリームになる。
++       二つのチャンクにまたがるエスケープシーケンスは、`Pty#consume` と同様に再開される。
++       各チャンクを消費するときに `Pty.Error` を発生させる。
++   entry .Error   エスケープシーケンスを解釈できないときに発生する
+
+=   entry .Error   raised when an escape sequence cannot be interpreted
+-     detail
++     detail
+
+-         Error `↯/s.132.1`: _an ANSI escape code could not be handled because `reason`_, where the
+-         reason is a `Pty.Error.Reason`. Raised by `Pty#consume` (and `Pty.stream`) for an
+-         escape sequence it does not recognise or whose parameters are invalid, so a test
+-         discovers that a program emits broken sequences, rather than a real terminal quietly
+-         mangling them. Most faults are raised and the walk continues, so under an accruing
+-         strategy the rest of the input is still interpreted; an invalid `SGR` parameter, a
+-         non-numeric parameter or a colour number out of range aborts.
+-     entry .Reason   the fault in an escape sequence which a `Pty` could not interpret
++         エラー `↯/s.132.1`：_an ANSI escape code could not be handled because `reason`_。理由は `Pty.Error.Reason` である。
++         `Pty#consume`（と `Pty.stream`）が、認識できないエスケープシーケンスやパラメーターが不正なエスケープシーケンスに対して発生させる。これにより、本物の端末が黙ってそれを壊すのではなく、プログラムが壊れたシーケンスを出していることをテストが発見できる。
++         ほとんどの誤りは発生させた後も走査を続けるので、蓄積型の戦略のもとでは残りの入力も解釈される。不正な `SGR` パラメーター、数値でないパラメーター、範囲外の色番号は中断する。
++     entry .Reason   `Pty` が解釈できなかったエスケープシーケンスの誤り
+
+=     entry .Reason   the fault in an escape sequence which a `Pty` could not interpret
+-       detail
++       detail
+
+-           Each reason carries its number, the error's second code:
++           各理由は自身の番号（エラーの二番目のコード）を持つ。
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
+-           row  `BadSgrParameters(n)`  1  _`n` is not a valid SGR parameter sequence_  a parameter the emulator does not know; `n` is the whole `;`-separated sequence
+-           row  `BadCsiParameter(n, command)`  2  _`n` is not a valid CSI parameter for the `command` command_  out of range for a command such as `ED` or `EL`
++           column  ケース
++           column  コード
++           column  メッセージ
++           column  注記
++           row  `BadSgrParameters(n)`  1  _`n` is not a valid SGR parameter sequence_  エミュレーターが知らないパラメーター。`n` は `;` で区切られたシーケンス全体
++           row  `BadCsiParameter(n, command)`  2  _`n` is not a valid CSI parameter for the `command` command_  `ED` や `EL` などのコマンドに対して範囲外
+
+-           row  `NonintegerSgrParameter(text)`  3  _`text` is not a numerical SGR parameter_
++           row  `NonintegerSgrParameter(text)`  3  _`text` is not a numerical SGR parameter_
+
+-           row  `BadColor(n)`  4  _`n` is not a valid color number_  a 256-colour index outside 0 to 255
+-           row  `BadOscParameter(parameter)`  5  _`parameter` is not a recognized OSC parameter_  not a title, a hyperlink or one of the ignored shell notifications
+-           row  `BadCsiCommand(param, char)`  6  _`char` (with parameter `param`) is not a valid CSI command_  a final character the emulator does not implement
+-           row  `BadCsiEscape(char)`  7  _`char` is not valid in a CSI escape sequence_  a byte which may not appear inside a control sequence
+-           row  `BadFeEscape(char)`  8  _`char` is not a valid Fe escape_  an `ESC` followed by a character which begins no known sequence
++           row  `BadColor(n)`  4  _`n` is not a valid color number_  0 から 255 の範囲外の 256 色インデックス
++           row  `BadOscParameter(parameter)`  5  _`parameter` is not a recognized OSC parameter_  タイトルでもハイパーリンクでも、無視されるシェル通知のいずれでもない
++           row  `BadCsiCommand(param, char)`  6  _`char` (with parameter `param`) is not a valid CSI command_  エミュレーターが実装していない終端文字
++           row  `BadCsiEscape(char)`  7  _`char` is not valid in a CSI escape sequence_  制御シーケンスの中に現れてはならないバイト
++           row  `BadFeEscape(char)`  8  _`char` is not a valid Fe escape_  既知のどのシーケンスも始めない文字が続く `ESC`
+
+-           ```
++           ```
+
+-       entry .communicable   renders each reason as a message, such as _x is not a valid Fe escape_
+-       entry #number   the reason's number, the second part of the error's code
+-     entry #reason   the `Pty.Error.Reason` naming the fault
+-   entry .State   everything a terminal holds besides its screen: cursor, saved state, modes, title
++       entry .communicable   各理由を _x is not a valid Fe escape_ のようなメッセージとして描画する
++       entry #number   理由の番号。エラーのコードの二番目の部分
++     entry #reason   誤りを示す `Pty.Error.Reason`
++   entry .State   端末が画面以外に持つすべてのもの：カーソル、保存された状態、モード、タイトル
+
+=   entry .State   everything a terminal holds besides its screen: cursor, saved state, modes, title
+-     detail
++     detail
+
+-         A case class of the terminal's settings, updated by `Pty#consume` alongside the
+-         screen. Positions are `Ordinal` cell indices into the screen read row by row, so
+-         `cursor` for column `x` and row `y` of a terminal `w` cells wide is `y*w + x`; the
+-         scroll region's bounds are row ordinals.
++         端末の設定のケースクラスで、`Pty#consume` が画面と並んで更新する。
++         位置は画面を行ごとに読んだときのセルインデックスである `Ordinal` なので、幅 `w` セルの端末の列 `x`、行 `y` に対する `cursor` は `y*w + x` である。スクロール領域の境界は行の序数である。
+
+=         scroll region's bounds are row ordinals.
+=
+-         ```scala
++         ```scala
+
+=         scroll region's bounds are row ordinals.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         scroll region's bounds are row ordinals.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         scroll region's bounds are row ordinals.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+-         val esc = 0x1b.toChar
++         val esc = 0x1b.toChar
+
+-         val pty = Pty(20, 5).consume(t"$esc]0;Build$esc\\$esc[?25l$esc[2;4r")
++         val pty = Pty(20, 5).consume(t"$esc]0;Build$esc\\$esc[?25l$esc[2;4r")
+
+-         pty.state.title        // t"Build"
++         pty.state.title        // t"Build"
+
+-         pty.state.hideCursor   // true
++         pty.state.hideCursor   // true
+
+-         pty.state.scrollTop    // Sec
++         pty.state.scrollTop    // Sec
+
+=         pty.state.scrollTop    // Sec
+-         ```
++         ```
+
+-         A fresh terminal's state has the cursor at `Prim`, the default `Style`, focus on, and
+-         every mode off; `Pty.apply` sets `scrollBottom` to the last row.
+-     entry #cursor               the cursor's position, as a cell index into the screen read row by row
+-     entry #savedCursor          the position saved by `CSI s` or `ESC 7`, restored by `CSI u` or `ESC 8`
+-     entry #savedStyle           the style saved with the cursor by `ESC 7` (`DECSC`), restored by `ESC 8`
+-     entry #savedLink            the hyperlink saved with the cursor by `ESC 7` (`DECSC`), restored by `ESC 8`
+-     entry #style                the style the next character written will take, as `SGR` sequences left it
+-     entry #focusDetectionMode   whether the program asked to be told of focus changes, by `CSI ? 1004 h`
+-     entry #focus                whether the terminal has focus, as last set by `CSI I` and `CSI O`
+-     entry #bracketedPasteMode   whether bracketed paste is on, by `CSI ? 2004 h`
+-     entry #hideCursor           whether the program hid the cursor, by `CSI ? 25 l` (`DECTCEM`)
+-     entry #title                the window title, as last set by `OSC 0` or `OSC 2`
+-     entry #link                 the hyperlink the next character written will carry, as set by `OSC 8`
+-         Empty when no link is open: `OSC 8 ; ; url` opens one, and an `OSC 8` with no URL closes
+-         it. Every cell written while it is open carries the URL, read with `Screen#link`.
+-     entry #scrollTop            the first row of the scroll region, as set by `CSI r` (`DECSTBM`)
+-     entry #scrollBottom         the last row of the scroll region, as set by `CSI r` (`DECSTBM`)
+-     entry #pendingWrap          whether the cursor waits on the last column, to wrap at the next character
+-     entry #mainScreen           the main screen, kept aside while the alternate screen is shown, or `Unset`
+-         Entering the alternate screen (`CSI ? 1049 h`, `? 1047 h` or `? 47 h`) stores the main
+-         screen here and blanks the display; leaving it restores the main screen as it was. Mode
+-         1049 also saves and restores the cursor, in `#mainCursor`.
+-     entry #mainCursor           the main screen's cursor, saved on entering the alternate screen by mode 1049
+-     entry #pending              an incomplete escape sequence at the end of the last input, resumed next time
+-         Output read from a terminal arrives in chunks which may end partway through an escape
+-         sequence; `Pty#consume` keeps the unfinished part here and prefixes it to the next
+-         input, so the screen is the same however the output is divided.
+-   entry #buffer   the screen: a `Screen[Style]` of graphemes, styles and hyperlinks, cell by cell
+-       Read a cell with `char`, `grapheme`, `style` and `link`, each taking the column and then
+-       the row as `Ordinal`s, or the whole screen with `render`. The buffer is a mutable
+-       `Screen`, shared with this `Pty`: read it, but do not `set` or `scroll` it, or the `Pty`
+-       which holds it changes too.
+-   entry #state    the terminal's settings beyond the screen: a `Pty.State`
+-   entry #output   the relay on which the terminal puts its replies to device queries
+-       A cursor position report (`CSI 6 n`) puts `ESC [ row ; column R`, the primary device
+-       attributes query (`CSI c`) puts `ESC [ ? 1 ; 2 c`, and the secondary (`CSI > c`) puts
+-       `ESC [ > 0 ; 0 ; 0 c`. The relay is shared by every state derived from one `Pty.apply`, so
+-       it holds all the replies made so far. Read it as `#stream`, after `stop()`ping it if the
+-       whole of it is wanted at once.
+-   entry #stream   the terminal's replies to device queries, as a lazy stream of text
+-       The view of `#output` as a `Chain[Text]`, which pulls replies as it is forced. To read
+-       every reply so far, stop the relay first, or the chain waits for more:
++         新しい端末の状態では、カーソルは `Prim` にあり、スタイルは既定の `Style` で、フォーカスはオンで、すべてのモードはオフである。`Pty.apply` は `scrollBottom` を最後の行に設定する。
++     entry #cursor               カーソルの位置。画面を行ごとに読んだときのセルインデックス
++     entry #savedCursor          `CSI s` または `ESC 7` で保存され、`CSI u` または `ESC 8` で復元される位置
++     entry #savedStyle           `ESC 7`（`DECSC`）でカーソルとともに保存され、`ESC 8` で復元されるスタイル
++     entry #savedLink            `ESC 7`（`DECSC`）でカーソルとともに保存され、`ESC 8` で復元されるハイパーリンク
++     entry #style                次に書き込まれる文字が取るスタイル。`SGR` シーケンスが残したもの
++     entry #focusDetectionMode   プログラムが `CSI ? 1004 h` によってフォーカスの変化の通知を求めたかどうか
++     entry #focus                端末がフォーカスを持っているかどうか。最後に `CSI I` と `CSI O` で設定されたもの
++     entry #bracketedPasteMode   `CSI ? 2004 h` によってブラケットペーストがオンかどうか
++     entry #hideCursor           プログラムが `CSI ? 25 l`（`DECTCEM`）でカーソルを隠したかどうか
++     entry #title                ウィンドウタイトル。最後に `OSC 0` または `OSC 2` で設定されたもの
++     entry #link                 次に書き込まれる文字が持つハイパーリンク。`OSC 8` で設定される
++         リンクが開いていないときは空である。`OSC 8 ; ; url` がリンクを開き、URL のない `OSC 8` がそれを閉じる。
++         開いている間に書き込まれたすべてのセルが URL を持ち、`Screen#link` で読める。
++     entry #scrollTop            スクロール領域の最初の行。`CSI r`（`DECSTBM`）で設定される
++     entry #scrollBottom         スクロール領域の最後の行。`CSI r`（`DECSTBM`）で設定される
++     entry #pendingWrap          カーソルが最後の列で待機し、次の文字で折り返すかどうか
++     entry #mainScreen           代替画面が表示されている間に退避された主画面、または `Unset`
++         代替画面に入る（`CSI ? 1049 h`、`? 1047 h`、`? 47 h`）と主画面がここに保存され、表示が空になる。代替画面を出ると主画面が元のとおりに復元される。
++         モード 1049 はカーソルも `#mainCursor` に保存して復元する。
++     entry #mainCursor           モード 1049 で代替画面に入るときに保存された主画面のカーソル
++     entry #pending              前回の入力の末尾にあった不完全なエスケープシーケンス。次回に再開される
++         端末から読んだ出力はエスケープシーケンスの途中で終わりうるチャンクとして届く。`Pty#consume` は未完の部分をここに保持して次の入力の前に付けるので、出力がどう分割されても画面は同じになる。
++   entry #buffer   画面：書記素、スタイル、ハイパーリンクをセルごとに持つ `Screen[Style]`
++       セルは `char`、`grapheme`、`style`、`link` で読む。どれも列、次に行を `Ordinal` として取る。画面全体は `render` で読む。
++       バッファーは可変の `Screen` で、この `Pty` と共有されている。読むのはよいが、`set` や `scroll` をしてはならない。そうすると、それを持つ `Pty` も変わってしまう。
++   entry #state    画面以外の端末の設定：`Pty.State`
++   entry #output   端末がデバイス問い合わせへの応答を置くリレー
++       カーソル位置レポート（`CSI 6 n`）は `ESC [ row ; column R` を置き、一次デバイス属性の問い合わせ（`CSI c`）は `ESC [ ? 1 ; 2 c` を置き、二次（`CSI > c`）は `ESC [ > 0 ; 0 ; 0 c` を置く。
++       リレーは一つの `Pty.apply` から派生したすべての状態で共有されるので、それまでのすべての応答を持つ。
++       `#stream` として読む。全体を一度に欲しいときは、先に `stop()` する。
++   entry #stream   デバイス問い合わせへの端末の応答。テキストの遅延ストリーム
++       `#output` を `Chain[Text]` として見たもので、強制されるにつれて応答を引き出す。
++       それまでのすべての応答を読むには、先にリレーを止める。さもないとチェーンはさらなる応答を待つ。
+
+=       every reply so far, stop the relay first, or the chain waits for more:
+=
+-       ```scala
++       ```scala
+
+=       every reply so far, stop the relay first, or the chain waits for more:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       every reply so far, stop the relay first, or the chain waits for more:
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       every reply so far, stop the relay first, or the chain waits for more:
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val esc = 0x1b.toChar
++       val esc = 0x1b.toChar
+
+-       val queried = Pty(80, 24).consume(t"ab$esc[6n")
++       val queried = Pty(80, 24).consume(t"ab$esc[6n")
+
+-       queried.output.stop()
++       queried.output.stop()
+
+-       queried.stream.to[List].join   // the report ESC[1;3R
++       queried.stream.to[List].join   // the report ESC[1;3R
+
+=       queried.stream.to[List].join   // the report ESC[1;3R
+-       ```
++       ```
+
+-   entry #title    the window title the program set, by `OSC 0` or `OSC 2`, or empty
+-       Both terminators are accepted — the bell character and the string terminator `ESC \` —
+-       since programs use both.
+-   entry #cursor   the cursor's position, as a cell index into the screen read row by row
+-       For a terminal `w` cells wide, the cursor at column `x` and row `y` is `y*w + x`, as an
+-       `Ordinal`.
+-   entry #cursorVisible   whether the cursor is shown: false after `CSI ? 25 l`, true again after `CSI ? 25 h`
+-   entry #consume   interprets text and escape sequences, giving the terminal's next state
+-       `pty.consume(text)` writes each grapheme at the cursor and performs each escape sequence,
+-       returning a new `Pty`; the receiver is unchanged. It needs a `Tactic[Pty.Error]`, raised
+-       for a sequence which cannot be interpreted.
++   entry #title    プログラムが `OSC 0` または `OSC 2` で設定したウィンドウタイトル、または空
++       プログラムはどちらも使うので、両方の終端子（ベル文字と文字列終端子 `ESC \`）を受け付ける。
++   entry #cursor   カーソルの位置。画面を行ごとに読んだときのセルインデックス
++       幅 `w` セルの端末では、列 `x`、行 `y` にあるカーソルは `Ordinal` として `y*w + x` である。
++   entry #cursorVisible   カーソルが表示されているかどうか：`CSI ? 25 l` の後は false、`CSI ? 25 h` の後に再び true
++   entry #consume   テキストとエスケープシーケンスを解釈し、端末の次の状態を与える
++       `pty.consume(text)` は各書記素をカーソル位置に書き込み、各エスケープシーケンスを実行して、新しい `Pty` を返す。レシーバは変わらない。
++       `Tactic[Pty.Error]` を必要とし、解釈できないシーケンスに対して発生させる。
+
+=       for a sequence which cannot be interpreted.
+=
+-       ```scala
++       ```scala
+
+=       for a sequence which cannot be interpreted.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       for a sequence which cannot be interpreted.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       for a sequence which cannot be interpreted.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val esc = 0x1b.toChar
++       val esc = 0x1b.toChar
+
+-       val pty = Pty(10, 4)
++       val pty = Pty(10, 4)
+
+-       val first = pty.consume(t"A$esc[3")    // ends partway through a sequence
++       val first = pty.consume(t"A$esc[3")    // ends partway through a sequence
+
+-       val second = first.consume(t"1mB")     // the sequence completes: B is red
++       val second = first.consume(t"1mB")     // the sequence completes: B is red
+
+-       second.buffer.style(Sec, Prim).foreground   // Chroma(222, 56, 43)
++       second.buffer.style(Sec, Prim).foreground   // Chroma(222, 56, 43)
+
+=       second.buffer.style(Sec, Prim).foreground   // Chroma(222, 56, 43)
+-       ```
++       ```
+
+-       Control characters behave as on a terminal: backspace moves left without erasing, tab
+-       advances to the next eight-column stop, carriage return goes to the first column, and
+-       line feed and form feed move down a line, scrolling the region at its bottom. Other C0
+-       controls are ignored. `ESC c` (`RIS`) resets the terminal to its initial state, so one
+-       `Pty` value may begin a fresh scenario.
++       制御文字は端末と同じように振る舞う。
++       バックスペースは消去せずに左へ動き、タブは次の 8 列ごとの位置へ進み、復帰は先頭の列へ行き、改行と改ページは一行下へ動き、領域の下端ではそれをスクロールさせる。
++       その他の C0 制御文字は無視される。
++       `ESC c`（`RIS`）は端末を初期状態にリセットするので、一つの `Pty` 値で新しいシナリオを始められる。
+
+- entry .Screen   a grid of cells, each a grapheme with a style and a hyperlink, readable cell by cell
++ entry .Screen   セルのグリッド。各セルはスタイルとハイパーリンクを持つ書記素で、セルごとに読める
+
+= entry .Screen   a grid of cells, each a grapheme with a style and a hyperlink, readable cell by cell
+-   detail
++   detail
+
+-       A `Screen[styling]` is the buffer behind a `Pty` (as `Screen[Style]`) and behind
+-       ultimatum's text user interfaces (with escapade's style words). `Screen` is declared in
+-       `yossarian.internal` and exported here. Each cell holds one grapheme cluster: an ASCII
+-       character, a combining sequence, an emoji, or the leading half of a wide character,
+-       whose trailing cell holds the empty grapheme (`isWideTrailing`). Cells are addressed by
+-       column and then row, both `Ordinal`s.
++       `Screen[styling]` は、`Pty` の背後にある（`Screen[Style]` として）バッファーであり、ultimatum のテキストユーザーインターフェースの背後にある（escapade のスタイル語とともに）バッファーである。
++       `Screen` は `yossarian.internal` で宣言され、ここにエクスポートされている。
++       各セルは一つの書記素クラスタを持つ。それは ASCII 文字、結合文字列、絵文字、または全角文字の前半であり、全角文字の後半のセルは空の書記素を持つ（`isWideTrailing`）。
++       セルは列、次に行で指定され、どちらも `Ordinal` である。
+
+=       column and then row, both `Ordinal`s.
+=
+-       ```scala
++       ```scala
+
+=       column and then row, both `Ordinal`s.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       column and then row, both `Ordinal`s.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       column and then row, both `Ordinal`s.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val esc = 0x1b.toChar
++       val esc = 0x1b.toChar
+
+-       val screen = Pty(12, 2).consume(t"$esc]8;;https://example.com/${esc}\\link$esc]8;;$esc\\ 日本").buffer
++       val screen = Pty(12, 2).consume(t"$esc]8;;https://example.com/${esc}\\link$esc]8;;$esc\\ 日本").buffer
+
+-       screen.char(Prim, Prim)          // 'l'
++       screen.char(Prim, Prim)          // 'l'
+
+-       screen.link(Prim, Prim)          // t"https://example.com/"
++       screen.link(Prim, Prim)          // t"https://example.com/"
+
+-       screen.isWideTrailing(6.z, Prim) // true: 日 takes two cells
++       screen.isWideTrailing(6.z, Prim) // true: 日 takes two cells
+
+-       screen.render                    // the two rows, joined by a newline
++       screen.render                    // the two rows, joined by a newline
+
+=       screen.render                    // the two rows, joined by a newline
+-       ```
++       ```
+
+-       Unlike a `Pty`, a `Screen` is mutable: `set` and `scroll` change it in place, and `copy`
+-       makes an independent one.
++       `Pty` と違い、`Screen` は可変である。`set` と `scroll` はそれをその場で変更し、`copy` は独立したものを作る。
+
+=       makes an independent one.
+-   refer yossarian.Pty
++   refer yossarian.Pty
+
+=   refer yossarian.Pty
+-   refer yossarian.Style
++   refer yossarian.Style
+
+- entry .Style   a cell's appearance: eight attribute flags, two colours, and whether each colour is the default
++ entry .Style   セルの外観：八つの属性フラグ、二つの色、そしてそれぞれの色が既定かどうか
+
+= entry .Style   a cell's appearance: eight attribute flags, two colours, and whether each colour is the default
+-   detail
++   detail
+
+-       `Style` is an opaque type over a `Long`, declared in `yossarian.internal` and exported
+-       here, read with extension methods: `bold`, `faint`, `italic`, `underline`, `blink`,
+-       `reverse`, `conceal` and `strike` are the flags, `foreground` and `background` the
+-       colours as `Chroma`s, and `defaultForeground` and `defaultBackground` say whether each
+-       colour is the terminal's own default rather than one the output chose.
++       `Style` は `Long` の上の不透明型で、`yossarian.internal` で宣言され、ここにエクスポートされており、拡張メソッドで読む。
++       `bold`、`faint`、`italic`、`underline`、`blink`、`reverse`、`conceal`、`strike` がフラグであり、`foreground` と `background` は `Chroma` としての色である。`defaultForeground` と `defaultBackground` は、それぞれの色が出力の選んだ色ではなく端末自身の既定であるかどうかを示す。
+
+-       The distinction matters to a renderer. A fresh cell, and one written after `SGR 0`,
+-       `SGR 39` or `SGR 49`, has the default colours: the `Chroma` is only what this emulator
+-       shows for them (white on black), and a renderer drawing the screen in its own theme may
+-       use its own. Any colour the output sets explicitly clears the flag, even one equal to
+-       the default chroma.
++       この区別は描画器にとって重要である。
++       新しいセル、および `SGR 0`、`SGR 39`、`SGR 49` の後に書き込まれたセルは既定の色を持つ。その `Chroma` はこのエミュレーターがそれらに対して表示するもの（黒地に白）にすぎず、画面を独自のテーマで描く描画器は独自の色を使ってよい。
++       出力が明示的に設定した色は、既定の色と等しいものであっても、このフラグをクリアする。
+
+=       the default chroma.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       the default chroma.
+=
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A fresh cell: both colours are the defaults
++         label 新しいセル：両方の色が既定
+
+=         label A fresh cell: both colours are the defaults
+-         code
++         code
+
+=         label A fresh cell: both colours are the defaults
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A fresh cell: both colours are the defaults
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label A fresh cell: both colours are the defaults
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val esc = 0x1b.toChar
++             val esc = 0x1b.toChar
+
+-             val style = Pty(10, 1).consume(t"A").buffer.style(Prim, Prim)
++             val style = Pty(10, 1).consume(t"A").buffer.style(Prim, Prim)
+
+=             val style = Pty(10, 1).consume(t"A").buffer.style(Prim, Prim)
+-             (style.defaultForeground, style.defaultBackground)   // (true, true)
++             (style.defaultForeground, style.defaultBackground)   // (true, true)
+
+=             (style.defaultForeground, style.defaultBackground)   // (true, true)
+-       frame
++       frame
+
+-         label SGR 31 sets a red foreground: only the background is still the default
++         label SGR 31 は赤の前景色を設定する：背景色だけがまだ既定
+
+=         label SGR 31 sets a red foreground: only the background is still the default
+-         code
++         code
+
+=         label SGR 31 sets a red foreground: only the background is still the default
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label SGR 31 sets a red foreground: only the background is still the default
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label SGR 31 sets a red foreground: only the background is still the default
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val esc = 0x1b.toChar
++             val esc = 0x1b.toChar
+
+-             val style = Pty(10, 1).consume(t"$esc[31mA").buffer.style(Prim, Prim)
++             val style = Pty(10, 1).consume(t"$esc[31mA").buffer.style(Prim, Prim)
+
+-             (style.defaultForeground, style.defaultBackground)   // (false, true)
++             (style.defaultForeground, style.defaultBackground)   // (false, true)
+
+-             style.foreground                                     // Chroma(222, 56, 43)
++             style.foreground                                     // Chroma(222, 56, 43)
+
+=             style.foreground                                     // Chroma(222, 56, 43)
+-       frame
++       frame
+
+-         label SGR 39 restores the default foreground
++         label SGR 39 は既定の前景色に戻す
+
+=         label SGR 39 restores the default foreground
+-         code
++         code
+
+=         label SGR 39 restores the default foreground
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label SGR 39 restores the default foreground
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label SGR 39 restores the default foreground
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val esc = 0x1b.toChar
++             val esc = 0x1b.toChar
+
+-             val style = Pty(10, 1).consume(t"$esc[31m$esc[39mA").buffer.style(Prim, Prim)
++             val style = Pty(10, 1).consume(t"$esc[31m$esc[39mA").buffer.style(Prim, Prim)
+
+=             val style = Pty(10, 1).consume(t"$esc[31m$esc[39mA").buffer.style(Prim, Prim)
+-             (style.defaultForeground, style.defaultBackground)   // (true, true)
++             (style.defaultForeground, style.defaultBackground)   // (true, true)
+
+=             (style.defaultForeground, style.defaultBackground)   // (true, true)
+-       ##
++       ##
+
+=             (style.defaultForeground, style.defaultBackground)   // (true, true)
+=       ##
+-       ```
++       ```
+
+-       `SGR 30`–`37` and `40`–`47` choose from the sixteen-colour palette, `90`–`97` and
+-       `100`–`107` its bright half, `38;5;n` and `48;5;n` the 256-colour palette (the sixteen,
+-       a 6×6×6 cube and a 24-step grey ramp), and `38;2;r;g;b` and `48;2;r;g;b` any 24-bit
+-       colour. A style change affects the cells written afterwards, not those already on the
+-       screen, as on a terminal.
++       `SGR 30`–`37` と `40`–`47` は 16 色パレットから選び、`90`–`97` と `100`–`107` はその明るい半分から、`38;5;n` と `48;5;n` は 256 色パレット（16 色、6×6×6 のキューブ、24 段階のグレーの階調）から、`38;2;r;g;b` と `48;2;r;g;b` は任意の 24 ビットカラーを選ぶ。
++       スタイルの変更は、端末と同様に、その後に書き込まれるセルに影響し、すでに画面にあるセルには影響しない。
+
+-       A style inspects compactly as its flags (each name prefixed with `!` when off) and its two
+-       colours, as `[Bo !F !I … DF DB … …]`.
++       スタイルは、フラグ（オフのものは名前の前に `!` が付く）と二つの色として、`[Bo !F !I … DF DB … …]` のように簡潔に検査用に表示される。
+
+=       colours, as `[Bo !F !I … DF DB … …]`.
+-   refer yossarian.Pty
++   refer yossarian.Pty
+
+=   refer yossarian.Pty
+-   refer yossarian.Screen
++   refer yossarian.Screen
+
+- entry .internal   the declarations of `Screen` and `Style`, and the extensions which read a style
++ entry .internal   `Screen` と `Style` の宣言、およびスタイルを読む拡張
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use as a prefix: `Screen` and `Style` are exported from here to the
+-       `yossarian` package, and the style extensions (`bold`, `foreground`, …) apply to any
+-       `Style` without an import.
+-   entry .Style   a cell's appearance, as an opaque `Long`; see `yossarian.Style`
++       接頭辞として直接使うためのものではない。`Screen` と `Style` はここから `yossarian` パッケージにエクスポートされ、スタイルの拡張（`bold`、`foreground`、…）はインポートなしで任意の `Style` に適用される。
++   entry .Style   セルの外観。不透明な `Long` である。`yossarian.Style` を参照
+
+=   entry .Style   a cell's appearance, as an opaque `Long`; see `yossarian.Style`
+-     detail
++     detail
+
+-         The opaque type `Style = Long`. Its page under the `yossarian` package has the full
+-         account; its members, which encode and decode the bits, are here.
+-     entry .apply   the default style: white on black, with both colours marked as the defaults
+-     entry .Bits   reads and writes one 24-bit colour field of a style
++         不透明型 `Style = Long`。
++         `yossarian` パッケージのもとにあるページに完全な説明がある。ビットをエンコード・デコードするメンバーはここにある。
++     entry .apply   既定のスタイル：黒地に白で、両方の色が既定として印が付いている
++     entry .Bits   スタイルの 24 ビットの色フィールドの一つを読み書きする
+
+=     entry .Bits   reads and writes one 24-bit colour field of a style
+-       detail
++       detail
+
+-           A colour occupies 24 bits of the `Long` at an offset; `Foreground` and `Background`
+-           are the two instances.
+-       entry #apply    the colour stored in a style's field, as a `Chroma`
+-       entry #update   a copy of a style with the field set to a colour: `Style.Foreground(style) = chroma`
+-     entry .Foreground   the foreground colour's field of a style
+-     entry .Background   the background colour's field of a style
+-     entry .chromaInspectable   renders a `Chroma` by its packed integer, for a style's inspection
+-     entry .inspectable   renders a style as its flags and colours: `[Bo !F … DF DB fg bg]`
+-     entry .Bit   one flag of a style: an attribute, or whether a colour is the terminal's default
++           色は `Long` のあるオフセットの 24 ビットを占める。`Foreground` と `Background` が二つのインスタンスである。
++       entry #apply    スタイルのフィールドに格納された色。`Chroma` として
++       entry #update   フィールドを色に設定したスタイルのコピー：`Style.Foreground(style) = chroma`
++     entry .Foreground   スタイルの前景色のフィールド
++     entry .Background   スタイルの背景色のフィールド
++     entry .chromaInspectable   スタイルの検査用表示のために、`Chroma` をパックされた整数で描画する
++     entry .inspectable   スタイルをフラグと色として描画する：`[Bo !F … DF DB fg bg]`
++     entry .Bit   スタイルの一つのフラグ：属性、または色が端末の既定であるかどうか
+
+=     entry .Bit   one flag of a style: an attribute, or whether a colour is the terminal's default
+-       detail
++       detail
+
+-           The attribute flags `Bold`, `Faint`, `Italic`, `Strike`, `Blink`, `Underline`,
+-           `Conceal` and `Reverse`, and `DefaultForeground` and `DefaultBackground`, which are set
+-           while a colour is the terminal's default (at a reset, and after `SGR 39` or `49`) and
+-           cleared by any colour the output sets. A flag reads a style with `Bit.Bold(style)` and
+-           writes one with `Bit.Bold(style) = true`.
+-       entry #bit      the flag's bit position in the style's `Long`
+-       entry #apply    whether the flag is set in a style
+-       entry #update   a copy of a style with the flag set or cleared
+-   entry .Screen   a grid of styled cells; see `yossarian.Screen`
++           属性フラグ `Bold`、`Faint`、`Italic`、`Strike`、`Blink`、`Underline`、`Conceal`、`Reverse`、そして `DefaultForeground` と `DefaultBackground`。後の二つは色が端末の既定である間（リセット時、および `SGR 39` や `49` の後）設定され、出力が設定する任意の色によってクリアされる。
++           フラグは `Bit.Bold(style)` でスタイルを読み、`Bit.Bold(style) = true` で書き込む。
++       entry #bit      スタイルの `Long` におけるフラグのビット位置
++       entry #apply    スタイルでフラグが設定されているかどうか
++       entry #update   フラグを設定またはクリアしたスタイルのコピー
++   entry .Screen   スタイル付きセルのグリッド。`yossarian.Screen` を参照
+
+=   entry .Screen   a grid of styled cells; see `yossarian.Screen`
+-     detail
++     detail
+
+-         The class `Screen[styling]`, generic in the style each cell holds. Its page under the
+-         `yossarian` package has the full account; its members are here.
+-     entry .apply   a blank screen of a width and height, with a given blank style, or the default `Style`
+-         `Screen(width, height, blank)` fills every cell with a space in the style `blank`, which
+-         is also the style a cell vacated by scrolling takes; it needs a `ClassTag` for the style
+-         type. `Screen(width, height)` is the terminal emulator's screen, a `Screen[Style]`
+-         blanked to the default `Style`.
+-     entry #width     the number of columns
+-     entry #capacity  the number of cells, width times height
+-     entry #height    the number of rows
+-     entry #offset    the index of a cell, by column and row, into the screen read row by row
+-     entry #style     the style of the cell at a column and row
+-     entry #link      the hyperlink of the cell at a column and row, or empty text if it has none
+-     entry #grapheme  the grapheme in the cell at a column and row, empty for the trailing half of a wide one
+-     entry #char      the first character of the cell at a column and row, or a space for a wide grapheme's trailing half
+-         A convenience for asserting on narrow text: a cell holding a combining sequence or an
+-         emoji gives only its first `Char`, so use `#grapheme` for those.
+-     entry #isWideTrailing   whether the cell is the trailing half of a wide grapheme held in the cell to its left
+-     entry #line      the whole screen as one row, sharing this screen's cells
+-     entry #render    the screen's text, rows joined by newlines, with wide graphemes appearing once
+-         Every row is rendered in full, trailing spaces included, so a ten-column row holding
+-         `hi` renders as `hi` followed by eight spaces.
+-     entry #find      the cells where a text first appears on the screen, as a one-row screen, or `Unset`
+-         Searches the screen read as one line, so a match may run from the end of one row onto
+-         the next. The result holds copies of the matched cells' styles and links, so a test can
+-         find a word and check how it was drawn:
++         クラス `Screen[styling]` で、各セルが持つスタイルについてジェネリックである。
++         `yossarian` パッケージのもとにあるページに完全な説明がある。そのメンバーはここにある。
++     entry .apply   指定した幅と高さの空の画面。与えられた空白のスタイル、または既定の `Style` を持つ
++         `Screen(width, height, blank)` はすべてのセルをスタイル `blank` の空白で埋める。これはスクロールで空いたセルが取るスタイルでもある。スタイルの型に対する `ClassTag` を必要とする。
++         `Screen(width, height)` は端末エミュレーターの画面で、既定の `Style` で空にした `Screen[Style]` である。
++     entry #width     列の数
++     entry #capacity  セルの数。幅と高さの積
++     entry #height    行の数
++     entry #offset    列と行で指定したセルの、画面を行ごとに読んだときのインデックス
++     entry #style     列と行にあるセルのスタイル
++     entry #link      列と行にあるセルのハイパーリンク。なければ空のテキスト
++     entry #grapheme  列と行にあるセルの書記素。全角文字の後半では空
++     entry #char      列と行にあるセルの最初の文字。全角の書記素の後半では空白
++         幅の狭いテキストについてアサートするための便宜である。結合文字列や絵文字を持つセルは最初の `Char` しか与えないので、それらには `#grapheme` を使う。
++     entry #isWideTrailing   そのセルが、左のセルにある全角の書記素の後半であるかどうか
++     entry #line      画面全体を一つの行にしたもの。この画面のセルを共有する
++     entry #render    画面のテキスト。行を改行でつなぎ、全角の書記素は一度だけ現れる
++         どの行も末尾の空白を含めて完全に描画されるので、`hi` を持つ 10 列の行は、`hi` の後に空白が八つ続くものとして描画される。
++     entry #find      テキストが画面上で最初に現れるセル。一行の画面として、または `Unset`
++         画面を一行として読んで検索するので、一致はある行の末尾から次の行にまたがりうる。
++         結果は一致したセルのスタイルとリンクのコピーを持つので、テストは単語を見つけて、それがどう描かれたかを確かめられる。
+
+=         find a word and check how it was drawn:
+=
+-         ```scala
++         ```scala
+
+=         find a word and check how it was drawn:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         find a word and check how it was drawn:
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         find a word and check how it was drawn:
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+-         val esc = 0x1b.toChar
++         val esc = 0x1b.toChar
+
+-         val screen = Pty(20, 2).consume(t"ok $esc[1mFAILED$esc[0m").buffer
++         val screen = Pty(20, 2).consume(t"ok $esc[1mFAILED$esc[0m").buffer
+
+-         screen.find(t"FAILED").let(_.style(Prim, Prim).bold)   // true
++         screen.find(t"FAILED").let(_.style(Prim, Prim).bold)   // true
+
+=         screen.find(t"FAILED").let(_.style(Prim, Prim).bold)   // true
+-         ```
++         ```
+
+-     entry #styles    a frozen copy of every cell's style, read row by row
+-     entry #scroll    moves the screen's rows, or a region's, up by a number of rows, or down if negative
+-         `scroll(n)` scrolls the whole screen and `scroll(n, top, bottom)` the rows from `top` to
+-         `bottom` inclusive; the rows uncovered are filled with blank cells. It changes the
+-         screen in place. Rows scrolled out are discarded: there is no scrollback.
+-     entry #set       writes a grapheme, style and hyperlink to a cell, in place
+-         Addressed by column and row, or by a cell index; the screen is changed in place.
+-     entry #copy      an independent copy of the screen, which later writes to either do not affect
+-   entry .bold                whether a style is bold, set by `SGR 1` and cleared by `SGR 21` or `22`
+-   entry .italic              whether a style is italic, set by `SGR 3` and cleared by `SGR 23`
+-   entry .blink               whether a style blinks, set by `SGR 5` and cleared by `SGR 25`
+-   entry .faint               whether a style is faint, set by `SGR 2` and cleared by `SGR 22`
+-   entry .conceal             whether a style is concealed, set by `SGR 8` and cleared by `SGR 28`
+-   entry .strike              whether a style is struck through, set by `SGR 9` and cleared by `SGR 29`
+-   entry .underline           whether a style is underlined, set by `SGR 4` and cleared by `SGR 24`
+-   entry .reverse             whether a style swaps its colours, set by `SGR 7` and cleared by `SGR 27`
+-   entry .foreground          a style's foreground colour, as a `Chroma`
+-       When `defaultForeground` is true, this is only the colour this emulator shows for the
+-       terminal's default (white), and a renderer may substitute its own.
+-   entry .background          a style's background colour, as a `Chroma`
+-       When `defaultBackground` is true, this is only the colour this emulator shows for the
+-       terminal's default (black), and a renderer may substitute its own.
+-   entry .defaultForeground   whether a style's foreground is the terminal's default rather than a colour the output set
+-       True for a fresh cell and after `SGR 0` or `SGR 39`; false after any foreground colour is
+-       set, even one equal to the default's chroma.
+-   entry .defaultBackground   whether a style's background is the terminal's default rather than a colour the output set
+-       True for a fresh cell and after `SGR 0` or `SGR 49`; false after any background colour is
+-       set, even one equal to the default's chroma.
++     entry #styles    すべてのセルのスタイルの凍結済みのコピー。行ごとに読む
++     entry #scroll    画面または領域の行を指定した行数だけ上に動かす。負なら下に動かす
++         `scroll(n)` は画面全体を、`scroll(n, top, bottom)` は `top` から `bottom` まで（両端を含む）の行をスクロールする。空いた行は空のセルで埋められる。
++         画面はその場で変更される。
++         スクロールして出た行は破棄される。スクロールバックはない。
++     entry #set       セルに書記素、スタイル、ハイパーリンクをその場で書き込む
++         列と行、またはセルインデックスで指定する。画面はその場で変更される。
++     entry #copy      画面の独立したコピー。以後どちらに書き込んでも他方に影響しない
++   entry .bold                スタイルが太字かどうか。`SGR 1` で設定され、`SGR 21` または `22` でクリアされる
++   entry .italic              スタイルが斜体かどうか。`SGR 3` で設定され、`SGR 23` でクリアされる
++   entry .blink               スタイルが点滅するかどうか。`SGR 5` で設定され、`SGR 25` でクリアされる
++   entry .faint               スタイルが淡色かどうか。`SGR 2` で設定され、`SGR 22` でクリアされる
++   entry .conceal             スタイルが隠されているかどうか。`SGR 8` で設定され、`SGR 28` でクリアされる
++   entry .strike              スタイルが取り消し線付きかどうか。`SGR 9` で設定され、`SGR 29` でクリアされる
++   entry .underline           スタイルが下線付きかどうか。`SGR 4` で設定され、`SGR 24` でクリアされる
++   entry .reverse             スタイルが色を入れ替えるかどうか。`SGR 7` で設定され、`SGR 27` でクリアされる
++   entry .foreground          スタイルの前景色。`Chroma` として
++       `defaultForeground` が true のとき、これはこのエミュレーターが端末の既定に対して表示する色（白）にすぎず、描画器は独自の色に置き換えてよい。
++   entry .background          スタイルの背景色。`Chroma` として
++       `defaultBackground` が true のとき、これはこのエミュレーターが端末の既定に対して表示する色（黒）にすぎず、描画器は独自の色に置き換えてよい。
++   entry .defaultForeground   スタイルの前景色が、出力が設定した色ではなく端末の既定であるかどうか
++       新しいセル、および `SGR 0` や `SGR 39` の後では true である。前景色が設定された後は、既定の色と等しいものであっても false である。
++   entry .defaultBackground   スタイルの背景色が、出力が設定した色ではなく端末の既定であるかどうか
++       新しいセル、および `SGR 0` や `SGR 49` の後では true である。背景色が設定された後は、既定の色と等しいものであっても false である。

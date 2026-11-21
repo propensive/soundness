@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.15.2` — `TextEscapes.Error`
++ # `↯/s.15.2` — `TextEscapes.Error`
+
+- Raised by Fulminate when a string-interpolation escape sequence is
+- not valid.
++ 文字列補間のエスケープシーケンスが正しくないときに Fulminate が発生させる。
+
+- ## Cause
++ ## 原因
+
+- The `m"…"` and similar interpolators support escape sequences
+- (`\n`, `\t`, `\u…`, etc.). When an escape is malformed, the
+- interpolator throws this error with a message describing the
+- specific issue.
++ `m"…"` などの補間子は、エスケープシーケンス（`\n`、`\t`、`\u…` など）をサポートする。
++ エスケープの形が不正なとき、補間子は具体的な問題を説明するメッセージとともにこのエラーを投げる。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.15.2] the escape sequence \q is not recognized
++ [↯/s.15.2] the escape sequence \q is not recognized
+
+= [↯/s.15.2] the escape sequence \q is not recognized
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Use a documented escape sequence; for a literal backslash, write
+- `\\`.
++ 文書化されたエスケープシーケンスを使う。バックスラッシュそのものには `\\` と書く。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/fulminate/src/core/fulminate.TextEscapes.scala`
++ - ソース：`lib/fulminate/src/core/fulminate.TextEscapes.scala`

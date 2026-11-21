@@ -1,0 +1,55 @@
+orthant 1 language
+
+- # `↯/s.128.3` — `Xsd.Error`
++ # `↯/s.128.3` — `Xsd.Error`
+
+- Raised when an XML document cannot be read as an XML Schema.
++ XML の文書を XML Schema として読めないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- `Xsd.parse` reads a schema document into the `Xsd` model, and reports the first construct it
+- cannot accept. The message is `the XML Schema could not be read because $reason`.
++ `Xsd.parse` はスキーマの文書を `Xsd` のモデルに読み込み、受け付けられない最初の構成要素を報告する。
++ メッセージは `the XML Schema could not be read because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.128.3.1`  `NotSchema`  The document element is not `schema` in the XML Schema namespace.  `[↯/s.128.3.1] the XML Schema could not be read because the document element is root, not an XML Schema`  Pass the schema document itself, with its `xs:`, `xsd:` or default prefix bound to `http://www.w3.org/2001/XMLSchema`.
+- row  `↯/s.128.3.2`  `Unexpected`  An element appears where the schema grammar does not allow it.  `[↯/s.128.3.2] the XML Schema could not be read because {http://www.w3.org/2001/XMLSchema}oops may not appear in schema`  Correct the schema, or report the construct if it is one the model does not yet read.
+- row  `↯/s.128.3.3`  `MissingAttribute`  A declaration lacks an attribute it must have, such as a global element's `name`.  `[↯/s.128.3.3] the XML Schema could not be read because the element has no name attribute`  Add the attribute.
+- row  `↯/s.128.3.4`  `BadOccurs`  A `minOccurs` or `maxOccurs` is neither a number nor `unbounded`.  `[↯/s.128.3.4] the XML Schema could not be read because lots is not a valid number of occurrences`  Use a non-negative integer, or `unbounded` for `maxOccurs`.
+- row  `↯/s.128.3.5`  `UnknownPrefix`  A `type`, `ref`, `base`, `itemType`, `memberTypes` or `substitutionGroup` uses a prefix the document does not bind.  `[↯/s.128.3.5] the XML Schema could not be read because the prefix zz is not bound to a namespace`  Declare the prefix with `xmlns:zz="…"` on the schema element or an ancestor.
+- row  `↯/s.128.3.6`  `BadFacet`  A facet's value is not of the kind the facet takes, such as a non-numeric `length`.  `[↯/s.128.3.6] the XML Schema could not be read because many is not a valid value for the maxLength facet`  Give the facet a value of the right kind.
+- row  `↯/s.128.3.7`  `Duplicate`  A global element, type, attribute or group is declared twice under one name.  `[↯/s.128.3.7] the XML Schema could not be read because the element a is declared more than once`  Remove or rename one of the declarations.
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.128.3.1`  `NotSchema`  文書要素が XML Schema の名前空間の `schema` ではない。  `[↯/s.128.3.1] the XML Schema could not be read because the document element is root, not an XML Schema`  `xs:`、`xsd:`、または既定の接頭辞が `http://www.w3.org/2001/XMLSchema` に束縛された、スキーマの文書そのものを渡す。
++ row  `↯/s.128.3.2`  `Unexpected`  スキーマの文法が許さない場所に要素が現れている。  `[↯/s.128.3.2] the XML Schema could not be read because {http://www.w3.org/2001/XMLSchema}oops may not appear in schema`  スキーマを修正する。モデルがまだ読まない構成要素であれば、それを報告する。
++ row  `↯/s.128.3.3`  `MissingAttribute`  宣言に、グローバルな要素の `name` のような、持たなければならない属性がない。  `[↯/s.128.3.3] the XML Schema could not be read because the element has no name attribute`  属性を加える。
++ row  `↯/s.128.3.4`  `BadOccurs`  `minOccurs` または `maxOccurs` が、数値でも `unbounded` でもない。  `[↯/s.128.3.4] the XML Schema could not be read because lots is not a valid number of occurrences`  負でない整数を使うか、`maxOccurs` には `unbounded` を使う。
++ row  `↯/s.128.3.5`  `UnknownPrefix`  `type`、`ref`、`base`、`itemType`、`memberTypes`、`substitutionGroup` が、文書が束縛していない接頭辞を使っている。  `[↯/s.128.3.5] the XML Schema could not be read because the prefix zz is not bound to a namespace`  schema 要素またはその祖先で、`xmlns:zz="…"` によって接頭辞を宣言する。
++ row  `↯/s.128.3.6`  `BadFacet`  ファセットの値が、数値でない `length` のように、そのファセットが取る種類のものではない。  `[↯/s.128.3.6] the XML Schema could not be read because many is not a valid value for the maxLength facet`  ファセットに正しい種類の値を与える。
++ row  `↯/s.128.3.7`  `Duplicate`  グローバルな要素、型、属性、グループが、一つの名前で二回宣言されている。  `[↯/s.128.3.7] the XML Schema could not be read because the element a is declared more than once`  宣言の一つを取り除くか、名前を変える。
+
+- ```
++ ```
+
+- ## See also
++ ## 関連項目
+
+- - [`↯/s.128.4` — `Xml.Provider.Error`](128.4.md)
++ - [`↯/s.128.4` — `Xml.Provider.Error`](128.4.md)

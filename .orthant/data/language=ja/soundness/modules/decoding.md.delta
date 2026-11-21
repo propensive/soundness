@@ -1,0 +1,1135 @@
+orthant 1 language
+
+- ## Decoding
++ ## デコード
+
+- ### About
++ ### 概要
+
+- A running program receives much of its data as loose, untyped text: command-line arguments,
+- environment variables, configuration files, the groups captured by a regular expression, a line
+- typed at a prompt. Decoding turns that text into typed values, such as an `Int`, a `Uuid` or an
+- email address.
++ 実行中のプログラムは、データの多くを型のない緩いテキストとして受け取る。
++ コマンドライン引数、環境変数、設定ファイル、正規表現が捕捉したグループ、プロンプトで入力された行などである。
++ デコードはそのテキストを、`Int`、`Uuid`、メールアドレスなどの型付きの値に変える。
+
+- Every such conversion shares one fact: it might not succeed. The types say so. A conversion
+- never returns a plausible value for input it could not read, which is what
+- [total transitions](../../philosophy/total-transitions.md) demands.
++ こうした変換には共通の事実が一つある。成功しないかもしれないということだ。
++ 型がそれを示す。
++ 変換は、読めなかった入力に対してもっともらしい値を返すことはない。
++ それが[全域的な遷移](../../philosophy/total-transitions.md)の要求するところである。
+
+- ### On conversion
++ ### 変換について
+
+- A conversion from one representation to another can fail in more than one way, and the
+- differences matter:
++ ある表現から別の表現への変換は、複数の仕方で失敗しうる。その違いは重要である。
+
+- - Reading an integer from arbitrary text can fail, because the text might not be a number.
+- - Narrowing a `Long` to an `Int` can fail, because the value might not fit.
+- - Widening a `Byte` to an `Int` can never fail.
++ - 任意のテキストから整数を読むことは失敗しうる。テキストが数でないかもしれないからである。
++ - `Long` を `Int` に縮小することは失敗しうる。値が収まらないかもしれないからである。
++ - `Byte` を `Int` に拡大することは決して失敗しない。
+
+- Treating these alike, by returning `null`, throwing from a getter or quietly truncating, is
+- where bugs begin. Here each has its own [typeclass], so the way a conversion can fail is visible
+- in the code which calls it:
++ これらを同じように扱い、`null` を返したり、ゲッターから例外を投げたり、黙って切り詰めたりするところからバグが始まる。
++ ここではそれぞれが独自の[型クラス]を持つので、変換がどう失敗しうるかは、それを呼ぶコードの中で見える。
+
+= in the code which calls it:
+=
+- ```tabular
++ ```tabular
+
+- column  Typeclass
+- column  Written
+- column  When the conversion fails
+- row  `Decodable`  `Int is Decodable in Text`  raises a typed error
+- row  `Extractable`  `Text is Extractable to Int`  yields `Unset`
+- row  `Irrefutable`  `Byte is Irrefutable to Int`  cannot fail
+- row  `Identifiable`  `Identifiable[Column]`  cannot fail; it maps a name both ways
++ column  型クラス
++ column  書き方
++ column  変換が失敗したとき
++ row  `Decodable`  `Int is Decodable in Text`  型付きのエラーを発生させる
++ row  `Extractable`  `Text is Extractable to Int`  `Unset` を返す
++ row  `Irrefutable`  `Byte is Irrefutable to Int`  失敗しない
++ row  `Identifiable`  `Identifiable[Column]`  失敗しない。名前を双方向に対応づける
+
+= row  `Identifiable`  `Identifiable[Column]`  cannot fail; it maps a name both ways
+- ```
++ ```
+
+- The names read as English, and state the direction of the conversion. A value which
+- `is Decodable in Text` is read *out of* text. Text which `is Extractable to Int` is read
+- *toward* an integer. An `Extractable` gives no result, instead of raising an error, which is
+- exactly what pattern matching wants.
++ 名前は英語として読め、変換の向きを示す。
++ `is Decodable in Text` である値は、テキスト*から*読み出される。
++ `is Extractable to Int` であるテキストは、整数*へ向けて*読まれる。
++ `Extractable` はエラーを発生させる代わりに結果を返さない。これはまさにパターンマッチが求めるものである。
+
+- The everyday surface is small: the `as` method and the `As` extractor. The sections below begin
+- there, and then turn to the typeclasses underneath and to writing instances for new types.
++ 日常的に使う表面は小さい。`as` メソッドと `As` 抽出子である。
++ 以下の節はそこから始め、次にその下にある型クラスと、新しい型のためのインスタンスの書き方に進む。
+
+- Everything comes from the `soundness` package. Decoding can fail, so it needs a [strategy] in
+- scope, and `throwUnsafely` throws an exception when a decode fails. The last import lets the
+- samples print their results:
++ すべては `soundness` パッケージから来る。
++ デコードは失敗しうるので、スコープに[戦略]が必要であり、`throwUnsafely` はデコードが失敗したときに例外を投げる。
++ 最後のインポートはサンプルが結果を表示できるようにする。
+
+= samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Decoding a value
++ ### 値のデコード
+
+- The `as` method reads a typed value out of text. The target type is named, and a `Decodable`
+- instance for it does the work:
++ `as` メソッドはテキストから型付きの値を読み出す。
++ 対象の型を指定すると、その型の `Decodable` インスタンスが処理を行う。
+
+= instance for it does the work:
+=
+- ```scala fuel
++ ```scala fuel
+
+= instance for it does the work:
+=
+= ```scala fuel
+- run
++ run
+
+= instance for it does the work:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"123".as[Int].show)
++ Out.println(t"123".as[Int].show)
+
+= Out.println(t"123".as[Int].show)
+- ```
++ ```
+
+- Text which is not a number raises a `Number.Error`:
++ 数でないテキストは `Number.Error` を発生させる。
+
+= Text which is not a number raises a `Number.Error`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Text which is not a number raises a `Number.Error`:
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- t"hello".as[Int]
++ t"hello".as[Int]
+
+= t"hello".as[Int]
+- ```
++ ```
+
+- A `Number.Error` has a reason. Text which is not a number at all is *unparseable*, while a
+- number outside the target type's range is *out of range*. Decoding to a `Byte` shows both:
++ `Number.Error` には理由がある。
++ まったく数でないテキストは*解析不能*であり、対象の型の範囲外の数は*範囲外*である。
++ `Byte` へのデコードで両方が分かる。
+
+= number outside the target type's range is *out of range*. Decoding to a `Byte` shows both:
+=
+- ```scala fuel
++ ```scala fuel
+
+= number outside the target type's range is *out of range*. Decoding to a `Byte` shows both:
+=
+= ```scala fuel
+- run
++ run
+
+= number outside the target type's range is *out of range*. Decoding to a `Byte` shows both:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(capture[Number.Error](t"300".as[Byte]).reason.inspect)
++ Out.println(capture[Number.Error](t"300".as[Byte]).reason.inspect)
+
+- Out.println(capture[Number.Error](t"abc".as[Byte]).reason.inspect)
++ Out.println(capture[Number.Error](t"abc".as[Byte]).reason.inspect)
+
+= Out.println(capture[Number.Error](t"abc".as[Byte]).reason.inspect)
+- ```
++ ```
+
+- The strategy which handles a failed decode is chosen by the caller, not fixed by the decoder.
+- [`safely`](errors.md#choosing-a-strategy) turns a failure into `Unset`, so falling back to a
+- default is one more method call:
++ 失敗したデコードを処理する戦略は、デコーダーが固定するのではなく、呼び出し側が選ぶ。
++ [`safely`](errors.md#choosing-a-strategy) は失敗を `Unset` に変えるので、デフォルト値にフォールバックするにはメソッド呼び出しを一つ足すだけでよい。
+
+= default is one more method call:
+=
+- ```scala fuel
++ ```scala fuel
+
+= default is one more method call:
+=
+= ```scala fuel
+- run
++ run
+
+= default is one more method call:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(safely(t"hello".as[Int]).or(0).show)
++ Out.println(safely(t"hello".as[Int]).or(0).show)
+
+= Out.println(safely(t"hello".as[Int]).or(0).show)
+- ```
++ ```
+
+- A type with no `Decodable` instance cannot be asked for, and the compiler says so:
++ `Decodable` インスタンスのない型は求めることができず、コンパイラがそう告げる。
+
+= A type with no `Decodable` instance cannot be asked for, and the compiler says so:
+=
+- ```scala
++ ```scala
+
+- class Widget()
++ class Widget()
+
+= class Widget()
+- ```
++ ```
+
+= class Widget()
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- t"sprocket".as[Widget]
++ t"sprocket".as[Widget]
+
+= t"sprocket".as[Widget]
+- ```
++ ```
+
+- Instances are built in for the primitive number types, for `Char`, and for types defined
+- elsewhere in Soundness, such as `Uuid` and `Fqcn`. Other parts of Soundness add their own, which
+- is why the same `as` reads a [date](time.md), a
+- [hostname or a URL](network-addresses.md#parsing-at-runtime):
++ インスタンスは、プリミティブの数値型、`Char`、および `Uuid` や `Fqcn` など Soundness の他の場所で定義された型に組み込まれている。
++ Soundness の他の部分も独自のインスタンスを加える。
++ 同じ `as` が[日付](time.md)や[ホスト名や URL](network-addresses.md#parsing-at-runtime)を読めるのはそのためである。
+
+= [hostname or a URL](network-addresses.md#parsing-at-runtime):
+=
+- ```scala
++ ```scala
+
+- val date = t"2024-01-15".as[Date]
++ val date = t"2024-01-15".as[Date]
+
+- val host = t"example.com".as[Hostname]
++ val host = t"example.com".as[Hostname]
+
+= val host = t"example.com".as[Hostname]
+- ```
++ ```
+
+- #### Booleans
++ #### 真偽値
+
+- A `Boolean` decodes from `true` or `false`, in any case, with or without space around it.
+- Anything else raises a `Truth.Error`. The other spellings a tool might accept are each a `Truth`
+- in the package `truths`:
++ `Boolean` は、大文字小文字を問わず、前後の空白の有無も問わず、`true` または `false` からデコードされる。
++ それ以外は `Truth.Error` を発生させる。
++ ツールが受け付けうる他の綴りは、それぞれパッケージ `truths` の `Truth` である。
+
+= in the package `truths`:
+=
+- ```tabular
++ ```tabular
+
+- column  Given
+- column  True
+- column  False
++ column  given
++ column  真
++ column  偽
+
+- row  `yesNoTruth`  `yes`  `no`
++ row  `yesNoTruth`  `yes`  `no`
+
+- row  `onOffTruth`  `on`  `off`
++ row  `onOffTruth`  `on`  `off`
+
+- row  `oneZeroTruth`  `1`  `0`
++ row  `oneZeroTruth`  `1`  `0`
+
+= row  `oneZeroTruth`  `1`  `0`
+- ```
++ ```
+
+- Every `Truth` in scope is accepted beside the default. Importing one adds spellings, and takes
+- none away:
++ スコープにあるすべての `Truth` が、デフォルトと並んで受け付けられる。
++ 一つをインポートすると綴りが加わり、どれも取り除かれない。
+
+= none away:
+=
+- ```scala
++ ```scala
+
+- import truths.yesNoTruth
++ import truths.yesNoTruth
+
+= import truths.yesNoTruth
+- ```
++ ```
+
+= import truths.yesNoTruth
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import truths.yesNoTruth
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import truths.yesNoTruth
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"yes".as[Boolean].inspect)
++ Out.println(t"yes".as[Boolean].inspect)
+
+- Out.println(t"True".as[Boolean].inspect)
++ Out.println(t"True".as[Boolean].inspect)
+
+= Out.println(t"True".as[Boolean].inspect)
+- ```
++ ```
+
+- ### Policies for optional fields
++ ### オプショナルなフィールドのポリシー
+
+- Every data format which decodes an `Optional` field answers the same three questions, and by
+- default answers them the same way. That covers [JSON](json.md#optional-fields-and-defaults),
+- [CBOR](cbor.md), [YAML](yaml.md), [XML](xml.md), [TEL](tel.md) and
+- [delimited text](csv.md). Taking JSON as the example:
++ `Optional` フィールドをデコードするデータ形式はどれも同じ三つの問いに答え、デフォルトでは同じように答える。
++ これは [JSON](json.md#optional-fields-and-defaults)、[CBOR](cbor.md)、[YAML](yaml.md)、[XML](xml.md)、[TEL](tel.md)、[区切りテキスト](csv.md)に当てはまる。
++ JSON を例に取る。
+
+= [delimited text](csv.md). Taking JSON as the example:
+=
+- ```tabular
++ ```tabular
+
+- column  A field which is
+- column  Reads as
+- column  Unless
+- row  omitted from the document  `Unset`  `strictJsonAbsence` makes it an error
+- row  an explicit null  `Unset`  `strictJsonNulls` hands it to the inner decoder
+- row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
++ column  フィールドが
++ column  読まれ方
++ column  例外
++ row  文書から省略されている  `Unset`  `strictJsonAbsence` はこれをエラーにする
++ row  明示的な null である  `Unset`  `strictJsonNulls` はこれを内側のデコーダーに渡す
++ row  存在するが内側のデコーダーに拒否される  エラー  `lenientJsonFaults` はこれを `Unset` として読む
+
+= row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
+- ```
++ ```
+
+- Each answer is a policy, indexed by the format, with a default in its companion:
++ それぞれの答えは形式によって索引づけられたポリシーであり、デフォルトはそのコンパニオンにある。
+
+= Each answer is a policy, indexed by the format, with a default in its companion:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Each answer is a policy, indexed by the format, with a default in its companion:
+=
+= ```scala fuel
+- run
++ run
+
+= Each answer is a policy, indexed by the format, with a default in its companion:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Decodable.Absence in Text].strict.inspect)
++ Out.println(summon[Decodable.Absence in Text].strict.inspect)
+
+- Out.println(summon[Decodable.Nullity in Text].strict.inspect)
++ Out.println(summon[Decodable.Nullity in Text].strict.inspect)
+
+- Out.println(summon[Decodable.Fault in Text].strict.inspect)
++ Out.println(summon[Decodable.Fault in Text].strict.inspect)
+
+= Out.println(summon[Decodable.Fault in Text].strict.inspect)
+- ```
++ ```
+
+- A format's `optionalityOptions` package offers the other answer to each question, named for the
+- format. One answer can therefore be changed without touching the others, and JSON can be strict
+- where, in the same scope, CSV stays lenient. These are the givens which change a default. A
+- format with no null has no policy for nulls:
++ 形式の `optionalityOptions` パッケージは、それぞれの問いに対するもう一方の答えを、形式の名前を付けて提供する。
++ したがって一つの答えを他に触れずに変えることができ、同じスコープの中で JSON を厳格にしつつ CSV を寛容なままにしておける。
++ これらがデフォルトを変える given である。
++ null のない形式には null のポリシーがない。
+
+= format with no null has no policy for nulls:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Omitted is an error
+- column  Null goes to the decoder
+- column  Rejected is `Unset`
++ column  形式
++ column  省略はエラー
++ column  null はデコーダーへ
++ column  拒否は `Unset`
+
+- row  JSON  `strictJsonAbsence`  `strictJsonNulls`  `lenientJsonFaults`
++ row  JSON  `strictJsonAbsence`  `strictJsonNulls`  `lenientJsonFaults`
+
+- row  YAML  `strictYamlAbsence`  `strictYamlNulls`  `lenientYamlFaults`
++ row  YAML  `strictYamlAbsence`  `strictYamlNulls`  `lenientYamlFaults`
+
+- row  CBOR  `strictCborAbsence`  `strictCborNulls`  `lenientCborFaults`
++ row  CBOR  `strictCborAbsence`  `strictCborNulls`  `lenientCborFaults`
+
+- row  TEL
++ row  TEL
+
+-   cell  `strictTelAbsence`
++   cell  `strictTelAbsence`
+
+=   cell  `strictTelAbsence`
+-   cell
++   cell
+
+-   cell  `lenientTelFaults`
++   cell  `lenientTelFaults`
+
+- row  XML
++ row  XML
+
+-   cell  `strictXmlAbsence`
++   cell  `strictXmlAbsence`
+
+=   cell  `strictXmlAbsence`
+-   cell
++   cell
+
+-   cell  `lenientXmlFaults`
++   cell  `lenientXmlFaults`
+
+- row  Delimited text
++ row  区切りテキスト
+
+-   cell  `strictDsvAbsence`
++   cell  `strictDsvAbsence`
+
+=   cell  `strictDsvAbsence`
+-   cell
++   cell
+
+-   cell  `lenientDsvFaults`
++   cell  `lenientDsvFaults`
+
+=   cell  `lenientDsvFaults`
+- ```
++ ```
+
+- Each package also names the default answers, `lenientJsonAbsence`, `strictJsonFaults` and so on,
+- for a scope which must restore one.
++ 各パッケージはデフォルトの答え `lenientJsonAbsence`、`strictJsonFaults` なども名指ししており、それを復元しなければならないスコープで使える。
+
+- A lenient *fault* decodes the value under the ambient tactic's
+- [`tolerate`](errors.md#tolerating-a-failure), so it records nothing even where errors are being
+- accumulated. `Option` fields follow the same policies, and give `None`. The tutorial for each
+- format shows the policies in use.
++ 寛容な*誤り*は、アンビエントな戦術の [`tolerate`](errors.md#tolerating-a-failure) のもとで値をデコードするので、エラーが蓄積されている場所でも何も記録しない。
++ `Option` フィールドも同じポリシーに従い、`None` を返す。
++ 各形式のチュートリアルは、ポリシーが使われる様子を示している。
+
+- ### Extracting in patterns
++ ### パターンでの抽出
+
+- Pattern matching needs a conversion which declines to match, instead of raising an error. That
+- is the `As` extractor. `As[Int]` succeeds when the value being matched yields an `Int`, and
+- falls through to the next case when it does not:
++ パターンマッチには、エラーを発生させる代わりにマッチを断る変換が必要である。
++ それが `As` 抽出子である。
++ `As[Int]` は、マッチされている値が `Int` を返すときに成功し、返さないときには次の case に進む。
+
+= falls through to the next case when it does not:
+=
+- ```scala
++ ```scala
+
+- def number(text: Text): Int = text match
++ def number(text: Text): Int = text match
+
+-   case As[Int](number) => number
++   case As[Int](number) => number
+
+-   case _               => 0
++   case _               => 0
+
+=   case _               => 0
+- ```
++ ```
+
+=   case _               => 0
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _               => 0
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _               => 0
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(number(t"123").show)
++ Out.println(number(t"123").show)
+
+- Out.println(number(t"abc").show)
++ Out.println(number(t"abc").show)
+
+= Out.println(number(t"abc").show)
+- ```
++ ```
+
+- `As` is an ordinary [extractor](https://docs.scala-lang.org/tour/extractor-objects.html), so it
+- composes with every pattern Scala offers. It binds the groups of a
+- [regular expression](patterns.md), turning captured text into typed values in one step:
++ `As` は通常の[抽出子](https://docs.scala-lang.org/tour/extractor-objects.html)なので、Scala が提供するあらゆるパターンと組み合わさる。
++ [正規表現](patterns.md)のグループを束縛し、捕捉したテキストを一段階で型付きの値に変える。
+
+= [regular expression](patterns.md), turning captured text into typed values in one step:
+=
+- ```scala
++ ```scala
+
+- val time = t"12:13:14" match
++ val time = t"12:13:14" match
+
+-   case r"${As[Int](hours)}(\d+):${As[Int](minutes)}(\d+):${As[Int](seconds)}(\d+)" =>
++   case r"${As[Int](hours)}(\d+):${As[Int](minutes)}(\d+):${As[Int](seconds)}(\d+)" =>
+
+-     List(hours, minutes, seconds)
++     List(hours, minutes, seconds)
+
+-   case _ =>
++   case _ =>
+
+-     List(0, 0, 0)
++     List(0, 0, 0)
+
+=     List(0, 0, 0)
+- ```
++ ```
+
+- It nests inside larger patterns just as freely. This match takes a list apart and decodes each
+- element at once:
++ より大きなパターンの中にも同じく自由に入れ子にできる。
++ このマッチはリストを分解し、各要素を一度にデコードする。
+
+= element at once:
+=
+- ```scala
++ ```scala
+
+- val triple = List(t"12", t"13", t"14") match
++ val triple = List(t"12", t"13", t"14") match
+
+-   case As[Int](first) :: As[Int](second) :: As[Int](third) :: Nil => (first, second, third)
++   case As[Int](first) :: As[Int](second) :: As[Int](third) :: Nil => (first, second, third)
+
+-   case _                                                          => (0, 0, 0)
++   case _                                                          => (0, 0, 0)
+
+=   case _                                                          => (0, 0, 0)
+- ```
++ ```
+
+=   case _                                                          => (0, 0, 0)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                                                          => (0, 0, 0)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                                                          => (0, 0, 0)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(time.inspect)
++ Out.println(time.inspect)
+
+- Out.println(triple.inspect)
++ Out.println(triple.inspect)
+
+= Out.println(triple.inspect)
+- ```
++ ```
+
+- The extractor works for any type with a suitable instance, not only numbers. An email address
+- is extracted when it is well-formed, and declined otherwise, so a single match both validates
+- and converts:
++ 抽出子は、数だけでなく、適切なインスタンスを持つあらゆる型に使える。
++ メールアドレスは、正しい形式であれば抽出され、そうでなければ断られるので、一つのマッチで検証と変換の両方を行える。
+
+= and converts:
+=
+- ```scala
++ ```scala
+
+- def recipient(text: Text): EmailAddress = text match
++ def recipient(text: Text): EmailAddress = text match
+
+-   case As[EmailAddress](email) => email
++   case As[EmailAddress](email) => email
+
+-   case _                       => email"nobody@example.com"
++   case _                       => email"nobody@example.com"
+
+=   case _                       => email"nobody@example.com"
+- ```
++ ```
+
+=   case _                       => email"nobody@example.com"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                       => email"nobody@example.com"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                       => email"nobody@example.com"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(recipient(t"hamlet@example.com").show)
++ Out.println(recipient(t"hamlet@example.com").show)
+
+- Out.println(recipient(t"hamlet.example.com").show)
++ Out.println(recipient(t"hamlet.example.com").show)
+
+= Out.println(recipient(t"hamlet.example.com").show)
+- ```
++ ```
+
+- ### Narrowing and widening
++ ### 縮小と拡大
+
+- Numbers convert between widths, and the direction decides whether the conversion can fail.
+- Widening always succeeds: every `Byte` is an `Int`. Narrowing succeeds only when the value fits,
+- so it belongs to `As`, which simply declines when it does not:
++ 数は幅の間で変換され、その向きによって変換が失敗しうるかどうかが決まる。
++ 拡大は常に成功する。すべての `Byte` は `Int` である。
++ 縮小は値が収まるときにだけ成功するので、`As` に属する。`As` は収まらないときに単に断る。
+
+= so it belongs to `As`, which simply declines when it does not:
+=
+- ```scala
++ ```scala
+
+- def narrow(value: Int): Byte = value match
++ def narrow(value: Int): Byte = value match
+
+-   case As[Byte](byte) => byte
++   case As[Byte](byte) => byte
+
+-   case _              => -1
++   case _              => -1
+
+=   case _              => -1
+- ```
++ ```
+
+=   case _              => -1
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _              => -1
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _              => -1
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(narrow(100).show)
++ Out.println(narrow(100).show)
+
+- Out.println(narrow(300).show)
++ Out.println(narrow(300).show)
+
+= Out.println(narrow(300).show)
+- ```
++ ```
+
+- An [enumeration] is extracted by the name of its cases. There is no instance to write, since
+- the cases are read from the type:
++ [列挙型]はその case の名前によって抽出される。
++ case は型から読まれるので、書くべきインスタンスはない。
+
+= the cases are read from the type:
+=
+- ```scala
++ ```scala
+
+- enum Direction:
++ enum Direction:
+
+-   case North, South, East, West
++   case North, South, East, West
+
+- def direction(text: Text): Optional[Direction] = text match
++ def direction(text: Text): Optional[Direction] = text match
+
+-   case As[Direction](direction) => direction
++   case As[Direction](direction) => direction
+
+-   case _                        => Unset
++   case _                        => Unset
+
+=   case _                        => Unset
+- ```
++ ```
+
+=   case _                        => Unset
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                        => Unset
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                        => Unset
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(direction(t"North").inspect)
++ Out.println(direction(t"North").inspect)
+
+- Out.println(direction(t"Up").inspect)
++ Out.println(direction(t"Up").inspect)
+
+= Out.println(direction(t"Up").inspect)
+- ```
++ ```
+
+- ### Requiring a value
++ ### 値の必須性
+
+- Some types accept an empty input and some do not, and a form or a configuration often needs to
+- know which before it asks for a value. A type is *required* when an empty input cannot produce
+- one. That follows from the type's decoder, so no separate declaration is needed. The decoder is
+- simply run against the empty text, and whether it succeeds is the answer:
++ 空の入力を受け付ける型とそうでない型があり、フォームや設定は値を求める前にどちらなのかを知る必要があることが多い。
++ 空の入力から値を作れない型は*必須*である。
++ これは型のデコーダーから導かれるので、別の宣言は要らない。
++ デコーダーを空のテキストに対して実行するだけで、それが成功するかどうかが答えになる。
+
+= simply run against the empty text, and whether it succeeds is the answer:
+=
+- ```scala fuel
++ ```scala fuel
+
+= simply run against the empty text, and whether it succeeds is the answer:
+=
+= ```scala fuel
+- run
++ run
+
+= simply run against the empty text, and whether it succeeds is the answer:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(safely(t"".as[Int]).present.inspect)
++ Out.println(safely(t"".as[Int]).present.inspect)
+
+- Out.println(safely(t"".as[Text]).present.inspect)
++ Out.println(safely(t"".as[Text]).present.inspect)
+
+= Out.println(safely(t"".as[Text]).present.inspect)
+- ```
++ ```
+
+- An `Int` is required, since the empty text is not a number. A `Text` is not, since the empty
+- text is a `Text`. A [form](forms.md) marks its mandatory fields this way, without a second
+- declaration which could disagree with the decoder.
++ 空のテキストは数ではないので、`Int` は必須である。
++ 空のテキストは `Text` なので、`Text` は必須ではない。
++ [フォーム](forms.md)はこの方法で必須のフィールドに印を付けるので、デコーダーと食い違いうる二つ目の宣言は要らない。
+
+- ### Enumerations by name and position
++ ### 名前と位置による列挙型
+
+- An enumeration's cases are known to the compiler, so its `Enumerable` instance is
+- [derived][derivation] from the type, not written. The instance gives the enumeration's cases in
+- the order they were declared, and looks a case up by name or by [ordinal](numbers.md#ordinals).
+- Each lookup gives an `Optional`, since neither a name nor a position is guaranteed to correspond
+- to a case:
++ 列挙型の case はコンパイラが知っているので、その `Enumerable` インスタンスは書かれるのではなく、型から[導出される][導出]。
++ インスタンスは列挙型の case を宣言された順に与え、名前または[序数](numbers.md#ordinals)で case を引く。
++ 名前も位置も case に対応する保証はないので、どちらの検索も `Optional` を返す。
+
+= to a case:
+=
+- ```scala
++ ```scala
+
+- val enumerable = summon[Direction is Enumerable]
++ val enumerable = summon[Direction is Enumerable]
+
+= val enumerable = summon[Direction is Enumerable]
+- ```
++ ```
+
+= val enumerable = summon[Direction is Enumerable]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val enumerable = summon[Direction is Enumerable]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val enumerable = summon[Direction is Enumerable]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(enumerable.values.inspect)
++ Out.println(enumerable.values.inspect)
+
+- Out.println(enumerable.value(t"North").inspect)
++ Out.println(enumerable.value(t"North").inspect)
+
+- Out.println(enumerable.value(t"Up").inspect)
++ Out.println(enumerable.value(t"Up").inspect)
+
+- Out.println(enumerable.value(Prim).inspect)
++ Out.println(enumerable.value(Prim).inspect)
+
+- Out.println(enumerable.name(Direction.South))
++ Out.println(enumerable.name(Direction.South))
+
+- Out.println(enumerable.index(Direction.East).show)
++ Out.println(enumerable.index(Direction.East).show)
+
+= Out.println(enumerable.index(Direction.East).show)
+- ```
++ ```
+
+- This is the machinery beneath `As[Direction]`, beneath [bit flags](flags.md), and beneath the
+- handling of enumerations in every format's derived codecs, so all of them agree about what a
+- case is called.
++ これは `As[Direction]` の下、[ビットフラグ](flags.md)の下、そしてあらゆる形式の導出されたコーデックにおける列挙型の扱いの下にある仕組みなので、それらはすべて case の呼び名について一致する。
+
+- ### Round-tripping an identifier
++ ### 識別子の往復
+
+- Some conversions are not to a Scala type at all, but from one textual form to another: a
+- database column named `first_name` and a field named `firstName`, or a header written
+- `Content-Type` and read as `contentType`. An `Identifiable` states both directions of such a
+- mapping, as a pair of functions on text:
++ 変換の中には、Scala の型へではなく、あるテキスト形式から別のテキスト形式へのものがある。
++ `first_name` という名前のデータベースの列と `firstName` という名前のフィールド、あるいは `Content-Type` と書かれ `contentType` として読まれるヘッダーなどである。
++ `Identifiable` はそうした対応の両方向を、テキスト上の関数の組として記述する。
+
+= mapping, as a pair of functions on text:
+=
+- ```scala
++ ```scala
+
+- case class Column()
++ case class Column()
+
+- val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
++ val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
+
+= val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
+- ```
++ ```
+
+- The two functions convert a name into the convention and back, using the
+- [case conventions](text.md#case-conventions) of text.
++ 二つの関数は、テキストの[ケースの規約](text.md#case-conventions)を使って、名前をその規約へ変換し、また元に戻す。
+
+- `Identifiable` is a `Typeclass.Pure`, so the compiler knows that the conversion captures
+- nothing. It may be shared freely, and applied wherever the naming convention is needed, without
+- being passed along as an argument.
++ `Identifiable` は `Typeclass.Pure` なので、コンパイラはその変換が何も捕捉しないことを知っている。
++ それは自由に共有でき、引数として渡されることなく、命名規約が必要なところならどこでも適用できる。
+
+- ### Defining your own
++ ### 独自の定義
+
+- The four typeclasses are where decoding is extended. Writing an instance means writing the one
+- conversion function. The `as` method, the `As` extractor and the rest follow from it.
++ デコードはこの四つの型クラスで拡張される。
++ インスタンスを書くことは、一つの変換関数を書くことである。
++ `as` メソッド、`As` 抽出子、その他はそこから導かれる。
+
+- A `Decodable` instance maps each form of input it recognizes to a value. This one reads a
+- compass heading from a word:
++ `Decodable` インスタンスは、認識する入力の形それぞれを値に対応づける。
++ これは単語から方位を読む。
+
+= compass heading from a word:
+=
+- ```scala
++ ```scala
+
+- enum Heading:
++ enum Heading:
+
+-   case N, S, E, W
++   case N, S, E, W
+
+- object Heading:
++ object Heading:
+
+-   given (Heading is Decodable in Text) =
++   given (Heading is Decodable in Text) =
+
+-     case t"north" => N
++     case t"north" => N
+
+-     case t"south" => S
++     case t"south" => S
+
+-     case t"east"  => E
++     case t"east"  => E
+
+-     case t"west"  => W
++     case t"west"  => W
+
+=     case t"west"  => W
+- ```
++ ```
+
+=     case t"west"  => W
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=     case t"west"  => W
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=     case t"west"  => W
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"north".as[Heading].inspect)
++ Out.println(t"north".as[Heading].inspect)
+
+= Out.println(t"north".as[Heading].inspect)
+- ```
++ ```
+
+- An `Extractable` instance gives an `Optional` result, which is `Unset` for the inputs it
+- declines. It can be built on an existing instance. This bounded type borrows the extractor for
+- `Int`, and keeps only the values in its range:
++ `Extractable` インスタンスは `Optional` の結果を返し、断る入力に対しては `Unset` になる。
++ 既存のインスタンスの上に構築することもできる。
++ この範囲のある型は `Int` の抽出子を借り、範囲内の値だけを残す。
+
+= `Int`, and keeps only the values in its range:
+=
+- ```scala
++ ```scala
+
+- case class Percent(value: Int)
++ case class Percent(value: Int)
+
+- given (Text is Extractable to Int) => Text is Extractable to Percent =
++ given (Text is Extractable to Int) => Text is Extractable to Percent =
+
+-   case As[Int](number) if number >= 0 && number <= 100 => Percent(number)
++   case As[Int](number) if number >= 0 && number <= 100 => Percent(number)
+
+-   case _                                               => Unset
++   case _                                               => Unset
+
+=   case _                                               => Unset
+- ```
++ ```
+
+- The conversions built into Soundness follow these same shapes. A type defined this way is
+- decoded with `as`, matched with `As`, and composed into the patterns of every other type, with
+- no further wiring. The conversion is named once, and its fallibility lives in its type.
++ Soundness に組み込まれた変換も、これと同じ形に従う。
++ このように定義された型は、`as` でデコードされ、`As` でマッチされ、他のあらゆる型のパターンに組み込まれる。それ以上の配線は要らない。
++ 変換は一度だけ名付けられ、その失敗しうる性質はその型の中にある。
+
+- ### Related
++ ### 関連
+
+- - [JSON](json.md#case-classes-and-enumerations) and the other formats decode a whole document
+-   into a case class, using a `Decodable` instance for each text field.
+- - [Command-line parameters](cli.md) and [environment variables](environment.md) are decoded
+-   with `as`.
+- - [Patterns](patterns.md) captures the groups which `As` converts.
+- - [Errors](errors.md) covers the strategies which decide what a failed decode does.
+- - [Internationalization](internationalization.md), [interpolation](interpolation.md), [paths](paths.md), [sockets](sockets.md), [UUIDs](uuid.md) and [versioning](versioning.md) decode their values from text.
++ - [JSON](json.md#case-classes-and-enumerations) やその他の形式は、各テキストフィールドに `Decodable` インスタンスを使って、文書全体をケースクラスにデコードする。
++ - [コマンドライン引数](cli.md)と[環境変数](environment.md)は `as` でデコードされる。
++ - [パターン](patterns.md)は `As` が変換するグループを捕捉する。
++ - [エラー](errors.md)は、失敗したデコードが何をするかを決める戦略を扱う。
++ - [国際化](internationalization.md)、[補間](interpolation.md)、[パス](paths.md)、[ソケット](sockets.md)、[UUID](uuid.md)、[バージョニング](versioning.md)は、それぞれの値をテキストからデコードする。

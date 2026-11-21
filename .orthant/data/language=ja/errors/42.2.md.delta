@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.42.2` — Invalid ASCII character literal
++ # `↯/s.42.2` — 不正な ASCII 文字リテラル
+
+- Raised at compile time by Gossamer's ASCII literal macro when the
+- character is not in the ASCII range.
++ 文字が ASCII の範囲にないとき、Gossamer の ASCII リテラルのマクロによってコンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- Gossamer constrains certain literal forms (e.g. ASCII strings) to
+- the 7-bit ASCII subset. Non-ASCII characters are rejected.
++ Gossamer は、特定のリテラルの形式（たとえば ASCII 文字列）を 7 ビットの ASCII の部分集合に制限する。
++ ASCII でない文字は拒否される。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.42.2] é is not a valid ASCII character
++ [↯/s.42.2] é is not a valid ASCII character
+
+= [↯/s.42.2] é is not a valid ASCII character
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Use only ASCII characters in the literal, or use the corresponding
+- non-ASCII-aware type instead.
++ リテラルには ASCII 文字だけを使うか、代わりに ASCII 以外を扱える対応する型を使う。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/gossamer/src/core/gossamer.internal.scala`
++ - ソース：`lib/gossamer/src/core/gossamer.internal.scala`

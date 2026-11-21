@@ -1,0 +1,409 @@
+orthant 1 language
+
+- # Soundness Logging Standards
++ # Soundness のロギング標準
+
+- This document defines when, what, and how to log in the Soundness libraries. It
+- complements `syntax.md` (whitespace and formatting) and `naming.md` (factory
+- names). Examples are drawn from `lib/*/src/core/*.scala`.
++ この文書は、Soundness のライブラリで、いつ、何を、どのようにログに記録するかを定める。
++ これは `syntax.md`（空白と書式）と `naming.md`（ファクトリーの名前）を補う。
++ 例は `lib/*/src/core/*.scala` から取っている。
+
+- Logging is type-safe: a method that logs declares the requirement in its return
+- type with the `logs` infix type, and emits values of a module-specific `Event`
+- type — never raw strings. A `Logger` (a `Sink`) defined in the caller's scope
+- receives the events; with no logger in scope, logging is silent and free, so a
+- `logs` declaration imposes nothing on callers.
++ ロギングは型安全である。ログを記録するメソッドは、中置型 `logs` によってその要件を戻り値の型で宣言し、モジュール固有の `Event` 型の値を出力する。生の文字列は決して出力しない。
++ 呼び出し側のスコープで定義された `Logger`（`Sink`）がイベントを受け取る。スコープにロガーがなければ、ロギングは何も出力せず、コストもかからないので、`logs` の宣言は呼び出し側に何も課さない。
+
+- ## 1. When to log
++ ## 1. いつログを記録するか
+
+- A method should log if, and only if, it performs an **observable side effect with
+- latency or a failure mode**:
++ メソッドは、**レイテンシや失敗の可能性を伴う観測可能な副作用**を行う場合に、かつその場合に限り、ログを記録すべきである。
+
+= latency or a failure mode**:
+=
+- ```tabular
++ ```tabular
+
+- column  Category
+- column  Operations
+- row  Network  connect, bind, listen, accept, send, receive, close, upgrade
+- row  Filesystem  open, read, write, create, delete, move, symlink, watch
+- row  Process  spawn, kill, wait, signal
+- row  External services  HTTP requests, daemon protocols, Docker, package registries, downloads and uploads
++ column  分類
++ column  操作
++ row  ネットワーク  接続、バインド、リッスン、受け入れ、送信、受信、クローズ、アップグレード
++ row  ファイルシステム  オープン、読み込み、書き込み、作成、削除、移動、シンボリックリンク、監視
++ row  プロセス  起動、kill、待機、シグナル
++ row  外部サービス  HTTP リクエスト、デーモンのプロトコル、Docker、パッケージレジストリ、ダウンロードとアップロード
+
+= row  External services  HTTP requests, daemon protocols, Docker, package registries, downloads and uploads
+- ```
++ ```
+
+- Pure, CPU-bound, or in-memory work **must not** log: hashing, encryption, parsing,
+- codecs, serialization, arithmetic, and data-structure manipulation produce no
+- log output, however expensive.
++ 純粋な処理、CPU に縛られた処理、メモリ内の処理は、ログを記録しては**ならない**。ハッシュ、暗号化、パース、コーデック、直列化、算術、データ構造の操作は、どれほど高くついてもログを出力しない。
+
+- A method opts in by naming its event type in the return type:
++ メソッドは、戻り値の型でイベント型を名指すことによってロギングを選び取る。
+
+= A method opts in by naming its event type in the return type:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A method opts in by naming its event type in the return type:
+=
+= ```scala fuel
+- substitute ???  ...
++ substitute ???  ...
+
+= A method opts in by naming its event type in the return type:
+=
+= ```scala fuel
+= substitute ???  ...
+- ##
++ ##
+
+- def fetch(url: HttpUrl): Http.Response logs Http.Event = ???
++ def fetch(url: HttpUrl): Http.Response logs Http.Event = ???
+
+= def fetch(url: HttpUrl): Http.Response logs Http.Event = ???
+- ```
++ ```
+
+- A method may log more than one event type by chaining:
++ メソッドは連鎖させることで、複数のイベント型をログに記録できる。
+
+= A method may log more than one event type by chaining:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A method may log more than one event type by chaining:
+=
+= ```scala fuel
+- substitute ???  ...
++ substitute ???  ...
+
+= A method may log more than one event type by chaining:
+=
+= ```scala fuel
+= substitute ???  ...
+- ##
++ ##
+
+- def shutdown(server: Pid): Unit logs Http.Event logs Exec.Event = ???
++ def shutdown(server: Pid): Unit logs Http.Event logs Exec.Event = ???
+
+= def shutdown(server: Pid): Unit logs Http.Event logs Exec.Event = ???
+- ```
++ ```
+
+- Do **not** add a `logs` requirement (or a `Log` call) inside a method that
+- implements a typeclass's abstract method — the extra context parameter changes
+- the signature and breaks the override. Log in the public extension method that
+- *calls* the typeclass instead; that is also the right granularity (one entry per
+- user-level operation, not per internal dispatch).
++ 型クラスの抽象メソッドを実装するメソッドの中には、`logs` の要件（または `Log` の呼び出し）を加えては**ならない**。余分なコンテキストパラメーターがシグネチャを変え、オーバーライドを壊すからである。
++ 代わりに、型クラスを*呼び出す*公開の拡張メソッドでログを記録すること。それは粒度としても正しい（内部のディスパッチごとではなく、ユーザーレベルの操作ごとに一つのエントリー）。
+
+- ## 2. Levels
++ ## 2. レベル
+
+- `Level` has four values, chosen by **frequency and severity** together:
++ `Level` には四つの値があり、**頻度と重大度**を合わせて選ぶ。
+
+= `Level` has four values, chosen by **frequency and severity** together:
+=
+- ```tabular
++ ```tabular
+
+- column  Level
+- column  For
+- column  Examples
+- row  `Fine`  high-frequency, per-unit detail useful only while debugging  each frame, packet, file open, request received, cache hit
+- row  `Info`  one line per significant logical operation or lifecycle milestone  a connection established, a server now listening, a request sent, a process started, an archive opened, a download finished
+- row  `Warn`  a recoverable or unexpected-but-handled condition  a forced kill, a connection reset or retry, a broken stream, an idle timeout, a gracefully handled protocol violation, a fallback taken
++ column  レベル
++ column  用途
++ column  例
++ row  `Fine`  デバッグ中にのみ役立つ、高頻度で単位ごとの詳細  各フレーム、パケット、ファイルのオープン、受信したリクエスト、キャッシュヒット
++ row  `Info`  重要な論理的操作やライフサイクルの節目ごとに一行  確立した接続、リッスンを開始したサーバー、送信したリクエスト、開始したプロセス、オープンしたアーカイブ、完了したダウンロード
++ row  `Warn`  回復可能な、あるいは予期しないが処理された状態  強制的な kill、接続のリセットや再試行、壊れたストリーム、アイドルタイムアウト、穏便に処理されたプロトコル違反、代替の経路の選択
+
+- row  `Fail`
++ row  `Fail`
+
+-   cell  an operation that failed unrecoverably, emitted alongside the `Error` being raised; used sparingly
++   cell  回復できずに失敗した操作。発生させる `Error` と並んで出力する。控えめに使う
+
+-   cell
++   cell
+
+=   cell
+- ```
++ ```
+
+- Assume `Fine` is normally switched off, and be verbose at it: a per-packet send
+- is `Fine` even though it is "normal", while a one-per-connection bind is `Info`.
++ `Fine` は通常は無効にされていると想定し、そのレベルでは冗長に記録すること。パケットごとの送信は「正常」であっても `Fine` であり、接続ごとに一回のバインドは `Info` である。
+
+- ## 3. What to log
++ ## 3. 何をログに記録するか
+
+- - **Identify the resource**: address and port, path, PID, URL, stream id, archive
+-   or entry name, container id.
+- - **Quantify when cheap**: byte counts, entry counts, elapsed milliseconds,
+-   status codes, exit codes.
+- - **Never log secrets**: credentials, tokens, cookies, key material, authorization
+-   headers, or whole request and response bodies. Log a redaction, a size, or a
+-   short preview instead.
+- - **Bound the size**: log lengths and previews, not entire payloads.
+- - **Carry typed fields**, not pre-formatted strings. The event case holds the
+-   values; the `Communicable` instance does the formatting (§4). This keeps the
+-   event type-safe and lets the rendering vary by sink.
++ - **リソースを特定する**：アドレスとポート、パス、PID、URL、ストリームの id、アーカイブやエントリーの名前、コンテナーの id。
++ - **安く済むなら数量を示す**：バイト数、エントリー数、経過ミリ秒、ステータスコード、終了コード。
++ - **秘密は決してログに記録しない**：認証情報、トークン、クッキー、鍵の素材、認可ヘッダー、リクエストやレスポンスの本文全体。代わりに、伏せ字、大きさ、短いプレビューを記録する。
++ - **大きさを制限する**：ペイロード全体ではなく、長さとプレビューを記録する。
++ - **型付きのフィールドを運ぶ**。あらかじめ書式化した文字列ではない。イベントのケースが値を保持し、`Communicable` インスタンスが書式化を行う（§4）。これによってイベントは型安全に保たれ、描画をシンクごとに変えられる。
+
+- ### Cost when disabled
++ ### 無効なときのコスト
+
+- `Log.fine`/`info`/`warn`/`fail` take their argument **by name**, and
+- `Loggable.fanOut` consults each sink's `accepts(level)` *before* forcing it. So
+- when no sink is in scope, or none accepts the level, the event value is never
+- constructed and its fields are never evaluated — a disabled log statement costs
+- nothing. Write log calls freely; do not guard them.
++ `Log.fine`/`info`/`warn`/`fail` は引数を**名前渡し**で受け取り、`Loggable.fanOut` は引数を強制評価する*前に*、各シンクの `accepts(level)` を確かめる。
++ そのため、スコープにシンクがないか、どのシンクもそのレベルを受け入れないとき、イベントの値は決して構築されず、そのフィールドは決して評価されない。無効にされたログ文のコストはゼロである。
++ ログの呼び出しは自由に書き、ガードしないこと。
+
+- Because of this, prefer passing the **original typed values** into the event and
+- letting the `Communicable` render them, rather than converting at the call site:
++ このため、呼び出し箇所で変換するよりも、**元の型付きの値**をイベントに渡し、`Communicable` にそれを描画させるほうがよい。
+
+= letting the `Communicable` render them, rather than converting at the call site:
+=
+- ```scala
++ ```scala
+
+- def send(method: Http.Method, url: HttpUrl, headers: List[Http.Header]): Unit logs Http.Event =
++ def send(method: Http.Method, url: HttpUrl, headers: List[Http.Header]): Unit logs Http.Event =
+
+-   Log.info(Http.Event.Send(method, url, headers))   // typed fields; rendering deferred
++   Log.info(Http.Event.Send(method, url, headers))   // typed fields; rendering deferred
+
+=   Log.info(Http.Event.Send(method, url, headers))   // typed fields; rendering deferred
+- ```
++ ```
+
+- Both forms are free when disabled (the argument is by-name), but typed fields
+- keep the event type-safe and let the rendering vary by sink.
++ 無効なときはどちらの形もコストがかからない（引数は名前渡しである）が、型付きのフィールドはイベントを型安全に保ち、描画をシンクごとに変えられるようにする。
+
+- **Exception — call-site context.** When rendering a value needs information only
+- available at the call site (for example, a `serpentine.Path on plane` whose
+- textual form depends on its `plane`), capture the rendered `Text` *there*:
++ **例外：呼び出し箇所の文脈。** 値の描画に呼び出し箇所でしか得られない情報が必要なとき（たとえば、テキストとしての形式がその `plane` に依存する `serpentine.Path on plane`）は、描画した `Text` を*そこで*取り込むこと。
+
+= textual form depends on its `plane`), capture the rendered `Text` *there*:
+=
+- ```scala
++ ```scala
+
+- def move[plane: Filesystem](source: Path on plane, destination: Path on plane): Unit logs Io.Event =
++ def move[plane: Filesystem](source: Path on plane, destination: Path on plane): Unit logs Io.Event =
+
+-   Log.info(Io.Event.Move(source.show, destination.show))   // path rendering needs `plane`
++   Log.info(Io.Event.Move(source.show, destination.show))   // path rendering needs `plane`
+
+=   Log.info(Io.Event.Move(source.show, destination.show))   // path rendering needs `plane`
+- ```
++ ```
+
+- This is correct, not a compromise: the `.show` runs at the (by-name) call site
+- where the context exists, and still only when the event is actually logged.
++ これは妥協ではなく、正しいやり方である。`.show` は文脈が存在する（名前渡しの）呼び出し箇所で実行され、それでもイベントが実際にログに記録されるときにしか実行されない。
+
+- ## 4. Event types
++ ## 4. イベント型
+
+- Each module that logs defines a single `enum` named `Event`, nested in the
+- object that names its domain (`Exec.Event`, `Http.Event`, `Io.Event`), with the
+- companion `object` before the `enum` (L3). Cases are CamelCase verb or noun
+- phrases carrying the relevant values as typed fields, and each extends the
+- `Log` categories it belongs to:
++ ログを記録する各モジュールは、`Event` という名前の `enum` を一つだけ定義し、それをそのドメインを名指すオブジェクト（`Exec.Event`、`Http.Event`、`Io.Event`）の中に入れ子にし、コンパニオンの `object` を `enum` の前に置く（L3）。
++ ケースは、関連する値を型付きのフィールドとして運ぶ、キャメルケースの動詞句または名詞句であり、それぞれが属する `Log` のカテゴリーを継承する。
+
+= `Log` categories it belongs to:
+=
+- ```scala
++ ```scala
+
+- object Exec:
++ object Exec:
+
+-   object Event:
++   object Event:
+
+-     given communicable: Event is Communicable =
++     given communicable: Event is Communicable =
+
+-       case AbortProcess(pid)       => m"aborted the process with PID $pid"
++       case AbortProcess(pid)       => m"aborted the process with PID $pid"
+
+-       case PipelineStart(commands) => m"starting the pipeline ${commands.map(_.show).join(t" ")}"
++       case PipelineStart(commands) => m"starting the pipeline ${commands.map(_.show).join(t" ")}"
+
+-       case KillProcess(pid)        => m"killed the process with PID $pid"
++       case KillProcess(pid)        => m"killed the process with PID $pid"
+
+-       case ProcessStart(command)   => m"starting the process $command"
++       case ProcessStart(command)   => m"starting the process $command"
+
+-   enum Event:
++   enum Event:
+
+-     case ProcessStart(command: Command) extends Event, Log.Process
++     case ProcessStart(command: Command) extends Event, Log.Process
+
+-     case AbortProcess(pid: Pid) extends Event, Log.Process
++     case AbortProcess(pid: Pid) extends Event, Log.Process
+
+-     case PipelineStart(commands: List[Command]) extends Event, Log.Process
++     case PipelineStart(commands: List[Command]) extends Event, Log.Process
+
+-     case KillProcess(pid: Pid) extends Event, Log.Process
++     case KillProcess(pid: Pid) extends Event, Log.Process
+
+=     case KillProcess(pid: Pid) extends Event, Log.Process
+- ```
++ ```
+
+- The companion holds a `given communicable: <Event> is Communicable` that maps each
+- case to an `m"..."` message, with the `=>` arrows aligned (Consequent Style `T1`).
++ コンパニオンは、各ケースを `m"..."` メッセージに対応付ける `given communicable: <Event> is Communicable` を持ち、`=>` の矢印を揃える（Consequent Style `T1`）。
+
+- The event type must be exported into the `soundness` package (L4).
++ イベント型は `soundness` パッケージにエクスポートしなければならない（L4）。
+
+- ### Composing with `Exec.Event`
++ ### `Exec.Event` との組み合わせ
+
+- A module that shells out to a subprocess reuses `guillotine.Exec.Event` by
+- transcribing it into its own event, rather than duplicating process cases:
++ サブプロセスを呼び出すモジュールは、プロセスのケースを複製するのではなく、`guillotine.Exec.Event` を自身のイベントに転記することで再利用する。
+
+= transcribing it into its own event, rather than duplicating process cases:
+=
+- ```scala
++ ```scala
+
+- given execEvent: CliEvent transcribes guillotine.Exec.Event = CliEvent.Exec(_)
++ given execEvent: CliEvent transcribes guillotine.Exec.Event = CliEvent.Exec(_)
+
+= given execEvent: CliEvent transcribes guillotine.Exec.Event = CliEvent.Exec(_)
+- ```
++ ```
+
+- (existing pattern: `CliEvent`, `octogenarian.Commandline.Event`).
++ （既存のパターン：`CliEvent`、`octogenarian.Commandline.Event`）。
+
+- ## 5. Message style
++ ## 5. メッセージのスタイル
+
+- Log messages are lowercase, terse, present-tense, with no trailing period, and
+- interpolate the relevant context — matching the house style for `fulminate`
+- error messages (see `messages.md`):
++ ログメッセージは小文字で、簡潔で、現在時制であり、末尾にピリオドを付けず、関連する文脈を埋め込む。これは `fulminate` のエラーメッセージのハウススタイルに合わせたものである（`messages.md` を参照）。
+
+= error messages (see `messages.md`):
+=
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+= parse
+- ##
++ ##
+
+- m"connected to $remote"
++ m"connected to $remote"
+
+- m"opened $path for reading"
++ m"opened $path for reading"
+
+- m"killed process $pid"
++ m"killed process $pid"
+
+- m"downloaded $url ($size bytes in ${elapsed}ms)"
++ m"downloaded $url ($size bytes in ${elapsed}ms)"
+
+= m"downloaded $url ($size bytes in ${elapsed}ms)"
+- ```
++ ```
+
+- A message must say something specific: `m"a failure occurred"` is not acceptable —
+- name what failed and include the identifier.
++ メッセージは具体的なことを言わなければならない。`m"a failure occurred"` は受け入れられない。何が失敗したかを名指し、識別子を含めること。
+
+- ## 6. Emitting
++ ## 6. 出力
+
+- Call `Log.fine`, `Log.info`, `Log.warn`, or `Log.fail` with an event value at the
+- point the side effect happens:
++ 副作用が起きる時点で、イベントの値を渡して `Log.fine`、`Log.info`、`Log.warn`、`Log.fail` のいずれかを呼ぶ。
+
+= point the side effect happens:
+=
+- ```scala
++ ```scala
+
+- def start(command: Command, builder: ProcessBuilder): Unit logs Exec.Event =
++ def start(command: Command, builder: ProcessBuilder): Unit logs Exec.Event =
+
+-   Log.info(Exec.Event.ProcessStart(command))
++   Log.info(Exec.Event.ProcessStart(command))
+
+-   builder.start()
++   builder.start()
+
+=   builder.start()
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- def kill(pid: Pid, process: java.lang.Process): Unit logs Exec.Event =
++ def kill(pid: Pid, process: java.lang.Process): Unit logs Exec.Event =
+
+-   Log.warn(Exec.Event.KillProcess(pid))
++   Log.warn(Exec.Event.KillProcess(pid))
+
+-   process.destroyForcibly()
++   process.destroyForcibly()
+
+=   process.destroyForcibly()
+- ```
++ ```
+
+- A lifecycle event is logged once, at `Info`; a per-unit event (per frame, per
+- file) is logged at `Fine`; a handled anomaly is logged at `Warn`.
++ ライフサイクルのイベントは `Info` で一度だけ記録する。単位ごとのイベント（フレームごと、ファイルごと）は `Fine` で記録する。処理された異常は `Warn` で記録する。

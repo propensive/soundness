@@ -1,0 +1,41 @@
+orthant 1 language
+
+- The surface has already been measured: `etc/api-reduction-candidates.md` inventories every
+- identifier the `soundness` package exports, and classifies the reduction candidates:
++ 表面はすでに測定されている。`etc/api-reduction-candidates.md` は `soundness` パッケージがエクスポートするすべての識別子を一覧にし、削減の候補を分類している。
+
+- Done when: the rename table in `etc/api-nesting-proposal.md` (which superseded the C1
+- section) is fully applied, and the inventory's "Remaining names by prefix family" section
+- lists no name outside "Reviewed items which should not be moved".
++ 完了条件：`etc/api-nesting-proposal.md`（C1 の節に取って代わった）の改名表が完全に適用され、一覧の「Remaining names by prefix family」の節に、「Reviewed items which should not be moved」の外にある名前が一つもないこと。
+
+- Done when: the C2 section of the inventory is empty. (C3 and C3b were superseded by
+- `etc/api-nesting-proposal.md` and closed with it.)
++ 完了条件：一覧の C2 の節が空になること。（C3 と C3b は `etc/api-nesting-proposal.md` に取って代わられ、それとともに閉じられた。）
+
+- The naming standards in `doc/work/standards/naming.md` and `doc/work/standards/given-naming.md` gain a
+- conformance sweep, so that drift back into incoherence is caught mechanically rather than in
+- review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
+- nothing checks `naming.md`, though flare's `S1.1` rule enforces its one `unsafe…` clause.
++ `doc/work/standards/naming.md` と `doc/work/standards/given-naming.md` の命名規約に、適合性を一掃して調べる仕組みが加わる。そうすれば、一貫性のなさへの逆戻りは、レビューではなく機械的に捕まえられる。
++ `make build` が実行する `etc/check-given-uniqueness.py` は、given の命名の半分を扱う。`naming.md` を検査するものはないが、flare の `S1.1` 規則がその一つの `unsafe…` の条項を強制している。
+
+-     test -f etc/api-reduction-candidates.md || echo absent    # absent
++     test -f etc/api-reduction-candidates.md || echo absent    # absent
+
+- api-1 nests a name whose prefix repeats its context. This item covers the case with no prefix
+- to strip: a single word whose bare spelling claims a general concept when it names one
+- library's notion. ultimatum's layout tree is not *the* `Frame`. Each candidate is judged
+- case by case against rule R8 in `etc/api-nesting-proposal.md`. Convenience keeps a name
+- top-level only when it is the library's principal type, or a concept that really is general.
++ api-1 は、接頭辞がその文脈を繰り返している名前を入れ子にする。
++ この項目が扱うのは、取り除く接頭辞がない場合である。一つのライブラリの概念を名指ししているのに、そのむき出しの綴りが一般的な概念を主張している単一の語である。
++ ultimatum のレイアウトの木は、*唯一の* `Frame` ではない。
++ それぞれの候補は、`etc/api-nesting-proposal.md` の規則 R8 に照らして個別に判断される。
++ 利便性のために名前をトップレベルに残すのは、それがライブラリの主要な型であるか、本当に一般的な概念である場合だけである。
+
+- Done when: no name is exported into `package soundness` by more than one library, no
+- `@unexported` exists only to dodge a clash, and every row of the R8 tables in
+- `etc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept
+- top-level" list.
++ 完了条件：複数のライブラリによって `package soundness` にエクスポートされている名前がなく、衝突を避けるためだけの `@unexported` が存在せず、`etc/api-nesting-proposal.md` の R8 の表のすべての行が、適用されたか、その「Reviewed and kept top-level」の一覧に移されていること。

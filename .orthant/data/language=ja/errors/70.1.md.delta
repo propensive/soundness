@@ -1,0 +1,83 @@
+orthant 1 language
+
+- # `↯/s.70.1` — `Path.Error`
++ # `↯/s.70.1` — `Path.Error`
+
+- Raised when a path operation cannot proceed because the path is in
+- some way invalid.
++ パスが何らかの形で不正なために、パスの操作を進められないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Serpentine reports `Path.Error` for structural problems with paths —
+- operating on the root, mismatched roots between paths, malformed
+- roots, or invalid name components. The message is `the path $path
+- was invalid because $reason` (the `path` prefix is omitted when not
+- known).
++ Serpentine は、パスの構造上の問題について `Path.Error` を報告する。ルートに対する操作、パスの間のルートの不一致、不正な形のルート、不正な名前の成分である。
++ メッセージは `the path $path was invalid because $reason` である（`path` の部分は、分からないときは省かれる）。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.70.1.1` — `RootParent`
++ ### `↯/s.70.1.1` — `RootParent`
+
+- `parent` was called on a root path, which has no parent.
++ 親を持たないルートのパスに対して `parent` が呼ばれた。
+
+- **Example.** `[↯/s.70.1.1] the path /  was invalid because the root has no parent`
++ **例。** `[↯/s.70.1.1] the path /  was invalid because the root has no parent`
+
+- **Resolution.** Check whether the path is a root before requesting
+- its parent, or use an `Optional`-returning accessor.
++ **解決方法。** 親を求める前にパスがルートかどうかを確かめるか、`Optional` を返すアクセサーを使う。
+
+- ### `↯/s.70.1.2` — `InvalidRoot`
++ ### `↯/s.70.1.2` — `InvalidRoot`
+
+- The root component itself is malformed (for example a Windows path
+- that does not start with a drive letter or UNC root).
++ ルートの成分そのものが不正な形をしている（たとえば、ドライブレターや UNC のルートで始まらない Windows のパス）。
+
+- **Example.** `[↯/s.70.1.2] the path was invalid because the root is not valid`
++ **例。** `[↯/s.70.1.2] the path was invalid because the root is not valid`
+
+- **Resolution.** Construct paths via the typed `Path` API rather than
+- parsing arbitrary text, or pass a syntactically valid root.
++ **解決方法。** 任意のテキストをパースするのではなく型付きの `Path` API を通してパスを構築するか、構文的に正当なルートを渡す。
+
+- ### `↯/s.70.1.3` — `DifferentRoots`
++ ### `↯/s.70.1.3` — `DifferentRoots`
+
+- A relativisation or join was attempted between two paths that have
+- incompatible roots.
++ 両立しないルートを持つ二つのパスの間で、相対化や結合が試みられた。
+
+- **Example.** `[↯/s.70.1.3] the path was invalid because it does not have the same root as the source`
++ **例。** `[↯/s.70.1.3] the path was invalid because it does not have the same root as the source`
+
+- **Resolution.** Ensure both paths share the same root before
+- relativising; otherwise, work in absolute paths throughout.
++ **解決方法。** 相対化する前に、両方のパスが同じルートを共有していることを確かめる。そうでなければ、一貫して絶対パスで作業する。
+
+- ### `↯/s.70.1.4` — `InvalidName`
++ ### `↯/s.70.1.4` — `InvalidName`
+
+- A path component (name) is invalid for the target filesystem — for
+- example contains illegal characters or is reserved.
++ パスの成分（名前）が、対象のファイルシステムにとって不正である。たとえば使えない文字を含んでいたり、予約されていたりする。
+
+- **Example.** `[↯/s.70.1.4] the path was invalid because the name is not valid`
++ **例。** `[↯/s.70.1.4] the path was invalid because the name is not valid`
+
+- **Resolution.** Sanitise component names against the target
+- platform's rules before composing them into a path.
++ **解決方法。** 成分の名前をパスに組み立てる前に、対象のプラットフォームの規則に照らしてサニタイズする。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/serpentine/src/core/serpentine.Path.scala`
++ - ソース：`lib/serpentine/src/core/serpentine.Path.scala`

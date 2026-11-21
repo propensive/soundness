@@ -1,0 +1,1551 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base mandible
++ base mandible
+
+- import soundness
++ import soundness
+
+- info   JVM class files as values: methods, bytecode with simulated stacks, declaration surfaces and supertype closures
++ info   値としての JVM クラスファイル：メソッド、スタックをシミュレートしたバイトコード、宣言の表面、上位型の閉包
+
+- detail
++ detail
+
+-     _Mandible_ reads JVM class files — the `.class` output of `scalac` or `javac` — into
+-     immutable, typed values, so that a program can inspect what the compiler and the optimizer
+-     actually produced rather than assume it. It reads the files through the JDK's own
+-     `java.lang.classfile` API and presents three views of a class, each a value:
++     _Mandible_ は JVM クラスファイル（`scalac` や `javac` が出力する `.class`）を不変で型付きの値として読み込む。
++     これにより、プログラムはコンパイラとオプティマイザが実際に生成したものを、推測ではなく検査できる。
++     ファイルは JDK 自身の `java.lang.classfile` API を通じて読み込まれ、クラスは三つのビューとして提示される。
++     いずれも値である。
+
+-     - `Classfile` is the **bytecode** view: the methods of a class, each with its `Bytecode`,
+-       a list of `Bytecode.Instruction`s decoded to a typed `Bytecode.Opcode`, carrying the
+-       source line it came from and a simulation of the operand stack after it runs. It
+-       renders as a coloured table at a terminal, and `disassemble` compiles a quoted block
+-       and reads its bytecode straight back.
+-     - `ClassSurface` is the **declaration** view: the names, descriptors, access flags,
+-       supertypes and generic signatures a compiled consumer links against, and nothing that
+-       can legitimately differ between two builds of the same source.
+-     - `ClasspathIndex` resolves JVM internal class names to their `ClassSurface`s over a set
+-       of classes held in memory plus a classpath, and walks a class's supertype closure.
++     - `Classfile` は**バイトコード**のビューである。クラスのメソッドがそれぞれ `Bytecode` を持ち、それは型付きの `Bytecode.Opcode` にデコードされた `Bytecode.Instruction` のリストで、各命令は由来するソース行と、実行後のオペランドスタックのシミュレーションを持つ。端末では色付きの表として描画され、`disassemble` はクォートされたブロックをコンパイルして、そのバイトコードをそのまま読み戻す。
++     - `ClassSurface` は**宣言**のビューである。コンパイル済みの利用者がリンクする名前、記述子、アクセスフラグ、上位型、ジェネリックシグネチャを持ち、同じソースの二つのビルドの間で正当に異なりうるものは何も持たない。
++     - `ClasspathIndex` は、メモリ上に保持されたクラスの集合とクラスパスに対して、JVM の内部クラス名をその `ClassSurface` に解決し、クラスの上位型の閉包をたどる。
+
+=       of classes held in memory plus a classpath, and walks a class's supertype closure.
+=
+-     ```scala
++     ```scala
+
+=       of classes held in memory plus a classpath, and walks a class's supertype closure.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import classloaders.threadContextClassloader
++     import classloaders.threadContextClassloader
+
+-     val classfile: Optional[Classfile] = Classfile[StackTrace]
++     val classfile: Optional[Classfile] = Classfile[StackTrace]
+
+-     val bytecode: Optional[Bytecode] =
++     val bytecode: Optional[Bytecode] =
+
+-       classfile.let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
++       classfile.let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
+
+-     bytecode.let(_.instructions.map(_.opcode.show))
++     bytecode.let(_.instructions.map(_.opcode.show))
+
+=     bytecode.let(_.instructions.map(_.opcode.show))
+-     ```
++     ```
+
+-     A class file is found through the `Classloader` given in scope, chosen by name from the
+-     `classloaders` package (`import soundness.*` imports no givens), or read from any stream
+-     of bytes with `read[Classfile]`. The library has a single source set, `mandible.core`,
+-     which is JVM-only: it depends on `java.lang.classfile`, on the staging compiler for
+-     `disassemble` and on the JVM classpath. Everything is exported to the `soundness`
+-     umbrella.
++     クラスファイルは、スコープ内の given の `Classloader`（`classloaders` パッケージから名前で選ぶ。`import soundness.*` は given をインポートしない）を通じて見つけるか、`read[Classfile]` で任意のバイトのストリームから読み込む。
++     ライブラリのソースセットは `mandible.core` 一つだけで、JVM 専用である。
++     `java.lang.classfile`、`disassemble` のためのステージングコンパイラ、JVM のクラスパスに依存する。
++     すべてが `soundness` アンブレラにエクスポートされる。
+
+-     Rendering `Bytecode` to a terminal needs a `BytecodePalette` in scope, a `Palette` naming
+-     the colours for source references, source lines and the stack outline; no default
+-     palette is provided, so a program defines its own.
++     `Bytecode` を端末に描画するには、スコープ内に `BytecodePalette` が必要である。
++     これはソース参照、ソース行、スタックの輪郭の色を指定する `Palette` である。
++     デフォルトのパレットは提供されないので、プログラムが自分で定義する。
+
+- refer mandible.Classfile
++ refer mandible.Classfile
+
+- refer mandible.Bytecode
++ refer mandible.Bytecode
+
+- refer mandible.ClassSurface
++ refer mandible.ClassSurface
+
+- refer mandible.disassemble
++ refer mandible.disassemble
+
+- entry .Classfile   a parsed JVM class file: its methods, their bytecode and its source attributes
++ entry .Classfile   パースされた JVM クラスファイル：そのメソッド、メソッドのバイトコード、ソース属性
+
+= entry .Classfile   a parsed JVM class file: its methods, their bytecode and its source attributes
+-   detail
++   detail
+
+-       A `Classfile` wraps the bytes of one `.class` file, parsed on first use through the
+-       JDK's `java.lang.classfile` API. It is found on the classpath by name or by type, through
+-       the `Classloader` given in scope, or read from any source of bytes — a file, a resource,
+-       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
++       `Classfile` は一つの `.class` ファイルのバイトを包み、最初の使用時に JDK の `java.lang.classfile` API でパースする。
++       クラスパス上で名前または型によって、スコープ内の given の `Classloader` を通じて見つけるか、任意のバイトの供給源（ファイル、リソース、ストリーム）から `read[Classfile]` で読み込む。
++       `Aggregable by Data` だからである。
+
+=       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
+=
+-       ```scala
++       ```scala
+
+=       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+-       Classfile[StackTrace].let(_.methods.map(_.name))
++       Classfile[StackTrace].let(_.methods.map(_.name))
+
+-       Classfile(t"scala/Option.class").let(_.sourceFile)
++       Classfile(t"scala/Option.class").let(_.sourceFile)
+
+=       Classfile(t"scala/Option.class").let(_.sourceFile)
+-       ```
++       ```
+
+-       Its members are the parts a disassembler and a stack-trace resolver need: `#methods`,
+-       each a `Classfile.Method` whose `bytecode` is decoded on request; `#sourceFile`, the
+-       `SourceFile` attribute; and `#sourceDebugExtension`, the JSR-45 SMAP which maps the
+-       synthetic line numbers of inlined code back to where it was written. The declaration
+-       surface of a class — fields, flags, supertypes, signatures — is the separate
+-       `ClassSurface` view.
++       メンバーは、逆アセンブラとスタックトレースの解決器が必要とする部分である。
++       `#methods` はそれぞれが `Classfile.Method` で、その `bytecode` は要求に応じてデコードされる。
++       `#sourceFile` は `SourceFile` 属性である。
++       `#sourceDebugExtension` は JSR-45 の SMAP で、インライン化されたコードの合成された行番号を、それが書かれた場所へ対応付ける。
++       クラスの宣言の表面（フィールド、フラグ、上位型、シグネチャ）は、別の `ClassSurface` ビューである。
+
+-       A `Classfile` holds no capability: its bytes are copied in at construction, so the
+-       value may be kept, shared and passed freely.
++       `Classfile` はケイパビリティを保持しない。
++       バイトは構築時にコピーされるので、値は自由に保持し、共有し、受け渡せる。
+
+=       value may be kept, shared and passed freely.
+-   refer mandible.Bytecode
++   refer mandible.Bytecode
+
+=   refer mandible.Bytecode
+-   refer mandible.ClassSurface
++   refer mandible.ClassSurface
+
+=   refer mandible.ClassSurface
+-   refer mandible.disassemble
++   refer mandible.disassemble
+
+-   entry .Error   raised when a class file cannot be read
+-       Error `↯/s.88.2`: _there was an error reading the classfile_. Declared for readers of class
+-       files to raise; the `Classfile` constructor itself defers parsing until a member is
+-       first used, and `Classfile.apply` gives `Unset` for a class the classloader does not
+-       have rather than raising.
+-   entry .aggregable   reads a `Classfile` from any stream of bytes, as `read[Classfile]`
+-       The `Aggregable by Data` given which lets a file, a classpath resource or any other
+-       `Readable` source be read as a class file: the whole stream is collected into one `Data`
+-       and wrapped. The bytes are not parsed until a member of the result is used.
++   entry .Error   クラスファイルを読み込めないときに発生する
++       エラー `↯/s.88.2`：_there was an error reading the classfile_。
++       クラスファイルを読むものが発生させるために宣言されている。
++       `Classfile` のコンストラクター自体は、メンバーが最初に使われるまでパースを遅らせ、`Classfile.apply` はクラスローダーが持たないクラスに対してエラーを発生させず `Unset` を返す。
++   entry .aggregable   任意のバイトのストリームから `read[Classfile]` として `Classfile` を読み込む
++       ファイル、クラスパスのリソース、その他任意の `Readable` な供給源をクラスファイルとして読めるようにする `Aggregable by Data` の given である。
++       ストリーム全体が一つの `Data` に集められ、包まれる。
++       結果のメンバーが使われるまで、バイトはパースされない。
+
+=       and wrapped. The bytes are not parsed until a member of the result is used.
+=
+-       ```scala
++       ```scala
+
+=       and wrapped. The bytes are not parsed until a member of the result is used.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       and wrapped. The bytes are not parsed until a member of the result is used.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       and wrapped. The bytes are not parsed until a member of the result is used.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val classfile: Classfile = cp"/scala/Option.class".read[Classfile]
++       val classfile: Classfile = cp"/scala/Option.class".read[Classfile]
+
+=       val classfile: Classfile = cp"/scala/Option.class".read[Classfile]
+-       ```
++       ```
+
+-   entry .apply   the class file of a resource name, or of a type, through the `Classloader` in scope
+-       `Classfile(name)` reads the classpath resource at `name` — a JVM internal name with its
+-       extension, `scala/Option.class` — through the `Classloader` given in scope, and
+-       `Classfile[T]` finds the class of `T` by its `ClassTag` and reads the resource its
+-       binary name denotes, so a nested class resolves to `Outer$Nested.class`. Both give
+-       `Unset` when the classloader has no such resource.
++   entry .apply   リソース名または型のクラスファイルを、スコープ内の `Classloader` を通じて得る
++       `Classfile(name)` は、`name`（拡張子付きの JVM 内部名、`scala/Option.class`）にあるクラスパスのリソースを、スコープ内の given の `Classloader` を通じて読む。
++       `Classfile[T]` は `T` のクラスをその `ClassTag` で見つけ、そのバイナリ名が示すリソースを読むので、ネストしたクラスは `Outer$Nested.class` に解決される。
++       どちらも、クラスローダーがそのリソースを持たないときは `Unset` を返す。
+
+=       `Unset` when the classloader has no such resource.
+=
+-       ```scala
++       ```scala
+
+=       `Unset` when the classloader has no such resource.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Unset` when the classloader has no such resource.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+-       Classfile[StackTrace].let(_.methods.size)
++       Classfile[StackTrace].let(_.methods.size)
+
+-       Classfile(t"scala/Option.class").let(_.methods.size)
++       Classfile(t"scala/Option.class").let(_.methods.size)
+
+=       Classfile(t"scala/Option.class").let(_.methods.size)
+-       ```
++       ```
+
+-       The type form takes a `ClassTag`, so it works for a class or an object's type, but not
+-       for an unapplied type constructor; `Classloader[T]` in hellenism is the companion
+-       operation for finding the classloader itself.
+-   entry #sourceFile   the `SourceFile` attribute: the name of the source the class was compiled from
+-       The file name alone, `Option.scala`, with no directory, as the compiler records it; or
+-       `Unset` when the class file carries no such attribute, as some generated classes do not.
+-       It is the file name a stack trace reports, and `Bytecode#sourceFile` carries it on to
+-       the rendered listing.
+-   entry #sourceDebugExtension   the JSR-45 `SourceDebugExtension` attribute, as text, if present
+-       The body of the attribute is an SMAP, a source map which translates the synthetic line
+-       numbers the compiler allocates to inlined code back to the file and line they were
+-       written at, level by level. It is `Unset` for a class with no inlining. A stack-trace
+-       resolver reads it to give an inlined frame its real call-site line; `Smap.parse` in
+-       digression decodes the text.
+-   entry #methods   the methods of the class, in class-file order, each a `Classfile.Method`
+-       Constructors appear as `<init>`, a static initializer as `<clinit>`, and the compiler's
+-       synthetic methods — lambda bodies, bridges, default getters — under their compiled
+-       names. The list is computed once, on first use, and parsing happens then.
+-   entry #Method   one method of a class file, with its name and its decoded bytecode
++       型の形式は `ClassTag` を取るので、クラスやオブジェクトの型には使えるが、適用されていない型コンストラクターには使えない。
++       hellenism の `Classloader[T]` は、クラスローダー自体を見つけるための対になる操作である。
++   entry #sourceFile   `SourceFile` 属性：クラスのコンパイル元のソースの名前
++       コンパイラが記録するとおりの、ディレクトリを含まないファイル名だけ（`Option.scala`）である。
++       クラスファイルにその属性がなければ `Unset` で、生成されたクラスの中にはそういうものもある。
++       これはスタックトレースが報告するファイル名で、`Bytecode#sourceFile` がそれを描画されたリストへ引き継ぐ。
++   entry #sourceDebugExtension   JSR-45 の `SourceDebugExtension` 属性をテキストとして。存在する場合のみ
++       属性の本体は SMAP である。
++       これはコンパイラがインライン化されたコードに割り当てる合成の行番号を、それが書かれたファイルと行へ、レベルごとに変換するソースマップである。
++       インライン化のないクラスでは `Unset` になる。
++       スタックトレースの解決器はこれを読んで、インライン化されたフレームに本当の呼び出し位置の行を与える。
++       digression の `Smap.parse` がこのテキストをデコードする。
++   entry #methods   クラスファイル内の順序でのクラスのメソッド。それぞれが `Classfile.Method`
++       コンストラクターは `<init>`、静的初期化子は `<clinit>` として現れ、コンパイラの合成メソッド（ラムダ本体、ブリッジ、デフォルト引数のゲッター）はコンパイル後の名前で現れる。
++       リストは最初の使用時に一度だけ計算され、パースもそのときに行われる。
++   entry #Method   クラスファイルの一つのメソッド。名前とデコードされたバイトコードを持つ
+
+=   entry #Method   one method of a class file, with its name and its decoded bytecode
+-     detail
++     detail
+
+-         A `Classfile.Method` is created by `Classfile#methods` and is not constructed directly.
+-         Its `#name` is the method's compiled name, and `#bytecode` decodes its `Code`
+-         attribute into a `Bytecode` value: every instruction with its offset, the source line
+-         it belongs to, and the operand stack as simulated from the method's stack-map frames.
++         `Classfile.Method` は `Classfile#methods` が作るもので、直接は構築しない。
++         `#name` はメソッドのコンパイル後の名前で、`#bytecode` はその `Code` 属性を `Bytecode` 値にデコードする。
++         それはすべての命令を、そのオフセット、属するソース行、メソッドのスタックマップフレームからシミュレートしたオペランドスタックとともに持つ。
+
+=         it belongs to, and the operand stack as simulated from the method's stack-map frames.
+=
+-         ```scala
++         ```scala
+
+=         it belongs to, and the operand stack as simulated from the method's stack-map frames.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import classloaders.threadContextClassloader
++         import classloaders.threadContextClassloader
+
+-         Classfile[StackTrace].let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
++         Classfile[StackTrace].let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
+
+=         Classfile[StackTrace].let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
+-         ```
++         ```
+
+-     entry #name   the method's name as the class file spells it
+-         The compiled name, not the source name: a constructor is `<init>`, an operator such as
+-         `+` is `$plus`, and a lambda body is `$anonfun$…`. `StackTrace.rewrite` in digression
+-         turns such a name back toward its source spelling.
+-     entry #bytecode   the method's `Code` attribute decoded to a `Bytecode`, or `Unset` for an abstract method
+-         Decodes every instruction of the method to a `Bytecode.Opcode`, resolving branch
+-         targets to byte offsets, and threads a simulation of the operand stack through them:
+-         the stack after each instruction is computed by `Bytecode.Opcode#transform`, and reset
+-         at every label from the method's `StackMapTable` frames, so the stack at a branch
+-         target is what the verifier records, not what the fall-through path left. Line
+-         numbers from the `LineNumberTable` are attached to the first instruction of each line.
+-         A method with no code — abstract or native — gives `Unset`.
++     entry #name   クラスファイルが綴るとおりのメソッド名
++         ソース上の名前ではなくコンパイル後の名前である。
++         コンストラクターは `<init>`、`+` のような演算子は `$plus`、ラムダ本体は `$anonfun$…` になる。
++         digression の `StackTrace.rewrite` は、そのような名前をソース上の綴りへ戻す。
++     entry #bytecode   メソッドの `Code` 属性を `Bytecode` にデコードしたもの。抽象メソッドでは `Unset`
++         メソッドのすべての命令を `Bytecode.Opcode` にデコードし、分岐先をバイトオフセットに解決し、それらを通してオペランドスタックのシミュレーションを進める。
++         各命令の後のスタックは `Bytecode.Opcode#transform` が計算し、メソッドの `StackMapTable` のフレームによってすべてのラベルでリセットされる。
++         そのため分岐先でのスタックは、フォールスルーの経路が残したものではなく、ベリファイアが記録したものになる。
++         `LineNumberTable` の行番号は、各行の最初の命令に付けられる。
++         コードを持たないメソッド（抽象メソッドやネイティブメソッド）は `Unset` を返す。
+
+-         The result carries the class's `sourceFile`, and the method's declared `maxStack` and
+-         `maxLocals`.
++         結果はクラスの `sourceFile` と、メソッドで宣言された `maxStack` と `maxLocals` を持つ。
+
+- entry .Bytecode   a method's instructions, each decoded, placed on its source line, with its simulated operand stack
++ entry .Bytecode   一つのメソッドの命令。それぞれデコードされ、ソース行に置かれ、シミュレートされたオペランドスタックを持つ
+
+= entry .Bytecode   a method's instructions, each decoded, placed on its source line, with its simulated operand stack
+-   detail
++   detail
+
+-       A `Bytecode` is the decoded `Code` attribute of one method: its `#instructions`, each a
+-       `Bytecode.Instruction` pairing a typed `Bytecode.Opcode` with its byte `offset`, the
+-       source `line` it begins, and the operand `stack` — a list of `Bytecode.Frame`s — as it
+-       stands after the instruction runs; plus the method's declared `#maxStack` and
+-       `#maxLocals` and the class's `#sourceFile`. It is produced by `Classfile.Method#bytecode`
+-       from a class on the classpath, or by `disassemble` from a quoted block compiled on the
+-       spot, and may also be built by hand from `Instruction`s for analysis.
++       `Bytecode` は一つのメソッドのデコードされた `Code` 属性である。
++       その `#instructions` はそれぞれ `Bytecode.Instruction` で、型付きの `Bytecode.Opcode` を、そのバイト `offset`、それが始めるソースの `line`、命令の実行後のオペランドの `stack`（`Bytecode.Frame` のリスト）と組にする。
++       加えて、メソッドで宣言された `#maxStack` と `#maxLocals`、クラスの `#sourceFile` を持つ。
++       クラスパス上のクラスから `Classfile.Method#bytecode` によって、またはその場でコンパイルされたクォートされたブロックから `disassemble` によって作られる。
++       解析のために `Instruction` から手で組み立てることもできる。
+
+=       spot, and may also be built by hand from `Instruction`s for analysis.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A class file, found through the classloader in scope
++         label スコープ内のクラスローダーを通じて見つけたクラスファイル
+
+=         label A class file, found through the classloader in scope
+-         code
++         code
+
+=         label A class file, found through the classloader in scope
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A class file, found through the classloader in scope
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label A class file, found through the classloader in scope
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+-             val classfile: Optional[Classfile] = Classfile[StackTrace]
++             val classfile: Optional[Classfile] = Classfile[StackTrace]
+
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+-       frame
++       frame
+
+-         label One of its methods, by name
++         label 名前で選んだそのメソッドの一つ
+
+=         label One of its methods, by name
+-         code
++         code
+
+=         label One of its methods, by name
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label One of its methods, by name
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label One of its methods, by name
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+-             val classfile: Optional[Classfile] = Classfile[StackTrace]
++             val classfile: Optional[Classfile] = Classfile[StackTrace]
+
+=         label One of its methods, by name
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+-             val method: Optional[Classfile.Method] =
++             val method: Optional[Classfile.Method] =
+
+=         label One of its methods, by name
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+=             val method: Optional[Classfile.Method] =
+-               classfile.let(_.methods.seek(_.name == t"rewrite"))
++               classfile.let(_.methods.seek(_.name == t"rewrite"))
+
+=               classfile.let(_.methods.seek(_.name == t"rewrite"))
+-       frame
++       frame
+
+-         label Its bytecode, listed as opcodes
++         label オペコードとして並べたそのバイトコード
+
+=         label Its bytecode, listed as opcodes
+-         code
++         code
+
+=         label Its bytecode, listed as opcodes
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Its bytecode, listed as opcodes
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label Its bytecode, listed as opcodes
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+-             val classfile: Optional[Classfile] = Classfile[StackTrace]
++             val classfile: Optional[Classfile] = Classfile[StackTrace]
+
+=         label Its bytecode, listed as opcodes
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+-             val method: Optional[Classfile.Method] =
++             val method: Optional[Classfile.Method] =
+
+=         label Its bytecode, listed as opcodes
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+=             val method: Optional[Classfile.Method] =
+-               classfile.let(_.methods.seek(_.name == t"rewrite"))
++               classfile.let(_.methods.seek(_.name == t"rewrite"))
+
+=         label Its bytecode, listed as opcodes
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+=             val method: Optional[Classfile.Method] =
+=               classfile.let(_.methods.seek(_.name == t"rewrite"))
+-             val bytecode: Optional[Bytecode] = method.let(_.bytecode)
++             val bytecode: Optional[Bytecode] = method.let(_.bytecode)
+
+-             bytecode.let(_.instructions.map(_.opcode.show))   // List(t"a·load₀", t"invoke·virtual …", …)
++             bytecode.let(_.instructions.map(_.opcode.show))   // List(t"a·load₀", t"invoke·virtual …", …)
+
+=             bytecode.let(_.instructions.map(_.opcode.show))   // List(t"a·load₀", t"invoke·virtual …", …)
+-       frame
++       frame
+
+-         label One instruction, decoded: its offset, its line and the stack it leaves
++         label デコードされた一つの命令：そのオフセット、行、残すスタック
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+-         code
++         code
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+-             val classfile: Optional[Classfile] = Classfile[StackTrace]
++             val classfile: Optional[Classfile] = Classfile[StackTrace]
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+-             val method: Optional[Classfile.Method] =
++             val method: Optional[Classfile.Method] =
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+=             val method: Optional[Classfile.Method] =
+-               classfile.let(_.methods.seek(_.name == t"rewrite"))
++               classfile.let(_.methods.seek(_.name == t"rewrite"))
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+=             val method: Optional[Classfile.Method] =
+=               classfile.let(_.methods.seek(_.name == t"rewrite"))
+-             val bytecode: Optional[Bytecode] = method.let(_.bytecode)
++             val bytecode: Optional[Bytecode] = method.let(_.bytecode)
+
+-             bytecode.let(_.instructions.seek(_.opcode == Bytecode.Opcode.Aload0)).let: instruction =>
++             bytecode.let(_.instructions.seek(_.opcode == Bytecode.Opcode.Aload0)).let: instruction =>
+
+-               (instruction.offset, instruction.line, instruction.stack.let(_.map(_.show)))
++               (instruction.offset, instruction.line, instruction.stack.let(_.map(_.show)))
+
+=               (instruction.offset, instruction.line, instruction.stack.let(_.map(_.show)))
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       The operand stack is a simulation, not a measurement: `Bytecode.Opcode#transform` pushes
+-       and pops what each opcode is defined to, and the method's `StackMapTable` resets it at
+-       every branch target. A reference on the stack is a `Frame.L(className)` where the
+-       instruction that pushed it names a class, and `Frame.L(t"?")` where it does not.
++       オペランドスタックは測定ではなくシミュレーションである。
++       `Bytecode.Opcode#transform` は各オペコードが定義どおりにプッシュ・ポップするものをプッシュ・ポップし、メソッドの `StackMapTable` がすべての分岐先でそれをリセットする。
++       スタック上の参照は、それをプッシュした命令がクラスを名指す場合は `Frame.L(className)`、そうでない場合は `Frame.L(t"?")` になる。
+
+-       Rendering needs a `BytecodePalette` in scope: `bytecode.teletype` is a four-column table
+-       of source position, offset, opcode (coloured by `Opcode#cost`) and stack, and
+-       `bytecode.printable` prints it. `#linearize` follows the static and effectively-static
+-       calls a method makes into their callees' bytecode, to a bounded depth, which is how a
+-       hot path's full instruction sequence is seen in one listing.
++       描画にはスコープ内の `BytecodePalette` が必要である。
++       `bytecode.teletype` はソース位置、オフセット、オペコード（`Opcode#cost` で色付け）、スタックの四列の表で、`bytecode.printable` がそれを出力する。
++       `#linearize` は、メソッドが行う静的呼び出しと実質的に静的な呼び出しを、上限のある深さまで呼び出し先のバイトコードへたどる。
++       ホットパスの命令列全体を一つのリストで見るにはこうする。
+
+=       hot path's full instruction sequence is seen in one listing.
+-   refer mandible.Classfile
++   refer mandible.Classfile
+
+=   refer mandible.Classfile
+-   refer mandible.disassemble
++   refer mandible.disassemble
+
+-   refer mandible.BytecodePalette
++   refer mandible.BytecodePalette
+
+-   entry .teletypeable   renders bytecode as a coloured table: source line, offset, opcode and stack
+-       The `Teletypeable` given, needing a `BytecodePalette`. One row per instruction: the
+-       source file and line (in the palette's `bytecode` and `sourceCode` colours) where the
+-       instruction begins a line, the byte offset as subscripts, the opcode coloured by its
+-       `Opcode#cost`, and the simulated stack, outlined in the palette's `outline` colour. The
+-       table is laid out for 160 columns.
+-   entry .printable   prints a bytecode listing, as `Printable`
+-       Renders `.teletypeable`'s table for the terminal it is printed to; needs a
+-       `BytecodePalette`.
+-   entry .stack   renders a simulated operand stack, a `List[Bytecode.Frame]`, in one line
+-       The `Teletypeable` given for a stack, needing a `BytecodePalette`: frames are shown
+-       bottom-first, separated by `┊` and outlined with `┃` in the palette's `outline` colour.
+-   entry .Frame   one slot of the operand stack or one verification type: a primitive, a reference or an array
++   entry .teletypeable   バイトコードを色付きの表として描画する：ソース行、オフセット、オペコード、スタック
++       `Teletypeable` の given で、`BytecodePalette` を必要とする。
++       命令ごとに一行で、命令が行を始める箇所ではソースファイルと行（パレットの `bytecode` と `sourceCode` の色）、下付き添字でのバイトオフセット、`Opcode#cost` で色付けされたオペコード、パレットの `outline` の色で輪郭を描いたシミュレート済みのスタックを示す。
++       表は 160 桁向けにレイアウトされる。
++   entry .printable   バイトコードのリストを `Printable` として出力する
++       `.teletypeable` の表を、出力先の端末向けに描画する。
++       `BytecodePalette` が必要である。
++   entry .stack   シミュレートされたオペランドスタック `List[Bytecode.Frame]` を一行で描画する
++       スタックのための `Teletypeable` の given で、`BytecodePalette` を必要とする。
++       フレームは底から順に示され、`┊` で区切られ、パレットの `outline` の色の `┃` で囲まれる。
++   entry .Frame   オペランドスタックの一つのスロット、または一つの検証型：プリミティブ、参照、配列
+
+=   entry .Frame   one slot of the operand stack or one verification type: a primitive, a reference or an array
+-     detail
++     detail
+
+-         The cases are the JVM's descriptor letters for the primitives — `Z` (boolean), `B`
+-         (byte), `C` (char), `S` (short), `I` (int), `J` (long), `F` (float), `D` (double) —
+-         with `L(name)` for a reference to a class, by its binary name (`java.lang.String`),
+-         and `Array(frame)` for an array of another frame. A reference whose class is unknown is
+-         `L(t"?")`; the verifier's special types appear as `L(t"null")`, `L(t"this")`,
+-         `L(t"top")` and `L(t"uninit")`.
++         ケースは、プリミティブを表す JVM の記述子の文字（`Z`（boolean）、`B`（byte）、`C`（char）、`S`（short）、`I`（int）、`J`（long）、`F`（float）、`D`（double））に、バイナリ名（`java.lang.String`）によるクラスへの参照 `L(name)` と、別のフレームの配列 `Array(frame)` を加えたものである。
++         クラスが不明な参照は `L(t"?")` である。
++         ベリファイアの特殊な型は `L(t"null")`、`L(t"this")`、`L(t"top")`、`L(t"uninit")` として現れる。
+
+=         `L(t"top")` and `L(t"uninit")`.
+=
+-         ```scala
++         ```scala
+
+=         `L(t"top")` and `L(t"uninit")`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Bytecode.Frame.fromFieldDescriptor(t"[Ljava/lang/String;")
++         Bytecode.Frame.fromFieldDescriptor(t"[Ljava/lang/String;")
+
+-         // Bytecode.Frame.Array(Bytecode.Frame.L(t"java.lang.String"))
++         // Bytecode.Frame.Array(Bytecode.Frame.L(t"java.lang.String"))
+
+=         // Bytecode.Frame.Array(Bytecode.Frame.L(t"java.lang.String"))
+-         ```
++         ```
+
+-         A `Frame` shows as its letter, as `*name` for a reference and `[frame]` for an array.
+-     entry .showable   renders a frame: a primitive's letter, `*name` for a reference, `[frame]` for an array
+-     entry .parseOne   reads one type from a descriptor at a position, giving the frame and the position after it
+-         `Frame.parseOne(descriptor, cursor)` decodes the type whose descriptor begins at
+-         `cursor` — a letter, a `[`-prefixed array or an `L…;` class — and returns it with the
+-         index just past it, for a caller walking a method descriptor's parameter list. An
+-         unexpected character is a panic, since a descriptor from a class file is well-formed.
+-     entry .fromFieldDescriptor   the frame of a field descriptor, `I` or `Ljava/lang/String;`
+-         Decodes a whole field descriptor to one `Frame`, with `/` in a class name rewritten to
+-         `.`.
+-     entry .fromVerificationType   the frame of a `StackMapTable` verification type
+-         Maps the JDK's `VerificationTypeInfo` to a `Frame`: the simple types to their
+-         primitives, an object type to `L(name)` (or an array frame when the class is an array
+-         class), `null`, `uninitializedThis` and `top` to `L(t"null")`, `L(t"this")` and
+-         `L(t"top")`, and an uninitialized object to `L(t"uninit")`.
+-   entry .Descriptor   a method descriptor parsed into its parameter frames and its result
++         `Frame` はその文字として、参照は `*name` として、配列は `[frame]` として表示される。
++     entry .showable   フレームを描画する：プリミティブはその文字、参照は `*name`、配列は `[frame]`
++     entry .parseOne   記述子のある位置から型を一つ読み、フレームとその直後の位置を返す
++         `Frame.parseOne(descriptor, cursor)` は、`cursor` で始まる記述子の型（文字、`[` を接頭辞とする配列、`L…;` のクラス）をデコードし、そのすぐ後のインデックスとともに返す。
++         メソッド記述子のパラメーターリストをたどる呼び出し側のためのものである。
++         クラスファイル由来の記述子は整形式なので、予期しない文字はパニックになる。
++     entry .fromFieldDescriptor   フィールド記述子のフレーム。`I` や `Ljava/lang/String;`
++         フィールド記述子全体を一つの `Frame` にデコードする。
++         クラス名中の `/` は `.` に書き換える。
++     entry .fromVerificationType   `StackMapTable` の検証型のフレーム
++         JDK の `VerificationTypeInfo` を `Frame` に対応付ける。
++         単純型はそのプリミティブに、オブジェクト型は `L(name)`（クラスが配列クラスなら配列のフレーム）に、`null`、`uninitializedThis`、`top` は `L(t"null")`、`L(t"this")`、`L(t"top")` に、未初期化のオブジェクトは `L(t"uninit")` になる。
++   entry .Descriptor   パラメーターのフレームと結果にパースされたメソッド記述子
+
+=   entry .Descriptor   a method descriptor parsed into its parameter frames and its result
+-     detail
++     detail
+
+-         `Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")` gives a `Descriptor` whose
+-         `#args` are the frames `L(java.lang.String)` and `I` and whose `#result` is `Unset`,
+-         since `V` is void. The instruction decoder uses it to know how many operands an
+-         invocation pops and whether it pushes a result.
++         `Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")` は、`#args` がフレーム `L(java.lang.String)` と `I` で、`V` が void なので `#result` が `Unset` である `Descriptor` を返す。
++         命令デコーダーはこれを使って、呼び出しがいくつのオペランドをポップし、結果をプッシュするかどうかを知る。
+
+=         invocation pops and whether it pushes a result.
+=
+-         ```scala
++         ```scala
+
+=         invocation pops and whether it pushes a result.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val descriptor = Bytecode.Descriptor.parse(t"([[Ljava/lang/Object;J)Z")
++         val descriptor = Bytecode.Descriptor.parse(t"([[Ljava/lang/Object;J)Z")
+
+-         descriptor.args.size     // 2
++         descriptor.args.size     // 2
+
+-         descriptor.result        // Bytecode.Frame.Z
++         descriptor.result        // Bytecode.Frame.Z
+
+=         descriptor.result        // Bytecode.Frame.Z
+-         ```
++         ```
+
+-     entry .parse   reads a `(…)R` method descriptor into a `Descriptor`
+-         The text must begin with `(`; the parameter types up to `)` become `#args`, and the
+-         return type `#result`, with `V` as `Unset`. A malformed descriptor panics.
+-     entry #args   the parameter types, in order
+-     entry #result   the return type, or `Unset` for `void`
+-   entry .Instruction   one decoded instruction: its opcode, source line, resulting stack and offset
++     entry .parse   `(…)R` 形式のメソッド記述子を `Descriptor` に読み込む
++         テキストは `(` で始まらなければならない。
++         `)` までのパラメーター型が `#args` に、戻り値の型が `#result` になり、`V` は `Unset` になる。
++         不正な記述子はパニックする。
++     entry #args   パラメーターの型。順序どおり
++     entry #result   戻り値の型。`void` なら `Unset`
++   entry .Instruction   デコードされた一つの命令：オペコード、ソース行、結果のスタック、オフセット
+
+=   entry .Instruction   one decoded instruction: its opcode, source line, resulting stack and offset
+-     detail
++     detail
+
+-         The element of `Bytecode#instructions`. `#line` is set on the first instruction of
+-         each source line and `Unset` on the rest; `#stack` is the simulated operand stack
+-         after the instruction, or `Unset` once the simulation has been lost; `#offset` is the
+-         instruction's position in the method's code, in bytes, which is what branch targets
+-         and `Bytecode#effectivelyStaticCalls` refer to.
++         `Bytecode#instructions` の要素である。
++         `#line` は各ソース行の最初の命令に設定され、残りでは `Unset` である。
++         `#stack` は命令の後のシミュレートされたオペランドスタックで、シミュレーションが失われた後は `Unset` である。
++         `#offset` はメソッドのコード内での命令の位置をバイト単位で表し、分岐先と `Bytecode#effectivelyStaticCalls` が参照するのはこれである。
+
+=         and `Bytecode#effectivelyStaticCalls` refer to.
+=
+-         ```scala
++         ```scala
+
+=         and `Bytecode#effectivelyStaticCalls` refer to.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val instruction =
++         val instruction =
+
+-           Bytecode.Instruction(Bytecode.Opcode.Iconst1, Unset, List(Bytecode.Frame.I), 0)
++           Bytecode.Instruction(Bytecode.Opcode.Iconst1, Unset, List(Bytecode.Frame.I), 0)
+
+=           Bytecode.Instruction(Bytecode.Opcode.Iconst1, Unset, List(Bytecode.Frame.I), 0)
+-         ```
++         ```
+
+-     entry #opcode   the instruction, as a `Bytecode.Opcode`
+-     entry #line   the source line this instruction begins, or `Unset` if it continues one
+-     entry #stack   the simulated operand stack after the instruction, top first, if known
+-     entry #offset   the instruction's byte offset within the method's code
+-   entry .Linearized   one instruction of a linearized listing, with its inlining depth and the method it came from
++     entry #opcode   命令。`Bytecode.Opcode` として
++     entry #line   この命令が始めるソース行。行の続きなら `Unset`
++     entry #stack   命令の後のシミュレートされたオペランドスタック。先頭が上。わかる場合のみ
++     entry #offset   メソッドのコード内での命令のバイトオフセット
++   entry .Linearized   線形化されたリストの一つの命令。インライン化の深さと由来するメソッドを持つ
+
+=   entry .Linearized   one instruction of a linearized listing, with its inlining depth and the method it came from
+-     detail
++     detail
+
+-         The element of the list `Bytecode#linearize` returns. `#depth` is `0` for the
+-         method's own instructions and one more for each call followed into a callee;
+-         `#source` names the callee as `owner.method`, and is empty at depth `0`;
+-         `#instruction` is the instruction itself. A `List[Linearized]` renders, with a
+-         `BytecodePalette`, as an indented listing.
+-     entry .teletypeable   renders a linearized listing, indented two spaces per level of depth
+-         The `Teletypeable` given for `List[Bytecode.Linearized]`, needing a `BytecodePalette`:
+-         each line is indented by its depth, prefixed with its source method in the palette's
+-         `bytecode` colour, and followed by the opcode.
+-     entry #depth   how many calls deep the instruction is: `0` in the listed method itself
+-     entry #source   the `owner.method` the instruction was inlined from, or empty at depth `0`
+-     entry #instruction   the instruction
+-   entry .Opcode   every JVM instruction as an enum case, with its operands decoded
++         `Bytecode#linearize` が返すリストの要素である。
++         `#depth` はメソッド自身の命令では `0` で、呼び出し先へたどる呼び出しごとに一つ増える。
++         `#source` は呼び出し先を `owner.method` として名指し、深さ `0` では空である。
++         `#instruction` は命令そのものである。
++         `List[Linearized]` は `BytecodePalette` があれば、インデントされたリストとして描画される。
++     entry .teletypeable   線形化されたリストを、深さ一段ごとに空白二つでインデントして描画する
++         `List[Bytecode.Linearized]` のための `Teletypeable` の given で、`BytecodePalette` を必要とする。
++         各行は深さに応じてインデントされ、パレットの `bytecode` の色で由来するメソッドが前に置かれ、その後にオペコードが続く。
++     entry #depth   命令が呼び出し何段分深いか。リストされたメソッド自身では `0`
++     entry #source   命令のインライン化元の `owner.method`。深さ `0` では空
++     entry #instruction   命令
++   entry .Opcode   すべての JVM 命令を、オペランドをデコードした列挙型のケースとして表す
+
+=   entry .Opcode   every JVM instruction as an enum case, with its operands decoded
+-     detail
++     detail
+
+-         One case per opcode of the JVM instruction set, in opcode order, so a case's
+-         `ordinal` is its opcode number: `Nop` (0) through `Jsr`, `GotoW` (200) and `JsrW`
+-         (201), with the reserved `Breakpoint`, `Impdep1`, `Impdep2` and the unassigned
+-         `OpCb` … `OpFd` filling the gaps. Operands are decoded into fields: a load or store
+-         carries its `slot`; `Bipush`, `Sipush`, `Ldc`, `LdcW` and `Ldc2W` their `value`;
+-         every branch its `target` as a byte offset; `Tableswitch` and `Lookupswitch` their
+-         tables; a field instruction its `owner`, `field` and `descriptor`; an invocation its
+-         `owner`, `method` and `descriptor` (`Invokeinterface` also its `count`, and
+-         `Invokedynamic` only `method` and `descriptor`); `New`, `Checkcast`, `Instanceof` and
+-         `Anewarray` their class; `Newarray` its element `Frame`; `Multianewarray` its class
+-         and `dimensions`; `Iinc` its `slot` and `const`.
++         JVM 命令セットのオペコードごとに一つのケースがオペコード順に並ぶので、ケースの `ordinal` がそのオペコード番号になる。
++         `Nop`（0）から `Jsr`、`GotoW`（200）、`JsrW`（201）までで、予約された `Breakpoint`、`Impdep1`、`Impdep2` と、割り当てのない `OpCb` … `OpFd` が隙間を埋める。
++         オペランドはフィールドにデコードされる。
++         ロードとストアは `slot` を持ち、`Bipush`、`Sipush`、`Ldc`、`LdcW`、`Ldc2W` は `value` を、すべての分岐はバイトオフセットとしての `target` を、`Tableswitch` と `Lookupswitch` は表を、フィールド命令は `owner`、`field`、`descriptor` を、呼び出しは `owner`、`method`、`descriptor`（`Invokeinterface` は `count` も、`Invokedynamic` は `method` と `descriptor` だけ）を、`New`、`Checkcast`、`Instanceof`、`Anewarray` はクラスを、`Newarray` は要素の `Frame` を、`Multianewarray` はクラスと `dimensions` を、`Iinc` は `slot` と `const` を持つ。
+
+-         Class names are binary names with `.`, as `java.lang.String`; an `Invokedynamic`
+-         method name is demangled with `StackTrace.rewrite`, so a lambda call site reads as
+-         `λ₁` rather than `$anonfun$1`.
++         クラス名は `java.lang.String` のように `.` を使うバイナリ名である。
++         `Invokedynamic` のメソッド名は `StackTrace.rewrite` でデマングルされるので、ラムダの呼び出し位置は `$anonfun$1` ではなく `λ₁` と読める。
+
+=         `λ₁` rather than `$anonfun$1`.
+=
+-         ```scala
++         ```scala
+
+=         `λ₁` rather than `$anonfun$1`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val call = Bytecode.Opcode.Invokevirtual(t"java.lang.String", t"length", t"()I")
++         val call = Bytecode.Opcode.Invokevirtual(t"java.lang.String", t"length", t"()I")
+
+-         call.show         // t"invoke·virtual java.lang.String ⌗ length"
++         call.show         // t"invoke·virtual java.lang.String ⌗ length"
+
+-         call.cost         // 2
++         call.cost         // 2
+
+-         call.transform(List(Bytecode.Frame.L(t"java.lang.String")))   // List(Bytecode.Frame.I)
++         call.transform(List(Bytecode.Frame.L(t"java.lang.String")))   // List(Bytecode.Frame.I)
+
+=         call.transform(List(Bytecode.Frame.L(t"java.lang.String")))   // List(Bytecode.Frame.I)
+-         ```
++         ```
+
+-         An opcode is `Showable` as its mnemonic, written with `·` between the parts of a
+-         compound name and subscripts for constants and slots (`a·load₀`, `i·const₋₁`,
+-         `dup²∕₁`), followed by its operands; and `Teletypeable`, which colours the mnemonic by
+-         `#cost` and italicises the operands. Both givens are anonymous, in the companion, so
+-         they are always in scope. An `Opcode` is read from the JDK's instruction model with
+-         `.apply`.
+-     entry .apply   decodes a `java.lang.classfile.Instruction` to an `Opcode`
+-         `Opcode(instruction, labels)` maps the JDK's instruction object to the enum case for
+-         its opcode, decoding its operands. `labels` maps the code's `Label`s to byte offsets,
+-         so that a branch's `target` is an offset; an instruction whose label is absent from
+-         the map gets `0`. An opcode the decoder does not recognise is a panic.
+-     entry #cost   a rough relative cost of the instruction, from `0` to `3`
+-         A coarse ranking used to colour a listing: `0` for constants, loads, stores, stack
+-         shuffles and widening conversions; `1` for arithmetic, comparisons, conditional
+-         branches and static or special calls; `2` for array accesses, field accesses, casts,
+-         unconditional jumps, returns and virtual calls; `3` for switches, allocations,
+-         monitors, `athrow`, interface and dynamic calls.
+-     entry #describe   a one-line description of what the instruction does, for the opcodes it knows
+-         Describes the constant and push instructions and the reserved opcodes in words —
+-         `push the int constant 1` — and gives `unrecognized` for the rest.
+-     entry #highlight   the colour for the instruction's `#cost`, from teal (`0`) to crimson (`3`)
+-     entry #transform   the operand stack after this instruction, given the stack before it
+-         The stack simulation: pops what the instruction consumes and pushes what it produces,
+-         with `Frame.I` for an `int` result, `Frame.L(name)` for a `new` object or a loaded
+-         field of class type, `Frame.L(t"?")` for a reference the instruction cannot name, and
+-         a method's return frame for an invocation (parsed from its descriptor). The stack is
+-         top first. A `Dup` on an empty stack fails; a shuffle on a stack shorter than it
+-         needs leaves the stack as it was.
+-   entry .Error   raised by `disassemble` when the compiled class file cannot be opened or read
++         オペコードは `Showable` で、そのニーモニックとして表示される。
++         複合名の部分の間には `·` を、定数とスロットには下付き添字を使い（`a·load₀`、`i·const₋₁`、`dup²∕₁`）、その後にオペランドが続く。
++         また `Teletypeable` でもあり、ニーモニックを `#cost` で色付けし、オペランドをイタリックにする。
++         どちらの given もコンパニオンにある無名の given なので、常にスコープ内にある。
++         `Opcode` は `.apply` で JDK の命令モデルから読み込む。
++     entry .apply   `java.lang.classfile.Instruction` を `Opcode` にデコードする
++         `Opcode(instruction, labels)` は JDK の命令オブジェクトを、そのオペコードの列挙型のケースに対応付け、オペランドをデコードする。
++         `labels` はコードの `Label` をバイトオフセットに対応付けるので、分岐の `target` はオフセットになる。
++         ラベルがマップにない命令は `0` を得る。
++         デコーダーが認識しないオペコードはパニックになる。
++     entry #cost   命令の大まかな相対コスト。`0` から `3` まで
++         リストの色付けに使う粗い順位付けである。
++         `0` は定数、ロード、ストア、スタックの入れ替え、拡大変換。
++         `1` は算術、比較、条件分岐、静的呼び出しと special 呼び出し。
++         `2` は配列アクセス、フィールドアクセス、キャスト、無条件ジャンプ、リターン、仮想呼び出し。
++         `3` は switch、アロケーション、モニター、`athrow`、インターフェース呼び出しと動的呼び出しである。
++     entry #describe   命令が何をするかの一行の説明。知っているオペコードについてのみ
++         定数とプッシュの命令、予約されたオペコードを言葉で説明し（`push the int constant 1`）、残りには `unrecognized` を返す。
++     entry #highlight   命令の `#cost` の色。ティール（`0`）からクリムゾン（`3`）まで
++     entry #transform   命令前のスタックから求めた、この命令後のオペランドスタック
++         スタックのシミュレーションである。
++         命令が消費するものをポップし、生成するものをプッシュする。
++         `int` の結果には `Frame.I`、`new` のオブジェクトやクラス型のフィールドのロードには `Frame.L(name)`、命令が名指せない参照には `Frame.L(t"?")`、呼び出しにはメソッドの戻り値のフレーム（記述子からパースする）を使う。
++         スタックは先頭が上である。
++         空のスタックへの `Dup` は失敗する。
++         必要より短いスタックへの入れ替えは、スタックをそのままにする。
++   entry .Error   コンパイルされたクラスファイルを開けない、または読めないときに `disassemble` が発生させる
+
+=   entry .Error   raised by `disassemble` when the compiled class file cannot be opened or read
+-     detail
++     detail
+
+-         Error `↯/s.88.3`, _the bytecode could not be extracted because …_, with a `#reason`:
+-         `ClassfileMissing` (295.1, _the generated classfile could not be opened_) when the
+-         staging compiler left no class file to read, and `ClassfileUnreadable` (295.2, _the
+-         generated classfile could not be read_) when the file was truncated or the generated
+-         method was not found in it. `disassemble` needs a `Tactic[Bytecode.Error]` in scope.
+-     entry .Reason   why extraction failed: `ClassfileMissing` or `ClassfileUnreadable`
+-         A `Clarification` whose `number` is the error's sub-number: `ClassfileMissing` is `1`
+-         and `ClassfileUnreadable` is `2`.
+-     entry .communicable   renders a `Reason` as the message the error embeds
+-     entry #reason   the reason
+-   entry #sourceFile   the name of the source file the method's class was compiled from, if recorded
+-   entry #instructions   the method's instructions, in code order
+-   entry #maxStack   the maximum operand stack depth the method declares
+-   entry #maxLocals   the number of local variable slots the method declares
+-   entry #embed   shifts the listing's line numbers to a `Codepoint`, as if the code were written there
+-       `bytecode.embed(codepoint)` adds the codepoint's line (less one) to every instruction's
+-       `line`, and replaces `sourceFile` with the last segment of the codepoint's source path.
+-       `disassemble` uses it so that the bytecode of a block compiled in a temporary file is
+-       reported against the file and line the block was written at.
+-   entry #linearize   follows calls into their callees' bytecode, to a bounded depth and length
+-       `bytecode.linearize(resolver, maxDepth, maxInstructions)` walks the instructions and,
+-       at each `Invokestatic` and at each `Invokevirtual` or `Invokeinterface` which
+-       `#effectivelyStaticCalls` has shown to dispatch to a known class, asks `resolver(owner,
+-       method, descriptor)` for the callee's `Bytecode` and lists its instructions in place,
+-       one level deeper, after the call instruction. The resolver returns `Unset` for a method
+-       it cannot find, and the call is then listed alone. `maxDepth` (default `3`) bounds the
+-       nesting and `maxInstructions` (default `1000`) the total length of the listing.
++         エラー `↯/s.88.3`、_the bytecode could not be extracted because …_ で、`#reason` を持つ。
++         ステージングコンパイラが読むべきクラスファイルを残さなかったときは `ClassfileMissing`（295.1、_the generated classfile could not be opened_）、ファイルが途中で切れていたか、生成されたメソッドがその中に見つからなかったときは `ClassfileUnreadable`（295.2、_the generated classfile could not be read_）である。
++         `disassemble` はスコープ内に `Tactic[Bytecode.Error]` を必要とする。
++     entry .Reason   抽出が失敗した理由：`ClassfileMissing` または `ClassfileUnreadable`
++         `number` がエラーのサブ番号である `Clarification` である。
++         `ClassfileMissing` は `1`、`ClassfileUnreadable` は `2` である。
++     entry .communicable   `Reason` を、エラーが埋め込むメッセージとして描画する
++     entry #reason   理由
++   entry #sourceFile   メソッドのクラスのコンパイル元のソースファイル名。記録されている場合のみ
++   entry #instructions   メソッドの命令。コードの順序どおり
++   entry #maxStack   メソッドが宣言するオペランドスタックの最大の深さ
++   entry #maxLocals   メソッドが宣言するローカル変数のスロット数
++   entry #embed   コードがそこに書かれたかのように、リストの行番号を `Codepoint` へずらす
++       `bytecode.embed(codepoint)` は、すべての命令の `line` にコードポイントの行（から一を引いたもの）を加え、`sourceFile` をコードポイントのソースパスの最後のセグメントに置き換える。
++       `disassemble` はこれを使って、一時ファイルでコンパイルされたブロックのバイトコードを、そのブロックが書かれたファイルと行に対して報告する。
++   entry #linearize   上限のある深さと長さまで、呼び出しを呼び出し先のバイトコードへたどる
++       `bytecode.linearize(resolver, maxDepth, maxInstructions)` は命令を順にたどる。
++       各 `Invokestatic` と、`#effectivelyStaticCalls` が既知のクラスへディスパッチすると示した各 `Invokevirtual` と `Invokeinterface` で、呼び出し先の `Bytecode` を `resolver(owner, method, descriptor)` に求め、その命令を呼び出し命令の後に、一段深くしてその場にリストする。
++       リゾルバーは見つけられないメソッドには `Unset` を返し、その場合は呼び出しだけがリストされる。
++       `maxDepth`（デフォルトは `3`）が入れ子の深さを、`maxInstructions`（デフォルトは `1000`）がリストの全長を制限する。
+
+=       nesting and `maxInstructions` (default `1000`) the total length of the listing.
+=
+-       ```scala
++       ```scala
+
+=       nesting and `maxInstructions` (default `1000`) the total length of the listing.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val nop = Bytecode.Instruction(Bytecode.Opcode.Nop, Unset, Nil, 0)
++       val nop = Bytecode.Instruction(Bytecode.Opcode.Nop, Unset, Nil, 0)
+
+-       val caller = Bytecode(Unset, List.fill(50)(nop), 0, 0)
++       val caller = Bytecode(Unset, List.fill(50)(nop), 0, 0)
+
+-       caller.linearize((_, _, _) => Unset, maxInstructions = 7).size   // 7
++       caller.linearize((_, _, _) => Unset, maxInstructions = 7).size   // 7
+
+=       caller.linearize((_, _, _) => Unset, maxInstructions = 7).size   // 7
+-       ```
++       ```
+
+-       A resolver over the classpath is written with `Classfile`: find the owner's class file,
+-       seek the method by name, and take its `bytecode`.
+-   entry #effectivelyStaticCalls   the offsets of the virtual and interface calls whose receiver is a known singleton
+-       A call through `invokevirtual` or `invokeinterface` whose receiver, in the simulated
+-       stack before the call, is a `Frame.L(owner)` of exactly the call's own owner class —
+-       as a call on a Scala `object`'s `MODULE$` is — can only dispatch to that class, so it
+-       may be followed like a static call. The result is the set of such calls' byte offsets;
+-       a receiver of unknown class (`L(t"?")`) or of a different class is excluded, as is a call
+-       whose simulated stack is too shallow to hold its receiver.
++       クラスパスに対するリゾルバーは `Classfile` で書ける。
++       所有者のクラスファイルを見つけ、メソッドを名前で探し、その `bytecode` を取ればよい。
++   entry #effectivelyStaticCalls   レシーバが既知のシングルトンである仮想呼び出しとインターフェース呼び出しのオフセット
++       `invokevirtual` または `invokeinterface` による呼び出しで、呼び出し前のシミュレートされたスタックにあるレシーバが、呼び出し自身の所有者クラスとちょうど同じ `Frame.L(owner)` であるもの（Scala の `object` の `MODULE$` に対する呼び出しがそうである）は、そのクラスにしかディスパッチできないので、静的呼び出しと同じようにたどってよい。
++       結果はそのような呼び出しのバイトオフセットの集合である。
++       クラスが不明な（`L(t"?")`）レシーバや別のクラスのレシーバは除外され、シミュレートされたスタックが浅すぎてレシーバを保持できない呼び出しも除外される。
+
+=       whose simulated stack is too shallow to hold its receiver.
+=
+-       ```scala
++       ```scala
+
+=       whose simulated stack is too shallow to hold its receiver.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val module = Bytecode.Frame.L(t"Play$$")
++       val module = Bytecode.Frame.L(t"Play$$")
+
+-       val load = Bytecode.Instruction
++       val load = Bytecode.Instruction
+
+-         (Bytecode.Opcode.Getstatic(t"Play$$", t"MODULE$$", t"LPlay$$;"), Unset, List(module), 0)
++         (Bytecode.Opcode.Getstatic(t"Play$$", t"MODULE$$", t"LPlay$$;"), Unset, List(module), 0)
+
+-       val call = Bytecode.Instruction
++       val call = Bytecode.Instruction
+
+-         (Bytecode.Opcode.Invokevirtual(t"Play$$", t"doIt", t"()V"), Unset, Nil, 3)
++         (Bytecode.Opcode.Invokevirtual(t"Play$$", t"doIt", t"()V"), Unset, Nil, 3)
+
+-       Bytecode(Unset, List(load, call), 1, 0).effectivelyStaticCalls   // Set(3)
++       Bytecode(Unset, List(load, call), 1, 0).effectivelyStaticCalls   // Set(3)
+
+=       Bytecode(Unset, List(load, call), 1, 0).effectivelyStaticCalls   // Set(3)
+-       ```
++       ```
+
+- entry .ClassSurface   the declaration surface of a class: what a compiled consumer links against, and nothing else
++ entry .ClassSurface   クラスの宣言の表面：コンパイル済みの利用者がリンクするもの、そしてそれだけ
+
+= entry .ClassSurface   the declaration surface of a class: what a compiled consumer links against, and nothing else
+-   detail
++   detail
+
+-       A `ClassSurface` is a class file reduced to its **linkage surface**: its internal
+-       `#name`, access `#flags`, `#superclass`, `#interfaces`, generic `#signature`, and its
+-       `#members` — fields and methods as `ClassSurface.Member`s, each with name, descriptor,
+-       flags, generic signature, declared exceptions and inlinable constant. `Code`,
+-       `SourceFile`, `LineNumberTable` and annotations are deliberately dropped: two builds of
+-       the same source may differ in all of them without changing what a consumer binds to.
+-       This is the view for comparing releases for binary compatibility, which is why members
+-       are sorted by selector and interfaces and exceptions by name, rather than kept in file
+-       order, which is an artifact of the compilation.
++       `ClassSurface` は、クラスファイルをその**リンケージの表面**に絞り込んだものである。
++       内部名の `#name`、アクセスの `#flags`、`#superclass`、`#interfaces`、ジェネリックな `#signature`、そして `#members`（`ClassSurface.Member` としてのフィールドとメソッドで、それぞれ名前、記述子、フラグ、ジェネリックシグネチャ、宣言された例外、インライン化可能な定数を持つ）からなる。
++       `Code`、`SourceFile`、`LineNumberTable`、アノテーションは意図的に捨てられる。
++       同じソースの二つのビルドは、利用者が束縛するものを変えずに、これらすべてで異なりうるからである。
++       これはリリースをバイナリ互換性について比較するためのビューである。
++       そのため、メンバーはファイル内の順序（コンパイルの副産物である）のままではなくセレクターで、インターフェースと例外は名前でソートされる。
+
+=       order, which is an artifact of the compilation.
+=
+-       ```scala
++       ```scala
+
+=       order, which is an artifact of the compilation.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       order, which is an artifact of the compilation.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       order, which is an artifact of the compilation.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val surface: ClassSurface = ClassSurface(cp"/scala/Option.class".read[Data])
++       val surface: ClassSurface = ClassSurface(cp"/scala/Option.class".read[Data])
+
+-       surface.name                       // t"scala/Option"
++       surface.name                       // t"scala/Option"
+
+-       surface.supertypes                 // superclass first, then interfaces
++       surface.supertypes                 // superclass first, then interfaces
+
+-       surface.members.filter(_.visible).map(_.selector)
++       surface.members.filter(_.visible).map(_.selector)
+
+=       surface.members.filter(_.visible).map(_.selector)
+-       ```
++       ```
+
+-       Names are JVM internal names, `java/lang/String`, as every reference inside a class
+-       file spells them. Accessibility of a nested class is read from the `InnerClasses`
+-       attribute (`#innerFlags`) where the class's own flags would misreport a `protected`
+-       member class as package-private.
++       名前は、クラスファイル内のすべての参照が綴るとおりの JVM 内部名 `java/lang/String` である。
++       ネストしたクラスのアクセス可能性は `InnerClasses` 属性（`#innerFlags`）から読む。
++       クラス自身のフラグでは、`protected` のメンバークラスがパッケージプライベートと誤って報告されるからである。
+
+-   refer mandible.ClasspathIndex
++   refer mandible.ClasspathIndex
+
+=   refer mandible.ClasspathIndex
+-   refer mandible.Classfile
++   refer mandible.Classfile
+
+-   entry .Kind   whether a member is a `Method` or a `Field`
+-   entry .Member   one field or method of a class, as the JVM resolves it
++   entry .Kind   メンバーが `Method` か `Field` か
++   entry .Member   JVM が解決するとおりの、クラスの一つのフィールドまたはメソッド
+
+=   entry .Member   one field or method of a class, as the JVM resolves it
+-     detail
++     detail
+
+-         A member has a `#kind`, its `#name`, its `#descriptor` (such as `(I)V` or `Ljava/lang/String;`),
+-         its access `#flags`, an optional generic `#signature`, the sorted internal names of
+-         its declared `#exceptions` (methods only) and, for a `static final` field, the
+-         `#constant` its `ConstantValue` attribute carries. Predicates read the flag bits;
+-         `#visible` is whether the member is `public` or `protected`, the only accessibilities
+-         a consumer outside the package can link to.
++         メンバーは `#kind`、`#name`、`#descriptor`（`(I)V` や `Ljava/lang/String;` など）、アクセスの `#flags`、オプショナルなジェネリック `#signature`、宣言された `#exceptions` のソート済みの内部名（メソッドのみ）、そして `static final` フィールドでは `ConstantValue` 属性が持つ `#constant` を持つ。
++         述語はフラグのビットを読む。
++         `#visible` はメンバーが `public` か `protected` かで、パッケージ外の利用者がリンクできるアクセス可能性はこの二つだけである。
+
+=         a consumer outside the package can link to.
+=
+-         ```scala
++         ```scala
+
+=         a consumer outside the package can link to.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val member = ClassSurface.Member(ClassSurface.Kind.Method, t"length", t"()I", 1)
++         val member = ClassSurface.Member(ClassSurface.Kind.Method, t"length", t"()I", 1)
+
+-         member.selector   // t"#length:()I"
++         member.selector   // t"#length:()I"
+
+-         member.public     // true
++         member.public     // true
+
+=         member.public     // true
+-         ```
++         ```
+
+-     entry #kind   `Kind.Method` or `Kind.Field`
+-     entry #name   the member's name, as compiled
+-     entry #descriptor   the JVM descriptor: a method's `(params)result` or a field's type
+-     entry #flags   the `access_flags` bitmask
+-     entry #signature   the generic `Signature` attribute, kept because erasure loses what a recompiling consumer needs
+-     entry #exceptions   the internal names of the `Exceptions` attribute, sorted; `Nil` for a field
+-     entry #constant   a `static final` field's `ConstantValue`, as `class:value`, for example `java.lang.Integer:1`
+-         The constant's class is folded in with its value, since `1` as an `Integer` and `"1"`
+-         as a `String` are different contracts whose `toString`s coincide.
+-     entry #selector   the member's key within its class: the name and descriptor, prefixed `#` for a method or `.` for a field
+-         The sigil keeps a method and a field of the same name apart, and the descriptor keeps
+-         overloads apart, so a selector identifies one member of a class.
+-     entry #public   whether `ACC_PUBLIC` is set
+-     entry #protect   whether `ACC_PROTECTED` is set
+-     entry #priv   whether `ACC_PRIVATE` is set
+-     entry #static   whether `ACC_STATIC` is set
+-     entry #finl   whether `ACC_FINAL` is set
+-     entry #abstrakt   whether `ACC_ABSTRACT` is set
+-     entry #bridge   whether `ACC_BRIDGE` is set: a compiler-generated bridge method
+-     entry #synthetic   whether `ACC_SYNTHETIC` is set
+-     entry #visible   whether the member is `public` or `protected`: linkable from outside its package
+-     entry #inlinable   whether a consumer's compiler may already have copied this field's value into its own constant pool
+-         True for a `static final` field of primitive or `String` type which has a
+-         `#constant`: by the JLS's rules a compiler inlines such a constant at every use, so
+-         changing its value does not break linkage, but does change consumers' behaviour
+-         until they are recompiled. A `ConstantValue` on any other field is not inlined, so
+-         the attribute alone is not the test.
+-   entry .apply   parses the bytes of a class file to its `ClassSurface`
+-       `ClassSurface(data)` reads the class file through `java.lang.classfile` and keeps only
+-       the linkage surface. Fields are read with their signature and constant, methods with
+-       their signature and exceptions; members are sorted by `Member#selector` and interfaces
+-       by name. The bytes are not retained.
+-   entry #name   the class's internal name, `scala/Option`
+-   entry #flags   the class's `access_flags` bitmask, as the class file records it
+-   entry #superclass   the superclass's internal name, or `Unset` for `java/lang/Object` itself
+-   entry #interfaces   the internal names of the directly implemented interfaces, sorted
+-   entry #signature   the class's generic `Signature` attribute, if any
+-   entry #members   the fields and methods, sorted by `Member#selector`
+-   entry #innerFlags   the flags the `InnerClasses` attribute records for this class, if it is nested
+-       A nested class's own `access_flags` show the outer view, where a `protected` member
+-       class is neither public nor protected; its real accessibility is in the enclosing
+-       class's `InnerClasses` entry for it, which this reads back. `Unset` for a top-level
+-       class.
+-   entry #interface   whether the class is an interface (`ACC_INTERFACE`)
+-   entry #isFinal   whether the class is final (`ACC_FINAL`)
+-   entry #synthetic   whether the class is compiler-generated (`ACC_SYNTHETIC`)
+-   entry #access   the flags which decide accessibility: `#innerFlags` where present, else `#flags`
+-   entry #visible   whether the class is `public` or `protected` by its `#access` flags
+-   entry #supertypes   the directly named supertypes, superclass first, then interfaces
+-       The order the JVM's own resolution walks, and the order inherited members are keyed
+-       in by `ClasspathIndex#closure`.
+-   entry #member   the member with a given `Member#selector`, or `Unset`
++     entry #kind   `Kind.Method` または `Kind.Field`
++     entry #name   コンパイル後のメンバー名
++     entry #descriptor   JVM の記述子：メソッドの `(params)result`、またはフィールドの型
++     entry #flags   `access_flags` のビットマスク
++     entry #signature   ジェネリックな `Signature` 属性。再コンパイルする利用者が必要とするものをイレイジャが失うので保持する
++     entry #exceptions   `Exceptions` 属性の内部名。ソート済み。フィールドでは `Nil`
++     entry #constant   `static final` フィールドの `ConstantValue`。`class:value` の形で、たとえば `java.lang.Integer:1`
++         定数のクラスは値と一緒に畳み込まれる。
++         `Integer` としての `1` と `String` としての `"1"` は、`toString` が一致しても異なる契約だからである。
++     entry #selector   クラス内でのメンバーのキー：名前と記述子に、メソッドなら `#`、フィールドなら `.` を前置したもの
++         シジルが同名のメソッドとフィールドを区別し、記述子がオーバーロードを区別するので、セレクターはクラスの一つのメンバーを識別する。
++     entry #public   `ACC_PUBLIC` が設定されているか
++     entry #protect   `ACC_PROTECTED` が設定されているか
++     entry #priv   `ACC_PRIVATE` が設定されているか
++     entry #static   `ACC_STATIC` が設定されているか
++     entry #finl   `ACC_FINAL` が設定されているか
++     entry #abstrakt   `ACC_ABSTRACT` が設定されているか
++     entry #bridge   `ACC_BRIDGE` が設定されているか：コンパイラが生成したブリッジメソッド
++     entry #synthetic   `ACC_SYNTHETIC` が設定されているか
++     entry #visible   メンバーが `public` か `protected` か：パッケージの外からリンクできるか
++     entry #inlinable   利用者のコンパイラが、このフィールドの値を自身の定数プールにすでにコピーしているかもしれないか
++         プリミティブ型または `String` 型の `static final` フィールドで、`#constant` を持つものでは真になる。
++         JLS の規則により、コンパイラはそのような定数を使用箇所ごとにインライン化する。
++         そのため値を変えてもリンケージは壊れないが、利用者が再コンパイルされるまで、その動作は変わる。
++         それ以外のフィールドの `ConstantValue` はインライン化されないので、属性の有無だけでは判定にならない。
++   entry .apply   クラスファイルのバイトをパースして `ClassSurface` にする
++       `ClassSurface(data)` はクラスファイルを `java.lang.classfile` で読み、リンケージの表面だけを保持する。
++       フィールドはシグネチャと定数とともに、メソッドはシグネチャと例外とともに読まれる。
++       メンバーは `Member#selector` で、インターフェースは名前でソートされる。
++       バイトは保持されない。
++   entry #name   クラスの内部名。`scala/Option`
++   entry #flags   クラスファイルが記録するとおりの、クラスの `access_flags` のビットマスク
++   entry #superclass   スーパークラスの内部名。`java/lang/Object` 自体なら `Unset`
++   entry #interfaces   直接実装するインターフェースの内部名。ソート済み
++   entry #signature   クラスのジェネリックな `Signature` 属性。あれば
++   entry #members   フィールドとメソッド。`Member#selector` でソート済み
++   entry #innerFlags   ネストしたクラスの場合に、`InnerClasses` 属性がこのクラスについて記録するフラグ
++       ネストしたクラス自身の `access_flags` は外側から見た姿を示し、そこでは `protected` のメンバークラスは public でも protected でもない。
++       本当のアクセス可能性は、それを囲むクラスの `InnerClasses` にあるそのクラスのエントリーにあり、これはそれを読み戻す。
++       トップレベルのクラスでは `Unset` である。
++   entry #interface   クラスがインターフェース（`ACC_INTERFACE`）か
++   entry #isFinal   クラスが final（`ACC_FINAL`）か
++   entry #synthetic   クラスがコンパイラの生成したもの（`ACC_SYNTHETIC`）か
++   entry #access   アクセス可能性を決めるフラグ：あれば `#innerFlags`、なければ `#flags`
++   entry #visible   `#access` のフラグによって、クラスが `public` か `protected` か
++   entry #supertypes   直接名指された上位型。スーパークラスが先で、次にインターフェース
++       JVM 自身の解決がたどる順序であり、`ClasspathIndex#closure` が継承したメンバーをキーにする順序でもある。
++   entry #member   与えられた `Member#selector` を持つメンバー。なければ `Unset`
+
+- entry .ClasspathIndex   resolves internal class names to their surfaces, over in-memory classes plus a classpath
++ entry .ClasspathIndex   メモリ上のクラスとクラスパスに対して、内部クラス名をその表面に解決する
+
+= entry .ClasspathIndex   resolves internal class names to their surfaces, over in-memory classes plus a classpath
+-   detail
++   detail
+
+-       A `ClasspathIndex` answers "what does class `name` declare?" for every class a set of
+-       classes may refer to. It holds the surfaces of the classes it is given eagerly — a
+-       release's own, which are the ones being examined — and resolves everything else lazily
+-       by reading `name.class` from a `URLClassLoader` over the classpath entries, with the
+-       platform classloader as its parent so the JDK's own classes resolve too. Every
+-       resolution, including a failed one, is memoized, which keeps a walk over many classes'
+-       supertypes linear.
++       `ClasspathIndex` は、クラスの集合が参照しうるすべてのクラスについて「クラス `name` は何を宣言しているか」に答える。
++       与えられたクラス（リリース自身のクラスで、調べる対象である）の表面は即座に保持する。
++       それ以外はすべて、クラスパスのエントリーに対する `URLClassLoader` から `name.class` を読んで遅延的に解決する。
++       その親はプラットフォームのクラスローダーなので、JDK 自身のクラスも解決される。
++       失敗したものも含め、すべての解決はメモ化される。
++       これにより、多数のクラスの上位型をたどる処理が線形に保たれる。
+
+=       supertypes linear.
+=
+-       ```scala
++       ```scala
+
+=       supertypes linear.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       supertypes linear.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       supertypes linear.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val own = Map(t"com/example/Main" -> ClassSurface(cp"/com/example/Main.class".read[Data]))
++       val own = Map(t"com/example/Main" -> ClassSurface(cp"/com/example/Main.class".read[Data]))
+
+-       val index = ClasspathIndex(own, List(t"/lib/dependency.jar"))
++       val index = ClasspathIndex(own, List(t"/lib/dependency.jar"))
+
+-       index(t"java/lang/Object")
++       index(t"java/lang/Object")
+
+-       index.closure(t"com/example/Main")
++       index.closure(t"com/example/Main")
+
+=       index.closure(t"com/example/Main")
+-       ```
++       ```
+
+-       A class in the in-memory map is never shadowed by a same-named class earlier on the
+-       classpath.
++       メモリ上のマップにあるクラスが、クラスパスの前方にある同名のクラスに隠されることはない。
+
+=       classpath.
+-   refer mandible.ClassSurface
++   refer mandible.ClassSurface
+
+-   entry .apply   an index over a map of surfaces by internal name, plus classpath entries as text
+-       Each classpath entry is a directory or JAR path, as text; a directory must exist on
+-       disk for the loader to treat it as one. An entry which does not exist resolves nothing.
+-   entry #own   the internal names of the classes held in memory, sorted
+-   entry #apply   the surface of a class by internal name, or `Unset` if nothing can supply it
+-       Looks in the in-memory map first, then reads the class file from the classpath,
+-       caching the answer either way.
+-   entry #closure   a class's transitive supertypes, nearest first, and the names which could not be resolved
+-       `index.closure(name)` walks `ClassSurface#supertypes` breadth-first from `name`,
+-       excluding `name` itself, and returns a pair: the supertypes found, in order of
+-       discovery, and the names of those which no source could resolve. An unresolvable
+-       supertype is reported rather than skipped, because without it the class's inherited
+-       member set is unknown.
++   entry .apply   内部名による表面のマップと、テキストとしてのクラスパスのエントリーに対するインデックス
++       各クラスパスのエントリーは、テキストとしてのディレクトリまたは JAR のパスである。
++       ローダーがディレクトリとして扱うには、ディレクトリがディスク上に存在しなければならない。
++       存在しないエントリーは何も解決しない。
++   entry #own   メモリ上に保持されたクラスの内部名。ソート済み
++   entry #apply   内部名によるクラスの表面。何も供給できなければ `Unset`
++       まずメモリ上のマップを探し、次にクラスパスからクラスファイルを読む。
++       どちらの場合も答えはキャッシュされる。
++   entry #closure   クラスの推移的な上位型（近いものが先）と、解決できなかった名前
++       `index.closure(name)` は、`name` から `ClassSurface#supertypes` を幅優先でたどり（`name` 自身は除く）、組を返す。
++       見つかった上位型を発見順に並べたものと、どの供給源も解決できなかったものの名前である。
++       解決できない上位型は飛ばさずに報告される。
++       それがなければ、クラスの継承したメンバーの集合がわからないからである。
+
+- entry .disassemble   compiles a quoted block with the staging compiler and reads its bytecode back
++ entry .disassemble   クォートされたブロックをステージングコンパイラでコンパイルし、そのバイトコードを読み戻す
+
+= entry .disassemble   compiles a quoted block with the staging compiler and reads its bytecode back
+-   detail
++   detail
+
+-       `disassemble(code)` takes a `Quotes ?=> Expr[Any]` — a block of code quoted with `'{…}` —
+-       wraps it in a method, compiles it with the staging compiler into a temporary directory,
+-       reads the resulting class file and returns the method's `Bytecode`, with its line
+-       numbers shifted by `Bytecode#embed` to the call site's `Codepoint`, so the listing reads
+-       against the file the block was written in.
++       `disassemble(code)` は `Quotes ?=> Expr[Any]`（`'{…}` でクォートされたコードのブロック）を取る。
++       それをメソッドで包み、ステージングコンパイラで一時ディレクトリにコンパイルし、結果のクラスファイルを読んで、そのメソッドの `Bytecode` を返す。
++       行番号は `Bytecode#embed` で呼び出し位置の `Codepoint` へずらされるので、リストはブロックが書かれたファイルに対して読める。
+
+=       against the file the block was written in.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       ##
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+-       val bytecode: Bytecode = disassemble('{ (1 to 10).map(_ * 2).sum })
++       val bytecode: Bytecode = disassemble('{ (1 to 10).map(_ * 2).sum })
+
+-       bytecode.instructions.map(_.opcode.show)
++       bytecode.instructions.map(_.opcode.show)
+
+=       bytecode.instructions.map(_.opcode.show)
+-       ```
++       ```
+
+-       It needs a `TemporaryDirectory` for the compiler's output, a `Classloader` for the
+-       compiler to load against (its `java` instance is handed to the staging compiler), and a
+-       `Tactic[Bytecode.Error]`, raised as `ClassfileMissing` when no class file appears and
+-       `ClassfileUnreadable` when it cannot be read or the generated method is not in it. The
+-       block is compiled with the experimental language flag enabled, under Scala 3.6's
+-       settings. Compilation takes a moment, so this is a tool for examining what the compiler
+-       and its optimizer produce, not for a hot path.
++       コンパイラの出力のための `TemporaryDirectory`、コンパイラがロードする対象の `Classloader`（その `java` インスタンスがステージングコンパイラに渡される）、そして `Tactic[Bytecode.Error]` が必要である。
++       エラーは、クラスファイルが現れないときは `ClassfileMissing`、それを読めないか生成されたメソッドがその中にないときは `ClassfileUnreadable` として発生する。
++       ブロックは Scala 3.6 の設定のもとで、実験的言語機能のフラグを有効にしてコンパイルされる。
++       コンパイルには少し時間がかかるので、これはコンパイラとそのオプティマイザが生成するものを調べるための道具であり、ホットパスのためのものではない。
+
+=       and its optimizer produce, not for a hot path.
+-   refer mandible.Bytecode
++   refer mandible.Bytecode
+
+=   refer mandible.Bytecode
+-   refer mandible.Classfile
++   refer mandible.Classfile
+
+- entry .BytecodePalette   the colours a bytecode listing is rendered with
+-     A `Palette` in sRGB with, beyond the `background` and `foreground` every palette has, three colours: `bytecode`, for the source-file reference and the
+-     method a linearized instruction came from; `sourceCode`, for line numbers; and `outline`,
+-     for the frame of the stack column. A `BytecodePalette` must be in scope to render a
+-     `Bytecode`, a `List[Bytecode.Frame]` or a `List[Bytecode.Linearized]` as `Teletype`; the
+-     library supplies no default, so a program defines one. Opcode colours are not in the
+-     palette: they come from `Bytecode.Opcode#highlight`, by cost.
++ entry .BytecodePalette   バイトコードのリストの描画に使う色
++     sRGB の `Palette` で、すべてのパレットが持つ `background` と `foreground` に加えて三つの色を持つ。
++     `bytecode` はソースファイルの参照と、線形化された命令の由来するメソッドに使う。
++     `sourceCode` は行番号に使う。
++     `outline` はスタックの列の枠に使う。
++     `Bytecode`、`List[Bytecode.Frame]`、`List[Bytecode.Linearized]` を `Teletype` として描画するには、スコープ内に `BytecodePalette` がなければならない。
++     ライブラリはデフォルトを提供しないので、プログラムが定義する。
++     オペコードの色はパレットにはなく、コストに応じて `Bytecode.Opcode#highlight` から得られる。
+
+=     palette: they come from `Bytecode.Opcode#highlight`, by cost.
+=
+-     ```scala
++     ```scala
+
+=     palette: they come from `Bytecode.Opcode#highlight`, by cost.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     given palette: BytecodePalette = new Palette:
++     given palette: BytecodePalette = new Palette:
+
+-       type Form = Srgb
++       type Form = Srgb
+
+-       def background: Color in Srgb = WebColors.Black
++       def background: Color in Srgb = WebColors.Black
+
+-       def foreground: Color in Srgb = WebColors.White
++       def foreground: Color in Srgb = WebColors.White
+
+-       def bytecode: Color in Srgb   = WebColors.Teal
++       def bytecode: Color in Srgb   = WebColors.Teal
+
+-       def sourceCode: Color in Srgb = WebColors.YellowGreen
++       def sourceCode: Color in Srgb = WebColors.YellowGreen
+
+-       def outline: Color in Srgb    = WebColors.Gray
++       def outline: Color in Srgb    = WebColors.Gray
+
+=       def outline: Color in Srgb    = WebColors.Gray
+-     ```
++     ```
+
+- entry .internal   the home of a macro which disassembles a method selected by a lambda
++ entry .internal   ラムダで選んだメソッドを逆アセンブルするマクロの置き場所
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. Holds `disassemble`, a macro implementation which, given a lambda
+-       of the form `_.method` over a type and a `Classloader` expression, splices a lookup of
+-       that method's `Bytecode` through `Classfile`; no public inline entry point currently
+-       invokes it.
+-   entry .disassemble   the macro: a `target => Any` selecting a method, to that method's bytecode
+-       Halts with _this type of lambda is not supported_ (code 91) for a lambda which is not a
+-       plain member selection.
++       直接使うためのものではない。
++       `disassemble` を保持する。
++       これはマクロの実装で、ある型に対する `_.method` という形のラムダと `Classloader` の式が与えられると、そのメソッドの `Bytecode` を `Classfile` を通じて調べるコードをスプライスする。
++       現在、これを呼び出す公開のインラインのエントリーポイントはない。
++   entry .disassemble   マクロ：メソッドを選ぶ `target => Any` から、そのメソッドのバイトコードへ
++       単純なメンバー選択でないラムダに対しては、_this type of lambda is not supported_（コード 91）で停止する。

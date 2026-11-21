@@ -1,0 +1,69 @@
+orthant 1 language
+
+- # `↯/s.82.2` — `Feed.Error`
++ # `↯/s.82.2` — `Feed.Error`
+
+- Raised when Cacophony cannot record from an audio feed.
++ Cacophony が音声のフィードから録音できないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Cacophony opens an audio capture line and reads samples from it. This
+- error reports a problem with the line itself, the requested
+- configuration, or operations performed after recording has stopped.
+- The message is `could not record from feed $feed because $reason`.
++ Cacophony は音声のキャプチャのラインを開き、そこからサンプルを読む。
++ このエラーは、ラインそのもの、要求された構成、または録音の停止後に行われた操作の問題を報告する。
++ メッセージは `could not record from feed $feed because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.82.2.1` — `Unavailable`
++ ### `↯/s.82.2.1` — `Unavailable`
+
+- The requested audio line could not be opened — typically because no
+- input device is connected, or another process has exclusive use of
+- it.
++ 要求された音声のラインを開けなかった。典型的には、入力デバイスが接続されていないか、別のプロセスがそれを排他的に使っているためである。
+
+- **Example.** `[↯/s.82.2.1] could not record from feed default because the audio line could not be opened`
++ **例。** `[↯/s.82.2.1] could not record from feed default because the audio line could not be opened`
+
+- **Resolution.** Ensure an input device is connected and that the
+- process has permission to use it.
++ **解決方法。** 入力デバイスが接続されており、プロセスにそれを使うパーミッションがあることを確かめる。
+
+- ### `↯/s.82.2.2` — `UnsupportedConfiguration`
++ ### `↯/s.82.2.2` — `UnsupportedConfiguration`
+
+- The combination of sample rate, channel count, and sample size was
+- not supported by the device.
++ サンプルレート、チャンネル数、サンプルサイズの組み合わせが、デバイスでサポートされていなかった。
+
+- **Example.** `[↯/s.82.2.2] could not record from feed default because the requested configuration is not supported`
++ **例。** `[↯/s.82.2.2] could not record from feed default because the requested configuration is not supported`
+
+- **Resolution.** Choose a configuration the device supports; query
+- its capabilities and pick a compatible format.
++ **解決方法。** デバイスがサポートする構成を選ぶ。その能力を問い合わせ、互換性のある形式を選ぶ。
+
+- ### `↯/s.82.2.3` — `Closed`
++ ### `↯/s.82.2.3` — `Closed`
+
+- An operation was attempted after recording was stopped.
++ 録音が停止された後に操作が試みられた。
+
+- **Example.** `[↯/s.82.2.3] could not record from feed default because the recording has already been stopped`
++ **例。** `[↯/s.82.2.3] could not record from feed default because the recording has already been stopped`
+
+- **Resolution.** Open a fresh recording rather than re-using a
+- stopped one.
++ **解決方法。** 停止した録音を再利用するのではなく、新しい録音を開く。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/cacophony/src/core/cacophony.Feed.scala`
++ - ソース：`lib/cacophony/src/core/cacophony.Feed.scala`

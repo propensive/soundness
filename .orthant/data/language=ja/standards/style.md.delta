@@ -1,0 +1,552 @@
+orthant 1 language
+
+- # Writing Soundness Documentation
++ # Soundness のドキュメントの書き方
+
+- The documents in `doc/modules/` are tutorials, each introducing one feature of
+- Soundness — a capability that may span several internal modules — to a reader meeting
+- it for the first time. This guide sets out how to write them: who they address, the
+- voice they use, and the conventions they follow.
++ `doc/modules/` の文書はチュートリアルであり、それぞれが Soundness の一つの機能（複数の内部モジュールにまたがることもあるケイパビリティ）を、初めてそれに出会う読者に紹介する。
++ このガイドは、その書き方を定める。
++ 誰に向けて書くのか、どんな文体を使うのか、どんな慣例に従うのかである。
+
+- ## Audience and scope
++ ## 読者と範囲
+
+- Assume a reader with a basic understanding of Scala and of the subject at hand, but
+- pace the prose for someone meeting Soundness's treatment of it for the first time.
++ 読者は Scala と扱う主題について基本的な理解を持っていると想定するが、Soundness によるその主題の扱いには初めて出会う人に合わせて文章の歩調を整える。
+
+- Explain Soundness's own implementations in depth. The concepts Soundness builds on —
+- JSON, regular expressions, time zones — need not be taught from scratch, but give
+- enough of each to motivate the design that follows. Link complex or esoteric
+- background to an external resource, such as Wikipedia, rather than explaining it
+- inline.
++ Soundness 自身の実装は深く説明する。
++ Soundness が土台とする概念（JSON、正規表現、タイムゾーン）を一から教える必要はないが、続く設計の動機が分かるだけのことはそれぞれ述べる。
++ 複雑な背景や難解な背景は、本文で説明するのではなく、Wikipedia などの外部の資料にリンクする。
+
+- Limit terms and phrases to those familiar to both British and American readers.
++ 用語や言い回しは、イギリスとアメリカの読者の両方になじみのあるものに限る。
+
+- Before writing, decide who opens the page and why. A reader comes to a tutorial to get
+- something done — read a configuration file, call a service, make sense of an error — and reads
+- with questions the page should answer in the order they arise: what is the least that works,
+- what happens when it fails, what does it cost, how does it fit with what is already in use. Put
+- the commonest task first, and answer the worry before the reader has to go looking.
++ 書く前に、誰がなぜそのページを開くのかを決める。
++ 読者は何かを成し遂げるためにチュートリアルを訪れる。
++ 設定ファイルを読む、サービスを呼ぶ、エラーの意味を理解する、といったことである。
++ そして、ページが答えるべき問いを、それが生じる順に抱えて読む。
++ 最低限動くものは何か、失敗したら何が起こるか、コストはどれほどか、すでに使っているものとどう組み合わさるか。
++ 最もよくある作業を最初に置き、読者が探しに行かなければならなくなる前に、その懸念に答える。
+
+- Prefer short sentences that each make one point. A sentence that needs two semicolons or a
+- parenthesis inside a dash is two or three sentences.
++ それぞれが一つの点を述べる短い文を好む。
++ セミコロンが二つ必要な文や、ダッシュの中に括弧が入る文は、二つか三つの文である。
+
+- ## Voice: Classic Style
++ ## 文体：クラシックスタイル
+
+- Write in Classic Style, as described by Steven Pinker: the writer shows the reader
+- something true or interesting in the world and helps them see it clearly, as a
+- conversation between equals. The reader is intelligent and capable. Truth can be
+- perceived and described plainly, and success is measured by whether the reader grasps
+- the point without effort.
++ Steven Pinker が述べるクラシックスタイルで書く。
++ 書き手は世界の中の真実のことや興味深いことを読者に示し、それがはっきり見えるように手助けする。
++ これは対等な者どうしの会話である。
++ 読者は知的で有能である。
++ 真実は認識でき、平明に記述でき、成功の尺度は読者が苦労せずに要点をつかめるかどうかである。
+
+- - **Show, don't announce.** Present the idea itself, not your intention to present it.
+-   Avoid throat-clearing ("In this section…", "It is important to note that…") and
+-   signposting ("Firstly…", "In conclusion…").
+- - **Stay out of view.** Avoid first-person pronouns and meta-discussion of the writing,
+-   the document, or its structure. Do not refer to the document by its genre: never
+-   justify a choice as one that "suits a tutorial" or is made "for this guide". State
+-   the choice directly instead — write "the `throwUnsafely` strategy raises an exception
+-   on failure", not "raising an exception suits a tutorial".
+- - **Be plain and direct.** Prefer straightforward phrasing over ornate, inflated, or
+-   needlessly technical wording. Cut clutter, hedging, and unnecessary qualifiers.
+- - **Project confidence.** State things plainly rather than hedging or apologising;
+-   avoid academic over-qualification.
+- - **Ground the abstract.** Reach for concrete imagery and examples to anchor abstract
+-   ideas.
+- - **Guide the reader's gaze.** Structure each sentence so attention falls naturally on
+-   what matters most.
+- - **Sound like someone who knows the subject.** The voice is calm, knowledgeable, and
+-   unstrained; the prose feels effortless even when heavily revised.
+- - **Avoid devices that depend on shared context.** State the point directly rather than
+-   through rhetorical questions or allusion. Avoid bureaucratic prose, excessive passive
+-   voice, and pretentious diction.
++ - **予告せずに見せる。** 示そうという意図ではなく、考えそのものを示す。前置き（「この節では…」「…に注意することが重要である」）や道しるべ（「まず…」「結論として…」）を避ける。
++ - **姿を見せない。** 一人称の代名詞や、文章、文書、その構成についてのメタな議論を避ける。文書をそのジャンルで呼ばない。ある選択を「チュートリアルに適している」とか「このガイドのため」だとして正当化しない。代わりに選択を直接述べる。「例外を発生させるのはチュートリアルに適している」ではなく、「`throwUnsafely` 戦略は失敗すると例外を発生させる」と書く。
++ - **平明に、直接に。** 飾り立てた、大げさな、不必要に専門的な言い回しよりも、率直な言い回しを好む。無駄、ためらい、不要な限定を削る。
++ - **自信を示す。** ためらったり弁解したりせず、物事を平明に述べる。学術的な過剰な限定を避ける。
++ - **抽象を具体につなぎとめる。** 抽象的な考えをつなぎとめるために、具体的なイメージや例を用いる。
++ - **読者の視線を導く。** 最も重要なものに注意が自然に向かうように、それぞれの文を組み立てる。
++ - **主題を知っている人のように語る。** 声は落ち着いていて、知識があり、無理がない。何度も手を入れた文章でも、楽に書かれたように感じられる。
++ - **共有された文脈に頼る手法を避ける。** 修辞的な問いや当てこすりではなく、要点を直接述べる。役所的な文章、過度な受動態、気取った言葉遣いを避ける。
+
+- ## Emphasis
++ ## 強調
+
+- Draw attention to the typesafety and compiletime checking Soundness performs, and
+- explain the design ideas behind each API — especially those that may be unconventional.
+- Occasionally connect these to Soundness's general design philosophy, so the reader sees
+- not just how a feature works but why it is shaped as it is.
++ Soundness が行う型安全性とコンパイル時の検査に注意を向け、各 API の背後にある設計の考え方、とりわけ型破りかもしれないものを説明する。
++ ときにはそれらを Soundness の全般的な設計哲学と結びつけ、読者が機能がどう動くかだけでなく、なぜその形をしているのかも分かるようにする。
+
+- ## Language and spelling
++ ## 言語と綴り
+
+- Use American English spelling. Always write "runtime" and "compiletime" as single
+- words, never as "run time", "run-time", "compile time", or "compile-time".
++ アメリカ英語の綴りを使う。
++ 「runtime」と「compiletime」は常に一語で書き、「run time」「run-time」「compile time」「compile-time」とは決して書かない。
+
+- ## Document structure
++ ## 文書の構成
+
+- Begin with a `## Title`, then up to three introductory paragraphs giving an overview of
+- the subject's scope. Within these, an `### About` section gives the overview and an
+- `### On <topic>` section motivates the design. After the introduction, cover the
+- individual topics in their own `###` sections.
++ `## Title` で始め、その後に主題の範囲の概観を示す導入の段落を三つまで置く。
++ その中で、`### About` 節が概観を示し、`### On <topic>` 節が設計の動機を述べる。
++ 導入の後、個々の話題をそれぞれの `###` 節で扱う。
+
+- Prioritise foundational details and the most commonly used features; deprioritise
+- implementation details and esoteric features.
++ 基礎的な細部と最もよく使われる機能を優先し、実装の細部と難解な機能は後回しにする。
+
+- The reader already knows the subject is Soundness, so do not make "Soundness" the
+- reflexive subject of every sentence, least of all the opening one. Lead with the
+- capability or the thing itself — "Regular expressions are checked as the code compiles",
+- not "Soundness checks regular expressions as the code compiles". Name the project where
+- it genuinely marks a contrast — what Soundness does against what other libraries do — and
+- when you do name it, call it "Soundness", never an internal module name.
++ 読者は主題が Soundness であることをすでに知っているので、「Soundness」をすべての文の、とりわけ冒頭の文の、決まりきった主語にしない。
++ ケイパビリティやもの自体から始める。
++ 「Soundness はコードのコンパイル時に正規表現を検査する」ではなく、「正規表現はコードのコンパイル時に検査される」と書く。
++ プロジェクトの名前を出すのは、それが本当に対比を示すとき、つまり Soundness がすることと他のライブラリがすることを比べるときだけにし、名前を出すときは内部のモジュール名ではなく必ず「Soundness」と呼ぶ。
+
+- ## Code samples
++ ## コードのサンプル
+
+- Write code in idiomatic Soundness Scala, formatted according to `syntax.md`. Use inline
+- backticks for code, and for the specific names of terms and types; use triple-backtick
+- blocks for block-level samples.
++ コードは慣用的な Soundness の Scala で書き、`syntax.md` に従って整形する。
++ コードと、項や型の具体的な名前にはインラインのバッククォートを使い、ブロックのサンプルには三重のバッククォートのブロックを使う。
+
+- Samples should be complete — including imports where necessary, though wildcard imports
+- are fine — and should follow on from one another: a term with a given name means the
+- same thing throughout a document, and a single identifier is never assigned more than
+- once.
++ サンプルは完全でなければならない（必要ならインポートも含める。ワイルドカードのインポートでよい）。
++ また、前のサンプルを引き継がなければならない。
++ ある名前の項は文書全体を通して同じものを意味し、一つの識別子に二度以上代入することはない。
+
+- Every sample is checked mechanically, twice over, and both checkers follow the fences in
+- order as one session:
++ すべてのサンプルは機械的に二重に検査され、どちらの検査器もフェンスを順にたどって一つのセッションとして扱う。
+
+= order as one session:
+=
+- ```tabular
++ ```tabular
+
+- column  Command
+- column  Checks
+- row  `make fuelcheck`  compiles each tutorial with fuel against `main`'s own test assembly (`.pyrocosm/fuel/config.tel`)
+- row  `make doccheck`  evaluates each fence through the flame REPL (`etc/doccheck.py`) against the latest release, and checks the names used against the source (`etc/doccheck-names.py`)
+- row  `make doccheck DOC=json`  the same, for one tutorial
++ column  コマンド
++ column  検査するもの
++ row  `make fuelcheck`  各チュートリアルを、fuel で `main` 自身のテストアセンブリに対してコンパイルする（`.pyrocosm/fuel/config.tel`）
++ row  `make doccheck`  各フェンスを最新のリリースに対して flame の REPL で評価し（`etc/doccheck.py`）、使われている名前をソースと照合する（`etc/doccheck-names.py`）
++ row  `make doccheck DOC=json`  同じことを一つのチュートリアルに対して行う
+
+= row  `make doccheck DOC=json`  the same, for one tutorial
+- ```
++ ```
+
+- A few conventions make that possible:
++ いくつかの慣例がこれを可能にする。
+
+- - A sample must introduce every name it uses, in a fence of the same tutorial, so the fences
+-   form one continuous session. Where a tutorial needs a value it cannot sensibly construct
+-   in prose — a path that must exist, a running service — put the binding in
+-   `doc/fixtures/<tutorial>.scala`, which both checkers compile before the first fence.
+- - A line that is meant not to compile carries a trailing `// does not compile` comment (with
+-   an optional explanation after a colon). Both checkers compile it on its own and report it
+-   if it compiles after all; fuel shows its error as a note on the line. New samples use an
+-   `errors show` fence instead, for the reason given under "Showing, not telling".
+- - A fence that says more than its code does so in a TEL preamble: it opens with
+-   ` ```scala fuel `, and the preamble ends at a line holding `##`. Its directives are below.
++ - サンプルは、使うすべての名前を同じチュートリアルのフェンスで導入しなければならないので、フェンスは一続きのセッションを成す。チュートリアルが、文章の中では無理なく構築できない値（存在しなければならないパス、実行中のサービス）を必要とするときは、その束縛を `doc/fixtures/<tutorial>.scala` に置く。どちらの検査器も、最初のフェンスの前にそれをコンパイルする。
++ - コンパイルされないことを意図した行には、末尾に `// does not compile` というコメントを付ける（コロンの後に説明を付けてもよい）。どちらの検査器もそれを単独でコンパイルし、結局コンパイルできてしまった場合は報告する。fuel はそのエラーを行への注記として表示する。新しいサンプルでは、「語らずに見せる」で述べる理由により、代わりに `errors show` のフェンスを使う。
++ - コード以上のことを述べるフェンスは、TEL の前置きでそれを行う。フェンスは ` ```scala fuel ` で始まり、前置きは `##` だけの行で終わる。その指令を以下に示す。
+
+- The preamble directives:
++ 前置きの指令は次のとおりである。
+
+= The preamble directives:
+=
+- ```tabular
++ ```tabular
+
+- column  Directive
+- column  Use it for
+- column  Meaning
+- row  `typecheck`  a fence that cannot run in a REPL session: one that opens a browser, binds a socket, reads a terminal, dispatches a JVM  fuel compiles it, and the REPL checker leaves it alone
+- row  `errors show`  a fence whose point is its error  the error is rendered beneath it
+- row  `run`  a fence whose point is what it prints, or the error it throws  fuel compiles it and runs it, and shows its output beneath it; the REPL checker leaves it alone
+- row  `highlight`  the part of a fence the prose is about  the range is underlined, with a caption beside it
+- row  `error`, `caution`  a part of a fence that is wrong, or risky, by design  the range is marked as the compiler would mark it, with the caption given
+- row  `parse`  a sketch that is not meant to compile at all  it is only parsed
+- row  `feature experimental.captureChecking`  the first fence that needs a language feature  the feature is enabled from there on
+- row  `restart`  a fence that must not follow the ones before it  the session begins afresh
+- row  `frame`  an animation  each `frame` has its `code` (and perhaps a `label`); later fences follow the last
+- row  `alternative`  versions of the same code, one under each tab  each has its `code` (or its `frame`s); later fences follow the first
+- row  `substitute`  code that must be there to compile but is noise to the reader  the range is shown as `...`, or the text given
+- row  `focus`  one region of a long fragment, or of one frame, that the prose is about  everything else in the block fades
+- row  `path`  a fence holding the contents of a file  the file's name is shown above it, and a `run` fence can read it
++ column  指令
++ column  使う場面
++ column  意味
++ row  `typecheck`  REPL のセッションで実行できないフェンス。ブラウザを開く、ソケットをバインドする、端末を読む、JVM を起動するもの  fuel はそれをコンパイルし、REPL の検査器はそれに手を付けない
++ row  `errors show`  エラーそのものが要点であるフェンス  エラーがその下に描画される
++ row  `run`  出力するもの、または投げるエラーが要点であるフェンス  fuel はそれをコンパイルして実行し、その出力を下に表示する。REPL の検査器はそれに手を付けない
++ row  `highlight`  文章が話題にしているフェンスの部分  その範囲に下線が引かれ、傍らにキャプションが付く
++ row  `error`、`caution`  意図的に誤っている、または危険なフェンスの部分  その範囲はコンパイラが印を付けるように印を付けられ、与えたキャプションが付く
++ row  `parse`  そもそもコンパイルを意図しないスケッチ  パースされるだけである
++ row  `feature experimental.captureChecking`  言語機能を必要とする最初のフェンス  そこから先はその機能が有効になる
++ row  `restart`  それより前のフェンスに続いてはならないフェンス  セッションが新しく始まる
++ row  `frame`  アニメーション  各 `frame` はその `code`（とことによると `label`）を持つ。後のフェンスは最後のフレームを引き継ぐ
++ row  `alternative`  タブごとに一つずつ置く、同じコードの別の版  それぞれがその `code`（またはその `frame`）を持つ。後のフェンスは最初のものを引き継ぐ
++ row  `substitute`  コンパイルには必要だが読者にとっては雑音であるコード  その範囲は `...` か、与えたテキストとして表示される
++ row  `focus`  長い断片や一つのフレームのうち、文章が話題にしている一つの領域  ブロックの他の部分はすべて薄くなる
++ row  `path`  ファイルの内容を保持するフェンス  ファイルの名前がその上に表示され、`run` のフェンスがそれを読める
+
+= row  `path`  a fence holding the contents of a file  the file's name is shown above it, and a `run` fence can read it
+- ```
++ ```
+
+- Use an animation only where watching the code change from one frame to the next teaches
+- something that two fences side by side would not: each frame builds on the last. Where the
+- versions are instead choices made at the same point — the same program under another policy
+- import, backend or calendar, or the same thing written two ways — make them alternatives, with
+- a tab title of a word or two (`Julian`, `RE2`, `Imported`). Only the first alternative joins
+- the session, so put first the one the rest of the tutorial uses, and nothing after a `##` in
+- such a fence. `etc/doccheck.py` runs the first alternative too.
++ アニメーションは、あるフレームから次のフレームへコードが変わるのを見ることで、二つのフェンスを並べただけでは分からないことが分かる場合にだけ使う。
++ 各フレームは前のフレームの上に積み上がる。
++ 版が同じ地点での選択である場合、つまり別のポリシーのインポート、バックエンド、暦のもとでの同じプログラムや、二通りに書いた同じものである場合は、それらを一、二語のタブの見出し（`Julian`、`RE2`、`Imported`）を付けた選択肢にする。
++ セッションに加わるのは最初の選択肢だけなので、チュートリアルの残りが使うものを最初に置き、そのようなフェンスでは `##` の後に何も置かない。
++ `etc/doccheck.py` も最初の選択肢を実行する。
+
+- A `substitute` names its range as a mark does — a literal, or `start..end`, refined by `line`
+- and `occurrence` — and is for a `???` that stands for something supplied, a long key or literal
+- whose content is not the point, or setup repeated in every frame. Don't substitute code the
+- prose discusses.
++ `substitute` はマークと同じように範囲を名指しする（リテラルか `start..end` であり、`line` と `occurrence` で絞り込む）。
++ これは、与えられる何かを表す `???`、内容が要点ではない長い鍵やリテラル、あるいはすべてのフレームで繰り返されるセットアップのためのものである。
++ 文章が論じるコードを置き換えてはならない。
+
+- ### Showing, not telling
++ ### 語らずに見せる
+
+- A sample shows what the code does; it does not describe it. A comment in a sample is the writer
+- talking over the code, so a sample has none. Each thing
+- a comment used to say has a better place:
++ サンプルはコードが何をするかを見せるのであって、それを説明するのではない。
++ サンプルの中のコメントは書き手がコードの上から話しているものなので、サンプルにはコメントを置かない。
++ コメントがかつて述べていたそれぞれのことには、もっとよい置き場所がある。
+
+= a comment used to say has a better place:
+=
+- ```tabular
++ ```tabular
+
+- column  Instead of a comment saying
+- column  Write
+- row  what an expression evaluates to  a `run` fence which prints it, so the real output appears beneath
+- row  what a line is for  a `highlight` with a caption, or a sentence before the fence
+- row  why code does not compile  an `errors show` fence, so the compiler's own message is shown
+- row  what a program throws  a `run` fence with `errors show`
+- row  that something is risky or discouraged  a `caution` mark, or a sentence before the fence
++ column  次のことを述べるコメントの代わりに
++ column  書くもの
++ row  式が何に評価されるか  それを出力する `run` のフェンス。実際の出力が下に現れる
++ row  ある行が何のためにあるか  キャプション付きの `highlight`、またはフェンスの前の文
++ row  コードがなぜコンパイルされないか  `errors show` のフェンス。コンパイラ自身のメッセージが表示される
++ row  プログラムが何を投げるか  `errors show` 付きの `run` のフェンス
++ row  何かが危険であるか推奨されないこと  `caution` のマーク、またはフェンスの前の文
+
+= row  that something is risky or discouraged  a `caution` mark, or a sentence before the fence
+- ```
++ ```
+
+- A fence that prints needs a `Stdio` in scope, so a tutorial with `run` fences imports one once,
+- with its first imports, and says in a clause what the line is for:
++ 出力するフェンスにはスコープ内に `Stdio` が必要なので、`run` のフェンスを持つチュートリアルは最初のインポートとともにそれを一度インポートし、その行が何のためにあるかを節で述べる。
+
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+- ##
++ ##
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- A `run` fence prints with `Out.println`. Print a value with `show` where it has a `Showable`
+- instance, since that is the form a user would display, and with `inspect` otherwise — a
+- `Boolean`, a case class, a nested structure. Print the values a reader would want to see and no
+- more: one fence with three lines of output teaches more than three fences with one.
++ `run` のフェンスは `Out.println` で出力する。
++ 値に `Showable` のインスタンスがあれば、それがユーザーが表示する形なので `show` で出力し、そうでなければ（`Boolean`、ケースクラス、入れ子の構造など）`inspect` で出力する。
++ 読者が見たいと思う値を出力し、それ以上は出力しない。
++ 三行の出力を持つ一つのフェンスは、一行ずつの三つのフェンスよりも多くを教える。
+
+- Prefer the compiler's words to a paraphrase of them. A reader who meets an error in their own
+- code searches for its text, so a sample that fails shows the message they will see. A message of
+- one line appears as a note on the line; a longer one appears as a card beneath the fence. A
+- failing sample is a fence of its own, holding only the code that fails:
++ コンパイラの言葉を、それを言い換えたものよりも優先する。
++ 自分のコードでエラーに出会った読者はそのテキストで検索するので、失敗するサンプルは読者が目にするメッセージを見せる。
++ 一行のメッセージは行への注記として現れ、それより長いものはフェンスの下にカードとして現れる。
++ 失敗するサンプルはそれだけのフェンスにし、失敗するコードだけを入れる。
+
+= failing sample is a fence of its own, holding only the code that fails:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  Use it when
+- row  `compile` and `errors show`  the code does not compile
+- row  `run` and `errors show`  the code compiles, and fails when it runs
++ column  形式
++ column  使う場面
++ row  `compile` と `errors show`  コードがコンパイルされない
++ row  `run` と `errors show`  コードはコンパイルされ、実行すると失敗する
+
+= row  `run` and `errors show`  the code compiles, and fails when it runs
+- ```
++ ```
+
+- Keep a failing expression minimal: the one call that is wrong, without the calls that would
+- follow it. Avoid the `// does not compile` marker in new samples. A fence that holds one never
+- joins the session, and every marker line and `run` fence after it then fails for want of that
+- fence, which fuel counts as the failure it was told to expect — so a line which compiles
+- perfectly well can pass as one which does not.
++ 失敗する式は最小限に保つ。
++ 誤っている一つの呼び出しだけにし、それに続くはずの呼び出しは入れない。
++ 新しいサンプルでは `// does not compile` のマーカーを避ける。
++ それを持つフェンスは決してセッションに加わらないので、その後のマーカーの行と `run` のフェンスはすべて、そのフェンスがないために失敗する。
++ fuel はそれを、期待するよう指示された失敗として数えるので、問題なくコンパイルできる行が、コンパイルできない行として通ってしまうことがある。
+
+- Check what a sample shows as well as that it passes. Read the captured output and each error
+- message in the rendered page: a sample can compile, run, and still print something other than
+- what the prose around it says.
++ サンプルが通ることだけでなく、それが何を見せるかも確かめる。
++ 描画されたページで、捕捉された出力とそれぞれのエラーメッセージを読む。
++ サンプルはコンパイルでき、実行でき、それでも周りの文章が述べるのとは違うものを出力することがある。
+
+- The session has a few rules of its own, which a tutorial's fences must respect:
++ セッションには独自の規則がいくつかあり、チュートリアルのフェンスはそれを守らなければならない。
+
+- - A definition which later fences use goes in a plain fence, and a `run` fence only prints. The
+-   REPL checker skips every fence which names a mode, so a definition inside one is lost to it.
+- - A name defined in a tutorial — an enumeration's cases, a companion's members — is not carried
+-   into a later fence by an `import` of it. Write `Color.Red` in later fences, or repeat the
+-   import in the fence that needs it.
+- - Name a given whose type starts with a type defined in the tutorial:
+-   `given personParsable: (Person is Json.Parsable)`. An anonymous `given Person is …` hides
+-   `Person` from every later fence.
+- - A given which must be found while another is derived is declared in the fence that uses it,
+-   inside a `locally` block, as an import of a different policy is.
+- - A fence whose code depends on a macro or an inline given being expanded needs `compile`, since
+-   `typecheck`, the default, stops before expansion.
+- - An import which cannot be resolved breaks every fence after it, because a failed fence still
+-   leaves its imports behind. Fix the first error in a tutorial before reading the others.
++ - 後のフェンスが使う定義は普通のフェンスに置き、`run` のフェンスは出力だけをする。REPL の検査器はモードを指定したフェンスをすべて飛ばすので、その中の定義は検査器からは失われる。
++ - チュートリアルで定義した名前（列挙型のケース、コンパニオンのメンバー）は、それを `import` しても後のフェンスに引き継がれない。後のフェンスでは `Color.Red` と書くか、それが必要なフェンスでインポートを繰り返す。
++ - 型がチュートリアルで定義した型で始まる given には名前を付ける。`given personParsable: (Person is Json.Parsable)` のように書く。無名の `given Person is …` は、後のすべてのフェンスから `Person` を隠してしまう。
++ - 別の given を導出する間に見つからなければならない given は、別のポリシーのインポートと同じように、それを使うフェンスの中で `locally` ブロックの中に宣言する。
++ - コードがマクロやインラインの given の展開に依存するフェンスには `compile` が必要である。デフォルトの `typecheck` は展開の前で止まるからである。
++ - 解決できないインポートは、その後のすべてのフェンスを壊す。失敗したフェンスもそのインポートを残していくからである。他のエラーを読む前に、チュートリアルの最初のエラーを直す。
+
+- `inspect` writes a present optional value between corner brackets and an absent one as `○`, and
+- a floating-point number has no `show` without a `Decimalizer` in scope, so it is printed with
+- `inspect` too. Say what the notation means where a tutorial first shows it.
++ `inspect` は存在するオプショナルな値を鉤括弧で囲んで書き、存在しない値を `○` と書く。
++ また、浮動小数点数はスコープ内に `Decimalizer` がなければ `show` を持たないので、それも `inspect` で出力する。
++ チュートリアルで初めてその表記を見せるところで、その意味を述べる。
+
+- A `run` fence which touches the world outside the program — the disk, a subprocess — creates
+- what it needs within itself, and does not rely on what an earlier `run` fence left behind. Fuel
+- runs a fence again only when the fence changes, so on a partial rebuild an earlier fence's
+- effects may be absent, or belong to a different temporary directory. Give such a tutorial one
+- fixed working location, write to it with flags which replace what is there, and print results,
+- never paths: an absolute path in captured output, or in a captured error message, is the path
+- on whichever machine built the documentation. For the same reason, do not `run` a fence which
+- prints the real environment, user name or host name; give it a fixed environment instead.
++ プログラムの外の世界（ディスク、サブプロセス）に触れる `run` のフェンスは、必要なものを自分の中で作り、前の `run` のフェンスが残したものに頼らない。
++ fuel はフェンスが変わったときにしかそれを再実行しないので、部分的な再ビルドでは、前のフェンスの効果がなかったり、別の一時ディレクトリに属していたりすることがある。
++ そのようなチュートリアルには固定の作業場所を一つ与え、そこにあるものを置き換えるフラグで書き込み、パスではなく結果を出力する。
++ 捕捉された出力や捕捉されたエラーメッセージの中の絶対パスは、ドキュメントをビルドしたマシンでのパスである。
++ 同じ理由で、実際の環境、ユーザー名、ホスト名を出力するフェンスを `run` しない。
++ 代わりに固定の環境を与える。
+
+- A fence that cannot run where the documentation is built — one that needs the network, a
+- terminal, a browser or a running service — stays `typecheck`, and the prose says what it would
+- do. Never write the output of such a fence by hand as though it had been captured.
++ ドキュメントがビルドされる場所で実行できないフェンス（ネットワーク、端末、ブラウザ、実行中のサービスを必要とするもの）は `typecheck` のままにし、それが何をするかを文章で述べる。
++ そのようなフェンスの出力を、捕捉されたかのように手で書いてはならない。
+
+- ## Links
++ ## リンク
+
+- A tutorial is rarely read alone. The reader arrives with something to get done, and the thing
+- they need next is often on another page, so link to it at the point they would want it:
++ チュートリアルが単独で読まれることはまれである。
++ 読者は成し遂げたいことを抱えてやって来て、次に必要なものは別のページにあることが多いので、読者がそれを求める箇所でリンクする。
+
+- - a concept another tutorial teaches, at its first use in each section, with the section's anchor
+-   where the target is one section of a long page: `[strategy](errors.md#choosing-a-strategy)`;
+- - a combination of two features, from both pages. Where an instance joins one module's type to
+-   another's typeclass — a date that is encoded in JSON, a quantity that is shown in a table, a
+-   path that is a command-line parameter — each tutorial gives the combination a short section or
+-   a sentence, with a sample, and links to the other;
+- - a design idea, to its essay in `doc/philosophy/`, once, where the design is being explained;
+- - an API entity, by naming it in inline code with its sigil (`` `#Json` `` for a type,
+-   `` `.fetch` `` for a term), which fuel resolves and links.
++ - 別のチュートリアルが教える概念へ、各節での最初の使用箇所で。対象が長いページの一つの節であれば、その節のアンカーを付ける。`[strategy](errors.md#choosing-a-strategy)` のように書く。
++ - 二つの機能の組み合わせへ、両方のページから。インスタンスがあるモジュールの型を別のモジュールの型クラスにつなぐ場合（JSON でエンコードされる日付、表に表示される量、コマンドラインのパラメーターであるパス）、それぞれのチュートリアルはその組み合わせに短い節か一文をサンプルとともに割き、もう一方にリンクする。
++ - 設計の考え方へ、`doc/philosophy/` のその論考に、設計を説明している箇所で一度だけ。
++ - API の実体へ、インラインのコードでシジル付きでその名前を書いて（型なら `` `#Json` ``、項なら `` `.fetch` ``）。fuel がそれを解決してリンクする。
+
+- Link text is the name of the thing linked to, never "here" or "this page". `fuel compile` checks
+- that every link has a target.
++ リンクのテキストはリンク先のものの名前であり、決して「ここ」や「このページ」ではない。
++ `fuel compile` は、すべてのリンクにリンク先があることを検査する。
+
+- ## Glossary
++ ## 用語集
+
+- A word with a precise meaning in Soundness — *tactic*, *strategy*, *capability*, *choice
+- package* — is defined in `doc/en/glossary.tel`, and written in brackets where a reader may not yet
+- know it: `[tactic]`, or `[strategies][strategy]` for an inflected form. Fuel shows the definition
+- when the term is pointed at, and links it to the page named in its entry.
++ Soundness で精密な意味を持つ語（*戦術*、*戦略*、*ケイパビリティ*、*選択パッケージ*）は `doc/en/glossary.tel` で定義され、読者がまだ知らないかもしれない箇所では角括弧で囲んで書く。
++ `[tactic]`、あるいは語形が変わる場合は `[strategies][strategy]` と書く。
++ fuel は、用語が指されるとその定義を表示し、その項目に指定されたページにリンクする。
+
+- - Mark a term at its first use in a section, not at every use.
+- - A definition is one to three plain sentences that would make sense to a reader who has read
+-   nothing else, and it names the page that explains the term in full as its `link`.
+- - Add a term when a tutorial relies on a word whose everyday meaning would mislead, or which
+-   Soundness uses more narrowly than Scala does. Ordinary Scala vocabulary a reader is assumed to
+-   know — *trait*, *case class* — is not defined. A term is also defined when its translation
+-   must be the same everywhere, so that every language renders it alike, even if it is ordinary
+-   vocabulary.
+- - Fuel does not report a bracketed term with no definition; it is shown as plain bracketed
+-   text, so search the tutorial for bracketed words before committing.
++ - 用語は、使うたびにではなく、節の中での最初の使用箇所で印を付ける。
++ - 定義は、他に何も読んでいない読者にも意味が通じる一文から三文の平明な文であり、その用語を詳しく説明するページを `link` として名指しする。
++ - チュートリアルが、日常的な意味では誤解を招く語や、Soundness が Scala より狭い意味で使う語に頼るときに、用語を加える。読者が知っていると想定される普通の Scala の語彙（*トレイト*、*ケースクラス*）は定義しない。翻訳がどこでも同じでなければならない用語も、すべての言語で同じように訳されるように、普通の語彙であっても定義する。
++ - fuel は、定義のない角括弧の用語を報告しない。それはただの角括弧付きのテキストとして表示されるので、コミットする前にチュートリアルの角括弧付きの語を検索する。
+
+- ## Tables
++ ## 表
+
+- Fuel does not support Markdown pipe tables. A table is a fence marked `tabular`, written in
+- TEL: a `column` line per column (with an indented `title` and `align` where needed), a
+- `row` line per row, and an optional `caption`. Fields are separated by two spaces, so a
+- cell may hold single spaces but never two in a row. A row with an empty cell takes the long
+- form, `row` alone with an indented `cell` line per cell, a bare `cell` for the empty one.
+- Cells are Markdown phrasing, and code containing a backtick needs a double-backtick span.
++ fuel は Markdown のパイプの表をサポートしない。
++ 表は `tabular` と印を付けたフェンスで、TEL で書く。
++ 列ごとに `column` の行（必要なら字下げした `title` と `align` を付ける）を、行ごとに `row` の行を書き、`caption` は省略できる。
++ フィールドは二つの空白で区切るので、セルには単一の空白は入れられるが、二つ続けては決して入れられない。
++ 空のセルを持つ行は長い形式を取り、`row` だけを書いて、その下にセルごとに字下げした `cell` の行を置き、空のセルには `cell` だけを書く。
++ セルは Markdown のフレージングであり、バッククォートを含むコードには二重のバッククォートのスパンが必要である。
+
+= Cells are Markdown phrasing, and code containing a backtick needs a double-backtick span.
+=
+- ```tabular
++ ```tabular
+
+- column  Glyph
+- column  Meaning
+- column  Example
+- row  `↗`  superscript  `x↗2` is *x²*
++ column  グリフ
++ column  意味
++ column  例
++ row  `↗`  上付き添字  `x↗2` は *x²*
+
+- row  `↘`
++ row  `↘`
+
+-   cell  subscript
++   cell  下付き添字
+
+-   cell
++   cell
+
+=   cell
+- ```
++ ```
+
+- Use a table when the items share attributes: an enumeration, a mapping, a comparison, the
+- reasons an error can carry, the choices made by an import. Explanation — why, trade-offs,
+- caveats — stays in prose. Introduce a table with a sentence, as a sample is introduced, and
+- keep each cell to a phrase. `fuel compile` validates every table.
++ 表は、項目が属性を共有するときに使う。
++ 列挙型、対応関係、比較、エラーが持ちうる理由、インポートによる選択などである。
++ 説明（理由、トレードオフ、注意点）は文章に残す。
++ サンプルと同じように、表は文で導入し、各セルは一句にとどめる。
++ `fuel compile` はすべての表を検証する。
+
+- The format pages share three layouts, so that every format reads the same:
++ フォーマットのページは三つのレイアウトを共有するので、どのフォーマットも同じように読める。
+
+= The format pages share three layouts, so that every format reads the same:
+=
+- ```tabular
++ ```tabular
+
+- column  Layout
+- column  Columns
+- row  Optional-field policies  *A field which is* · *Reads as* · *Unless*
+- row  Codec modes  *Import* · *For a record* · *For any other type*
+- row  Output forms  *Form* · *Serializes on* · *Hands out*
++ column  レイアウト
++ column  列
++ row  省略可能なフィールドのポリシー  *フィールドが* · *読まれ方* · *ただし*
++ row  コーデックのモード  *インポート* · *レコードに対して* · *ほかの型に対して*
++ row  出力の形式  *形式* · *直列化を行う場所* · *渡すもの*
+
+= row  Output forms  *Form* · *Serializes on* · *Hands out*
+- ```
++ ```

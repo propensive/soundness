@@ -1,0 +1,258 @@
+orthant 1 language
+
+- ## Overview
++ ## 概観
+
+- Soundness is one library with many parts, and each of these tutorials takes one topic. They are
+- grouped here by what a reader is likely to be doing.
++ Soundness は多くの部分からなる一つのライブラリであり、これらのチュートリアルはそれぞれ一つのトピックを扱う。
++ ここでは、読者がしていそうなことごとにまとめてある。
+
+- Each tutorial builds its samples up in order, and the output of a sample is shown beneath it,
+- as the sample produced it. Where a sample is meant to fail, the compiler's error or the thrown
+- error is shown instead. A word with a precise meaning, such as [typeclass] or [strategy], is
+- defined in the glossary, which appears where the word is used. Every tutorial ends with a list
+- of the related tutorials, and most link to the philosophy behind their design:
+- [safety by construction](../../philosophy/safety-by-construction.md),
+- [direct style](../../philosophy/direct-style.md),
+- [honest signatures](../../philosophy/honest-signatures.md) and the rest.
++ 各チュートリアルはサンプルを順に積み上げていき、サンプルの出力は、サンプルが生成したとおりにその下に示される。
++ 失敗することを意図したサンプルでは、代わりにコンパイラのエラーか投げられたエラーが示される。
++ [型クラス]や[戦略]のように正確な意味を持つ語は用語集で定義されており、その定義は語が使われる場所に表示される。
++ どのチュートリアルも関連するチュートリアルの一覧で終わり、ほとんどはその設計の背後にある哲学へリンクしている。[構築による安全性](../../philosophy/safety-by-construction.md)、[ダイレクトスタイル](../../philosophy/direct-style.md)、[正直なシグネチャ](../../philosophy/honest-signatures.md)などである。
+
+- ### Foundations
++ ### 基礎
+
+- - [Text](text.md) — writing, slicing, searching and rendering text, with the types that are textual
+- - [Characters](characters.md) — encodings, Unicode properties, widths and grapheme clusters
+- - [Numbers](numbers.md) — checked arithmetic, bit manipulation, precision, ordinals and bounded numbers
+- - [Mathematics](mathematics.md) — complex numbers, vectors, matrices and permutations
+- - [Optional Values](optional-values.md) — absence without `Option`, and what it costs
+- - [Errors](errors.md) — declaring that code can fail, choosing a strategy, and recovering
+- - [Collections](collections.md) — the collection types, and how they cross to the standard library
+- - [Patterns](patterns.md) — regular expressions and globs, checked as the code compiles
+- - [Interpolation](interpolation.md) — writing an interpolator of your own
+- - [Names](names.md) — identifiers validated against a plane of rules
+- - [Decoding](decoding.md) — turning text into typed values, and extracting them in patterns
+- - [Display](display.md) — showing and inspecting values
+- - [Derivation](derivation.md) — deriving typeclass instances for products and sums
+- - [Annotations](annotations.md) — reading annotations at compiletime
+- - [Generic Data](generic-data.md) — a representation every format can be converted through
+- - [Records](records.md) — typed records from a specification
+- - [Catalogs](catalogs.md) — a value for every field of a type, addressed by path
+- - [Optics](optics.md) — updating nested immutable values
+- - [Bit Flags](flags.md) — sets of flags as bits
+- - [Bloom Filters](bloom-filters.md) — probabilistic membership
+- - [Caching](caching.md) — an LRU cache and expiring values
+- - [UUIDs](uuid.md) — generating, parsing and combining UUIDs
+- - [Randomness](randomness.md) — random values, distributions and reproducible runs
+- - [Versioning](versioning.md) — versions and manifests
+- - [Diffing](diffing.md) — diffs, patches and evolutions
+- - [Trees](trees.md) — trees and graphs drawn as diagrams
+- - [Graphs](graphs.md) — building, ordering, folding and drawing graphs
++ - [テキスト](text.md) — テキストの記述、切り出し、検索、描画と、テキストとして扱える型
++ - [文字](characters.md) — エンコーディング、Unicode のプロパティ、幅、書記素クラスタ
++ - [数](numbers.md) — 検査付きの算術、ビット操作、精度、序数、範囲付きの数
++ - [数学](mathematics.md) — 複素数、ベクトル、行列、置換
++ - [オプショナルな値](optional-values.md) — `Option` を使わない値の不在と、そのコスト
++ - [エラー](errors.md) — コードが失敗しうることの宣言、戦略の選択、回復
++ - [コレクション](collections.md) — コレクションの型と、それらが標準ライブラリへ渡る方法
++ - [パターン](patterns.md) — コードのコンパイル時に検査される正規表現とグロブ
++ - [補間](interpolation.md) — 独自の補間子を書く
++ - [名前](names.md) — 規則のプレーンに照らして検証される識別子
++ - [デコード](decoding.md) — テキストを型付きの値に変え、パターンの中で取り出す
++ - [表示](display.md) — 値の表示と検査用の表示
++ - [導出](derivation.md) — 直積と直和に対する型クラスのインスタンスの導出
++ - [アノテーション](annotations.md) — コンパイル時にアノテーションを読む
++ - [汎用データ](generic-data.md) — どの形式もそれを通して変換できる表現
++ - [レコード](records.md) — 仕様から作られる型付きのレコード
++ - [カタログ](catalogs.md) — 型のフィールドごとに一つの値を持ち、パスで指定するもの
++ - [オプティクス](optics.md) — 入れ子になった不変の値の更新
++ - [ビットフラグ](flags.md) — ビットとしてのフラグの集合
++ - [Bloom フィルター](bloom-filters.md) — 確率的な所属判定
++ - [キャッシュ](caching.md) — LRU キャッシュと期限付きの値
++ - [UUID](uuid.md) — UUID の生成、パース、結合
++ - [乱数](randomness.md) — ランダムな値、分布、再現可能な実行
++ - [バージョン管理](versioning.md) — バージョンとマニフェスト
++ - [差分](diffing.md) — 差分、パッチ、進化
++ - [木](trees.md) — 図として描かれる木とグラフ
++ - [グラフ](graphs.md) — グラフの構築、順序付け、畳み込み、描画
+
+- ### Data formats
++ ### データ形式
+
+- - [JSON](json.md) — parsing, typed access, building, schemas and validation
+- - [YAML](yaml.md) — parsing, tags, anchors and encoding
+- - [XML](xml.md) — nodes, namespaces, XPath and schemas
+- - [CBOR](cbor.md) — binary JSON-like encoding, with tags and diagnostic notation
+- - [CSV](csv.md) — rows, headers and formats, decoded to case classes
+- - [TEL](tel.md) — the indentation-based data language, its schemas and editing
+- - [Protocol Buffers](protobuf.md) — messages, fields and compatibility
+- - [Markdown](markdown.md) — parsing, rendering and writing back
+- - [Base Encoding](base-encoding.md) — Base64, hexadecimal and other alphabets
+- - [Binary Data](binary-data.md) — describing and reading a binary layout
+- - [Compression](compression.md) — compressing values and streams
+- - [Archives](archives.md) — ZIP, tar and ar
+- - [Hashing](hashing.md) — digests, checksums and fast hashing
+- - [Cryptography](cryptography.md) — encryption, signing, keys and certificates
+- - [Media Types](media-types.md) — media types, and types that know theirs
++ - [JSON](json.md) — パース、型付きのアクセス、構築、スキーマ、検証
++ - [YAML](yaml.md) — パース、タグ、アンカー、エンコード
++ - [XML](xml.md) — ノード、名前空間、XPath、スキーマ
++ - [CBOR](cbor.md) — タグと診断記法を備えた、JSON に似たバイナリのエンコーディング
++ - [CSV](csv.md) — ケースクラスへデコードされる行、ヘッダー、形式
++ - [TEL](tel.md) — インデントに基づくデータ言語と、そのスキーマと編集
++ - [Protocol Buffers](protobuf.md) — メッセージ、フィールド、互換性
++ - [Markdown](markdown.md) — パース、描画、書き戻し
++ - [Base エンコーディング](base-encoding.md) — Base64、16 進数、その他のアルファベット
++ - [バイナリデータ](binary-data.md) — バイナリのレイアウトの記述と読み取り
++ - [圧縮](compression.md) — 値とストリームの圧縮
++ - [アーカイブ](archives.md) — ZIP、tar、ar
++ - [ハッシュ](hashing.md) — ダイジェスト、チェックサム、高速なハッシュ
++ - [暗号](cryptography.md) — 暗号化、署名、鍵、証明書
++ - [メディアタイプ](media-types.md) — メディアタイプと、自身のメディアタイプを知っている型
+
+- ### Time, quantity and locale
++ ### 時間、量、ロケール
+
+- - [Time](time.md) — dates, times, instants, zones, calendars, recurrences and formatting
+- - [Quantities](quantities.md) — units, dimensions and conversions, checked at compiletime
+- - [Money](money.md) — amounts, splitting, prices and tax
+- - [Geography](geography.md) — angles, compass points and locations
+- - [Chemistry](chemistry.md) — elements, molecules, formulas and equations
+- - [Colors](colors.md) — color spaces, mixing, distance and palettes
+- - [Internationalization](internationalization.md) — translations and locales
+- - [Hyphenation](hyphenation.md) — hyphenating and syllabifying words
++ - [時間](time.md) — 日付、時刻、時点、タイムゾーン、暦、繰り返し、書式
++ - [物理量](quantities.md) — コンパイル時に検査される単位、次元、換算
++ - [貨幣](money.md) — 金額、分割、価格、税
++ - [地理](geography.md) — 角度、方位、位置
++ - [化学](chemistry.md) — 元素、分子、化学式、反応式
++ - [色](colors.md) — 色空間、混色、距離、パレット
++ - [国際化](internationalization.md) — 翻訳とロケール
++ - [ハイフネーション](hyphenation.md) — 単語のハイフネーションと音節分け
+
+- ### Filesystem, processes and the environment
++ ### ファイルシステム、プロセス、環境
+
+- - [Paths](paths.md) — building, relating and deconstructing paths
+- - [Filesystem](filesystem.md) — files, directories, access and watching
+- - [Environment](environment.md) — variables, properties, directories and the machine
+- - [Streams](streams.md) — reading, writing and composing streams of data
+- - [Processes](processes.md) — defining, running and piping commands
+- - [Concurrency](concurrency.md) — supervised tasks, cancellation and promises
+- - [Logging](logging.md) — loggers, levels and routing
+- - [Classpaths](classpath.md) — resources, classloaders and services
+- - [Packaging](packaging.md) — slim JARs whose dependencies are fetched by hash
+- - [Daemons](daemons.md) — long-running applications with fast clients
+- - [Containers](docker.md) — building and reading images, and talking to a daemon
+- - [Git](git.md) — repositories, commits, branches and remotes
+- - [SSH](ssh.md) — host keys, transports and remote commands
+- - [Databases](database.md) — declaring, storing and querying
++ - [パス](paths.md) — パスの構築、関連付け、分解
++ - [ファイルシステム](filesystem.md) — ファイル、ディレクトリ、アクセス、監視
++ - [環境](environment.md) — 変数、プロパティ、ディレクトリ、マシン
++ - [ストリーム](streams.md) — データのストリームの読み取り、書き込み、合成
++ - [プロセス](processes.md) — コマンドの定義、実行、パイプ
++ - [並行性](concurrency.md) — 監督されたタスク、キャンセル、プロミス
++ - [ロギング](logging.md) — ロガー、レベル、ルーティング
++ - [クラスパス](classpath.md) — リソース、クラスローダー、サービス
++ - [パッケージング](packaging.md) — 依存をハッシュで取得するスリムな JAR
++ - [デーモン](daemons.md) — 高速なクライアントを持つ長時間動作するアプリケーション
++ - [コンテナー](docker.md) — イメージの構築と読み取り、デーモンとのやり取り
++ - [Git](git.md) — リポジトリ、コミット、ブランチ、リモート
++ - [SSH](ssh.md) — ホスト鍵、トランスポート、リモートコマンド
++ - [データベース](database.md) — 宣言、格納、問い合わせ
+
+- ### Networking and the web
++ ### ネットワークと Web
+
+- - [Network Addresses](network-addresses.md) — URLs, hostnames, IP addresses and ports
+- - [Sockets](sockets.md) — serving, clients, TLS and conversations
+- - [HTTP Client](http-client.md) — requests, headers, bodies and sessions
+- - [HTTP Server](http-server.md) — servers, responses, WebSockets and HTTP/2
+- - [RPC](rpc.md) — interfaces over JSON-RPC, gRPC and server-sent events
+- - [Email](email.md) — composing and sending
+- - [OAuth 2](oauth.md) — tokens and credentials
+- - [OpenAPI](openapi.md) — typed clients from a document
+- - [Service Discovery](service-discovery.md) — advertising and browsing services
+- - [Web Automation](web-automation.md) — driving a browser
+- - [HTML](html.md) — constructing, checking, rendering and parsing HTML
+- - [Web Pages](pages.md) — whole pages from archetypes
+- - [The Browser DOM](dom.md) — typed scripting of the page
+- - [CSS](css.md) — writing, validating and rendering stylesheets
+- - [Forms](forms.md) — rendering and handling forms
+- - [SVG](svg.md) — shapes, paths, transforms and documents
+- - [Charts](charts.md) — series, chart kinds and rendering
+- - [Label placement](label-placement.md) — captions that avoid their obstacles
+- - [Images](images.md) — pixels, canvases and conversion
+- - [Audio](audio.md) — reading, writing, recording and playback
+- - [Fonts](fonts.md) — loading, measuring and subsetting
+- - [PDF](pdf.md) — creating, reading and editing documents
+- - [Mathematical Markup](mathematical-markup.md) — MathML trees
++ - [ネットワークアドレス](network-addresses.md) — URL、ホスト名、IP アドレス、ポート
++ - [ソケット](sockets.md) — サーバー、クライアント、TLS、対話
++ - [HTTP クライアント](http-client.md) — リクエスト、ヘッダー、本文、セッション
++ - [HTTP サーバー](http-server.md) — サーバー、レスポンス、WebSocket、HTTP/2
++ - [RPC](rpc.md) — JSON-RPC、gRPC、サーバー送信イベント上のインターフェース
++ - [メール](email.md) — 作成と送信
++ - [OAuth 2](oauth.md) — トークンと資格情報
++ - [OpenAPI](openapi.md) — 文書から作られる型付きのクライアント
++ - [サービスディスカバリー](service-discovery.md) — サービスの広告と閲覧
++ - [Web の自動化](web-automation.md) — ブラウザの操作
++ - [HTML](html.md) — HTML の構築、検査、描画、パース
++ - [Web ページ](pages.md) — アーキタイプから作られるページ全体
++ - [ブラウザの DOM](dom.md) — 型付きのページのスクリプティング
++ - [CSS](css.md) — スタイルシートの記述、検証、描画
++ - [フォーム](forms.md) — フォームの描画と処理
++ - [SVG](svg.md) — 図形、パス、変換、文書
++ - [チャート](charts.md) — 系列、チャートの種類、描画
++ - [ラベルの配置](label-placement.md) — 障害物を避けるキャプション
++ - [画像](images.md) — ピクセル、キャンバス、変換
++ - [オーディオ](audio.md) — 読み取り、書き込み、録音、再生
++ - [フォント](fonts.md) — 読み込み、計測、サブセット化
++ - [PDF](pdf.md) — 文書の作成、読み取り、編集
++ - [数式マークアップ](mathematical-markup.md) — MathML の木
+
+- ### Command line and terminal
++ ### コマンドラインと端末
+
+- - [Command-Line Applications](cli.md) — entry points, arguments, flags, completions and help
+- - [Terminal](terminal.md) — styled text, input, menus and layout
+- - [Terminal Emulation](terminal-emulator.md) — feeding and inspecting a terminal
+- - [Tables](tables.md) — tabulating values at any width
+- - [Gauges](gauges.md) — statuses as gauges
+- - [Syntax Highlighting](syntax-highlighting.md) — highlighting, types and completions
++ - [コマンドラインアプリケーション](cli.md) — エントリーポイント、引数、フラグ、補完、ヘルプ
++ - [端末](terminal.md) — スタイル付きのテキスト、入力、メニュー、レイアウト
++ - [端末エミュレーション](terminal-emulator.md) — 端末への入力と端末の検査
++ - [表](tables.md) — 任意の幅での値の表形式化
++ - [ゲージ](gauges.md) — ゲージとしての状態
++ - [構文ハイライト](syntax-highlighting.md) — ハイライト、型、補完
+
+- ### Compiler, tooling and agents
++ ### コンパイラ、ツール、エージェント
+
+- - [Compilation](compiler.md) — configuring and running compilers, and producing artifacts
+- - [Metaprogramming](metaprogramming.md) — givens, type-level values and expansions
+- - [Staging](staging.md) — quotes, splices and rigs
+- - [Testing](testing.md) — suites, tests, contrasts and benchmarks
+- - [Debugging](debugging.md) — sessions, breakpoints and stepping
+- - [Stack Traces](stack-traces.md) — capturing, demangling and resolving traces
+- - [Foreign Interoperability](foreign-interop.md) — loading and navigating foreign interfaces
+- - [Language Server Protocol](lsp.md) — defining and running a server
+- - [ACP](acp.md) — the agent client protocol
+- - [MCP](mcp.md) — the model context protocol
+- - [Language Models](llm.md) — conversations, tools and structured answers
++ - [コンパイル](compiler.md) — コンパイラの設定と実行、成果物の生成
++ - [メタプログラミング](metaprogramming.md) — given、型レベルの値、展開
++ - [ステージング](staging.md) — クォート、スプライス、リグ
++ - [テスト](testing.md) — スイート、テスト、対比、ベンチマーク
++ - [デバッグ](debugging.md) — セッション、ブレークポイント、ステップ実行
++ - [スタックトレース](stack-traces.md) — トレースの取得、デマングル、解決
++ - [外部との相互運用](foreign-interop.md) — 外部インターフェースの読み込みとナビゲーション
++ - [Language Server Protocol](lsp.md) — サーバーの定義と実行
++ - [ACP](acp.md) — エージェントクライアントプロトコル
++ - [MCP](mcp.md) — モデルコンテキストプロトコル
++ - [言語モデル](llm.md) — 会話、ツール、構造化された回答

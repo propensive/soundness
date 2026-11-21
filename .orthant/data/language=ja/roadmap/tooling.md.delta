@@ -1,0 +1,376 @@
+orthant 1 language
+
+- # The Toolchain
++ # ツールチェーン
+
+- Soundness code should be written, built, tested, explored and debugged with tools that share
+- its philosophy — total, honest, native-feeling — rather than through a Maven-era toolchain that
+- predates every idea the platform embodies. The end-state is a developer, human or agent, who
+- never leaves the ecosystem: flame for exploration, fury for building, fume for testing,
+- fluence for finding APIs, the exegesis LSP server inside any editor, a debugger that speaks
+- Soundness rather than Java, and the synesthesia MCP server giving agents the same access
+- programmatically.
++ Soundness のコードは、このプラットフォームが体現するあらゆる考えより前からある Maven 時代のツールチェーンを通じてではなく、その哲学（全域的で、正直で、ネイティブに感じられること）を共有するツールで書き、ビルドし、テストし、探索し、デバッグするべきである。
++ 最終状態は、人間であれエージェントであれ、開発者がエコシステムを離れることのない状態である。探索には flame、ビルドには fury、テストには fume、API を見つけるには fluence、どのエディターの中でも exegesis LSP サーバー、Java ではなく Soundness を話すデバッガー、そしてエージェントにプログラムから同じアクセスを与える synesthesia MCP サーバーである。
+
+- The pieces are in different states, and the roadmap is honest about which. Of the tools
+- that live elsewhere, this track records only what Soundness owes each of them, never their own
+- progress:
++ 各部分の状態はさまざまであり、ロードマップはどれがどうであるかについて正直である。
++ 他の場所にあるツールについて、このトラックは Soundness がそれぞれに対して負うものだけを記録し、ツール自身の進捗は記録しない。
+
+= progress:
+=
+- ```tabular
++ ```tabular
+
+- column  Tool
+- column  Role
+- column  Where
+- column  State
+- row  flame  exploration (the REPL)  its own repository  pinned in `etc/tools` (0.8.0), configured under `.pyrocosm/`
+- row  fury  building  its own repository  cannot yet build this repository
+- row  fume  testing  its own repository  pinned in `etc/tools` (0.8.3), configured under `.pyrocosm/`; runs this repository's suites
+- row  fluence  finding APIs  its own repository  not started
+- row  exegesis  the LSP server  this repository  working
+- row  vivisection  the debugger  this repository  working
+- row  synesthesia  the MCP server  this repository  working
++ column  ツール
++ column  役割
++ column  場所
++ column  状態
++ row  flame  探索（REPL）  独自のリポジトリ  `etc/tools` に固定（0.8.0）、`.pyrocosm/` で設定
++ row  fury  ビルド  独自のリポジトリ  まだこのリポジトリをビルドできない
++ row  fume  テスト  独自のリポジトリ  `etc/tools` に固定（0.8.3）、`.pyrocosm/` で設定。このリポジトリのスイートを実行する
++ row  fluence  API の検索  独自のリポジトリ  未着手
++ row  exegesis  LSP サーバー  このリポジトリ  動作している
++ row  vivisection  デバッガー  このリポジトリ  動作している
++ row  synesthesia  MCP サーバー  このリポジトリ  動作している
+
+= row  synesthesia  the MCP server  this repository  working
+- ```
++ ```
+
+- fume is a front-end and runner over the probably framework, which remains the library. TEL —
+- the configuration language the whole toolchain standardises on — is specified and implemented,
+- with stratiform as its reference implementation. The bootstrap test for the entire track is
+- Soundness being buildable by fury, attestation-equal to the Mill build.
++ fume は probably フレームワークの上のフロントエンドとランナーであり、ライブラリは probably のままである。
++ TEL（ツールチェーン全体が標準とする設定言語）は仕様化され実装されており、stratiform がその参照実装である。
++ トラック全体のブートストラップのテストは、Soundness が fury でビルドでき、Mill のビルドと証明上等しいことである。
+
+- The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
++ このトラックの項目と、その時期およびハードな依存を示す。各項目の状況は [`status.tel`](status.tel) に記録されている。
+
+= The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+=
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Title
+- column  Horizon
+- column  Needs
+- row  tool-1  flame tracks current releases  near
+- row  tool-2  fume runs the suites  near → mid
+- row  tool-3  the LSP server serves a real session  near → mid
+- row  tool-4  Soundness builds with fury  mid
+- row  tool-5  agents reach everything over MCP  mid
+- row  tool-6  the property-testing question is settled  mid
+- row  tool-7  fluence searches the APIs  long  doc-5
+- row  tool-8  fume reports live to the web  long
+- row  tool-9  TEL everywhere  long
+- row  tool-10  a debugger that speaks Soundness  near → mid
+- row  tool-11  coverage is tracked  mid  tool-2
+- row  tool-12  benchmarks on every commit  mid  tool-2
++ column  項目
++ column  題目
++ column  時期
++ column  依存
++ row  tool-1  flame が最新のリリースに追従する  近期
++ row  tool-2  fume がスイートを実行する  近期 → 中期
++ row  tool-3  LSP サーバーが実際のセッションに応える  近期 → 中期
++ row  tool-4  Soundness が fury でビルドされる  中期
++ row  tool-5  エージェントが MCP ですべてに届く  中期
++ row  tool-6  プロパティテストの問題に決着がつく  中期
++ row  tool-7  fluence が API を検索する  長期  doc-5
++ row  tool-8  fume が Web にライブで報告する  長期
++ row  tool-9  どこでも TEL  長期
++ row  tool-10  Soundness を話すデバッガー  近期 → 中期
++ row  tool-11  カバレッジが追跡される  中期  tool-2
++ row  tool-12  すべてのコミットでベンチマーク  中期  tool-2
+
+= row  tool-12  benchmarks on every commit  mid  tool-2
+- ```
++ ```
+
+- ## tool-1: flame tracks current releases
++ ## tool-1: flame が最新のリリースに追従する
+
+- Horizon: near
+- Baseline: flame 0.8.0 is pinned in `etc/tools`; the current Soundness release is 0.72.0 (measured 2026-10-21; 0.3.0 and 0.68.0 on 2026-09-25; on 2026-08-01 flame built against 0.62.0 while the release was 0.64.0)
++ 時期：近期
++ 基準値：flame 0.8.0 が `etc/tools` に固定されている。現在の Soundness のリリースは 0.72.0 である（2026-10-21 に測定。2026-09-25 には 0.3.0 と 0.68.0。2026-08-01 には、リリースが 0.64.0 のときに flame は 0.62.0 に対してビルドされていた）
+
+- A REPL that lags the platform cannot be the platform's front door. flame builds against each
+- release as it happens, and staying current becomes a checked property rather than an intention.
+- Since #2044 flame is a pinned tool with its own `.pyrocosm/flame/config.tel`, and `make
+- doccheck` runs every tutorial's examples through it; nothing yet ties a Soundness release to a
+- green flame build.
++ プラットフォームに遅れる REPL は、プラットフォームの正面玄関にはなれない。
++ flame はリリースが出るたびにそれに対してビルドされ、最新であることは意図ではなく検査される性質になる。
++ #2044 以降、flame は独自の `.pyrocosm/flame/config.tel` を持つ固定されたツールであり、`make doccheck` はすべてのチュートリアルの例をそれを通じて実行する。Soundness のリリースを緑の flame のビルドに結びつけるものはまだない。
+
+- Done when: flame's CI builds it against every new Soundness release, and a release is not
+- announced until that build is green.
++ 完了条件：flame の CI がすべての新しい Soundness のリリースに対して flame をビルドし、そのビルドが緑になるまでリリースが告知されないこと。
+
+- ## tool-2: fume runs the suites
++ ## tool-2: fume がスイートを実行する
+
+- Done: #2091 (2026-09-27), which re-enabled orthodoxy's suite
+- Baseline was fume 0.4.1 running the suite with 1 test suite (orthodoxy) disabled (measured 2026-09-25; fume did not exist and 3 suites were disabled on 2026-08-01); fume 0.8.3 runs every suite on 2026-10-21
++ 完了：#2091（2026-09-27）。orthodoxy のスイートを再び有効にした
++ 基準値は、テストスイートを一つ（orthodoxy）無効にしてスイートを実行する fume 0.4.1 だった（2026-09-25 に測定。2026-08-01 には fume は存在せず、三つのスイートが無効だった）。2026-10-21 には fume 0.8.3 がすべてのスイートを実行している
+
+- fume is the testing tool over the probably framework: multiple report formats, live updates in
+- the terminal, and results recorded as git notes alongside the existing attestation notes. Its
+- first milestone — running this repository's own suites in CI — is reached: `make ci` is
+- `fume run` over the umbrella assembly named in `.pyrocosm/fume/config.tel`, and probably no longer
+- renders reports of its own. No suite is disabled.
++ fume は probably フレームワークの上のテストツールである。複数のレポート形式、端末でのライブ更新、そして既存の証明のノートと並んで git のノートとして記録される結果を持つ。
++ 最初のマイルストーン（このリポジトリ自身のスイートを CI で実行すること）は達成されている。`make ci` は `.pyrocosm/fume/config.tel` で名指したアンブレラのアセンブリに対する `fume run` であり、probably はもはや独自のレポートを描画しない。
++ 無効にされたスイートはない。
+
+- Done when: fume runs the full Soundness suite in CI and
++ 完了条件：fume が CI で Soundness の全スイートを実行し、次が成り立つこと。
+
+-     grep -c 'enabled = false' build.mill    # 0
++     grep -c 'enabled = false' build.mill    # 0
+
+- ## tool-3: the LSP server serves a real session
++ ## tool-3: LSP サーバーが実際のセッションに応える
+
+- Horizon: near → mid
++ 時期：近期 → 中期
+
+- exegesis provides the LSP framework; the criterion is lived experience made mechanical: a
+- scripted editor session — open, diagnose, complete, navigate — runs against a Soundness project
+- in CI. exegesis's own suite already drives an in-process server over JSON-RPC (initialize,
+- open, diagnose, hover, incremental change, completion, folding, rename and inlay hints), with
+- message framing tested over an in-memory `Stdio`; navigation (definition, references) and a
+- session against a real project in CI are what separate it from the criterion (2026-10-21).
++ exegesis は LSP のフレームワークを提供する。基準は、実際の体験を機械的にしたものである。スクリプト化したエディターのセッション（開く、診断する、補完する、ナビゲートする）が、CI で Soundness のプロジェクトに対して実行されることである。
++ exegesis 自身のスイートはすでに、JSON-RPC 上でプロセス内のサーバーを動かしており（initialize、open、診断、ホバー、増分の変更、補完、折りたたみ、名前の変更、インレイヒント）、メッセージのフレーミングはメモリ上の `Stdio` でテストされている。ナビゲーション（定義、参照）と、CI での実際のプロジェクトに対するセッションが、それを基準から隔てているものである（2026-10-21）。
+
+- Done when: the scripted editor-session test passes in CI.
++ 完了条件：スクリプト化したエディターのセッションのテストが CI で通ること。
+
+- ## tool-4: Soundness builds with fury
++ ## tool-4: Soundness が fury でビルドされる
+
+= ## tool-4: Soundness builds with fury
+=
+- Horizon: mid
++ 時期：中期
+
+- The bootstrap is the criterion: `fury build` produces the same artifacts as the Mill build,
+- verified by the same attestation input-digest discipline, on this repository — the hardest
+- Scala build it will ever face. fury itself is an [external gate](index.md#dependencies); what
+- this item tracks is Soundness's side of the bootstrap — the things a build tool needs from this
+- repository's own libraries, each filed as an issue:
++ ブートストラップが基準である。`fury build` が、同じ証明の入力ダイジェストの規律で検証されて、Mill のビルドと同じ成果物を、このリポジトリ（fury が直面するであろう最も難しい Scala のビルド）に対して作り出すことである。
++ fury そのものは [外部の関門](index.md#dependencies) である。この項目が追跡するのはブートストラップの Soundness の側、つまりビルドツールがこのリポジトリ自身のライブラリに必要とするものであり、それぞれイシューとして登録されている。
+
+= repository's own libraries, each filed as an issue:
+=
+- ```tabular
++ ```tabular
+
+- column  Need
+- column  Issue
+- row  the manifest `source` record  #2022
+- row  section-scoped `Tool` records and `Setting`  #2023
+- row  the closed `Lira.Hash.Domain`  #2024
+- row  the `Materializer` cache against the store's derivative tier  #2025
+- row  a compiler-version accessor  #2026
+- row  the diagnostics `ScalacEdges` drops  #2027
+- row  retained compiler sessions for a daemon  #2028
+- row  TASTy UUIDs against LIRA §17 determinism  #2029
+- row  `Tel.Provider` records over custom validators (nested and repeatable compounds are done)  #2030
++ column  必要なもの
++ column  イシュー
++ row  マニフェストの `source` レコード  #2022
++ row  セクションのスコープを持つ `Tool` レコードと `Setting`  #2023
++ row  閉じた `Lira.Hash.Domain`  #2024
++ row  ストアの派生層に対する `Materializer` のキャッシュ  #2025
++ row  コンパイラのバージョンのアクセサー  #2026
++ row  `ScalacEdges` が落とす診断  #2027
++ row  デーモンのために保持されるコンパイラのセッション  #2028
++ row  LIRA §17 の決定性に対する TASTy の UUID  #2029
++ row  独自のバリデーターに対する `Tel.Provider` のレコード（入れ子と繰り返し可能なコンパウンドは完了）  #2030
+
+= row  `Tel.Provider` records over custom validators (nested and repeatable compounds are done)  #2030
+- ```
++ ```
+
+- Done when: `fury build` builds Soundness from a clean checkout, attestation-equal to the Mill
+- build.
++ 完了条件：`fury build` がクリーンなチェックアウトから Soundness をビルドし、Mill のビルドと証明上等しいこと。
+
+- ## tool-5: agents reach everything over MCP
++ ## tool-5: エージェントが MCP ですべてに届く
+
+= ## tool-5: agents reach everything over MCP
+=
+- Horizon: mid
++ 時期：中期
+
+- synesthesia exposes the platform's knowledge to agents: module documentation, error
+- pages, roadmap status from `status.tel`, and migration instructions. An agent should never
+- need to clone the repository to answer "what does ↯/s.42.1 mean?" Today synesthesia is the
+- generic MCP library — tools, resources and prompts — and none of those resources exists.
++ synesthesia はプラットフォームの知識をエージェントに公開する。モジュールのドキュメント、エラーのページ、`status.tel` からのロードマップの状況、そして移行の指示である。
++ エージェントは「↯/s.42.1 は何を意味するか」に答えるためにリポジトリをクローンする必要があってはならない。
++ 現在の synesthesia は汎用の MCP ライブラリ（ツール、リソース、プロンプト）であり、それらのリソースは一つも存在しない。
+
+- Done when: a scripted MCP session resolves a bolt code to its page, a module to its topic
+- guide, and a roadmap item to its status, in CI.
++ 完了条件：スクリプト化した MCP のセッションが、CI で、ボルトのコードをそのページに、モジュールをそのトピックのガイドに、ロードマップの項目をその状況に解決すること。
+
+- ## tool-6: the property-testing question is settled
++ ## tool-6: プロパティテストの問題に決着がつく
+
+= ## tool-6: the property-testing question is settled
+=
+- Horizon: mid
++ 時期：中期
+
+- probably tests over axes and spreads rather than `forAll` and shrinking. Either that is the
+- answer — in which case a philosophy page argues it — or generative testing with shrinking
+- ships in probably. Either artifact closes the item; what is not acceptable is the question
+- staying open by default.
++ probably は `forAll` と縮小ではなく、軸と展開でテストする。
++ それが答えである（その場合は哲学のページがそれを論じる）か、縮小付きの生成的テストが probably に入るかのどちらかである。
++ どちらの成果物でもこの項目は閉じる。受け入れられないのは、問題が既定で開いたままであることである。
+
+- Done when: probably ships `forAll`-style generation with shrinking, or a philosophy page
+- documents why axes and spreads are the design.
++ 完了条件：probably が縮小付きの `forAll` 型の生成を出荷するか、哲学のページが、なぜ軸と展開が設計であるかを文書化すること。
+
+- ## tool-7: fluence searches the APIs
++ ## tool-7: fluence が API を検索する
+
+- Horizon: long
+- Needs: doc-5
++ 時期：長期
++ 依存：doc-5
+
+- fluence makes the API surface searchable — by name, by type, by signature — over the extraction
+- pipeline that `doc-5` builds.
++ fluence は、`doc-5` が作る抽出のパイプラインの上で、API の表面を名前、型、シグネチャで検索できるようにする。
+
+- Done when: fluence answers name, type and signature queries against the current release's
+- published API documentation.
++ 完了条件：fluence が、現在のリリースの公開された API ドキュメントに対して、名前、型、シグネチャの問い合わせに答えること。
+
+- ## tool-8: fume reports live to the web
++ ## tool-8: fume が Web にライブで報告する
+
+= ## tool-8: fume reports live to the web
+=
+- Horizon: long
++ 時期：長期
+
+- fume's second front-end: live test reporting over HTTP and WebSockets, the same data that
+- drives the terminal renderer.
++ fume の二つ目のフロントエンドである。HTTP と WebSocket によるライブのテスト報告で、端末の描画器を動かすのと同じデータを使う。
+
+- Done when: a fume run can be watched live in a browser, and the recorded git-note report
+- matches what was streamed.
++ 完了条件：fume の実行をブラウザでライブで見ることができ、記録された git のノートのレポートがストリームされたものと一致すること。
+
+- ## tool-9: TEL everywhere
++ ## tool-9: どこでも TEL
+
+= ## tool-9: TEL everywhere
+=
+- Horizon: long
++ 時期：長期
+
+- Every ecosystem tool that needs configuration reads TEL, with stratiform as the reference
+- implementation. No tool in the ecosystem asks for YAML, JSON or HOCON configuration. The three
+- tools this repository runs — flare, flame and fume — already read theirs from
+- `.pyrocosm/<tool>/config.tel`.
++ 設定を必要とするエコシステムのすべてのツールは TEL を読み、stratiform がその参照実装である。
++ エコシステムのどのツールも YAML、JSON、HOCON の設定を求めない。
++ このリポジトリが実行する三つのツール、flare、flame、fume は、すでに自分の設定を `.pyrocosm/<tool>/config.tel` から読んでいる。
+
+- Done when: no ecosystem tool's own configuration surface accepts any format but TEL.
++ 完了条件：エコシステムのどのツールの設定の表面も、TEL 以外の形式を受け入れないこと。
+
+- ## tool-10: a debugger that speaks Soundness
++ ## tool-10: Soundness を話すデバッガー
+
+- Done: #2306 (2026-10-21)
+- Baseline was a JDWP core, an expression evaluator and a DAP server whose suite drove a live session end to end, with an object inspecting as its JVM class name and no topic (measured 2026-09-25)
++ 完了：#2306（2026-10-21）
++ 基準値は、JDWP のコア、式の評価器、そしてスイートがライブのセッションを端から端まで動かす DAP サーバーだったが、オブジェクトは JVM のクラス名として検査用に表示され、トピックはなかった（2026-09-25 に測定）
+
+- Debugging a running application should feel native, not hosted: breakpoints, stepping and
+- inspection through a Debug Adapter Protocol server, with inspected values rendered as their
+- Soundness types — the same no-Java-encodings discipline `core-5` applies to traces, applied
+- to live state. vivisection is that server: `vivisection.DapServer` handles the request set
+- (launch, attach, breakpoints, threads, stack traces, scopes, variables, evaluate, stepping),
+- and its suite's `DapClient` drives a live debuggee through a breakpoint, a `next` step and
+- inspection in the ordinary run, with each local rendered through its `Inspectable` instance
+- and an object snapshot shown by its simple name and identity rather than a JVM class name. The
+- topic is `doc/en/modules/debugging.md`.
++ 実行中のアプリケーションのデバッグは、間借りしたものではなくネイティブに感じられるべきである。Debug Adapter Protocol のサーバーを通じたブレークポイント、ステップ実行、検査があり、検査した値はその Soundness の型として描画される。これは `core-5` がトレースに適用するのと同じ、Java のエンコーディングを見せない規律を、生きた状態に適用したものである。
++ vivisection がそのサーバーである。`vivisection.DapServer` はリクエストの集合（launch、attach、ブレークポイント、スレッド、スタックトレース、スコープ、変数、evaluate、ステップ実行）を扱い、そのスイートの `DapClient` は通常の実行で、ライブのデバッグ対象をブレークポイント、`next` のステップ、検査へと動かす。各ローカル変数はその `Inspectable` インスタンスを通じて描画され、オブジェクトのスナップショットは JVM のクラス名ではなく、単純名と同一性によって示される。
++ トピックは `doc/en/modules/debugging.md` である。
+
+- Done when: a scripted DAP session — set a breakpoint, step, inspect a value rendered in
+- Soundness terms — passes against a running Soundness application in CI.
++ 完了条件：スクリプト化した DAP のセッション（ブレークポイントを設定し、ステップ実行し、Soundness の言葉で描画された値を検査する）が、CI で、実行中の Soundness のアプリケーションに対して通ること。
+
+- ## tool-11: coverage is tracked
++ ## tool-11: カバレッジが追跡される
+
+= ## tool-11: coverage is tracked
+=
+- Horizon: mid
+- Needs: tool-2
++ 時期：中期
++ 依存：tool-2
+
+- probably's own scoverage reader went with its report renderer when fume took over reporting;
+- coverage returns as a fume concern, a tracked property rather than a one-off report: unit-test
+- coverage recorded for every commit, stored in git notes alongside the test reports, so the
+- trend is queryable and a regression is visible at review time. flare's unsafety census
+- (`safety-7`) already keeps its record this way, and is the pattern to follow.
++ fume がレポートを引き継いだとき、probably 自身の scoverage のリーダーはそのレポートの描画器とともになくなった。カバレッジは fume の関心事として、一度きりのレポートではなく追跡される性質として戻ってくる。単体テストのカバレッジがすべてのコミットについて記録され、テストのレポートと並んで git のノートに格納されるので、傾向を問い合わせることができ、後退はレビューの時点で見える。
++ flare の安全でなさの集計（`safety-7`）はすでにこのように記録を保っており、従うべき型である。
+
+- Done when: every CI run records coverage in a git note, and a single command reports the
+- coverage delta between any two commits.
++ 完了条件：すべての CI の実行がカバレッジを git のノートに記録し、一つのコマンドが任意の二つのコミットの間のカバレッジの差を報告すること。
+
+- ## tool-12: benchmarks on every commit
++ ## tool-12: すべてのコミットでベンチマーク
+
+= ## tool-12: benchmarks on every commit
+=
+- Horizon: mid
+- Needs: tool-2
++ 時期：中期
++ 依存：tool-2
+
+- The benchmark suites run for every commit, with results stored in git notes under the same
+- discipline as test reports and attestations, so performance history travels with the
+- repository and regressions are caught when they land, not when users notice.
++ ベンチマークのスイートはすべてのコミットについて実行され、結果はテストのレポートや証明と同じ規律で git のノートに格納されるので、性能の履歴はリポジトリとともに移動し、後退はユーザーが気づいたときではなく、入ったときに捕らえられる。
+
+- Done when: every commit on the main branch carries a benchmark git note, and a single command
+- reports the benchmark delta between any two commits.
++ 完了条件：メインブランチのすべてのコミットがベンチマークの git のノートを持ち、一つのコマンドが任意の二つのコミットの間のベンチマークの差を報告すること。

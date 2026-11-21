@@ -1,0 +1,3095 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base gossamer
++ base gossamer
+
+- import soundness
++ import soundness
+
+- info   text as a typed value: `Text`, the `t"…"` interpolator, and a vocabulary of operations over any textual type
++ info   型付きの値としてのテキスト：`Text`、`t"…"` 補間子、そして任意のテキスト型に対する操作の語彙
+
+- detail
++ detail
+
+-     _Gossamer_ is the text library: the operations on `Text` — the opaque alias of the JVM's
+-     `String` which Soundness uses in place of `String` everywhere — and the typeclasses which
+-     make those same operations available on any other textual type, such as an ANSI-styled
+-     `Teletype`, an `Ascii` byte string or a `Writing` of grapheme clusters.
++     _Gossamer_ はテキストのライブラリである。`Text` に対する操作と、それと同じ操作をほかのテキスト型でも使えるようにする型クラスを提供する。`Text` は JVM の `String` の不透明なエイリアスであり、Soundness はあらゆる場所で `String` の代わりにこれを使う。ほかのテキスト型とは、ANSI でスタイルを付けた `Teletype`、`Ascii` のバイト文字列、書記素クラスタの `Writing` などである。
+
+-     A `Text` is written with the `t"…"` interpolator, which substitutes any value that is
+-     `Showable` and processes escapes while the code compiles, or with `txt"…"`, which also
+-     folds a paragraph written across several source lines into one. Its operations are plain
+-     verbs: `cut` divides at a delimiter and `join` reassembles; `keep`, `skip`, `snip`,
+-     `before`, `after`, `upto`, `from` and `segment` slice by count or by ordinal position;
+-     `lower`, `upper`, `capitalize`, `trim`, `pad`, `fit` and `sub` transform; `starts`, `ends`,
+-     `contains`, `offsetOf`, `tally`, `pinpoint` and `search` ask questions. Absence is an
+-     `Optional`, not `-1` or `null`; positions are `Ordinal`s (`Prim`, `Sec`, `Ter`, …), which
+-     cannot be confused with lengths; and a `cut` is proved to yield at least one piece.
++     `Text` は `t"…"` 補間子で書く。これは `Showable` である任意の値を埋め込み、コンパイル時にエスケープを処理する。あるいは `txt"…"` で書く。これはさらに、ソースの複数行にわたって書いた段落を一行にまとめる。
++     その操作は素朴な動詞である。`cut` は区切り文字で分割し、`join` は組み立て直す。`keep`、`skip`、`snip`、`before`、`after`、`upto`、`from`、`segment` は個数や序数の位置で切り出す。`lower`、`upper`、`capitalize`、`trim`、`pad`、`fit`、`sub` は変換する。`starts`、`ends`、`contains`、`offsetOf`、`tally`、`pinpoint`、`search` は問いを立てる。
++     存在しないことは `-1` や `null` ではなく `Optional` で表す。位置は長さと取り違えようのない `Ordinal`（`Prim`、`Sec`、`Ter` など）である。そして `cut` は少なくとも一つの断片を返すことが証明されている。
+
+=     cannot be confused with lengths; and a `cut` is proved to yield at least one piece.
+=
+-     ```scala
++     ```scala
+
+=     cannot be confused with lengths; and a `cut` is proved to yield at least one piece.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     cannot be confused with lengths; and a `cut` is proved to yield at least one piece.
+=
+=     ```scala
+=     import soundness.*
+-     import textMetrics.uniformMetric
++     import textMetrics.uniformMetric
+
+-     val name = t"Nick Bottom"
++     val name = t"Nick Bottom"
+
+-     name.words.map(_.keep(1)).join            // t"NB"
++     name.words.map(_.keep(1)).join            // t"NB"
+
+-     name.cut(t" ").head.upper                 // t"NICK"
++     name.cut(t" ").head.upper                 // t"NICK"
+
+-     name.offsetOf(t"Bott")                    // an Optional ordinal, present here
++     name.offsetOf(t"Bott")                    // an Optional ordinal, present here
+
+-     name.pad(15, Rtl, '.')                    // t"....Nick Bottom"
++     name.pad(15, Rtl, '.')                    // t"....Nick Bottom"
+
+-     t"one,two".cut(t",").join(t"(", t", ", t")")   // t"(one, two)"
++     t"one,two".cut(t",").join(t"(", t", ", t")")   // t"(one, two)"
+
+=     t"one,two".cut(t",").join(t"(", t", ", t")")   // t"(one, two)"
+-     ```
++     ```
+
+-     Most of the vocabulary is written once, over the `Textual` typeclass, so a type with a
+-     `Textual` instance — `Text`, `Ascii`, `Writing`, and escapade's `Teletype` — gets every
+-     operation without redefining any. `Textual` extends the general collection typeclasses
+-     (`Countable`, `Segmentable`), which is how the count-based and predicate-based `keep`,
+-     `skip` and `snip`, the ordinal-based `before`/`after`/`upto`/`from`, and `count`, `where`,
+-     `all` and `exists` from the collections library serve text too: those live in `rudiments`
+-     and `murmuration`, not here. The factories `reversibleTextual` and `traversableTextual`
+-     let a new textual type publish `reverse` and traversal in its own companion.
++     語彙のほとんどは `Textual` 型クラスの上に一度だけ書かれているので、`Textual` のインスタンスを持つ型、すなわち `Text`、`Ascii`、`Writing`、そして escapade の `Teletype` は、何も再定義せずにすべての操作を得る。
++     `Textual` は一般的なコレクションの型クラス（`Countable`、`Segmentable`）を継承する。そのため、個数に基づく `keep`、`skip`、`snip` と述語に基づくそれら、序数に基づく `before`/`after`/`upto`/`from`、そしてコレクションライブラリの `count`、`where`、`all`、`exists` もテキストに使える。それらはここではなく `rudiments` と `murmuration` にある。
++     ファクトリー `reversibleTextual` と `traversableTextual` を使うと、新しいテキスト型が自分のコンパニオンで `reverse` と走査を公開できる。
+
+-     Three things about text are policies, chosen by importing a given **by name** (because
+-     `import soundness.*` does not import givens):
++     テキストについての三つの事柄はポリシーであり、given を**名前で**インポートして選ぶ（`import soundness.*` は given をインポートしないからである）。
+
+-     - **Case sensitivity** (`caseSensitivity.caseSensitive`, `caseInsensitive` or
+-       `smartCase`), which every proximity measure consults.
+-     - **Collation** (`collations.unicodeCollation` or `codepointCollation`), without which
+-       text cannot be sorted or compared with `<`: with `collationComparable`, a `Collation`
+-       in scope makes `Text` `Comparable`.
+-     - **Proximity** (`proximities.levenshteinProximity`, `jaroProximity`, …), the measure
+-       behind `proximity`, `fuzzy` and the `Lexicon`.
++     - **大文字と小文字の区別**（`caseSensitivity.caseSensitive`、`caseInsensitive`、`smartCase`）。すべての近接度の尺度がこれを参照する。
++     - **照合**（`collations.unicodeCollation` または `codepointCollation`）。これがなければ、テキストを並べ替えたり `<` で比較したりできない。`collationComparable` があれば、スコープにある `Collation` が `Text` を `Comparable` にする。
++     - **近接度**（`proximities.levenshteinProximity`、`jaroProximity` など）。`proximity`、`fuzzy`、`Lexicon` の背後にある尺度である。
+
+-     `Decimalizer` renders a `Double` to a chosen number of significant figures or decimal
+-     places, and is what `show` on a `Double` consults; `decimalConverters.javaDecimalConverter`
+-     is the plain `toString` alternative.
++     `Decimalizer` は `Double` を指定した有効数字の桁数または小数点以下の桁数で描画するものであり、`Double` に対する `show` が参照するものである。`decimalConverters.javaDecimalConverter` は素の `toString` による代替である。
+
+-     The library has three components:
++     このライブラリには三つのコンポーネントがある。
+
+-     - `gossamer.core` — `Text`'s operations, `t"…"`, `txt"…"` and `a"…"`, `Textual`,
+-       `Builder` and `Text.build`, `Cuttable` and `Joinable`, `Writing` and `Grapheme`, `Ascii`,
+-       `Decimalizer`, `Numerous`, `CaseSensitivity`, `Collation`, `Proximity` and the choice
+-       packages `caseSensitivity`, `collations`, `proximities` and `decimalConverters`.
+-     - `gossamer.codec` — the `distillate`-facing half: `textDecodable`, which decodes bytes
+-       to `Text` through a `Charset`, and the `enumIdentification` package, which names enum
+-       cases in kebab, snake, camel or Pascal case. Split out so that a module which only
+-       needs text does not depend on `distillate`.
+-     - `gossamer.lexicon` — `Lexicon`, a BK-tree for similarity search over a vocabulary,
+-       and `Dictionary`, a dense trie for exact and prefix lookup.
++     - `gossamer.core`：`Text` の操作、`t"…"`、`txt"…"`、`a"…"`、`Textual`、`Builder` と `Text.build`、`Cuttable` と `Joinable`、`Writing` と `Grapheme`、`Ascii`、`Decimalizer`、`Numerous`、`CaseSensitivity`、`Collation`、`Proximity`、そして選択パッケージ `caseSensitivity`、`collations`、`proximities`、`decimalConverters`。
++     - `gossamer.codec`：`distillate` に面した半分。`Charset` を通じてバイトを `Text` にデコードする `textDecodable` と、列挙型のケースをケバブケース、スネークケース、キャメルケース、パスカルケースで名付ける `enumIdentification` パッケージ。テキストだけを必要とするモジュールが `distillate` に依存しないように分けてある。
++     - `gossamer.lexicon`：語彙に対する類似検索のための BK 木である `Lexicon` と、完全一致と接頭辞による検索のための密なトライである `Dictionary`。
+
+-     Everything is exported to the `soundness` umbrella, and the choice packages merge with
+-     the umbrella's own, so a user writes `import soundness.*` and then imports one given of
+-     each policy by name.
++     すべてが `soundness` アンブレラにエクスポートされ、選択パッケージはアンブレラ自身のものとマージされる。そのため利用者は `import soundness.*` と書き、それから各ポリシーの given を一つずつ名前でインポートする。
+
+- refer anticipation.Text
++ refer anticipation.Text
+
+- refer gossamer.Textual
++ refer gossamer.Textual
+
+- refer gossamer.t
++ refer gossamer.t
+
+- refer gossamer.cut
++ refer gossamer.cut
+
+- refer gossamer.join
++ refer gossamer.join
+
+- refer gossamer.Collation
++ refer gossamer.Collation
+
+- refer gossamer.Proximity
++ refer gossamer.Proximity
+
+- refer gossamer.Decimalizer
++ refer gossamer.Decimalizer
+
+- entry .t   the `t"…"` interpolator: a `Text` from a literal, with `Showable` substitutions; and a `t"…"` pattern
++ entry .t   `t"…"` 補間子：リテラルから作る、`Showable` の埋め込みを伴う `Text`。そして `t"…"` パターン
+
+= entry .t   the `t"…"` interpolator: a `Text` from a literal, with `Showable` substitutions; and a `t"…"` pattern
+-   detail
++   detail
+
+-       `t"Hello, $name!"` builds a `Text`. Each literal part is escape-processed while the
+-       code compiles (`\n`, `\t`, `→`, `\\`, `\$`; a bad escape is a compile error at the
+-       offending character), and each substitution is rendered through the `Showable` instance
+-       for its type — a value with no `Showable` is a compile error, _a value of `T` is not
+-       Showable_, rather than a silent `toString`. The result is `Text`, never `String`.
++       `t"Hello, $name!"` は `Text` を組み立てる。
++       リテラルの各部分は、コンパイル時にエスケープが処理される（`\n`、`\t`、`→`、`\\`、`\$`。誤ったエスケープは、問題の文字の位置でのコンパイルエラーになる）。そして各埋め込みは、その型の `Showable` のインスタンスを通じて描画される。`Showable` を持たない値は、黙って `toString` されるのではなく、_a value of `T` is not Showable_ というコンパイルエラーになる。
++       結果は `Text` であり、決して `String` ではない。
+
+=       Showable_, rather than a silent `toString`. The result is `Text`, never `String`.
+=
+-       ```scala
++       ```scala
+
+=       Showable_, rather than a silent `toString`. The result is `Text`, never `String`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val name = t"Hamlet"
++       val name = t"Hamlet"
+
+-       val count = 3
++       val count = 3
+
+-       t"Hello, $name! You have $count messages."   // t"Hello, Hamlet! You have 3 messages."
++       t"Hello, $name! You have $count messages."   // t"Hello, Hamlet! You have 3 messages."
+
+-       t"tab\there"                                  // a real tab between the words
++       t"tab\there"                                  // a real tab between the words
+
+=       t"tab\there"                                  // a real tab between the words
+-       ```
++       ```
+
+-       The same prefix is a pattern: `case t"quit" =>` matches a `Text` equal to the literal,
+-       through `SimpleTExtractor`. The pattern form takes no substitutions. `fuzzy` accepts
+-       `t"…"` patterns in its cases, too.
++       同じ接頭辞はパターンでもある。`case t"quit" =>` は、`SimpleTExtractor` を通じて、リテラルと等しい `Text` に一致する。
++       パターンの形は埋め込みを取らない。
++       `fuzzy` もそのケースに `t"…"` パターンを受け付ける。
+
+=       `t"…"` patterns in its cases, too.
+=
+-       ```scala
++       ```scala
+
+=       `t"…"` patterns in its cases, too.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def respond(command: Text): Text = command match
++       def respond(command: Text): Text = command match
+
+-         case t"quit" => t"goodbye"
++         case t"quit" => t"goodbye"
+
+-         case other   => t"unknown command: $other"
++         case other   => t"unknown command: $other"
+
+=         case other   => t"unknown command: $other"
+-       ```
++       ```
+
+-       `txt"…"` is the variant for multi-line prose, and `a"…"` makes an `Ascii`.
++       `txt"…"` は複数行の文章のための変種であり、`a"…"` は `Ascii` を作る。
+
+-   refer gossamer.txt
++   refer gossamer.txt
+
+-   refer gossamer.SimpleTExtractor
++   refer gossamer.SimpleTExtractor
+
+=   refer gossamer.SimpleTExtractor
+-   refer gossamer.fuzzy
++   refer gossamer.fuzzy
+
+- entry .txt   the `txt"…"` interpolator: a `Text` with wrapped source lines folded into one
+-     As `t"…"`, with the whitespace of a literal written across several source lines
+-     normalised: every run of whitespace (including a single newline and the indentation after
+-     it) becomes one space, and a blank line — two newlines — becomes a single `\n`, so a
+-     paragraph wrapped for the source's reader is unwrapped for the output's, and a blank line
+-     separates paragraphs.
++ entry .txt   `txt"…"` 補間子：ソースで折り返した行を一つにまとめた `Text`
++     `t"…"` と同じだが、ソースの複数行にわたって書いたリテラルの空白が正規化される。空白の連続（一つの改行とその後のインデントを含む）はすべて一つの空白になり、空行、すなわち二つの改行は一つの `\n` になる。そのため、ソースの読み手のために折り返した段落は出力の読み手のために折り返しが解かれ、空行は段落を区切る。
+
+=     separates paragraphs.
+=
+-     ```scala
++     ```scala
+
+=     separates paragraphs.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     txt"""This message is written
++     txt"""This message is written
+
+-           across several lines."""      // t"This message is written across several lines."
++           across several lines."""      // t"This message is written across several lines."
+
+-     txt"""Hello
++     txt"""Hello
+
+-           world
++           world
+
+-           Bonjour
++           Bonjour
+
+-           le monde"""                   // t"Hello world\nBonjour le monde"
++           le monde"""                   // t"Hello world\nBonjour le monde"
+
+=           le monde"""                   // t"Hello world\nBonjour le monde"
+-     ```
++     ```
+
+-     Substitutions are rendered through `Showable`, as in `t"…"`, and are normalised with the
+-     rest of the text.
++     埋め込みは `t"…"` と同じく `Showable` を通じて描画され、テキストの残りとともに正規化される。
+
+- entry .a   the `a"…"` interpolator: an `Ascii` byte string, checked to be ASCII as the code compiles
+-     `a"hello"` is an `Ascii`, a frozen array of bytes holding the literal's characters, one byte
+-     each. A character outside ASCII is a compile error (number 824, _`é` is not a valid ASCII
+-     character_) reported at that character's own position in the source, not at the start of
+-     the literal. Substitutions are themselves `Ascii` values, concatenated in.
++ entry .a   `a"…"` 補間子：コンパイル時に ASCII であることを検査される `Ascii` のバイト文字列
++     `a"hello"` は `Ascii` であり、リテラルの文字を一文字一バイトで保持する凍結済みのバイト配列である。
++     ASCII の外の文字はコンパイルエラー（番号 824、_`é` is not a valid ASCII character_）になり、リテラルの先頭ではなく、ソースの中のその文字自身の位置で報告される。
++     埋め込みはそれ自体が `Ascii` の値であり、連結される。
+
+=     the literal. Substitutions are themselves `Ascii` values, concatenated in.
+=
+-     ```scala
++     ```scala
+
+=     the literal. Substitutions are themselves `Ascii` values, concatenated in.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val name = a"world"
++     val name = a"world"
+
+-     a"hello $name".bytes.length   // 11
++     a"hello $name".bytes.length   // 11
+
+-     a"hello café"                 // does not compile
++     a"hello café"                 // does not compile
+
+=     a"hello café"                 // does not compile
+-     ```
++     ```
+
+- entry .SimpleTExtractor   the extractor behind a `t"…"` pattern: equality with the literal
++ entry .SimpleTExtractor   `t"…"` パターンの背後にある抽出子：リテラルとの等しさ
+
+= entry .SimpleTExtractor   the extractor behind a `t"…"` pattern: equality with the literal
+-   detail
++   detail
+
+-       `case t"quit" =>` desugars to a `SimpleTExtractor(t"quit")` whose `#unapply` is equality
+-       with the scrutinee. It exists so that `t"…"` can be written in a pattern as well as an
+-       expression; there is rarely a reason to construct one directly.
+-   entry #text   the literal the pattern matches
+-   entry #unapply   whether the scrutinee equals `#text`
++       `case t"quit" =>` は `SimpleTExtractor(t"quit")` に脱糖され、その `#unapply` は検査対象との等しさである。
++       これは `t"…"` を式だけでなくパターンにも書けるようにするために存在する。直接構築する理由はめったにない。
++   entry #text   パターンが一致するリテラル
++   entry #unapply   検査対象が `#text` と等しいかどうか
+
+- entry .Textual   the typeclass which makes a type textual: `Text`, `Ascii`, `Writing`, `Teletype`
++ entry .Textual   型をテキスト型にする型クラス：`Text`、`Ascii`、`Writing`、`Teletype`
+
+= entry .Textual   the typeclass which makes a type textual: `Text`, `Ascii`, `Writing`, `Teletype`
+-   detail
++   detail
+
+-       `textual is Textual` says that `textual` is a sequence of characters with a known length,
+-       which can be sliced, mapped, searched and concatenated, built up in a `Builder`, and
+-       rendered as plain `Text`. Every generic operation in gossamer — `cut`, `join`, `words`,
+-       `lower`, `trim`, `pad`, `capitalize`, `uncamel`, `pinpoint`, `chomp`, … — is an
+-       extension on a receiver with a `Textual` instance, so a new textual type gains the whole
+-       vocabulary by providing one instance in its companion.
++       `textual is Textual` は、`textual` が長さの分かる文字の並びであり、切り出し、写像、検索、連結ができ、`Builder` で組み立てられ、素の `Text` として描画できることを述べる。
++       gossamer のすべての汎用の操作（`cut`、`join`、`words`、`lower`、`trim`、`pad`、`capitalize`、`uncamel`、`pinpoint`、`chomp` など）は `Textual` のインスタンスを持つレシーバに対する拡張なので、新しいテキスト型はコンパニオンにインスタンスを一つ用意するだけで語彙全体を得る。
+
+-       The `#Result` type member is the element type: `Char` for `Text`, `Byte` for `Ascii`,
+-       `Grapheme` for `Writing`. Operations which act on characters (`lower`, `upper`, `trim`,
+-       `capitalize`, `tr`, `pad`, `pinpoint`, …) require `Textual { type Result = Char }`;
+-       those which act on positions and substrings (`cut`, `words`, `starts`, `offsetOf`,
+-       `slices`, `chomp`, …) take any `Textual`. `#Show[value]` is the typeclass a value must
+-       satisfy to be appended to a builder of this type (`Showable` for `Text`; escapade's
+-       `Teletype` uses its own, so a styled value appends with its styling).
++       型メンバー `#Result` は要素型である。`Text` なら `Char`、`Ascii` なら `Byte`、`Writing` なら `Grapheme` である。
++       文字に作用する操作（`lower`、`upper`、`trim`、`capitalize`、`tr`、`pad`、`pinpoint` など）は `Textual { type Result = Char }` を必要とし、位置と部分文字列に作用する操作（`cut`、`words`、`starts`、`offsetOf`、`slices`、`chomp` など）は任意の `Textual` を取る。
++       `#Show[value]` は、値がこの型のビルダーに追加されるために満たさなければならない型クラスである（`Text` では `Showable`。escapade の `Teletype` は独自のものを使うので、スタイル付きの値はそのスタイルとともに追加される）。
+
+-       `Textual` extends `Countable` and `Segmentable` (with `Segment = Self` and `Operand =
+-       Ordinal`), which is what lets the general collection operations — `keep`, `skip`,
+-       `snip`, `before`, `after`, `upto`, `from`, `segment`, `count`, `where`, `all`, `exists` —
+-       serve textual values, and `Zeroic` and `Applicable`, so `textual.zero` is the empty
+-       value and `Textual[Teletype](text)` converts plain text in.
++       `Textual` は `Countable` と `Segmentable`（`Segment = Self`、`Operand = Ordinal`）を継承する。これによって、一般的なコレクションの操作（`keep`、`skip`、`snip`、`before`、`after`、`upto`、`from`、`segment`、`count`、`where`、`all`、`exists`）がテキストの値にも使える。また `Zeroic` と `Applicable` も継承するので、`textual.zero` は空の値であり、`Textual[Teletype](text)` は素のテキストを変換して取り込む。
+
+=       value and `Textual[Teletype](text)` converts plain text in.
+=
+-       ```scala
++       ```scala
+
+=       value and `Textual[Teletype](text)` converts plain text in.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def initials[textual: Textual { type Result = Char }](name: textual): textual =
++       def initials[textual: Textual { type Result = Char }](name: textual): textual =
+
+-         name.words.map(_.keep(1).upper).join
++         name.words.map(_.keep(1).upper).join
+
+-       initials(t"nick bottom")   // t"NB"
++       initials(t"nick bottom")   // t"NB"
+
+=       initials(t"nick bottom")   // t"NB"
+-       ```
++       ```
+
+-       The instances for `Text` (`.text`) and, through their companions, for `Ascii` and
+-       `Writing`, are in implicit scope. A type whose `reverse` and traversal should go through
+-       its `Textual` instance publishes `reversibleTextual` and `traversableTextual` in its own
+-       companion, since a blanket given could not be found from `rudiments`.
++       `Text` のインスタンス（`.text`）と、それぞれのコンパニオンを通じた `Ascii` と `Writing` のインスタンスは、暗黙のスコープにある。
++       `reverse` と走査を `Textual` のインスタンスを通じて行うべき型は、自分のコンパニオンで `reversibleTextual` と `traversableTextual` を公開する。包括的な given では `rudiments` から見つけられないからである。
+
+-   refer gossamer.reversibleTextual
++   refer gossamer.reversibleTextual
+
+-   refer gossamer.traversableTextual
++   refer gossamer.traversableTextual
+
+-   refer gossamer.Builder
++   refer gossamer.Builder
+
+=   refer gossamer.Builder
+-   refer gossamer.Writing
++   refer gossamer.Writing
+
+-   refer gossamer.Ascii
++   refer gossamer.Ascii
+
+-   entry .apply   `Textual[textual](text)`: converts a `Text` into any textual type
+-       The explicit form of `#apply`: `Textual[Teletype](t"plain")` wraps plain text as a styled
+-       value with no styling, and `Textual[Text](text)` is the identity.
+-   entry .text   the `Textual` instance for `Text` itself, with `Char` elements and `Showable` for `Show`
+-       Length, access, `indexOf`, `segment` and `map` go straight to the underlying `String`;
+-       the builder is a `TextBuilder`.
+-   entry .concatenable   `left + right` on any textual type, through `Textual#concat`
+-       The `Concatenable` given which gives every textual type `+`. It is a companion given of
+-       `Textual`, so it is found for any `textual: Textual`.
+-   entry #Result   the element type: `Char` for `Text`, `Byte` for `Ascii`, `Grapheme` for `Writing`
+-   entry #Show   the typeclass a value needs to be appended to a builder of this type
+-       `Show[value]` is `value is Showable` for `Text`, `Ascii` and `Writing`; a styled type
+-       may choose a richer one. `append` in a `Text.build` block requires it of anything which
+-       is neither a `Text` nor a `Char`.
+-   entry #Segment   the type a slice of this text has: the text's own type
+-   entry #Operand   the index type: `Ordinal`
+-   entry #show   renders a value as this textual type, through `#Show`
+-   entry #apply   converts a plain `Text` into this textual type
+-   entry #single   a one-element text from one `#Result`
+-   entry #fromChar   the `#Result` element corresponding to a `Char`
+-   entry #classTag   the `ClassTag` of the textual type, for allocating arrays of it
+-   entry #length   the number of elements: characters, bytes or graphemes
+-   entry #text   the plain `Text` of a value, with any styling dropped
+-   entry #map   a new text with a function applied to every element
+-   entry #empty   the empty value of this type
+-   entry #concat   two values joined into one
+-   entry #access   the element at an ordinal position; no check is made that it is in range
+-   entry #contains   whether an ordinal is a valid position in the text
+-   entry #indexOf   the position of a substring's first occurrence at or after `start`, or `Unset`
+-       The primitive behind `offsetOf`, `contains` and `tally`. The substring is always plain
+-       `Text`, whatever the textual type.
+-   entry #lastIndexOf   the position of a substring's last occurrence, or `Unset`
+-       By default a scan of repeated `#indexOf` calls; `Text`'s instance overrides it with the
+-       `String` primitive. An empty substring is `Unset`.
+-   entry #builder   a fresh `Builder` for this type, optionally sized
+-   entry #segment   the slice of a text over an `Interval` of ordinals, clamped to the text's bounds
+-       An interval reaching past the end is cut short, and one starting past the end is empty,
+-       rather than either failing.
+-   entry #zero   the empty value, as the `Zeroic` typeclass names it
++   entry .apply   `Textual[textual](text)`：`Text` を任意のテキスト型に変換する
++       `#apply` の明示的な形である。`Textual[Teletype](t"plain")` は素のテキストをスタイルのないスタイル付きの値として包み、`Textual[Text](text)` は恒等写像である。
++   entry .text   `Text` 自身に対する `Textual` のインスタンス。要素は `Char`、`Show` は `Showable`
++       長さ、アクセス、`indexOf`、`segment`、`map` は下にある `String` に直接委ねられる。ビルダーは `TextBuilder` である。
++   entry .concatenable   `Textual#concat` を通じた、任意のテキスト型に対する `left + right`
++       すべてのテキスト型に `+` を与える `Concatenable` の given である。
++       `Textual` のコンパニオンの given なので、任意の `textual: Textual` に対して見つかる。
++   entry #Result   要素型：`Text` なら `Char`、`Ascii` なら `Byte`、`Writing` なら `Grapheme`
++   entry #Show   値がこの型のビルダーに追加されるために必要な型クラス
++       `Text`、`Ascii`、`Writing` では `Show[value]` は `value is Showable` である。スタイル付きの型はより豊かなものを選んでもよい。
++       `Text.build` のブロックの中の `append` は、`Text` でも `Char` でもないものに対してこれを要求する。
++   entry #Segment   このテキストの切り出しが持つ型：テキスト自身の型
++   entry #Operand   インデックスの型：`Ordinal`
++   entry #show   `#Show` を通じて、値をこのテキスト型として描画する
++   entry #apply   素の `Text` をこのテキスト型に変換する
++   entry #single   一つの `#Result` からなる一要素のテキスト
++   entry #fromChar   `Char` に対応する `#Result` の要素
++   entry #classTag   テキスト型の `ClassTag`。その配列を割り当てるためのもの
++   entry #length   要素の数：文字、バイト、または書記素
++   entry #text   値の素の `Text`。スタイルは落とされる
++   entry #map   すべての要素に関数を適用した新しいテキスト
++   entry #empty   この型の空の値
++   entry #concat   二つの値を一つにつなげたもの
++   entry #access   序数の位置にある要素。範囲内にあるかどうかは検査しない
++   entry #contains   序数がテキストの中の有効な位置であるかどうか
++   entry #indexOf   `start` 以降で部分文字列が最初に現れる位置、または `Unset`
++       `offsetOf`、`contains`、`tally` の背後にある基本操作である。
++       テキスト型が何であれ、部分文字列は常に素の `Text` である。
++   entry #lastIndexOf   部分文字列が最後に現れる位置、または `Unset`
++       デフォルトでは `#indexOf` を繰り返し呼ぶ走査である。`Text` のインスタンスは `String` の基本操作でこれを上書きする。
++       空の部分文字列は `Unset` である。
++   entry #builder   この型のための新しい `Builder`。大きさを指定することもできる
++   entry #segment   序数の `Interval` にわたるテキストの切り出し。テキストの範囲に収められる
++       末尾を越える区間は切り詰められ、末尾より後から始まる区間は空になる。どちらも失敗はしない。
++   entry #zero   `Zeroic` 型クラスが名付ける空の値
+
+- entry .Builder   a mutable accumulator which builds a textual value from appended pieces
++ entry .Builder   追加された断片からテキストの値を組み立てる、可変のアキュムレーター
+
+= entry .Builder   a mutable accumulator which builds a textual value from appended pieces
+-   detail
++   detail
+
+-       `Builder[textual]` is the abstract class behind `TextBuilder`, `AsciiBuilder`,
+-       `WritingBuilder` and the builders of other textual types, each obtained from its
+-       `Textual#builder`. Pieces are added with `#append` (a value of the type, or a single
+-       `Char`), the result is read with `#apply`, and `#build` runs a block in which the
+-       package-level `append` and `appendln` write to it as a contextual value.
++       `Builder[textual]` は、`TextBuilder`、`AsciiBuilder`、`WritingBuilder` やほかのテキスト型のビルダーの背後にある抽象クラスであり、それぞれ `Textual#builder` から得られる。
++       断片は `#append`（その型の値、または一つの `Char`）で追加し、結果は `#apply` で読み、`#build` はブロックを実行する。そのブロックの中では、パッケージ水準の `append` と `appendln` がコンテキスト値としてのビルダーに書き込む。
+
+=       package-level `append` and `appendln` write to it as a contextual value.
+=
+-       ```scala
++       ```scala
+
+=       package-level `append` and `appendln` write to it as a contextual value.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val builder = TextBuilder()
++       val builder = TextBuilder()
+
+-       builder.append(t"Hello").append(',').append(t" world")
++       builder.append(t"Hello").append(',').append(t" world")
+
+-       builder.length   // 12
++       builder.length   // 12
+
+-       builder()        // t"Hello, world"
++       builder()        // t"Hello, world"
+
+=       builder()        // t"Hello, world"
+-       ```
++       ```
+
+-       A builder is mutable state and is not safe to share between threads; for text, prefer
+-       `Text.build`, which scopes one to a block.
++       ビルダーは可変の状態であり、スレッド間で共有するのは安全ではない。テキストについては、ビルダーをブロックに閉じ込める `Text.build` を使うほうがよい。
+
+-   refer gossamer.TextBuilder
++   refer gossamer.TextBuilder
+
+-   refer gossamer.append
++   refer gossamer.append
+
+-   refer gossamer.build
++   refer gossamer.build
+
+-   entry #append   adds a value of the textual type, or a single `Char`; returns the builder
+-   entry #build   runs a block with this builder as the contextual `builder`, then returns the result
+-       Inside the block, `append(value)`, `appendln(value)` and `builder` refer to this
+-       builder. The block cannot outlive the call, which is why the builder is handed in as a
+-       pure contextual value despite being mutable.
+-   entry #apply   the accumulated value
+-   entry #clear   discards everything appended so far; returns the builder
+-   entry #nil   whether nothing has been appended
+-   entry #length   the number of elements appended so far
++   entry #append   テキスト型の値、または一つの `Char` を追加する。ビルダーを返す
++   entry #build   このビルダーをコンテキストの `builder` としてブロックを実行し、その後で結果を返す
++       ブロックの中では、`append(value)`、`appendln(value)`、`builder` はこのビルダーを指す。
++       ブロックは呼び出しより長く生きられない。ビルダーが可変であるにもかかわらず純粋なコンテキスト値として渡されるのはそのためである。
++   entry #apply   蓄積された値
++   entry #clear   それまでに追加したものをすべて捨てる。ビルダーを返す
++   entry #nil   何も追加されていないかどうか
++   entry #length   それまでに追加した要素の数
+
+- entry .TextBuilder   the `Builder` for `Text`, over a `StringBuilder`
++ entry .TextBuilder   `StringBuilder` の上の、`Text` のための `Builder`
+
+= entry .TextBuilder   the `Builder` for `Text`, over a `StringBuilder`
+-   detail
++   detail
+
+-       `TextBuilder(size)` sizes the underlying buffer, as a hint, when the length is known.
+-       `Textual.text.builder` returns one, and `Text.build` scopes one to a block.
+-   entry #put   appends one character
+-   entry #length   the number of characters appended so far
++       長さが分かっているときは、`TextBuilder(size)` がヒントとして下にあるバッファーの大きさを決める。
++       `Textual.text.builder` はこれを一つ返し、`Text.build` はこれを一つブロックに閉じ込める。
++   entry #put   一文字を追加する
++   entry #length   それまでに追加した文字の数
+
+- entry .AsciiBuilder   the `Builder` for `Ascii`, accumulating bytes
++ entry .AsciiBuilder   バイトを蓄積する、`Ascii` のための `Builder`
+
+= entry .AsciiBuilder   the `Builder` for `Ascii`, accumulating bytes
+-   detail
++   detail
+
+-       Each appended `Char` is truncated to its low byte; an appended `Ascii` contributes its
+-       bytes. `Ascii`'s `Textual` instance uses it for every building operation.
+-   entry #put   appends one character as a byte
+-   entry #length   the number of bytes appended so far
++       追加した `Char` はそれぞれ下位バイトに切り詰められ、追加した `Ascii` はそのバイトを加える。
++       `Ascii` の `Textual` のインスタンスは、組み立てるすべての操作でこれを使う。
++   entry #put   一文字をバイトとして追加する
++   entry #length   それまでに追加したバイトの数
+
+- entry .WritingBuilder   the `Builder` for `Writing`
++ entry .WritingBuilder   `Writing` のための `Builder`
+
+= entry .WritingBuilder   the `Builder` for `Writing`
+-   detail
++   detail
+
+-       Accumulates the text of each appended `Writing` and recomputes the grapheme boundaries
+-       of the whole when the result is read, so `#length` counts characters while building,
+-       not graphemes.
+-   entry #length   the number of characters appended so far
++       追加した各 `Writing` のテキストを蓄積し、結果を読むときに全体の書記素の境界を計算し直す。そのため `#length` は、組み立てている間は書記素ではなく文字を数える。
++   entry #length   それまでに追加した文字の数
+
+- entry .append   appends a value to the contextual `Builder`, inside a `build` block
+-     A package-level inline method for use inside `Text.build` or `Builder#build`, where a
+-     `Builder[textual]` is in scope as the contextual value `builder`. A `Text` is appended as
+-     is (converted to the builder's type), a `Char` as one element, and anything else through
+-     the builder's `Textual#Show` typeclass — `Showable`, for `Text` — so a value with no
+-     rendering is a compile error rather than a `toString`.
++ entry .append   `build` ブロックの中で、コンテキストの `Builder` に値を追加する
++     `Text.build` や `Builder#build` の中で使うためのパッケージ水準の inline メソッドであり、そこでは `Builder[textual]` がコンテキスト値 `builder` としてスコープにある。
++     `Text` はそのまま（ビルダーの型に変換して）追加され、`Char` は一つの要素として、それ以外のものはビルダーの `Textual#Show` 型クラス（`Text` では `Showable`）を通じて追加される。そのため、描画の方法を持たない値は `toString` されるのではなくコンパイルエラーになる。
+
+=     rendering is a compile error rather than a `toString`.
+=
+-     ```scala
++     ```scala
+
+=     rendering is a compile error rather than a `toString`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     Text.build:
++     Text.build:
+
+-       append(t"x = ")
++       append(t"x = ")
+
+-       append(42)
++       append(42)
+
+-       append('!')
++       append('!')
+
+-     // t"x = 42!"
++     // t"x = 42!"
+
+=     // t"x = 42!"
+-     ```
++     ```
+
+- entry .appendln   appends a value and then a newline to the contextual `Builder`
+-     As `append`, followed by `'\n'`.
++ entry .appendln   コンテキストの `Builder` に値を追加し、続けて改行を追加する
++     `append` と同じで、その後に `'\n'` が続く。
+
+- entry .builder   the contextual `Builder` inside a `build` block, as a value
+-     `builder[TextBuilder]` (or `builder[Builder[Text]]`) retrieves the builder a `Text.build`
+-     or `Builder#build` block is writing to, for the operations `append` does not cover, such
+-     as `clear()` or reading `length`.
++ entry .builder   `build` ブロックの中の、値としてのコンテキストの `Builder`
++     `builder[TextBuilder]`（または `builder[Builder[Text]]`）は、`Text.build` や `Builder#build` のブロックが書き込んでいるビルダーを取り出す。`clear()` や `length` を読むことのように、`append` が扱わない操作のためのものである。
+
+- entry .build   `Text.build` scopes a `TextBuilder` to a block; `Array.build` fills a fresh array
+-     Two extensions share the name. `Text.build { … }` runs the block with a new `TextBuilder`
+-     as its contextual builder — `append`, `appendln` and `builder` inside it refer to that
+-     builder — and returns the text built, so a text assembled from many pieces is written
+-     without a visible mutable value:
++ entry .build   `Text.build` は `TextBuilder` をブロックに閉じ込める。`Array.build` は新しい配列を満たす
++     二つの拡張が名前を共有している。
++     `Text.build { … }` は新しい `TextBuilder` をコンテキストのビルダーとしてブロックを実行し（その中の `append`、`appendln`、`builder` はそのビルダーを指す）、組み立てたテキストを返す。そのため、多くの断片から組み立てるテキストを、目に見える可変の値なしに書ける。
+
+=     without a visible mutable value:
+=
+-     ```scala
++     ```scala
+
+=     without a visible mutable value:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val table: Text = Text.build:
++     val table: Text = Text.build:
+
+-       for row <- 1 to 3 do
++       for row <- 1 to 3 do
+
+-         append(t"row ")
++         append(t"row ")
+
+-         appendln(row)
++         appendln(row)
+
+=         appendln(row)
+-     ```
++     ```
+
+-     `Array.build[element](size) { array => … }` allocates a mutable JVM array of `size`
+-     elements, hands it to the lambda to fill, and returns it frozen as `Array[element]^{}`;
+-     `Pue.apply` and `Ascii`'s concatenation use it. The lambda's array must not escape.
++     `Array.build[element](size) { array => … }` は `size` 個の要素を持つ可変の JVM の配列を割り当て、それをラムダに渡して満たさせ、`Array[element]^{}` として凍結して返す。`Pue.apply` と `Ascii` の連結がこれを使う。
++     ラムダの配列は外に漏れてはならない。
+
+- entry .fill   `Text.fill(length)(index => char)`: a text of a given length, one character per index
+-     The index is zero-based (`Int`), so `Text.fill(3)(_ => '-')` is `t"---"` and
+-     `Text.fill(3)(i => ('a' + i).toChar)` is `t"abc"`.
++ entry .fill   `Text.fill(length)(index => char)`：インデックスごとに一文字からなる、指定した長さのテキスト
++     インデックスはゼロ始まり（`Int`）なので、`Text.fill(3)(_ => '-')` は `t"---"`、`Text.fill(3)(i => ('a' + i).toChar)` は `t"abc"` である。
+
+- entry .ascii   `Text.ascii(bytes)` and `bytes.ascii`: decodes a `Data` as US-ASCII text
+-     Both forms decode each byte as one ASCII character; a byte above 127 becomes the
+-     replacement character. For UTF-8, use `utf8`; for an arbitrary charset, decode with
+-     `data.as[Text]` under a `Charset` given (`textDecodable`).
++ entry .ascii   `Text.ascii(bytes)` と `bytes.ascii`：`Data` を US-ASCII のテキストとしてデコードする
++     どちらの形も、各バイトを一つの ASCII 文字としてデコードする。127 を超えるバイトは置換文字になる。
++     UTF-8 には `utf8` を使う。任意の文字セットについては、`Charset` の given（`textDecodable`）のもとで `data.as[Text]` でデコードする。
+
+- entry .utf8   decodes a `Data` as UTF-8 text
+-     `bytes.utf8`: the inverse of `text.in[Data]` under `codepages.utf8Codepage`. Malformed
+-     sequences become the replacement character rather than failing.
++ entry .utf8   `Data` を UTF-8 のテキストとしてデコードする
++     `bytes.utf8` は、`codepages.utf8Codepage` のもとでの `text.in[Data]` の逆である。
++     不正なシーケンスは失敗せずに置換文字になる。
+
+=     sequences become the replacement character rather than failing.
+=
+-     ```scala
++     ```scala
+
+=     sequences become the replacement character rather than failing.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     t"Adélaïde".in[Data].utf8   // t"Adélaïde"
++     t"Adélaïde".in[Data].utf8   // t"Adélaïde"
+
+=     t"Adélaïde".in[Data].utf8   // t"Adélaïde"
+-     ```
++     ```
+
+- entry .utf16   decodes a `Data` as UTF-16 text, honouring a byte-order mark
+-     `bytes.utf16`: without a mark, the bytes are read big-endian.
++ entry .utf16   バイトオーダーマークに従って、`Data` を UTF-16 のテキストとしてデコードする
++     `bytes.utf16` は、マークがなければバイトをビッグエンディアンとして読む。
+
+- entry .pue   renders a `Data` as text in which every byte is one printable character
+-     `bytes.pue`: the _printable Unicode encoding_, a reversible rendering of bytes as text in
+-     which each byte is one character, chosen so that none is a control character — a byte
+-     which would be a control (its low seven bits at most 0x20, or 0x7f) is shifted up by
+-     0x100, and every other byte is the character of its own value. `Pue(text)` reverses it.
+-     The result is for display and for carrying bytes through text-only channels; it is not
+-     a standard encoding.
++ entry .pue   すべてのバイトが一つの印字可能な文字であるテキストとして `Data` を描画する
++     `bytes.pue` は _printable Unicode encoding_ であり、各バイトが一文字になる、バイトをテキストとして可逆に描画する方法である。どの文字も制御文字にならないように選ばれている。制御文字になってしまうバイト（下位 7 ビットが 0x20 以下、または 0x7f）は 0x100 だけ上にずらされ、それ以外のバイトはその値自身の文字になる。
++     `Pue(text)` はこれを元に戻す。
++     結果は表示用と、テキストしか通らない経路でバイトを運ぶためのものであり、標準のエンコーディングではない。
+
+- entry .Pue   decodes printable-Unicode-encoded text back to its bytes
++ entry .Pue   printable Unicode encoding のテキストをデコードしてバイトに戻す
+
+= entry .Pue   decodes printable-Unicode-encoded text back to its bytes
+-   detail
++   detail
+
+-       `Pue(text)` is the inverse of `bytes.pue`: each character's low byte is one byte of the
+-       result, so a byte which `pue` shifted up by 0x100 to avoid a control character comes
+-       back down. Text which did not come from `pue` is reduced to its characters' low bytes
+-       without complaint.
+-   entry .apply   the bytes a printable-Unicode-encoded text encodes
++       `Pue(text)` は `bytes.pue` の逆である。各文字の下位バイトが結果の一バイトになるので、`pue` が制御文字を避けるために 0x100 だけ上にずらしたバイトは元に戻る。
++       `pue` から来たのではないテキストは、文句なしに文字の下位バイトにまで縮められる。
++   entry .apply   printable Unicode encoding のテキストが符号化しているバイト
+
+- entry .cut   divides a text at every occurrence of a delimiter, into a list proved to be non-empty
+-     `text.cut(delimiter)` splits at a `Text`, a `Char` or a `Regex` (an `r"…"` literal), for
+-     any textual type with a `Cuttable` instance for that delimiter. The result is
+-     `List[textual] { type Occupied = true }`: a cut always yields at least one piece — the
+-     text after the last delimiter, or the whole text when the delimiter never occurs — so
+-     `head` and `last` on it are total, and `case List(a, b) =>` binds the element type.
++ entry .cut   区切り文字が現れるたびにテキストを分割し、空でないことが証明されたリストにする
++     `text.cut(delimiter)` は、`Text`、`Char`、`Regex`（`r"…"` リテラル）で分割する。その区切り文字に対する `Cuttable` のインスタンスを持つ任意のテキスト型に使える。
++     結果は `List[textual] { type Occupied = true }` である。分割は常に少なくとも一つの断片を返す（最後の区切り文字の後のテキスト、または区切り文字が一度も現れなければテキスト全体）。そのため、その `head` と `last` は全域的であり、`case List(a, b) =>` は要素型を束縛する。
+
+=     `head` and `last` on it are total, and `case List(a, b) =>` binds the element type.
+=
+-     ```scala
++     ```scala
+
+=     `head` and `last` on it are total, and `case List(a, b) =>` binds the element type.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"one,two,three".cut(t",")        // List(t"one", t"two", t"three")
++     t"one,two,three".cut(t",")        // List(t"one", t"two", t"three")
+
+-     t",one,two".cut(',')              // List(t"", t"one", t"two")
++     t",one,two".cut(',')              // List(t"", t"one", t"two")
+
+-     t"a1b22c".cut(r"[0-9]+")          // List(t"a", t"b", t"c")
++     t"a1b22c".cut(r"[0-9]+")          // List(t"a", t"b", t"c")
+
+-     t"k=v=w".cut(t"=", 2)             // List(t"k", t"v=w")
++     t"k=v=w".cut(t"=", 2)             // List(t"k", t"v=w")
+
+-     t"no commas".cut(t",").head       // t"no commas"
++     t"no commas".cut(t",").head       // t"no commas"
+
+=     t"no commas".cut(t",").head       // t"no commas"
+-     ```
++     ```
+
+-     A positive `limit` caps the number of pieces, the last taking the remainder; a limit of
+-     zero or less means unlimited. Trailing empty pieces are kept, as `String.split` keeps them
+-     with a positive limit, so `t"a,".cut(t",")` is `List(t"a", t"")`. `words`, `lines`,
+-     `unkebab` and `unsnake` are cuts at a space, a newline, `-` and `_`.
++     正の `limit` は断片の数に上限を設け、最後の断片が残りを取る。ゼロ以下の上限は無制限を意味する。
++     末尾の空の断片は保たれる。`String.split` が正の上限のときに保つのと同じであり、`t"a,".cut(t",")` は `List(t"a", t"")` である。
++     `words`、`lines`、`unkebab`、`unsnake` は、それぞれ空白、改行、`-`、`_` での分割である。
+
+- entry .Cuttable   the typeclass behind `cut`: how a textual type is divided at a kind of delimiter
++ entry .Cuttable   `cut` の背後にある型クラス：テキスト型をある種類の区切り文字で分割する方法
+
+= entry .Cuttable   the typeclass behind `cut`: how a textual type is divided at a kind of delimiter
+-   detail
++   detail
+
+-       `textual is Cuttable by delimiter` has one method, `#cut(text, delimiter, limit)`, and
+-       must return at least one piece. Instances exist for `Text` cut by `Text` (a scan for the
+-       literal delimiter, with no regular expression involved) and by `Regex`, for any
+-       `Textual` with a `Countable` instance cut by `Text` or by `Regex` (so styled text is cut
+-       through `segment` and keeps its styling), and for any type cuttable by `Text` cut by a
+-       `Char`. All are companion givens, in implicit scope.
+-   entry .textualText   any textual cut by a literal `Text`; and any `Text`-cuttable type cut by a `Char`
+-       Two givens share the name. The first serves any `Textual` with `Countable`, scanning
+-       with `Textual#indexOf` and slicing with `segment`; the second derives `Cuttable by Char`
+-       from a type's `Cuttable by Text` instance, so `cut(',')` works wherever `cut(t",")` does.
+-   entry .textualRegex   any textual cut at the matches of a `Regex`
+-       The pieces *between* matches, with the text after the last match as the final piece. A
+-       zero-width match at the cursor is not a cut, so the scan always advances. `Text` itself
+-       has the more direct `.textRegex`.
+-   entry .textText   `Text` cut by a literal `Text`, by a plain substring scan
+-       No regular expression is compiled, so a delimiter such as `.` or `|` needs no quoting,
+-       and the cut works under runtimes whose regex engine is unavailable.
+-   entry .textRegex   `Text` cut at the matches of a `Regex`, through `String.split`
+-       The `limit` is passed to `split` as given (after `cut` has replaced a non-positive limit
+-       with unlimited), so trailing empty pieces are kept.
+-   entry #cut   the pieces of a text divided at a delimiter, at most `limit` of them, never none
++       `textual is Cuttable by delimiter` にはメソッドが一つ、`#cut(text, delimiter, limit)` があり、少なくとも一つの断片を返さなければならない。
++       インスタンスは次のものがある。`Text` を `Text` で分割するもの（正規表現を使わずにリテラルの区切り文字を走査する）と `Regex` で分割するもの。`Countable` のインスタンスを持つ任意の `Textual` を `Text` または `Regex` で分割するもの（そのため、スタイル付きのテキストは `segment` を通じて分割され、スタイルを保つ）。そして、`Text` で分割できる任意の型を `Char` で分割するもの。
++       すべてコンパニオンの given であり、暗黙のスコープにある。
++   entry .textualText   任意のテキスト型をリテラルの `Text` で分割する。そして `Text` で分割できる任意の型を `Char` で分割する
++       二つの given が名前を共有している。
++       一つ目は `Countable` を持つ任意の `Textual` に使え、`Textual#indexOf` で走査して `segment` で切り出す。二つ目は型の `Cuttable by Text` のインスタンスから `Cuttable by Char` を導出するので、`cut(t",")` が使える場所ではどこでも `cut(',')` が使える。
++   entry .textualRegex   任意のテキスト型を `Regex` の一致で分割する
++       一致と一致の*間*の断片であり、最後の一致の後のテキストが最後の断片になる。
++       カーソル位置での幅ゼロの一致は分割ではないので、走査は常に進む。
++       `Text` 自身にはより直接的な `.textRegex` がある。
++   entry .textText   素朴な部分文字列の走査による、リテラルの `Text` での `Text` の分割
++       正規表現をコンパイルしないので、`.` や `|` のような区切り文字に引用は要らず、正規表現エンジンが使えない実行時でも分割できる。
++   entry .textRegex   `String.split` を通じた、`Regex` の一致での `Text` の分割
++       `limit` は（`cut` が正でない上限を無制限に置き換えた後で）そのまま `split` に渡されるので、末尾の空の断片は保たれる。
++   entry #cut   区切り文字で分割したテキストの断片。最大で `limit` 個、決してゼロ個ではない
+
+- entry .words   a text cut at every space
+-     `text.words` is `text.cut(t" ")`: consecutive spaces yield empty pieces, and no other
+-     whitespace is a boundary. The result is non-empty.
++ entry .words   空白ごとに分割したテキスト
++     `text.words` は `text.cut(t" ")` である。連続する空白は空の断片を生み、ほかの空白文字は境界にならない。
++     結果は空でない。
+
+- entry .lines   a text cut at every newline
+-     `text.lines` is `text.cut(t"\n")`; a `\r` before the newline stays on its line.
++ entry .lines   改行ごとに分割したテキスト
++     `text.lines` は `text.cut(t"\n")` である。改行の前の `\r` はその行に残る。
+
+- entry .unkebab   the words of a kebab-case identifier: cut at every `-`
+-     `t"one-two-three".unkebab` is `List(t"one", t"two", t"three")`. The inverse of `kebab`.
++ entry .unkebab   ケバブケースの識別子の単語：`-` ごとに分割する
++     `t"one-two-three".unkebab` は `List(t"one", t"two", t"three")` である。
++     `kebab` の逆である。
+
+- entry .unsnake   the words of a snake-case identifier: cut at every `_`
+-     `t"one_two_three".unsnake` is `List(t"one", t"two", t"three")`. The inverse of `snake`.
++ entry .unsnake   スネークケースの識別子の単語：`_` ごとに分割する
++     `t"one_two_three".unsnake` は `List(t"one", t"two", t"three")` である。
++     `snake` の逆である。
+
+- entry .uncamel   the words of a camel-case or Pascal-case identifier, each lowercased
+-     Breaks before every uppercase letter after the first character, and lowercases each word:
+-     `t"oneTwoThree".uncamel` and `t"OneTwoThree".uncamel` are both `List(t"one", t"two",
+-     t"three")`. A run of capitals is one word per letter (`t"parseXML"` gives `parse`, `x`,
+-     `m`, `l`). `kebab`, `snake`, `dotted`, `spaced`, `camel` and `pascal` rejoin the words in
+-     another convention:
++ entry .uncamel   キャメルケースまたはパスカルケースの識別子の単語。それぞれ小文字にする
++     最初の文字より後のすべての大文字の前で区切り、各単語を小文字にする。`t"oneTwoThree".uncamel` と `t"OneTwoThree".uncamel` はどちらも `List(t"one", t"two", t"three")` である。
++     大文字の連続は一文字が一単語になる（`t"parseXML"` は `parse`、`x`、`m`、`l` になる）。
++     `kebab`、`snake`、`dotted`、`spaced`、`camel`、`pascal` は、単語を別の慣習でつなぎ直す。
+
+=     another convention:
+=
+-     ```scala
++     ```scala
+
+=     another convention:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"oneTwoThree".uncamel.kebab    // t"one-two-three"
++     t"oneTwoThree".uncamel.kebab    // t"one-two-three"
+
+-     t"oneTwoThree".uncamel.snake    // t"one_two_three"
++     t"oneTwoThree".uncamel.snake    // t"one_two_three"
+
+-     t"oneTwoThree".uncamel.dotted   // t"one.two.three"
++     t"oneTwoThree".uncamel.dotted   // t"one.two.three"
+
+-     t"one-two-three".unkebab.camel  // t"oneTwoThree"
++     t"one-two-three".unkebab.camel  // t"oneTwoThree"
+
+=     t"one-two-three".unkebab.camel  // t"oneTwoThree"
+-     ```
++     ```
+
+- entry .join   concatenates a collection of texts, with optional separators and brackets
+-     An extension on any `Traversable` collection — `List`, `Set`, `Chain`, `Sequence`, a
+-     frozen array, or a standard-library `Iterable` — whose elements are `Joinable`: texts of
+-     any textual type, `Message`s, or collections, which join by concatenation. The result
+-     type is the element type, so joining `List[Text]` gives `Text` and joining `List[Teletype]`
+-     gives `Teletype`, with the separators of that same type.
++ entry .join   テキストのコレクションを連結する。区切りと括弧を指定することもできる
++     要素が `Joinable` である任意の `Traversable` なコレクション（`List`、`Set`、`Chain`、`Sequence`、凍結済みの配列、または標準ライブラリの `Iterable`）に対する拡張である。要素とは、任意のテキスト型のテキスト、`Message`、またはコレクションであり、連結によってつながる。
++     結果の型は要素型なので、`List[Text]` をつなげると `Text` になり、`List[Teletype]` をつなげると `Teletype` になる。区切りもその同じ型である。
+
+=     gives `Teletype`, with the separators of that same type.
+=
+-     ```scala
++     ```scala
+
+=     gives `Teletype`, with the separators of that same type.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     List(t"one", t"two", t"three").join                      // t"onetwothree"
++     List(t"one", t"two", t"three").join                      // t"onetwothree"
+
+-     List(t"one", t"two", t"three").join(t", ")               // t"one, two, three"
++     List(t"one", t"two", t"three").join(t", ")               // t"one, two, three"
+
+-     List(t"one", t"two", t"three").join(t", ", t" and ")     // t"one, two and three"
++     List(t"one", t"two", t"three").join(t", ", t" and ")     // t"one, two and three"
+
+-     List(t"one", t"two").join(t"(", t", ", t")")             // t"(one, two)"
++     List(t"one", t"two").join(t"(", t", ", t")")             // t"(one, two)"
+
+-     List(t"a", t"b", t"c").join(t"[", t", ", t" and ", t"]") // t"[a, b and c]"
++     List(t"a", t"b", t"c").join(t"[", t", ", t" and ", t"]") // t"[a, b and c]"
+
+=     List(t"a", t"b", t"c").join(t"[", t", ", t" and ", t"]") // t"[a, b and c]"
+-     ```
++     ```
+
+-     The five forms are: no separator; a separator; left bracket, separator and right bracket;
+-     a separator and a distinct *penultimate* separator placed before the last element, for
+-     prose; and all four. Two elements with a penultimate separator give `t"a and b"`.
++     五つの形がある。区切りなし。区切りあり。左の括弧、区切り、右の括弧。区切りと、文章のために最後の要素の前に置く別の*最後から二番目の*区切り。そして四つすべてである。
++     最後から二番目の区切りを伴う二つの要素は `t"a and b"` になる。
+
+-     When the elements are not themselves joinable — `List(1, 2, 3)` — the separator is an
+-     *element*, interleaved into a rebuilt collection of the receiver's shape:
+-     `List(1, 2, 3).join(0)` is `List(1, 0, 2, 0, 3)`, and `List(List(1), List(2)).join(List(0))`
+-     is `List(1, 0, 2)`. `join` is the counterpart of `mkString`, but never calls `toString`:
+-     a collection whose elements have no joining does not compile. A `Set` joins in its
+-     iteration order, which the caller accepts by joining it.
++     要素自体がつなげられないもの（`List(1, 2, 3)`）であるときは、区切りは*要素*であり、レシーバの形で組み立て直したコレクションに挟み込まれる。`List(1, 2, 3).join(0)` は `List(1, 0, 2, 0, 3)` であり、`List(List(1), List(2)).join(List(0))` は `List(1, 0, 2)` である。
++     `join` は `mkString` に相当するが、決して `toString` を呼ばない。要素につなげ方のないコレクションはコンパイルできない。
++     `Set` は走査の順序でつながり、呼び出し側はそれをつなげることでその順序を受け入れる。
+
+- entry .Joinable   the typeclass behind `join`: how a collection of values becomes one value
++ entry .Joinable   `join` の背後にある型クラス：値のコレクションを一つの値にする方法
+
+= entry .Joinable   the typeclass behind `join`: how a collection of values becomes one value
+-   detail
++   detail
+
+-       `textual is Joinable` has one method, `#join(elements)`, which concatenates an
+-       `Iterable` of values into one. Instances in the companion cover every `Textual` type
+-       (through its builder, sized to the total length), `Message`, and the native collection
+-       shapes `List`, `Chain`, `Sequence` (by concatenation) and `Set` (by union). The
+-       receiver side of `join` is `Joinable.Source` (anything `Traversable`), and what the
+-       result is — a joined element, or a rebuilt collection with separators interleaved — is
+-       decided by `Joinable.Assembly`.
++       `textual is Joinable` にはメソッドが一つ、`#join(elements)` があり、値の `Iterable` を一つに連結する。
++       コンパニオンのインスタンスは、すべての `Textual` 型（そのビルダーを通じて、全体の長さに合わせた大きさで）、`Message`、そしてネイティブのコレクションの形 `List`、`Chain`、`Sequence`（連結による）と `Set`（和集合による）を扱う。
++       `join` のレシーバの側は `Joinable.Source`（`Traversable` な任意のもの）であり、結果が何であるか、すなわちつなげた要素か、区切りを挟み込んで組み立て直したコレクションかは `Joinable.Assembly` が決める。
+
+-   refer gossamer.join
++   refer gossamer.join
+
+-   entry .textual   any `Textual` type is `Joinable`, through its `Builder`
+-   entry .message   `Message`s join by concatenation
+-   entry .list   `List[element]`s join into one `List`, by concatenation
+-   entry .chain   `Chain[element]`s join into one `Chain`
+-   entry .sequence   `Sequence[element]`s join into one `Sequence`
+-   entry .set   `Set[element]`s join into one `Set`, by union
+-   entry .Source   the receiver side of `join`: a collection traversed to its elements
++   entry .textual   任意の `Textual` 型は、その `Builder` を通じて `Joinable` である
++   entry .message   `Message` は連結によってつながる
++   entry .list   `List[element]` は連結によって一つの `List` につながる
++   entry .chain   `Chain[element]` は一つの `Chain` につながる
++   entry .sequence   `Sequence[element]` は一つの `Sequence` につながる
++   entry .set   `Set[element]` は和集合によって一つの `Set` につながる
++   entry .Source   `join` のレシーバの側：要素まで走査されるコレクション
+
+=   entry .Source   the receiver side of `join`: a collection traversed to its elements
+-     detail
++     detail
+
+-         `self is Joinable.Source by element` yields the elements of a receiver as an
+-         iterator. The one instance, `.traversable`, serves any `Traversable` receiver, which
+-         is every native shape and any standard `Iterable`. One typeclass rather than one
+-         `join` extension per receiver, since same-named extensions with different clause
+-         shapes would make every receiver ambiguous.
+-     entry .traversable   any `Traversable` receiver is a `Source` of its elements
+-     entry #traverse   the receiver's elements, in order, as an iterator
+-   entry .Assembly   how `join` assembles a receiver's elements, and the type of its separators
++         `self is Joinable.Source by element` は、レシーバの要素をイテレーターとして返す。
++         唯一のインスタンス `.traversable` は任意の `Traversable` なレシーバに使え、それはすべてのネイティブの形と任意の標準の `Iterable` である。
++         レシーバごとに `join` の拡張を一つずつ用意するのではなく型クラスを一つにしているのは、節の形が異なる同名の拡張があると、どのレシーバも曖昧になってしまうからである。
++     entry .traversable   任意の `Traversable` なレシーバは、その要素の `Source` である
++     entry #traverse   レシーバの要素を順に、イテレーターとして
++   entry .Assembly   `join` がレシーバの要素を組み立てる方法と、その区切りの型
+
+=   entry .Assembly   how `join` assembles a receiver's elements, and the type of its separators
+-     detail
++     detail
+
+-         `self is Joinable.Assembly by element to result` decides what `join` returns.
+-         `#Part` is the type of the separators and brackets, and `#assemble` turns the stream
+-         of parts into the result. Two instances are tried in priority order: `.joinable`,
+-         when the elements are themselves `Joinable` (text, messages, collections), in which
+-         case the result is one of them and the separators are of the same type; and the
+-         fallback `Fallback#interleaving`, when they are not, in which case the separators are
+-         elements and the result is a rebuilt collection of the receiver's shape, through
+-         `Reshapable`. The choice is made by given priority, since for a `List[Text]` both
+-         readings would apply and overloading cannot rank them.
+-     entry .joinable   elements which are `Joinable` join into one of them, with separators of that type
+-         `List(t"a", t"b").join(t",")` is `t"a,b"`. The element may be widened to a joinable
+-         supertype, so a list of a `Text` subtype joins as `Text`.
+-     entry .Fallback   the lower-priority assembly: separators interleaved as elements
++         `self is Joinable.Assembly by element to result` は `join` が何を返すかを決める。
++         `#Part` は区切りと括弧の型であり、`#assemble` は部分のストリームを結果に変える。
++         二つのインスタンスが優先順に試される。要素自体が `Joinable`（テキスト、メッセージ、コレクション）であるときの `.joinable` では、結果はその一つであり、区切りも同じ型である。そうでないときの代替の `Fallback#interleaving` では、区切りは要素であり、結果は `Reshapable` を通じてレシーバの形で組み立て直したコレクションである。
++         選択は given の優先度で行われる。`List[Text]` には両方の読み方が当てはまり、オーバーロードではそれらに順位を付けられないからである。
++     entry .joinable   `Joinable` である要素は、その型の区切りを伴って、その一つにつながる
++         `List(t"a", t"b").join(t",")` は `t"a,b"` である。
++         要素はつなげられる上位型に拡大されてもよいので、`Text` の部分型のリストは `Text` としてつながる。
++     entry .Fallback   優先度の低い組み立て：区切りを要素として挟み込む
+
+=     entry .Fallback   the lower-priority assembly: separators interleaved as elements
+-       detail
++       detail
+
+-           The trait which `Joinable.Assembly`'s companion extends, so that `#interleaving` is
+-           found only when `.joinable` does not apply.
+-       entry #interleaving   elements which are not `Joinable` are rebuilt with the separators interleaved
+-           Needs `self is Reshapable by element to result`. `List(1, 2, 3).join(0)` is
+-           `List(1, 0, 2, 0, 3)`.
+-     entry #Part   the type of a separator or bracket: the joined type, or the element type
+-     entry #assemble   builds the result from the stream of elements and separators
+-   entry #join   one value from an `Iterable` of them
++           `Joinable.Assembly` のコンパニオンが継承するトレイトであり、`.joinable` が当てはまらないときにだけ `#interleaving` が見つかるようにする。
++       entry #interleaving   `Joinable` でない要素は、区切りを挟み込んで組み立て直される
++           `self is Reshapable by element to result` が必要である。
++           `List(1, 2, 3).join(0)` は `List(1, 0, 2, 0, 3)` である。
++     entry #Part   区切りまたは括弧の型：つなげる型、または要素型
++     entry #assemble   要素と区切りのストリームから結果を組み立てる
++   entry #join   値の `Iterable` から作る一つの値
+
+- entry .pascal   words joined in Pascal case: each capitalised, no separator
+-     An extension on any `Traversable` of a textual type with `Char` elements:
+-     `List(t"one", t"two").pascal` is `t"OneTwo"`. Each word is lowercased and then
+-     capitalised, so `List(t"ONE", t"two").pascal` is also `t"OneTwo"`.
++ entry .pascal   パスカルケースでつなげた単語：それぞれ先頭を大文字にし、区切りなし
++     要素が `Char` であるテキスト型の任意の `Traversable` に対する拡張である。`List(t"one", t"two").pascal` は `t"OneTwo"` である。
++     各単語は小文字にしてから先頭を大文字にするので、`List(t"ONE", t"two").pascal` も `t"OneTwo"` である。
+
+- entry .camel   words joined in camel case: Pascal case with the first letter lowered
+-     `List(t"one", t"two", t"three").camel` is `t"oneTwoThree"`. `uncamel` is its inverse.
++ entry .camel   キャメルケースでつなげた単語：最初の文字を小文字にしたパスカルケース
++     `List(t"one", t"two", t"three").camel` は `t"oneTwoThree"` である。
++     `uncamel` がその逆である。
+
+- entry .snake   words joined with `_`
+-     `List(t"one", t"two").snake` is `t"one_two"`; the words are not recased. `unsnake` is its
+-     inverse.
++ entry .snake   `_` でつなげた単語
++     `List(t"one", t"two").snake` は `t"one_two"` である。単語の大文字小文字は変えない。
++     `unsnake` がその逆である。
+
+- entry .kebab   words joined with `-`
+-     `List(t"one", t"two").kebab` is `t"one-two"`; the words are not recased. `unkebab` is its
+-     inverse.
++ entry .kebab   `-` でつなげた単語
++     `List(t"one", t"two").kebab` は `t"one-two"` である。単語の大文字小文字は変えない。
++     `unkebab` がその逆である。
+
+- entry .dotted   words joined with `.`
+-     `List(t"one", t"two").dotted` is `t"one.two"`.
++ entry .dotted   `.` でつなげた単語
++     `List(t"one", t"two").dotted` は `t"one.two"` である。
+
+- entry .spaced   words joined with a space
+-     `List(t"one", t"two").spaced` is `t"one two"`, the inverse of `words`.
++ entry .spaced   空白でつなげた単語
++     `List(t"one", t"two").spaced` は `t"one two"` であり、`words` の逆である。
+
+- entry .length   the number of elements in a textual value: characters, bytes or graphemes
+-     `t"hello".length` is `5`; `Writing(t"👨‍👩‍👧").length` is `1`, one grapheme. An inline
+-     extension on any `Textual` type, through `Textual#length`.
++ entry .length   テキストの値の要素の数：文字、バイト、または書記素
++     `t"hello".length` は `5` である。`Writing(t"👨‍👩‍👧").length` は一つの書記素なので `1` である。
++     `Textual#length` を通じた、任意の `Textual` 型に対する inline の拡張である。
+
+- entry .plain   the plain `Text` of any textual value, with styling dropped
+-     `Textual#text` as an extension: `teletype.plain` is the styled text's characters alone,
+-     and `text.plain` is `text` itself. The width-measuring operations (`pad`, `fit`, `center`)
+-     measure the plain text.
++ entry .plain   任意のテキストの値の素の `Text`。スタイルは落とされる
++     拡張としての `Textual#text` である。`teletype.plain` はスタイル付きのテキストの文字だけであり、`text.plain` は `text` そのものである。
++     幅を測る操作（`pad`、`fit`、`center`）は素のテキストを測る。
+
+- entry .init   a textual value without its last element
+-     `t"Hello".init` is `t"Hell"`, and the empty text's `init` is empty. The same as
+-     `skip(1, Rtl)`; `tail` is the general collection operation for the other end.
++ entry .init   最後の要素を除いたテキストの値
++     `t"Hello".init` は `t"Hell"` であり、空のテキストの `init` は空である。
++     `skip(1, Rtl)` と同じである。反対側の端には一般的なコレクションの操作 `tail` がある。
+
+- entry .chars   the characters of a textual value as a frozen `Array[Char]`
+-     `t"Hello".chars.to[List]` is `List('H', 'e', 'l', 'l', 'o')`. The array is of the plain
+-     text's characters, whatever the textual type. `text` on a frozen `Array[Char]` is the
+-     inverse.
++ entry .chars   テキストの値の文字を、凍結済みの `Array[Char]` として
++     `t"Hello".chars.to[List]` は `List('H', 'e', 'l', 'l', 'o')` である。
++     テキスト型が何であれ、配列は素のテキストの文字からなる。
++     凍結済みの `Array[Char]` に対する `text` がその逆である。
+
+- entry .text   a frozen `Array[Char]` as a `Text`; and the contents of a `StringBuilder` as a `Text`
+-     `chars.text` is the inverse of `chars`. On a `StringBuilder`, `builder.text` reads the
+-     accumulated text, as the companion of `add`.
++ entry .text   凍結済みの `Array[Char]` を `Text` として。そして `StringBuilder` の中身を `Text` として
++     `chars.text` は `chars` の逆である。
++     `StringBuilder` に対しては、`builder.text` は蓄積されたテキストを読む。`add` の対となるものである。
+
+- entry .add   appends a `Text` or a `Char` to a `StringBuilder`
+-     For code which works with a raw `StringBuilder`: `builder.add(t"…")` and `builder.add('x')`
+-     append without a `String` conversion at the call site, and `builder.text` reads the
+-     result. `TextBuilder` and `Text.build` are the typed alternatives.
++ entry .add   `StringBuilder` に `Text` または `Char` を追加する
++     生の `StringBuilder` を扱うコードのためのものである。`builder.add(t"…")` と `builder.add('x')` は呼び出し箇所で `String` に変換せずに追加し、`builder.text` は結果を読む。
++     型付きの代替は `TextBuilder` と `Text.build` である。
+
+- entry .slices   a textual value divided into pieces of a fixed size
+-     `t"abcdefg".slices(3)` is `List(t"abc", t"def", t"g")`: every piece but the last has
+-     exactly `size` elements, and the last has whatever remains. Works on any `Textual` type
+-     through `segment`, so a styled text's pieces keep their styling. The empty text gives one
+-     empty piece.
++ entry .slices   決まった大きさの断片に分けたテキストの値
++     `t"abcdefg".slices(3)` は `List(t"abc", t"def", t"g")` である。最後以外のすべての断片はちょうど `size` 個の要素を持ち、最後の断片は残りを持つ。
++     `segment` を通じて任意の `Textual` 型に使えるので、スタイル付きのテキストの断片はスタイルを保つ。
++     空のテキストは空の断片を一つ返す。
+
+- entry .punch   splits a textual value at an ordinal, dropping the element there
+-     `t"key=value".punch(Quart)` is `(t"key", t"value")`: everything before the ordinal, and
+-     everything after it, with the element at the ordinal itself removed. Compare `snip`,
+-     which splits between elements and keeps them all.
++ entry .punch   テキストの値を序数の位置で分割し、そこにある要素を落とす
++     `t"key=value".punch(Quart)` は `(t"key", t"value")` である。序数より前のすべてと後のすべてであり、序数の位置にある要素自体は取り除かれる。
++     要素の間で分割してすべてを保つ `snip` と比べよ。
+
+- entry .justify   widens a text to a width by distributing extra spaces among its inter-word gaps
+-     The intent is full justification: the difference between `width` and the text's length
+-     is shared out as additional spaces between the words, so a line fills its column. Only
+-     the plain character count is considered, not display width. The implementation is marked
+-     as needing attention in the source and should not be relied on yet.
++ entry .justify   余分な空白を単語間の隙間に配分して、テキストをある幅まで広げる
++     意図は両端揃えである。`width` とテキストの長さの差が単語間の追加の空白として配分され、行がその列を埋める。
++     考慮されるのは素の文字数だけであり、表示幅ではない。
++     実装はソースの中で手直しが必要と記されており、まだ頼るべきではない。
+
+- entry .contains   whether a textual value contains a substring, or a character
+-     `t"hello world".contains(t"ello")` and `t"hello".contains('e')` are `true`; every text
+-     contains the empty text. The substring is plain `Text`, so a styled text is searched by
+-     its characters. For a position rather than a yes or no, use `offsetOf`.
++ entry .contains   テキストの値が部分文字列、または文字を含むかどうか
++     `t"hello world".contains(t"ello")` と `t"hello".contains('e')` は `true` である。どのテキストも空のテキストを含む。
++     部分文字列は素の `Text` なので、スタイル付きのテキストはその文字で検索される。
++     はいかいいえではなく位置が欲しければ `offsetOf` を使う。
+
+- entry .starts   whether a textual value begins with a prefix
+-     `t"hello".starts(t"he")` is `true`. Compared on the plain text; `chomp` removes the
+-     prefix if present.
++ entry .starts   テキストの値が接頭辞で始まるかどうか
++     `t"hello".starts(t"he")` は `true` である。
++     素のテキストで比較する。`chomp` は接頭辞があればそれを取り除く。
+
+- entry .ends   whether a textual value ends with a suffix
+-     `t"hello".ends(t"lo")` is `true`. Compared on the plain text; `chomp(suffix, Rtl)`
+-     removes it if present.
++ entry .ends   テキストの値が接尾辞で終わるかどうか
++     `t"hello".ends(t"lo")` は `true` である。
++     素のテキストで比較する。`chomp(suffix, Rtl)` は接尾辞があればそれを取り除く。
+
+- entry .chomp   removes a prefix (or, with `Rtl`, a suffix) from a textual value, if it is there
+-     `t"Sir Toby".chomp(t"Sir ")` is `t"Toby"`, and `t"file.txt".chomp(t".txt", Rtl)` is
+-     `t"file"`; a text without the affix is returned unchanged, so `chomp` is safe to apply
+-     without a `starts` or `ends` check first.
++ entry .chomp   テキストの値から接頭辞（`Rtl` なら接尾辞）を、あれば取り除く
++     `t"Sir Toby".chomp(t"Sir ")` は `t"Toby"` であり、`t"file.txt".chomp(t".txt", Rtl)` は `t"file"` である。接辞を持たないテキストは変更されずに返るので、`chomp` は先に `starts` や `ends` で確かめなくても安全に適用できる。
+
+- entry .offsetOf   the position of a substring's first (or, with `Rtl`, last) occurrence, as an `Optional` ordinal
+-     `t"hello world".offsetOf(t"o")` is the ordinal `Quin`, and `offsetOf(t"o", Rtl)` the
+-     ordinal of the last `o`; a substring which does not occur is `Unset`, never a sentinel.
+-     The result is an `Ordinal`, so it feeds `before`, `after`, `upto`, `from`, `punch` and
+-     `segment` directly, which is how a text is taken apart around a delimiter:
++ entry .offsetOf   部分文字列が最初に（`Rtl` なら最後に）現れる位置。`Optional` な序数として
++     `t"hello world".offsetOf(t"o")` は序数 `Quin` であり、`offsetOf(t"o", Rtl)` は最後の `o` の序数である。現れない部分文字列は `Unset` であり、決して番兵ではない。
++     結果は `Ordinal` なので、`before`、`after`、`upto`、`from`、`punch`、`segment` に直接渡せる。こうしてテキストを区切り文字の前後で分解する。
+
+=     `segment` directly, which is how a text is taken apart around a delimiter:
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     frame
++     frame
+
+-       label Find the separator
++       label 区切りを見つける
+
+=       label Find the separator
+-       code
++       code
+
+=       label Find the separator
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label Find the separator
+=       code
+=           import soundness.*
+=
+-           val header = t"Content-Type: text/html; charset=utf-8"
++           val header = t"Content-Type: text/html; charset=utf-8"
+
+-           val colon = header.offsetOf(t":")              // an Optional[Ordinal], present
++           val colon = header.offsetOf(t":")              // an Optional[Ordinal], present
+
+=           val colon = header.offsetOf(t":")              // an Optional[Ordinal], present
+-     frame
++     frame
+
+-       label Take the name before it
++       label その前の名前を取る
+
+=       label Take the name before it
+-       code
++       code
+
+=       label Take the name before it
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label Take the name before it
+=       code
+=           import soundness.*
+=
+-           val header = t"Content-Type: text/html; charset=utf-8"
++           val header = t"Content-Type: text/html; charset=utf-8"
+
+-           val name = header.offsetOf(t":").let(header.before(_))    // t"Content-Type"
++           val name = header.offsetOf(t":").let(header.before(_))    // t"Content-Type"
+
+=           val name = header.offsetOf(t":").let(header.before(_))    // t"Content-Type"
+-     frame
++     frame
+
+-       label And the value after it, trimmed
++       label そしてその後の値を、前後の空白を除いて取る
+
+=       label And the value after it, trimmed
+-       code
++       code
+
+=       label And the value after it, trimmed
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label And the value after it, trimmed
+=       code
+=           import soundness.*
+=
+-           val header = t"Content-Type: text/html; charset=utf-8"
++           val header = t"Content-Type: text/html; charset=utf-8"
+
+=       label And the value after it, trimmed
+=       code
+=           import soundness.*
+=
+=           val header = t"Content-Type: text/html; charset=utf-8"
+-           val value = header.offsetOf(t":").let(header.after(_).trim)
++           val value = header.offsetOf(t":").let(header.after(_).trim)
+
+-           // t"text/html; charset=utf-8"
++           // t"text/html; charset=utf-8"
+
+=           // t"text/html; charset=utf-8"
+-     frame
++     frame
+
+-       label Then split the value at the first parameter
++       label 次に値を最初のパラメーターで分割する
+
+=       label Then split the value at the first parameter
+-       code
++       code
+
+=       label Then split the value at the first parameter
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label Then split the value at the first parameter
+=       code
+=           import soundness.*
+=
+-           val header = t"Content-Type: text/html; charset=utf-8"
++           val header = t"Content-Type: text/html; charset=utf-8"
+
+=       label Then split the value at the first parameter
+=       code
+=           import soundness.*
+=
+=           val header = t"Content-Type: text/html; charset=utf-8"
+-           val value = header.offsetOf(t":").let(header.after(_).trim)
++           val value = header.offsetOf(t":").let(header.after(_).trim)
+
+-           val media = value.let { v => v.offsetOf(t";").lay(v)(v.before(_)) }   // t"text/html"
++           val media = value.let { v => v.offsetOf(t";").lay(v)(v.before(_)) }   // t"text/html"
+
+=           val media = value.let { v => v.offsetOf(t";").lay(v)(v.before(_)) }   // t"text/html"
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     `offsetOf` finds a substring; `pinpoint` finds a character by predicate, and `search`
+-     finds the matches of a regular expression. `Textual#indexOf` is the primitive beneath
+-     it. An empty substring is found at `Prim` from the left and is `Unset` from the right.
++     `offsetOf` は部分文字列を見つけ、`pinpoint` は述語で文字を見つけ、`search` は正規表現の一致を見つける。
++     その下にある基本操作は `Textual#indexOf` である。
++     空の部分文字列は、左からは `Prim` に見つかり、右からは `Unset` である。
+
+- entry .tally   the number of non-overlapping occurrences of a substring
+-     `t"banana".tally(t"an")` is `2`, and `t"aaaa".tally(t"aa")` is `2`, since each
+-     occurrence is counted from the end of the one before. The empty substring tallies `0`.
+-     This is the substring form; `count(predicate)` on a text — `t"banana".count(_ == 'a')`
+-     — is the collections' operation, which is why the substring form has its own name.
++ entry .tally   重ならない部分文字列の出現の数
++     `t"banana".tally(t"an")` は `2` であり、`t"aaaa".tally(t"aa")` も `2` である。各出現は、その前の出現の終わりから数えるからである。
++     空の部分文字列の数は `0` である。
++     これは部分文字列の形である。テキストに対する `count(predicate)`（`t"banana".count(_ == 'a')`）はコレクションの操作であり、部分文字列の形に独自の名前があるのはそのためである。
+
+- entry .search   the substrings of a textual value which a regular expression matches
+-     `t"a1b22c".search(r"[0-9]+")` is a `Chain` of `t"1"` and `t"22"`, each a slice of the
+-     receiver (so a styled text's matches keep their styling). With `overlap = true`, a match
+-     may begin inside the one before it. It needs a `Regex.Engine` in scope, which the `r"…"`
+-     literal's form supplies. For the pieces *between* matches, use `cut`.
++ entry .search   テキストの値のうち、正規表現が一致する部分文字列
++     `t"a1b22c".search(r"[0-9]+")` は `t"1"` と `t"22"` の `Chain` であり、それぞれレシーバの切り出しである（そのため、スタイル付きのテキストの一致はスタイルを保つ）。
++     `overlap = true` を指定すると、一致はその前の一致の内側から始まってもよい。
++     スコープに `Regex.Engine` が必要であり、それは `r"…"` リテラルの形が供給する。
++     一致と一致の*間*の断片には `cut` を使う。
+
+- entry .extract   scans a textual value with a partial function of regex patterns, collecting every match
+-     `text.extract { case r"…" => value }` runs a partial function of `r"…"` patterns along
+-     the text, from `start` (`Prim` by default), yielding a `Chain` of the values the matching
+-     cases produce; the scan advances to the end of each match. The cases are decomposed while
+-     the code compiles so that each pattern is tried at every position, with a `Scanner` which
+-     records where its match began and ended; a lambda which cannot be decomposed falls back
+-     to re-running the whole partial function at each position. The result type is inferred
+-     from the cases.
++ entry .extract   正規表現のパターンの部分関数でテキストの値を走査し、すべての一致を集める
++     `text.extract { case r"…" => value }` は、`r"…"` パターンの部分関数をテキストに沿って `start`（デフォルトは `Prim`）から実行し、一致したケースが生成する値の `Chain` を返す。走査は各一致の終わりまで進む。
++     ケースはコンパイル時に分解され、各パターンがすべての位置で試される。その際、一致が始まった場所と終わった場所を記録する `Scanner` を使う。分解できないラムダは、各位置で部分関数全体を実行し直す方法に代替される。
++     結果の型はケースから推論される。
+
+=     from the cases.
+=
+-     ```scala
++     ```scala
+
+=     from the cases.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"x=1, y=22".extract:
++     t"x=1, y=22".extract:
+
+-       case r"$key([a-z])=$value([0-9]+)" => (key, value)
++       case r"$key([a-z])=$value([0-9]+)" => (key, value)
+
+=       case r"$key([a-z])=$value([0-9]+)" => (key, value)
+-     ```
++     ```
+
+- entry .lower   a textual value in lower case
+-     `t"Hello World".lower` is `t"hello world"`, mapping each character with `Char#toLower`.
+-     Requires `Char` elements, so it is available on `Text`, `Writing` is excluded, and a
+-     styled text keeps its styling.
++ entry .lower   小文字にしたテキストの値
++     `t"Hello World".lower` は `t"hello world"` であり、各文字を `Char#toLower` で写す。
++     `Char` の要素を必要とするので、`Text` では使えるが `Writing` は除外され、スタイル付きのテキストはスタイルを保つ。
+
+- entry .upper   a textual value in upper case
+-     `t"Hello World".upper` is `t"HELLO WORLD"`, mapping each character with `Char#toUpper`;
+-     a character with no single-character upper case (`ß`) is left alone.
++ entry .upper   大文字にしたテキストの値
++     `t"Hello World".upper` は `t"HELLO WORLD"` であり、各文字を `Char#toUpper` で写す。一文字の大文字を持たない文字（`ß`）はそのままにする。
+
+- entry .capitalize   a textual value with its first character in upper case
+-     `t"hello".capitalize` is `t"Hello"` and `t"kingLear".capitalize` is `t"KingLear"`; the rest
+-     is unchanged. The empty text stays empty.
++ entry .capitalize   最初の文字を大文字にしたテキストの値
++     `t"hello".capitalize` は `t"Hello"` であり、`t"kingLear".capitalize` は `t"KingLear"` である。残りは変わらない。
++     空のテキストは空のままである。
+
+- entry .uncapitalize   a textual value with its first character in lower case
+-     `t"Hello".uncapitalize` is `t"hello"`; `camel` is `pascal` followed by this.
++ entry .uncapitalize   最初の文字を小文字にしたテキストの値
++     `t"Hello".uncapitalize` は `t"hello"` である。`camel` は `pascal` の後にこれを行ったものである。
+
+- entry .trim   a textual value without its leading and trailing whitespace, or one side's with a `Bidi`
+-     `t"  Hello \n".trim` is `t"Hello"`, and `trim(Ltr)` or `trim(Rtl)` strips one side only.
+-     Whitespace is what `Char#isWhitespace` says: spaces, tabs, newlines and the other
+-     Unicode space separators. Text which is all whitespace trims to the empty text.
++ entry .trim   先頭と末尾の空白文字を除いたテキストの値。`Bidi` を指定すれば片側だけ
++     `t"  Hello \n".trim` は `t"Hello"` であり、`trim(Ltr)` や `trim(Rtl)` は片側だけを取り除く。
++     空白文字とは `Char#isWhitespace` が言うもの、すなわち空白、タブ、改行、そしてほかの Unicode の空白区切りである。
++     すべて空白文字のテキストは、取り除くと空のテキストになる。
+
+- entry .blank   whether a textual value is empty or all whitespace
+-     `t"  \t".blank` and `t"".blank` are `true`; for emptiness alone, use the collections'
+-     `nil`.
++ entry .blank   テキストの値が空か、すべて空白文字であるかどうか
++     `t"  \t".blank` と `t"".blank` は `true` である。空であるかどうかだけなら、コレクションの `nil` を使う。
+
+- entry .pinpoint   the ordinal of the first character satisfying a predicate, from a start, in either direction
+-     `t"oh, Hello World".pinpoint(_.isUpper)` is `Quin`, the position of `H`;
+-     `pinpoint(_.isUpper, Sen)` begins the search at the sixth character and finds `W`; and
+-     `pinpoint(!_.isWhitespace, bidi = Rtl)` scans from the end. The result is `Unset` when no
+-     character satisfies the predicate. It is the positional primitive beneath `trim`, `blank`
+-     and `uncamel`, and reaches each character by direct access rather than traversal. For a
+-     substring's position, use `offsetOf`; the collections' `where` is the predicate search
+-     without a start or direction.
++ entry .pinpoint   開始位置から、どちらかの方向に、述語を満たす最初の文字の序数
++     `t"oh, Hello World".pinpoint(_.isUpper)` は `H` の位置である `Quin` である。`pinpoint(_.isUpper, Sen)` は六番目の文字から検索を始めて `W` を見つける。そして `pinpoint(!_.isWhitespace, bidi = Rtl)` は末尾から走査する。
++     述語を満たす文字がなければ、結果は `Unset` である。
++     これは `trim`、`blank`、`uncamel` の下にある位置の基本操作であり、走査ではなく直接のアクセスで各文字に到達する。
++     部分文字列の位置には `offsetOf` を使う。コレクションの `where` は、開始位置も方向も持たない述語による検索である。
+
+- entry .tr   maps every character; or replaces one character with another
+-     `t"ABC".tr(_.toLower)` is `t"abc"`, and `t"one,two".tr(',', ';')` is `t"one;two"`. A
+-     character-for-character transliteration which never changes the length; for a
+-     substring, use `sub`.
++ entry .tr   すべての文字を写す。あるいは一つの文字を別の文字に置き換える
++     `t"ABC".tr(_.toLower)` は `t"abc"` であり、`t"one,two".tr(',', ';')` は `t"one;two"` である。
++     長さを決して変えない、一文字対一文字の字訳である。部分文字列には `sub` を使う。
+
+- entry .erase   a textual value with every occurrence of the given characters removed
+-     `t"a-b_c".erase('-', '_')` is `t"abc"`.
++ entry .erase   指定した文字の出現をすべて取り除いたテキストの値
++     `t"a-b_c".erase('-', '_')` は `t"abc"` である。
+
+- entry .broken   inserts a break character wherever two adjacent characters satisfy a predicate
+-     `text.broken((left, right) => …)` tests each adjacent pair and inserts `break` — a
+-     zero-width space by default — between the two when the predicate holds, so a long
+-     identifier can be given soft break points for wrapping: `t"camelCaseName".broken((a, b)
+-     => a.isLower && b.isUpper)` marks each word boundary. A text of fewer than two
+-     characters is unchanged.
++ entry .broken   隣り合う二つの文字が述語を満たす箇所に、区切りの文字を挿入する
++     `text.broken((left, right) => …)` は隣り合う各組を検査し、述語が成り立てばその二つの間に `break`（デフォルトではゼロ幅スペース）を挿入する。そのため、長い識別子に折り返しのための柔らかい区切り位置を与えられる。`t"camelCaseName".broken((a, b) => a.isLower && b.isUpper)` は各単語の境界に印を付ける。
++     二文字未満のテキストは変わらない。
+
+- entry .pad   extends a textual value with a character to a width, on the right or, with `Rtl`, the left
+-     `t"123".pad(5)` is `t"123  "` and `t"123".pad(5, Rtl, '0')` is `t"00123"`; text already
+-     at or past the width is unchanged, never truncated. The width is measured through the
+-     `Text is Measurable` given in scope (`textMetrics.uniformMetric` counts one column per
+-     character; `wideCharacterWidthMetric` counts two for CJK and emoji), so padding aligns
+-     columns of text as a terminal displays them.
++ entry .pad   テキストの値を文字で幅まで伸ばす。右側に、`Rtl` なら左側に
++     `t"123".pad(5)` は `t"123  "` であり、`t"123".pad(5, Rtl, '0')` は `t"00123"` である。既に幅に達しているか超えているテキストは変わらず、決して切り詰められない。
++     幅はスコープにある `Text is Measurable` の given を通じて測る（`textMetrics.uniformMetric` は一文字を一桁と数え、`wideCharacterWidthMetric` は CJK と絵文字を二桁と数える）。そのため、パディングは端末が表示するとおりにテキストの列を揃える。
+
+=     columns of text as a terminal displays them.
+=
+-     ```scala
++     ```scala
+
+=     columns of text as a terminal displays them.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     columns of text as a terminal displays them.
+=
+=     ```scala
+=     import soundness.*
+-     import textMetrics.uniformMetric
++     import textMetrics.uniformMetric
+
+-     t"123".pad(5, Rtl)   // t"  123"
++     t"123".pad(5, Rtl)   // t"  123"
+
+=     t"123".pad(5, Rtl)   // t"  123"
+-     ```
++     ```
+
+- entry .center   pads a textual value on both sides to a width
+-     `t"ab".center(6)` is `t"  ab  "`, with the odd column, when there is one, on the left.
+-     Measured through the `Text is Measurable` given in scope, as `pad` is.
++ entry .center   テキストの値の両側を幅までパディングする
++     `t"ab".center(6)` は `t"  ab  "` であり、端数の一桁があるときは左側に置く。
++     `pad` と同じく、スコープにある `Text is Measurable` の given を通じて測る。
+
+- entry .fit   forces a textual value to an exact width, padding or truncating as needed
+-     `t"123".fit(5)` is `t"123  "`, `t"12345".fit(3)` is `t"123"`, and with `Rtl` the padding
+-     goes on the left and the truncation keeps the right: `t"12345".fit(3, Rtl)` is `t"345"`
+-     and `t"123".fit(5, Rtl, '.')` is `t"..123"`. Measured through the `Text is Measurable`
+-     given in scope.
++ entry .fit   テキストの値を正確な幅にする。必要に応じてパディングするか切り詰める
++     `t"123".fit(5)` は `t"123  "`、`t"12345".fit(3)` は `t"123"` である。`Rtl` を指定するとパディングは左側に付き、切り詰めは右側を残す。`t"12345".fit(3, Rtl)` は `t"345"`、`t"123".fit(5, Rtl, '.')` は `t"..123"` である。
++     スコープにある `Text is Measurable` の given を通じて測る。
+
+- entry .ossify   replaces every space with a non-breaking space
+-     `t"a b".ossify` has U+00A0 between the letters, so a line-wrapping layout keeps the
+-     words together.
++ entry .ossify   すべての空白をノーブレークスペースに置き換える
++     `t"a b".ossify` は文字の間に U+00A0 を持つので、行を折り返すレイアウトは単語を一緒に保つ。
+
+- entry .subscripts   a textual value with every character replaced by its subscript form
+-     `t"2".subscripts` is `t"₂"`; a character with no Unicode subscript becomes a space.
++ entry .subscripts   すべての文字を下付き添字の形に置き換えたテキストの値
++     `t"2".subscripts` は `t"₂"` である。Unicode の下付き添字を持たない文字は空白になる。
+
+- entry .superscripts   a textual value with every character replaced by its superscript form
+-     `t"23".superscripts` is `t"²³"`; a character with no Unicode superscript becomes a space.
++ entry .superscripts   すべての文字を上付き添字の形に置き換えたテキストの値
++     `t"23".superscripts` は `t"²³"` である。Unicode の上付き添字を持たない文字は空白になる。
+
+- entry .sub   replaces occurrences of a substring, or of a regular expression's matches, in a `Text`
+-     `t"naive".sub(t"i", t"ï")` is `t"naïve"`, and every occurrence is replaced unless a
+-     `count` is given: `t"aaa".sub(t"a", t"b", 2)` is `t"bba"`. A literal replacement is
+-     inserted verbatim — `\` and `$` in it are not escapes — so `t"a.b".sub(t".", t"\\.")`
+-     gives `a\.b`. With a `Regex` as the pattern, `$1` in the replacement refers to the
+-     first group: `t"ab".sub(r"(a)b", t"$$1c")` is `t"ac"`. Matches do not overlap:
+-     `t"fofofoo".sub(t"fofo", t"momo")` is `t"momofoo"`.
++ entry .sub   `Text` の中の部分文字列の出現、または正規表現の一致を置き換える
++     `t"naive".sub(t"i", t"ï")` は `t"naïve"` であり、`count` を指定しない限りすべての出現が置き換えられる。`t"aaa".sub(t"a", t"b", 2)` は `t"bba"` である。
++     リテラルの置換はそのまま挿入され、その中の `\` と `$` はエスケープではないので、`t"a.b".sub(t".", t"\\.")` は `a\.b` になる。
++     パターンが `Regex` のときは、置換の中の `$1` は最初のグループを指す。`t"ab".sub(r"(a)b", t"$$1c")` は `t"ac"` である。
++     一致は重ならない。`t"fofofoo".sub(t"fofo", t"momo")` は `t"momofoo"` である。
+
+- entry .urlEncode   a `Text` percent-encoded as a URL query component, in UTF-8
+-     `t"hello world".urlEncode` is `t"hello+world"` and `t"é".urlEncode` is `t"%C3%A9"`: the
+-     form encoding, in which a space is `+`. `urlDecode` reverses it.
++ entry .urlEncode   UTF-8 で URL のクエリーの構成要素としてパーセントエンコードした `Text`
++     `t"hello world".urlEncode` は `t"hello+world"` であり、`t"é".urlEncode` は `t"%C3%A9"` である。空白が `+` になるフォームのエンコーディングである。
++     `urlDecode` がそれを元に戻す。
+
+- entry .urlDecode   decodes a percent-encoded `Text`, with `+` as a space
+-     `t"%2B".urlDecode` is `t"+"` and `t"+".urlDecode` is `t" "`.
++ entry .urlDecode   `+` を空白として、パーセントエンコードされた `Text` をデコードする
++     `t"%2B".urlDecode` は `t"+"` であり、`t"+".urlDecode` は `t" "` である。
+
+- entry .punycode   an internationalised domain name in its ASCII (Punycode) form
+-     `t"www.äpfel.com".punycode` is `t"www.xn--pfel-koa.com"`, through `java.net.IDN`.
++ entry .punycode   ASCII（Punycode）形式の国際化ドメイン名
++     `t"www.äpfel.com".punycode` は、`java.net.IDN` を通じて `t"www.xn--pfel-koa.com"` となる。
+
+- entry .sysData   the bytes of a `Text` in the system codepage, as a frozen array
+-     `t"hello".sysData` is the bytes `104, 101, 108, 108, 111`. For a chosen encoding, use
+-     `text.in[Data]` with a `codepages` given in scope.
++ entry .sysData   システムのコードページによる `Text` のバイト。凍結済みの配列として
++     `t"hello".sysData` はバイト `104, 101, 108, 108, 111` である。
++     エンコーディングを選ぶには、スコープに `codepages` の given を置いて `text.in[Data]` を使う。
+
+- entry .proximity   the distance between two `Text`s under the `Proximity` measure in scope
+-     `t"Hello world".proximity(t"Hello orld")` is `1` under `proximities.levenshteinProximity`
+-     (and `caseSensitivity.caseSensitive`): the result type is the measure's `Operand` — an
+-     `Int` for Levenshtein and prefix measures, a `Double` for Jaro, Jaro–Winkler and
+-     normalised Levenshtein. Both a `Proximity` and a `CaseSensitivity` must be imported by
+-     name.
++ entry .proximity   スコープの `Proximity` の測度による、二つの `Text` の間の距離
++     `t"Hello world".proximity(t"Hello orld")` は、`proximities.levenshteinProximity`（と `caseSensitivity.caseSensitive`）の下で `1` である。結果の型は測度の `Operand` であり、Levenshtein と接頭辞の測度では `Int`、Jaro、Jaro–Winkler、正規化 Levenshtein では `Double` である。
++     `Proximity` と `CaseSensitivity` の両方を名前でインポートしなければならない。
+
+=     name.
+=
+-     ```scala
++     ```scala
+
+=     name.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import proximities.levenshteinProximity
++     import proximities.levenshteinProximity
+
+-     import caseSensitivity.caseSensitive
++     import caseSensitivity.caseSensitive
+
+-     t"kitten".proximity(t"sitting")   // 3
++     t"kitten".proximity(t"sitting")   // 3
+
+=     t"kitten".proximity(t"sitting")   // 3
+-     ```
++     ```
+
+- entry .fuzzy   matches a `Text` against literal cases by proximity rather than equality
+-     `text.fuzzy() { case t"hello" => … }` evaluates the case whose literal is nearest the
+-     text under the `Proximity by Double` measure in scope — `proximities.normalized
+-     LevenshteinProximity` or `jaroWinklerProximity` — with ties going to the earlier case. A
+-     `threshold` bounds the distance a case may be chosen at; a text further than it from
+-     every literal falls to the wildcard case, which must be last and may bind the text, and
+-     throws `MatchError` if there is none. Every non-wildcard case must be a `"…"` or `t"…"`
+-     literal, checked as the code compiles.
++ entry .fuzzy   `Text` を、等価性ではなく近さによってリテラルのケースとマッチさせる
++     `text.fuzzy() { case t"hello" => … }` は、スコープの `Proximity by Double` の測度（`proximities.normalized LevenshteinProximity` または `jaroWinklerProximity`）の下で、リテラルがテキストに最も近いケースを評価する。同点の場合は前のケースが選ばれる。
++     `threshold` はケースが選ばれうる距離の上限を定める。どのリテラルからもそれより遠いテキストはワイルドカードのケースに落ちる。ワイルドカードのケースは最後になければならず、テキストを束縛してもよい。それがなければ `MatchError` を投げる。
++     ワイルドカード以外のすべてのケースは `"…"` または `t"…"` のリテラルでなければならず、コンパイル時に検査される。
+
+=     literal, checked as the code compiles.
+=
+-     ```scala
++     ```scala
+
+=     literal, checked as the code compiles.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import proximities.normalizedLevenshteinProximity
++     import proximities.normalizedLevenshteinProximity
+
+-     import caseSensitivity.caseInsensitive
++     import caseSensitivity.caseInsensitive
+
+-     t"hlelo".fuzzy(0.5):
++     t"hlelo".fuzzy(0.5):
+
+-       case t"hello"   => t"english"
++       case t"hello"   => t"english"
+
+-       case t"bonjour" => t"french"
++       case t"bonjour" => t"french"
+
+-       case other      => t"unknown: $other"
++       case other      => t"unknown: $other"
+
+-     // t"english"
++     // t"english"
+
+=     // t"english"
+-     ```
++     ```
+
+- entry .Proximity   a measure of the distance between two `Text`s: the typeclass behind `proximity`, `fuzzy` and `Lexicon`
++ entry .Proximity   二つの `Text` の間の距離の測度。`proximity`、`fuzzy`、`Lexicon` の背後にある型クラス
+
+= entry .Proximity   a measure of the distance between two `Text`s: the typeclass behind `proximity`, `fuzzy` and `Lexicon`
+-   detail
++   detail
+
+-       `Proximity by operand` has one method, `#distance(left, right)`, whose result type is
+-       `#Operand`: an `Int` for a count of edits or matching characters, a `Double` for a
+-       normalised score. There is no default: a measure is imported by name from the
+-       `proximities` package, and every one of them consults the `CaseSensitivity` in scope
+-       to decide whether two characters are the same, so that is imported too.
++       `Proximity by operand` はメソッドを一つ、`#distance(left, right)` を持ち、その結果の型は `#Operand` である。編集や一致する文字の数なら `Int`、正規化されたスコアなら `Double` である。
++       既定はない。測度は `proximities` パッケージから名前でインポートし、どの測度も二つの文字が同じかどうかを決めるためにスコープの `CaseSensitivity` を参照するので、それもインポートする。
+
+=       to decide whether two characters are the same, so that is imported too.
+=
+-       ```scala
++       ```scala
+
+=       to decide whether two characters are the same, so that is imported too.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       to decide whether two characters are the same, so that is imported too.
+=
+=       ```scala
+=       import soundness.*
+-       import proximities.levenshteinProximity
++       import proximities.levenshteinProximity
+
+-       import caseSensitivity.caseInsensitive
++       import caseSensitivity.caseInsensitive
+
+-       t"Hello".proximity(t"hello")   // 0
++       t"Hello".proximity(t"hello")   // 0
+
+=       t"Hello".proximity(t"hello")   // 0
+-       ```
++       ```
+
+-       `#Triangulable` is `true` for a measure which is a metric obeying the triangle
+-       inequality (Levenshtein), which is what a `Lexicon` needs to prune its search; the
+-       Jaro measures are similarities, not metrics, and `Lexicon(terms)` will not accept
+-       them.
++       `#Triangulable` は、三角不等式に従う距離関数である測度（Levenshtein）では `true` であり、`Lexicon` が探索を枝刈りするにはこれが必要である。Jaro の測度は類似度であって距離関数ではないので、`Lexicon(terms)` はそれを受け付けない。
+
+=       them.
+-   refer gossamer.proximities
++   refer gossamer.proximities
+
+-   refer gossamer.proximity
++   refer gossamer.proximity
+
+=   refer gossamer.proximity
+-   refer gossamer.fuzzy
++   refer gossamer.fuzzy
+
+=   refer gossamer.fuzzy
+-   refer gossamer.Lexicon
++   refer gossamer.Lexicon
+
+-   entry #Operand   the type a distance has: `Int` or `Double`
+-   entry #Triangulable   `true` when the measure is a metric obeying the triangle inequality
+-   entry #distance   the distance between two texts
++   entry #Operand   距離の型：`Int` または `Double`
++   entry #Triangulable   測度が三角不等式に従う距離関数であるとき `true`
++   entry #distance   二つのテキストの間の距離
+
+- entry .proximities   the string-similarity measures, each a `Proximity` given to import by name
++ entry .proximities   文字列の類似度の測度。それぞれ名前でインポートする `Proximity` の given
+
+= entry .proximities   the string-similarity measures, each a `Proximity` given to import by name
+-   detail
++   detail
+
+-       Which notion of closeness `proximity`, `fuzzy` and `Lexicon` use is a choice, so
+-       `import soundness.*` brings none of these in; one is imported by name, along with a
+-       `CaseSensitivity`, which every measure needs to compare characters.
++       `proximity`、`fuzzy`、`Lexicon` がどのような近さの概念を使うかは選択なので、`import soundness.*` はこれらを一つも取り込まない。一つを名前でインポートし、あわせて、すべての測度が文字の比較に必要とする `CaseSensitivity` もインポートする。
+
+=       `CaseSensitivity`, which every measure needs to compare characters.
+=
+-       ```scala
++       ```scala
+
+=       `CaseSensitivity`, which every measure needs to compare characters.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import proximities.jaroWinklerProximity
++       import proximities.jaroWinklerProximity
+
+=       import proximities.jaroWinklerProximity
+-       import caseSensitivity.caseSensitive
++       import caseSensitivity.caseSensitive
+
+-       t"martha".proximity(t"marhta")   // about 0.96
++       t"martha".proximity(t"marhta")   // about 0.96
+
+=       t"martha".proximity(t"marhta")   // about 0.96
+-       ```
++       ```
+
+-       Levenshtein and prefix distances are `Int`s, and zero means identical; the Jaro,
+-       Jaro–Winkler and normalised Levenshtein measures are `Double`s. Jaro and Jaro–Winkler
+-       are *similarities* (one means identical), where normalised Levenshtein is a *distance*
+-       (zero means identical); `fuzzy`, which picks the case with the smallest value, expects
+-       a distance.
+-   entry .levenshteinProximity   the Levenshtein edit distance: single-character insertions, deletions and substitutions
+-       `t"kitten".proximity(t"sitting")` is `3`. The distance between a text and the empty
+-       text is the text's length. A true metric (`Triangulable = true`), so it is what a
+-       `Lexicon` is built over. Computed in two rows of integers, so memory is linear in the
+-       shorter text.
+-   entry .normalizedLevenshteinProximity   the Levenshtein distance divided by the longer text's length, in `0.0` to `1.0`
+-       `0.0` for identical texts, `1.0` for texts with nothing in common, and `0.0` for two
+-       empty texts. The measure `fuzzy` is usually used with, since a threshold on it does not
+-       depend on the texts' lengths.
+-   entry .jaroProximity   the Jaro similarity: matching characters within a window, less transpositions
+-       `1.0` for identical texts, `0.0` for texts sharing no characters within half the
+-       longer length of each other. A similarity, not a distance.
+-   entry .jaroWinklerProximity   the Jaro similarity boosted for a common prefix of up to four characters
+-       Jaro, plus a tenth of the common-prefix length (capped at four) times what Jaro
+-       leaves short of `1.0`; it favours texts which begin alike, as misspellings often do.
+-   entry .prefixProximity   the length of the common prefix of two texts
+-       `t"interview".proximity(t"internal")` is `5`. A larger number means *more* alike; it
+-       is a building block of `jaroWinklerProximity` rather than a distance for `fuzzy`.
++       Levenshtein と接頭辞の距離は `Int` で、ゼロは同一を意味する。Jaro、Jaro–Winkler、正規化 Levenshtein の測度は `Double` である。
++       Jaro と Jaro–Winkler は*類似度*（一が同一を意味する）であり、正規化 Levenshtein は*距離*（ゼロが同一を意味する）である。値が最小のケースを選ぶ `fuzzy` は距離を期待する。
++   entry .levenshteinProximity   Levenshtein の編集距離。一文字の挿入、削除、置換
++       `t"kitten".proximity(t"sitting")` は `3` である。
++       テキストと空のテキストの間の距離は、そのテキストの長さである。
++       真の距離関数（`Triangulable = true`）なので、`Lexicon` はこれの上に構築される。
++       二行の整数で計算するので、メモリーは短いほうのテキストに対して線形である。
++   entry .normalizedLevenshteinProximity   Levenshtein 距離を長いほうのテキストの長さで割ったもの。`0.0` から `1.0` まで
++       同一のテキストでは `0.0`、共通点のないテキストでは `1.0`、二つの空のテキストでは `0.0` である。
++       その閾値はテキストの長さに依存しないので、`fuzzy` とともに通常使われる測度である。
++   entry .jaroProximity   Jaro 類似度。ウィンドウ内で一致する文字から、転置を差し引いたもの
++       同一のテキストでは `1.0`、互いに長いほうの長さの半分以内に共通の文字を持たないテキストでは `0.0` である。
++       距離ではなく類似度である。
++   entry .jaroWinklerProximity   最大四文字までの共通の接頭辞で強化した Jaro 類似度
++       Jaro に、共通の接頭辞の長さ（最大四）の十分の一と、Jaro が `1.0` に足りない分との積を加えたものである。綴りの誤りがしばしばそうであるように、同じように始まるテキストを優遇する。
++   entry .prefixProximity   二つのテキストの共通の接頭辞の長さ
++       `t"interview".proximity(t"internal")` は `5` である。
++       数が大きいほど*より*似ていることを意味する。これは `fuzzy` のための距離ではなく、`jaroWinklerProximity` の構成要素である。
+
+- entry .CaseSensitivity   whether two characters count as the same: a policy every proximity measure consults
++ entry .CaseSensitivity   二つの文字が同じとみなされるかどうか。すべての近さの測度が参照するポリシー
+
+= entry .CaseSensitivity   whether two characters count as the same: a policy every proximity measure consults
+-   detail
++   detail
+
+-       A `CaseSensitivity` is a function from two `Char`s to whether they match. The three
+-       policies in the `caseSensitivity` package — `caseSensitive`, `caseInsensitive` and
+-       `smartCase` — are the usual choices, imported by name; a custom one is any lambda of
+-       the right shape.
++       `CaseSensitivity` は、二つの `Char` から、それらが一致するかどうかへの関数である。
++       `caseSensitivity` パッケージにある三つのポリシー（`caseSensitive`、`caseInsensitive`、`smartCase`）が通常の選択肢で、名前でインポートする。独自のものは、正しい形の任意のラムダである。
+
+-   refer gossamer.caseSensitivity
++   refer gossamer.caseSensitivity
+
+-   entry #compare   whether two characters match under this policy
++   entry #compare   このポリシーの下で二つの文字が一致するかどうか
+
+- entry .caseSensitivity   the case-matching policies, each a `CaseSensitivity` given to import by name
++ entry .caseSensitivity   大文字小文字の一致のポリシー。それぞれ名前でインポートする `CaseSensitivity` の given
+
+= entry .caseSensitivity   the case-matching policies, each a `CaseSensitivity` given to import by name
+-   detail
++   detail
+
+-       `import soundness.*` brings none of these in. One is imported by name wherever a
+-       `Proximity` is used, since every measure asks it whether two characters are the same.
++       `import soundness.*` はこれらを一つも取り込まない。
++       どの測度も二つの文字が同じかどうかをこれに問うので、`Proximity` を使う場所では必ず一つを名前でインポートする。
+
+=       `Proximity` is used, since every measure asks it whether two characters are the same.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Case-sensitive
++       alternative Case-sensitive
+
+=       alternative Case-sensitive
+-         code
++         code
+
+=       alternative Case-sensitive
+=         code
+-             locally:
++             locally:
+
+=       alternative Case-sensitive
+=         code
+=             locally:
+-               import proximities.levenshteinProximity
++               import proximities.levenshteinProximity
+
+-               import caseSensitivity.caseSensitive
++               import caseSensitivity.caseSensitive
+
+-               t"Hello".proximity(t"hello")   // 1: `H` and `h` differ
++               t"Hello".proximity(t"hello")   // 1: `H` and `h` differ
+
+-       alternative Case-insensitive
++       alternative Case-insensitive
+
+=       alternative Case-insensitive
+-         code
++         code
+
+=       alternative Case-insensitive
+=         code
+-             locally:
++             locally:
+
+=       alternative Case-insensitive
+=         code
+=             locally:
+-               import proximities.levenshteinProximity
++               import proximities.levenshteinProximity
+
+-               import caseSensitivity.caseInsensitive
++               import caseSensitivity.caseInsensitive
+
+-               t"Hello".proximity(t"hello")   // 0: they are the same
++               t"Hello".proximity(t"hello")   // 0: they are the same
+
+-       alternative Smart case
++       alternative Smart case
+
+=       alternative Smart case
+-         code
++         code
+
+=       alternative Smart case
+=         code
+-             locally:
++             locally:
+
+=       alternative Smart case
+=         code
+=             locally:
+-               import proximities.levenshteinProximity
++               import proximities.levenshteinProximity
+
+-               import caseSensitivity.smartCase
++               import caseSensitivity.smartCase
+
+-               (t"hello".proximity(t"Hello"), t"Hello".proximity(t"hello"))   // (0, 1)
++               (t"hello".proximity(t"Hello"), t"Hello".proximity(t"hello"))   // (0, 1)
+
+=               (t"hello".proximity(t"Hello"), t"Hello".proximity(t"hello"))   // (0, 1)
+-       ##
++       ##
+
+=               (t"hello".proximity(t"Hello"), t"Hello".proximity(t"hello"))   // (0, 1)
+=       ##
+-       ```
++       ```
+
+-   entry .caseSensitive   characters match only when they are equal
+-   entry .caseInsensitive   characters match when their upper-case forms are equal
+-   entry .smartCase   a lowercase character on the left matches either case; any other character matches only itself
+-       The rule of search tools such as Vim's `smartcase`: a query typed in lowercase is
+-       case-insensitive, and a capital in the query must be matched exactly. The left operand
+-       is the query.
++   entry .caseSensitive   文字は等しいときにだけ一致する
++   entry .caseInsensitive   文字は大文字の形が等しいときに一致する
++   entry .smartCase   左側の小文字はどちらの大文字小文字にも一致し、それ以外の文字はそれ自身にだけ一致する
++       Vim の `smartcase` のような検索ツールの規則である。小文字で入力した問い合わせは大文字小文字を区別せず、問い合わせ中の大文字は正確に一致しなければならない。
++       左のオペランドが問い合わせである。
+
+- entry .Collation   a total ordering of `Text`: what sorting and comparing text requires
++ entry .Collation   `Text` の全順序。テキストのソートと比較に必要なもの
+
+= entry .Collation   a total ordering of `Text`: what sorting and comparing text requires
+-   detail
++   detail
+
+-       Text has no natural order — whether `café` sorts before `caff` depends on the language
+-       and the purpose — so Soundness has no ambient one: sorting a `List[Text]`, or writing
+-       `t"a" < t"b"`, needs a `Collation` in scope, and does not compile without one. A
+-       collation is imported by name from the `collations` package (`unicodeCollation` for
+-       dictionary order, `codepointCollation` for a fast, table-free order) or built from a
+-       hieroglyph `CollationTable` with `.apply`, and `collationComparable` turns it into the
+-       `Text is Comparable` the comparison operators and sorts look for.
++       テキストには自然な順序がない。`café` が `caff` の前に来るかどうかは言語と目的によって決まる。そのため Soundness にはアンビエントな順序がない。`List[Text]` をソートしたり `t"a" < t"b"` と書いたりするにはスコープに `Collation` が必要であり、それがなければコンパイルできない。
++       照合は `collations` パッケージから名前でインポートする（辞書順なら `unicodeCollation`、高速で表を使わない順序なら `codepointCollation`）か、`.apply` で hieroglyph の `CollationTable` から構築する。`collationComparable` は、それを比較演算子とソートが探す `Text is Comparable` に変える。
+
+=       `Text is Comparable` the comparison operators and sorts look for.
+=
+-       ```scala
++       ```scala
+
+=       `Text is Comparable` the comparison operators and sorts look for.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import collations.unicodeCollation
++       import collations.unicodeCollation
+
+-       import sortingAlgorithms.timsort
++       import sortingAlgorithms.timsort
+
+-       List(t"caff", t"café", t"cafe").sort   // List(t"cafe", t"café", t"caff")
++       List(t"caff", t"café", t"cafe").sort   // List(t"cafe", t"café", t"caff")
+
+-       t"apple" < t"banana"                    // true
++       t"apple" < t"banana"                    // true
+
+=       t"apple" < t"banana"                    // true
+-       ```
++       ```
+
+-       `#compare` gives the `Comparison` of two texts, and `#key` a sort key: an array of
+-       integers which, compared element by element, orders as the collation does, for
+-       sorting many texts without repeating the comparison work.
++       `#compare` は二つのテキストの `Comparison` を与え、`#key` はソートキーを与える。ソートキーは、要素ごとに比較すると照合と同じ順序になる整数の配列であり、多くのテキストを比較の作業を繰り返さずにソートするためのものである。
+
+-   refer gossamer.collations
++   refer gossamer.collations
+
+-   refer gossamer.collationComparable
++   refer gossamer.collationComparable
+
+-   entry .apply   a `Collation` over a hieroglyph `CollationTable`, such as a language's tailoring
+-   entry #compare   the `Comparison` (`Less`, `Same` or `More`) of two texts
+-   entry #key   a sort key for a text: integers which compare as the collation does
++   entry .apply   言語のテーラリングのような、hieroglyph の `CollationTable` 上の `Collation`
++   entry #compare   二つのテキストの `Comparison`（`Less`、`Same`、`More`）
++   entry #key   テキストのソートキー。照合と同じように比較される整数
+
+- entry .collationComparable   makes `Text` `Comparable` whenever a `Collation` is in scope
+-     The given which `<`, `>`, `least`, `sort` and every other comparison on `Text` resolve
+-     through. It needs a `Collation` in scope, so text becomes sortable exactly when a sort
+-     order has been chosen, and the error for an unsorted `List[Text]` names the missing
+-     `Comparable`. It is a top-level given with a library-qualified name, since neither
+-     `Comparable`'s nor `Text`'s companion can refer to gossamer, so it must be imported by
+-     name — `import soundness.collationComparable` — alongside the collation.
++ entry .collationComparable   スコープに `Collation` があるとき、`Text` を `Comparable` にする
++     `<`、`>`、`least`、`sort` をはじめ、`Text` に対するすべての比較がこれを通じて解決される given である。
++     スコープに `Collation` を必要とするので、テキストはソート順が選ばれたときにちょうどソート可能になり、ソートされていない `List[Text]` に対するエラーは欠けている `Comparable` を名指す。
++     `Comparable` のコンパニオンも `Text` のコンパニオンも gossamer を参照できないので、ライブラリで修飾された名前を持つトップレベルの given であり、照合とともに名前でインポートしなければならない：`import soundness.collationComparable`。
+
+=     name — `import soundness.collationComparable` — alongside the collation.
+=
+-     ```scala
++     ```scala
+
+=     name — `import soundness.collationComparable` — alongside the collation.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import soundness.collationComparable
++     import soundness.collationComparable
+
+-     import collations.codepointCollation
++     import collations.codepointCollation
+
+-     t"b" < t"a"   // false
++     t"b" < t"a"   // false
+
+=     t"b" < t"a"   // false
+-     ```
++     ```
+
+- entry .collations   the sort orders for text, each a `Collation` given to import by name
++ entry .collations   テキストのソート順。それぞれ名前でインポートする `Collation` の given
+
+= entry .collations   the sort orders for text, each a `Collation` given to import by name
+-   detail
++   detail
+
+-       `import soundness.*` brings none of these in; a sort order is chosen by importing one.
+-       The two orders differ on case, accents and characters outside the basic plane:
++       `import soundness.*` はこれらを一つも取り込まない。ソート順は一つをインポートして選ぶ。
++       二つの順序は、大文字小文字、アクセント、基本面の外の文字の扱いが異なる。
+
+=       The two orders differ on case, accents and characters outside the basic plane:
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Unicode
++       alternative Unicode
+
+=       alternative Unicode
+-         code
++         code
+
+=       alternative Unicode
+=         code
+-             locally:
++             locally:
+
+-               import collations.unicodeCollation
++               import collations.unicodeCollation
+
+=               import collations.unicodeCollation
+-               import sortingAlgorithms.timsort
++               import sortingAlgorithms.timsort
+
+-               List(t"B", t"a", t"café", t"cafe").sort   // List(t"a", t"B", t"cafe", t"café")
++               List(t"B", t"a", t"café", t"cafe").sort   // List(t"a", t"B", t"cafe", t"café")
+
+-       alternative Codepoint
++       alternative Codepoint
+
+=       alternative Codepoint
+-         code
++         code
+
+=       alternative Codepoint
+=         code
+-             locally:
++             locally:
+
+-               import collations.codepointCollation
++               import collations.codepointCollation
+
+=               import collations.codepointCollation
+-               import sortingAlgorithms.timsort
++               import sortingAlgorithms.timsort
+
+-               List(t"B", t"a", t"café", t"cafe").sort   // List(t"B", t"a", t"cafe", t"café")
++               List(t"B", t"a", t"café", t"cafe").sort   // List(t"B", t"a", t"cafe", t"café")
+
+=               List(t"B", t"a", t"café", t"cafe").sort   // List(t"B", t"a", t"cafe", t"café")
+-       ##
++       ##
+
+=               List(t"B", t"a", t"café", t"cafe").sort   // List(t"B", t"a", t"cafe", t"café")
+=       ##
+-       ```
++       ```
+
+-       A locale-specific tailoring comes from cosmopolite, which derives a `Collation` from a
+-       contextual `Locale`, or from `Collation(table)` over a hieroglyph `CollationTable`.
+-   entry .unicodeCollation   dictionary order: the Unicode Collation Algorithm's root table, three levels, non-ignorable
+-       The order of the Default Unicode Collation Element Table (UTS #10): letters by their
+-       primary weight regardless of case or accent, then accents, then case, so `cafe` <
+-       `café` < `caff` and `a` < `B`. The sort key is the table's key for the text.
+-   entry .codepointCollation   raw code-point order: deterministic, table-free, for machine-facing sorting
+-       Orders by Unicode scalar value, so it is stable across versions of the collation data
+-       and costs nothing to load; suited to file listings and other output which must be
+-       reproducible rather than readable. Not `String`'s order, which compares UTF-16 code
+-       units and so puts supplementary characters (`𝓐`) before U+E000–U+FFFF; here they sort
+-       after the whole basic plane. Capitals sort before every lowercase letter.
++       ロケール固有のテーラリングは、コンテキストの `Locale` から `Collation` を導出する cosmopolite か、hieroglyph の `CollationTable` に対する `Collation(table)` から得られる。
++   entry .unicodeCollation   辞書順。Unicode 照合アルゴリズムのルートテーブル、三レベル、無視不可
++       Default Unicode Collation Element Table（UTS #10）の順序である。文字は大文字小文字やアクセントに関係なく第一の重みで、次にアクセント、次に大文字小文字で並ぶので、`cafe` < `café` < `caff`、`a` < `B` となる。
++       ソートキーは、そのテキストに対するテーブルのキーである。
++   entry .codepointCollation   生のコードポイント順。決定的で表を使わない、機械向けのソートのためのもの
++       Unicode スカラー値で並べるので、照合データのバージョンが変わっても安定しており、読み込みのコストがない。読みやすさより再現性が求められるファイルの一覧などの出力に向く。
++       `String` の順序ではない。`String` は UTF-16 のコードユニットを比較するので、補助文字（`𝓐`）を U+E000–U+FFFF より前に置くが、ここではそれらは基本面全体の後に並ぶ。
++       大文字はすべての小文字より前に並ぶ。
+
+- entry .Decimalizer   renders a `Double` as decimal text to a chosen precision, as the `DecimalConverter` `show` consults
++ entry .Decimalizer   `Double` を選んだ精度で十進のテキストとして描画する。`show` が参照する `DecimalConverter` として
+
+= entry .Decimalizer   renders a `Double` as decimal text to a chosen precision, as the `DecimalConverter` `show` consults
+-   detail
++   detail
+
+-       A `Decimalizer` is a `DecimalConverter`, the typeclass `Double is Showable` (and so
+-       `t"$x"` for a `Double`) looks for, which states how many digits are worth showing:
+-       `Decimalizer(3)` is three significant figures, and `Decimalizer(decimalPlaces = 2)` two
+-       digits after the point. Values whose magnitude reaches `#exponentThreshold` powers of
+-       ten (three by default) are written in scientific notation with a superscript exponent.
++       `Decimalizer` は `DecimalConverter` であり、`Double is Showable`（したがって `Double` に対する `t"$x"`）が探す型クラスで、何桁を表示する価値があるかを定める。`Decimalizer(3)` は有効数字三桁、`Decimalizer(decimalPlaces = 2)` は小数点以下二桁である。
++       絶対値が十の `#exponentThreshold` 乗（既定では三）に達する値は、上付きの指数による科学的記数法で書かれる。
+
+=       ten (three by default) are written in scientific notation with a superscript exponent.
+=
+-       ```scala
++       ```scala
+
+=       ten (three by default) are written in scientific notation with a superscript exponent.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Decimalizer(3).decimalize(-3.14159)                  // t"-3.14"
++       Decimalizer(3).decimalize(-3.14159)                  // t"-3.14"
+
+-       Decimalizer(5).decimalize(6.0221408e23)              // t"6.0221×10²³"
++       Decimalizer(5).decimalize(6.0221408e23)              // t"6.0221×10²³"
+
+-       Decimalizer(decimalPlaces = 1).decimalize(9.96)      // t"10.0"
++       Decimalizer(decimalPlaces = 1).decimalize(9.96)      // t"10.0"
+
+-       Decimalizer(2).decimalize(9.99)                      // t"10"
++       Decimalizer(2).decimalize(9.99)                      // t"10"
+
+-       Decimalizer(4).decimalize(999.96)                    // t"1.000×10³"
++       Decimalizer(4).decimalize(999.96)                    // t"1.000×10³"
+
+-       Decimalizer(7, exponentMultiple = 3).decimalize(6.0221408e23)   // t"602.2141×10²¹"
++       Decimalizer(7, exponentMultiple = 3).decimalize(6.0221408e23)   // t"602.2141×10²¹"
+
+=       Decimalizer(7, exponentMultiple = 3).decimalize(6.0221408e23)   // t"602.2141×10²¹"
+-       ```
++       ```
+
+-       A `given Decimalizer(3)` in scope then makes every `show` of a floating-point number
+-       render the same way, so changing a program's precision is one given rather than a
+-       search for format strings. Rounding carries correctly past the leading digit. The
+-       special values render as `#infinity` (`∞`, with `#minusSign` when negative) and `#nan`
+-       (`∉ℝ`). `decimalConverters.javaDecimalConverter` is the plain `Double#toString`
+-       alternative.
++       スコープに `given Decimalizer(3)` を置くと、浮動小数点数のすべての `show` が同じように描画されるので、プログラムの精度を変えるのは、書式文字列を探し回ることではなく、一つの given を変えることになる。
++       丸めは先頭の桁を越えて正しく繰り上がる。
++       特別な値は `#infinity`（`∞`、負なら `#minusSign` 付き）と `#nan`（`∉ℝ`）として描画される。
++       `decimalConverters.javaDecimalConverter` は、素の `Double#toString` による代替である。
+
+-   refer rudiments.DecimalConverter
++   refer rudiments.DecimalConverter
+
+-   refer gossamer.decimalConverters
++   refer gossamer.decimalConverters
+
+-   entry #significantFigures   the number of significant digits to show, or `Unset` to use `#decimalPlaces`
+-       The first parameter, so `Decimalizer(3)` sets it. When both it and `#decimalPlaces`
+-       are `Unset`, three significant figures are used.
+-   entry #decimalPlaces   the number of digits after the decimal point, used when `#significantFigures` is `Unset`
+-   entry #decimalPoint   the decimal point character, `.` by default
+-       `Decimalizer(7, decimalPoint = '·').decimalize(6.626070e-34)` is `t"6·626070×10¯³⁴"`.
+-   entry #minusSign   the character written before a negative number, `-` by default
+-   entry #plusSign   the character written before a positive number, or `Unset` (the default) for none
+-   entry #exponent   the text between the mantissa and the exponent, `×10` by default
+-   entry #exponentThreshold   the magnitude, in powers of ten, at which scientific notation begins; `3` by default
+-       `Unset` disables scientific notation altogether.
+-   entry #superscript   whether the exponent is written in superscript digits (`10²³`), the default, or plain (`10-34`)
+-       With superscript, a negative exponent uses the macron-like `¯` as its sign.
+-   entry #exponentMultiple   rounds the exponent down to a multiple, `3` for engineering notation; `1` by default
+-       With `exponentMultiple = 3`, `6.0221408e23` renders as `602.2141×10²¹`.
+-   entry #infinity   the text for an infinite value, `∞` by default
+-   entry #nan   the text for a value which is not a number, `∉ℝ` by default
+-   entry #decimalize   the text of a `Double` under this decimalizer's settings
+-   entry #exponentScale   the number of decimal digits in an exponent; a helper of `#decimalize`
++   entry #significantFigures   表示する有効数字の桁数。`#decimalPlaces` を使うなら `Unset`
++       最初のパラメーターなので、`Decimalizer(3)` がこれを設定する。
++       これと `#decimalPlaces` がどちらも `Unset` のときは、有効数字三桁が使われる。
++   entry #decimalPlaces   小数点以下の桁数。`#significantFigures` が `Unset` のときに使われる
++   entry #decimalPoint   小数点の文字。既定は `.`
++       `Decimalizer(7, decimalPoint = '·').decimalize(6.626070e-34)` は `t"6·626070×10¯³⁴"` である。
++   entry #minusSign   負の数の前に書く文字。既定は `-`
++   entry #plusSign   正の数の前に書く文字。何も書かないなら `Unset`（既定）
++   entry #exponent   仮数と指数の間のテキスト。既定は `×10`
++   entry #exponentThreshold   科学的記数法が始まる、十の冪で表した大きさ。既定は `3`
++       `Unset` は科学的記数法を完全に無効にする。
++   entry #superscript   指数を上付きの数字（`10²³`、既定）で書くか、素の数字（`10-34`）で書くか
++       上付きの場合、負の指数はマクロンに似た `¯` を符号に使う。
++   entry #exponentMultiple   指数をある倍数に切り下げる。工学表記なら `3`、既定は `1`
++       `exponentMultiple = 3` のとき、`6.0221408e23` は `602.2141×10²¹` と描画される。
++   entry #infinity   無限大の値のテキスト。既定は `∞`
++   entry #nan   数でない値のテキスト。既定は `∉ℝ`
++   entry #decimalize   この Decimalizer の設定による `Double` のテキスト
++   entry #exponentScale   指数の十進の桁数。`#decimalize` の補助
+
+- entry .decimalConverters   the `DecimalConverter` alternatives to a `Decimalizer`, to import by name
++ entry .decimalConverters   `Decimalizer` に代わる `DecimalConverter`。名前でインポートする
+
+= entry .decimalConverters   the `DecimalConverter` alternatives to a `Decimalizer`, to import by name
+-   detail
++   detail
+
+-       A `Double` is shown through the `DecimalConverter` in scope. A `Decimalizer` states a
+-       precision; this package holds the converter which does not.
+-   entry .javaDecimalConverter   renders a `Double` with `Double#toString`, exactly as Java would
+-       `3.14159` renders as `3.14159`, `1e21` as `1.0E21`, and `0.1 + 0.2` as
+-       `0.30000000000000004`: every digit the binary value has, with no rounding to a
+-       precision.
++       `Double` はスコープの `DecimalConverter` を通じて表示される。
++       `Decimalizer` は精度を定める。このパッケージは精度を定めない変換器を持つ。
++   entry .javaDecimalConverter   `Double` を `Double#toString` で、Java とまったく同じように描画する
++       `3.14159` は `3.14159`、`1e21` は `1.0E21`、`0.1 + 0.2` は `0.30000000000000004` と描画される。二進の値が持つすべての桁を、精度に丸めずに書く。
+
+- entry .Numerous   a word with its singular and plural endings, for counting things in prose
++ entry .Numerous   単数と複数の語尾を持つ単語。文章の中でものを数えるためのもの
+
+= entry .Numerous   a word with its singular and plural endings, for counting things in prose
+-   detail
++   detail
+
+-       `Numerous(t"item")(3)` is `t"items"` and `Numerous(t"item")(1)` is `t"item"`. The
+-       endings are `s` and nothing by default, and are given for irregular words:
+-       `Numerous(t"quer", t"ies", t"y")`. A collection may be passed in place of a count.
++       `Numerous(t"item")(3)` は `t"items"`、`Numerous(t"item")(1)` は `t"item"` である。
++       語尾は既定で `s` と空であり、不規則な単語では与える：`Numerous(t"quer", t"ies", t"y")`。
++       数の代わりにコレクションを渡してもよい。
+
+=       `Numerous(t"quer", t"ies", t"y")`. A collection may be passed in place of a count.
+=
+-       ```scala
++       ```scala
+
+=       `Numerous(t"quer", t"ies", t"y")`. A collection may be passed in place of a count.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val files = Numerous(t"file")
++       val files = Numerous(t"file")
+
+-       def report(n: Int): Text = t"$n ${files(n)} changed"
++       def report(n: Int): Text = t"$n ${files(n)} changed"
+
+-       report(1)   // t"1 file changed"
++       report(1)   // t"1 file changed"
+
+-       report(2)   // t"2 files changed"
++       report(2)   // t"2 files changed"
+
+=       report(2)   // t"2 files changed"
+-       ```
++       ```
+
+-   entry #word   the stem the endings are added to
+-   entry #pluralEnd   the ending for any count but one; `s` by default
+-   entry #singularEnd   the ending for a count of one; empty by default
+-   entry #apply   the word with the ending for a count, or for a collection's size
++   entry #word   語尾が付けられる語幹
++   entry #pluralEnd   一以外の数に対する語尾。既定は `s`
++   entry #singularEnd   一に対する語尾。既定は空
++   entry #apply   数、またはコレクションの大きさに対する語尾を付けた単語
+
+- entry .Range   the home of `Range.Error`, raised when an index is outside a text's bounds
++ entry .Range   `Range.Error` の置き場所。インデックスがテキストの範囲外のときに発生する
+
+= entry .Range   the home of `Range.Error`, raised when an index is outside a text's bounds
+-   detail
++   detail
+
+-       Only the error lives here. The slicing operations themselves clamp rather than fail —
+-       `segment` cuts an oversized interval short — so the error is raised by the few
+-       operations which must reject an index, such as a line editor's cursor movement.
+-   entry .Error   Error `↯/s.42.1`: _the index `index` is outside the range `from`-`to`_
++       ここにあるのはエラーだけである。
++       切り出しの操作自体は失敗せずに範囲に収める（`segment` は大きすぎる区間を途中で切る）ので、このエラーは、行エディターのカーソル移動のように、インデックスを拒否しなければならない少数の操作が発生させる。
++   entry .Error   エラー `↯/s.42.1`：_the index `index` is outside the range `from`-`to`_
+
+=   entry .Error   Error `↯/s.42.1`: _the index `index` is outside the range `from`-`to`_
+-     detail
++     detail
+
+-         Raised when a position is outside a text's bounds by an operation which cannot
+-         clamp. It is a `fulminate.Error`, so it is raised through a `Tactic[Range.Error]`
+-         and can be handled with `safely` or `mend`.
+-     entry #index   the index which was asked for
+-     entry #from   the lowest valid index
+-     entry #to   the highest valid index
++         範囲に収められない操作で、位置がテキストの範囲外のときに発生する。
++         `fulminate.Error` なので、`Tactic[Range.Error]` を通じて発生し、`safely` や `mend` で処理できる。
++     entry #index   求められたインデックス
++     entry #from   有効な最小のインデックス
++     entry #to   有効な最大のインデックス
+
+- entry .Bidi   the direction an operation works from: `Ltr` (the start) or `Rtl` (the end)
+-     `Bidi` is anticipation's enum, re-exported here with its cases so that `import
+-     gossamer.*` has the whole slicing vocabulary. `keep`, `skip`, `pad`, `fit`, `trim`,
+-     `chomp`, `offsetOf` and `pinpoint` each take a `Bidi`, `Ltr` by default, and `Rtl` makes
+-     them work from the end: `t"Hello".keep(2, Rtl)` is `t"lo"`.
++ entry .Bidi   操作が働く向き：`Ltr`（先頭から）または `Rtl`（末尾から）
++     `Bidi` は anticipation の列挙型で、`import gossamer.*` が切り出しの語彙をすべて持つように、そのケースとともにここで再エクスポートされている。
++     `keep`、`skip`、`pad`、`fit`、`trim`、`chomp`、`offsetOf`、`pinpoint` はそれぞれ `Bidi` を受け取り、既定は `Ltr` で、`Rtl` にすると末尾から働く：`t"Hello".keep(2, Rtl)` は `t"lo"` である。
+
+- entry .Ltr   left-to-right: from the start of the text, the default direction
+-     `Bidi.Ltr`, re-exported so it can be written bare: `t"123".pad(5, Ltr, '.')` is
+-     `t"123.."`.
++ entry .Ltr   左から右へ。テキストの先頭から。既定の向き
++     `Bidi.Ltr` を、修飾なしで書けるように再エクスポートしたものである：`t"123".pad(5, Ltr, '.')` は `t"123.."` である。
+
+- entry .Rtl   right-to-left: from the end of the text
+-     `Bidi.Rtl`, re-exported so it can be written bare: `t"123".pad(5, Rtl, '.')` is
+-     `t"..123"`, and `t"Hello".skip(1, Rtl)` is `t"Hell"`.
++ entry .Rtl   右から左へ。テキストの末尾から
++     `Bidi.Rtl` を、修飾なしで書けるように再エクスポートしたものである：`t"123".pad(5, Rtl, '.')` は `t"..123"`、`t"Hello".skip(1, Rtl)` は `t"Hell"` である。
+
+- entry .reversibleTextual   a `Reversible` instance for any textual type, for a companion to publish
+-     `reverse` is one extension for collections and text alike, driven by rudiments'
+-     `Reversible` typeclass; but a blanket given for every `Textual` type cannot be placed
+-     where implicit search would find it, since `Reversible`'s companion is in `rudiments`,
+-     below gossamer. So each textual type publishes the instance in its own companion:
++ entry .reversibleTextual   任意のテキスト型のための `Reversible` インスタンス。コンパニオンが公開するためのもの
++     `reverse` は、rudiments の `Reversible` 型クラスに駆動される、コレクションにもテキストにも共通の一つの拡張である。しかし `Reversible` のコンパニオンは gossamer より下の `rudiments` にあるので、すべての `Textual` 型に対する包括的な given を暗黙の探索が見つける場所に置くことはできない。
++     そのため、各テキスト型は自身のコンパニオンでインスタンスを公開する。
+
+=     below gossamer. So each textual type publishes the instance in its own companion:
+=
+-     ```scala fuel
++     ```scala fuel
+
+-     substitute ???  ...
++     substitute ???  ...
+
+=     substitute ???  ...
+-     ##
++     ##
+
+=     ##
+-     import soundness.*
++     import soundness.*
+
+-     case class Styled(text: Text)
++     case class Styled(text: Text)
+
+-     object Styled:
++     object Styled:
+
+-       given textual: Styled is Textual = ???
++       given textual: Styled is Textual = ???
+
+-       given reversible: (Styled is Reversible { type Result = Styled }) = reversibleTextual
++       given reversible: (Styled is Reversible { type Result = Styled }) = reversibleTextual
+
+=       given reversible: (Styled is Reversible { type Result = Styled }) = reversibleTextual
+-     ```
++     ```
+
+-     The refinement must be parenthesised as shown, or the braces parse as the given's body.
+-     The reversal builds the result element by element through the type's `Builder`, so a
+-     styled text stays styled.
++     細分化は示したとおりに括弧で囲まなければならない。そうしないと、波括弧が given の本体としてパースされる。
++     反転は型の `Builder` を通じて結果を要素ごとに組み立てるので、スタイル付きのテキストはスタイルを保つ。
+
+- entry .traversableTextual   a `Traversable` instance for any textual type, for a companion to publish
+-     The counterpart of `reversibleTextual` for traversal: a textual type whose companion
+-     declares `given traversable: (Styled is Traversable { type Operand = Char }) =
+-     traversableTextual` gains the predicate forms of `keep`, `skip`, `snip`, `count`,
+-     `where`, `all`, `exists` and the other `Traversable` operations from the collections
+-     library, with the rebuild going through `segment` so styling survives. The elements
+-     traversed are the type's `Textual#Result`.
++ entry .traversableTextual   任意のテキスト型のための `Traversable` インスタンス。コンパニオンが公開するためのもの
++     走査のための `reversibleTextual` の対応物である。コンパニオンで `given traversable: (Styled is Traversable { type Operand = Char }) = traversableTextual` を宣言するテキスト型は、コレクションライブラリから `keep`、`skip`、`snip`、`count`、`where`、`all`、`exists` などの `Traversable` の操作の述語形を得る。組み立て直しは `segment` を通じて行われるので、スタイルは保たれる。
++     走査される要素は、その型の `Textual#Result` である。
+
+- entry .Writing   a text segmented into grapheme clusters: the characters a reader sees
++ entry .Writing   書記素クラスタに分割したテキスト。読み手が目にする文字
+
+= entry .Writing   a text segmented into grapheme clusters: the characters a reader sees
+-   detail
++   detail
+
+-       A `Char` is not what a person calls a character: `é` may be one code point or two, a
+-       flag is a pair of regional indicators, and a family emoji is several code points
+-       joined. `Writing(text)` computes the text's grapheme-cluster `#boundaries` (Unicode
+-       UAX #29) once, and then presents it as a `Textual` whose elements are `Grapheme`s, so
+-       `length`, `keep`, `skip`, `segment`, `slices` and `reverse` count and cut by what is
+-       seen rather than by UTF-16 code units.
++       `Char` は人が文字と呼ぶものではない。`é` は一つのコードポイントのことも二つのこともあり、国旗は地域指示子の組であり、家族の絵文字はいくつものコードポイントを結合したものである。
++       `Writing(text)` はテキストの書記素クラスタの `#boundaries`（Unicode UAX #29）を一度だけ計算し、それを要素が `Grapheme` である `Textual` として示すので、`length`、`keep`、`skip`、`segment`、`slices`、`reverse` は UTF-16 のコードユニットではなく、目に見えるものによって数え、切る。
+
+=       seen rather than by UTF-16 code units.
+=
+-       ```scala
++       ```scala
+
+=       seen rather than by UTF-16 code units.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Writing(t"abc").graphemeCount           // 3
++       Writing(t"abc").graphemeCount           // 3
+
+-       Writing(Text("👨‍👩‍👧")).graphemeCount     // 1
++       Writing(Text("👨‍👩‍👧")).graphemeCount     // 1
+
+-       Writing(Text("🇬🇧🇫🇷")).length           // 2
++       Writing(Text("🇬🇧🇫🇷")).length           // 2
+
+-       Writing(t"").boundaries.length          // 1: the single boundary at position 0
++       Writing(t"").boundaries.length          // 1: the single boundary at position 0
+
+-       Writing(t"héllo").keep(2).text          // t"hé", whatever `é` is made of
++       Writing(t"héllo").keep(2).text          // t"hé", whatever `é` is made of
+
+=       Writing(t"héllo").keep(2).text          // t"hé", whatever `é` is made of
+-       ```
++       ```
+
+-       Under a `Grapheme is Measurable` in scope (from a `textMetrics` given), `.measurable`
+-       gives a writing's display width as the sum of its graphemes' widths, which is more
+-       accurate than measuring the plain text per code point. A `Writing` shows as its text
+-       and inspects with its clusters separated by `·`.
++       スコープに（`textMetrics` の given による）`Grapheme is Measurable` があれば、`.measurable` は書記素の幅の合計として Writing の表示幅を与える。これは素のテキストをコードポイントごとに測るより正確である。
++       `Writing` はそのテキストとして表示され、クラスタを `·` で区切って検査用に表示される。
+
+-   refer gossamer.Grapheme
++   refer gossamer.Grapheme
+
+-   refer gossamer.Textual
++   refer gossamer.Textual
+
+-   entry .apply   a `Writing` of a text, with its grapheme boundaries computed
+-   entry .empty   the empty writing
+-   entry .showable   shows a writing as its plain text
+-   entry .inspectable   inspects a writing as `w"…"` with `·` between its graphemes
+-       `Writing(t"a\r\nb").inspect` is `w"a·\r\n·b"`: the segmentation is what distinguishes
+-       one writing from another, so it is what inspection shows.
+-   entry .concatenable   `left + right` on writings, with the boundaries recomputed
+-   entry .measurable   the display width of a writing: the sum of its graphemes' widths
+-       Needs a `Grapheme is Measurable` in scope, which `textMetrics.wideCharacterWidthMetric`
+-       provides through `Grapheme.measurable`. A combining accent adds nothing to its base,
+-       and a flag or a ZWJ sequence is one wide cell rather than the sum of its parts.
+-   entry .textual   the `Textual` instance for `Writing`, with `Grapheme` elements
+-       Length is the grapheme count, access and `segment` work in graphemes, and `indexOf`
+-       returns a position only when the substring begins on a grapheme boundary.
+-   entry .graphemes   the writing's graphemes, as an indexed sequence
+-   entry .graphemeCount   the number of grapheme clusters; the same as `length`
+-   entry #text   the underlying plain text
+-   entry #boundaries   the character offsets of the grapheme boundaries, from `0` to the text's length
+-       A frozen array with one more element than there are graphemes; grapheme `i` is the
+-       characters between `boundaries(i)` and `boundaries(i + 1)`.
++   entry .apply   書記素の境界を計算した、テキストの `Writing`
++   entry .empty   空の Writing
++   entry .showable   Writing を素のテキストとして表示する
++   entry .inspectable   Writing を、書記素の間に `·` を入れた `w"…"` として検査用に表示する
++       `Writing(t"a\r\nb").inspect` は `w"a·\r\n·b"` である。ある Writing を別のものと区別するのは分割なので、検査用の表示はそれを示す。
++   entry .concatenable   Writing に対する `left + right`。境界は計算し直される
++   entry .measurable   Writing の表示幅。書記素の幅の合計
++       スコープに `Grapheme is Measurable` が必要で、`textMetrics.wideCharacterWidthMetric` が `Grapheme.measurable` を通じてそれを提供する。
++       結合アクセントはその基底文字に何も加えず、国旗や ZWJ シーケンスは、部分の合計ではなく、一つの幅広のセルである。
++   entry .textual   要素が `Grapheme` である、`Writing` のための `Textual` インスタンス
++       長さは書記素の数であり、アクセスと `segment` は書記素単位で働き、`indexOf` は部分文字列が書記素の境界で始まるときにだけ位置を返す。
++   entry .graphemes   Writing の書記素。インデックス付きの列として
++   entry .graphemeCount   書記素クラスタの数。`length` と同じ
++   entry #text   基になる素のテキスト
++   entry #boundaries   書記素の境界の文字オフセット。`0` からテキストの長さまで
++       書記素の数より要素が一つ多い凍結済みの配列である。書記素 `i` は `boundaries(i)` と `boundaries(i + 1)` の間の文字である。
+
+- entry .Grapheme   one grapheme cluster: a base character with its combining marks, or a joined sequence
++ entry .Grapheme   一つの書記素クラスタ。結合記号を伴う基底文字、または結合されたシーケンス
+
+= entry .Grapheme   one grapheme cluster: a base character with its combining marks, or a joined sequence
+-   detail
++   detail
+
+-       The element type of `Writing`: an opaque type over `String` holding the code points of
+-       a single user-perceived character. `Grapheme("é")` wraps one; `#text` is it as `Text`
+-       and `#chars` its length in UTF-16 units. It inspects as `‹é›`, the cluster shown
+-       intact inside guillemets rather than escaped, since the structure is the point.
++       `Writing` の要素型であり、ユーザーが一文字と認識するもののコードポイントを保持する、`String` 上の不透明型である。
++       `Grapheme("é")` は一つを包む。`#text` はそれを `Text` として、`#chars` は UTF-16 単位での長さを与える。
++       構造こそが要点なので、エスケープされずにギユメの中にそのまま示されたクラスタ `‹é›` として検査用に表示される。
+
+=       intact inside guillemets rather than escaped, since the structure is the point.
+=
+-       ```scala
++       ```scala
+
+=       intact inside guillemets rather than escaped, since the structure is the point.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import textMetrics.wideCharacterWidthMetric
++       import textMetrics.wideCharacterWidthMetric
+
+-       Grapheme("a").metrics    // 1
++       Grapheme("a").metrics    // 1
+
+-       Grapheme("é").metrics    // 1: a base plus a combining mark
++       Grapheme("é").metrics    // 1: a base plus a combining mark
+
+-       Grapheme("日").metrics   // 2
++       Grapheme("日").metrics   // 2
+
+=       Grapheme("日").metrics   // 2
+-       ```
++       ```
+
+-       Its companion's members — `apply`, the `showable`, `inspectable` and `measurable`
+-       givens, and the `text` and `chars` extensions — are declared in
+-       `internal.opaques.Grapheme`, from which the type is exported, and documented there.
++       そのコンパニオンのメンバー（`apply`、given の `showable`、`inspectable`、`measurable`、拡張の `text` と `chars`）は、型のエクスポート元である `internal.opaques.Grapheme` で宣言され、そこで文書化されている。
+
+=       `internal.opaques.Grapheme`, from which the type is exported, and documented there.
+-   refer gossamer.Writing
++   refer gossamer.Writing
+
+- entry .Ascii   a byte string of ASCII characters, made with `a"…"`
++ entry .Ascii   `a"…"` で作る、ASCII 文字のバイト文字列
+
+= entry .Ascii   a byte string of ASCII characters, made with `a"…"`
+-   detail
++   detail
+
+-       An opaque type over a frozen `Array[Byte]`, one byte per character, with a `Textual`
+-       instance whose elements are `Byte`s, so the positional and substring operations
+-       (`cut`, `keep`, `starts`, `offsetOf`, `slices`, `+`, …) work on it directly and `plain`
+-       converts it to `Text`. The `a"…"` interpolator checks every character is ASCII as the
+-       code compiles; `Ascii(bytes)` wraps bytes already in hand, unchecked.
++       一文字一バイトの凍結済みの `Array[Byte]` 上の不透明型で、要素が `Byte` である `Textual` インスタンスを持つので、位置と部分文字列の操作（`cut`、`keep`、`starts`、`offsetOf`、`slices`、`+`、…）がそのまま働き、`plain` は `Text` に変換する。
++       `a"…"` 補間子はコンパイル時にすべての文字が ASCII であることを検査する。`Ascii(bytes)` は手元にあるバイトを検査せずに包む。
+
+=       code compiles; `Ascii(bytes)` wraps bytes already in hand, unchecked.
+=
+-       ```scala
++       ```scala
+
+=       code compiles; `Ascii(bytes)` wraps bytes already in hand, unchecked.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val greeting: Ascii = a"hello"
++       val greeting: Ascii = a"hello"
+
+-       greeting.bytes.length          // 5
++       greeting.bytes.length          // 5
+
+-       (greeting + a", world").plain  // t"hello, world"
++       (greeting + a", world").plain  // t"hello, world"
+
+-       greeting.inspect               // t"ascii\"hello\""
++       greeting.inspect               // t"ascii\"hello\""
+
+=       greeting.inspect               // t"ascii\"hello\""
+-       ```
++       ```
+
+-       Its companion's members — `apply`, the `showable`, `inspectable`, `concatenable` and
+-       `textual` givens, and the `bytes` extension — are declared in `internal.opaques.Ascii`,
+-       from which the type is exported, and documented there.
++       そのコンパニオンのメンバー（`apply`、given の `showable`、`inspectable`、`concatenable`、`textual`、拡張の `bytes`）は、型のエクスポート元である `internal.opaques.Ascii` で宣言され、そこで文書化されている。
+
+-   refer gossamer.a
++   refer gossamer.a
+
+- entry .textDecodable   decodes a `Data` to `Text` through the `Charset` in scope, for `data.as[Text]`
+-     The `Decodable in Data` given for `Text`, in `gossamer.codec`: `bytes.as[Text]` reads
+-     the bytes in the `Charset` given in scope (`charsets.utf8Charset`, `asciiCharset`, …),
+-     and is the counterpart of `text.in[Data]` under a `codepages` given. A charset other
+-     than ISO-8859-1 also needs a `TextSanitizer` for malformed input (`strictSanitizer`
+-     raises `Charset.Error`). It is a top-level given and so must be imported by name:
+-     `import soundness.textDecodable`.
++ entry .textDecodable   スコープの `Charset` を通じて `Data` を `Text` にデコードする。`data.as[Text]` のためのもの
++     `gossamer.codec` にある `Text` のための `Decodable in Data` の given である。`bytes.as[Text]` はスコープの `Charset`（`charsets.utf8Charset`、`asciiCharset`、…）でバイトを読み、`codepages` の given の下での `text.in[Data]` の対応物である。
++     ISO-8859-1 以外の文字セットでは、不正な入力のための `TextSanitizer` も必要である（`strictSanitizer` は `Charset.Error` を発生させる）。
++     トップレベルの given なので、名前でインポートしなければならない：`import soundness.textDecodable`。
+
+=     `import soundness.textDecodable`.
+=
+-     ```scala
++     ```scala
+
+=     `import soundness.textDecodable`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import soundness.textDecodable
++     import soundness.textDecodable
+
+-     import charsets.utf8Charset
++     import charsets.utf8Charset
+
+-     import textSanitizers.skipSanitizer
++     import textSanitizers.skipSanitizer
+
+-     val bytes: Data = Data(0x41, 0x42)
++     val bytes: Data = Data(0x41, 0x42)
+
+-     bytes.as[Text]   // t"AB"
++     bytes.as[Text]   // t"AB"
+
+=     bytes.as[Text]   // t"AB"
+-     ```
++     ```
+
+- entry .enumIdentification   how an enum's case names are written as text, each an `Identifiable` given to import by name
++ entry .enumIdentification   列挙型のケース名をテキストとしてどう書くか。それぞれ名前でインポートする `Identifiable` の given
+
+= entry .enumIdentification   how an enum's case names are written as text, each an `Identifiable` given to import by name
+-   detail
++   detail
+
+-       A `Verbosity.Loud` case may appear in a command line, a configuration file or a JSON
+-       document as `loud`, `LOUD`, `Loud` or `loud-level`; which, is a choice, so the
+-       `Identifiable` givens for enums live here and one is imported by name. Each encodes a
+-       case's name into the convention and decodes text in that convention back to the
+-       Pascal-case name the enum declares.
++       `Verbosity.Loud` というケースは、コマンドライン、設定ファイル、JSON ドキュメントの中で `loud`、`LOUD`、`Loud`、`loud-level` のいずれとしても現れうる。どれにするかは選択なので、列挙型のための `Identifiable` の given はここにあり、一つを名前でインポートする。
++       それぞれケースの名前をその規約にエンコードし、その規約のテキストを列挙型が宣言するパスカルケースの名前にデコードし直す。
+
+=       Pascal-case name the enum declares.
+=
+-       ```scala
++       ```scala
+
+=       Pascal-case name the enum declares.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import enumIdentification.kebabCaseIdentifiable
++       import enumIdentification.kebabCaseIdentifiable
+
+-       enum Verbosity:
++       enum Verbosity:
+
+-         case Quiet, Normal, VeryLoud
++         case Quiet, Normal, VeryLoud
+
+-       summon[Verbosity is Identifiable].encode(t"VeryLoud")   // t"very-loud"
++       summon[Verbosity is Identifiable].encode(t"VeryLoud")   // t"very-loud"
+
+-       summon[Verbosity is Identifiable].decode(t"very-loud")  // t"VeryLoud"
++       summon[Verbosity is Identifiable].decode(t"very-loud")  // t"VeryLoud"
+
+=       summon[Verbosity is Identifiable].decode(t"very-loud")  // t"VeryLoud"
+-       ```
++       ```
+
+-       A CLI flag typed `Flag[Verbosity]` then reads `--verbosity very-loud`, and a JSON or
+-       TEL codec writes the case as `very-loud`.
++       こうすると、`Flag[Verbosity]` と型付けされた CLI のフラグは `--verbosity very-loud` を読み、JSON や TEL のコーデックはケースを `very-loud` と書く。
+
+-       `pascalCaseIdentifiable` is the identity, for an enum whose cases are written as
+-       declared. The givens are in `gossamer.codec`, since `Identifiable` is distillate's.
++       `pascalCaseIdentifiable` は恒等変換であり、ケースを宣言どおりに書く列挙型のためのものである。
++       `Identifiable` は distillate のものなので、これらの given は `gossamer.codec` にある。
+
+-   entry .kebabCaseIdentifiable   `VeryLoud` ↔ `very-loud`
++   entry .kebabCaseIdentifiable   `VeryLoud` ↔ `very-loud`
+
+-   entry .snakeCaseIdentifiable   `VeryLoud` ↔ `very_loud`
++   entry .snakeCaseIdentifiable   `VeryLoud` ↔ `very_loud`
+
+-   entry .camelCaseIdentifiable   `VeryLoud` ↔ `veryLoud`
++   entry .camelCaseIdentifiable   `VeryLoud` ↔ `veryLoud`
+
+-       Decoding treats `_` as a word boundary, as the snake-case given does, before
+-       recapitalising.
+-   entry .pascalCaseIdentifiable   `VeryLoud` ↔ `VeryLoud`: the case name as declared
++       デコードでは、大文字に戻す前に、スネークケースの given と同様に `_` を単語の境界として扱う。
++   entry .pascalCaseIdentifiable   `VeryLoud` ↔ `VeryLoud`：宣言どおりのケース名
+
+- entry .Lexicon   a BK-tree over a vocabulary: finds every term within a given distance of a query
++ entry .Lexicon   語彙の上の BK 木。問い合わせから指定した距離以内にあるすべての語を見つける
+
+= entry .Lexicon   a BK-tree over a vocabulary: finds every term within a given distance of a query
+-   detail
++   detail
+
+-       Comparing a query against every word in a vocabulary is quadratic, and a spelling
+-       suggestion needs it to be fast. A `Lexicon` indexes terms in a
+-       Burkhard–Keller tree under the `Proximity by Int` in scope, and uses the triangle
+-       inequality — which the measure must obey, so its `Triangulable` must be `true`, as
+-       `levenshteinProximity`'s is — to prune most of the vocabulary without measuring it.
++       問い合わせを語彙のすべての単語と比較するのは二乗の計算量であり、綴りの候補を示すにはそれを速くする必要がある。
++       `Lexicon` は、スコープの `Proximity by Int` の下で語を Burkhard–Keller 木に索引付けし、三角不等式を使って語彙の大部分を測らずに枝刈りする。測度は三角不等式に従わなければならないので、その `Triangulable` は `levenshteinProximity` のように `true` でなければならない。
+
+=       `levenshteinProximity`'s is — to prune most of the vocabulary without measuring it.
+=
+-       ```scala
++       ```scala
+
+=       `levenshteinProximity`'s is — to prune most of the vocabulary without measuring it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `levenshteinProximity`'s is — to prune most of the vocabulary without measuring it.
+=
+=       ```scala
+=       import soundness.*
+-       import proximities.levenshteinProximity
++       import proximities.levenshteinProximity
+
+=       import proximities.levenshteinProximity
+-       import caseSensitivity.caseSensitive
++       import caseSensitivity.caseSensitive
+
+-       val lexicon = Lexicon(List(t"book", t"boot", t"cook", t"look", t"bake"))
++       val lexicon = Lexicon(List(t"book", t"boot", t"cook", t"look", t"bake"))
+
+-       lexicon.search(t"book", 0)   // Set(t"book"): exact matches only
++       lexicon.search(t"book", 0)   // Set(t"book"): exact matches only
+
+-       lexicon.search(t"booq", 1)   // Set(t"book", t"boot"): within one edit
++       lexicon.search(t"booq", 1)   // Set(t"book", t"boot"): within one edit
+
+=       lexicon.search(t"booq", 1)   // Set(t"book", t"boot"): within one edit
+-       ```
++       ```
+
+-       A lexicon may map each term to a value (`Lexicon(Map(t"colour" -> Colour.Blue))`),
+-       in which case a search returns the values. It is mutable: `#update` adds a term,
+-       `lexicon(t"term") = value`, and the structure is not safe to share between threads
+-       while being built.
++       Lexicon は各語を値に対応させてもよく（`Lexicon(Map(t"colour" -> Colour.Blue))`）、その場合、探索は値を返す。
++       これは可変である。`#update` が語を加え（`lexicon(t"term") = value`）、構築中の構造はスレッド間で共有しても安全ではない。
+
+-   refer gossamer.Proximity
++   refer gossamer.Proximity
+
+=   refer gossamer.Proximity
+-   refer gossamer.proximities
++   refer gossamer.proximities
+
+-   entry .apply   a lexicon of a list of terms, of a map from terms to values, or an empty one
+-       `Lexicon(terms)` indexes each `Text` as both key and value; `Lexicon(map)` indexes
+-       the keys and returns the values from a search; and `Lexicon[element]()` is empty, to
+-       be filled with `#update`. The first two need a `Triangulable` measure; the empty form
+-       takes any `Proximity by Int`, and relies on the caller to have chosen a metric.
+-   entry .Node   one node of the tree: a term, its value, and children keyed by distance
++   entry .apply   語のリスト、語から値へのマップ、または空の Lexicon
++       `Lexicon(terms)` は各 `Text` をキーと値の両方として索引付けし、`Lexicon(map)` はキーを索引付けして探索から値を返し、`Lexicon[element]()` は空で、`#update` で埋める。
++       最初の二つは `Triangulable` な測度を必要とする。空の形は任意の `Proximity by Int` を受け取り、呼び出し側が距離関数を選んだことに頼る。
++   entry .Node   木の一つのノード。語、その値、距離をキーとする子
+
+=   entry .Node   one node of the tree: a term, its value, and children keyed by distance
+-     detail
++     detail
+
+-         The implementation of a non-empty lexicon. Each child subtree is keyed by its root's
+-         distance from this node's term, which is what lets a search skip every subtree whose
+-         key is further than the radius from the query's distance.
+-     entry #children   the child subtrees, keyed by their distance from this node's term
+-     entry #update   adds a term to the subtree at its distance, creating one if needed
+-     entry #search   the values within `radius` of the query, in this subtree
+-   entry #update   adds a term with a value: `lexicon(key) = value`
+-   entry #search   the values of every term within `radius` of the query
+-       Radius zero is an exact lookup; each wider radius admits more distant candidates,
+-       which is how a "did you mean" suggestion is produced from a large word list.
++         空でない Lexicon の実装である。
++         各子の部分木は、その根とこのノードの語との距離をキーとしており、そのため探索は、キーが問い合わせの距離から半径より離れているすべての部分木を飛ばせる。
++     entry #children   子の部分木。このノードの語からの距離をキーとする
++     entry #update   語をその距離にある部分木に加える。必要なら部分木を作る
++     entry #search   この部分木の中で、問い合わせから `radius` 以内にある値
++   entry #update   語を値とともに加える：`lexicon(key) = value`
++   entry #search   問い合わせから `radius` 以内にあるすべての語の値
++       半径ゼロは正確な検索である。半径を広げるごとにより遠い候補が入る。大きな単語リストから「もしかして」の候補を作るのはこの方法による。
+
+- entry .Dictionary   a dense trie from `Text` keys to values, for exact and prefix lookup
++ entry .Dictionary   `Text` のキーから値への密なトライ。完全一致と接頭辞による検索のためのもの
+
+= entry .Dictionary   a dense trie from `Text` keys to values, for exact and prefix lookup
+-   detail
++   detail
+
+-       A `Dictionary[value]` maps text to values through a trie laid out in flat arrays:
+-       each node owns a block of `alphabet.size` slots in `#children`, so a lookup costs one
+-       array read per character of the key, and no hashing of the whole key. It suits
+-       hyphenation tables, HTML attribute names, keyword sets and any other fixed vocabulary
+-       which is looked up constantly.
++       `Dictionary[value]` は、平坦な配列に配置したトライを通じてテキストを値に対応させる。各ノードは `#children` の中に `alphabet.size` 個のスロットのブロックを持つので、検索のコストはキーの一文字ごとに配列の読み取り一回であり、キー全体のハッシュは計算しない。
++       ハイフネーションの表、HTML の属性名、キーワードの集合など、絶えず検索される固定の語彙に向いている。
+
+=       which is looked up constantly.
+=
+-       ```scala
++       ```scala
+
+=       which is looked up constantly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
++       val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+
+-       dictionary(t"color")    // 0
++       dictionary(t"color")    // 0
+
+-       dictionary(t"colo")     // Unset
++       dictionary(t"colo")     // Unset
+
+-       dictionary.size         // 2
++       dictionary.size         // 2
+
+=       dictionary.size         // 2
+-       ```
++       ```
+
+-       The alphabet — the characters keys may contain, each given a slot — is derived from
+-       the keys by `.apply` and `.empty`, or given to `.withAlphabet` and `.aho`; a key with a
+-       character outside the alphabet is silently dropped. `.aho` additionally builds the
+-       failure links of an Aho–Corasick automaton, so one pass over an input finds every key
+-       which ends at each position, through `#step`, `#fail` and `#dictLink`.
++       アルファベット（キーが含みうる文字で、それぞれにスロットが与えられる）は、`.apply` と `.empty` ではキーから導出され、`.withAlphabet` と `.aho` には与える。アルファベットの外の文字を含むキーは黙って取り除かれる。
++       `.aho` はさらに Aho–Corasick オートマトンの失敗リンクを構築するので、入力を一度走査するだけで、`#step`、`#fail`、`#dictLink` を通じて各位置で終わるすべてのキーを見つけられる。
+
+-       A dictionary is immutable once built, and its arrays are frozen, so it may be shared
+-       freely; `#add`, `#+` and `#++` rebuild a new one with a widened value type. The value
+-       type should be a reference type, since values are stored boxed in an `AnyRef` array.
++       辞書は一度構築すると不変であり、その配列は凍結済みなので、自由に共有してよい。`#add`、`#+`、`#++` は、値の型を広げた新しい辞書を組み立て直す。
++       値は `AnyRef` の配列にボックス化して格納されるので、値の型は参照型であるべきである。
+
+=       type should be a reference type, since values are stored boxed in an `AnyRef` array.
+-   refer gossamer.Lexicon
++   refer gossamer.Lexicon
+
+-   entry .Alphabet   the characters a dictionary's keys may use, each mapped to a dense slot
++   entry .Alphabet   辞書のキーが使える文字。それぞれ密なスロットに対応する
+
+=   entry .Alphabet   the characters a dictionary's keys may use, each mapped to a dense slot
+-     detail
++     detail
+
+-         A fixed mapping from `Char` to a slot in `[0, size)`, with `-1` for a character
+-         outside it. `Alphabet.of(t"abc…")` numbers the characters of a string in order; the
+-         default builders derive one from the keys automatically, so most callers never make
+-         one. Only characters below 128 can be in an alphabet. An alphabet is pure and may be
+-         shared by every dictionary built over it.
+-     entry .of   an alphabet of the characters of a string, in that order; ASCII only
+-     entry .empty   the alphabet with no characters, used by the empty dictionary
+-     entry #slot   the slot of a character, or `-1` if it is not in the alphabet
+-     entry #char   the character at a slot
+-     entry #size   the number of characters, and so the width of each node's block of children
+-   entry .empty   the dictionary with no entries
+-       Its alphabet is empty; `+` and `++` rebuild it with an alphabet derived from the keys.
+-   entry .apply   a dictionary of `(key -> value)` pairs, with the alphabet derived from the keys
+-       The alphabet's slots follow the order the characters are first seen in, so it is
+-       stable for the same input.
+-   entry .withAlphabet   a dictionary of pairs over a given alphabet
+-       A key with a character outside the alphabet is dropped.
+-   entry .aho   a dictionary of pairs over an alphabet, with Aho–Corasick failure and dictionary-suffix links
+-       Fills `#depth`, `#fail` and `#dictLink`, which the plain builders leave empty, so that
+-       a walk over an input with `#step` can follow a failure link on a mismatch and report
+-       every key ending at the current position through `#dictLink`.
+-   entry #children   the child-node table: `children(node * alphabet.size + slot)` is the child, or `-1`
+-   entry #values   the value at each node, or `null` where no key ends; typed `AnyRef` because arrays are invariant
+-       Read a typed value with `#value(node)` instead.
+-   entry #depth   each node's depth, for an Aho–Corasick dictionary; empty otherwise
+-   entry #fail   each node's failure link, for an Aho–Corasick dictionary; empty otherwise
+-   entry #dictLink   each node's nearest ancestor on the failure chain which holds a value; empty unless built with `aho`
+-   entry #alphabet   the alphabet the keys are encoded in
+-   entry #root   the root node's id, `0`
+-   entry #step   the node reached from a node by one character, or `-1` if no key continues that way
+-       The primitive of every lookup: start at `#root` and step once per character.
+-   entry #value   the value at a node, or `null` where no key ends there
+-   entry #apply   the value for a key, or `Unset`; also a lookup of a slice of a character buffer
+-       `dictionary(t"key")` is the exact-key form. `dictionary(buffer, offset, length)` looks
+-       up the characters of a mutable `Array[Char]` slice without allocating a `Text`, for a
+-       parser which already holds a buffer.
+-   entry #size   the number of keys stored
+-   entry #iterator   the stored values, as an `Iterable`
+-   entry #entries   every `(key, value)` pair, in alphabet order
+-   entry #add   a new dictionary with one more entry, as `#+` with the key and value separate
+-   entry #+   a new dictionary with an entry added, rebuilt with an alphabet covering both
+-       `dictionary + (t"key" -> value)`. The value type widens to a common supertype.
+-   entry #++   a new dictionary with several entries added
++         `Char` から `[0, size)` のスロットへの固定の対応で、範囲外の文字には `-1` を与える。
++         `Alphabet.of(t"abc…")` は文字列の文字を順に番号付けする。既定のビルダーはキーから自動的にアルファベットを導出するので、ほとんどの呼び出し側は自分で作ることがない。
++         アルファベットに入れられるのは 128 未満の文字だけである。
++         アルファベットは純粋であり、その上に構築されたすべての辞書で共有してよい。
++     entry .of   文字列の文字からなるアルファベット。その順で。ASCII のみ
++     entry .empty   文字を持たないアルファベット。空の辞書が使う
++     entry #slot   文字のスロット。アルファベットになければ `-1`
++     entry #char   スロットにある文字
++     entry #size   文字の数。したがって各ノードの子のブロックの幅
++   entry .empty   エントリーを持たない辞書
++       そのアルファベットは空である。`+` と `++` は、キーから導出したアルファベットで組み立て直す。
++   entry .apply   `(key -> value)` の組からなる辞書。アルファベットはキーから導出される
++       アルファベットのスロットは文字が最初に現れた順に従うので、同じ入力に対して安定している。
++   entry .withAlphabet   与えたアルファベット上の、組からなる辞書
++       アルファベットの外の文字を含むキーは取り除かれる。
++   entry .aho   アルファベット上の、組からなる辞書。Aho–Corasick の失敗リンクと辞書接尾辞リンクを持つ
++       素のビルダーが空のままにする `#depth`、`#fail`、`#dictLink` を埋めるので、`#step` で入力を走査するときに、不一致では失敗リンクをたどり、現在の位置で終わるすべてのキーを `#dictLink` を通じて報告できる。
++   entry #children   子ノードの表：`children(node * alphabet.size + slot)` が子、または `-1`
++   entry #values   各ノードの値。キーが終わらない場所では `null`。配列は非変なので `AnyRef` 型
++       型付きの値を読むには、代わりに `#value(node)` を使う。
++   entry #depth   各ノードの深さ。Aho–Corasick の辞書の場合。それ以外では空
++   entry #fail   各ノードの失敗リンク。Aho–Corasick の辞書の場合。それ以外では空
++   entry #dictLink   失敗の連鎖上で値を持つ、各ノードに最も近い祖先。`aho` で構築しなければ空
++   entry #alphabet   キーがエンコードされるアルファベット
++   entry #root   ルートノードの ID、`0`
++   entry #step   あるノードから一文字で到達するノード。その方向に続くキーがなければ `-1`
++       すべての検索の基本操作である。`#root` から始めて、一文字ごとに一回ステップを進める。
++   entry #value   ノードにある値。そこで終わるキーがなければ `null`
++   entry #apply   キーに対する値、または `Unset`。文字バッファーの一部の検索でもある
++       `dictionary(t"key")` は完全なキーの形である。`dictionary(buffer, offset, length)` は、`Text` をアロケートせずに可変の `Array[Char]` の一部の文字を検索する。すでにバッファーを持つパーサーのためのものである。
++   entry #size   格納されたキーの数
++   entry #iterator   格納された値。`Iterable` として
++   entry #entries   すべての `(key, value)` の組。アルファベット順
++   entry #add   エントリーを一つ加えた新しい辞書。キーと値を分けて渡す `#+`
++   entry #+   エントリーを加えた新しい辞書。両方を覆うアルファベットで組み立て直される
++       `dictionary + (t"key" -> value)`。
++       値の型は共通の上位型に広がる。
++   entry #++   いくつかのエントリーを加えた新しい辞書
+
+- entry .internal   the macro implementations behind `t"…"`, `txt"…"`, `a"…"`, `extract` and `fuzzy`, and the opaque types' home
++ entry .internal   `t"…"`、`txt"…"`、`a"…"`、`extract`、`fuzzy` の背後にあるマクロの実装と、不透明型の置き場所
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the macros have a stable home and so
+-       that `Ascii` and `Grapheme` can be opaque. Both are exported from `.opaques` to the
+-       `gossamer` package.
+-   entry .t   the macro behind `t"…"`: escape-processes the parts, renders substitutions through `Showable`
+-   entry .txt   the macro behind `txt"…"`: as `.t`, then folds whitespace runs and blank lines
+-   entry .ascii   the macro behind `a"…"`: checks each literal character is ASCII, reporting at its position
+-   entry .extractMacro   the macro behind `extract`: decomposes the cases and scans the text with a `Scanner`
+-   entry .fuzzyMacro   the macro behind `fuzzy`: collects the literal patterns and picks the nearest at runtime
+-   entry .opaques   the declarations of the opaque types `Ascii` and `Grapheme`
++       直接使うためのものではない。このオブジェクトは、マクロに安定した置き場所を与え、`Ascii` と `Grapheme` を不透明にするために存在する。
++       どちらも `.opaques` から `gossamer` パッケージにエクスポートされる。
++   entry .t   `t"…"` の背後にあるマクロ。各部分のエスケープを処理し、置換を `Showable` を通じて描画する
++   entry .txt   `txt"…"` の背後にあるマクロ。`.t` と同様に処理した後、空白の連続と空行を畳む
++   entry .ascii   `a"…"` の背後にあるマクロ。リテラルの各文字が ASCII であることを検査し、その位置で報告する
++   entry .extractMacro   `extract` の背後にあるマクロ。ケースを分解し、`Scanner` でテキストを走査する
++   entry .fuzzyMacro   `fuzzy` の背後にあるマクロ。リテラルのパターンを集め、実行時に最も近いものを選ぶ
++   entry .opaques   不透明型 `Ascii` と `Grapheme` の宣言
+
+=   entry .opaques   the declarations of the opaque types `Ascii` and `Grapheme`
+-     detail
++     detail
+
+-         The types' pages under the `gossamer` package have the full account; their
+-         companions' members are documented here, where they are declared.
+-     entry .Ascii   a byte string of ASCII characters; see `gossamer.Ascii`
++         `gossamer` パッケージの下にある型のページに完全な説明がある。そのコンパニオンのメンバーは、宣言されたこの場所で文書化されている。
++     entry .Ascii   ASCII 文字のバイト文字列。`gossamer.Ascii` を参照
+
+=     entry .Ascii   a byte string of ASCII characters; see `gossamer.Ascii`
+-       detail
++       detail
+
+-           The companion of the opaque type `Ascii`, exported with it to the `gossamer` package.
+-       entry .apply   wraps a `Data` as `Ascii`, without checking its bytes
+-       entry .showable   shows an `Ascii` as the text its bytes encode
+-       entry .inspectable   inspects an `Ascii` as `ascii"…"`, with the characters escaped as a text literal's
+-       entry .concatenable   `left + right` on `Ascii` values
+-       entry .bytes   the underlying bytes, as `Data`
+-       entry .textual   the `Textual` instance for `Ascii`, with `Byte` elements
+-           `apply(text)` encodes text in the system codepage, `segment` and `concat` copy bytes,
+-           and the builder is an `AsciiBuilder`.
+-     entry .Grapheme   one grapheme cluster; see `gossamer.Grapheme`
++           不透明型 `Ascii` のコンパニオンで、型とともに `gossamer` パッケージにエクスポートされる。
++       entry .apply   `Data` を、バイトを検査せずに `Ascii` として包む
++       entry .showable   `Ascii` を、そのバイトがエンコードするテキストとして表示する
++       entry .inspectable   `Ascii` を、テキストリテラルと同じように文字をエスケープした `ascii"…"` として検査用に表示する
++       entry .concatenable   `Ascii` の値に対する `left + right`
++       entry .bytes   基になるバイト。`Data` として
++       entry .textual   要素が `Byte` である、`Ascii` のための `Textual` インスタンス
++           `apply(text)` はテキストをシステムのコードページでエンコードし、`segment` と `concat` はバイトをコピーし、ビルダーは `AsciiBuilder` である。
++     entry .Grapheme   一つの書記素クラスタ。`gossamer.Grapheme` を参照
+
+=     entry .Grapheme   one grapheme cluster; see `gossamer.Grapheme`
+-       detail
++       detail
+
+-           The companion of the opaque type `Grapheme`, exported with it to the `gossamer` package.
+-       entry .apply   a grapheme from the string of its code points; no check is made that it is one cluster
+-       entry .showable   shows a grapheme as its text
+-       entry .inspectable   inspects a grapheme as `‹…›`, the cluster unescaped
+-       entry .measurable   the display width of a grapheme: the widest of its code points
+-           Needs a `Char is Measurable` in scope (a `textMetrics` given). The maximum rather than
+-           the sum, so a base with combining marks is as wide as its base, and a flag pair or a
+-           ZWJ family is one wide cell.
+-       entry .text   the grapheme's code points as a `Text`
+-       entry .chars   the number of UTF-16 code units in the grapheme
++           不透明型 `Grapheme` のコンパニオンで、型とともに `gossamer` パッケージにエクスポートされる。
++       entry .apply   コードポイントの文字列からの書記素。一つのクラスタであるかどうかは検査しない
++       entry .showable   書記素をそのテキストとして表示する
++       entry .inspectable   書記素を、クラスタをエスケープせずに `‹…›` として検査用に表示する
++       entry .measurable   書記素の表示幅。そのコードポイントのうち最も幅広いもの
++           スコープに `Char is Measurable`（`textMetrics` の given）が必要である。
++           合計ではなく最大なので、結合記号を伴う基底文字はその基底文字と同じ幅であり、国旗の組や ZWJ の家族は一つの幅広のセルである。
++       entry .text   書記素のコードポイント。`Text` として
++       entry .chars   書記素の UTF-16 コードユニットの数
