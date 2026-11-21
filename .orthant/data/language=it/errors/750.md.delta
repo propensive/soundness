@@ -1,0 +1,17 @@
+orthant 1 language
+
+- # `SN-750` — `BcodlError` (retired)
++ # `SN-750` — `BcodlError` (ritirato)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Questo errore non esiste più. La pagina è conservata perché il codice non venga riusato, e perché
++ un riferimento a esso da una release precedente si possa ancora risolvere.
+
+- ## What became of it
++ ## Che fine ha fatto
+
+- The `cellulose` module, which implemented CoDL and its binary form BCoDL, has been
+- removed. Its role is filled by [TEL](../en/modules/tel.md), whose binary encoding is BinTEL.
++ Il modulo `cellulose`, che implementava CoDL e la sua forma binaria BCoDL, è stato
++ rimosso. Il suo ruolo è svolto da [TEL](../en/modules/tel.md), la cui codifica binaria è BinTEL.

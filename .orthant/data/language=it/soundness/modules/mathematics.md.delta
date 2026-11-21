@@ -1,0 +1,820 @@
+orthant 1 language
+
+- ## Mathematics
++ ## Matematica
+
+- ### About
++ ### Panoramica
+
+- Beyond ordinary [numbers](numbers.md), there are the structured values of mathematics:
++ Oltre ai normali [numeri](numbers.md), ci sono i valori strutturati della matematica:
+
+- - [complex numbers](https://en.wikipedia.org/wiki/Complex_number), whose real and imaginary
+-   parts may be of any suitably numeric type;
+- - [vectors](https://en.wikipedia.org/wiki/Euclidean_vector) and
+-   [matrices](https://en.wikipedia.org/wiki/Matrix_(mathematics)), whose dimensions are part of
+-   their types, so that a mismatch of dimensions does not compile;
+- - [permutations](https://en.wikipedia.org/wiki/Permutation), which are reversible
+-   rearrangements stored in a compact canonical form.
++ - i [numeri complessi](https://en.wikipedia.org/wiki/Complex_number), le cui parti reale e
++   immaginaria possono essere di qualsiasi tipo numerico adatto;
++ - i [vettori](https://en.wikipedia.org/wiki/Euclidean_vector) e le
++   [matrici](https://en.wikipedia.org/wiki/Matrix_(mathematics)), le cui dimensioni fanno parte dei
++   loro tipi, così che una discordanza di dimensioni non compila;
++ - le [permutazioni](https://en.wikipedia.org/wiki/Permutation), che sono riordinamenti reversibili
++   memorizzati in una forma canonica compatta.
+
+- All three compose with the rest of the arithmetic. A vector of lengths dotted with a vector of
+- lengths gives an area, and a complex number of [quantities](quantities.md) keeps its units,
+- because the operations are defined through the same
+- [arithmetic typeclasses](numbers.md#overloading-the-operators) everywhere.
++ Tutti e tre si compongono con il resto dell'aritmetica. Il prodotto scalare di un vettore di
++ lunghezze per un vettore di lunghezze dà un'area, e un numero complesso di
++ [grandezze](quantities.md) mantiene le sue unità, perché le operazioni sono definite ovunque
++ tramite le stesse [typeclass aritmetiche](numbers.md#overloading-the-operators).
+
+- ### On mathematical structure
++ ### Sulla struttura matematica
+
+- A vector is not a list. A list of three numbers and a list of four concatenate happily. Vectors
+- of different dimensions cannot even be added, and a matrix product is defined only when the
+- inner dimensions agree. A library which models these as arrays defers every such rule to
+- [runtime], where a mismatch of shapes becomes an exception, or, worse, silent nonsense, long
+- after the mistake.
++ Un vettore non è una lista. Una lista di tre numeri e una di quattro si concatenano senza
++ problemi. Vettori di dimensioni diverse non si possono nemmeno sommare, e un prodotto di matrici è
++ definito solo quando le dimensioni interne concordano. Una libreria che li modella come array
++ rimanda ognuna di queste regole al [runtime], dove una discordanza di forme diventa un'eccezione,
++ o, peggio, un'assurdità silenziosa, molto dopo l'errore.
+
+- Here the dimensions are in the types. A `Vector[Int, 3]` and a `Vector[Int, 2]` are different
+- types. A `Matrix[…, 2, 3]` multiplies a `Matrix[…, 3, 2]`, and nothing else. A mismatched
+- multiplication is an [impossible state](../../philosophy/impossible-states.md) of linear algebra.
+- The element type is generic over anything with the right arithmetic, which is how units flow
+- through a calculation.
++ Qui le dimensioni stanno nei tipi. Un `Vector[Int, 3]` e un `Vector[Int, 2]` sono tipi diversi.
++ Una `Matrix[…, 2, 3]` si moltiplica per una `Matrix[…, 3, 2]`, e per nient'altro. Una
++ moltiplicazione discordante è uno [stato impossibile](../../philosophy/impossible-states.md)
++ dell'algebra lineare. Il tipo degli elementi è generico su qualsiasi cosa abbia l'aritmetica
++ giusta, ed è così che le unità scorrono attraverso un calcolo.
+
+- Everything comes from the `soundness` package. Arithmetic between plain numbers and these types
+- relies on the compiler's *into* conversions, so that language feature is enabled too, and the
+- last import lets the samples print their results:
++ Tutto viene dal package `soundness`. L'aritmetica tra numeri semplici e questi tipi si affida alle
++ conversioni *into* del compilatore, quindi viene abilitata anche quella funzionalità del
++ linguaggio, e l'ultimo import permette agli esempi di stampare i loro risultati:
+
+= last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import scala.language.experimental.into
++ import scala.language.experimental.into
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Complex numbers
++ ### Numeri complessi
+
+- A `Complex` pairs a real component with an imaginary one, and supports the usual arithmetic:
++ Un `Complex` accoppia una componente reale a una immaginaria, e supporta l'aritmetica consueta:
+
+= A `Complex` pairs a real component with an imaginary one, and supports the usual arithmetic:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A `Complex` pairs a real component with an imaginary one, and supports the usual arithmetic:
+=
+= ```scala fuel
+- run
++ run
+
+= A `Complex` pairs a real component with an imaginary one, and supports the usual arithmetic:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Complex(1, 3).show)
++ Out.println(Complex(1, 3).show)
+
+- Out.println((Complex(1, 3)*Complex(2, 4)).show)
++ Out.println((Complex(1, 3)*Complex(2, 4)).show)
+
+- Out.println((-Complex(10, 7)).show)
++ Out.println((-Complex(10, 7)).show)
+
+= Out.println((-Complex(10, 7)).show)
+- ```
++ ```
+
+- A complex number can also be written by adding to a multiple of `i`, the imaginary unit, or
+- given in polar form, as a modulus and an `Angle`:
++ Un numero complesso si può anche scrivere sommando a un multiplo di `i`, l'unità immaginaria, o
++ dare in forma polare, come modulo e `Angle`:
+
+= given in polar form, as a modulus and an `Angle`:
+=
+- ```scala
++ ```scala
+
+- val sum = Complex(0.8, 0.0) + i*1.8
++ val sum = Complex(0.8, 0.0) + i*1.8
+
+- val polar = Complex(12*Kilo(Gram), 0.3845.rad)
++ val polar = Complex(12*Kilo(Gram), 0.3845.rad)
+
+= val polar = Complex(12*Kilo(Gram), 0.3845.rad)
+- ```
++ ```
+
+- `modulus` and `argument` give the polar form back, with the argument as a typed angle. The
+- prefix operator `~` gives the complex conjugate.
++ `modulus` e `argument` restituiscono la forma polare, con l'argomento come angolo tipizzato.
++ L'operatore prefisso `~` dà il complesso coniugato.
+
+- The components may be of any type which has the arithmetic an operation needs. That includes
+- quantities, so a complex impedance keeps its units. A quantity is written out through a
+- `Decimalizer`, which says how many significant figures to show:
++ Le componenti possono essere di qualsiasi tipo che abbia l'aritmetica di cui un'operazione ha
++ bisogno. Ciò include le grandezze, quindi un'impedenza complessa mantiene le sue unità. Una
++ grandezza si scrive tramite un `Decimalizer`, che dice quante cifre significative mostrare:
+
+= `Decimalizer`, which says how many significant figures to show:
+=
+- ```scala
++ ```scala
+
+- given decimalizer: Decimalizer = Decimalizer(3)
++ given decimalizer: Decimalizer = Decimalizer(3)
+
+- val real = 1.0*Metre/Second
++ val real = 1.0*Metre/Second
+
+- val imaginary = 9.0*Metre/Second
++ val imaginary = 9.0*Metre/Second
+
+= val imaginary = 9.0*Metre/Second
+- ```
++ ```
+
+= val imaginary = 9.0*Metre/Second
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val imaginary = 9.0*Metre/Second
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val imaginary = 9.0*Metre/Second
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Complex(real, imaginary).show)
++ Out.println(Complex(real, imaginary).show)
+
+= Out.println(Complex(real, imaginary).show)
+- ```
++ ```
+
+- ### Vectors
++ ### Vettori
+
+- A `Vector` is a fixed number of components, with the dimension in its type. It is in effect a
+- hybrid of a `Tuple`, whose size is known statically, and a collection, whose elements share a
+- type. That is what a Euclidean vector is, and it is why neither of the two ordinary choices
+- quite fits it.
++ Un `Vector` è un numero fisso di componenti, con la dimensione nel suo tipo. È di fatto un ibrido
++ tra una `Tuple`, la cui dimensione è nota staticamente, e una collezione, i cui elementi
++ condividono un tipo. È ciò che è un vettore euclideo, ed è per questo che nessuna delle due scelte
++ ordinarie gli si adatta davvero.
+
+- Constructing a vector infers both the element type and the size:
++ Costruire un vettore inferisce sia il tipo degli elementi sia la dimensione:
+
+= Constructing a vector infers both the element type and the size:
+=
+- ```scala
++ ```scala
+
+- val v: Vector[Int, 3] = Vector(1, 2, 3)
++ val v: Vector[Int, 3] = Vector(1, 2, 3)
+
+= val v: Vector[Int, 3] = Vector(1, 2, 3)
+- ```
++ ```
+
+- A value of the wrong size does not compile:
++ Un valore della dimensione sbagliata non compila:
+
+= A value of the wrong size does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A value of the wrong size does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= A value of the wrong size does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= A value of the wrong size does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- val w: Vector[Int, 2] = Vector(1, 3, 4)
++ val w: Vector[Int, 2] = Vector(1, 3, 4)
+
+= val w: Vector[Int, 2] = Vector(1, 3, 4)
+- ```
++ ```
+
+- Vectors of one dimension add and subtract. A vector negates, and multiplies and divides
+- component by component, either by a scalar or by another vector of the same dimension,
+- whenever its components do:
++ I vettori di una stessa dimensione si sommano e si sottraggono. Un vettore si nega, e si
++ moltiplica e si divide componente per componente, per uno scalare o per un altro vettore della
++ stessa dimensione, ogni volta che le sue componenti lo consentono:
+
+= whenever its components do:
+=
+- ```scala fuel
++ ```scala fuel
+
+= whenever its components do:
+=
+= ```scala fuel
+- run
++ run
+
+= whenever its components do:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Vector(1, 2, 3) + Vector(3, 4, 5)).inspect)
++ Out.println((Vector(1, 2, 3) + Vector(3, 4, 5)).inspect)
+
+- Out.println((-Vector(1, -2, 3)).inspect)
++ Out.println((-Vector(1, -2, 3)).inspect)
+
+- Out.println((Vector(1, 2, 3)*2).inspect)
++ Out.println((Vector(1, 2, 3)*2).inspect)
+
+- Out.println((Vector(1, 2, 3)*Vector(4, 5, 6)).inspect)
++ Out.println((Vector(1, 2, 3)*Vector(4, 5, 6)).inspect)
+
+= Out.println((Vector(1, 2, 3)*Vector(4, 5, 6)).inspect)
+- ```
++ ```
+
+- Adding vectors of different dimensions does not compile:
++ Sommare vettori di dimensioni diverse non compila:
+
+= Adding vectors of different dimensions does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Adding vectors of different dimensions does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Adding vectors of different dimensions does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Adding vectors of different dimensions does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Vector(1, 2, 3) + Vector(1, 2)
++ Vector(1, 2, 3) + Vector(1, 2)
+
+= Vector(1, 2, 3) + Vector(1, 2)
+- ```
++ ```
+
+- `dot` computes the scalar product and, in three dimensions, `cross` computes the vector
+- product:
++ `dot` calcola il prodotto scalare e, in tre dimensioni, `cross` calcola il prodotto vettoriale:
+
+= product:
+=
+- ```scala fuel
++ ```scala fuel
+
+= product:
+=
+= ```scala fuel
+- run
++ run
+
+= product:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Vector(1, 2, 3).dot(Vector(4, 3, 7)).inspect)
++ Out.println(Vector(1, 2, 3).dot(Vector(4, 3, 7)).inspect)
+
+- Out.println(Vector(1, 2, 3).cross(Vector(4, 3, 7)).inspect)
++ Out.println(Vector(1, 2, 3).cross(Vector(4, 3, 7)).inspect)
+
+= Out.println(Vector(1, 2, 3).cross(Vector(4, 3, 7)).inspect)
+- ```
++ ```
+
+- ### Matrices
++ ### Matrici
+
+- A `Matrix` has its numbers of rows and columns in its type. They are written as type
+- arguments, and the matrix is filled row by row:
++ Una `Matrix` ha nel suo tipo il numero di righe e di colonne. Si scrivono come argomenti di tipo, e
++ la matrice si riempie riga per riga:
+
+= arguments, and the matrix is filled row by row:
+=
+- ```scala
++ ```scala
+
+- val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
++ val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+
+- val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
++ val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
+
+= val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
+- ```
++ ```
+
+- A matrix multiplies another matrix, a vector or a scalar, and negates:
++ Una matrice si moltiplica per un'altra matrice, per un vettore o per uno scalare, e si nega:
+
+= A matrix multiplies another matrix, a vector or a scalar, and negates:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A matrix multiplies another matrix, a vector or a scalar, and negates:
+=
+= ```scala fuel
+- run
++ run
+
+= A matrix multiplies another matrix, a vector or a scalar, and negates:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((m1*m2).inspect)
++ Out.println((m1*m2).inspect)
+
+- Out.println((m1*Vector(7, 8, 9)).inspect)
++ Out.println((m1*Vector(7, 8, 9)).inspect)
+
+- Out.println((m1*10).inspect)
++ Out.println((m1*10).inspect)
+
+- Out.println((-m1).inspect)
++ Out.println((-m1).inspect)
+
+= Out.println((-m1).inspect)
+- ```
++ ```
+
+- A product whose dimensions do not agree is a compile error, not a check of shapes at runtime:
++ Un prodotto le cui dimensioni non concordano è un errore di compilazione, non una verifica delle
++ forme a runtime:
+
+= A product whose dimensions do not agree is a compile error, not a check of shapes at runtime:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A product whose dimensions do not agree is a compile error, not a check of shapes at runtime:
+=
+= ```scala fuel
+- compile
++ compile
+
+= A product whose dimensions do not agree is a compile error, not a check of shapes at runtime:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= A product whose dimensions do not agree is a compile error, not a check of shapes at runtime:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- m1*m1
++ m1*m1
+
+= m1*m1
+- ```
++ ```
+
+- Beyond its arithmetic, a matrix has these operations. Those of a square matrix exist only for
+- a square matrix:
++ Oltre alla sua aritmetica, una matrice ha queste operazioni. Quelle di una matrice quadrata
++ esistono solo per una matrice quadrata:
+
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Of
+- column  Gives
+- row  `transpose`  any matrix  the transpose
+- row  `rank`  any matrix  the rank
+- row  `frobeniusNorm`  any matrix  the square root of the sum of the squares of its entries
+- row  `determinant`  a square matrix  the determinant
+- row  `trace`  a square matrix  the sum of the diagonal
+- row  `inverse`  a square matrix  the inverse, or `Unset` for a singular matrix
+- row  `solve`  a square matrix  the solution of a linear system, as an `Optional` vector
+- row  `adjugate`  a square matrix  the transpose of the cofactor matrix
+- row  `eigenvalues`  a square matrix of `Double`s  the eigenvalues, as an `Optional` vector
+- row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
++ column  Metodo
++ column  Di
++ column  Dà
++ row  `transpose`  qualsiasi matrice  la trasposta
++ row  `rank`  qualsiasi matrice  il rango
++ row  `frobeniusNorm`  qualsiasi matrice  la radice quadrata della somma dei quadrati dei suoi elementi
++ row  `determinant`  una matrice quadrata  il determinante
++ row  `trace`  una matrice quadrata  la somma della diagonale
++ row  `inverse`  una matrice quadrata  l'inversa, o `Unset` per una matrice singolare
++ row  `solve`  una matrice quadrata  la soluzione di un sistema lineare, come vettore `Optional`
++ row  `adjugate`  una matrice quadrata  la trasposta della matrice dei cofattori
++ row  `eigenvalues`  una matrice quadrata di `Double`  gli autovalori, come vettore `Optional`
++ row  `eigenvectors`  una matrice quadrata di `Double`  gli autovettori, come matrice `Optional`
+
+= row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
+- ```
++ ```
+
+= row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `eigenvectors`  a square matrix of `Double`s  the eigenvectors, as an `Optional` matrix
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5)).determinant.inspect)
++ Out.println(Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5)).determinant.inspect)
+
+- Out.println(Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse.let(_.inspect).or(t"singular"))
++ Out.println(Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse.let(_.inspect).or(t"singular"))
+
+- Out.println(Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse.let(_.inspect).or(t"singular"))
++ Out.println(Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse.let(_.inspect).or(t"singular"))
+
+= Out.println(Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse.let(_.inspect).or(t"singular"))
+- ```
++ ```
+
+- `inverse` gives an [optional](optional-values.md) matrix, since a singular matrix has none.
++ `inverse` dà una matrice [opzionale](optional-values.md), poiché una matrice singolare non ne ha.
+
+- The `adjugate` is available in its own right. It is defined over any ring, and not only where
+- division is possible, so a matrix of integers has an adjugate where it has no inverse:
++ `adjugate` è disponibile di per sé. È definito su qualsiasi anello, e non solo dove la divisione
++ è possibile, quindi una matrice di interi ha un'aggiunta classica anche dove non ha un'inversa:
+
+= division is possible, so a matrix of integers has an adjugate where it has no inverse:
+=
+- ```scala fuel
++ ```scala fuel
+
+= division is possible, so a matrix of integers has an adjugate where it has no inverse:
+=
+= ```scala fuel
+- run
++ run
+
+= division is possible, so a matrix of integers has an adjugate where it has no inverse:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Matrix[2, 2]((1, 2), (3, 4)).adjugate.inspect)
++ Out.println(Matrix[2, 2]((1, 2), (3, 4)).adjugate.inspect)
+
+= Out.println(Matrix[2, 2]((1, 2), (3, 4)).adjugate.inspect)
+- ```
++ ```
+
+- `frobeniusNorm` gives a matrix's magnitude. `eigenvalues` gives the values for which it has an
+- eigenvector, as an `Optional`, since not every matrix has real eigenvalues:
++ `frobeniusNorm` dà la grandezza di una matrice. `eigenvalues` dà i valori per cui essa ha un
++ autovettore, come `Optional`, poiché non ogni matrice ha autovalori reali:
+
+= eigenvector, as an `Optional`, since not every matrix has real eigenvalues:
+=
+- ```scala fuel
++ ```scala fuel
+
+= eigenvector, as an `Optional`, since not every matrix has real eigenvalues:
+=
+= ```scala fuel
+- run
++ run
+
+= eigenvector, as an `Optional`, since not every matrix has real eigenvalues:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm.inspect)
++ Out.println(Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm.inspect)
+
+- Out.println(Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.inspect).or(t"none"))
++ Out.println(Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.inspect).or(t"none"))
+
+= Out.println(Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.inspect).or(t"none"))
+- ```
++ ```
+
+- ### Elements that are not numbers
++ ### Elementi che non sono numeri
+
+- Nothing above requires the entries to be `Double`s. Vectors and matrices are generic in their
+- element type, and their operations are found through the arithmetic typeclasses, so anything
+- with the right structure works. That includes typed [quantities](quantities.md), whose
+- dimensions compose as the arithmetic does:
++ Niente di quanto sopra richiede che gli elementi siano `Double`. Vettori e matrici sono generici
++ nel tipo degli elementi, e le loro operazioni si trovano tramite le typeclass aritmetiche, quindi
++ funziona qualsiasi cosa abbia la struttura giusta. Ciò include le [grandezze](quantities.md)
++ tipizzate, le cui dimensioni si compongono come fa l'aritmetica:
+
+= dimensions compose as the arithmetic does:
+=
+- ```scala
++ ```scala
+
+- val v1 = Vector(5*Inch, 2*Inch, Inch)
++ val v1 = Vector(5*Inch, 2*Inch, Inch)
+
+- val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
++ val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+
+= val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+- ```
++ ```
+
+= val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(v1.dot(v2).inspect)
++ Out.println(v1.dot(v2).inspect)
+
+= Out.println(v1.dot(v2).inspect)
+- ```
++ ```
+
+- A dot product of lengths is an area, and the type says so. The same holds for complex entries,
+- for exact rationals, and for any other element type with the operations a computation needs.
++ Un prodotto scalare di lunghezze è un'area, e il tipo lo dice. Lo stesso vale per gli elementi
++ complessi, per i razionali esatti, e per qualsiasi altro tipo di elemento con le operazioni di cui
++ un calcolo ha bisogno.
+
+- ### Permutations
++ ### Permutazioni
+
+- A `Permutation` is a reversible rearrangement. It is built from the reordered indexes, and is
+- applied to any list of at least that length:
++ Una `Permutation` è un riordinamento reversibile. Si costruisce dagli indici riordinati, e si
++ applica a qualsiasi lista di lunghezza almeno pari:
+
+= applied to any list of at least that length:
+=
+- ```scala
++ ```scala
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- val shuffle = Permutation(Sequence(3, 1, 4, 2, 0, 5))
++ val shuffle = Permutation(Sequence(3, 1, 4, 2, 0, 5))
+
+- val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
++ val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+
+= val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+- ```
++ ```
+
+= val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(shuffle(items).inspect)
++ Out.println(shuffle(items).inspect)
+
+- Out.println((shuffle.inverse(shuffle(items)) == items).inspect)
++ Out.println((shuffle.inverse(shuffle(items)) == items).inspect)
+
+= Out.println((shuffle.inverse(shuffle(items)) == items).inspect)
+- ```
++ ```
+
+- A sequence of indexes which is not a permutation, because it has a duplicate or a gap, is a
+- typed error:
++ Una sequenza di indici che non è una permutazione, perché ha un duplicato o un buco, è un errore
++ tipizzato:
+
+= typed error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= typed error:
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- Permutation(Sequence(3, 1, 1))
++ Permutation(Sequence(3, 1, 1))
+
+= Permutation(Sequence(3, 1, 1))
+- ```
++ ```
+
+- Internally, a permutation is stored as its
+- [Lehmer code](https://en.wikipedia.org/wiki/Lehmer_code) in factorial-base form, which is a
+- single integer that uniquely identifies it. That makes permutations compact to store and to
+- enumerate: `Permutation.bySize(n)` gives all `n!` of them, as a lazy
+- [chain](collections.md#lazy-chains). A permutation of *n* elements occupies
+- O(*n* log *n*) space, which is the least possible, since there are *n*! of them to tell apart.
++ Internamente, una permutazione è memorizzata come il suo
++ [codice di Lehmer](https://en.wikipedia.org/wiki/Lehmer_code) in forma a base fattoriale, cioè un
++ unico intero che la identifica univocamente. Questo rende le permutazioni compatte da memorizzare
++ e da enumerare: `Permutation.bySize(n)` le dà tutte e `n!`, come
++ [catena](collections.md#lazy-chains) pigra. Una permutazione di *n* elementi occupa uno spazio
++ O(*n* log *n*), che è il minimo possibile, poiché ce ne sono *n*! da distinguere.
+
+- The number *is* the permutation, so it can be given directly, and both representations can be
+- read back:
++ Il numero *è* la permutazione, quindi si può dare direttamente, ed entrambe le rappresentazioni si
++ possono rileggere:
+
+= read back:
+=
+- ```scala fuel
++ ```scala fuel
+
+= read back:
+=
+= ```scala fuel
+- run
++ run
+
+= read back:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Permutation(Factoradic(45)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
++ Out.println((Permutation(Factoradic(45)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
+
+- Out.println(shuffle.lehmer.inspect)
++ Out.println(shuffle.lehmer.inspect)
+
+- Out.println(shuffle.expansion.inspect)
++ Out.println(shuffle.expansion.inspect)
+
+= Out.println(shuffle.expansion.inspect)
+- ```
++ ```
+
+- A permutation leaves alone every position outside its own range. Applying one to a longer
+- sequence is therefore not an error: it rearranges the positions it covers, and leaves the rest
+- where they were.
++ Una permutazione lascia invariata ogni posizione al di fuori del proprio intervallo. Applicarne una
++ a una sequenza più lunga non è quindi un errore: riordina le posizioni che copre, e lascia le altre
++ dove erano.
+
+- ### Related
++ ### Correlati
+
+- - [Mathematical markup](mathematical-markup.md) typesets what is computed here, and [randomness](randomness.md) samples its distributions.
++ - [Notazione matematica](mathematical-markup.md) compone ciò che si calcola qui, e
++   [casualità](randomness.md) campiona le sue distribuzioni.

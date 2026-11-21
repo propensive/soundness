@@ -1,0 +1,1330 @@
+orthant 1 language
+
+- ## Numbers
++ ## Numeri
+
+- ### About
++ ### Panoramica
+
+- The numeric types are precise and regular, and each one's name says what it is:
++ I tipi numerici sono precisi e regolari, e il nome di ciascuno dice che cosa è:
+
+= The numeric types are precise and regular, and each one's name says what it is:
+=
+- ```tabular
++ ```tabular
+
+- column  Family
+- column  Types
+- column  Is
+- column  Operators
+- row  `U*`  `U8`, `U16`, `U32`, `U64`  unsigned  arithmetic
+- row  `S*`  `S8`, `S16`, `S32`, `S64`  two's-complement signed  arithmetic
+- row  `F*`  `F32`, `F64`  floating-point  arithmetic
+- row  `B*`  `B8`, `B16`, `B32`, `B64`  a raw bit pattern  shifts, rotations and masks
++ column  Famiglia
++ column  Tipi
++ column  È
++ column  Operatori
++ row  `U*`  `U8`, `U16`, `U32`, `U64`  senza segno  aritmetici
++ row  `S*`  `S8`, `S16`, `S32`, `S64`  con segno in complemento a due  aritmetici
++ row  `F*`  `F32`, `F64`  in virgola mobile  aritmetici
++ row  `B*`  `B8`, `B16`, `B32`, `B64`  un pattern di bit grezzo  shift, rotazioni e maschere
+
+= row  `B*`  `B8`, `B16`, `B32`, `B64`  a raw bit pattern  shifts, rotations and masks
+- ```
++ ```
+
+- The letter says how a number's bits are read, and the digits say how many bits there are, so
+- both are part of its type. Arithmetic can be checked for overflow and for division by zero. The
+- checking is chosen by import, and is paid for only where it is wanted.
++ La lettera dice come si leggono i bit di un numero, e le cifre dicono quanti bit ci sono, quindi
++ entrambe fanno parte del suo tipo. L'aritmetica può essere verificata contro l'overflow e la
++ divisione per zero. La verifica si sceglie con un import, e si paga solo dove la si vuole.
+
+- A *bounded* type goes further, and carries a number's permitted range. A value outside `[0, 1]`
+- is then an error at [compiletime], where it is written, and arithmetic on bounded numbers works
+- out the range of the result. A range in the type is the plainest way to make an
+- [impossible state](../../philosophy/impossible-states.md) unrepresentable.
++ Un tipo *limitato* va oltre, e porta con sé l'intervallo ammesso di un numero. Un valore fuori da
++ `[0, 1]` è allora un errore a [tempo di compilazione], dove viene scritto, e l'aritmetica sui
++ numeri limitati calcola l'intervallo del risultato. Un intervallo nel tipo è il modo più semplice
++ per rendere non rappresentabile uno [stato impossibile](../../philosophy/impossible-states.md).
+
+- ### On numbers
++ ### Sui numeri
+
+- Scala inherits the JVM's numbers, which are a mixed bag:
++ Scala eredita i numeri della JVM, che sono un insieme eterogeneo:
+
+- - Every integer is signed.
+- - Addition overflows in silence, and wraps round to a negative number.
+- - Dividing an integer by zero throws, while dividing a floating-point number by zero gives
+-   `NaN` or an infinity.
+- - The bitwise operators sit on the same types as the arithmetic ones, so a shift and a multiply
+-   look alike.
++ - Ogni intero ha il segno.
++ - L'addizione va in overflow in silenzio, e si riavvolge fino a un numero negativo.
++ - Dividere un intero per zero lancia un'eccezione, mentre dividere un numero in virgola mobile per
++   zero dà `NaN` o un infinito.
++ - Gli operatori bit a bit stanno sugli stessi tipi di quelli aritmetici, quindi uno shift e una
++   moltiplicazione si somigliano.
+
+- The type says only how many bits a number has, and never how those bits are meant to be read.
++ Il tipo dice solo quanti bit ha un numero, e mai come quei bit vanno letti.
+
+- Here the concerns are separated. A number is *either* arithmetic, a `U*`, `S*` or `F*` with `+`,
+- `-`, `*` and `/` and no bitwise operators, *or* a bit pattern, a `B*` with shifts and masks and
+- no arithmetic. Conversions between them are explicit, and free. The dangerous operations are
+- checked only when a checking [given] is in scope. Each type is an [opaque type] over a JVM
+- primitive, so none of this exists at [runtime].
++ Qui le questioni sono separate. Un numero è *o* aritmetico, un `U*`, `S*` o `F*` con `+`, `-`,
++ `*` e `/` e nessun operatore bit a bit, *oppure* un pattern di bit, un `B*` con shift e maschere e
++ nessuna aritmetica. Le conversioni fra loro sono esplicite, e gratuite. Le operazioni pericolose
++ sono verificate solo quando c'è nell'ambito un [given] di verifica. Ogni tipo è un [tipo opaco]
++ su una primitiva della JVM, quindi nulla di tutto ciò esiste a [runtime].
+
+- Everything comes from the `soundness` package. Generic number literals are enabled, so that a
+- literal takes whichever numeric type is expected, and the last import lets the samples print
+- their results:
++ Tutto proviene dal package `soundness`. I letterali numerici generici sono abilitati, così che un
++ letterale assuma il tipo numerico atteso, e l'ultimo import permette agli esempi di stampare i
++ loro risultati:
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import scala.language.experimental.genericNumberLiterals
++ import scala.language.experimental.genericNumberLiterals
+
+- import scala.language.experimental.into
++ import scala.language.experimental.into
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Numeric types
++ ### Tipi numerici
+
+- A literal takes the type it is assigned to. A conversion between types is a short method named
+- for the target type:
++ Un letterale assume il tipo a cui viene assegnato. Una conversione fra tipi è un breve metodo
++ che porta il nome del tipo di destinazione:
+
+= for the target type:
+=
+- ```scala
++ ```scala
+
+- val count: U64 = 123
++ val count: U64 = 123
+
+- val small: U8 = 200
++ val small: U8 = 200
+
+- val signed: S32 = 42
++ val signed: S32 = 42
+
+- val widened: S32 = small.s32
++ val widened: S32 = small.s32
+
+= val widened: S32 = small.s32
+- ```
++ ```
+
+- Converting a `U8` to an `S32` can lose nothing, since the wider type holds every value of the
+- narrower one. An unsigned value and a signed one are different types, so mixing them is always
+- a deliberate conversion, never an accident:
++ Convertire un `U8` in un `S32` non può perdere nulla, dato che il tipo più ampio contiene ogni
++ valore di quello più stretto. Un valore senza segno e uno con segno sono tipi diversi, quindi
++ mescolarli è sempre una conversione deliberata, mai un incidente:
+
+= a deliberate conversion, never an accident:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a deliberate conversion, never an accident:
+=
+= ```scala fuel
+- compile
++ compile
+
+= a deliberate conversion, never an accident:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= a deliberate conversion, never an accident:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- val mixed: S32 = small
++ val mixed: S32 = small
+
+= val mixed: S32 = small
+- ```
++ ```
+
+- The operators `+`, `-`, `*`, `/` and prefix `-` are not methods of these types. They are found
+- through the [typeclasses][typeclass] `Addable`, `Subtractable`, `Multiplicable`, `Divisible`
+- and `Negatable`, which [Overloading the operators](#overloading-the-operators) describes. Code
+- written against those typeclasses can therefore sum a `U32` or an `F64` alike, and a value of
+- one of these types can be combined with a `Double`, an `Int` or a narrower type, wherever a
+- conversion exists:
++ Gli operatori `+`, `-`, `*`, `/` e il `-` prefisso non sono metodi di questi tipi. Si trovano
++ tramite le [typeclass][typeclass] `Addable`, `Subtractable`, `Multiplicable`, `Divisible` e
++ `Negatable`, descritte in [Sovraccaricare gli operatori](#overloading-the-operators). Il codice
++ scritto rispetto a queste typeclass può quindi sommare allo stesso modo un `U32` o un `F64`, e un
++ valore di uno di questi tipi si può combinare con un `Double`, un `Int` o un tipo più stretto,
++ ovunque esista una conversione:
+
+= conversion exists:
+=
+- ```scala
++ ```scala
+
+- val ratio: F64 = 1.5
++ val ratio: F64 = 1.5
+
+= val ratio: F64 = 1.5
+- ```
++ ```
+
+= val ratio: F64 = 1.5
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val ratio: F64 = 1.5
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val ratio: F64 = 1.5
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((ratio*2).inspect)
++ Out.println((ratio*2).inspect)
+
+- Out.println((ratio + 0.25).inspect)
++ Out.println((ratio + 0.25).inspect)
+
+- Out.println((-ratio).inspect)
++ Out.println((-ratio).inspect)
+
+= Out.println((-ratio).inspect)
+- ```
++ ```
+
+- The operand of such an operator is a type parameter, which a bare integer literal does not
+- determine. An integer literal operand is therefore written with its type, as in
++ L'operando di un tale operatore è un parametro di tipo, che un letterale intero nudo non
++ determina. Un operando letterale intero si scrive quindi con il suo tipo, come in
+
+- `count + (1: U64)`.
++ `count + (1: U64)`.
+
+- ### Checked arithmetic
++ ### Aritmetica verificata
+
+- Arithmetic on the integer types needs an overflow policy in scope, and division needs one of
+- its own. Each policy is imported from the package `arithmeticOptions`:
++ L'aritmetica sui tipi interi richiede una politica di overflow nell'ambito, e la divisione ne
++ richiede una propria. Ogni politica si importa dal package `arithmeticOptions`:
+
+= its own. Each policy is imported from the package `arithmeticOptions`:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
++ column  Import
+
+- column  Governs
+- column  Behavior
+- row  `uncheckedOverflow`  `+`, `-` and `*`  the hardware's, wrapping on overflow
+- row  `checkedOverflow`  `+`, `-` and `*`  raises `Arithmetic.Error` on overflow
+- row  `uncheckedDivision`  `/`  the bare machine behavior
+- row  `checkedDivision`  `/`  raises `Arithmetic.Error` on division by zero
++ column  Governa
++ column  Comportamento
++ row  `uncheckedOverflow`  `+`, `-` e `*`  quello dell'hardware, con riavvolgimento in caso di overflow
++ row  `checkedOverflow`  `+`, `-` e `*`  solleva `Arithmetic.Error` in caso di overflow
++ row  `uncheckedDivision`  `/`  il comportamento nudo della macchina
++ row  `checkedDivision`  `/`  solleva `Arithmetic.Error` in caso di divisione per zero
+
+= row  `checkedDivision`  `/`  raises `Arithmetic.Error` on division by zero
+- ```
++ ```
+
+- `checkedOverflow` changes the result type of `+`, `-` and `*` to one which can raise an
+- `Arithmetic.Error`. An overflow then becomes a failure to be [handled](errors.md), not a silent
+- wrap to a negative number:
++ `checkedOverflow` cambia il tipo del risultato di `+`, `-` e `*` in uno che può sollevare un
++ `Arithmetic.Error`. Un overflow diventa allora un fallimento da [gestire](errors.md), non un
++ riavvolgimento silenzioso fino a un numero negativo:
+
+= wrap to a negative number:
+=
+- ```scala
++ ```scala
+
+- import arithmeticOptions.checkedOverflow
++ import arithmeticOptions.checkedOverflow
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- val big: S32 = 2000000000
++ val big: S32 = 2000000000
+
+= val big: S32 = 2000000000
+- ```
++ ```
+
+= val big: S32 = 2000000000
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val big: S32 = 2000000000
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val big: S32 = 2000000000
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(safely(big + big).inspect)
++ Out.println(safely(big + big).inspect)
+
+= Out.println(safely(big + big).inspect)
+- ```
++ ```
+
+= Out.println(safely(big + big).inspect)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(safely(big + big).inspect)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- big + big
++ big + big
+
+= big + big
+- ```
++ ```
+
+- The two checks are independent. A program which must not wrap, but is content to trust its
+- divisors, imports only the first.
++ Le due verifiche sono indipendenti. Un programma che non deve riavvolgersi, ma si accontenta di
++ fidarsi dei suoi divisori, importa solo la prima.
+
+- Neither costs anything where it is not chosen. After inlining, an unchecked `a + b` on an `S32`
+- is the single `iadd` instruction the hardware has for it, with nothing allocated, and a checked
+- one is the same instruction followed by a test.
++ Nessuna delle due costa nulla dove non è scelta. Dopo l'inlining, un `a + b` non verificato su un
++ `S32` è la singola istruzione `iadd` che l'hardware ha per esso, senza nulla di allocato, e uno
++ verificato è la stessa istruzione seguita da un test.
+
+- Overflow detection is exact. It tells the cases where a signed addition really overflows from
+- those where it merely crosses zero. A sum of the most negative value with itself is caught,
+- while ordinary negative arithmetic is undisturbed.
++ Il rilevamento dell'overflow è esatto. Distingue i casi in cui un'addizione con segno va davvero
++ in overflow da quelli in cui attraversa semplicemente lo zero. La somma del valore più negativo
++ con sé stesso viene intercettata, mentre l'aritmetica negativa ordinaria non viene disturbata.
+
+- ### Bit manipulation
++ ### Manipolazione dei bit
+
+- The `B*` types treat a number as a set of bits. They have the shifts, rotations and masks, and
+- are written out in the usual radices, but they have no arithmetic:
++ I tipi `B*` trattano un numero come un insieme di bit. Hanno gli shift, le rotazioni e le
++ maschere, e si scrivono nelle basi consuete, ma non hanno aritmetica:
+
+= are written out in the usual radices, but they have no arithmetic:
+=
+- ```scala
++ ```scala
+
+- val pattern: B32 = 0xf0.bits
++ val pattern: B32 = 0xf0.bits
+
+= val pattern: B32 = 0xf0.bits
+- ```
++ ```
+
+= val pattern: B32 = 0xf0.bits
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val pattern: B32 = 0xf0.bits
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val pattern: B32 = 0xf0.bits
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(pattern.hex)
++ Out.println(pattern.hex)
+
+- Out.println((pattern << 2).hex)
++ Out.println((pattern << 2).hex)
+
+- Out.println((pattern & 0x30.bits).hex)
++ Out.println((pattern & 0x30.bits).hex)
+
+= Out.println((pattern & 0x30.bits).hex)
+- ```
++ ```
+
+- Arithmetic on a bit pattern does not compile:
++ L'aritmetica su un pattern di bit non compila:
+
+= Arithmetic on a bit pattern does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Arithmetic on a bit pattern does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Arithmetic on a bit pattern does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Arithmetic on a bit pattern does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- pattern + pattern
++ pattern + pattern
+
+= pattern + pattern
+- ```
++ ```
+
+- The operations on a bit pattern are:
++ Le operazioni su un pattern di bit sono:
+
+= The operations on a bit pattern are:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Does
+- row  `<<`, `>>`  shift left or right, filling with zeros
+- row  `<<<`, `>>>`  rotate left or right
+- row  `&`, `|`, `^`  and, or and exclusive or
+- row  `~`  invert every bit
+- row  `bit`  read one bit
+- row  `set`, `clear`, `flip`  write one bit, or every bit of an interval
+- row  `leadingZeros`, `trailingZeros`  count the zeros at either end
+- row  `reverse`  reverse the order of the bits
++ column  Operazione
++ column  Effetto
++ row  `<<`, `>>`  shift a sinistra o a destra, riempiendo con zeri
++ row  `<<<`, `>>>`  rotazione a sinistra o a destra
++ row  `&`, `|`, `^`  and, or e or esclusivo
++ row  `~`  inverte ogni bit
++ row  `bit`  legge un bit
++ row  `set`, `clear`, `flip`  scrive un bit, o ogni bit di un intervallo
++ row  `leadingZeros`, `trailingZeros`  conta gli zeri a una delle due estremità
++ row  `reverse`  inverte l'ordine dei bit
+
+= row  `reverse`  reverse the order of the bits
+- ```
++ ```
+
+- A bit is addressed by an [ordinal](#ordinals): `Prim` is the first and `Sec` the second. A bit's
+- position therefore cannot be confused with the zero-based or one-based convention of whichever
+- specification is being implemented:
++ Un bit si indirizza con un [ordinale](#ordinals): `Prim` è il primo e `Sec` il secondo. La
++ posizione di un bit non può quindi essere confusa con la convenzione a base zero o a base uno
++ della specifica che si sta implementando:
+
+= specification is being implemented:
+=
+- ```scala fuel
++ ```scala fuel
+
+= specification is being implemented:
+=
+= ```scala fuel
+- run
++ run
+
+= specification is being implemented:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(B64(Data(0, 0, 0, 0, 0, 0, 0, 6)).bit(Sec).inspect)
++ Out.println(B64(Data(0, 0, 0, 0, 0, 0, 0, 6)).bit(Sec).inspect)
+
+= Out.println(B64(Data(0, 0, 0, 0, 0, 0, 0, 6)).bit(Sec).inspect)
+- ```
++ ```
+
+- A bit pattern is written out padded to its type's full width, without dropping leading zeros,
+- so the number of characters says which type produced it:
++ Un pattern di bit si scrive con il riempimento fino all'intera larghezza del suo tipo, senza
++ scartare gli zeri iniziali, quindi il numero di caratteri dice quale tipo l'ha prodotto:
+
+= so the number of characters says which type produced it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= so the number of characters says which type produced it:
+=
+= ```scala fuel
+- run
++ run
+
+= so the number of characters says which type produced it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((-1: Byte).hex)
++ Out.println((-1: Byte).hex)
+
+- Out.println((-1: Byte).binary)
++ Out.println((-1: Byte).binary)
+
+= Out.println((-1: Byte).binary)
+- ```
++ ```
+
+- [Bit flags](flags.md) names the bits of a word by the cases of an enumeration, and
+- [Binary data](binary-data.md) reads these types out of a sequence of bytes.
++ [Flag di bit](flags.md) dà un nome ai bit di una parola tramite i casi di un'enumerazione, e
++ [Dati binari](binary-data.md) legge questi tipi da una sequenza di byte.
+
+- ### Mathematics
++ ### Matematica
+
+- The operations which Java scatters across `java.lang.Math` are extension methods, consistent
+- across the numeric types: `abs`, `ceiling`, `floor`, `round`, `signum` and the rest. `**` raises
+- to a power. `%%` is a floor-modulus which, unlike `%`, never gives a negative remainder:
++ Le operazioni che Java sparpaglia in `java.lang.Math` sono metodi di estensione, coerenti fra i
++ tipi numerici: `abs`, `ceiling`, `floor`, `round`, `signum` e il resto. `**` eleva a potenza.
++ `%%` è un modulo per difetto che, a differenza di `%`, non dà mai un resto negativo:
+
+= to a power. `%%` is a floor-modulus which, unlike `%`, never gives a negative remainder:
+=
+- ```scala fuel
++ ```scala fuel
+
+= to a power. `%%` is a floor-modulus which, unlike `%`, never gives a negative remainder:
+=
+= ```scala fuel
+- run
++ run
+
+= to a power. `%%` is a floor-modulus which, unlike `%`, never gives a negative remainder:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((7.0 %% 3.0).inspect)
++ Out.println((7.0 %% 3.0).inspect)
+
+- Out.println((-7.0 %% 3.0).inspect)
++ Out.println((-7.0 %% 3.0).inspect)
+
+- Out.println((2.0 ** 10.0).inspect)
++ Out.println((2.0 ** 10.0).inspect)
+
+= Out.println((2.0 ** 10.0).inspect)
+- ```
++ ```
+
+- The trigonometric and logarithmic functions are plain functions: `cos`, `sin`, `exp`, `ln` and
+- `log10`. The constants `π`, `euler` and `φ` sit beside them.
++ Le funzioni trigonometriche e logaritmiche sono semplici funzioni: `cos`, `sin`, `exp`, `ln` e
++ `log10`. Le costanti `π`, `euler` e `φ` stanno accanto a esse.
+
+- `**` widens its result. Raising a `Short` to a power which exceeds a `Short`'s range gives the
+- right answer, not a wrapped one, and a fractional exponent gives a fractional result:
++ `**` allarga il suo risultato. Elevare uno `Short` a una potenza che supera l'intervallo di uno
++ `Short` dà la risposta giusta, non una riavvolta, e un esponente frazionario dà un risultato
++ frazionario:
+
+= right answer, not a wrapped one, and a fractional exponent gives a fractional result:
+=
+- ```scala fuel
++ ```scala fuel
+
+= right answer, not a wrapped one, and a fractional exponent gives a fractional result:
+=
+= ```scala fuel
+- run
++ run
+
+= right answer, not a wrapped one, and a fractional exponent gives a fractional result:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(((200: Short) ** 2.0).inspect)
++ Out.println(((200: Short) ** 2.0).inspect)
+
+- Out.println(((1000: Short) ** 1.5).inspect)
++ Out.println(((1000: Short) ** 1.5).inspect)
+
+= Out.println(((1000: Short) ** 1.5).inspect)
+- ```
++ ```
+
+- The statistics of a collection are extension methods too. `median` finds the middle value by a
+- selection algorithm, without sorting the whole collection, and averages the two middle values
+- where the count is even:
++ Anche le statistiche di una collezione sono metodi di estensione. `median` trova il valore
++ centrale con un algoritmo di selezione, senza ordinare l'intera collezione, e fa la media dei due
++ valori centrali dove il numero di elementi è pari:
+
+= where the count is even:
+=
+- ```scala fuel
++ ```scala fuel
+
+= where the count is even:
+=
+= ```scala fuel
+- run
++ run
+
+= where the count is even:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Iterable[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).median.inspect)
++ Out.println(Iterable[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).median.inspect)
+
+= Out.println(Iterable[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).median.inspect)
+- ```
++ ```
+
+- [Mathematics](mathematics.md) builds complex numbers, vectors and matrices on these types.
++ [Matematica](mathematics.md) costruisce numeri complessi, vettori e matrici su questi tipi.
+
+- ### Comparisons
++ ### Confronti
+
+- Comparisons chain as they do in mathematics, so a value can be tested against two bounds at
+- once:
++ I confronti si concatenano come in matematica, quindi un valore si può verificare contro due
++ limiti in una volta:
+
+= once:
+=
+- ```scala fuel
++ ```scala fuel
+
+= once:
+=
+= ```scala fuel
+- run
++ run
+
+= once:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4).inspect)
++ Out.println(List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4).inspect)
+
+= Out.println(List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4).inspect)
+- ```
++ ```
+
+- `min` and `max` compare two values, and
+- [`minimum` and `maximum`](collections.md#searching-and-measuring) reduce a collection.
++ `min` e `max` confrontano due valori, e
++ [`minimum` e `maximum`](collections.md#searching-and-measuring) riducono una collezione.
+
+- ### Arbitrary precision
++ ### Precisione arbitraria
+
+- Some values must be exact, and no fixed width will do: a monetary total, a coordinate in a
+- document, a figure read from a file which promised nothing about its size. A `Decimal` holds a
+- sign, a magnitude of any size, and a decimal scale:
++ Alcuni valori devono essere esatti, e nessuna larghezza fissa va bene: un totale monetario, una
++ coordinata in un documento, una cifra letta da un file che non prometteva nulla sulla sua
++ dimensione. Un `Decimal` contiene un segno, una grandezza di qualsiasi dimensione, e una scala
++ decimale:
+
+= sign, a magnitude of any size, and a decimal scale:
+=
+- ```scala
++ ```scala
+
+- val large = Decimal(1234567890123L)
++ val large = Decimal(1234567890123L)
+
+- val scaled = Decimal(-1234567, 4)
++ val scaled = Decimal(-1234567, 4)
+
+- val parsed = Decimal.parse(t"-12.34e+2")
++ val parsed = Decimal.parse(t"-12.34e+2")
+
+= val parsed = Decimal.parse(t"-12.34e+2")
+- ```
++ ```
+
+- `text` writes a decimal exactly, with nothing lost:
++ `text` scrive un decimale in modo esatto, senza perdere nulla:
+
+= `text` writes a decimal exactly, with nothing lost:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `text` writes a decimal exactly, with nothing lost:
+=
+= ```scala fuel
+- run
++ run
+
+= `text` writes a decimal exactly, with nothing lost:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(large.text)
++ Out.println(large.text)
+
+- Out.println(scaled.text)
++ Out.println(scaled.text)
+
+- Out.println(parsed.text)
++ Out.println(parsed.text)
+
+= Out.println(parsed.text)
+- ```
++ ```
+
+- A decimal literal in source code becomes a `Decimal` directly, where one is expected.
+- `Decimal(0.1)` converts a `Double`, and raises a `Decimal.Error` if the double is not exact.
++ Un letterale decimale nel codice sorgente diventa direttamente un `Decimal`, dove ne è atteso
++ uno. `Decimal(0.1)` converte un `Double`, e solleva un `Decimal.Error` se il double non è esatto.
+
+- Values are canonical. Trailing zeros are absorbed into the scale as a value is constructed, and
+- zero has one representation, so two decimals which are numerically equal are the same value.
+- `BigDecimal`'s trap, in which `equals` and `compareTo` disagree, has no counterpart here.
++ I valori sono canonici. Gli zeri finali vengono assorbiti nella scala mentre un valore viene
++ costruito, e lo zero ha una sola rappresentazione, quindi due decimali numericamente uguali sono
++ lo stesso valore. La trappola di `BigDecimal`, in cui `equals` e `compareTo` sono in disaccordo,
++ qui non ha un corrispettivo.
+
+- Division cannot always be exact, so it must be told what is wanted: a scale and a rounding
+- mode, which are given and never assumed.
++ La divisione non può sempre essere esatta, quindi le si deve dire che cosa si vuole: una scala e
++ una modalità di arrotondamento, che vengono date e mai presunte.
+
+= mode, which are given and never assumed.
+=
+- ```scala fuel
++ ```scala fuel
+
+= mode, which are given and never assumed.
+=
+= ```scala fuel
+- run
++ run
+
+= mode, which are given and never assumed.
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Decimal(1, 0).divide(Decimal(3, 0), scale = 10, Decimal.Rounding.HalfEven).text)
++ Out.println(Decimal(1, 0).divide(Decimal(3, 0), scale = 10, Decimal.Rounding.HalfEven).text)
+
+= Out.println(Decimal(1, 0).divide(Decimal(3, 0), scale = 10, Decimal.Rounding.HalfEven).text)
+- ```
++ ```
+
+- `Decimal` is written in pure Scala, and is not a wrapper over the JVM's `BigDecimal`, so it
+- works on every platform. Nothing in it depends on native 64-bit arithmetic, which matters where
+- `Long` is emulated. [Money](money.md) uses exact arithmetic for amounts in a currency.
++ `Decimal` è scritto in Scala puro, e non è un wrapper del `BigDecimal` della JVM, quindi funziona
++ su ogni piattaforma. Nulla in esso dipende dall'aritmetica nativa a 64 bit, il che conta dove
++ `Long` è emulato. [Denaro](money.md) usa l'aritmetica esatta per gli importi in una valuta.
+
+- ### Overloading the operators
++ ### Sovraccaricare gli operatori
+
+- `+`, `-`, `*` and `/` are not built into any of the types above. They come from typeclasses,
+- and that is what lets arithmetic mean something for types whose operands and results differ.
++ `+`, `-`, `*` e `/` non sono integrati in nessuno dei tipi sopra. Provengono da typeclass, ed è
++ questo che permette all'aritmetica di avere un significato per tipi i cui operandi e risultati
++ differiscono.
+
+- Scala's own operators are methods, so a type can define `+` only where it knows both sides and
+- the result. That is enough for a number plus a number. It is not enough for most of the
+- interesting cases. Multiplying a length by a length gives an *area*. Adding a duration to an
+- instant gives an instant. Dividing one quantity by another gives something whose type neither
+- operand could have anticipated.
++ Gli operatori di Scala sono metodi, quindi un tipo può definire `+` solo dove conosce entrambi i
++ lati e il risultato. Questo basta per un numero più un numero. Non basta per la maggior parte dei
++ casi interessanti. Moltiplicare una lunghezza per una lunghezza dà un'*area*. Aggiungere una
++ durata a un istante dà un istante. Dividere una grandezza per un'altra dà qualcosa il cui tipo
++ nessuno dei due operandi avrebbe potuto prevedere.
+
+- The operators are therefore defined over typeclasses, each of which names both the operand and
+- the result:
++ Gli operatori sono quindi definiti tramite typeclass, ciascuna delle quali nomina sia l'operando
++ sia il risultato:
+
+= the result:
+=
+- ```tabular
++ ```tabular
+
+- column  Typeclass
++ column  Typeclass
+
+- column  Supplies
++ column  Fornisce
+
+- row  `Addable`  `+`
++ row  `Addable`  `+`
+
+- row  `Subtractable`  `-`
++ row  `Subtractable`  `-`
+
+- row  `Multiplicable`  `*`
++ row  `Multiplicable`  `*`
+
+- row  `Divisible`  `/`
++ row  `Divisible`  `/`
+
+- row  `Negatable`  prefix `-`
+- row  `Rootable`  `sqrt` and `cbrt`
+- row  `Zeroic`  `zero`, the additive identity
+- row  `Unital`  `one`, the multiplicative identity
++ row  `Negatable`  `-` prefisso
++ row  `Rootable`  `sqrt` e `cbrt`
++ row  `Zeroic`  `zero`, l'elemento neutro dell'addizione
++ row  `Unital`  `one`, l'elemento neutro della moltiplicazione
+
+= row  `Unital`  `one`, the multiplicative identity
+- ```
++ ```
+
+- An instance reads as a sentence:
++ Un'istanza si legge come una frase:
+
+= An instance reads as a sentence:
+=
+- ```scala
++ ```scala
+
+- given Double is Addable by Double to Double = Addable(_ + _)
++ given Double is Addable by Double to Double = Addable(_ + _)
+
+= given Double is Addable by Double to Double = Addable(_ + _)
+- ```
++ ```
+
+- A `Double` *is addable by* a `Double` *to* a `Double`. The result type belongs to the instance,
+- and is not a parameter of the operator. So `length*length` can produce `Quantity[Metres[2]]`
+- while `length*number` produces `Quantity[Metres[1]]`, and the same `*` finds both. The
+- identities, `zero` and `one`, are for an algorithm which needs a value to start from.
++ Un `Double` *è sommabile con* un `Double` *dando* un `Double`. Il tipo del risultato appartiene
++ all'istanza, e non è un parametro dell'operatore. Così `length*length` può produrre
++ `Quantity[Metres[2]]` mentre `length*number` produce `Quantity[Metres[1]]`, e lo stesso `*` li
++ trova entrambi. Gli elementi neutri, `zero` e `one`, servono a un algoritmo che ha bisogno di un
++ valore da cui partire.
+
+- Three other parts of Soundness rest on these typeclasses:
++ Altre tre parti di Soundness poggiano su queste typeclass:
+
+- - [Quantities](quantities.md), where checking the dimensions of a calculation is exactly the
+-   computing of the result type.
+- - [Complex numbers and matrices](mathematics.md), which are generic in an element type they
+-   only ever combine through these operators.
+- - [Derivation](derivation.md), which can produce arithmetic for a case class, field by field.
++ - [Grandezze](quantities.md), dove verificare le dimensioni di un calcolo è esattamente calcolare
++   il tipo del risultato.
++ - [Numeri complessi e matrici](mathematics.md), che sono generici in un tipo di elemento che
++   combinano sempre e solo tramite questi operatori.
++ - [Derivazione](derivation.md), che può produrre l'aritmetica per una case class, campo per campo.
+
+- [Time](time.md) uses them too, for adding a duration to an instant.
++ Anche [Tempo](time.md) le usa, per aggiungere una durata a un istante.
+
+- ### Ordinals
++ ### Ordinali
+
+- Off-by-one errors come from a single ambiguity: whether "1" means the first element, or the one
+- after the first. `Ordinal` removes the ambiguity by being a different type from `Int`. An `Int`
+- cannot be used where an `Ordinal` is expected, nor the reverse, and there is no zeroth ordinal.
+- An `Ordinal` is an opaque type over an `Int`, so it costs nothing. The first seven are named:
++ Gli errori di uno nascono da un'unica ambiguità: se «1» significhi il primo elemento, o quello
++ dopo il primo. `Ordinal` elimina l'ambiguità essendo un tipo diverso da `Int`. Un `Int` non si
++ può usare dove è atteso un `Ordinal`, né viceversa, e non esiste un ordinale zeresimo. Un
++ `Ordinal` è un tipo opaco su un `Int`, quindi non costa nulla. I primi sette hanno un nome:
+
+= An `Ordinal` is an opaque type over an `Int`, so it costs nothing. The first seven are named:
+=
+- ```tabular
++ ```tabular
+
+- column  Ordinal
+- column  Position
+- column  From
+- row  `Prim`  first  primary
+- row  `Sec`  second  secondary
+- row  `Ter`  third  tertiary
+- row  `Quat`  fourth  quaternary
+- row  `Quin`  fifth  quinary
+- row  `Sen`  sixth  senary
+- row  `Sept`  seventh  septenary
++ column  Ordinale
++ column  Posizione
++ column  Da
++ row  `Prim`  primo  primario
++ row  `Sec`  secondo  secondario
++ row  `Ter`  terzo  terziario
++ row  `Quat`  quarto  quaternario
++ row  `Quin`  quinto  quinario
++ row  `Sen`  sesto  senario
++ row  `Sept`  settimo  settenario
+
+= row  `Sept`  seventh  septenary
+- ```
++ ```
+
+- Crossing between an `Int` and an `Ordinal` is explicit, and says which convention the number
+- comes *from*. `z` reads a count from zero as an ordinal, and `u` reads a count from one. So
+- `0.z` and `1.u` are both `Prim`. Where a number came from, whether a wire protocol counting from
+- zero or a specification counting from one, is thus recorded where the number enters the
+- program, and need not be remembered afterwards.
++ Il passaggio fra un `Int` e un `Ordinal` è esplicito, e dice *da* quale convenzione proviene il
++ numero. `z` legge un conteggio da zero come ordinale, e `u` legge un conteggio da uno. Così `0.z`
++ e `1.u` sono entrambi `Prim`. Da dove proviene un numero, che sia un protocollo di trasmissione
++ che conta da zero o una specifica che conta da uno, viene così registrato dove il numero entra
++ nel programma, e non occorre ricordarlo in seguito.
+
+- Only the arithmetic which means something is available. Adding a number to an ordinal gives an
+- ordinal, and subtracting one ordinal from another gives the distance between them, an `Int`:
++ È disponibile solo l'aritmetica che ha un significato. Aggiungere un numero a un ordinale dà un
++ ordinale, e sottrarre un ordinale da un altro dà la distanza fra loro, un `Int`:
+
+= ordinal, and subtracting one ordinal from another gives the distance between them, an `Int`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= ordinal, and subtracting one ordinal from another gives the distance between them, an `Int`:
+=
+= ```scala fuel
+- run
++ run
+
+= ordinal, and subtracting one ordinal from another gives the distance between them, an `Int`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Ter + 3).inspect)
++ Out.println((Ter + 3).inspect)
+
+- Out.println((Sept - Quin).inspect)
++ Out.println((Sept - Quin).inspect)
+
+= Out.println((Sept - Quin).inspect)
+- ```
++ ```
+
+- Multiplying two ordinals does not compile, because it does not mean anything:
++ Moltiplicare due ordinali non compila, perché non significa nulla:
+
+= Multiplying two ordinals does not compile, because it does not mean anything:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Multiplying two ordinals does not compile, because it does not mean anything:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Multiplying two ordinals does not compile, because it does not mean anything:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Multiplying two ordinals does not compile, because it does not mean anything:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Ter*Quin
++ Ter*Quin
+
+= Ter*Quin
+- ```
++ ```
+
+- The last elements of a sequence are named, not computed. `ult` is the last ("ultimate"), `pen`
+- the second from last, and `ant` the third from last. Each gives an `Optional`, since a sequence
+- may be too short to have one, and each is available on any type with a `Countable` instance.
++ Gli ultimi elementi di una sequenza hanno un nome, non si calcolano. `ult` è l'ultimo
++ («ultimate»), `pen` il penultimo, e `ant` il terzultimo. Ciascuno dà un `Optional`, dato che una
++ sequenza può essere troppo corta per averne uno, e ciascuno è disponibile su qualsiasi tipo con
++ un'istanza di `Countable`.
+
+- A range of ordinals is an `Interval`. It is built with `thru` for an inclusive end, `till` for
+- an exclusive one, or `span` for a length:
++ Un intervallo di ordinali è un `Interval`. Si costruisce con `thru` per un estremo incluso,
++ `till` per uno escluso, o `span` per una lunghezza:
+
+= an exclusive one, or `span` for a length:
+=
+- ```scala fuel
++ ```scala fuel
+
+= an exclusive one, or `span` for a length:
+=
+= ```scala fuel
+- run
++ run
+
+= an exclusive one, or `span` for a length:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Ter thru Sen).inspect)
++ Out.println((Ter thru Sen).inspect)
+
+- Out.println((Ter till Sen).inspect)
++ Out.println((Ter till Sen).inspect)
+
+- Out.println((Ter span 3).inspect)
++ Out.println((Ter span 3).inspect)
+
+= Out.println((Ter span 3).inspect)
+- ```
++ ```
+
+- An interval knows its `start`, `end` and `size`. It iterates with `each` and folds with `fuse`,
+- as a [collection](collections.md) does. `extent` gives the whole of a countable value as an
+- interval, so that a traversal states its bounds in terms of the value it traverses, not in raw
+- integers.
++ Un intervallo conosce il suo `start`, il suo `end` e il suo `size`. Si itera con `each` e si
++ fa un fold con `fuse`, come fa una [collezione](collections.md). `extent` dà l'intero di un valore
++ numerabile come intervallo, così che un attraversamento dichiari i suoi limiti in termini del
++ valore che attraversa, non in interi grezzi.
+
+- An interval which comes from `extent` carries, in its type, the value it came from, and so do
+- the ordinals it hands out when iterated. Such an ordinal has been proved to lie within the
+- collection, so reading with it cannot fail. It gives an element, where an unproven index would
+- give an `Optional`. A counting loop over a collection is therefore written without a counter,
+- and without a bounds check on either side:
++ Un intervallo che proviene da `extent` porta nel suo tipo il valore da cui proviene, e così gli
++ ordinali che fornisce quando viene iterato. Un tale ordinale è dimostrato trovarsi dentro la
++ collezione, quindi leggere con esso non può fallire. Dà un elemento, dove un indice non
++ dimostrato darebbe un `Optional`. Un ciclo di conteggio su una collezione si scrive quindi senza
++ un contatore, e senza un controllo dei limiti da nessuna delle due parti:
+
+= and without a bounds check on either side:
+=
+- ```scala
++ ```scala
+
+- val array = Array(10, 20, 30)
++ val array = Array(10, 20, 30)
+
+- var total = 0
++ var total = 0
+
+- array.extent.each { ordinal => total += array(ordinal) }
++ array.extent.each { ordinal => total += array(ordinal) }
+
+= array.extent.each { ordinal => total += array(ordinal) }
+- ```
++ ```
+
+= array.extent.each { ordinal => total += array(ordinal) }
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= array.extent.each { ordinal => total += array(ordinal) }
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= array.extent.each { ordinal => total += array(ordinal) }
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(total.show)
++ Out.println(total.show)
+
+= Out.println(total.show)
+- ```
++ ```
+
+- `capped` narrows such an interval while keeping what it proves. `array.extent.capped(2)`
+- iterates the first two positions, and its ordinals can still be read without a check.
++ `capped` restringe un tale intervallo conservando ciò che dimostra. `array.extent.capped(2)` itera
++ le prime due posizioni, e i suoi ordinali si possono ancora leggere senza controllo.
+
+- ### Bounded numbers
++ ### Numeri limitati
+
+- A number can carry its permitted range in its type, written with `~`:
++ Un numero può portare il suo intervallo ammesso nel suo tipo, scritto con `~`:
+
+= A number can carry its permitted range in its type, written with `~`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A number can carry its permitted range in its type, written with `~`:
+=
+= ```scala fuel
+- compile
++ compile
+
+= compile
+- ##
++ ##
+
+- val portion: 0.0 ~ 1.0 = 0.2
++ val portion: 0.0 ~ 1.0 = 0.2
+
+= val portion: 0.0 ~ 1.0 = 0.2
+- ```
++ ```
+
+- A literal outside the range is a compiletime error, caught where it is written:
++ Un letterale fuori dall'intervallo è un errore a tempo di compilazione, intercettato dove viene
++ scritto:
+
+= A literal outside the range is a compiletime error, caught where it is written:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A literal outside the range is a compiletime error, caught where it is written:
+=
+= ```scala fuel
+- compile
++ compile
+
+= A literal outside the range is a compiletime error, caught where it is written:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= A literal outside the range is a compiletime error, caught where it is written:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- val tooMuch: 0.0 ~ 1.0 = 2.0
++ val tooMuch: 0.0 ~ 1.0 = 2.0
+
+= val tooMuch: 0.0 ~ 1.0 = 2.0
+- ```
++ ```
+
+- Arithmetic on bounded numbers computes the range of the result from the ranges of its operands.
+- Doubling a value in `[0, 1]` gives one which is known to lie in `[0, 2]`, and so certainly
+- within `[-2, 2]`:
++ L'aritmetica sui numeri limitati calcola l'intervallo del risultato dagli intervalli dei suoi
++ operandi. Raddoppiare un valore in `[0, 1]` ne dà uno che si sa trovarsi in `[0, 2]`, e quindi
++ certamente dentro `[-2, 2]`:
+
+= within `[-2, 2]`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= within `[-2, 2]`:
+=
+= ```scala fuel
+- parse
++ parse
+
+= within `[-2, 2]`:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val doubled: -2.0 ~ 2.0 = portion*2.0
++ val doubled: -2.0 ~ 2.0 = portion*2.0
+
+= val doubled: -2.0 ~ 2.0 = portion*2.0
+- ```
++ ```
+
+- The bound travels with the value through a calculation, and a step which could break it does
+- not compile. This is the discipline of [physical quantities](quantities.md), applied to plain ranges. The
+- inference is precise. It takes account of whether each operand is a bounded value, a literal,
+- or a `Double` about which nothing is known, and it composes through a whole expression:
++ Il limite viaggia con il valore attraverso un calcolo, e un passo che potrebbe violarlo non
++ compila. È la disciplina delle [grandezze fisiche](quantities.md), applicata a semplici
++ intervalli. L'inferenza è precisa. Tiene conto del fatto che ciascun operando sia un valore
++ limitato, un letterale, o un `Double` di cui non si sa nulla, e si compone attraverso un'intera
++ espressione:
+
+= or a `Double` about which nothing is known, and it composes through a whole expression:
+=
+- ```scala fuel
++ ```scala fuel
+
+= or a `Double` about which nothing is known, and it composes through a whole expression:
+=
+= ```scala fuel
+- parse
++ parse
+
+= or a `Double` about which nothing is known, and it composes through a whole expression:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val x: 0.0 ~ 1.0 = 0.2
++ val x: 0.0 ~ 1.0 = 0.2
+
+- val y: -1.0 ~ 1.0 = 0.2
++ val y: -1.0 ~ 1.0 = 0.2
+
+- val z: 1e3 ~ 1e8 = 10000
++ val z: 1e3 ~ 1e8 = 10000
+
+- val combined: -2.0e8 ~ 3.0e8 = (x + y*3.0)*z
++ val combined: -2.0e8 ~ 3.0e8 = (x + y*3.0)*z
+
+= val combined: -2.0e8 ~ 3.0e8 = (x + y*3.0)*z
+- ```
++ ```
+
+- Ordinary unbounded `Double`s are everywhere, though, and a program must be able to bring one
+- into this world from outside it. `force` asserts a bound which the compiler cannot check. That
+- makes it the one operation here which can be wrong, and so the one to use deliberately.
++ Però i `Double` ordinari non limitati sono ovunque, e un programma deve poterne portare uno in
++ questo mondo dall'esterno. `force` asserisce un limite che il compilatore non può verificare. Ciò
++ ne fa l'unica operazione qui che può essere sbagliata, e quindi quella da usare deliberatamente.

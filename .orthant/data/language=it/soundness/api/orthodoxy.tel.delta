@@ -1,0 +1,1939 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base orthodoxy
++ base orthodoxy
+
+- import soundness
++ import soundness
+
+- info   OAuth 2 for clients and web applications: grants, PKCE, scoped tokens and typed credentials
++ info   OAuth 2 per client e applicazioni web: concessioni, PKCE, token con scope e credenziali tipizzate
+
+- detail
++ detail
+
+-     _Orthodoxy_ implements [OAuth 2](https://www.rfc-editor.org/rfc/rfc6749), the protocol by
+-     which a client obtains an access token from an API's authorization server and presents it
+-     with each request, on a user's behalf or on its own. A token is more than a string — it
+-     grants particular scopes, it expires, and it may come with a refresh token — so it is an
+-     `Authorization` carrying all four, against which a `OAuth.Scope` can be checked.
++     _Orthodoxy_ implementa [OAuth 2](https://www.rfc-editor.org/rfc/rfc6749), il protocollo
++     con cui un client ottiene un token di accesso dal server di autorizzazione di un'API e lo
++     presenta a ogni richiesta, per conto di un utente o per conto proprio. Un token è più di
++     una stringa — concede determinati scope, scade e può essere accompagnato da un refresh
++     token — perciò è un `Authorization` che porta tutte e quattro le cose, rispetto al quale
++     si può verificare un `OAuth.Scope`.
+
+-     An `Issuer` is an authorization server as one client sees it, and each grant is a method
+-     on it which posts to the token endpoint through the `Http.Client` in scope and raises
+-     `OAuth.Error` on refusal:
++     Un `Issuer` è un server di autorizzazione così come lo vede un client, e ogni concessione
++     è un suo metodo che invia una richiesta POST all'endpoint dei token tramite
++     l'`Http.Client` nell'ambito e solleva `OAuth.Error` in caso di rifiuto:
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import internetAccess.online
++     import internetAccess.online
+
+-     import httpBackends.javaNetHttp
++     import httpBackends.javaNetHttp
+
+-     import logging.silentLogging
++     import logging.silentLogging
+
+-     val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
++     val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+-     val token: Authorization = issuer.clientCredentials(t"read", t"write")
++     val token: Authorization = issuer.clientCredentials(t"read", t"write")
+
+-     token.grants(List(t"read"))
++     token.grants(List(t"read"))
+
+-     url"https://api.example/items".fetch(authorization = token).receive[Text]
++     url"https://api.example/items".fetch(authorization = token).receive[Text]
+
+-     ```
++     ```
+
+-     For the authorization-code flow, `Issuer#authorizationUrl` builds the URL a user is sent
+-     to, with a `Pkce` challenge, and `Issuer#exchangeCode` exchanges the code they bring back.
+-     A `Credential` names a security scheme as an API's specification names it, and is how an
+-     OpenAPI client from apoplexy finds the key or token each operation requires.
++     Per il flusso authorization-code, `Issuer#authorizationUrl` costruisce l'URL a cui viene
++     mandato un utente, con una challenge `Pkce`, e `Issuer#exchangeCode` scambia il codice che
++     l'utente riporta indietro. Una `Credential` nomina uno schema di sicurezza così come lo
++     nomina la specifica di un'API, ed è il modo in cui un client OpenAPI di apoplexy trova la
++     chiave o il token richiesto da ciascuna operazione.
+
+-     The library has two source sets:
++     La libreria ha due source set:
+
+-     - `orthodoxy.core` — `Issuer`, `Authorization`, `Pkce`, `OAuth.Scope`, `Credential` and
+-       `OAuth.Error`: everything a client needs.
+-     - `orthodoxy.server` — the authorization-code flow as scintillate middleware, the
+-       extensions `oauth` and `require` on `Issuer`, with `Authorizations` holding each
+-       session's state.
++     - `orthodoxy.core` — `Issuer`, `Authorization`, `Pkce`, `OAuth.Scope`, `Credential` e
++       `OAuth.Error`: tutto ciò di cui ha bisogno un client.
++     - `orthodoxy.server` — il flusso authorization-code come middleware di scintillate, le
++       estensioni `oauth` e `require` su `Issuer`, con `Authorizations` che conserva lo stato
++       di ogni sessione.
+
+-     Everything is exported to the `soundness` umbrella. There are no choice packages of its
+-     own, but the grants need the usual contextual values from elsewhere: an `Online` token
+-     (`internetAccess.online`), an HTTP backend (`httpBackends.javaNetHttp`), a
+-     `Http.Event is Loggable` (`logging.silentLogging`), and a `Tactic[OAuth.Error]`, each
+-     imported by name.
++     Tutto è esportato nel modulo ombrello `soundness`. Non ci sono package di scelta propri,
++     ma le concessioni richiedono i consueti valori contestuali da altre parti: un token
++     `Online` (`internetAccess.online`), un backend HTTP (`httpBackends.javaNetHttp`), un
++     `Http.Event is Loggable` (`logging.silentLogging`) e una `Tactic[OAuth.Error]`, ciascuno
++     importato per nome.
+
+- refer orthodoxy.Issuer
++ refer orthodoxy.Issuer
+
+- refer orthodoxy.Authorization
++ refer orthodoxy.Authorization
+
+- refer orthodoxy.OAuth.Error
++ refer orthodoxy.OAuth.Error
+
+- refer orthodoxy.oauth
++ refer orthodoxy.oauth
+
+- entry .Issuer   an OAuth 2 authorization server as one client sees it: its endpoints and the client's identity
++ entry .Issuer   un server di autorizzazione OAuth 2 così come lo vede un client: i suoi endpoint e l'identità del client
+
+= entry .Issuer   an OAuth 2 authorization server as one client sees it: its endpoints and the client's identity
+-   detail
++   detail
+
+-       An `Issuer` holds the token endpoint, `#exchange`; the client's identity, `#client`,
+-       and its `#secret` if it has one; and, for the authorization-code flow, the
+-       authorization endpoint, `#init`, and the `#redirect` URI registered for the client.
+-       Its grant methods are the client side of RFC 6749: each posts to the token endpoint,
+-       with the client's identity and secret as form parameters (RFC 6749 §2.3.1's
+-       `client_secret_post`), and reads the `Authorization` the server returns.
++       Un `Issuer` contiene l'endpoint dei token, `#exchange`; l'identità del client,
++       `#client`, e il suo `#secret` se ne ha uno; e, per il flusso authorization-code,
++       l'endpoint di autorizzazione, `#init`, e l'URI di `#redirect` registrato per il client.
++       I suoi metodi di concessione sono il lato client di RFC 6749: ciascuno invia una
++       richiesta POST all'endpoint dei token, con l'identità e il segreto del client come
++       parametri di form (il `client_secret_post` di RFC 6749 §2.3.1), e legge
++       l'`Authorization` restituito dal server.
+
+=       `client_secret_post`), and reads the `Authorization` the server returns.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `client_secret_post`), and reads the `Authorization` the server returns.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `client_secret_post`), and reads the `Authorization` the server returns.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `client_secret_post`), and reads the `Authorization` the server returns.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       `client_secret_post`), and reads the `Authorization` the server returns.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       `client_secret_post`), and reads the `Authorization` the server returns.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import internetAccess.online
++       import internetAccess.online
+
+=       `client_secret_post`), and reads the `Authorization` the server returns.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+-       import httpBackends.javaNetHttp
++       import httpBackends.javaNetHttp
+
+=       `client_secret_post`), and reads the `Authorization` the server returns.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import httpBackends.javaNetHttp
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       `client_secret_post`), and reads the `Authorization` the server returns.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import httpBackends.javaNetHttp
+=       import logging.silentLogging
+=
+-       val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
++       val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+-       val token: Authorization = issuer.clientCredentials(t"read", t"write")
++       val token: Authorization = issuer.clientCredentials(t"read", t"write")
+
+-       val fresh: Authorization = issuer.refresh(token)
++       val fresh: Authorization = issuer.refresh(token)
+
+=       val fresh: Authorization = issuer.refresh(token)
+-       ```
++       ```
+
+-       Every grant needs an `Online` token, a `Http.Event is Loggable`, an `Http.Client` for
+-       `http` or `https` origins (an HTTP backend such as `httpBackends.javaNetHttp`), and a
+-       `Tactic[OAuth.Error]`. A `400` or `401` from the token endpoint is
+-       `OAuth.Error.Reason.Unauthorized`, a connection failure `Connection`, a response which
+-       does not parse `InvalidJsonResponse`, and any other status `UnexpectedHttpStatus`. A
+-       method which needs `#init` or `#redirect` when the issuer was built without it raises
++       Ogni concessione richiede un token `Online`, un `Http.Event is Loggable`, un
++       `Http.Client` per origini `http` o `https` (un backend HTTP come
++       `httpBackends.javaNetHttp`) e una `Tactic[OAuth.Error]`. Un `400` o un `401`
++       dall'endpoint dei token è `OAuth.Error.Reason.Unauthorized`, un fallimento di
++       connessione `Connection`, una risposta che non si riesce ad analizzare
++       `InvalidJsonResponse`, e qualsiasi altro stato `UnexpectedHttpStatus`. Un metodo che
++       richiede `#init` o `#redirect` quando l'issuer è stato costruito senza di essi solleva
+
+-       `Misconfigured`.
++       `Misconfigured`.
+
+=       `Misconfigured`.
+-   refer orthodoxy.Authorization
++   refer orthodoxy.Authorization
+
+-   refer orthodoxy.Pkce
++   refer orthodoxy.Pkce
+
+-   refer orthodoxy.OAuth.Error
++   refer orthodoxy.OAuth.Error
+
+-   entry .Context   evidence, in a request handler, that it runs inside one issuer's `oauth` middleware
++   entry .Context   prova, in un handler di richieste, che esso viene eseguito all'interno del middleware `oauth` di un issuer
+
+=   entry .Context   evidence, in a request handler, that it runs inside one issuer's `oauth` middleware
+-     detail
++     detail
+
+-         `Issuer.Context of issuer.type` is provided by `Issuer#oauth` to the handler it wraps,
+-         and required by `Issuer#require`, so that the redirect `require` sends a user on is
+-         one the same issuer's `oauth` will handle when the user returns. It carries nothing
+-         but its `Topic` type.
+-     entry .apply   makes the context for an issuer's singleton type, as `Issuer.Context[issuer.type]()`
+-   entry #exchange   the token endpoint, to which every grant posts
+-   entry #client   the client's identifier, sent as `client_id`
+-   entry #secret   the client's secret, sent as `client_secret`, or `Unset` for a public client
+-   entry #init   the authorization endpoint a user is sent to, or `Unset` if the authorization-code flow is not used
+-   entry #redirect   the redirect URI registered for the client, or `Unset` if the authorization-code flow is not used
+-   entry #grant   posts a token request with arbitrary grant parameters and reads the `Authorization`
+-       The common step of every grant: the given `Query` of parameters is posted to
+-       `#exchange` with `client_id`, and `client_secret` where there is one. For a grant type
+-       this class has no method for, pass its parameters here.
++         `Issuer.Context of issuer.type` viene fornito da `Issuer#oauth` all'handler che
++         avvolge, e richiesto da `Issuer#require`, così che il redirect su cui `require` manda
++         un utente sia uno che l'`oauth` dello stesso issuer gestirà quando l'utente ritorna.
++         Non porta nulla se non il suo tipo `Topic`.
++     entry .apply   crea il contesto per il tipo singleton di un issuer, come `Issuer.Context[issuer.type]()`
++   entry #exchange   l'endpoint dei token, a cui ogni concessione invia la richiesta
++   entry #client   l'identificatore del client, inviato come `client_id`
++   entry #secret   il segreto del client, inviato come `client_secret`, o `Unset` per un client pubblico
++   entry #init   l'endpoint di autorizzazione a cui viene mandato un utente, o `Unset` se il flusso authorization-code non è usato
++   entry #redirect   l'URI di redirect registrato per il client, o `Unset` se il flusso authorization-code non è usato
++   entry #grant   invia una richiesta di token con parametri di concessione arbitrari e legge l'`Authorization`
++       Il passo comune di ogni concessione: la `Query` di parametri data viene inviata a
++       `#exchange` con `client_id`, e `client_secret` dove esiste. Per un tipo di concessione
++       per cui questa classe non ha un metodo, si passano qui i suoi parametri.
+
+=       this class has no method for, pass its parameters here.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       this class has no method for, pass its parameters here.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       this class has no method for, pass its parameters here.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       this class has no method for, pass its parameters here.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       this class has no method for, pass its parameters here.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       this class has no method for, pass its parameters here.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import internetAccess.online
++       import internetAccess.online
+
+=       this class has no method for, pass its parameters here.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+-       import httpBackends.javaNetHttp
++       import httpBackends.javaNetHttp
+
+=       this class has no method for, pass its parameters here.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import httpBackends.javaNetHttp
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       this class has no method for, pass its parameters here.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import httpBackends.javaNetHttp
+=       import logging.silentLogging
+=
+-       val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
++       val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+-       issuer.grant(Query(List(t"grant_type" -> t"password", t"username" -> t"ada", t"password" -> t"…")))
++       issuer.grant(Query(List(t"grant_type" -> t"password", t"username" -> t"ada", t"password" -> t"…")))
+
+=       issuer.grant(Query(List(t"grant_type" -> t"password", t"username" -> t"ada", t"password" -> t"…")))
+-       ```
++       ```
+
+-   entry #clientCredentials   the client-credentials grant: the client's own authorization, for the given scopes
+-       RFC 6749 §4.4. The scopes are sent space-separated as `scope`, and omitted when none are
+-       given, in which case the server grants its default.
+-   entry #refresh   a new authorization from a refresh token, or from an authorization which carries one
+-       RFC 6749 §6. Takes the refresh token as `Text`, or an `Authorization`, whose `#refresh`
+-       token is used; an authorization with no refresh token raises
+-       `OAuth.Error.Reason.Unauthorized` without contacting the server.
+-   entry #exchangeCode   exchanges an authorization code for an authorization, with the PKCE verifier if one was used
+-       RFC 6749 §4.1.3. Posts the `code` the user brought back to `#redirect` with the
+-       redirect URI and, when a `Pkce` is passed, its verifier (RFC 7636), which must be the
+-       same `Pkce` whose challenge went into `#authorizationUrl`. Raises
+-       `OAuth.Error.Reason.Misconfigured` if the issuer has no `#redirect`.
++   entry #clientCredentials   la concessione client-credentials: l'autorizzazione propria del client, per gli scope dati
++       RFC 6749 §4.4. Gli scope vengono inviati separati da spazi come `scope`, e omessi quando
++       non ne viene dato nessuno, nel qual caso il server concede il proprio predefinito.
++   entry #refresh   una nuova autorizzazione da un refresh token, o da un'autorizzazione che ne porta uno
++       RFC 6749 §6. Accetta il refresh token come `Text`, oppure un `Authorization`, di cui
++       viene usato il token `#refresh`; un'autorizzazione senza refresh token solleva
++       `OAuth.Error.Reason.Unauthorized` senza contattare il server.
++   entry #exchangeCode   scambia un codice di autorizzazione con un'autorizzazione, con il verifier PKCE se ne è stato usato uno
++       RFC 6749 §4.1.3. Invia il `code` che l'utente ha riportato a `#redirect`, insieme
++       all'URI di redirect e, quando viene passato un `Pkce`, al suo verifier (RFC 7636), che
++       deve essere lo stesso `Pkce` la cui challenge è entrata in `#authorizationUrl`. Solleva
++       `OAuth.Error.Reason.Misconfigured` se l'issuer non ha un `#redirect`.
+
+=       `OAuth.Error.Reason.Misconfigured` if the issuer has no `#redirect`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `OAuth.Error.Reason.Misconfigured` if the issuer has no `#redirect`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `OAuth.Error.Reason.Misconfigured` if the issuer has no `#redirect`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `OAuth.Error.Reason.Misconfigured` if the issuer has no `#redirect`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       `OAuth.Error.Reason.Misconfigured` if the issuer has no `#redirect`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       `OAuth.Error.Reason.Misconfigured` if the issuer has no `#redirect`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import internetAccess.online
++       import internetAccess.online
+
+=       `OAuth.Error.Reason.Misconfigured` if the issuer has no `#redirect`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+-       import httpBackends.javaNetHttp
++       import httpBackends.javaNetHttp
+
+=       `OAuth.Error.Reason.Misconfigured` if the issuer has no `#redirect`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import httpBackends.javaNetHttp
+-       import logging.silentLogging
++       import logging.silentLogging
+
+-       val flow = Issuer
++       val flow = Issuer
+
+-         ( url"https://issuer.example/token", t"client-1", Unset,
++         ( url"https://issuer.example/token", t"client-1", Unset,
+
+=         ( url"https://issuer.example/token", t"client-1", Unset,
+-           url"https://issuer.example/authorize", url"https://app.example/callback" )
++           url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+-       val pkce = Pkce()
++       val pkce = Pkce()
+
+-       val code: Text = t"…"   // from the redirect's `code` parameter
++       val code: Text = t"…"   // from the redirect's `code` parameter
+
+-       flow.exchangeCode(code, pkce)
++       flow.exchangeCode(code, pkce)
+
+=       flow.exchangeCode(code, pkce)
+-       ```
++       ```
+
+-   entry #authorizationUrl   the URL a user is sent to, to authorize the client for some scopes
++   entry #authorizationUrl   l'URL a cui viene mandato un utente, per autorizzare il client per alcuni scope
+
+=   entry #authorizationUrl   the URL a user is sent to, to authorize the client for some scopes
+-     detail
++     detail
+
+-         RFC 6749 §4.1.1. The URL is `#init` with `client_id`, `redirect_uri`,
+-         `response_type=code`, the `state` (which the redirect back must echo, and which the
+-         application should check), the scopes space-separated, and, when a `Pkce` is passed,
+-         its `S256` challenge. It makes no request, so it needs only a
+-         `Tactic[OAuth.Error]`, raised as `Misconfigured` if the issuer has no `#init` or no
+-         `#redirect`.
++         RFC 6749 §4.1.1. L'URL è `#init` con `client_id`, `redirect_uri`,
++         `response_type=code`, lo `state` (che il redirect di ritorno deve ripetere, e che
++         l'applicazione dovrebbe verificare), gli scope separati da spazi e, quando viene
++         passato un `Pkce`, la sua challenge `S256`. Non fa alcuna richiesta, quindi richiede
++         solo una `Tactic[OAuth.Error]`, sollevata come `Misconfigured` se l'issuer non ha
++         `#init` o non ha `#redirect`.
+
+=         `#redirect`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+-         alternative Without PKCE
++         alternative Without PKCE
+
+=         alternative Without PKCE
+-           code
++           code
+
+=         alternative Without PKCE
+=           code
+-               import soundness.*
++               import soundness.*
+
+=         alternative Without PKCE
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=         alternative Without PKCE
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               val flow = Issuer
++               val flow = Issuer
+
+=         alternative Without PKCE
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               val flow = Issuer
+-                 ( url"https://issuer.example/token", t"client-1", Unset,
++                 ( url"https://issuer.example/token", t"client-1", Unset,
+
+=         alternative Without PKCE
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               val flow = Issuer
+=                 ( url"https://issuer.example/token", t"client-1", Unset,
+-                   url"https://issuer.example/authorize", url"https://app.example/callback" )
++                   url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+-               flow.authorizationUrl(List(t"read"), t"xyz").show
++               flow.authorizationUrl(List(t"read"), t"xyz").show
+
+-               // https://issuer.example/authorize?client_id=client-1
++               // https://issuer.example/authorize?client_id=client-1
+
+-               //   &redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&response_type=code&state=xyz
++               //   &redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&response_type=code&state=xyz
+
+-               //   &scope=read
++               //   &scope=read
+
+-         alternative With PKCE
++         alternative With PKCE
+
+=         alternative With PKCE
+-           code
++           code
+
+=         alternative With PKCE
+=           code
+-               import soundness.*
++               import soundness.*
+
+=         alternative With PKCE
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=         alternative With PKCE
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               val flow = Issuer
++               val flow = Issuer
+
+=         alternative With PKCE
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               val flow = Issuer
+-                 ( url"https://issuer.example/token", t"client-1", Unset,
++                 ( url"https://issuer.example/token", t"client-1", Unset,
+
+=         alternative With PKCE
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               val flow = Issuer
+=                 ( url"https://issuer.example/token", t"client-1", Unset,
+-                   url"https://issuer.example/authorize", url"https://app.example/callback" )
++                   url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+-               val pkce = Pkce(t"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
++               val pkce = Pkce(t"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
+
+-               flow.authorizationUrl(List(t"read"), t"xyz", pkce).show
++               flow.authorizationUrl(List(t"read"), t"xyz", pkce).show
+
+-               // … &scope=read
++               // … &scope=read
+
+-               //   &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256
++               //   &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256
+
+=               //   &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+- entry .Authorization   an access token and what it grants: its scopes, its expiry and a refresh token
++ entry .Authorization   un token di accesso e ciò che concede: i suoi scope, la sua scadenza e un refresh token
+
+= entry .Authorization   an access token and what it grants: its scopes, its expiry and a refresh token
+-   detail
++   detail
+
+-       What a token response grants (RFC 6749 §5.1): the access token itself, `#key`; the
+-       `#scopes` granted; the `#expiry` instant; and the `#refresh` token, if one was issued.
+-       Every grant on `Issuer` returns one, and `.parse` reads one from a token response's
+-       JSON.
++       Ciò che concede una risposta di token (RFC 6749 §5.1): il token di accesso stesso,
++       `#key`; gli `#scopes` concessi; l'istante di `#expiry`; e il token di `#refresh`, se ne
++       è stato emesso uno. Ogni concessione su `Issuer` ne restituisce uno, e `.parse` ne legge
++       uno dal JSON di una risposta di token.
+
+-       An `Authorization` is passed directly as an HTTP request's `authorization` header,
+-       through the companion's `.authorization` directive, rendered as `Bearer <key>`:
++       Un `Authorization` viene passato direttamente come intestazione `authorization` di una
++       richiesta HTTP, tramite la direttiva `.authorization` dell'oggetto compagno, resa come
++       `Bearer <key>`:
+
+=       through the companion's `.authorization` directive, rendered as `Bearer <key>`:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       through the companion's `.authorization` directive, rendered as `Bearer <key>`:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       through the companion's `.authorization` directive, rendered as `Bearer <key>`:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       through the companion's `.authorization` directive, rendered as `Bearer <key>`:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       through the companion's `.authorization` directive, rendered as `Bearer <key>`:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       through the companion's `.authorization` directive, rendered as `Bearer <key>`:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import internetAccess.online
++       import internetAccess.online
+
+=       through the companion's `.authorization` directive, rendered as `Bearer <key>`:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+-       import httpBackends.javaNetHttp
++       import httpBackends.javaNetHttp
+
+=       through the companion's `.authorization` directive, rendered as `Bearer <key>`:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import httpBackends.javaNetHttp
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       through the companion's `.authorization` directive, rendered as `Bearer <key>`:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import httpBackends.javaNetHttp
+=       import logging.silentLogging
+=
+-       val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
++       val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+-       val token = issuer.clientCredentials(t"read")
++       val token = issuer.clientCredentials(t"read")
+
+-       val current = if token.expired then issuer.refresh(token) else token
++       val current = if token.expired then issuer.refresh(token) else token
+
+-       url"https://api.example/items".fetch(authorization = current).receive[Text]
++       url"https://api.example/items".fetch(authorization = current).receive[Text]
+
+=       url"https://api.example/items".fetch(authorization = current).receive[Text]
+-       ```
++       ```
+
+-       A token whose response named no scopes is taken to grant exactly those requested, as
+-       RFC 6749 §5.1 has it, so `#grants` is `true` for any scopes when `#scopes` is empty.
+-       `Authorization of scope`, a refinement of its `Topic`, is an authorization known to
+-       grant a `OAuth.Scope`: `OAuth.Scope#apply` and `Issuer#require` produce one.
++       Un token la cui risposta non nominava alcuno scope si considera concedere esattamente
++       quelli richiesti, come stabilisce RFC 6749 §5.1, quindi `#grants` è `true` per qualsiasi
++       scope quando `#scopes` è vuoto. `Authorization of scope`, un raffinamento del suo
++       `Topic`, è un'autorizzazione di cui si sa che concede un `OAuth.Scope`:
++       `OAuth.Scope#apply` e `Issuer#require` ne producono una.
+
+=       grant a `OAuth.Scope`: `OAuth.Scope#apply` and `Issuer#require` produce one.
+-   refer orthodoxy.OAuth.Scope
++   refer orthodoxy.OAuth.Scope
+
+=   refer orthodoxy.OAuth.Scope
+-   refer orthodoxy.Issuer
++   refer orthodoxy.Issuer
+
+-   entry .authorization   sets a request's `authorization` header from an `Authorization`, as `Bearer <key>`
+-       The telekinesis `Directive` for the `authorization` named argument of `fetch` and
+-       `submit`, in the companion and so in implicit scope.
+-   entry .parse   reads an `Authorization` from the JSON of a token response
+-       Reads `access_token` (required), `scope` (split on spaces; absent means `Nil`),
+-       `expires_in` (seconds, converted to an instant in milliseconds from now) and
+-       `refresh_token`. A response with no `access_token` raises
+-       `OAuth.Error.Reason.InvalidJsonResponse` through the `Tactic[OAuth.Error]` in scope.
++   entry .authorization   imposta l'intestazione `authorization` di una richiesta da un `Authorization`, come `Bearer <key>`
++       La `Directive` di telekinesis per l'argomento con nome `authorization` di `fetch` e
++       `submit`, nell'oggetto compagno e quindi nell'ambito implicito.
++   entry .parse   legge un `Authorization` dal JSON di una risposta di token
++       Legge `access_token` (obbligatorio), `scope` (diviso sugli spazi; se assente vale
++       `Nil`), `expires_in` (secondi, convertiti in un istante in millisecondi da adesso) e
++       `refresh_token`. Una risposta senza `access_token` solleva
++       `OAuth.Error.Reason.InvalidJsonResponse` tramite la `Tactic[OAuth.Error]` nell'ambito.
+
+=       `OAuth.Error.Reason.InvalidJsonResponse` through the `Tactic[OAuth.Error]` in scope.
+=
+-       ```scala
++       ```scala
+
+=       `OAuth.Error.Reason.InvalidJsonResponse` through the `Tactic[OAuth.Error]` in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val json = t"""{"access_token": "tok", "expires_in": 3600, "scope": "read write"}""".as[Json]
++       val json = t"""{"access_token": "tok", "expires_in": 3600, "scope": "read write"}""".as[Json]
+
+-       Authorization.parse(json).scopes   // List(t"read", t"write")
++       Authorization.parse(json).scopes   // List(t"read", t"write")
+
+=       Authorization.parse(json).scopes   // List(t"read", t"write")
+-       ```
++       ```
+
+-   entry #key   the access token itself
+-   entry #scopes   the scopes granted, or `Nil` if the response did not name them
+-   entry #expiry   when the token expires, in milliseconds since the epoch, or `Unset` if no lifetime was stated
+-   entry #refresh   the refresh token, or `Unset` if none was issued
+-   entry #bearer   the token as an `Auth.Bearer`, as the `Authorization` header carries it
+-   entry #expired   whether the token's expiry has passed; a token with no stated lifetime never expires
+-   entry #grants   whether the token grants every one of the given scopes
+-       `true` when `#scopes` contains them all, and also whenever `#scopes` is empty, since a
+-       response which named no scopes granted those requested.
++   entry #key   il token di accesso stesso
++   entry #scopes   gli scope concessi, o `Nil` se la risposta non li nominava
++   entry #expiry   quando scade il token, in millisecondi dall'epoca, o `Unset` se non è stata indicata alcuna durata
++   entry #refresh   il refresh token, o `Unset` se non ne è stato emesso nessuno
++   entry #bearer   il token come `Auth.Bearer`, così come lo porta l'intestazione `Authorization`
++   entry #expired   se la scadenza del token è passata; un token senza durata indicata non scade mai
++   entry #grants   se il token concede tutti gli scope dati
++       `true` quando `#scopes` li contiene tutti, e anche ogni volta che `#scopes` è vuoto,
++       poiché una risposta che non nominava alcuno scope ha concesso quelli richiesti.
+
+- entry .Pkce   Proof Key for Code Exchange: a verifier the client keeps and the challenge it sends
++ entry .Pkce   Proof Key for Code Exchange: un verifier che il client conserva e la challenge che invia
+
+= entry .Pkce   Proof Key for Code Exchange: a verifier the client keeps and the challenge it sends
+-   detail
++   detail
+
+-       RFC 7636. A `Pkce` holds a random `#verifier`; its `#challenge`, the verifier's SHA-256
+-       digest in unpadded URL-safe base 64, goes with `Issuer#authorizationUrl`, and the
+-       verifier with `Issuer#exchangeCode`, so an authorization code intercepted on its way
+-       back cannot be exchanged by anyone without the verifier. A public client — one with no
+-       secret, such as a command-line tool or a mobile app — should always use one.
++       RFC 7636. Un `Pkce` contiene un `#verifier` casuale; la sua `#challenge`, il digest
++       SHA-256 del verifier in base 64 URL-safe senza padding, accompagna
++       `Issuer#authorizationUrl`, e il verifier accompagna `Issuer#exchangeCode`, così che un
++       codice di autorizzazione intercettato durante il ritorno non possa essere scambiato da
++       nessuno che non abbia il verifier. Un client pubblico — uno senza segreto, come uno
++       strumento da riga di comando o un'app mobile — dovrebbe usarne sempre uno.
+
+=       secret, such as a command-line tool or a mobile app — should always use one.
+=
+-       ```scala
++       ```scala
+
+=       secret, such as a command-line tool or a mobile app — should always use one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       val pkce = Pkce()
++       val pkce = Pkce()
+
+-       pkce.verifier.length   // 43
++       pkce.verifier.length   // 43
+
+-       Pkce(t"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk").challenge
++       Pkce(t"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk").challenge
+
+-       // t"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
++       // t"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+
+=       // t"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+-       ```
++       ```
+
+-       The same `Pkce` must be kept between the two steps of the flow.
++       Lo stesso `Pkce` va conservato tra i due passi del flusso.
+
+=       The same `Pkce` must be kept between the two steps of the flow.
+-   refer orthodoxy.Issuer
++   refer orthodoxy.Issuer
+
+-   entry .apply   a fresh verifier: 32 octets from a `SecureRandom`, as 43 URL-safe characters
+-   entry #verifier   the secret the client keeps and sends when exchanging the code
+-   entry #challenge   the `S256` challenge sent with the authorization request: the verifier's SHA-256, in URL-safe base 64
++   entry .apply   un verifier nuovo: 32 ottetti da un `SecureRandom`, come 43 caratteri URL-safe
++   entry #verifier   il segreto che il client conserva e invia quando scambia il codice
++   entry #challenge   la challenge `S256` inviata con la richiesta di autorizzazione: lo SHA-256 del verifier, in base 64 URL-safe
+
+- entry .Credential   a credential for a named security scheme, as `("name" is Credential to Result)`
++ entry .Credential   una credenziale per uno schema di sicurezza con nome, come `("name" is Credential to Result)`
+
+= entry .Credential   a credential for a named security scheme, as `("name" is Credential to Result)`
+-   detail
++   detail
+
+-       A typeclass keyed by the name an API's specification gives a security scheme, whose
+-       `Result` is the value the scheme calls for: `Text` for an API key, `Auth` for HTTP
+-       authentication, `Authorization` for an OAuth 2 token. A client which reads the
+-       specification — apoplexy's `Api` — finds the credential for each scheme an operation
+-       requires by name, checks its result fits the scheme's kind, and presents it as the
+-       scheme dictates: a header, a query parameter or a cookie.
++       Una typeclass indicizzata dal nome che la specifica di un'API dà a uno schema di
++       sicurezza, il cui `Result` è il valore richiesto dallo schema: `Text` per una chiave
++       API, `Auth` per l'autenticazione HTTP, `Authorization` per un token OAuth 2. Un client
++       che legge la specifica — l'`Api` di apoplexy — trova per nome la credenziale per ogni
++       schema richiesto da un'operazione, verifica che il suo risultato sia adatto al tipo di
++       schema, e la presenta come lo schema prescrive: un'intestazione, un parametro della
++       query o un cookie.
+
+=       scheme dictates: a header, a query parameter or a cookie.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       scheme dictates: a header, a query parameter or a cookie.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       scheme dictates: a header, a query parameter or a cookie.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       scheme dictates: a header, a query parameter or a cookie.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       scheme dictates: a header, a query parameter or a cookie.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       scheme dictates: a header, a query parameter or a cookie.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import internetAccess.online
++       import internetAccess.online
+
+=       scheme dictates: a header, a query parameter or a cookie.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+-       import httpBackends.javaNetHttp
++       import httpBackends.javaNetHttp
+
+=       scheme dictates: a header, a query parameter or a cookie.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import httpBackends.javaNetHttp
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       scheme dictates: a header, a query parameter or a cookie.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import httpBackends.javaNetHttp
+=       import logging.silentLogging
+=
+-       val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
++       val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+-       given apiKey: ("api_key" is Credential to Text) = Credential(t"k-1")
++       given apiKey: ("api_key" is Credential to Text) = Credential(t"k-1")
+
+-       given petstore: ("petstore_auth" is Credential to Authorization) = issuer.clientCredentials()
++       given petstore: ("petstore_auth" is Credential to Authorization) = issuer.clientCredentials()
+
+=       given petstore: ("petstore_auth" is Credential to Authorization) = issuer.clientCredentials()
+-       ```
++       ```
+
+-       Name these givens: two anonymous givens of different credential types in one scope
+-       are synthesised with the same name and clash. A credential is keyed by the scheme's
+-       name alone, so two specifications which use the same name for different schemes must
+-       be given their credentials in separate scopes.
++       Si dia un nome a questi given: due given anonimi di tipi di credenziale diversi nello
++       stesso ambito vengono sintetizzati con lo stesso nome ed entrano in conflitto. Una
++       credenziale è indicizzata solo dal nome dello schema, quindi a due specifiche che usano
++       lo stesso nome per schemi diversi vanno date le credenziali in ambiti separati.
+
+=       be given their credentials in separate scopes.
+-   refer orthodoxy.Authorization
++   refer orthodoxy.Authorization
+
+-   entry .Bound   the credential `Credential(value)` makes, for one scheme name and result type
++   entry .Bound   la credenziale creata da `Credential(value)`, per un nome di schema e un tipo di risultato
+
+=   entry .Bound   the credential `Credential(value)` makes, for one scheme name and result type
+-     detail
++     detail
+
+-         A `Credential` whose `Self` is the scheme's name and whose `Result` is the value's
+-         type; written as `"name" is Credential to Result`, it is what a given's declared type
+-         refines.
+-     entry #value   the credential's value
+-   entry .apply   makes a credential from its value, for the scheme name the expected type gives
+-   entry #Self   the scheme's name, as a literal `Label` type
+-   entry #value   the value the scheme presents: a key, an `Auth` or an `Authorization`
++         Una `Credential` il cui `Self` è il nome dello schema e il cui `Result` è il tipo del
++         valore; scritta come `"name" is Credential to Result`, è ciò che raffina il tipo
++         dichiarato di un given.
++     entry #value   il valore della credenziale
++   entry .apply   crea una credenziale dal suo valore, per il nome di schema dato dal tipo atteso
++   entry #Self   il nome dello schema, come tipo `Label` letterale
++   entry #value   il valore che lo schema presenta: una chiave, un `Auth` o un `Authorization`
+
+- entry .OAuth   the home of `OAuth.Error`, raised whenever an OAuth exchange fails
++ entry .OAuth   la sede di `OAuth.Error`, sollevato ogni volta che uno scambio OAuth fallisce
+
+= entry .OAuth   the home of `OAuth.Error`, raised whenever an OAuth exchange fails
+-   detail
++   detail
+
+-       An object which holds `OAuth.Error` and its reasons.
+-   entry .Error   raised when an OAuth 2 grant, check or redirect fails
++       Un oggetto che contiene `OAuth.Error` e i suoi motivi.
++   entry .Error   sollevato quando una concessione, una verifica o un redirect OAuth 2 fallisce
+
+=   entry .Error   raised when an OAuth 2 grant, check or redirect fails
+-     detail
++     detail
+
+-         Error `↯/s.117.1`: _OAuth failed because `reason`_, where the second number is the reason's.
+-         Every grant on `Issuer`, `Authorization.parse`, `Scope#apply` and the server
+-         middleware raise it, each through the `Tactic[OAuth.Error]` in scope; network,
+-         parsing and HTTP-status failures are all mitigated into it, so a caller handles one
+-         error type.
++         Errore `↯/s.117.1`: _OAuth failed because `reason`_, dove il secondo numero è quello
++         del motivo. Ogni concessione su `Issuer`, `Authorization.parse`, `Scope#apply` e il
++         middleware del server lo sollevano, ciascuno tramite la `Tactic[OAuth.Error]`
++         nell'ambito; i fallimenti di rete, di parsing e di stato HTTP vengono tutti mitigati
++         in esso, così che un chiamante gestisca un solo tipo di errore.
+
+-         ```scala
++         ```scala
+
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         capture[OAuth.Error](Authorization.parse(t"""{"token_type": "Bearer"}""".as[Json])).reason
++         capture[OAuth.Error](Authorization.parse(t"""{"token_type": "Bearer"}""".as[Json])).reason
+
+-         // OAuth.Error.Reason.InvalidJsonResponse
++         // OAuth.Error.Reason.InvalidJsonResponse
+
+=         // OAuth.Error.Reason.InvalidJsonResponse
+-         ```
++         ```
+
+-     entry .Reason   why an OAuth exchange failed, numbered as the second part of error `↯/s.117.1`
++     entry .Reason   perché uno scambio OAuth è fallito, numerato come seconda parte dell'errore `↯/s.117.1`
+
+-       detail
++       detail
+
+-           A `Reason is Communicable` given in the companion renders each case:
++           Un given `Reason is Communicable` nell'oggetto compagno rende ciascun caso:
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
++           column  Caso
++           column  Codice
++           column  Messaggio
++           column  Nota
+
+-           row  `Connection(url, reason)`  1  _could not connect to the OAuth provider at `url` because `reason`_
++           row  `Connection(url, reason)`  1  _could not connect to the OAuth provider at `url` because `reason`_
+
+-           row  `InvalidJsonResponse`  2  _the token response was not valid JSON_
++           row  `InvalidJsonResponse`  2  _the token response was not valid JSON_
+
+-           row  `UnexpectedHttpStatus(status)`  3  _the provider returned an unexpected status: `status`_
++           row  `UnexpectedHttpStatus(status)`  3  _the provider returned an unexpected status: `status`_
+
+-           row  `InsufficientPrivileges(scope)`  4  _the user has not granted access to `scope`_
++           row  `InsufficientPrivileges(scope)`  4  _the user has not granted access to `scope`_
+
+-           row  `Unauthorized`  5  _authorization was not granted_  a `400` or `401` from the token endpoint
+-           row  `Other`  6  _an unexpected error occurred_  raised by the server middleware for a malformed or forged redirect
+-           row  `Misconfigured(detail)`  7  _the issuer is not configured for this: `detail`_  an `Issuer` lacks an endpoint a flow needs
++           row  `Unauthorized`  5  _authorization was not granted_  un `400` o un `401` dall'endpoint dei token
++           row  `Other`  6  _an unexpected error occurred_  sollevato dal middleware del server per un redirect malformato o contraffatto
++           row  `Misconfigured(detail)`  7  _the issuer is not configured for this: `detail`_  a un `Issuer` manca un endpoint di cui un flusso ha bisogno
+
+-           ```
++           ```
+
+-       entry #number   the reason's number, the second part of the error's code
+-     entry #reason   why the exchange failed, as an `OAuth.Error.Reason`
++       entry #number   il numero del motivo, la seconda parte del codice dell'errore
++     entry #reason   perché lo scambio è fallito, come `OAuth.Error.Reason`
+
+-   entry .Scope   a named set of OAuth scopes, which checks that an authorization grants them
++   entry .Scope   un insieme con nome di scope OAuth, che verifica che un'autorizzazione li conceda
+
+=   entry .Scope   a named set of OAuth scopes, which checks that an authorization grants them
+-     detail
++     detail
+
+-         A `Scope(t"read", t"write")` names the scopes an operation needs. Applied with `()`, it
+-         checks the `Authorization of …` given in scope and returns it refined as
+-         `Authorization of scope.type`, so code which demands that refinement can only be
+-         reached once the check has passed. Each missing scope is raised as
+-         `OAuth.Error.Reason.InsufficientPrivileges`.
++         Uno `Scope(t"read", t"write")` nomina gli scope di cui un'operazione ha bisogno.
++         Applicato con `()`, verifica l'`Authorization of …` fornito nell'ambito e lo
++         restituisce raffinato come `Authorization of scope.type`, così che il codice che esige
++         quel raffinamento possa essere raggiunto solo dopo che la verifica è passata. Ogni
++         scope mancante viene sollevato come `OAuth.Error.Reason.InsufficientPrivileges`.
+
+-         `Issuer#require(read, write)` provides an `Authorization of (read.type | write.type)`
+-         without checking its scopes; within it, `read()` checks and narrows to
++         `Issuer#require(read, write)` fornisce un `Authorization of (read.type | write.type)`
++         senza verificarne gli scope; al suo interno, `read()` verifica e restringe a
+
+-         `Authorization of read.type`:
++         `Authorization of read.type`:
+
+=         `Authorization of read.type`:
+=
+-         ```scala fuel
++         ```scala fuel
+
+-         typecheck
++         typecheck
+
+=         typecheck
+-         ##
++         ##
+
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         ##
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         import internetAccess.online
++         import internetAccess.online
+
+-         import logging.silentLogging
++         import logging.silentLogging
+
+-         given Authorizations = Authorizations()
++         given Authorizations = Authorizations()
+
+-         val issuer = Issuer
++         val issuer = Issuer
+
+-           ( url"https://issuer.example/token", t"client-1", t"s3cret",
++           ( url"https://issuer.example/token", t"client-1", t"s3cret",
+
+-             url"https://issuer.example/authorize", url"https://app.example/callback" )
++             url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+-         val read = OAuth.Scope(t"read")
++         val read = OAuth.Scope(t"read")
+
+-         val write = OAuth.Scope(t"write")
++         val write = OAuth.Scope(t"write")
+
+-         def handle(using Http.Request, Session): Http.Response =
++         def handle(using Http.Request, Session): Http.Response =
+
+-           issuer.oauth:
++           issuer.oauth:
+
+-             issuer.require(read, write):
++             issuer.require(read, write):
+
+-               val checked: Authorization of read.type = read()
++               val checked: Authorization of read.type = read()
+
+-               Http.Response(Http.Ok)(t"may read")
++               Http.Response(Http.Ok)(t"may read")
+
+=               Http.Response(Http.Ok)(t"may read")
+-         ```
++         ```
+
+-         A scope should be a stable value (a `val` or an `object`), since its singleton type is
+-         what the refinement records; `Issuer#require` takes scopes this way.
++         Uno scope dovrebbe essere un valore stabile (una `val` o un `object`), poiché è il suo
++         tipo singleton ciò che il raffinamento registra; `Issuer#require` accetta gli scope in
++         questo modo.
+
+-     refer orthodoxy.Authorization
++     refer orthodoxy.Authorization
+
+-     refer orthodoxy.require
++     refer orthodoxy.require
+
+-     entry #names   the scope names, as the issuer spells them
+-     entry #apply   checks the given authorization grants every scope, and returns it refined to this scope
+-         Needs an `Authorization of (? >: this.type)` in scope — an authorization refined to
+-         this scope or to a union including it, as `Issuer#require` provides; a plain
+-         `Authorization` is not one — and raises `OAuth.Error.Reason.InsufficientPrivileges(name)` for each name it does
+-         not grant. Unlike `Authorization#grants`, an authorization with no named scopes fails
+-         the check.
+-     entry #Check   the type of an authorization this scope can check: `Authorization of (? >: this.type)`
++     entry #names   i nomi degli scope, così come li scrive l'issuer
++     entry #apply   verifica che l'autorizzazione fornita conceda ogni scope, e la restituisce raffinata a questo scope
++         Richiede un `Authorization of (? >: this.type)` nell'ambito — un'autorizzazione
++         raffinata a questo scope o a un'unione che lo include, come quella fornita da
++         `Issuer#require`; un semplice `Authorization` non lo è — e solleva
++         `OAuth.Error.Reason.InsufficientPrivileges(name)` per ogni nome che non concede. A
++         differenza di `Authorization#grants`, un'autorizzazione senza scope nominati non
++         supera la verifica.
++     entry #Check   il tipo di un'autorizzazione che questo scope può verificare: `Authorization of (? >: this.type)`
+
+- entry .Authorizations   a web application's store of each session's authorization-code flow state
++ entry .Authorizations   il deposito di un'applicazione web per lo stato del flusso authorization-code di ogni sessione
+
+= entry .Authorizations   a web application's store of each session's authorization-code flow state
+-   detail
++   detail
+
+-       The store `Issuer#oauth` and `Issuer#require` keep each `Session`'s
+-       `Authorizations.State` in, in `orthodoxy.server`. It is a thread-safe map held in
+-       memory, so it is lost when the server restarts, and is given once for the application:
++       Il deposito in cui `Issuer#oauth` e `Issuer#require` tengono l'`Authorizations.State`
++       di ogni `Session`, in `orthodoxy.server`. È una mappa thread-safe tenuta in memoria,
++       quindi va persa al riavvio del server, e viene fornita una volta sola per
++       l'applicazione:
+
+=       memory, so it is lost when the server restarts, and is given once for the application:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       memory, so it is lost when the server restarts, and is given once for the application:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       memory, so it is lost when the server restarts, and is given once for the application:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       memory, so it is lost when the server restarts, and is given once for the application:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       given Authorizations = Authorizations()
++       given Authorizations = Authorizations()
+
+=       given Authorizations = Authorizations()
+-       ```
++       ```
+
+=       ```
+-   refer orthodoxy.oauth
++   refer orthodoxy.oauth
+
+=   refer orthodoxy.oauth
+-   refer orthodoxy.require
++   refer orthodoxy.require
+
+-   entry .State   one session's place in the flow: where the user was going, the `state` to check, the token
++   entry .State   il punto del flusso in cui si trova una sessione: dove stava andando l'utente, lo `state` da verificare, il token
+
+=   entry .State   one session's place in the flow: where the user was going, the `state` to check, the token
+-     detail
++     detail
+
+-         Made by `Issuer#require` when it sends a user to the issuer, and completed by
+-         `Issuer#oauth` when the user returns with a code.
+-     entry #redirect   the path the user asked for, to which they are sent back once authorized
+-     entry #uuid   the random `state` the redirect back from the issuer must echo
+-     entry #access   the session's authorization once granted, or `Unset` while the flow is in progress
+-     entry #expired   whether the held authorization has expired; `false` while there is none
+-   entry #update   records a session's state, as `store(session) = state`
+-   entry #apply   the state recorded for a session, or `Unset`
++         Creato da `Issuer#require` quando manda un utente all'issuer, e completato da
++         `Issuer#oauth` quando l'utente ritorna con un codice.
++     entry #redirect   il path richiesto dall'utente, a cui viene rimandato una volta autorizzato
++     entry #uuid   lo `state` casuale che il redirect di ritorno dall'issuer deve ripetere
++     entry #access   l'autorizzazione della sessione una volta concessa, o `Unset` mentre il flusso è in corso
++     entry #expired   se l'autorizzazione conservata è scaduta; `false` finché non ce n'è una
++   entry #update   registra lo stato di una sessione, come `store(session) = state`
++   entry #apply   lo stato registrato per una sessione, o `Unset`
+
+- entry .oauth   scintillate middleware which completes the authorization-code flow on the issuer's redirect
++ entry .oauth   middleware di scintillate che completa il flusso authorization-code sul redirect dell'issuer
+
+= entry .oauth   scintillate middleware which completes the authorization-code flow on the issuer's redirect
+-   detail
++   detail
+
+-       An extension on `Issuer`, in `orthodoxy.server`. `issuer.oauth { … }` wraps a request
+-       handler: a request to any path but the issuer's `#redirect` runs the handler, with an
+-       `Issuer.Context of issuer.type` in scope for `require`. A request to the redirect path
+-       is the user returning from the issuer: its `state` parameter is checked against the
+-       session's `Authorizations.State`, its `code` is exchanged for an authorization (or, if
+-       the session holds an expired one with a refresh token, that is refreshed instead), the
+-       result is stored, and the user is redirected to the path they first asked for.
++       Un'estensione su `Issuer`, in `orthodoxy.server`. `issuer.oauth { … }` avvolge un
++       handler di richieste: una richiesta a qualsiasi path diverso dal `#redirect`
++       dell'issuer esegue l'handler, con un `Issuer.Context of issuer.type` nell'ambito per
++       `require`. Una richiesta al path di redirect è l'utente che ritorna dall'issuer: il suo
++       parametro `state` viene verificato rispetto all'`Authorizations.State` della sessione,
++       il suo `code` viene scambiato con un'autorizzazione (oppure, se la sessione ne conserva
++       una scaduta con un refresh token, viene invece rinnovata quella), il risultato viene
++       memorizzato e l'utente viene rediretto al path che aveva chiesto inizialmente.
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import internetAccess.online
++       import internetAccess.online
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+-       given Authorizations = Authorizations()
++       given Authorizations = Authorizations()
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+-       val issuer = Issuer
++       val issuer = Issuer
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+-         ( url"https://issuer.example/token", t"client-1", t"s3cret",
++         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+-           url"https://issuer.example/authorize", url"https://app.example/callback" )
++           url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+-       val read = OAuth.Scope(t"read")
++       val read = OAuth.Scope(t"read")
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+=       val read = OAuth.Scope(t"read")
+=
+-       def handle(using Http.Request, Session): Http.Response =
++       def handle(using Http.Request, Session): Http.Response =
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+=       val read = OAuth.Scope(t"read")
+=
+=       def handle(using Http.Request, Session): Http.Response =
+-         issuer.oauth:
++         issuer.oauth:
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+=       val read = OAuth.Scope(t"read")
+=
+=       def handle(using Http.Request, Session): Http.Response =
+=         issuer.oauth:
+-           issuer.require(read):
++           issuer.require(read):
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+=       val read = OAuth.Scope(t"read")
+=
+=       def handle(using Http.Request, Session): Http.Response =
+=         issuer.oauth:
+=           issuer.require(read):
+-             Http.Response(Http.Ok)(t"authorized")
++             Http.Response(Http.Ok)(t"authorized")
+
+=       result is stored, and the user is redirected to the path they first asked for.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+=       val read = OAuth.Scope(t"read")
+=
+=       def handle(using Http.Request, Session): Http.Response =
+=         issuer.oauth:
+=           issuer.require(read):
+=             Http.Response(Http.Ok)(t"authorized")
+-       ```
++       ```
+
+-       It needs the `Http.Request`, an `Online` token, a `Http.Event is Loggable`, the
+-       `Authorizations` store, the request's `Session` and a `Tactic[OAuth.Error]`. A `state`
+-       which does not match is raised as `OAuth.Error.Reason.Other`, as is a malformed redirect;
+-       an issuer with no `#redirect` raises `Misconfigured`. The token request is made with
+-       the `java.net.http` backend whatever HTTP backend is in scope. A redirect for a session
+-       with no recorded state runs the handler.
++       Richiede l'`Http.Request`, un token `Online`, un `Http.Event is Loggable`, il deposito
++       `Authorizations`, la `Session` della richiesta e una `Tactic[OAuth.Error]`. Uno `state`
++       che non corrisponde viene sollevato come `OAuth.Error.Reason.Other`, così come un
++       redirect malformato; un issuer senza `#redirect` solleva `Misconfigured`. La richiesta di
++       token viene fatta con il backend `java.net.http`, qualunque sia il backend HTTP
++       nell'ambito. Un redirect per una sessione senza stato registrato esegue l'handler.
+
+=       with no recorded state runs the handler.
+-   refer orthodoxy.require
++   refer orthodoxy.require
+
+-   refer orthodoxy.Authorizations
++   refer orthodoxy.Authorizations
+
+- entry .require   scintillate middleware which sends a user without an authorization to the issuer
++ entry .require   middleware di scintillate che manda all'issuer un utente privo di autorizzazione
+
+= entry .require   scintillate middleware which sends a user without an authorization to the issuer
+-   detail
++   detail
+
+-       An extension on `Issuer`, in `orthodoxy.server`, used inside the same issuer's `oauth`
+-       (it requires an `Issuer.Context of issuer.type`). `issuer.require(scopes*) { … }` runs
+-       the handler with an `Authorization of scope` in scope when the session already holds
+-       an authorization; otherwise it records an `Authorizations.State` for the request's path
+-       and responds with a redirect to `Issuer#authorizationUrl`, asking for the names of all
+-       the scopes, with the state's UUID as `state`.
++       Un'estensione su `Issuer`, in `orthodoxy.server`, usata all'interno dell'`oauth` dello
++       stesso issuer (richiede un `Issuer.Context of issuer.type`). `issuer.require(scopes*) {
++       … }` esegue l'handler con un `Authorization of scope` nell'ambito quando la sessione
++       conserva già un'autorizzazione; altrimenti registra un `Authorizations.State` per il
++       path della richiesta e risponde con un redirect a `Issuer#authorizationUrl`, chiedendo i
++       nomi di tutti gli scope, con lo UUID dello stato come `state`.
+
+=       the scopes, with the state's UUID as `state`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import internetAccess.online
++       import internetAccess.online
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+-       given Authorizations = Authorizations()
++       given Authorizations = Authorizations()
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+-       val issuer = Issuer
++       val issuer = Issuer
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+-         ( url"https://issuer.example/token", t"client-1", t"s3cret",
++         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+-           url"https://issuer.example/authorize", url"https://app.example/callback" )
++           url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+-       val read = OAuth.Scope(t"read")
++       val read = OAuth.Scope(t"read")
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+=       val read = OAuth.Scope(t"read")
+=
+-       def handle(using Http.Request, Session): Http.Response =
++       def handle(using Http.Request, Session): Http.Response =
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+=       val read = OAuth.Scope(t"read")
+=
+=       def handle(using Http.Request, Session): Http.Response =
+-         issuer.oauth:
++         issuer.oauth:
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+=       val read = OAuth.Scope(t"read")
+=
+=       def handle(using Http.Request, Session): Http.Response =
+=         issuer.oauth:
+-           issuer.require(read):
++           issuer.require(read):
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+=       val read = OAuth.Scope(t"read")
+=
+=       def handle(using Http.Request, Session): Http.Response =
+=         issuer.oauth:
+=           issuer.require(read):
+-             Http.Response(Http.Ok)(t"authorized")
++             Http.Response(Http.Ok)(t"authorized")
+
+=       the scopes, with the state's UUID as `state`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import internetAccess.online
+=       import logging.silentLogging
+=
+=       given Authorizations = Authorizations()
+=
+=       val issuer = Issuer
+=         ( url"https://issuer.example/token", t"client-1", t"s3cret",
+=           url"https://issuer.example/authorize", url"https://app.example/callback" )
+=
+=       val read = OAuth.Scope(t"read")
+=
+=       def handle(using Http.Request, Session): Http.Response =
+=         issuer.oauth:
+=           issuer.require(read):
+=             Http.Response(Http.Ok)(t"authorized")
+-       ```
++       ```
+
+-       The scopes must be stable values, such as `val`s, since their singleton types refine the
+-       authorization. The held authorization is refined to the scopes without checking them
+-       against its `#scopes`; a handler which must be sure calls `OAuth.Scope#apply`. No PKCE
+-       challenge is sent.
++       Gli scope devono essere valori stabili, come le `val`, poiché i loro tipi singleton
++       raffinano l'autorizzazione. L'autorizzazione conservata viene raffinata agli scope senza
++       verificarli rispetto ai suoi `#scopes`; un handler che deve esserne certo chiama
++       `OAuth.Scope#apply`. Non viene inviata alcuna challenge PKCE.
+
+=       challenge is sent.
+-   refer orthodoxy.oauth
++   refer orthodoxy.oauth
+
+=   refer orthodoxy.oauth
+-   refer orthodoxy.OAuth.Scope
++   refer orthodoxy.OAuth.Scope

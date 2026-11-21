@@ -1,0 +1,1903 @@
+orthant 1 language
+
+- ## Filesystem
++ ## Filesystem
+
+- ### About
++ ### Panoramica
+
+- Files on a disk are read and written through the typed [paths](paths.md) which already
+- describe them. A `Path on Linux` has the operations which touch the disk: opening it to read
+- or write, creating it as a file or a directory, listing its children, copying, moving and
+- deleting. Each operation declares the errors it may raise.
++ I file su un disco si leggono e si scrivono attraverso i [percorsi](paths.md) tipizzati che già li
++ descrivono. Un `Path on Linux` ha le operazioni che toccano il disco: aprirlo in lettura o in
++ scrittura, crearlo come file o come directory, elencarne i figli, copiare, spostare ed eliminare.
++ Ogni operazione dichiara gli errori che può sollevare.
+
+- How an operation behaves in the awkward cases is decided by policies, chosen in scope. They
+- say, for example, whether a copy overwrites an existing file, and whether a delete descends
+- into a directory.
++ Come si comporta un'operazione nei casi scomodi lo decidono delle politiche, scelte nell'ambito.
++ Dicono, per esempio, se una copia sovrascrive un file esistente, e se un'eliminazione scende dentro
++ una directory.
+
+- Beyond individual files, the standard directories of a system, such as the home directory,
+- the cache and `/usr/share`, are named values. A directory can be watched for changes. A file
+- can be locked, mapped into memory, tagged with extended attributes, or searched for along a
+- list of directories.
++ Oltre ai singoli file, le directory standard di un sistema, come la directory home, la cache e
++ `/usr/share`, sono valori con un nome. Una directory si può osservare per coglierne i cambiamenti.
++ Un file si può bloccare, mappare in memoria, etichettare con attributi estesi, o cercare lungo un
++ elenco di directory.
+
+- ### On the filesystem
++ ### Sul filesystem
+
+- The JVM's filesystem API is full of untyped edges. A path is a string, or an untyped object.
+- A missing file is a `null` here and an exception there. The crucial questions of policy are
+- buried in flag arguments, or fixed by the method which is chosen, and are invisible in the
+- type: does this copy replace what is already there, and does this delete empty a whole tree?
+- A program which gets one wrong destroys data.
++ L'API del filesystem della JVM è piena di spigoli non tipizzati. Un percorso è una stringa, o un
++ oggetto non tipizzato. Un file mancante è un `null` in un punto e un'eccezione in un altro. Le
++ questioni cruciali di politica sono sepolte in argomenti flag, o fissate dal metodo che si sceglie,
++ e sono invisibili nel tipo: questa copia sostituisce ciò che c'è già, e questa eliminazione svuota
++ un intero albero? Un programma che ne sbaglia una distrugge dati.
+
+- Here these are lifted into the types:
++ Qui queste questioni sono portate nei tipi:
+
+- - A path carries its platform, so its rules are known.
+- - An operation declares `raises Io.Error`, and the error has a specific reason: a missing
+-   file, a permission denied, a directory which is not empty.
+- - Each policy is an explicit [contextual value], so overwriting, or deleting recursively, is a
+-   decision which the code states, not a default it inherits.
++ - Un percorso porta con sé la sua piattaforma, così le sue regole sono note.
++ - Un'operazione dichiara `raises Io.Error`, e l'errore ha un motivo specifico: un file mancante,
++   un permesso negato, una directory non vuota.
++ - Ogni politica è un [valore contestuale] esplicito, così sovrascrivere, o eliminare
++   ricorsivamente, è una decisione che il codice dichiara, non un comportamento predefinito che
++   eredita.
+
+- Everything comes from the `soundness` package. The capabilities of the system, and the
+- policies which the operations need, are brought into scope:
++ Tutto proviene dal package `soundness`. Le capability del sistema, e le politiche di cui le
++ operazioni hanno bisogno, si portano nell'ambito:
+
+= policies which the operations need, are brought into scope:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import filesystemOptions.dereferenceSymlinks
++ import filesystemOptions.dereferenceSymlinks
+
+- import filesystemOptions.moveAtomically
++ import filesystemOptions.moveAtomically
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.basicTermcap
++ import termcapDefinitions.basicTermcap
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import filesystemOptions.createNonexistentParents
++ import filesystemOptions.createNonexistentParents
+
+- import filesystemOptions.deleteRecursively
++ import filesystemOptions.deleteRecursively
+
+- import filesystemOptions.overwritePreexisting
++ import filesystemOptions.overwritePreexisting
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- import textSanitizers.strictSanitizer
++ import textSanitizers.strictSanitizer
+
+= import textSanitizers.strictSanitizer
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Imports
+- column  Decide
+- row  `filesystemBackends.javaBaseFilesystem`  which implementation touches the disk: here, `java.nio`
+- row  `pathInterfaces.pathOnLinux`  the type of path which the standard directories are given as
+- row  the five from `filesystemOptions`  the answers to the questions of policy, described under [Copying, moving and deleting](#copying-moving-and-deleting)
+- row  `charsets`, `codepages`, `textSanitizers`  how bytes become text, and text becomes bytes; [Characters](characters.md) describes them
+- row  `environments`, `systems`, `temporaryDirectories`  where the [environment](environment.md), system properties and temporary directory come from
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception; [Errors](errors.md#choosing-a-strategy) has the other strategies
+- row  `stdios`, `termcapDefinitions`  where the samples print their results
++ column  Import
++ column  Decidono
++ row  `filesystemBackends.javaBaseFilesystem`  quale implementazione tocca il disco: qui, `java.nio`
++ row  `pathInterfaces.pathOnLinux`  il tipo di percorso con cui sono date le directory standard
++ row  i cinque di `filesystemOptions`  le risposte alle questioni di politica, descritte in [Copiare, spostare ed eliminare](#copying-moving-and-deleting)
++ row  `charsets`, `codepages`, `textSanitizers`  come i byte diventano testo, e il testo diventa byte; [Caratteri](characters.md) li descrive
++ row  `environments`, `systems`, `temporaryDirectories`  da dove provengono l'[ambiente](environment.md), le proprietà di sistema e la directory temporanea
++ row  `strategies.throwUnsafely`  che un errore venga lanciato come eccezione; [Errori](errors.md#choosing-a-strategy) presenta le altre strategie
++ row  `stdios`, `termcapDefinitions`  dove gli esempi stampano i loro risultati
+
+= row  `stdios`, `termcapDefinitions`  where the samples print their results
+- ```
++ ```
+
+- The samples work in a directory of their own, beneath the system's temporary directory:
++ Gli esempi lavorano in una directory tutta loro, sotto la directory temporanea del sistema:
+
+= The samples work in a directory of their own, beneath the system's temporary directory:
+=
+- ```scala
++ ```scala
+
+- val directory = temporaryDirectory[Path on Linux] / "soundness-filesystem-tutorial"
++ val directory = temporaryDirectory[Path on Linux] / "soundness-filesystem-tutorial"
+
+- val file = directory / "notes.txt"
++ val file = directory / "notes.txt"
+
+= val file = directory / "notes.txt"
+- ```
++ ```
+
+- ### Files and directories
++ ### File e directory
+
+- A path names a location. Whether it is a file or a directory is a matter of what is created
+- there. `create[Directory]` and `create[File]` bring an entry into being:
++ Un percorso indica una posizione. Che sia un file o una directory dipende da ciò che vi si crea.
++ `create[Directory]` e `create[File]` fanno esistere una voce:
+
+= there. `create[Directory]` and `create[File]` bring an entry into being:
+=
+- ```scala fuel
++ ```scala fuel
+
+= there. `create[Directory]` and `create[File]` bring an entry into being:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= there. `create[Directory]` and `create[File]` bring an entry into being:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- directory.create[Directory]()
++ directory.create[Directory]()
+
+- file.create[File]()
++ file.create[File]()
+
+= file.create[File]()
+- ```
++ ```
+
+- By default, creating refuses to destroy anything. Creating over something which exists, or
+- under a parent which does not, is an `Io.Error`. Where either is the intent, a flag says so,
+- at the place where it happens, instead of an import saying it for the whole file:
++ Per impostazione predefinita, la creazione si rifiuta di distruggere alcunché. Creare sopra
++ qualcosa che esiste, o sotto un genitore che non esiste, è un `Io.Error`. Dove l'intenzione è
++ proprio questa, lo dice una flag, nel punto in cui accade, invece di un import che lo dica per
++ l'intero file:
+
+= at the place where it happens, instead of an import saying it for the whole file:
+=
+- ```scala fuel
++ ```scala fuel
+
+= at the place where it happens, instead of an import saying it for the whole file:
+=
+= ```scala fuel
+- run
++ run
+
+= at the place where it happens, instead of an import saying it for the whole file:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- directory.create[Directory](CreateFlag.Replace, CreateFlag.Parents)
++ directory.create[Directory](CreateFlag.Replace, CreateFlag.Parents)
+
+- file.create[File](CreateFlag.Replace)
++ file.create[File](CreateFlag.Replace)
+
+- (directory / "deep" / "nested").create[Directory](CreateFlag.Parents)
++ (directory / "deep" / "nested").create[Directory](CreateFlag.Parents)
+
+= (directory / "deep" / "nested").create[Directory](CreateFlag.Parents)
+=
+- Out.println(file.existent().inspect)
++ Out.println(file.existent().inspect)
+
+- Out.println((directory / "deep" / "nested").existent().inspect)
++ Out.println((directory / "deep" / "nested").existent().inspect)
+
+= Out.println((directory / "deep" / "nested").existent().inspect)
+- ```
++ ```
+
+- `Fifo` and `Sock` are entries too, and are created in the same way.
++ Anche `Fifo` e `Sock` sono voci, e si creano allo stesso modo.
+
+- ### Reading and writing
++ ### Lettura e scrittura
+
+- Where a whole small file is wanted, `read` and `write` act directly on the path:
++ Quando si vuole un intero file piccolo, `read` e `write` agiscono direttamente sul percorso:
+
+= Where a whole small file is wanted, `read` and `write` act directly on the path:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Where a whole small file is wanted, `read` and `write` act directly on the path:
+=
+= ```scala fuel
+- run
++ run
+
+= Where a whole small file is wanted, `read` and `write` act directly on the path:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= Where a whole small file is wanted, `read` and `write` act directly on the path:
+=
+= ```scala fuel
+= run
+= ##
+- file.write(t"Hello world")
++ file.write(t"Hello world")
+
+= file.write(t"Hello world")
+- Out.println(file.read[Text])
++ Out.println(file.read[Text])
+
+= file.write(t"Hello world")
+= Out.println(file.read[Text])
+- ```
++ ```
+
+- `read` takes the type to read the file as. `Text` is decoded with the charset in scope, and a
+- type with a decoder for a format reads in the same way, so `file.read[Json]` parses a
+- [JSON](json.md#parsing) file.
++ `read` prende il tipo come cui leggere il file. `Text` viene decodificato con il charset
++ nell'ambito, e un tipo con un decodificatore per un formato si legge allo stesso modo, così
++ `file.read[Json]` analizza un file [JSON](json.md#parsing).
+
+- A larger file is read and written by *opening* it. `open` names the form to open the path as,
+- and the mode to open it in, and runs a block with a handle. Inside the block, `file` is the
+- open handle:
++ Un file più grande si legge e si scrive *aprendolo*. `open` indica la forma come cui aprire il
++ percorso, e la modalità in cui aprirlo, ed esegue un blocco con un handle. Dentro il blocco, `file`
++ è l'handle aperto:
+
+= open handle:
+=
+- ```scala fuel
++ ```scala fuel
+
+= open handle:
+=
+= ```scala fuel
+- run
++ run
+
+= open handle:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- file.open[File](Write, OpenFlag.Create): handle ?=>
++ file.open[File](Write, OpenFlag.Create): handle ?=>
+
+= file.open[File](Write, OpenFlag.Create): handle ?=>
+-   handle.write(Chain(t"Hello, world".in[Data]))
++   handle.write(Chain(t"Hello, world".in[Data]))
+
+- Out.println(file.open[File]()(file.read[Text]))
++ Out.println(file.open[File]()(file.read[Text]))
+
+= Out.println(file.open[File]()(file.read[Text]))
+- ```
++ ```
+
+- The handle exists only for the duration of the block, so the file's descriptor cannot outlive
+- the scope which owns it. This is the shape described under
+- [delimited scopes](../../philosophy/delimited-scopes.md), and
+- [capture checking](../../philosophy/capture-checking.md) enforces it.
++ L'handle esiste solo per la durata del blocco, così il descrittore del file non può sopravvivere
++ all'ambito che lo possiede. È la forma descritta in
++ [ambiti delimitati](../../philosophy/delimited-scopes.md), e il
++ [capture checking](../../philosophy/capture-checking.md) la impone.
+
+- The mode is not merely a flag at runtime. It is carried in the handle's type, as a set of
+- *grants*. Opening with the default mode, `Read`, gives a handle which grants only reading, and
+- `Read & Write` grants both. Writing through a handle which was opened only for reading does
+- not compile:
++ La modalità non è soltanto una flag a runtime. È portata nel tipo dell'handle, come insieme di
++ *permessi*. Aprire con la modalità predefinita, `Read`, dà un handle che permette solo la lettura, e
++ `Read & Write` permette entrambe. Scrivere attraverso un handle aperto solo in lettura non compila:
+
+= not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- file.open[File](): handle ?=>
++ file.open[File](): handle ?=>
+
+= file.open[File](): handle ?=>
+-   handle.write(Chain(t"Hello, world".in[Data]))
++   handle.write(Chain(t"Hello, world".in[Data]))
+
+=   handle.write(Chain(t"Hello, world".in[Data]))
+- ```
++ ```
+
+- A whole class of mistakes thereby becomes a compile error: writing through a read-only handle,
+- and holding a descriptor past its scope.
++ Un'intera classe di errori diventa così un errore di compilazione: scrivere attraverso un handle di
++ sola lettura, e trattenere un descrittore oltre il suo ambito.
+
+- Opening a path which names a directory confines what may be reached through it. Paths which
+- are derived from the handle live on a *fresh plane* of their own. `..` does not compile on
+- such a path, and a path obtained from one open directory cannot be written under another:
++ Aprire un percorso che indica una directory limita ciò che si può raggiungere attraverso di esso. I
++ percorsi ricavati dall'handle vivono su un proprio *piano nuovo*. `..` non compila su un percorso
++ del genere, e un percorso ottenuto da una directory aperta non si può scrivere sotto un'altra:
+
+= such a path, and a path obtained from one open directory cannot be written under another:
+=
+- ```scala fuel
++ ```scala fuel
+
+= such a path, and a path obtained from one open directory cannot be written under another:
+=
+= ```scala fuel
+- run
++ run
+
+= such a path, and a path obtained from one open directory cannot be written under another:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val names = directory.open[Directory](Read & Write): dir ?=>
++ val names = directory.open[Directory](Read & Write): dir ?=>
+
+-   (dir / "greeting.txt").overwrite(t"Hello directory")
++   (dir / "greeting.txt").overwrite(t"Hello directory")
+
+-   dir.base.entries.map(_.name)
++   dir.base.entries.map(_.name)
+
+- Out.println(names.to[List].has(t"greeting.txt").inspect)
++ Out.println(names.to[List].has(t"greeting.txt").inspect)
+
+= Out.println(names.to[List].has(t"greeting.txt").inspect)
+- ```
++ ```
+
+- ### Exclusive and shared access
++ ### Accesso esclusivo e condiviso
+
+- `Exclusive` is a third grant, beside `Read` and `Write`, and it means what it says. No other
+- scope in the program may hold an overlapping path open while it lasts. Overlap is by
+- containment, not by equality: a directory and something beneath it overlap, and two siblings
+- do not.
++ `Exclusive` è un terzo permesso, accanto a `Read` e `Write`, e significa ciò che dice. Nessun altro
++ ambito del programma può tenere aperto un percorso sovrapposto finché dura. La sovrapposizione è
++ per contenimento, non per uguaglianza: una directory e qualcosa sotto di essa si sovrappongono, e due
++ fratelli no.
+
+= do not.
+=
+- ```scala fuel
++ ```scala fuel
+
+= do not.
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= do not.
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- directory.open[Directory](Read & Exclusive): dir ?=>
++ directory.open[Directory](Read & Exclusive): dir ?=>
+
+-   ()
++   ()
+
+=   ()
+- ```
++ ```
+
+- Two ordinary reads may coexist. An exclusive open conflicts with an overlapping open in either
+- direction, whether the exclusive scope is the outer or the inner one. The conflict is an
+- `Io.Error` whose reason is `Busy`. It is raised at the second open, and not discovered later
+- as corruption. The claim is released when the scope ends, however it ends.
++ Due letture ordinarie possono coesistere. Un'apertura esclusiva è in conflitto con un'apertura
++ sovrapposta in entrambe le direzioni, che l'ambito esclusivo sia quello esterno o quello interno. Il
++ conflitto è un `Io.Error` il cui motivo è `Busy`. Viene sollevato alla seconda apertura, e non
++ scoperto più tardi sotto forma di corruzione. La pretesa viene rilasciata quando l'ambito termina,
++ comunque termini.
+
+- For a *file*, as opposed to a directory, `Exclusive` also takes a lock from the operating
+- system, so exclusivity holds against other processes, and not merely within this one. `Shared`
+- is the reader's counterpart. Any number of shared holders may coexist, and an exclusive open
+- waits for them, or fails at once if the lock is requested without blocking. A lock may also
+- cover a range of bytes instead of the whole file, for the record-oriented layouts which
+- databases use.
++ Per un *file*, a differenza di una directory, `Exclusive` acquisisce anche un lock dal sistema
++ operativo, così l'esclusività vale nei confronti di altri processi, e non soltanto all'interno di
++ questo. `Shared` è la controparte per chi legge. Qualsiasi numero di detentori condivisi può
++ coesistere, e un'apertura esclusiva li attende, o fallisce subito se il lock è richiesto senza
++ bloccare. Un lock può anche coprire un intervallo di byte anziché l'intero file, per le disposizioni
++ orientate ai record che usano i database.
+
+- The four grants, side by side:
++ I quattro permessi, fianco a fianco:
+
+= The four grants, side by side:
+=
+- ```tabular
++ ```tabular
+
+- column  Grant
+- column  Permits
+- column  Conflicts with
+- row  `Read`  reading, and is the default mode  an overlapping `Exclusive` open
+- row  `Write`  writing  an overlapping `Exclusive` open
+- row  `Exclusive`  no other overlapping open in the program, and for a file an OS lock  any overlapping open, as `Busy`
+- row  `Shared`  for a file, a shared OS lock, held alongside any number of others  an `Exclusive` open, which waits for it
++ column  Permesso
++ column  Consente
++ column  In conflitto con
++ row  `Read`  la lettura, ed è la modalità predefinita  un'apertura `Exclusive` sovrapposta
++ row  `Write`  la scrittura  un'apertura `Exclusive` sovrapposta
++ row  `Exclusive`  nessun'altra apertura sovrapposta nel programma, e per un file un lock del sistema operativo  qualsiasi apertura sovrapposta, come `Busy`
++ row  `Shared`  per un file, un lock condiviso del sistema operativo, tenuto insieme a un numero qualsiasi di altri  un'apertura `Exclusive`, che lo attende
+
+= row  `Shared`  for a file, a shared OS lock, held alongside any number of others  an `Exclusive` open, which waits for it
+- ```
++ ```
+
+- ### Creating as a scope
++ ### Creare come ambito
+
+- `create` is the counterpart of `open`. Where opening acts on something which exists, creating
+- brings it into being, and gives a handle over it for the same scope. Content written within
+- the scope is committed when the block completes, and a scope which fails leaves nothing
+- behind:
++ `create` è la controparte di `open`. Dove l'apertura agisce su qualcosa che esiste, la creazione lo
++ fa esistere, e dà un handle su di esso per lo stesso ambito. Il contenuto scritto nell'ambito viene
++ confermato quando il blocco si completa, e un ambito che fallisce non lascia nulla dietro di sé:
+
+= behind:
+=
+- ```scala fuel
++ ```scala fuel
+
+= behind:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= behind:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val target = directory / "payload.bin"
++ val target = directory / "payload.bin"
+
+- target.create[File](): handle ?=>
++ target.create[File](): handle ?=>
+
+-   handle.write(Chain(t"payload".in[Data]))
++   handle.write(Chain(t"payload".in[Data]))
+
+- (directory / "inner").create[Directory](): dir ?=>
++ (directory / "inner").create[Directory](): dir ?=>
+
+-   (dir / "inner.txt").overwrite(t"hello")
++   (dir / "inner.txt").overwrite(t"hello")
+
+=   (dir / "inner.txt").overwrite(t"hello")
+- ```
++ ```
+
+- A *scratch* directory is created and removed by its scope, whether the scope succeeds or
+- fails. A scratch *file* is likewise, for a throwaway index or a test fixture. Its handle also
+- knows its `path`, for whatever must be told where the file is:
++ Una directory *temporanea* viene creata e rimossa dal suo ambito, che l'ambito riesca o fallisca.
++ Lo stesso vale per un *file* temporaneo, per un indice usa e getta o una fixture di test. Il suo
++ handle conosce anche il suo `path`, per qualunque cosa debba sapere dove si trova il file:
+
+= knows its `path`, for whatever must be told where the file is:
+=
+- ```scala fuel
++ ```scala fuel
+
+= knows its `path`, for whatever must be told where the file is:
+=
+= ```scala fuel
+- run
++ run
+
+= knows its `path`, for whatever must be told where the file is:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- directory.open[Scratch](Read & Write): scratch ?=>
++ directory.open[Scratch](Read & Write): scratch ?=>
+
+-   (scratch / "file.txt").overwrite(t"data")
++   (scratch / "file.txt").overwrite(t"data")
+
+- val content = directory.open[Scratch.File](Read & Write): file ?=>
++ val content = directory.open[Scratch.File](Read & Write): file ?=>
+
+-   file.write(Chain(t"data".in[Data]))
++   file.write(Chain(t"data".in[Data]))
+
+-   file.path.read[Text]
++   file.path.read[Text]
+
+- Out.println(content)
++ Out.println(content)
+
+= Out.println(content)
+- ```
++ ```
+
+- ### Creation masks
++ ### Maschere di creazione
+
+- A process creates files under its *umask*: the permission bits which the operating system
+- withholds from everything it creates. Ordinarily that is the end of the matter. But a process
+- which serves several callers at once, such as a [daemon](daemons.md), has one umask and many
+- invocations, each with its own.
++ Un processo crea i file sotto la sua *umask*: i bit di permesso che il sistema operativo nega a
++ tutto ciò che crea. Di solito la questione finisce qui. Ma un processo che serve più chiamanti
++ contemporaneamente, come un [demone](daemons.md), ha una sola umask e molte invocazioni, ciascuna
++ con la propria.
+
+- The mask can therefore be a contextual value. A `Umask` in scope is applied to every file and
+- directory which is created while it applies. It is requested at creation, so the entry never
+- exists with wider permissions than were asked for. Where none is in scope, `Umask.process`
+- applies, which is the operating system's own, exactly as before:
++ La maschera può quindi essere un valore contestuale. Una `Umask` nell'ambito si applica a ogni file
++ e directory creati mentre è in vigore. È richiesta al momento della creazione, così la voce non
++ esiste mai con permessi più ampi di quelli richiesti. Dove non ce n'è nessuna nell'ambito, si applica
++ `Umask.process`, che è quella del sistema operativo stesso, esattamente come prima:
+
+= applies, which is the operating system's own, exactly as before:
+=
+- ```scala
++ ```scala
+
+- def privately(): Unit =
++ def privately(): Unit =
+
+-   given umask: Umask = Umask(0x3f)
++   given umask: Umask = Umask(0x3f)
+
+-   (directory / "secret.txt").create[File](): handle ?=>
++   (directory / "secret.txt").create[File](): handle ?=>
+
+-     handle.write(Chain(t"payload".in[Data]))
++     handle.write(Chain(t"payload".in[Data]))
+
+=     handle.write(Chain(t"payload".in[Data]))
+- ```
++ ```
+
+- `0x3f` is the mask written `077` in octal, which leaves a file readable and writable by its
+- owner alone. A mask is parsed from the octal form which `umask` prints, with
+- `Umask.parse(t"022")`, and `octal` writes it back in the same form. A daemon's service handle
+- is a `Umask.Provider`, so within a `cli` block the invocation's mask is already in scope, with
+- no further declaration.
++ `0x3f` è la maschera che in ottale si scrive `077`, che lascia un file leggibile e scrivibile
++ soltanto dal suo proprietario. Una maschera si analizza dalla forma ottale che stampa `umask`, con
++ `Umask.parse(t"022")`, e `octal` la riscrive nella stessa forma. L'handle di servizio di un demone
++ è un `Umask.Provider`, così all'interno di un blocco `cli` la maschera dell'invocazione è già
++ nell'ambito, senza ulteriori dichiarazioni.
+
+- ### The opening pattern, generally
++ ### Lo schema dell'apertura, in generale
+
+- `open` is not specific to files. A great many things share the same shape. A value says
+- *where* something is, whether a path, a buffer in memory or a URL, and getting at its contents
+- is a distinct, scoped act. Naming that pattern once means that it reads the same wherever it
+- applies.
++ `open` non è specifico dei file. Moltissime cose condividono la stessa forma. Un valore dice *dove*
++ si trova qualcosa, che sia un percorso, un buffer in memoria o un URL, e raggiungerne il contenuto è
++ un atto distinto e con un ambito. Dare un nome a questo schema una volta sola significa che si legge
++ allo stesso modo ovunque si applichi.
+
+- An `Openable` instance relates a target to a *form*. That is why the form is a type argument,
+- and is not implied by the target. The same path opens as a `File`, as a `Directory`, as a
+- `Zip` [archive](archives.md), as a [PDF](pdf.md) or as an [image](images.md), and each is a
+- different handle with different operations. The form may be omitted where a target has only
+- one instance. Where it has several, the ambiguity is reported, with the alternatives listed.
++ Un'istanza di `Openable` mette in relazione una destinazione con una *forma*. Per questo la forma è
++ un argomento di tipo, e non è implicita nella destinazione. Lo stesso percorso si apre come `File`,
++ come `Directory`, come [archivio](archives.md) `Zip`, come [PDF](pdf.md) o come
++ [immagine](images.md), e ciascuno è un handle diverso con operazioni diverse. La forma si può
++ omettere quando una destinazione ha una sola istanza. Quando ne ha più d'una, l'ambiguità viene
++ segnalata, con l'elenco delle alternative.
+
+- Behind the pattern are the [typeclasses][typeclass] `Openable`, `Creatable` and `Sessional`,
+- for `open`, `create` and `session`. The mode which the first two take is a combination of
+- `Grant`s.
++ Dietro lo schema ci sono le [typeclass][typeclass] `Openable`, `Creatable` e `Sessional`, per
++ `open`, `create` e `session`. La modalità che accettano le prime due è una combinazione di `Grant`.
+
+- The forms which this page describes are:
++ Le forme che questa pagina descrive sono:
+
+= The forms which this page describes are:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  The handle gives
+- row  `File`  the file's contents, to read or write as the grants allow
+- row  `Directory`  paths confined beneath the directory, on a fresh plane
+- row  `Scratch`  a directory removed when the scope ends
+- row  `Scratch.File`  a file removed when the scope ends, and its `path`
+- row  `Ram`  positional reads and writes over a memory-mapped file, of any size
+- row  `Watch`  a stream of the changes beneath a directory
++ column  Forma
++ column  L'handle dà
++ row  `File`  il contenuto del file, da leggere o scrivere secondo i permessi
++ row  `Directory`  percorsi confinati sotto la directory, su un piano nuovo
++ row  `Scratch`  una directory rimossa quando l'ambito termina
++ row  `Scratch.File`  un file rimosso quando l'ambito termina, e il suo `path`
++ row  `Ram`  letture e scritture posizionali su un file mappato in memoria, di qualsiasi dimensione
++ row  `Watch`  uno stream dei cambiamenti sotto una directory
+
+= row  `Watch`  a stream of the changes beneath a directory
+- ```
++ ```
+
+- Three things follow uniformly:
++ Ne seguono uniformemente tre cose:
+
+- - The *mode*, which is `Read`, `Write`, `Exclusive`, `Shared` or a combination of them, is
+-   carried in the handle's type, so the grants which are requested are the operations which
+-   are permitted.
+- - Flags after the mode belong to the instance. They are specific to the kind of thing being
+-   opened, and an irrelevant flag does not typecheck.
+- - The handle is a [capability] confined to the block, so neither it, nor anything derived from
+-   it, can escape.
++ - La *modalità*, che è `Read`, `Write`, `Exclusive`, `Shared` o una loro combinazione, è portata nel
++   tipo dell'handle, così i permessi richiesti sono le operazioni consentite.
++ - Le flag dopo la modalità appartengono all'istanza. Sono specifiche del tipo di cosa che si apre, e
++   una flag non pertinente non supera il controllo dei tipi.
++ - L'handle è una [capability] confinata nel blocco, quindi né esso né nulla che ne derivi può
++   sfuggire.
+
+- `create` is the same pattern for something which does not yet exist. `session` is the same
+- pattern for a target whose access is a conversation with something running, such as a
+- [browser](web-automation.md) or a [program being debugged](debugging.md), and not a handle
+- over stored bytes. In each case the scope is the lifetime, and the end of the block is the end
+- of the access.
++ `create` è lo stesso schema per qualcosa che non esiste ancora. `session` è lo stesso schema per una
++ destinazione il cui accesso è una conversazione con qualcosa in esecuzione, come un
++ [browser](web-automation.md) o un [programma sottoposto a debug](debugging.md), e non un handle su
++ byte memorizzati. In ogni caso l'ambito è la durata, e la fine del blocco è la fine dell'accesso.
+
+- ### Positional access
++ ### Accesso posizionale
+
+- A file which is opened as `Ram` is mapped into memory, and serves reads and writes at any
+- position, without streaming through it. The `Write` grant is required to write, as everywhere
+- else:
++ Un file aperto come `Ram` viene mappato in memoria, e serve letture e scritture in qualsiasi
++ posizione, senza doverlo percorrere come stream. Per scrivere serve il permesso `Write`, come
++ ovunque:
+
+= else:
+=
+- ```scala fuel
++ ```scala fuel
+
+= else:
+=
+= ```scala fuel
+- run
++ run
+
+= else:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= else:
+=
+= ```scala fuel
+= run
+= ##
+- file.write(t"Hello world")
++ file.write(t"Hello world")
+
+- val middle = file.open[Ram](): ram ?=>
++ val middle = file.open[Ram](): ram ?=>
+
+-   ram(2, 3)
++   ram(2, 3)
+
+- file.open[Ram](Read & Write): ram ?=>
++ file.open[Ram](Read & Write): ram ?=>
+
+-   ram(3L) = t"XYZ".in[Data]
++   ram(3L) = t"XYZ".in[Data]
+
+- Out.println(middle.utf8)
++ Out.println(middle.utf8)
+
+= Out.println(middle.utf8)
+- Out.println(file.read[Text])
++ Out.println(file.read[Text])
+
+= Out.println(middle.utf8)
+= Out.println(file.read[Text])
+- ```
++ ```
+
+- `mapped` maps a whole file for reading, and lends a `Terrain` view of it for the length of a
+- block. A `Terrain` is an `Expanse`, with its `size` and its copying `read`, whose bytes are in
+- memory. Nothing is copied: integers are loaded from the mapped memory in place, little-endian
+- and at any offset, and a `slice` is a narrower view of the same memory. Several processes
+- which map one file share a single copy of it, in the operating system's page cache, which is
+- what makes a mapped file a way of sharing a large index between programs:
++ `mapped` mappa un intero file in lettura, e presta una vista `Terrain` di esso per la durata di un
++ blocco. Un `Terrain` è un `Expanse`, con la sua `size` e il suo `read` che copia, i cui byte sono in
++ memoria. Nulla viene copiato: gli interi si caricano dalla memoria mappata sul posto, little-endian e
++ a qualsiasi offset, e una `slice` è una vista più stretta della stessa memoria. Più processi che
++ mappano uno stesso file ne condividono un'unica copia, nella page cache del sistema operativo, ed è
++ questo che fa di un file mappato un modo per condividere un grande indice tra programmi:
+
+= what makes a mapped file a way of sharing a large index between programs:
+=
+- ```scala fuel
++ ```scala fuel
+
+= what makes a mapped file a way of sharing a large index between programs:
+=
+= ```scala fuel
+- run
++ run
+
+= what makes a mapped file a way of sharing a large index between programs:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- file.write(t"0123456789ABCDEF")
++ file.write(t"0123456789ABCDEF")
+
+- val word = file.mapped(_.u32(0L))
++ val word = file.mapped(_.u32(0L))
+
+- val letters = file.mapped: view =>
++ val letters = file.mapped: view =>
+
+-   val tail = view.slice(10L, 6L)
++   val tail = view.slice(10L, 6L)
+
+-   tail.read(0L, 3).utf8
++   tail.read(0L, 3).utf8
+
+- Out.println(word.show)
++ Out.println(word.show)
+
+- Out.println(letters)
++ Out.println(letters)
+
+= Out.println(letters)
+- ```
++ ```
+
+- The loads are these:
++ I caricamenti sono questi:
+
+= The loads are these:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Gives
+- row  `u8`, `u16`  an unsigned byte or 16-bit integer, as an `Int`
+- row  `u32`  an unsigned 32-bit integer, as a `Long`
+- row  `i32`  the same 32 bits as a signed `Int`
+- row  `u64`  a 64-bit integer, as a `Long`
+- row  `slice`  a view of part of the memory, with no copy
+- row  `read`  some of the bytes as `Data`, for a value which must outlive the view
+- row  `same`  whether the bytes at an offset are those of some `Data`, compared in place
+- row  `compare`  the order of some bytes relative to some `Data`, compared in place
++ column  Metodo
++ column  Dà
++ row  `u8`, `u16`  un byte senza segno o un intero a 16 bit senza segno, come `Int`
++ row  `u32`  un intero a 32 bit senza segno, come `Long`
++ row  `i32`  gli stessi 32 bit come `Int` con segno
++ row  `u64`  un intero a 64 bit, come `Long`
++ row  `slice`  una vista di parte della memoria, senza copia
++ row  `read`  alcuni dei byte come `Data`, per un valore che deve sopravvivere alla vista
++ row  `same`  se i byte a un offset sono quelli di un certo `Data`, confrontati sul posto
++ row  `compare`  l'ordine di alcuni byte rispetto a un certo `Data`, confrontati sul posto
+
+= row  `compare`  the order of some bytes relative to some `Data`, compared in place
+- ```
++ ```
+
+- The file is unmapped when the block ends. The view, and every slice of it, is a [capability]
+- confined to the block, so a load from memory which is no longer mapped cannot be written. A
+- method which receives a view declares it as `Terrain^`. The same loads are
+- available on `Data`, with a big-endian `u16be`, `i32be`, `u32be` and `u64be` beside them, so a
+- parser reads a format the same way from either.
++ Il file viene smappato quando il blocco termina. La vista, e ogni sua porzione, è una [capability]
++ confinata nel blocco, quindi non si può scrivere un caricamento da una memoria che non è più mappata.
++ Un metodo che riceve una vista la dichiara come `Terrain^`. Gli stessi caricamenti sono disponibili
++ su `Data`, con accanto `u16be`, `i32be`, `u32be` e `u64be` big-endian, così un parser legge un
++ formato allo stesso modo dall'uno o dall'altro.
+
+- A mapped file should be replaced, by moving a new file onto its name, and not rewritten in
+- place: a view goes on seeing the file it mapped, unchanged, for as long as it is held. Mapping
+- is available on the JVM and on Scala Native; WASI has no memory mapping, and reports
+- `Unsupported`.
++ Un file mappato va sostituito, spostando un nuovo file sul suo nome, e non riscritto sul posto: una
++ vista continua a vedere il file che ha mappato, invariato, finché la si trattiene. La mappatura è
++ disponibile sulla JVM e su Scala Native; WASI non ha mappatura in memoria, e segnala `Unsupported`.
+
+- `Terrain(data)` is a view of bytes which are already in memory, for reading a format which is
+- designed for a mapped file from `Data` instead. A path is `Viewable`, the typeclass of a value
+- which can lend a view of its bytes, so a format which is read in place is opened straight from
+- its file. [RaTEL](tel.md#ratel) is such a format, a TEL document laid out so that one record is
+- found without reading the rest, and `file.open[Ratel]()` maps the file for the length of its
+- block.
++ `Terrain(data)` è una vista di byte che sono già in memoria, per leggere da `Data` un formato
++ progettato per un file mappato. Un percorso è `Viewable`, la typeclass di un valore che può prestare
++ una vista dei suoi byte, così un formato che si legge sul posto si apre direttamente dal suo file.
++ [RaTEL](tel.md#ratel) è un formato di questo tipo, un documento TEL disposto in modo che si trovi un
++ record senza leggere il resto, e `file.open[Ratel]()` mappa il file per la durata del suo blocco.
+
+- ### Publishing versions
++ ### Pubblicare versioni
+
+- A mapped file is a way for one program to share a large value with others, without a copy in
+- each. The program which produces the value *owns* its name, and publishes one version after
+- another under it. The programs which use it map whichever version is current, and move on to
+- the next when they choose to. Nothing arbitrates between them, because two rules are kept:
++ Un file mappato è un modo con cui un programma condivide un grande valore con altri, senza una copia
++ in ciascuno. Il programma che produce il valore *possiede* il suo nome, e pubblica sotto di esso una
++ versione dopo l'altra. I programmi che lo usano mappano qualunque versione sia quella corrente, e
++ passano alla successiva quando lo decidono. Nulla fa da arbitro tra loro, perché si rispettano due
++ regole:
+
+- - A published file never changes. Each version is written beside the name and moved over it
+-   in one step, so a reader which has mapped a version goes on seeing it, whole.
+- - A name has one owner. `claim` holds an operating-system lock on `<name>.lock` for as long as
+-   its block runs, and a second owner, in this process or another, is refused with `Busy`.
++ - Un file pubblicato non cambia mai. Ogni versione viene scritta accanto al nome e spostata su di esso
++   in un solo passo, così un lettore che ha mappato una versione continua a vederla, intera.
++ - Un nome ha un solo proprietario. `claim` tiene un lock del sistema operativo su `<name>.lock` per
++   tutto il tempo in cui il suo blocco è in esecuzione, e un secondo proprietario, in questo processo
++   o in un altro, viene respinto con `Busy`.
+
+- `claim` gives an `Owner`, whose `publish` writes a value in whatever form its `Encodable in Data`
+- instance gives, and returns the `Edition` it published:
++ `claim` dà un `Owner`, il cui `publish` scrive un valore in qualunque forma dia la sua istanza di
++ `Encodable in Data`, e restituisce l'`Edition` che ha pubblicato:
+
+= instance gives, and returns the `Edition` it published:
+=
+- ```scala fuel
++ ```scala fuel
+
+= instance gives, and returns the `Edition` it published:
+=
+= ```scala fuel
+- run
++ run
+
+= instance gives, and returns the `Edition` it published:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val edition = file.claim[Text]: owner =>
++ val edition = file.claim[Text]: owner =>
+
+-   owner.publish(t"first edition")
++   owner.publish(t"first edition")
+
+=
+- Out.println(file.read[Text])
++ Out.println(file.read[Text])
+
+=
+= Out.println(file.read[Text])
+- ```
++ ```
+
+- `published` gives a reader, a `Published`. Its `map` lends a `Terrain` view of the version it
+- holds, and its `refresh` moves it to the version which the name now leads to, and says whether
+- there was one:
++ `published` dà un lettore, un `Published`. Il suo `map` presta una vista `Terrain` della versione
++ che detiene, e il suo `refresh` lo sposta sulla versione a cui ora porta il nome, e dice se ce n'era
++ una:
+
+= there was one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= there was one:
+=
+= ```scala fuel
+- run
++ run
+
+= there was one:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- file.claim[Text](_.publish(t"one"))
++ file.claim[Text](_.publish(t"one"))
+
+- file.published[Text]: reader =>
++ file.published[Text]: reader =>
+
+-   file.claim[Text](_.publish(t"two"))
++   file.claim[Text](_.publish(t"two"))
+
+-   val before = reader.map(_.u8(0L))
++   val before = reader.map(_.u8(0L))
+
+-   val moved = reader.refresh()
++   val moved = reader.refresh()
+
+-   val after = reader.map(_.u8(0L))
++   val after = reader.map(_.u8(0L))
+
+-   Out.println(t"$before, then $after")
++   Out.println(t"$before, then $after")
+
+=   Out.println(t"$before, then $after")
+- ```
++ ```
+
+- A reader takes no lock, so it never delays the owner, and the owner never delays it. A view
+- which is in use when a `refresh` happens, on this thread or another, stays valid until its
+- block ends. Two editions are equal exactly when they are the same version of the file; they
+- have no order.
++ Un lettore non acquisisce alcun lock, quindi non ritarda mai il proprietario, e il proprietario non
++ ritarda mai lui. Una vista in uso quando avviene un `refresh`, su questo thread o su un altro, resta
++ valida fino alla fine del suo blocco. Due edizioni sono uguali esattamente quando sono la stessa
++ versione del file; non hanno un ordine.
+
+- A reader keeps the version it has mapped in existence, even after a newer one has replaced it
+- under the name, so a long-lived reader should `refresh` when it learns that there is something
+- new, whether from a message or from [watching](#watching-for-changes) the name. The lock is
+- advisory, and is dependable between cooperating programs on one machine's own filesystems,
+- but not over a network filesystem.
++ Un lettore mantiene in vita la versione che ha mappato, anche dopo che una più recente l'ha
++ sostituita sotto il nome, quindi un lettore di lunga durata dovrebbe eseguire `refresh` quando viene a
++ sapere che c'è qualcosa di nuovo, da un messaggio o [osservando](#watching-for-changes) il nome. Il
++ lock è consultivo, ed è affidabile tra programmi che cooperano sui filesystem propri di una macchina,
++ ma non su un filesystem di rete.
+
+- A `Slice` is a window onto part of a file, with an offset and an extent. It is opened for
+- reading or writing like a file of its own. A region of a large file can therefore be streamed
+- in or out without the rest being touched, and a write cannot stray outside its window.
++ Uno `Slice` è una finestra su una parte di un file, con un offset e un'estensione. Si apre in lettura
++ o in scrittura come un file a sé. Una regione di un grande file si può quindi trasmettere in entrata
++ o in uscita senza toccare il resto, e una scrittura non può uscire dalla sua finestra.
+
+- ### Copying, moving and deleting
++ ### Copiare, spostare ed eliminare
+
+- A path is copied, moved, linked or deleted with operations which name the destination, or act
+- in place:
++ Un percorso si copia, si sposta, si collega o si elimina con operazioni che indicano la
++ destinazione, o che agiscono sul posto:
+
+= in place:
+=
+- ```scala fuel
++ ```scala fuel
+
+= in place:
+=
+= ```scala fuel
+- run
++ run
+
+= in place:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= in place:
+=
+= ```scala fuel
+= run
+= ##
+- file.write(t"Hello world")
++ file.write(t"Hello world")
+
+- file.copyTo(directory / "backup.txt")
++ file.copyTo(directory / "backup.txt")
+
+- file.moveTo(directory / "renamed.txt")
++ file.moveTo(directory / "renamed.txt")
+
+- (directory / "backup.txt").delete()
++ (directory / "backup.txt").delete()
+
+= (directory / "backup.txt").delete()
+=
+- Out.println(file.existent().inspect)
++ Out.println(file.existent().inspect)
+
+= Out.println(file.existent().inspect)
+- Out.println((directory / "renamed.txt").existent().inspect)
++ Out.println((directory / "renamed.txt").existent().inspect)
+
+- Out.println((directory / "backup.txt").existent().inspect)
++ Out.println((directory / "backup.txt").existent().inspect)
+
+= Out.println((directory / "backup.txt").existent().inspect)
+- ```
++ ```
+
+- Each consults the policies in scope for the awkward cases, and each may raise an `Io.Error`.
++ Ciascuna consulta le politiche nell'ambito per i casi scomodi, e ciascuna può sollevare un
++ `Io.Error`.
+
+- Those policies are not defaults which can be left alone. Moving a file onto a path where
+- something already exists either destroys that thing, or refuses to. Neither answer is right in
+- general, and choosing one silently would make the wrong programs compile. So `moveTo` requires
+- either `overwritePreexisting` or `failOnPreexisting` in scope, and calling it with neither is
+- a compile error. That is instructive, as well as cautious: a reader who had not realized that
+- the question needed an answer is told that it does.
++ Quelle politiche non sono valori predefiniti che si possono ignorare. Spostare un file su un
++ percorso dove esiste già qualcosa o distrugge quella cosa, o si rifiuta di farlo. Nessuna delle due
++ risposte è giusta in generale, e sceglierne una in silenzio farebbe compilare i programmi sbagliati.
++ Così `moveTo` richiede nell'ambito `overwritePreexisting` oppure `failOnPreexisting`, e chiamarlo
++ senza nessuno dei due è un errore di compilazione. Questo è istruttivo, oltre che prudente: a un
++ lettore che non si era reso conto che la domanda richiedeva una risposta viene detto che la richiede.
+
+- The choice also changes what must be handled. With `failOnPreexisting` in scope, a collision
+- is a failure to deal with. With `overwritePreexisting`, it cannot arise, and the obligation
+- goes away with it.
++ La scelta cambia anche ciò che va gestito. Con `failOnPreexisting` nell'ambito, una collisione è un
++ fallimento da affrontare. Con `overwritePreexisting`, non può verificarsi, e l'obbligo scompare con
++ essa.
+
+- The policies are contextual values, so they can be imported for a whole file, or narrowed to
+- a single block. Each answers one question, and comes as one of a pair, from the package
++ Le politiche sono valori contestuali, quindi si possono importare per un intero file, o restringere
++ a un solo blocco. Ognuna risponde a una domanda, e fa parte di una coppia, dal package
+
+- `filesystemOptions`:
++ `filesystemOptions`:
+
+= `filesystemOptions`:
+=
+- ```tabular
++ ```tabular
+
+- column  Question
+- column  Yes
++ column  Domanda
++ column  Sì
+
+- column  No
++ column  No
+
+- row  Replace what is already at the destination?  `overwritePreexisting`  `failOnPreexisting`
+- row  Empty a directory before deleting it?  `deleteRecursively`  `deleteOnlyEmpty`
+- row  Create missing parent directories?  `createNonexistentParents`  `requireParents`
+- row  Follow symbolic links?  `dereferenceSymlinks`  `preserveSymlinks`
+- row  Move atomically?  `moveAtomically`  `moveNonAtomically`
++ row  Sostituire ciò che c'è già nella destinazione?  `overwritePreexisting`  `failOnPreexisting`
++ row  Svuotare una directory prima di eliminarla?  `deleteRecursively`  `deleteOnlyEmpty`
++ row  Creare le directory genitrici mancanti?  `createNonexistentParents`  `requireParents`
++ row  Seguire i link simbolici?  `dereferenceSymlinks`  `preserveSymlinks`
++ row  Spostare in modo atomico?  `moveAtomically`  `moveNonAtomically`
+
+= row  Move atomically?  `moveAtomically`  `moveNonAtomically`
+- ```
++ ```
+
+- Replacing an existing entry deletes it first, so `overwritePreexisting` needs one of the
+- deletion policies in scope as well.
++ Sostituire una voce esistente la elimina prima, quindi `overwritePreexisting` richiede nell'ambito
++ anche una delle politiche di eliminazione.
+
+- Each operation consults the policies which bear on it:
++ Ogni operazione consulta le politiche che la riguardano:
+
+= Each operation consults the policies which bear on it:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Acts on
+- column  Policies consulted
+- row  `copyTo(path)`  the path given  replacing, parents, symbolic links
+- row  `copyInto(directory)`  a child of the directory, keeping the name  replacing, symbolic links
+- row  `moveTo(path)`  the path given  replacing, parents, symbolic links, atomicity
+- row  `moveInto(directory)`  a child of the directory, keeping the name  replacing, symbolic links, atomicity
+- row  `symlinkTo(path)`  a new link at the path given, pointing here  replacing, parents
+- row  `symlinkInto(directory)`  a new link in the directory, keeping the name  replacing
+- row  `delete()`, `wipe()`  the path itself  deletion
++ column  Operazione
++ column  Agisce su
++ column  Politiche consultate
++ row  `copyTo(path)`  il percorso dato  sostituzione, genitori, link simbolici
++ row  `copyInto(directory)`  un figlio della directory, mantenendo il nome  sostituzione, link simbolici
++ row  `moveTo(path)`  il percorso dato  sostituzione, genitori, link simbolici, atomicità
++ row  `moveInto(directory)`  un figlio della directory, mantenendo il nome  sostituzione, link simbolici, atomicità
++ row  `symlinkTo(path)`  un nuovo link nel percorso dato, che punta qui  sostituzione, genitori
++ row  `symlinkInto(directory)`  un nuovo link nella directory, mantenendo il nome  sostituzione
++ row  `delete()`, `wipe()`  il percorso stesso  eliminazione
+
+= row  `delete()`, `wipe()`  the path itself  deletion
+- ```
++ ```
+
+- The `…Into` forms create any missing parents themselves. Deleting a directory which has
+- children is an `Io.Error`, whose reason is `DirectoryNotEmpty`, unless `deleteRecursively` is
+- in scope. Recursive deletion is thus a policy which must be enabled deliberately.
++ Le forme `…Into` creano da sé i genitori mancanti. Eliminare una directory che ha figli è un
++ `Io.Error`, il cui motivo è `DirectoryNotEmpty`, a meno che `deleteRecursively` non sia
++ nell'ambito. L'eliminazione ricorsiva è quindi una politica che va abilitata deliberatamente.
+
+- ### Listing and inspecting
++ ### Elencare e ispezionare
+
+- `children` gives a directory's immediate children, and `descendants` gives its whole subtree.
+- A path reports whether it exists, its size, and what kind of entry it is. A `glob` selects
+- children by a pattern, in which `*` matches within a name, and a whole segment `**` spans
+- directories:
++ `children` dà i figli immediati di una directory, e `descendants` dà il suo intero sottoalbero. Un
++ percorso indica se esiste, la sua dimensione, e che tipo di voce è. Un `glob` seleziona i figli
++ secondo un pattern, in cui `*` corrisponde all'interno di un nome, e un intero segmento `**` si
++ estende attraverso le directory:
+
+= directories:
+=
+- ```scala fuel
++ ```scala fuel
+
+= directories:
+=
+= ```scala fuel
+- run
++ run
+
+= directories:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- (directory / "renamed.txt").write(t"Hello world")
++ (directory / "renamed.txt").write(t"Hello world")
+
+=
+- Out.println((directory / "renamed.txt").existent().inspect)
++ Out.println((directory / "renamed.txt").existent().inspect)
+
+- Out.println((directory / "renamed.txt").filesize().inspect)
++ Out.println((directory / "renamed.txt").filesize().inspect)
+
+- Out.println(directory.children.map(_.name).to[List].has(t"renamed.txt").inspect)
++ Out.println(directory.children.map(_.name).to[List].has(t"renamed.txt").inspect)
+
+- Out.println(directory.glob(Glob.parse(t"*.txt")).map(_.name).to[List].has(t"renamed.txt").inspect)
++ Out.println(directory.glob(Glob.parse(t"*.txt")).map(_.name).to[List].has(t"renamed.txt").inspect)
+
+= Out.println(directory.glob(Glob.parse(t"*.txt")).map(_.name).to[List].has(t"renamed.txt").inspect)
+- ```
++ ```
+
+- Two paths can name one entry, through symbolic links, or through `/tmp` and `/private/tmp` on
+- macOS. `canonical` is the entry's path as the filesystem itself knows it, with every link
+- resolved. That is the path which a registry keyed by path should store:
++ Due percorsi possono indicare una stessa voce, attraverso link simbolici, o attraverso `/tmp` e
++ `/private/tmp` su macOS. `canonical` è il percorso della voce come lo conosce il filesystem stesso,
++ con ogni link risolto. È il percorso che dovrebbe memorizzare un registro indicizzato per percorso:
+
+= resolved. That is the path which a registry keyed by path should store:
+=
+- ```scala fuel
++ ```scala fuel
+
+= resolved. That is the path which a registry keyed by path should store:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= resolved. That is the path which a registry keyed by path should store:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val canonical = (directory / "renamed.txt").canonical()
++ val canonical = (directory / "renamed.txt").canonical()
+
+= val canonical = (directory / "renamed.txt").canonical()
+- ```
++ ```
+
+- [Patterns](patterns.md) describes globs.
++ [Pattern](patterns.md) descrive i glob.
+
+- ### Content-addressed storage
++ ### Memorizzazione indirizzata per contenuto
+
+- A directory of blobs, each named by the digest of its own bytes, is a *content-addressed
+- store*. A blob is written once, verified as it is written, and found by anything which knows
+- its digest. `Cas` is that store. The [hash algorithm](hashing.md) is in its type, and in the
+- type of every digest it accepts, so a SHA-256 store cannot be asked for a BLAKE3 digest:
++ Una directory di blob, ciascuno chiamato con il digest dei propri byte, è un *archivio
++ indirizzato per contenuto*. Un blob si scrive una volta sola, viene verificato mentre lo si scrive, e
++ lo trova chiunque ne conosca il digest. `Cas` è questo archivio. L'[algoritmo di hash](hashing.md) è
++ nel suo tipo, e nel tipo di ogni digest che accetta, così a un archivio SHA-256 non si può chiedere
++ un digest BLAKE3:
+
+= type of every digest it accepts, so a SHA-256 store cannot be asked for a BLAKE3 digest:
+=
+- ```scala
++ ```scala
+
+- import providers.javaBaseProvider
++ import providers.javaBaseProvider
+
+- val store: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](directory, t".blob")
++ val store: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](directory, t".blob")
+
+= val store: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](directory, t".blob")
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val digest: Digest in Sha2[256] = store() = t"some bytes".in[Data]
++ val digest: Digest in Sha2[256] = store() = t"some bytes".in[Data]
+
+- Out.println(store(digest).let(_.utf8).or(t"missing"))
++ Out.println(store(digest).let(_.utf8).or(t"missing"))
+
+- Out.println(store.has(digest).inspect)
++ Out.println(store.has(digest).inspect)
+
+- Out.println(store.missing(List(digest)).inspect)
++ Out.println(store.missing(List(digest)).inspect)
+
+= Out.println(store.missing(List(digest)).inspect)
+- ```
++ ```
+
+- A store has these operations:
++ Un archivio ha queste operazioni:
+
+= A store has these operations:
+=
+- ```tabular
++ ```tabular
+
+- column  Expression
+- column  Does
+- row  `store() = data`  stores the data under its own digest, and returns it; nothing if the blob is already there
+- row  `store(digest) = data`  the same, after checking that the data has that digest, raising a `Cas.Error` if not
+- row  `store(digest)`  the bytes, or `Unset`
+- row  `store.has(digest)`  whether the blob is stored
+- row  `store.missing(digests)`  those of a list of digests not yet stored
+- row  `store.digests`  every digest stored
+- row  `store.prune(digests)`  deletes every blob not in the set, and returns how many it deleted
++ column  Espressione
++ column  Effetto
++ row  `store() = data`  memorizza i dati sotto il loro stesso digest, e lo restituisce; niente se il blob c'è già
++ row  `store(digest) = data`  lo stesso, dopo aver verificato che i dati abbiano quel digest, sollevando un `Cas.Error` altrimenti
++ row  `store(digest)`  i byte, oppure `Unset`
++ row  `store.has(digest)`  se il blob è memorizzato
++ row  `store.missing(digests)`  quelli di un elenco di digest non ancora memorizzati
++ row  `store.digests`  ogni digest memorizzato
++ row  `store.prune(digests)`  elimina ogni blob che non è nell'insieme, e restituisce quanti ne ha eliminati
+
+= row  `store.prune(digests)`  deletes every blob not in the set, and returns how many it deleted
+- ```
++ ```
+
+- `prune` is how a cache is trimmed to what is still referenced.
++ `prune` è il modo in cui una cache viene ridotta a ciò che è ancora referenziato.
+
+- A blob is written to a sibling with a unique name, and moved into place atomically, so a
+- reader never sees a partial blob. The store's root is a `Path` here, but its type is the type
+- of that root, and a `Cas.Storage` instance for another kind of root makes a store over it
+- with the same interface. As a [collection](collections.md), a store is its digests:
+- `store.size`, `store.has(digest)`, `store.at(digest)` and traversal all work on it.
++ Un blob viene scritto in un file accanto con un nome univoco, e spostato al suo posto in modo
++ atomico, così un lettore non vede mai un blob parziale. La radice dell'archivio qui è un `Path`, ma
++ il suo tipo è il tipo di quella radice, e un'istanza di `Cas.Storage` per un altro tipo di radice
++ crea su di essa un archivio con la stessa interfaccia. Come [collezione](collections.md), un
++ archivio è i suoi digest: `store.size`, `store.has(digest)`, `store.at(digest)` e l'attraversamento
++ funzionano tutti su di esso.
+
+- ### Extended attributes and volumes
++ ### Attributi estesi e volumi
+
+- The filesystem which a path sits on is a typed fact about it. `Ext4`, `Btrfs`, `Apfs`, `Ntfs`
+- and `Dos` are the *axes* which a path can be matched against. A filesystem which supports
+- extended attributes lets a path carry named metadata beyond its contents:
++ Il filesystem su cui si trova un percorso è un fatto tipizzato su di esso. `Ext4`, `Btrfs`, `Apfs`,
++ `Ntfs` e `Dos` sono gli *assi* rispetto ai quali si può confrontare un percorso. Un filesystem che
++ supporta gli attributi estesi permette a un percorso di portare metadati con nome oltre al suo
++ contenuto:
+
+= extended attributes lets a path carry named metadata beyond its contents:
+=
+- ```scala fuel
++ ```scala fuel
+
+= extended attributes lets a path carry named metadata beyond its contents:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= extended attributes lets a path carry named metadata beyond its contents:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val attributes = file match
++ val attributes = file match
+
+-   case Apfs(path) => path.attribute(t"origin", t"soundness".in[Data]) yet path.attributes()
++   case Apfs(path) => path.attribute(t"origin", t"soundness".in[Data]) yet path.attributes()
+
+-   case Ext4(path) => path.attribute(t"origin", t"soundness".in[Data]) yet path.attributes()
++   case Ext4(path) => path.attribute(t"origin", t"soundness".in[Data]) yet path.attributes()
+
+-   case _          => Nil
++   case _          => Nil
+
+=   case _          => Nil
+- ```
++ ```
+
+- On btrfs, `subvolume` reports the subvolume which a path belongs to, and `subvolumeRoot`
+- reports whether it is the top of one.
++ Su btrfs, `subvolume` indica il sottovolume a cui appartiene un percorso, e `subvolumeRoot` indica
++ se ne è la cima.
+
+- ### Standard directories
++ ### Directory standard
+
+- The conventional locations of a system are named values, resolved against the
+- [environment](environment.md). The home directory and the paths beneath it, and the system
+- directories under the root, are reached by navigating and applying:
++ Le posizioni convenzionali di un sistema sono valori con un nome, risolti rispetto
++ all'[ambiente](environment.md). La directory home e i percorsi sotto di essa, e le directory di
++ sistema sotto la radice, si raggiungono navigando e applicando:
+
+= directories under the root, are reached by navigating and applying:
+=
+- ```scala fuel
++ ```scala fuel
+
+= directories under the root, are reached by navigating and applying:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= directories under the root, are reached by navigating and applying:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val home = Home[Path on Linux]()
++ val home = Home[Path on Linux]()
+
+- val cache = Home.Cache[Path on Linux]()
++ val cache = Home.Cache[Path on Linux]()
+
+- val bin = Home.Local.Bin[Path on Linux]()
++ val bin = Home.Local.Bin[Path on Linux]()
+
+- val share = Base.Usr.Share[Path on Linux]()
++ val share = Base.Usr.Share[Path on Linux]()
+
+= val share = Base.Usr.Share[Path on Linux]()
+- ```
++ ```
+
+- Each object is named for the directory it stands for, capitalized, with any leading `.`
+- dropped, since `.` is the separator between members. So `$HOME/.local/bin` is
+- `Home.Local.Bin`, and `/var/lib` is `Base.Var.Lib`. Writing a standard location in this way,
+- and not as text, means that a mistyped directory does not compile:
++ Ogni oggetto prende il nome dalla directory che rappresenta, con l'iniziale maiuscola, senza
++ l'eventuale `.` iniziale, poiché `.` è il separatore tra i membri. Così `$HOME/.local/bin` è
++ `Home.Local.Bin`, e `/var/lib` è `Base.Var.Lib`. Scrivere una posizione standard in questo modo, e
++ non come testo, significa che una directory scritta male non compila:
+
+= and not as text, means that a mistyped directory does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and not as text, means that a mistyped directory does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= and not as text, means that a mistyped directory does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= and not as text, means that a mistyped directory does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Home.Cashe[Path on Linux]()
++ Home.Cashe[Path on Linux]()
+
+= Home.Cashe[Path on Linux]()
+- ```
++ ```
+
+- These are the layouts, and whether `readOnly` marks each as not meant to be written to:
++ Queste sono le disposizioni, e se `readOnly` segna ciascuna come non destinata alla scrittura:
+
+= These are the layouts, and whether `readOnly` marks each as not meant to be written to:
+=
+- ```tabular
++ ```tabular
+
+- column  Layout
++ column  Disposizione
+
+- column  Directory
++ column  Directory
+
+- column  Read-only
++ column  Sola lettura
+
+- row  `Home`  `~`  no
++ row  `Home`  `~`  no
+
+- row  `Home.Cache`  `~/.cache`  no
++ row  `Home.Cache`  `~/.cache`  no
+
+- row  `Home.Config`  `~/.config`  no
++ row  `Home.Config`  `~/.config`  no
+
+- row  `Home.Local`  `~/.local`  no
++ row  `Home.Local`  `~/.local`  no
+
+- row  `Home.Local.Bin`  `~/.local/bin`  no
++ row  `Home.Local.Bin`  `~/.local/bin`  no
+
+- row  `Home.Local.Lib`  `~/.local/lib`  no
++ row  `Home.Local.Lib`  `~/.local/lib`  no
+
+- row  `Home.Local.Share`  `~/.local/share`  no
++ row  `Home.Local.Share`  `~/.local/share`  no
+
+- row  `Home.Local.State`  `~/.local/state`  no
++ row  `Home.Local.State`  `~/.local/state`  no
+
+- row  `Base`  `/`  no
++ row  `Base`  `/`  no
+
+- row  `Base.Boot`  `/boot`  yes
++ row  `Base.Boot`  `/boot`  sì
+
+- row  `Base.Dev`  `/dev`  no
++ row  `Base.Dev`  `/dev`  no
+
+- row  `Base.Dev.Shm`  `/dev/shm`  no
++ row  `Base.Dev.Shm`  `/dev/shm`  no
+
+- row  `Base.Efi`  `/efi`  yes
++ row  `Base.Efi`  `/efi`  sì
+
+- row  `Base.Etc`  `/etc`  no
++ row  `Base.Etc`  `/etc`  no
+
+- row  `Base.Home`  `/home`  no
++ row  `Base.Home`  `/home`  no
+
+- row  `Base.Proc`  `/proc`  no
++ row  `Base.Proc`  `/proc`  no
+
+- row  `Base.Proc(pid)`  `/proc/<pid>`  yes
+- row  `Base.Proc.Sys`  `/proc/sys`  yes
++ row  `Base.Proc(pid)`  `/proc/<pid>`  sì
++ row  `Base.Proc.Sys`  `/proc/sys`  sì
+
+- row  `Base.Root`  `/root`  no
++ row  `Base.Root`  `/root`  no
+
+- row  `Base.Run`  `/run`  no
++ row  `Base.Run`  `/run`  no
+
+- row  `Base.Run.Log`  `/run/log`  no
++ row  `Base.Run.Log`  `/run/log`  no
+
+- row  `Base.Run.User`  `/run/user`  no
++ row  `Base.Run.User`  `/run/user`  no
+
+- row  `Base.Srv`  `/srv`  no
++ row  `Base.Srv`  `/srv`  no
+
+- row  `Base.Sys`  `/sys`  yes
++ row  `Base.Sys`  `/sys`  sì
+
+- row  `Base.Tmp`  `/tmp`  no
++ row  `Base.Tmp`  `/tmp`  no
+
+- row  `Base.Usr`  `/usr`  yes
+- row  `Base.Usr.Bin`  `/usr/bin`  yes
+- row  `Base.Usr.Include`  `/usr/include`  yes
+- row  `Base.Usr.Lib`  `/usr/lib`  yes
+- row  `Base.Usr.Share`  `/usr/share`  yes
+- row  `Base.Usr.Share.Doc`  `/usr/share/doc`  yes
+- row  `Base.Usr.Share.Factory`  `/usr/share/factory`  yes
+- row  `Base.Usr.Share.Factory.Etc`  `/usr/share/factory/etc`  yes
+- row  `Base.Usr.Share.Factory.Var`  `/usr/share/factory/var`  yes
++ row  `Base.Usr`  `/usr`  sì
++ row  `Base.Usr.Bin`  `/usr/bin`  sì
++ row  `Base.Usr.Include`  `/usr/include`  sì
++ row  `Base.Usr.Lib`  `/usr/lib`  sì
++ row  `Base.Usr.Share`  `/usr/share`  sì
++ row  `Base.Usr.Share.Doc`  `/usr/share/doc`  sì
++ row  `Base.Usr.Share.Factory`  `/usr/share/factory`  sì
++ row  `Base.Usr.Share.Factory.Etc`  `/usr/share/factory/etc`  sì
++ row  `Base.Usr.Share.Factory.Var`  `/usr/share/factory/var`  sì
+
+- row  `Base.Var`  `/var`  no
++ row  `Base.Var`  `/var`  no
+
+- row  `Base.Var.Cache`  `/var/cache`  no
++ row  `Base.Var.Cache`  `/var/cache`  no
+
+- row  `Base.Var.Lib`  `/var/lib`  no
++ row  `Base.Var.Lib`  `/var/lib`  no
+
+- row  `Base.Var.Log`  `/var/log`  no
++ row  `Base.Var.Log`  `/var/log`  no
+
+- row  `Base.Var.Spool`  `/var/spool`  no
++ row  `Base.Var.Spool`  `/var/spool`  no
+
+- row  `Base.Var.Tmp`  `/var/tmp`  no
++ row  `Base.Var.Tmp`  `/var/tmp`  no
+
+= row  `Base.Var.Tmp`  `/var/tmp`  no
+- ```
++ ```
+
+- A layout is a fixed place. `Home.Config` is always `$HOME/.config`, and only `$HOME` is read
+- from the environment. The locations which the
+- [XDG specification](environment.md#standard-directories) lets the user move, such as
+- `$XDG_CONFIG_HOME`, are given by `Xdg` instead. Applying a layout constructs a value of
+- whichever directory type is asked for, so the same names serve a `Path on Linux` and any
+- other representation.
++ Una disposizione è un luogo fisso. `Home.Config` è sempre `$HOME/.config`, e dall'ambiente si legge
++ soltanto `$HOME`. Le posizioni che la
++ [specifica XDG](environment.md#standard-directories) permette all'utente di spostare, come
++ `$XDG_CONFIG_HOME`, sono date invece da `Xdg`. Applicare una disposizione costruisce un valore del
++ tipo di directory richiesto, così gli stessi nomi servono un `Path on Linux` e qualsiasi altra
++ rappresentazione.
+
+- ### Search paths
++ ### Percorsi di ricerca
+
+- Many files are looked up not at one location, but along a list of them: an icon in whichever
+- of the XDG data directories holds it, or a configuration file in the first of several places.
+- A `Searchpaths.Stems` instance names the directories to try, in order. A relative path on the
+- corresponding plane is resolved with `search` to the first of them which holds it, or to
+- `Unset`:
++ Molti file si cercano non in una sola posizione, ma lungo un elenco di posizioni: un'icona in
++ qualunque delle directory dati XDG la contenga, o un file di configurazione nella prima di diverse
++ posizioni. Un'istanza di `Searchpaths.Stems` indica le directory da provare, in ordine. Un percorso
++ relativo sul piano corrispondente viene risolto con `search` nella prima di esse che lo contiene,
++ oppure in `Unset`:
+
+= `Unset`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Unset`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= `Unset`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import galilei.search
++ import galilei.search
+
+- given stems: (Searchpaths.Stems on Xdg.Data onto Linux) = new Searchpaths.Stems:
++ given stems: (Searchpaths.Stems on Xdg.Data onto Linux) = new Searchpaths.Stems:
+
+-   type Plane = Xdg.Data
++   type Plane = Xdg.Data
+
+-   type Target = Linux
++   type Target = Linux
+
+-   val stems: List[Path on Linux] = List(directory, directory / "inner")
++   val stems: List[Path on Linux] = List(directory, directory / "inner")
+
+- val found = (% / "inner.txt").on[Xdg.Data].search()
++ val found = (% / "inner.txt").on[Xdg.Data].search()
+
+= val found = (% / "inner.txt").on[Xdg.Data].search()
+- ```
++ ```
+
+- `dataSearch` and `configSearch` supply the XDG search paths for data and configuration, from
+- the environment, so a program's resources are found wherever the user's system keeps them.
++ `dataSearch` e `configSearch` forniscono i percorsi di ricerca XDG per i dati e la configurazione,
++ dall'ambiente, così le risorse di un programma si trovano ovunque il sistema dell'utente le tenga.
+
+- ### Watching for changes
++ ### Osservare i cambiamenti
+
+- A directory is watched by opening it as `Watch`, which gives a [stream](streams.md) of
+- `Watch.Event`s: a file created, modified or deleted, or a directory created. The registration
+- lasts exactly as long as the block:
++ Una directory si osserva aprendola come `Watch`, il che dà uno [stream](streams.md) di
++ `Watch.Event`: un file creato, modificato o eliminato, o una directory creata. La registrazione dura
++ esattamente quanto il blocco:
+
+= lasts exactly as long as the block:
+=
+- ```scala
++ ```scala
+
+- def observe(): Unit =
++ def observe(): Unit =
+
+= def observe(): Unit =
+-   directory.open[Watch](): watcher ?=>
++   directory.open[Watch](): watcher ?=>
+
+-     watcher.stream.each:
++     watcher.stream.each:
+
+-       case Watch.Event.NewFile(dir, file) => Out.println(t"created $file")
++       case Watch.Event.NewFile(dir, file) => Out.println(t"created $file")
+
+-       case Watch.Event.Modify(dir, file)  => Out.println(t"modified $file")
++       case Watch.Event.Modify(dir, file)  => Out.println(t"modified $file")
+
+-       case Watch.Event.Delete(dir, file)  => Out.println(t"deleted $file")
++       case Watch.Event.Delete(dir, file)  => Out.println(t"deleted $file")
+
+-       case _                              => ()
++       case _                              => ()
+
+=       case _                              => ()
+- ```
++ ```
+
+- Several paths are watched together by opening a list of them, which gives one stream of
+- events across all of them.
++ Più percorsi si osservano insieme aprendone un elenco, il che dà un solo stream di eventi su tutti.
+
+- Editors save in bursts, and a rebuild wants one notification for each burst, not one for each
+- event. `batches` gives a `Watch.Batch` each time no event has arrived for the given quiet
+- period, and its `paths` lists every changed path once:
++ Gli editor salvano a raffiche, e una ricompilazione vuole una notifica per ogni raffica, non una per
++ ogni evento. `batches` dà un `Watch.Batch` ogni volta che non arriva alcun evento per il periodo di
++ quiete indicato, e il suo `paths` elenca una sola volta ogni percorso cambiato:
+
+= period, and its `paths` lists every changed path once:
+=
+- ```scala
++ ```scala
+
+- def rebuild(changed: List[Path on Linux]): Unit = ()
++ def rebuild(changed: List[Path on Linux]): Unit = ()
+
+- def observeBatches(): Unit =
++ def observeBatches(): Unit =
+
+= def observeBatches(): Unit =
+-   directory.open[Watch](): watcher ?=>
++   directory.open[Watch](): watcher ?=>
+
+-     watcher.batches(0.2*Second).each: batch =>
++     watcher.batches(0.2*Second).each: batch =>
+
+-       rebuild(batch.paths[Path on Linux])
++       rebuild(batch.paths[Path on Linux])
+
+=       rebuild(batch.paths[Path on Linux])
+- ```
++ ```
+
+- The default watcher uses the operating system's own notifications of changes to files. Where
+- those are unavailable, `watchers.polling` checks at an interval instead.
++ L'osservatore predefinito usa le notifiche dei cambiamenti ai file del sistema operativo stesso.
++ Dove non sono disponibili, `watchers.polling` controlla invece a intervalli.
+
+- ### Choosing a backend
++ ### Scegliere un backend
+
+- Nothing above names a platform's API. The primitive operations which a filesystem must offer,
+- which are stat, open, read, write, list, link and delete, are gathered into a
+- `FilesystemBackend` for a plane, and everything else is defined in terms of them.
++ Niente di quanto sopra nomina l'API di una piattaforma. Le operazioni primitive che un filesystem
++ deve offrire, cioè stat, open, read, write, list, link e delete, sono raccolte in un
++ `FilesystemBackend` per un piano, e tutto il resto è definito in termini di esse.
+
+- The `java.nio` implementation is `filesystemBackends.javaBaseFilesystem`. A WASI
+- implementation, over `wasi:filesystem`, is supplied for WebAssembly components, so the same
+- code reads and writes files on the JVM and inside a component. An operation which a backend
+- cannot support raises an `Io.Error` whose reason is `Unsupported`. It is never approximated.
+- Narrowing the platform's surface to a seam this small is
+- [decoupling](../../philosophy/decoupling.md) applied within one library.
++ L'implementazione `java.nio` è `filesystemBackends.javaBaseFilesystem`. Per i componenti
++ WebAssembly è fornita un'implementazione WASI, su `wasi:filesystem`, così lo stesso codice legge e
++ scrive file sulla JVM e dentro un componente. Un'operazione che un backend non può supportare solleva
++ un `Io.Error` il cui motivo è `Unsupported`. Non viene mai approssimata. Restringere la superficie
++ della piattaforma a una giuntura così piccola è il
++ [disaccoppiamento](../../philosophy/decoupling.md) applicato all'interno di una sola libreria.
+
+- ### Related
++ ### Correlati
+
+- - [Paths](paths.md) describes the paths which these operations act on.
+- - [Streams](streams.md) reads and writes files a part at a time.
+- - [Archives](archives.md) opens a path as a ZIP or tar archive.
+- - [Compression](compression.md#compressing-a-stream) writes a compressed file.
+- - [Hashing](hashing.md#hashing-a-stream) computes the checksum of a file or a directory.
++ - [Percorsi](paths.md) descrive i percorsi su cui agiscono queste operazioni.
++ - [Stream](streams.md) legge e scrive file una parte alla volta.
++ - [Archivi](archives.md) apre un percorso come archivio ZIP o tar.
++ - [Compressione](compression.md#compressing-a-stream) scrive un file compresso.
++ - [Hashing](hashing.md#hashing-a-stream) calcola il checksum di un file o di una directory.

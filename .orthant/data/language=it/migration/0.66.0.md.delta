@@ -1,0 +1,455 @@
+orthant 1 language
+
+- # Changes in 0.66.0
++ # Modifiche nella 0.66.0
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.65.0 to 0.66.0. Each entry states precisely what changed; see `AGENTS.md` for the format.
+- Entries are grouped by module, most-recently-added last within a module.
++ Questo file viene letto da un agente LLM per aggiornare dalla 0.65.0 alla 0.66.0 il codice che usa
++ le librerie Soundness. Ogni voce indica con precisione che cosa è cambiato; il formato è descritto
++ in `AGENTS.md`. Le voci sono raggruppate per modulo e, all'interno di un modulo, la più recente è
++ l'ultima.
+
+- ## ziggurat
++ ## ziggurat
+
+- - The `ziggurat` library is removed. Its packaging (`ziggurat.Packaging`, `ziggurat.Packager`)
+-   and polyglot script generation (`ziggurat.Xeq`, `ziggurat.Payload`) now live in the separate
+-   [propensive/xeq](https://github.com/propensive/xeq) project, published as the `xeq` builder
+-   script alongside the runner stubs. Build a distributable with `xeq build --jar <jar> --out
+-   <name>` (or `embed-all`/`download`) instead of calling `Packager.pack`. (#1973)
++ - La libreria `ziggurat` è rimossa. Il suo packaging (`ziggurat.Packaging`, `ziggurat.Packager`)
++   e la generazione di script poliglotti (`ziggurat.Xeq`, `ziggurat.Payload`) si trovano ora nel
++   progetto separato [propensive/xeq](https://github.com/propensive/xeq), pubblicato come script
++   builder `xeq` accanto agli stub del runner. Si costruisce un distribuibile con `xeq build --jar <jar> --out
++   <name>` (oppure `embed-all`/`download`) invece di chiamare `Packager.pack`. (#1973)
+
+- ## anthology
++ ## anthology
+
+- - `anthology.xeq` (the `Jar`-to-executable toolchain edges: `xeqEdges`, `xeqOptions`,
+-   `XeqConfiguration`, `anthology.Xeq`) is removed. The same packaging is reachable as a toolchain
+-   format in the `xeq` project's `xeq.toolchain` module. (#1973)
++ - `anthology.xeq` (gli archi della toolchain da `Jar` a eseguibile: `xeqEdges`, `xeqOptions`,
++   `XeqConfiguration`, `anthology.Xeq`) è rimosso. Lo stesso packaging è raggiungibile come formato
++   della toolchain nel modulo `xeq.toolchain` del progetto `xeq`. (#1973)
+
+- ## ethereal
++ ## ethereal
+
+- - `ethereal.Assembler` and `ethereal.Runners` are removed, along with the in-JVM self-packaging
+-   path (`java -Dbuild.executable=… -jar app.jar`). An application JAR run without a launcher now
+-   prints an instruction to build one with `xeq build …` and exits. Package with the `xeq` builder
+-   script. The launcher→daemon `build.id` property is unchanged. (#1973)
++ - `ethereal.Assembler` e `ethereal.Runners` sono rimossi, insieme al percorso di auto-packaging
++   dentro la JVM (`java -Dbuild.executable=… -jar app.jar`). Un JAR applicativo eseguito senza
++   launcher ora stampa l'istruzione di costruirne uno con `xeq build …` e termina. Il packaging si
++   fa con lo script builder `xeq`. La proprietà `build.id` passata dal launcher al demone è
++   invariata. (#1973)
+
+- ## polyvinyl
++ ## polyvinyl
+
+- - `Specification.fields` is now `List[(Text, Member)]` (ordered), not `Map[Text, Member]`.
+-   Implementations must return the fields in the order a named tuple's elements should take;
+-   a `Map` can be converted with `List.from(map.stdlib)`, but its order is arbitrary. (#1974)
+- - `Member.Record`'s second parameter, formerly `map: Map[Text, Member]`, is now
++ - `Specification.fields` è ora `List[(Text, Member)]` (ordinato), non `Map[Text, Member]`.
++   Le implementazioni devono restituire i campi nell'ordine che devono assumere gli elementi di
++   una named tuple; una `Map` si può convertire con `List.from(map.stdlib)`, ma il suo ordine è
++   arbitrario. (#1974)
++ - Il secondo parametro di `Member.Record`, prima `map: Map[Text, Member]`, è ora
+
+-   `fields: List[(Text, Member)]`. (#1974)
++   `fields: List[(Text, Member)]`. (#1974)
+
+- - `Structural.transform` is now polymorphic: `def transform[value](data: Origin, make: Origin
+-   => value): constructor[value]`, formerly `def transform(data: Origin, make: Origin => Record):
+-   constructor[Record]`. An instance can no longer be written as a lambda (a polymorphic method
+-   is not a SAM); write `new Structural[constructor]: …` with the type members `Self`, `Origin`
+-   and `Form`, or take a polymorphic function `[value] => (Origin, Origin => value) =>
+-   constructor[value]` as `JsonBlueprint.structural` does. (#1974)
+- - New: `Specification.tuple(value: Expr[Origin])`, a macro helper beside `build`, returning
+-   `Expr[NamedTuple.AnyNamedTuple]`. Declare `transparent inline def tuple(value: Origin):
+-   NamedTuple.AnyNamedTuple = ${tuple('value)}` in a specification object to produce named
+-   tuples with one element per field, in field order, read eagerly at construction. An
+-   `Intensional` result of the form `success raises error` becomes an element of type `success`,
+-   with a `Tactic[error]` required at the call site. (#1974)
+- - `polyvinyl.core` now depends on `contingency.core`. (#1974)
++ - `Structural.transform` è ora polimorfico: `def transform[value](data: Origin, make: Origin
++   => value): constructor[value]`, prima `def transform(data: Origin, make: Origin => Record):
++   constructor[Record]`. Un'istanza non si può più scrivere come lambda (un metodo polimorfico
++   non è un SAM); si scrive `new Structural[constructor]: …` con i membri di tipo `Self`, `Origin`
++   e `Form`, oppure si prende una funzione polimorfica `[value] => (Origin, Origin => value) =>
++   constructor[value]` come fa `JsonBlueprint.structural`. (#1974)
++ - Nuovo: `Specification.tuple(value: Expr[Origin])`, un helper di macro accanto a `build`, che
++   restituisce `Expr[NamedTuple.AnyNamedTuple]`. Si dichiara `transparent inline def tuple(value: Origin):
++   NamedTuple.AnyNamedTuple = ${tuple('value)}` in un oggetto di specifica per produrre named
++   tuple con un elemento per campo, nell'ordine dei campi, letti subito alla costruzione. Un
++   risultato `Intensional` della forma `success raises error` diventa un elemento di tipo `success`,
++   e richiede una `Tactic[error]` nel punto di chiamata. (#1974)
++ - `polyvinyl.core` ora dipende da `contingency.core`. (#1974)
+
+- ## jacinta
++ ## jacinta
+
+- - `JsonBlueprint.Doc.properties` is now `Json` (the schema's `properties` object, kept in
+-   document order), not `Map[Text, JsonBlueprint.Property]`; `JsonBlueprint.Doc.fields` returns
+-   `List[(Text, Member)]`. Use `JsonBlueprint.entries(doc.properties)` for the decoded
+-   `List[(Text, JsonBlueprint.Property)]`. (#1974)
+- - `JsonBlueprint.Property.properties` and `JsonBlueprint.Property.items` are now
+-   `Optional[Json]`, not `Optional[Map[Text, Json]]`; `objectFields` and `arrayFields` return
++ - `JsonBlueprint.Doc.properties` è ora `Json` (l'oggetto `properties` dello schema, conservato
++   nell'ordine del documento), non `Map[Text, JsonBlueprint.Property]`; `JsonBlueprint.Doc.fields`
++   restituisce `List[(Text, Member)]`. Si usa `JsonBlueprint.entries(doc.properties)` per ottenere la
++   `List[(Text, JsonBlueprint.Property)]` decodificata. (#1974)
++ - `JsonBlueprint.Property.properties` e `JsonBlueprint.Property.items` sono ora
++   `Optional[Json]`, non `Optional[Map[Text, Json]]`; `objectFields` e `arrayFields` restituiscono
+
+-   `List[(Text, Member)]`. (#1974)
++   `List[(Text, Member)]`. (#1974)
+
+- - New: `JsonBlueprint.entries(json: Json): List[(Text, JsonBlueprint.Property)]` and
++ - Nuovi: `JsonBlueprint.entries(json: Json): List[(Text, JsonBlueprint.Property)]` e
+
+-   `JsonBlueprint.structural[name, constructor[_]](lambda: [value] => (Json, Json => value) =>
++   `JsonBlueprint.structural[name, constructor[_]](lambda: [value] => (Json, Json => value) =>
+
+-   constructor[value])`. (#1974)
++   constructor[value])`. (#1974)
+
+- - The givens `JsonBlueprint.array`, `optionalArray`, `module` and `optionalModule` keep their
+-   names and labels but are now explicit `Structural` instances (see polyvinyl). (#1974)
++ - I given `JsonBlueprint.array`, `optionalArray`, `module` e `optionalModule` mantengono nomi ed
++   etichette, ma sono ora istanze esplicite di `Structural` (vedi polyvinyl). (#1974)
+
+- ## stratiform
++ ## stratiform
+
+- - `TelBlueprint.fieldsOf` returns `List[(Text, Member)]` in schema order, not `Map[Text,
+-   Member]`; `TelBlueprint.fields` likewise. (#1974)
+- - `stratiform.Tel` serialization (`Tel.Document is Showable`, `Tel is Showable`): an empty
+-   inline atom (a `Tel.Atom.Inline` whose text is empty, as `Tel.scalar(t"")` and the `Text`
+-   encoder produce for an empty text) is now written as no atom at all, so a keyword-bearing
+-   compound with an empty scalar serializes as the bare keyword (`text`) where it previously
+-   wrote the keyword followed by the atom's preceding spaces (`text `). Reading is unchanged:
+-   the bare keyword decodes as the empty string, where the previous output was refused as a
+-   trailing space. Code comparing serialized documents textually must expect the bare keyword.
+-   (#1977)
++ - `TelBlueprint.fieldsOf` restituisce `List[(Text, Member)]` nell'ordine dello schema, non `Map[Text,
++   Member]`; lo stesso vale per `TelBlueprint.fields`. (#1974)
++ - Serializzazione di `stratiform.Tel` (`Tel.Document is Showable`, `Tel is Showable`): un atomo
++   inline vuoto (un `Tel.Atom.Inline` il cui testo è vuoto, come quelli prodotti da `Tel.scalar(t"")` e
++   dall'encoder di `Text` per un testo vuoto) ora non viene scritto affatto, quindi un composto con
++   parola chiave e scalare vuoto si serializza come la sola parola chiave (`text`), dove prima
++   scriveva la parola chiave seguita dagli spazi che precedono l'atomo (`text `). La lettura è
++   invariata: la sola parola chiave si decodifica come stringa vuota, mentre l'output precedente
++   veniva rifiutato come spazio finale. Il codice che confronta testualmente documenti serializzati
++   deve aspettarsi la sola parola chiave. (#1977)
+
+- ## spectacular
++ ## spectacular
+
+- - A `scala.NamedTuple` now has a native `Inspectable` instance, `spectacular.Inspectable.namedTuple`,
+-   and renders as its labelled elements in the product notation without a type name: `(name =
+-   t"Simon", age = 72).inspect` yields `t"(name:t\"Simon\" ╱ age:72)"`. Each element is rendered by
+-   the `Inspectable` summoned at that element's static type. Previously no instance matched a named
+-   tuple, so it fell through to `Inspectable.derived`'s `toString` case and rendered
+-   `t"“(Simon,72)”"`, with the labels lost and the elements' own instances bypassed. Code asserting
+-   on the old rendering, or filtering it out of `Inspectable.fallbacks`, must be updated. (#1975)
+- - `scala.Tuple` now has an explicit instance, `spectacular.Inspectable.tuple`, in place of the
+-   wisteria derivation a tuple previously reached through `Inspectable.derived`. The rendering of a
+-   tuple whose element types are statically known is unchanged (`(t"Simon", 72).inspect` still
+-   yields `t"(t\"Simon\" ╱ 72)"`, and `EmptyTuple.inspect` still yields `t"()"`). A value whose
+-   static type is a bare `Tuple`, whose element types cannot be walked, renders as its `toString` in
+-   the `“…”` marker, as before. (#1975)
++ - Una `scala.NamedTuple` ha ora un'istanza nativa di `Inspectable`, `spectacular.Inspectable.namedTuple`,
++   e viene resa come i suoi elementi etichettati nella notazione di prodotto, senza nome di tipo: `(name =
++   t"Simon", age = 72).inspect` produce `t"(name:t\"Simon\" ╱ age:72)"`. Ogni elemento è reso
++   dall'`Inspectable` evocato al tipo statico di quell'elemento. Prima nessuna istanza
++   corrispondeva a una named tuple, che ricadeva quindi nel caso `toString` di `Inspectable.derived`
++   e veniva resa come `t"“(Simon,72)”"`, perdendo le etichette e scavalcando le istanze proprie degli
++   elementi. Il codice che fa asserzioni sulla vecchia resa, o che la filtra da
++   `Inspectable.fallbacks`, va aggiornato. (#1975)
++ - `scala.Tuple` ha ora un'istanza esplicita, `spectacular.Inspectable.tuple`, al posto della
++   derivazione wisteria che una tupla raggiungeva prima tramite `Inspectable.derived`. La resa di una
++   tupla i cui tipi di elemento sono noti staticamente è invariata (`(t"Simon", 72).inspect` produce
++   ancora `t"(t\"Simon\" ╱ 72)"`, e `EmptyTuple.inspect` produce ancora `t"()"`). Un valore il cui
++   tipo statico è un semplice `Tuple`, i cui tipi di elemento non si possono percorrere, viene reso
++   come il suo `toString` nel marcatore `“…”`, come prima. (#1975)
+
+- ## stenography
++ ## stenography
+
+- - `stenography.Imports` gained a third parameter, `aliases: scala.collection.immutable.Map[String,
+-   Text] = Map()`, mapping a refined type member's name to the infix type alias which refines
+-   it. `Imports.resolve(designators, direct)` now fills it from every wildcard scope in
+-   `designators`; `Imports(designators, direct)` written directly leaves it empty. New:
+-   `Imports.infixAliases(scope: Designator)(using Context): Map[String, Text]`, the harvest for
+-   one scope. (#1979)
+- - `stenography.Syntax#text(using Imports)` now writes `Syntax.Structural(base, members, defs)`
+-   as nested `Infix` applications when `defs` is empty and every member of `members` is a plain
+-   alias (not a `Syntax.Declaration`) whose name is in `imports.aliases`: `Foo { type Form =
+-   Bar }` renders as `Foo in Bar` under an `Imports` resolved against a scope declaring `infix
+-   type in [refined, form] = refined { type Form = form }`. Previously this preference applied
+-   only to a `Syntax` built inside a macro (`Syntax.name`), and `text` always wrote the
+-   refinement. (#1979)
+- - `stenography.Syntax#text(using Imports)` now writes `Syntax.Application(Simple(Type(parent,
+-   name)), List(a, b), infix = true)` as `a name b` when `imports.hasDirect(Type(parent, name))`,
+-   in addition to when `imports.has(parent)`. Previously such an alias reached only through an
+-   `export` rendered as `parent.name[a, b]`. (#1979)
+- - `stenography.Imports.exports(scope)` (and so `resolve`) now includes the target of a
+-   polymorphic exported type alias whose body applies a `TypeRef` to exactly the alias's own
+-   parameters in order (an `export prepositional.on` forwarder), so that target renders by its
+-   leaf name under a wildcard import of `scope`. Previously only monomorphic aliases counted.
+-   (#1979)
++ - `stenography.Imports` ha acquisito un terzo parametro, `aliases: scala.collection.immutable.Map[String,
++   Text] = Map()`, che associa il nome di un membro di tipo raffinato all'alias di tipo infisso che
++   lo raffina. `Imports.resolve(designators, direct)` ora lo riempie a partire da ogni ambito con
++   wildcard in `designators`; `Imports(designators, direct)` scritto direttamente lo lascia vuoto.
++   Nuovo: `Imports.infixAliases(scope: Designator)(using Context): Map[String, Text]`, la raccolta
++   per un singolo ambito. (#1979)
++ - `stenography.Syntax#text(using Imports)` ora scrive `Syntax.Structural(base, members, defs)`
++   come applicazioni `Infix` annidate quando `defs` è vuoto e ogni membro di `members` è un semplice
++   alias (non una `Syntax.Declaration`) il cui nome è in `imports.aliases`: `Foo { type Form =
++   Bar }` viene reso come `Foo in Bar` con un `Imports` risolto rispetto a un ambito che dichiara `infix
++   type in [refined, form] = refined { type Form = form }`. Prima questa preferenza si applicava
++   solo a una `Syntax` costruita dentro una macro (`Syntax.name`), e `text` scriveva sempre il
++   raffinamento. (#1979)
++ - `stenography.Syntax#text(using Imports)` ora scrive `Syntax.Application(Simple(Type(parent,
++   name)), List(a, b), infix = true)` come `a name b` quando `imports.hasDirect(Type(parent, name))`,
++   oltre che quando `imports.has(parent)`. Prima un alias di questo tipo raggiunto solo tramite un
++   `export` veniva reso come `parent.name[a, b]`. (#1979)
++ - `stenography.Imports.exports(scope)` (e quindi `resolve`) ora include il bersaglio di un alias
++   di tipo esportato polimorfico il cui corpo applica un `TypeRef` esattamente ai parametri propri
++   dell'alias, nell'ordine (un forwarder `export prepositional.on`), in modo che quel bersaglio sia
++   reso con il suo nome foglia sotto un import con wildcard di `scope`. Prima contavano solo gli alias
++   monomorfici. (#1979)
+
+- ## phoenicia
++ ## phoenicia
+
+- - New: `Typeface of family` (`Typeface["Inter"]`, with the CSS generic families as
++ - Nuovi: `Typeface of family` (`Typeface["Inter"]`, con le famiglie generiche CSS come
+
+-   `Typeface.SansSerif`, `Serif`, `Monospace`, `Cursive`, `Fantasy`, `SystemUi`), `Face of family`
++   `Typeface.SansSerif`, `Serif`, `Monospace`, `Cursive`, `Fantasy`, `SystemUi`), `Face of family`
+
+-   (a typeface with `Weight`, `Slant`, `Stretch`, `Variation`s and `Face.Feature.Setting`s, built
+-   fluently: `Inter.bold.italic.enabling(Face.Feature.OldstyleNumerals)`), `Weight`, `Slant`,
+-   `Stretch`, `Variation` with `Variation.Axis`, `Coverage`, `Medium`, and the typeclass
+-   `Typesettable` (`(Typeface of "Inter") is Typesettable in Web`, with `Typesettable.embedded(sfnts*)`
+-   making a provision `in Medium` from font files and `Typesettable.Source` naming how a medium
+-   obtains a font). All are exported from `soundness`. (#1981)
+- - New: `class Font(face, provision) extends Formal`, written `Font in Web`. `Font(face)` pairs a
+-   face with the provision in scope for its typeface in the medium the expected type names;
+-   `Font.of[medium](face)` names the medium. Both require `Typeface of family is Typesettable in
+-   (? >: medium)` and a `Tactic[Font.Error]`. `Font.Error.Reason` gains `UncoveredWeight`,
+-   `UncoveredSlant`, `UncoveredStretch`, `UnknownAxis`, `AxisOutOfRange` and `MissingFeature`
+-   (numbers 5–10), and the error's message now reads "the font could not be used because …"
+-   (formerly "read"). (#1981)
+- - New: `Sfnt.fvar: Optional[FvarTable]` (a variable font's axes), `Sfnt.features:
+-   List[Face.Feature]` (the `GSUB`/`GPOS` feature tags) and `Os2Table.italic`. (#1981)
+- - `Face` records its request in three type members, `Weights` (a literal such as `700`),
+-   `Slanting` (`"upright"` or `"italic"`) and `Enabled` (a union of feature tags), each
+-   `Face.Runtime` where decided at runtime; the fluent methods return `Face.Shape[family, …]`
+-   refinements, and `Face.Feature` is a `Topical` class (`Feature of "onum"`) rather than an opaque
+-   `Text`. `Typesettable` is now `Locative`, and `Typesettable.embedded(resource)` accepts a
+-   `Locative` streamable source such as `cp"/fonts/x.ttf"`, keeping its path as the `Locus`.
+-   `Font(face)` and `Font.of[medium](face)` are inline macros: where the provision's `Locus` is on
+-   the compiler's classpath, the face's request is checked against the file at compile time and a
+-   refusal is a compile error; `Font.paired` is the runtime pairing they expand to. (#1981)
++   (un carattere tipografico con `Weight`, `Slant`, `Stretch`, `Variation` e `Face.Feature.Setting`,
++   costruito in modo fluente: `Inter.bold.italic.enabling(Face.Feature.OldstyleNumerals)`), `Weight`, `Slant`,
++   `Stretch`, `Variation` con `Variation.Axis`, `Coverage`, `Medium`, e la typeclass
++   `Typesettable` (`(Typeface of "Inter") is Typesettable in Web`, dove `Typesettable.embedded(sfnts*)`
++   crea una fornitura `in Medium` da file di font e `Typesettable.Source` indica come un mezzo
++   ottiene un font). Sono tutti esportati da `soundness`. (#1981)
++ - Nuovo: `class Font(face, provision) extends Formal`, scritto `Font in Web`. `Font(face)` associa
++   uno stile tipografico alla fornitura in ambito per il suo carattere tipografico nel mezzo indicato
++   dal tipo atteso; `Font.of[medium](face)` indica esplicitamente il mezzo. Entrambi richiedono `Typeface of family is Typesettable in
++   (? >: medium)` e una `Tactic[Font.Error]`. `Font.Error.Reason` acquisisce `UncoveredWeight`,
++   `UncoveredSlant`, `UncoveredStretch`, `UnknownAxis`, `AxisOutOfRange` e `MissingFeature`
++   (numeri 5–10), e il messaggio dell'errore ora recita "the font could not be used because …"
++   (prima "read"). (#1981)
++ - Nuovi: `Sfnt.fvar: Optional[FvarTable]` (gli assi di un font variabile), `Sfnt.features:
++   List[Face.Feature]` (i tag di funzionalità `GSUB`/`GPOS`) e `Os2Table.italic`. (#1981)
++ - `Face` registra la sua richiesta in tre membri di tipo, `Weights` (un letterale come `700`),
++   `Slanting` (`"upright"` o `"italic"`) ed `Enabled` (un'unione di tag di funzionalità), ciascuno
++   `Face.Runtime` dove deciso a runtime; i metodi fluenti restituiscono raffinamenti
++   `Face.Shape[family, …]`, e `Face.Feature` è una classe `Topical` (`Feature of "onum"`) anziché un
++   `Text` opaco. `Typesettable` è ora `Locative`, e `Typesettable.embedded(resource)` accetta una
++   sorgente streamable `Locative` come `cp"/fonts/x.ttf"`, conservandone il percorso come `Locus`.
++   `Font(face)` e `Font.of[medium](face)` sono macro inline: dove il `Locus` della fornitura è nel
++   classpath del compilatore, la richiesta dello stile tipografico viene verificata rispetto al file
++   in fase di compilazione e un rifiuto è un errore di compilazione; `Font.paired` è
++   l'abbinamento a runtime in cui si espandono. (#1981)
+
+- ## cataclysm
++ ## cataclysm
+
+- - New: `trait Web extends Medium`, whose companion holds `Typesettable in Web` givens for the
+-   generic families and the factories `Web.linked(url, coverage, format)`, `Web.imported(url,
+-   coverage)`, `Web.local[family]()`, plus `Web.font(face): Font in Web` and `Web.sansSerifFont`. (#1981)
+- - New: `Css.fontFace(font)` and `Css.fontFaces(fonts*)`, the `@font-face`/`@import` rules for a
+-   font's provision (embedded files as base-64 data URIs), and `FontFace`; `face.style` and
+-   `font.style` render a face's `font-family`, `font-weight`, `font-style`, `font-stretch`,
+-   `font-variation-settings` and `font-feature-settings` as a `Css.Style`. Exported from
+-   `soundness` as `Web`, `FontFace` and `style`. (#1981)
+- - `cataclysm.core` now depends on `phoenicia.core`, `monotonous.core` and `anticipation.url`. (#1981)
++ - Nuovo: `trait Web extends Medium`, il cui oggetto compagno contiene i given `Typesettable in Web` per le
++   famiglie generiche e le factory `Web.linked(url, coverage, format)`, `Web.imported(url,
++   coverage)`, `Web.local[family]()`, oltre a `Web.font(face): Font in Web` e `Web.sansSerifFont`. (#1981)
++ - Nuovi: `Css.fontFace(font)` e `Css.fontFaces(fonts*)`, le regole `@font-face`/`@import` per la
++   fornitura di un font (i file incorporati come data URI in base 64), e `FontFace`; `face.style` e
++   `font.style` rendono `font-family`, `font-weight`, `font-style`, `font-stretch`,
++   `font-variation-settings` e `font-feature-settings` di uno stile tipografico come `Css.Style`.
++   Esportati da `soundness` come `Web`, `FontFace` e `style`. (#1981)
++ - `cataclysm.core` ora dipende da `phoenicia.core`, `monotonous.core` e `anticipation.url`. (#1981)
+
+- ## savagery
++ ## savagery
+
+- - `Rectangle` and `Ellipse` gained trailing `style: Optional[Css.Style] = Unset` and
+-   `id: Optional[Svg.Id] = Unset` fields after `transforms`. Construction by name or by the first
+-   three (or four) positional arguments is unchanged; extractor patterns must add two wildcards:
+-   `case Rectangle(position, width, height, transforms, _, _)` and
+-   `case Ellipse(center, xRadius, yRadius, angle, transforms, _, _)`. `Circle.apply` accepts the
+-   same three optional arguments. (#1980)
+- - Parsing an SVG no longer flattens `<g>` elements into their children: each becomes a `Group`
+-   figure. `<polyline>`, `<polygon>` and `<text>` elements, previously skipped, now parse as
+-   `Polyline` (with `closed = true` for a polygon) and `Lettering`; `id`, `transform` and `style`
+-   attributes are read on every figure rather than only on `<path>`. (#1980)
+- - New figures `Group`, `Polyline` and `Lettering` (with `Lettering.Anchor` and
+-   `Lettering.Baseline`), all exported from `soundness`. (#1980)
+- - `Lettering` gains a field `font: Optional[Font in Web] = Unset` between `style` and
+-   `transforms`; a positional eighth argument that was `transforms` must now be named. The
+-   font's declarations join the inline `style` attribute, and `Svg.xml` writes a
+-   `<defs><style>` of `@font-face` rules for the typefaces of all its lettering. (#1981)
+- - New: `Figure.fonts: List[Font in Web]` on every figure, and `Figure.fonts(figures)`. (#1981)
++ - `Rectangle` ed `Ellipse` hanno acquisito i campi finali `style: Optional[Css.Style] = Unset` e
++   `id: Optional[Svg.Id] = Unset` dopo `transforms`. La costruzione per nome o con i primi tre (o
++   quattro) argomenti posizionali è invariata; i pattern con estrattore devono aggiungere due
++   wildcard: `case Rectangle(position, width, height, transforms, _, _)` e
++   `case Ellipse(center, xRadius, yRadius, angle, transforms, _, _)`. `Circle.apply` accetta gli
++   stessi tre argomenti opzionali. (#1980)
++ - Il parsing di un SVG non appiattisce più gli elementi `<g>` nei loro figli: ciascuno diventa una
++   figura `Group`. Gli elementi `<polyline>`, `<polygon>` e `<text>`, prima saltati, ora vengono
++   analizzati come `Polyline` (con `closed = true` per un poligono) e `Lettering`; gli attributi `id`,
++   `transform` e `style` vengono letti su ogni figura anziché solo su `<path>`. (#1980)
++ - Nuove figure `Group`, `Polyline` e `Lettering` (con `Lettering.Anchor` e
++   `Lettering.Baseline`), tutte esportate da `soundness`. (#1980)
++ - `Lettering` acquisisce un campo `font: Optional[Font in Web] = Unset` tra `style` e
++   `transforms`; un ottavo argomento posizionale che era `transforms` ora deve essere nominato. Le
++   dichiarazioni del font si uniscono all'attributo `style` inline, e `Svg.xml` scrive un
++   `<defs><style>` di regole `@font-face` per i caratteri tipografici di tutte le sue scritte. (#1981)
++ - Nuovi: `Figure.fonts: List[Font in Web]` su ogni figura, e `Figure.fonts(figures)`. (#1981)
+
+- ## tasseomancy
++ ## tasseomancy
+
+- - `Chart.Style.fontFamily: Text` is replaced by `font: Font in Web`; `Chart.Standard`'s
+-   `fontFamily = t"sans-serif"` parameter is now `font = Web.sansSerifFont`. A named family becomes
+-   a provision plus a font: `given (Typeface of "Menlo") is Typesettable in Web = Web.local()` and
++ - `Chart.Style.fontFamily: Text` è sostituito da `font: Font in Web`; il parametro
++   `fontFamily = t"sans-serif"` di `Chart.Standard` è ora `font = Web.sansSerifFont`. Una famiglia
++   con nome diventa una fornitura più un font: `given (Typeface of "Menlo") is Typesettable in Web = Web.local()` e
+
+-   `Chart.Standard(font = Web.font(Typeface["Menlo"].face))`. (#1981)
++   `Chart.Standard(font = Web.font(Typeface["Menlo"].face))`. (#1981)
+
+- - `Chart.Style.font(color: Color in Srgb): Css.Style` is renamed `fontStyle(color)` and no longer
+-   emits `font-family` (the lettering's `font` does). (#1981)
+- - `FontMetric`'s default given is now `FontMetric.fromStyle`, deriving from the style's font: an
+-   embedded file's own metrics, else the average; formerly `FontMetric.average`, always the
+-   average. New: `FontMetric.of(font: Font)`. (#1981)
++ - `Chart.Style.font(color: Color in Srgb): Css.Style` è rinominato `fontStyle(color)` e non
++   emette più `font-family` (lo fa il `font` della scritta). (#1981)
++ - Il given predefinito di `FontMetric` è ora `FontMetric.fromStyle`, che deriva dal font dello
++   stile: le metriche proprie di un file incorporato, altrimenti la media; prima era
++   `FontMetric.average`, sempre la media. Nuovo: `FontMetric.of(font: Font)`. (#1981)
+
+- ## denominative
++ ## denominative
+
+- - `each` on an `Interval` moved from `denominative.internal` to the `denominative` package. It
+-   is no longer in the opaque type's implicit scope, so a call site with no import of
+-   `denominative` (or `soundness`) must add one. Signature and behaviour unchanged:
++ - `each` su un `Interval` si è spostato da `denominative.internal` al package `denominative`.
++   Non è più nell'ambito implicito del tipo opaco, quindi un punto di chiamata senza import di
++   `denominative` (o `soundness`) deve aggiungerne uno. Firma e comportamento invariati:
+
+-   `extension (interval: Interval) inline def each(inline lambda: Ordinal => Unit): Unit`. (#1985)
++   `extension (interval: Interval) inline def each(inline lambda: Ordinal => Unit): Unit`. (#1985)
+
+- - `thru` and `till` on `Ordinal` moved from `denominative.internal` to the `denominative`
+-   package, so they are no longer in the opaque type's implicit scope: a call site with no
+-   import of `denominative` (or `soundness`) must add one. Signatures and behaviour unchanged.
+-   `span` is unmoved. (#1985)
+- - New overloads `extension [form](ordinal: Ordinal in form) inline infix def thru(right:
+-   Ordinal in form): Interval in form` and the matching `till`, selected when both endpoints are
+-   confined to the same value. They are the only way to build a branded interval that does not
+-   begin at the start of the collection. Note that an ordinal obtained through `Optional#let`
+-   carries a capture variable and will not match them; narrow with `beyond` instead. (#1985)
+- - New: `extension [form](range: Interval in form) inline def beyond(count: Int): Interval in
+-   form`, the complement of `capped` — it drops the first `count` indexes, preserving the brand,
+-   where `capped` keeps the first `count`. Together they bound a window at both ends. (#1985)
+- - New overload `extension [form](range: Interval in form) inline def each(inline lambda:
+-   (Ordinal in form) => Unit): Unit`, selected for a confined interval such as `value.extent` or
+-   `value.extent.capped(n)`. It supplies confined ordinals (`Ordinal in form`), so an indexed read
+-   in the lambda resolves to the total `apply` and yields a bare element, not an `Optional`:
+-   `xs.extent.each { ordinal => xs(ordinal) }`. It supersedes `value.iterate` and
+-   `value.iterate(range)`, which are unchanged and still available. (#1985)
++ - `thru` e `till` su `Ordinal` si sono spostati da `denominative.internal` al package
++   `denominative`, quindi non sono più nell'ambito implicito del tipo opaco: un punto di chiamata
++   senza import di `denominative` (o `soundness`) deve aggiungerne uno. Firme e comportamento
++   invariati. `span` non si è spostato. (#1985)
++ - Nuovi overload `extension [form](ordinal: Ordinal in form) inline infix def thru(right:
++   Ordinal in form): Interval in form` e il corrispondente `till`, selezionati quando entrambi gli
++   estremi sono confinati allo stesso valore. Sono l'unico modo per costruire un intervallo con
++   marchio che non inizi all'inizio della collezione. Un ordinale ottenuto tramite `Optional#let`
++   porta con sé una variabile di cattura e non vi corrisponde; si restringe invece con `beyond`. (#1985)
++ - Nuovo: `extension [form](range: Interval in form) inline def beyond(count: Int): Interval in
++   form`, il complemento di `capped`: scarta i primi `count` indici, preservando il marchio,
++   mentre `capped` conserva i primi `count`. Insieme delimitano una finestra a entrambe le
++   estremità. (#1985)
++ - Nuovo overload `extension [form](range: Interval in form) inline def each(inline lambda:
++   (Ordinal in form) => Unit): Unit`, selezionato per un intervallo confinato come `value.extent` o
++   `value.extent.capped(n)`. Fornisce ordinali confinati (`Ordinal in form`), così una lettura
++   indicizzata nella lambda si risolve nell'`apply` totale e produce un elemento nudo, non un
++   `Optional`: `xs.extent.each { ordinal => xs(ordinal) }`. Sostituisce `value.iterate` e
++   `value.iterate(range)`, che sono invariati e ancora disponibili. (#1985)
+
+- ## concordance
++ ## concordance
+
+- - New overload `extension [collection](value: collection) inline def survey[result](range:
++ - Nuovo overload `extension [collection](value: collection) inline def survey[result](range:
+
+-   Interval in value.type)(using indexable: collection is Applicable by Ordinal, countable:
++   Interval in value.type)(using indexable: collection is Applicable by Ordinal, countable:
+
+-   collection is Countable)(inline lambda: Surveyor[collection, value.type, indexable.Result] =>
++   collection is Countable)(inline lambda: Surveyor[collection, value.type, indexable.Result] =>
+
+-   result): result`. The surveyor begins at the interval's start and is exhausted at its limit,
+-   rather than spanning the whole collection, so a scan bounded by anything other than the
+-   collection's own length cannot overrun its window. `surveyor.passed` is the position counted
+-   from the start of the collection, which for a surveyor over everything is unchanged. (#1985)
++   result): result`. Il surveyor inizia all'inizio dell'intervallo e si esaurisce al suo limite,
++   anziché coprire l'intera collezione, così una scansione delimitata da qualcosa di diverso dalla
++   lunghezza propria della collezione non può oltrepassare la sua finestra. `surveyor.passed` è la
++   posizione contata dall'inizio della collezione, che per un surveyor su tutto è invariata. (#1985)
+
+- ## hypotenuse
++ ## hypotenuse
+
+- - `hypotenuse.Bcd#each(action: Int => Unit): Unit` renamed to `eachNibble`; `each` removed.
+-   Behaviour unchanged: it invokes `action` with each nibble value in left-to-right
+-   (oldest-first) order. The old name collided with the collection `each`, which a file
+-   importing `Bcd.*` would resolve to `Bcd`'s version for any receiver. (#1985)
++ - `hypotenuse.Bcd#each(action: Int => Unit): Unit` rinominato in `eachNibble`; `each` rimosso.
++   Comportamento invariato: invoca `action` con il valore di ogni nibble in ordine da sinistra a
++   destra (dal più vecchio). Il vecchio nome collideva con l'`each` delle collezioni, che un file
++   che importa `Bcd.*` risolveva nella versione di `Bcd` per qualsiasi ricevente. (#1985)

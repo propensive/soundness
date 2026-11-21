@@ -1,0 +1,848 @@
+orthant 1 language
+
+- ## OpenAPI
++ ## OpenAPI
+
+- ### About
++ ### Panoramica
+
+- An [OpenAPI](https://www.openapis.org/) document describes a REST API: its paths, parameters,
+- and request and response schemas. Here that description becomes a *typed client* as the code
+- compiles. Pointing `Api` at a specification gives a value whose navigation mirrors the paths of
+- the API. Each segment, each path parameter, each query or header parameter and each response
+- type is checked against the specification. A call which the API does not offer, or a parameter
+- of the wrong type, does not compile.
++ Un documento [OpenAPI](https://www.openapis.org/) descrive un'API REST: i suoi path, i
++ parametri e gli schemi di richiesta e di risposta. Qui quella descrizione diventa un *client
++ tipizzato* durante la compilazione del codice. Puntare `Api` su una specifica produce un valore la
++ cui navigazione rispecchia i path dell'API. Ogni segmento, ogni parametro di path, ogni parametro
++ di query o di intestazione e ogni tipo di risposta viene verificato rispetto alla specifica. Una
++ chiamata che l'API non offre, o un parametro del tipo sbagliato, non compila.
+
+- ### On API specifications
++ ### Sulle specifiche delle API
+
+- An OpenAPI document is a machine-readable contract. The usual way to honor it is code
+- generation: a build step emits a client, which is compiled, versioned and kept in step by
+- tooling. The contract is enforced, at the price of generated sources and a build pipeline. When
+- the generator is skipped, calls are made against remembered URLs and hoped-for schemas.
++ Un documento OpenAPI è un contratto leggibile da una macchina. Il modo consueto di onorarlo è la
++ generazione di codice: un passo della build emette un client, che viene compilato, versionato e
++ mantenuto allineato dagli strumenti. Il contratto viene fatto rispettare, al prezzo di sorgenti
++ generati e di una pipeline di build. Quando si salta il generatore, le chiamate si fanno verso URL
++ ricordati a memoria e schemi sperati.
+
+- Here the specification is read during compilation instead. There is no generated code to
+- maintain. The client *is* the specification, interpreted by the compiler, and a drift between
+- code and contract is a compile error in the code. That is
+- [correctness](../../philosophy/correctness.md) by construction, and not by review.
++ Qui invece la specifica si legge durante la compilazione. Non c'è codice generato da mantenere.
++ Il client *è* la specifica, interpretata dal compilatore, e uno scostamento tra codice e contratto
++ è un errore di compilazione nel codice. È
++ [correttezza](../../philosophy/correctness.md) per costruzione, e non per revisione.
+
+- Everything comes from the `soundness` package, with a few deliberate choices imported by name:
++ Tutto proviene dal package `soundness`, con alcune scelte deliberate importate per nome:
+
+= Everything comes from the `soundness` package, with a few deliberate choices imported by name:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import construables.jsonConstruable
++ import construables.jsonConstruable
+
+- import postables.jsonPostable
++ import postables.jsonPostable
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+= import errorDiagnostics.stackTracesDiagnostics
+- ```
++ ```
+
+- The samples on this page call APIs over the network, so they are compiled but not run.
++ Gli esempi di questa pagina chiamano API in rete, quindi vengono compilati ma non eseguiti.
+
+- ### A typed client
++ ### Un client tipizzato
+
+- `Api` reads a specification from the [classpath](classpath.md) as the code compiles. The
+- specification may be JSON or YAML, and OpenAPI 3.0 or 3.1. The resulting value navigates by
+- path:
++ `Api` legge una specifica dal [classpath](classpath.md) durante la compilazione del codice. La
++ specifica può essere JSON o YAML, e OpenAPI 3.0 o 3.1. Il valore risultante si naviga per path:
+
+= path:
+=
+- ```scala fuel
++ ```scala fuel
+
+= path:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= path:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val api = Api(cp"/openapi/local/petstore.json")
++ val api = Api(cp"/openapi/local/petstore.json")
+
+- val pets = api.pets
++ val pets = api.pets
+
+- val pet = api.pets(42)
++ val pet = api.pets(42)
+
+= val pet = api.pets(42)
+- ```
++ ```
+
+- `api.pets` is the `/pets` path, and `api.pets(42)` is `/pets/{petId}`, with the parameter typed
+- by the specification. A path which the specification does not have does not compile:
++ `api.pets` è il path `/pets`, e `api.pets(42)` è `/pets/{petId}`, con il parametro tipizzato
++ dalla specifica. Un path che la specifica non ha non compila:
+
+= by the specification. A path which the specification does not have does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- api.unicorns
++ api.unicorns
+
+= api.unicorns
+- ```
++ ```
+
+- A path parameter of the wrong type, such as text where the specification says integer, is also
+- a compile error, caught where the call is written. A parameter of `type: integer` with
+- `format: int64` is a `Long`, and an `Int` is accepted too. A segment which the specification
+- writes with characters Scala does not allow in an identifier is written in backticks, as in
+- `` api.`museum-hours` `` or `` api.users.`@me` ``.
++ Anche un parametro di path del tipo sbagliato, come del testo dove la specifica dice intero, è un
++ errore di compilazione, intercettato dove si scrive la chiamata. Un parametro di `type: integer`
++ con `format: int64` è un `Long`, e si accetta anche un `Int`. Un segmento che la specifica scrive
++ con caratteri che Scala non ammette in un identificatore si scrive tra backtick, come in
++ `` api.`museum-hours` `` o `` api.users.`@me` ``.
+
+- The base URL comes from the first server of the specification, with its `{variables}` at their
+- defaults, and is checked as a URL as the code compiles. A specification whose server is
+- relative, such as `/api/v3`, or which declares none, must take its base from the caller. A
+- relative server URL then extends that base:
++ L'URL di base proviene dal primo server della specifica, con le sue `{variables}` ai valori
++ predefiniti, ed è verificato come URL durante la compilazione del codice. Una specifica il cui
++ server è relativo, come `/api/v3`, o che non ne dichiara alcuno, deve ricevere la sua base dal
++ chiamante. Un URL di server relativo estende allora quella base:
+
+= relative server URL then extends that base:
+=
+- ```scala fuel
++ ```scala fuel
+
+= relative server URL then extends that base:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= relative server URL then extends that base:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val petstore = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
++ val petstore = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
+
+= val petstore = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
+- ```
++ ```
+
+- What is about to be sent is a value too. `request` on any navigated `Api` or `Api.Response` is
+- an `Api.Request`, whose fields are:
++ Anche ciò che sta per essere inviato è un valore. `request` su qualsiasi `Api` o `Api.Response`
++ navigato è un `Api.Request`, i cui campi sono:
+
+= an `Api.Request`, whose fields are:
+=
+- ```tabular
++ ```tabular
+
+- column  Field
+- column  Holds
+- row  `method`  the `Http.Method`
+- row  `base`  the base `HttpUrl`
+- row  `path`  the path template
+- row  `substitutions`  the values for the template's variables
+- row  `query`  the `Query`
+- row  `headers`  the `Http.Header`s
+- row  `body`  the body, with its `MediaType`
+- row  `accept`  the media type asked for
++ column  Campo
++ column  Contiene
++ row  `method`  l'`Http.Method`
++ row  `base`  l'`HttpUrl` di base
++ row  `path`  il modello del path
++ row  `substitutions`  i valori per le variabili del modello
++ row  `query`  la `Query`
++ row  `headers`  gli `Http.Header`
++ row  `body`  il corpo, con il suo `MediaType`
++ row  `accept`  il tipo di media richiesto
+
+= row  `accept`  the media type asked for
+- ```
++ ```
+
+- ### Calling
++ ### Chiamare
+
+- An endpoint is invoked with its method, with its query and header parameters as named arguments,
+- and with a request body as a value. `call` executes the request and reads the response as the
+- type asked for, which must conform to the response schema the specification declares:
++ Un endpoint si invoca con il suo metodo, con i suoi parametri di query e di intestazione come
++ argomenti con nome, e con un corpo di richiesta come valore. `call` esegue la richiesta e legge la
++ risposta come il tipo richiesto, che deve essere conforme allo schema di risposta dichiarato dalla
++ specifica:
+
+= type asked for, which must conform to the response schema the specification declares:
+=
+- ```scala
++ ```scala
+
+- case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
++ case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
+
+- case class NewPet(name: Text, tag: Optional[Text] = Unset)
++ case class NewPet(name: Text, tag: Optional[Text] = Unset)
+
+= case class NewPet(name: Text, tag: Optional[Text] = Unset)
+- ```
++ ```
+
+= case class NewPet(name: Text, tag: Optional[Text] = Unset)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class NewPet(name: Text, tag: Optional[Text] = Unset)
+= ```
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= case class NewPet(name: Text, tag: Optional[Text] = Unset)
+= ```
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val one: Pet = api.pets(42).get.call[Pet]()
++ val one: Pet = api.pets(42).get.call[Pet]()
+
+- val some: List[Pet] = api.pets.get(limit = 10).call[List[Pet]]()
++ val some: List[Pet] = api.pets.get(limit = 10).call[List[Pet]]()
+
+- val created: Pet = api.pets.post(NewPet(t"Crab")).call[Pet]()
++ val created: Pet = api.pets.post(NewPet(t"Crab")).call[Pet]()
+
+- val deleted: Unit = api.sessions(t"abc").delete.call()
++ val deleted: Unit = api.sessions(t"abc").delete.call()
+
+= val deleted: Unit = api.sessions(t"abc").delete.call()
+- ```
++ ```
+
+- The first is `GET /pets/42`, decoded according to the schema. The third sends a typed request
+- body. The last answers `204` with no body, so its result is `Unit`.
++ La prima è `GET /pets/42`, decodificata secondo lo schema. La terza invia un corpo di richiesta
++ tipizzato. L'ultima risponde `204` senza corpo, quindi il suo risultato è `Unit`.
+
+- A parameter declared on the path item applies to every operation on it. A parameter written as
+- a `$ref` into the components of the document is followed, as are `$ref` responses and request
+- bodies. Where an operation declares several successful responses, `200` is preferred, then
+- `201`, then the lowest. Asking for a type which the response schema does not support is a
+- compile error.
++ Un parametro dichiarato sul path item si applica a ogni operazione su di esso. Un parametro
++ scritto come `$ref` verso i componenti del documento viene seguito, e così le risposte e i corpi
++ di richiesta `$ref`. Dove un'operazione dichiara più risposte di successo, si preferisce `200`,
++ poi `201`, poi la più bassa. Chiedere un tipo che lo schema di risposta non supporta è un errore
++ di compilazione.
+
+- ### Security
++ ### Sicurezza
+
+- The specification of an API names its security schemes, which may be an API key in a header,
+- query parameter or cookie, HTTP authentication, OAuth 2 or OpenID Connect, and says which of
+- them each operation requires. The credentials come from [OAuth](oauth.md). A `Credential` is a
+- [contextual value] named for the scheme, which holds the value the kind of scheme calls for. An
+- operation which requires credentials which nobody has provided does not compile, and the error
+- names the givens which would satisfy each alternative:
++ La specifica di un'API nomina i suoi schemi di sicurezza, che possono essere una chiave API in
++ un'intestazione, in un parametro di query o in un cookie, l'autenticazione HTTP, OAuth 2 o OpenID
++ Connect, e dice quali di essi richiede ciascuna operazione. Le credenziali provengono da
++ [OAuth](oauth.md). Una `Credential` è un [valore contestuale] che prende il nome dallo schema, e
++ che contiene il valore richiesto dal tipo di schema. Un'operazione che richiede credenziali che
++ nessuno ha fornito non compila, e l'errore nomina i given che soddisferebbero ciascuna
++ alternativa:
+
+= names the givens which would satisfy each alternative:
+=
+- ```scala
++ ```scala
+
+- val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
++ val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+- given apiKey: ("api_key" is Credential to Text) = Credential(t"…")
++ given apiKey: ("api_key" is Credential to Text) = Credential(t"…")
+
+- given oauth: ("petstore_auth" is Credential to Authorization) =
++ given oauth: ("petstore_auth" is Credential to Authorization) =
+
+-   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
++   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+
+=   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+- ```
++ ```
+
+=   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+= ```
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+=   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+= ```
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- petstore.pet(42L).get.call()
++ petstore.pet(42L).get.call()
+
+- petstore.pet(42L).delete(api_key = t"…")
++ petstore.pet(42L).delete(api_key = t"…")
+
+= petstore.pet(42L).delete(api_key = t"…")
+- ```
++ ```
+
+- The first call sends `api_key` as the specification dictates. In the second, `api_key` is a
+- header parameter, and is sent as a header. Each kind of scheme takes its own credential, and
+- sends it its own way:
++ La prima chiamata invia `api_key` come prescrive la specifica. Nella seconda, `api_key` è un
++ parametro di intestazione, e viene inviato come intestazione. Ogni tipo di schema accetta la
++ propria credenziale, e la invia a modo suo:
+
+= sends it its own way:
+=
+- ```tabular
++ ```tabular
+
+- column  Scheme
+- column  Credential
+- column  Sent
+- row  API key  `Credential to Text`  in the header, query parameter or cookie the scheme names
+- row  HTTP authentication  `Credential to Auth`  in the `Authorization` header
+- row  OAuth 2, OpenID Connect  `Credential to Authorization`, or `Credential to Auth` for a token obtained elsewhere  as a `Bearer` authorization
+- row  mutual TLS  not supported
++ column  Schema
++ column  Credenziale
++ column  Inviata
++ row  chiave API  `Credential to Text`  nell'intestazione, nel parametro di query o nel cookie che lo schema nomina
++ row  autenticazione HTTP  `Credential to Auth`  nell'intestazione `Authorization`
++ row  OAuth 2, OpenID Connect  `Credential to Authorization`, o `Credential to Auth` per un token ottenuto altrove  come autorizzazione `Bearer`
++ row  TLS mutuo  non supportato
+
+= row  mutual TLS  not supported
+- ```
++ ```
+
+- An OAuth 2 or OpenID Connect token is checked, before the request goes, against the scopes which
+- the requirement names. A token which lacks one raises `OAuth.Error`. Where an operation offers
+- alternative requirements, the first of which every scheme has a credential in scope is used. An
+- operation whose `security` is empty needs none.
++ Un token OAuth 2 o OpenID Connect viene verificato, prima che la richiesta parta, rispetto agli
++ scope che il requisito nomina. Un token a cui ne manca uno solleva `OAuth.Error`. Dove
++ un'operazione offre requisiti alternativi, si usa il primo per il quale ogni schema ha una
++ credenziale nell'ambito. Un'operazione la cui `security` è vuota non ne richiede alcuna.
+
+- ### Errors
++ ### Errori
+
+- Every response which an operation declares outside the success range has its own error type,
+- named for its status:
++ Ogni risposta che un'operazione dichiara fuori dall'intervallo di successo ha un proprio tipo di
++ errore, che prende il nome dal suo stato:
+
+= named for its status:
+=
+- ```tabular
++ ```tabular
+
+- column  Declared response
+- column  Error type
+- row  a status telekinesis names, such as `404`, `400` or `429`  one named for it: `Api.NotFound`, `Api.BadRequest`, `Api.TooManyRequests`
+- row  the `4XX` range  `Api.ClientError`
+- row  the `5XX` range  `Api.ServerError`
++ column  Risposta dichiarata
++ column  Tipo di errore
++ row  uno stato che telekinesis nomina, come `404`, `400` o `429`  uno che prende il nome da esso: `Api.NotFound`, `Api.BadRequest`, `Api.TooManyRequests`
++ row  l'intervallo `4XX`  `Api.ClientError`
++ row  l'intervallo `5XX`  `Api.ServerError`
+
+- row  `default`  `Api.OtherError`
++ row  `default`  `Api.OtherError`
+
+= row  `default`  `Api.OtherError`
+- ```
++ ```
+
+- Each carries the error body, construed as the type which the specification declares for it, by
+- the first of these which applies:
++ Ciascuno porta il corpo dell'errore, interpretato come il tipo che la specifica dichiara per
++ esso, secondo la prima di queste regole che si applica:
+
+= the first of these which applies:
+=
+- ```tabular
++ ```tabular
+
+- column  The error body is
+- column  Construed as
+- row  a JSON object  a record typed by the error schema
+- row  of a media type with a carrier  the media type's carrier
+- row  anything else  `Text`
+- row  not declared  `Unit`
++ column  Il corpo dell'errore è
++ column  Interpretato come
++ row  un oggetto JSON  un record tipizzato dallo schema dell'errore
++ row  di un tipo di media con un portatore  il portatore del tipo di media
++ row  qualsiasi altra cosa  `Text`
++ row  non dichiarato  `Unit`
+
+= row  not declared  `Unit`
+- ```
++ ```
+
+- The `Api.Response` of the operation records the union of them as its `Failure`. So `attempt`
+- gives an `Attempt` over exactly the declared errors, and the compiler checks a `match` over it
+- for exhaustiveness:
++ L'`Api.Response` dell'operazione registra la loro unione come suo `Failure`. Così `attempt`
++ produce un `Attempt` esattamente sugli errori dichiarati, e il compilatore verifica l'esaustività
++ di un `match` su di esso:
+
+= for exhaustiveness:
+=
+- ```scala fuel
++ ```scala fuel
+
+= for exhaustiveness:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= for exhaustiveness:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- petstore.pet(42L).get.attempt[Pet]() match
++ petstore.pet(42L).get.attempt[Pet]() match
+
+-   case Attempt.Success(pet)                        => pet.name
++   case Attempt.Success(pet)                        => pet.name
+
+-   case Attempt.Failure(Api.NotFound(()))           => t"no such pet"
++   case Attempt.Failure(Api.NotFound(()))           => t"no such pet"
+
+-   case Attempt.Failure(Api.BadRequest(()))         => t"bad id"
++   case Attempt.Failure(Api.BadRequest(()))         => t"bad id"
+
+- given basic: ("basicAuth" is Credential to Auth) = Credential(Auth.Basic(t"user", t"pass"))
++ given basic: ("basicAuth" is Credential to Auth) = Credential(Auth.Basic(t"user", t"pass"))
+
+- val stripe = Api(cp"/openapi/stripe/spec3.json")
++ val stripe = Api(cp"/openapi/stripe/spec3.json")
+
+- stripe.v1.customers(t"cus_1").get.attempt[Json]() match
++ stripe.v1.customers(t"cus_1").get.attempt[Json]() match
+
+-   case Attempt.Success(customer)                       => customer
++   case Attempt.Success(customer)                       => customer
+
+-   case Attempt.Failure(Api.OtherError(status, problem)) => problem.error.message
++   case Attempt.Failure(Api.OtherError(status, problem)) => problem.error.message
+
+=   case Attempt.Failure(Api.OtherError(status, problem)) => problem.error.message
+- ```
++ ```
+
+- A case for a status which the specification does not declare, such as `Api.Conflict` for these
+- operations, does not compile. `call()` itself raises the declared errors through
+- [contingency](errors.md), with one [tactic] for each declared type, which a `recover` or
+- `mitigate` supplies case by case. A handler which misses one is a compile error which names it.
++ Un caso per uno stato che la specifica non dichiara, come `Api.Conflict` per queste operazioni,
++ non compila. `call()` stesso solleva gli errori dichiarati attraverso
++ [contingency](errors.md), con una [tattica] per ogni tipo dichiarato, che un `recover` o un
++ `mitigate` fornisce caso per caso. Un handler che ne manca uno è un errore di compilazione che lo
++ nomina.
+
+- Servers do not always keep to their specifications. A response with an undeclared status raises
+- `Api.Violation`, which carries the status and the bytes of the body. Every call may meet it, and
+- it is handled apart from the declared errors. It is the breach of the contract, not one of its
+- cases.
++ I server non rispettano sempre le loro specifiche. Una risposta con uno stato non dichiarato
++ solleva `Api.Violation`, che porta lo stato e i byte del corpo. Ogni chiamata può incontrarlo, e
++ lo si gestisce separatamente dagli errori dichiarati. È la violazione del contratto, non uno dei
++ suoi casi.
+
+- ### Media types and their carriers
++ ### Tipi di media e i loro portatori
+
+- The specification names the media type of each body, and a `Construable` names the type which
+- carries that media type: `("application/json" is Construable to Json)`, or
+- `("image/png" is Construable to (Raster in Png))`. The [typeclass] carries no operations. The
+- reader and writer of the carrier do the work. Every mapping is a contextual value in the
+- `construables` family, imported by name, so nothing is construed without a deliberate choice:
++ La specifica nomina il tipo di media di ogni corpo, e un `Construable` nomina il tipo che porta
++ quel tipo di media: `("application/json" is Construable to Json)`, o
++ `("image/png" is Construable to (Raster in Png))`. La [typeclass] non porta alcuna operazione. Il
++ lavoro lo fanno il reader e il writer del portatore. Ogni corrispondenza è un valore contestuale
++ della famiglia `construables`, importato per nome, quindi nulla viene interpretato senza una
++ scelta deliberata:
+
+= `construables` family, imported by name, so nothing is construed without a deliberate choice:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `construables` family, imported by name, so nothing is construed without a deliberate choice:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= `construables` family, imported by name, so nothing is construed without a deliberate choice:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import construables.pngConstruable
++ import construables.pngConstruable
+
+- given museumAuth: ("MuseumPlaceholderAuth" is Credential to Auth) =
++ given museumAuth: ("MuseumPlaceholderAuth" is Credential to Auth) =
+
+-   Credential(Auth.Basic(t"curator", t"…"))
++   Credential(Auth.Basic(t"curator", t"…"))
+
+- val museum = Api(cp"/openapi/redocly/museum.yaml")
++ val museum = Api(cp"/openapi/redocly/museum.yaml")
+
+- val ticket: Raster in Png = museum.tickets(t"a1").qr.get.call()
++ val ticket: Raster in Png = museum.tickets(t"a1").qr.get.call()
+
+- val inventory: Json = petstore.store.inventory.get.call()
++ val inventory: Json = petstore.store.inventory.get.call()
+
+= val inventory: Json = petstore.store.inventory.get.call()
+- ```
++ ```
+
+- These are the `Construable`s provided:
++ Questi sono i `Construable` forniti:
+
+= These are the `Construable`s provided:
+=
+- ```tabular
++ ```tabular
+
+- column  Media type
+- column  Carrier
++ column  Tipo di media
++ column  Portatore
+
+- column  Given
++ column  Given
+
+- row  `application/json`  `Json`  `construables.jsonConstruable`
++ row  `application/json`  `Json`  `construables.jsonConstruable`
+
+- row  `application/xml`  `Xml`  `construables.xmlConstruable`
++ row  `application/xml`  `Xml`  `construables.xmlConstruable`
+
+- row  `text/xml`  `Xml`  `construables.textXmlConstruable`
++ row  `text/xml`  `Xml`  `construables.textXmlConstruable`
+
+- row  `application/yaml`  `Yaml`  `construables.yamlConstruable`
++ row  `application/yaml`  `Yaml`  `construables.yamlConstruable`
+
+- row  `application/vnd.tel`  `Tel`  `construables.telConstruable`
++ row  `application/vnd.tel`  `Tel`  `construables.telConstruable`
+
+- row  `application/cbor`  `Cbor`  `construables.cborConstruable`
++ row  `application/cbor`  `Cbor`  `construables.cborConstruable`
+
+- row  `application/protobuf`  `Protobuf`  `construables.protobufConstruable`
++ row  `application/protobuf`  `Protobuf`  `construables.protobufConstruable`
+
+- row  `text/html`  `Document[Html]`  `construables.htmlConstruable`
++ row  `text/html`  `Document[Html]`  `construables.htmlConstruable`
+
+- row  `text/css`  `Css`  `construables.cssConstruable`
++ row  `text/css`  `Css`  `construables.cssConstruable`
+
+- row  `image/svg+xml`  `Svg`  `construables.svgConstruable`
++ row  `image/svg+xml`  `Svg`  `construables.svgConstruable`
+
+- row  `text/markdown`  `Markdown of Layout`  `construables.markdownConstruable`
++ row  `text/markdown`  `Markdown of Layout`  `construables.markdownConstruable`
+
+- row  `text/csv`  `Sheet`  `construables.csvConstruable`
++ row  `text/csv`  `Sheet`  `construables.csvConstruable`
+
+- row  `text/tab-separated-values`  `Sheet`  `construables.tsvConstruable`
++ row  `text/tab-separated-values`  `Sheet`  `construables.tsvConstruable`
+
+- row  `text/plain`  `Text`  `construables.plainTextConstruable`
++ row  `text/plain`  `Text`  `construables.plainTextConstruable`
+
+- row  `application/octet-stream`  `Data`  `construables.octetStreamConstruable`
++ row  `application/octet-stream`  `Data`  `construables.octetStreamConstruable`
+
+- row  `application/x-www-form-urlencoded`  `Query`  `construables.formConstruable`
++ row  `application/x-www-form-urlencoded`  `Query`  `construables.formConstruable`
+
+- row  `image/png`  `Raster in Png`  `construables.pngConstruable`
++ row  `image/png`  `Raster in Png`  `construables.pngConstruable`
+
+- row  `image/jpeg`  `Raster in Jpeg`  `construables.jpegConstruable`
++ row  `image/jpeg`  `Raster in Jpeg`  `construables.jpegConstruable`
+
+- row  `image/gif`  `Raster in Gif`  `construables.gifConstruable`
++ row  `image/gif`  `Raster in Gif`  `construables.gifConstruable`
+
+- row  `image/bmp`  `Raster in Bmp`  `construables.bmpConstruable`
++ row  `image/bmp`  `Raster in Bmp`  `construables.bmpConstruable`
+
+- row  `image/webp`  `Raster in Webp`  `construables.webpConstruable`
++ row  `image/webp`  `Raster in Webp`  `construables.webpConstruable`
+
+= row  `image/webp`  `Raster in Webp`  `construables.webpConstruable`
+- ```
++ ```
+
+- A structured-syntax suffix falls back to the type it names, so `application/problem+json` is
+- construed by the JSON mapping. Where an operation offers several media types, the first with a
+- mapping in scope is chosen, with `application/json` first.
++ Un suffisso di sintassi strutturata ripiega sul tipo che nomina, quindi
++ `application/problem+json` viene interpretato dalla corrispondenza JSON. Dove un'operazione offre
++ più tipi di media, si sceglie il primo con una corrispondenza nell'ambito, con `application/json`
++ per primo.
+
+- A request body is encoded to the carrier of the media type, and written by that carrier's
+- `Postable`, which is likewise imported by name, as `postables.jsonPostable` or
+- `postables.xmlPostable`. A value which already *is* the carrier, such as a `Query` for
+- `application/x-www-form-urlencoded` or `Data` for `application/octet-stream`, is sent as it is.
++ Un corpo di richiesta viene codificato nel portatore del tipo di media, e scritto dal `Postable`
++ di quel portatore, anch'esso importato per nome, come `postables.jsonPostable` o
++ `postables.xmlPostable`. Un valore che *è* già il portatore, come una `Query` per
++ `application/x-www-form-urlencoded` o `Data` per `application/octet-stream`, viene inviato così
++ com'è.
+
+- ### Records from a response
++ ### Record da una risposta
+
+- A response is read in one of four ways:
++ Una risposta si legge in uno di quattro modi:
+
+= A response is read in one of four ways:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Reads the response as
+- row  `call[T]()`  a `T`, raising the declared errors
+- row  `attempt[T]()`  an `Attempt` over a `T` and the declared errors
+- row  `record()`  a record typed by the response schema
+- row  `tuple()`  a named tuple typed by the response schema, read eagerly
++ column  Metodo
++ column  Legge la risposta come
++ row  `call[T]()`  un `T`, sollevando gli errori dichiarati
++ row  `attempt[T]()`  un `Attempt` su un `T` e gli errori dichiarati
++ row  `record()`  un record tipizzato dallo schema di risposta
++ row  `tuple()`  una tupla con nome tipizzata dallo schema di risposta, letta in modo eager
+
+= row  `tuple()`  a named tuple typed by the response schema, read eagerly
+- ```
++ ```
+
+- A JSON response can be read without a mirror class at all. `record()` gives a
+- [record](records.md) typed by the response schema, with one member for each property, at the
+- type the schema declares. Nested objects and references to component schemas are nested
+- records, and an array of objects is a `List` of them:
++ Una risposta JSON si può leggere senza alcuna classe speculare. `record()` produce un
++ [record](records.md) tipizzato dallo schema di risposta, con un membro per ogni proprietà, al
++ tipo che lo schema dichiara. Gli oggetti annidati e i riferimenti agli schemi dei componenti sono
++ record annidati, e un array di oggetti è una `List` di essi:
+
+= records, and an array of objects is a `List` of them:
+=
+- ```scala fuel
++ ```scala fuel
+
+= records, and an array of objects is a `List` of them:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= records, and an array of objects is a `List` of them:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val found = petstore.pet(42L).get.record()
++ val found = petstore.pet(42L).get.record()
+
+- val name: Text = found.name
++ val name: Text = found.name
+
+- val photos: List[Text] = found.photoUrls
++ val photos: List[Text] = found.photoUrls
+
+- val sold = petstore.pet.findByStatus.get(status = t"sold").record().map(_.name)
++ val sold = petstore.pet.findByStatus.get(status = t"sold").record().map(_.name)
+
+= val sold = petstore.pet.findByStatus.get(status = t"sold").record().map(_.name)
+- ```
++ ```
+
+- `tuple()` reads the same schema as a named tuple, eagerly. Both need a JSON response whose
+- schema describes an object or an array of objects. Anything else is a compile error which
+- suggests `call[T]()`.
++ `tuple()` legge lo stesso schema come tupla con nome, in modo eager. Entrambi richiedono una
++ risposta JSON il cui schema descrive un oggetto o un array di oggetti. Qualsiasi altra cosa è un
++ errore di compilazione che suggerisce `call[T]()`.
+
+- ### The document model
++ ### Il modello del documento
+
+- The specification itself is also a value. `OpenApi` decodes an OpenAPI 3.x document from JSON or
+- YAML into typed parts: info, servers with their variables, paths, operations, parameters,
+- request bodies, responses, and component schemas, parameters, responses and request bodies.
+- This serves tooling which inspects APIs rather than calling them. A YAML document is translated
+- to JSON and read by the same decoder, so the two forms cannot drift.
++ Anche la specifica stessa è un valore. `OpenApi` decodifica un documento OpenAPI 3.x da JSON o
++ YAML in parti tipizzate: info, server con le loro variabili, path, operazioni, parametri, corpi
++ di richiesta, risposte, e schemi, parametri, risposte e corpi di richiesta dei componenti. Questo
++ serve agli strumenti che ispezionano le API anziché chiamarle. Un documento YAML viene tradotto in
++ JSON e letto dallo stesso decodificatore, quindi le due forme non possono divergere.
+
+- A parameter, response or request body written as a `$ref` is kept as an `OpenApi.Ref`, and
+- resolved on demand by `apply()`, given the document. A schema reference resolves the same way,
+- one hop at a time, so cyclic schemas stay finite. A document of an unsupported version, or one
+- which will not parse, raises an `OpenApi.Error` which names the fault.
++ Un parametro, una risposta o un corpo di richiesta scritto come `$ref` viene conservato come
++ `OpenApi.Ref`, e risolto su richiesta da `apply()`, dato il documento. Un riferimento a uno
++ schema si risolve allo stesso modo, un salto alla volta, quindi gli schemi ciclici restano
++ finiti. Un documento di una versione non supportata, o uno che non si riesce ad analizzare,
++ solleva un `OpenApi.Error` che nomina il difetto.
+
+- The model and the client are exercised against a corpus of real descriptions: the examples of
+- the OpenAPI Initiative, Swagger's Petstore, Redocly's Museum, Twilio, Kubernetes, Discord, Box
+- and Stripe. They are checked in under `lib/apoplexy/res/test/openapi` with their provenance.
++ Il modello e il client sono messi alla prova su un corpus di descrizioni reali: gli esempi della
++ OpenAPI Initiative, il Petstore di Swagger, il Museum di Redocly, Twilio, Kubernetes, Discord, Box
++ e Stripe. Sono registrati in `lib/apoplexy/res/test/openapi` con la loro provenienza.
+
+- ### Limitations
++ ### Limitazioni
+
+- Cookie parameters, `callbacks`, `links`, `security` requirements, `webhooks` and references into
+- other documents are read into the model where the model has a place for them, but the client
+- does not act on them. A `multipart/form-data` body is not yet construed.
++ I parametri cookie, `callbacks`, `links`, i requisiti `security`, `webhooks` e i riferimenti ad
++ altri documenti vengono letti nel modello dove il modello ha un posto per essi, ma il client non
++ agisce su di essi. Un corpo `multipart/form-data` non viene ancora interpretato.
+
+- ### Related
++ ### Correlati
+
+- - [HTTP client](http-client.md) carries the requests, and describes the backends.
+- - [OAuth](oauth.md) describes the `Credential` values and the token flows.
+- - [Records](records.md) describes the typed records which `record()` gives.
+- - [JSON](json.md), [XML](xml.md) and [YAML](yaml.md) describe the carriers of the common media
+-   types.
+- - [Errors](errors.md) describes `attempt`, `recover` and `mitigate`.
+- - [Media types](media-types.md) describes the `MediaType` values which name each body.
++ - [Client HTTP](http-client.md) trasporta le richieste e descrive i backend.
++ - [OAuth](oauth.md) descrive i valori `Credential` e i flussi dei token.
++ - [Record](records.md) descrive i record tipizzati che `record()` produce.
++ - [JSON](json.md), [XML](xml.md) e [YAML](yaml.md) descrivono i portatori dei tipi di media
++   comuni.
++ - [Errori](errors.md) descrive `attempt`, `recover` e `mitigate`.
++ - [Tipi di media](media-types.md) descrive i valori `MediaType` che nominano ogni corpo.

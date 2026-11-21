@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.17.7` — Type has no `map` method
++ # `↯/s.17.7` — Il tipo non ha un metodo `map`
+
+- Raised at compile time by Mercator's `functor` macro when the
+- target type has no `map` method.
++ Sollevato in fase di compilazione dalla macro `functor` di Mercator quando il
++ tipo di destinazione non ha un metodo `map`.
+
+- ## Cause
++ ## Causa
+
+- Mercator's `Functor` derivation requires a `map` method on the
+- type.
++ La derivazione di `Functor` di Mercator richiede un metodo `map` sul
++ tipo.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.17.7] the type Play has no map methods
++ [↯/s.17.7] the type Play has no map methods
+
+= [↯/s.17.7] the type Play has no map methods
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Define a `map` method on the type, or supply a `Functor` instance
+- manually.
++ Definire un metodo `map` sul tipo, oppure fornire manualmente un'istanza
++ di `Functor`.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/mercator/src/core/mercator.internal.scala`
++ - Sorgente: `lib/mercator/src/core/mercator.internal.scala`

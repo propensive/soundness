@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.24.16` — `Expectation.Error`
++ # `↯/s.24.16` — `Expectation.Error`
+
+- Raised when an expression that was expected to fail with an `Error`
+- instead succeeded.
++ Sollevato quando un'espressione che ci si aspettava fallisse con un `Error`
++ ha invece avuto successo.
+
+- ## Cause
++ ## Causa
+
+- Used by Contingency's expectation utilities (e.g. test helpers that
+- assert a specific error). When the wrapped expression evaluates
+- without throwing, `Expectation.Error` is thrown carrying the result.
++ Usato dalle utilità di aspettativa di Contingency (per esempio gli helper di test che
++ asseriscono un errore specifico). Quando l'espressione avvolta viene valutata
++ senza lanciare eccezioni, viene lanciato `Expectation.Error` con il risultato.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.24.16] the expression was expected to fail, but succeeded
++ [↯/s.24.16] the expression was expected to fail, but succeeded
+
+= [↯/s.24.16] the expression was expected to fail, but succeeded
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Either adjust the test/expectation to match the actual behaviour or
+- fix the code so that it really does fail.
++ Adeguare il test o l'aspettativa al comportamento effettivo, oppure
++ correggere il codice in modo che fallisca davvero.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/contingency/src/core/contingency.Expectation.scala`
++ - Sorgente: `lib/contingency/src/core/contingency.Expectation.scala`

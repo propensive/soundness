@@ -1,0 +1,54 @@
+orthant 1 language
+
+- # `↯/s.72.1` — `Dag.Error`
++ # `↯/s.72.1` — `Dag.Error`
+
+- Raised when a graph operation requires an acyclic graph and the graph has a cycle.
++ Sollevato quando un'operazione su un grafo richiede un grafo aciclico e il grafo ha un ciclo.
+
+- ## Cause
++ ## Causa
+
+- A topological sort, a reachability query and a transitive reduction are all undefined on a
+- cyclic graph. Rather than looping or returning a partial answer, the operation reports the
+- cycle.
++ Un ordinamento topologico, un'interrogazione di raggiungibilità e una riduzione transitiva non
++ sono definiti su un grafo ciclico. Invece di entrare in un ciclo infinito o di restituire una
++ risposta parziale, l'operazione segnala il ciclo.
+
+- ## Variants
++ ## Varianti
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+- row  `↯/s.72.1.1`  `NodeMissing`  `[↯/s.72.1.1] the node <node> is not present in the graph`
++ row  `↯/s.72.1.1`  `NodeMissing`  `[↯/s.72.1.1] the node <node> is not present in the graph`
+
+- row  `↯/s.72.1.2`  `Cyclic`  `[↯/s.72.1.2] the graph contains a cycle`
++ row  `↯/s.72.1.2`  `Cyclic`  `[↯/s.72.1.2] the graph contains a cycle`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Break the cycle, or ask a question that is defined on cyclic graphs. `hasCycle` tests for
+- one without raising, for code that would rather check than handle.
++ Spezzare il ciclo, oppure porre una domanda che sia definita sui grafi ciclici. `hasCycle`
++ verifica la presenza di un ciclo senza sollevare errori, per il codice che preferisce
++ controllare anziché gestire.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/acyclicity/src/core/acyclicity.Dag.scala`
++ - Sorgente: `lib/acyclicity/src/core/acyclicity.Dag.scala`

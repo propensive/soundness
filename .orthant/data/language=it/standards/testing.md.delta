@@ -1,0 +1,204 @@
+orthant 1 language
+
+- # Soundness Testing Standards
++ # Standard di test di Soundness
+
+- This document defines how tests are written and organised in the Soundness
+- libraries. Tests use [Probably](https://github.com/propensive/probably/). It
+- complements `syntax.md` (whitespace and formatting) and `benchmarking.md`
+- (performance measurement). Examples are drawn from `lib/*/src/test/*.scala`.
++ Questo documento definisce come si scrivono e si organizzano i test nelle librerie Soundness. I
++ test usano [Probably](https://github.com/propensive/probably/). Integra `syntax.md` (spaziatura e
++ formattazione) e `benchmarking.md` (misura delle prestazioni). Gli esempi sono tratti da
++ `lib/*/src/test/*.scala`.
+
+- ## 1. Location and naming
++ ## 1. Posizione e nomi
+
+- Tests live in a module's `src/test` directory. The test object extends `Suite`
+- and implements `run()`:
++ I test si trovano nella directory `src/test` di un modulo. L'oggetto di test estende `Suite` e
++ implementa `run()`:
+
+- ```scala fuel
++ ```scala fuel
+
+- substitute ???  ...
++ substitute ???  ...
+
+- ##
++ ##
+
+- object Tests extends Suite("logging", m"Eucalyptus tests"):
++ object Tests extends Suite("logging", m"Eucalyptus tests"):
+
+-   def run(): Unit = ???
++   def run(): Unit = ???
+
+=   def run(): Unit = ???
+- ```
++ ```
+
+- The suite's title is a `Message`, naming the module under test. Before it comes
+- the suite's id, a string literal by which a selection addresses it: `fume run
+- logging`. The id names what the module is for, not the module. Keep it short, and one word
+- unless two are needed:
++ Il titolo della suite è un `Message`, che nomina il modulo sotto test. Prima di esso viene l'id
++ della suite, un letterale stringa con cui una selezione la indirizza: `fume run logging`. L'id
++ nomina lo scopo del modulo, non il modulo. Tienilo breve, e di una sola parola a meno che non ne
++ servano due:
+
+- ```tabular
++ ```tabular
+
+- column  Suite
++ column  Suite
+
+- column  Id
++ column  Id
+
+- column  Example
+- row  a module's suite  what the module is for  `logging`, not `eucalyptus`; `html`, not `honeycomb`
+- row  an area's suite, in `<module>.<Area>Tests.scala`  the module's id and the area  `json-parser`, `json-records`
+- row  a suite declared by its title alone  derived from the title; a fallback, not the convention  `eucalyptus-tests`
++ column  Esempio
++ row  la suite di un modulo  lo scopo del modulo  `logging`, non `eucalyptus`; `html`, non `honeycomb`
++ row  la suite di un'area, in `<module>.<Area>Tests.scala`  l'id del modulo e l'area  `json-parser`, `json-records`
++ row  una suite dichiarata solo con il titolo  derivato dal titolo; un ripiego, non la convenzione  `eucalyptus-tests`
+
+= row  a suite declared by its title alone  derived from the title; a fallback, not the convention  `eucalyptus-tests`
+- ```
++ ```
+
+- A method outside `run()` which declares tests for the suite names it by the same id:
++ Un metodo fuori da `run()` che dichiara test per la suite la nomina con lo stesso id:
+
+- `(using Testable of "logging")`.
++ `(using Testable of "logging")`.
+
+- ## 2. Structure
++ ## 2. Struttura
+
+- Group related tests with `suite`, and write each individual test with `test`,
+- both taking a `Message`:
++ Raggruppa i test correlati con `suite`, e scrivi ogni singolo test con `test`, entrambi con un
++ `Message`:
+
+= both taking a `Message`:
+=
+- ```scala
++ ```scala
+
+- suite(m"Measuring"):
++ suite(m"Measuring"):
+
+-   test(m"an empty text has no characters"):
++   test(m"an empty text has no characters"):
+
+-     t"".length
++     t"".length
+
+-   . assert(_ == 0)
++   . assert(_ == 0)
+
+=   . assert(_ == 0)
+- ```
++ ```
+
+- A `test` block evaluates to the value under examination; the `assert` (or `check`)
+- that follows states what must hold of it. Keep one logical assertion per test, so
+- a failure names exactly what broke.
++ Un blocco `test` si valuta nel valore sotto esame; l'`assert` (o `check`) che segue dichiara che
++ cosa deve valere per esso. Tieni un'asserzione logica per test, così un fallimento nomina
++ esattamente che cosa si è rotto.
+
+- ## 3. Test names
++ ## 3. Nomi dei test
+
+- A test name is a short, descriptive `m"..."` phrase, **under 70 characters**,
+- stating the property being verified rather than the method being called. Prefer
+- `m"a malformed pointer fails to parse"` over `m"test parse"`.
++ Il nome di un test è una frase `m"..."` breve e descrittiva, **sotto i 70 caratteri**, che dichiara
++ la proprietà verificata anziché il metodo chiamato. Preferisci
++ `m"a malformed pointer fails to parse"` a `m"test parse"`.
+
+- ## 4. Assertions
++ ## 4. Asserzioni
+
+- Assertions are written in the fluent style, with the predicate applied to the
+- block's result:
++ Le asserzioni si scrivono in stile fluente, con il predicato applicato al risultato del blocco:
+
+= block's result:
+=
+- ```scala
++ ```scala
+
+- test(m"addition combines quantities of the same unit"):
++ test(m"addition combines quantities of the same unit"):
+
+-   Metre + Metre*2.0
++   Metre + Metre*2.0
+
+- . assert(_ == 3*Metre)
++ . assert(_ == 3*Metre)
+
+= . assert(_ == 3*Metre)
+- ```
++ ```
+
+- Compare against an expected value with `_ == expected`; use a predicate for
+- looser checks. Do not throw or use `require`/`assert` from the standard library.
++ Confronta con un valore atteso con `_ == expected`; usa un predicato per controlli più laschi. Non
++ lanciare eccezioni e non usare `require`/`assert` della libreria standard.
+
+- ## 5. Error strategy
++ ## 5. Strategia di errore
+
+- A test that exercises fallible code chooses an error strategy explicitly, usually
+- by importing `strategies.throwUnsafely`, so that an unexpected failure surfaces as
+- a failed test rather than a swallowed error:
++ Un test che esercita codice fallibile sceglie esplicitamente una strategia di errore, di solito
++ importando `strategies.throwUnsafely`, così che un fallimento inatteso emerga come test fallito
++ anziché come errore inghiottito:
+
+= a failed test rather than a swallowed error:
+=
+- ```scala
++ ```scala
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- To test that a failure *does* occur, capture it and assert on its reason rather
+- than letting it propagate.
++ Per verificare che un fallimento *avvenga*, catturalo e fai un'asserzione sul suo motivo invece di
++ lasciarlo propagare.
+
+- ## 6. Compiletime testing
++ ## 6. Test a tempo di compilazione
+
+- To assert that code is *rejected* by the compiler — that an impossible state truly
+- cannot be written — use [Larceny](https://github.com/propensive/larceny/), which
+- captures compile errors as values a test can inspect. A `// does not compile`
+- example in documentation should have a corresponding Larceny test.
++ Per asserire che il codice viene *rifiutato* dal compilatore, cioè che uno stato impossibile
++ davvero non può essere scritto, usa [Larceny](https://github.com/propensive/larceny/), che cattura
++ gli errori di compilazione come valori che un test può ispezionare. Un esempio `// does not compile`
++ nella documentazione dovrebbe avere un test Larceny corrispondente.
+
+- ## 7. What to test
++ ## 7. Che cosa testare
+
+- Test the behaviour a user relies on: the result of each public operation, the
+- boundary cases (empty, absent, maximal), and the failures that should be raised.
+- Test that invalid constructions do not compile. Do not test private internals
+- directly; reach them through the public surface.
++ Testa il comportamento su cui un utente fa affidamento: il risultato di ogni operazione pubblica, i
++ casi limite (vuoto, assente, massimo), e i fallimenti che devono essere sollevati. Verifica che le
++ costruzioni non valide non compilino. Non testare direttamente i dettagli interni privati;
++ raggiungili attraverso la superficie pubblica.

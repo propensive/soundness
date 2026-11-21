@@ -1,0 +1,621 @@
+orthant 1 language
+
+- ## Records
++ ## Record
+
+- ### About
++ ### Panoramica
+
+- The shape of some data is defined outside the program: by a database table, a JSON Schema or a
+- configuration format. The program should still read its fields with static types.
++ La forma di certi dati è definita al di fuori del programma: da una tabella di database, da un
++ JSON Schema o da un formato di configurazione. Il programma dovrebbe comunque leggerne i campi
++ con tipi statici.
+
+- A `Record` is a value whose fields come from such an external *specification*, which is read as
+- the code compiles. So `record.name` typechecks as `Text`, and `record.nope` does not compile,
+- and no class is written by hand to mirror the schema.
++ Un `Record` è un valore i cui campi provengono da una tale *specifica* esterna, che viene letta
++ mentre il codice compila. Così `record.name` supera il controllo dei tipi come `Text`,
++ `record.nope` non compila, e nessuna classe viene scritta a mano per rispecchiare lo schema.
+
+- The [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) and [TEL](tel.md) *providers*
+- are built on this. A JSON Schema, an XML Schema or a TEL schema document produces typed records.
+- So does the response schema of an operation, through `record()` in the [OpenAPI](openapi.md)
+- client. Any source of schemas which a program can read at [compiletime] can do the same.
++ I *provider* [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) e [TEL](tel.md) sono
++ costruiti su questo. Un JSON Schema, un XML Schema o un documento di schema TEL producono record
++ tipizzati. Lo stesso fa lo schema di risposta di un'operazione, tramite `record()` nel client
++ [OpenAPI](openapi.md). Qualsiasi sorgente di schemi che un programma possa leggere in [tempo di
++ compilazione] può fare lo stesso.
+
+- ### On external schemas
++ ### Sugli schemi esterni
+
+- When the authoritative shape of the data lives elsewhere, a case class written by hand is a
+- copy, and copies drift. The schema gains a field, the class does not, and the mismatch appears
+- at [runtime]. The usual alternative is to read fields dynamically, by string. That gives up
+- checking altogether.
++ Quando la forma autorevole dei dati risiede altrove, una case class scritta a mano è una copia,
++ e le copie divergono. Lo schema acquisisce un campo, la classe no, e la discrepanza si manifesta
++ a [runtime]. L'alternativa abituale è leggere i campi dinamicamente, tramite stringhe. Così si
++ rinuncia del tutto alla verifica.
+
+- A `Record` avoids both. The schema is read once, as the program compiles. Scala's
+- [structural types](https://docs.scala-lang.org/scala3/book/types-structural.html) then build
+- the exact interface of the record from it, with every field at the type which the schema
+- declares. The schema cannot drift from the code, because the types in the code *are* the
+- schema's. This is [safety by construction](../../philosophy/safety-by-construction.md), with no
+- class to maintain.
++ Un `Record` evita entrambe le cose. Lo schema viene letto una volta, mentre il programma
++ compila. I [tipi strutturali](https://docs.scala-lang.org/scala3/book/types-structural.html) di
++ Scala costruiscono poi a partire da esso l'interfaccia esatta del record, con ogni campo del
++ tipo dichiarato dallo schema. Lo schema non può divergere dal codice, perché i tipi nel codice
++ *sono* quelli dello schema. Questa è la [sicurezza per
++ costruzione](../../philosophy/safety-by-construction.md), senza alcuna classe da mantenere.
+
+- Everything comes from the `soundness` package. The other imports choose an encoding, and a
+- [strategy](errors.md#choosing-a-strategy) for errors:
++ Tutto proviene dal package `soundness`. Gli altri import scelgono una codifica, e una
++ [strategia](errors.md#choosing-a-strategy) per gli errori:
+
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- ### Using records
++ ### Usare i record
+
+- A provider object holds a schema. This one is a `Json.Provider`, built from a JSON Schema
+- document. In a real program it is declared in a file of its own, for the reason which
+- [compilation order](#compilation-order) explains. For the same reason, the samples on this page
+- are checked but not run:
++ Un oggetto provider contiene uno schema. Questo è un `Json.Provider`, costruito da un documento
++ JSON Schema. In un programma reale lo si dichiara in un file a sé, per il motivo spiegato in
++ [ordine di compilazione](#compilation-order). Per lo stesso motivo, gli esempi di questa pagina
++ vengono verificati ma non eseguiti:
+
+= are checked but not run:
+=
+- ```scala fuel
++ ```scala fuel
+
+= are checked but not run:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= are checked but not run:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- object Catalogue extends Json.Provider(t"""{
++ object Catalogue extends Json.Provider(t"""{
+
+-   "type": "object",
++   "type": "object",
+
+-   "required": ["name", "children"],
++   "required": ["name", "children"],
+
+-   "properties": {
++   "properties": {
+
+-     "name": { "type": "string" },
++     "name": { "type": "string" },
+
+-     "age": { "type": "integer" },
++     "age": { "type": "integer" },
+
+-     "children": {
++     "children": {
+
+-       "type": "array",
++       "type": "array",
+
+-       "items": {
++       "items": {
+
+-         "type": "object",
++         "type": "object",
+
+-         "required": ["weight"],
++         "required": ["weight"],
+
+-         "properties": { "weight": { "type": "number", "minimum": 0 } }
++         "properties": { "weight": { "type": "number", "minimum": 0 } }
+
+-       }
++       }
+
+-     }
++     }
+
+-   }
++   }
+
+- }""".read[Json])
++ }""".read[Json])
+
+- val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
++ val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
+
+= val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
+- ```
++ ```
+
+- The `record` method of the provider turns raw data into a typed record. Each field has the type
+- which the schema gives it. `name` is a string in the schema, so it is a `Text`. `weight` is a
+- number, so it is a `Double`. The schema does not require `age`, so it is an
++ Il metodo `record` del provider trasforma i dati grezzi in un record tipizzato. Ogni campo ha
++ il tipo che gli dà lo schema. `name` è una stringa nello schema, quindi è un `Text`. `weight` è
++ un numero, quindi è un `Double`. Lo schema non richiede `age`, quindi è un
+
+- [`Optional[Int]`](optional-values.md):
++ [`Optional[Int]`](optional-values.md):
+
+= [`Optional[Int]`](optional-values.md):
+=
+- ```scala fuel
++ ```scala fuel
+
+= [`Optional[Int]`](optional-values.md):
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [`Optional[Int]`](optional-values.md):
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val record = Catalogue.record(input)
++ val record = Catalogue.record(input)
+
+- val name: Text = record.name
++ val name: Text = record.name
+
+- val weight: Optional[Double] = record.children.head.let(_.weight)
++ val weight: Optional[Double] = record.children.head.let(_.weight)
+
+- val age: Optional[Int] = record.age
++ val age: Optional[Int] = record.age
+
+= val age: Optional[Int] = record.age
+- ```
++ ```
+
+- The schema has no field called `nope`, so `record.nope` does not compile.
++ Lo schema non ha alcun campo chiamato `nope`, quindi `record.nope` non compila.
+
+- A nested object becomes a nested record, and an array becomes a list. Every access is checked
+- against the specification. A class written by hand would give the same guarantee, but there is
+- no class.
++ Un oggetto annidato diventa un record annidato, e un array diventa una lista. Ogni accesso viene
++ verificato rispetto alla specifica. Una classe scritta a mano darebbe la stessa garanzia, ma non
++ c'è alcuna classe.
+
+- ### Tuples instead of records
++ ### Tuple anziché record
+
+- The same provider can produce a
+- [named tuple](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html)
+- instead of a record, through `tuple`, the twin of `record`.
++ Lo stesso provider può produrre una
++ [tupla con nome](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html)
++ anziché un record, tramite `tuple`, il gemello di `record`.
+
+- For the schema above, `Catalogue.tuple(input)` has the type
+- `(name: Text, age: Optional[Int], children: List[(weight: Double)])`. It has one element for
+- each field, named as the schema names it, in the order of the schema. Nested objects become
+- nested named tuples, and arrays become lists of them.
++ Per lo schema visto sopra, `Catalogue.tuple(input)` ha il tipo
++ `(name: Text, age: Optional[Int], children: List[(weight: Double)])`. Ha un elemento per ogni
++ campo, nominato come lo nomina lo schema, nell'ordine dello schema. Gli oggetti annidati
++ diventano tuple con nome annidate, e gli array diventano liste di esse.
+
+- A named tuple is read by name, like a record. It is also an ordinary tuple, so it is taken apart
+- by position, and converts to its unnamed form:
++ Una tupla con nome si legge per nome, come un record. È anche una tupla ordinaria, quindi si
++ scompone per posizione, e si converte nella sua forma senza nomi:
+
+= by position, and converts to its unnamed form:
+=
+- ```scala fuel
++ ```scala fuel
+
+= by position, and converts to its unnamed form:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= by position, and converts to its unnamed form:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val tuple = Catalogue.tuple(input)
++ val tuple = Catalogue.tuple(input)
+
+- val name: Text = tuple.name
++ val name: Text = tuple.name
+
+- val (first, second, third) = tuple
++ val (first, second, third) = tuple
+
+- val plain: (Text, Optional[Int], List[(weight: Double)]) = tuple.toTuple
++ val plain: (Text, Optional[Int], List[(weight: Double)]) = tuple.toTuple
+
+= val plain: (Text, Optional[Int], List[(weight: Double)]) = tuple.toTuple
+- ```
++ ```
+
+- #### Eager and lazy
++ #### Eager e lazy
+
+- The two forms differ in *when* the data is read.
++ Le due forme differiscono nel *momento* in cui i dati vengono letti.
+
+- A record is lazy. It holds the raw data, and each access reads and converts its field afresh. A
+- malformed field is noticed only when that field is read, and a field read twice is converted
+- twice.
++ Un record è lazy. Contiene i dati grezzi, e ogni accesso legge e converte il suo campo da capo.
++ Un campo malformato viene notato solo quando quel campo viene letto, e un campo letto due volte
++ viene convertito due volte.
+
+- A tuple is eager. Every field is read once, when the tuple is built, and the tuple holds the
+- converted values. A malformed field fails the construction of the tuple, whether or not the
+- program ever reads it.
++ Una tupla è eager. Ogni campo viene letto una volta, quando la tupla viene costruita, e la tupla
++ contiene i valori convertiti. Un campo malformato fa fallire la costruzione della tupla, che il
++ programma lo legga o no.
+
+- This changes the types of the fields. Reading any field can fail: a required value may be
+- absent, a value may be of the wrong kind, or it may break a constraint of the schema. It fails
+- with the specification's own error, such as `Json.Provider.Error`, through the [tactic] of the
+- code which reads it.
++ Questo cambia i tipi dei campi. La lettura di qualsiasi campo può fallire: un valore richiesto
++ può essere assente, un valore può essere del genere sbagliato, o può violare un vincolo dello
++ schema. Fallisce con l'errore proprio della specifica, come `Json.Provider.Error`, tramite la
++ [tattica] del codice che lo legge.
+
+- In a record, a field has the type `Record.Field[Int, Json.Provider.Error]`. That is a context
+- function over the tactic, applied wherever the field is selected, so each access needs a handler
+- in scope. In a tuple, a failure can happen only during construction. The type of the element is
+- plainly `Int`, and the handler must be in scope where the tuple is built.
++ In un record, un campo ha il tipo `Record.Field[Int, Json.Provider.Error]`. È una funzione di
++ contesto sulla tattica, applicata ovunque il campo venga selezionato, quindi ogni accesso
++ richiede un handler nell'ambito. In una tupla, un fallimento può avvenire solo durante la
++ costruzione. Il tipo dell'elemento è semplicemente `Int`, e l'handler deve essere nell'ambito
++ dove la tupla viene costruita.
+
+- Since every failure goes through the caller's tactic, a reader chooses how to meet it. One field
+- can be wrapped in `attempt` or `recover`. A whole record can be read with `validate` and
+- `track`, with a `venture` for each field, which collects every problem in a document and reports
+- them together. [Errors](errors.md) describes these.
++ Poiché ogni fallimento passa per la tattica del chiamante, chi legge sceglie come affrontarlo.
++ Un campo si può avvolgere in `attempt` o `recover`. Un intero record si può leggere con
++ `validate` e `track`, con una `venture` per ogni campo, che raccoglie ogni problema di un
++ documento e li riporta insieme. [Errori](errors.md) descrive questi strumenti.
+
+- In summary:
++ In sintesi:
+
+= In summary:
+=
+- ```tabular
++ ```tabular
+
+- column  Aspect
++ column  Aspetto
+
+- column  Record
++ column  Record
+
+- column  Tuple
+- row  Data is read  at each field access  once, when the tuple is built
+- row  A malformed field fails  when it is accessed  the construction
+- row  A field of schema type integer has type  `Record.Field[Int, Json.Provider.Error]`  `Int`
+- row  The `Tactic` must be in scope  wherever a field is selected  where the tuple is built
+- row  Destructures positionally  no  yes
++ column  Tupla
++ row  I dati vengono letti  a ogni accesso a un campo  una volta, quando la tupla viene costruita
++ row  Un campo malformato fa fallire  l'accesso a esso  la costruzione
++ row  Un campo di tipo integer nello schema ha tipo  `Record.Field[Int, Json.Provider.Error]`  `Int`
++ row  La `Tactic` deve essere nell'ambito  ovunque venga selezionato un campo  dove la tupla viene costruita
++ row  Si scompone per posizione  no  sì
+
+= row  Destructures positionally  no  yes
+- ```
++ ```
+
+- ### Defining a specification
++ ### Definire una specifica
+
+- A new source of schemas plugs in by implementing `Specification`. Such an implementation is a
+- *provider*. The source might be the table definitions of a database, an XML Schema, or a
+- proprietary format.
++ Una nuova sorgente di schemi si collega implementando `Specification`. Un'implementazione di
++ questo tipo è un *provider*. La sorgente potrebbe essere le definizioni delle tabelle di un
++ database, un XML Schema o un formato proprietario.
+
+- A provider supplies the names and types of the fields as an ordered list of `Member` values. The
+- elements of a tuple follow that order. It also supplies primitive operations over the underlying
+- data:
++ Un provider fornisce i nomi e i tipi dei campi come lista ordinata di valori `Member`. Gli
++ elementi di una tupla seguono quell'ordine. Fornisce anche operazioni primitive sui dati
++ sottostanti:
+
+= data:
+=
+- ```tabular
++ ```tabular
+
+- column  Hook
++ column  Hook
+
+- column  Default
+- column  Supplies
+- row  `access`  none: must be implemented  a named field's value, fetched from a value
+- row  `absent`  none: must be implemented  whether a fetched value stands for a missing field
+- row  `repeated`  none: must be implemented  every value of a field which occurs many times
+- row  `required`  returns the value as it is  the value of a field read under `One`; overridden to fail when it is absent
+- row  `entries`  fails  a keyed field's values by name
+- row  `kind`  fails  the kind of a value, by which a union chooses its alternative
+- row  `elements`  fails  the elements of a value which is itself a sequence
+- row  `pairs`  fails  the named values of a value which is itself a dictionary
+- row  `unoffered`  fails  the failure for a value of a kind no alternative of a union offers
++ column  Predefinito
++ column  Fornisce
++ row  `access`  nessuno: va implementato  il valore di un campo con nome, prelevato da un valore
++ row  `absent`  nessuno: va implementato  se un valore prelevato rappresenta un campo mancante
++ row  `repeated`  nessuno: va implementato  ogni valore di un campo che compare molte volte
++ row  `required`  restituisce il valore così com'è  il valore di un campo letto sotto `One`; ridefinito per fallire quando è assente
++ row  `entries`  fallisce  i valori di un campo con chiave, per nome
++ row  `kind`  fallisce  il genere di un valore, con cui un'unione sceglie la sua alternativa
++ row  `elements`  fallisce  gli elementi di un valore che è esso stesso una sequenza
++ row  `pairs`  fallisce  i valori con nome di un valore che è esso stesso un dizionario
++ row  `unoffered`  fallisce  il fallimento per un valore di un genere che nessuna alternativa di un'unione offre
+
+= row  `unoffered`  fails  the failure for a value of a kind no alternative of a union offers
+- ```
++ ```
+
+- The values of a repeated field are the elements of a JSON array, say. In a format which repeats
+- a field, they are every sibling with the field's keyword. A format which has unions or
+- dictionaries provides `entries`, `kind`, `elements` and `pairs`. One which does not leaves their
+- defaults.
++ I valori di un campo ripetuto sono, per esempio, gli elementi di un array JSON. In un formato
++ che ripete un campo, sono tutti i fratelli con la parola chiave del campo. Un formato che ha
++ unioni o dizionari fornisce `entries`, `kind`, `elements` e `pairs`. Uno che non li ha lascia i
++ loro predefiniti.
+
+- A `Member` is one of three things. A `Value` names the scalar type which the schema declared. A
+- `Record` holds further members. A `Union` holds alternatives, each keyed by the *kind* of value
+- which selects it. Every member carries a `Multiplicity`:
++ Un `Member` è una di tre cose. Un `Value` nomina il tipo scalare dichiarato dallo schema. Un
++ `Record` contiene altri membri. Una `Union` contiene alternative, ciascuna indicizzata dal
++ *genere* di valore che la seleziona. Ogni membro porta una `Multiplicity`:
+
+= which selects it. Every member carries a `Multiplicity`:
+=
+- ```tabular
++ ```tabular
+
+- column  Multiplicity
+- column  Reads as
+- column  Through
+- row  `One`  the value  `access`, then `required`
+- row  `Optional`  an `Optional`, `Unset` where `absent`  `access` and `absent`
+- row  `Many`  a `List`  `repeated`
+- row  `Keyed`  a `Map[Text, _]`  `entries`
+- row  `Series`  the provider's own collection  `series`
++ column  Molteplicità
++ column  Si legge come
++ column  Tramite
++ row  `One`  il valore  `access`, poi `required`
++ row  `Optional`  un `Optional`, `Unset` dove `absent`  `access` e `absent`
++ row  `Many`  una `List`  `repeated`
++ row  `Keyed`  una `Map[Text, _]`  `entries`
++ row  `Series`  la collezione propria del provider  `series`
+
+= row  `Series`  the provider's own collection  `series`
+- ```
++ ```
+
+- The provider says nothing more about optionality or repetition. The macro applies the
+- multiplicity itself. An alternative of a union may carry its own, so a union with a single
+- alternative nests one multiplicity inside another.
++ Il provider non dice nient'altro su opzionalità o ripetizione. La macro applica da sé la
++ molteplicità. Un'alternativa di un'unione può portarne una propria, quindi un'unione con una
++ sola alternativa annida una molteplicità dentro un'altra.
+
+- A provider names the error which its fields fail with as its `Failure` type. The primitives
+- which can fail are `access`, `repeated`, `required`, `entries`, `elements`, `pairs` and
+- `unoffered`, and each takes the tactic for that error.
++ Un provider nomina come suo tipo `Failure` l'errore con cui falliscono i suoi campi. Le
++ primitive che possono fallire sono `access`, `repeated`, `required`, `entries`, `elements`,
++ `pairs` e `unoffered`, e ciascuna accetta la tattica per quell'errore.
+
+- One [typeclass] completes the picture. There is an `Intensional` instance for each scalar type
+- name which the schema can declare. It says which Scala type the name becomes, and how to read a
+- single value of it. There are three ways to make one:
++ Una [typeclass] completa il quadro. C'è un'istanza di `Intensional` per ogni nome di tipo
++ scalare che lo schema può dichiarare. Dice in quale tipo Scala diventa il nome, e come leggerne
++ un singolo valore. Ci sono tre modi per crearne una:
+
+= single value of it. There are three ways to make one:
+=
+- ```tabular
++ ```tabular
+
+- column  Constructor
+- column  From
+- row  `Intensional(accessor)`  a function of the value
+- row  `Intensional.parametric`  a function of the value and the member's parameters, for a type such as a bounded integer
+- row  `Intensional.Reading`  a function of the value, its parameters and a `Tactic`, for a reading which can fail
++ column  Costruttore
++ column  A partire da
++ row  `Intensional(accessor)`  una funzione del valore
++ row  `Intensional.parametric`  una funzione del valore e dei parametri del membro, per un tipo come un intero limitato
++ row  `Intensional.Reading`  una funzione del valore, dei suoi parametri e di una `Tactic`, per una lettura che può fallire
+
+= row  `Intensional.Reading`  a function of the value, its parameters and a `Tactic`, for a reading which can fail
+- ```
++ ```
+
+- A reading may fail: the value may be of the wrong kind, or outside its bounds, or a string which
+- does not match its pattern. Such a reading is an `Intensional.Fallible`, whose `transform` takes
+- the tactic for its `Error`. That `Error` must be the provider's `Failure`, or a subtype of it,
+- so that every field fails in one way. An instance which raises anything else is a compile error.
++ Una lettura può fallire: il valore può essere del genere sbagliato, o fuori dai suoi limiti, o
++ una stringa che non corrisponde al suo pattern. Una lettura del genere è un
++ `Intensional.Fallible`, il cui `transform` accetta la tattica per il suo `Error`. Quell'`Error`
++ deve essere il `Failure` del provider, o un suo sottotipo, così che ogni campo fallisca in un
++ solo modo. Un'istanza che solleva qualsiasi altra cosa è un errore di compilazione.
+
+- The instances live in the companion of the provider, so they are found without an import. A
+- provider over XML, for instance, would fetch a child element by its label, find a field absent
+- where no such child exists, and repeat over every child with the label.
++ Le istanze risiedono nell'oggetto compagno del provider, quindi vengono trovate senza import.
++ Un provider su XML, per esempio, preleverebbe un elemento figlio tramite la sua etichetta,
++ considererebbe assente un campo dove non esiste un tale figlio, e ripeterebbe su ogni figlio
++ con quell'etichetta.
+
+- Some sources are not in the values which are read from them. A record over a file which is
+- mapped into memory holds only where to look, and the file itself is open for a while, and
+- closed. A provider for such a source names a `Context`, and makes its records with
+- `Specification.recordWith`, giving the type of the context each is to be read in. A member of
+- such a record is read only where a value of that type is [given], beside its tactic, so a
+- record cannot be read once its source has gone, and the type may say which of several sources
+- a record came from. The provider's `accessWith`, `repeatedWith` and `entriesWith` are given the
+- context, and stand for `access`, `repeated` and `entries`.
++ Alcune sorgenti non stanno nei valori che se ne leggono. Un record su un file mappato in
++ memoria contiene solo dove guardare, e il file stesso resta aperto per un po', poi viene
++ chiuso. Un provider per una sorgente del genere nomina un `Context`, e crea i suoi record con
++ `Specification.recordWith`, indicando il tipo del contesto in cui ciascuno va letto. Un membro
++ di un record del genere si legge solo dove un valore di quel tipo è [given], accanto alla sua
++ tattica, così un record non può essere letto una volta che la sua sorgente è scomparsa, e il
++ tipo può dire da quale di più sorgenti provenga un record. Gli `accessWith`, `repeatedWith` ed
++ `entriesWith` del provider ricevono il contesto, e stanno al posto di `access`, `repeated` ed
++ `entries`.
+
+- A `Series` is for such a provider too. It reads as the provider's `Series` type, a collection
+- of its own, which `series` makes from a function which reads one element. The collection reads
+- an element when it is asked for one, in the context it is then given, so a field of a hundred
+- thousand records costs nothing until one is looked up.
++ Anche una `Series` è pensata per un provider del genere. Si legge come il tipo `Series` del
++ provider, una collezione propria, che `series` crea da una funzione che legge un elemento. La
++ collezione legge un elemento quando gliene viene chiesto uno, nel contesto che le viene dato in
++ quel momento, quindi un campo di centomila record non costa nulla finché non se ne cerca uno.
+
+- Every specification object gets `record` and `tuple` from `Specification` itself. Nothing need
+- be declared in the object beyond its schema. Both methods are `transparent inline`. They are
+- expanded where they are called, with the specification object known, so the macro can find that
+- object by its type and evaluate its `fields`.
++ Ogni oggetto di specifica riceve `record` e `tuple` da `Specification` stesso. Nell'oggetto non
++ occorre dichiarare nulla oltre al suo schema. Entrambi i metodi sono `transparent inline`.
++ Vengono espansi dove vengono chiamati, con l'oggetto di specifica noto, così la macro può
++ trovare quell'oggetto tramite il suo tipo e valutarne i `fields`.
+
+- The declared return type of `record` is `Record`. What a call actually has is a *structural
+- refinement* of it. For a schema of three fields, it is a type such as this:
++ Il tipo di ritorno dichiarato di `record` è `Record`. Ciò che una chiamata ha effettivamente è
++ un suo *raffinamento strutturale*. Per uno schema di tre campi, è un tipo come questo:
+
+= refinement* of it. For a schema of three fields, it is a type such as this:
+=
+- ```scala fuel
++ ```scala fuel
+
+= refinement* of it. For a schema of three fields, it is a type such as this:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= refinement* of it. For a schema of three fields, it is a type such as this:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- type Person = Record { def age: Double; def name: Text; def employed: Boolean }
++ type Person = Record { def age: Double; def name: Text; def employed: Boolean }
+
+= type Person = Record { def age: Double; def name: Text; def employed: Boolean }
+- ```
++ ```
+
+- Only a transparent method lets that more precise type reach the place where it is called.
++ Solo un metodo transparent permette a quel tipo più preciso di raggiungere il punto in cui
++ viene chiamato.
+
+- ### Compilation order
++ ### Ordine di compilazione
+
+- The schema object must be in a *different file* from the code which calls its `record` method.
++ L'oggetto dello schema deve trovarsi in un *file diverso* dal codice che chiama il suo metodo
++ `record`.
+
+- The macro runs while the calling code compiles. It evaluates the schema object as a runtime
+- value, by reading the JSON Schema document or querying the database. So that object must already
+- be compiled. Scala guarantees this order for a macro and its use, provided they are in separate
+- files with no cycle between them. If they are in one file, the schema is not yet available when
+- the macro needs it.
++ La macro viene eseguita mentre il codice chiamante compila. Valuta l'oggetto dello schema come
++ valore a runtime, leggendo il documento JSON Schema o interrogando il database. Quindi
++ quell'oggetto deve essere già compilato. Scala garantisce quest'ordine per una macro e il suo
++ uso, purché si trovino in file separati senza cicli tra loro. Se si trovano in un unico file, lo
++ schema non è ancora disponibile quando la macro ne ha bisogno.
+
+- This is also what makes the pattern a type provider, in the sense of F#. The compiler consults
+- the authoritative schema, and the types which the program is checked against are built from it.
++ È anche ciò che rende questo pattern un type provider, nel senso di F#. Il compilatore consulta
++ lo schema autorevole, e i tipi rispetto a cui il programma viene verificato sono costruiti a
++ partire da esso.
+
+- ### Related
++ ### Correlati
+
+- - [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) and [TEL](tel.md) each describe
+-   the provider for their own schema language.
+- - [OpenAPI](openapi.md) builds records from the response schemas of an API.
+- - [Errors](errors.md) describes `attempt`, `recover`, `validate` and `track`, which meet the
+-   failure of a field.
+- - [Optional values](optional-values.md) describes the type of a field which the schema does not
+-   require.
+- - [Metaprogramming](metaprogramming.md) describes the macros which a provider relies on.
+- - [Catalogs](catalogs.md), [databases](database.md) and [tables](tables.md) work with the fields of a record by name.
++ - [JSON](json.md#typed-records-from-a-schema), [XML](xml.md) e [TEL](tel.md) descrivono
++   ciascuno il provider per il proprio linguaggio di schema.
++ - [OpenAPI](openapi.md) costruisce record a partire dagli schemi di risposta di un'API.
++ - [Errori](errors.md) descrive `attempt`, `recover`, `validate` e `track`, che affrontano il
++   fallimento di un campo.
++ - [Valori opzionali](optional-values.md) descrive il tipo di un campo che lo schema non
++   richiede.
++ - [Metaprogrammazione](metaprogramming.md) descrive le macro su cui si basa un provider.
++ - [Cataloghi](catalogs.md), [database](database.md) e [tabelle](tables.md) lavorano con i campi di un record per nome.

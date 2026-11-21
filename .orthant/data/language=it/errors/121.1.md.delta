@@ -1,0 +1,85 @@
+orthant 1 language
+
+- # `↯/s.121.1` — `Rig.Error`
++ # `↯/s.121.1` — `Rig.Error`
+
+- Raised when Superlunary cannot move a value across the boundary into or
+- out of a `Rig` — the classloader in which staged code is compiled and run.
++ Sollevato quando Superlunary non riesce a spostare un valore attraverso il confine verso
++ l'interno o l'esterno di un `Rig`, il classloader in cui il codice portato in staging viene
++ compilato ed eseguito.
+
+- This is a failure of *marshalling*, not of the staged code itself: the
+- value could not be written into the rig's `Transport` (`Json` or `Pojo`),
+- or could not be read back out of it. A failure to compile the staged tree
+- is `Compiler.Error`, which `Rig.dispatch` declares alongside this one.
++ È un fallimento del *marshalling*, non del codice in staging stesso: il valore non ha
++ potuto essere scritto nel `Transport` del rig (`Json` o `Pojo`), oppure non ha potuto
++ esserne riletto. Un fallimento nella compilazione dell'albero in staging è
++ `Compiler.Error`, che `Rig.dispatch` dichiara accanto a questo.
+
+- ## Cause
++ ## Causa
+
+- Superlunary marshals a call to a remote process and reads the result
+- back. Any failure in serialising the call, deserialising the result,
+- or otherwise transporting it produces this error. The message is
++ Superlunary esegue il marshalling di una chiamata verso un processo remoto e ne rilegge il
++ risultato. Qualsiasi fallimento nel serializzare la chiamata, nel deserializzare il
++ risultato, o comunque nel trasportarlo produce questo errore. Il messaggio è
+
+- `failed to perform a remote operation because $reason`.
++ `failed to perform a remote operation because $reason`.
+
+- ## Variants
++ ## Varianti
+
+- ### `↯/s.121.1.1` — `Serialization`
++ ### `↯/s.121.1.1` — `Serialization`
+
+- The output (the call or its arguments) could not be serialised for
+- transmission.
++ L'output (la chiamata o i suoi argomenti) non ha potuto essere serializzato per la
++ trasmissione.
+
+- **Example.** `[↯/s.121.1.1] failed to perform a remote operation because the output could not be serialized`
++ **Esempio.** `[↯/s.121.1.1] failed to perform a remote operation because the output could not be serialized`
+
+- **Resolution.** Confirm that all argument types have the necessary
+- encoders/decoders in scope and produce well-formed bytes.
++ **Soluzione.** Verificare che tutti i tipi degli argomenti abbiano nell'ambito i
++ codificatori e i decodificatori necessari e che producano byte ben formati.
+
+- ### `↯/s.121.1.2` — `Deserialization`
++ ### `↯/s.121.1.2` — `Deserialization`
+
+- The response from the remote could not be deserialised.
++ La risposta del processo remoto non ha potuto essere deserializzata.
+
+- **Example.** `[↯/s.121.1.2] failed to perform a remote operation because the input could not be deserialized`
++ **Esempio.** `[↯/s.121.1.2] failed to perform a remote operation because the input could not be deserialized`
+
+- **Resolution.** Verify the remote is producing the expected payload
+- shape; mismatched schemas between client and server are the typical
+- cause.
++ **Soluzione.** Verificare che il processo remoto produca un payload della forma
++ attesa; la causa tipica sono schemi non corrispondenti tra client e
++ server.
+
+- ### `↯/s.121.1.3` — `Unknown`
++ ### `↯/s.121.1.3` — `Unknown`
+
+- The cause does not match either of the more specific variants.
++ La causa non corrisponde a nessuna delle varianti più specifiche.
+
+- **Example.** `[↯/s.121.1.3] failed to perform a remote operation because of an unknown reason`
++ **Esempio.** `[↯/s.121.1.3] failed to perform a remote operation because of an unknown reason`
+
+- **Resolution.** Inspect logs and any cause chain.
++ **Soluzione.** Esaminare i log e l'eventuale catena di cause.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/superlunary/src/core/superlunary.Rig.scala`
++ - Sorgente: `lib/superlunary/src/core/superlunary.Rig.scala`

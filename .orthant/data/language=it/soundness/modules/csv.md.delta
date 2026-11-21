@@ -1,0 +1,1132 @@
+orthant 1 language
+
+- ## CSV
++ ## CSV
+
+- ### About
++ ### Panoramica
+
+- [CSV](https://en.wikipedia.org/wiki/Comma-separated_values), its tab-separated cousin TSV, and
+- other delimited formats are read and written in one way. Text parses into a `Sheet`, which is a
+- series of rows. Each row, a `Dsv`, decodes into a case class whose fields take the columns in
+- turn. A case class encodes back to a row in the same way. The encoder and decoder are
+- [derived][derivation] from the type, so there is nothing to write by hand.
++ [CSV](https://en.wikipedia.org/wiki/Comma-separated_values), il suo cugino TSV separato da
++ tabulazioni e gli altri formati delimitati si leggono e si scrivono in un unico modo. Il testo viene
++ analizzato in un `Sheet`, che è una serie di righe. Ogni riga, un `Dsv`, si decodifica in una case
++ class i cui campi prendono le colonne nell'ordine. Una case class si codifica di nuovo in una riga
++ allo stesso modo. Encoder e decoder sono [derivati][derivazione] dal tipo, quindi non c'è nulla da
++ scrivere a mano.
+
+- The delimiter, the quoting and the presence of a header row are fixed by a format, chosen in
+- scope, so the same data reads as CSV or TSV by a change of import. Nested case classes spread
+- across several columns, optional fields are supported, and a column can be addressed by its
+- header instead of its position.
++ Il delimitatore, le virgolette e la presenza di una riga di intestazione sono fissati da un formato,
++ scelto nell'ambito, così gli stessi dati si leggono come CSV o TSV cambiando un import. Le case
++ class annidate si distribuiscono su più colonne, i campi opzionali sono supportati, e a una colonna
++ ci si può riferire tramite la sua intestazione anziché la sua posizione.
+
+- ### On delimited data
++ ### Sui dati delimitati
+
+- CSV looks trivial, and is not:
++ Il CSV sembra banale, e non lo è:
+
+- - A field may contain the delimiter, if it is quoted.
+- - A quote inside a quoted field is doubled.
+- - A file may or may not begin with a header row.
+- - A "CSV" file is as likely to be separated by tabs or semicolons as by commas.
++ - Un campo può contenere il delimitatore, se è tra virgolette.
++ - Una virgoletta dentro un campo tra virgolette viene raddoppiata.
++ - Un file può cominciare o no con una riga di intestazione.
++ - Un file «CSV» ha la stessa probabilità di essere separato da tabulazioni o punti e virgola che
++   da virgole.
+
+- Code which splits on commas handles none of this. And the mapping from columns to a program's
+- own types is usually written out by hand, and kept in step by discipline.
++ Il codice che divide sulle virgole non gestisce niente di tutto questo. E la corrispondenza tra le
++ colonne e i tipi propri di un programma di solito si scrive a mano, e la si tiene allineata con la
++ disciplina.
+
+- Here that mapping is derived from the case class which the data should become. Parsing respects
+- quoting and escaping. The format is an explicit value, not a guess. Decoding a row to a type, or
+- a type to a row, is a single derived operation, through the same derivation as every other
+- format, so the shape of the data is checked once, as
+- [correctness](../../philosophy/correctness.md) prefers.
++ Qui quella corrispondenza è derivata dalla case class che i dati devono diventare. Il parsing
++ rispetta virgolette ed escape. Il formato è un valore esplicito, non un'ipotesi. Decodificare una
++ riga in un tipo, o un tipo in una riga, è un'unica operazione derivata, attraverso la stessa
++ derivazione di ogni altro formato, quindi la forma dei dati viene verificata una volta sola, come
++ preferisce la [correttezza](../../philosophy/correctness.md).
+
+- Everything comes from the `soundness` package. A format and an error [strategy] are in scope,
+- and the last import lets the samples print their results:
++ Tutto viene dal package `soundness`. Un formato e una [strategia] di errore sono nell'ambito, e
++ l'ultimo import permette agli esempi di stampare i loro risultati:
+
+= and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import dsvFormats.csvFormat
++ import dsvFormats.csvFormat
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Reading rows
++ ### Leggere le righe
+
+- `read[Sheet]` parses text into a `Sheet`. Its `rows` are `Dsv` values, one for each line, split
+- into cells according to the format:
++ `read[Sheet]` analizza il testo in un `Sheet`. Le sue `rows` sono valori `Dsv`, uno per riga, divisi
++ in celle secondo il formato:
+
+= into cells according to the format:
+=
+- ```scala fuel
++ ```scala fuel
+
+= into cells according to the format:
+=
+= ```scala fuel
+- run
++ run
+
+= into cells according to the format:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"hello,world".read[Sheet].rows(Prim).inspect)
++ Out.println(t"hello,world".read[Sheet].rows(Prim).inspect)
+
+= Out.println(t"hello,world".read[Sheet].rows(Prim).inspect)
+- ```
++ ```
+
+- The delimiter inside a quoted cell is part of the cell, so this row has three cells, not four:
++ Il delimitatore dentro una cella tra virgolette fa parte della cella, quindi questa riga ha tre
++ celle, non quattro:
+
+= The delimiter inside a quoted cell is part of the cell, so this row has three cells, not four:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The delimiter inside a quoted cell is part of the cell, so this row has three cells, not four:
+=
+= ```scala fuel
+- run
++ run
+
+= The delimiter inside a quoted cell is part of the cell, so this row has three cells, not four:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"1,\"Bottom, Nick\",36".read[Sheet].rows(Prim).inspect)
++ Out.println(t"1,\"Bottom, Nick\",36".read[Sheet].rows(Prim).inspect)
+
+= Out.println(t"1,\"Bottom, Nick\",36".read[Sheet].rows(Prim).inspect)
+- ```
++ ```
+
+- A `Sheet` holds all its rows in memory, in an array, so they can be replayed, indexed and
+- compared cheaply. A file too large to hold needs no sheet at all. `rows` on a
+- [stream](streams.md) of characters gives the rows one at a time, parsed by the same reader, so
+- a quoted cell which spans the boundary between chunks, or between lines, is handled exactly as
+- it is in a sheet:
++ Uno `Sheet` tiene tutte le sue righe in memoria, in un array, così si possono rileggere, indicizzare
++ e confrontare a basso costo. Un file troppo grande per essere tenuto in memoria non ha bisogno di
++ alcuno sheet. `rows` su uno [stream](streams.md) di caratteri fornisce le righe una alla volta,
++ analizzate dallo stesso reader, quindi una cella tra virgolette che attraversa il confine tra due
++ chunk, o tra due righe, viene gestita esattamente come in uno sheet:
+
+= it is in a sheet:
+=
+- ```scala
++ ```scala
+
+- val names =
++ val names =
+
+-   t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to[List]
++   t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to[List]
+
+=   t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to[List]
+- ```
++ ```
+
+- ### Decoding to a case class
++ ### Decodificare in una case class
+
+- `as` decodes a row into a case class, taking the cells in order. A nested case class simply
+- consumes as many columns as it has fields:
++ `as` decodifica una riga in una case class, prendendo le celle nell'ordine. Una case class annidata
++ consuma semplicemente tante colonne quanti sono i suoi campi:
+
+= consumes as many columns as it has fields:
+=
+- ```scala
++ ```scala
+
+- case class FullName(first: Text, last: Text)
++ case class FullName(first: Text, last: Text)
+
+- case class Person(id: Int, name: FullName, age: Int)
++ case class Person(id: Int, name: FullName, age: Int)
+
+- val bottom = t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
++ val bottom = t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
+
+= val bottom = t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
+- ```
++ ```
+
+= val bottom = t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val bottom = t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val bottom = t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(bottom.inspect)
++ Out.println(bottom.inspect)
+
+= Out.println(bottom.inspect)
+- ```
++ ```
+
+- `rows(Prim)` gives an [optional](optional-values.md) row, since the sheet may be empty, so `let`
+- decodes the row if there is one.
++ `rows(Prim)` fornisce una riga [opzionale](optional-values.md), poiché lo sheet può essere vuoto,
++ quindi `let` decodifica la riga se ce n'è una.
+
+- Reading straight to a type combines the two steps, and decodes a single record from text:
++ Leggere direttamente in un tipo unisce i due passaggi, e decodifica un singolo record dal testo:
+
+= Reading straight to a type combines the two steps, and decodes a single record from text:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Reading straight to a type combines the two steps, and decodes a single record from text:
+=
+= ```scala fuel
+- run
++ run
+
+= Reading straight to a type combines the two steps, and decodes a single record from text:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"hello,world".read[FullName in Dsv].inspect)
++ Out.println(t"hello,world".read[FullName in Dsv].inspect)
+
+= Out.println(t"hello,world".read[FullName in Dsv].inspect)
+- ```
++ ```
+
+- A cell which cannot be decoded as its field's type is an error:
++ Una cella che non si può decodificare come il tipo del suo campo è un errore:
+
+= A cell which cannot be decoded as its field's type is an error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A cell which cannot be decoded as its field's type is an error:
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- t"one,Nick,Bottom,36".read[Person in Dsv]
++ t"one,Nick,Bottom,36".read[Person in Dsv]
+
+= t"one,Nick,Bottom,36".read[Person in Dsv]
+- ```
++ ```
+
+- ### Encoding
++ ### Codifica
+
+- `dsv` encodes a case class as a row, and a sequence of them as a `Sheet`. `show` writes the
+- result as delimited text:
++ `dsv` codifica una case class come una riga, e una sequenza di esse come uno `Sheet`. `show`
++ scrive il risultato come testo delimitato:
+
+= result as delimited text:
+=
+- ```scala fuel
++ ```scala fuel
+
+= result as delimited text:
+=
+= ```scala fuel
+- run
++ run
+
+= result as delimited text:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(FullName(t"Nick", t"Bottom").dsv.inspect)
++ Out.println(FullName(t"Nick", t"Bottom").dsv.inspect)
+
+- Out.println(List(FullName(t"Nick", t"Bottom"), FullName(t"Francis", t"Flute")).dsv.show)
++ Out.println(List(FullName(t"Nick", t"Bottom"), FullName(t"Francis", t"Flute")).dsv.show)
+
+= Out.println(List(FullName(t"Nick", t"Bottom"), FullName(t"Francis", t"Flute")).dsv.show)
+- ```
++ ```
+
+- `in[Text over Dsv]` encodes a value as a single record in one step, and `in[Data over Dsv]`
+- writes the same text as bytes, in the `Codepage` in scope:
++ `in[Text over Dsv]` codifica un valore come singolo record in un solo passaggio, e
++ `in[Data over Dsv]` scrive lo stesso testo come byte, nel `Codepage` nell'ambito:
+
+= writes the same text as bytes, in the `Codepage` in scope:
+=
+- ```scala
++ ```scala
+
+- val record: Text = FullName(t"hello", t"world").in[Text over Dsv]
++ val record: Text = FullName(t"hello", t"world").in[Text over Dsv]
+
+= val record: Text = FullName(t"hello", t"world").in[Text over Dsv]
+- ```
++ ```
+
+= val record: Text = FullName(t"hello", t"world").in[Text over Dsv]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val record: Text = FullName(t"hello", t"world").in[Text over Dsv]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val record: Text = FullName(t"hello", t"world").in[Text over Dsv]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(record)
++ Out.println(record)
+
+= Out.println(record)
+- ```
++ ```
+
+- A cell is quoted only when it contains the delimiter, a quote or a line break, and a quote
+- within a cell is doubled:
++ Una cella viene messa tra virgolette solo quando contiene il delimitatore, una virgoletta o un a
++ capo, e una virgoletta dentro una cella viene raddoppiata:
+
+= within a cell is doubled:
+=
+- ```scala
++ ```scala
+
+- val quoted: Text = FullName(t"Nick", t"Bottom, the weaver").in[Text over Dsv]
++ val quoted: Text = FullName(t"Nick", t"Bottom, the weaver").in[Text over Dsv]
+
+= val quoted: Text = FullName(t"Nick", t"Bottom, the weaver").in[Text over Dsv]
+- ```
++ ```
+
+= val quoted: Text = FullName(t"Nick", t"Bottom, the weaver").in[Text over Dsv]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val quoted: Text = FullName(t"Nick", t"Bottom, the weaver").in[Text over Dsv]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val quoted: Text = FullName(t"Nick", t"Bottom, the weaver").in[Text over Dsv]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(quoted)
++ Out.println(quoted)
+
+= Out.println(quoted)
+- ```
++ ```
+
+- ### Headers
++ ### Intestazioni
+
+- Data often begins with a header row. A format which expects one matches each column to the
+- field of the same name, so the order of the columns need not match the order of the fields:
++ Spesso i dati cominciano con una riga di intestazione. Un formato che se ne aspetta una fa
++ corrispondere ogni colonna al campo con lo stesso nome, quindi l'ordine delle colonne non deve
++ per forza coincidere con l'ordine dei campi:
+
+= field of the same name, so the order of the columns need not match the order of the fields:
+=
+- ```scala fuel
++ ```scala fuel
+
+= field of the same name, so the order of the columns need not match the order of the fields:
+=
+= ```scala fuel
+- run
++ run
+
+= field of the same name, so the order of the columns need not match the order of the fields:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= field of the same name, so the order of the columns need not match the order of the fields:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+= locally:
+-   import dsvFormats.csvWithHeaderFormat
++   import dsvFormats.csvWithHeaderFormat
+
+-   Out.println(t"last,first\nBottom,Nick".read[FullName in Dsv].inspect)
++   Out.println(t"last,first\nBottom,Nick".read[FullName in Dsv].inspect)
+
+=   Out.println(t"last,first\nBottom,Nick".read[FullName in Dsv].inspect)
+- ```
++ ```
+
+- ### Formats
++ ### Formati
+
+- The format in scope decides the delimiter and the quoting. Each delimiter has a plain format
+- and a variant with a header, in the package `dsvFormats`, and all of them quote with `"`:
++ Il formato nell'ambito decide il delimitatore e le virgolette. Ogni delimitatore ha un formato
++ semplice e una variante con intestazione, nel package `dsvFormats`, e tutti usano `"` come
++ virgolette:
+
+= and a variant with a header, in the package `dsvFormats`, and all of them quote with `"`:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  With a header
+- column  Delimiter
+- row  `csvFormat`  `csvWithHeaderFormat`  comma
+- row  `tsvFormat`  `tsvWithHeaderFormat`  tab
+- row  `ssvFormat`  `ssvWithHeaderFormat`  space
++ column  Formato
++ column  Con intestazione
++ column  Delimitatore
++ row  `csvFormat`  `csvWithHeaderFormat`  virgola
++ row  `tsvFormat`  `tsvWithHeaderFormat`  tabulazione
++ row  `ssvFormat`  `ssvWithHeaderFormat`  spazio
+
+= row  `ssvFormat`  `ssvWithHeaderFormat`  space
+- ```
++ ```
+
+- Importing another format in an inner scope changes the delimiter:
++ Importare un altro formato in un ambito interno cambia il delimitatore:
+
+= Importing another format in an inner scope changes the delimiter:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Importing another format in an inner scope changes the delimiter:
+=
+= ```scala fuel
+- run
++ run
+
+= Importing another format in an inner scope changes the delimiter:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= Importing another format in an inner scope changes the delimiter:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import dsvFormats.tsvFormat
++   import dsvFormats.tsvFormat
+
+-   Out.println(List(FullName(t"Nick", t"Bottom")).dsv.show.inspect)
++   Out.println(List(FullName(t"Nick", t"Bottom")).dsv.show.inspect)
+
+=   Out.println(List(FullName(t"Nick", t"Bottom")).dsv.show.inspect)
+- ```
++ ```
+
+- ### Column spans
++ ### Estensioni delle colonne
+
+- A nested case class occupies as many columns as it has fields. That number is computed from the
+- type, not discovered while parsing. Each field's *span* says how many columns it consumes, so a
+- decoder knows where one field ends and the next begins, even when several are nested. `Person`
+- spans four columns in all:
++ Una case class annidata occupa tante colonne quanti sono i suoi campi. Quel numero è calcolato dal
++ tipo, non scoperto durante il parsing. L'*estensione* di ogni campo dice quante colonne consuma,
++ così un decoder sa dove finisce un campo e comincia il successivo, anche quando molti sono
++ annidati. `Person` si estende in tutto su quattro colonne:
+
+= spans four columns in all:
+=
+- ```scala fuel
++ ```scala fuel
+
+= spans four columns in all:
+=
+= ```scala fuel
+- run
++ run
+
+= spans four columns in all:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Spannable.derived[Person].spans().to[List].inspect)
++ Out.println(Spannable.derived[Person].spans().to[List].inspect)
+
+= Out.println(Spannable.derived[Person].spans().to[List].inspect)
+- ```
++ ```
+
+- Decoding by position is brittle by nature. Adding a field to a nested case class shifts every
+- column after it, and nothing in the file says so. That is how positional data behaves, and no
+- decoder can change it. It is why a format with headers is worth using where there is a choice,
+- and why cells can be [addressed by name](#addressing-cells-by-name).
++ La decodifica per posizione è fragile per natura. Aggiungere un campo a una case class annidata
++ sposta ogni colonna successiva, e nulla nel file lo dice. È così che si comportano i dati
++ posizionali, e nessun decoder può cambiarlo. Per questo vale la pena di usare un formato con
++ intestazioni quando si può scegliere, e per questo alle celle ci si può
++ [riferire per nome](#addressing-cells-by-name).
+
+- ### Optional columns
++ ### Colonne opzionali
+
+- An `Optional` field spans one column. A row which stops short of it decodes it as `Unset`,
+- which is what a trailing optional column in a real spreadsheet means:
++ Un campo `Optional` si estende su una colonna. Una riga che si ferma prima lo decodifica come
++ `Unset`, che è ciò che significa una colonna opzionale finale in un vero foglio di calcolo:
+
+= which is what a trailing optional column in a real spreadsheet means:
+=
+- ```scala
++ ```scala
+
+- case class Greeting(word: Text, name: Optional[Text])
++ case class Greeting(word: Text, name: Optional[Text])
+
+= case class Greeting(word: Text, name: Optional[Text])
+- ```
++ ```
+
+= case class Greeting(word: Text, name: Optional[Text])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Greeting(word: Text, name: Optional[Text])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Greeting(word: Text, name: Optional[Text])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"hello,world".read[Greeting in Dsv].inspect)
++ Out.println(t"hello,world".read[Greeting in Dsv].inspect)
+
+- Out.println(t"hello".read[Greeting in Dsv].inspect)
++ Out.println(t"hello".read[Greeting in Dsv].inspect)
+
+= Out.println(t"hello".read[Greeting in Dsv].inspect)
+- ```
++ ```
+
+- Reading an `Optional` field follows the policies which
+- [Decoding](decoding.md#policies-for-optional-fields) describes, each varied by a given in the
+- package `optionalityOptions`. Delimited text has no null:
++ La lettura di un campo `Optional` segue le politiche descritte in
++ [Decodifica](decoding.md#policies-for-optional-fields), ciascuna modificabile con un given nel
++ package `optionalityOptions`. Il testo delimitato non ha null:
+
+= package `optionalityOptions`. Delimited text has no null:
+=
+- ```tabular
++ ```tabular
+
+- column  A field which is
+- column  Reads as
+- column  Unless
+- row  in a column the row lacks  `Unset`  `strictDsvAbsence` makes it an error
+- row  present but rejected by the inner decoder  an error  `lenientDsvFaults` reads it as `Unset`
++ column  Un campo che è
++ column  Si legge come
++ column  A meno che
++ row  in una colonna che manca alla riga  `Unset`  `strictDsvAbsence` lo renda un errore
++ row  presente ma rifiutato dal decoder interno  un errore  `lenientDsvFaults` lo legga come `Unset`
+
+= row  present but rejected by the inner decoder  an error  `lenientDsvFaults` reads it as `Unset`
+- ```
++ ```
+
+- A column the row lacks is one beyond the end of a short row, or a header column the row does
+- not have. The error raised for it under `strictDsvAbsence` has the reason
+- `Dsv.Error.Reason.Absent`. An empty cell is a present value, not a null.
++ Una colonna che manca alla riga è una colonna oltre la fine di una riga corta, o una colonna di
++ intestazione che la riga non ha. L'errore sollevato in tal caso con `strictDsvAbsence` ha il
++ motivo `Dsv.Error.Reason.Absent`. Una cella vuota è un valore presente, non un null.
+
+= `Dsv.Error.Reason.Absent`. An empty cell is a present value, not a null.
+=
+- ```scala
++ ```scala
+
+- case class Tally(name: Text, count: Optional[Int])
++ case class Tally(name: Text, count: Optional[Int])
+
+- val tolerant =
++ val tolerant =
+
+-   import optionalityOptions.lenientDsvFaults
++   import optionalityOptions.lenientDsvFaults
+
+-   t"hello,many".read[Tally in Dsv]
++   t"hello,many".read[Tally in Dsv]
+
+=   t"hello,many".read[Tally in Dsv]
+- ```
++ ```
+
+=   t"hello,many".read[Tally in Dsv]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"hello,many".read[Tally in Dsv]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"hello,many".read[Tally in Dsv]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(tolerant.inspect)
++ Out.println(tolerant.inspect)
+
+= Out.println(tolerant.inspect)
+- ```
++ ```
+
+- ### Addressing cells by name
++ ### Riferirsi alle celle per nome
+
+- With dynamic access enabled, a cell of a row which has a header is read as a named member, and
+- decoded to the type asked for. A *redesignation* in scope says how a member's name becomes a
+- header. `unchangedRedesignation` uses the name as it is:
++ Con l'accesso dinamico abilitato, una cella di una riga che ha un'intestazione si legge come un
++ membro con nome, e si decodifica nel tipo richiesto. Una *ridesignazione* nell'ambito dice come il
++ nome di un membro diventa un'intestazione. `unchangedRedesignation` usa il nome così com'è:
+
+= header. `unchangedRedesignation` uses the name as it is:
+=
+- ```scala
++ ```scala
+
+- import dynamicAccess.dynamicDsv
++ import dynamicAccess.dynamicDsv
+
+- val number =
++ val number =
+
+= val number =
+-   import dsvFormats.csvWithHeaderFormat
++   import dsvFormats.csvWithHeaderFormat
+
+-   import dsvRedesignations.unchangedRedesignation
++   import dsvRedesignations.unchangedRedesignation
+
+-   t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])
++   t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])
+
+=   t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])
+- ```
++ ```
+
+- The column names in a file rarely look like Scala's names. Another redesignation maps between
+- the two conventions, so the member `targetPerson` reads the column headed `Target Person`:
++ I nomi delle colonne in un file raramente somigliano ai nomi di Scala. Un'altra ridesignazione fa
++ da ponte tra le due convenzioni, così il membro `targetPerson` legge la colonna intitolata
++ `Target Person`:
+
+= the two conventions, so the member `targetPerson` reads the column headed `Target Person`:
+=
+- ```scala
++ ```scala
+
+- val target =
++ val target =
+
+= val target =
+-   import dsvFormats.csvWithHeaderFormat
++   import dsvFormats.csvWithHeaderFormat
+
+-   import dsvRedesignations.capitalizedWordsRedesignation
++   import dsvRedesignations.capitalizedWordsRedesignation
+
+-   t"Personal Greeting,Target Person\nHello,World".read[Sheet].rows(Prim).let(_.targetPerson[Text])
++   t"Personal Greeting,Target Person\nHello,World".read[Sheet].rows(Prim).let(_.targetPerson[Text])
+
+=   t"Personal Greeting,Target Person\nHello,World".read[Sheet].rows(Prim).let(_.targetPerson[Text])
+- ```
++ ```
+
+=   t"Personal Greeting,Target Person\nHello,World".read[Sheet].rows(Prim).let(_.targetPerson[Text])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"Personal Greeting,Target Person\nHello,World".read[Sheet].rows(Prim).let(_.targetPerson[Text])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"Personal Greeting,Target Person\nHello,World".read[Sheet].rows(Prim).let(_.targetPerson[Text])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(number.inspect)
++ Out.println(number.inspect)
+
+- Out.println(target.inspect)
++ Out.println(target.inspect)
+
+= Out.println(target.inspect)
+- ```
++ ```
+
+- Each redesignation in the package `dsvRedesignations` gives the member `targetPerson` this
+- header:
++ Ogni ridesignazione nel package `dsvRedesignations` dà al membro `targetPerson` questa
++ intestazione:
+
+= header:
+=
+- ```tabular
++ ```tabular
+
+- column  Redesignation
+- column  Header
++ column  Ridesignazione
++ column  Intestazione
+
+- row  `unchangedRedesignation`  `targetPerson`
++ row  `unchangedRedesignation`  `targetPerson`
+
+- row  `capitalizedWordsRedesignation`  `Target Person`
++ row  `capitalizedWordsRedesignation`  `Target Person`
+
+- row  `lowerWordsRedesignation`  `target person`
++ row  `lowerWordsRedesignation`  `target person`
+
+- row  `lowerDottedRedesignation`  `target.person`
++ row  `lowerDottedRedesignation`  `target.person`
+
+- row  `lowerSlashedRedesignation`  `target/person`
++ row  `lowerSlashedRedesignation`  `target/person`
+
+= row  `lowerSlashedRedesignation`  `target/person`
+- ```
++ ```
+
+- Without a redesignation in scope, a cell cannot be read by name:
++ Senza una ridesignazione nell'ambito, una cella non si può leggere per nome:
+
+= Without a redesignation in scope, a cell cannot be read by name:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])
++ t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])
+
+= t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])
+- ```
++ ```
+
+- The import of `dynamicDsv` grants the permission `Dsv is Dynamical` to the rest of its scope.
+- `dynamically[Dsv]:` grants it to a single block instead, as
+- [JSON](json.md#fields-as-members) describes. A field of a case class whose name differs from
+- its header is renamed with [`@name`](json.md#renaming-fields).
++ L'import di `dynamicDsv` concede l'abilitazione `Dsv is Dynamical` al resto del suo ambito.
++ `dynamically[Dsv]:` la concede invece a un singolo blocco, come descrive
++ [JSON](json.md#fields-as-members). Un campo di una case class il cui nome differisce dalla sua
++ intestazione si rinomina con [`@name`](json.md#renaming-fields).
+
+- ### Reporting every bad cell
++ ### Segnalare ogni cella errata
+
+- A spreadsheet exported from elsewhere is rarely wrong in only one place, and a decoder which
+- stops at the first bad cell makes fixing it a series of guesses. Under a strategy which
+- [accumulates failures](errors.md#accumulating-failures), every cell which fails is reported,
+- missing cells and unparseable ones together. Each is identified by its column, so one pass over
+- a file gives the whole list of what to correct.
++ Un foglio di calcolo esportato da altrove raramente è sbagliato in un solo punto, e un decoder che
++ si ferma alla prima cella errata rende la correzione una serie di tentativi. Con una strategia che
++ [accumula i fallimenti](errors.md#accumulating-failures), ogni cella che fallisce viene segnalata,
++ le celle mancanti e quelle non analizzabili insieme. Ciascuna è identificata dalla sua colonna,
++ quindi un solo passaggio su un file fornisce l'intero elenco di ciò che va corretto.
+
+- The accumulation is a value of the caller's choosing, here an error which collects each fault
+- with the column it was found in. `Validate` says how each fault joins it, and is focused on the
+- `CellRef` which the decoder was reading:
++ L'accumulo è un valore scelto dal chiamante, qui un errore che raccoglie ogni difetto con la
++ colonna in cui è stato trovato. `Validate` dice come ogni difetto vi si unisce, ed è focalizzato
++ sul `CellRef` che il decoder stava leggendo:
+
+= `CellRef` which the decoder was reading:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- case class Issues(items: List[(Text, Dsv.Error)] = Nil)(using Diagnostics)
++ case class Issues(items: List[(Text, Dsv.Error)] = Nil)(using Diagnostics)
+
+- extends Error(m"${items.size} decoding issues"):
++ extends Error(m"${items.size} decoding issues"):
+
+-   def +(column: Text, error: Dsv.Error): Issues = Issues(items :+ (column, error))
++   def +(column: Text, error: Dsv.Error): Issues = Issues(items :+ (column, error))
+
+- case class Measurement(name: Text, age: Int, height: Int)
++ case class Measurement(name: Text, age: Int, height: Int)
+
+- val damaged =
++ val damaged =
+
+= val damaged =
+-   import dsvFormats.csvWithHeaderFormat
++   import dsvFormats.csvWithHeaderFormat
+
+-   t"name,age,height\nHamlet,thirty,tall".read[Sheet].rows(Prim)
++   t"name,age,height\nHamlet,thirty,tall".read[Sheet].rows(Prim)
+
+- val problems =
++ val problems =
+
+-   Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
++   Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
+
+-     ( Issues(),
++     ( Issues(),
+
+-       { case error: Dsv.Error => accrual + (prior.let(_.column).or(t"#"), error) } )
++       { case error: Dsv.Error => accrual + (prior.let(_.column).or(t"#"), error) } )
+
+-   . protect(damaged.let(_.as[Measurement]))
++   . protect(damaged.let(_.as[Measurement]))
+
+-   . items
++   . items
+
+=   . items
+- ```
++ ```
+
+=   . items
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   . items
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   . items
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- problems.each: (column, error) =>
++ problems.each: (column, error) =>
+
+-   Out.println(t"$column: ${error.message}")
++   Out.println(t"$column: ${error.message}")
+
+=   Out.println(t"$column: ${error.message}")
+- ```
++ ```
+
+- ### Parsing directly to a type
++ ### Parsing diretto in un tipo
+
+- Building a `Dsv` for every row, only to decode it and throw it away, is wasted work. A type
+- with a `Dsv.Parsable` instance is parsed straight from the source. Its cells are read in place,
+- from the parser's buffer, and no row value is built at all:
++ Costruire un `Dsv` per ogni riga, solo per decodificarlo e buttarlo via, è lavoro sprecato. Un
++ tipo con un'istanza di `Dsv.Parsable` viene analizzato direttamente dalla sorgente. Le sue celle si
++ leggono sul posto, dal buffer del parser, e nessun valore di riga viene costruito:
+
+= from the parser's buffer, and no row value is built at all:
+=
+- ```scala
++ ```scala
+
+- case class Stat(name: Text, count: Int, note: Optional[Text])
++ case class Stat(name: Text, count: Int, note: Optional[Text])
+
+- given statParsable: (Stat is Dsv.Parsable) = Dsv.Parsable.derived
++ given statParsable: (Stat is Dsv.Parsable) = Dsv.Parsable.derived
+
+= given statParsable: (Stat is Dsv.Parsable) = Dsv.Parsable.derived
+- ```
++ ```
+
+= given statParsable: (Stat is Dsv.Parsable) = Dsv.Parsable.derived
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= given statParsable: (Stat is Dsv.Parsable) = Dsv.Parsable.derived
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= given statParsable: (Stat is Dsv.Parsable) = Dsv.Parsable.derived
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"z,9,note".read[Stat in Dsv].inspect)
++ Out.println(t"z,9,note".read[Stat in Dsv].inspect)
+
+- Out.println(t"a,1\nb,2".read[List[Stat] in Dsv].map(_.name).inspect)
++ Out.println(t"a,1\nb,2".read[List[Stat] in Dsv].map(_.name).inspect)
+
+= Out.println(t"a,1\nb,2".read[List[Stat] in Dsv].map(_.name).inspect)
+- ```
++ ```
+
+- A stream gives records in the same way, through `rowsOf`:
++ Uno stream fornisce i record allo stesso modo, tramite `rowsOf`:
+
+= A stream gives records in the same way, through `rowsOf`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A stream gives records in the same way, through `rowsOf`:
+=
+= ```scala fuel
+- run
++ run
+
+= A stream gives records in the same way, through `rowsOf`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to[List].inspect)
++ Out.println(t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to[List].inspect)
+
+= Out.println(t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to[List].inspect)
+- ```
++ ```
+
+- Fields are matched by header name where the format has a header, and by position where it does
+- not. An `Optional` field which the row does not reach is `Unset`, not an error.
++ I campi si fanno corrispondere per nome di intestazione dove il formato ha un'intestazione, e per
++ posizione dove non ce l'ha. Un campo `Optional` che la riga non raggiunge è `Unset`, non un errore.
+
+- The `codecs` import which selects the route for every other format selects it for delimited
+- text too:
++ L'import di `codecs` che seleziona il percorso per ogni altro formato lo seleziona anche per il
++ testo delimitato:
+
+= text too:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
++ column  Import
+
+- column  For a product
+- column  For any other type
+- row  `codecs.direct`  parsed directly, with no instance declared  the row decoder, unless it has a `Dsv.Parsable`
+- row  `codecs.derived`  the row decoder, even where a `Dsv.Parsable` is in scope  the row decoder
+- row  `codecs.strict`  parsed directly, with no instance declared  a compile error naming the type, unless it has a `Dsv.Parsable`
++ column  Per un prodotto
++ column  Per qualsiasi altro tipo
++ row  `codecs.direct`  analizzato direttamente, senza istanza dichiarata  il decodificatore di righe, a meno che abbia un `Dsv.Parsable`
++ row  `codecs.derived`  il decodificatore di righe, anche dove un `Dsv.Parsable` è nell'ambito  il decodificatore di righe
++ row  `codecs.strict`  analizzato direttamente, senza istanza dichiarata  un errore di compilazione che nomina il tipo, a meno che abbia un `Dsv.Parsable`
+
+= row  `codecs.strict`  parsed directly, with no instance declared  a compile error naming the type, unless it has a `Dsv.Parsable`
+- ```
++ ```
+
+- The modes are alternatives, so import one at a time. Reading a `List[Play] in Dsv` is direct in
+- every mode, since the row decoder has no counterpart for a whole sheet.
++ Le modalità sono alternative, quindi se ne importa una alla volta. Leggere una `List[Play] in Dsv`
++ è diretto in ogni modalità, poiché il decodificatore di righe non ha un corrispettivo per un intero
++ sheet.
+
+- Each field of a directly parsed product reads one cell through its `Decodable in Text`
+- instance, or is itself a product of such fields. A field which has only a `Decodable in Dsv`
+- instance keeps its type on the row decoder: declare no `Dsv.Parsable` for the type, and import
+- no mode.
++ Ogni campo di un prodotto analizzato direttamente legge una cella tramite la sua istanza di
++ `Decodable in Text`, oppure è a sua volta un prodotto di tali campi. Un campo che ha solo
++ un'istanza di `Decodable in Dsv` mantiene il suo tipo sul decodificatore di righe: non si dichiara
++ alcun `Dsv.Parsable` per il tipo, e non si importa alcuna modalità.
+
+- ### Related
++ ### Correlati
+
+- - [Tables](tables.md) lays out rows of data for display in a terminal.
+- - [Decoding](decoding.md) describes the `Decodable in Text` instances which read each cell.
+- - [JSON](json.md) and [YAML](yaml.md) decode nested documents with the same derivation.
+- - [Streams](streams.md) covers the sources which `rows` and `rowsOf` read from.
+- - [Derivation](derivation.md) explains how a row is decoded to a case class without an instance written by hand.
++ - [Tabelle](tables.md) dispone righe di dati da visualizzare in un terminale.
++ - [Decodifica](decoding.md) descrive le istanze di `Decodable in Text` che leggono ogni cella.
++ - [JSON](json.md) e [YAML](yaml.md) decodificano documenti annidati con la stessa derivazione.
++ - [Stream](streams.md) tratta le sorgenti da cui leggono `rows` e `rowsOf`.
++ - [Derivazione](derivation.md) spiega come una riga si decodifica in una case class senza un'istanza scritta a mano.

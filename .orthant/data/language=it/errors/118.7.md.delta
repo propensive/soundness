@@ -1,0 +1,88 @@
+orthant 1 language
+
+- # `↯/s.118.7` — `Tels.Resolution.Error`
++ # `↯/s.118.7` — `Tels.Resolution.Error`
+
+- Raised when a TEL document's schema identification does not resolve to a schema.
++ Sollevato quando l'identificazione dello schema di un documento TEL non si risolve in uno schema.
+
+- ## Cause
++ ## Causa
+
+- Schema resolution (TEL §8.2) turns the pragma's identification — a LIRA reference, layer
+- selections, and/or a BASE-256 signature — into a composed schema, through the embedded,
+- built-in, store, library and LIRA steps. Its failures are runtime resolution errors, outside
+- the document's E1xx–E3xx taxonomy (the one exception is E124, out-of-order layer selections,
+- which is a `Tel.Error` raised during resolution because it needs the schema's declaration
+- order).
++ La risoluzione dello schema (TEL §8.2) trasforma l'identificazione del pragma — un riferimento
++ LIRA, selezioni di strati e/o una firma BASE-256 — in uno schema composto, attraverso i passi
++ embedded, integrato, deposito, libreria e LIRA. I suoi fallimenti sono errori di risoluzione a
++ runtime, al di fuori della tassonomia E1xx–E3xx del documento (l'unica eccezione è E124, selezioni
++ di strati fuori ordine, che è un `Tel.Error` sollevato durante la risoluzione perché richiede
++ l'ordine di dichiarazione dello schema).
+
+- ## Variants
++ ## Varianti
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+- row  `↯/s.118.7.1`  `UnknownLayer`  the selected layer is not declared by the schema
++ row  `↯/s.118.7.1`  `UnknownLayer`  the selected layer is not declared by the schema
+
+- row  `↯/s.118.7.2`  `ComponentCount`  the signature has the wrong number of components
++ row  `↯/s.118.7.2`  `ComponentCount`  the signature has the wrong number of components
+
+- row  `↯/s.118.7.3`  `BaseMismatch`  the signature's base component does not match the schema's base hash
++ row  `↯/s.118.7.3`  `BaseMismatch`  the signature's base component does not match the schema's base hash
+
+- row  `↯/s.118.7.4`  `LayerMismatch`  the signature's component for a layer does not match its hash
++ row  `↯/s.118.7.4`  `LayerMismatch`  the signature's component for a layer does not match its hash
+
+- row  `↯/s.118.7.5`  `ReferenceDisagrees`  the reference's lineage does not serve the authoritative signature
++ row  `↯/s.118.7.5`  `ReferenceDisagrees`  the reference's lineage does not serve the authoritative signature
+
+- row  `↯/s.118.7.6`  `Unresolved`  the identifier was not resolved, naming the failing step
++ row  `↯/s.118.7.6`  `Unresolved`  the identifier was not resolved, naming the failing step
+
+- row  `↯/s.118.7.7`  `NotSchema`  the resolved body is not a valid schema document
++ row  `↯/s.118.7.7`  `NotSchema`  the resolved body is not a valid schema document
+
+- row  `↯/s.118.7.8`  `Unverified`  signature verification failed
++ row  `↯/s.118.7.8`  `Unverified`  signature verification failed
+
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- A signature is authoritative: when layer selections precede it, it must decompose into
+- exactly the base hash plus the selected layers' hashes, in order. A bare reference (no
+- selector, no signature) resolves only against local state, by design; make a document
+- portable by appending a signature or publishing the schema and using a `:version` or `:tag`
+- selector. A non-network resolver answers `Unresolved` at the LIRA step for anything absent
+- from local stores.
++ Una firma è autorevole: quando è preceduta da selezioni di strati, deve scomporsi esattamente
++ nell'hash di base più gli hash degli strati selezionati, in ordine. Un riferimento nudo (senza
++ selettore, senza firma) si risolve solo rispetto allo stato locale, per scelta progettuale; si
++ rende portabile un documento aggiungendo una firma oppure pubblicando lo schema e usando un
++ selettore `:version` o `:tag`. Un resolver senza rete risponde `Unresolved` al passo LIRA per
++ qualunque cosa assente dai depositi locali.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/stratiform/src/core/stratiform.Tels.scala` (`Tels.Resolution`), engine in
++ - Sorgente: `lib/stratiform/src/core/stratiform.Tels.scala` (`Tels.Resolution`), motore in
+
+-   `lib/stratiform/src/core/stratiform.SchemaResolver.scala`
++   `lib/stratiform/src/core/stratiform.SchemaResolver.scala`

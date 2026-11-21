@@ -1,0 +1,1615 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base cacophony
++ base cacophony
+
+- import soundness
++ import soundness
+
+- info   audio as typed, immutable PCM values: read and write WAV, AIFF, AIFC, AU and SND; record from and play to devices
++ info   l'audio come valori PCM tipizzati e immutabili: lettura e scrittura di WAV, AIFF, AIFC, AU e SND; registrazione dai dispositivi e riproduzione verso di essi
+
+- detail
++ detail
+
+-     _Cacophony_ reads and writes audio as typed values, records from the machine's inputs,
+-     and plays through its outputs. Reading a WAV, AIFF, AIFC, AU or SND file yields an
+-     `Audio` — an immutable block of PCM samples which knows its sample rate (a genuine
+-     quantity in hertz), its channel count, its bit depth and every sample it holds — and
+-     the file format lives in the type: an `Audio in Wave` is distinct from an `Audio in
+-     Aiff`, converting between them is `to[Aiff]`, and an audio value's encoded bytes are
+-     read from it as `Data`, with the same `read` as any other source.
++     _Cacophony_ legge e scrive l'audio come valori tipizzati, registra dagli ingressi della
++     macchina e riproduce attraverso le sue uscite. Leggere un file WAV, AIFF, AIFC, AU o SND
++     produce un `Audio` — un blocco immutabile di campioni PCM che conosce la propria frequenza
++     di campionamento (una vera grandezza in hertz), il numero di canali, la profondità in bit e
++     ogni campione che contiene — e il formato del file vive nel tipo: un `Audio in Wave` è
++     distinto da un `Audio in Aiff`, convertire dall'uno all'altro è `to[Aiff]`, e i byte
++     codificati di un valore audio si leggono da esso come `Data`, con lo stesso `read` di
++     qualsiasi altra sorgente.
+
+=     read from it as `Data`, with the same `read` as any other source.
+=
+-     ```scala
++     ```scala
+
+=     read from it as `Data`, with the same `read` as any other source.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     read from it as `Data`, with the same `read` as any other source.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     // A complete WAV file: one channel, 16-bit signed samples at 8 kHz, four frames.
++     // A complete WAV file: one channel, 16-bit signed samples at 8 kHz, four frames.
+
+=     // A complete WAV file: one channel, 16-bit signed samples at 8 kHz, four frames.
+-     val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
++     val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+
+=     // A complete WAV file: one channel, 16-bit signed samples at 8 kHz, four frames.
+=     val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+-                     617461080000006400c8002c019001"""
++                     617461080000006400c8002c019001"""
+
+-     val audio: Audio in Wave = wav.read[Audio in Wave]
++     val audio: Audio in Wave = wav.read[Audio in Wave]
+
+-     audio.channels        // 1
++     audio.channels        // 1
+
+-     audio.frames          // 4
++     audio.frames          // 4
+
+-     audio.bitsPerSample   // 16
++     audio.bitsPerSample   // 16
+
+-     audio.sampleRate      // 8000.0*Hertz
++     audio.sampleRate      // 8000.0*Hertz
+
+-     audio.duration        // 0.0005*Second
++     audio.duration        // 0.0005*Second
+
+-     audio(0, 2)           // 300
++     audio(0, 2)           // 300
+
+-     val aiff: Data = audio.to[Aiff].read[Data]
++     val aiff: Data = audio.to[Aiff].read[Data]
+
+-     aiff.read[Audio in Aiff](0, 2)   // 300
++     aiff.read[Audio in Aiff](0, 2)   // 300
+
+=     aiff.read[Audio in Aiff](0, 2)   // 300
+-     ```
++     ```
+
+-     Underneath, uncompressed audio is a grid of numbers played at a fixed rate, and the
+-     formats differ in their headers more than their substance; Java's sound library exposes
+-     it through mutable objects and untyped formats, where a wrong channel count surfaces as
+-     noise. Here the format is an `Audible` typeclass instance (`Wave`, `Aiff`, `Aifc`, `Au`,
+-     `Snd`), the channel layout an optional `ChannelLayout` carried in the type as `across
+-     Stereo` or `across Surround[6]`, and audio which is not already PCM is converted to
+-     16-bit signed PCM as it is read, so every `Audio` has the same internal form.
++     Sotto la superficie, l'audio non compresso è una griglia di numeri riprodotta a una
++     frequenza fissa, e i formati differiscono più nelle intestazioni che nella sostanza; la
++     libreria audio di Java lo espone tramite oggetti mutabili e formati non tipizzati, dove un
++     numero di canali sbagliato si manifesta come rumore. Qui il formato è un'istanza della
++     typeclass `Audible` (`Wave`, `Aiff`, `Aifc`, `Au`, `Snd`), la disposizione dei canali un
++     `ChannelLayout` opzionale portato nel tipo come `across Stereo` o `across Surround[6]`, e
++     l'audio che non è già PCM viene convertito in PCM con segno a 16 bit durante la lettura,
++     così ogni `Audio` ha la stessa forma interna.
+
+-     Watching one audio value move through the pipeline shows how the pieces connect:
++     Seguire un valore audio lungo la pipeline mostra come si collegano i pezzi:
+
+=     Watching one audio value move through the pipeline shows how the pieces connect:
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     frame
++     frame
+
+-       label Bytes become an audio value when the format is named
++       label I byte diventano un valore audio quando si nomina il formato
+
+=       label Bytes become an audio value when the format is named
+-       code
++       code
+
+=       label Bytes become an audio value when the format is named
+=       code
+-           val audio = wav.read[Audio in Wave]
++           val audio = wav.read[Audio in Wave]
+
+=           val audio = wav.read[Audio in Wave]
+-     frame
++     frame
+
+-       label Re-expressed in another format, the samples are unchanged
++       label Riespressi in un altro formato, i campioni restano invariati
+
+=       label Re-expressed in another format, the samples are unchanged
+-       code
++       code
+
+=       label Re-expressed in another format, the samples are unchanged
+=       code
+-           val audio = wav.read[Audio in Wave]
++           val audio = wav.read[Audio in Wave]
+
+=       label Re-expressed in another format, the samples are unchanged
+=       code
+=           val audio = wav.read[Audio in Wave]
+-           val converted = audio.to[Aiff]
++           val converted = audio.to[Aiff]
+
+-           converted.frames   // 4
++           converted.frames   // 4
+
+=           converted.frames   // 4
+-     frame
++     frame
+
+-       label An audio value reads as its encoded bytes
++       label Un valore audio si legge come i suoi byte codificati
+
+=       label An audio value reads as its encoded bytes
+-       code
++       code
+
+=       label An audio value reads as its encoded bytes
+=       code
+-           val audio = wav.read[Audio in Wave]
++           val audio = wav.read[Audio in Wave]
+
+=       label An audio value reads as its encoded bytes
+=       code
+=           val audio = wav.read[Audio in Wave]
+-           val converted = audio.to[Aiff]
++           val converted = audio.to[Aiff]
+
+=       label An audio value reads as its encoded bytes
+=       code
+=           val audio = wav.read[Audio in Wave]
+=           val converted = audio.to[Aiff]
+-           val bytes: Data = converted.read[Data]
++           val bytes: Data = converted.read[Data]
+
+=           val bytes: Data = converted.read[Data]
+-     frame
++     frame
+
+-       label And the bytes read back as audio in that format
++       label E i byte si rileggono come audio in quel formato
+
+=       label And the bytes read back as audio in that format
+-       code
++       code
+
+=       label And the bytes read back as audio in that format
+=       code
+-           val audio = wav.read[Audio in Wave]
++           val audio = wav.read[Audio in Wave]
+
+=       label And the bytes read back as audio in that format
+=       code
+=           val audio = wav.read[Audio in Wave]
+-           val converted = audio.to[Aiff]
++           val converted = audio.to[Aiff]
+
+=       label And the bytes read back as audio in that format
+=       code
+=           val audio = wav.read[Audio in Wave]
+=           val converted = audio.to[Aiff]
+-           val bytes: Data = converted.read[Data]
++           val bytes: Data = converted.read[Data]
+
+-           bytes.read[Audio in Aiff](0, 2)   // 300
++           bytes.read[Audio in Aiff](0, 2)   // 300
+
+=           bytes.read[Audio in Aiff](0, 2)   // 300
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     Devices are `Audio.Feed`s (inputs, listed by `Audio.Feed.list`) and `Audio.Outlet`s (outputs, listed by
+-     `Audio.Outlet.list`), each a `Audio.Device` with a name, vendor, description and the
+-     `configurations` it offers. `Audio.Feed#record` and `Audio.Outlet#play` hold a device for as long
+-     as the program wants it, returning a `Recording` or a `Playback`; for a device held for
+-     exactly one block, a line is *opened* as a file is, with the `Pcm` form —
+-     `feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))` and `outlet.open[Pcm](Write)`
+-     — and released when the block ends, with playback gated on the `Write` grant so that
+-     the compiler, not the driver, refuses to play to a capture line.
++     I dispositivi sono `Audio.Feed` (ingressi, elencati da `Audio.Feed.list`) e `Audio.Outlet`
++     (uscite, elencate da `Audio.Outlet.list`), ciascuno un `Audio.Device` con un nome, un
++     produttore, una descrizione e le `configurations` che offre. `Audio.Feed#record` e
++     `Audio.Outlet#play` tengono un dispositivo per tutto il tempo che il programma desidera,
++     restituendo una `Recording` o una `Playback`; per un dispositivo tenuto esattamente per un
++     blocco, una linea viene *aperta* come si apre un file, con la forma `Pcm` —
++     `feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))` e `outlet.open[Pcm](Write)` — e
++     rilasciata quando il blocco termina, con la riproduzione subordinata al permesso `Write`,
++     così che sia il compilatore, e non il driver, a rifiutarsi di riprodurre su una linea di
++     acquisizione.
+
+-     Reading raises `Audio.Error` through the `Tactic` in scope; recording raises
+-     `Audio.Feed.Error` and playback `Audio.Outlet.Error`. The library is one source set,
+-     `cacophony.core`, for the JVM, over `javax.sound.sampled`; on macOS the JVM must have
+-     been granted microphone permission or no feeds are listed. Everything is exported to the
+-     `soundness` umbrella except `Audio.Device`, the shared parent of `Audio.Feed` and `Audio.Outlet`, which is
+-     reached as `cacophony.Device`.
++     La lettura solleva `Audio.Error` tramite la `Tactic` nell'ambito; la registrazione solleva
++     `Audio.Feed.Error` e la riproduzione `Audio.Outlet.Error`. La libreria è un unico insieme di
++     sorgenti, `cacophony.core`, per la JVM, su `javax.sound.sampled`; su macOS la JVM deve aver
++     ricevuto l'autorizzazione al microfono, altrimenti non viene elencato alcun ingresso. Tutto
++     è esportato nel modulo ombrello `soundness` tranne `Audio.Device`, il genitore comune di
++     `Audio.Feed` e `Audio.Outlet`, che si raggiunge come `cacophony.Device`.
+
+- refer cacophony.Audio
++ refer cacophony.Audio
+
+- refer cacophony.Audible
++ refer cacophony.Audible
+
+- refer cacophony.Audio.Feed
++ refer cacophony.Audio.Feed
+
+- refer cacophony.Audio.Outlet
++ refer cacophony.Audio.Outlet
+
+- refer cacophony.Pcm
++ refer cacophony.Pcm
+
+- entry .Audio   an immutable block of PCM samples which knows its rate, channels, depth and every sample
++ entry .Audio   un blocco immutabile di campioni PCM che conosce frequenza, canali, profondità e ogni campione
+
+= entry .Audio   an immutable block of PCM samples which knows its rate, channels, depth and every sample
+-   detail
++   detail
+
+-       An `Audio` is pure and immutable: its samples are a frozen array, so a value may be
+-       shared freely. Its `Form` type member is the file format it was read in or converted
+-       to (`Audio in Wave`), and its `Domain` the channel layout, if one is known (`Audio
+-       across Stereo`); a plain `Audio` has neither. It is made by reading bytes —
+-       `data.read[Audio in Wave]` through `.aggregable`, or `data.read[Audio]` through
+-       `.aggregable2` when the format is to be detected — or built from samples with
+-       `Audio[Wave](format, samples)`.
++       Un `Audio` è puro e immutabile: i suoi campioni sono un array congelato, quindi un valore
++       si può condividere liberamente. Il suo type member `Form` è il formato di file in cui è
++       stato letto o in cui è stato convertito (`Audio in Wave`), e il suo `Domain` la
++       disposizione dei canali, se è nota (`Audio across Stereo`); un `Audio` semplice non ha né
++       l'uno né l'altro. Si ottiene leggendo dei byte — `data.read[Audio in Wave]` tramite
++       `.aggregable`, oppure `data.read[Audio]` tramite `.aggregable2` quando il formato va
++       rilevato — oppure si costruisce dai campioni con `Audio[Wave](format, samples)`.
+
+=       `Audio[Wave](format, samples)`.
+=
+-       ```scala
++       ```scala
+
+=       `Audio[Wave](format, samples)`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Audio[Wave](format, samples)`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
++       val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+=       val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+-                       617461080000006400c8002c019001"""
++                       617461080000006400c8002c019001"""
+
+=
+-       val audio = wav.read[Audio in Wave]
++       val audio = wav.read[Audio in Wave]
+
+-       audio.sampleRate   // 8000.0*Hertz
++       audio.sampleRate   // 8000.0*Hertz
+
+-       audio.duration     // 0.0005*Second
++       audio.duration     // 0.0005*Second
+
+-       audio(0, 0)        // 100
++       audio(0, 0)        // 100
+
+-       audio.to[Au].read[Data].read[Audio in Au].frames   // 4
++       audio.to[Au].read[Data].read[Audio in Au].frames   // 4
+
+=       audio.to[Au].read[Data].read[Audio in Au].frames   // 4
+-       ```
++       ```
+
+-       Audio which is not already signed or unsigned PCM (µ-law in an AU file, say) is
+-       converted to 16-bit signed PCM as it is read, so `#apply` always indexes plain
+-       samples. An `Audio in form` is `Streamable` (`.streamable`), so it reads as `Data` and
+-       writes to a file handle directly, and `Abstractable` to an HTTP response body with
+-       the format's media type (`.abstractable`). `#to` re-expresses it in another format.
++       L'audio che non è già PCM con o senza segno (per esempio µ-law in un file AU) viene
++       convertito in PCM con segno a 16 bit durante la lettura, così `#apply` indicizza sempre
++       campioni semplici. Un `Audio in form` è `Streamable` (`.streamable`), quindi si legge come
++       `Data` e si scrive direttamente su un handle di file, e `Abstractable` in un corpo di
++       risposta HTTP con il tipo di media del formato (`.abstractable`). `#to` lo riesprime in un
++       altro formato.
+
+-   refer cacophony.Audible
++   refer cacophony.Audible
+
+=   refer cacophony.Audible
+-   refer cacophony.Wave
++   refer cacophony.Wave
+
+-   refer cacophony.ChannelLayout
++   refer cacophony.ChannelLayout
+
+-   entry .apply   reads audio from any byte source with the format detected, or builds audio from a format and samples
+-       `Audio(source)`, for any `Streamable by Data over Credit` source, lets
+-       `javax.sound.sampled` detect the file format, converting to 16-bit signed PCM if the
+-       encoding is not PCM, and returns a plain `Audio` with no `Form`; it raises
+-       `Audio.Error(Unset)` if the bytes are not audio in any format the JVM knows.
++   entry .apply   legge l'audio da qualsiasi sorgente di byte rilevandone il formato, oppure costruisce l'audio da un formato e dai campioni
++       `Audio(source)`, per qualsiasi sorgente `Streamable by Data over Credit`, lascia a
++       `javax.sound.sampled` il rilevamento del formato del file, convertendo in PCM con segno a
++       16 bit se la codifica non è PCM, e restituisce un `Audio` semplice senza `Form`; solleva
++       `Audio.Error(Unset)` se i byte non sono audio in alcun formato noto alla JVM.
+
+-       `Audio[form](format: javax.sound.sampled.AudioFormat, data: Array[Byte]^{})` builds an
+-       `Audio in form` from raw PCM samples and the Java format which describes them, for
+-       audio generated in the program. The samples must be a frozen array: `Array.freeze` an
+-       exclusive one, or build them with `Array.tabulate`.
++       `Audio[form](format: javax.sound.sampled.AudioFormat, data: Array[Byte]^{})` costruisce un
++       `Audio in form` da campioni PCM grezzi e dal formato Java che li descrive, per l'audio
++       generato nel programma. I campioni devono essere un array congelato: si applica
++       `Array.freeze` a uno esclusivo, oppure li si costruisce con `Array.tabulate`.
+
+=       exclusive one, or build them with `Array.tabulate`.
+=
+-       ```scala
++       ```scala
+
+=       exclusive one, or build them with `Array.tabulate`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       exclusive one, or build them with `Array.tabulate`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import javax.sound.sampled as jss
++       import javax.sound.sampled as jss
+
+-       // One second of a 440 Hz sine: 16-bit signed little-endian, mono, 8 kHz.
++       // One second of a 440 Hz sine: 16-bit signed little-endian, mono, 8 kHz.
+
+-       val rate = 8000
++       val rate = 8000
+
+-       val format = jss.AudioFormat(jss.AudioFormat.Encoding.PCM_SIGNED, rate, 16, 1, 2, rate, false)
++       val format = jss.AudioFormat(jss.AudioFormat.Encoding.PCM_SIGNED, rate, 16, 1, 2, rate, false)
+
+-       val samples: Data = Array.tabulate[Byte](2*rate): index =>
++       val samples: Data = Array.tabulate[Byte](2*rate): index =>
+
+-         val value = (Math.sin(2*Math.PI*440*(index/2)/rate)*32767).toInt
++         val value = (Math.sin(2*Math.PI*440*(index/2)/rate)*32767).toInt
+
+-         (if index%2 == 0 then value else value >> 8).toByte
++         (if index%2 == 0 then value else value >> 8).toByte
+
+-       val tone: Audio in Wave = Audio[Wave](format, samples)
++       val tone: Audio in Wave = Audio[Wave](format, samples)
+
+-       tone.duration   // 1.0*Second
++       tone.duration   // 1.0*Second
+
+-       tone.read[Data].length   // the bytes of a WAV file
++       tone.read[Data].length   // the bytes of a WAV file
+
+=       tone.read[Data].length   // the bytes of a WAV file
+-       ```
++       ```
+
+-   entry .streamable   an `Audio in form` reads as its encoded bytes, and so writes to any destination
+-       The `Streamable by Data over Credit` given for any `Audio` whose `Form` has an
+-       `Audible`: `audio.read[Data]` is the complete file, headers and all, and
+-       `handle.write(audio)` writes it. The encoding is done by the JVM's writer for the
+-       format's name, so a format the JVM cannot write throws rather than raises.
+-   entry .streamableAcross   as `.streamable`, for an `Audio in form across layout`
+-       A separate given because the refined type with both members is not matched by the
+-       one with `Form` alone.
+-   entry .abstractable   an `Audio in form` as an HTTP response body, with its format's media type
+-       `audio/x-wav`, `audio/x-aiff`, `audio/x-aifc` or `audio/basic`, and the encoded bytes
+-       as the body, so an audio value can be served directly.
+-   entry .aggregable   `data.read[Audio in form]`: bytes read as audio in a named format
+-       The `Aggregable by Data` given for `Audio in form`, for any `form` with an `Audible`.
+-       Needs a `Tactic[Audio.Error]`, raised with the format if the bytes are not audio of
+-       that type: reading a WAV as `Audio in Aiff` fails, since the format is a claim about
+-       the bytes, not a request to convert them.
+-   entry .aggregable2   `data.read[Audio]`: bytes read as audio with the format detected
+-       The `Aggregable by Data` given for a plain `Audio`, through `Audio.apply`; the error
+-       names no format.
+-   entry .Error   raised when bytes are not audio in the expected format
++   entry .streamable   un `Audio in form` si legge come i suoi byte codificati, e quindi si scrive su qualsiasi destinazione
++       Il given `Streamable by Data over Credit` per qualsiasi `Audio` il cui `Form` abbia un
++       `Audible`: `audio.read[Data]` è il file completo, intestazioni comprese, e
++       `handle.write(audio)` lo scrive. La codifica è svolta dallo scrittore della JVM per il
++       nome del formato, quindi un formato che la JVM non sa scrivere lancia un'eccezione invece
++       di sollevare un errore.
++   entry .streamableAcross   come `.streamable`, per un `Audio in form across layout`
++       Un given separato perché il tipo raffinato con entrambi i membri non corrisponde a quello
++       con il solo `Form`.
++   entry .abstractable   un `Audio in form` come corpo di risposta HTTP, con il tipo di media del suo formato
++       `audio/x-wav`, `audio/x-aiff`, `audio/x-aifc` o `audio/basic`, e i byte codificati come
++       corpo, così un valore audio si può servire direttamente.
++   entry .aggregable   `data.read[Audio in form]`: byte letti come audio in un formato nominato
++       Il given `Aggregable by Data` per `Audio in form`, per qualsiasi `form` con un `Audible`.
++       Richiede una `Tactic[Audio.Error]`, sollevata con il formato se i byte non sono audio di
++       quel tipo: leggere un WAV come `Audio in Aiff` fallisce, poiché il formato è
++       un'affermazione sui byte, non una richiesta di convertirli.
++   entry .aggregable2   `data.read[Audio]`: byte letti come audio con il formato rilevato
++       Il given `Aggregable by Data` per un `Audio` semplice, tramite `Audio.apply`; l'errore non
++       nomina alcun formato.
++   entry .Error   sollevato quando i byte non sono audio nel formato atteso
+
+=   entry .Error   raised when bytes are not audio in the expected format
+-     detail
++     detail
+
+-         _unable to read the audio in `format` format_, with `unspecified` when the format was
+-         to be detected. Raised by `.aggregable` and `Audible#read` when the JVM cannot parse
+-         the bytes, when it parses them as a different format from the one named, or when it
+-         cannot convert their encoding to PCM.
++         _unable to read the audio in `format` format_, con `unspecified` quando il formato
++         andava rilevato. Sollevato da `.aggregable` e da `Audible#read` quando la JVM non riesce
++         ad analizzare i byte, quando li analizza come un formato diverso da quello nominato, o
++         quando non riesce a convertirne la codifica in PCM.
+
+=         cannot convert their encoding to PCM.
+=
+-         ```scala
++         ```scala
+
+=         cannot convert their encoding to PCM.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-         val broken = hex"5249464600000000ffffffff"
++         val broken = hex"5249464600000000ffffffff"
+
+-         capture[Audio.Error](broken.read[Audio in Wave])   // Audio.Error(Wave())
++         capture[Audio.Error](broken.read[Audio in Wave])   // Audio.Error(Wave())
+
+=         capture[Audio.Error](broken.read[Audio in Wave])   // Audio.Error(Wave())
+-         ```
++         ```
+
+-     entry #audible   the format expected, or `Unset` if the format was to be detected
+-   entry #channels   the number of channels: 1 for mono, 2 for stereo
+-   entry #bitsPerSample   the bit depth of each sample: 8, 16, 24 or 32
+-   entry #frames   the number of frames, each holding one sample per channel
+-   entry #sampleRate   the sample rate as a frequency: `8000.0*Hertz`
+-       A `Quantity[Seconds[-1]]`, so it participates in arithmetic with other quantities
+-       rather than being a bare number.
+-   entry #duration   the length of the audio in seconds: frames divided by the sample rate
+-       A `Quantity[Seconds[1]]`.
+-   entry #apply   the sample at a channel and frame, as a signed integer
+-       `audio(channel, frame)` decodes one sample from the bytes, honouring the format's
+-       byte order and signedness, and sign-extends it, so a 16-bit sample is in −32768 to
+-       32767. The indices are not checked against `#channels` and `#frames`.
+-   entry #to   the same audio re-expressed in another format: `audio.to[Aiff]`
+-       The samples are shared, not copied, and the channel layout is kept; only the `Form`
+-       changes, and with it the bytes the value reads as and the media type it serves with.
++     entry #audible   il formato atteso, oppure `Unset` se il formato andava rilevato
++   entry #channels   il numero di canali: 1 per mono, 2 per stereo
++   entry #bitsPerSample   la profondità in bit di ogni campione: 8, 16, 24 o 32
++   entry #frames   il numero di frame, ciascuno con un campione per canale
++   entry #sampleRate   la frequenza di campionamento come frequenza: `8000.0*Hertz`
++       Una `Quantity[Seconds[-1]]`, quindi partecipa all'aritmetica con altre grandezze invece di
++       essere un semplice numero.
++   entry #duration   la durata dell'audio in secondi: i frame divisi per la frequenza di campionamento
++       Una `Quantity[Seconds[1]]`.
++   entry #apply   il campione in un canale e in un frame, come intero con segno
++       `audio(channel, frame)` decodifica un campione dai byte, rispettando l'ordine dei byte e
++       il segno del formato, e ne estende il segno, così un campione a 16 bit sta tra −32768 e
++       32767. Gli indici non sono verificati rispetto a `#channels` e `#frames`.
++   entry #to   lo stesso audio riespresso in un altro formato: `audio.to[Aiff]`
++       I campioni sono condivisi, non copiati, e la disposizione dei canali viene mantenuta;
++       cambia solo il `Form`, e con esso i byte come cui il valore si legge e il tipo di media con
++       cui viene servito.
+
+-   entry .Configuration   a format a device's lines offer: channels, rate, bit depth, encoding and byte order
++   entry .Configuration   un formato offerto dalle linee di un dispositivo: canali, frequenza, profondità in bit, codifica e ordine dei byte
+
+=   entry .Configuration   a format a device's lines offer: channels, rate, bit depth, encoding and byte order
+-     detail
++     detail
+
+-         Returned by `Device#configurations`, one per format the mixer's lines report. The
+-         sample rate is `Unset` when the line accepts any rate (the JVM reports −1), which is
+-         common.
++         Restituito da `Device#configurations`, uno per ogni formato riportato dalle linee del
++         mixer. La frequenza di campionamento è `Unset` quando la linea accetta qualsiasi
++         frequenza (la JVM riporta −1), il che è comune.
+
+=         common.
+=
+-         ```scala
++         ```scala
+
+=         common.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Audio.Feed.list.map(_.configurations)
++         Audio.Feed.list.map(_.configurations)
+
+=         Audio.Feed.list.map(_.configurations)
+-         ```
++         ```
+
+=         ```
+-     refer cacophony.Audio.Device
++     refer cacophony.Audio.Device
+
+-     entry #channels   the number of channels the format has
+-     entry #sampleRate   the sample rate, or `Unset` if the line accepts any rate
+-     entry #bitsPerSample   the bit depth: 8, 16, 24 or 32
+-     entry #encoding   `Sonation.PcmSigned` or `Sonation.PcmUnsigned`
+-     entry #bigEndian   whether multi-byte samples are big-endian
+-   entry .Device   what a `Feed` and an `Outlet` share: a mixer the system describes, and the lines it offers
++     entry #channels   il numero di canali del formato
++     entry #sampleRate   la frequenza di campionamento, oppure `Unset` se la linea accetta qualsiasi frequenza
++     entry #bitsPerSample   la profondità in bit: 8, 16, 24 o 32
++     entry #encoding   `Sonation.PcmSigned` o `Sonation.PcmUnsigned`
++     entry #bigEndian   se i campioni multibyte sono big-endian
++   entry .Device   ciò che `Feed` e `Outlet` hanno in comune: un mixer descritto dal sistema e le linee che offre
+
+=   entry .Device   what a `Feed` and an `Outlet` share: a mixer the system describes, and the lines it offers
+-     detail
++     detail
+
+-         A `Device` wraps a `javax.sound.sampled.Mixer.Info`, giving its `#name`, `#vendor` and
+-         `#description`, the `#configurations` its lines of the right kind (target lines for a
+-         `Feed`, source lines for an `Outlet`) report, and `#supports` to ask about one before
+-         committing to it. It is not exported to the `soundness` umbrella: a program names
+-         `Feed` or `Outlet`, or `cacophony.Device` for code over both.
++         Un `Device` avvolge un `javax.sound.sampled.Mixer.Info`, fornendone `#name`, `#vendor` e
++         `#description`, le `#configurations` riportate dalle sue linee del tipo giusto (linee di
++         destinazione per un `Feed`, linee sorgente per un `Outlet`), e `#supports` per chiedere
++         di una configurazione prima di impegnarvisi. Non è esportato nel modulo ombrello
++         `soundness`: un programma nomina `Feed` o `Outlet`, oppure `cacophony.Device` per il
++         codice che li tratta entrambi.
+
+=         `Feed` or `Outlet`, or `cacophony.Device` for code over both.
+=
+-         ```scala
++         ```scala
+
+=         `Feed` or `Outlet`, or `cacophony.Device` for code over both.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Audio.Feed.list.map(feed => t"${feed.name} (${feed.vendor}): ${feed.description}")
++         Audio.Feed.list.map(feed => t"${feed.name} (${feed.vendor}): ${feed.description}")
+
+-         Audio.Outlet.list.head.let(_.supports[Stereo](44100.0*Hertz, 16))
++         Audio.Outlet.list.head.let(_.supports[Stereo](44100.0*Hertz, 16))
+
+=         Audio.Outlet.list.head.let(_.supports[Stereo](44100.0*Hertz, 16))
+-         ```
++         ```
+
+-     refer cacophony.Audio.Feed
++     refer cacophony.Audio.Feed
+
+-     refer cacophony.Audio.Outlet
++     refer cacophony.Audio.Outlet
+
+-     entry #name   the device's name, as the system reports it
+-     entry #vendor   the device's vendor
+-     entry #description   the device's description
+-     entry #configurations   every format the device's lines report, as `Configuration`s
+-     entry #supports   whether the device can open a line in a layout at a rate and bit depth, as signed little-endian PCM
+-         `device.supports[Stereo](44100.0*Hertz, 16)` asks the mixer whether such a line is
+-         supported, without opening one; `record` and `play` raise `UnsupportedConfiguration`
+-         where this is `false`.
+-   entry .Feed   an input device: records audio in a chosen layout, rate and bit depth
++     entry #name   il nome del dispositivo, come lo riporta il sistema
++     entry #vendor   il produttore del dispositivo
++     entry #description   la descrizione del dispositivo
++     entry #configurations   ogni formato riportato dalle linee del dispositivo, come `Configuration`
++     entry #supports   se il dispositivo può aprire una linea in una disposizione, a una frequenza e a una profondità in bit, come PCM little-endian con segno
++         `device.supports[Stereo](44100.0*Hertz, 16)` chiede al mixer se una linea simile è
++         supportata, senza aprirne una; `record` e `play` sollevano `UnsupportedConfiguration`
++         dove questo è `false`.
++   entry .Feed   un dispositivo di ingresso: registra audio in una disposizione, frequenza e profondità in bit scelte
+
+=   entry .Feed   an input device: records audio in a chosen layout, rate and bit depth
+-     detail
++     detail
+
+-         The machine's feeds are `Feed.list`; a machine may have none, so the first is an
+-         `Optional`. A feed is a `Device`, with a name, vendor, description and
+-         `configurations`, and `supports` to ask about a format before recording. `#record`
+-         opens a line and returns a `Recording` whose `stream` yields `Audio` chunks until it
+-         is stopped; for a line held for exactly one block, `feed.open[Pcm across Stereo](Read,
+-         PcmFlag.Rate(48000))` lends a `Pcm.PcmInput` instead (see `Pcm`).
++         Gli ingressi della macchina sono `Feed.list`; una macchina può non averne, quindi il
++         primo è un `Optional`. Un ingresso è un `Device`, con nome, produttore, descrizione e
++         `configurations`, e `supports` per chiedere di un formato prima di registrare.
++         `#record` apre una linea e restituisce una `Recording` il cui `stream` produce chunk di
++         `Audio` finché non viene fermata; per una linea tenuta esattamente per un blocco,
++         `feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))` presta invece un
++         `Pcm.PcmInput` (vedi `Pcm`).
+
+=         PcmFlag.Rate(48000))` lends a `Pcm.PcmInput` instead (see `Pcm`).
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         PcmFlag.Rate(48000))` lends a `Pcm.PcmInput` instead (see `Pcm`).
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         PcmFlag.Rate(48000))` lends a `Pcm.PcmInput` instead (see `Pcm`).
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         PcmFlag.Rate(48000))` lends a `Pcm.PcmInput` instead (see `Pcm`).
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         PcmFlag.Rate(48000))` lends a `Pcm.PcmInput` instead (see `Pcm`).
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         Audio.Feed.list.head.let: feed =>
++         Audio.Feed.list.head.let: feed =>
+
+-           if feed.supports[Stereo](44100.0*Hertz, 16) then
++           if feed.supports[Stereo](44100.0*Hertz, 16) then
+
+-             val recording = feed.record[Stereo](44100.0*Hertz, bits = 16)
++             val recording = feed.record[Stereo](44100.0*Hertz, bits = 16)
+
+-             val firstChunk: Optional[Audio across Stereo] = recording.stream.head
++             val firstChunk: Optional[Audio across Stereo] = recording.stream.head
+
+-             recording.stop()
++             recording.stop()
+
+=             recording.stop()
+-         ```
++         ```
+
+-         Recording from a feed which is unavailable or cannot honour the configuration raises
+-         `Feed.Error`. On macOS the JVM must have been granted microphone permission, or
+-         `Feed.list` is empty.
++         Registrare da un ingresso non disponibile o che non può rispettare la configurazione
++         solleva `Feed.Error`. Su macOS la JVM deve aver ricevuto l'autorizzazione al microfono,
++         altrimenti `Feed.list` è vuoto.
+
+-     refer cacophony.Recording
++     refer cacophony.Recording
+
+=     refer cacophony.Recording
+-     refer cacophony.Pcm
++     refer cacophony.Pcm
+
+=     refer cacophony.Recording
+=     refer cacophony.Pcm
+-     refer cacophony.Audio.Device
++     refer cacophony.Audio.Device
+
+-     entry .list   every mixer with a line to record from, as a `Feed`
+-         Enumerates the JVM's mixers and keeps those offering a `TargetDataLine`. The list is
+-         fresh on each call, so a device plugged in since is seen.
+-     entry .Error   raised when a feed cannot record
++     entry .list   ogni mixer con una linea da cui registrare, come `Feed`
++         Enumera i mixer della JVM e tiene quelli che offrono una `TargetDataLine`. La lista viene
++         ricalcolata a ogni chiamata, quindi un dispositivo collegato nel frattempo è visibile.
++     entry .Error   sollevato quando un ingresso non riesce a registrare
+
+=     entry .Error   raised when a feed cannot record
+-       detail
++       detail
+
+-           Error `↯/s.82.2`: _could not record from feed `name` because …_, with the reason's number
+-           and message appended. Raised by `Feed#record` and by opening a feed as `Pcm`.
+-       entry .Reason   `Unavailable`, `UnsupportedConfiguration` or `Closed`
+-           `Unavailable` (1), _the audio line could not be opened_: another program holds it, or
+-           the system refused; `UnsupportedConfiguration` (2), _the requested configuration is
+-           not supported_, which `Device#supports` predicts; and `Closed` (3), _the recording
+-           has already been stopped_.
+-       entry #feed   the feed's name
+-       entry #reason   why it could not record
+-     entry #record   opens a line and records in a layout at a rate and bit depth, as a `Recording` of chunks
+-         `feed.record[Stereo](44100.0*Hertz, 16, chunkBytes = 65536)`: a line is opened for
+-         signed little-endian PCM in the layout's channels and started; the `Recording`'s
+-         `stream` reads chunks of up to `chunkBytes` from it, each an `Audio across layout`,
+-         until `stop` closes the line. Raises `Feed.Error` with `UnsupportedConfiguration` or
+-         `Unavailable`. The line is held until `stop` is called.
+-   entry .Outlet   an output device: plays an audio value in the background, or synchronously within a scope
++           Errore `↯/s.82.2`: _could not record from feed `name` because …_, seguito dal numero e
++           dal messaggio del motivo. Sollevato da `Feed#record` e dall'apertura di un ingresso come
++           `Pcm`.
++       entry .Reason   `Unavailable`, `UnsupportedConfiguration` o `Closed`
++           `Unavailable` (1), _the audio line could not be opened_: un altro programma la tiene, o
++           il sistema l'ha rifiutata; `UnsupportedConfiguration` (2), _the requested configuration
++           is not supported_, che `Device#supports` prevede; e `Closed` (3), _the recording has
++           already been stopped_.
++       entry #feed   il nome dell'ingresso
++       entry #reason   perché non è riuscito a registrare
++     entry #record   apre una linea e registra in una disposizione, a una frequenza e a una profondità in bit, come `Recording` di chunk
++         `feed.record[Stereo](44100.0*Hertz, 16, chunkBytes = 65536)`: si apre e si avvia una linea
++         per PCM little-endian con segno nei canali della disposizione; lo `stream` della
++         `Recording` ne legge chunk fino a `chunkBytes`, ciascuno un `Audio across layout`,
++         finché `stop` non chiude la linea. Solleva `Feed.Error` con `UnsupportedConfiguration` o
++         `Unavailable`. La linea resta tenuta finché non si chiama `stop`.
++   entry .Outlet   un dispositivo di uscita: riproduce un valore audio in background, oppure in modo sincrono all'interno di un ambito
+
+=   entry .Outlet   an output device: plays an audio value in the background, or synchronously within a scope
+-     detail
++     detail
+
+-         The machine's outlets are `Outlet.list`. An outlet is a `Device`, with a name, vendor,
+-         description, `configurations` and `supports`. `#play` opens a line for the audio's
+-         own format and returns a `Playback` which runs on its own thread, to be awaited or
+-         stopped; for a line held for exactly one block, `outlet.open[Pcm](Write)` lends a
+-         `Pcm.PcmOutput` whose `play` is synchronous and needs the `Write` grant (see `Pcm`).
++         Le uscite della macchina sono `Outlet.list`. Un'uscita è un `Device`, con nome,
++         produttore, descrizione, `configurations` e `supports`. `#play` apre una linea per il
++         formato proprio dell'audio e restituisce una `Playback` che gira sul proprio thread, da
++         attendere o da fermare; per una linea tenuta esattamente per un blocco,
++         `outlet.open[Pcm](Write)` presta un `Pcm.PcmOutput` il cui `play` è sincrono e richiede il
++         permesso `Write` (vedi `Pcm`).
+
+=         `Pcm.PcmOutput` whose `play` is synchronous and needs the `Write` grant (see `Pcm`).
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `Pcm.PcmOutput` whose `play` is synchronous and needs the `Write` grant (see `Pcm`).
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `Pcm.PcmOutput` whose `play` is synchronous and needs the `Write` grant (see `Pcm`).
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         `Pcm.PcmOutput` whose `play` is synchronous and needs the `Write` grant (see `Pcm`).
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         `Pcm.PcmOutput` whose `play` is synchronous and needs the `Write` grant (see `Pcm`).
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
++         val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+
+-                         617461080000006400c8002c019001"""
++                         617461080000006400c8002c019001"""
+
+-         val audio = wav.read[Audio in Wave]
++         val audio = wav.read[Audio in Wave]
+
+=         val audio = wav.read[Audio in Wave]
+=
+-         Audio.Outlet.list.head.let: outlet =>
++         Audio.Outlet.list.head.let: outlet =>
+
+-           val playback = outlet.play(audio)
++           val playback = outlet.play(audio)
+
+-           playback.await()
++           playback.await()
+
+=           playback.await()
+=
+-         Audio.Outlet.list.head.let: outlet =>
++         Audio.Outlet.list.head.let: outlet =>
+
+-           outlet.open[Pcm](Write): out ?=>
++           outlet.open[Pcm](Write): out ?=>
+
+-             out.play(audio)
++             out.play(audio)
+
+=             out.play(audio)
+-         ```
++         ```
+
+-         Playing to an outlet which is unavailable or cannot accept the audio's configuration
+-         raises `Outlet.Error`.
++         Riprodurre su un'uscita non disponibile o che non può accettare la configurazione
++         dell'audio solleva `Outlet.Error`.
+
+-     refer cacophony.Playback
++     refer cacophony.Playback
+
+=     refer cacophony.Playback
+-     refer cacophony.Pcm
++     refer cacophony.Pcm
+
+=     refer cacophony.Playback
+=     refer cacophony.Pcm
+-     refer cacophony.Audio.Device
++     refer cacophony.Audio.Device
+
+-     entry .list   every mixer with a line to play to, as an `Outlet`
+-         Enumerates the JVM's mixers and keeps those offering a `SourceDataLine`.
+-     entry .Error   raised when an outlet cannot play
++     entry .list   ogni mixer con una linea su cui riprodurre, come `Outlet`
++         Enumera i mixer della JVM e tiene quelli che offrono una `SourceDataLine`.
++     entry .Error   sollevato quando un'uscita non riesce a riprodurre
+
+=     entry .Error   raised when an outlet cannot play
+-       detail
++       detail
+
+-           Error `↯/s.82.1`: _could not play to outlet `name` because …_, with the reason's number and
+-           message appended. Raised by `Outlet#play` and by `Pcm.play` on an opened outlet.
+-       entry .Reason   `Unavailable`, `UnsupportedConfiguration` or `Closed`
++           Errore `↯/s.82.1`: _could not play to outlet `name` because …_, seguito dal numero e dal
++           messaggio del motivo. Sollevato da `Outlet#play` e da `Pcm.play` su un'uscita aperta.
++       entry .Reason   `Unavailable`, `UnsupportedConfiguration` o `Closed`
+
+-           `Unavailable` (1), _the audio line could not be opened_; `UnsupportedConfiguration`
++           `Unavailable` (1), _the audio line could not be opened_; `UnsupportedConfiguration`
+
+-           (2), _the requested configuration is not supported_: the audio's rate, depth or
+-           channels are not something the outlet can play, which `Device#supports` predicts;
+-           and `Closed` (3), _the playback has already been stopped_.
+-       entry #outlet   the outlet's name
+-       entry #reason   why it could not play
+-     entry #play   plays an audio value on a virtual thread, as a `Playback` to await or stop
+-         `outlet.play(audio, chunkBytes = 65536)` opens a line for the audio's format
+-         (`UnsupportedConfiguration` or `Unavailable` otherwise), starts it, and writes the
+-         samples in chunks from a background thread, draining the line and closing it when
+-         the audio ends. `Playback#stop` is observed between chunks and closes the line at
+-         once; `await` joins the thread. Any `Audio` plays, whatever its `Form`: the samples
+-         are PCM already.
++           (2), _the requested configuration is not supported_: la frequenza, la profondità o i
++           canali dell'audio non sono qualcosa che l'uscita può riprodurre, cosa che
++           `Device#supports` prevede; e `Closed` (3), _the playback has already been stopped_.
++       entry #outlet   il nome dell'uscita
++       entry #reason   perché non è riuscita a riprodurre
++     entry #play   riproduce un valore audio su un virtual thread, come `Playback` da attendere o fermare
++         `outlet.play(audio, chunkBytes = 65536)` apre una linea per il formato dell'audio
++         (altrimenti `UnsupportedConfiguration` o `Unavailable`), la avvia e scrive i campioni in
++         chunk da un thread in background, svuotando la linea e chiudendola quando l'audio
++         finisce. `Playback#stop` viene osservato tra un chunk e l'altro e chiude subito la linea;
++         `await` attende il thread. Qualsiasi `Audio` si può riprodurre, qualunque sia il suo
++         `Form`: i campioni sono già PCM.
+
+- entry .Audible   a file format which audio can be read in and written in: its name and media type
++ entry .Audible   un formato di file in cui l'audio si può leggere e scrivere: il suo nome e il suo tipo di media
+
+= entry .Audible   a file format which audio can be read in and written in: its name and media type
+-   detail
++   detail
+
+-       The typeclass behind `Audio in form`: `Wave`, `Aiff`, `Aifc`, `Au` and `Snd` each
+-       have an instance in their companion. `#name` is the type name `javax.sound.sampled`
+-       knows the format by (`WAVE`, `AIFF`, `AIFC`, `AU`, `SND`), which must match what the
+-       JVM detects for a read to succeed, and `#mediaType` is what an audio value is served
+-       as. `#read` is the reading itself, which `Audio.aggregable` delegates to.
++       La typeclass dietro `Audio in form`: `Wave`, `Aiff`, `Aifc`, `Au` e `Snd` hanno ciascuno
++       un'istanza nel proprio oggetto compagno. `#name` è il nome di tipo con cui
++       `javax.sound.sampled` conosce il formato (`WAVE`, `AIFF`, `AIFC`, `AU`, `SND`), che deve
++       corrispondere a ciò che la JVM rileva perché una lettura riesca, e `#mediaType` è il tipo
++       con cui viene servito un valore audio. `#read` è la lettura vera e propria, a cui
++       `Audio.aggregable` delega.
+
+=       as. `#read` is the reading itself, which `Audio.aggregable` delegates to.
+=
+-       ```scala
++       ```scala
+
+=       as. `#read` is the reading itself, which `Audio.aggregable` delegates to.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       as. `#read` is the reading itself, which `Audio.aggregable` delegates to.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       summon[Wave is Audible].name        // t"WAVE"
++       summon[Wave is Audible].name        // t"WAVE"
+
+-       summon[Aiff is Audible].mediaType   // media"audio/x-aiff"
++       summon[Aiff is Audible].mediaType   // media"audio/x-aiff"
+
+-       Wave().name                         // t"WAVE"
++       Wave().name                         // t"WAVE"
+
+=       Wave().name                         // t"WAVE"
+-       ```
++       ```
+
+-   refer cacophony.Audio
++   refer cacophony.Audio
+
+=   refer cacophony.Audio
+-   refer cacophony.Wave
++   refer cacophony.Wave
+
+-   entry #name   the format's type name as the JVM's audio system reports it
+-   entry #mediaType   the format's media type, for serving audio over HTTP
+-   entry #read   reads a byte source as `Audio in Self`, raising `Audio.Error` if it is not this format
+-       Parses the file format, checks it is this one, converts a non-PCM encoding to 16-bit
+-       signed PCM, and reads every sample into memory. Needs a `Tactic[Audio.Error]`.
++   entry #name   il nome di tipo del formato come lo riporta il sistema audio della JVM
++   entry #mediaType   il tipo di media del formato, per servire l'audio via HTTP
++   entry #read   legge una sorgente di byte come `Audio in Self`, sollevando `Audio.Error` se non è in questo formato
++       Analizza il formato del file, verifica che sia questo, converte una codifica non PCM in PCM
++       con segno a 16 bit e legge in memoria ogni campione. Richiede una `Tactic[Audio.Error]`.
+
+- entry .Wave   the WAV (RIFF) format, as `Audio in Wave`
+-     A sealed type with no values, used as a type argument; its companion holds the
+-     `Audible` instance, `audibility`, with the name `WAVE` and the media type `audio/x-wav`.
+-     `Wave()` returns that instance as an `Audible`, which is how `Audio.Error` names a
+-     format.
++ entry .Wave   il formato WAV (RIFF), come `Audio in Wave`
++     Un tipo sealed senza valori, usato come argomento di tipo; il suo oggetto compagno contiene
++     l'istanza di `Audible`, `audibility`, con il nome `WAVE` e il tipo di media `audio/x-wav`.
++     `Wave()` restituisce quell'istanza come `Audible`, ed è così che `Audio.Error` nomina un
++     formato.
+
+=     format.
+=
+-     ```scala
++     ```scala
+
+=     format.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     format.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=
+-     val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
++     val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+
+=
+=     val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+-                     617461080000006400c8002c019001"""
++                     617461080000006400c8002c019001"""
+
+-     wav.read[Audio in Wave].frames   // 4
++     wav.read[Audio in Wave].frames   // 4
+
+=     wav.read[Audio in Wave].frames   // 4
+-     ```
++     ```
+
+- entry .Aiff   the AIFF format, as `Audio in Aiff`
+-     A sealed type whose companion holds the `Audible` instance, `audibility`, with the name
+-     `AIFF` and the media type `audio/x-aiff`; `Aiff()` returns it. An AIFF file is
+-     big-endian, which `Audio#apply` honours when indexing a sample.
++ entry .Aiff   il formato AIFF, come `Audio in Aiff`
++     Un tipo sealed il cui oggetto compagno contiene l'istanza di `Audible`, `audibility`, con il
++     nome `AIFF` e il tipo di media `audio/x-aiff`; `Aiff()` la restituisce. Un file AIFF è
++     big-endian, cosa che `Audio#apply` rispetta quando indicizza un campione.
+
+- entry .Aifc   the AIFF-C format, as `Audio in Aifc`
+-     A sealed type whose companion holds the `Audible` instance, `audibility`, with the name
+-     `AIFC` and the media type `audio/x-aifc`; `Aifc()` returns it.
++ entry .Aifc   il formato AIFF-C, come `Audio in Aifc`
++     Un tipo sealed il cui oggetto compagno contiene l'istanza di `Audible`, `audibility`, con il
++     nome `AIFC` e il tipo di media `audio/x-aifc`; `Aifc()` la restituisce.
+
+- entry .Au   Sun's AU format, as `Audio in Au`
+-     A sealed type whose companion holds the `Audible` instance, `audibility`, with the name
+-     `AU` and the media type `audio/basic`; `Au()` returns it. An AU file holding µ-law or
+-     A-law audio is converted to 16-bit signed PCM as it is read.
++ entry .Au   il formato AU di Sun, come `Audio in Au`
++     Un tipo sealed il cui oggetto compagno contiene l'istanza di `Audible`, `audibility`, con il
++     nome `AU` e il tipo di media `audio/basic`; `Au()` la restituisce. Un file AU contenente
++     audio µ-law o A-law viene convertito in PCM con segno a 16 bit durante la lettura.
+
+- entry .Snd   the NeXT SND format, as `Audio in Snd`
+-     A sealed type whose companion holds the `Audible` instance, `audibility`, with the name
+-     `SND` and the media type `audio/basic`; `Snd()` returns it.
++ entry .Snd   il formato SND di NeXT, come `Audio in Snd`
++     Un tipo sealed il cui oggetto compagno contiene l'istanza di `Audible`, `audibility`, con il
++     nome `SND` e il tipo di media `audio/basic`; `Snd()` la restituisce.
+
+- entry .ChannelLayout   a channel layout carried in the type: how many channels, known statically
++ entry .ChannelLayout   una disposizione dei canali portata nel tipo: quanti canali, noti staticamente
+
+= entry .ChannelLayout   a channel layout carried in the type: how many channels, known statically
+-   detail
++   detail
+
+-       The typeclass behind `Audio across layout`, `Recording across layout` and
+-       `Pcm across layout`: `Monaural` has one channel, `Stereo` two, and `Surround[n]` the
+-       literal `n`. A feed records in a layout — `feed.record[Stereo](…)` — so the channel
+-       count of what it produces is in the type, not a number to be checked.
++       La typeclass dietro `Audio across layout`, `Recording across layout` e
++       `Pcm across layout`: `Monaural` ha un canale, `Stereo` due, e `Surround[n]` il letterale
++       `n`. Un ingresso registra in una disposizione — `feed.record[Stereo](…)` — così il numero
++       di canali di ciò che produce sta nel tipo, non è un numero da verificare.
+
+=       count of what it produces is in the type, not a number to be checked.
+=
+-       ```scala
++       ```scala
+
+=       count of what it produces is in the type, not a number to be checked.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       summon[Monaural is ChannelLayout].channels      // 1
++       summon[Monaural is ChannelLayout].channels      // 1
+
+-       summon[Stereo is ChannelLayout].channels        // 2
++       summon[Stereo is ChannelLayout].channels        // 2
+
+-       summon[Surround[6] is ChannelLayout].channels   // 6
++       summon[Surround[6] is ChannelLayout].channels   // 6
+
+=       summon[Surround[6] is ChannelLayout].channels   // 6
+-       ```
++       ```
+
+-   refer cacophony.Stereo
++   refer cacophony.Stereo
+
+-   refer cacophony.Surround
++   refer cacophony.Surround
+
+-   entry #channels   the number of channels in the layout
++   entry #channels   il numero di canali nella disposizione
+
+- entry .Monaural   the one-channel layout, as `Audio across Monaural`
+-     A sealed type whose companion holds its `ChannelLayout` instance, `channelLayout`, with
+-     one channel.
++ entry .Monaural   la disposizione a un canale, come `Audio across Monaural`
++     Un tipo sealed il cui oggetto compagno contiene la sua istanza di `ChannelLayout`,
++     `channelLayout`, con un canale.
+
+- entry .Stereo   the two-channel layout, as `Audio across Stereo`
+-     A sealed type whose companion holds its `ChannelLayout` instance, `channelLayout`, with
+-     two channels.
++ entry .Stereo   la disposizione a due canali, come `Audio across Stereo`
++     Un tipo sealed il cui oggetto compagno contiene la sua istanza di `ChannelLayout`,
++     `channelLayout`, con due canali.
+
+- entry .Surround   a surround layout of a literal number of channels, as `Audio across Surround[6]`
+-     `Surround[N]` takes a literal `Int`, and its companion's `channelLayout` given yields
+-     that number of channels for any `N` with a `ValueOf`, so `Surround[6]` and
+-     `Surround[8]` are distinct layouts with no instance written for either.
++ entry .Surround   una disposizione surround con un numero letterale di canali, come `Audio across Surround[6]`
++     `Surround[N]` accetta un `Int` letterale, e il given `channelLayout` del suo oggetto
++     compagno produce quel numero di canali per qualsiasi `N` dotato di un `ValueOf`, così
++     `Surround[6]` e `Surround[8]` sono disposizioni distinte senza che si scriva un'istanza per
++     nessuna delle due.
+
+- entry .Sonation   how samples are encoded: `PcmSigned` or `PcmUnsigned`
+-     The encoding a device `Audio.Configuration` reports. Every `Audio` value is signed PCM after
+-     reading, so `PcmUnsigned` appears only in what a device says it supports.
++ entry .Sonation   come sono codificati i campioni: `PcmSigned` o `PcmUnsigned`
++     La codifica riportata da una `Audio.Configuration` di un dispositivo. Ogni valore `Audio` è
++     PCM con segno dopo la lettura, quindi `PcmUnsigned` compare solo in ciò che un dispositivo
++     dichiara di supportare.
+
+- entry .Recording   an open recording: a stream of audio chunks until it is stopped
++ entry .Recording   una registrazione aperta: uno stream di chunk audio finché non viene fermata
+
+= entry .Recording   an open recording: a stream of audio chunks until it is stopped
+-   detail
++   detail
+
+-       Returned by `Audio.Feed#record`. `#stream` is a lazy chain of `Audio across Domain` chunks,
+-       each up to the chunk size the recording was started with, read from the line as the
+-       chain is forced; it ends when `#stop` closes the line, or when the line delivers
+-       nothing. The `Domain` type member is the layout recorded in.
++       Restituita da `Audio.Feed#record`. `#stream` è una catena pigra di chunk
++       `Audio across Domain`, ciascuno fino alla dimensione di chunk con cui la registrazione è
++       stata avviata, letti dalla linea man mano che la catena viene forzata; termina quando
++       `#stop` chiude la linea, o quando la linea non fornisce nulla. Il type member `Domain` è la
++       disposizione in cui si registra.
+
+=       nothing. The `Domain` type member is the layout recorded in.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       nothing. The `Domain` type member is the layout recorded in.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       nothing. The `Domain` type member is the layout recorded in.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       nothing. The `Domain` type member is the layout recorded in.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       nothing. The `Domain` type member is the layout recorded in.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import strategies.throwUnsafely
+=
+-       Audio.Feed.list.head.let: feed =>
++       Audio.Feed.list.head.let: feed =>
+
+-         val recording = feed.record[Monaural](8000.0*Hertz, 16, chunkBytes = 1024)
++         val recording = feed.record[Monaural](8000.0*Hertz, 16, chunkBytes = 1024)
+
+-         val chunk: Optional[Audio across Monaural] = recording.stream.head
++         val chunk: Optional[Audio across Monaural] = recording.stream.head
+
+-         recording.stop()
++         recording.stop()
+
+-         chunk.let(_.channels)   // 1
++         chunk.let(_.channels)   // 1
+
+=         chunk.let(_.channels)   // 1
+-       ```
++       ```
+
+=         chunk.let(_.channels)   // 1
+=       ```
+-   refer cacophony.Audio.Feed
++   refer cacophony.Audio.Feed
+
+-   entry #active   whether the recording has not yet been stopped
+-   entry #stop   stops the line and closes it; the stream ends
+-       Idempotent. The line is held until this is called, so a recording should always be
+-       stopped; `Audio.Feed`'s scoped form, `open[Pcm across layout]`, does it at the end of the
+-       block.
+-   entry #stream   the chunks recorded so far and to come, as a lazy chain
+-       Each force reads one chunk from the line, blocking until it is full, so the chain is
+-       consumed at the rate the device produces samples.
++   entry #active   se la registrazione non è ancora stata fermata
++   entry #stop   ferma la linea e la chiude; lo stream termina
++       Idempotente. La linea resta tenuta finché non lo si chiama, quindi una registrazione va
++       sempre fermata; la forma con ambito di `Audio.Feed`, `open[Pcm across layout]`, lo fa alla
++       fine del blocco.
++   entry #stream   i chunk registrati finora e quelli a venire, come catena pigra
++       Ogni forzatura legge un chunk dalla linea, bloccandosi finché non è pieno, così la catena
++       viene consumata al ritmo con cui il dispositivo produce i campioni.
+
+- entry .Playback   audio playing in the background: await its end, or stop it early
++ entry .Playback   audio in riproduzione in background: attenderne la fine, oppure fermarlo prima
+
+= entry .Playback   audio playing in the background: await its end, or stop it early
+-   detail
++   detail
+
+-       Returned by `Audio.Outlet#play`. The samples are written from a virtual thread; `#await`
+-       blocks until the audio has been played to the end (or stopped), and `#stop` ends it
+-       early, flushing what has not yet sounded. Whichever of `stop` and the end of the
+-       audio comes first closes the line, exactly once.
++       Restituita da `Audio.Outlet#play`. I campioni vengono scritti da un virtual thread;
++       `#await` si blocca finché l'audio non è stato riprodotto fino alla fine (o fermato), e
++       `#stop` lo termina in anticipo, scartando ciò che non è ancora suonato. Il primo tra
++       `stop` e la fine dell'audio chiude la linea, esattamente una volta.
+
+=       audio comes first closes the line, exactly once.
+-   refer cacophony.Audio.Outlet
++   refer cacophony.Audio.Outlet
+
+-   entry #active   whether the audio is still playing
+-   entry #stop   stops the playback at once, discarding what has not yet sounded, and closes the line
+-       Idempotent, and safe to call from another thread than the one which started the
+-       playback: the writer observes it between chunks.
+-   entry #await   blocks until the playback has finished, by reaching the end or being stopped
++   entry #active   se l'audio è ancora in riproduzione
++   entry #stop   ferma subito la riproduzione, scartando ciò che non è ancora suonato, e chiude la linea
++       Idempotente, e sicuro da chiamare da un thread diverso da quello che ha avviato la
++       riproduzione: lo scrittore lo osserva tra un chunk e l'altro.
++   entry #await   si blocca finché la riproduzione non è terminata, perché è arrivata alla fine o perché è stata fermata
+
+- entry .Pcm   the form for scoped audio-line access: a feed opens as `Pcm across layout`, an outlet as `Pcm`
++ entry .Pcm   la forma per l'accesso con ambito a una linea audio: un ingresso si apre come `Pcm across layout`, un'uscita come `Pcm`
+
+= entry .Pcm   the form for scoped audio-line access: a feed opens as `Pcm across layout`, an outlet as `Pcm`
+-   detail
++   detail
+
+-       Where `Audio.Feed#record` and `Audio.Outlet#play` hold a device for as long as the program wants
+-       it, a line may instead be *opened* for exactly one block, as a file is: the OS line
+-       lasts precisely as long as the scope and is released however it ends. `Pcm` is the
+-       form named at the `open`: a `Audio.Feed` opens as `Pcm across layout` for capture, lending
+-       a `.PcmInput` whose `stream` yields `Audio across layout` chunks; an `Audio.Outlet` opens as
+-       plain `Pcm` for playback, lending a `.PcmOutput` whose `.play` plays each `Audio`
+-       synchronously. The `Openable` instances, `.feedOpenable` and `.outletOpenable`, are
+-       in the companion, so no import is needed.
++       Mentre `Audio.Feed#record` e `Audio.Outlet#play` tengono un dispositivo per tutto il tempo
++       che il programma desidera, una linea si può invece *aprire* esattamente per un blocco,
++       come un file: la linea del sistema operativo dura esattamente quanto l'ambito e viene
++       rilasciata comunque esso termini. `Pcm` è la forma nominata nell'`open`: un `Audio.Feed`
++       si apre come `Pcm across layout` per l'acquisizione, prestando un `.PcmInput` il cui
++       `stream` produce chunk `Audio across layout`; un `Audio.Outlet` si apre come semplice
++       `Pcm` per la riproduzione, prestando un `.PcmOutput` il cui `.play` riproduce ogni `Audio`
++       in modo sincrono. Le istanze di `Openable`, `.feedOpenable` e `.outletOpenable`, si trovano
++       nell'oggetto compagno, quindi non serve alcun import.
+
+=       in the companion, so no import is needed.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       in the companion, so no import is needed.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       in the companion, so no import is needed.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       in the companion, so no import is needed.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       in the companion, so no import is needed.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
++       val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+=       val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+-                       617461080000006400c8002c019001"""
++                       617461080000006400c8002c019001"""
+
+=                       617461080000006400c8002c019001"""
+-       val audio = wav.read[Audio in Wave]
++       val audio = wav.read[Audio in Wave]
+
+=       val audio = wav.read[Audio in Wave]
+=
+-       Audio.Feed.list.head.let: feed =>
++       Audio.Feed.list.head.let: feed =>
+
+-         feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000), PcmFlag.Chunk(1024)): input ?=>
++         feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000), PcmFlag.Chunk(1024)): input ?=>
+
+-           input.stream.head
++           input.stream.head
+
+-       Audio.Outlet.list.head.let: outlet =>
++       Audio.Outlet.list.head.let: outlet =>
+
+-         outlet.open[Pcm](Write): out ?=>
++         outlet.open[Pcm](Write): out ?=>
+
+-           out.play(audio)
++           out.play(audio)
+
+=           out.play(audio)
+-       ```
++       ```
+
+-       The configuration is given as `PcmFlag`s: `PcmFlag.Rate(hertz)` (44100 by default),
+-       `PcmFlag.Bits(bits)` (16) and `PcmFlag.Chunk(bytes)` (65536); an outlet reads only
+-       `Chunk`, since each `play` opens a line for the audio's own format. Playing requires
+-       the `Write` grant: `outlet.open[Pcm]()` with no grant lends a `PcmOutput` on which
+-       `play` does not compile, so a line opened for capture cannot be played to, and the
+-       compiler, not the audio driver, says so.
++       La configurazione si fornisce come `PcmFlag`: `PcmFlag.Rate(hertz)` (44100 per
++       impostazione predefinita), `PcmFlag.Bits(bits)` (16) e `PcmFlag.Chunk(bytes)` (65536);
++       un'uscita legge solo `Chunk`, poiché ogni `play` apre una linea per il formato proprio
++       dell'audio. La riproduzione richiede il permesso `Write`: `outlet.open[Pcm]()` senza alcun
++       permesso presta un `PcmOutput` su cui `play` non compila, quindi su una linea aperta per
++       l'acquisizione non si può riprodurre, ed è il compilatore, non il driver audio, a dirlo.
+
+=       compiler, not the audio driver, says so.
+=
+-       ```scala
++       ```scala
+
+=       compiler, not the audio driver, says so.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       compiler, not the audio driver, says so.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val outlet: Audio.Outlet = ???
++       val outlet: Audio.Outlet = ???
+
+-       val audio: Audio = ???
++       val audio: Audio = ???
+
+-       outlet.open[Pcm](): out ?=>
++       outlet.open[Pcm](): out ?=>
+
+-         out.play(audio)   // does not compile
++         out.play(audio)   // does not compile
+
+=         out.play(audio)   // does not compile
+-       ```
++       ```
+
+=         out.play(audio)   // does not compile
+=       ```
+-   refer cacophony.Audio.Feed
++   refer cacophony.Audio.Feed
+
+=   refer cacophony.Audio.Feed
+-   refer cacophony.Audio.Outlet
++   refer cacophony.Audio.Outlet
+
+-   refer cacophony.PcmFlag
++   refer cacophony.PcmFlag
+
+-   entry .PcmInput   the handle lent by opening a `Feed` as `Pcm across layout`: a stream of audio chunks
++   entry .PcmInput   l'handle prestato aprendo un `Feed` come `Pcm across layout`: uno stream di chunk audio
+
+=   entry .PcmInput   the handle lent by opening a `Feed` as `Pcm across layout`: a stream of audio chunks
+-     detail
++     detail
+
+-         An exclusive capability over an open, started line, valid for the block it is lent
+-         to. `#stream` reads chunks as it is forced, each an `Audio across layout` of up to
+-         the `PcmFlag.Chunk` size; the line is stopped and closed when the block ends.
+-     entry #stream   the chunks captured, as a lazy chain, for as long as the scope lasts
+-   entry .PcmOutput   the handle lent by opening an `Outlet` as `Pcm`: plays audio values, with the `Write` grant
++         Una capability esclusiva su una linea aperta e avviata, valida per il blocco a cui viene
++         prestata. `#stream` legge chunk man mano che viene forzato, ciascuno un
++         `Audio across layout` fino alla dimensione di `PcmFlag.Chunk`; la linea viene fermata e
++         chiusa quando il blocco termina.
++     entry #stream   i chunk acquisiti, come catena pigra, per tutta la durata dell'ambito
++   entry .PcmOutput   l'handle prestato aprendo un `Outlet` come `Pcm`: riproduce valori audio, con il permesso `Write`
+
+=   entry .PcmOutput   the handle lent by opening an `Outlet` as `Pcm`: plays audio values, with the `Write` grant
+-     detail
++     detail
+
+-         An exclusive capability over the outlet, valid for the block it is lent to. Each
+-         `Pcm.play` (the grant-gated extension) or `#playAudio` opens a line for the audio's
+-         own format, plays it to completion and closes it; the next may have a different
+-         format.
+-     entry #playAudio   opens a line for the audio's format, plays it to the end, and closes the line
+-         Public so that the grant-gated `play` extension can reach it; use `play`, which
+-         checks the `Write` grant, rather than this. Raises `Audio.Outlet.Error` with
+-         `UnsupportedConfiguration` or `Unavailable`.
+-   entry .play   `out.play(audio)` on a `PcmOutput` opened with the `Write` grant: synchronous playback
+-       An extension on `PcmOutput & Granting[Grant.Write]`, so it is available only inside
+-       `outlet.open[Pcm](Write)`. Blocks until the audio has sounded, and raises
+-       `Audio.Outlet.Error` if the outlet cannot play it.
+-   entry .FeedOpenable   the `Openable` which opens a `Feed` as `Pcm across layout`, lending a `PcmInput`
++         Una capability esclusiva sull'uscita, valida per il blocco a cui viene prestata. Ogni
++         `Pcm.play` (l'estensione subordinata al permesso) o `#playAudio` apre una linea per il
++         formato proprio dell'audio, lo riproduce fino in fondo e la chiude; il successivo può
++         avere un formato diverso.
++     entry #playAudio   apre una linea per il formato dell'audio, lo riproduce fino alla fine e chiude la linea
++         Pubblico perché l'estensione `play`, subordinata al permesso, possa raggiungerlo; si usa
++         `play`, che verifica il permesso `Write`, anziché questo. Solleva `Audio.Outlet.Error`
++         con `UnsupportedConfiguration` o `Unavailable`.
++   entry .play   `out.play(audio)` su un `PcmOutput` aperto con il permesso `Write`: riproduzione sincrona
++       Un'estensione su `PcmOutput & Granting[Grant.Write]`, quindi è disponibile solo dentro
++       `outlet.open[Pcm](Write)`. Si blocca finché l'audio non è suonato, e solleva
++       `Audio.Outlet.Error` se l'uscita non riesce a riprodurlo.
++   entry .FeedOpenable   l'`Openable` che apre un `Feed` come `Pcm across layout`, prestando un `PcmInput`
+
+=   entry .FeedOpenable   the `Openable` which opens a `Feed` as `Pcm across layout`, lending a `PcmInput`
+-     detail
++     detail
+
+-         A named class rather than an anonymous given, so that its type members are stable:
++         Una classe con nome anziché un given anonimo, così che i suoi type member siano stabili:
+
+-         `Self = Audio.Feed`, `Form = Pcm across layout`, `Operand = PcmFlag`, `Result =
++         `Self = Audio.Feed`, `Form = Pcm across layout`, `Operand = PcmFlag`, `Result =
+
+-         PcmInput[layout]`. Made by `.feedOpenable` from the `ChannelLayout` and the
+-         `Tactic[Audio.Feed.Error]` in scope.
+-     entry #open   opens a line for the flags' rate, bits and chunk size in the layout's channels, for the block
+-         Signed little-endian PCM at `PcmFlag.Rate` (44100 by default) and `PcmFlag.Bits`
+-         (16); the line is started before the block and stopped and closed after it. Raises
+-         `Audio.Feed.Error` with `UnsupportedConfiguration` or `Unavailable`.
+-   entry .OutletOpenable   the `Openable` which opens an `Outlet` as `Pcm`, lending a `PcmOutput`
++         PcmInput[layout]`. Creata da `.feedOpenable` a partire dal `ChannelLayout` e dalla
++         `Tactic[Audio.Feed.Error]` nell'ambito.
++     entry #open   apre per il blocco una linea con la frequenza, i bit e la dimensione di chunk delle flag, nei canali della disposizione
++         PCM little-endian con segno a `PcmFlag.Rate` (44100 per impostazione predefinita) e
++         `PcmFlag.Bits` (16); la linea viene avviata prima del blocco e fermata e chiusa dopo.
++         Solleva `Audio.Feed.Error` con `UnsupportedConfiguration` o `Unavailable`.
++   entry .OutletOpenable   l'`Openable` che apre un `Outlet` come `Pcm`, prestando un `PcmOutput`
+
+=   entry .OutletOpenable   the `Openable` which opens an `Outlet` as `Pcm`, lending a `PcmOutput`
+-     detail
++     detail
+
+-         `Self = Audio.Outlet`, `Form = Pcm`, `Operand = PcmFlag`, `Result = PcmOutput`. Made by
+-         `.outletOpenable` from the `Tactic[Audio.Outlet.Error]` in scope. Opening itself touches
+-         no line: each `play` within the block opens one for its audio.
+-     entry #open   lends a `PcmOutput` with the flags' chunk size to the block
+-   entry .feedOpenable   the given which makes `feed.open[Pcm across layout](…)` available
+-       Needs a `ChannelLayout` for the layout and a `Tactic[Audio.Feed.Error]`, which it captures.
+-       In implicit scope through the companion.
+-   entry .outletOpenable   the given which makes `outlet.open[Pcm](…)` available
+-       Needs a `Tactic[Audio.Outlet.Error]`, which it captures. In implicit scope through the
+-       companion.
++         `Self = Audio.Outlet`, `Form = Pcm`, `Operand = PcmFlag`, `Result = PcmOutput`. Creata
++         da `.outletOpenable` a partire dalla `Tactic[Audio.Outlet.Error]` nell'ambito. L'apertura
++         in sé non tocca alcuna linea: ogni `play` all'interno del blocco ne apre una per il
++         proprio audio.
++     entry #open   presta al blocco un `PcmOutput` con la dimensione di chunk delle flag
++   entry .feedOpenable   il given che rende disponibile `feed.open[Pcm across layout](…)`
++       Richiede un `ChannelLayout` per la disposizione e una `Tactic[Audio.Feed.Error]`, che
++       cattura. Si trova nell'ambito implicito tramite l'oggetto compagno.
++   entry .outletOpenable   il given che rende disponibile `outlet.open[Pcm](…)`
++       Richiede una `Tactic[Audio.Outlet.Error]`, che cattura. Si trova nell'ambito implicito
++       tramite l'oggetto compagno.
+
+- entry .PcmFlag   the options of a scoped line: `Rate(hertz)`, `Bits(bits)` and `Chunk(bytes)`
+-     Passed to `open[Pcm …]` after the mode. `Rate(hertz)` is the sample rate in hertz
+-     (44100 if absent), `Bits(bits)` the bit depth (16), and `Chunk(bytes)` the size of each
+-     chunk read from a feed or written to an outlet (65536). A feed reads all three; an
+-     outlet reads only `Chunk`, since its lines take the format of the audio played.
++ entry .PcmFlag   le opzioni di una linea con ambito: `Rate(hertz)`, `Bits(bits)` e `Chunk(bytes)`
++     Passate a `open[Pcm …]` dopo la modalità. `Rate(hertz)` è la frequenza di campionamento in
++     hertz (44100 se assente), `Bits(bits)` la profondità in bit (16), e `Chunk(bytes)` la
++     dimensione di ogni chunk letto da un ingresso o scritto su un'uscita (65536). Un ingresso
++     le legge tutte e tre; un'uscita legge solo `Chunk`, poiché le sue linee assumono il formato
++     dell'audio riprodotto.
+
+=     outlet reads only `Chunk`, since its lines take the format of the audio played.
+=
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+=     typecheck
+-     ##
++     ##
+
+=     ##
+-     import soundness.*
++     import soundness.*
+
+=     ##
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     Audio.Feed.list.head.let: feed =>
++     Audio.Feed.list.head.let: feed =>
+
+-       feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000), PcmFlag.Bits(16), PcmFlag.Chunk(1024)):
++       feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000), PcmFlag.Bits(16), PcmFlag.Chunk(1024)):
+
+-         input ?=> input.stream.head.let(_.channels)   // 1
++         input ?=> input.stream.head.let(_.channels)   // 1
+
+=         input ?=> input.stream.head.let(_.channels)   // 1
+-     ```
++     ```

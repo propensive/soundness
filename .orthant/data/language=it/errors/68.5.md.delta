@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.68.5` — Constraint inaccessible
++ # `↯/s.68.5` — Vincolo inaccessibile
+
+- Raised at compile time by Nomenclature's `parse` macro when the
+- type-level constraint cannot be accessed.
++ Sollevato a tempo di compilazione dalla macro `parse` di Nomenclature quando non si può accedere al
++ vincolo a livello di tipi.
+
+- ## Cause
++ ## Causa
+
+- The message is intentionally generic: the macro could not read
+- the constraint expression at compile time.
++ Il messaggio è intenzionalmente generico: la macro non è riuscita a leggere l'espressione del
++ vincolo a tempo di compilazione.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.68.5] Could not access constraint
++ [↯/s.68.5] Could not access constraint
+
+= [↯/s.68.5] Could not access constraint
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- This typically indicates an internal misconfiguration; ensure
+- the constraint type is accessible from the call site.
++ Di solito indica un errore di configurazione interno; assicurarsi che il tipo del vincolo sia
++ accessibile dal punto di chiamata.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/nomenclature/src/core/nomenclature.protointernal.scala`
++ - Sorgente: `lib/nomenclature/src/core/nomenclature.protointernal.scala`

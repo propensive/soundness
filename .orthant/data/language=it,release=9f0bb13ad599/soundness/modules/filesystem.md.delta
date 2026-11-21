@@ -1,0 +1,251 @@
+orthant 1 language
+
+- Files on a disk are read and written through the typed [paths](paths.md) which already
+- describe them. A `Path on Local` has the operations which touch the disk: opening it to read
+- or write, creating it as a file or a directory, listing its children, copying, moving and
+- deleting. Each operation declares the errors it may raise.
++ I file su un disco si leggono e si scrivono attraverso i [percorsi](paths.md) tipizzati che già li
++ descrivono. Un `Path on Local` ha le operazioni che toccano il disco: aprirlo in lettura o in
++ scrittura, crearlo come file o come directory, elencarne i figli, copiare, spostare ed eliminare.
++ Ogni operazione dichiara gli errori che può sollevare.
+
+- import filesystemOptions.createParents
++ import filesystemOptions.createParents
+
+- import pathInterfaces.pathOnLocal
++ import pathInterfaces.pathOnLocal
+
+- column  Imports
+- column  Decide
+- row  `filesystemBackends.javaBaseFilesystem`  which implementation touches the disk: here, `java.nio`
+- row  `pathInterfaces.pathOnLocal`  the type of path which the standard directories are given as
+- row  the five from `filesystemOptions`  the answers to the questions of policy, described under [Copying, moving and deleting](#copying-moving-and-deleting)
+- row  `charsets`, `codepages`, `textSanitizers`  how bytes become text, and text becomes bytes; [Characters](characters.md) describes them
+- row  `environments`, `systems`, `temporaryDirectories`  where the [environment](environment.md), system properties and temporary directory come from
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception; [Errors](errors.md#choosing-a-strategy) has the other strategies
+- row  `stdios`, `termcapDefinitions`  where the samples print their results
++ column  Import
++ column  Decidono
++ row  `filesystemBackends.javaBaseFilesystem`  quale implementazione tocca il disco: qui, `java.nio`
++ row  `pathInterfaces.pathOnLocal`  il tipo di percorso con cui sono date le directory standard
++ row  i cinque di `filesystemOptions`  le risposte alle questioni di politica, descritte in [Copiare, spostare ed eliminare](#copying-moving-and-deleting)
++ row  `charsets`, `codepages`, `textSanitizers`  come i byte diventano testo, e il testo diventa byte; [Caratteri](characters.md) li descrive
++ row  `environments`, `systems`, `temporaryDirectories`  da dove provengono l'[ambiente](environment.md), le proprietà di sistema e la directory temporanea
++ row  `strategies.throwUnsafely`  che un errore venga lanciato come eccezione; [Errori](errors.md#choosing-a-strategy) presenta le altre strategie
++ row  `stdios`, `termcapDefinitions`  dove gli esempi stampano i loro risultati
+
+- val directory = temporaryDirectory[Path on Local] / "soundness-filesystem-tutorial"
++ val directory = temporaryDirectory[Path on Local] / "soundness-filesystem-tutorial"
+
+- By default, creating refuses to destroy anything. Creating over something which exists is an
+- `Io.Error`, and so is creating under a parent which does not exist, unless
+- `filesystemOptions.createParents` is imported, as it is here. A flag states either
+- intent at the place where it happens, whatever is imported:
++ Per impostazione predefinita, la creazione si rifiuta di distruggere alcunché. Creare sopra
++ qualcosa che esiste è un `Io.Error`, e lo è anche creare sotto un genitore che non esiste, a meno
++ che non si importi `filesystemOptions.createParents`, come avviene qui. Una flag dichiara
++ l'una o l'altra intenzione nel punto in cui accade, qualunque cosa sia importata:
+
+- `hold` maps a whole file for changing where it lies, and lends a `Holding`: a `Terrain` which
+- is stored to as well as loaded from. `set8`, `set16`, `set32` and `set64` store an integer at
+- an offset, `write` stores some `Data`, `zero` clears a range and `move` copies one within the
+- file, and `expand` makes the holding longer, and the file with it. A file which is not there is
+- created, at the size which `hold` is given. An exclusive lock is held on the file for the
+- length of the block, so a second `hold` of the same file, in this program or another, is
+- refused with `Busy`:
++ `hold` mappa un intero file per modificarlo dove si trova, e presta un `Holding`: un `Terrain`
++ in cui si scrive oltre che leggere. `set8`, `set16`, `set32` e `set64` scrivono un intero a un
++ offset, `write` scrive dei `Data`, `zero` azzera un intervallo e `move` ne copia uno all'interno
++ del file, ed `expand` allunga l'holding, e con esso il file. Un file che non c'è viene creato,
++ della dimensione data a `hold`. Sul file è tenuto un lock esclusivo per la durata del blocco,
++ quindi un secondo `hold` dello stesso file, in questo programma o in un altro, viene rifiutato
++ con `Busy`:
+
+= refused with `Busy`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= refused with `Busy`:
+=
+= ```scala fuel
+- run
++ run
+
+= refused with `Busy`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val ledger = directory / "ledger"
++ val ledger = directory / "ledger"
+
+- ledger.hold(16L): holding =>
++ ledger.hold(16L): holding =>
+
+-   holding.set32(0L, 1599L)
++   holding.set32(0L, 1599L)
+
+-   holding.expand(32L)
++   holding.expand(32L)
+
+-   holding.set64(24L, 1616L)
++   holding.set64(24L, 1616L)
+
+- val first = ledger.mapped(_.u32(0L))
++ val first = ledger.mapped(_.u32(0L))
+
+- val last = ledger.mapped(_.u64(24L))
++ val last = ledger.mapped(_.u64(24L))
+
+- Out.println(t"${first.show}, then ${last.show}")
++ Out.println(t"${first.show}, then ${last.show}")
+
+= Out.println(t"${first.show}, then ${last.show}")
+- ```
++ ```
+
+- A holding hands out no address into its memory, since `expand` may move it: every load and store
+- is at an offset, and a `slice` of a holding reads through it, so it stays good afterwards. What
+- was stored is in the file when the block ends. It is what a format which is altered in place
+- is altered through, as an image of [RaTEL](tel.md#ratel) is by the program which owns it.
+- `Holding(size)` is one on the heap, for an image which is not yet a file. A file is mapped for
+- changing on the JVM and on Scala Native; WASI, which can neither map nor lock a file, reports
+- `Unsupported`.
++ Un holding non fornisce alcun indirizzo della sua memoria, perché `expand` può spostarla: ogni
++ lettura e scrittura avviene a un offset, e uno `slice` di un holding legge attraverso di esso,
++ quindi resta valido anche dopo. Ciò che è stato scritto si trova nel file quando il blocco
++ termina. È ciò attraverso cui si modifica un formato che si modifica sul posto, come fa con
++ un'immagine [RaTEL](tel.md#ratel) il programma che la possiede. `Holding(size)` è un holding
++ sullo heap, per un'immagine che non è ancora un file. Un file si mappa per la modifica sulla JVM
++ e su Scala Native; WASI, che non può né mappare né bloccare un file, segnala `Unsupported`.
+
+- `observe` gives an `Observer`, which reads what the owner publishes. Its `map` lends a
+- `Terrain` view of the version it holds, and its `refresh` moves it to the version which the
+- name now leads to, and says whether there was one:
++ `observe` dà un `Observer`, che legge ciò che il proprietario pubblica. Il suo `map` presta una
++ vista `Terrain` della versione che detiene, e il suo `refresh` lo sposta sulla versione a cui ora
++ porta il nome, e dice se ce n'era una:
+
+- file.observe[Text]: observer =>
++ file.observe[Text]: observer =>
+
+-   val before = observer.map(_.u8(0L))
+-   val moved = observer.refresh()
+-   val after = observer.map(_.u8(0L))
++   val before = observer.map(_.u8(0L))
++   val moved = observer.refresh()
++   val after = observer.map(_.u8(0L))
+
+- An observer takes no lock, so it never delays the owner, and the owner never delays it. A view
+- which is in use when a `refresh` happens, on this thread or another, stays valid until its
+- block ends. Two editions are equal exactly when they are the same version of the file; they
+- have no order.
++ Un observer non acquisisce alcun lock, quindi non ritarda mai il proprietario, e il proprietario non
++ ritarda mai lui. Una vista in uso quando avviene un `refresh`, su questo thread o su un altro, resta
++ valida fino alla fine del suo blocco. Due edizioni sono uguali esattamente quando sono la stessa
++ versione del file; non hanno un ordine.
+
+- The type which `claim` and `observe` are given is what is published under the name. For a
+- form which is read in place, an observer's `open` maps the current version and opens it as
+- that type, in one block: an observer of a `Ratel of Playbill` opens an image of a `Playbill`,
+- and refuses one of anything else, as [RaTEL](tel.md#ratel) shows.
++ Il tipo dato a `claim` e a `observe` è ciò che viene pubblicato sotto il nome. Per una forma che
++ si legge sul posto, l'`open` di un observer mappa la versione corrente e la apre come quel tipo,
++ in un solo blocco: un observer di un `Ratel of Playbill` apre un'immagine di un `Playbill`, e
++ rifiuta quella di qualsiasi altra cosa, come mostra [RaTEL](tel.md#ratel).
++
++ Un observer mantiene in vita la versione che ha mappato, anche dopo che una più recente l'ha
++ sostituita sotto il nome, quindi un observer di lunga durata dovrebbe eseguire `refresh` quando viene a
++ sapere che c'è qualcosa di nuovo, da un messaggio o [osservando](#watching-for-changes) il nome. Il
++ lock è consultivo, ed è affidabile tra programmi che cooperano sui filesystem propri di una macchina,
++ ma non su un filesystem di rete.
+
+- An observer keeps the version it has mapped in existence, even after a newer one has replaced
+- it under the name, so a long-lived observer should `refresh` when it learns that there is
+- something new, whether from a message or from [watching](#watching-for-changes) the name. The
+- lock is advisory, and is dependable between cooperating programs on one machine's own
+- filesystems, but not over a network filesystem.
+-
+
+- row  Replace what is already at the destination?  `overwritePreexisting`  `failOnPreexisting`
+- row  Empty a directory before deleting it?  `deleteRecursively`  `deleteOnlyEmpty`
+- row  Create missing parent directories?  `createParents`  `requireParents`
+- row  Follow symbolic links?  `dereferenceSymlinks`  `preserveSymlinks`
+- row  Move atomically?  `moveAtomically`  `moveNonAtomically`
++ row  Sostituire ciò che c'è già nella destinazione?  `overwritePreexisting`  `failOnPreexisting`
++ row  Svuotare una directory prima di eliminarla?  `deleteRecursively`  `deleteOnlyEmpty`
++ row  Creare le directory genitrici mancanti?  `createParents`  `requireParents`
++ row  Seguire i link simbolici?  `dereferenceSymlinks`  `preserveSymlinks`
++ row  Spostare in modo atomico?  `moveAtomically`  `moveNonAtomically`
+
+- val store: Cas in Sha2[256] on (Path on Local) = Cas[Sha2[256]](directory, t".blob")
++ val store: Cas in Sha2[256] on (Path on Local) = Cas[Sha2[256]](directory, t".blob")
+
+- val home = Home[Path on Local]()
+- val cache = Home.Cache[Path on Local]()
+- val bin = Home.Local.Bin[Path on Local]()
+- val share = Base.Usr.Share[Path on Local]()
++ val home = Home[Path on Local]()
++ val cache = Home.Cache[Path on Local]()
++ val bin = Home.Local.Bin[Path on Local]()
++ val share = Base.Usr.Share[Path on Local]()
+
+- Home.Cashe[Path on Local]()
++ Home.Cashe[Path on Local]()
+
+- row  `Home.Cache`  `~/.cache`, or `$XDG_CACHE_HOME`  no
+- row  `Home.Config`  `~/.config`, or `$XDG_CONFIG_HOME`  no
++ row  `Home.Cache`  `~/.cache`, o `$XDG_CACHE_HOME`  no
++ row  `Home.Config`  `~/.config`, o `$XDG_CONFIG_HOME`  no
+
+- row  `Home.Local.Bin`  `~/.local/bin`, or `$XDG_BIN_HOME`  no
++ row  `Home.Local.Bin`  `~/.local/bin`, o `$XDG_BIN_HOME`  no
+
+- row  `Home.Local.Share`  `~/.local/share`, or `$XDG_DATA_HOME`  no
+- row  `Home.Local.State`  `~/.local/state`, or `$XDG_STATE_HOME`  no
++ row  `Home.Local.Share`  `~/.local/share`, o `$XDG_DATA_HOME`  no
++ row  `Home.Local.State`  `~/.local/state`, o `$XDG_STATE_HOME`  no
+
+- Most layouts are fixed places. The five which the
+- [XDG specification](environment.md#standard-directories) lets the user move are not:
+- `Home.Config` is normally `$HOME/.config`, but is `$XDG_CONFIG_HOME` where the user has set
+- that to an absolute path. Applying a layout constructs a value of
+- whichever directory type is asked for, so the same names serve a `Path on Local` and any
+- other representation.
++ La maggior parte delle disposizioni sono luoghi fissi. Non lo sono le cinque che la
++ [specifica XDG](environment.md#standard-directories) permette all'utente di spostare:
++ `Home.Config` è normalmente `$HOME/.config`, ma è `$XDG_CONFIG_HOME` dove l'utente lo ha
++ impostato a un percorso assoluto. Applicare una disposizione costruisce un valore del
++ tipo di directory richiesto, così gli stessi nomi servono un `Path on Local` e qualsiasi altra
++ rappresentazione.
+
+- Many files are looked up not at one location, but along a list of them: an icon in whichever
+- of the XDG data directories holds it, or a configuration file in the first of several places.
+- A `Searchpaths.Stems` instance names the directories to try, in order. A relative path on the
+- corresponding plane is resolved with `discover` to the first of them which holds it, or to
+- `Unset`:
++ Molti file si cercano non in una sola posizione, ma lungo un elenco di posizioni: un'icona in
++ qualunque delle directory dati XDG la contenga, o un file di configurazione nella prima di diverse
++ posizioni. Un'istanza di `Searchpaths.Stems` indica le directory da provare, in ordine. Un percorso
++ relativo sul piano corrispondente viene risolto con `discover` nella prima di esse che lo contiene,
++ oppure in `Unset`:
+
+- given stems: (Searchpaths.Stems on Xdg.Data onto Local) = new Searchpaths.Stems:
++ given stems: (Searchpaths.Stems on Xdg.Data onto Local) = new Searchpaths.Stems:
+
+-   type Target = Local
+-   val stems: List[Path on Local] = List(directory, directory / "inner")
++   type Target = Local
++   val stems: List[Path on Local] = List(directory, directory / "inner")
+
+- val found = (% / "inner.txt").on[Xdg.Data].discover()
++ val found = (% / "inner.txt").on[Xdg.Data].discover()
+
+- def rebuild(changed: List[Path on Local]): Unit = ()
++ def rebuild(changed: List[Path on Local]): Unit = ()
+
+-       rebuild(batch.paths[Path on Local])
++       rebuild(batch.paths[Path on Local])

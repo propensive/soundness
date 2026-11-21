@@ -1,0 +1,255 @@
+orthant 1 language
+
+- # Direct Style
++ # Stile diretto
+
+- Soundness is written in direct style: code reads as a straightforward sequence of
+- steps, not as a chain of combinators threading a value through a monad. Effects such
+- as failure, asynchrony, and context are carried by capabilities and by types rather
+- than by wrapper types that have to be mapped and flat-mapped together. The result
+- composes as ordinary code composes — with calls, blocks, and local values — so the
+- shape of a program follows the shape of the problem instead of the shape of an
+- abstraction laid over it.
++ Soundness è scritto in stile diretto: il codice si legge come una semplice sequenza di passi, non
++ come una catena di combinatori che fanno passare un valore attraverso una monade. Effetti come il
++ fallimento, l'asincronia e il contesto sono portati da capability e da tipi anziché da tipi
++ involucro che vanno combinati con map e flatMap. Il risultato si compone come si compone il codice
++ ordinario — con chiamate, blocchi e valori locali — quindi la forma di un programma segue la forma
++ del problema anziché quella di un'astrazione sovrapposta a esso.
+
+- The difference shows in composition. Direct-style expressions nest: a fallible call can
+- sit inside an argument list, inside an interpolated string, inside a condition —
+- anywhere an expression can go —
++ La differenza si vede nella composizione. Le espressioni in stile diretto si annidano: una
++ chiamata che può fallire può stare dentro un elenco di argomenti, dentro una stringa interpolata,
++ dentro una condizione — ovunque possa stare un'espressione —
+
+= anywhere an expression can go —
+=
+- ```scala fuel
++ ```scala fuel
+
+= anywhere an expression can go —
+=
+= ```scala fuel
+- parse
++ parse
+
+= anywhere an expression can go —
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val greeting = t"Hello, ${name.as[EmailAddress].localPart}!"
++ val greeting = t"Hello, ${name.as[EmailAddress].localPart}!"
+
+= val greeting = t"Hello, ${name.as[EmailAddress].localPart}!"
+- ```
++ ```
+
+- whereas monadic values compose only through their combinators. The same line, with
+- failure as a wrapper type, must be unrolled into named intermediate steps:
++ mentre i valori monadici si compongono solo tramite i loro combinatori. La stessa riga, con il
++ fallimento come tipo involucro, va srotolata in passi intermedi con nome:
+
+= failure as a wrapper type, must be unrolled into named intermediate steps:
+=
+- ```scala fuel
++ ```scala fuel
+
+= failure as a wrapper type, must be unrolled into named intermediate steps:
+=
+= ```scala fuel
+- parse
++ parse
+
+= failure as a wrapper type, must be unrolled into named intermediate steps:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val greeting = name.decodeEither.map(email => s"Hello, ${email.localPart}!")
++ val greeting = name.decodeEither.map(email => s"Hello, ${email.localPart}!")
+
+= val greeting = name.decodeEither.map(email => s"Hello, ${email.localPart}!")
+- ```
++ ```
+
+- and each further effect deepens the unrolling. For-comprehensions soften the syntax but
+- not the constraint: a `for` composes only values of *one* monad, so mixing failure with
+- asynchrony with iteration demands transformer stacks or manual plumbing, and ordinary
+- control flow — a `while`, an early return, a `try`/`finally` — has no direct place
+- inside it. Two monadic libraries with different wrapper types do not compose at all
+- without adapters.
++ e ogni effetto ulteriore approfondisce lo srotolamento. Le for-comprehension addolciscono la
++ sintassi ma non il vincolo: un `for` compone solo valori di *una* monade, quindi mescolare
++ fallimento, asincronia e iterazione richiede pile di transformer o raccordi manuali, e il normale
++ flusso di controllo — un `while`, un return anticipato, un `try`/`finally` — non vi trova posto
++ direttamente. Due librerie monadiche con tipi involucro diversi non si compongono affatto senza
++ adattatori.
+
+- Direct style dissolves the problem rather than managing it. Effects are contextual
+- capabilities, so combining them is having both in scope, not nesting their types; every
+- control structure of the language works unchanged; and the fallible, the asynchronous
+- and the pure call all look like calls. Where monadic values must be *sequenced*,
+- direct-style expressions merely *occur* — which is why the composition never stops
+- being ordinary.
++ Lo stile diretto dissolve il problema anziché gestirlo. Gli effetti sono capability contestuali,
++ quindi combinarli significa averli entrambi nell'ambito, non annidarne i tipi; ogni struttura di
++ controllo del linguaggio funziona invariata; e la chiamata che può fallire, quella asincrona e
++ quella pura sembrano tutte chiamate. Dove i valori monadici vanno *messi in sequenza*, le
++ espressioni in stile diretto semplicemente *compaiono* — ed è per questo che la composizione non
++ smette mai di essere ordinaria.
+
+- ## Ordinary control flow keeps working
++ ## Il normale flusso di controllo continua a funzionare
+
+- The claim is easiest to check on the constructs a monadic encoding has to replace. Each
+- of these works unchanged around fallible, asynchronous or resource-holding code:
++ L'affermazione è più facile da verificare sui costrutti che una codifica monadica deve sostituire.
++ Ciascuno di essi funziona invariato attorno a codice che può fallire, che è asincrono o che
++ detiene risorse:
+
+= of these works unchanged around fallible, asynchronous or resource-holding code:
+=
+- ```scala fuel
++ ```scala fuel
+
+= of these works unchanged around fallible, asynchronous or resource-holding code:
+=
+= ```scala fuel
+- parse
++ parse
+
+= of these works unchanged around fallible, asynchronous or resource-holding code:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- supervise:
++ supervise:
+
+-   for url <- urls do                          // an ordinary loop
++   for url <- urls do                          // an ordinary loop
+
+-     if shouldFetch(url) then                  // an ordinary condition
++     if shouldFetch(url) then                  // an ordinary condition
+
+-       try async(url.fetch().receive[Text])
++       try async(url.fetch().receive[Text])
+
+-       finally record(url)                     // ordinary try/finally
++       finally record(url)                     // ordinary try/finally
+
+=       finally record(url)                     // ordinary try/finally
+- ```
++ ```
+
+- No `traverse`, no `whenA`, no bracket combinator — and no question of which monad the
+- `for` is over, because it is not over one. A `while` loop, an early return, a `match`,
+- a nested function definition: all of them mean what they mean in Scala.
++ Nessun `traverse`, nessun `whenA`, nessun combinatore bracket — e nessuna questione su quale sia
++ la monade su cui opera il `for`, perché non opera su nessuna. Un ciclo `while`, un return
++ anticipato, un `match`, una definizione di funzione annidata: tutti significano ciò che
++ significano in Scala.
+
+- ## Effects still appear in the types
++ ## Gli effetti compaiono comunque nei tipi
+
+- Direct style is not effect-erasure. What an operation needs is in its signature, exactly
+- as it would be in the monadic encoding — the difference is that it appears as a
+- *requirement* rather than as a wrapper around the result:
++ Lo stile diretto non è cancellazione degli effetti. Ciò di cui un'operazione ha bisogno è nella
++ sua firma, esattamente come sarebbe nella codifica monadica — la differenza è che compare come
++ *requisito* anziché come involucro attorno al risultato:
+
+= *requirement* rather than as a wrapper around the result:
+=
+- ```scala fuel
++ ```scala fuel
+
+= *requirement* rather than as a wrapper around the result:
+=
+= ```scala fuel
+- parse
++ parse
+
+= *requirement* rather than as a wrapper around the result:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def fetch(url: HttpUrl)(using Online, Monitor): Text raises HttpError
++ def fetch(url: HttpUrl)(using Online, Monitor): Text raises HttpError
+
+= def fetch(url: HttpUrl)(using Online, Monitor): Text raises HttpError
+- ```
++ ```
+
+- Network access, suspension, and failure are all visible. What is *not* imposed is a
+- change to the shape of the value: the method returns `Text`, so its result composes with
+- everything that accepts `Text`, and a caller that has discharged the requirements has an
+- ordinary value in hand.
++ Accesso alla rete, sospensione e fallimento sono tutti visibili. Ciò che *non* viene imposto è un
++ cambiamento della forma del valore: il metodo restituisce `Text`, quindi il suo risultato si
++ compone con tutto ciò che accetta `Text`, e un chiamante che ha assolto i requisiti ha in mano un
++ valore ordinario.
+
+- This is the property the monadic encoding trades away. `IO[Either[HttpError, Text]]`
+- carries the same information and cannot be passed to anything expecting `Text`.
++ È la proprietà a cui la codifica monadica rinuncia. `IO[Either[HttpError, Text]]` porta la stessa
++ informazione e non può essere passato a nulla che si aspetti `Text`.
+
+- ## What it costs
++ ## Quanto costa
+
+- **Capabilities must be in scope, and that propagates.** A method calling something that
+- needs `Online` must either supply it or declare it. This is the same propagation a
+- monadic encoding has — there it is in the return type — so it is a cost of honesty rather
+- than of direct style, but it is not zero.
++ **Le capability devono essere nell'ambito, e questo si propaga.** Un metodo che chiama qualcosa
++ che richiede `Online` deve fornirlo o dichiararlo. È la stessa propagazione che ha una codifica
++ monadica — lì sta nel tipo di ritorno — quindi è un costo dell'onestà più che dello stile diretto,
++ ma non è nullo.
+
+- **The mechanism is contextual, and contextual code can surprise.** Which strategy is in
+- scope determines what a failure does, and a given imported at the top of a file affects
+- code far below it. That is the intended power — see
+- [declarative context](declarative-context.md) — but a reader who does not check the
+- imports can misread what a fallible call will do.
++ **Il meccanismo è contestuale, e il codice contestuale può sorprendere.** Quale strategia sia
++ nell'ambito determina che cosa fa un fallimento, e un given importato in cima a un file influisce
++ sul codice molto più in basso. È la forza voluta — vedi
++ [contesto dichiarativo](declarative-context.md) — ma un lettore che non controlla gli import può
++ fraintendere che cosa farà una chiamata che può fallire.
+
+- **Some reasoning is genuinely easier with an explicit value.** A monadic value can be
+- stored, retried, or passed to a combinator that runs it three times. A direct-style
+- fallible expression is not a value in the same way — which is why `defer` exists, to
+- hold an unapplied fallible computation where one is genuinely wanted. That it needs a
+- mechanism at all is an admission that the wrapper had a use.
++ **Alcuni ragionamenti sono davvero più facili con un valore esplicito.** Un valore monadico si può
++ memorizzare, ritentare o passare a un combinatore che lo esegue tre volte. Un'espressione in stile
++ diretto che può fallire non è un valore nello stesso senso — ed è per questo che esiste `defer`,
++ per conservare un calcolo che può fallire non ancora applicato quando ne serve davvero uno. Il
++ fatto stesso che serva un meccanismo ammette che l'involucro aveva una sua utilità.
+
+- **It leans on newer language features.** Context functions, capture checking and
+- `transparent inline` are doing the work, and the second of those is still maturing. The
+- monadic encoding needs none of them and works on any Scala.
++ **Si appoggia a funzionalità più recenti del linguaggio.** Le context function, il capture
++ checking e `transparent inline` fanno il lavoro, e la seconda è ancora in fase di maturazione. La
++ codifica monadica non ne richiede nessuna e funziona su qualsiasi Scala.
+
+- See [delimited scopes](delimited-scopes.md) for how a capability is introduced, and
+- [error handling](error-handling.md) for the effect this matters most for.
++ Vedi [ambiti delimitati](delimited-scopes.md) per come si introduce una capability, e
++ [gestione degli errori](error-handling.md) per l'effetto per cui tutto ciò conta di più.

@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.54.1` — Quanta does not include this unit
++ # `↯/s.54.1` — Quanta non include questa unità
+
+- Raised when the `Quanta` macro is asked to look up a unit that is not part
+- of the `Quanta` it was applied to.
++ Sollevato quando alla macro `Quanta` viene chiesto di cercare un'unità che non fa parte del `Quanta`
++ a cui è stata applicata.
+
+- ## Cause
++ ## Causa
+
+- The Abacist macros derive a multiplier for a unit by searching the
+- `Quanta` type for that unit's power. If the requested unit is not present
+- in the `Quanta`, the search fails and the macro aborts.
++ Le macro di Abacist derivano un moltiplicatore per un'unità cercando nel tipo `Quanta` la potenza di
++ quell'unità. Se l'unità richiesta non è presente nel `Quanta`, la ricerca fallisce e la macro si
++ interrompe.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.54.1] the Quanta does not include this unit
++ [↯/s.54.1] the Quanta does not include this unit
+
+= [↯/s.54.1] the Quanta does not include this unit
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Either include the unit in the `Quanta` type at the call site, or call
+- the lookup with a unit that is already part of the `Quanta`.
++ Includi l'unità nel tipo `Quanta` nel punto di chiamata, oppure esegui la ricerca con un'unità che fa
++ già parte del `Quanta`.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/abacist/src/core/abacist.internal.scala`
++ - Sorgente: `lib/abacist/src/core/abacist.internal.scala`

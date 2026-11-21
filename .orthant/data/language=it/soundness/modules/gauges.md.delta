@@ -1,0 +1,827 @@
+orthant 1 language
+
+- ## Gauges
++ ## Indicatori
+
+- ### About
++ ### Panoramica
+
+- A long-running program has something to say while it works: how far through it is, that it
+- is still alive, how fast bytes are moving, and which step of a pipeline is running. These
+- are shown as *gauges*: spinners, progress bars, meters, sparklines, counters and step
+- indicators. A gauge is either embedded in a [terminal layout](terminal.md#layout), or drawn
+- on its own at the cursor.
++ Un programma che lavora a lungo ha qualcosa da dire mentre lavora: a che punto è, che è ancora
++ vivo, a che velocità si muovono i byte e quale passo di una pipeline è in esecuzione. Queste
++ informazioni si mostrano come *indicatori*: spinner, barre di avanzamento, misuratori,
++ sparkline, contatori e indicatori di passo. Un indicatore è incorporato in un
++ [layout del terminale](terminal.md#layout), oppure è disegnato da solo, nella posizione del
++ cursore.
+
+- A gauge is chosen by the *type* of the thing which it displays. What it looks like, what
+- colors it uses, and which characters it may draw with are three separate decisions. Each is
+- made by one import, and none of them disturbs the other two.
++ Un indicatore si sceglie in base al *tipo* di ciò che mostra. Il suo aspetto, i colori che usa e
++ i caratteri con cui può disegnare sono tre decisioni separate. Ciascuna si prende con un import,
++ e nessuna disturba le altre due.
+
+- ### On progress display
++ ### Sulla visualizzazione dell'avanzamento
+
+- A display of progress is usually written twice: once as the drawing, and again as the
+- arithmetic which decides what fits. The two are kept consistent by hand. The result is a bar
+- which is correct at eighty columns and corrupt at thirty, with a row which overruns, a label
+- which pushes the bar off the edge, or a percentage which disagrees with the bar beside it.
++ Una visualizzazione dell'avanzamento di solito si scrive due volte: una volta come disegno, e
++ un'altra come l'aritmetica che decide che cosa ci sta. Le due si tengono coerenti a mano. Il
++ risultato è una barra corretta a ottanta colonne e corrotta a trenta, con una riga che sborda,
++ un'etichetta che spinge la barra fuori dal bordo, o una percentuale che contraddice la barra che
++ le sta accanto.
+
+- Separating the two removes the duplication. A design says how to draw a status at whatever
+- width it is given, and how narrow it can usefully go. The layout says how much room there
+- is. Neither needs to know what the other decided. A bar which is handed six cells is drawn
+- in six. Handed three, it becomes a percentage, and handed one, it becomes a single shade. A
+- design which is chosen by import, independently of the status it draws, is
+- [decoupling](../../philosophy/decoupling.md) between meaning and appearance.
++ Separare le due cose elimina la duplicazione. Un design dice come disegnare uno stato a
++ qualunque larghezza gli venga data, e fino a che punto può restringersi restando utile. Il
++ layout dice quanto spazio c'è. Nessuno dei due deve sapere che cosa ha deciso l'altro. Una barra
++ a cui si danno sei celle si disegna in sei. Con tre diventa una percentuale, e con una diventa
++ una singola sfumatura. Un design scelto con un import, indipendentemente dallo stato che
++ disegna, è [disaccoppiamento](../../philosophy/decoupling.md) tra significato e aspetto.
+
+- Everything comes from the `soundness` package, and several choices are in scope:
++ Tutto viene dal package `soundness`, e diverse scelte sono nell'ambito:
+
+= Everything comes from the `soundness` package, and several choices are in scope:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import textMetrics.uniformMetric
++ import textMetrics.uniformMetric
+
+- import palettes.solarizedDarkGaugePalette
++ import palettes.solarizedDarkGaugePalette
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.xtermTrueColorTermcap
++ import termcapDefinitions.xtermTrueColorTermcap
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import Tui.{Captioned, Countdown, Fraction, Meter, Reading, Reckoning, Standing, Step, Transfer}
++ import Tui.{Captioned, Countdown, Fraction, Meter, Reading, Reckoning, Standing, Step, Transfer}
+
+= import Tui.{Captioned, Countdown, Fraction, Meter, Reading, Reckoning, Standing, Step, Transfer}
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+= ```
+=
+= ```tabular
+- column  Import
++ column  Import
+
+- column  Decides
+- row  `textMetrics.uniformMetric`  how the width of text is measured, since a gauge is laid out by the width of what it draws
+- row  `palettes.solarizedDarkGaugePalette`  the colors; with none, a palette is chosen from what the terminal reports
+- row  `stdios`, `termcapDefinitions`  where the samples print, and what the terminal can display
+- row  `threads`, `probates`  the [concurrency](concurrency.md) context in which an animated gauge redraws itself
++ column  Decide
++ row  `textMetrics.uniformMetric`  come si misura la larghezza del testo, poiché un indicatore si dispone in base alla larghezza di ciò che disegna
++ row  `palettes.solarizedDarkGaugePalette`  i colori; senza di esso, la tavolozza si sceglie in base a ciò che il terminale segnala
++ row  `stdios`, `termcapDefinitions`  dove si stampano gli esempi, e che cosa il terminale può visualizzare
++ row  `threads`, `probates`  il contesto di [concorrenza](concurrency.md) in cui un indicatore animato si ridisegna
+
+= row  `threads`, `probates`  the [concurrency](concurrency.md) context in which an animated gauge redraws itself
+- ```
++ ```
+
+- ### Statuses
++ ### Stati
+
+- What a gauge displays is a value of a specific type, and that type is what selects the
+- design. The status types are nested in `Tui`, and imported from it above:
++ Ciò che un indicatore mostra è un valore di un tipo specifico, ed è quel tipo a selezionare il
++ design. I tipi di stato sono annidati in `Tui`, e sono importati da lì qui sopra:
+
+= design. The status types are nested in `Tui`, and imported from it above:
+=
+- ```tabular
++ ```tabular
+
+- column  Status
+- column  Displays
+- column  Default design
+- row  `Fraction`  a proportion in `[0, 1]`, clamped  smooth block bar
+- row  `Reckoning`  `done` against a total that may be unknown  `17/120`
+- row  `Standing`  how one unit of work turned out  `✓ ✗ ‑`
+- row  `Duration`  time spent  `2m41s`
+- row  `Countdown`  time left, clamped at zero  `2m41s`
+- row  `Captioned`  any status, with a label  derived
+- row  `Transfer`  bytes moved, with rate and estimate  *none*
+- row  `Meter`  a reading on a bounded scale  *none*
+- row  `Sequence[Double]`  samples over time  *none*
+- row  `Sequence[Step]`  an ordered run of steps  *none*
++ column  Stato
++ column  Mostra
++ column  Design predefinito
++ row  `Fraction`  una proporzione in `[0, 1]`, limitata all'intervallo  barra a blocchi continua
++ row  `Reckoning`  `done` rispetto a un totale che può essere ignoto  `17/120`
++ row  `Standing`  com'è andata un'unità di lavoro  `✓ ✗ ‑`
++ row  `Duration`  il tempo trascorso  `2m41s`
++ row  `Countdown`  il tempo rimasto, limitato a zero  `2m41s`
++ row  `Captioned`  qualunque stato, con un'etichetta  derivato
++ row  `Transfer`  i byte spostati, con velocità e stima  *nessuno*
++ row  `Meter`  una lettura su una scala limitata  *nessuno*
++ row  `Sequence[Double]`  campioni nel tempo  *nessuno*
++ row  `Sequence[Step]`  una serie ordinata di passi  *nessuno*
+
+= row  `Sequence[Step]`  an ordered run of steps  *none*
+- ```
++ ```
+
+- Most of these are types which a program already has. A new type is introduced only where it
+- has to be *distinct*, because it is the key by which the design is looked up. A proportion
+- cannot be a plain `Double` without claiming every `Double` in the program for progress bars.
+- Elapsed time is a [`Duration`](time.md#durations-and-timespans), samples are a
+- `Sequence[Double]`, and a run of steps is a `Sequence[Step]`. `Countdown` has a type of its
+- own only so that it can sit beside an elapsed time, with a different design.
++ La maggior parte di questi sono tipi che un programma ha già. Si introduce un tipo nuovo solo
++ dove deve essere *distinto*, perché è la chiave con cui si cerca il design. Una proporzione non
++ può essere un semplice `Double` senza rivendicare per le barre di avanzamento ogni `Double` del
++ programma. Il tempo trascorso è una [`Duration`](time.md#durations-and-timespans), i campioni
++ sono una `Sequence[Double]` e una serie di passi è una `Sequence[Step]`. `Countdown` ha un tipo
++ tutto suo solo per poter stare accanto a un tempo trascorso, con un design diverso.
+
+- Any status may be [`Optional`](optional-values.md), and every design is lifted to that
+- automatically. `Optional[Fraction]` is progress which may not be known yet, so a job which
+- starts out unmeasurable, and later learns its total, does not change type half way through.
+- A design says how to draw when there is no value. A bar sweeps, because an empty bar claims
+- "no progress" where the truth is "not measured", and a spinner draws its frames. Nothing has
+- to be written twice for the optional case.
++ Qualunque stato può essere [`Optional`](optional-values.md), e ogni design viene sollevato
++ automaticamente a quel tipo. `Optional[Fraction]` è un avanzamento che potrebbe non essere
++ ancora noto, così un job che parte non misurabile, e più tardi scopre il suo totale, non cambia
++ tipo a metà strada. Un design dice come disegnare quando non c'è alcun valore. Una barra fa uno
++ scorrimento, perché una barra vuota afferma «nessun avanzamento» dove la verità è «non
++ misurato», e uno spinner disegna i suoi frame. Nulla va scritto due volte per il caso opzionale.
+
+- The four statuses with no default are deliberate. A default exists only where every candidate
+- design is the same height, and says the same thing. A battery, a thermometer and a dial are
+- not interchangeable. Block and braille sparklines differ in vertical resolution, and so in
+- what the data shows. A checklist is one row for each step, where a breadcrumb is one row
+- altogether. And whether a transfer counts in `MB` or `MiB` is an editorial decision. Choosing
+- silently in those cases would be choosing how much of the caller's layout to occupy, or what
+- their numbers mean.
++ I quattro stati senza un predefinito sono intenzionali. Un predefinito esiste solo dove ogni
++ design candidato ha la stessa altezza e dice la stessa cosa. Una batteria, un termometro e un
++ quadrante non sono intercambiabili. Le sparkline a blocchi e quelle in braille differiscono in
++ risoluzione verticale, e quindi in ciò che i dati mostrano. Una checklist è una riga per ogni
++ passo, mentre un breadcrumb è una riga in tutto. E se un trasferimento conti in `MB` o in `MiB` è
++ una decisione editoriale. Scegliere in silenzio in questi casi significherebbe scegliere quanta
++ parte del layout del chiamante occupare, o che cosa significano i suoi numeri.
+
+- ### Choosing a design
++ ### Scegliere un design
+
+- With no design imported, the defaults apply. `gaugeLine` draws one frame, at a width which
+- the caller chooses:
++ Senza alcun design importato, valgono i predefiniti. `gaugeLine` disegna un frame, alla
++ larghezza che sceglie il chiamante:
+
+= the caller chooses:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the caller chooses:
+=
+= ```scala fuel
+- run
++ run
+
+= the caller chooses:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(gaugeLine(Fraction(0.42), 40))
++ Out.println(gaugeLine(Fraction(0.42), 40))
+
+- Out.println(gaugeLine(Reckoning(17, 120), 7))
++ Out.println(gaugeLine(Reckoning(17, 120), 7))
+
+- Out.println(e"${gaugeLine(Standing.Succeeded, 1)} built")
++ Out.println(e"${gaugeLine(Standing.Succeeded, 1)} built")
+
+= Out.println(e"${gaugeLine(Standing.Succeeded, 1)} built")
+- ```
++ ```
+
+- A gauge always needs a width. There is no drawing of a bar which does not know how wide it
+- is, so a status cannot be printed on its own.
++ Un indicatore ha sempre bisogno di una larghezza. Non esiste un modo di disegnare una barra che
++ non sappia quanto è larga, quindi uno stato non si può stampare da solo.
+
+- Importing a design by name replaces the default, and nothing else changes:
++ Importare un design per nome sostituisce il predefinito, e nient'altro cambia:
+
+= Importing a design by name replaces the default, and nothing else changes:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Importing a design by name replaces the default, and nothing else changes:
+=
+= ```scala fuel
+- run
++ run
+
+= Importing a design by name replaces the default, and nothing else changes:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= Importing a design by name replaces the default, and nothing else changes:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import bars.arrowheadBar
++   import bars.arrowheadBar
+
+=   import bars.arrowheadBar
+-   Out.println(gaugeLine(Fraction(0.42), 40))
++   Out.println(gaugeLine(Fraction(0.42), 40))
+
+=   Out.println(gaugeLine(Fraction(0.42), 40))
+- ```
++ ```
+
+- A spinner is what to import when the figure is not worth showing, or is not known. It is
+- keyed on `Fraction`, as a bar is, and ignores the value. A spinner and a bar are therefore
+- two designs for the same status, and only one of them can be imported at a time. A layout
+- which wants both takes one from a [given] in a local scope:
++ Uno spinner è ciò che si importa quando la cifra non vale la pena di essere mostrata, o non è
++ nota. Ha come chiave `Fraction`, come una barra, e ignora il valore. Uno spinner e una barra sono
++ quindi due design per lo stesso stato, e se ne può importare solo uno alla volta. Un layout che
++ li vuole entrambi ne prende uno da un [given] in un ambito locale:
+
+= which wants both takes one from a [given] in a local scope:
+=
+- ```scala
++ ```scala
+
+- val resolving =
++ val resolving =
+
+-   given spinner: (Fraction is Gaugeable) = spinners.brailleDotsSpinner
++   given spinner: (Fraction is Gaugeable) = spinners.brailleDotsSpinner
+
+-   gauge(Reading(Fraction.indeterminate))
++   gauge(Reading(Fraction.indeterminate))
+
+=   gauge(Reading(Fraction.indeterminate))
+- ```
++ ```
+
+- The designs are grouped into eight families, each of which is a package to import from:
++ I design sono raggruppati in otto famiglie, ciascuna delle quali è un package da cui importare:
+
+= The designs are grouped into eight families, each of which is a package to import from:
+=
+- ```tabular
++ ```tabular
+
+- column  Family
+- column  For
+- column  Designs
+- column  Range
+- row  `spinners`  `Fraction`  42  single-cell braille and block animations to bouncing bars and emoji moon phases
+- row  `bars`  `Fraction`  18  the smooth eighth-block default through segmented pips and gradient fills to `[###---]`
+- row  `meters`  `Meter`  6  battery, thermometer, needle, bullet, column and ASCII
+- row  `sparklines`  `Sequence[Double]`  4  block, tall, dot and ASCII
+- row  `counters`  `Reckoning`, `Transfer`  9  plain, padded, worded, scaled and percentage counts; transfer reports
+- row  `standings`  `Standing`  5  ASCII, tick, heavy, square and word markers
+- row  `processions`  `Sequence[Step]`  5  checklist, breadcrumb, beads, numbered and ribbon
+- row  `timers`  `Duration`, `Countdown`  5  compact and digital elapsed times; compact, digital and urgent countdowns
++ column  Famiglia
++ column  Per
++ column  Design
++ column  Gamma
++ row  `spinners`  `Fraction`  42  dalle animazioni in braille e a blocchi di una sola cella alle barre rimbalzanti e alle fasi lunari in emoji
++ row  `bars`  `Fraction`  18  dal predefinito continuo a ottavi di blocco, attraverso pallini segmentati e riempimenti sfumati, fino a `[###---]`
++ row  `meters`  `Meter`  6  batteria, termometro, lancetta, bullet, colonna e ASCII
++ row  `sparklines`  `Sequence[Double]`  4  a blocchi, alta, a punti e ASCII
++ row  `counters`  `Reckoning`, `Transfer`  9  conteggi semplici, con riempimento, a parole, in scala e in percentuale; resoconti di trasferimento
++ row  `standings`  `Standing`  5  marcatori ASCII, a spunta, marcati, quadrati e a parole
++ row  `processions`  `Sequence[Step]`  5  checklist, breadcrumb, perline, numerata e nastro
++ row  `timers`  `Duration`, `Countdown`  5  tempi trascorsi compatti e digitali; conti alla rovescia compatti, digitali e urgenti
+
+= row  `timers`  `Duration`, `Countdown`  5  compact and digital elapsed times; compact, digital and urgent countdowns
+- ```
++ ```
+
+- ### Colors and glyphs
++ ### Colori e glifi
+
+- Color is an independent choice. A `GaugePalette` names its colors by *role*, so one design
+- is drawn under any palette:
++ Il colore è una scelta indipendente. Una `GaugePalette` nomina i suoi colori per *ruolo*, così
++ un design si disegna con qualunque tavolozza:
+
+= is drawn under any palette:
+=
+- ```tabular
++ ```tabular
+
+- column  Role
+- column  Colors
+- row  `fill`  the filled part of a bar
+- row  `track`  the unfilled part of a bar, hollow pips, the arc a dial's needle sweeps
+- row  `leadingEdge`  the boundary cell of a bar and the head of a marker
+- row  `caption`  labels and captions
+- row  `muted`  completed steps, elapsed times, units
+- row  `success`  a succeeded step; the low end of a severity scale
+- row  `warning`  a warned step; the middle of a severity scale
+- row  `danger`  a failed step; the top of a severity scale
++ column  Ruolo
++ column  Colora
++ row  `fill`  la parte piena di una barra
++ row  `track`  la parte vuota di una barra, i pallini cavi, l'arco percorso dalla lancetta di un quadrante
++ row  `leadingEdge`  la cella di confine di una barra e la testa di un marcatore
++ row  `caption`  etichette e didascalie
++ row  `muted`  passi completati, tempi trascorsi, unità
++ row  `success`  un passo riuscito; l'estremo basso di una scala di gravità
++ row  `warning`  un passo con avvertimento; il centro di una scala di gravità
++ row  `danger`  un passo fallito; l'estremo alto di una scala di gravità
+
+= row  `danger`  a failed step; the top of a severity scale
+- ```
++ ```
+
+- A palette is chosen by import, as `palettes.solarizedDarkGaugePalette` was above. Ten
+- palettes are provided. They include `monochromeGaugePalette`, which has no hues, and
+- `ansiSixteenGaugePalette`, whose colors are the canonical values which a sixteen-color
+- terminal actually has. With no import, an adaptive palette picks by what the terminal
+- reports. [Colors](colors.md#themes-and-palettes) describes palettes generally.
++ Una tavolozza si sceglie con un import, come `palettes.solarizedDarkGaugePalette` qui sopra. Sono
++ fornite dieci tavolozze. Tra queste c'è `monochromeGaugePalette`, che non ha tinte, e
++ `ansiSixteenGaugePalette`, i cui colori sono i valori canonici che un terminale a sedici colori
++ ha davvero. Senza import, una tavolozza adattiva sceglie in base a ciò che il terminale segnala.
++ [Colori](colors.md#themes-and-palettes) descrive le tavolozze in generale.
+
+- The repertoire of characters is a third choice, and it degrades every design at once:
++ Il repertorio di caratteri è una terza scelta, e degrada ogni design in un colpo solo:
+
+= The repertoire of characters is a third choice, and it degrades every design at once:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The repertoire of characters is a third choice, and it degrades every design at once:
+=
+= ```scala fuel
+- run
++ run
+
+= The repertoire of characters is a third choice, and it degrades every design at once:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= The repertoire of characters is a third choice, and it degrades every design at once:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import gaugeGlyphs.asciiGlyphs
++   import gaugeGlyphs.asciiGlyphs
+
+=
+-   Out.println(gaugeLine(Fraction(0.42), 40))
++   Out.println(gaugeLine(Fraction(0.42), 40))
+
+-   Out.println(e"${gaugeLine(Standing.Succeeded, 1)} built")
++   Out.println(e"${gaugeLine(Standing.Succeeded, 1)} built")
+
+=   Out.println(e"${gaugeLine(Standing.Succeeded, 1)} built")
+- ```
++ ```
+
+- Every design has an ASCII form, and every design which prefers exotic glyphs declares what
+- to fall back to. Emoji designs become their plainer siblings where the terminal cannot show
+- them, and under `asciiGlyphs` everything emits seven-bit output. No design carries its
+- meaning in color alone, so a gauge which is written to a file, or read by someone who cannot
+- tell red from green, still says what it means.
++ Ogni design ha una forma ASCII, e ogni design che preferisce glifi esotici dichiara a che cosa
++ ripiegare. I design in emoji diventano i loro fratelli più semplici dove il terminale non può
++ mostrarli, e con `asciiGlyphs` tutto emette output a sette bit. Nessun design affida il suo
++ significato al solo colore, così un indicatore scritto in un file, o letto da qualcuno che non
++ distingue il rosso dal verde, dice ancora ciò che significa.
+
+- ### Degradation
++ ### Degradazione
+
+- Every design is drawn at exactly the width which it is given, at every width, and says less
+- as it narrows, instead of overrunning. A bar drops its end caps below eight cells, becomes a
+- percentage at four, and becomes a single shade at one:
++ Ogni design si disegna esattamente alla larghezza che gli viene data, a ogni larghezza, e dice
++ meno man mano che si restringe, invece di sbordare. Una barra perde i terminali sotto le otto
++ celle, diventa una percentuale a quattro, e una singola sfumatura a una:
+
+= percentage at four, and becomes a single shade at one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= percentage at four, and becomes a single shade at one:
+=
+= ```scala fuel
+- run
++ run
+
+= percentage at four, and becomes a single shade at one:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- List(40, 20, 8, 4, 1).each: width =>
++ List(40, 20, 8, 4, 1).each: width =>
+
+-   Out.println(gaugeLine(Fraction(0.42), width))
++   Out.println(gaugeLine(Fraction(0.42), width))
+
+=   Out.println(gaugeLine(Fraction(0.42), width))
+- ```
++ ```
+
+- A row which is composed of several parts sheds them in a declared order. A transfer which
+- reads
++ Una riga composta da più parti le abbandona in un ordine dichiarato. Un trasferimento che a
++ ottanta celle si legge
+
+= reads
+=
+- ```
++ ```
+
+- 14.2 MiB/512 MiB · 3.1 MiB/s · 2m41s left
++ 14.2 MiB/512 MiB · 3.1 MiB/s · 2m41s left
+
+= 14.2 MiB/512 MiB · 3.1 MiB/s · 2m41s left
+- ```
++ ```
+
+- at eighty cells keeps only the figures at thirty. A caption is shortened before it squeezes
+- the gauge which it labels, and is allowed at most half the row before it begins to cost the
+- gauge cells.
++ a trenta conserva solo le cifre. Una didascalia si accorcia prima di comprimere l'indicatore che
++ etichetta, e le è concessa al massimo metà della riga prima che cominci a costare celle
++ all'indicatore.
+
+- A sparkline's scale is a choice of design, not part of the data.
+- `Sparkline.Blocks.scaled(0, 100)` fixes it, so that a steady signal does not look erratic as
+- the bounds move under it. A sparkline which is narrower than its series is *decimated*: each
+- cell shows the maximum of the samples which it covers. It is not truncated. A truncated
+- sparkline would show only the oldest samples, while looking like the whole series, which is
+- worse than showing less.
++ La scala di una sparkline è una scelta di design, non parte dei dati.
++ `Sparkline.Blocks.scaled(0, 100)` la fissa, così che un segnale stabile non sembri irregolare
++ quando i limiti si spostano sotto di esso. Una sparkline più stretta della sua serie viene
++ *decimata*: ogni cella mostra il massimo dei campioni che copre. Non viene troncata. Una
++ sparkline troncata mostrerebbe solo i campioni più vecchi, pur sembrando l'intera serie, il che
++ è peggio che mostrare meno.
+
+- ### In a layout
++ ### In un layout
+
+- `gauge` builds a pane. It takes a `Reading`, which is a mutable cell that holds the current
+- status. Assigning to the cell publishes the value, and repaints, so a gauge which is driven
+- from a background task updates itself. An application's [`Cli`](cli.md) provides the console:
++ `gauge` costruisce un riquadro. Prende una `Reading`, che è una cella mutabile che contiene lo
++ stato corrente. Assegnare alla cella pubblica il valore e ridisegna, così un indicatore guidato da
++ un task in background si aggiorna da sé. La [`Cli`](cli.md) di un'applicazione fornisce la
++ console:
+
+= from a background task updates itself. An application's [`Cli`](cli.md) provides the console:
+=
+- ```scala fuel
++ ```scala fuel
+
+= from a background task updates itself. An application's [`Cli`](cli.md) provides the console:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= from a background task updates itself. An application's [`Cli`](cli.md) provides the console:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- given console: Console = Console(summon[Stdio])
++ given console: Console = Console(summon[Stdio])
+
+- val progress = Reading(Fraction(0.0))
++ val progress = Reading(Fraction(0.0))
+
+- val work = List(1, 2, 3, 4, 5)
++ val work = List(1, 2, 3, 4, 5)
+
+=
+- supervise:
++ supervise:
+
+-   async:
++   async:
+
+-     work.each: item =>
++     work.each: item =>
+
+-       snooze(0.5*Second)
++       snooze(0.5*Second)
+
+-       progress() = Fraction.of(item, work.size)
++       progress() = Fraction.of(item, work.size)
+
+-   interactive: terminal ?=>
++   interactive: terminal ?=>
+
+-     conduct(Tui.Occupancy.Inline)(stack(gauge(progress)))
++     conduct(Tui.Occupancy.Inline)(stack(gauge(progress)))
+
+=     conduct(Tui.Occupancy.Inline)(stack(gauge(progress)))
+- ```
++ ```
+
+- A gauge reports the intrinsic size of its design each time the layout is solved, so it takes
+- part in the layout, and does not assume a width. An elastic design fills what it is given.
+- An inelastic one, such as a spinner or a status glyph, is held to its own width. A design of
+- several rows, such as a checklist, grows the layout to the number of its steps. A gauge
+- accepts no input, so Tab skips over it.
++ Un indicatore segnala la dimensione intrinseca del suo design ogni volta che il layout viene
++ risolto, così prende parte al layout e non presuppone una larghezza. Un design elastico riempie
++ ciò che gli viene dato. Uno anelastico, come uno spinner o un glifo di stato, è tenuto alla sua
++ larghezza. Un design di più righe, come una checklist, fa crescere il layout fino al numero dei
++ suoi passi. Un indicatore non accetta input, quindi Tab lo salta.
+
+- A design which animates declares how often it wants to be redrawn. The layout takes the
+- shortest period among the gauges on screen, and runs one timer for all of them, and none at
+- all when nothing is animating.
++ Un design che si anima dichiara con che frequenza vuole essere ridisegnato. Il layout prende il
++ periodo più breve tra gli indicatori sullo schermo, ed esegue un solo timer per tutti, e nessuno
++ quando nulla si anima.
+
+- ### Standalone
++ ### Da solo
+
+- Outside a layout, `whilst` shows a gauge at the cursor for the duration of a block, and
+- erases it afterwards. Its animation runs as a background task, so it is called under
+- `supervise`:
++ Fuori da un layout, `whilst` mostra un indicatore nella posizione del cursore per la durata di
++ un blocco, e poi lo cancella. La sua animazione gira come task in background, quindi lo si
++ chiama dentro `supervise`:
+
+= `supervise`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `supervise`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= `supervise`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= ##
+- supervise:
++ supervise:
+
+-   whilst(Reading(Fraction.indeterminate)):
++   whilst(Reading(Fraction.indeterminate)):
+
+-     snooze(2.0*Second)
++     snooze(2.0*Second)
+
+=     snooze(2.0*Second)
+- ```
++ ```
+
+- `gaugeLine` draws a single frame, for a caller which does its own drawing. It is the form to
+- use when the redrawing is already handled:
++ `gaugeLine` disegna un singolo frame, per un chiamante che disegna da sé. È la forma da usare
++ quando il ridisegno è già gestito:
+
+= use when the redrawing is already handled:
+=
+- ```scala
++ ```scala
+
+- def frame(done: Int, total: Int)(using Stdio): Unit =
++ def frame(done: Int, total: Int)(using Stdio): Unit =
+
+-   Out.print(e"\r${gaugeLine(Fraction.of(done, total), 40)} $done/$total${csi.el()}")
++   Out.print(e"\r${gaugeLine(Fraction.of(done, total), 40)} $done/$total${csi.el()}")
+
+=   Out.print(e"\r${gaugeLine(Fraction.of(done, total), 40)} $done/$total${csi.el()}")
+- ```
++ ```
+
+- ### Composing
++ ### Comporre
+
+- `Captioned` labels any status. It derives its design from whichever design the underlying
+- status already uses, so it is not a choice of style, and needs no import:
++ `Captioned` etichetta qualunque stato. Deriva il suo design da quello che lo stato sottostante
++ usa già, quindi non è una scelta di stile, e non richiede alcun import:
+
+= status already uses, so it is not a choice of style, and needs no import:
+=
+- ```scala fuel
++ ```scala fuel
+
+= status already uses, so it is not a choice of style, and needs no import:
+=
+= ```scala fuel
+- run
++ run
+
+= status already uses, so it is not a choice of style, and needs no import:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(gaugeLine(Captioned(Fraction(0.42), t"resolving dependencies"), 60))
++ Out.println(gaugeLine(Captioned(Fraction(0.42), t"resolving dependencies"), 60))
+
+= Out.println(gaugeLine(Captioned(Fraction(0.42), t"resolving dependencies"), 60))
+- ```
++ ```
+
+- A `Sequence[Step]` has five designs, which differ in height:
++ Una `Sequence[Step]` ha cinque design, che differiscono in altezza:
+
+= A `Sequence[Step]` has five designs, which differ in height:
+=
+- ```tabular
++ ```tabular
+
+= A `Sequence[Step]` has five designs, which differ in height:
+=
+= ```tabular
+- column  Import
++ column  Import
+
+- column  Draws
+- column  Height
+- row  `processions.checklistProcession`  a checklist  one row per step
+- row  `processions.breadcrumbProcession`  a breadcrumb  one row
+- row  `processions.beadProcession`  a chain of beads  one row
+- row  `processions.numberedProcession`  a numbered position  one row
+- row  `processions.ribbonProcession`  a powerline ribbon  one row
++ column  Disegna
++ column  Altezza
++ row  `processions.checklistProcession`  una checklist  una riga per passo
++ row  `processions.breadcrumbProcession`  un breadcrumb  una riga
++ row  `processions.beadProcession`  una catena di perline  una riga
++ row  `processions.numberedProcession`  una posizione numerata  una riga
++ row  `processions.ribbonProcession`  un nastro in stile powerline  una riga
+
+= row  `processions.ribbonProcession`  a powerline ribbon  one row
+- ```
++ ```
+
+- A checklist, for example, is drawn in three rows for three steps:
++ Una checklist, per esempio, si disegna in tre righe per tre passi:
+
+= A checklist, for example, is drawn in three rows for three steps:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A checklist, for example, is drawn in three rows for three steps:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A checklist, for example, is drawn in three rows for three steps:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import processions.checklistProcession
++ import processions.checklistProcession
+
+- val steps: Sequence[Step] =
++ val steps: Sequence[Step] =
+
+-   Sequence
++   Sequence
+
+-     ( Step(t"resolve", Standing.Succeeded),
++     ( Step(t"resolve", Standing.Succeeded),
+
+-       Step(t"compile", Standing.Running),
++       Step(t"compile", Standing.Running),
+
+-       Step(t"publish", Standing.Pending) )
++       Step(t"publish", Standing.Pending) )
+
+- val checklist = gauge(Reading(steps))
++ val checklist = gauge(Reading(steps))
+
+= val checklist = gauge(Reading(steps))
+- ```
++ ```
+
+= ```
+=
+- ```
++ ```
+
+- ✓ resolve
++ ✓ resolve
+
+- ⠋ compile
++ ⠋ compile
+
+- · publish
++ · publish
+
+= · publish
+- ```
++ ```
+
+- The running step animates, and each step's marker comes from the same `Standing` vocabulary
+- which a status glyph of one cell uses.
++ Il passo in esecuzione si anima, e il marcatore di ogni passo viene dallo stesso vocabolario di
++ `Standing` che usa un glifo di stato di una sola cella.
+
+- ### Related
++ ### Correlati
+
+- - [Terminal](terminal.md#layout) arranges gauges with other panes, and handles input.
+- - [Colors](colors.md) describes the colors which a palette names.
+- - [Concurrency](concurrency.md) runs the work which a gauge reports on.
+- - [Charts](charts.md) draws data which is already complete, where a gauge draws work in
+-   progress.
++ - [Terminale](terminal.md#layout) dispone gli indicatori insieme ad altri riquadri, e gestisce
++   l'input.
++ - [Colori](colors.md) descrive i colori che una tavolozza nomina.
++ - [Concorrenza](concurrency.md) esegue il lavoro su cui un indicatore riferisce.
++ - [Grafici](charts.md) disegna dati già completi, dove un indicatore disegna lavoro in corso.

@@ -1,0 +1,64 @@
+orthant 1 language
+
+- # `↯/s.123.2` — `Git.RefError`
++ # `↯/s.123.2` — `Git.RefError`
+
+- Raised when a value is not a valid Git reference name.
++ Sollevato quando un valore non è un nome di riferimento Git valido.
+
+- ## Cause
++ ## Causa
+
+- Octogenarian validates reference names against `git
+- check-ref-format`'s rules. The constructor records the offending
+- `value` and a `reason: Reason`; the rendered message is `$value
++ Octogenarian convalida i nomi dei riferimenti secondo le regole di `git
++ check-ref-format`. Il costruttore registra il `value` incriminato e un
++ `reason: Reason`; il messaggio reso è `$value
+
+- is not a valid Git reference because $reason`.
++ is not a valid Git reference because $reason`.
+
+- ## Variants
++ ## Varianti
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.123.2.1`  `LeadingOrTrailingDot`  A path segment of the reference starts or ends with `.`.  `[↯/s.123.2.1] .verona is not a valid Git reference because a path segment starts or ends with .`  Trim the leading or trailing dot from the segment.
+- row  `↯/s.123.2.2`  `ReservedSuffix`  A path segment matches `*.lock`, a pattern which Git reserves for lock files.  `[↯/s.123.2.2] feature.lock is not a valid Git reference because a path segment ends with the reserved suffix .lock`  Choose a name which does not match `*.lock`.
+- row  `↯/s.123.2.3`  `ReservedSequence`  The name contains `@{`, which Git reserves for reflog selectors (e.g. `HEAD@{1}`).  `[↯/s.123.2.3] verona@{capulet} is not a valid Git reference because the name contains the reserved sequence @{`  Remove or replace the `@{` sequence.
+- row  `↯/s.123.2.4`  `DoubleDot`  The name contains `..`, which Git reserves for range selectors.  `[↯/s.123.2.4] verona..capulet is not a valid Git reference because the name contains ..`  Replace the `..` with a single `.` or another separator.
+- row  `↯/s.123.2.5`  `EmptySegment`  The name contains an empty path segment — typically a leading, trailing, or doubled `/`.  `[↯/s.123.2.5] verona//capulet is not a valid Git reference because the name contains an empty path segment`  Remove the empty segment.
+- row  `↯/s.123.2.6`  `InvalidCharacter`  The name contains a character Git forbids in references: any of `*`, `[`, `\`, ` `, `^`, `~`, `:`, or `?`.  `[↯/s.123.2.6] verona capulet is not a valid Git reference because the name contains a character forbidden by Git`  Replace the forbidden character with `-` or `_`.
+- row  `↯/s.123.2.7`  `BadHash`  The value passed to `Git.Hash` was not a 40-character lowercase hexadecimal string.  `[↯/s.123.2.7] abc is not a valid Git reference because the value is not a 40-character hexadecimal hash`  Provide the full 40-character SHA-1 commit hash.
+- row  `↯/s.123.2.8`  `BadRefspec`  The value passed to `Git.Refspec.parse` was not a refspec: it had more than one `:` separating source and destination.  `[↯/s.123.2.8] a:b:c is not a valid Git reference because the value is not a valid refspec`  Write the refspec as `source`, `source:destination` or `:destination`, with an optional leading `+`.
++ column  Codice
++ column  Motivo
++ column  Significato
++ column  Messaggio
++ column  Soluzione
++ row  `↯/s.123.2.1`  `LeadingOrTrailingDot`  Un segmento di percorso del riferimento inizia o termina con `.`.  `[↯/s.123.2.1] .verona is not a valid Git reference because a path segment starts or ends with .`  Togliere il punto iniziale o finale dal segmento.
++ row  `↯/s.123.2.2`  `ReservedSuffix`  Un segmento di percorso corrisponde a `*.lock`, un pattern che Git riserva ai file di lock.  `[↯/s.123.2.2] feature.lock is not a valid Git reference because a path segment ends with the reserved suffix .lock`  Scegliere un nome che non corrisponda a `*.lock`.
++ row  `↯/s.123.2.3`  `ReservedSequence`  Il nome contiene `@{`, che Git riserva ai selettori del reflog (per esempio `HEAD@{1}`).  `[↯/s.123.2.3] verona@{capulet} is not a valid Git reference because the name contains the reserved sequence @{`  Rimuovere o sostituire la sequenza `@{`.
++ row  `↯/s.123.2.4`  `DoubleDot`  Il nome contiene `..`, che Git riserva ai selettori di intervallo.  `[↯/s.123.2.4] verona..capulet is not a valid Git reference because the name contains ..`  Sostituire `..` con un singolo `.` o con un altro separatore.
++ row  `↯/s.123.2.5`  `EmptySegment`  Il nome contiene un segmento di percorso vuoto, di solito un `/` iniziale, finale o doppio.  `[↯/s.123.2.5] verona//capulet is not a valid Git reference because the name contains an empty path segment`  Rimuovere il segmento vuoto.
++ row  `↯/s.123.2.6`  `InvalidCharacter`  Il nome contiene un carattere che Git vieta nei riferimenti: uno qualsiasi tra `*`, `[`, `\`, ` `, `^`, `~`, `:` o `?`.  `[↯/s.123.2.6] verona capulet is not a valid Git reference because the name contains a character forbidden by Git`  Sostituire il carattere vietato con `-` o `_`.
++ row  `↯/s.123.2.7`  `BadHash`  Il valore passato a `Git.Hash` non era una stringa esadecimale minuscola di 40 caratteri.  `[↯/s.123.2.7] abc is not a valid Git reference because the value is not a 40-character hexadecimal hash`  Fornire l'hash SHA-1 completo di 40 caratteri del commit.
++ row  `↯/s.123.2.8`  `BadRefspec`  Il valore passato a `Git.Refspec.parse` non era una refspec: conteneva più di un `:` a separare sorgente e destinazione.  `[↯/s.123.2.8] a:b:c is not a valid Git reference because the value is not a valid refspec`  Scrivere la refspec come `source`, `source:destination` o `:destination`, con un `+` iniziale facoltativo.
+
+- ```
++ ```
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/octogenarian/src/core/octogenarian.Git.scala`
+- - `↯/s.123.1` — Git operation failure variants
++ - Sorgente: `lib/octogenarian/src/core/octogenarian.Git.scala`
++ - `↯/s.123.1`: varianti dei fallimenti delle operazioni Git

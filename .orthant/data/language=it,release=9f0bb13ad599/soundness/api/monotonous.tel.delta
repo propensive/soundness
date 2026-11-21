@@ -1,0 +1,69 @@
+orthant 1 language
+
+-   entry .Bits   the bits each character of an encoding carries, as a type: `Serialization.Bits[Hex]` is `4`
++   entry .Bits   i bit che porta ciascun carattere di una codifica, come tipo: `Serialization.Bits[Hex]` è `4`
+
+-       given Alphabet[Hex] = Alphabet("0123456789ABCDEF", false)
++       given Alphabet[Hex] = Alphabet("0123456789ABCDEF", false)
+
+-       `Alphabet(chars, padding)` is the only way to make one, and `chars` must be a string
+-       literal, because it is checked as the call is compiled: it must have exactly `2^bits`
+-       characters for the encoding, plus one for padding when `padding` is `true`; no
+-       character may appear twice; and every character must be ASCII. An alphabet which
+-       breaks any of these does not compile, so a wrong one cannot exist at runtime. An
+-       alphabet is pure (`caps.Pure`), so it may not capture a capability.
++       `Alphabet(chars, padding)` è l'unico modo per crearne uno, e `chars` deve essere un
++       letterale stringa, perché viene controllato mentre la chiamata viene compilata: deve avere
++       esattamente `2^bits` caratteri per la codifica, più uno per il padding quando `padding` è
++       `true`; nessun carattere può comparire due volte; e ogni carattere deve essere ASCII. Un
++       alfabeto che viola una di queste regole non compila, per cui uno sbagliato non può esistere
++       a runtime. Un alfabeto è puro (`caps.Pure`), per cui non può catturare una capability.
+
+-   entry .serialization     streams bytes through an alphabet as a stage, giving text
+-       The `Ductile` given which lets `via(alphabet)` serialize a `Stream[Data] over Credit`
+-       into a `Stream[Text] over Credit`. Demand is translated by the exact arithmetic of the
+-       base, so a downstream request for 1024 hexadecimal characters asks upstream for 512
+-       bytes; padding, if the alphabet has it, is written when the stream ends.
+-   entry .deserialization   streams text through an alphabet as a stage, giving bytes
+-       The `Ductile` given which lets `via(alphabet)` deserialize a `Stream[Text] over Credit`
+-       into a `Stream[Data] over Credit`. It needs a `Tactic[Serialization.Error]`, raised for
+-       a character not in the alphabet, and the instance captures that tactic. Groups and
+-       padding split between chunks are carried across.
+-   entry .apply        `Alphabet("…", padding)`: an alphabet from a string literal, its size and characters checked at compile time
+-       A third argument gives the `#tolerance`. The encoding is taken from the expected type,
+-       or written as `Alphabet[Hex]("…", false)`.
+-   entry #chars        the encoding's characters in order of value, then the padding character if any
+-   entry #bits         the bits each character carries, from the encoding: 4 for `Hex`, 6 for `Base64`
+-   entry #padding      whether output is padded to a whole group with the last character of `#chars`
+-   entry #tolerance    further characters accepted when deserializing, mapped to the values they stand for
+-       Empty for a strict alphabet. For a tolerant one, usually the inverse of the strict
+-       alphabet of the other case, as `hexUpperCase`'s is `hexStrictLowerCase.inverse`.
+-   entry #apply        the character for a value, from zero
+-   entry #invert       the value of a character, or a `Serialization.Error` at the given position
+-       `alphabet.invert(position, char)` looks the character up in `#inversions`; one with no
+-       value raises `Serialization.Error(position, char)`, so it needs a
++   entry .serialization     fa scorrere i byte attraverso un alfabeto come stadio, producendo testo
++       Il given `Ductile` che permette a `via(alphabet)` di serializzare uno
++       `Stream[Data] over Credit` in uno `Stream[Text] over Credit`. La domanda viene tradotta con
++       l'aritmetica esatta della base, per cui una richiesta a valle di 1024 caratteri
++       esadecimali chiede a monte 512 byte; il padding, se l'alfabeto lo prevede, viene scritto
++       quando lo stream termina.
++   entry .deserialization   fa scorrere il testo attraverso un alfabeto come stadio, producendo byte
++       Il given `Ductile` che permette a `via(alphabet)` di deserializzare uno
++       `Stream[Text] over Credit` in uno `Stream[Data] over Credit`. Richiede una
++       `Tactic[Serialization.Error]`, sollevato per un carattere che non è nell'alfabeto, e
++       l'istanza cattura quella tattica. I gruppi e il padding divisi tra chunk vengono riportati.
++   entry .apply        `Alphabet("…", padding)`: un alfabeto da un letterale stringa, con dimensione e caratteri controllati a tempo di compilazione
++       Un terzo argomento fornisce la `#tolerance`. La codifica viene presa dal tipo atteso,
++       oppure scritta come `Alphabet[Hex]("…", false)`.
++   entry #chars        i caratteri della codifica in ordine di valore, poi il carattere di padding se presente
++   entry #bits         i bit che porta ciascun carattere, dalla codifica: 4 per `Hex`, 6 per `Base64`
++   entry #padding      se l'output viene completato fino a un gruppo intero con l'ultimo carattere di `#chars`
++   entry #tolerance    ulteriori caratteri accettati in deserializzazione, associati ai valori che rappresentano
++       Vuota per un alfabeto rigoroso. Per uno tollerante, di solito l'inverso dell'alfabeto
++       rigoroso dell'altra forma, maiuscola o minuscola, come quella di `hexUpperCase` è
++       `hexStrictLowerCase.inverse`.
++   entry #apply        il carattere per un valore, a partire da zero
++   entry #invert       il valore di un carattere, o un `Serialization.Error` alla posizione data
++       `alphabet.invert(position, char)` cerca il carattere in `#inversions`; uno senza valore
++       solleva `Serialization.Error(position, char)`, per cui richiede una

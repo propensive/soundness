@@ -1,0 +1,517 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base austronesian
++ base austronesian
+
+- import soundness
++ import soundness
+
+- info   any Scala value as a classloader-neutral `Pojo` of JDK boxes, strings and object arrays, and back
++ info   qualunque valore Scala come `Pojo` neutrale rispetto al classloader, fatto di box JDK, stringhe e array di oggetti, e ritorno
+
+- detail
++ detail
+
+-     _Austronesian_ carries a structured value across a boundary its class cannot cross — into
+-     another classloader, another process, or a staged computation — by encoding it as a
+-     `Pojo`: a tree built only from the types every JVM context shares, `String`, the boxed
+-     primitives and `Array[Object]`. A product becomes an array of its fields, a variant a pair
+-     of its label and its payload, a collection an array of its elements, and a primitive its
+-     boxed self. The receiving side decodes against the type it expects, deriving the same
+-     codec from the same definition, so no schema travels with the data.
++     _Austronesian_ porta un valore strutturato oltre un confine che la sua classe non può
++     attraversare — in un altro classloader, in un altro processo, o in un calcolo in staging —
++     codificandolo come `Pojo`: un albero costruito solo con i tipi che ogni contesto JVM
++     condivide, `String`, i primitivi in boxing e `Array[Object]`. Un prodotto diventa un array
++     dei suoi campi, una variante una coppia della sua etichetta e del suo payload, una
++     collezione un array dei suoi elementi, e un primitivo sé stesso in boxing. Il lato
++     ricevente decodifica rispetto al tipo che si aspetta, derivando lo stesso codec dalla stessa
++     definizione, così nessuno schema viaggia con i dati.
+
+=     codec from the same definition, so no schema travels with the data.
+=
+-     ```scala
++     ```scala
+
+=     codec from the same definition, so no schema travels with the data.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     codec from the same definition, so no schema travels with the data.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+=     codec from the same definition, so no schema travels with the data.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Person(name: Text, age: Int)
+-     case class Group(persons: List[Person], size: Int)
++     case class Group(persons: List[Person], size: Int)
+
+-     val group = Group(List(Person(t"Hamlet", 30), Person(t"Ophelia", 25)), 2)
++     val group = Group(List(Person(t"Hamlet", 30), Person(t"Ophelia", 25)), 2)
+
+-     val transportable: Pojo = group.pojo   // Array(Array(Array("Hamlet", 30), …), 2)
++     val transportable: Pojo = group.pojo   // Array(Array(Array("Hamlet", 30), …), 2)
+
+-     safely(transportable.as[Group])        // the original group
++     safely(transportable.as[Group])        // the original group
+
+=     safely(transportable.as[Group])        // the original group
+-     ```
++     ```
+
+-     The conversion grows with the value's structure, one layer of the type at a time:
++     La conversione cresce con la struttura del valore, uno strato del tipo alla volta:
+
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     frame
++     frame
+
+-       label A primitive is its boxed self
++       label Un primitivo è sé stesso in boxing
+
+=       label A primitive is its boxed self
+-       code
++       code
+
+-           30.pojo                            // java.lang.Integer(30)
++           30.pojo                            // java.lang.Integer(30)
+
+=           30.pojo                            // java.lang.Integer(30)
+-     frame
++     frame
+
+-       label A product is an array of its fields
++       label Un prodotto è un array dei suoi campi
+
+=       label A product is an array of its fields
+-       code
++       code
+
+-           Person(t"Hamlet", 30).pojo         // Array("Hamlet", 30)
++           Person(t"Hamlet", 30).pojo         // Array("Hamlet", 30)
+
+=           Person(t"Hamlet", 30).pojo         // Array("Hamlet", 30)
+-     frame
++     frame
+
+-       label A collection is an array of its elements
++       label Una collezione è un array dei suoi elementi
+
+=       label A collection is an array of its elements
+-       code
++       code
+
+-           List(Person(t"Hamlet", 30)).pojo   // Array(Array("Hamlet", 30))
++           List(Person(t"Hamlet", 30)).pojo   // Array(Array("Hamlet", 30))
+
+=           List(Person(t"Hamlet", 30)).pojo   // Array(Array("Hamlet", 30))
+-     frame
++     frame
+
+-       label A variant is a pair of its label and its payload
++       label Una variante è una coppia della sua etichetta e del suo payload
+
+=       label A variant is a pair of its label and its payload
+-       code
++       code
+
+-           enum Light:
++           enum Light:
+
+-             case Red, Amber, Green
++             case Red, Amber, Green
+
+-           (Light.Green: Light).pojo          // Array("Green", Array())
++           (Light.Green: Light).pojo          // Array("Green", Array())
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     Encoding is `pojo`, available for any type which is `Encodable in Pojo`: the primitives,
+-     `Text` and `String`, collections of encodable elements, and — derived through wisteria —
+-     any product or sum whose parts are encodable. Decoding is `as[T]` on a `Pojo`, and
+-     raises `Pojo.Error` where the shape does not match, so it needs a `Tactic[Pojo.Error]`
+-     (for instance under `safely` or `unsafely`). A type recursive through a collection, such
+-     as `case class Tree(value: Text, children: List[Tree])`, derives too.
++     La codifica è `pojo`, disponibile per qualunque tipo che sia `Encodable in Pojo`: i
++     primitivi, `Text` e `String`, le collezioni di elementi codificabili, e — derivato tramite
++     wisteria — qualunque prodotto o somma le cui parti siano codificabili. La decodifica è
++     `as[T]` su un `Pojo`, e solleva `Pojo.Error` dove la forma non corrisponde, quindi richiede
++     una `Tactic[Pojo.Error]` (per esempio dentro `safely` o `unsafely`). Anche un tipo ricorsivo
++     attraverso una collezione, come `case class Tree(value: Text, children: List[Tree])`, deriva.
+
+-     The library has one source set, `austronesian.core`, and is the transport beneath
+-     staging's remote execution. `Pojo` and `pojo` are exported to the `soundness` umbrella;
+-     every codec is in `Pojo`'s companion, in implicit scope, so nothing else is imported.
++     La libreria ha un solo insieme di sorgenti, `austronesian.core`, ed è il trasporto sotto
++     l'esecuzione remota dello staging. `Pojo` e `pojo` sono esportati nell'ombrello `soundness`;
++     ogni codec è nel compagno di `Pojo`, nell'ambito implicito, quindi non si importa nient'altro.
+
+- refer austronesian.Pojo
++ refer austronesian.Pojo
+
+- refer austronesian.pojo
++ refer austronesian.pojo
+
+- refer austronesian.internal.Pojo.Error
++ refer austronesian.internal.Pojo.Error
+
+- entry .Pojo   a value as a tree of JDK types alone: strings, boxed primitives and object arrays
+-     `Pojo` is the opaque type `austronesian.internal.Pojo`, exported here. It is a subtype of
+-     `Object` whose underlying type is the union of `Array[Object]`, `String`,
++ entry .Pojo   un valore come albero di soli tipi JDK: stringhe, primitivi in boxing e array di oggetti
++     `Pojo` è il tipo opaco `austronesian.internal.Pojo`, esportato qui. È un sottotipo di
++     `Object` il cui tipo sottostante è l'unione di `Array[Object]`, `String`,
+
+-     `java.lang.Boolean`, `java.lang.Byte`, `java.lang.Character`, `java.lang.Short`,
++     `java.lang.Boolean`, `java.lang.Byte`, `java.lang.Character`, `java.lang.Short`,
+
+-     `java.lang.Integer`, `java.lang.Long`, `java.lang.Float` and `java.lang.Double`, so a
+-     `Pojo` cannot be confused with an arbitrary object and is meaningful to any classloader,
+-     since all of those classes come from the JDK.
++     `java.lang.Integer`, `java.lang.Long`, `java.lang.Float` e `java.lang.Double`, così un
++     `Pojo` non può essere confuso con un oggetto arbitrario ed è significativo per qualunque
++     classloader, poiché tutte quelle classi vengono dal JDK.
+
+=     since all of those classes come from the JDK.
+=
+-     ```scala
++     ```scala
+
+=     since all of those classes come from the JDK.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     since all of those classes come from the JDK.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+-     val pojo: Pojo = Person(t"Hamlet", 30).pojo
++     val pojo: Pojo = Person(t"Hamlet", 30).pojo
+
+-     unsafely(pojo.as[Person])
++     unsafely(pojo.as[Person])
+
+=     unsafely(pojo.as[Person])
+-     ```
++     ```
+
+-     A value becomes a `Pojo` with the `pojo` extension, and is read back with `as[T]`, which
+-     raises `Pojo.Error` on a mismatched shape. The encoding of each kind of value:
++     Un valore diventa un `Pojo` con l'estensione `pojo`, e si rilegge con `as[T]`, che solleva
++     `Pojo.Error` su una forma non corrispondente. La codifica di ogni genere di valore:
+
+-     - `Text` and `String` are the `String`, and `Int`, `Long`, `Float`, `Double`, `Char`,
+-       `Boolean` and `Byte` their boxed forms.
+-     - A collection (any `Iterable`, or a `List`, `Set` or `Sequence`) is an `Array[Object]`
+-       of its elements' encodings.
+-     - A product (a case class) is an `Array[Object]` of its fields' encodings, in
+-       declaration order.
+-     - A sum (a sealed trait or an enum) is a two-element array of the variant's label and the
+-       variant's own encoding: `Array("Green", Array())` for a parameterless enum case.
++     - `Text` e `String` sono la `String`, e `Int`, `Long`, `Float`, `Double`, `Char`,
++       `Boolean` e `Byte` le loro forme in boxing.
++     - Una collezione (qualunque `Iterable`, o una `List`, un `Set` o una `Sequence`) è un
++       `Array[Object]` delle codifiche dei suoi elementi.
++     - Un prodotto (una case class) è un `Array[Object]` delle codifiche dei suoi campi,
++       nell'ordine di dichiarazione.
++     - Una somma (un sealed trait o un enum) è un array di due elementi con l'etichetta della
++       variante e la codifica propria della variante: `Array("Green", Array())` per un caso di
++       enum senza parametri.
+
+-     Two `Pojo`s compare structurally with probably's `===`, through `Pojo`'s `Checkable`
+-     instance, which compares arrays element by element where `==` would compare their
+-     identities. `Pojo(value)` wraps a value of one of the permitted JDK types directly.
++     Due `Pojo` si confrontano strutturalmente con `===` di probably, tramite l'istanza
++     `Checkable` di `Pojo`, che confronta gli array elemento per elemento dove `==` ne
++     confronterebbe l'identità. `Pojo(value)` incapsula direttamente un valore di uno dei tipi
++     JDK permessi.
+
+- entry .pojo   encodes a value as a classloader-neutral `Pojo`
+-     An inline extension on any value which is `Encodable in Pojo`: the primitives, `Text`,
+-     `String`, collections of encodable elements, and any case class, enum or sealed trait
+-     whose parts are encodable, whose codec is derived. Encoding cannot fail.
++ entry .pojo   codifica un valore come `Pojo` neutrale rispetto al classloader
++     Un'estensione inline su qualunque valore che sia `Encodable in Pojo`: i primitivi, `Text`,
++     `String`, le collezioni di elementi codificabili, e qualunque case class, enum o sealed
++     trait le cui parti siano codificabili, il cui codec viene derivato. La codifica non può
++     fallire.
+
+=     whose parts are encodable, whose codec is derived. Encoding cannot fail.
+=
+-     ```scala
++     ```scala
+
+=     whose parts are encodable, whose codec is derived. Encoding cannot fail.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     whose parts are encodable, whose codec is derived. Encoding cannot fail.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+=     whose parts are encodable, whose codec is derived. Encoding cannot fail.
+=
+=     ```scala
+=     import soundness.*
+=
+=     case class Person(name: Text, age: Int)
+-     case class Group(persons: List[Person], size: Int)
++     case class Group(persons: List[Person], size: Int)
+
+-     Group(List(Person(t"Hamlet", 30)), 1).pojo
++     Group(List(Person(t"Hamlet", 30)), 1).pojo
+
+-     (List(1L, 99L, 203L): List[Long]).pojo
++     (List(1L, 99L, 203L): List[Long]).pojo
+
+=     (List(1L, 99L, 203L): List[Long]).pojo
+-     ```
++     ```
+
+- entry .internal   the opaque type `Pojo`, its companion of codecs, and its error
++ entry .internal   il tipo opaco `Pojo`, il suo compagno di codec e il suo errore
+
+= entry .internal   the opaque type `Pojo`, its companion of codecs, and its error
+-   hidden
++   hidden
+
+= entry .internal   the opaque type `Pojo`, its companion of codecs, and its error
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object holds the opaque definition of `Pojo`, which is exported
+-       to the `austronesian` package and to the `soundness` umbrella. Its companion holds every
+-       codec, so they are in implicit scope wherever `Pojo` is.
+-   entry .Pojo   a value as a tree of JDK types alone; see `austronesian.Pojo`
++       Non per uso diretto: l'oggetto contiene la definizione opaca di `Pojo`, che è esportata
++       nel package `austronesian` e nell'ombrello `soundness`. Il suo compagno contiene ogni
++       codec, così questi sono nell'ambito implicito ovunque lo sia `Pojo`.
++   entry .Pojo   un valore come albero di soli tipi JDK; vedi `austronesian.Pojo`
+
+=   entry .Pojo   a value as a tree of JDK types alone; see `austronesian.Pojo`
+-     detail
++     detail
+
+-         The opaque type `Pojo <: Object`, and the companion holding its construction, its
+-         `Encodable` and `Decodable` instances for primitives and collections, the `as`
+-         decoding extension and `Pojo.Error`. The derived instances for products and sums, and
+-         the `Checkable` instance, are inherited from `Pojo2`.
+-     entry .apply   wraps a string, a boxed primitive or an object array as a `Pojo`
+-         Takes a value of one of the JDK types `Pojo` permits, and returns it unchanged as a
+-         `Pojo`. It does not check an array's elements, which should themselves be `Pojo`s.
+-     entry .text      encodes `Text` as its `String`
+-     entry .string    encodes a `String` as itself
+-     entry .int       encodes an `Int` as a `java.lang.Integer`
+-     entry .long      encodes a `Long` as a `java.lang.Long`
+-     entry .float     encodes a `Float` as a `java.lang.Float`
+-     entry .double    encodes a `Double` as a `java.lang.Double`
+-     entry .char      encodes a `Char` as a `java.lang.Character`
+-     entry .boolean   encodes a `Boolean` as a `java.lang.Boolean`
+-     entry .byte      encodes a `Byte` as a `java.lang.Byte`
+-     entry .list   encodes any `Iterable` collection of encodable elements as an object array
+-         For any `collection[element]` whose `collection` is a subtype of the standard
+-         library's `Iterable` and whose elements are `Encodable in Pojo`.
+-     entry .listEncodable     encodes a Soundness `List` of encodable elements as an object array
+-     entry .setEncodable      encodes a Soundness `Set` of encodable elements as an object array
+-     entry .seriesEncodable   encodes a Soundness `Sequence` of encodable elements as an object array
+-         Soundness's own collections are opaque and do not conform to `Iterable`, so each has
+-         its own instance, sharing `.list`'s implementation.
+-     entry .text2      decodes `Text` from a `Pojo` holding a `String`
+-     entry .string2    decodes a `String` from a `Pojo`
+-     entry .int2       decodes an `Int` from a `Pojo` holding a `java.lang.Integer`
+-     entry .long2      decodes a `Long` from a `Pojo` holding a `java.lang.Long`
+-     entry .float2     decodes a `Float` from a `Pojo` holding a `java.lang.Float`
+-     entry .double2    decodes a `Double` from a `Pojo` holding a `java.lang.Double`
+-     entry .char2      decodes a `Char` from a `Pojo` holding a `java.lang.Character`
+-     entry .boolean2   decodes a `Boolean` from a `Pojo` holding a `java.lang.Boolean`
+-         This decoder, like the other primitive decoders, casts without checking, so a `Pojo` of another type
+-         fails with a `ClassCastException` rather than a `Pojo.Error`; only the shape of arrays
+-         is checked.
+-     entry .collection   decodes an `Iterable` collection from an object array, element by element
+-         For any standard `collection[element]` with a `Factory`, needing a `Tactic[Pojo.Error]`
+-         when the instance is resolved; a `Pojo` which is not an array raises `Pojo.Error`. The
+-         element's decoder is taken by name, so a type recursive through a collection, such as
+-         `case class Tree(value: Text, children: List[Tree])`, derives.
+-     entry .listDecodable     decodes a Soundness `List` from an object array, raising `Pojo.Error` otherwise
+-     entry .setDecodable      decodes a Soundness `Set` from an object array, raising `Pojo.Error` otherwise
+-     entry .seriesDecodable   decodes a Soundness `Sequence` from an object array, raising `Pojo.Error` otherwise
+-         Needs a `Tactic[Pojo.Error]` in scope when it is resolved, and takes the element's
+-         decoder by name, as `.collection` does, so a recursive type derives.
+-     entry .as   decodes a `Pojo` as a type of the caller's choosing
+-         An inline extension on `Pojo`, for any type which is `Decodable in Pojo`. A product or
+-         sum decoder raises `Pojo.Error` on a mismatched shape, and an unknown variant label
+-         raises distillate's `Variant.Error`; a `Tactic[Pojo.Error]` is needed in scope.
++         Il tipo opaco `Pojo <: Object`, e il compagno che ne contiene la costruzione, le sue
++         istanze `Encodable` e `Decodable` per primitivi e collezioni, l'estensione di
++         decodifica `as` e `Pojo.Error`. Le istanze derivate per prodotti e somme, e l'istanza
++         `Checkable`, sono ereditate da `Pojo2`.
++     entry .apply   incapsula una stringa, un primitivo in boxing o un array di oggetti come `Pojo`
++         Prende un valore di uno dei tipi JDK che `Pojo` permette, e lo restituisce invariato
++         come `Pojo`. Non controlla gli elementi di un array, che dovrebbero essere a loro
++         volta dei `Pojo`.
++     entry .text      codifica `Text` come la sua `String`
++     entry .string    codifica una `String` come sé stessa
++     entry .int       codifica un `Int` come `java.lang.Integer`
++     entry .long      codifica un `Long` come `java.lang.Long`
++     entry .float     codifica un `Float` come `java.lang.Float`
++     entry .double    codifica un `Double` come `java.lang.Double`
++     entry .char      codifica un `Char` come `java.lang.Character`
++     entry .boolean   codifica un `Boolean` come `java.lang.Boolean`
++     entry .byte      codifica un `Byte` come `java.lang.Byte`
++     entry .list   codifica qualunque collezione `Iterable` di elementi codificabili come array di oggetti
++         Per qualunque `collection[element]` la cui `collection` sia un sottotipo di
++         `Iterable` della libreria standard e i cui elementi siano `Encodable in Pojo`.
++     entry .listEncodable     codifica una `List` di Soundness di elementi codificabili come array di oggetti
++     entry .setEncodable      codifica un `Set` di Soundness di elementi codificabili come array di oggetti
++     entry .seriesEncodable   codifica una `Sequence` di Soundness di elementi codificabili come array di oggetti
++         Le collezioni proprie di Soundness sono opache e non sono conformi a `Iterable`, quindi
++         ciascuna ha la propria istanza, che condivide l'implementazione di `.list`.
++     entry .text2      decodifica `Text` da un `Pojo` che contiene una `String`
++     entry .string2    decodifica una `String` da un `Pojo`
++     entry .int2       decodifica un `Int` da un `Pojo` che contiene un `java.lang.Integer`
++     entry .long2      decodifica un `Long` da un `Pojo` che contiene un `java.lang.Long`
++     entry .float2     decodifica un `Float` da un `Pojo` che contiene un `java.lang.Float`
++     entry .double2    decodifica un `Double` da un `Pojo` che contiene un `java.lang.Double`
++     entry .char2      decodifica un `Char` da un `Pojo` che contiene un `java.lang.Character`
++     entry .boolean2   decodifica un `Boolean` da un `Pojo` che contiene un `java.lang.Boolean`
++         Questo decodificatore, come gli altri decodificatori di primitivi, esegue il cast senza
++         controllo, così un `Pojo` di un altro tipo fallisce con una `ClassCastException` anziché
++         con un `Pojo.Error`; si controlla solo la forma degli array.
++     entry .collection   decodifica una collezione `Iterable` da un array di oggetti, elemento per elemento
++         Per qualunque `collection[element]` standard con una `Factory`, e richiede una
++         `Tactic[Pojo.Error]` quando l'istanza viene risolta; un `Pojo` che non è un array
++         solleva `Pojo.Error`. Il decodificatore dell'elemento si prende per nome, così deriva
++         anche un tipo ricorsivo attraverso una collezione, come
++         `case class Tree(value: Text, children: List[Tree])`.
++     entry .listDecodable     decodifica una `List` di Soundness da un array di oggetti, sollevando altrimenti `Pojo.Error`
++     entry .setDecodable      decodifica un `Set` di Soundness da un array di oggetti, sollevando altrimenti `Pojo.Error`
++     entry .seriesDecodable   decodifica una `Sequence` di Soundness da un array di oggetti, sollevando altrimenti `Pojo.Error`
++         Richiede una `Tactic[Pojo.Error]` nell'ambito quando viene risolto, e prende per nome il
++         decodificatore dell'elemento, come fa `.collection`, così un tipo ricorsivo deriva.
++     entry .as   decodifica un `Pojo` come un tipo scelto dal chiamante
++         Un'estensione inline su `Pojo`, per qualunque tipo che sia `Decodable in Pojo`. Un
++         decodificatore di prodotto o di somma solleva `Pojo.Error` su una forma non
++         corrispondente, e un'etichetta di variante sconosciuta solleva `Variant.Error` di
++         distillate; serve una `Tactic[Pojo.Error]` nell'ambito.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         enum Color:
++         enum Color:
+
+-           case Red, Green, Blue
++           case Red, Green, Blue
+
+-         unsafely((Color.Green: Color).pojo.as[Color])
++         unsafely((Color.Green: Color).pojo.as[Color])
+
+-         ```
++         ```
+
+-     entry .Error   raised when a `Pojo` does not have the shape of the type it is decoded as
++     entry .Error   sollevato quando un `Pojo` non ha la forma del tipo come cui viene decodificato
+
+-       detail
++       detail
+
+-           Error `↯/s.120.1`: _could not deserialize from Java POJO types_. Raised by `as` when a product
+-           or a collection is expected and the `Pojo` is not an array, or a sum is expected and
+-           it is not a two-element array of a label and a payload. It usually means the two
+-           sides of a boundary disagree on the type's definition.
+-   entry .Pojo2   the lower-priority instances of `Pojo`'s companion: derived codecs and `Checkable`
++           Errore `↯/s.120.1`: _could not deserialize from Java POJO types_. Sollevato da `as`
++           quando ci si aspetta un prodotto o una collezione e il `Pojo` non è un array, o ci si
++           aspetta una somma e non è un array di due elementi con un'etichetta e un payload. Di
++           solito significa che i due lati di un confine non concordano sulla definizione del
++           tipo.
++   entry .Pojo2   le istanze a priorità più bassa del compagno di `Pojo`: codec derivati e `Checkable`
+
+=   entry .Pojo2   the lower-priority instances of `Pojo`'s companion: derived codecs and `Checkable`
+-     detail
++     detail
+
+-         A trait which `Pojo`'s companion extends, so its givens are in implicit scope wherever
+-         `Pojo` is, at a lower priority than the companion's own.
+-     entry #checkable   compares two `Pojo`s structurally, for probably's `===`
+-         Arrays are equal when they have the same length and equal elements, compared
+-         recursively; anything else compares with `==`.
+-     entry #encodable   derives `Encodable in Pojo` for any product or sum, through wisteria
+-         A product encodes as the array of its fields, a sum as the pair of its variant's label
+-         and encoding.
+-     entry #decodable   derives `Decodable in Pojo` for any product or sum, through wisteria
+-         The inverse of `#encodable`, raising `Pojo.Error` on a mismatched shape.
++         Un trait che il compagno di `Pojo` estende, così i suoi given sono nell'ambito implicito
++         ovunque lo sia `Pojo`, con una priorità più bassa di quelli del compagno stesso.
++     entry #checkable   confronta strutturalmente due `Pojo`, per `===` di probably
++         Gli array sono uguali quando hanno la stessa lunghezza ed elementi uguali, confrontati
++         ricorsivamente; qualunque altra cosa si confronta con `==`.
++     entry #encodable   deriva `Encodable in Pojo` per qualunque prodotto o somma, tramite wisteria
++         Un prodotto si codifica come l'array dei suoi campi, una somma come la coppia
++         dell'etichetta e della codifica della sua variante.
++     entry #decodable   deriva `Decodable in Pojo` per qualunque prodotto o somma, tramite wisteria
++         L'inverso di `#encodable`, che solleva `Pojo.Error` su una forma non corrispondente.
+
+- entry .protointernal   the wisteria derivations behind `Pojo`'s derived codecs
++ entry .protointernal   le derivazioni wisteria dietro i codec derivati di `Pojo`
+
+= entry .protointernal   the wisteria derivations behind `Pojo`'s derived codecs
+-   hidden
++   hidden
+
+= entry .protointernal   the wisteria derivations behind `Pojo`'s derived codecs
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the derivations which `Pojo2.encodable` and `Pojo2.decodable` invoke.
+-   entry .EncodableDerivation   derives `Encodable in Pojo` for products and sums
+-     entry .conjunction   a product as the array of its fields' encodings
+-     entry .disjunction   a sum as a two-element array of its variant's label and encoding
+-   entry .DecodableDerivation   derives `Decodable in Pojo` for products and sums
+-     entry .conjunction   a product from the array of its fields, raising `Pojo.Error` for any other shape
+-     entry .disjunction   a sum from a label and payload pair, raising `Pojo.Error` for any other shape
++       Non per uso diretto: le derivazioni che `Pojo2.encodable` e `Pojo2.decodable` invocano.
++   entry .EncodableDerivation   deriva `Encodable in Pojo` per prodotti e somme
++     entry .conjunction   un prodotto come l'array delle codifiche dei suoi campi
++     entry .disjunction   una somma come array di due elementi con l'etichetta e la codifica della sua variante
++   entry .DecodableDerivation   deriva `Decodable in Pojo` per prodotti e somme
++     entry .conjunction   un prodotto dall'array dei suoi campi, che solleva `Pojo.Error` per qualunque altra forma
++     entry .disjunction   una somma da una coppia di etichetta e payload, che solleva `Pojo.Error` per qualunque altra forma

@@ -1,0 +1,70 @@
+orthant 1 language
+
+- # `↯/s.106.2` — `JsonPointer.Error`
++ # `↯/s.106.2` — `JsonPointer.Error`
+
+- Raised when a JSON pointer cannot be resolved.
++ Sollevato quando un puntatore JSON non può essere risolto.
+
+- ## Cause
++ ## Causa
+
+- Jacinta resolves JSON pointers per RFC 6901. The constructor takes
+- a `reason: Reason`; the rendered message is `the JSON pointer
++ Jacinta risolve i puntatori JSON secondo l'RFC 6901. Il costruttore prende un `reason: Reason`; il
++ messaggio reso è `the JSON pointer
+
+- could not be resolved because $reason`.
++ could not be resolved because $reason`.
+
+- ## Variants
++ ## Varianti
+
+- (`↯/s.106.2.1`, `UnknownDocument`, was retired when `JsonPointer` lost its never-populated document
+- URL and `JsonPointer.Registry`; the remaining numbers are unchanged.)
++ (`↯/s.106.2.1`, `UnknownDocument`, è stato ritirato quando `JsonPointer` ha perso il suo URL di
++ documento, mai valorizzato, e `JsonPointer.Registry`; i numeri rimanenti sono invariati.)
+
+- ### `↯/s.106.2.2` — `ExpectedHash`
++ ### `↯/s.106.2.2` — `ExpectedHash`
+
+- A JSON reference does not begin with `#`.
++ Un riferimento JSON non inizia con `#`.
+
+- **Example.** `[↯/s.106.2.2] the JSON reference was not valid because a JSON reference must begin with '#'`
++ **Esempio.** `[↯/s.106.2.2] the JSON reference was not valid because a JSON reference must begin with '#'`
+
+- **Resolution.** Begin the reference with `#`, as in `#/play/title`.
++ **Soluzione.** Inizia il riferimento con `#`, come in `#/play/title`.
+
+- ### `↯/s.106.2.3` — `ExpectedSlash`
++ ### `↯/s.106.2.3` — `ExpectedSlash`
+
+- A JSON reference's fragment does not begin with `/`.
++ Il frammento di un riferimento JSON non inizia con `/`.
+
+- **Example.** `[↯/s.106.2.3] the JSON reference was not valid because a JSON reference fragment must begin with '/'`
++ **Esempio.** `[↯/s.106.2.3] the JSON reference was not valid because a JSON reference fragment must begin with '/'`
+
+- **Resolution.** Begin the fragment with `/`, as in `#/play`. A bare `#` addressing the whole document is also valid.
++ **Soluzione.** Inizia il frammento con `/`, come in `#/play`. È valido anche un `#` da solo, che indirizza l'intero documento.
+
+- ### `↯/s.106.2.4` — `BadEscape`
++ ### `↯/s.106.2.4` — `BadEscape`
+
+- A `~` in a JSON reference is not followed by `0` or `1`.
++ Un `~` in un riferimento JSON non è seguito da `0` o `1`.
+
+- **Example.** `[↯/s.106.2.4] the JSON reference was not valid because a '~' in a JSON reference must be followed by '0' or '1'`
++ **Esempio.** `[↯/s.106.2.4] the JSON reference was not valid because a '~' in a JSON reference must be followed by '0' or '1'`
+
+- **Resolution.** Escape a literal `~` as `~0` and a literal `/` as `~1`. No other escape is defined.
++ **Soluzione.** Scrivi un `~` letterale come `~0` e una `/` letterale come `~1`. Non è definito nessun altro escape.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/jacinta/src/core/jacinta.JsonPointer.scala`
+- - `↯/s.106.1` — typed JSON access errors
++ - Sorgente: `lib/jacinta/src/core/jacinta.JsonPointer.scala`
++ - `↯/s.106.1`: errori di accesso tipizzato a JSON

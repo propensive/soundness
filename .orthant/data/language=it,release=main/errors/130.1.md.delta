@@ -1,0 +1,8 @@
+orthant 1 language
+
+- Check that the element and its attributes are among those Savagery models. An SVG produced
+- by a drawing program may contain constructs outside that subset; reading it as plain
+- [XML](/doc/soundness/modules/xml.md) is the fallback.
++ Verificare che l'elemento e i suoi attributi siano tra quelli che Savagery modella. Un SVG prodotto
++ da un programma di disegno può contenere costrutti esterni a quel sottoinsieme; il ripiego è
++ leggerlo come semplice [XML](/doc/soundness/modules/xml.md).

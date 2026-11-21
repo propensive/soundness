@@ -1,0 +1,35 @@
+orthant 1 language
+
+- # `SN-247` — Unnecessary line break (retired)
++ # `SN-247` — A capo non necessario (ritirato)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Questo errore non esiste più. La pagina viene conservata affinché il codice non venga riutilizzato,
++ e affinché un riferimento a esso da una release precedente possa ancora essere risolto.
+
+- ## What became of it
++ ## Che fine ha fatto
+
+- The Decorum compiler plugin, which raised this error, was extracted from Soundness and
+- is now [Consequent](https://github.com/propensive/consequent), a standalone checker for
+- Consequent Style. The rule survives there under a new identifier, in which the letter
+- names the principle it derives from:
++ Il plugin del compilatore Decorum, che sollevava questo errore, è stato estratto da Soundness ed è
++ ora [Consequent](https://github.com/propensive/consequent), un checker autonomo per lo stile
++ Consequent. La regola sopravvive lì con un nuovo identificatore, in cui la lettera nomina il
++ principio da cui deriva:
+
+- ```tabular
++ ```tabular
+
+- column  Was
+- column  Now
++ column  Era
++ column  Ora
+
+- row  `SN-247`  [`D1`](https://github.com/propensive/consequent/blob/main/doc/rules/D1.md)
++ row  `SN-247`  [`D1`](https://github.com/propensive/consequent/blob/main/doc/rules/D1.md)
+
+- ```
++ ```

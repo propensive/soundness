@@ -1,0 +1,27 @@
+orthant 1 language
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and
+- round-trips the RFC 7515/7516 example vectors.
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/work/soundness/modules/`, e fa l'andata e ritorno dei vettori di esempio delle RFC 7515/7516.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and
+- passes the standard TOML compliance suite.
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/work/soundness/modules/`, e supera la suite di conformità standard di TOML.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and a
+- scripted registration-and-assertion ceremony passes against a reference authenticator.
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/work/soundness/modules/`, e una cerimonia scriptata di registrazione e asserzione ha esito positivo con un
++ autenticatore di riferimento.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and
+- interoperates with a reference HTTP/3 server and client.
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/work/soundness/modules/`, e interopera con un server e un client HTTP/3 di riferimento.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and a
+- scripted session passes against a reference IMAP server.
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/work/soundness/modules/`, e una sessione scriptata ha esito positivo con un server IMAP di riferimento.

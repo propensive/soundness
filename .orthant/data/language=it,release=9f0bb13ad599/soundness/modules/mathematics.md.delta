@@ -1,0 +1,29 @@
+orthant 1 language
+
+- Internally, a permutation is stored as its
+- [inversion table](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) in
+- factorial-base form, which is a single integer that uniquely identifies it. That makes permutations compact to store and to
+- enumerate: `Permutation.bySize(n)` gives all `n!` of them, as a lazy
+- [chain](collections.md#lazy-chains). A permutation of *n* elements occupies
+- O(*n* log *n*) space, which is the least possible, since there are *n*! of them to tell apart.
++ Internamente, una permutazione è memorizzata come la sua
++ [tabella delle inversioni](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) in
++ forma a base fattoriale, cioè un
++ unico intero che la identifica univocamente. Questo rende le permutazioni compatte da memorizzare
++ e da enumerare: `Permutation.bySize(n)` le dà tutte e `n!`, come
++ [catena](collections.md#lazy-chains) pigra. Una permutazione di *n* elementi occupa uno spazio
++ O(*n* log *n*), che è il minimo possibile, poiché ce ne sono *n*! da distinguere.
+
+- Out.println((Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
+- Out.println(shuffle.inversions.inspect)
++ Out.println((Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
++ Out.println(shuffle.inversions.inspect)
+
+- A permutation leaves alone every position after the last one it moves, so `shuffle`, whose
+- sixth index stays in place, is a permutation of five. Applying one to a longer sequence is
+- therefore not an error: it rearranges the leading positions it covers, and leaves the rest
+- where they were. A single index is mapped the same way, with `shuffle(3)`.
++ Una permutazione lascia invariata ogni posizione successiva all'ultima che sposta, quindi `shuffle`,
++ il cui sesto indice resta al suo posto, è una permutazione di cinque elementi. Applicarne una a una
++ sequenza più lunga non è quindi un errore: riordina le posizioni iniziali che copre, e lascia le
++ altre dove erano. Un singolo indice viene mappato allo stesso modo, con `shuffle(3)`.

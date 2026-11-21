@@ -1,0 +1,2414 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base degustation
++ base degustation
+
+- import soundness
++ import soundness
+
+- info   a reader of compiled Scala: TASTy files as plain data, resolved against a classpath, and erased
++ info   un lettore di Scala compilato: file TASTy come semplici dati, risolti rispetto a un classpath, e cancellati
+
+- detail
++ detail
+
+-     _Degustation_ reads what the Scala compiler leaves behind. Every Scala 3 class file is
+-     accompanied by a **TASTy** file (`Option.tasty` beside `Option.class`), the compiler's
+-     typed syntax tree pickled into a compact binary form: every definition, its modifiers and
+-     annotations, its parameter and result types, the parents of every class, and the bodies
+-     of inline and macro definitions. It is the complete record of a module's API, and the
+-     thing any tool which must understand compiled Scala — an API walker, a documentation
+-     renderer, a compatibility checker — needs to read. Degustation reads it without running
+-     the compiler: the only dependency is `tasty-core`, the small library which knows the
+-     format's byte layout, so a reading runs on the JVM, in a browser and in a native binary.
++     _Degustation_ legge ciò che il compilatore Scala lascia dietro di sé. Ogni class file di
++     Scala 3 è accompagnato da un file **TASTy** (`Option.tasty` accanto a `Option.class`),
++     l'albero sintattico tipato del compilatore serializzato in una forma binaria compatta: ogni
++     definizione, i suoi modificatori e le sue annotazioni, i tipi dei suoi parametri e del
++     risultato, i genitori di ogni classe, e i corpi delle definizioni inline e macro. È la
++     registrazione completa dell'API di un modulo, e ciò che deve leggere qualunque strumento che
++     debba capire Scala compilato: un esploratore di API, un renderer di documentazione, un
++     verificatore di compatibilità. Degustation lo legge senza eseguire il compilatore: l'unica
++     dipendenza è `tasty-core`, la piccola libreria che conosce la disposizione dei byte del
++     formato, quindi una lettura gira sulla JVM, in un browser e in un binario nativo.
+
+-     The reader yields **values**. `Unpickler(data)` turns the bytes of one file into an
+-     `Unpickler.File` of `Pickled.Tree`s, `Pickled.Type`s and `Pickled.Name`s, exactly as the
+-     format lays them out and with no symbol table behind them: a reference to a local
+-     definition is the address of its definition node, and a reference to anything else is a
+-     name against a prefix type, as the file spells it. A `Universe` answers the questions the
+-     bytes alone cannot — what a name refers to, which class declares a selected member, how a
+-     class linearizes — by loading further files lazily from a `Universe.Source`, a classpath
+-     reduced to the two operations of reading an entry and listing a directory. Over a
+-     universe, an `Erasure` computes Scala 3's type erasure, so that a member's erased
+-     signature — `(scala.Function1)scala.Option` — is spelled as the compiler would spell it.
++     Il lettore produce **valori**. `Unpickler(data)` trasforma i byte di un file in un
++     `Unpickler.File` di `Pickled.Tree`, `Pickled.Type` e `Pickled.Name`, esattamente come il
++     formato li dispone e senza alcuna tabella dei simboli alle spalle: un riferimento a una
++     definizione locale è l'indirizzo del suo nodo di definizione, e un riferimento a qualsiasi
++     altra cosa è un nome rispetto a un tipo prefisso, come lo scrive il file. Un `Universe`
++     risponde alle domande a cui i soli byte non possono rispondere (a che cosa si riferisce un
++     nome, quale classe dichiara un membro selezionato, come si linearizza una classe) caricando
++     altri file in modo pigro da un `Universe.Source`, un classpath ridotto alle due operazioni di
++     leggere una voce e di elencare una directory. Sopra un universo, un `Erasure` calcola la
++     cancellazione dei tipi di Scala 3, così che la firma cancellata di un membro,
++     `(scala.Function1)scala.Option`, sia scritta come la scriverebbe il compilatore.
+
+=     signature — `(scala.Function1)scala.Option` — is spelled as the compiler would spell it.
+=
+-     ```scala
++     ```scala
+
+=     signature — `(scala.Function1)scala.Option` — is spelled as the compiler would spell it.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import classloaders.threadContextClassloader
++     import classloaders.threadContextClassloader
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
++     val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
+
+-     val scope: Scope = degustation.Universe.index(t"scala/Option.tasty", file)
++     val scope: Scope = degustation.Universe.index(t"scala/Option.tasty", file)
+
+-     scope.names.values.filter(_.s.startsWith("scala.Option."))
++     scope.names.values.filter(_.s.startsWith("scala.Option."))
+
+=     scope.names.values.filter(_.s.startsWith("scala.Option."))
+-     ```
++     ```
+
+-     On top of the reader sits the **atomizer**, the reason the library exists: `Degustation.
+-     atomize` applies the rules of LIRA's Scala discipline (`tasty/2`) to a module's files,
+-     cutting its API into `ScalaAtom`s — each a stable key such as `fixture.Overloads.f(scala.
+-     Int)scala.Int`, a canonical binary encoding whose hash is the atom's value, and, for an
+-     inline body, the `ScalaReference`s it makes — so that two versions of a library can be
+-     compared by set arithmetic. `Inspection.atomize` is the same over files and a classpath
+-     on disk.
++     Sopra il lettore sta l'**atomizzatore**, la ragione per cui la libreria esiste: `Degustation.
++     atomize` applica le regole della disciplina Scala di LIRA (`tasty/2`) ai file di un modulo,
++     tagliandone l'API in `ScalaAtom`, ciascuno una chiave stabile come `fixture.Overloads.f(scala.
++     Int)scala.Int`, una codifica binaria canonica il cui hash è il valore dell'atomo e, per un
++     corpo inline, i `ScalaReference` che esso produce, così che due versioni di una libreria
++     possano essere confrontate con l'aritmetica degli insiemi. `Inspection.atomize` fa lo stesso
++     su file e su un classpath su disco.
+
+-     The library's parts, by what each platform can do:
++     Le parti della libreria, secondo ciò che ogni piattaforma può fare:
+
+-     - `degustation.tasty` — the data model (`Pickled`), the reader (`Unpickler`), the
+-       classfile reader (`Classfile`), the classpath universe (`Universe.Source`, `Scope`,
+-       `Universe.ClassInfo`, `Member`, `Kind`, `Resolution`, `Universe`), erasure (`Erasure`), the
+-       atomizer (`Degustation`) and its output (`ScalaAtom`, `ScalaReference`). Compiles for
+-       the JVM, Scala.js and Scala Native; nothing in it touches a filesystem.
+-     - `degustation.core` — `Inspection`, the filesystem face: `.tasty` files and classpath
+-       directories read through galilei's filesystem backend, jars through zeppelin. JVM and
+-       Scala Native. On the JVM the JDK's own classes are read from the running JVM's class
+-       loader; on Native there is no JVM to read them from, so a jar of the JDK's class files
+-       must be on the classpath.
++     - `degustation.tasty`: il modello dei dati (`Pickled`), il lettore (`Unpickler`), il lettore
++       di classfile (`Classfile`), l'universo del classpath (`Universe.Source`, `Scope`,
++       `Universe.ClassInfo`, `Member`, `Kind`, `Resolution`, `Universe`), la cancellazione
++       (`Erasure`), l'atomizzatore (`Degustation`) e il suo output (`ScalaAtom`,
++       `ScalaReference`). Compila per la JVM, Scala.js e Scala Native; nulla al suo interno tocca
++       un filesystem.
++     - `degustation.core`: `Inspection`, la faccia rivolta al filesystem: file `.tasty` e
++       directory del classpath letti attraverso il backend di filesystem di galilei, jar
++       attraverso zeppelin. JVM e Scala Native. Sulla JVM le classi del JDK stesso sono lette dal
++       class loader della JVM in esecuzione; su Native non c'è una JVM da cui leggerle, quindi un
++       jar con i class file del JDK deve trovarsi nel classpath.
+
+-     Everything but `Universe` and `Classfile` is exported to the `soundness` umbrella; those
+-     two keep their simple names for anthology and mandible there, and are reached as
+-     `degustation.Universe` and `degustation.Classfile`. The library has no choice packages and
+-     one given, `Inspection.Error.communicable`, which is in implicit scope.
++     Tutto tranne `Universe` e `Classfile` è esportato nel modulo ombrello `soundness`; quei due
++     lasciano lì i loro nomi semplici ad anthology e mandible, e si raggiungono come
++     `degustation.Universe` e `degustation.Classfile`. La libreria non ha package di scelta
++     e ha un solo given, `Inspection.Error.communicable`, che si trova nell'ambito implicito.
+
+- refer degustation.Unpickler
++ refer degustation.Unpickler
+
+- refer degustation.Pickled
++ refer degustation.Pickled
+
+- refer degustation.Universe
++ refer degustation.Universe
+
+- refer degustation.Erasure
++ refer degustation.Erasure
+
+- refer degustation.Degustation
++ refer degustation.Degustation
+
+- refer degustation.Inspection
++ refer degustation.Inspection
+
+- entry .Unpickler   reads a `.tasty` file's bytes into the `Pickled` model: trees, definitions and binders by address
++ entry .Unpickler   legge i byte di un file `.tasty` nel modello `Pickled`: alberi, definizioni e binder per indirizzo
+
+= entry .Unpickler   reads a `.tasty` file's bytes into the `Pickled` model: trees, definitions and binders by address
+-   detail
++   detail
+
+-       `Unpickler(data)` checks the file's header, decodes its name table and unpickles its
+-       ASTs section into `Pickled.Tree`s; the positions, comments and attributes sections are
+-       skipped, since nothing in them is API. Every shared subtree (`SHAREDtype`, `SHAREDterm`)
+-       is resolved to the tree it shares, memoized by address, so the result is a plain tree in
+-       which only the identity-bearing nodes — definitions, binders, recursive types — keep
+-       their addresses. The grammar followed is the one `TastyFormat` documents; where the
+-       compiler's own unpickler departs from it to build symbols or re-type nodes, this reader
+-       keeps what the file says.
++       `Unpickler(data)` verifica l'intestazione del file, decodifica la sua tabella dei nomi e
++       deserializza la sua sezione degli AST in `Pickled.Tree`; le sezioni delle posizioni, dei
++       commenti e degli attributi sono saltate, poiché nulla in esse è API. Ogni sottoalbero
++       condiviso (`SHAREDtype`, `SHAREDterm`) è risolto nell'albero che condivide, memoizzato per
++       indirizzo, quindi il risultato è un semplice albero in cui solo i nodi portatori di
++       identità (definizioni, binder, tipi ricorsivi) mantengono i loro indirizzi. La grammatica
++       seguita è quella che documenta `TastyFormat`; dove l'unpickler del compilatore se ne
++       discosta per costruire simboli o ritipare nodi, questo lettore mantiene ciò che dice il
++       file.
+
+=       keeps what the file says.
+=
+-       ```scala
++       ```scala
+
+=       keeps what the file says.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       keeps what the file says.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       keeps what the file says.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
++       val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
+
+-       file.statements
++       file.statements
+
+=       file.statements
+-       ```
++       ```
+
+-       A file whose header is not a TASTy header, or whose version the embedded `tasty-core`
+-       cannot read, throws `dotty.tools.tasty.UnpickleException`; so does a node which does
+-       not read to its recorded end, which means the grammar has drifted from the file's and is
+-       reported rather than silently misread. The bytes are copied once into a JVM array
+-       before reading.
++       Un file la cui intestazione non è un'intestazione TASTy, o la cui versione il `tasty-core`
++       incorporato non sa leggere, lancia `dotty.tools.tasty.UnpickleException`; lo stesso fa un
++       nodo la cui lettura non arriva alla fine registrata, il che significa che la grammatica si
++       è allontanata da quella del file, e viene segnalato anziché letto male in silenzio. I byte
++       sono copiati una volta in un array JVM prima della lettura.
+
+=       before reading.
+-   refer degustation.Pickled
++   refer degustation.Pickled
+
+=   refer degustation.Pickled
+-   refer degustation.Scope
++   refer degustation.Scope
+
+-   entry .apply   unpickles one file's bytes into its `File`
+-       Reads the header, the names and the ASTs of `data`. A file with no ASTs section (which
+-       a valid file never lacks) gives an empty `File`.
+-   entry .File   the ASTs of one file: top-level statements, every definition by address, every binder by address
++   entry .apply   deserializza i byte di un file nel suo `File`
++       Legge l'intestazione, i nomi e gli AST di `data`. Un file senza sezione degli AST (che a
++       un file valido non manca mai) dà un `File` vuoto.
++   entry .File   gli AST di un file: istruzioni di primo livello, ogni definizione per indirizzo, ogni binder per indirizzo
+
+=   entry .File   the ASTs of one file: top-level statements, every definition by address, every binder by address
+-     detail
++     detail
+
+-         A `File` is what `Unpickler(data)` returns and what `Universe.index` indexes into a
+-         `Scope`. `#statements` are the file's top-level trees, each a `Pickled.Tree.Package`;
+-         `#definitions` maps the address of every definition node to the node, so a local
+-         reference (`Type.TermRefDirect` and its kin) can be followed to the definition it
+-         names; `#binders` maps the address of every methodic, lambda or recursive type to it,
+-         for `Type.Param` and `Type.RecursiveThis` references to resolve against.
+-     entry #statements   the top-level trees, in file order
+-     entry #definitions   every definition node — `TypeDef`, `ValDef`, `DefDef`, `TypeParam`, `Param`, `Bind` — by its address
+-     entry #binders   every `Type.Method`, `Type.Poly`, `Type.Lambda` and `Type.Recursive`, by its address
++         Un `File` è ciò che restituisce `Unpickler(data)` e ciò che `Universe.index` indicizza in
++         uno `Scope`. `#statements` sono gli alberi di primo livello del file, ciascuno un
++         `Pickled.Tree.Package`; `#definitions` associa l'indirizzo di ogni nodo di definizione al
++         nodo, così che un riferimento locale (`Type.TermRefDirect` e simili) possa essere seguito
++         fino alla definizione che nomina; `#binders` associa a ogni tipo metodico, lambda o
++         ricorsivo il suo indirizzo, perché i riferimenti `Type.Param` e `Type.RecursiveThis` si
++         risolvano rispetto a esso.
++     entry #statements   gli alberi di primo livello, nell'ordine del file
++     entry #definitions   ogni nodo di definizione (`TypeDef`, `ValDef`, `DefDef`, `TypeParam`, `Param`, `Bind`) per indirizzo
++     entry #binders   ogni `Type.Method`, `Type.Poly`, `Type.Lambda` e `Type.Recursive`, per indirizzo
+
+- entry .Pickled   the TASTy data model: names, types, trees and modifiers as the format lays them out
++ entry .Pickled   il modello dei dati di TASTy: nomi, tipi, alberi e modificatori come li dispone il formato
+
+= entry .Pickled   the TASTy data model: names, types, trees and modifiers as the format lays them out
+-   detail
++   detail
+
+-       `Pickled` holds the types which model a `.tasty` file as data, with no symbol table
+-       behind them: a `Name` from the name table, a `Type`, a `Tree`, the `Modifiers` of a
+-       definition, and the smaller enumerations they are built from. A reference to a local
+-       definition is the address of its definition node; a reference to anything else is a
+-       name and a prefix type, as the file spells it. Everything a semantic question needs —
+-       what a name refers to, what a type erases to, which class declares a selected member —
+-       is answered elsewhere, by `Universe` and `Erasure`.
++       `Pickled` contiene i tipi che modellano un file `.tasty` come dati, senza alcuna tabella
++       dei simboli alle spalle: un `Name` dalla tabella dei nomi, un `Type`, un `Tree`, i
++       `Modifiers` di una definizione, e le enumerazioni più piccole di cui sono composti. Un
++       riferimento a una definizione locale è l'indirizzo del suo nodo di definizione; un
++       riferimento a qualsiasi altra cosa è un nome e un tipo prefisso, come lo scrive il file.
++       Tutto ciò di cui ha bisogno una domanda semantica (a che cosa si riferisce un nome, a che
++       cosa si cancella un tipo, quale classe dichiara un membro selezionato) trova risposta
++       altrove, in `Universe` e in `Erasure`.
+
+-       A few forms are not pickled at all but made by the reader or the universe for their own
+-       use, and say so: `Type.AppliedTerms`, `Type.Opaque`, `Type.Abstraction`, `Type.Foreign`,
+-       `Flag.ParamAccessor` and `Tree.Path`.
++       Alcune forme non sono affatto serializzate ma create dal lettore o dall'universo per il
++       proprio uso, e lo dichiarano: `Type.AppliedTerms`, `Type.Opaque`, `Type.Abstraction`,
++       `Type.Foreign`, `Flag.ParamAccessor` e `Tree.Path`.
+
+=       `Flag.ParamAccessor` and `Tree.Path`.
+=
+-       ```scala
++       ```scala
+
+=       `Flag.ParamAccessor` and `Tree.Path`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val tpe: Pickled.Type =
++       val tpe: Pickled.Type =
+
+-         Pickled.Type.Applied(
++         Pickled.Type.Applied(
+
+-           Pickled.Type.TypeRef(t"Option", Pickled.Type.TermRefPkg(t"scala")),
++           Pickled.Type.TypeRef(t"Option", Pickled.Type.TermRefPkg(t"scala")),
+
+-           List(Pickled.Type.TypeRef(t"Int", Pickled.Type.TermRefPkg(t"scala"))))
++           List(Pickled.Type.TypeRef(t"Int", Pickled.Type.TermRefPkg(t"scala"))))
+
+-       degustation.Universe.className(tpe)   // t"scala.Option"
++       degustation.Universe.className(tpe)   // t"scala.Option"
+
+=       degustation.Universe.className(tpe)   // t"scala.Option"
+-       ```
++       ```
+
+=       ```
+-   refer degustation.Unpickler
++   refer degustation.Unpickler
+
+=   refer degustation.Unpickler
+-   refer degustation.Universe
++   refer degustation.Universe
+
+-   entry .Name   a name from the name table, structured as the compiler's name kinds structure it
++   entry .Name   un nome dalla tabella dei nomi, strutturato come lo strutturano i tipi di nome del compilatore
+
+=   entry .Name   a name from the name table, structured as the compiler's name kinds structure it
+-     detail
++     detail
+
+-         A `Name` is `Simple(value)` for a plain name, or one of the compiler's derived kinds
+-         over another name: `Qualified(prefix, selector)` for `a.b`, `Expanded` and
+-         `ExpandPrefix` for the `$$`- and `$`-separated expansions of a private or local name,
+-         `Unique(separator, number, original)` for a fresh name, `DefaultGetter(method, index)`
+-         for a default argument's getter, `SuperAccessor`, `InlineAccessor`, `ObjectClass` (the
+-         `X$` of a module class) and `BodyRetainer` wrappers, and `Signed(original, target,
+-         result, params)` — a term name carrying the erased signature of the member it refers
+-         to, which is how a reference to an overloaded method says which alternative it means.
++         Un `Name` è `Simple(value)` per un nome semplice, o uno dei tipi derivati del
++         compilatore su un altro nome: `Qualified(prefix, selector)` per `a.b`, `Expanded` ed
++         `ExpandPrefix` per le espansioni, separate da `$$` e da `$`, di un nome privato o locale,
++         `Unique(separator, number, original)` per un nome nuovo, `DefaultGetter(method, index)`
++         per il getter di un argomento predefinito, gli involucri `SuperAccessor`,
++         `InlineAccessor`, `ObjectClass` (l'`X$` di una classe modulo) e `BodyRetainer`, e
++         `Signed(original, target, result, params)`: un nome di termine che porta la firma
++         cancellata del membro a cui si riferisce, ed è così che un riferimento a un metodo
++         sovraccarico dice quale alternativa intende.
+
+-         `#text` renders a name as the compiler's `Name#toString` does, so what a stack frame or
+-         a classfile shows can be matched against it; `#spelled` is the `fullName` spelling,
+-         which differs only for a constructor's default getter; `#unsigned` drops a signature,
+-         and `#signature` is the signature a signed name carries, spelled `(paramSigs)resultSig`
+-         exactly as the keys of `ScalaAtom`s spell theirs.
+-     entry #text   the name as the compiler's `Name#toString` renders it
+-         `Simple` is its value; `Qualified` joins with `.`; `Expanded` with `$$` and
+-         `ExpandPrefix` with `$`; a `Unique` name is `original`, separator, number (or `$3$`
+-         for a fresh name with nothing to derive from); a `DefaultGetter` is `method$default$N`
+-         with a constructor's `<init>` mangled to `$lessinit$greater`; `SuperAccessor`,
+-         `InlineAccessor` and `BodyRetainer` put `super$`, `inline$` and `$retainedBody` on
+-         the last segment of a qualified name; `ObjectClass` appends `$`; and a `Signed` name
+-         renders as its original.
+-     entry #spelled   the name as the compiler's `fullName` spells it
+-         The same as `#text`, except that a constructor's default getter keeps `<init>`
+-         unmangled: `<init>$default$1`. This is the spelling `Scope#names` and `ScalaAtom`
+-         keys use.
+-     entry #unsigned   the name without its signature, if it had one
+-     entry #signature   the erased signature a signed name carries, or `Unset`
+-         Spelled `(paramSigs)resultSig`, each parameter signature a fully-qualified erased
+-         class name or a type-parameter count — the spelling `Erasure` produces for a
+-         declaration, so the two sides of a reference agree by construction.
+-   entry .ParamSig   one component of a signed name's erased signature
++         `#text` rende un nome come fa `Name#toString` del compilatore, così che ciò che mostra
++         uno stack frame o un classfile possa essere confrontato con esso; `#spelled` è la grafia
++         di `fullName`, che differisce solo per il getter predefinito di un costruttore;
++         `#unsigned` elimina una firma, e `#signature` è la firma che porta un nome firmato,
++         scritta `(paramSigs)resultSig` esattamente come scrivono le loro le chiavi degli
++         `ScalaAtom`.
++     entry #text   il nome come lo rende `Name#toString` del compilatore
++         `Simple` è il suo valore; `Qualified` unisce con `.`; `Expanded` con `$$` ed
++         `ExpandPrefix` con `$`; un nome `Unique` è `original`, separatore, numero (o `$3$` per
++         un nome nuovo senza nulla da cui derivare); un `DefaultGetter` è `method$default$N`, con
++         il `<init>` di un costruttore trasformato in `$lessinit$greater`; `SuperAccessor`,
++         `InlineAccessor` e `BodyRetainer` mettono `super$`, `inline$` e `$retainedBody`
++         sull'ultimo segmento di un nome qualificato; `ObjectClass` aggiunge `$`; e un nome
++         `Signed` si rende come il suo originale.
++     entry #spelled   il nome come lo scrive `fullName` del compilatore
++         Lo stesso di `#text`, tranne che il getter predefinito di un costruttore mantiene
++         `<init>` non trasformato: `<init>$default$1`. È la grafia usata da `Scope#names` e dalle
++         chiavi degli `ScalaAtom`.
++     entry #unsigned   il nome senza la sua firma, se ne aveva una
++     entry #signature   la firma cancellata che porta un nome firmato, oppure `Unset`
++         Scritta `(paramSigs)resultSig`, dove ogni firma di parametro è un nome di classe
++         cancellato pienamente qualificato o un numero di parametri di tipo: la grafia che
++         `Erasure` produce per una dichiarazione, così che i due lati di un riferimento
++         concordino per costruzione.
++   entry .ParamSig   una componente della firma cancellata di un nome firmato
+
+=   entry .ParamSig   one component of a signed name's erased signature
+-     detail
++     detail
+
+-         `Erased(name)` is a fully-qualified erased type name; `TypeParams(count)` is the
+-         length of a type-parameter section. `#text` renders either as the signature spells it:
+-         the name, or the count as digits.
+-     entry #text   the component as it appears in a spelled signature
+-   entry .Constant   a literal constant: unit, booleans, null, the numeric and character primitives, a string or a class
++         `Erased(name)` è un nome di tipo cancellato pienamente qualificato; `TypeParams(count)`
++         è la lunghezza di una sezione di parametri di tipo. `#text` rende entrambi come li
++         scrive la firma: il nome, o il numero in cifre.
++     entry #text   la componente come appare in una firma scritta
++   entry .Constant   una costante letterale: unit, booleani, null, i primitivi numerici e di carattere, una stringa o una classe
+
+=   entry .Constant   a literal constant: unit, booleans, null, the numeric and character primitives, a string or a class
+-     detail
++     detail
+
+-         The cases are `UnitValue`, `FalseValue`, `TrueValue`, `NullValue`, `ByteValue`,
++         I casi sono `UnitValue`, `FalseValue`, `TrueValue`, `NullValue`, `ByteValue`,
+
+-         `ShortValue`, `CharValue`, `IntValue`, `LongValue`, `FloatValue`, `DoubleValue`,
++         `ShortValue`, `CharValue`, `IntValue`, `LongValue`, `FloatValue`, `DoubleValue`,
+
+-         `StringValue(value: Text)` and `ClassValue(tpe: Type)`, which is what a `classOf[T]`
+-         literal pickles as.
+-     entry #className   the fully-qualified class the constant's type is a reference to
+-         `scala.Unit`, `scala.Boolean`, `scala.Null`, `scala.Int` and the other primitives,
+-         `java.lang.String` for a string and `java.lang.Class` for a class literal.
+-   entry .Variance   `Invariant`, `Covariant` or `Contravariant`, as a type lambda's parameters carry them
+-   entry .Clause   the kind of a method type's parameter clause: `Plain`, `Implicit` or `Contextual`
+-   entry .Type   a type as pickled: references by address or by name against a prefix, and the type constructors
++         `StringValue(value: Text)` e `ClassValue(tpe: Type)`, che è la forma serializzata di un
++         letterale `classOf[T]`.
++     entry #className   la classe pienamente qualificata a cui si riferisce il tipo della costante
++         `scala.Unit`, `scala.Boolean`, `scala.Null`, `scala.Int` e gli altri primitivi,
++         `java.lang.String` per una stringa e `java.lang.Class` per un letterale di classe.
++   entry .Variance   `Invariant`, `Covariant` o `Contravariant`, come li portano i parametri di una lambda di tipo
++   entry .Clause   il tipo di una clausola di parametri di un tipo metodo: `Plain`, `Implicit` o `Contextual`
++   entry .Type   un tipo come serializzato: riferimenti per indirizzo o per nome rispetto a un prefisso, e i costruttori di tipo
+
+=   entry .Type   a type as pickled: references by address or by name against a prefix, and the type constructors
+-     detail
++     detail
+
+-         References come in three families. A **local** reference names a definition in the
+-         same file by the address of its node: `TermRefDirect(address)` and
+-         `TypeRefDirect(address)`, or `TermRefLocal(address, prefix)` and `TypeRefLocal(address,
+-         prefix)` when a prefix is recorded too. A **package member** is named outright:
+-         `TermRefPkg(name)` and `TypeRefPkg(name)` carry a fully-qualified name. Anything else
+-         is a name against a prefix type: `TermRef(name, prefix)` with a `Name` that may be
+-         signed, `TypeRef(name, prefix)`, and the `TermRefIn` and `TypeRefIn` forms which also
+-         record the class the member was selected in.
++         I riferimenti si dividono in tre famiglie. Un riferimento **locale** nomina una
++         definizione nello stesso file tramite l'indirizzo del suo nodo: `TermRefDirect(address)`
++         e `TypeRefDirect(address)`, oppure `TermRefLocal(address, prefix)` e
++         `TypeRefLocal(address, prefix)` quando è registrato anche un prefisso. Un **membro di
++         package** è nominato direttamente: `TermRefPkg(name)` e `TypeRefPkg(name)` portano un
++         nome pienamente qualificato. Qualsiasi altra cosa è un nome rispetto a un tipo
++         prefisso: `TermRef(name, prefix)` con un `Name` che può essere firmato,
++         `TypeRef(name, prefix)`, e le forme `TermRefIn` e `TypeRefIn`, che registrano anche la
++         classe in cui il membro è stato selezionato.
+
+-         The constructors are the format's: `This(cls)` and `Super(thisType, underlying)`;
+-         `Recursive(address, parent)` and `RecursiveThis(address)` for a recursive refinement;
++         I costruttori sono quelli del formato: `This(cls)` e `Super(thisType, underlying)`;
++         `Recursive(address, parent)` e `RecursiveThis(address)` per un raffinamento ricorsivo;
+
+-         `Refined(parent, name, info)`; `Applied(constructor, arguments)`; `Bounds(low, high,
++         `Refined(parent, name, info)`; `Applied(constructor, arguments)`; `Bounds(low, high,
+
+-         variances)`, where an absent `high` means an alias of `low`; `Annotated(underlying,
+-         annotation)`; `And` and `Or`; `Match(bound, scrutinee, cases)` and `MatchCase(pattern,
+-         rhs)`; `Flexible(underlying)` for a Java null-flexible type; `ByName(underlying)`;
+-         `Literal(constant)`; and `Bind(address, name, bounds)`. The binders — `Method(address,
+-         names, params, result, clause)`, `Poly(address, names, bounds, result)` and
+-         `Lambda(address, names, bounds, result)` — carry the address a `Param(binder, number)`
+-         inside them refers back to, and `Unpickler.File#binders` finds them by it.
++         variances)`, dove un `high` assente indica un alias di `low`; `Annotated(underlying,
++         annotation)`; `And` e `Or`; `Match(bound, scrutinee, cases)` e `MatchCase(pattern,
++         rhs)`; `Flexible(underlying)` per un tipo Java flessibile rispetto a null;
++         `ByName(underlying)`; `Literal(constant)`; e `Bind(address, name, bounds)`. I binder
++         (`Method(address, names, params, result, clause)`, `Poly(address, names, bounds,
++         result)` e `Lambda(address, names, bounds, result)`) portano l'indirizzo a cui rimanda
++         un `Param(binder, number)` al loro interno, e `Unpickler.File#binders` li trova tramite
++         esso.
+
+-         Four forms are not pickled but made by the reader or the universe: `AppliedTerms
+-         (function, arguments)`, the type of a term application whose function's type is not
+-         yet resolved; `Opaque(alias, bounds)`, an opaque type's right-hand side with the bounds
+-         it is seen through from outside; `Abstraction(params, names, bounds, result)`, a type
+-         lambda as a lambda type *tree* spells it, binding its parameters as definitions by
+-         address; and `Foreign(path, tpe)`, a type pinned to the file it was read from, so its
+-         local references still resolve when it is carried into another file's types — a type
+-         argument substituted into an alias, say.
++         Quattro forme non sono serializzate ma create dal lettore o dall'universo: `AppliedTerms
++         (function, arguments)`, il tipo di un'applicazione di termine il cui tipo della funzione
++         non è ancora risolto; `Opaque(alias, bounds)`, il lato destro di un tipo opaco con i
++         limiti attraverso cui è visto dall'esterno; `Abstraction(params, names, bounds,
++         result)`, una lambda di tipo come la scrive un *albero* di tipo lambda, che lega i suoi
++         parametri come definizioni per indirizzo; e `Foreign(path, tpe)`, un tipo ancorato al
++         file da cui è stato letto, così che i suoi riferimenti locali si risolvano ancora quando
++         è portato nei tipi di un altro file: un argomento di tipo sostituito in un alias, per
++         esempio.
+
+-         `Universe.resolve` says what a type refers to; `Universe.transform` and
+-         `Universe.mapChildren` rewrite one; `Erasure#erase` erases one.
+-   entry .Flag   a modifier flag, named as the format's tags are
++         `Universe.resolve` dice a che cosa si riferisce un tipo; `Universe.transform` e
++         `Universe.mapChildren` lo riscrivono; `Erasure#erase` lo cancella.
++   entry .Flag   un flag di modificatore, nominato come i tag del formato
+
+=   entry .Flag   a modifier flag, named as the format's tags are
+-     detail
++     detail
+
+-         `Private`, `Protected`, `Abstract`, `Final`, `Sealed`, `Case`, `Implicit`, `Given`,
++         `Private`, `Protected`, `Abstract`, `Final`, `Sealed`, `Case`, `Implicit`, `Given`,
+
+-         `Erased`, `Lazy`, `Override`, `Opaque`, `Inline`, `Macro`, `InlineProxy`, `Static`,
++         `Erased`, `Lazy`, `Override`, `Opaque`, `Inline`, `Macro`, `InlineProxy`, `Static`,
+
+-         `Object`, `Trait`, `Enum`, `Local`, `Synthetic`, `Artifact`, `Mutable`,
++         `Object`, `Trait`, `Enum`, `Local`, `Synthetic`, `Artifact`, `Mutable`,
+
+-         `FieldAccessor`, `CaseAccessor`, `Covariant`, `Contravariant`, `HasDefault`, `Stable`,
++         `FieldAccessor`, `CaseAccessor`, `Covariant`, `Contravariant`, `HasDefault`, `Stable`,
+
+-         `Extension`, `ParamSetter`, `ParamAlias`, `Exported`, `Open`, `Invisible`,
++         `Extension`, `ParamSetter`, `ParamAlias`, `Exported`, `Open`, `Invisible`,
+
+-         `Transparent`, `Infix`, `Tracked`, `Into` and `AbsOverride` are the format's own.
+-         `ParamAccessor` is not a TASTy modifier: the universe adds it to mark a class
+-         parameter among its class's members, as the compiler's flag of that name does.
+-   entry .Annotation   an annotation on a definition: its type and the tree which constructs it
+-     entry #tpe   the annotation's class type
+-     entry #tree   the constructor call, as pickled
+-   entry .Modifiers   a definition's flags, its `private[X]` qualifier and its annotations
++         `Transparent`, `Infix`, `Tracked`, `Into` e `AbsOverride` sono quelli propri del formato.
++         `ParamAccessor` non è un modificatore TASTy: l'universo lo aggiunge per marcare un
++         parametro di classe tra i membri della sua classe, come fa il flag omonimo del
++         compilatore.
++   entry .Annotation   un'annotazione su una definizione: il suo tipo e l'albero che la costruisce
++     entry #tpe   il tipo di classe dell'annotazione
++     entry #tree   la chiamata al costruttore, come serializzata
++   entry .Modifiers   i flag di una definizione, il suo qualificatore `private[X]` e le sue annotazioni
+
+=   entry .Modifiers   a definition's flags, its `private[X]` qualifier and its annotations
+-     detail
++     detail
+
+-         Every `Tree.TypeDef`, `ValDef`, `DefDef`, `TypeParam`, `Param` and `Bind` carries
+-         one. `#has(flag)` tests a flag; `#privateWithin` is the type a `private[X]` or
+-         `protected[X]` qualifier names, or `Unset`; `.empty` has no flags, no qualifier and no
+-         annotations.
+-     entry .empty   no flags, no qualifier, no annotations
+-     entry #flags   the definition's flags, as a set
+-     entry #privateWithin   the `X` of `private[X]` or `protected[X]`, as a type, or `Unset`
+-     entry #annotations   the definition's annotations, in order
+-     entry #has   whether a flag is set
+-   entry .Selector   one selector of an `import` or `export`: `Imported(name)`, `Renamed(to)` or `Bounded(tpe)`
+-   entry .Tree   a tree as pickled: definitions, templates, terms, patterns and type trees
++         Ogni `Tree.TypeDef`, `ValDef`, `DefDef`, `TypeParam`, `Param` e `Bind` ne porta uno.
++         `#has(flag)` verifica un flag; `#privateWithin` è il tipo che nomina un qualificatore
++         `private[X]` o `protected[X]`, oppure `Unset`; `.empty` non ha flag, né qualificatore,
++         né annotazioni.
++     entry .empty   nessun flag, nessun qualificatore, nessuna annotazione
++     entry #flags   i flag della definizione, come insieme
++     entry #privateWithin   l'`X` di `private[X]` o `protected[X]`, come tipo, oppure `Unset`
++     entry #annotations   le annotazioni della definizione, in ordine
++     entry #has   se un flag è impostato
++   entry .Selector   un selettore di un `import` o di un `export`: `Imported(name)`, `Renamed(to)` o `Bounded(tpe)`
++   entry .Tree   un albero come serializzato: definizioni, template, termini, pattern e alberi di tipo
+
+=   entry .Tree   a tree as pickled: definitions, templates, terms, patterns and type trees
+-     detail
++     detail
+
+-         A file's top-level trees are `Package(path, statements)`. Definitions are
+-         `TypeDef(address, name, rhs, modifiers)` — a class when `rhs` is a `Template
+-         (typeParams, params, parents, self, body)`, else a type alias, bounds or opaque type
+-         — `ValDef(address, name, tpt, rhs, modifiers)`, `DefDef(address, name, clauses, returns,
+-         rhs, modifiers)` with its clauses as lists of `TypeParam` or `Param` trees, and
+-         `Import` and `Export` with their `Selector`s. Each definition carries the address its
+-         local references name it by.
++         Gli alberi di primo livello di un file sono `Package(path, statements)`. Le definizioni
++         sono `TypeDef(address, name, rhs, modifiers)` (una classe quando `rhs` è un `Template
++         (typeParams, params, parents, self, body)`, altrimenti un alias di tipo, dei limiti o un
++         tipo opaco), `ValDef(address, name, tpt, rhs, modifiers)`, `DefDef(address, name,
++         clauses, returns, rhs, modifiers)` con le sue clausole come liste di alberi `TypeParam`
++         o `Param`, e `Import` ed `Export` con i loro `Selector`. Ogni definizione porta
++         l'indirizzo con cui la nominano i suoi riferimenti locali.
+
+-         Terms are the usual Scala forms — `Ident`, `Select`, `SelectIn`, `QualifiedThis`,
+-         `New`, `Apply`, `TypeApply`, `ApplySigPoly`, `Typed`, `Assign`, `Block`, `Inlined`,
+-         `Lambda`, `If`, `Match`, `Try`, `Return`, `While`, `Repeated`, `Throw`, `NamedArg`,
+-         `SuperRef`, `SelectOuter`, `Elided` — with the quotation forms `Quote`, `Splice`,
+-         `SplicePattern`, `QuotePattern` and `Hole`, and the pattern forms `Bind`,
+-         `Alternative`, `Unapply` and `CaseDef`. `Match` carries a `Tree.MatchKind`.
++         I termini sono le consuete forme di Scala (`Ident`, `Select`, `SelectIn`,
++         `QualifiedThis`, `New`, `Apply`, `TypeApply`, `ApplySigPoly`, `Typed`, `Assign`,
++         `Block`, `Inlined`, `Lambda`, `If`, `Match`, `Try`, `Return`, `While`, `Repeated`,
++         `Throw`, `NamedArg`, `SuperRef`, `SelectOuter`, `Elided`), con le forme di quotazione
++         `Quote`, `Splice`, `SplicePattern`, `QuotePattern` e `Hole`, e le forme di pattern
++         `Bind`, `Alternative`, `Unapply` e `CaseDef`. `Match` porta un `Tree.MatchKind`.
+
+-         Type trees are `IdentTpt`, `SelectTpt`, `SingletonTpt`, `RefinedTpt`, `AppliedTpt`,
+-         `LambdaTpt`, `BoundsTpt`, `AnnotatedTpt`, `MatchTpt`, `ByNameTpt` and `ExplicitTpt`;
+-         `#isTypeTree` is whether a tree is one of them. `Path(tpe)` is not a pickled form: a
+-         path or constant in tree position, whose whole content is a type.
++         Gli alberi di tipo sono `IdentTpt`, `SelectTpt`, `SingletonTpt`, `RefinedTpt`,
++         `AppliedTpt`, `LambdaTpt`, `BoundsTpt`, `AnnotatedTpt`, `MatchTpt`, `ByNameTpt` ed
++         `ExplicitTpt`; `#isTypeTree` indica se un albero è uno di essi. `Path(tpe)` non è una
++         forma serializzata: un path o una costante in posizione di albero, il cui intero
++         contenuto è un tipo.
+
+-         `Universe.typeOf` is the type a type tree denotes, `Universe.termType` the type of a
+-         term used as a prefix, and `Universe.children` a tree's immediate subtrees.
+-     entry .MatchKind   how a `Match` was written: `Plain`, `Inline`, `Implicit` or `Sub`
+-     entry #isTypeTree   whether this is a type tree, one the compiler would read with `readTpt`
++         `Universe.typeOf` è il tipo che denota un albero di tipo, `Universe.termType` il tipo di
++         un termine usato come prefisso, e `Universe.children` i sottoalberi immediati di un
++         albero.
++     entry .MatchKind   come è stato scritto un `Match`: `Plain`, `Inline`, `Implicit` o `Sub`
++     entry #isTypeTree   se questo è un albero di tipo, uno che il compilatore leggerebbe con `readTpt`
+
+- entry .Scope   a loaded `.tasty` file, indexed: every definition's full name, locality and owner by address
++ entry .Scope   un file `.tasty` caricato e indicizzato: il nome completo, la località e il proprietario di ogni definizione per indirizzo
+
+= entry .Scope   a loaded `.tasty` file, indexed: every definition's full name, locality and owner by address
+-   detail
++   detail
+
+-       `Universe.index(path, file)` makes a `Scope` from an `Unpickler.File`, and
+-       `Universe#scope(path)` loads and indexes one from a `Universe.Source`. It holds the `#path`
+-       the file was read from, the `#file` itself, `#names` — the fully-qualified name of every
+-       definition a reference from outside a term body can reach, by address, spelled as the
+-       compiler's `fullName` spells it (a method's parameters as `pkg.Class._$param`) — the
+-       `#locals`, the definitions inside term bodies, and `#owners`, each definition's owner:
+-       the address of the definition enclosing it, or the name of its package at the top.
++       `Universe.index(path, file)` crea uno `Scope` da un `Unpickler.File`, e
++       `Universe#scope(path)` ne carica e indicizza uno da un `Universe.Source`. Contiene il
++       `#path` da cui il file è stato letto, il `#file` stesso, `#names` (il nome pienamente
++       qualificato di ogni definizione raggiungibile da un riferimento esterno al corpo di un
++       termine, per indirizzo, scritto come lo scrive `fullName` del compilatore, con i
++       parametri di un metodo come `pkg.Class._$param`), i `#locals`, le definizioni all'interno
++       dei corpi dei termini, e `#owners`, il proprietario di ogni definizione: l'indirizzo
++       della definizione che la racchiude, o il nome del suo package al primo livello.
+
+=       the address of the definition enclosing it, or the name of its package at the top.
+=
+-       ```scala
++       ```scala
+
+=       the address of the definition enclosing it, or the name of its package at the top.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       the address of the definition enclosing it, or the name of its package at the top.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       the address of the definition enclosing it, or the name of its package at the top.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val scope: Scope =
++       val scope: Scope =
+
+-         degustation.Universe.index(t"scala/Option.tasty", Unpickler(cp"/scala/Option.tasty".read[Data]))
++         degustation.Universe.index(t"scala/Option.tasty", Unpickler(cp"/scala/Option.tasty".read[Data]))
+
+-       scope.names.values.filter(_.s.startsWith("scala.Option."))
++       scope.names.values.filter(_.s.startsWith("scala.Option."))
+
+=       scope.names.values.filter(_.s.startsWith("scala.Option."))
+-       ```
++       ```
+
+-       `Universe#resolve` takes a scope as the context in which a type's local references are
+-       followed; a type carried into another file keeps its own scope as a `Type.Foreign`.
++       `Universe#resolve` prende uno scope come contesto in cui seguire i riferimenti locali di
++       un tipo; un tipo portato in un altro file mantiene il proprio scope come `Type.Foreign`.
+
+=       followed; a type carried into another file keeps its own scope as a `Type.Foreign`.
+-   refer degustation.Universe
++   refer degustation.Universe
+
+=   refer degustation.Universe
+-   refer degustation.Unpickler
++   refer degustation.Unpickler
+
+-   entry #path   the classpath-relative path the file was read from
+-   entry #file   the unpickled file
+-   entry #names   the fully-qualified name of every reachable definition, by address
+-   entry #locals   the addresses of the definitions inside term bodies
+-   entry #owners   each definition's owner: an enclosing definition's address, or a package name at the top
+-   entry #definition   the definition node at an address, or `Unset`
+-   entry #binder   the methodic, lambda or recursive type at an address, or `Unset`
+-   entry #within   whether the definition at one address is enclosed, at any depth, by the one at another
+-   entry #enclosingClass   the address of the nearest enclosing class of a definition, or `Unset` at the top
++   entry #path   il path relativo al classpath da cui il file è stato letto
++   entry #file   il file deserializzato
++   entry #names   il nome pienamente qualificato di ogni definizione raggiungibile, per indirizzo
++   entry #locals   gli indirizzi delle definizioni all'interno dei corpi dei termini
++   entry #owners   il proprietario di ogni definizione: l'indirizzo di una definizione che la racchiude, o il nome di un package al primo livello
++   entry #definition   il nodo di definizione a un indirizzo, oppure `Unset`
++   entry #binder   il tipo metodico, lambda o ricorsivo a un indirizzo, oppure `Unset`
++   entry #within   se la definizione a un indirizzo è racchiusa, a qualsiasi profondità, da quella a un altro
++   entry #enclosingClass   l'indirizzo della classe più vicina che racchiude una definizione, oppure `Unset` al primo livello
+
+- entry .Kind   the kind of a class member: `Val`, `Def`, `Type` or `Class`
+-     `Universe#memberIn` and `Universe#packageObjectMember` take a set of kinds to search for,
+-     so a type member and a term member of the same name are told apart.
++ entry .Kind   il genere di un membro di classe: `Val`, `Def`, `Type` o `Class`
++     `Universe#memberIn` e `Universe#packageObjectMember` prendono un insieme di generi da
++     cercare, così che un membro di tipo e un membro di termine con lo stesso nome siano
++     distinti.
+
+- entry .Member   one member of a class, by declaration: its name, kind, declared type, flags and address
++ entry .Member   un membro di una classe, per dichiarazione: il suo nome, genere, tipo dichiarato, flag e indirizzo
+
+= entry .Member   one member of a class, by declaration: its name, kind, declared type, flags and address
+-   detail
++   detail
+
+-       A `Universe.ClassInfo#members` entry. `#tpe` is the member's declared type — for a method, the
+-       methodic type its clauses spell, built by `Universe.methodType` — and `#address` finds
+-       the declaring tree in the class's `Scope`. For a member read from a Java classfile,
+-       `#erased` is the erased signature its descriptor already is, and `#address` is `-1`;
+-       `Erasure#signature(owner, member)` uses whichever is there.
+-   entry #name   the member's name, as `Name#spelled` spells it
+-   entry #kind   `Val`, `Def`, `Type` or `Class`
+-   entry #tpe   the declared type: a methodic type for a method, the alias or bounds for a type member
+-   entry #flags   the member's modifier flags
+-   entry #address   the address of the declaring tree in the class's scope, or `-1` for a Java member
+-   entry #erased   a Java member's erased signature, read off its descriptor; `Unset` for a Scala member
++       Una voce di `Universe.ClassInfo#members`. `#tpe` è il tipo dichiarato del membro (per un
++       metodo, il tipo metodico che scrivono le sue clausole, costruito da
++       `Universe.methodType`) e `#address` trova l'albero dichiarante nello `Scope` della
++       classe. Per un membro letto da un classfile Java, `#erased` è la firma cancellata che il
++       suo descrittore già è, e `#address` è `-1`; `Erasure#signature(owner, member)` usa
++       quella delle due che c'è.
++   entry #name   il nome del membro, come lo scrive `Name#spelled`
++   entry #kind   `Val`, `Def`, `Type` o `Class`
++   entry #tpe   il tipo dichiarato: un tipo metodico per un metodo, l'alias o i limiti per un membro di tipo
++   entry #flags   i flag di modificatore del membro
++   entry #address   l'indirizzo dell'albero dichiarante nello scope della classe, o `-1` per un membro Java
++   entry #erased   la firma cancellata di un membro Java, letta dal suo descrittore; `Unset` per un membro Scala
+
+- entry .Resolution   what a type reference turns out to name: a class, an alias, an abstract type, a term, a package
++ entry .Resolution   ciò che un riferimento di tipo risulta nominare: una classe, un alias, un tipo astratto, un termine, un package
+
+= entry .Resolution   what a type reference turns out to name: a class, an alias, an abstract type, a term, a package
+-   detail
++   detail
+
+-       `Universe#resolve` returns one. `Class(info, arguments, scope)` is a class with the type
+-       arguments it was applied to, if any. `Alias(arity, apply, scope, body, opaque)` is a
+-       type alias, opaque or not: `apply` substitutes arguments into its right-hand side,
+-       `body` is that right-hand side as declared (a lambda, when parameterized), and `opaque`
+-       says whether it is an opaque type, which erasure sees through and resolution does not.
+-       `Abstract(high, scope)` is an abstract type or type parameter, known only by its upper
+-       bound; `Term(tpe, scope)` a term, known by its declared type; `Package(path)` a
+-       package; and `Unknown(reason)` a reference the universe could not follow, with the
+-       reason in words. Each carries the scope its result is spelled in, for following it
+-       further.
++       `Universe#resolve` ne restituisce una. `Class(info, arguments, scope)` è una classe con
++       gli argomenti di tipo a cui è stata applicata, se ce ne sono. `Alias(arity, apply, scope,
++       body, opaque)` è un alias di tipo, opaco o no: `apply` sostituisce gli argomenti nel suo
++       lato destro, `body` è quel lato destro come dichiarato (una lambda, quando è
++       parametrizzato), e `opaque` dice se è un tipo opaco, attraverso cui la cancellazione vede
++       e la risoluzione no. `Abstract(high, scope)` è un tipo astratto o un parametro di tipo,
++       noto solo per il suo limite superiore; `Term(tpe, scope)` un termine, noto per il suo tipo
++       dichiarato; `Package(path)` un package; e `Unknown(reason)` un riferimento che l'universo
++       non è riuscito a seguire, con il motivo a parole. Ognuno porta lo scope in cui è scritto
++       il suo risultato, per seguirlo oltre.
+
+- entry .Universe   the classes a module's TASTy can reach, loaded lazily, and the semantic questions over them
++ entry .Universe   le classi che il TASTy di un modulo può raggiungere, caricate in modo pigro, e le domande semantiche su di esse
+
+= entry .Universe   the classes a module's TASTy can reach, loaded lazily, and the semantic questions over them
+-   detail
++   detail
+
+-       A `Universe` is built over a `Source` and loads from it on demand: a file's `Scope`
+-       the first time a path is asked for, a `ClassInfo` the first time a class is named, from
+-       the first of its TASTy or its classfile that exists. Over them it answers what the bytes
+-       of one file cannot: what a name refers to (`#resolve`), which class declares a selected
+-       member and which alternative an overloaded reference means (`#memberIn`, `#termsIn`,
+-       `#choose`), how a class linearizes (`#linearization`, `#derivesFrom`), and what type
+-       arguments a class hands its base (`#baseArguments`). Nothing here subtypes, infers or
+-       substitutes beyond an alias's parameters: erasure and member lookup need no more.
++       Un `Universe` è costruito su un `Source` e carica da esso su richiesta: lo `Scope` di un
++       file la prima volta che viene chiesto un path, un `ClassInfo` la prima volta che viene
++       nominata una classe, dal primo tra il suo TASTy e il suo classfile che esista. Su di essi
++       risponde a ciò a cui i byte di un singolo file non possono rispondere: a che cosa si
++       riferisce un nome (`#resolve`), quale classe dichiara un membro selezionato e quale
++       alternativa intende un riferimento sovraccarico (`#memberIn`, `#termsIn`, `#choose`),
++       come si linearizza una classe (`#linearization`, `#derivesFrom`), e quali argomenti di
++       tipo una classe passa alla sua base (`#baseArguments`). Nulla qui calcola sottotipi,
++       inferisce o sostituisce oltre i parametri di un alias: la cancellazione e la ricerca dei
++       membri non richiedono di più.
+
+-       It is exported to the umbrella as `Universe`, now that anthology's compiler universe is
+-       `Toolchain.Universe`, and holds the `Source` it reads from and the `ClassInfo` it builds. The companion holds the pure functions over
+-       the `Pickled` model which need no classpath: `typeOf`, `termType`, `methodType`,
+-       `substitute`, `transform`, `index`, `encode`, `classRef`, `className` and the rest.
++       È esportato nel modulo ombrello come `Universe`, ora che l'universo del compilatore di
++       anthology è `Toolchain.Universe`, e contiene il `Source` da cui legge e il `ClassInfo` che
++       costruisce. L'oggetto compagno contiene le funzioni pure sul modello `Pickled` che non
++       richiedono un classpath: `typeOf`, `termType`, `methodType`, `substitute`, `transform`,
++       `index`, `encode`, `classRef`, `className` e le altre.
+
+-       A class file's TASTy opened, its definitions listed, and one member's type erased:
++       Il TASTy di un class file aperto, le sue definizioni elencate, e il tipo di un membro
++       cancellato:
+
+=       A class file's TASTy opened, its definitions listed, and one member's type erased:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Open a file and unpickle it
++         label Aprire un file e deserializzarlo
+
+=         label Open a file and unpickle it
+-         code
++         code
+
+=         label Open a file and unpickle it
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Open a file and unpickle it
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label Open a file and unpickle it
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Open a file and unpickle it
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import strategies.throwUnsafely
+=
+-             val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
++             val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
+
+-             file.statements   // one `Tree.Package` for `scala`
++             file.statements   // one `Tree.Package` for `scala`
+
+=             file.statements   // one `Tree.Package` for `scala`
+-       frame
++       frame
+
+-         label Index it as a scope and list its definitions
++         label Indicizzarlo come scope ed elencarne le definizioni
+
+=         label Index it as a scope and list its definitions
+-         code
++         code
+
+=         label Index it as a scope and list its definitions
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Index it as a scope and list its definitions
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label Index it as a scope and list its definitions
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Index it as a scope and list its definitions
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import strategies.throwUnsafely
+=
+-             val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
++             val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
+
+-             val scope: Scope = degustation.Universe.index(t"scala/Option.tasty", file)
++             val scope: Scope = degustation.Universe.index(t"scala/Option.tasty", file)
+
+-             scope.names.values.filter(_.s.startsWith("scala.Option."))
++             scope.names.values.filter(_.s.startsWith("scala.Option."))
+
+=             scope.names.values.filter(_.s.startsWith("scala.Option."))
+-       frame
++       frame
+
+-         label Build a universe over the classpath
++         label Costruire un universo sul classpath
+
+=         label Build a universe over the classpath
+-         code
++         code
+
+=         label Build a universe over the classpath
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Build a universe over the classpath
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label Build a universe over the classpath
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Build a universe over the classpath
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import strategies.throwUnsafely
+=
+-             val source: Universe.Source = new Universe.Source:
++             val source: Universe.Source = new Universe.Source:
+
+=         label Build a universe over the classpath
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import strategies.throwUnsafely
+=
+=             val source: Universe.Source = new Universe.Source:
+-               def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
++               def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+
+=         label Build a universe over the classpath
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import strategies.throwUnsafely
+=
+=             val source: Universe.Source = new Universe.Source:
+=               def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+-               def list(directory: Text): List[Text] = List()
++               def list(directory: Text): List[Text] = List()
+
+=         label Build a universe over the classpath
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import strategies.throwUnsafely
+=
+=             val source: Universe.Source = new Universe.Source:
+=               def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+=               def list(directory: Text): List[Text] = List()
+=
+-             val universe = degustation.Universe(source)
++             val universe = degustation.Universe(source)
+
+-             val option: Optional[Universe.ClassInfo] = universe.classOf(t"scala.Option")
++             val option: Optional[Universe.ClassInfo] = universe.classOf(t"scala.Option")
+
+-             option.let(_.parents.map(degustation.Universe.className))
++             option.let(_.parents.map(degustation.Universe.className))
+
+=             option.let(_.parents.map(degustation.Universe.className))
+-       frame
++       frame
+
+-         label Find a member and erase its signature
++         label Trovare un membro e cancellarne la firma
+
+=         label Find a member and erase its signature
+-         code
++         code
+
+=         label Find a member and erase its signature
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Find a member and erase its signature
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label Find a member and erase its signature
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Find a member and erase its signature
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import strategies.throwUnsafely
+=
+-             val source: Universe.Source = new Universe.Source:
++             val source: Universe.Source = new Universe.Source:
+
+=         label Find a member and erase its signature
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import strategies.throwUnsafely
+=
+=             val source: Universe.Source = new Universe.Source:
+-               def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
++               def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+
+=         label Find a member and erase its signature
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import strategies.throwUnsafely
+=
+=             val source: Universe.Source = new Universe.Source:
+=               def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+-               def list(directory: Text): List[Text] = List()
++               def list(directory: Text): List[Text] = List()
+
+=         label Find a member and erase its signature
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import strategies.throwUnsafely
+=
+=             val source: Universe.Source = new Universe.Source:
+=               def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+=               def list(directory: Text): List[Text] = List()
+=
+-             val universe = degustation.Universe(source)
++             val universe = degustation.Universe(source)
+
+-             universe.classOf(t"scala.Option").let: info =>
++             universe.classOf(t"scala.Option").let: info =>
+
+-               universe.memberIn(info, t"map", scala.collection.immutable.Set(Kind.Def)).let: (owner, member) =>
++               universe.memberIn(info, t"map", scala.collection.immutable.Set(Kind.Def)).let: (owner, member) =>
+
+-                 universe.erasure.signature(owner, member)   // t"(1,scala.Function1)scala.Option"
++                 universe.erasure.signature(owner, member)   // t"(1,scala.Function1)scala.Option"
+
+=                 universe.erasure.signature(owner, member)   // t"(1,scala.Function1)scala.Option"
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       A universe caches everything it loads and is not thread-safe: build one per reading. A
+-       name no source has gives `Unset` from `#classOf` rather than an error; `Erasure` turns
+-       that into `Erasure.Unresolved` only where a signature cannot be spelled without it.
++       Un universo mette in cache tutto ciò che carica e non è thread-safe: se ne costruisce uno
++       per ogni lettura. Un nome che nessuna sorgente possiede dà `Unset` da `#classOf` anziché
++       un errore; `Erasure` lo trasforma in `Erasure.Unresolved` solo dove una firma non può
++       essere scritta senza di esso.
+
+-   refer degustation.Universe.Source
++   refer degustation.Universe.Source
+
+=   refer degustation.Universe.Source
+-   refer degustation.Scope
++   refer degustation.Scope
+
+-   refer degustation.Universe.ClassInfo
++   refer degustation.Universe.ClassInfo
+
+-   refer degustation.Resolution
++   refer degustation.Resolution
+
+-   refer degustation.Erasure
++   refer degustation.Erasure
+
+-   entry .marker   a `scala.annotation.internal` marker annotation, as a tree
+-       `Universe.marker(t"Repeated")` is the `New` of the named class in
+-       `scala.annotation.internal`, as the compiler attaches to a parameter's type for a
+-       modifier a method type cannot otherwise represent.
+-   entry .synthetic   the classes the compiler defines with no classfile or TASTy behind them
+-       `scala.Any` (with the members the compiler gives it), `scala.AnyKind`,
+-       `scala.Matchable`, `scala.Nothing`, `scala.Null`, `scala.Singleton`, the repeated-
+-       parameter marker `scala.<repeated>`, `scala.&` and `scala.|`, and the function classes
+-       the compiler makes up by arity — `FunctionN` beyond 22 and every `ContextFunctionN` —
+-       each as a `ClassInfo`; `Unset` for any other name. `Universe#classOf` consults this
+-       before the classpath.
+-   entry .impureFunction   `scala.ImpureFunctionN` and `scala.ImpureContextFunctionN` as the aliases they are
+-       The compiler's own aliases, in no file: `[-T1, …, -TN, +R] =>> FunctionN[T1, …, TN,
+-       R]^`, given as a `Resolution.Alias` whose body is the lambda; `Unset` for any other name.
+-   entry .anyMembers   the members the compiler gives `Any`, with their signatures
++   entry .marker   un'annotazione marcatore di `scala.annotation.internal`, come albero
++       `Universe.marker(t"Repeated")` è il `New` della classe nominata in
++       `scala.annotation.internal`, come lo associa il compilatore al tipo di un parametro per
++       un modificatore che un tipo metodo non può rappresentare altrimenti.
++   entry .synthetic   le classi che il compilatore definisce senza alcun classfile o TASTy alle spalle
++       `scala.Any` (con i membri che gli dà il compilatore), `scala.AnyKind`,
++       `scala.Matchable`, `scala.Nothing`, `scala.Null`, `scala.Singleton`, il marcatore dei
++       parametri ripetuti `scala.<repeated>`, `scala.&` e `scala.|`, e le classi funzione che
++       il compilatore crea per arità (`FunctionN` oltre 22 e ogni `ContextFunctionN`), ciascuna
++       come `ClassInfo`; `Unset` per qualsiasi altro nome. `Universe#classOf` consulta questo
++       prima del classpath.
++   entry .impureFunction   `scala.ImpureFunctionN` e `scala.ImpureContextFunctionN` come gli alias che sono
++       Gli alias propri del compilatore, in nessun file: `[-T1, …, -TN, +R] =>> FunctionN[T1, …, TN,
++       R]^`, forniti come `Resolution.Alias` il cui corpo è la lambda; `Unset` per qualsiasi
++       altro nome.
++   entry .anyMembers   i membri che il compilatore dà ad `Any`, con le loro firme
+
+-       `==`, `!=`, `equals`, `##`, `hashCode`, `toString`, `getClass`, `isInstanceOf`,
++       `==`, `!=`, `equals`, `##`, `hashCode`, `toString`, `getClass`, `isInstanceOf`,
+
+-       `asInstanceOf` and their `$`-wrapped forms, each a `Member` whose `erased` signature is
+-       the one the compiler assigns (`getClass` and `isInstanceOf` take a type parameter).
+-   entry .objectMembers   the members the compiler gives `AnyRef` beyond `java.lang.Object`'s
+-       `eq`, `ne`, `synchronized` and `getClass`, added to `java.lang.Object` when it is loaded.
+-   entry .functionArity   the arity of a function class the compiler synthesizes, or `-1`
+-       `scala.FunctionN` for N beyond the implemented 22, and any `scala.ContextFunctionN`,
+-       `scala.ImpureFunctionN` or `scala.ImpureContextFunctionN`.
+-   entry .encode   a class name as it is spelled in a classfile or `.tasty` file name
+-       Operator characters become their `NameTransformer` names (`*:` is `$times$colon`) and a
+-       dot — which a top-level-definition carrier's name may contain — becomes `$u002E`.
+-   entry .decode   the inverse of `.encode`, for a class name read from a file name
+-   entry .qualify   a package member's full name: `pkg.name`, or `name` alone in the empty or root package
+-   entry .nth   the element of a list at an index, or `Unset` when the index is out of range
+-   entry .pin   types leaving the file they were read in, pinned to it as `Type.Foreign`
+-       Arguments substituted into another file's alias or value class keep resolving their
+-       local references in their own scope; with no scope to pin to, the types are returned as
+-       they are.
+-   entry .primitives   the nine primitive value classes, `scala.Unit` to `scala.Double`, by full name
+-   entry .classRef   a reference to a class by fully-qualified name, as a `Type`
+-       `Universe.classRef(t"scala.Option")` is `TypeRef(t"Option", TermRefPkg(t"scala"))`;
+-       a name with no package refers into `<empty>`. A Java nested class's binary `$` is read
+-       as a `.` in its name.
+-   entry .className   the fully-qualified name a class type names, when it can be read off the type alone
+-       Follows `TypeRefPkg`, `TypeRef` and `TypeRefIn` through package, `this` and stable-term
+-       prefixes, and `Applied` and `Annotated` to their underlying type; `Unset` for a type
+-       whose name needs resolution — a local reference, a type parameter, an alias.
+-   entry .upper   the upper bound a bounds type imposes, or the type itself when it is not bounds
+-   entry .typeOf   the type a type tree denotes
+-       `IdentTpt` and `Path` carry their type; `SelectTpt` becomes a `TypeRef` against its
+-       qualifier's `termType`; `SingletonTpt` its reference's type; `AppliedTpt` an `Applied`
+-       (or an `And`/`Or`, when the constructor is `scala.&` or `scala.|` written as a type
+-       tree); `RefinedTpt`, `LambdaTpt`, `BoundsTpt`, `AnnotatedTpt`, `MatchTpt` and
+-       `ByNameTpt` their corresponding types, with a lambda's parameters bound by address as a
+-       `Type.Abstraction`.
+-   entry .termType   the type of a term tree used as a type's prefix, or of a parent constructor call
+-       `Ident` carries its type; `Select` and `SelectIn` become term references against their
+-       qualifier; `QualifiedThis` a `This`; `New` its type; `Apply` the result of applying its
+-       function's type, or an `AppliedTerms` to be resolved later when that type is not yet at
+-       hand; a `Block` its expression's; and anything else `scala.Nothing`.
+-   entry .memberInfo   a type member's info as the compiler keeps it: an alias is bounds which coincide
+-   entry .annotationType   the class type an annotation tree constructs
+-       Looks through the `Apply`, `TypeApply`, `Select` of `<init>` and `New` of an annotation's
+-       constructor call to the annotated class, applied to any explicit type arguments.
+-   entry .parentType   the class type a parent clause names: the type under its constructor call, if any
+-   entry .methodType   the methodic type a definition's clauses and result spell
+-       `Universe.methodType(address, clauses, returns)` folds a `DefDef`'s clauses into nested
+-       `Type.Poly` and `Type.Method` types with the definition's own address as every clause's
+-       binder, so a `Type.Param` reference inside them resolves through
+-       `Universe#clauseAddresses`. This is how a `Member#tpe` for a method is built.
+-   entry .substitute   the parameters of the lambda at a binder replaced by arguments, throughout a type
+-   entry .replace   local references by address replaced by types, throughout a type
+-       Replaces `TypeRefDirect`, `TypeRefLocal`, `TermRefDirect` and `TermRefLocal` references
+-       to the given addresses: type parameters in a type, or term parameters whose singleton
+-       types a dependent method type mentions.
+-   entry .transform   rewrites every subtype for which a partial function is defined, bottom-up
+-   entry .mapChildren   rebuilds a type with a function applied to each of its immediate component types
+-   entry .index   indexes an unpickled file into a `Scope`
+-       Walks the file's trees, entering every definition by address with the fully-qualified
+-       name the compiler's `fullName` would give it: members of a class or package qualified by
+-       it, and a method's parameters and local types with the compiler's `_$` filler for each
+-       enclosing term (`pkg.Class._$param`). Definitions inside term bodies are recorded as
+-       local; a local type keeps its qualified name too, since an inline body refers to it by
+-       it. `Universe#scope` does this for a file found on the classpath.
+-   entry .children   the immediate subtrees of a tree
+-   entry #erasure   the `Erasure` over this universe, made once
+-   entry #scope   the scope of the `.tasty` file at a path, loaded and indexed once, or `Unset`
+-   entry #enter   a file supplied directly rather than found on the classpath, entered under a path
+-       The module being atomized, say: its classes become resolvable like any other's. Returns
+-       the `Scope` made for it.
+-   entry #classOf   the class named by a full name, or the class a type refers to
+-       `classOf(fullName)` gives the `ClassInfo` from the first of the class's synthetic
+-       definition, TASTy or classfile that exists, cached. A nested class lives in its
+-       top-level class's TASTy, and a class's simple name may itself contain dots (a
+-       top-level-definitions carrier is named after its source file), so every split of the
+-       name between package segments, a top-level class and nested classes is tried, longest
+-       package first; a module class `X$` is found in `X.tasty`. `classOf(tpe, scope)` is the
+-       class a type refers to, through aliases, bounds and singletons; both give `Unset` for
+-       what cannot be found.
+-   entry #resolve   what a type refers to, following local references in a scope
+-       The central question. Package references resolve to a class or a `Package`; named
+-       references to the member of their prefix, searched along its class's linearization and
+-       through an intersection's parts; local references to the definition at their address;
+-       an applied alias to whatever its expansion resolves to, with the arguments pinned to
+-       the scope they were spelled in; a `Param` to its binder's bound or parameter; a method
+-       type to its result; a literal to its constant's class. What cannot be followed is a
+-       `Resolution.Unknown` with the reason in words, never an exception.
+-   entry #parts   the two parts of a prefix that is an intersection or a union, or `Unset`
+-       Spelled as `And`/`Or`, or as an application of `scala.&` or `scala.|` (or an alias of
+-       one), whose members are those of its parts, the first part that has the member
+-       providing it.
+-   entry #clauseAddresses   the addresses of the parameters of a definition's clause, by the clause's names
+-       Which is how a `Type.Param(binder, number)` of a `methodType` is tied back to the
+-       parameter definition it stands for. Empty when the binder is not a definition's (a
+-       synthetic member's, say).
+-   entry #applicationType   the type of an application of a method reference, with the arguments substituted
+-       A type application of a polymorphic method, or a term application of a method, gives
+-       the method's result with the arguments in place of the parameters — by address for a
+-       definition's, by position for a synthetic member's — which is where a dependent result
+-       comes to refer to an argument. A reference that is no application resolves to its
+-       declared type. Returns the type with the scope it is spelled in.
+-   entry #expansionOf   the expansion of an alias reference or application, with the scope it is spelled in, or `Unset`
+-   entry #choose   among the members of a name along a class's linearization, the one a reference denotes
+-       The one whose signature the reference's `Name#signature` carries, if it is signed; an
+-       unsigned reference to an overloaded name denotes the parameterless alternative, since
+-       the pickler signs every other kind of method. A concrete member is preferred over an
+-       abstract redeclaration, as the compiler's `findMember` joins them.
+-   entry #baseArguments   the type arguments with which a class, applied to arguments, instantiates a base class
+-       The arguments themselves for the class itself; otherwise those of the parent clause
+-       which leads to the base, with the class's own parameters substituted; `Unset` when the
+-       class does not derive from the base.
+-   entry #packageObjectMember   a member of a package's package object or of one of its top-level-definition carriers
+-       Where a reference pickled against a package prefix finds a package-level type alias or
+-       definition: the `package$` object first, then each `<file>$package` carrier the
+-       `Source` lists in the package's directory.
+-   entry #owner   the class or package a prefix denotes: a package path, a class's `this`, a term's class
+-   entry #selfType   the self type a class declares, if any
+-   entry #memberIn   the member of a name and kinds, in a class or the first of its linearization that declares one
+-       Returns the member with its declaring class. The class's own declarations are searched
+-       first, then its linearization in order.
+-   entry #termsIn   every term member of a name along a class's linearization, declaring class first
+-   entry #linearization   the class's linearization by full name: itself, then its parents' from last to first
+-       `L(C) = C, L(Pn) +: … +: L(P1)`, keeping the last occurrence of a class that appears
+-       more than once, so a superclass's linearization is a suffix. A class asked for while its
+-       own linearization is being computed contributes only itself.
+-   entry #derivesFrom   whether a class has a base of the given full name in its linearization
++       `asInstanceOf` e le loro forme avvolte in `$`, ciascuno un `Member` la cui firma `erased`
++       è quella che assegna il compilatore (`getClass` e `isInstanceOf` prendono un parametro di
++       tipo).
++   entry .objectMembers   i membri che il compilatore dà ad `AnyRef` oltre a quelli di `java.lang.Object`
++       `eq`, `ne`, `synchronized` e `getClass`, aggiunti a `java.lang.Object` quando viene
++       caricato.
++   entry .functionArity   l'arità di una classe funzione che il compilatore sintetizza, oppure `-1`
++       `scala.FunctionN` per N oltre il 22 implementato, e qualsiasi `scala.ContextFunctionN`,
++       `scala.ImpureFunctionN` o `scala.ImpureContextFunctionN`.
++   entry .encode   un nome di classe come è scritto in un classfile o nel nome di un file `.tasty`
++       I caratteri operatore diventano i loro nomi di `NameTransformer` (`*:` è `$times$colon`)
++       e un punto, che il nome di un portatore di definizioni di primo livello può contenere,
++       diventa `$u002E`.
++   entry .decode   l'inverso di `.encode`, per un nome di classe letto dal nome di un file
++   entry .qualify   il nome completo di un membro di package: `pkg.name`, o `name` da solo nel package vuoto o radice
++   entry .nth   l'elemento di una lista a un indice, oppure `Unset` quando l'indice è fuori intervallo
++   entry .pin   tipi che lasciano il file in cui sono stati letti, ancorati a esso come `Type.Foreign`
++       Gli argomenti sostituiti nell'alias o nella value class di un altro file continuano a
++       risolvere i loro riferimenti locali nel proprio scope; senza uno scope a cui ancorarli, i
++       tipi sono restituiti come sono.
++   entry .primitives   le nove value class primitive, da `scala.Unit` a `scala.Double`, per nome completo
++   entry .classRef   un riferimento a una classe per nome pienamente qualificato, come `Type`
++       `Universe.classRef(t"scala.Option")` è `TypeRef(t"Option", TermRefPkg(t"scala"))`;
++       un nome senza package si riferisce a `<empty>`. Il `$` binario di una classe annidata Java
++       è letto come `.` nel suo nome.
++   entry .className   il nome pienamente qualificato che nomina un tipo di classe, quando lo si può leggere dal solo tipo
++       Segue `TypeRefPkg`, `TypeRef` e `TypeRefIn` attraverso prefissi di package, di `this` e
++       di termini stabili, e `Applied` e `Annotated` fino al loro tipo sottostante; `Unset` per
++       un tipo il cui nome richiede una risoluzione: un riferimento locale, un parametro di
++       tipo, un alias.
++   entry .upper   il limite superiore che impone un tipo di limiti, o il tipo stesso quando non è di limiti
++   entry .typeOf   il tipo che denota un albero di tipo
++       `IdentTpt` e `Path` portano il loro tipo; `SelectTpt` diventa un `TypeRef` rispetto al
++       `termType` del suo qualificatore; `SingletonTpt` il tipo del suo riferimento;
++       `AppliedTpt` un `Applied` (o un `And`/`Or`, quando il costruttore è `scala.&` o `scala.|`
++       scritto come albero di tipo); `RefinedTpt`, `LambdaTpt`, `BoundsTpt`, `AnnotatedTpt`,
++       `MatchTpt` e `ByNameTpt` i tipi corrispondenti, con i parametri di una lambda legati per
++       indirizzo come `Type.Abstraction`.
++   entry .termType   il tipo di un albero di termine usato come prefisso di un tipo, o di una chiamata al costruttore di un genitore
++       `Ident` porta il suo tipo; `Select` e `SelectIn` diventano riferimenti di termine
++       rispetto al loro qualificatore; `QualifiedThis` un `This`; `New` il suo tipo; `Apply` il
++       risultato dell'applicazione del tipo della sua funzione, o un `AppliedTerms` da
++       risolvere più tardi quando quel tipo non è ancora disponibile; un `Block` quello della
++       sua espressione; e qualsiasi altra cosa `scala.Nothing`.
++   entry .memberInfo   l'info di un membro di tipo come la conserva il compilatore: un alias è un limite i cui estremi coincidono
++   entry .annotationType   il tipo di classe che costruisce un albero di annotazione
++       Guarda attraverso `Apply`, `TypeApply`, il `Select` di `<init>` e il `New` della
++       chiamata al costruttore di un'annotazione fino alla classe annotata, applicata a
++       eventuali argomenti di tipo espliciti.
++   entry .parentType   il tipo di classe che nomina una clausola di genitore: il tipo sotto la sua chiamata al costruttore, se c'è
++   entry .methodType   il tipo metodico che scrivono le clausole e il risultato di una definizione
++       `Universe.methodType(address, clauses, returns)` ripiega le clausole di un `DefDef` in
++       tipi `Type.Poly` e `Type.Method` annidati, con l'indirizzo della definizione stessa come
++       binder di ogni clausola, così che un riferimento `Type.Param` al loro interno si risolva
++       attraverso `Universe#clauseAddresses`. È così che si costruisce il `Member#tpe` di un
++       metodo.
++   entry .substitute   i parametri della lambda a un binder sostituiti da argomenti, in tutto un tipo
++   entry .replace   riferimenti locali per indirizzo sostituiti da tipi, in tutto un tipo
++       Sostituisce i riferimenti `TypeRefDirect`, `TypeRefLocal`, `TermRefDirect` e
++       `TermRefLocal` agli indirizzi dati: parametri di tipo in un tipo, o parametri di termine
++       i cui tipi singleton sono menzionati da un tipo metodo dipendente.
++   entry .transform   riscrive dal basso verso l'alto ogni sottotipo per cui una funzione parziale è definita
++   entry .mapChildren   ricostruisce un tipo con una funzione applicata a ciascuno dei suoi tipi componenti immediati
++   entry .index   indicizza un file deserializzato in uno `Scope`
++       Percorre gli alberi del file, inserendo ogni definizione per indirizzo con il nome
++       pienamente qualificato che le darebbe `fullName` del compilatore: i membri di una classe
++       o di un package qualificati da essa o da esso, e i parametri e i tipi locali di un metodo
++       con il riempitivo `_$` del compilatore per ogni termine che li racchiude
++       (`pkg.Class._$param`). Le definizioni all'interno dei corpi dei termini sono registrate
++       come locali; anche un tipo locale mantiene il suo nome qualificato, poiché un corpo inline
++       vi si riferisce con esso. `Universe#scope` fa questo per un file trovato nel classpath.
++   entry .children   i sottoalberi immediati di un albero
++   entry #erasure   l'`Erasure` su questo universo, creato una sola volta
++   entry #scope   lo scope del file `.tasty` a un path, caricato e indicizzato una sola volta, oppure `Unset`
++   entry #enter   un file fornito direttamente anziché trovato nel classpath, inserito sotto un path
++       Il modulo che si sta atomizzando, per esempio: le sue classi diventano risolvibili come
++       quelle di qualunque altro. Restituisce lo `Scope` creato per esso.
++   entry #classOf   la classe nominata da un nome completo, o la classe a cui si riferisce un tipo
++       `classOf(fullName)` dà il `ClassInfo` dalla prima esistente tra la definizione sintetica,
++       il TASTy o il classfile della classe, in cache. Una classe annidata vive nel TASTy della
++       sua classe di primo livello, e il nome semplice di una classe può a sua volta contenere
++       punti (un portatore di definizioni di primo livello prende il nome dal suo file
++       sorgente), quindi si prova ogni suddivisione del nome tra segmenti di package, una classe
++       di primo livello e classi annidate, a partire dal package più lungo; una classe modulo
++       `X$` si trova in `X.tasty`. `classOf(tpe, scope)` è la classe a cui si riferisce un tipo,
++       attraverso alias, limiti e singleton; entrambi danno `Unset` per ciò che non si trova.
++   entry #resolve   ciò a cui si riferisce un tipo, seguendo i riferimenti locali in uno scope
++       La domanda centrale. I riferimenti di package si risolvono in una classe o in un
++       `Package`; i riferimenti con nome nel membro del loro prefisso, cercato lungo la
++       linearizzazione della sua classe e attraverso le parti di un'intersezione; i riferimenti
++       locali nella definizione al loro indirizzo; un alias applicato in ciò in cui si risolve
++       la sua espansione, con gli argomenti ancorati allo scope in cui sono stati scritti; un
++       `Param` nel limite o nel parametro del suo binder; un tipo metodo nel suo risultato; un
++       letterale nella classe della sua costante. Ciò che non si può seguire è un
++       `Resolution.Unknown` con il motivo a parole, mai un'eccezione.
++   entry #parts   le due parti di un prefisso che è un'intersezione o un'unione, oppure `Unset`
++       Scritto come `And`/`Or`, o come applicazione di `scala.&` o di `scala.|` (o di un loro
++       alias), i cui membri sono quelli delle sue parti, fornito ciascuno dalla prima parte che
++       ha il membro.
++   entry #clauseAddresses   gli indirizzi dei parametri della clausola di una definizione, per i nomi della clausola
++       È così che un `Type.Param(binder, number)` di un `methodType` è ricollegato alla
++       definizione di parametro che rappresenta. Vuoto quando il binder non è quello di una
++       definizione (di un membro sintetico, per esempio).
++   entry #applicationType   il tipo di un'applicazione di un riferimento a metodo, con gli argomenti sostituiti
++       Un'applicazione di tipo di un metodo polimorfico, o un'applicazione di termine di un
++       metodo, dà il risultato del metodo con gli argomenti al posto dei parametri (per
++       indirizzo per quelli di una definizione, per posizione per quelli di un membro
++       sintetico), ed è lì che un risultato dipendente arriva a riferirsi a un argomento. Un
++       riferimento che non è un'applicazione si risolve nel suo tipo dichiarato. Restituisce il
++       tipo con lo scope in cui è scritto.
++   entry #expansionOf   l'espansione di un riferimento o di un'applicazione di alias, con lo scope in cui è scritta, oppure `Unset`
++   entry #choose   tra i membri di un nome lungo la linearizzazione di una classe, quello che un riferimento denota
++       Quello la cui firma porta il `Name#signature` del riferimento, se è firmato; un
++       riferimento non firmato a un nome sovraccarico denota l'alternativa senza parametri,
++       poiché il pickler firma ogni altro tipo di metodo. Un membro concreto è preferito a una
++       ridichiarazione astratta, come li unisce `findMember` del compilatore.
++   entry #baseArguments   gli argomenti di tipo con cui una classe, applicata ad argomenti, istanzia una classe base
++       Gli argomenti stessi per la classe stessa; altrimenti quelli della clausola di genitore
++       che porta alla base, con i parametri propri della classe sostituiti; `Unset` quando la
++       classe non deriva dalla base.
++   entry #packageObjectMember   un membro del package object di un package o di uno dei suoi portatori di definizioni di primo livello
++       Dove un riferimento serializzato rispetto a un prefisso di package trova un alias di tipo
++       o una definizione a livello di package: prima l'oggetto `package$`, poi ogni portatore
++       `<file>$package` che il `Source` elenca nella directory del package.
++   entry #owner   la classe o il package che un prefisso denota: un path di package, il `this` di una classe, la classe di un termine
++   entry #selfType   il self type che una classe dichiara, se c'è
++   entry #memberIn   il membro di un nome e di generi, in una classe o nella prima della sua linearizzazione che ne dichiari uno
++       Restituisce il membro con la sua classe dichiarante. Si cercano prima le dichiarazioni
++       proprie della classe, poi la sua linearizzazione in ordine.
++   entry #termsIn   ogni membro di termine di un nome lungo la linearizzazione di una classe, prima la classe dichiarante
++   entry #linearization   la linearizzazione della classe per nome completo: se stessa, poi quelle dei suoi genitori dall'ultimo al primo
++       `L(C) = C, L(Pn) +: … +: L(P1)`, mantenendo l'ultima occorrenza di una classe che appare
++       più di una volta, così che la linearizzazione di una superclasse sia un suffisso. Una
++       classe richiesta mentre si calcola la sua stessa linearizzazione contribuisce solo con se
++       stessa.
++   entry #derivesFrom   se una classe ha nella sua linearizzazione una base con il nome completo dato
+
+-   entry .Source   where a universe finds its classes: read an entry by path, list a directory
++   entry .Source   dove un universo trova le sue classi: leggere una voce per path, elencare una directory
+
+=   entry .Source   where a universe finds its classes: read an entry by path, list a directory
+-     detail
++     detail
+
+-         A classpath reduced to two questions, so that the same semantic layer runs wherever the
+-         bytes can be fetched from: directories and jars on the JVM, a bundle in a browser, a
+-         linked-in archive in a native binary. Paths are slash-separated and relative, as
+-         classfiles and `.tasty` files are named: `scala/collection/immutable/List.tasty`.
+-         `#read` gives an entry's bytes or `Unset`; `#list` gives the simple names in a
+-         directory, which a `Universe` uses to find a package's top-level-definition carriers
+-         (the `<file>$package.tasty` files), and may be empty where listing is impossible, at the
+-         cost of package-level definitions resolving only through a package object.
++         Un classpath ridotto a due domande, così che lo stesso strato semantico giri ovunque si
++         possano recuperare i byte: directory e jar sulla JVM, un bundle in un browser, un
++         archivio incorporato in un binario nativo. I path sono separati da barre e relativi,
++         come sono nominati i classfile e i file `.tasty`: `scala/collection/immutable/List.tasty`.
++         `#read` dà i byte di una voce oppure `Unset`; `#list` dà i nomi semplici in una
++         directory, che un `Universe` usa per trovare i portatori di definizioni di primo
++         livello di un package (i file `<file>$package.tasty`), e può essere vuoto dove elencare è
++         impossibile, al costo che le definizioni a livello di package si risolvano solo
++         attraverso un package object.
+
+-         `Source(first, second, …)` combines sources, the first that has an entry answering
+-         for it. `Degustation.atomize` takes the dependency classpath as one, and `Inspection`
+-         builds one over directories, jars and the JDK's classes.
++         `Source(first, second, …)` combina sorgenti, e la prima che ha una voce risponde per
++         essa. `Degustation.atomize` prende il classpath delle dipendenze come una di esse, e
++         `Inspection` ne costruisce una su directory, jar e le classi del JDK.
+
+=         builds one over directories, jars and the JDK's classes.
+=
+-         ```scala
++         ```scala
+
+=         builds one over directories, jars and the JDK's classes.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         builds one over directories, jars and the JDK's classes.
+=
+=         ```scala
+=         import soundness.*
+-         import classloaders.threadContextClassloader
++         import classloaders.threadContextClassloader
+
+=         builds one over directories, jars and the JDK's classes.
+=
+=         ```scala
+=         import soundness.*
+=         import classloaders.threadContextClassloader
+=
+-         val source: Universe.Source = new Universe.Source:
++         val source: Universe.Source = new Universe.Source:
+
+=         builds one over directories, jars and the JDK's classes.
+=
+=         ```scala
+=         import soundness.*
+=         import classloaders.threadContextClassloader
+=
+=         val source: Universe.Source = new Universe.Source:
+-           def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
++           def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+
+=         builds one over directories, jars and the JDK's classes.
+=
+=         ```scala
+=         import soundness.*
+=         import classloaders.threadContextClassloader
+=
+=         val source: Universe.Source = new Universe.Source:
+=           def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+-           def list(directory: Text): List[Text] = List()
++           def list(directory: Text): List[Text] = List()
+
+-         source.read(t"scala/Option.tasty").present
++         source.read(t"scala/Option.tasty").present
+
+=         source.read(t"scala/Option.tasty").present
+-         ```
++         ```
+
+=         source.read(t"scala/Option.tasty").present
+=         ```
+-     refer degustation.Universe
++     refer degustation.Universe
+
+-     refer degustation.Inspection
++     refer degustation.Inspection
+
+-     entry .apply   combines several sources: the first that has an entry answers for it
+-         `read` returns the first source's answer that is present; `list` is the union of every
+-         source's listing, without duplicates.
+-     entry #read   the bytes of the entry at a slash-separated relative path, or `Unset`
+-     entry #list   the simple names of the entries directly in a directory (`t""` for the root)
+-   entry .ClassInfo   a class as the universe knows it, from its TASTy or its classfile
++     entry .apply   combina diverse sorgenti: la prima che ha una voce risponde per essa
++         `read` restituisce la risposta della prima sorgente che è presente; `list` è l'unione
++         degli elenchi di ogni sorgente, senza duplicati.
++     entry #read   i byte della voce a un path relativo separato da barre, oppure `Unset`
++     entry #list   i nomi semplici delle voci direttamente in una directory (`t""` per la radice)
++   entry .ClassInfo   una classe come la conosce l'universo, dal suo TASTy o dal suo classfile
+
+=   entry .ClassInfo   a class as the universe knows it, from its TASTy or its classfile
+-     detail
++     detail
+
+-         `Universe#classOf(fullName)` gives one. It carries the class's `#fullName`, `#flags`,
+-         `#typeParams` (name and bounds) with the `#typeParamAddresses` the class's own types
+-         refer to them by, `#parents` as types, `#members`, the underlying type `#valueParam` of
+-         a class extending `AnyVal`, the `#scope` of the file it was read from (`Unset` for a
+-         Java class or a synthetic one), whether it is `#java`, and the `#address` of its
+-         definition in its scope (`-1` without TASTy).
++         `Universe#classOf(fullName)` ne dà uno. Porta il `#fullName` della classe, i `#flags`, i
++         `#typeParams` (nome e limiti) con i `#typeParamAddresses` con cui li riferiscono i tipi
++         propri della classe, i `#parents` come tipi, i `#members`, il tipo sottostante
++         `#valueParam` di una classe che estende `AnyVal`, lo `#scope` del file da cui è stata
++         letta (`Unset` per una classe Java o sintetica), se è `#java`, e l'`#address` della sua
++         definizione nel suo scope (`-1` senza TASTy).
+
+-         A Java class's members come from its classfile's descriptors, with the members the
+-         compiler gives `Any` and `AnyRef` added to `java.lang.Object` and the `+` the compiler
+-         gives `java.lang.String`; its interfaces are its parents, and a Java interface with no
+-         superclass has `scala.Any`, so that a universal trait of Java's is treated as the
+-         compiler treats it.
++         I membri di una classe Java vengono dai descrittori del suo classfile, con i membri che
++         il compilatore dà ad `Any` e ad `AnyRef` aggiunti a `java.lang.Object` e il `+` che il
++         compilatore dà a `java.lang.String`; le sue interfacce sono i suoi genitori, e
++         un'interfaccia Java senza superclasse ha `scala.Any`, così che un trait universale di
++         Java sia trattato come lo tratta il compilatore.
+
+=         compiler treats it.
+=
+-         ```scala
++         ```scala
+
+=         compiler treats it.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         compiler treats it.
+=
+=         ```scala
+=         import soundness.*
+-         import classloaders.threadContextClassloader
++         import classloaders.threadContextClassloader
+
+=         compiler treats it.
+=
+=         ```scala
+=         import soundness.*
+=         import classloaders.threadContextClassloader
+=
+-         val source: Universe.Source = new Universe.Source:
++         val source: Universe.Source = new Universe.Source:
+
+=         compiler treats it.
+=
+=         ```scala
+=         import soundness.*
+=         import classloaders.threadContextClassloader
+=
+=         val source: Universe.Source = new Universe.Source:
+-           def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
++           def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+
+=         compiler treats it.
+=
+=         ```scala
+=         import soundness.*
+=         import classloaders.threadContextClassloader
+=
+=         val source: Universe.Source = new Universe.Source:
+=           def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+-           def list(directory: Text): List[Text] = List()
++           def list(directory: Text): List[Text] = List()
+
+-         val universe = degustation.Universe(source)
++         val universe = degustation.Universe(source)
+
+-         universe.classOf(t"scala.Option").let: info =>
++         universe.classOf(t"scala.Option").let: info =>
+
+-           (info.isTrait, info.typeParams.map(_(0)), info.members.map(_.name))
++           (info.isTrait, info.typeParams.map(_(0)), info.members.map(_.name))
+
+=           (info.isTrait, info.typeParams.map(_(0)), info.members.map(_.name))
+-         ```
++         ```
+
+=           (info.isTrait, info.typeParams.map(_(0)), info.members.map(_.name))
+=         ```
+-     refer degustation.Universe
++     refer degustation.Universe
+
+-     refer degustation.Member
++     refer degustation.Member
+
+-     entry #fullName   the class's fully-qualified name, a nested class's joined to its owner's with `.`
+-     entry #flags   the class's modifier flags: `Trait`, `Object`, `Abstract`, `Final`, `Sealed`, `Case`, …
+-     entry #typeParams   each type parameter's name and bounds, in order
+-     entry #typeParamAddresses   the addresses of the type parameters' definitions, which the class's own types refer to
+-     entry #parents   the parent types, as the template's parent clauses name them
+-     entry #members   the class's own declarations, as `Member`s; not its inherited ones
+-     entry #valueParam   the underlying type of a class extending `AnyVal`, or `Unset`
+-     entry #scope   the scope of the file the class was read from; `Unset` for a Java or synthetic class
+-     entry #java   whether the class was read from a classfile rather than TASTy
+-     entry #address   the address of the class's definition in its scope; `-1` for a class without TASTy
+-     entry #pkg   the package the class is in: the owner of its top-level class
+-     entry #isTrait   whether the `Trait` flag is set; a Java interface counts
+-     entry #isObject   whether the `Object` flag is set: a module class
+-     entry #isValueClass   whether the compiler treats the class as a value class
+-         A class extending `AnyVal` that is not one of the primitives (nor `AnyVal` or `Null`
+-         themselves), which is the rule the compiler applies, and which decides whether a
+-         parameter of that type erases to its underlying type.
++     entry #fullName   il nome pienamente qualificato della classe, quello di una classe annidata unito al nome del suo proprietario con `.`
++     entry #flags   i flag di modificatore della classe: `Trait`, `Object`, `Abstract`, `Final`, `Sealed`, `Case`, …
++     entry #typeParams   il nome e i limiti di ogni parametro di tipo, in ordine
++     entry #typeParamAddresses   gli indirizzi delle definizioni dei parametri di tipo, a cui si riferiscono i tipi propri della classe
++     entry #parents   i tipi genitori, come li nominano le clausole di genitore del template
++     entry #members   le dichiarazioni proprie della classe, come `Member`; non quelle ereditate
++     entry #valueParam   il tipo sottostante di una classe che estende `AnyVal`, oppure `Unset`
++     entry #scope   lo scope del file da cui la classe è stata letta; `Unset` per una classe Java o sintetica
++     entry #java   se la classe è stata letta da un classfile anziché da TASTy
++     entry #address   l'indirizzo della definizione della classe nel suo scope; `-1` per una classe senza TASTy
++     entry #pkg   il package in cui si trova la classe: il proprietario della sua classe di primo livello
++     entry #isTrait   se il flag `Trait` è impostato; un'interfaccia Java conta
++     entry #isObject   se il flag `Object` è impostato: una classe modulo
++     entry #isValueClass   se il compilatore tratta la classe come value class
++         Una classe che estende `AnyVal` e che non è uno dei primitivi (né `AnyVal` o `Null`
++         stessi), che è la regola che applica il compilatore, e che decide se un parametro di
++         quel tipo si cancella nel suo tipo sottostante.
+
+- entry .Erasure   Scala 3's type erasure over the `Pickled` model, as far as spelling an erased signature needs it
++ entry .Erasure   la cancellazione dei tipi di Scala 3 sul modello `Pickled`, per quanto serve a scrivere una firma cancellata
+
+= entry .Erasure   Scala 3's type erasure over the `Pickled` model, as far as spelling an erased signature needs it
+-   detail
++   detail
+
+-       An `Erasure` is made over a `Universe` — `universe.erasure` is the one made for it —
+-       and reproduces the rules of the compiler's `TypeErasure` and `Signature`, for Scala 3
+-       source, with value classes semi-erased, in signature-name mode: the setting under
+-       which the compiler spells the signature it stores in a `SIGNED` name. A member's
+-       signature is `(paramSigs)resultSig`, each part a fully-qualified erased class name or a
+-       type-parameter count: `(1,scala.Function1)scala.Option` for `Option#map`. Those are the
+-       disambiguators in `ScalaAtom` keys and in `Name#signature`, so the two sides of a
+-       reference agree by construction.
++       Un `Erasure` è creato su un `Universe` (`universe.erasure` è quello creato per esso) e
++       riproduce le regole di `TypeErasure` e `Signature` del compilatore, per sorgenti Scala 3,
++       con le value class semi-cancellate, in modalità nome-di-firma: l'impostazione con cui il
++       compilatore scrive la firma che memorizza in un nome `SIGNED`. La firma di un membro è
++       `(paramSigs)resultSig`, ogni parte un nome di classe cancellato pienamente qualificato o
++       un numero di parametri di tipo: `(1,scala.Function1)scala.Option` per `Option#map`. Sono
++       questi i disambiguatori nelle chiavi degli `ScalaAtom` e in `Name#signature`, così che i
++       due lati di un riferimento concordino per costruzione.
+
+=       reference agree by construction.
+=
+-       ```scala
++       ```scala
+
+=       reference agree by construction.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       reference agree by construction.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+-       val source: Universe.Source = new Universe.Source:
++       val source: Universe.Source = new Universe.Source:
+
+=       val source: Universe.Source = new Universe.Source:
+-         def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
++         def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+
+=       val source: Universe.Source = new Universe.Source:
+=         def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+-         def list(directory: Text): List[Text] = List()
++         def list(directory: Text): List[Text] = List()
+
+-       val universe = degustation.Universe(source)
++       val universe = degustation.Universe(source)
+
+-       val erasure: Erasure = universe.erasure
++       val erasure: Erasure = universe.erasure
+
+-       erasure.sigName(degustation.Universe.classRef(t"scala.Int"), Unset)      // t"scala.Int"
++       erasure.sigName(degustation.Universe.classRef(t"scala.Int"), Unset)      // t"scala.Int"
+
+-       erasure.sigName(degustation.Universe.classRef(t"scala.Any"), Unset)      // t"java.lang.Object"
++       erasure.sigName(degustation.Universe.classRef(t"scala.Any"), Unset)      // t"java.lang.Object"
+
+-       erasure.resultSigName(degustation.Universe.classRef(t"scala.Unit"), Unset)   // t"scala.Unit"
++       erasure.resultSigName(degustation.Universe.classRef(t"scala.Unit"), Unset)   // t"scala.Unit"
+
+=       erasure.resultSigName(degustation.Universe.classRef(t"scala.Unit"), Unset)   // t"scala.Unit"
+-       ```
++       ```
+
+-       The rules, in brief: `Any`, `AnyVal`, `Matchable`, `Singleton` and `caps.Pure` erase to
+-       `java.lang.Object`; `Tuple` and `NonEmptyTuple` to `scala.Product`; `Unit` to
+-       `scala.runtime.BoxedUnit` as a parameter and `scala.Unit` as a result; a value class to
+-       its underlying type as a parameter and to itself as an array element; an alias or
+-       opaque type to its right-hand side; an abstract type or type parameter to its upper
+-       bound; a by-name parameter to `scala.Function0`; a polymorphic function type to the
+-       `FunctionN` of its arity; a `*:` tuple to `TupleN` or `TupleXXL`; an `Array[T]` to an
+-       array of `T`'s erasure, or to `Object` when `T` is generic; an intersection to the
+-       erased greatest lower bound of its parts (dropping a pure capability part); a union to
+-       the erased least upper bound; a match type to its reduction, or its bound.
++       Le regole, in breve: `Any`, `AnyVal`, `Matchable`, `Singleton` e `caps.Pure` si cancellano
++       in `java.lang.Object`; `Tuple` e `NonEmptyTuple` in `scala.Product`; `Unit` in
++       `scala.runtime.BoxedUnit` come parametro e in `scala.Unit` come risultato; una value class
++       nel suo tipo sottostante come parametro e in se stessa come elemento di array; un alias o
++       un tipo opaco nel suo lato destro; un tipo astratto o un parametro di tipo nel suo limite
++       superiore; un parametro by-name in `scala.Function0`; un tipo funzione polimorfico nel
++       `FunctionN` della sua arità; una tupla `*:` in `TupleN` o `TupleXXL`; un `Array[T]` in un
++       array della cancellazione di `T`, o in `Object` quando `T` è generico; un'intersezione nel
++       massimo minorante cancellato delle sue parti (scartando una parte che è una capability
++       pura); un'unione nel minimo maggiorante cancellato; un match type nella sua riduzione, o
++       nel suo limite.
+
+-       A type whose erasure needs a class the universe cannot find throws
+-       `Erasure.Unresolved`, which `Inspection.atomize` reports as `Inspection.Error` with
++       Un tipo la cui cancellazione richiede una classe che l'universo non trova lancia
++       `Erasure.Unresolved`, che `Inspection.atomize` segnala come `Inspection.Error` con
+
+-       `Reason.Unencodable`.
++       `Reason.Unencodable`.
+
+=       `Reason.Unencodable`.
+-   refer degustation.Universe
++   refer degustation.Universe
+
+=   refer degustation.Universe
+-   refer degustation.Pickled
++   refer degustation.Pickled
+
+-   entry .Erased   an erased type: a reference to a class by full name, or an array of one
+-       `Ref(name)` or `Array(element)`; `Erasure#render` spells them as `name` and `name[]`.
+-   entry .Unresolved   thrown when a type's erasure needs a class the universe cannot find
++   entry .Erased   un tipo cancellato: un riferimento a una classe per nome completo, o un array di essa
++       `Ref(name)` o `Array(element)`; `Erasure#render` li scrive come `name` e `name[]`.
++   entry .Unresolved   lanciato quando la cancellazione di un tipo richiede una classe che l'universo non trova
+
+=   entry .Unresolved   thrown when a type's erasure needs a class the universe cannot find
+-     detail
++     detail
+
+-         A `RuntimeException` carrying `#detail`: the reason the universe gave, or the package
+-         which was used as a type. Erasure can fail only on a classpath that lacks something
+-         the module refers to, so the dependency classpath handed to `Degustation.atomize` or
+-         `Inspection.atomize` must carry everything the files reference, including the Scala
+-         library and the JDK's classes.
+-     entry #detail   why the type could not be resolved
+-   entry #signature   the erased signature of a definition, or of a member found by lookup
+-       `signature(tree, scope, owner)` is a `DefDef`'s signature: each type clause as its
+-       parameter count, each term parameter's erased name (an `erased` parameter, or one whose
+-       type is an `erased class`, has no place in it), and the result's; a constructor's
+-       result is its own class, erased as the class is. Anything that is not a method — a
+-       value, a parameterless method — has the signature the compiler gives a non-method, `()`.
+-       `signature(owner, member)` is a member's from lookup: a Java member's is read off its
+-       descriptor, a Scala member's from its declaration in its class's file.
+-   entry #signatureOf   the signature of a pickled methodic type — a refinement's method, say — spelled as a declaration's would be
+-   entry #javaSignature   a Java member's signature from its descriptor types, which are already erased
+-   entry #sigName   the erased name of a type as a parameter: `render(erase(tpe, scope, vc = true))`
+-   entry #resultSigName   the erased name of a type as a result: as a parameter's, except that `Unit` stays `scala.Unit`
+-   entry #render   an `Erased` spelled as a signature does: the class's full name, with `[]` for each array level
+-   entry #erase   the erasure |T| of a type, in a scope, with or without value classes semi-erased
+-       `vc` is the compiler's `semiEraseVCs`: `true` erases a value class to its underlying
+-       type, as a parameter is erased; `false` keeps it as itself, as an array element or the
+-       underlying of another value class is. Throws `Erasure.Unresolved` for a type the
+-       universe cannot follow.
+-   entry #erasedGlb   the erased greatest lower bound: one of its two arguments, by the compiler's total order
+-       Arrays before non-arrays, primitives before others, classes before traits, subclasses
+-       before superclasses, then by name. This is how an intersection erases.
+-   entry #erasedLub   the erased least upper bound, as a union erases
+-       `Nothing` vanishes against anything, `Null` against a type that derives from `Object`
+-       (a universal trait does not); arrays join elementwise; two classes join at the last
+-       minimal common base class, preferring classes over traits, or at `java.lang.Object`.
++         Una `RuntimeException` che porta `#detail`: il motivo dato dall'universo, o il package
++         che è stato usato come tipo. La cancellazione può fallire solo su un classpath a cui
++         manca qualcosa a cui il modulo si riferisce, quindi il classpath delle dipendenze
++         passato a `Degustation.atomize` o a `Inspection.atomize` deve contenere tutto ciò a cui
++         i file fanno riferimento, compresi la libreria Scala e le classi del JDK.
++     entry #detail   perché il tipo non ha potuto essere risolto
++   entry #signature   la firma cancellata di una definizione, o di un membro trovato tramite ricerca
++       `signature(tree, scope, owner)` è la firma di un `DefDef`: ogni clausola di tipo come il
++       suo numero di parametri, il nome cancellato di ogni parametro di termine (un parametro
++       `erased`, o uno il cui tipo è una `erased class`, non vi trova posto), e quello del
++       risultato; il risultato di un costruttore è la sua stessa classe, cancellata come lo è la
++       classe. Tutto ciò che non è un metodo (un valore, un metodo senza parametri) ha la firma
++       che il compilatore dà a un non-metodo, `()`. `signature(owner, member)` è quella di un
++       membro trovato tramite ricerca: quella di un membro Java è letta dal suo descrittore,
++       quella di un membro Scala dalla sua dichiarazione nel file della sua classe.
++   entry #signatureOf   la firma di un tipo metodico serializzato (il metodo di un raffinamento, per esempio), scritta come lo sarebbe quella di una dichiarazione
++   entry #javaSignature   la firma di un membro Java dai tipi del suo descrittore, che sono già cancellati
++   entry #sigName   il nome cancellato di un tipo come parametro: `render(erase(tpe, scope, vc = true))`
++   entry #resultSigName   il nome cancellato di un tipo come risultato: come quello di un parametro, tranne che `Unit` resta `scala.Unit`
++   entry #render   un `Erased` scritto come lo scrive una firma: il nome completo della classe, con `[]` per ogni livello di array
++   entry #erase   la cancellazione |T| di un tipo, in uno scope, con o senza value class semi-cancellate
++       `vc` è il `semiEraseVCs` del compilatore: `true` cancella una value class nel suo tipo
++       sottostante, come si cancella un parametro; `false` la mantiene come se stessa, come lo è
++       un elemento di array o il sottostante di un'altra value class. Lancia
++       `Erasure.Unresolved` per un tipo che l'universo non riesce a seguire.
++   entry #erasedGlb   il massimo minorante cancellato: uno dei suoi due argomenti, secondo l'ordine totale del compilatore
++       Gli array prima dei non-array, i primitivi prima degli altri, le classi prima dei trait,
++       le sottoclassi prima delle superclassi, poi per nome. È così che si cancella
++       un'intersezione.
++   entry #erasedLub   il minimo maggiorante cancellato, come si cancella un'unione
++       `Nothing` svanisce rispetto a qualsiasi cosa, `Null` rispetto a un tipo che deriva da
++       `Object` (un trait universale no); gli array si uniscono elemento per elemento; due
++       classi si uniscono nell'ultima classe base comune minimale, preferendo le classi ai
++       trait, o in `java.lang.Object`.
+
+- entry .Classfile   the little of a Java classfile that erasure and member lookup need
++ entry .Classfile   quel poco di un classfile Java che serve alla cancellazione e alla ricerca dei membri
+
+= entry .Classfile   the little of a Java classfile that erasure and member lookup need
+-   detail
++   detail
+
+-       A reader of the class's name, kind and supertypes, and its members' names and
+-       descriptors — which, for a Java member, already *are* its erased signature. Nothing
+-       generic is read: a Java type parameter erases to its bound, which the descriptor spells
+-       out, and the erasure of a Scala reference to a Java class is the class. A `Universe`
+-       reads one for every class it finds a `.class` file but no `.tasty` for, which is how
+-       the JDK's and any Java library's classes join the universe.
++       Un lettore del nome, del genere e dei supertipi della classe, e dei nomi e descrittori dei
++       suoi membri — che, per un membro Java, *sono* già la sua firma cancellata. Nulla di
++       generico viene letto: un parametro di tipo Java si cancella nel suo limite, che il
++       descrittore esplicita, e la cancellazione di un riferimento Scala a una classe Java è la
++       classe stessa. Un `Universe` ne legge uno per ogni classe per cui trova un file `.class`
++       ma nessun `.tasty`, ed è così che le classi del JDK e di qualsiasi libreria Java entrano
++       nell'universo.
+
+-       It is `@unexported` from the umbrella, where `Classfile` is mandible's name, so it is
+-       written `degustation.Classfile`.
++       È `@unexported` dal modulo ombrello, dove `Classfile` è il nome usato da mandible, quindi
++       si scrive `degustation.Classfile`.
+
+=       written `degustation.Classfile`.
+=
+-       ```scala
++       ```scala
+
+=       written `degustation.Classfile`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       written `degustation.Classfile`.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       written `degustation.Classfile`.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val cls: degustation.Classfile.Class = degustation.Classfile(cp"/java/lang/String.class".read[Data])
++       val cls: degustation.Classfile.Class = degustation.Classfile(cp"/java/lang/String.class".read[Data])
+
+-       (cls.name, cls.superclass, cls.interfaces, cls.isInterface)
++       (cls.name, cls.superclass, cls.interfaces, cls.isInterface)
+
+-       cls.methods.filter(_.name == t"charAt").map(_.descriptor)   // List(t"(I)C")
++       cls.methods.filter(_.name == t"charAt").map(_.descriptor)   // List(t"(I)C")
+
+=       cls.methods.filter(_.name == t"charAt").map(_.descriptor)   // List(t"(I)C")
+-       ```
++       ```
+
+=       ```
+-   refer degustation.Universe
++   refer degustation.Universe
+
+-   entry .apply   reads a classfile's constant pool, header and member tables; attributes are skipped
+-       Of the class's own attributes only `InnerClasses` is read, for the entry describing the
+-       class itself: its enclosing class and whether it is static there. Bytes that do not
+-       begin with the classfile magic, or an unknown constant-pool tag, throw
++   entry .apply   legge il constant pool, l'intestazione e le tabelle dei membri di un classfile; gli attributi vengono saltati
++       Degli attributi propri della classe si legge solo `InnerClasses`, per la voce che descrive
++       la classe stessa: la sua classe contenitrice e se vi è statica. I byte che non iniziano
++       con il magic number dei classfile, o un tag del constant pool sconosciuto, lanciano
+
+-       `Classfile.Malformed`.
++       `Classfile.Malformed`.
+
+-   entry .Class   a class as read: name, flags, supertypes, members, and its enclosing class if nested
++   entry .Class   una classe così come è stata letta: nome, flag, supertipi, membri, e la classe contenitrice se è annidata
+
+=   entry .Class   a class as read: name, flags, supertypes, members, and its enclosing class if nested
+-     detail
++     detail
+
+-         `#name` is the dotted binary name; `#superclass` is `Unset` only for `java.lang.
+-         Object`; `#outer` and `#static` come from the `InnerClasses` attribute, and tell a
+-         `Universe` to name a nested class under its outer (`Outer.Inner`, or `Outer$.Inner`
+-         for a static one, which Scala sees as a member of the companion).
+-     entry #name   the class's name, with `.` between its package segments
+-     entry #flags   the class's access flags, as the classfile stores them
+-     entry #superclass   the superclass's name, or `Unset` for `java.lang.Object`
+-     entry #interfaces   the names of the interfaces the class implements
+-     entry #fields   the class's fields
+-     entry #methods   the class's methods, including constructors and static ones
+-     entry #outer   the binary name of the enclosing class, from `InnerClasses`, or `Unset`
+-     entry #static   whether a nested class is static within its outer
+-     entry #isInterface   whether the `ACC_INTERFACE` flag is set
+-   entry .Method   a method's name, descriptor and access flags
+-     entry #name   the method's name; `<init>` for a constructor
+-     entry #descriptor   the JVM descriptor, `(I)C` for `charAt`
+-     entry #flags   the method's access flags
+-   entry .Field   a field's name, descriptor and access flags
+-     entry #name   the field's name
+-     entry #descriptor   the JVM descriptor of the field's type
+-     entry #flags   the field's access flags
+-   entry .Descriptor   a descriptor's types as `Pickled.Type`s
++         `#name` è il nome binario a punti; `#superclass` è `Unset` solo per `java.lang.
++         Object`; `#outer` e `#static` provengono dall'attributo `InnerClasses`, e
++         dicono a un `Universe` di nominare una classe annidata sotto quella esterna
++         (`Outer.Inner`, oppure `Outer$.Inner` per una statica, che Scala vede come membro
++         dell'oggetto compagno).
++     entry #name   il nome della classe, con `.` tra i segmenti del package
++     entry #flags   i flag di accesso della classe, così come il classfile li memorizza
++     entry #superclass   il nome della superclasse, oppure `Unset` per `java.lang.Object`
++     entry #interfaces   i nomi delle interfacce che la classe implementa
++     entry #fields   i campi della classe
++     entry #methods   i metodi della classe, compresi i costruttori e quelli statici
++     entry #outer   il nome binario della classe contenitrice, da `InnerClasses`, oppure `Unset`
++     entry #static   se una classe annidata è statica all'interno di quella esterna
++     entry #isInterface   se il flag `ACC_INTERFACE` è impostato
++   entry .Method   il nome, il descrittore e i flag di accesso di un metodo
++     entry #name   il nome del metodo; `<init>` per un costruttore
++     entry #descriptor   il descrittore JVM, `(I)C` per `charAt`
++     entry #flags   i flag di accesso del metodo
++   entry .Field   il nome, il descrittore e i flag di accesso di un campo
++     entry #name   il nome del campo
++     entry #descriptor   il descrittore JVM del tipo del campo
++     entry #flags   i flag di accesso del campo
++   entry .Descriptor   i tipi di un descrittore come `Pickled.Type`
+
+=   entry .Descriptor   a descriptor's types as `Pickled.Type`s
+-     detail
++     detail
+
+-         References to the named classes, with primitives as the Scala value classes they
+-         correspond to (`I` is `scala.Int`, `V` is `scala.Unit`) and arrays as applications of
++         Riferimenti alle classi nominate, con i primitivi come le value class Scala a cui
++         corrispondono (`I` è `scala.Int`, `V` è `scala.Unit`) e gli array come applicazioni di
+
+-         `scala.Array`.
++         `scala.Array`.
+
+-     entry .parameters   the parameter types of a method descriptor
+-     entry .result   the result type of a method descriptor
+-     entry .field   the type of a field descriptor
+-   entry .Malformed   thrown for bytes that are not a classfile, or a descriptor that cannot be parsed
+-     entry #detail   what was wrong: _not a classfile_, _unknown constant pool tag N_, _bad descriptor …_
++     entry .parameters   i tipi dei parametri di un descrittore di metodo
++     entry .result   il tipo del risultato di un descrittore di metodo
++     entry .field   il tipo di un descrittore di campo
++   entry .Malformed   lanciato per byte che non sono un classfile, o per un descrittore che non si può analizzare
++     entry #detail   che cosa non andava: _not a classfile_, _unknown constant pool tag N_, _bad descriptor …_
+
+- entry .Degustation   the atomizer: a module's TASTy files cut into the `ScalaAtom`s of LIRA's Scala discipline
++ entry .Degustation   l'atomizzatore: i file TASTy di un modulo tagliati negli `ScalaAtom` della disciplina Scala di LIRA
+
+= entry .Degustation   the atomizer: a module's TASTy files cut into the `ScalaAtom`s of LIRA's Scala discipline
+-   detail
++   detail
+
+-       `Degustation.atomize` applies the atomization rules of the Scala discipline (`tasty/2`)
+-       over the `Pickled` model of a module's files, with a `Universe` answering the two
+-       questions the bytes cannot: what a reference names, and what a declaration's
+-       parameters erase to. The folding principle governs every decision: a declaration whose
+-       addition cannot break consumers — a class, a method, a value, a type member — stands
+-       alone as an atom, keyed by its fully-qualified name and erased signature; a fragment
+-       whose addition *can* break consumers — an abstract member of an open trait, a child of a
+-       sealed type, a parameter — folds into its enclosing atom's value, so that the whole
+-       compatibility check between two versions of a library stays set arithmetic over keys
+-       and values.
++       `Degustation.atomize` applica le regole di atomizzazione della disciplina Scala
++       (`tasty/2`) al modello `Pickled` dei file di un modulo, con un `Universe` che risponde
++       alle due domande a cui i byte non possono rispondere: che cosa nomina un riferimento, e in
++       che cosa si cancellano i parametri di una dichiarazione. Ogni decisione è governata dal
++       principio di incorporazione: una dichiarazione la cui aggiunta non può rompere i
++       consumatori — una classe, un metodo, un valore, un membro di tipo — sta da sola come
++       atomo, con chiave il suo nome pienamente qualificato e la sua firma cancellata; un
++       frammento la cui aggiunta *può* rompere i consumatori — un membro astratto di un trait
++       aperto, un figlio di un tipo sealed, un parametro — si incorpora nel valore dell'atomo che
++       lo contiene, così che l'intera verifica di compatibilità tra due versioni di una libreria
++       resti aritmetica degli insiemi su chiavi e valori.
+
+-       Canonicalization is structural, never printed: symbols appear as fully-qualified names,
+-       types as a tag-length-value fold over the type constructors, type-lambda parameters as
+-       de Bruijn indices, and members in sorted key order. Positions, tool versions and
+-       sharing never enter the encoding, so recompiling a module, or reordering its
+-       declarations, yields byte-identical atoms; adding a concrete method leaves every other
+-       atom unchanged; and changing an inline body changes that body's atom alone. A construct
+-       outside the encoder's vocabulary is a hard error, `Degustation.Unencodable`, so
+-       vocabulary drift in the toolchain is detected rather than silently absorbed.
++       La canonicalizzazione è strutturale, mai stampata: i simboli compaiono come nomi
++       pienamente qualificati, i tipi come un fold tag-lunghezza-valore sui costruttori di
++       tipo, i parametri delle lambda di tipo come indici di de Bruijn, e i membri in ordine di
++       chiave. Le posizioni, le versioni degli strumenti e la condivisione non entrano mai nella
++       codifica, quindi ricompilare un modulo, o riordinarne le dichiarazioni, produce atomi
++       identici byte per byte; aggiungere un metodo concreto lascia invariato ogni altro atomo; e
++       cambiare un corpo inline cambia solo l'atomo di quel corpo. Un costrutto al di fuori del
++       vocabolario del codificatore è un errore bloccante, `Degustation.Unencodable`, così la
++       deriva del vocabolario nella toolchain viene rilevata anziché assorbita in silenzio.
+
+=       vocabulary drift in the toolchain is detected rather than silently absorbed.
+=
+-       ```scala
++       ```scala
+
+=       vocabulary drift in the toolchain is detected rather than silently absorbed.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       vocabulary drift in the toolchain is detected rather than silently absorbed.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       vocabulary drift in the toolchain is detected rather than silently absorbed.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val dependencies: Universe.Source = new Universe.Source:
++       val dependencies: Universe.Source = new Universe.Source:
+
+=       val dependencies: Universe.Source = new Universe.Source:
+-         def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
++         def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+
+=       val dependencies: Universe.Source = new Universe.Source:
+=         def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+-         def list(directory: Text): List[Text] = List()
++         def list(directory: Text): List[Text] = List()
+
+-       val files: List[(Text, Data)] =
++       val files: List[(Text, Data)] =
+
+-         List((t"scala/Option.tasty", cp"/scala/Option.tasty".read[Data]))
++         List((t"scala/Option.tasty", cp"/scala/Option.tasty".read[Data]))
+
+-       val atoms: List[ScalaAtom] = Degustation.atomize(files, dependencies)
++       val atoms: List[ScalaAtom] = Degustation.atomize(files, dependencies)
+
+-       atoms.map(_.key).filter(_.s.startsWith("scala.Option.map("))
++       atoms.map(_.key).filter(_.s.startsWith("scala.Option.map("))
+
+=       atoms.map(_.key).filter(_.s.startsWith("scala.Option.map("))
+-       ```
++       ```
+
+-       Private members are not API and yield no atom; a `private[pkg]` member is
+-       conservatively API; an export forwarder atomizes exactly as its hand-written
+-       equivalent; an inline or macro definition yields a *replaceable* atom, keyed with an
+-       `[inline]` suffix, whose references name what its body splices. `Inspection.atomize`
+-       is this over files and a classpath on disk.
++       I membri privati non sono API e non producono alcun atomo; un membro `private[pkg]` è
++       prudenzialmente API; un forwarder di export si atomizza esattamente come il suo
++       equivalente scritto a mano; una definizione inline o macro produce un atomo
++       *sostituibile*, con chiave seguita dal suffisso `[inline]`, i cui riferimenti nominano ciò
++       che il suo corpo inserisce. `Inspection.atomize` è la stessa cosa su file e su un
++       classpath su disco.
+
+=       is this over files and a classpath on disk.
+-   refer degustation.ScalaAtom
++   refer degustation.ScalaAtom
+
+-   refer degustation.Inspection
++   refer degustation.Inspection
+
+=   refer degustation.Inspection
+-   refer degustation.Universe
++   refer degustation.Universe
+
+-   entry .atomize   atomizes a module's `.tasty` files, each named by its classpath-relative path, against a dependency classpath
+-       The files are `(path, bytes)` pairs, the path relative to the classpath as a `.tasty`
+-       file is named (`fixture/Overloads.tasty`), and are entered into the universe before the
+-       dependencies, so the module's own classes resolve first. `dependencies` must carry
+-       everything the files reference, including the Scala library and the JDK's classes;
+-       a reference it cannot resolve throws `Erasure.Unresolved` where a signature needed it.
+-       References collected from inline bodies are classified at the end: those matching an
+-       atom of the module are `ScalaReference.Own`, the rest `ScalaReference.Foreign`, to be
+-       resolved against dependencies at assembly time.
+-   entry .Unencodable   thrown for a construct outside the encoder's vocabulary
++   entry .atomize   atomizza i file `.tasty` di un modulo, ciascuno nominato dal suo percorso relativo al classpath, rispetto a un classpath di dipendenze
++       I file sono coppie `(path, bytes)`, con il percorso relativo al classpath come viene
++       nominato un file `.tasty` (`fixture/Overloads.tasty`), e vengono inseriti nell'universo
++       prima delle dipendenze, così le classi proprie del modulo si risolvono per prime.
++       `dependencies` deve contenere tutto ciò a cui i file fanno riferimento, compresi la
++       libreria Scala e le classi del JDK; un riferimento che non riesce a risolvere lancia
++       `Erasure.Unresolved` dove una firma ne aveva bisogno. I riferimenti raccolti dai corpi
++       inline vengono classificati alla fine: quelli che corrispondono a un atomo del modulo sono
++       `ScalaReference.Own`, gli altri `ScalaReference.Foreign`, da risolvere rispetto alle
++       dipendenze al momento dell'assemblaggio.
++   entry .Unencodable   lanciato per un costrutto al di fuori del vocabolario del codificatore
+
+=   entry .Unencodable   thrown for a construct outside the encoder's vocabulary
+-     detail
++     detail
+
+-         A `RuntimeException` carrying the `#construct` which could not be encoded. It means a
+-         form of TASTy the discipline has no canonical encoding for was met, and is the signal
+-         that the vocabulary needs extending; `Inspection.atomize` reports it as
+-         `Inspection.Error` with `Reason.Unencodable`, or `Reason.DuplicateKey` when the
+-         construct is a key produced twice.
+-     entry #construct   the construct, in words
++         Una `RuntimeException` che porta il `#construct` che non è stato possibile codificare.
++         Significa che si è incontrata una forma di TASTy per cui la disciplina non ha alcuna
++         codifica canonica, ed è il segnale che il vocabolario va esteso; `Inspection.atomize` la
++         segnala come `Inspection.Error` con `Reason.Unencodable`, oppure con
++         `Reason.DuplicateKey` quando il costrutto è una chiave prodotta due volte.
++     entry #construct   il costrutto, a parole
+
+- entry .ScalaAtom   one atom of the Scala discipline, before hashing: key, class, canonical encoding and references
++ entry .ScalaAtom   un atomo della disciplina Scala, prima dell'hashing: chiave, classe, codifica canonica e riferimenti
+
+= entry .ScalaAtom   one atom of the Scala discipline, before hashing: key, class, canonical encoding and references
+-   detail
++   detail
+
+-       The unit of LIRA's compatibility check. `#key` is the stable key: the definition's
+-       fully-qualified name with, for a method, its erased signature — `fixture.Overloads.
+-       f(scala.Int)scala.Int` — and an `[inline]` suffix for a replaceable atom.
+-       `#replaceable` is whether the atom is an inline or macro body, which a consumer copies
+-       and so depends on by value, rather than a rigid declaration it links against.
+-       `#encoding` is the canonical encoding whose hash is the atom's value, and
+-       `#references` the symbolic references collected from a replaceable body, empty for a
+-       rigid atom.
++       L'unità della verifica di compatibilità di LIRA. `#key` è la chiave stabile: il nome
++       pienamente qualificato della definizione con, per un metodo, la sua firma cancellata — `fixture.Overloads.
++       f(scala.Int)scala.Int` — e un suffisso `[inline]` per un atomo
++       sostituibile. `#replaceable` indica se l'atomo è un corpo inline o macro, che un
++       consumatore copia e da cui dipende quindi per valore, anziché una dichiarazione rigida a
++       cui si collega. `#encoding` è la codifica canonica il cui hash è il valore dell'atomo, e
++       `#references` i riferimenti simbolici raccolti da un corpo sostituibile, vuoti per un
++       atomo rigido.
+
+=       rigid atom.
+=
+-       ```scala
++       ```scala
+
+=       rigid atom.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val atom = ScalaAtom(t"fixture.Tops.value", false, Data())
++       val atom = ScalaAtom(t"fixture.Tops.value", false, Data())
+
+-       atom.key
++       atom.key
+
+-       atom.references
++       atom.references
+
+=       atom.references
+-       ```
++       ```
+
+=       ```
+-   refer degustation.Degustation
++   refer degustation.Degustation
+
+-   refer degustation.ScalaReference
++   refer degustation.ScalaReference
+
+-   entry #key   the stable key: fully-qualified name, erased signature for a method, `[inline]` for a replaceable atom
+-   entry #replaceable   whether the atom is an inline or macro body rather than a rigid declaration
+-   entry #encoding   the canonical encoding whose hash is the atom's value
+-   entry #references   the references a replaceable body makes; empty for a rigid atom
++   entry #key   la chiave stabile: nome pienamente qualificato, firma cancellata per un metodo, `[inline]` per un atomo sostituibile
++   entry #replaceable   se l'atomo è un corpo inline o macro anziché una dichiarazione rigida
++   entry #encoding   la codifica canonica il cui hash è il valore dell'atomo
++   entry #references   i riferimenti che un corpo sostituibile fa; vuoti per un atomo rigido
+
+- entry .ScalaReference   a symbolic reference from an inline body: to an atom of the same module, or of a dependency
+-     `Own(key)` names an atom of the same module by its key; `Foreign(key)` names one in a
+-     dependency, resolved to a value hash at assembly time, when the dependency's atoms are at
+-     hand. `Degustation.atomize` classifies every reference it collected by whether the key
+-     is among the module's own atoms.
++ entry .ScalaReference   un riferimento simbolico da un corpo inline: a un atomo dello stesso modulo, o di una dipendenza
++     `Own(key)` nomina un atomo dello stesso modulo tramite la sua chiave; `Foreign(key)` ne
++     nomina uno in una dipendenza, risolto in un hash di valore al momento dell'assemblaggio,
++     quando gli atomi della dipendenza sono disponibili. `Degustation.atomize` classifica ogni
++     riferimento raccolto a seconda che la chiave sia tra gli atomi propri del modulo.
+
+=     is among the module's own atoms.
+=
+-     ```scala
++     ```scala
+
+=     is among the module's own atoms.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val reference: ScalaReference = ScalaReference.Foreign(t"scala.Option.map(1,scala.Function1)scala.Option")
++     val reference: ScalaReference = ScalaReference.Foreign(t"scala.Option.map(1,scala.Function1)scala.Option")
+
+-     reference match
++     reference match
+
+-       case ScalaReference.Own(key)     => t"own: $key"
++       case ScalaReference.Own(key)     => t"own: $key"
+
+-       case ScalaReference.Foreign(key) => t"foreign: $key"
++       case ScalaReference.Foreign(key) => t"foreign: $key"
+
+=       case ScalaReference.Foreign(key) => t"foreign: $key"
+-     ```
++     ```
+
+- entry .Inspection   atomizes `.tasty` files on disk against a classpath of directories and jars
++ entry .Inspection   atomizza file `.tasty` su disco rispetto a un classpath di directory e jar
+
+= entry .Inspection   atomizes `.tasty` files on disk against a classpath of directories and jars
+-   detail
++   detail
+
+-       The filesystem face of `Degustation.atomize`, in `degustation.core`. `Inspection.
+-       atomize(tastyFiles, classpath)` reads each file and each classpath directory through the
+-       galilei `FilesystemBackend on Linux` in scope, and each jar through zeppelin, builds a
+-       `Universe.Source` over them, and atomizes. No compiler is involved, so neither
+-       `scala3-compiler` nor `scala3-tasty-inspector` need be on the classpath to call it.
++       La faccia di `Degustation.atomize` rivolta al filesystem, in `degustation.core`. `Inspection.
++       atomize(tastyFiles, classpath)` legge ogni file e ogni directory del classpath
++       tramite il `FilesystemBackend on Linux` di galilei nell'ambito, e ogni jar tramite
++       zeppelin, costruisce su di essi un `Universe.Source`, e atomizza. Non è coinvolto alcun
++       compilatore, quindi per chiamarlo non serve che né `scala3-compiler` né
++       `scala3-tasty-inspector` siano sul classpath.
+
+=       `scala3-compiler` nor `scala3-tasty-inspector` need be on the classpath to call it.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+-       val atoms: List[ScalaAtom] =
++       val atoms: List[ScalaAtom] =
+
+-         Inspection.atomize(
++         Inspection.atomize(
+
+-           List(t"/build/classes/fixture/Overloads.tasty"),
++           List(t"/build/classes/fixture/Overloads.tasty"),
+
+-           List(t"/build/classes", t"/lib/scala3-library.jar", t"/lib/scala-library.jar"))
++           List(t"/build/classes", t"/lib/scala3-library.jar", t"/lib/scala-library.jar"))
+
+-       atoms.map(_.key)
++       atoms.map(_.key)
+
+=       atoms.map(_.key)
+-       ```
++       ```
+
+-       Each `Text` must parse as an absolute Linux path. Every classpath entry is a directory
+-       or a jar, by what is on disk; the classpath must carry everything the files reference,
+-       including the Scala library. The JDK's own classes are read from the running JVM's
+-       class loader on the JVM; on Scala Native there is no JVM to read them from, so a jar of
+-       the JDK's class files must be on the classpath. A file inside one of the classpath
+-       directories is named by its path relative to it; a file outside every one is placed by
+-       the package it declares, read from the file itself.
++       Ogni `Text` deve potersi analizzare come percorso Linux assoluto. Ogni voce del classpath è
++       una directory o un jar, in base a ciò che c'è su disco; il classpath deve contenere tutto
++       ciò a cui i file fanno riferimento, compresa la libreria Scala. Le classi proprie del JDK
++       vengono lette dal class loader della JVM in esecuzione sulla JVM; su Scala Native non c'è
++       alcuna JVM da cui leggerle, quindi sul classpath deve esserci un jar con i classfile del
++       JDK. Un file all'interno di una delle directory del classpath viene nominato dal suo
++       percorso relativo a essa; un file al di fuori di tutte viene collocato in base al package
++       che dichiara, letto dal file stesso.
+
+-       A malformed path, an unreadable file or a malformed jar raises `Inspection.Error` with
+-       `Reason.InspectionFailed`; a construct the encoder cannot encode raises it with
+-       `Reason.Unencodable`, and a key produced twice with `Reason.DuplicateKey`. The atoms
+-       are those `Degustation.atomize` produces: byte-identical for a recompilation or a
+-       reordering of declarations, and the discipline they implement is `tasty/2`.
++       Un percorso malformato, un file illeggibile o un jar malformato sollevano
++       `Inspection.Error` con `Reason.InspectionFailed`; un costrutto che il codificatore non sa
++       codificare lo solleva con `Reason.Unencodable`, e una chiave prodotta due volte con
++       `Reason.DuplicateKey`. Gli atomi sono quelli che produce `Degustation.atomize`: identici
++       byte per byte per una ricompilazione o un riordino delle dichiarazioni, e la disciplina
++       che implementano è `tasty/2`.
+
+=       reordering of declarations, and the discipline they implement is `tasty/2`.
+-   refer degustation.Degustation
++   refer degustation.Degustation
+
+=   refer degustation.Degustation
+-   refer degustation.ScalaAtom
++   refer degustation.ScalaAtom
+
+-   entry .atomize   atomizes the named `.tasty` files against the named classpath entries
+-       Needs a `FilesystemBackend on Linux` (`import filesystemBackends.javaBaseFilesystem` on
+-       the JVM, `filesystemBackends.scalaNativeFilesystem` on Native) and a
+-       `Tactic[Inspection.Error]`. Jars are read lazily: a jar's central directory is parsed
+-       once, and each entry's bytes when a class in it is first asked for.
+-   entry .Error   raised when the Scala discipline cannot be applied to the files
++   entry .atomize   atomizza i file `.tasty` nominati rispetto alle voci del classpath nominate
++       Richiede un `FilesystemBackend on Linux` (`import filesystemBackends.javaBaseFilesystem`
++       sulla JVM, `filesystemBackends.scalaNativeFilesystem` su Native) e una
++       `Tactic[Inspection.Error]`. I jar vengono letti in modo lazy: la directory centrale di un
++       jar viene analizzata una volta, e i byte di ciascuna voce quando una classe al suo interno
++       viene richiesta per la prima volta.
++   entry .Error   sollevato quando la disciplina Scala non può essere applicata ai file
+
+=   entry .Error   raised when the Scala discipline cannot be applied to the files
+-     detail
++     detail
+
+-         Error `↯/s.139.1`: _the Scala discipline failed because `reason`_, where the reason is one of
+-         `Inspection.Error.Reason`'s cases: `InspectionFailed(detail)` (reason 1), _the TASTy
+-         could not be read: `detail`_, for a malformed path, an unreadable file, a malformed
+-         jar or a malformed classfile; `Unencodable(construct)` (reason 2), _no canonical
+-         encoding is defined for `construct`_, for a form the encoder has no vocabulary for or a
+-         type whose erasure needs a class the classpath lacks; and `DuplicateKey(key)` (reason
+-         3), _the key `key` was produced twice_. Raised by `Inspection.atomize` alone; the
+-         library's lower layers throw `Degustation.Unencodable`, `Erasure.Unresolved` and
+-         `Classfile.Malformed` instead, which `Inspection` translates.
+-     entry .Reason   why the discipline failed: `InspectionFailed`, `Unencodable` or `DuplicateKey`
+-         Each case carries its detail — the text of what could not be read, the construct, or
+-         the key — and the reason's number, 1 to 3, which becomes the error's sub-number.
+-     entry .communicable   renders each `Reason` as a message
+-         In implicit scope through the companion; nothing need be imported.
+-     entry #reason   the `Reason` the error carries
++         Errore `↯/s.139.1`: _the Scala discipline failed because `reason`_, dove il motivo è uno
++         dei casi di `Inspection.Error.Reason`: `InspectionFailed(detail)` (motivo 1), _the
++         TASTy could not be read: `detail`_, per un percorso malformato, un file illeggibile, un
++         jar malformato o un classfile malformato; `Unencodable(construct)` (motivo 2), _no
++         canonical encoding is defined for `construct`_, per una forma per cui il codificatore
++         non ha vocabolario o un tipo la cui cancellazione richiede una classe che manca al
++         classpath; e `DuplicateKey(key)` (motivo 3), _the key `key` was produced twice_.
++         Sollevato solo da `Inspection.atomize`; gli strati inferiori della libreria lanciano
++         invece `Degustation.Unencodable`, `Erasure.Unresolved` e `Classfile.Malformed`, che
++         `Inspection` traduce.
++     entry .Reason   perché la disciplina è fallita: `InspectionFailed`, `Unencodable` o `DuplicateKey`
++         Ogni caso porta il suo dettaglio — il testo di ciò che non si è potuto leggere, il
++         costrutto, o la chiave — e il numero del motivo, da 1 a 3, che diventa il sottonumero
++         dell'errore.
++     entry .communicable   rende ogni `Reason` come messaggio
++         Nell'ambito implicito tramite l'oggetto compagno; non serve importare nulla.
++     entry #reason   il `Reason` che l'errore porta

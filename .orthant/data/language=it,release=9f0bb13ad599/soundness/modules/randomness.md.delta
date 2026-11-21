@@ -1,0 +1,8 @@
+orthant 1 language
+
+- Nesting is deterministic too, but a nested scope does not continue the sequence of the scope
+- enclosing it. Each scope starts afresh from the `Randomization` in scope, so under the same seed
+- an inner scope repeats the first draws of the outer one.
++ Anche l'annidamento è deterministico, ma un ambito annidato non prosegue la sequenza dell'ambito
++ che lo racchiude. Ogni ambito riparte da capo dalla `Randomization` nell'ambito, quindi con lo
++ stesso seme un ambito interno ripete le prime estrazioni di quello esterno.

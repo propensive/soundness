@@ -1,0 +1,150 @@
+orthant 1 language
+
+- # Standards Breadth
++ # Ampiezza degli standard
+
+- Soundness implements standards rather than inventing alternatives to them, and the shelf is
+- already long: HTTP/2, WebSocket, TLS, CBOR, Protocol Buffers, tar, zip, xz, PDF, TrueType,
+- X.509, COSE, iCalendar, OAuth 2, OpenAPI, LSP, MCP and dozens more, with RFC citations in the
+- code. But batteries-included is judged by what a production team reaches for and fails to
+- find. This track is a fixed target list, drained in order of how often that reach happens.
++ Soundness implementa gli standard anziché inventarne alternative, e lo scaffale è già lungo:
++ HTTP/2, WebSocket, TLS, CBOR, Protocol Buffers, tar, zip, xz, PDF, TrueType, X.509, COSE,
++ iCalendar, OAuth 2, OpenAPI, LSP, MCP e decine di altri, con le citazioni delle RFC nel codice.
++ Ma una piattaforma «batterie incluse» si giudica da ciò che un team di produzione cerca e non
++ trova. Questo filone è un elenco fisso di obiettivi, smaltito nell'ordine di quanto spesso
++ quella ricerca avviene.
+
+- The list is deliberately closed: five standards, chosen because each completes a story the
+- platform already tells. JOSE/JWT is the largest hole — token-based authentication is ubiquitous,
+- and the neighbouring pieces (COSE, OAuth 2, X.509) already exist. TOML is table stakes for
+- interoperating with the wider tooling world. WebAuthn completes web authentication.
+- QUIC/HTTP-3 and IMAP round out transport and mail. Only the first three sit inside the
+- production-readiness gate; the rest lie beyond it. A row is complete
+- when its module ships with tests, error pages and a topic guide — the same bar as every other
+- module, because a battery that is undocumented or partial is not included, merely present.
++ L'elenco è deliberatamente chiuso: cinque standard, scelti perché ciascuno completa una storia
++ che la piattaforma già racconta. JOSE/JWT è la lacuna più grande: l'autenticazione basata su
++ token è onnipresente, e i pezzi vicini (COSE, OAuth 2, X.509) esistono già. TOML è il minimo
++ indispensabile per interoperare con il più ampio mondo degli strumenti. WebAuthn completa
++ l'autenticazione web. QUIC/HTTP-3 e IMAP completano il trasporto e la posta. Solo i primi tre
++ rientrano nel cancello della prontezza per la produzione; gli altri stanno oltre. Una riga è
++ completa quando il suo modulo viene distribuito con test, pagine di errore e una guida
++ all'argomento: la stessa soglia di ogni altro modulo, perché una batteria non documentata o
++ parziale non è inclusa, ma soltanto presente.
+
+- ```tabular
++ ```tabular
+
+- column  Item
++ column  Voce
+
+- column  Standard
++ column  Standard
+
+- column  Horizon
+- column  In the gate
+- row  brd-1  JOSE: JWS, JWE, JWK, JWT (RFC 7515–7519)  near  yes
+- row  brd-2  TOML  near  yes
+- row  brd-3  WebAuthn  mid  yes
+- row  brd-4  QUIC and HTTP/3 (RFC 9000, RFC 9114)  long  no
+- row  brd-5  IMAP (RFC 9051)  long  no
++ column  Orizzonte
++ column  Nel cancello
++ row  brd-1  JOSE: JWS, JWE, JWK, JWT (RFC 7515–7519)  breve  sì
++ row  brd-2  TOML  breve  sì
++ row  brd-3  WebAuthn  medio  sì
++ row  brd-4  QUIC e HTTP/3 (RFC 9000, RFC 9114)  lungo  no
++ row  brd-5  IMAP (RFC 9051)  lungo  no
+
+- ```
++ ```
+
+- ## brd-1: JOSE
++ ## brd-1: JOSE
+
+= ## brd-1: JOSE
+=
+- Horizon: near
++ Orizzonte: breve
+
+- Signed and encrypted tokens: JWS, JWE, JWK and JWT, building on the primitives enigmatic
+- already provides, alongside its COSE support.
++ Token firmati e cifrati: JWS, JWE, JWK e JWT, costruiti sulle primitive che enigmatic già
++ fornisce, accanto al suo supporto per COSE.
+
+- Done when: the module ships with tests, error pages and a `doc/modules/` topic, and
+- round-trips the RFC 7515/7516 example vectors.
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/modules/`, e fa l'andata e ritorno dei vettori di esempio delle RFC 7515/7516.
+
+- ## brd-2: TOML
++ ## brd-2: TOML
+
+= ## brd-2: TOML
+=
+- Horizon: near
++ Orizzonte: breve
+
+- The configuration format the wider tooling world speaks. Soundness configures itself with TEL;
+- it still reads what others write.
++ Il formato di configurazione che parla il più ampio mondo degli strumenti. Soundness si
++ configura con TEL; ma legge comunque ciò che scrivono gli altri.
+
+- Done when: the module ships with tests, error pages and a `doc/modules/` topic, and
+- passes the standard TOML compliance suite.
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/modules/`, e supera la suite di conformità standard di TOML.
+
+- ## brd-3: WebAuthn
++ ## brd-3: WebAuthn
+
+- Horizon: mid
+- Needs: brd-1
++ Orizzonte: medio
++ Richiede: brd-1
+
+- Passwordless authentication for the web stack, completing the story OAuth 2 and JOSE begin.
+- The COSE support it depends on already exists.
++ Autenticazione senza password per lo stack web, che completa la storia iniziata da OAuth 2 e da
++ JOSE. Il supporto per COSE da cui dipende esiste già.
+
+- Done when: the module ships with tests, error pages and a `doc/modules/` topic, and a
+- scripted registration-and-assertion ceremony passes against a reference authenticator.
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/modules/`, e una cerimonia scriptata di registrazione e asserzione ha esito positivo con un
++ autenticatore di riferimento.
+
+- ## brd-4: QUIC and HTTP/3
++ ## brd-4: QUIC e HTTP/3
+
+= ## brd-4: QUIC and HTTP/3
+=
+- Horizon: long
++ Orizzonte: lungo
+
+- The transport successor. HTTP/2 and HPACK are already native; QUIC extends the same treatment
+- below them.
++ Il successore nel trasporto. HTTP/2 e HPACK sono già nativi; QUIC estende lo stesso trattamento
++ al livello sottostante.
+
+- Done when: the module ships with tests, error pages and a `doc/modules/` topic, and
+- interoperates with a reference HTTP/3 server and client.
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/modules/`, e interopera con un server e un client HTTP/3 di riferimento.
+
+- ## brd-5: IMAP
++ ## brd-5: IMAP
+
+= ## brd-5: IMAP
+=
+- Horizon: long
++ Orizzonte: lungo
+
+- Mail retrieval, completing what caduceus's SMTP support begins.
++ Il recupero della posta, che completa ciò che il supporto SMTP di caduceus inizia.
+
+- Done when: the module ships with tests, error pages and a `doc/modules/` topic, and a
+- scripted session passes against a reference IMAP server.
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/modules/`, e una sessione scriptata ha esito positivo con un server IMAP di riferimento.

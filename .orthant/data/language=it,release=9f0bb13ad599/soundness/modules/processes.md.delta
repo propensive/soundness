@@ -1,0 +1,9 @@
+orthant 1 language
+
+- import pathInterfaces.pathOnLocal
+- import systems.javaBaseSystem
++ import pathInterfaces.pathOnLocal
++ import systems.javaBaseSystem
+
+- val directory: Path on Local = (% / "var" / "log").on[Local]
++ val directory: Path on Local = (% / "var" / "log").on[Local]

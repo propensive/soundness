@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.3` — Hexadecimal literal has an odd number of digits
++ # `↯/s.27.3` — Il letterale esadecimale ha un numero dispari di cifre
+
+- Raised at compiletime when a hexadecimal literal does not have an even number of digits.
++ Sollevato a tempo di compilazione quando un letterale esadecimale non ha un numero pari di cifre.
+
+- ## Cause
++ ## Causa
+
+- Each byte is two hexadecimal digits, so an odd count leaves one digit that names no whole
+- byte.
++ Ogni byte è composto da due cifre esadecimali, quindi un numero dispari lascia una cifra che non
++ corrisponde a nessun byte intero.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.27.3] a hexadecimal value must have an even number of digits
++ [↯/s.27.3] a hexadecimal value must have an even number of digits
+
+= [↯/s.27.3] a hexadecimal value must have an even number of digits
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Add a leading zero to the digit that stands alone.
++ Aggiungere uno zero iniziale alla cifra rimasta da sola.
+
+- ## See also
++ ## Vedi anche
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Gli altri errori dei letterali binari ed esadecimali: [Famiglie](README.md#families)
++ - Sorgente: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

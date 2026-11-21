@@ -1,0 +1,67 @@
+orthant 1 language
+
+- # Changes since 0.67.0
++ # Modifiche rispetto alla 0.67.0
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.67.0 to the next release. Each entry states precisely what changed; see `AGENTS.md` for the
+- format. Entries are grouped by module, most-recently-added last within a module.
++ Questo file viene letto da un agente LLM per aggiornare il codice che usa le librerie Soundness
++ dalla 0.67.0 alla release successiva. Ogni voce indica con precisione che cosa è cambiato; il
++ formato è descritto in `AGENTS.md`. Le voci sono raggruppate per modulo e, all'interno di un
++ modulo, la più recente è l'ultima.
+
+- ## anticipation
++ ## anticipation
+
+- - `anticipation.Chroma#red` changed semantics: it is now `inline def red: Int = (chroma >>
+-   16)&255`, previously `inline def red: Int = chroma >> 16`. `green` and `blue` were already
+-   masked and are unchanged. Code must be audited where a `Chroma` was constructed by
+-   `Chroma(value: Int)` from an `Int` with any bit set above the low twenty-four (including a
+-   negative `Int`), since `red` previously returned those bits and now discards them. `Chroma`
+-   values originating from `Chroma(red: Int, green: Int, blue: Int)`, the `rgb"…"` interpolator,
+-   `iridescence.Pixel#chroma`, `iridescence.Rgb12#chroma` or `iridescence.Rgb32#chroma` are
+-   unaffected, as all of those already masked. (#2036)
++ - `anticipation.Chroma#red` ha cambiato semantica: ora è `inline def red: Int = (chroma >>
++   16)&255`, mentre prima era `inline def red: Int = chroma >> 16`. `green` e `blue` erano già
++   mascherati e sono invariati. Il codice va verificato dove un `Chroma` è stato costruito con
++   `Chroma(value: Int)` a partire da un `Int` con qualche bit impostato al di sopra dei ventiquattro
++   bassi (compreso un `Int` negativo), poiché prima `red` restituiva quei bit e ora li scarta. I
++   valori `Chroma` provenienti da `Chroma(red: Int, green: Int, blue: Int)`, dall'interpolatore
++   `rgb"…"`, da `iridescence.Pixel#chroma`, `iridescence.Rgb12#chroma` o `iridescence.Rgb32#chroma`
++   non sono interessati, perché tutti questi erano già mascherati. (#2036)
+
+- ## iridescence
++ ## iridescence
+
+- - `iridescence.Channel`, and the channel traits `iridescence.Red`, `iridescence.Green`,
++ - `iridescence.Channel` e i trait di canale `iridescence.Red`, `iridescence.Green`,
+
+-   `iridescence.Blue`, `iridescence.Alpha`, `iridescence.Cyan`, `iridescence.Magenta`,
++   `iridescence.Blue`, `iridescence.Alpha`, `iridescence.Cyan`, `iridescence.Magenta`,
+
+-   `iridescence.Yellow`, `iridescence.Key` and `iridescence.Grey`, moved to `anticipation`:
+-   `anticipation.Channel`, `anticipation.Red`, and so on. All definitions, type parameters and
+-   match types are unchanged. The `soundness` umbrella exports the same names, now from
+-   `anticipation`, so code importing them through the umbrella needs no change; code importing
+-   `iridescence.*` for them must import `anticipation.*`. `Channel` remains `@unexported` and is
+-   reached as `anticipation.Channel`. (#2037)
++   `iridescence.Yellow`, `iridescence.Key` e `iridescence.Grey` sono stati spostati in
++   `anticipation`: `anticipation.Channel`, `anticipation.Red` e così via. Tutte le definizioni, i
++   parametri di tipo e i match type sono invariati. L'ombrello `soundness` esporta gli stessi nomi,
++   ora da `anticipation`, quindi il codice che li importa tramite l'ombrello non richiede modifiche;
++   il codice che importa `iridescence.*` per ottenerli deve importare `anticipation.*`. `Channel`
++   resta `@unexported` e si raggiunge come `anticipation.Channel`. (#2037)
+
+- ## ultimatum
++ ## ultimatum
+
+- - `ultimatum.GaugePalette.hue(chroma: anticipation.Chroma): iridescence.Color in
++ - `ultimatum.GaugePalette.hue(chroma: anticipation.Chroma): iridescence.Color in
+
+-   iridescence.Srgb` removed. Replace `hue(c)` with `c.color`, the extension `extension (chroma:
+-   anticipation.Chroma) def color: Color in Srgb` declared in `iridescence` and exported by the
+-   `soundness` umbrella as `color`. Results are identical. (#2036)
++   iridescence.Srgb` rimosso. Sostituire `hue(c)` con `c.color`, l'estensione `extension (chroma:
++   anticipation.Chroma) def color: Color in Srgb` dichiarata in `iridescence` ed esportata
++   dall'ombrello `soundness` come `color`. I risultati sono identici. (#2036)

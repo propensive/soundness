@@ -1,0 +1,56 @@
+orthant 1 language
+
+- A map with many entries is quicker to fill in place than to grow one `define` at a time.
+- `Map.build` lends a block a builder to write to, and gives back an ordinary `Map` when the
+- block ends:
++ Una mappa con molte voci si riempie più in fretta sul posto che facendola crescere un `define` alla
++ volta. `Map.build` presta a un blocco un builder su cui scrivere, e restituisce una normale `Map`
++ quando il blocco finisce:
+
+= block ends:
+=
+- ```scala fuel
++ ```scala fuel
+
+= block ends:
+=
+= ```scala fuel
+- run
++ run
+
+= block ends:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val court = Map.build[Text, Int]: map =>
++ val court = Map.build[Text, Int]: map =>
+
+-   map(t"Lear") = 80
++   map(t"Lear") = 80
+
+-   map(t"Kent") = 48
++   map(t"Kent") = 48
+
+-   map(t"Gloucester") = 60
++   map(t"Gloucester") = 60
+
+- Out.println(court.at(t"Kent").inspect)
++ Out.println(court.at(t"Kent").inspect)
+
+- Out.println((court == ages.define(t"Gloucester", 60)).inspect)
++ Out.println((court == ages.define(t"Gloucester", 60)).inspect)
+
+= Out.println((court == ages.define(t"Gloucester", 60)).inspect)
+- ```
++ ```
+
+- Only the builder can write to the map, and the builder cannot leave its block: keeping a
+- reference to it for later is a compile error. So the map is immutable from the moment `build`
+- returns, and equal to any other map with the same entries, however that one was made.
++ Solo il builder può scrivere sulla mappa, e il builder non può uscire dal suo blocco: conservarne
++ un riferimento per dopo è un errore di compilazione. Così la mappa è immutabile dal momento in cui
++ `build` restituisce il controllo, ed è uguale a qualunque altra mappa con le stesse voci, comunque
++ sia stata creata.

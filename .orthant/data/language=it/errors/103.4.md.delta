@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.103.4` — `Auth.Error`
++ # `↯/s.103.4` — `Auth.Error`
+
+- Raised when an HTTP authentication value is not valid.
++ Sollevato quando un valore di autenticazione HTTP non è valido.
+
+- ## Cause
++ ## Causa
+
+- Telekinesis throws this error when an `Authorization` header value
+- (or similar) does not match the expected scheme syntax.
++ Telekinesis lancia questo errore quando il valore di un'intestazione `Authorization` (o simile)
++ non corrisponde alla sintassi dello schema atteso.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.103.4] the authentication value Basic ??? is not valid
++ [↯/s.103.4] the authentication value Basic ??? is not valid
+
+= [↯/s.103.4] the authentication value Basic ??? is not valid
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Verify the value matches the expected scheme (`Basic`, `Bearer`,
+- etc.) and is correctly encoded.
++ Verificare che il valore corrisponda allo schema atteso (`Basic`, `Bearer`, ecc.) e sia
++ codificato correttamente.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/telekinesis/src/core/telekinesis.Auth.scala`
++ - Sorgente: `lib/telekinesis/src/core/telekinesis.Auth.scala`

@@ -1,0 +1,866 @@
+orthant 1 language
+
+- ## CBOR
++ ## CBOR
+
+- ### About
++ ### Panoramica
+
+- [CBOR](https://en.wikipedia.org/wiki/CBOR) is a binary cousin of JSON. It has the same data
+- model, encoded compactly for machines instead of legibly for people, and is standardized as
+- [RFC 8949](https://datatracker.ietf.org/doc/html/rfc8949).
++ [CBOR](https://en.wikipedia.org/wiki/CBOR) è un cugino binario di JSON. Ha lo stesso modello di
++ dati, codificato in modo compatto per le macchine anziché leggibile per le persone, ed è
++ standardizzato come [RFC 8949](https://datatracker.ietf.org/doc/html/rfc8949).
+
+- It is read and written with the same interface as the textual formats. Bytes parse into a
+- `Cbor` value. Case classes convert to and from it with [derived][derivation] codecs.
+- Navigation, updates and lenses work as they do for [JSON](json.md) and [YAML](yaml.md).
++ Si legge e si scrive con la stessa interfaccia dei formati testuali. I byte vengono analizzati in
++ un valore `Cbor`. Le case class si convertono da e verso di esso con codec [derivati][derivazione].
++ La navigazione, gli aggiornamenti e le lenti funzionano come per [JSON](json.md) e [YAML](yaml.md).
+
+- ### On binary interchange
++ ### Sullo scambio binario
+
+- JSON pays for its readability in bytes and in parsing time. Where no person reads the data, as
+- in a device protocol, a cache entry or a message queue, that price buys nothing. CBOR keeps
+- JSON's shape of maps, arrays, numbers, text and byte strings, in a compact binary form.
++ JSON paga la sua leggibilità in byte e in tempo di parsing. Dove nessuna persona legge i dati, come
++ in un protocollo per dispositivi, una voce di cache o una coda di messaggi, quel prezzo non compra
++ nulla. CBOR mantiene la forma di JSON fatta di mappe, array, numeri, testo e stringhe di byte, in
++ una forma binaria compatta.
+
+- Binary formats are usually consumed through byte-fiddling APIs, far clumsier than those of
+- their textual equivalents. Here CBOR gets the full treatment of a textual format: derived
+- codecs, typed errors with reasons, dynamic access, and optics. Choosing the compact format
+- costs the code no expressiveness.
++ I formati binari di solito si usano tramite API che armeggiano con i byte, molto più goffe di
++ quelle dei loro equivalenti testuali. Qui CBOR riceve il trattamento completo di un formato
++ testuale: codec derivati, errori tipizzati con motivi, accesso dinamico e ottiche. Scegliere il
++ formato compatto non costa al codice alcuna espressività.
+
+- The codec is derived from the type, so the type is the schema. The
+- [correctness](../../philosophy/correctness.md) of the encoding follows from the definition, not
+- from tests.
++ Il codec è derivato dal tipo, quindi il tipo è lo schema. La
++ [correttezza](../../philosophy/correctness.md) della codifica discende dalla definizione, non dai
++ test.
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception, and
+- the last import lets them print their results:
++ Tutto viene dal package `soundness`. Gli esempi lanciano ogni errore come eccezione, e l'ultimo
++ import permette loro di stampare i risultati:
+
+= the last import lets them print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Encoding and decoding
++ ### Codifica e decodifica
+
+- `in[Cbor]` encodes a value as a `Cbor` value, and `as` decodes one to a type:
++ `in[Cbor]` codifica un valore come valore `Cbor`, e `as` ne decodifica uno in un tipo:
+
+= `in[Cbor]` encodes a value as a `Cbor` value, and `as` decodes one to a type:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- val encoded = Person(t"Hamlet", 30).in[Cbor]
++ val encoded = Person(t"Hamlet", 30).in[Cbor]
+
+= val encoded = Person(t"Hamlet", 30).in[Cbor]
+- ```
++ ```
+
+= val encoded = Person(t"Hamlet", 30).in[Cbor]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val encoded = Person(t"Hamlet", 30).in[Cbor]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val encoded = Person(t"Hamlet", 30).in[Cbor]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(encoded.as[Person].inspect)
++ Out.println(encoded.as[Person].inspect)
+
+= Out.println(encoded.as[Person].inspect)
+- ```
++ ```
+
+- A `Cbor` value is a tree. `Cbor.unseal` exposes it as a `Cbor.Ast`, which serializes to its
+- bytes:
++ Un valore `Cbor` è un albero. `Cbor.unseal` lo espone come `Cbor.Ast`, che si serializza nei suoi
++ byte:
+
+= bytes:
+=
+- ```scala
++ ```scala
+
+- val bytes: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(encoded))
++ val bytes: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(encoded))
+
+= val bytes: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(encoded))
+- ```
++ ```
+
+- Bytes are read straight back to a type in one step, with `read[Person in Cbor]`, whether they
+- arrive whole or as a [stream](streams.md) of chunks:
++ I byte si rileggono direttamente in un tipo in un solo passaggio, con `read[Person in Cbor]`, sia
++ che arrivino interi sia come [stream](streams.md) di chunk:
+
+= arrive whole or as a [stream](streams.md) of chunks:
+=
+- ```scala fuel
++ ```scala fuel
+
+= arrive whole or as a [stream](streams.md) of chunks:
+=
+= ```scala fuel
+- run
++ run
+
+= arrive whole or as a [stream](streams.md) of chunks:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(bytes.length.show)
++ Out.println(bytes.length.show)
+
+- Out.println(Chain(bytes).read[Person in Cbor].inspect)
++ Out.println(Chain(bytes).read[Person in Cbor].inspect)
+
+= Out.println(Chain(bytes).read[Person in Cbor].inspect)
+- ```
++ ```
+
+- The two steps of writing combine in the same way. `in[Data over Cbor]` encodes a value straight
+- to its bytes, and is the mirror of `read[Person in Cbor]`:
++ I due passaggi della scrittura si combinano allo stesso modo. `in[Data over Cbor]` codifica un
++ valore direttamente nei suoi byte, ed è lo specchio di `read[Person in Cbor]`:
+
+= to its bytes, and is the mirror of `read[Person in Cbor]`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= to its bytes, and is the mirror of `read[Person in Cbor]`:
+=
+= ```scala fuel
+- run
++ run
+
+= to its bytes, and is the mirror of `read[Person in Cbor]`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Person(t"Hamlet", 30).in[Data over Cbor].read[Person in Cbor].inspect)
++ Out.println(Person(t"Hamlet", 30).in[Data over Cbor].read[Person in Cbor].inspect)
+
+= Out.println(Person(t"Hamlet", 30).in[Data over Cbor].read[Person in Cbor].inspect)
+- ```
++ ```
+
+- The same `Person`, written as compact [JSON](json.md), is 26 bytes.
++ Lo stesso `Person`, scritto come [JSON](json.md) compatto, occupa 26 byte.
+
+- The `@name[Cbor]` [annotation](annotations.md) renames a field in the encoded map. A sealed
+- hierarchy encodes with a discriminator, declared once:
++ L'[annotazione](annotations.md) `@name[Cbor]` rinomina un campo nella mappa codificata. Una
++ gerarchia sealed si codifica con un discriminatore, dichiarato una volta sola:
+
+= hierarchy encodes with a discriminator, declared once:
+=
+- ```scala
++ ```scala
+
+- enum Status:
++ enum Status:
+
+-   case Active(since: Int)
++   case Active(since: Int)
+
+-   case Retired
++   case Retired
+
+- given statusDiscriminable: (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
++ given statusDiscriminable: (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
+
+- val active: Status = Status.Active(2020)
++ val active: Status = Status.Active(2020)
+
+= val active: Status = Status.Active(2020)
+- ```
++ ```
+
+= val active: Status = Status.Active(2020)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val active: Status = Status.Active(2020)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val active: Status = Status.Active(2020)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(active.in[Cbor].as[Status].inspect)
++ Out.println(active.in[Cbor].as[Status].inspect)
+
+= Out.println(active.in[Cbor].as[Status].inspect)
+- ```
++ ```
+
+- ### Optional fields
++ ### Campi opzionali
+
+- An `Optional` field is left out of the map when it is unset, and a field with a default takes
+- that default when the map lacks it. A message may therefore gain fields without breaking
+- readers which are older than they are.
++ Un campo `Optional` viene omesso dalla mappa quando non è impostato, e un campo con un valore
++ predefinito assume quel valore quando la mappa ne è priva. Un messaggio può quindi acquisire
++ campi senza rompere i lettori più vecchi di lui.
+
+- Reading an `Optional` field follows the policies which
+- [Decoding](decoding.md#policies-for-optional-fields) describes. Each is varied separately, by a
+- given in the package `optionalityOptions`:
++ La lettura di un campo `Optional` segue le politiche descritte in
++ [Decodifica](decoding.md#policies-for-optional-fields). Ciascuna si modifica separatamente, con
++ un given nel package `optionalityOptions`:
+
+= given in the package `optionalityOptions`:
+=
+- ```tabular
++ ```tabular
+
+- column  A field which is
+- column  Reads as
+- column  Unless
+- row  omitted from the map, or `undefined`  `Unset`  `strictCborAbsence` makes it an error
+- row  a CBOR `null`  `Unset`  `strictCborNulls` hands it to the inner decoder
+- row  present but rejected by the inner decoder  an error  `lenientCborFaults` reads it as `Unset`
++ column  Un campo che è
++ column  Si legge come
++ column  A meno che
++ row  omesso dalla mappa, oppure `undefined`  `Unset`  `strictCborAbsence` lo renda un errore
++ row  un `null` CBOR  `Unset`  `strictCborNulls` lo passi al decoder interno
++ row  presente ma rifiutato dal decoder interno  un errore  `lenientCborFaults` lo legga come `Unset`
+
+= row  present but rejected by the inner decoder  an error  `lenientCborFaults` reads it as `Unset`
+- ```
++ ```
+
+- Here a text is put where a number belongs, and the lenient policy reads it as `Unset`:
++ Qui si mette un testo dove va un numero, e la politica permissiva lo legge come `Unset`:
+
+= Here a text is put where a number belongs, and the lenient policy reads it as `Unset`:
+=
+- ```scala
++ ```scala
+
+- case class Reading(sensor: Text, value: Optional[Int])
++ case class Reading(sensor: Text, value: Optional[Int])
+
+- val tolerant =
++ val tolerant =
+
+-   import dynamicAccess.dynamicCbor
++   import dynamicAccess.dynamicCbor
+
+-   import optionalityOptions.lenientCborFaults
++   import optionalityOptions.lenientCborFaults
+
+-   (Reading(t"a", 1).in[Cbor].value = t"x").as[Reading]
++   (Reading(t"a", 1).in[Cbor].value = t"x").as[Reading]
+
+=   (Reading(t"a", 1).in[Cbor].value = t"x").as[Reading]
+- ```
++ ```
+
+=   (Reading(t"a", 1).in[Cbor].value = t"x").as[Reading]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   (Reading(t"a", 1).in[Cbor].value = t"x").as[Reading]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   (Reading(t"a", 1).in[Cbor].value = t"x").as[Reading]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(tolerant.inspect)
++ Out.println(tolerant.inspect)
+
+= Out.println(tolerant.inspect)
+- ```
++ ```
+
+- ### Navigating and updating
++ ### Navigazione e aggiornamento
+
+- With dynamic access enabled, a map's fields are read as members and an array is indexed.
+- Assigning to a field gives a new value, and assigning `Unset` removes the field:
++ Con l'accesso dinamico abilitato, i campi di una mappa si leggono come membri e un array si
++ indicizza. Assegnare un valore a un campo produce un nuovo valore, e assegnare `Unset` rimuove il
++ campo:
+
+= Assigning to a field gives a new value, and assigning `Unset` removes the field:
+=
+- ```scala
++ ```scala
+
+- import dynamicAccess.dynamicCbor
++ import dynamicAccess.dynamicCbor
+
+- val person = Person(t"Hamlet", 30).in[Cbor]
++ val person = Person(t"Hamlet", 30).in[Cbor]
+
+= val person = Person(t"Hamlet", 30).in[Cbor]
+- ```
++ ```
+
+= val person = Person(t"Hamlet", 30).in[Cbor]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val person = Person(t"Hamlet", 30).in[Cbor]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val person = Person(t"Hamlet", 30).in[Cbor]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(person.name.as[Text])
++ Out.println(person.name.as[Text])
+
+- Out.println((person.age = 40).as[Person].inspect)
++ Out.println((person.age = 40).as[Person].inspect)
+
+= Out.println((person.age = 40).as[Person].inspect)
+- ```
++ ```
+
+- The import grants the permission `Cbor is Dynamical` to the rest of its scope.
+- `dynamically[Cbor]:` grants it to a single block instead, as
+- [JSON](json.md#fields-as-members) describes.
++ L'import concede l'abilitazione `Cbor is Dynamical` al resto del suo ambito.
++ `dynamically[Cbor]:` la concede invece a un singolo blocco, come descrive
++ [JSON](json.md#fields-as-members).
+
+- A deeper update uses a [lens](optics.md), with the optics `Each` and `Filter` to change many
+- elements at once, exactly as for the textual formats.
++ Un aggiornamento più profondo usa una [lente](optics.md), con le ottiche `Each` e `Filter` per
++ cambiare molti elementi insieme, esattamente come per i formati testuali.
+
+- ### Building directly
++ ### Costruzione diretta
+
+- Where no case class fits, a CBOR map is assembled from named arguments:
++ Dove nessuna case class è adatta, una mappa CBOR si assembla da argomenti con nome:
+
+= Where no case class fits, a CBOR map is assembled from named arguments:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Where no case class fits, a CBOR map is assembled from named arguments:
+=
+= ```scala fuel
+- run
++ run
+
+= Where no case class fits, a CBOR map is assembled from named arguments:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Cbor.make(name = t"Juliet".in[Cbor], age = 13.in[Cbor]).as[Person].inspect)
++ Out.println(Cbor.make(name = t"Juliet".in[Cbor], age = 13.in[Cbor]).as[Person].inspect)
+
+= Out.println(Cbor.make(name = t"Juliet".in[Cbor], age = 13.in[Cbor]).as[Person].inspect)
+- ```
++ ```
+
+- ### Diagnostic notation
++ ### Notazione diagnostica
+
+- RFC 8949 defines a human-readable rendering of CBOR. It is the format's counterpart of a hex
+- dump, but one which can actually be read, and `show` produces it. A byte string is written as
+- `h'…'`, and arrays and maps as their JSON-like equivalents:
++ La RFC 8949 definisce una resa di CBOR leggibile dalle persone. È il corrispettivo, per questo
++ formato, di un dump esadecimale, ma uno che si può davvero leggere, e `show` lo produce. Una
++ stringa di byte si scrive come `h'…'`, e array e mappe come i loro equivalenti simili a JSON:
+
+= `h'…'`, and arrays and maps as their JSON-like equivalents:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `h'…'`, and arrays and maps as their JSON-like equivalents:
+=
+= ```scala fuel
+- run
++ run
+
+= `h'…'`, and arrays and maps as their JSON-like equivalents:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Cbor.Ast.parse(hex"83010203").show)
++ Out.println(Cbor.Ast.parse(hex"83010203").show)
+
+- Out.println(Cbor.Ast.parse(hex"4401020304").show)
++ Out.println(Cbor.Ast.parse(hex"4401020304").show)
+
+= Out.println(Cbor.Ast.parse(hex"4401020304").show)
+- ```
++ ```
+
+- This is what to reach for when a message is not what it should be. The notation says what the
+- bytes mean, in the format's own vocabulary. [Base encoding](base-encoding.md) describes the
+- `hex"…"` literals.
++ È a questo che si ricorre quando un messaggio non è come dovrebbe essere. La notazione dice che
++ cosa significano i byte, nel vocabolario proprio del formato. [Codifica in base](base-encoding.md)
++ descrive i letterali `hex"…"`.
+
+- ### Tags
++ ### Tag
+
+- CBOR's tags annotate a value with its meaning. Tag 1 is an epoch time, tag 2 is a big integer,
+- and the registry runs to hundreds. A tagged value keeps both its tag and the value inside it,
+- so a document which carries tags is read and written without losing them. These bytes are
+- tag 1 around the integer 1363896240:
++ I tag di CBOR annotano un valore con il suo significato. Il tag 1 è un tempo epoch, il tag 2 è un
++ intero grande, e il registro arriva a centinaia. Un valore con tag conserva sia il tag sia il
++ valore al suo interno, quindi un documento che porta dei tag si legge e si scrive senza perderli.
++ Questi byte sono il tag 1 attorno all'intero 1363896240:
+
+= tag 1 around the integer 1363896240:
+=
+- ```scala
++ ```scala
+
+- val document = Cbor.ast(Cbor.Ast.parse(hex"c11a514b67b0"))
++ val document = Cbor.ast(Cbor.Ast.parse(hex"c11a514b67b0"))
+
+- val ast = Cbor.unseal(document)
++ val ast = Cbor.unseal(document)
+
+= val ast = Cbor.unseal(document)
+- ```
++ ```
+
+= val ast = Cbor.unseal(document)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val ast = Cbor.unseal(document)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val ast = Cbor.unseal(document)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(ast.isTag.inspect)
++ Out.println(ast.isTag.inspect)
+
+- Out.println(ast.tag.tag.show)
++ Out.println(ast.tag.tag.show)
+
+= Out.println(ast.tag.tag.show)
+- ```
++ ```
+
+- ### Errors
++ ### Errori
+
+- A malformed document, or a conversion which cannot be made, raises a `Cbor.Error` with a
+- specific reason. A protocol failure is diagnosed from the error, not from a hex dump:
++ Un documento malformato, o una conversione che non si può eseguire, solleva un `Cbor.Error` con un
++ motivo specifico. Un fallimento di protocollo si diagnostica dall'errore, non da un dump
++ esadecimale:
+
+= specific reason. A protocol failure is diagnosed from the error, not from a hex dump:
+=
+- ```tabular
++ ```tabular
+
+- column  Reason
+- column  Raised when
+- row  `Truncated(offset)`  the input stops mid-value
+- row  `Reserved(offset, byte)`  a head byte is one CBOR reserves
+- row  `BadSimpleValue(offset, value)`  a simple value is invalid
+- row  `InvalidUtf8(offset)`  a text string is not valid UTF-8
+- row  `Overflow(offset)`  an integer is too large for a `Long`
+- row  `UnexpectedBreak(offset)`  a break stop code is unexpected
+- row  `Trailing(offset)`  bytes follow the end of the value
+- row  `OutOfRange`  an array index is out of range
+- row  `NotType(found, expected)`  a value has the wrong type
+- row  `NonStringKey`  a map key is not a string
+- row  `Absent`  a value is not present
++ column  Motivo
++ column  Sollevato quando
++ row  `Truncated(offset)`  l'input si interrompe a metà di un valore
++ row  `Reserved(offset, byte)`  un byte di testa è uno di quelli riservati da CBOR
++ row  `BadSimpleValue(offset, value)`  un valore semplice non è valido
++ row  `InvalidUtf8(offset)`  una stringa di testo non è UTF-8 valido
++ row  `Overflow(offset)`  un intero è troppo grande per un `Long`
++ row  `UnexpectedBreak(offset)`  un codice di arresto break è inatteso
++ row  `Trailing(offset)`  dei byte seguono la fine del valore
++ row  `OutOfRange`  un indice di array è fuori intervallo
++ row  `NotType(found, expected)`  un valore ha il tipo sbagliato
++ row  `NonStringKey`  una chiave di mappa non è una stringa
++ row  `Absent`  un valore non è presente
+
+= row  `Absent`  a value is not present
+- ```
++ ```
+
+- A parsing failure carries the offset of the byte at which it occurred, which for a binary
+- format is the whole of the diagnosis. Input which stops mid-value names the offset of the byte
+- which should have followed. Trailing bytes name where the surplus begins. A reserved head byte
+- names both its offset and its value.
++ Un fallimento di parsing porta l'offset del byte in cui si è verificato, che per un formato binario
++ è l'intera diagnosi. Un input che si interrompe a metà di un valore indica l'offset del byte che
++ avrebbe dovuto seguire. I byte in eccesso indicano dove comincia il surplus. Un byte di testa
++ riservato indica sia il proprio offset sia il proprio valore.
+
+- These bytes promise an array of three elements, and deliver two:
++ Questi byte promettono un array di tre elementi, e ne consegnano due:
+
+= These bytes promise an array of three elements, and deliver two:
+=
+- ```scala fuel
++ ```scala fuel
+
+= These bytes promise an array of three elements, and deliver two:
+=
+= ```scala fuel
+- run
++ run
+
+= These bytes promise an array of three elements, and deliver two:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= These bytes promise an array of three elements, and deliver two:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- Cbor.Ast.parse(hex"830102")
++ Cbor.Ast.parse(hex"830102")
+
+= Cbor.Ast.parse(hex"830102")
+- ```
++ ```
+
+= Cbor.Ast.parse(hex"830102")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Cbor.Ast.parse(hex"830102")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= Cbor.Ast.parse(hex"830102")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(capture[Cbor.Error](Cbor.Ast.parse(hex"830102")).reason.inspect)
++ Out.println(capture[Cbor.Error](Cbor.Ast.parse(hex"830102")).reason.inspect)
+
+= Out.println(capture[Cbor.Error](Cbor.Ast.parse(hex"830102")).reason.inspect)
+- ```
++ ```
+
+- A conversion to the wrong type is reported as clearly:
++ Una conversione nel tipo sbagliato viene segnalata con altrettanta chiarezza:
+
+= A conversion to the wrong type is reported as clearly:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A conversion to the wrong type is reported as clearly:
+=
+= ```scala fuel
+- run
++ run
+
+= A conversion to the wrong type is reported as clearly:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= A conversion to the wrong type is reported as clearly:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- encoded.as[List[Int]]
++ encoded.as[List[Int]]
+
+= encoded.as[List[Int]]
+- ```
++ ```
+
+- ### Parsing directly
++ ### Parsing diretto
+
+- A type with a `Cbor.Parsable` instance is read straight from the bytes, with no intermediate
+- tree. The instance is derived at [compiletime], and composes a parser for that exact shape:
++ Un tipo con un'istanza di `Cbor.Parsable` si legge direttamente dai byte, senza alcun albero
++ intermedio. L'istanza è derivata in [tempo di compilazione], e compone un
++ parser per quella forma esatta:
+
+= tree. The instance is derived at [compiletime], and composes a parser for that exact shape:
+=
+- ```scala fuel
++ ```scala fuel
+
+= tree. The instance is derived at [compiletime], and composes a parser for that exact shape:
+=
+= ```scala fuel
+- compile
++ compile
+
+= tree. The instance is derived at [compiletime], and composes a parser for that exact shape:
+=
+= ```scala fuel
+= compile
+- ##
++ ##
+
+- import breviloquence.Inlinable
++ import breviloquence.Inlinable
+
+- given personParsable: (Person is Cbor.Parsable) = Inlinable.parsable[Person]
++ given personParsable: (Person is Cbor.Parsable) = Inlinable.parsable[Person]
+
+- val direct = Chain(bytes).read[Person in Cbor]
++ val direct = Chain(bytes).read[Person in Cbor]
+
+= val direct = Chain(bytes).read[Person in Cbor]
+- ```
++ ```
+
+- The derivation is imported by name. A sealed hierarchy, and a field whose type has a
+- hand-written `Inlinable`, also need the `breviloquence.staged` module, which evaluates the
+- discriminator and those instances as the code compiles.
++ La derivazione si importa per nome. Una gerarchia sealed, e un campo il cui tipo ha un
++ `Inlinable` scritto a mano, richiedono anche il modulo `breviloquence.staged`, che valuta il
++ discriminatore e quelle istanze mentre il codice compila.
+
+- Reading from a stream works in the same way, and the input is never assembled first. The parser
+- reads each chunk as it arrives, so a value which is split across two chunks reads exactly as
+- one which arrives whole. The memory held is bounded by the one item being read, not by the
+- document. `read[Cbor]` likewise reads the chunks as they arrive, but builds the whole tree.
++ La lettura da uno stream funziona allo stesso modo, e l'input non viene mai assemblato prima. Il
++ parser legge ogni chunk man mano che arriva, quindi un valore diviso tra due chunk si legge
++ esattamente come uno che arriva intero. La memoria occupata è limitata dal singolo elemento in
++ lettura, non dal documento. Anche `read[Cbor]` legge i chunk man mano che arrivano, ma costruisce
++ l'intero albero.
+
+- ### Printing directly
++ ### Stampa diretta
+
+- The same derivation generates the writing side. A `Cbor.Printable` writes a value's bytes
+- straight out, with no tree, and `in[Data over Cbor]` uses one wherever it exists:
++ La stessa derivazione genera il lato della scrittura. Un `Cbor.Printable` scrive direttamente i
++ byte di un valore, senza albero, e `in[Data over Cbor]` ne usa uno ovunque esista:
+
+= straight out, with no tree, and `in[Data over Cbor]` uses one wherever it exists:
+=
+- ```scala fuel
++ ```scala fuel
+
+= straight out, with no tree, and `in[Data over Cbor]` uses one wherever it exists:
+=
+= ```scala fuel
+- compile
++ compile
+
+= straight out, with no tree, and `in[Data over Cbor]` uses one wherever it exists:
+=
+= ```scala fuel
+= compile
+- ##
++ ##
+
+- given personPrintable: (Person is Cbor.Printable) = Inlinable.printable[Person]
++ given personPrintable: (Person is Cbor.Printable) = Inlinable.printable[Person]
+
+- val written = Person(t"Hamlet", 30).in[Data over Cbor]
++ val written = Person(t"Hamlet", 30).in[Data over Cbor]
+
+= val written = Person(t"Hamlet", 30).in[Data over Cbor]
+- ```
++ ```
+
+- The bytes are exactly those the derived encoding writes. `Cbor.Printable.emit` writes them a
+- block at a time, handing each block to a function as it fills, so a value can be sent without
+- its whole encoding ever being held.
++ I byte sono esattamente quelli che scrive la codifica derivata. `Cbor.Printable.emit` li scrive un
++ blocco alla volta, passando ogni blocco a una funzione man mano che si riempie, così un valore si
++ può inviare senza che la sua intera codifica venga mai tenuta in memoria.
+
+- ### Choosing the route for every type
++ ### Scegliere il percorso per ogni tipo
+
+- A record can generate both instances at once, into its companion, with `derives Cbor.Direct`.
+- A single import then selects the route for every record in scope. A type which is not a record
+- is a generic case class or a sealed hierarchy:
++ Un record può generare entrambe le istanze insieme, nel suo oggetto compagno, con
++ `derives Cbor.Direct`. Un solo import seleziona poi il percorso per ogni record nell'ambito. Un
++ tipo che non è un record è una case class generica o una gerarchia sealed:
+
+= is a generic case class or a sealed hierarchy:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
++ column  Import
+
+- column  For a record
+- column  For any other type
+- row  `codecs.direct`  a generated parser and printer  the derived codecs, unless it has a direct instance of its own
+- row  `codecs.derived`  the derived codecs, even over a direct instance  the derived codecs
+- row  `codecs.strict`  a generated parser and printer  a compile error naming the type, unless it has a direct instance
++ column  Per un record
++ column  Per qualsiasi altro tipo
++ row  `codecs.direct`  un parser e un printer generati  i codec derivati, a meno che abbia un'istanza diretta propria
++ row  `codecs.derived`  i codec derivati, anche rispetto a un'istanza diretta  i codec derivati
++ row  `codecs.strict`  un parser e un printer generati  un errore di compilazione che nomina il tipo, a meno che abbia un'istanza diretta
+
+= row  `codecs.strict`  a generated parser and printer  a compile error naming the type, unless it has a direct instance
+- ```
++ ```
+
+- Under `codecs.strict`, `read[Play in Cbor]` and `in[Data over Cbor]` never fall back to the
+- tree. The modes are alternatives, so import one at a time.
++ Con `codecs.strict`, `read[Play in Cbor]` e `in[Data over Cbor]` non ripiegano mai sull'albero. Le
++ modalità sono alternative, quindi se ne importa una alla volta.
+
+- ### CBOR over HTTP
++ ### CBOR su HTTP
+
+- A `Cbor` value is a request body or a response body, with the media type `application/cbor`,
+- and a body is parsed back on arrival. A binary API is therefore consumed and offered with the
+- same code as a [JSON one](json.md#json-over-http). Only the format's type differs.
++ Un valore `Cbor` è un corpo di richiesta o di risposta, con il tipo di media `application/cbor`, e
++ un corpo viene analizzato di nuovo all'arrivo. Un'API binaria si consuma e si offre quindi con lo
++ stesso codice di una [JSON](json.md#json-over-http). Cambia solo il tipo del formato.
+
+- ### Related
++ ### Correlati
+
+- - [Binary data](binary-data.md) describes the bytes which CBOR is written in.
++ - [Dati binari](binary-data.md) descrive i byte in cui è scritto CBOR.
