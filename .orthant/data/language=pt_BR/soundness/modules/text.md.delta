@@ -1,0 +1,1127 @@
+orthant 1 language
+
+- ## Text
++ ## Texto
+
+- ### About
++ ### Visão geral
+
+- `Text` is the string type used throughout Soundness, written with the `t"…"` [interpolator]. It
+- has a large and consistent set of operations: splitting and joining, slicing, changing case,
+- trimming, padding, replacing, searching and fuzzy matching. Each is typed so that a mistake is
+- caught at [compiletime], instead of surfacing as a wrong answer or an exception at [runtime].
++ `Text` é o tipo de string usado em todo o Soundness, escrito com o [interpolador] `t"…"`. Ele tem
++ um conjunto grande e consistente de operações: dividir e juntar, fatiar, mudar a caixa, aparar,
++ preencher, substituir, buscar e fazer casamento aproximado. Cada uma é tipada de modo que um
++ erro seja pego em [tempo de compilação], em vez de aparecer como uma resposta errada ou uma
++ exceção em [tempo de execução].
+
+- `Text` is an [opaque type] over the JVM's `String`, so it costs nothing at runtime. Every
+- operation is written against the `Textual` [typeclass], so the same methods work on `Text` and
+- on other textual types alike.
++ `Text` é um [tipo opaco] sobre a `String` da JVM, de modo que não custa nada em tempo de
++ execução. Toda operação é escrita em função da [classe de tipos] `Textual`, de modo que os mesmos
++ métodos funcionam tanto em `Text` quanto em outros tipos textuais.
+
+- ### On text
++ ### Sobre texto
+
+- Java's `String` gathered its methods over decades, and it shows. None of its pitfalls is caught
+- by the types, so each mistake waits for runtime:
++ A `String` do Java acumulou seus métodos ao longo de décadas, e isso se nota. Nenhuma de suas
++ armadilhas é pega pelos tipos, de modo que cada erro espera pelo tempo de execução:
+
+= by the types, so each mistake waits for runtime:
+=
+- ```tabular
++ ```tabular
+
+- column  In Java's `String`
+- column  The pitfall
+- column  With `Text`
+- row  `indexOf`  returns `-1` for "not found"  `offsetOf` returns an `Optional` position
+- row  `substring`  throws on a bad index  `keep`, `skip`, `snip` and `segment`, counting with ordinals
+- row  `split`  takes a regular expression where a literal was meant  `cut` takes a `Text`, a `Char` or a regular expression, as typed
+- row  any method returning a string  may return `null`  nothing returns `null`
++ column  Na `String` do Java
++ column  A armadilha
++ column  Com `Text`
++ row  `indexOf`  retorna `-1` para "não encontrado"  `offsetOf` retorna uma posição `Optional`
++ row  `substring`  lança uma exceção diante de um índice inválido  `keep`, `skip`, `snip` e `segment`, contando com ordinais
++ row  `split`  recebe uma expressão regular onde se queria um literal  `cut` recebe um `Text`, um `Char` ou uma expressão regular, conforme o tipo
++ row  qualquer método que retorna uma string  pode retornar `null`  nada retorna `null`
+
+= row  any method returning a string  may return `null`  nothing returns `null`
+- ```
++ ```
+
+- `Text` presents the same underlying strings through a deliberately designed surface. Three rules
+- hold throughout:
++ `Text` apresenta as mesmas strings subjacentes por meio de uma superfície projetada
++ deliberadamente. Três regras valem em toda parte:
+
+- - Nothing returns `null`. Absence is an [optional](optional-values.md) value.
+- - Nothing returns a mutable array.
+- - Nothing takes `Any` and quietly calls `toString` on it. A value must say how it becomes text
+-   before it can be treated as text.
++ - Nada retorna `null`. A ausência é um valor [opcional](optional-values.md).
++ - Nada retorna um array mutável.
++ - Nada recebe `Any` e chama `toString` sobre ele em silêncio. Um valor precisa dizer como se
++   torna texto antes de poder ser tratado como texto.
+
+- Everything comes from the `soundness` package. The operations which measure width need a text
+- metric in scope, and the last import lets the samples print their results:
++ Tudo vem do pacote `soundness`. As operações que medem largura precisam de uma métrica de texto
++ no escopo, e o último import permite que os exemplos imprimam seus resultados:
+
+= metric in scope, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import textMetrics.uniformMetric
++ import textMetrics.uniformMetric
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- Wherever an operation depends on a collation, an encoding or a metric, that choice is named by
+- an import. Nothing about text is assumed, which is
+- [declarative context](../../philosophy/declarative-context.md) at work.
++ Onde quer que uma operação dependa de uma collation, de uma codificação ou de uma métrica, essa
++ escolha é nomeada por um import. Nada sobre texto é presumido, o que é o
++ [contexto declarativo](../../philosophy/declarative-context.md) em ação.
+
+- ### Writing text
++ ### Escrevendo texto
+
+- The `t"…"` interpolator builds a `Text`, substituting any value which can be shown:
++ O interpolador `t"…"` constrói um `Text`, substituindo qualquer valor que possa ser exibido:
+
+= The `t"…"` interpolator builds a `Text`, substituting any value which can be shown:
+=
+- ```scala
++ ```scala
+
+- val name = t"Hamlet"
++ val name = t"Hamlet"
+
+= val name = t"Hamlet"
+- ```
++ ```
+
+= val name = t"Hamlet"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val name = t"Hamlet"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val name = t"Hamlet"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello, $name!")
++ Out.println(t"Hello, $name!")
+
+= Out.println(t"Hello, $name!")
+- ```
++ ```
+
+- A value with no way of being shown cannot be substituted. Where Java would print something like
+- `Object@1b6d3586`, this does not compile:
++ Um valor sem forma de ser exibido não pode ser substituído. Onde o Java imprimiria algo como
++ `Object@1b6d3586`, isto não compila:
+
+= `Object@1b6d3586`, this does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Object@1b6d3586`, this does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= `Object@1b6d3586`, this does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= `Object@1b6d3586`, this does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- t"Hello, ${new Object()}!"
++ t"Hello, ${new Object()}!"
+
+= t"Hello, ${new Object()}!"
+- ```
++ ```
+
+- Prose in source code wants to be wrapped for the programmer, and unwrapped for the output. The
+- `txt"…"` interpolator joins the lines of a wrapped paragraph with single spaces, and strips the
+- indentation the source needed. A blank line is a paragraph break, and becomes a single newline:
++ A prosa no código-fonte precisa de quebras de linha para o programador, e de nenhuma na saída. O
++ interpolador `txt"…"` junta as linhas de um parágrafo quebrado com espaços simples, e remove a
++ indentação de que o código-fonte precisava. Uma linha em branco é uma quebra de parágrafo, e se
++ torna uma única quebra de linha:
+
+= indentation the source needed. A blank line is a paragraph break, and becomes a single newline:
+=
+- ```scala fuel
++ ```scala fuel
+
+= indentation the source needed. A blank line is a paragraph break, and becomes a single newline:
+=
+= ```scala fuel
+- run
++ run
+
+= indentation the source needed. A blank line is a paragraph break, and becomes a single newline:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(txt"""This message is written
++ Out.println(txt"""This message is written
+
+-                   across several lines.
++                   across several lines.
+
+-                   This is its second paragraph.""")
++                   This is its second paragraph.""")
+
+=                   This is its second paragraph.""")
+- ```
++ ```
+
+- ### Splitting and joining
++ ### Dividindo e juntando
+
+- `cut` divides text at a delimiter, which may be a `Text`, a `Char` or a
+- [regular expression](patterns.md). `words` and `lines` are the common cases:
++ `cut` divide o texto em um delimitador, que pode ser um `Text`, um `Char` ou uma
++ [expressão regular](patterns.md). `words` e `lines` são os casos comuns:
+
+= [regular expression](patterns.md). `words` and `lines` are the common cases:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [regular expression](patterns.md). `words` and `lines` are the common cases:
+=
+= ```scala fuel
+- run
++ run
+
+= [regular expression](patterns.md). `words` and `lines` are the common cases:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"one,two,three".cut(t",").inspect)
++ Out.println(t"one,two,three".cut(t",").inspect)
+
+- Out.println(t"a short sentence".words.inspect)
++ Out.println(t"a short sentence".words.inspect)
+
+= Out.println(t"a short sentence".words.inspect)
+- ```
++ ```
+
+- `join` combines a collection of text. It takes an optional separator, and an optional final
+- separator, for a list which reads naturally in English:
++ `join` combina uma coleção de texto. Ele recebe um separador opcional, e um separador final
++ opcional, para uma lista que se leia naturalmente em inglês:
+
+= separator, for a list which reads naturally in English:
+=
+- ```scala fuel
++ ```scala fuel
+
+= separator, for a list which reads naturally in English:
+=
+= ```scala fuel
+- run
++ run
+
+= separator, for a list which reads naturally in English:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List(t"one", t"two", t"three").join(t", "))
++ Out.println(List(t"one", t"two", t"three").join(t", "))
+
+- Out.println(List(t"one", t"two", t"three").join(t", ", t" and "))
++ Out.println(List(t"one", t"two", t"three").join(t", ", t" and "))
+
+= Out.println(List(t"one", t"two", t"three").join(t", ", t" and "))
+- ```
++ ```
+
+- `join` does the job of the standard library's `mkString`, and differs in the way that matters.
+- `mkString` calls `toString` on every element without saying so, so a collection of anything at
+- all produces text of some kind. `join` produces text only from textual elements. A collection
+- whose elements have no meaningful rendering does not compile. If the elements are themselves
+- collections, `join` concatenates them, and the separator is then one of *their* elements;
+- [Collections](collections.md#reshaping) describes that form.
++ `join` faz o trabalho do `mkString` da biblioteca padrão, e difere dele no que importa.
++ `mkString` chama `toString` sobre cada elemento sem dizer, de modo que uma coleção de qualquer
++ coisa produz algum tipo de texto. `join` só produz texto a partir de elementos textuais. Uma
++ coleção cujos elementos não têm uma renderização com sentido não compila. Se os próprios
++ elementos forem coleções, `join` os concatena, e o separador é então um dos elementos *deles*;
++ [Coleções](collections.md#reshaping) descreve essa forma.
+
+- ### Slicing
++ ### Fatiando
+
+- `keep` takes a number of characters and `skip` drops them. Both count from the left by default,
+- and from the right with `Rtl`. `snip` splits the text at a position, into a pair:
++ `keep` toma um número de caracteres e `skip` os descarta. Ambos contam a partir da esquerda por
++ padrão, e a partir da direita com `Rtl`. `snip` divide o texto em uma posição, em um par:
+
+= and from the right with `Rtl`. `snip` splits the text at a position, into a pair:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and from the right with `Rtl`. `snip` splits the text at a position, into a pair:
+=
+= ```scala fuel
+- run
++ run
+
+= and from the right with `Rtl`. `snip` splits the text at a position, into a pair:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello".skip(1))
++ Out.println(t"Hello".skip(1))
+
+- Out.println(t"Hello".keep(1, Rtl))
++ Out.println(t"Hello".keep(1, Rtl))
+
+- Out.println(t"Hello".snip(2).inspect)
++ Out.println(t"Hello".snip(2).inspect)
+
+= Out.println(t"Hello".snip(2).inspect)
+- ```
++ ```
+
+- `segment` takes a range of positions. The positions are
+- [ordinals](https://en.wikipedia.org/wiki/Ordinal_number), `Prim`, `Sec`, `Ter` and so on, which
+- count from one. The fifth to the seventh characters are `Quin thru Sept`, so there is no
+- zero-based index to get wrong by one:
++ `segment` recebe um intervalo de posições. As posições são
++ [ordinais](https://en.wikipedia.org/wiki/Ordinal_number), `Prim`, `Sec`, `Ter` e assim por
++ diante, que contam a partir de um. Do quinto ao sétimo caractere é `Quin thru Sept`, de modo que
++ não há índice baseado em zero para errar por um:
+
+= zero-based index to get wrong by one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= zero-based index to get wrong by one:
+=
+= ```scala fuel
+- run
++ run
+
+= zero-based index to get wrong by one:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello world".segment(Quin thru Sept).inspect)
++ Out.println(t"Hello world".segment(Quin thru Sept).inspect)
+
+= Out.println(t"Hello world".segment(Quin thru Sept).inspect)
+- ```
++ ```
+
+- [Collections](collections.md#positions-and-access) uses the same ordinals for positions in a
+- list.
++ [Coleções](collections.md#positions-and-access) usa os mesmos ordinais para as posições em uma
++ lista.
+
+- ### Transforming
++ ### Transformando
+
+- Trimming, changing case and replacing are each a verb. `sub` replaces one piece of text with
+- another:
++ Aparar, mudar a caixa e substituir são, cada um, um verbo. `sub` substitui um trecho de texto
++ por outro:
+
+= another:
+=
+- ```scala fuel
++ ```scala fuel
+
+= another:
+=
+= ```scala fuel
+- run
++ run
+
+= another:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"  Hello  ".trim.inspect)
++ Out.println(t"  Hello  ".trim.inspect)
+
+- Out.println(t"hello".capitalize)
++ Out.println(t"hello".capitalize)
+
+- Out.println(t"LOUD".lower)
++ Out.println(t"LOUD".lower)
+
+- Out.println(t"naive".sub(t"i", t"ï"))
++ Out.println(t"naive".sub(t"i", t"ï"))
+
+= Out.println(t"naive".sub(t"i", t"ï"))
+- ```
++ ```
+
+- `keep` also takes a predicate, and keeps the characters which satisfy it:
++ `keep` também recebe um predicado, e mantém os caracteres que o satisfazem:
+
+= `keep` also takes a predicate, and keeps the characters which satisfy it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `keep` also takes a predicate, and keeps the characters which satisfy it:
+=
+= ```scala fuel
+- run
++ run
+
+= `keep` also takes a predicate, and keeps the characters which satisfy it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"HELLOworld".keep(_.isUpper))
++ Out.println(t"HELLOworld".keep(_.isUpper))
+
+= Out.println(t"HELLOworld".keep(_.isUpper))
+- ```
++ ```
+
+- [Characters](characters.md) describes what can be asked of a single character.
++ [Caracteres](characters.md) descreve o que se pode perguntar sobre um único caractere.
+
+- ### Sorting and comparing text
++ ### Ordenando e comparando texto
+
+- Text has no natural order. Whether `café` sorts before or after `caff` depends on the
+- *collation*, and a program which sorts text without choosing one is making a choice it does not
+- know about. So sorting text, or comparing it with `<`, needs a collation in scope. Without one,
+- the comparison does not compile:
++ O texto não tem uma ordem natural. Se `café` fica antes ou depois de `caff` depende da
++ *collation*, e um programa que ordena texto sem escolher uma está fazendo uma escolha da qual não
++ sabe. Por isso, ordenar texto, ou compará-lo com `<`, precisa de uma collation no escopo. Sem
++ uma, a comparação não compila:
+
+= the comparison does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the comparison does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= the comparison does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= the comparison does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- t"apple" < t"banana"
++ t"apple" < t"banana"
+
+= t"apple" < t"banana"
+- ```
++ ```
+
+- Two collations are provided:
++ São fornecidas duas collations:
+
+= Two collations are provided:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
++ column  Import
+
+- column  Orders text
+- row  `collations.unicodeCollation`  by the Unicode Collation Algorithm: dictionary order, ranking accents before case
+- row  `collations.codepointCollation`  by code point, which is fast and stable, but places supplementary characters after the whole basic plane
++ column  Ordena o texto
++ row  `collations.unicodeCollation`  pelo Unicode Collation Algorithm: ordem de dicionário, considerando os acentos antes da caixa
++ row  `collations.codepointCollation`  por code point, o que é rápido e estável, mas põe os caracteres suplementares depois de todo o plano básico
+
+= row  `collations.codepointCollation`  by code point, which is fast and stable, but places supplementary characters after the whole basic plane
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- import soundness.collationComparable
++ import soundness.collationComparable
+
+- import collations.unicodeCollation
++ import collations.unicodeCollation
+
+- import sortingAlgorithms.timsort
++ import sortingAlgorithms.timsort
+
+= import sortingAlgorithms.timsort
+- ```
++ ```
+
+= import sortingAlgorithms.timsort
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import sortingAlgorithms.timsort
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import sortingAlgorithms.timsort
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List(t"caff", t"café", t"cafe").sort.inspect)
++ Out.println(List(t"caff", t"café", t"cafe").sort.inspect)
+
+- Out.println((t"apple" < t"banana").inspect)
++ Out.println((t"apple" < t"banana").inspect)
+
+= Out.println((t"apple" < t"banana").inspect)
+- ```
++ ```
+
+- [Collections](collections.md#sorting) explains `sort` and the choice of sorting algorithm.
++ [Coleções](collections.md#sorting) explica `sort` e a escolha do algoritmo de ordenação.
+
+- ### Case conventions
++ ### Convenções de caixa
+
+- Text splits into words, and the words rejoin in a naming convention. `uncamel` breaks a
+- camel-case or Pascal-case identifier into its words, in lower case. `unkebab` and `unsnake` do
+- the same for the other styles. Four methods join words in each style:
++ O texto se divide em palavras, e as palavras se juntam de novo em uma convenção de nomes.
++ `uncamel` quebra um identificador em camel case ou Pascal case em suas palavras, em minúsculas.
++ `unkebab` e `unsnake` fazem o mesmo para os outros estilos. Quatro métodos juntam palavras em
++ cada estilo:
+
+= the same for the other styles. Four methods join words in each style:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Joins words
+- row  `kebab`  with hyphens
+- row  `snake`  with underscores
+- row  `camel`  capitalizing every word but the first
+- row  `pascal`  capitalizing every word
++ column  Método
++ column  Junta as palavras
++ row  `kebab`  com hífens
++ row  `snake`  com sublinhados
++ row  `camel`  com maiúscula em cada palavra exceto a primeira
++ row  `pascal`  com maiúscula em cada palavra
+
+= row  `pascal`  capitalizing every word
+- ```
++ ```
+
+= row  `pascal`  capitalizing every word
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `pascal`  capitalizing every word
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `pascal`  capitalizing every word
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"oneTwoThree".uncamel.kebab)
++ Out.println(t"oneTwoThree".uncamel.kebab)
+
+- Out.println(t"oneTwoThree".uncamel.snake)
++ Out.println(t"oneTwoThree".uncamel.snake)
+
+- Out.println(t"one-two-three".unkebab.camel)
++ Out.println(t"one-two-three".unkebab.camel)
+
+- Out.println(t"one_two_three".unsnake.pascal)
++ Out.println(t"one_two_three".unsnake.pascal)
+
+= Out.println(t"one_two_three".unsnake.pascal)
+- ```
++ ```
+
+- ### Padding and fitting
++ ### Preenchendo e ajustando
+
+- `pad` extends text to a width, `center` pads it on both sides, and `fit` forces an exact width,
+- truncating if need be. Each measures width through the `Text is Measurable` given in scope.
+- Here that is `uniformMetric`, which counts every character as one column:
++ `pad` estende o texto até uma largura, `center` o preenche dos dois lados, e `fit` impõe uma
++ largura exata, truncando se for preciso. Cada um mede a largura por meio do given
++ `Text is Measurable` no escopo. Aqui ele é `uniformMetric`, que conta cada caractere como uma
++ coluna:
+
+= Here that is `uniformMetric`, which counts every character as one column:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Here that is `uniformMetric`, which counts every character as one column:
+=
+= ```scala fuel
+- run
++ run
+
+= Here that is `uniformMetric`, which counts every character as one column:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"123".pad(5, Bidi.Rtl).inspect)
++ Out.println(t"123".pad(5, Bidi.Rtl).inspect)
+
+- Out.println(t"123".fit(5, Bidi.Rtl, '.').inspect)
++ Out.println(t"123".fit(5, Bidi.Rtl, '.').inspect)
+
+- Out.println(t"123456789".fit(5).inspect)
++ Out.println(t"123456789".fit(5).inspect)
+
+= Out.println(t"123456789".fit(5).inspect)
+- ```
++ ```
+
+- [Tables](tables.md) uses these to lay out columns of text.
++ [Tabelas](tables.md) usa esses métodos para dispor colunas de texto.
+
+- ### Searching
++ ### Buscando
+
+- Five methods ask about membership and position:
++ Cinco métodos perguntam sobre pertinência e posição:
+
+= Five methods ask about membership and position:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Answers
+- row  `contains`  whether the text contains another
+- row  `starts`  whether the text starts with another
+- row  `ends`  whether the text ends with another
+- row  `count`  how many characters satisfy a predicate
+- row  `offsetOf`  where another text occurs, searching from the left by default
++ column  Método
++ column  Responde
++ row  `contains`  se o texto contém outro
++ row  `starts`  se o texto começa com outro
++ row  `ends`  se o texto termina com outro
++ row  `count`  quantos caracteres satisfazem um predicado
++ row  `offsetOf`  onde outro texto ocorre, buscando a partir da esquerda por padrão
+
+= row  `offsetOf`  where another text occurs, searching from the left by default
+- ```
++ ```
+
+- `offsetOf` gives an `Optional` position. Text which is not found gives `Unset`, never a number
+- which could be mistaken for a position:
++ `offsetOf` dá uma posição `Optional`. Um texto que não é encontrado dá `Unset`, nunca um número
++ que poderia ser confundido com uma posição:
+
+= which could be mistaken for a position:
+=
+- ```scala fuel
++ ```scala fuel
+
+= which could be mistaken for a position:
+=
+= ```scala fuel
+- run
++ run
+
+= which could be mistaken for a position:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"hello world".contains(t"ello").inspect)
++ Out.println(t"hello world".contains(t"ello").inspect)
+
+- Out.println(t"banana".count(_ == 'a').show)
++ Out.println(t"banana".count(_ == 'a').show)
+
+- Out.println(t"hello world".offsetOf(t"o").inspect)
++ Out.println(t"hello world".offsetOf(t"o").inspect)
+
+- Out.println(t"hello world".offsetOf(t"z").inspect)
++ Out.println(t"hello world".offsetOf(t"z").inspect)
+
+= Out.println(t"hello world".offsetOf(t"z").inspect)
+- ```
++ ```
+
+- [Patterns](patterns.md) matches text against regular expressions and globs, and extracts parts
+- of it.
++ [Padrões](patterns.md) casa texto com expressões regulares e globs, e extrai partes dele.
+
+- ### Bytes
++ ### Bytes
+
+- Text encodes to bytes through the character encoding in scope, and bytes decode back:
++ O texto é codificado em bytes por meio da codificação de caracteres no escopo, e os bytes são
++ decodificados de volta:
+
+= Text encodes to bytes through the character encoding in scope, and bytes decode back:
+=
+- ```scala
++ ```scala
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- val bytes = t"Adélaïde".in[Data]
++ val bytes = t"Adélaïde".in[Data]
+
+= val bytes = t"Adélaïde".in[Data]
+- ```
++ ```
+
+= val bytes = t"Adélaïde".in[Data]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val bytes = t"Adélaïde".in[Data]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val bytes = t"Adélaïde".in[Data]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(bytes.length.show)
++ Out.println(bytes.length.show)
+
+- Out.println(bytes.utf8)
++ Out.println(bytes.utf8)
+
+= Out.println(bytes.utf8)
+- ```
++ ```
+
+- The eight characters are ten bytes in UTF-8, since each accented letter takes two.
+- [Characters](characters.md) covers encodings, and [Base encoding](base-encoding.md) writes bytes
+- as hexadecimal or Base64 text.
++ Os oito caracteres são dez bytes em UTF-8, já que cada letra acentuada ocupa dois.
++ [Caracteres](characters.md) trata das codificações, e [Codificação em base](base-encoding.md)
++ escreve bytes como texto hexadecimal ou Base64.
+
+- ### Fuzzy matching
++ ### Casamento aproximado
+
+- Two pieces of text can be compared for closeness, not just equality, through a `Proximity`
+- measure in scope. The [Levenshtein](https://en.wikipedia.org/wiki/Levenshtein_distance) distance
+- counts the single-character edits between them:
++ Dois trechos de texto podem ser comparados quanto à proximidade, e não só quanto à igualdade, por
++ meio de uma medida `Proximity` no escopo. A distância de
++ [Levenshtein](https://en.wikipedia.org/wiki/Levenshtein_distance) conta as edições de um único
++ caractere entre eles:
+
+= counts the single-character edits between them:
+=
+- ```scala
++ ```scala
+
+- import proximities.levenshteinProximity
++ import proximities.levenshteinProximity
+
+- import caseSensitivity.caseSensitive
++ import caseSensitivity.caseSensitive
+
+= import caseSensitivity.caseSensitive
+- ```
++ ```
+
+= import caseSensitivity.caseSensitive
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import caseSensitivity.caseSensitive
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import caseSensitivity.caseSensitive
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello world".proximity(t"Hello orld").show)
++ Out.println(t"Hello world".proximity(t"Hello orld").show)
+
+= Out.println(t"Hello world".proximity(t"Hello orld").show)
+- ```
++ ```
+
+- Comparing one word against a whole vocabulary in this way is slow, and a spelling suggestion
+- needs it to be fast. A `Lexicon` is a [BK-tree](https://en.wikipedia.org/wiki/BK-tree) over the
+- words. It uses the triangle inequality, which the distance obeys, to rule out most of the
+- vocabulary without measuring it:
++ Comparar uma palavra com um vocabulário inteiro dessa forma é lento, e uma sugestão de grafia
++ precisa que seja rápido. Um `Lexicon` é uma [BK-tree](https://en.wikipedia.org/wiki/BK-tree)
++ sobre as palavras. Ele usa a desigualdade triangular, à qual a distância obedece, para descartar
++ a maior parte do vocabulário sem medi-la:
+
+= vocabulary without measuring it:
+=
+- ```scala
++ ```scala
+
+- val words = List(t"book", t"boot", t"cook", t"look", t"bake")
++ val words = List(t"book", t"boot", t"cook", t"look", t"bake")
+
+- val lexicon = Lexicon(words)
++ val lexicon = Lexicon(words)
+
+= val lexicon = Lexicon(words)
+- ```
++ ```
+
+- A search at distance zero is an exact lookup. Widening the radius admits more distant
+- candidates, which is how a "did you mean" suggestion is produced from a large word list:
++ Uma busca à distância zero é uma consulta exata. Ampliar o raio admite candidatos mais distantes,
++ que é como uma sugestão de "você quis dizer" é produzida a partir de uma lista grande de
++ palavras:
+
+= candidates, which is how a "did you mean" suggestion is produced from a large word list:
+=
+- ```scala fuel
++ ```scala fuel
+
+= candidates, which is how a "did you mean" suggestion is produced from a large word list:
+=
+= ```scala fuel
+- run
++ run
+
+= candidates, which is how a "did you mean" suggestion is produced from a large word list:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(lexicon.search(t"book", 0).inspect)
++ Out.println(lexicon.search(t"book", 0).inspect)
+
+- Out.println(lexicon.search(t"booq", 1).inspect)
++ Out.println(lexicon.search(t"booq", 1).inspect)
+
+= Out.println(lexicon.search(t"booq", 1).inspect)
+- ```
++ ```
+
+- ### Prefix dictionaries
++ ### Dicionários de prefixos
+
+- Where lookup is by exact key, a `Dictionary` maps text to values through a
+- [trie](https://en.wikipedia.org/wiki/Trie). A lookup costs the length of the key, not a hash of
+- the whole of it, and a query by prefix costs the length of the prefix:
++ Onde a consulta é por chave exata, um `Dictionary` mapeia texto para valores por meio de uma
++ [trie](https://en.wikipedia.org/wiki/Trie). Uma consulta custa o comprimento da chave, e não um
++ hash dela inteira, e uma consulta por prefixo custa o comprimento do prefixo:
+
+= the whole of it, and a query by prefix costs the length of the prefix:
+=
+- ```scala
++ ```scala
+
+- val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
++ val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+
+= val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+- ```
++ ```
+
+= val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dictionary(t"colour").inspect)
++ Out.println(dictionary(t"colour").inspect)
+
+- Out.println(dictionary.size.show)
++ Out.println(dictionary.size.show)
+
+= Out.println(dictionary.size.show)
+- ```
++ ```
+
+- ### Graphemes and width
++ ### Grafemas e largura
+
+- A `Char` is not a unit of text a person would recognize. `é` may be one code point or two, and a
+- family emoji is several code points joined together, so counting `Char`s answers the wrong
+- question. `Writing` gives a text's *grapheme clusters*, which are what a reader would call
+- characters, and the boundaries between them:
++ Um `Char` não é uma unidade de texto que uma pessoa reconheceria. `é` pode ser um code point ou
++ dois, e um emoji de família são vários code points unidos, de modo que contar `Char`s responde à
++ pergunta errada. `Writing` dá os *clusters de grafemas* de um texto, que são o que um leitor
++ chamaria de caracteres, e as fronteiras entre eles:
+
+= characters, and the boundaries between them:
+=
+- ```scala fuel
++ ```scala fuel
+
+= characters, and the boundaries between them:
+=
+= ```scala fuel
+- run
++ run
+
+= characters, and the boundaries between them:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Writing(t"abc").graphemeCount.show)
++ Out.println(Writing(t"abc").graphemeCount.show)
+
+= Out.println(Writing(t"abc").graphemeCount.show)
+- ```
++ ```
+
+- Nor is a grapheme always one column wide on a terminal. Under a metric in scope, `metrics` gives
+- the width the terminal will actually use. That is one column for ASCII, one for a letter with a
+- combining accent, and two for Chinese, Japanese and Korean characters and for most emoji:
++ Um grafema também nem sempre tem uma coluna de largura em um terminal. Sob uma métrica no
++ escopo, `metrics` dá a largura que o terminal de fato usará. Isso é uma coluna para ASCII, uma
++ para uma letra com um acento combinante, e duas para caracteres chineses, japoneses e coreanos e
++ para a maioria dos emojis:
+
+= combining accent, and two for Chinese, Japanese and Korean characters and for most emoji:
+=
+- ```scala fuel
++ ```scala fuel
+
+= combining accent, and two for Chinese, Japanese and Korean characters and for most emoji:
+=
+= ```scala fuel
+- run
++ run
+
+= combining accent, and two for Chinese, Japanese and Korean characters and for most emoji:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- locally:
++ locally:
+
+-   import textMetrics.wideCharacterWidthMetric
++   import textMetrics.wideCharacterWidthMetric
+
+-   Out.println(Grapheme("a").metrics.show)
++   Out.println(Grapheme("a").metrics.show)
+
+-   Out.println(Grapheme("é").metrics.show)
++   Out.println(Grapheme("é").metrics.show)
+
+-   Out.println(Grapheme("日").metrics.show)
++   Out.println(Grapheme("日").metrics.show)
+
+=   Out.println(Grapheme("日").metrics.show)
+- ```
++ ```
+
+- Aligning columns of text in a [terminal](terminal.md) depends on this width.
++ Alinhar colunas de texto em um [terminal](terminal.md) depende dessa largura.
+
+- ### Rendering numbers
++ ### Renderizando números
+
+- Turning a number into text involves a choice, of how many digits are worth showing, which
+- `toString` makes badly. A `Decimalizer` states the choice as a number of significant figures,
+- and every `show` of a floating-point number consults the one in scope:
++ Transformar um número em texto envolve uma escolha, a de quantos dígitos vale a pena mostrar, que
++ `toString` faz mal. Um `Decimalizer` expressa a escolha como um número de algarismos
++ significativos, e todo `show` de um número de ponto flutuante consulta o que estiver no escopo:
+
+= and every `show` of a floating-point number consults the one in scope:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and every `show` of a floating-point number consults the one in scope:
+=
+= ```scala fuel
+- run
++ run
+
+= and every `show` of a floating-point number consults the one in scope:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Decimalizer(3).decimalize(-3.14159))
++ Out.println(Decimalizer(3).decimalize(-3.14159))
+
+= Out.println(Decimalizer(3).decimalize(-3.14159))
+- ```
++ ```
+
+- The same value therefore renders consistently everywhere in a program, and changing the
+- precision is a matter of one given, not a search for format strings. [Numbers](numbers.md)
+- covers the numeric types themselves.
++ O mesmo valor, portanto, é renderizado de forma consistente em todo o programa, e mudar a
++ precisão é questão de um único given, e não de uma busca por strings de formato.
++ [Números](numbers.md) trata dos próprios tipos numéricos.
+
+- ### Any textual type
++ ### Qualquer tipo textual
+
+- Every operation above is defined over the `Textual` typeclass, not over `Text` alone. A type
+- which declares itself textual gains the same `cut`, `join`, `keep`, `pad` and the rest, without
+- redefining any of them. The styled text of a [terminal](terminal.md) is one such type, so styled
+- and plain text are manipulated with one vocabulary.
++ Toda operação acima é definida sobre a classe de tipos `Textual`, e não apenas sobre `Text`. Um
++ tipo que se declara textual ganha os mesmos `cut`, `join`, `keep`, `pad` e o resto, sem redefinir
++ nenhum deles. O texto com estilo de um [terminal](terminal.md) é um desses tipos, de modo que o
++ texto com estilo e o texto simples são manipulados com um só vocabulário.

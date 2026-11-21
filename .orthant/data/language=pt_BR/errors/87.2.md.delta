@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.87.2` — `Query.Error`
++ # `↯/s.87.2` — `Query.Error`
+
+- Raised when Legerdemain cannot read a query parameter.
++ Lançado quando o Legerdemain não consegue ler um parâmetro de consulta.
+
+- ## Cause
++ ## Causa
+
+- Legerdemain decodes named query parameters into typed values. The
+- constructor takes a `reason: Reason`; the rendered message is
++ O Legerdemain decodifica parâmetros de consulta nomeados em valores tipados. O construtor recebe
++ um `reason: Reason`; a mensagem renderizada é
+
+- `the query parameter could not be read because $reason`.
++ `the query parameter could not be read because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.87.2.1` — `Missing`
++ ### `↯/s.87.2.1` — `Missing`
+
+- The parameter was not present in the query string. (When the
+- target type has a `Default` instance, the default is used in
+- place of the missing value, but the error is still raised so a
+- caller's `Tactic` can observe it.)
++ O parâmetro não estava presente na string de consulta. (Quando o tipo de destino tem uma
++ instância de `Default`, o padrão é usado no lugar do valor ausente, mas o erro ainda é lançado
++ para que o `Tactic` de quem chama possa observá-lo.)
+
+- **Example.** `[↯/s.87.2.1] the query parameter could not be read because the parameter was not present in the query string`
++ **Exemplo.** `[↯/s.87.2.1] the query parameter could not be read because the parameter was not present in the query string`
+
+- **Resolution.** Confirm the parameter is included in the query
+- string; supply a `Default[T]` instance to fall back when it is
+- absent.
++ **Resolução.** Confirme que o parâmetro está incluído na string de consulta; forneça uma
++ instância de `Default[T]` para recorrer a ela quando ele estiver ausente.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/legerdemain/src/query/legerdemain.Query.scala`
++ - Código-fonte: `lib/legerdemain/src/query/legerdemain.Query.scala`

@@ -1,0 +1,26 @@
+orthant 1 language
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and
+- round-trips the RFC 7515/7516 example vectors.
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/work/soundness/modules/`,
++ e faz a ida e volta dos vetores de exemplo das RFCs 7515/7516.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and
+- passes the standard TOML compliance suite.
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/work/soundness/modules/`,
++ e passa na suíte padrão de conformidade TOML.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and a
+- scripted registration-and-assertion ceremony passes against a reference authenticator.
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/work/soundness/modules/`,
++ e uma cerimônia roteirizada de registro e asserção passa contra um autenticador de referência.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and
+- interoperates with a reference HTTP/3 server and client.
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/work/soundness/modules/`,
++ e interopera com um servidor e um cliente HTTP/3 de referência.
+
+- Done when: the module ships with tests, error pages and a `doc/work/soundness/modules/` topic, and a
+- scripted session passes against a reference IMAP server.
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/work/soundness/modules/`,
++ e uma sessão roteirizada passa contra um servidor IMAP de referência.

@@ -1,0 +1,53 @@
+orthant 1 language
+
+- # `↯/s.88.3` — `ClassfileError`
++ # `↯/s.88.3` — `ClassfileError`
+
+- Raised when a JVM classfile cannot be read or its bytecode extracted.
++ Lançado quando um classfile da JVM não pode ser lido ou seu bytecode não pode ser extraído.
+
+- ## Cause
++ ## Causa
+
+- Mandible parses classfiles to expose methods and their instructions. This error covers a
+- classfile that is not present on the classpath and one whose structure cannot be parsed.
++ O Mandible analisa classfiles para expor métodos e suas instruções. Este erro cobre um classfile
++ que não está presente no classpath e um cuja estrutura não pode ser analisada.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+- row  `↯/s.88.3.1`  `ClassfileMissing`  `[↯/s.88.3.1] the generated classfile could not be opened`
++ row  `↯/s.88.3.1`  `ClassfileMissing`  `[↯/s.88.3.1] the generated classfile could not be opened`
+
+- row  `↯/s.88.3.2`  `ClassfileUnreadable`  `[↯/s.88.3.2] the generated classfile could not be read`
++ row  `↯/s.88.3.2`  `ClassfileUnreadable`  `[↯/s.88.3.2] the generated classfile could not be read`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- A missing classfile usually means the classpath passed to the reader differs from the one
+- the code was compiled against. A parse failure means the file is truncated, or uses a
+- classfile version beyond what the parser models.
++ Um classfile ausente em geral significa que o classpath passado ao leitor difere daquele contra o
++ qual o código foi compilado. Uma falha de análise significa que o arquivo está truncado, ou usa
++ uma versão de classfile além do que o parser modela.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/mandible/src/core/mandible_core.scala`
++ - Código-fonte: `lib/mandible/src/core/mandible_core.scala`

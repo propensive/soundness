@@ -1,0 +1,398 @@
+orthant 1 language
+
+- ## Hyphenation
++ ## Hifenização
+
+- ### About
++ ### Visão geral
+
+- Breaking a word at the end of a line is acceptable only at certain points, and finding those
+- points is the job of [hyphenation](https://en.wikipedia.org/wiki/Syllabification). Words are
+- hyphenated with the same algorithm, and the same pattern files, as
+- [TeX](https://en.wikipedia.org/wiki/TeX), whose typesetting the technique was invented for.
+- A word gains its permissible break points, is hyphenated with a chosen character, or is
+- split into its syllables.
++ Quebrar uma palavra no fim de uma linha só é aceitável em certos pontos, e encontrar esses pontos é
++ a tarefa da [hifenização](https://en.wikipedia.org/wiki/Syllabification). As palavras são
++ hifenizadas com o mesmo algoritmo, e os mesmos arquivos de padrões, do
++ [TeX](https://en.wikipedia.org/wiki/TeX), para cuja tipografia a técnica foi inventada. Uma
++ palavra ganha seus pontos de quebra permitidos, é hifenizada com um caractere escolhido, ou é
++ dividida em suas sílabas.
+
+- The patterns of a language are a [contextual value], and American English is provided. The
+- set of patterns can be extended, or replaced from any TeX pattern file, where a word breaks
+- in a way which the standard patterns do not know.
++ Os padrões de uma língua são um [valor contextual], e o inglês americano é fornecido. O conjunto de
++ padrões pode ser estendido, ou substituído a partir de qualquer arquivo de padrões do TeX, quando
++ uma palavra se quebra de um modo que os padrões comuns não conhecem.
+
+- ### On hyphenation
++ ### Sobre a hifenização
+
+- Where a word may break is not something which an algorithm can read from its spelling.
+- *hy-phen-ation* breaks between syllables which no simple rule identifies. Liang's algorithm,
+- which was built for TeX, answers this with a dictionary of thousands of small scoring
+- patterns, derived from real hyphenation dictionaries. It remains the standard, because it is
+- accurate and fast, and its pattern files exist for many languages.
++ Onde uma palavra pode se quebrar não é algo que um algoritmo consiga ler da sua grafia.
++ *hy-phen-ation* se quebra entre sílabas que nenhuma regra simples identifica. O algoritmo de
++ Liang, que foi criado para o TeX, responde a isso com um dicionário de milhares de pequenos padrões
++ de pontuação, derivados de dicionários reais de hifenização. Ele continua sendo o padrão, porque é
++ preciso e rápido, e seus arquivos de padrões existem para muitas línguas.
+
+- That algorithm is implemented here, against the standard pattern files, and is offered as
+- three operations on [text](text.md), with the language supplied as a [given]:
++ Esse algoritmo é implementado aqui, sobre os arquivos de padrões comuns, e é oferecido como três
++ operações sobre [texto](text.md), com a língua fornecida como um [given]:
+
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Returns
+- column  For
+- row  `hyphenate`  the `Text` with a hyphen character at each permissible break  text to be set in lines
+- row  `syllables`  a `Sequence[Text]` of syllables and runs of non-letters  analysis of a word's parts
+- row  `breakPoints`  an `Array[Int]` of break positions  code that places the breaks itself
++ column  Operação
++ column  Retorna
++ column  Para
++ row  `hyphenate`  o `Text` com um caractere de hífen em cada quebra permitida  texto a ser composto em linhas
++ row  `syllables`  uma `Sequence[Text]` de sílabas e sequências de não letras  análise das partes de uma palavra
++ row  `breakPoints`  um `Array[Int]` de posições de quebra  código que posiciona as quebras por conta própria
+
+= row  `breakPoints`  an `Array[Int]` of break positions  code that places the breaks itself
+- ```
++ ```
+
+- Breaking text at the right points is a pure function of the language's patterns, and stays
+- one, which is [immutability](../../philosophy/immutability.md) in a domain which tempts
+- stateful iteration.
++ Quebrar o texto nos pontos certos é uma função pura dos padrões da língua, e continua sendo, o que
++ é [imutabilidade](../../philosophy/immutability.md) num domínio que convida à iteração com estado.
+
+- Everything comes from the `soundness` package, with the English patterns in scope. The last
+- import lets the samples print their results:
++ Tudo vem do pacote `soundness`, com os padrões do inglês em escopo. O último import permite que os
++ exemplos imprimam seus resultados:
+
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import hyphenations.englishHyphenation
++ import hyphenations.englishHyphenation
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Hyphenating
++ ### Hifenizando
+
+- `hyphenate` inserts a hyphen character at each permissible break. The default is the
+- Unicode [soft hyphen](https://en.wikipedia.org/wiki/Soft_hyphen), which is invisible unless
+- a line actually breaks there. Passing a visible character shows the break points:
++ `hyphenate` insere um caractere de hífen em cada quebra permitida. O padrão é o
++ [hífen suave](https://en.wikipedia.org/wiki/Soft_hyphen) do Unicode, que é invisível a menos que
++ uma linha realmente se quebre ali. Passar um caractere visível mostra os pontos de quebra:
+
+= a line actually breaks there. Passing a visible character shows the break points:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a line actually breaks there. Passing a visible character shows the break points:
+=
+= ```scala fuel
+- run
++ run
+
+= a line actually breaks there. Passing a visible character shows the break points:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"hyphenation".hyphenate(hyphen = '-'))
++ Out.println(t"hyphenation".hyphenate(hyphen = '-'))
+
+- Out.println(t"presentation".hyphenate(hyphen = '-'))
++ Out.println(t"presentation".hyphenate(hyphen = '-'))
+
+= Out.println(t"presentation".hyphenate(hyphen = '-'))
+- ```
++ ```
+
+- `leftMin` and `rightMin` keep a minimum number of characters attached before the first
+- break, and after the last, so that a break never strands one or two letters:
++ `leftMin` e `rightMin` mantêm um número mínimo de caracteres juntos antes da primeira quebra e
++ depois da última, para que uma quebra nunca deixe uma ou duas letras isoladas:
+
+= break, and after the last, so that a break never strands one or two letters:
+=
+- ```scala fuel
++ ```scala fuel
+
+= break, and after the last, so that a break never strands one or two letters:
+=
+= ```scala fuel
+- run
++ run
+
+= break, and after the last, so that a break never strands one or two letters:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"hyphenation".hyphenate(hyphen = '-', leftMin = 4))
++ Out.println(t"hyphenation".hyphenate(hyphen = '-', leftMin = 4))
+
+- Out.println(t"presentation".hyphenate(hyphen = '-', leftMin = 4))
++ Out.println(t"presentation".hyphenate(hyphen = '-', leftMin = 4))
+
+= Out.println(t"presentation".hyphenate(hyphen = '-', leftMin = 4))
+- ```
++ ```
+
+- ### Syllables
++ ### Sílabas
+
+- `syllables` splits text into its parts. Each syllable is a segment, and each run of
+- characters which are not letters passes through as a segment of its own:
++ `syllables` divide o texto em suas partes. Cada sílaba é um segmento, e cada sequência de
++ caracteres que não são letras passa como um segmento próprio:
+
+= characters which are not letters passes through as a segment of its own:
+=
+- ```scala fuel
++ ```scala fuel
+
+= characters which are not letters passes through as a segment of its own:
+=
+= ```scala fuel
+- run
++ run
+
+= characters which are not letters passes through as a segment of its own:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"the algorithm".syllables.to[List].inspect)
++ Out.println(t"the algorithm".syllables.to[List].inspect)
+
+= Out.println(t"the algorithm".syllables.to[List].inspect)
+- ```
++ ```
+
+- ### Break points
++ ### Pontos de quebra
+
+- `breakPoints` gives the raw positions at which a word may break. It is for code which places
+- the breaks itself, such as an algorithm for wrapping lines, instead of inserting characters:
++ `breakPoints` dá as posições brutas em que uma palavra pode se quebrar. É para código que posiciona
++ as quebras por conta própria, como um algoritmo de quebra de linhas, em vez de inserir caracteres:
+
+= the breaks itself, such as an algorithm for wrapping lines, instead of inserting characters:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the breaks itself, such as an algorithm for wrapping lines, instead of inserting characters:
+=
+= ```scala fuel
+- run
++ run
+
+= the breaks itself, such as an algorithm for wrapping lines, instead of inserting characters:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"hyphenation".breakPoints.to[List].inspect)
++ Out.println(t"hyphenation".breakPoints.to[List].inspect)
+
+= Out.println(t"hyphenation".breakPoints.to[List].inspect)
+- ```
++ ```
+
+- ### Text that is not one word
++ ### Texto que não é uma única palavra
+
+- Hyphenation applies to letters, and text is rarely only letters. Each run of letters is
+- hyphenated independently. Everything else, such as spaces, punctuation and digits, passes
+- through untouched:
++ A hifenização se aplica a letras, e o texto raramente é só letras. Cada sequência de letras é
++ hifenizada de forma independente. Todo o resto, como espaços, pontuação e dígitos, passa intacto:
+
+= through untouched:
+=
+- ```scala fuel
++ ```scala fuel
+
+= through untouched:
+=
+= ```scala fuel
+- run
++ run
+
+= through untouched:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"hello, world!".hyphenate(hyphen = '-'))
++ Out.println(t"hello, world!".hyphenate(hyphen = '-'))
+
+- Out.println(t"the algorithm runs".hyphenate(hyphen = '-'))
++ Out.println(t"the algorithm runs".hyphenate(hyphen = '-'))
+
+= Out.println(t"the algorithm runs".hyphenate(hyphen = '-'))
+- ```
++ ```
+
+- Both words of the first text are too short to break. `syllables` follows the same rule, and
+- gives the runs which are not letters as segments of their own, so putting the segments back
+- together reproduces the original text exactly.
++ As duas palavras do primeiro texto são curtas demais para se quebrar. `syllables` segue a mesma
++ regra, e dá as sequências que não são letras como segmentos próprios, de modo que juntar os
++ segmentos de volta reproduz exatamente o texto original.
+
+- ### Extending the patterns
++ ### Estendendo os padrões
+
+- A word from a specialist field, which the standard patterns break wrongly, or not at all,
+- is taught with an extra pattern, in TeX's notation, layered over the existing set:
++ Uma palavra de um campo especializado, que os padrões comuns quebram errado, ou não quebram, é
++ ensinada com um padrão extra, na notação do TeX, sobreposto ao conjunto existente:
+
+= is taught with an extra pattern, in TeX's notation, layered over the existing set:
+=
+- ```scala fuel
++ ```scala fuel
+
+= is taught with an extra pattern, in TeX's notation, layered over the existing set:
+=
+= ```scala fuel
+- run
++ run
+
+= is taught with an extra pattern, in TeX's notation, layered over the existing set:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= is taught with an extra pattern, in TeX's notation, layered over the existing set:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   given hyphenation: Hyphenation = englishHyphenation.extending(patterns = List(t"klm9nop"))
++   given hyphenation: Hyphenation = englishHyphenation.extending(patterns = List(t"klm9nop"))
+
+-   Out.println(t"klmnop".hyphenate(hyphen = '-'))
++   Out.println(t"klmnop".hyphenate(hyphen = '-'))
+
+=   Out.println(t"klmnop".hyphenate(hyphen = '-'))
+- ```
++ ```
+
+- Patterns are merged by taking the higher score at each position. An added pattern with an
+- odd score therefore restores a break which a standard pattern with an even score had
+- forbidden. That is how one word is corrected, without disturbing the rest of the language.
++ Os padrões são mesclados tomando a pontuação mais alta em cada posição. Um padrão acrescentado com
++ pontuação ímpar, portanto, restaura uma quebra que um padrão comum com pontuação par havia
++ proibido. É assim que se corrige uma palavra, sem perturbar o resto da língua.
+
+- Some words no pattern gets right. An *exception* states a word's breaks outright, and takes
+- precedence over the algorithm:
++ Algumas palavras nenhum padrão acerta. Uma *exceção* declara diretamente as quebras de uma palavra,
++ e tem precedência sobre o algoritmo:
+
+= precedence over the algorithm:
+=
+- ```scala fuel
++ ```scala fuel
+
+= precedence over the algorithm:
+=
+= ```scala fuel
+- run
++ run
+
+= precedence over the algorithm:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= precedence over the algorithm:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   given hyphenation: Hyphenation = englishHyphenation.extending(exceptions = List(t"hy-phenation"))
++   given hyphenation: Hyphenation = englishHyphenation.extending(exceptions = List(t"hy-phenation"))
+
+-   Out.println(t"hyphenation".hyphenate(hyphen = '-'))
++   Out.println(t"hyphenation".hyphenate(hyphen = '-'))
+
+=   Out.println(t"hyphenation".hyphenate(hyphen = '-'))
+- ```
++ ```
+
+- The standard English set already has the list of exceptions which TeX ships, so `associate`
+- breaks as `as-so-ciate`, and `table` as `ta-ble`, where the patterns alone would not.
++ O conjunto comum do inglês já tem a lista de exceções que o TeX distribui, então `associate` se
++ quebra como `as-so-ciate`, e `table` como `ta-ble`, onde os padrões sozinhos não o fariam.
+
+- A whole language is supplied in the same way. `Hyphenation.fromTex` reads any TeX pattern
+- file, so the languages which are published for TeX are available by loading their patterns.
++ Uma língua inteira é fornecida da mesma forma. `Hyphenation.fromTex` lê qualquer arquivo de padrões
++ do TeX, de modo que as línguas publicadas para o TeX ficam disponíveis carregando seus padrões.
+
+- ### When no patterns are available
++ ### Quando não há padrões disponíveis
+
+- A language for which no set of patterns has been loaded hyphenates nothing, and does not
+- guess. `hyphenate` gives the text unchanged, and `breakPoints` is empty. An algorithm for
+- wrapping lines therefore falls back to breaking at spaces, which is the correct behavior,
+- and does not invent breaks in a language whose rules it does not know.
++ Uma língua para a qual nenhum conjunto de padrões foi carregado não hifeniza nada, e não tenta
++ adivinhar. `hyphenate` devolve o texto inalterado, e `breakPoints` fica vazio. Um algoritmo de
++ quebra de linhas recorre, portanto, a quebrar nos espaços, que é o comportamento correto, e não
++ inventa quebras numa língua cujas regras não conhece.
+
+- ### Related
++ ### Relacionados
+
+- - [Tables](tables.md) wraps the text of a column with hyphenation.
+- - [Text](text.md) describes the other operations on text.
+- - [PDF](pdf.md) and [Pages](pages.md) set paragraphs which break across lines.
++ - [Tabelas](tables.md) quebra o texto de uma coluna com hifenização.
++ - [Texto](text.md) descreve as outras operações sobre texto.
++ - [PDF](pdf.md) e [Páginas](pages.md) compõem parágrafos que se quebram entre linhas.

@@ -1,0 +1,52 @@
+orthant 1 language
+
+- # `SN-947` — `BoundsError` (retired)
++ # `SN-947` — `BoundsError` (aposentado)
+
+- **This code is no longer raised, and the type no longer exists.** `BoundsError`
+- duplicated `Json.Provider.Error`'s (then `JsonBlueprint.Error`'s) `IntOutOfRange` reason — the same failure, with
+- the same three fields, raised from the same object — so the `"integer!"` blueprint
+- now raises `↯/s.106.3.3` instead. It was declared in gossamer, which never used it.
++ **Este código não é mais lançado, e o tipo não existe mais.** `BoundsError` duplicava o motivo
++ `IntOutOfRange` de `Json.Provider.Error` (na época, de `JsonBlueprint.Error`) — a mesma falha,
++ com os mesmos três campos, lançada a partir do mesmo objeto —, então o blueprint `"integer!"`
++ agora lança `↯/s.106.3.3` em seu lugar. Ele era declarado no gossamer, que nunca o usou.
+
+- It was raised when a numeric value fell outside a permitted range.
++ Era lançado quando um valor numérico ficava fora de um intervalo permitido.
+
+- ## Cause
++ ## Causa
+
+- Gossamer uses `BoundsError` to signal that a value is not within
+- its declared minimum/maximum bounds.
++ O Gossamer usa `BoundsError` para sinalizar que um valor não está dentro dos seus limites mínimo
++ e máximo declarados.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯SN-947] the value 7.5 is not in the range 0.0-5.0
++ [↯SN-947] the value 7.5 is not in the range 0.0-5.0
+
+= [↯SN-947] the value 7.5 is not in the range 0.0-5.0
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Constrain the value to the documented range, or relax the bounds
+- if the broader range is intentional.
++ Restrinja o valor ao intervalo documentado, ou relaxe os limites se o intervalo mais amplo for
++ intencional.
+
+- ## See also
++ ## Veja também
+
+- - Superseded by: `↯/s.106.3.3` (`Json.Provider.Error`, `IntOutOfRange`)
++ - Substituído por: `↯/s.106.3.3` (`Json.Provider.Error`, `IntOutOfRange`)

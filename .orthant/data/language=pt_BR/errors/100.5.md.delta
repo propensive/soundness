@@ -1,0 +1,39 @@
+orthant 1 language
+
+- # `↯/s.100.5` — Port number out of range
++ # `↯/s.100.5` — Número de porta fora do intervalo
+
+- Raised at compiletime when a port literal is outside the range 1–65535.
++ Lançado em tempo de compilação quando um literal de porta está fora do intervalo 1–65535.
+
+- ## Cause
++ ## Causa
+
+- TCP and UDP port numbers occupy sixteen bits, and zero is reserved.
++ Os números de porta TCP e UDP ocupam dezesseis bits, e o zero é reservado.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.100.5] the TCP port number 70000 is not in the range 1-65535
++ [↯/s.100.5] the TCP port number 70000 is not in the range 1-65535
+
+= [↯/s.100.5] the TCP port number 70000 is not in the range 1-65535
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Use a port between 1 and 65535.
++ Use uma porta entre 1 e 65535.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/urticose/src/core/urticose.internal.scala`
++ - Código-fonte: `lib/urticose/src/core/urticose.internal.scala`

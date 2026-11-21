@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.61.1` — `Serialization.Error`
++ # `↯/s.61.1` — `Serialization.Error`
+
+- Raised when Monotonous cannot deserialize a binary value because of
+- an invalid byte at a known position.
++ Lançado quando o Monotonous não consegue desserializar um valor binário por causa de
++ um byte inválido numa posição conhecida.
+
+- ## Cause
++ ## Causa
+
+- Monotonous reports the offending `char` and its `position` so the
+- location of the corruption can be identified.
++ O Monotonous relata o `char` problemático e sua `position`, para que o
++ local da corrupção possa ser identificado.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.61.1] the character ? at 12 was not valid
++ [↯/s.61.1] the character ? at 12 was not valid
+
+= [↯/s.61.1] the character ? at 12 was not valid
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Inspect the input around the indicated position; check the
+- encoding of the source.
++ Inspecione a entrada em torno da posição indicada; verifique a
++ codificação da origem.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/monotonous/src/core/monotonous.Serialization.scala`
++ - Código-fonte: `lib/monotonous/src/core/monotonous.Serialization.scala`

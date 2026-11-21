@@ -1,0 +1,878 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base prophesy
++ base prophesy
+
+- import soundness
++ import soundness
+
+- info   the vocabulary of code completion: candidates, keyword contexts and elaborated call sites
++ info   o vocabulário da conclusão de código: candidatos, contextos de palavras-chave e pontos de chamada elaborados
+
+- detail
++ detail
+
+-     _Prophesy_ holds the types a code-completion engine and the libraries it serves share,
+-     without either depending on the compiler. A completion engine such as Harlequin's
+-     `Scala.highlight(…).completions` produces `Completions`; a `Dynamic` type offers the
+-     members its `selectDynamic` would accept by giving its companion object the `Completable`
+-     interface; and keyword completion is answered by `ScalaKeywords.pattern`, a curated trie
+-     over the tokens leading back from the caret, abstracted as `Lexeme`s.
++     _Prophesy_ contém os tipos que um motor de conclusão de código e as bibliotecas que ele atende
++     compartilham, sem que nenhum dos dois dependa do compilador. Um motor de conclusão como o
++     `Scala.highlight(…).completions` de Harlequin produz `Completions`; um tipo `Dynamic` oferece
++     os membros que seu `selectDynamic` aceitaria dando ao seu objeto companheiro a interface
++     `Completable`; e a conclusão de palavras-chave é respondida por `ScalaKeywords.pattern`, uma
++     trie curada sobre os tokens que antecedem o cursor, abstraídos como `Lexeme`s.
+
+-     A `Dynamic` type whose valid member names are not symbols can still complete honestly:
++     Um tipo `Dynamic` cujos nomes de membros válidos não são símbolos ainda pode oferecer
++     conclusões honestas:
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import prophesy.*
++     import prophesy.*
+
+-     trait Creature extends Dynamic:
++     trait Creature extends Dynamic:
+
+-       def selectDynamic(name: String): Text = t""
++       def selectDynamic(name: String): Text = t""
+
+-     object Creature extends Completable:
++     object Creature extends Completable:
+
+-       def completions(using quotes: scala.quoted.Quotes)
++       def completions(using quotes: scala.quoted.Quotes)
+
+-         ( receiver: quotes.reflect.TypeRepr, prefix: Text )
++         ( receiver: quotes.reflect.TypeRepr, prefix: Text )
+
+-       :   List[Completion] =
++       :   List[Completion] =
+
+=
+-         import quotes.reflect.*
++         import quotes.reflect.*
+
+-         List(t"habitat", t"diet").map: name =>
++         List(t"habitat", t"diet").map: name =>
+
+-           Completion(name, Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
++           Completion(name, Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
+
+-     ```
++     ```
+
+-     The pieces fit as follows:
++     As peças se encaixam assim:
+
+-     - `Completion` and `Completions` are one candidate and one answer to a completion request.
+-     - `Completable` is the interface a `Dynamic` type's companion implements to offer members.
+-     - `Lexeme`, `KeywordPattern`, `Keywords` and `ScalaKeywords` answer which keywords may come
+-       next at a caret, and what non-keyword content the grammar expects there.
+-     - `Elaboration` records what the typer added to a call beyond its source text — inferred
+-       type arguments and synthesized `using` arguments — for hover and inlay hints.
++     - `Completion` e `Completions` são um candidato e uma resposta a uma requisição de conclusão.
++     - `Completable` é a interface que o objeto companheiro de um tipo `Dynamic` implementa para
++       oferecer membros.
++     - `Lexeme`, `KeywordPattern`, `Keywords` e `ScalaKeywords` respondem quais palavras-chave
++       podem vir a seguir em um cursor, e que conteúdo que não é palavra-chave a gramática espera ali.
++     - `Elaboration` registra o que o typer acrescentou a uma chamada além do seu texto-fonte —
++       argumentos de tipo inferidos e argumentos `using` sintetizados — para hover e inlay hints.
+
+-     The library has one source set, `prophesy.core`. Only `Completable` is exported to the
+-     `soundness` umbrella: `Completion` and `Completions` would clash there with
+-     exoskeleton's command-line completions of the same names, so they are reached as
+-     `prophesy.Completion` and `prophesy.Completions` (and Harlequin re-exports them in its own
+-     package). The keyword and elaboration types are reached through `import prophesy.*`.
++     A biblioteca tem um source set, `prophesy.core`. Só `Completable` é exportado para o
++     guarda-chuva `soundness`: `Completion` e `Completions` colidiriam lá com as conclusões de
++     linha de comando de mesmo nome de exoskeleton, então são acessados como
++     `prophesy.Completion` e `prophesy.Completions` (e Harlequin os reexporta em seu próprio
++     pacote). Os tipos de palavras-chave e de elaboração são acessados por `import prophesy.*`.
+
+- refer prophesy.Completable
++ refer prophesy.Completable
+
+- refer prophesy.Completion
++ refer prophesy.Completion
+
+- refer prophesy.ScalaKeywords
++ refer prophesy.ScalaKeywords
+
+- entry .Completable   the interface through which a `Dynamic` type's companion offers tab completions
++ entry .Completable   a interface pela qual o objeto companheiro de um tipo `Dynamic` oferece conclusões com tab
+
+= entry .Completable   the interface through which a `Dynamic` type's companion offers tab completions
+-   detail
++   detail
+
+-       The compiler's interactive completion engine cannot enumerate the members a
+-       `selectDynamic` or `applyDynamic` implementation would accept, but a refined receiver
+-       type often determines them fully. A `Dynamic` type offers them by having its companion
+-       object extend `Completable`. A completion engine (such as Harlequin's) finds the
+-       companion from the receiver's type at the caret, loads it reflectively in its own JVM
+-       and calls `#completions` with a live `Quotes` and the receiver's full, refined
+-       `TypeRepr`.
++       O motor de conclusão interativo do compilador não consegue enumerar os membros que uma
++       implementação de `selectDynamic` ou `applyDynamic` aceitaria, mas um tipo receptor
++       refinado muitas vezes os determina por completo. Um tipo `Dynamic` os oferece fazendo seu
++       objeto companheiro estender `Completable`. Um motor de conclusão (como o de Harlequin)
++       encontra o companheiro a partir do tipo do receptor no cursor, carrega-o por reflexão em
++       sua própria JVM e chama `#completions` com um `Quotes` ativo e o `TypeRepr` completo e
++       refinado do receptor.
+
+=       `TypeRepr`.
+=
+-       ```scala
++       ```scala
+
+=       `TypeRepr`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `TypeRepr`.
+=
+=       ```scala
+=       import soundness.*
+-       import prophesy.*
++       import prophesy.*
+
+-       trait Creature extends Dynamic:
++       trait Creature extends Dynamic:
+
+-         def selectDynamic(name: String): Text = t""
++         def selectDynamic(name: String): Text = t""
+
+-       object Creature extends Completable:
++       object Creature extends Completable:
+
+-         def completions(using quotes: scala.quoted.Quotes)
++         def completions(using quotes: scala.quoted.Quotes)
+
+-           ( receiver: quotes.reflect.TypeRepr, prefix: Text )
++           ( receiver: quotes.reflect.TypeRepr, prefix: Text )
+
+-         :   List[Completion] =
++         :   List[Completion] =
+
+-           import quotes.reflect.*
++           import quotes.reflect.*
+
+-           List(t"habitat", t"diet").map: name =>
++           List(t"habitat", t"diet").map: name =>
+
+-             Completion(name, Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
++             Completion(name, Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
+
+=             Completion(name, Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
+-       ```
++       ```
+
+-       Because the companion is loaded reflectively from the classes on the engine's
+-       classpath, it must be compiled and on that classpath, not merely in the source being
+-       edited. This is how a xenophile `Foreign` value completes with the members its foreign
+-       declarations name. `Completable` is exported to the `soundness` umbrella.
++       Como o companheiro é carregado por reflexão a partir das classes no classpath do motor,
++       ele precisa estar compilado e nesse classpath, e não apenas no código-fonte em edição. É
++       assim que um valor `Foreign` de xenophile oferece como conclusões os membros que suas
++       declarações estrangeiras nomeiam. `Completable` é exportado para o guarda-chuva
++       `soundness`.
+
+=       declarations name. `Completable` is exported to the `soundness` umbrella.
+-   refer prophesy.Completion
++   refer prophesy.Completion
+
+-   entry #completions   the completions for a receiver type and the partial member name typed so far
+-       Takes the receiver's `TypeRepr` and the `prefix` already typed at the caret (possibly
+-       empty), and returns a `List[Completion]`. An implementation may filter by the prefix
+-       but need not, since the engine filters by it regardless. It must be pure and total: any
+-       exception it throws is caught by the engine and treated as no completions.
++   entry #completions   as conclusões para um tipo receptor e o nome de membro parcial digitado até agora
++       Recebe o `TypeRepr` do receptor e o `prefix` já digitado no cursor (possivelmente vazio),
++       e devolve um `List[Completion]`. Uma implementação pode filtrar pelo prefixo, mas não
++       precisa, já que o motor filtra por ele de qualquer jeito. Ela deve ser pura e total:
++       qualquer exceção que lance é capturada pelo motor e tratada como ausência de conclusões.
+
+- entry .Completion   one completion candidate: the text to insert, its kind, its signature and documentation
++ entry .Completion   um candidato de conclusão: o texto a inserir, sua categoria, sua assinatura e sua documentação
+
+= entry .Completion   one completion candidate: the text to insert, its kind, its signature and documentation
+-   detail
++   detail
+
+-       A case class of `#name`, `#kind`, `#signature` and an optional `#documentation`. A
+-       completion engine returns a list of them inside `Completions`, and a `Completable`
+-       companion builds them for the members of a `Dynamic` type.
++       Uma case class de `#name`, `#kind`, `#signature` e um `#documentation` opcional. Um motor
++       de conclusão devolve uma lista deles dentro de `Completions`, e um companheiro
++       `Completable` os constrói para os membros de um tipo `Dynamic`.
+
+=       companion builds them for the members of a `Dynamic` type.
+=
+-       ```scala
++       ```scala
+
+=       companion builds them for the members of a `Dynamic` type.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       companion builds them for the members of a `Dynamic` type.
+=
+=       ```scala
+=       import soundness.*
+-       import prophesy.*
++       import prophesy.*
+
+-       def candidate(using quotes: scala.quoted.Quotes): Completion =
++       def candidate(using quotes: scala.quoted.Quotes): Completion =
+
+=       def candidate(using quotes: scala.quoted.Quotes): Completion =
+-         import quotes.reflect.*
++         import quotes.reflect.*
+
+-         Completion(t"habitat", Completion.Kind.Term, Syntax(TypeRepr.of[Text]), t"where it lives")
++         Completion(t"habitat", Completion.Kind.Term, Syntax(TypeRepr.of[Text]), t"where it lives")
+
+=         Completion(t"habitat", Completion.Kind.Term, Syntax(TypeRepr.of[Text]), t"where it lives")
+-       ```
++       ```
+
+-       `Completion` is not exported to the `soundness` umbrella, where exoskeleton's
+-       command-line completions already use the name; write `prophesy.Completion`, or import
+-       it from `prophesy`. Harlequin re-exports it as `harlequin.Completion`.
++       `Completion` não é exportado para o guarda-chuva `soundness`, onde as conclusões de linha
++       de comando de exoskeleton já usam o nome; escreva `prophesy.Completion`, ou importe-o de
++       `prophesy`. Harlequin o reexporta como `harlequin.Completion`.
+
+-   refer prophesy.Completions
++   refer prophesy.Completions
+
+-   refer prophesy.Completable
++   refer prophesy.Completable
+
+-   entry .Kind   what sort of member a completion candidate is
+-       An enum with the cases `Term`, `Method`, `Given`, `Extension`, `Type`, `Module`,
+-       `Package` and `Keyword`, which an editor uses to choose an icon and to decide, for
+-       instance, whether to insert parentheses after a `Method`.
+-   entry #name   the text to insert
+-   entry #kind   the candidate's `Completion.Kind`: term, method, given, extension, type, module, package or keyword
+-   entry #signature   the member's type as a stenography `Syntax`: a method's full signature, or a value's type
+-   entry #documentation   the member's documentation, or `Unset` if it has none
++   entry .Kind   que espécie de membro um candidato de conclusão é
++       Um enum com os casos `Term`, `Method`, `Given`, `Extension`, `Type`, `Module`, `Package` e
++       `Keyword`, que um editor usa para escolher um ícone e para decidir, por exemplo, se insere
++       parênteses depois de um `Method`.
++   entry #name   o texto a inserir
++   entry #kind   o `Completion.Kind` do candidato: termo, método, given, extensão, tipo, módulo, pacote ou palavra-chave
++   entry #signature   o tipo do membro como um `Syntax` de stenography: a assinatura completa de um método, ou o tipo de um valor
++   entry #documentation   a documentação do membro, ou `Unset` se não houver
+
+- entry .Completions   the answer to a completion request: the region to replace and the candidates
++ entry .Completions   a resposta a uma requisição de conclusão: a região a substituir e os candidatos
+
+= entry .Completions   the answer to a completion request: the region to replace and the candidates
+-   detail
++   detail
+
+-       `#replace` is the source region the chosen completion replaces, as an `Offset`-mode
+-       `Span` — the partial identifier at the caret — and `#items` the candidates.
+-       Harlequin's `Scala.highlight(source, caret = …).completions` returns one, or `Unset`
+-       when no caret was given.
++       `#replace` é a região do código-fonte que a conclusão escolhida substitui, como um `Span`
++       no modo `Offset` — o identificador parcial no cursor — e `#items` são os candidatos. O
++       `Scala.highlight(source, caret = …).completions` de Harlequin devolve um deles, ou `Unset`
++       quando nenhum cursor foi dado.
+
+=       when no caret was given.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
++       given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+
+-       import highlighting.typecheckedScala
++       import highlighting.typecheckedScala
+
+-       val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
++       val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
+
+-       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
++       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+
+=       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+-       ```
++       ```
+
+-       Like `Completion`, it is reached as `prophesy.Completions` (or `harlequin.Completions`),
+-       not through the `soundness` umbrella.
++       Como `Completion`, é acessado como `prophesy.Completions` (ou `harlequin.Completions`), e
++       não pelo guarda-chuva `soundness`.
+
+=       not through the `soundness` umbrella.
+-   refer prophesy.Completion
++   refer prophesy.Completion
+
+-   entry #replace   the `Offset`-mode `Span` of source which a chosen completion replaces
+-   entry #items   the completion candidates, as `Completion`s
++   entry #replace   o `Span` no modo `Offset` do código-fonte que uma conclusão escolhida substitui
++   entry #items   os candidatos de conclusão, como `Completion`s
+
+- entry .Elaboration   one call site the typer elaborated beyond its source text, for hovers and inlay hints
++ entry .Elaboration   um ponto de chamada que o typer elaborou além do seu texto-fonte, para hovers e inlay hints
+
+= entry .Elaboration   one call site the typer elaborated beyond its source text, for hovers and inlay hints
+-   detail
++   detail
+
+-       Records, for one call, what the compiler added that the programmer did not write: the
+-       callee's simple name as `#method`, its token's source offsets as `#start` and `#end`,
+-       the *inferred* type arguments as `#typeArguments` and the *synthesized* `using`
+-       arguments as `#givenArguments`. Anything written in the source is never recorded, so an
+-       editor can show exactly the elaboration that is otherwise invisible.
++       Registra, para uma chamada, o que o compilador acrescentou e o programador não escreveu: o
++       nome simples do método chamado como `#method`, os offsets de seu token no código-fonte como
++       `#start` e `#end`, os argumentos de tipo *inferidos* como `#typeArguments` e os argumentos
++       `using` *sintetizados* como `#givenArguments`. Nada do que está escrito no código-fonte é
++       registrado, de modo que um editor pode mostrar exatamente a elaboração que de outro modo
++       seria invisível.
+
+-       `.scan` finds every such call in a typed tree. Harlequin uses it to attach elaborations
+-       to the tokens of highlighted source, keyed by their offsets.
++       `.scan` encontra cada uma dessas chamadas em uma árvore tipada. Harlequin o usa para anexar
++       elaborações aos tokens do código-fonte realçado, indexadas por seus offsets.
+
+-   refer prophesy.Elaboration.Instance
++   refer prophesy.Elaboration.Instance
+
+-   entry .Instance   the given the compiler supplied for one synthesized `using` argument
++   entry .Instance   o given que o compilador forneceu para um argumento `using` sintetizado
+
+=   entry .Instance   the given the compiler supplied for one synthesized `using` argument
+-     detail
++     detail
+
+-         `#name` is the qualified name of the given's head symbol — for a derived instance,
+-         the derivation method's — and `#tpe` the argument's widened type, as a stenography
+-         `Syntax`.
+-     entry #name   the qualified name of the supplied given, or of the method which derived it
+-     entry #tpe   the synthesized argument's widened type, as a `Syntax`
+-   entry .scan   every elaborated call site in a typed tree, ordered by position
+-       Takes a `Quotes` and a typed `Tree`, and returns a `List[Elaboration]` sorted by
+-       `#start`, merging the type and given arguments of the several clauses of one call. The
+-       scan works equally on a live typer run and on trees unpickled from TASTy: an inferred
+-       type argument is recognised by spanning the whole function tree it was wrapped around,
+-       and a synthesized `using` argument by being zero-extent at the end of its clause.
++         `#name` é o nome qualificado do símbolo principal do given — para uma instância
++         derivada, o do método de derivação — e `#tpe` é o tipo alargado do argumento, como um
++         `Syntax` de stenography.
++     entry #name   o nome qualificado do given fornecido, ou do método que o derivou
++     entry #tpe   o tipo alargado do argumento sintetizado, como um `Syntax`
++   entry .scan   todos os pontos de chamada elaborados em uma árvore tipada, ordenados por posição
++       Recebe um `Quotes` e uma `Tree` tipada, e devolve um `List[Elaboration]` ordenado por
++       `#start`, juntando os argumentos de tipo e os givens das várias cláusulas de uma mesma
++       chamada. A varredura funciona igualmente em uma execução ativa do typer e em árvores
++       desserializadas de TASTy: um argumento de tipo inferido é reconhecido por abranger toda a
++       árvore de função em torno da qual foi envolvido, e um argumento `using` sintetizado por
++       ter extensão zero no fim da sua cláusula.
+
+-       An `Inlined` node contributes its original call and is not descended into, since the
+-       expansion's trees carry the inline definition's own positions. The scan never fails: a
+-       node which cannot be read is skipped. A selection's token is approximated as its
+-       trailing `name.length` characters, which misplaces backticked names; a misplaced key
+-       attaches to no token, so the cost is only a missing hint.
+-   entry #method   the callee's simple name
+-   entry #start   the source offset at which the callee's token begins
+-   entry #end   the source offset at which the callee's token ends
+-   entry #typeArguments   the type arguments the typer inferred, as `Syntax`, omitting any written explicitly
+-   entry #givenArguments   the `using` arguments the typer synthesized, as `Elaboration.Instance`s
++       Um nó `Inlined` contribui com sua chamada original e não é percorrido por dentro, já que as
++       árvores da expansão carregam as posições da própria definição inline. A varredura nunca
++       falha: um nó que não pode ser lido é pulado. O token de uma seleção é aproximado como seus
++       últimos `name.length` caracteres, o que posiciona mal nomes entre crases; uma chave mal
++       posicionada não se anexa a nenhum token, então o custo é apenas uma dica ausente.
++   entry #method   o nome simples do método chamado
++   entry #start   o offset no código-fonte em que o token do método chamado começa
++   entry #end   o offset no código-fonte em que o token do método chamado termina
++   entry #typeArguments   os argumentos de tipo que o typer inferiu, como `Syntax`, omitindo os escritos explicitamente
++   entry #givenArguments   os argumentos `using` que o typer sintetizou, como `Elaboration.Instance`s
+
+- entry .Lexeme   a token abstracted for keyword completion: keywords and symbols kept, identifiers erased
++ entry .Lexeme   um token abstraído para a conclusão de palavras-chave: palavras-chave e símbolos mantidos, identificadores apagados
+
+= entry .Lexeme   a token abstracted for keyword completion: keywords and symbols kept, identifiers erased
+-   detail
++   detail
+
+-       The alphabet a `KeywordPattern` matches against: an abstraction of a token stream in
+-       which identifier text is irrelevant (any term identifier is just `Term`, any type
+-       identifier `Typal`) but every keyword and every symbolic token is individually
+-       significant. A tokenizer such as Harlequin's maps its tokens onto lexemes, and the
+-       pattern is consulted with the sequence *reversed*, reading outwards from the caret.
++       O alfabeto contra o qual um `KeywordPattern` casa: uma abstração de um stream de tokens em
++       que o texto dos identificadores é irrelevante (qualquer identificador de termo é apenas
++       `Term`, qualquer identificador de tipo `Typal`), mas cada palavra-chave e cada token
++       simbólico é significativo individualmente. Um tokenizador como o de Harlequin mapeia seus
++       tokens para lexemas, e o padrão é consultado com a sequência *invertida*, lendo a partir
++       do cursor para trás.
+
+-       The cases are `Keyword(word)`, covering hard keywords and soft modifiers alike,
+-       identified by their exact text — near a caret a soft modifier is lexically
+-       indistinguishable from an identifier, so the mapping is by text; `Symbol(glyph)` for a
+-       symbolic token such as `=>` or `:`; `Open(bracket)` and `Close(bracket)`, with a
+-       `Lexeme.Bracket`; `Term`, `Typal` and `Literal`; `Break`, a statement boundary (a line
+-       break whose continuation is not more deeply indented, where a line break which merely
+-       continues an expression contributes nothing); `Start`, the beginning of the input; and
+-       `Error`, a token the tokenizer could not classify.
++       Os casos são `Keyword(word)`, que cobre igualmente palavras-chave reservadas e modificadores
++       contextuais, identificados pelo texto exato — perto de um cursor, um modificador contextual
++       é lexicamente indistinguível de um identificador, então o mapeamento é pelo texto;
++       `Symbol(glyph)` para um token simbólico como `=>` ou `:`; `Open(bracket)` e
++       `Close(bracket)`, com um `Lexeme.Bracket`; `Term`, `Typal` e `Literal`; `Break`, uma
++       fronteira de instrução (uma quebra de linha cuja continuação não tem indentação mais
++       profunda, ao passo que uma quebra de linha que apenas continua uma expressão não contribui
++       com nada); `Start`, o início da entrada; e `Error`, um token que o tokenizador não
++       conseguiu classificar.
+
+=       `Error`, a token the tokenizer could not classify.
+=
+-       ```scala
++       ```scala
+
+=       `Error`, a token the tokenizer could not classify.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Error`, a token the tokenizer could not classify.
+=
+=       ```scala
+=       import soundness.*
+-       import prophesy.*
++       import prophesy.*
+
+-       // the caret in `transparent inline |`, read outwards
++       // the caret in `transparent inline |`, read outwards
+
+-       val context: List[Lexeme] =
++       val context: List[Lexeme] =
+
+-         List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent"), Lexeme.Break)
++         List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent"), Lexeme.Break)
+
+=         List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent"), Lexeme.Break)
+-       ```
++       ```
+
+=         List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent"), Lexeme.Break)
+=       ```
+-   refer prophesy.KeywordPattern
++   refer prophesy.KeywordPattern
+
+-   entry .Bracket   the shape of a bracket lexeme: `Round`, `Square` or `Brace`
++   entry .Bracket   a forma de um lexema delimitador: `Round`, `Square` ou `Brace`
+
+- entry .KeywordPattern   a trie over reversed lexeme contexts, answering which keywords may come next
++ entry .KeywordPattern   uma trie sobre contextos de lexemas invertidos, que responde quais palavras-chave podem vir a seguir
+
+= entry .KeywordPattern   a trie over reversed lexeme contexts, answering which keywords may come next
+-   detail
++   detail
+
+-       A node of the pattern tree. `#result`, when present, is the `Keywords` determined by the
+-       context consumed so far; `#branches` refine it by looking one `Lexeme` further back from
+-       the caret. Lookup, by `#apply`, descends the first branch whose element matches the next
+-       lexeme and returns the deepest result encountered, so an interior result is the default
+-       when no deeper pattern matches, and the tree looks back exactly as far as remains
+-       relevant. Branch order is significance order: `Exact` branches should precede the
+-       wildcard class branches.
++       Um nó da árvore de padrões. `#result`, quando presente, é o `Keywords` determinado pelo
++       contexto consumido até ali; `#branches` o refinam olhando um `Lexeme` mais para trás a
++       partir do cursor. A consulta, por `#apply`, desce pelo primeiro ramo cujo elemento casa
++       com o próximo lexema e devolve o resultado mais profundo encontrado, de modo que um
++       resultado interior é o padrão quando nenhum padrão mais profundo casa, e a árvore olha para
++       trás exatamente até onde ainda é relevante. A ordem dos ramos é a ordem de importância: os
++       ramos `Exact` devem vir antes dos ramos de classes curinga.
+
+=       wildcard class branches.
+=
+-       ```scala
++       ```scala
+
+=       wildcard class branches.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       wildcard class branches.
+=
+=       ```scala
+=       import soundness.*
+-       import prophesy.*
++       import prophesy.*
+
+-       import KeywordPattern.{Element, Expectation}
++       import KeywordPattern.{Element, Expectation}
+
+-       val definition = Keywords(Set(t"def", t"given"))
++       val definition = Keywords(Set(t"def", t"given"))
+
+-       val tree = KeywordPattern
++       val tree = KeywordPattern
+
+-         ( Unset,
++         ( Unset,
+
+-           List
++           List
+
+-             ( Element.Exact(Lexeme.Keyword(t"inline")) -> KeywordPattern
++             ( Element.Exact(Lexeme.Keyword(t"inline")) -> KeywordPattern
+
+-                 ( Keywords(definition.keywords + t"if"),
++                 ( Keywords(definition.keywords + t"if"),
+
+-                   List(Element.Exact(Lexeme.Keyword(t"transparent")) -> KeywordPattern(definition)) ),
++                   List(Element.Exact(Lexeme.Keyword(t"transparent")) -> KeywordPattern(definition)) ),
+
+-               Element.Exact(Lexeme.Symbol(t".")) -> KeywordPattern(Keywords(Set(), Expectation.Nothing)) ) )
++               Element.Exact(Lexeme.Symbol(t".")) -> KeywordPattern(Keywords(Set(), Expectation.Nothing)) ) )
+
+-       tree(List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent")))   // definition
++       tree(List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent")))   // definition
+
+-       tree(List(Lexeme.Keyword(t"inline"), Lexeme.Literal))   // the `inline` default, with `if`
++       tree(List(Lexeme.Keyword(t"inline"), Lexeme.Literal))   // the `inline` default, with `if`
+
+-       tree(Nil)   // Keywords.empty
++       tree(Nil)   // Keywords.empty
+
+=       tree(Nil)   // Keywords.empty
+-       ```
++       ```
+
+-       `ScalaKeywords.pattern` is the curated tree for Scala itself.
++       `ScalaKeywords.pattern` é a árvore curada para o próprio Scala.
+
+-   refer prophesy.ScalaKeywords
++   refer prophesy.ScalaKeywords
+
+=   refer prophesy.ScalaKeywords
+-   refer prophesy.Lexeme
++   refer prophesy.Lexeme
+
+-   refer prophesy.Keywords
++   refer prophesy.Keywords
+
+-   entry .Element   one step of a keyword pattern: an exact lexeme, or a class of lexemes
++   entry .Element   um passo de um padrão de palavras-chave: um lexema exato, ou uma classe de lexemas
+
+=   entry .Element   one step of a keyword pattern: an exact lexeme, or a class of lexemes
+-     detail
++     detail
+
+-         The element a branch of a `KeywordPattern` matches against a single lexeme of the
+-         reversed context. `Exact(lexeme)` matches one lexeme; the class elements are the
+-         wildcard mechanism, letting a curated tree generalise without enumerating every
+-         literal context: `AnyKeyword` matches any `Lexeme.Keyword`; `AnySymbol` any
+-         `Lexeme.Symbol`, the open class of operators such as `+`, `::` and `++`; `ValueEnd`
+-         any token which ends an expression (a closing bracket, a term identifier or a
+-         literal); `TypeEnd` any token which ends a type (a type identifier or a closing `]`);
+-         `AnyOf(lexemes)` any of a set; and `Any` every lexeme.
+-     entry #matches   whether this element accepts a lexeme
+-   entry .Expectation   what non-keyword content the grammar expects at the caret
+-       An enum: `TermBinding`, where a fresh term name is being written (after `val`, `def`,
+-       or at the head of a parameter), so member completions should be suppressed;
+-       `TypeBinding`, where a fresh type name is (after `class`, `trait`, `type`);
+-       `TypeIdentifier`, where only a type may follow (after `new`, `extends`, an ascription's
+-       `:`), so offers are narrowed to types; and `Nothing`, where no keyword is possible but
+-       member completions remain valid, as after `.`.
+-   entry #result   the keywords determined by the context matched so far, or `Unset` to inherit the enclosing node's
+-   entry #branches   the refinements of this node, each an `Element` and the subtree to descend when it matches
+-   entry #apply   looks up the keywords for a reversed lexeme context, read outwards from the caret
+-       Returns the deepest `Keywords` found along the first matching path, or `Keywords.empty`
+-       if no node on it has a result. The context is consumed only as deep as the tree goes,
+-       so passing the whole of a long line costs nothing more than passing its last tokens.
++         O elemento que um ramo de um `KeywordPattern` casa com um único lexema do contexto
++         invertido. `Exact(lexeme)` casa com um lexema; os elementos de classe são o mecanismo de
++         curinga, que permite a uma árvore curada generalizar sem enumerar cada contexto literal:
++         `AnyKeyword` casa com qualquer `Lexeme.Keyword`; `AnySymbol` com qualquer
++         `Lexeme.Symbol`, a classe aberta de operadores como `+`, `::` e `++`; `ValueEnd` com
++         qualquer token que termina uma expressão (um delimitador de fechamento, um identificador
++         de termo ou um literal); `TypeEnd` com qualquer token que termina um tipo (um
++         identificador de tipo ou um `]` de fechamento); `AnyOf(lexemes)` com qualquer um de um
++         conjunto; e `Any` com todo lexema.
++     entry #matches   se este elemento aceita um lexema
++   entry .Expectation   que conteúdo que não é palavra-chave a gramática espera no cursor
++       Um enum: `TermBinding`, onde um nome de termo novo está sendo escrito (depois de `val`,
++       `def`, ou no início de um parâmetro), de modo que as conclusões de membros devem ser
++       suprimidas; `TypeBinding`, onde um nome de tipo novo está (depois de `class`, `trait`,
++       `type`); `TypeIdentifier`, onde só um tipo pode vir a seguir (depois de `new`, `extends`,
++       o `:` de uma atribuição de tipo), de modo que as ofertas se restringem a tipos; e
++       `Nothing`, onde nenhuma palavra-chave é possível mas as conclusões de membros continuam
++       válidas, como depois de `.`.
++   entry #result   as palavras-chave determinadas pelo contexto casado até ali, ou `Unset` para herdar as do nó que o contém
++   entry #branches   os refinamentos deste nó, cada um com um `Element` e a subárvore pela qual descer quando ele casa
++   entry #apply   consulta as palavras-chave para um contexto de lexemas invertido, lido a partir do cursor para trás
++       Devolve o `Keywords` mais profundo encontrado ao longo do primeiro caminho que casa, ou
++       `Keywords.empty` se nenhum nó desse caminho tem resultado. O contexto só é consumido até a
++       profundidade da árvore, de modo que passar uma linha longa inteira não custa mais do que
++       passar seus últimos tokens.
+
+- entry .Keywords   the keywords plausible at a caret, and what other content the grammar expects there
++ entry .Keywords   as palavras-chave plausíveis em um cursor, e que outro conteúdo a gramática espera ali
+
+= entry .Keywords   the keywords plausible at a caret, and what other content the grammar expects there
+-   detail
++   detail
+
+-       The result of consulting a `KeywordPattern`: the set of `#keywords` which may come next,
+-       and optionally an `#expectation`, a `KeywordPattern.Expectation` saying whether a fresh
+-       name, a type, or nothing but members is expected. A multi-word keyword such as
+-       `case class` appears as a single element of the set.
++       O resultado de consultar um `KeywordPattern`: o conjunto de `#keywords` que podem vir a
++       seguir e, opcionalmente, um `#expectation`, um `KeywordPattern.Expectation` que diz se se
++       espera um nome novo, um tipo, ou nada além de membros. Uma palavra-chave de várias
++       palavras, como `case class`, aparece como um único elemento do conjunto.
+
+=       `case class` appears as a single element of the set.
+=
+-       ```scala
++       ```scala
+
+=       `case class` appears as a single element of the set.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `case class` appears as a single element of the set.
+=
+=       ```scala
+=       import soundness.*
+-       import prophesy.*
++       import prophesy.*
+
+-       val found: Keywords = ScalaKeywords.pattern(List(Lexeme.Keyword(t"def")))
++       val found: Keywords = ScalaKeywords.pattern(List(Lexeme.Keyword(t"def")))
+
+-       found.expectation == KeywordPattern.Expectation.TermBinding
++       found.expectation == KeywordPattern.Expectation.TermBinding
+
+=       found.expectation == KeywordPattern.Expectation.TermBinding
+-       ```
++       ```
+
+-   entry .empty   no keywords and no expectation: the result of a lookup which matched nothing
+-   entry #keywords   the keywords which may come next, as text; a multi-word keyword is one element
+-   entry #expectation   what non-keyword content is expected, or `Unset` if the pattern does not say
++   entry .empty   nenhuma palavra-chave e nenhuma expectativa: o resultado de uma consulta que não casou com nada
++   entry #keywords   as palavras-chave que podem vir a seguir, como texto; uma palavra-chave de várias palavras é um elemento
++   entry #expectation   que conteúdo que não é palavra-chave se espera, ou `Unset` se o padrão não diz
+
+- entry .ScalaKeywords   Scala 3's hard and soft keywords, and the curated keyword-completion tree for Scala
++ entry .ScalaKeywords   as palavras-chave reservadas e contextuais do Scala 3, e a árvore curada de conclusão de palavras-chave para Scala
+
+= entry .ScalaKeywords   Scala 3's hard and soft keywords, and the curated keyword-completion tree for Scala
+-   detail
++   detail
+
+-       `.hard` and `.soft` are Scala 3's alphanumeric keywords, and `.all` their union, the
+-       one copy shared by Harlequin's highlighting and any host which must reject a keyword
+-       as a fresh name. `.pattern` is the `KeywordPattern` for keyword completion in Scala
+-       source.
++       `.hard` e `.soft` são as palavras-chave alfanuméricas do Scala 3, e `.all` a união delas,
++       a única cópia compartilhada pelo realce de Harlequin e por qualquer host que precise
++       rejeitar uma palavra-chave como nome novo. `.pattern` é o `KeywordPattern` para a
++       conclusão de palavras-chave em código-fonte Scala.
+
+-       The pattern is hand-written, derived from and checked against a corpus analysis of
+-       about 445,000 keyword occurrences in real Scala, which reports the keywords observed
+-       after every reversed caret context and how far back the context must be read before
+-       it settles. Soft-modifier noise is pruned from the corpus's sets — `open` after `def` is
+-       a method name, not a keyword — and grammar the corpus under-attests is added back, such
+-       as `class` and `object` after `case`. `implicit` and Scala-2-style `with` after `:` are
+-       never offered. Where one lexeme context covers two grammatical positions, such as an
+-       indented template body after `:` and a same-line ascription, the union is offered,
+-       since a keyword offered where it is not strictly valid is harmless but a missing one is
+-       a failure.
++       O padrão é escrito à mão, derivado de e verificado contra uma análise de corpus de cerca
++       de 445.000 ocorrências de palavras-chave em Scala real, que relata as palavras-chave
++       observadas depois de cada contexto de cursor invertido e quão para trás o contexto precisa
++       ser lido antes de se estabilizar. O ruído dos modificadores contextuais é podado dos
++       conjuntos do corpus — `open` depois de `def` é um nome de método, não uma palavra-chave —
++       e a gramática que o corpus atesta de menos é acrescentada de volta, como `class` e
++       `object` depois de `case`. `implicit` e o `with` no estilo de Scala 2 depois de `:` nunca
++       são oferecidos. Onde um contexto de lexemas cobre duas posições gramaticais, como um corpo
++       de template indentado depois de `:` e uma atribuição de tipo na mesma linha, oferece-se a
++       união, já que uma palavra-chave oferecida onde não é estritamente válida é inofensiva, mas
++       uma que falte é uma falha.
+
+-       Here is how the offer narrows as more of the context before the caret is read:
++       Veja como a oferta se restringe à medida que mais do contexto antes do cursor é lido:
+
+=       Here is how the offer narrows as more of the context before the caret is read:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label After `inline`, a definition or an inline conditional
++         label Depois de `inline`, uma definição ou uma condicional inline
+
+=         label After `inline`, a definition or an inline conditional
+-         code
++         code
+
+=         label After `inline`, a definition or an inline conditional
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label After `inline`, a definition or an inline conditional
+=         code
+=             import soundness.*
+-             import prophesy.*
++             import prophesy.*
+
+-             ScalaKeywords.pattern(List(Lexeme.Keyword(t"inline"))).keywords
++             ScalaKeywords.pattern(List(Lexeme.Keyword(t"inline"))).keywords
+
+-             // def, given, val, if, match, infix
++             // def, given, val, if, match, infix
+
+=             // def, given, val, if, match, infix
+-       frame
++       frame
+
+-         label After `transparent inline`, only a definition
++         label Depois de `transparent inline`, só uma definição
+
+=         label After `transparent inline`, only a definition
+-         code
++         code
+
+=         label After `transparent inline`, only a definition
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label After `transparent inline`, only a definition
+=         code
+=             import soundness.*
+-             import prophesy.*
++             import prophesy.*
+
+-             ScalaKeywords.pattern(List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent"))).keywords
++             ScalaKeywords.pattern(List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent"))).keywords
+
+-             // def, given
++             // def, given
+
+=             // def, given
+-       frame
++       frame
+
+-         label After `def`, a fresh name and no keywords
++         label Depois de `def`, um nome novo e nenhuma palavra-chave
+
+=         label After `def`, a fresh name and no keywords
+-         code
++         code
+
+=         label After `def`, a fresh name and no keywords
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label After `def`, a fresh name and no keywords
+=         code
+=             import soundness.*
+-             import prophesy.*
++             import prophesy.*
+
+-             ScalaKeywords.pattern(List(Lexeme.Keyword(t"def")))
++             ScalaKeywords.pattern(List(Lexeme.Keyword(t"def")))
+
+-             // Keywords(Set(), TermBinding)
++             // Keywords(Set(), TermBinding)
+
+=             // Keywords(Set(), TermBinding)
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+=       ##
+=       ```
+-   refer prophesy.KeywordPattern
++   refer prophesy.KeywordPattern
+
+=   refer prophesy.KeywordPattern
+-   refer prophesy.Lexeme
++   refer prophesy.Lexeme
+
+-   entry .hard   Scala 3's alphanumeric hard keywords, reserved everywhere and so never identifiers
+-       From `abstract` to `yield`, including `implicit` and `macro`, as `Set[Text]`.
+-   entry .soft   Scala 3's alphanumeric soft keywords, which are keywords only in particular positions
++   entry .hard   as palavras-chave reservadas alfanuméricas do Scala 3, reservadas em todo lugar e, portanto, nunca identificadores
++       De `abstract` a `yield`, incluindo `implicit` e `macro`, como `Set[Text]`.
++   entry .soft   as palavras-chave contextuais alfanuméricas do Scala 3, que só são palavras-chave em certas posições
+
+-       `as`, `derives`, `end`, `erased`, `extension`, `infix`, `inline`, `opaque`, `open`,
++       `as`, `derives`, `end`, `erased`, `extension`, `infix`, `inline`, `opaque`, `open`,
+
+-       `throws`, `tracked`, `transparent` and `using`: identifiers the parser reads as
+-       keywords where its lookahead says so, and which a lexer without that lookahead tags as
+-       plain identifiers. A host deciding whether a word is a name needs them alongside
+-       `.hard`.
+-   entry .all   every Scala 3 keyword, hard and soft, as one set
+-   entry .pattern   the curated `KeywordPattern` for Scala keyword completion
+-       Consulted with the reversed `Lexeme`s before the caret. Statement boundaries offer
+-       everything which can begin a statement; a member selection offers only postfix `match`,
+-       singleton `.type` and import `.given`, with `Expectation.Nothing`; a definition head
+-       expects a fresh binding and offers no keywords; and each modifier offers what may
+-       follow it.
++       `throws`, `tracked`, `transparent` e `using`: identificadores que o parser lê como
++       palavras-chave onde seu lookahead assim indica, e que um lexer sem esse lookahead marca
++       como identificadores comuns. Um host que decide se uma palavra é um nome precisa delas
++       junto com `.hard`.
++   entry .all   todas as palavras-chave do Scala 3, reservadas e contextuais, como um só conjunto
++   entry .pattern   o `KeywordPattern` curado para a conclusão de palavras-chave em Scala
++       Consultado com os `Lexeme`s invertidos antes do cursor. As fronteiras de instrução oferecem
++       tudo o que pode começar uma instrução; uma seleção de membro oferece apenas o `match`
++       pós-fixo, o `.type` de singleton e o `.given` de import, com `Expectation.Nothing`; o início
++       de uma definição espera um vínculo novo e não oferece palavras-chave; e cada modificador
++       oferece o que pode vir depois dele.

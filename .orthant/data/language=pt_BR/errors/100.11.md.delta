@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.100.11` — Not a valid port
++ # `↯/s.100.11` — Não é uma porta válida
+
+- Raised at compiletime when a named-service literal does not name a port registered for that
+- transport.
++ Lançado em tempo de compilação quando um literal de serviço nomeado não nomeia uma porta registrada
++ para aquele transporte.
+
+- ## Cause
++ ## Causa
+
+- The `tcp"…"` and `udp"…"` interpolators check a service name against the registry, including
+- which transport it is registered for.
++ Os interpoladores `tcp"…"` e `udp"…"` verificam um nome de serviço contra o registro, incluindo
++ o transporte para o qual ele está registrado.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.100.11] docker is not a valid UDP port
++ [↯/s.100.11] docker is not a valid UDP port
+
+= [↯/s.100.11] docker is not a valid UDP port
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Check the service name and the transport. Docker, for instance, is registered over TCP, so
+- `udp"docker"` does not compile.
++ Verifique o nome do serviço e o transporte. O Docker, por exemplo, está registrado sobre TCP, então
++ `udp"docker"` não compila.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/urticose/src/core/urticose.internal.scala`
++ - Código-fonte: `lib/urticose/src/core/urticose.internal.scala`

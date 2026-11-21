@@ -1,0 +1,3417 @@
+orthant 1 language
+
+- ## JSON
++ ## JSON
+
+- ### About
++ ### Visão geral
+
+- [JSON](https://en.wikipedia.org/wiki/JSON) text parses into a `Json` value, and a `Json` value
+- converts to and from ordinary Scala types. A case class needs no annotation and no hand-written
+- codec: its encoder and decoder are [derived][derivation] from its fields.
++ Texto [JSON](https://en.wikipedia.org/wiki/JSON) é analisado em um valor `Json`, e um valor `Json`
++ é convertido de e para tipos Scala comuns. Uma case class não precisa de anotação nem de codec
++ escrito à mão: seu codificador e seu decodificador são [derivados][derivação] de seus campos.
+
+- Every conversion is checked. Asking a number for a string, or a document for a field it lacks,
+- raises a typed error which says what was wrong and where. It never yields a `null`, a default,
+- or a wrong answer.
++ Toda conversão é verificada. Pedir uma string a um número, ou a um documento um campo que ele não
++ tem, lança um erro tipado que diz o que estava errado e onde. Nunca produz um `null`, um valor
++ padrão ou uma resposta errada.
+
+- A document can also be validated against a schema derived from a Scala type. Once it is
+- validated, its fields can be navigated with the compiler checking each step.
++ Um documento também pode ser validado contra um schema derivado de um tipo Scala. Depois de
++ validado, seus campos podem ser navegados com o compilador verificando cada passo.
+
+- ### On JSON
++ ### Sobre JSON
+
+- Most libraries treat JSON loosely. A parsed document is an untyped tree, and fields are fished
+- out of it by string keys. When the data does not hold what the code expects, the mismatch
+- surfaces as a `null`, a failed cast or a silent default, often far from where it began.
++ A maioria das bibliotecas trata JSON de forma frouxa. Um documento analisado é uma árvore sem
++ tipos, e os campos são pescados dela por chaves string. Quando os dados não contêm o que o código
++ espera, a incompatibilidade aparece como um `null`, um cast que falha ou um valor padrão
++ silencioso, muitas vezes longe de onde começou.
+
+- Here the structure and the types stay together:
++ Aqui a estrutura e os tipos ficam juntos:
+
+- - Parsing gives a `Json` value, which is [immutable]: every operation on it returns a new value,
+-   in keeping with [immutability](../../philosophy/immutability.md).
+- - Converting between `Json` and a Scala type is done by an encoder or decoder which the compiler
+-   derives from the type's shape. A case class becomes an object, and an enumeration becomes a
+-   tagged union, so there is nothing to write and nothing to keep in step by hand.
+- - A conversion that cannot be made raises a `Json.Error`. The error names its reason and, where
+-   it can, the position in the document.
+- - The same derivation produces a schema. A document checked against the schema can then be read
+-   with the compiler rejecting any path the schema does not allow.
++ - A análise produz um valor `Json`, que é [imutável]: toda operação sobre ele retorna um novo
++   valor, de acordo com a [imutabilidade](../../philosophy/immutability.md).
++ - A conversão entre `Json` e um tipo Scala é feita por um codificador ou decodificador que o
++   compilador deriva da forma do tipo. Uma case class se torna um objeto, e uma enumeração se torna
++   uma união etiquetada, de modo que não há nada a escrever nem nada a manter em sincronia à mão.
++ - Uma conversão que não pode ser feita lança um `Json.Error`. O erro nomeia seu motivo e, quando
++   pode, a posição no documento.
++ - A mesma derivação produz um schema. Um documento verificado contra o schema pode então ser lido
++   com o compilador rejeitando qualquer caminho que o schema não permita.
+
+- The sections below begin with the everyday work of parsing, decoding and encoding. Schemas,
+- validation, streaming and the faster direct codecs come later, and each can be read on its own.
++ As seções abaixo começam pelo trabalho cotidiano de analisar, decodificar e codificar. Schemas,
++ validação, streaming e os codecs diretos, mais rápidos, vêm depois, e cada um pode ser lido por
++ conta própria.
+
+- Everything comes from the `soundness` package. Working with JSON also depends on a few choices,
+- each made by importing a [given] from a [choice package]:
++ Tudo vem do pacote `soundness`. Trabalhar com JSON também depende de algumas escolhas, cada uma
++ feita importando um [given] de um [pacote de escolhas]:
+
+= each made by importing a [given] from a [choice package]:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+= ```
+=
+- ```tabular
++ ```tabular
+
+= ```
+=
+= ```tabular
+- column  Import
++ column  Import
+
+- column  Decides
+- row  `codepages.utf8Codepage`  how JSON text is written as bytes
+- row  `errorDiagnostics.stackTracesDiagnostics`  that an error records a stack trace
+- row  `formatting.compactJsonFormatting`  that JSON is written without whitespace; [Formatting](#formatting) has the alternative
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception; [errors](errors.md#choosing-a-strategy) has the other strategies
+- row  `stdios.javaLangSystemStdio`  where the samples print their results
++ column  Decide
++ row  `codepages.utf8Codepage`  como o texto JSON é escrito em bytes
++ row  `errorDiagnostics.stackTracesDiagnostics`  que um erro registra um stack trace
++ row  `formatting.compactJsonFormatting`  que o JSON é escrito sem espaços em branco; [Formatação](#formatting) traz a alternativa
++ row  `strategies.throwUnsafely`  que um erro é lançado como exceção; [erros](errors.md#choosing-a-strategy) traz as outras estratégias
++ row  `stdios.javaLangSystemStdio`  onde os exemplos imprimem seus resultados
+
+= row  `stdios.javaLangSystemStdio`  where the samples print their results
+- ```
++ ```
+
+- ### Parsing
++ ### Análise
+
+- `read[Json]` parses any source of text into a `Json` value:
++ `read[Json]` analisa qualquer origem de texto em um valor `Json`:
+
+= `read[Json]` parses any source of text into a `Json` value:
+=
+- ```scala
++ ```scala
+
+- val document = t"""{"name": "Hamlet", "age": 30}""".read[Json]
++ val document = t"""{"name": "Hamlet", "age": 30}""".read[Json]
+
+= val document = t"""{"name": "Hamlet", "age": 30}""".read[Json]
+- ```
++ ```
+
+- `show` writes a `Json` value back out as text, in the formatting in scope:
++ `show` escreve um valor `Json` de volta como texto, na formatação no escopo:
+
+= `show` writes a `Json` value back out as text, in the formatting in scope:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `show` writes a `Json` value back out as text, in the formatting in scope:
+=
+= ```scala fuel
+- run
++ run
+
+= `show` writes a `Json` value back out as text, in the formatting in scope:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(document.show)
++ Out.println(document.show)
+
+= Out.println(document.show)
+- ```
++ ```
+
+- Parsing fails on malformed input, and the failure goes to the [strategy] in scope. Under
+- `throwUnsafely`, that means an exception which says what the parser found and where:
++ A análise falha com uma entrada malformada, e a falha vai para a [estratégia] no escopo. Sob
++ `throwUnsafely`, isso significa uma exceção que diz o que o parser encontrou e onde:
+
+= `throwUnsafely`, that means an exception which says what the parser found and where:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `throwUnsafely`, that means an exception which says what the parser found and where:
+=
+= ```scala fuel
+- run
++ run
+
+= `throwUnsafely`, that means an exception which says what the parser found and where:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= `throwUnsafely`, that means an exception which says what the parser found and where:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"""{"name": "Hamlet", "age": }""".read[Json]
++ t"""{"name": "Hamlet", "age": }""".read[Json]
+
+= t"""{"name": "Hamlet", "age": }""".read[Json]
+- ```
++ ```
+
+- ### Reading values
++ ### Leitura de valores
+
+- `as` converts a `Json` value to a Scala type. Primitive types, collections and maps are all read
+- directly:
++ `as` converte um valor `Json` em um tipo Scala. Tipos primitivos, coleções e mapas são todos lidos
++ diretamente:
+
+= directly:
+=
+- ```scala fuel
++ ```scala fuel
+
+= directly:
+=
+= ```scala fuel
+- run
++ run
+
+= directly:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"42".read[Json].as[Int].show)
++ Out.println(t"42".read[Json].as[Int].show)
+
+- Out.println(t"3.14".read[Json].as[Double].inspect)
++ Out.println(t"3.14".read[Json].as[Double].inspect)
+
+- Out.println(t""""hello"""".read[Json].as[Text])
++ Out.println(t""""hello"""".read[Json].as[Text])
+
+- Out.println(t"true".read[Json].as[Boolean].inspect)
++ Out.println(t"true".read[Json].as[Boolean].inspect)
+
+- Out.println(t"[1, 2, 3]".read[Json].as[List[Int]].inspect)
++ Out.println(t"[1, 2, 3]".read[Json].as[List[Int]].inspect)
+
+- Out.println(t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].inspect)
++ Out.println(t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].inspect)
+
+= Out.println(t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].inspect)
+- ```
++ ```
+
+- JSON's `null` reads as `Unit`, and as the absent value of an [optional] type.
++ O `null` do JSON é lido como `Unit`, e como o valor ausente de um tipo [opcional].
+
+- Asking for the wrong type is an error, not a conversion. A string is never quietly turned into a
+- number:
++ Pedir o tipo errado é um erro, não uma conversão. Uma string nunca é transformada discretamente em
++ um número:
+
+= number:
+=
+- ```scala fuel
++ ```scala fuel
+
+= number:
+=
+= ```scala fuel
+- run
++ run
+
+= number:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= number:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t""""hello"""".read[Json].as[Int]
++ t""""hello"""".read[Json].as[Int]
+
+= t""""hello"""".read[Json].as[Int]
+- ```
++ ```
+
+- ### Case classes and enumerations
++ ### Case classes e enumerações
+
+- A case class takes part in JSON as it stands. Its decoder is derived from its fields, so an
+- object reads into a value:
++ Uma case class participa do JSON tal como é. Seu decodificador é derivado de seus campos, de modo
++ que um objeto é lido em um valor:
+
+= object reads into a value:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
++ val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
+
+= val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
+- ```
++ ```
+
+= val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val horatio = t"""{"name": "Horatio", "age": 32}""".read[Json].as[Person]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(horatio.inspect)
++ Out.println(horatio.inspect)
+
+= Out.println(horatio.inspect)
+- ```
++ ```
+
+- Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
++ Seu codificador é derivado da mesma maneira. `in[Json]` codifica um valor como `Json`:
+
+= Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
+=
+= ```scala fuel
+- run
++ run
+
+= Its encoder is derived in the same way. `in[Json]` encodes a value as `Json`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Person(t"Hamlet", 30).in[Json].show)
++ Out.println(Person(t"Hamlet", 30).in[Json].show)
+
+= Out.println(Person(t"Hamlet", 30).in[Json].show)
+- ```
++ ```
+
+- Nested case classes, and collections of them, derive in turn, so a whole structure converts in
+- one step:
++ Case classes aninhadas, e coleções delas, são derivadas por sua vez, de modo que uma estrutura
++ inteira é convertida em um único passo:
+
+= one step:
+=
+- ```scala
++ ```scala
+
+- case class Troupe(players: List[Person], director: Person, prompter: Option[Person])
++ case class Troupe(players: List[Person], director: Person, prompter: Option[Person])
+
+- val troupe =
++ val troupe =
+
+-   t"""{"players":[{"name":"Bottom","age":35}],"director":{"name":"Quince","age":40}}"""
++   t"""{"players":[{"name":"Bottom","age":35}],"director":{"name":"Quince","age":40}}"""
+
+-   . read[Troupe in Json]
++   . read[Troupe in Json]
+
+=   . read[Troupe in Json]
+- ```
++ ```
+
+=   . read[Troupe in Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   . read[Troupe in Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   . read[Troupe in Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(troupe.inspect)
++ Out.println(troupe.inspect)
+
+= Out.println(troupe.inspect)
+- ```
++ ```
+
+- `read[Troupe in Json]` parses and decodes together. `in`, `as` and `read` are the same vocabulary
+- for every format, and between them they give each route between text, `Json` and a Scala type:
++ `read[Troupe in Json]` analisa e decodifica de uma vez. `in`, `as` e `read` são o mesmo
++ vocabulário para todo formato, e juntos oferecem cada rota entre texto, `Json` e um tipo Scala:
+
+= for every format, and between them they give each route between text, `Json` and a Scala type:
+=
+- ```tabular
++ ```tabular
+
+- column  Expression
+- column  Does
+- column  Yields
+- row  `value.in[Json]`  encodes a value  `Json`
+- row  `json.as[Type]`  decodes a `Json` value  `Type`
+- row  `text.read[Json]`  parses text  `Json`
+- row  `text.read[Type in Json]`  parses and decodes in one step  `Type`
+- row  `value.in[Text over Json]`  encodes and renders  `Text`
+- row  `value.in[Data over Json]`  encodes and renders as bytes  `Data`
++ column  Expressão
++ column  Faz
++ column  Produz
++ row  `value.in[Json]`  codifica um valor  `Json`
++ row  `json.as[Type]`  decodifica um valor `Json`  `Type`
++ row  `text.read[Json]`  analisa texto  `Json`
++ row  `text.read[Type in Json]`  analisa e decodifica em um único passo  `Type`
++ row  `value.in[Text over Json]`  codifica e renderiza  `Text`
++ row  `value.in[Data over Json]`  codifica e renderiza em bytes  `Data`
+
+= row  `value.in[Data over Json]`  encodes and renders as bytes  `Data`
+- ```
++ ```
+
+- `in[Text over Json]` writes in the `Json.Formatting` in scope, exactly as `show` does, and
+- `in[Data over Json]` writes the same text as bytes in the `Codepage` in scope:
++ `in[Text over Json]` escreve na `Json.Formatting` no escopo, exatamente como `show`, e
++ `in[Data over Json]` escreve o mesmo texto em bytes no `Codepage` no escopo:
+
+= `in[Data over Json]` writes the same text as bytes in the `Codepage` in scope:
+=
+- ```scala
++ ```scala
+
+- val written: Text = Person(t"Hamlet", 30).in[Text over Json]
++ val written: Text = Person(t"Hamlet", 30).in[Text over Json]
+
+= val written: Text = Person(t"Hamlet", 30).in[Text over Json]
+- ```
++ ```
+
+= val written: Text = Person(t"Hamlet", 30).in[Text over Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val written: Text = Person(t"Hamlet", 30).in[Text over Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val written: Text = Person(t"Hamlet", 30).in[Text over Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(written)
++ Out.println(written)
+
+= Out.println(written)
+- ```
++ ```
+
+- [Derivation](derivation.md#when-derivation-fails) explains what happens when a field's type has
+- no decoder, and
+- [Decoding](decoding.md) describes the decoders that turn a single text value, such as a JSON
+- string, into a type of one's own.
++ [Derivação](derivation.md#when-derivation-fails) explica o que acontece quando o tipo de um campo
++ não tem decodificador, e
++ [Decodificação](decoding.md) descreve os decodificadores que transformam um único valor de texto,
++ como uma string JSON, em um tipo próprio.
+
+- ### Optional fields and defaults
++ ### Campos opcionais e valores padrão
+
+- A field typed as `Optional` is left out of the output when it is absent, and reads as `Unset`
+- when the document omits it. `Option` behaves the same way, with `None`:
++ Um campo tipado como `Optional` é deixado de fora da saída quando está ausente, e é lido como
++ `Unset` quando o documento o omite. `Option` se comporta da mesma maneira, com `None`:
+
+= when the document omits it. `Option` behaves the same way, with `None`:
+=
+- ```scala
++ ```scala
+
+- case class Profile(name: Text, age: Optional[Int])
++ case class Profile(name: Text, age: Optional[Int])
+
+= case class Profile(name: Text, age: Optional[Int])
+- ```
++ ```
+
+= case class Profile(name: Text, age: Optional[Int])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Profile(name: Text, age: Optional[Int])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Profile(name: Text, age: Optional[Int])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Profile(t"Fool", Unset).in[Json].show)
++ Out.println(Profile(t"Fool", Unset).in[Json].show)
+
+- Out.println(t"""{"name": "Fool"}""".read[Json].as[Profile].inspect)
++ Out.println(t"""{"name": "Fool"}""".read[Json].as[Profile].inspect)
+
+= Out.println(t"""{"name": "Fool"}""".read[Json].as[Profile].inspect)
+- ```
++ ```
+
+- A field with a default value takes that default when the document omits it:
++ Um campo com um valor padrão assume esse valor quando o documento o omite:
+
+= A field with a default value takes that default when the document omits it:
+=
+- ```scala
++ ```scala
+
+- case class Account(name: Text, age: Int = 18)
++ case class Account(name: Text, age: Int = 18)
+
+= case class Account(name: Text, age: Int = 18)
+- ```
++ ```
+
+= case class Account(name: Text, age: Int = 18)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Account(name: Text, age: Int = 18)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Account(name: Text, age: Int = 18)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"""{"name": "Fool"}""".read[Json].as[Account].inspect)
++ Out.println(t"""{"name": "Fool"}""".read[Json].as[Account].inspect)
+
+= Out.println(t"""{"name": "Fool"}""".read[Json].as[Account].inspect)
+- ```
++ ```
+
+- A field which is neither optional nor defaulted is required. A document without it does not
+- decode:
++ Um campo que não é opcional nem tem valor padrão é obrigatório. Um documento sem ele não é
++ decodificado:
+
+= decode:
+=
+- ```scala fuel
++ ```scala fuel
+
+= decode:
+=
+= ```scala fuel
+- run
++ run
+
+= decode:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= decode:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"""{"age": 40}""".read[Json].as[Person]
++ t"""{"age": 40}""".read[Json].as[Person]
+
+= t"""{"age": 40}""".read[Json].as[Person]
+- ```
++ ```
+
+- [Optional values](optional-values.md) describes `Optional` and `Unset` in full.
++ [Valores opcionais](optional-values.md) descreve `Optional` e `Unset` por completo.
+
+- #### Controlling optionality
++ #### Controle da opcionalidade
+
+- An `Optional` field answers three questions. Each answer has a default, which a given from the
+- `optionalityOptions` package overrides:
++ Um campo `Optional` responde a três perguntas. Cada resposta tem um padrão, que um given do pacote
++ `optionalityOptions` substitui:
+
+= `optionalityOptions` package overrides:
+=
+- ```tabular
++ ```tabular
+
+- column  A key which is
+- column  Reads as
+- column  Unless
+- row  omitted from the document  `Unset`  `strictJsonAbsence` makes it an error
+- row  an explicit null  `Unset`  `strictJsonNulls` hands it to the inner decoder
+- row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
++ column  Uma chave que está
++ column  É lida como
++ column  A menos que
++ row  omitida do documento  `Unset`  `strictJsonAbsence` a torne um erro
++ row  explicitamente nula  `Unset`  `strictJsonNulls` a entregue ao decodificador interno
++ row  presente, mas rejeitada pelo decodificador interno  um erro  `lenientJsonFaults` a leia como `Unset`
+
+= row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
+- ```
++ ```
+
+- A strict absence raises the reason `Absent`. A strict null is rejected by the inner decoder, as
+- it would be for any other field. A lenient fault is read as `Unset` and reports nothing. Each is
+- a separate given, so one can be varied alone:
++ Uma ausência estrita lança o motivo `Absent`. Um nulo estrito é rejeitado pelo decodificador
++ interno, como seria para qualquer outro campo. Uma falha tolerante é lida como `Unset` e não
++ relata nada. Cada um é um given separado, de modo que um pode ser variado sozinho:
+
+= a separate given, so one can be varied alone:
+=
+- ```scala
++ ```scala
+
+- val strict =
++ val strict =
+
+-   import optionalityOptions.strictJsonAbsence
++   import optionalityOptions.strictJsonAbsence
+
+-   capture[Json.Error](t"""{"name": "Fool"}""".read[Json].as[Profile]).reason
++   capture[Json.Error](t"""{"name": "Fool"}""".read[Json].as[Profile]).reason
+
+- val lenient =
++ val lenient =
+
+-   import optionalityOptions.lenientJsonFaults
++   import optionalityOptions.lenientJsonFaults
+
+-   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
++   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
+
+=   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
+- ```
++ ```
+
+=   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"""{"name": "Fool", "age": "old"}""".read[Json].as[Profile].age
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(strict.inspect)
++ Out.println(strict.inspect)
+
+- Out.println(lenient.inspect)
++ Out.println(lenient.inspect)
+
+= Out.println(lenient.inspect)
+- ```
++ ```
+
+- `Option` fields follow the same three policies, and give `None`. A declared default of `Unset`
+- cannot be told apart from no default, so it does not satisfy a strict absence.
++ Os campos `Option` seguem as mesmas três políticas e dão `None`. Um padrão declarado de `Unset`
++ não pode ser distinguido da ausência de padrão, de modo que não satisfaz uma ausência estrita.
+
+- The [direct parsers](#skipping-the-tree) honor the policies too, with one limit. They tolerate
+- a lenient fault only when the value in the document is of the wrong *kind*, such as a string
+- where a number was expected, because the parser sees the kind before reading the value and can
+- skip it whole. A value of the right kind which fails part-way, such as a number too large for an
+- `Int`, has already been partly consumed, so it still raises.
++ Os [parsers diretos](#skipping-the-tree) também respeitam as políticas, com um limite. Eles
++ toleram uma falha tolerante apenas quando o valor no documento é da *categoria* errada, como uma
++ string onde se esperava um número, porque o parser vê a categoria antes de ler o valor e pode
++ pulá-lo por inteiro. Um valor da categoria certa que falha no meio do caminho, como um número
++ grande demais para um `Int`, já foi parcialmente consumido, e por isso ainda lança erro.
+
+- ### Renaming fields
++ ### Renomeação de campos
+
+- A field's name in Scala need not match its key in JSON. The `@name` annotation gives the key to
+- use. `@name[Json]` confines the rename to JSON, where another format may want a different key:
++ O nome de um campo em Scala não precisa coincidir com sua chave em JSON. A anotação `@name` dá a
++ chave a usar. `@name[Json]` restringe a renomeação ao JSON, onde outro formato pode querer uma
++ chave diferente:
+
+= use. `@name[Json]` confines the rename to JSON, where another format may want a different key:
+=
+- ```scala
++ ```scala
+
+- case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
++ case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+
+= case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+- ```
++ ```
+
+= case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Record(t"Juliet", 1582).in[Json].show)
++ Out.println(Record(t"Juliet", 1582).in[Json].show)
+
+= Out.println(Record(t"Juliet", 1582).in[Json].show)
+- ```
++ ```
+
+- ### Tagged unions
++ ### Uniões etiquetadas
+
+- An enumeration or sealed hierarchy encodes as an object with an extra *discriminator* field,
+- which names the case. The key that holds the discriminator is chosen by import, and is `kind`
+- here:
++ Uma enumeração ou hierarquia selada é codificada como um objeto com um campo extra
++ *discriminador*, que nomeia o caso. A chave que contém o discriminador é escolhida por import, e
++ aqui é `kind`:
+
+= here:
+=
+- ```scala
++ ```scala
+
+- import discriminables.jsonByKindDiscriminable
++ import discriminables.jsonByKindDiscriminable
+
+- enum Shape:
++ enum Shape:
+
+-   case Circle(radius: Double)
++   case Circle(radius: Double)
+
+-   case Square(side: Double)
++   case Square(side: Double)
+
+- val circle: Shape = Shape.Circle(1.0)
++ val circle: Shape = Shape.Circle(1.0)
+
+= val circle: Shape = Shape.Circle(1.0)
+- ```
++ ```
+
+= val circle: Shape = Shape.Circle(1.0)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val circle: Shape = Shape.Circle(1.0)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val circle: Shape = Shape.Circle(1.0)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(circle.in[Json].show)
++ Out.println(circle.in[Json].show)
+
+= Out.println(circle.in[Json].show)
+- ```
++ ```
+
+- Decoding reads the discriminator and builds the right case:
++ A decodificação lê o discriminador e constrói o caso certo:
+
+= Decoding reads the discriminator and builds the right case:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Decoding reads the discriminator and builds the right case:
+=
+= ```scala fuel
+- run
++ run
+
+= Decoding reads the discriminator and builds the right case:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"""{"side":2.0,"kind":"Square"}""".read[Json].as[Shape].inspect)
++ Out.println(t"""{"side":2.0,"kind":"Square"}""".read[Json].as[Shape].inspect)
+
+= Out.println(t"""{"side":2.0,"kind":"Square"}""".read[Json].as[Shape].inspect)
+- ```
++ ```
+
+- `@name` renames a case's discriminator value just as it renames a field, so the name in the
+- document and the name in Scala can differ.
++ `@name` renomeia o valor discriminador de um caso assim como renomeia um campo, de modo que o nome
++ no documento e o nome em Scala podem diferir.
+
+- A discriminator beside the case's own fields is only one convention in use. The others are also
+- chosen by a `Discriminable` given, not by writing a codec. A *wrapper* puts the whole variant
+- inside an object with a single key, named for the case. An *envelope* names one field for the
+- tag and another for the payload:
++ Um discriminador ao lado dos próprios campos do caso é apenas uma das convenções em uso. As outras
++ também são escolhidas por um given `Discriminable`, não escrevendo um codec. Um *wrapper* coloca a
++ variante inteira dentro de um objeto com uma única chave, nomeada pelo caso. Um *envelope* nomeia
++ um campo para a tag e outro para o payload:
+
+= tag and another for the payload:
+=
+- ```scala fuel
++ ```scala fuel
+
+- alternative Discriminator field
++ alternative Discriminator field
+
+= alternative Discriminator field
+-   code
++   code
+
+=   code
+-       circle.in[Json].show
++       circle.in[Json].show
+
+- alternative Wrapper
++ alternative Wrapper
+
+= alternative Wrapper
+-   code
++   code
+
+-       given Shape is Discriminable in Json = Json.DiscriminantWrapper()
++       given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+
+=       given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+=
+-       circle.in[Json].show
++       circle.in[Json].show
+
+- alternative Envelope
++ alternative Envelope
+
+= alternative Envelope
+-   code
++   code
+
+-       given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
++       given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
+
+=       given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
+=
+-       circle.in[Json].show
++       circle.in[Json].show
+
+=       circle.in[Json].show
+- ##
++ ##
+
+=       circle.in[Json].show
+= ##
+- ```
++ ```
+
+= ##
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Convention
+- column  `Shape.Circle(1.0)` is written as
+- row  Discriminator field  `{"radius":1.0,"kind":"Circle"}`
++ column  Convenção
++ column  `Shape.Circle(1.0)` é escrito como
++ row  Campo discriminador  `{"radius":1.0,"kind":"Circle"}`
+
+- row  Wrapper  `{"Circle":{"radius":1.0}}`
++ row  Wrapper  `{"Circle":{"radius":1.0}}`
+
+- row  Envelope  `{"type":"Circle","value":{"radius":1.0}}`
++ row  Envelope  `{"type":"Circle","value":{"radius":1.0}}`
+
+= row  Envelope  `{"type":"Circle","value":{"radius":1.0}}`
+- ```
++ ```
+
+- Each convention works through the tree and through the [direct parsers](#skipping-the-tree). A
+- direct parser does not need the tag to come first: a document whose `type` field follows its
+- `value` reads just as well. A wrapper object with more than one key is not a valid variant, and
+- raises `Json.Error.Reason.Absent` instead of guessing which key was meant.
++ Cada convenção funciona pela árvore e pelos [parsers diretos](#skipping-the-tree). Um parser
++ direto não precisa que a tag venha primeiro: um documento cujo campo `type` vem depois de seu
++ `value` é lido igualmente bem. Um objeto wrapper com mais de uma chave não é uma variante válida,
++ e lança `Json.Error.Reason.Absent` em vez de adivinhar qual chave se pretendia.
+
+- Anything more unusual is a `Discriminable` written by hand. It has three methods, which say how
+- to attach a tag, how to read one, and how to reach the variant. Codecs derived from it work
+- unchanged.
++ Qualquer coisa mais incomum é um `Discriminable` escrito à mão. Ele tem três métodos, que dizem
++ como anexar uma tag, como ler uma e como alcançar a variante. Os codecs derivados dele funcionam
++ sem alterações.
+
+- ### Building JSON
++ ### Construção de JSON
+
+- A `Json` value can also be assembled directly, without a case class. `Json.make` builds an
+- object from named arguments, each of them a `Json`:
++ Um valor `Json` também pode ser montado diretamente, sem uma case class. `Json.make` constrói um
++ objeto a partir de argumentos nomeados, cada um deles um `Json`:
+
+= object from named arguments, each of them a `Json`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= object from named arguments, each of them a `Json`:
+=
+= ```scala fuel
+- run
++ run
+
+= object from named arguments, each of them a `Json`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show)
++ Out.println(Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show)
+
+= Out.println(Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show)
+- ```
++ ```
+
+- The `j"…"` [interpolator] writes JSON literally, and its syntax is checked at [compiletime]. A
+- substitution in a value's place encodes that value. One followed by `*` splices a collection
+- into an array, and one in a field's place merges a map of fields into an object:
++ O [interpolador] `j"…"` escreve JSON literalmente, e sua sintaxe é verificada em [tempo de
++ compilação]. Uma substituição no lugar de um valor codifica esse valor. Uma seguida de `*` insere
++ uma coleção em um array, e uma no lugar de um campo mescla um mapa de campos em um objeto:
+
+= into an array, and one in a field's place merges a map of fields into an object:
+=
+- ```scala
++ ```scala
+
+- val x = 42
++ val x = 42
+
+- val xs = List(2, 3, 4)
++ val xs = List(2, 3, 4)
+
+- val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
++ val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+
+= val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+- ```
++ ```
+
+= val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(j"""{"a": $x}""".show)
++ Out.println(j"""{"a": $x}""".show)
+
+- Out.println(j"""[1, $xs*]""".show)
++ Out.println(j"""[1, $xs*]""".show)
+
+- Out.println(j"""{"a": 1, $rest}""".show)
++ Out.println(j"""{"a": 1, $rest}""".show)
+
+= Out.println(j"""{"a": 1, $rest}""".show)
+- ```
++ ```
+
+- A malformed literal is rejected where it is written. The error points at the character at
+- fault, not at the whole expression:
++ Um literal malformado é rejeitado onde é escrito. O erro aponta para o caractere em falta, não
++ para a expressão inteira:
+
+= fault, not at the whole expression:
+=
+- ```scala fuel
++ ```scala fuel
+
+= fault, not at the whole expression:
+=
+= ```scala fuel
+- compile
++ compile
+
+= fault, not at the whole expression:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= fault, not at the whole expression:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- j""" {"a": 1, } """
++ j""" {"a": 1, } """
+
+= j""" {"a": 1, } """
+- ```
++ ```
+
+- ### Matching JSON
++ ### Casamento de JSON
+
+- The same `j"…"` interpolator is a pattern. In a `match` it takes a document apart, binding each
+- substitution to the piece found in its place. A document of another shape falls through to the
+- next case:
++ O mesmo interpolador `j"…"` é um padrão. Em um `match`, ele desmonta um documento, vinculando cada
++ substituição ao pedaço encontrado em seu lugar. Um documento de outra forma passa para o caso
++ seguinte:
+
+= next case:
+=
+- ```scala
++ ```scala
+
+- val answer = t"""{"a": 42}""".read[Json] match
++ val answer = t"""{"a": 42}""".read[Json] match
+
+-   case j"""{"a": $a}""" => a.as[Int]
++   case j"""{"a": $a}""" => a.as[Int]
+
+-   case _                => -1
++   case _                => -1
+
+=   case _                => -1
+- ```
++ ```
+
+- An array pattern matches by length, and a trailing `*` captures the remaining elements:
++ Um padrão de array casa pelo comprimento, e um `*` final captura os elementos restantes:
+
+= An array pattern matches by length, and a trailing `*` captures the remaining elements:
+=
+- ```scala
++ ```scala
+
+- val split = t"""[1, 2, 3, 4]""".read[Json] match
++ val split = t"""[1, 2, 3, 4]""".read[Json] match
+
+-   case j"""[$head, $tail*]""" => (head.as[Int], tail.as[List[Int]])
++   case j"""[$head, $tail*]""" => (head.as[Int], tail.as[List[Int]])
+
+-   case _                      => (0, Nil)
++   case _                      => (0, Nil)
+
+=   case _                      => (0, Nil)
+- ```
++ ```
+
+=   case _                      => (0, Nil)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                      => (0, Nil)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                      => (0, Nil)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(answer.show)
++ Out.println(answer.show)
+
+- Out.println(split.inspect)
++ Out.println(split.inspect)
+
+= Out.println(split.inspect)
+- ```
++ ```
+
+- Each kind of substitution has a meaning as an expression and as a pattern:
++ Cada categoria de substituição tem um significado como expressão e como padrão:
+
+= Each kind of substitution has a meaning as an expression and as a pattern:
+=
+- ```tabular
++ ```tabular
+
+- column  Substitution
+- column  In an expression
+- column  In a pattern
+- row  `$x` in a value's place  the value, encoded as `Json`  binds the value there, as `Json`
+- row  `$xs*` at the end of an array  splices a collection's elements  binds the remaining elements, as an array
+- row  `$rest` in a field's place  merges a `Map[Text, Json]` of fields  binds the other fields, as an object
+- row  `$x` inside a string  the value, encoded as `Text`  not supported
++ column  Substituição
++ column  Em uma expressão
++ column  Em um padrão
++ row  `$x` no lugar de um valor  o valor, codificado como `Json`  vincula o valor ali, como `Json`
++ row  `$xs*` no fim de um array  insere os elementos de uma coleção  vincula os elementos restantes, como um array
++ row  `$rest` no lugar de um campo  mescla um `Map[Text, Json]` de campos  vincula os outros campos, como um objeto
++ row  `$x` dentro de uma string  o valor, codificado como `Text`  não suportado
+
+= row  `$x` inside a string  the value, encoded as `Text`  not supported
+- ```
++ ```
+
+- [Interpolation](interpolation.md) describes how interpolators like `j"…"` are built.
++ [Interpolação](interpolation.md) descreve como interpoladores como `j"…"` são construídos.
+
+- ### Navigating
++ ### Navegação
+
+- Applying a `Json` value to a key reaches a field, and applying it to an index reaches an array
+- element. The steps chain:
++ Aplicar um valor `Json` a uma chave alcança um campo, e aplicá-lo a um índice alcança um elemento
++ de array. Os passos se encadeiam:
+
+= element. The steps chain:
+=
+- ```scala
++ ```scala
+
+- val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
++ val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+
+= val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+- ```
++ ```
+
+= val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(data(t"a")(t"b")(t"c").as[Int].show)
++ Out.println(data(t"a")(t"b")(t"c").as[Int].show)
+
+- Out.println(t"[10, 20, 30]".read[Json](1).as[Int].show)
++ Out.println(t"[10, 20, 30]".read[Json](1).as[Int].show)
+
+= Out.println(t"[10, 20, 30]".read[Json](1).as[Int].show)
+- ```
++ ```
+
+- Reaching for a field that is not there is not itself an error. It gives an absent `Json`, which
+- decodes to `Unset` when an optional type is asked for, and raises only when a value is required:
++ Buscar um campo que não está lá não é, por si só, um erro. Isso dá um `Json` ausente, que é
++ decodificado como `Unset` quando se pede um tipo opcional, e só lança erro quando um valor é
++ obrigatório:
+
+= decodes to `Unset` when an optional type is asked for, and raises only when a value is required:
+=
+- ```scala
++ ```scala
+
+- val person = t"""{"name": "Hamlet"}""".read[Json]
++ val person = t"""{"name": "Hamlet"}""".read[Json]
+
+= val person = t"""{"name": "Hamlet"}""".read[Json]
+- ```
++ ```
+
+= val person = t"""{"name": "Hamlet"}""".read[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val person = t"""{"name": "Hamlet"}""".read[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val person = t"""{"name": "Hamlet"}""".read[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(person(t"missing").as[Optional[Int]].inspect)
++ Out.println(person(t"missing").as[Optional[Int]].inspect)
+
+= Out.println(person(t"missing").as[Optional[Int]].inspect)
+- ```
++ ```
+
+= Out.println(person(t"missing").as[Optional[Int]].inspect)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(person(t"missing").as[Optional[Int]].inspect)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- person(t"missing").as[Int]
++ person(t"missing").as[Int]
+
+= person(t"missing").as[Int]
+- ```
++ ```
+
+- #### Fields as members
++ #### Campos como membros
+
+- The compiler knows nothing about which fields a `Json` value has, or even whether it is an
+- object. Often the programmer knows more, and would like to write `person.name`. That syntax
+- gives up checking, since a misspelled field is found only at [runtime], so it is not available
+- by default:
++ O compilador não sabe nada sobre quais campos um valor `Json` tem, nem mesmo se é um objeto.
++ Muitas vezes o programador sabe mais e gostaria de escrever `person.name`. Essa sintaxe abre mão
++ da verificação, já que um campo escrito errado só é descoberto em [tempo de execução], e por
++ isso não está disponível por padrão:
+
+= by default:
+=
+- ```scala fuel
++ ```scala fuel
+
+= by default:
+=
+= ```scala fuel
+- compile
++ compile
+
+= by default:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= by default:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- person.name
++ person.name
+
+= person.name
+- ```
++ ```
+
+- Importing `dynamicAccess.dynamicJson` permits it for the rest of the scope:
++ Importar `dynamicAccess.dynamicJson` a permite pelo resto do escopo:
+
+= Importing `dynamicAccess.dynamicJson` permits it for the rest of the scope:
+=
+- ```scala
++ ```scala
+
+- import dynamicAccess.dynamicJson
++ import dynamicAccess.dynamicJson
+
+= import dynamicAccess.dynamicJson
+- ```
++ ```
+
+= import dynamicAccess.dynamicJson
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import dynamicAccess.dynamicJson
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import dynamicAccess.dynamicJson
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(person.name.as[Text])
++ Out.println(person.name.as[Text])
+
+= Out.println(person.name.as[Text])
+- ```
++ ```
+
+- The import grants a permission, `Json is Dynamical`. The same permission can be confined to one
+- block with `dynamically`, which names the formats it covers:
++ O import concede uma permissão, `Json is Dynamical`. A mesma permissão pode ser restrita a um bloco
++ com `dynamically`, que nomeia os formatos que ela abrange:
+
+= block with `dynamically`, which names the formats it covers:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  Grants dynamic access to
+- row  `dynamically[Json]`  JSON alone
+- row  `dynamically[Json | Yaml]`  each format in the union
+- row  `dynamically`  every format with dynamic access
++ column  Forma
++ column  Concede acesso dinâmico a
++ row  `dynamically[Json]`  só JSON
++ row  `dynamically[Json | Yaml]`  cada formato da união
++ row  `dynamically`  todo formato com acesso dinâmico
+
+= row  `dynamically`  every format with dynamic access
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- val config = t"""{"server": {"port": 8080}}""".read[Json]
++ val config = t"""{"server": {"port": 8080}}""".read[Json]
+
+- val port = dynamically[Json]:
++ val port = dynamically[Json]:
+
+-   config.server.port.as[Int]
++   config.server.port.as[Int]
+
+=   config.server.port.as[Int]
+- ```
++ ```
+
+- A document whose shape is known in advance is better [validated](#validation) once. Its fields
+- are then members which the compiler does check.
++ Um documento cuja forma é conhecida de antemão é mais bem [validado](#validation) uma única vez.
++ Seus campos passam então a ser membros que o compilador verifica.
+
+- ### Updating
++ ### Atualização
+
+- Assigning to a field through dynamic access gives a new document. The original is unchanged,
+- since a `Json` value is immutable. Assigning a value adds or replaces a field, and assigning
+- `Unset` removes one:
++ Atribuir a um campo por meio do acesso dinâmico dá um novo documento. O original fica inalterado,
++ já que um valor `Json` é imutável. Atribuir um valor acrescenta ou substitui um campo, e atribuir
++ `Unset` remove um:
+
+= `Unset` removes one:
+=
+- ```scala
++ ```scala
+
+- val base = t"""{"x": 1}""".read[Json]
++ val base = t"""{"x": 1}""".read[Json]
+
+= val base = t"""{"x": 1}""".read[Json]
+- ```
++ ```
+
+= val base = t"""{"x": 1}""".read[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val base = t"""{"x": 1}""".read[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val base = t"""{"x": 1}""".read[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((base.y = 2).show)
++ Out.println((base.y = 2).show)
+
+- Out.println((base.x = Unset).show)
++ Out.println((base.x = Unset).show)
+
+- Out.println(base.show)
++ Out.println(base.show)
+
+= Out.println(base.show)
+- ```
++ ```
+
+- A deeper update is written with a [lens](optics.md). A lens reaches through several levels, and
+- may carry optics such as `Each` or `Filter` to change many elements at once:
++ Uma atualização mais profunda é escrita com uma [lente](optics.md). Uma lente alcança vários
++ níveis e pode carregar óticas como `Each` ou `Filter` para alterar muitos elementos de uma vez:
+
+= may carry optics such as `Each` or `Filter` to change many elements at once:
+=
+- ```scala
++ ```scala
+
+- case class Scene(place: Text)
++ case class Scene(place: Text)
+
+- case class Act(name: Text, number: Int, scenes: List[Scene])
++ case class Act(name: Text, number: Int, scenes: List[Scene])
+
+- case class Play(title: Text, opening: Act)
++ case class Play(title: Text, opening: Act)
+
+- val play = Play(t"Macbeth", Act(t"Act I", 1, List(Scene(t"A heath")))).in[Json]
++ val play = Play(t"Macbeth", Act(t"Act I", 1, List(Scene(t"A heath")))).in[Json]
+
+- val renumbered =
++ val renumbered =
+
+-   import conversions.encodableToJson
++   import conversions.encodableToJson
+
+-   import optics.jsonLens
++   import optics.jsonLens
+
+-   play.lens(_.opening.number = 2.in[Json])
++   play.lens(_.opening.number = 2.in[Json])
+
+=   play.lens(_.opening.number = 2.in[Json])
+- ```
++ ```
+
+=   play.lens(_.opening.number = 2.in[Json])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   play.lens(_.opening.number = 2.in[Json])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   play.lens(_.opening.number = 2.in[Json])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(renumbered.show)
++ Out.println(renumbered.show)
+
+= Out.println(renumbered.show)
+- ```
++ ```
+
+- ### Formatting
++ ### Formatação
+
+- The output format is a given in scope. Compact formatting leaves out all whitespace, and
+- indented formatting adds newlines and indentation for a human reader:
++ O formato de saída é um given no escopo. A formatação compacta omite todo espaço em branco, e a
++ formatação indentada acrescenta quebras de linha e indentação para um leitor humano:
+
+= indented formatting adds newlines and indentation for a human reader:
+=
+- ```scala fuel
++ ```scala fuel
+
+= indented formatting adds newlines and indentation for a human reader:
+=
+= ```scala fuel
+- run
++ run
+
+= indented formatting adds newlines and indentation for a human reader:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= indented formatting adds newlines and indentation for a human reader:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import formatting.indentedJsonFormatting
++   import formatting.indentedJsonFormatting
+
+=   import formatting.indentedJsonFormatting
+=
+-   Out.println(troupe.in[Json].show)
++   Out.println(troupe.in[Json].show)
+
+=   import formatting.indentedJsonFormatting
+=
+=   Out.println(troupe.in[Json].show)
+- ```
++ ```
+
+- `show` renders the whole document into one `Text`. A large document need not be held in memory
+- before it is sent, and the other forms of output deliver it a block at a time. They differ in
+- where the work of serializing happens, and in what they hand out:
++ `show` renderiza o documento inteiro em um único `Text`. Um documento grande não precisa ser
++ mantido na memória antes de ser enviado, e as outras formas de saída o entregam um bloco de cada
++ vez. Elas diferem em onde acontece o trabalho de serialização e no que entregam:
+
+= where the work of serializing happens, and in what they hand out:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  Serializes on
+- column  Hands out
+- row  `json.show`  the caller's thread  one `Text` of the whole document
+- row  `Json.emit[Text](json, deliver)`  the caller's thread  each block as `Text`, to a function
+- row  `Json.emit[Data](json, deliver)`  the caller's thread  each block as UTF-8 `Data`, to a function
+- row  `Json.lend(json)`  the caller's thread  the writer's own buffer, lent block by block
+- row  `Json.emit(json)`  a fiber  an iterator of `Text`
+- row  `Json` as `Streamable` by `Text`  a fiber  a stream of `Text`
++ column  Forma
++ column  Serializa em
++ column  Entrega
++ row  `json.show`  a thread de quem chama  um único `Text` com o documento inteiro
++ row  `Json.emit[Text](json, deliver)`  a thread de quem chama  cada bloco como `Text`, a uma função
++ row  `Json.emit[Data](json, deliver)`  a thread de quem chama  cada bloco como `Data` UTF-8, a uma função
++ row  `Json.lend(json)`  a thread de quem chama  o buffer do próprio escritor, emprestado bloco a bloco
++ row  `Json.emit(json)`  uma fibra  um iterador de `Text`
++ row  `Json` como `Streamable` por `Text`  uma fibra  um stream de `Text`
+
+= row  `Json` as `Streamable` by `Text`  a fiber  a stream of `Text`
+- ```
++ ```
+
+- The push form of `Json.emit` hands each block to a function as it fills. With `emit[Data]` the
+- blocks are UTF-8 bytes, encoded straight from the serializer, which suits writing to a file, a
+- [socket](sockets.md) or an `OutputStream`:
++ A forma push de `Json.emit` entrega cada bloco a uma função à medida que ele enche. Com
++ `emit[Data]`, os blocos são bytes UTF-8, codificados diretamente pelo serializador, o que convém
++ para escrever em um arquivo, um [socket](sockets.md) ou um `OutputStream`:
+
+= [socket](sockets.md) or an `OutputStream`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [socket](sockets.md) or an `OutputStream`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [socket](sockets.md) or an `OutputStream`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val json = Person(t"Hamlet", 30).in[Json]
++ val json = Person(t"Hamlet", 30).in[Json]
+
+- Json.emit[Data](json, chunk => socket.write(chunk))
++ Json.emit[Data](json, chunk => socket.write(chunk))
+
+= Json.emit[Data](json, chunk => socket.write(chunk))
+- ```
++ ```
+
+- `Json.lend` avoids even the copy into each `Data` block. It lends the consumer the writer's own
+- buffer as a `Region`, together with an interval which proves that every index in it is in range.
+- Both are valid only for the duration of the call, the same rule as a
+- [stream's](streams.md) `lend`:
++ `Json.lend` evita até a cópia para cada bloco `Data`. Ele empresta ao consumidor o buffer do
++ próprio escritor como uma `Region`, junto com um intervalo que prova que todo índice nele está
++ dentro dos limites. Ambos são válidos apenas durante a chamada, a mesma regra do `lend` de um
++ [stream](streams.md):
+
+= [stream's](streams.md) `lend`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [stream's](streams.md) `lend`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [stream's](streams.md) `lend`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- Json.lend(json): region =>
++ Json.lend(json): region =>
+
+-   interval => region.visit(interval)(index => sink.put(region(index)))
++   interval => region.visit(interval)(index => sink.put(region(index)))
+
+=   interval => region.visit(interval)(index => sink.put(region(index)))
+- ```
++ ```
+
+- Where the consumer pulls instead, `Json.emit(json)` serializes on a fiber and hands out the text
+- through an iterator. A `Json` is `Streamable` by `Text` on the same terms. Both need a
+- [`supervise`](concurrency.md) block:
++ Onde, em vez disso, o consumidor puxa, `Json.emit(json)` serializa em uma fibra e entrega o texto
++ por meio de um iterador. Um `Json` é `Streamable` por `Text` nos mesmos termos. Ambos precisam de
++ um bloco [`supervise`](concurrency.md):
+
+= [`supervise`](concurrency.md) block:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [`supervise`](concurrency.md) block:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [`supervise`](concurrency.md) block:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import probates.cancelProbate
++ import probates.cancelProbate
+
+- supervise:
++ supervise:
+
+-   Json.emit(json).each(chunk => out.write(chunk))
++   Json.emit(json).each(chunk => out.write(chunk))
+
+=   Json.emit(json).each(chunk => out.write(chunk))
+- ```
++ ```
+
+- ### Errors
++ ### Erros
+
+- A conversion that cannot be made raises a `Json.Error`, whose `reason` says what went wrong:
++ Uma conversão que não pode ser feita lança um `Json.Error`, cujo `reason` diz o que deu errado:
+
+= A conversion that cannot be made raises a `Json.Error`, whose `reason` says what went wrong:
+=
+- ```tabular
++ ```tabular
+
+- column  Reason
+- column  Raised for
+- row  `NotType(found, primitive)`  a value of the wrong type
+- row  `Absent`  a required field that is absent
+- row  `OutOfRange`  a number outside the target's range
++ column  Motivo
++ column  Lançado para
++ row  `NotType(found, primitive)`  um valor do tipo errado
++ row  `Absent`  um campo obrigatório que está ausente
++ row  `OutOfRange`  um número fora do intervalo do destino
+
+= row  `OutOfRange`  a number outside the target's range
+- ```
++ ```
+
+- `capture` runs an expression that is expected to fail, and gives its error, so that the reason
+- can be inspected:
++ `capture` executa uma expressão que se espera que falhe e dá seu erro, para que o motivo possa ser
++ inspecionado:
+
+= can be inspected:
+=
+- ```scala fuel
++ ```scala fuel
+
+= can be inspected:
+=
+= ```scala fuel
+- run
++ run
+
+= can be inspected:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(capture[Json.Error](t""""abc"""".read[Json].as[Int]).reason.inspect)
++ Out.println(capture[Json.Error](t""""abc"""".read[Json].as[Int]).reason.inspect)
+
+- Out.println(capture[Json.Error](t"""{}""".read[Json].as[Person]).reason.inspect)
++ Out.println(capture[Json.Error](t"""{}""".read[Json].as[Person]).reason.inspect)
+
+= Out.println(capture[Json.Error](t"""{}""".read[Json].as[Person]).reason.inspect)
+- ```
++ ```
+
+- Throwing at the first error is one [strategy] among several. A method that should not throw
+- declares `raises Json.Error` instead, and its caller chooses what a failure does;
+- [Errors](errors.md) covers the choices.
++ Lançar no primeiro erro é uma [estratégia] entre várias. Um método que não deve lançar exceções
++ declara `raises Json.Error` em vez disso, e quem o chama escolhe o que uma falha faz;
++ [Erros](errors.md) trata das escolhas.
+
+- #### Collecting every error
++ #### Coleta de todos os erros
+
+- Under a strategy that [accumulates failures](errors.md#accumulating-failures), decoding does
+- not stop at the first error. Every error is collected, and each is tagged with a
+- [JSON Pointer](https://en.wikipedia.org/wiki/JSON_Pointer) to the field that failed, so all of a
+- document's problems are reported at once.
++ Sob uma estratégia que [acumula falhas](errors.md#accumulating-failures), a decodificação não para
++ no primeiro erro. Todo erro é coletado, e cada um é etiquetado com um
++ [JSON Pointer](https://en.wikipedia.org/wiki/JSON_Pointer) para o campo que falhou, de modo que
++ todos os problemas de um documento são relatados de uma vez.
+
+- The pointer comes from a *focus*, which the decoder maintains as it descends, and which the
+- strategy reads through `prior`. This contact has a person and an address which are each wrong in
+- two places:
++ O ponteiro vem de um *foco*, que o decodificador mantém enquanto desce e que a estratégia lê por
++ meio de `prior`. Este contato tem uma pessoa e um endereço que estão errados em dois lugares cada:
+
+= two places:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- case class Address(street: Text, postcode: Text)
++ case class Address(street: Text, postcode: Text)
+
+- case class Contact(person: Person, address: Address)
++ case class Contact(person: Person, address: Address)
+
+- case class Issues(items: List[(Text, Json.Error)] = Nil)(using Diagnostics)
++ case class Issues(items: List[(Text, Json.Error)] = Nil)(using Diagnostics)
+
+- extends Error(m"${items.size} problems"):
++ extends Error(m"${items.size} problems"):
+
+-   def +(pointer: Text, error: Json.Error): Issues = Issues(items :+ (pointer, error))
++   def +(pointer: Text, error: Json.Error): Issues = Issues(items :+ (pointer, error))
+
+- val damaged = t"""{"person": {"name": 1}, "address": {"street": 2}}""".read[Json]
++ val damaged = t"""{"person": {"name": 1}, "address": {"street": 2}}""".read[Json]
+
+- val problems =
++ val problems =
+
+-   Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
++   Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
+
+-     ( Issues(),
++     ( Issues(),
+
+-       { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
++       { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
+
+-   . protect(damaged.as[Contact])
++   . protect(damaged.as[Contact])
+
+-   . items
++   . items
+
+=   . items
+- ```
++ ```
+
+- Decoding yields four errors, one for each fault:
++ A decodificação produz quatro erros, um para cada falha:
+
+= Decoding yields four errors, one for each fault:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Decoding yields four errors, one for each fault:
+=
+= ```scala fuel
+- run
++ run
+
+= Decoding yields four errors, one for each fault:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- problems.each: (pointer, error) =>
++ problems.each: (pointer, error) =>
+
+-   Out.println(t"$pointer: ${error.reason.inspect}")
++   Out.println(t"$pointer: ${error.reason.inspect}")
+
+=   Out.println(t"$pointer: ${error.reason.inspect}")
+- ```
++ ```
+
+- Missing fields and fields of the wrong type accumulate together. An absent field contributes
+- exactly one error, however many times the decoder tries to read it.
++ Campos ausentes e campos do tipo errado se acumulam juntos. Um campo ausente contribui com
++ exatamente um erro, não importa quantas vezes o decodificador tente lê-lo.
+
+- ### Equality and structure
++ ### Igualdade e estrutura
+
+- Two documents are equal when they mean the same thing. The order of an object's keys does not
+- matter, and a whole number equals the same value written with a decimal point:
++ Dois documentos são iguais quando significam a mesma coisa. A ordem das chaves de um objeto não
++ importa, e um número inteiro é igual ao mesmo valor escrito com ponto decimal:
+
+= matter, and a whole number equals the same value written with a decimal point:
+=
+- ```scala fuel
++ ```scala fuel
+
+= matter, and a whole number equals the same value written with a decimal point:
+=
+= ```scala fuel
+- run
++ run
+
+= matter, and a whole number equals the same value written with a decimal point:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((t"""{"x": 1, "y": 2}""".read[Json] == t"""{"y": 2, "x": 1}""".read[Json]).inspect)
++ Out.println((t"""{"x": 1, "y": 2}""".read[Json] == t"""{"y": 2, "x": 1}""".read[Json]).inspect)
+
+- Out.println((t"5".read[Json] == t"5.0".read[Json]).inspect)
++ Out.println((t"5".read[Json] == t"5.0".read[Json]).inspect)
+
+= Out.println((t"5".read[Json] == t"5.0".read[Json]).inspect)
+- ```
++ ```
+
+- `Json.unseal` exposes the underlying tree where it is needed directly. The tree has a predicate
+- for each kind of value, and a `primitive` which names the kind:
++ `Json.unseal` expõe a árvore subjacente onde ela é necessária diretamente. A árvore tem um
++ predicado para cada categoria de valor, e um `primitive` que nomeia a categoria:
+
+= for each kind of value, and a `primitive` which names the kind:
+=
+- ```scala fuel
++ ```scala fuel
+
+= for each kind of value, and a `primitive` which names the kind:
+=
+= ```scala fuel
+- run
++ run
+
+= for each kind of value, and a `primitive` which names the kind:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Json.unseal(t"42".read[Json]).isLong.inspect)
++ Out.println(Json.unseal(t"42".read[Json]).isLong.inspect)
+
+- Out.println(Json.unseal(t""""x"""".read[Json]).primitive.inspect)
++ Out.println(Json.unseal(t""""x"""".read[Json]).primitive.inspect)
+
+= Out.println(Json.unseal(t""""x"""".read[Json]).primitive.inspect)
+- ```
++ ```
+
+- The predicates are finer than the primitives. Code which cares how a number is represented can
+- ask, and code which does not need not:
++ Os predicados são mais finos que os primitivos. O código que se importa com como um número é
++ representado pode perguntar, e o código que não se importa não precisa:
+
+= ask, and code which does not need not:
+=
+- ```tabular
++ ```tabular
+
+- column  Predicate
+- column  Primitive
+- column  True for
+- row  `isLong`  `Number`  a number held as a `Long`
+- row  `isDouble`  `Number`  a number held as a `Double`
+- row  `isNumber`  `Number`  any number
+- row  `isString`  `String`  a string
+- row  `isBoolean`  `Boolean`  `true` or `false`
++ column  Predicado
++ column  Primitivo
++ column  Verdadeiro para
++ row  `isLong`  `Number`  um número guardado como `Long`
++ row  `isDouble`  `Number`  um número guardado como `Double`
++ row  `isNumber`  `Number`  qualquer número
++ row  `isString`  `String`  uma string
++ row  `isBoolean`  `Boolean`  `true` ou `false`
+
+- row  `isNull`  `Null`  `null`
++ row  `isNull`  `Null`  `null`
+
+- row  `isObject`  `Object`  an object
+- row  `isArray`  `Array`  an array
++ row  `isObject`  `Object`  um objeto
++ row  `isArray`  `Array`  um array
+
+= row  `isArray`  `Array`  an array
+- ```
++ ```
+
+- ### Numbers and precision
++ ### Números e precisão
+
+- A JSON number has no limit on its precision, and most parsers quietly impose one. Here the
+- *number mode* in scope decides what happens to a number too long for the parser's fast path,
+- which holds about fifteen digits. A shorter number is decoded identically in every mode:
++ Um número JSON não tem limite de precisão, e a maioria dos parsers impõe um discretamente. Aqui, o
++ *modo numérico* no escopo decide o que acontece com um número longo demais para o caminho rápido
++ do parser, que comporta cerca de quinze dígitos. Um número mais curto é decodificado de forma
++ idêntica em todos os modos:
+
+= which holds about fifteen digits. A shorter number is decoded identically in every mode:
+=
+- ```scala
++ ```scala
+
+- import numberModes.fullNumberMode
++ import numberModes.fullNumberMode
+
+= import numberModes.fullNumberMode
+- ```
++ ```
+
+= import numberModes.fullNumberMode
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Mode
+- column  With a number too long for the fast path
+- row  `fullNumberMode`  keeps every digit as a binary-coded decimal, at the cost of an allocation
+- row  `doubleNumberMode`  drops the excess digits and computes a `Double` from the leading ones
+- row  `bcdNumberMode`  drops the excess digits and yields the raw packed accumulator, with no allocation
++ column  Modo
++ column  Com um número longo demais para o caminho rápido
++ row  `fullNumberMode`  mantém todos os dígitos como decimal codificado em binário, ao custo de uma alocação
++ row  `doubleNumberMode`  descarta os dígitos excedentes e calcula um `Double` a partir dos iniciais
++ row  `bcdNumberMode`  descarta os dígitos excedentes e produz o acumulador compactado bruto, sem alocação
+
+= row  `bcdNumberMode`  drops the excess digits and yields the raw packed accumulator, with no allocation
+- ```
++ ```
+
+- `fullNumberMode` is the default, because losing digits silently is the wrong thing to do
+- unasked. `doubleNumberMode` does what Jawn, Circe, Jsoniter and Jackson do. It is the mode for
+- a like-for-like comparison of speed, or for data known to fit in a `Double`. The `Long` which
+- `bcdNumberMode` yields holds binary-coded decimal digits, not the number's value, so it buys
+- speed at the price of treating long numbers as opaque. [Numbers](numbers.md) covers the numeric
+- types a value can be decoded to.
++ `fullNumberMode` é o padrão, porque perder dígitos silenciosamente é a coisa errada a fazer sem
++ que se peça. `doubleNumberMode` faz o que Jawn, Circe, Jsoniter e Jackson fazem. É o modo para uma
++ comparação de velocidade em pé de igualdade, ou para dados que se sabe caberem em um `Double`. O
++ `Long` que `bcdNumberMode` produz contém dígitos decimais codificados em binário, não o valor do
++ número, de modo que compra velocidade ao preço de tratar números longos como opacos.
++ [Números](numbers.md) trata dos tipos numéricos para os quais um valor pode ser decodificado.
+
+- ### NDJSON
++ ### NDJSON
+
+- [Newline-delimited JSON](https://en.wikipedia.org/wiki/JSON_streaming) is a stream of
+- independent documents, one on each line. It needs no type of its own. `delineate` splits a
+- [source](streams.md#records) into records at its line boundaries, and each record is read as
+- `Json`:
++ [JSON delimitado por quebras de linha](https://en.wikipedia.org/wiki/JSON_streaming) é um stream
++ de documentos independentes, um em cada linha. Não precisa de um tipo próprio. `delineate` divide
++ uma [origem](streams.md#records) em registros em suas fronteiras de linha, e cada registro é lido
++ como `Json`:
+
+= `Json`:
+=
+- ```scala
++ ```scala
+
+- import lineSeparation.adaptiveLinefeedLineSeparation
++ import lineSeparation.adaptiveLinefeedLineSeparation
+
+- val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
++ val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
+- ```
++ ```
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.inspect)
++ Out.println(numbers.inspect)
+
+= Out.println(numbers.inspect)
+- ```
++ ```
+
+- Each line is read independently, so the documents need not share a shape. A log of mixed
+- records reads as well as a uniform one.
++ Cada linha é lida de forma independente, de modo que os documentos não precisam compartilhar uma
++ forma. Um log de registros mistos é lido tão bem quanto um uniforme.
+
+- ### JSON Pointers
++ ### JSON Pointers
+
+- A [JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901) names a location within a
+- document. The `jp"…"` interpolator writes one, and checks it at compiletime. A pointer can also
+- be built a segment at a time:
++ Um [JSON Pointer](https://datatracker.ietf.org/doc/html/rfc6901) nomeia um local dentro de um
++ documento. O interpolador `jp"…"` escreve um e o verifica em tempo de compilação. Um ponteiro
++ também pode ser construído um segmento de cada vez:
+
+= be built a segment at a time:
+=
+- ```scala fuel
++ ```scala fuel
+
+= be built a segment at a time:
+=
+= ```scala fuel
+- run
++ run
+
+= be built a segment at a time:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(jp"#/verona/capulet".encode)
++ Out.println(jp"#/verona/capulet".encode)
+
+- Out.println(JsonPointer()(t"a")(t"b").encode)
++ Out.println(JsonPointer()(t"a")(t"b").encode)
+
+= Out.println(JsonPointer()(t"a")(t"b").encode)
+- ```
++ ```
+
+- Within a segment, the special characters `~` and `/` are escaped as `~0` and `~1`. A malformed
+- pointer does not compile, and the error points at the character at fault:
++ Dentro de um segmento, os caracteres especiais `~` e `/` são escapados como `~0` e `~1`. Um
++ ponteiro malformado não compila, e o erro aponta para o caractere em falta:
+
+= pointer does not compile, and the error points at the character at fault:
+=
+- ```scala fuel
++ ```scala fuel
+
+= pointer does not compile, and the error points at the character at fault:
+=
+= ```scala fuel
+- compile
++ compile
+
+= pointer does not compile, and the error points at the character at fault:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= pointer does not compile, and the error points at the character at fault:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- jp"#/verona~2capulet"
++ jp"#/verona~2capulet"
+
+= jp"#/verona~2capulet"
+- ```
++ ```
+
+- ### Source positions
++ ### Posições no código-fonte
+
+- Ordinary parsing keeps no record of where each value sat in the text, since most programs never
+- ask. A program which does ask, perhaps to underline the source of an error, brings
+- `parsing.trackPositions` into scope. `read` then records positions, and `locate` gives the line
+- and column of the value a pointer names:
++ A análise comum não guarda registro de onde cada valor estava no texto, já que a maioria dos
++ programas nunca pergunta. Um programa que pergunta, talvez para sublinhar a origem de um erro,
++ traz `parsing.trackPositions` para o escopo. `read` então registra as posições, e `locate` dá a
++ linha e a coluna do valor que um ponteiro nomeia:
+
+= and column of the value a pointer names:
+=
+- ```scala
++ ```scala
+
+- import parsing.trackPositions
++ import parsing.trackPositions
+
+- val tracked = t"{\n  \"a\": 42\n}".read[Json]
++ val tracked = t"{\n  \"a\": 42\n}".read[Json]
+
+= val tracked = t"{\n  \"a\": 42\n}".read[Json]
+- ```
++ ```
+
+= val tracked = t"{\n  \"a\": 42\n}".read[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val tracked = t"{\n  \"a\": 42\n}".read[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val tracked = t"{\n  \"a\": 42\n}".read[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(tracked.locate(JsonPointer()(t"a")).let(_.line).inspect)
++ Out.println(tracked.locate(JsonPointer()(t"a")).let(_.line).inspect)
+
+= Out.println(tracked.locate(JsonPointer()(t"a")).let(_.line).inspect)
+- ```
++ ```
+
+- A position covers the whole of the value it names. A negative number's extent includes its
+- minus sign, and an object or array runs from its opening bracket to its closing one. `locateKey`
+- gives the position of the *key* matching the pointer's last segment, not of its value, which is
+- what underlining a misspelled field name needs.
++ Uma posição cobre a totalidade do valor que nomeia. A extensão de um número negativo inclui seu
++ sinal de menos, e um objeto ou array vai de seu colchete de abertura até o de fechamento.
++ `locateKey` dá a posição da *chave* que corresponde ao último segmento do ponteiro, não de seu
++ valor, que é o que sublinhar um nome de campo escrito errado exige.
+
+- A pointer which does not resolve gives `Unset`, whether it names a key the document lacks or an
+- index past the end of an array. Probing a document for a position is therefore always safe.
+- Under ordinary parsing, without tracking, every `locate` gives `Unset`, and a program which does
+- not want positions pays nothing for them.
++ Um ponteiro que não se resolve dá `Unset`, quer nomeie uma chave que falta no documento, quer um
++ índice além do fim de um array. Sondar um documento em busca de uma posição é, portanto, sempre
++ seguro. Na análise comum, sem rastreamento, todo `locate` dá `Unset`, e um programa que não quer
++ posições não paga nada por elas.
+
+- ### Schemas
++ ### Schemas
+
+- A [JSON Schema](https://en.wikipedia.org/wiki/JSON_Schema) describes the shape a document is
+- allowed to have. A schema is derived from a Scala type, and a schema value renders as a standard
+- JSON Schema document:
++ Um [JSON Schema](https://en.wikipedia.org/wiki/JSON_Schema) descreve a forma que um documento pode
++ ter. Um schema é derivado de um tipo Scala, e um valor de schema é renderizado como um documento
++ JSON Schema padrão:
+
+= JSON Schema document:
+=
+- ```scala fuel
++ ```scala fuel
+
+= JSON Schema document:
+=
+= ```scala fuel
+- run
++ run
+
+= JSON Schema document:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((JsonSchema.Integer(): JsonSchema).in[Json].show)
++ Out.println((JsonSchema.Integer(): JsonSchema).in[Json].show)
+
+= Out.println((JsonSchema.Integer(): JsonSchema).in[Json].show)
+- ```
++ ```
+
+- The `@memo` annotation on a field gives it a description in the generated schema. String
+- formats such as `date-time` and `email` are represented by `JsonSchema.Format`. The derived
+- schema is what [validation](#validation) rests on, and [OpenAPI](openapi.md) uses the same
+- schemas to describe a service.
++ A anotação `@memo` em um campo dá a ele uma descrição no schema gerado. Formatos de string como
++ `date-time` e `email` são representados por `JsonSchema.Format`. O schema derivado é aquilo em que
++ a [validação](#validation) se apoia, e [OpenAPI](openapi.md) usa os mesmos schemas para descrever
++ um serviço.
+
+- ### Validation
++ ### Validação
+
+- `verify` checks a document against the shape a type expects. On success it gives the same
+- document, now carrying that type:
++ `verify` verifica um documento contra a forma que um tipo espera. Em caso de sucesso, dá o mesmo
++ documento, agora carregando esse tipo:
+
+= document, now carrying that type:
+=
+- ```scala
++ ```scala
+
+- case class Player(name: Text, age: Int, email: Text)
++ case class Player(name: Text, age: Int, email: Text)
+
+- val viola = t"""{"name": "Viola", "age": 20, "email": "viola@example.com"}""".read[Json]
++ val viola = t"""{"name": "Viola", "age": 20, "email": "viola@example.com"}""".read[Json]
+
+- val player = viola.verify[Player]
++ val player = viola.verify[Player]
+
+= val player = viola.verify[Player]
+- ```
++ ```
+
+- A document which does not conform raises a `Json.Error`:
++ Um documento que não está em conformidade lança um `Json.Error`:
+
+= A document which does not conform raises a `Json.Error`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A document which does not conform raises a `Json.Error`:
+=
+= ```scala fuel
+- run
++ run
+
+= A document which does not conform raises a `Json.Error`:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= A document which does not conform raises a `Json.Error`:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"""{"name": "Feste"}""".read[Json].verify[Player]
++ t"""{"name": "Feste"}""".read[Json].verify[Player]
+
+= t"""{"name": "Feste"}""".read[Json].verify[Player]
+- ```
++ ```
+
+- The verified document carries the schema's structure in its type, so its fields are reached as
+- members, with full checking and without the `dynamicAccess.dynamicJson` import:
++ O documento verificado carrega a estrutura do schema em seu tipo, de modo que seus campos são
++ alcançados como membros, com verificação completa e sem o import `dynamicAccess.dynamicJson`:
+
+= members, with full checking and without the `dynamicAccess.dynamicJson` import:
+=
+- ```scala fuel
++ ```scala fuel
+
+= members, with full checking and without the `dynamicAccess.dynamicJson` import:
+=
+= ```scala fuel
+- run
++ run
+
+= members, with full checking and without the `dynamicAccess.dynamicJson` import:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(player.name.as[Text])
++ Out.println(player.name.as[Text])
+
+- Out.println(player.as[Player].inspect)
++ Out.println(player.as[Player].inspect)
+
+= Out.println(player.as[Player].inspect)
+- ```
++ ```
+
+- Anything the schema does not permit is a compiletime error. That includes a field which does
+- not exist, an index into something which is not an array, and a field of a scalar:
++ Qualquer coisa que o schema não permite é um erro em tempo de compilação. Isso inclui um campo que
++ não existe, um índice em algo que não é um array e um campo de um escalar:
+
+= not exist, an index into something which is not an array, and a field of a scalar:
+=
+- ```scala fuel
++ ```scala fuel
+
+= not exist, an index into something which is not an array, and a field of a scalar:
+=
+= ```scala fuel
+- compile
++ compile
+
+= not exist, an index into something which is not an array, and a field of a scalar:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= not exist, an index into something which is not an array, and a field of a scalar:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- player.nope
++ player.nope
+
+= player.nope
+- ```
++ ```
+
+= player.nope
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= player.nope
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= player.nope
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= player.nope
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- player.name(0)
++ player.name(0)
+
+= player.name(0)
+- ```
++ ```
+
+= player.name(0)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= player.name(0)
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= player.name(0)
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= player.name(0)
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- player.name.deeper
++ player.name.deeper
+
+= player.name.deeper
+- ```
++ ```
+
+- Navigation runs to any depth, through nested objects and into arrays, and each step is checked:
++ A navegação vai a qualquer profundidade, por objetos aninhados e dentro de arrays, e cada passo é
++ verificado:
+
+= Navigation runs to any depth, through nested objects and into arrays, and each step is checked:
+=
+- ```scala
++ ```scala
+
+- case class Venue(city: Text)
++ case class Venue(city: Text)
+
+- case class Premiere(title: Text, venue: Venue)
++ case class Premiere(title: Text, venue: Venue)
+
+- case class Court(members: List[Person])
++ case class Court(members: List[Person])
+
+- val premiere = t"""{"title": "Hamlet", "venue": {"city": "London"}}""".read[Json]
++ val premiere = t"""{"title": "Hamlet", "venue": {"city": "London"}}""".read[Json]
+
+- val court =
++ val court =
+
+-   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
++   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
+
+=   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
+- ```
++ ```
+
+=   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"""{"members": [{"name": "Hamlet", "age": 30}, {"name": "Horatio", "age": 32}]}""".read[Json]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(premiere.verify[Premiere].venue.city.as[Text])
++ Out.println(premiere.verify[Premiere].venue.city.as[Text])
+
+- Out.println(court.verify[Court].members(1).name.as[Text])
++ Out.println(court.verify[Court].members(1).name.as[Text])
+
+= Out.println(court.verify[Court].members(1).name.as[Text])
+- ```
++ ```
+
+- It is the schema which licenses this access, not a blanket permission. Reaching a field of an
+- *unverified* document still needs `dynamicJson`, so the two kinds of access cannot be confused.
+- A path through a document is thereby checked against the type the document is supposed to have,
+- before the program runs.
++ É o schema que autoriza esse acesso, não uma permissão geral. Alcançar um campo de um documento
++ *não verificado* ainda exige `dynamicJson`, de modo que os dois tipos de acesso não podem ser
++ confundidos. Um caminho através de um documento é assim verificado contra o tipo que o documento
++ deveria ter, antes que o programa execute.
+
+- ### Overriding one field's encoder
++ ### Substituição do codificador de um campo
+
+- A derived encoder uses, for each field, whichever instance is in scope for that field's type.
+- A different given in scope would change every field of that type at once, which is rarely what
+- one awkward field calls for. A `Specific` names a path instead, and its override applies along
+- that path and nowhere else:
++ Um codificador derivado usa, para cada campo, a instância que estiver no escopo para o tipo desse
++ campo. Um given diferente no escopo mudaria todos os campos desse tipo de uma vez, o que raramente
++ é o que um campo problemático pede. Um `Specific` nomeia um caminho em vez disso, e sua
++ substituição se aplica ao longo desse caminho e em nenhum outro lugar:
+
+= that path and nowhere else:
+=
+- ```scala
++ ```scala
+
+- case class Fencer(name: Text, age: Int)
++ case class Fencer(name: Text, age: Int)
+
+- case class Duel(challenger: Fencer, opponent: Fencer)
++ case class Duel(challenger: Fencer, opponent: Fencer)
+
+- val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
++ val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+
+= val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+- ```
++ ```
+
+- With the `Specific` given in scope, only the opponent's name is changed:
++ Com o given `Specific` no escopo, só o nome do oponente muda:
+
+= With the `Specific` given in scope, only the opponent's name is changed:
+=
+- ```scala fuel
++ ```scala fuel
+
+= With the `Specific` given in scope, only the opponent's name is changed:
+=
+= ```scala fuel
+- run
++ run
+
+= With the `Specific` given in scope, only the opponent's name is changed:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= With the `Specific` given in scope, only the opponent's name is changed:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   given (Duel is Specific over Json.Encodable) =
++   given (Duel is Specific over Json.Encodable) =
+
+=   given (Duel is Specific over Json.Encodable) =
+-     specifically:
++     specifically:
+
+-       case root.opponent.name() => shout
++       case root.opponent.name() => shout
+
+-   Out.println(Duel(Fencer(t"hamlet", 30), Fencer(t"laertes", 25)).in[Json].show)
++   Out.println(Duel(Fencer(t"hamlet", 30), Fencer(t"laertes", 25)).in[Json].show)
+
+=   Out.println(Duel(Fencer(t"hamlet", 30), Fencer(t"laertes", 25)).in[Json].show)
+- ```
++ ```
+
+- A path which ends at a collection takes an encoder for the collection. Deriving that encoder
+- again, with a local given in scope, changes how the members of that one list are written without
+- changing their type's encoding everywhere:
++ Um caminho que termina em uma coleção recebe um codificador para a coleção. Derivar esse
++ codificador novamente, com um given local no escopo, muda como os membros daquela única lista são
++ escritos sem mudar a codificação de seu tipo em todo lugar:
+
+= changing their type's encoding everywhere:
+=
+- ```scala
++ ```scala
+
+- val nameOnly: Person is Json.Encodable =
++ val nameOnly: Person is Json.Encodable =
+
+-   Json.Encodable(() => Morphology.Str): person => Json(person.name)
++   Json.Encodable(() => Morphology.Str): person => Json(person.name)
+
+=   Json.Encodable(() => Morphology.Str): person => Json(person.name)
+- ```
++ ```
+
+=   Json.Encodable(() => Morphology.Str): person => Json(person.name)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   Json.Encodable(() => Morphology.Str): person => Json(person.name)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   Json.Encodable(() => Morphology.Str): person => Json(person.name)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   given (Troupe is Specific over Json.Encodable) =
++   given (Troupe is Specific over Json.Encodable) =
+
+=   given (Troupe is Specific over Json.Encodable) =
+-     specifically:
++     specifically:
+
+-       case root.players() =>
++       case root.players() =>
+
+-         given Person is Json.Encodable = nameOnly
++         given Person is Json.Encodable = nameOnly
+
+-         summon[List[Person] is Json.Encodable]
++         summon[List[Person] is Json.Encodable]
+
+=         summon[List[Person] is Json.Encodable]
+=
+-   Out.println(troupe.in[Json].show)
++   Out.println(troupe.in[Json].show)
+
+=         summon[List[Person] is Json.Encodable]
+=
+=   Out.println(troupe.in[Json].show)
+- ```
++ ```
+
+- ### Skipping the tree
++ ### Dispensando a árvore
+
+- `read[Person in Json]` ordinarily parses the text into a `Json` tree, and then decodes the tree.
+- A type with a `Json.Parsable` instance is instead read *directly* from the source. Its parser is
+- composed for that type at compiletime, and takes the fields from the text as they arrive, so no
+- tree is built. The saving is the whole intermediate structure: its allocation, its boxing and a
+- second traversal.
++ `read[Person in Json]` normalmente analisa o texto em uma árvore `Json` e depois decodifica a
++ árvore. Um tipo com uma instância de `Json.Parsable`, em vez disso, é lido *diretamente* da origem.
++ Seu parser é composto para esse tipo em tempo de compilação e toma os campos do texto à medida que
++ chegam, de modo que nenhuma árvore é construída. A economia é toda a estrutura intermediária: sua
++ alocação, seu boxing e uma segunda travessia.
+
+= second traversal.
+=
+- ```scala
++ ```scala
+
+- given personParsable: (Person is Json.Parsable) = Json.Parsable.derived
++ given personParsable: (Person is Json.Parsable) = Json.Parsable.derived
+
+= given personParsable: (Person is Json.Parsable) = Json.Parsable.derived
+- ```
++ ```
+
+- In ordinary code the instance belongs in the type's companion object, where it is found without
+- an import.
++ Em código comum, a instância pertence ao objeto companheiro do tipo, onde é encontrada sem import.
+
+- Writing has a matching instance, `Json.Printable`. A type which has one is written directly,
+- with no tree, wherever the formatting is compact. Indented formatting still renders through the
+- tree. Both routes write the same text:
++ A escrita tem uma instância correspondente, `Json.Printable`. Um tipo que tem uma é escrito
++ diretamente, sem árvore, sempre que a formatação é compacta. A formatação indentada ainda
++ renderiza por meio da árvore. As duas rotas escrevem o mesmo texto:
+
+= tree. Both routes write the same text:
+=
+- ```scala fuel
++ ```scala fuel
+
+- alternative Tree
++ alternative Tree
+
+= alternative Tree
+-   code
++   code
+
+-       Person(t"Hamlet", 30).in[Text over Json]
++       Person(t"Hamlet", 30).in[Text over Json]
+
+- alternative Direct
++ alternative Direct
+
+= alternative Direct
+-   code
++   code
+
+-       val direct =
++       val direct =
+
+-         given Person is Json.Printable = Json.Direct.derived[Person].printable
++         given Person is Json.Printable = Json.Direct.derived[Person].printable
+
+-         Person(t"Hamlet", 30).in[Text over Json]
++         Person(t"Hamlet", 30).in[Text over Json]
+
+=         Person(t"Hamlet", 30).in[Text over Json]
+- ##
++ ##
+
+=         Person(t"Hamlet", 30).in[Text over Json]
+= ##
+- ```
++ ```
+
+- `Json.Printable.emit` writes the text a block at a time, handing each block to a function as it
+- fills.
++ `Json.Printable.emit` escreve o texto um bloco de cada vez, entregando cada bloco a uma função à
++ medida que ele enche.
+
+- A record can generate both instances at once, into its companion, with `derives Json.Direct`.
+- A single import then selects the route for every record in scope:
++ Um registro pode gerar as duas instâncias de uma vez, em seu objeto companheiro, com
++ `derives Json.Direct`. Um único import então seleciona a rota para todos os registros no escopo:
+
+= A single import then selects the route for every record in scope:
+=
+- ```tabular
++ ```tabular
+
+= A single import then selects the route for every record in scope:
+=
+= ```tabular
+- column  Import
++ column  Import
+
+- column  For a record
+- column  For any other type
+- row  `codecs.direct`  a generated parser and printer  its own direct instance, else the tree
+- row  `codecs.derived`  the derived codecs, even over a direct instance  the derived codecs, even over a direct instance
+- row  `codecs.strict`  a generated parser and printer  its own direct instance, else a compile error naming the type
++ column  Para um registro
++ column  Para qualquer outro tipo
++ row  `codecs.direct`  um parser e um printer gerados  sua própria instância direta, senão a árvore
++ row  `codecs.derived`  os codecs derivados, mesmo sobre uma instância direta  os codecs derivados, mesmo sobre uma instância direta
++ row  `codecs.strict`  um parser e um printer gerados  sua própria instância direta, senão um erro de compilação que nomeia o tipo
+
+= row  `codecs.strict`  a generated parser and printer  its own direct instance, else a compile error naming the type
+- ```
++ ```
+
+- Under `codecs.strict` the error is reported wherever `read[Play in Json]` or `in[Text over Json]`
+- would otherwise fall back to the tree. With none of the three imported, a type takes the direct
+- route exactly when it has a direct instance of its own. The modes are alternatives, so import
+- one at a time.
++ Sob `codecs.strict`, o erro é relatado onde quer que `read[Play in Json]` ou `in[Text over Json]`
++ recorressem de outro modo à árvore. Sem nenhum dos três importado, um tipo segue a rota direta
++ exatamente quando tem uma instância direta própria. Os modos são alternativos, então importe um de
++ cada vez.
+
+- The tree remains the right route for a document whose shape is not known in advance, and
+- wherever the tree itself is what is wanted.
++ A árvore continua sendo a rota certa para um documento cuja forma não é conhecida de antemão, e
++ onde quer que a própria árvore seja o que se quer.
+
+- ### Typed records from a schema
++ ### Registros tipados a partir de um schema
+
+- Sometimes the schema arrives as a JSON Schema document, not as a Scala type. A `Json.Provider`
+- reads such a schema at compiletime, and produces typed records from JSON which matches it. A
+- provider object, here `Catalogue`, holds the schema, and its `record` method turns a `Json`
+- value into a record. Each field of the record has the type the schema declares, and a field the
+- schema does not describe is a compiletime error:
++ Às vezes o schema chega como um documento JSON Schema, não como um tipo Scala. Um `Json.Provider`
++ lê esse schema em tempo de compilação e produz registros tipados a partir de JSON que corresponda
++ a ele. Um objeto provedor, aqui `Catalogue`, contém o schema, e seu método `record` transforma um
++ valor `Json` em um registro. Cada campo do registro tem o tipo que o schema declara, e um campo que
++ o schema não descreve é um erro em tempo de compilação:
+
+= schema does not describe is a compiletime error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= schema does not describe is a compiletime error:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= schema does not describe is a compiletime error:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- object Catalogue extends Json.Provider(t"""{
++ object Catalogue extends Json.Provider(t"""{
+
+-   "type": "object",
++   "type": "object",
+
+-   "required": ["name", "children"],
++   "required": ["name", "children"],
+
+-   "properties": {
++   "properties": {
+
+-     "name": { "type": "string" },
++     "name": { "type": "string" },
+
+-     "email": { "type": "string", "format": "email" },
++     "email": { "type": "string", "format": "email" },
+
+-     "children": {
++     "children": {
+
+-       "type": "array",
++       "type": "array",
+
+-       "items": {
++       "items": {
+
+-         "type": "object",
++         "type": "object",
+
+-         "required": ["weight"],
++         "required": ["weight"],
+
+-         "properties": { "weight": { "type": "number", "minimum": 0 } }
++         "properties": { "weight": { "type": "number", "minimum": 0 } }
+
+-       }
++       }
+
+-     }
++     }
+
+-   }
++   }
+
+- }""".read[Json])
++ }""".read[Json])
+
+- val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
++ val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
+
+- val record = Catalogue.record(input)
++ val record = Catalogue.record(input)
+
+- val name: Text = record.name
++ val name: Text = record.name
+
+- val weight: Optional[Double] = record.children.head.let(_.weight)
++ val weight: Optional[Double] = record.children.head.let(_.weight)
+
+= val weight: Optional[Double] = record.children.head.let(_.weight)
+- ```
++ ```
+
+- The provider takes its schema as anything readable as JSON. A schema kept as a
+- [classpath](classpath.md) resource is bound directly, as
+- `object Catalogue extends Json.Provider(cp"/schemas/catalogue.json")`, with a `Classloader` such
+- as `classloaders.threadContextClassloader` in scope, and is read as the code compiles.
++ O provedor recebe seu schema como qualquer coisa que possa ser lida como JSON. Um schema guardado
++ como recurso do [classpath](classpath.md) é vinculado diretamente, como
++ `object Catalogue extends Json.Provider(cp"/schemas/catalogue.json")`, com um `Classloader` como
++ `classloaders.threadContextClassloader` no escopo, e é lido enquanto o código compila.
+
+- Each construct in the schema has a reading in Scala:
++ Cada construção do schema tem uma leitura em Scala:
+
+= Each construct in the schema has a reading in Scala:
+=
+- ```tabular
++ ```tabular
+
+- column  Schema construct
+- column  Reads as
++ column  Construção do schema
++ column  É lida como
+
+- row  `"type": "string"`  `Text`
++ row  `"type": "string"`  `Text`
+
+- row  `"type": "integer"`  `Int`, or `Long` with `"format": "int64"`
++ row  `"type": "integer"`  `Int`, ou `Long` com `"format": "int64"`
+
+- row  `"type": "number"`  `Double`
++ row  `"type": "number"`  `Double`
+
+- row  `"type": "boolean"`  `Boolean`
++ row  `"type": "boolean"`  `Boolean`
+
+- row  a property in the `required` list  its type, with a `Json.Provider.Error` where the document omits it
+- row  any other property, or one whose type admits `null`  an `Optional`, `Unset` where omitted or `null`
+- row  an `array` with an `items` schema  a `List` of the items' type
+- row  an `object` with `properties`  a nested record
+- row  `additionalProperties`, or `patternProperties` all of one type  a `Map[Text, T]`, empty where absent
+- row  a `$ref` into the same document  the definition it names
+- row  an `allOf` of objects  one record with all their properties
+- row  an `enum` (or `const`) without a `type`  the type of its values
+- row  a `oneOf` or `anyOf` whose alternatives are all strings  `Text`, an `enum` of all their values where each alternative is one
+- row  a property admitting several types  the union of their readings, chosen by the kind of value found
++ row  uma propriedade na lista `required`  seu tipo, com um `Json.Provider.Error` onde o documento a omite
++ row  qualquer outra propriedade, ou uma cujo tipo admite `null`  um `Optional`, `Unset` onde omitida ou `null`
++ row  um `array` com um schema `items`  uma `List` do tipo dos itens
++ row  um `object` com `properties`  um registro aninhado
++ row  `additionalProperties`, ou `patternProperties` todas de um único tipo  um `Map[Text, T]`, vazio onde ausente
++ row  um `$ref` para o mesmo documento  a definição que ele nomeia
++ row  um `allOf` de objetos  um único registro com todas as suas propriedades
++ row  um `enum` (ou `const`) sem `type`  o tipo de seus valores
++ row  um `oneOf` ou `anyOf` cujas alternativas são todas strings  `Text`, um `enum` com todos os seus valores quando cada alternativa é um
++ row  uma propriedade que admite vários tipos  a união de suas leituras, escolhida pela categoria do valor encontrado
+
+= row  a property admitting several types  the union of their readings, chosen by the kind of value found
+- ```
++ ```
+
+- A `$ref` may take any JSON pointer, `#/definitions/…` and `#/$defs/…` alike. A union arises
+- from the alternatives of an `anyOf` or `oneOf`, and from a `type` which names several. So
+- `"exec": string | object` reads as `Text | Record { … }`, and `"ignore": string | array` as
+- `Text | List[Text]`, and each alternative keeps its own checks. A dictionary nests freely: a
+- dictionary of lists, a list of dictionaries, an array of arrays. A property named with a hyphen
+- or a keyword is reached through a backticked name, such as ``record.`content-type` ``.
++ Um `$ref` pode usar qualquer JSON pointer, tanto `#/definitions/…` quanto `#/$defs/…`. Uma união
++ surge das alternativas de um `anyOf` ou `oneOf`, e de um `type` que nomeia vários. Assim,
++ `"exec": string | object` é lido como `Text | Record { … }`, e `"ignore": string | array` como
++ `Text | List[Text]`, e cada alternativa mantém suas próprias verificações. Um dicionário se aninha
++ livremente: um dicionário de listas, uma lista de dicionários, um array de arrays. Uma propriedade
++ cujo nome tem um hífen ou é uma palavra-chave é alcançada por meio de um nome entre crases, como
++ ``record.`content-type` ``.
+
+- The schema's constraints are checked as each field is read, as is the value's JSON type:
++ As restrições do schema são verificadas à medida que cada campo é lido, assim como o tipo JSON do
++ valor:
+
+= The schema's constraints are checked as each field is read, as is the value's JSON type:
+=
+- ```tabular
++ ```tabular
+
+- column  Applies to
+- column  Keywords checked
+- row  a string  `enum` (or `const`), `pattern`, `minLength`, `maxLength`
+- row  a number  `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`
++ column  Aplica-se a
++ column  Palavras-chave verificadas
++ row  uma string  `enum` (ou `const`), `pattern`, `minLength`, `maxLength`
++ row  um número  `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`
+
+= row  a number  `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`
+- ```
++ ```
+
+- The exclusive bounds are accepted in draft 4's boolean form and in the later numeric form. A
+- failed check raises a `Json.Provider.Error`. Every error is raised through the [tactic] of the
+- code which reads the field, so `validate`, with a `venture` for each field,
+- [collects every problem](errors.md#ventures-and-guards) in a document.
++ Os limites exclusivos são aceitos na forma booleana do draft 4 e na forma numérica posterior. Uma
++ verificação que falha lança um `Json.Provider.Error`. Todo erro é lançado por meio da [tática] do
++ código que lê o campo, de modo que `validate`, com um `venture` para cada campo,
++ [coleta todos os problemas](errors.md#ventures-and-guards) de um documento.
+
+- Some constructs cannot be given a type, and remain raw `Json` to be read by hand:
++ Algumas construções não podem receber um tipo e permanecem `Json` bruto, para ser lido à mão:
+
+- - alternatives which the kind of value cannot tell apart, such as two object shapes in a
+-   `oneOf`, or an alternative typed as anything;
+- - a `not` or an `if`;
+- - an object with neither `properties` nor a value schema;
+- - an array with no `items` schema, or with a tuple-form `items` list;
+- - `patternProperties` of differing types;
+- - a reference to another document;
+- - a recursive reference, at the point of recursion, since a record type cannot contain itself.
++ - alternativas que a categoria do valor não consegue distinguir, como duas formas de objeto em um
++   `oneOf`, ou uma alternativa tipada como qualquer coisa;
++ - um `not` ou um `if`;
++ - um objeto sem `properties` e sem schema de valor;
++ - um array sem schema `items`, ou com uma lista `items` em forma de tupla;
++ - `patternProperties` de tipos diferentes;
++ - uma referência a outro documento;
++ - uma referência recursiva, no ponto da recursão, já que um tipo de registro não pode conter a si
++   mesmo.
+
+- The schema's root must be an object with properties. A root which is an array, a bare string or
+- a reference to another document is a compiletime error. Where the root offers alternatives, and
+- one of them is such an object, the provider reads that one.
++ A raiz do schema deve ser um objeto com propriedades. Uma raiz que é um array, uma string simples
++ ou uma referência a outro documento é um erro em tempo de compilação. Onde a raiz oferece
++ alternativas, e uma delas é um objeto assim, o provedor lê essa.
+
+- A property whose name is a method of every JVM object, such as `notify`, `wait`, `toString` or
+- `hashCode`, cannot be selected by name. It is read through `record.selectDynamic("notify")`,
+- whose result is the field's reading: cast it to `Record.Field[T, Json.Provider.Error]`, and it
+- is applied to the `Tactic` in scope.
++ Uma propriedade cujo nome é um método de todo objeto da JVM, como `notify`, `wait`, `toString` ou
++ `hashCode`, não pode ser selecionada pelo nome. Ela é lida por meio de
++ `record.selectDynamic("notify")`, cujo resultado é a leitura do campo: faça o cast para
++ `Record.Field[T, Json.Provider.Error]`, e ela é aplicada à `Tactic` no escopo.
+
+- A format which names a network or identity type reads as whichever type represents that domain
+- where the record is used, chosen by importing its interface:
++ Um formato que nomeia um tipo de rede ou de identidade é lido como o tipo que representar esse
++ domínio onde o registro é usado, escolhido importando sua interface:
+
+= where the record is used, chosen by importing its interface:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
++ column  Formato
+
+- column  Interface
++ column  Interface
+
+= column  Interface
+- column  Reads as
++ column  É lido como
+
+- row  `email`, `idn-email`  `emailAddressInterfaces.soundnessEmailAddress`  `EmailAddress`
++ row  `email`, `idn-email`  `emailAddressInterfaces.soundnessEmailAddress`  `EmailAddress`
+
+- row  `hostname`  `hostnameInterfaces.soundnessHostname`  `Hostname`
++ row  `hostname`  `hostnameInterfaces.soundnessHostname`  `Hostname`
+
+- row  `ipv4`  `ipAddressInterfaces.soundnessIpv4`  `Ipv4`
++ row  `ipv4`  `ipAddressInterfaces.soundnessIpv4`  `Ipv4`
+
+- row  `ipv6`  `ipAddressInterfaces.soundnessIpv6`  `Ipv6`
++ row  `ipv6`  `ipAddressInterfaces.soundnessIpv6`  `Ipv6`
+
+- row  `uri`, `iri`  `urlInterfaces.soundnessUrl`  `HttpUrl`
++ row  `uri`, `iri`  `urlInterfaces.soundnessUrl`  `HttpUrl`
+
+- row  `uuid`  `uuidInterfaces.soundnessUuid`  `Uuid`
++ row  `uuid`  `uuidInterfaces.soundnessUuid`  `Uuid`
+
+= row  `uuid`  `uuidInterfaces.soundnessUuid`  `Uuid`
+- ```
++ ```
+
+- So with `emailAddressInterfaces.soundnessEmailAddress` imported, `record.email` is an
+- `EmailAddress`. [Network addresses](network-addresses.md) and [UUIDs](uuid.md) describe these
+- types.
++ Assim, com `emailAddressInterfaces.soundnessEmailAddress` importado, `record.email` é um
++ `EmailAddress`. [Endereços de rede](network-addresses.md) e [UUIDs](uuid.md) descrevem esses
++ tipos.
+
+- A provider can equally produce a named tuple, `(name: Text, children: List[(weight: Double)])`,
+- whose elements are all read when it is built, by declaring a `tuple` method beside `record`.
+- [Records](records.md) describes both forms and how they differ.
++ Um provedor pode igualmente produzir uma tupla nomeada, `(name: Text, children: List[(weight:
++ Double)])`, cujos elementos são todos lidos quando ela é construída, declarando um método `tuple`
++ ao lado de `record`. [Registros](records.md) descreve as duas formas e como diferem.
+
+- ### Dates and times
++ ### Datas e horas
+
+- The temporal types of [Time](time.md) are not encoded in JSON until an import says how. An
+- `Instant` and a `Duration` each travel as a whole number of milliseconds:
++ Os tipos temporais de [Time](time.md) não são codificados em JSON até que um import diga como. Um
++ `Instant` e uma `Duration` trafegam cada um como um número inteiro de milissegundos:
+
+= `Instant` and a `Duration` each travel as a whole number of milliseconds:
+=
+- ```scala
++ ```scala
+
+- import chronometries.unixChronometry
++ import chronometries.unixChronometry
+
+- import encodables.instantJsonEncodable
++ import encodables.instantJsonEncodable
+
+- import decodables.durationJsonDecodable
++ import decodables.durationJsonDecodable
+
+= import decodables.durationJsonDecodable
+- ```
++ ```
+
+= import decodables.durationJsonDecodable
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import decodables.durationJsonDecodable
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import decodables.durationJsonDecodable
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Instant(1700000000000L).in[Json].show)
++ Out.println(Instant(1700000000000L).in[Json].show)
+
+- Out.println(t"5000".read[Json].as[Duration].value.inspect)
++ Out.println(t"5000".read[Json].as[Duration].value.inspect)
+
+= Out.println(t"5000".read[Json].as[Duration].value.inspect)
+- ```
++ ```
+
+- `encodables` and `decodables` each have an instance for both types, and `parsables` has the
+- instances the [direct parsers](#skipping-the-tree) use.
++ `encodables` e `decodables` têm cada um uma instância para os dois tipos, e `parsables` tem as
++ instâncias que os [parsers diretos](#skipping-the-tree) usam.
+
+- ### JSON over HTTP
++ ### JSON sobre HTTP
+
+- A `Json` value is a request body and a response body, sent as `application/json`. The
+- [HTTP client](http-client.md#posting-a-body) posts one once `postables.jsonPostable` is
+- imported, and the response's text is read back as `Json`:
++ Um valor `Json` é um corpo de requisição e um corpo de resposta, enviado como `application/json`.
++ O [cliente HTTP](http-client.md#posting-a-body) envia um com POST depois que
++ `postables.jsonPostable` é importado, e o texto da resposta é lido de volta como `Json`:
+
+= imported, and the response's text is read back as `Json`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= imported, and the response's text is read back as `Json`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= imported, and the response's text is read back as `Json`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import postables.jsonPostable
++ import postables.jsonPostable
+
+- val reply: Json =
++ val reply: Json =
+
+-   url"https://example.com/people".submit(Http.Post)(Person(t"Hamlet", 30).in[Json]).receive[Text].read[Json]
++   url"https://example.com/people".submit(Http.Post)(Person(t"Hamlet", 30).in[Json]).receive[Text].read[Json]
+
+=   url"https://example.com/people".submit(Http.Post)(Person(t"Hamlet", 30).in[Json]).receive[Text].read[Json]
+- ```
++ ```
+
+- With `servables.jsonServable` imported, an [HTTP server](http-server.md#responses) answers a
+- request with a `Json` value in the same way. No glue is needed between the two layers: the
+- encoders and decoders described above carry the values across.
++ Com `servables.jsonServable` importado, um [servidor HTTP](http-server.md#responses) responde a
++ uma requisição com um valor `Json` da mesma maneira. Não é preciso nenhuma cola entre as duas
++ camadas: os codificadores e decodificadores descritos acima levam os valores de um lado a outro.
+
+- ### Related
++ ### Relacionados
+
+- - [YAML](yaml.md), [XML](xml.md), [CBOR](cbor.md), [TEL](tel.md) and [CSV](csv.md) use the same
+-   `read`, `as` and `in` vocabulary, so a case class which works with one works with the others.
+- - [Derivation](derivation.md) explains how the codecs for a case class are generated.
+- - [Decoding](decoding.md) covers reading a single text value as a type.
+- - [Errors](errors.md) covers the strategies that decide what a `Json.Error` does.
+- - [Optics](optics.md) covers the lenses used for deep updates.
+- - [Records](records.md) covers the typed records a schema provides.
++ - [YAML](yaml.md), [XML](xml.md), [CBOR](cbor.md), [TEL](tel.md) e [CSV](csv.md) usam o mesmo
++   vocabulário `read`, `as` e `in`, de modo que uma case class que funciona com um funciona com os
++   outros.
++ - [Derivação](derivation.md) explica como os codecs de uma case class são gerados.
++ - [Decodificação](decoding.md) trata da leitura de um único valor de texto como um tipo.
++ - [Erros](errors.md) trata das estratégias que decidem o que um `Json.Error` faz.
++ - [Óticas](optics.md) trata das lentes usadas para atualizações profundas.
++ - [Registros](records.md) trata dos registros tipados que um schema fornece.

@@ -1,0 +1,299 @@
+orthant 1 language
+
+- ## Packaging
++ ## Empacotamento
+
+- ### About
++ ### Visão geral
+
+- An application built with these libraries is a JAR, and a JAR which carries every dependency it
+- needs is large. A command-line tool of a few hundred lines ships tens of megabytes of library
+- code, most of it already published somewhere public. Burdock makes that JAR *slim*, without
+- making it fragile, in three steps:
++ Uma aplicação construída com estas bibliotecas é um JAR, e um JAR que carrega todas as
++ dependências de que precisa é grande. Uma ferramenta de linha de comando de algumas centenas de
++ linhas distribui dezenas de megabytes de código de bibliotecas, a maior parte já publicada em
++ algum lugar público. O Burdock torna esse JAR *enxuto*, sem torná-lo frágil, em três passos:
+
+= making it fragile, in three steps:
+=
+- ```tabular
++ ```tabular
+
+- column  When
+- column  Step
+- column  Does
+- row  at compiletime  `externalize`  records which dependencies the application was built against, as content hashes rather than coordinates
+- row  after the build  `repackage`  rewrites the JAR, replacing every dependency with a public home by a reference to it, and keeping anything without one
+- row  at runtime  the bootstrap loader  fetches the referenced dependencies, verifies each against its hash, caches it, and starts the application
++ column  Quando
++ column  Passo
++ column  Faz
++ row  em tempo de compilação  `externalize`  registra contra quais dependências a aplicação foi construída, como hashes de conteúdo em vez de coordenadas
++ row  depois do build  `repackage`  reescreve o JAR, substituindo toda dependência que tem uma sede pública por uma referência a ela, e mantendo tudo o que não tem
++ row  em tempo de execução  o loader de bootstrap  busca as dependências referenciadas, verifica cada uma contra seu hash, guarda-a em cache e inicia a aplicação
+
+= row  at runtime  the bootstrap loader  fetches the referenced dependencies, verifies each against its hash, caches it, and starts the application
+- ```
++ ```
+
+- So the first launch downloads, every later launch is instant, and a dependency which has changed
+- since the build cannot be loaded.
++ Assim, a primeira inicialização baixa, todas as seguintes são instantâneas, e uma dependência
++ que mudou desde o build não pode ser carregada.
+
+- ### On content hashes
++ ### Sobre hashes de conteúdo
+
+- Build tools identify a dependency by coordinates, which are a group, a name and a version, and
+- trust that the same coordinates resolve to the same bytes everywhere. Burdock identifies it by
+- the SHA-256 of the JAR which the compiler actually read. That is the stronger claim. A reference
+- in a repackaged JAR names the exact bytes, and the bootstrap refuses anything else, whether a
+- registry served a different build under the same version, or a download was tampered with on
+- the way.
++ Ferramentas de build identificam uma dependência por coordenadas, que são um grupo, um nome e
++ uma versão, e confiam que as mesmas coordenadas resolvem para os mesmos bytes em todo lugar. O
++ Burdock a identifica pelo SHA-256 do JAR que o compilador de fato leu. Essa é a afirmação mais
++ forte. Uma referência em um JAR reempacotado nomeia os bytes exatos, e o bootstrap recusa
++ qualquer outra coisa, seja porque um registro serviu um build diferente sob a mesma versão, seja
++ porque um download foi adulterado no caminho.
+
+- The hash also separates *where* a dependency lives from *what* it is. The repackager asks
+- [deps.dev](https://deps.dev/) which Maven artifact has that hash, and consults the release
+- assets of any GitHub repositories named as hints. A dependency found in neither is inlined from
+- the local cache. So the completeness invariant holds: every dependency is either referenced or
+- present. A hash which is neither stops the repackage with an error, and does not produce a JAR
+- which will fail later.
++ O hash também separa *onde* uma dependência mora *do que* ela é. O reempacotador pergunta ao
++ [deps.dev](https://deps.dev/) qual artefato Maven tem aquele hash, e consulta os assets de
++ release de quaisquer repositórios GitHub nomeados como dicas. Uma dependência encontrada em
++ nenhum dos dois é incluída a partir do cache local. Assim vale o invariante de completude: toda
++ dependência ou é referenciada ou está presente. Um hash que não é nem uma coisa nem outra
++ interrompe o reempacotamento com um erro, e não produz um JAR que falhará depois.
+
+- ### Externalizing an application
++ ### Externalizando uma aplicação
+
+- The application wraps its entry point in `externalize`. At [runtime] the macro leaves the body
+- alone. At [compiletime] it captures the classpath of the build, hashes each dependency JAR,
+- hard-links it into the Burdock cache at `~/.cache/soundness/jars/<sha256>.jar`, so the bytes
+- stay retrievable by hash on the build machine, and embeds the list of hashes as the resource
+- `META-INF/burdock.deps` in the compiled output:
++ A aplicação envolve seu ponto de entrada em `externalize`. Em [tempo de execução], a macro deixa
++ o corpo intacto. Em [tempo de compilação], ela captura o classpath do build, calcula o hash de
++ cada JAR de dependência, cria um hard link dele no cache do Burdock em
++ `~/.cache/soundness/jars/<sha256>.jar`, para que os bytes continuem recuperáveis pelo hash na
++ máquina de build, e incorpora a lista de hashes como o recurso `META-INF/burdock.deps` na saída
++ compilada:
+
+- <!-- doccheck: skip -->
++ <!-- doccheck: skip -->
+
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.basicTermcap
++ import termcapDefinitions.basicTermcap
+
+- @main
++ @main
+
+- def myApp(): Unit = externalize:
++ def myApp(): Unit = externalize:
+
+-   Out.println(t"hello, world")
++   Out.println(t"hello, world")
+
+=   Out.println(t"hello, world")
+- ```
++ ```
+
+- Nothing else about the application changes. It is still built, tested and run as an ordinary
+- JAR, and the embedded resource is inert until the repackager reads it.
++ Nada mais na aplicação muda. Ela continua sendo construída, testada e executada como um JAR
++ comum, e o recurso incorporado fica inerte até que o reempacotador o leia.
+
+- ### Repackaging
++ ### Reempacotando
+
+- The `soundness.repackage` entry point is launched against the application JAR. It locates the
+- JAR by finding the `META-INF/burdock.deps` resource on its own classpath, and rewrites it in
+- place:
++ O ponto de entrada `soundness.repackage` é executado contra o JAR da aplicação. Ele localiza o
++ JAR encontrando o recurso `META-INF/burdock.deps` no seu próprio classpath, e o reescreve no
++ lugar:
+
+- ```sh
++ ```sh
+
+- java -cp app.jar:burdock.jar soundness.repackage --github propensive/soundness
++ java -cp app.jar:burdock.jar soundness.repackage --github propensive/soundness
+
+= java -cp app.jar:burdock.jar soundness.repackage --github propensive/soundness
+- ```
++ ```
+
+- Each `--github owner/repo` hint names a repository whose release assets are a source of
+- downloads. The option may be repeated, or its values separated by commas. GitHub keeps no
+- global index by hash, so the hints are indexed up front, with a few requests for each
+- repository, honoring a `GITHUB_TOKEN` environment variable if one is set. They are consulted
+- before deps.dev, since a repository which the user named takes precedence over the global
+- index. In the rewritten JAR, each class meets one of three fates:
++ Cada dica `--github owner/repo` nomeia um repositório cujos assets de release são uma origem de
++ downloads. A opção pode ser repetida, ou seus valores separados por vírgulas. O GitHub não mantém
++ um índice global por hash, então as dicas são indexadas de antemão, com algumas requisições por
++ repositório, respeitando a variável de ambiente `GITHUB_TOKEN` se houver uma definida. Elas são
++ consultadas antes do deps.dev, já que um repositório que o usuário nomeou tem precedência sobre o
++ índice global. No JAR reescrito, cada classe tem um de três destinos:
+
+= index. In the rewritten JAR, each class meets one of three fates:
+=
+- ```tabular
++ ```tabular
+
+- column  Classes of
+- column  Are
+- row  the application  kept
+- row  a dependency it could resolve  dropped, and referenced instead
+- row  a dependency it could not resolve  inlined
++ column  Classes de
++ column  São
++ row  a aplicação  mantidas
++ row  uma dependência que ele conseguiu resolver  removidas, e referenciadas em seu lugar
++ row  uma dependência que ele não conseguiu resolver  incluídas
+
+= row  a dependency it could not resolve  inlined
+- ```
++ ```
+
+- It carries exactly one extra class, `burdock.Bootstrap`, which is the runtime loader. The
+- manifest records the arrangement:
++ Ele carrega exatamente uma classe extra, `burdock.Bootstrap`, que é o loader de tempo de
++ execução. O manifesto registra o arranjo:
+
+= manifest records the arrangement:
+=
+- ```tabular
++ ```tabular
+
+- column  Attribute
+- column  Holds
++ column  Atributo
++ column  Contém
+
+- row  `Main-Class`  `burdock.Bootstrap`
++ row  `Main-Class`  `burdock.Bootstrap`
+
+- row  `Burdock-Main`  the application's own entry point, which the bootstrap starts once the classpath is assembled
+- row  `Burdock-Require`  each externalized dependency as `<sha256>:<url>`, in classpath order
+- row  `Burdock-Verbosity`  what the bootstrap prints while it fetches: `silent`, as the repackager writes it, or `error`, `info` or `debug`
++ row  `Burdock-Main`  o ponto de entrada da própria aplicação, que o bootstrap inicia assim que o classpath está montado
++ row  `Burdock-Require`  cada dependência externalizada como `<sha256>:<url>`, na ordem do classpath
++ row  `Burdock-Verbosity`  o que o bootstrap imprime enquanto busca: `silent`, como o reempacotador o escreve, ou `error`, `info` ou `debug`
+
+= row  `Burdock-Verbosity`  what the bootstrap prints while it fetches: `silent`, as the repackager writes it, or `error`, `info` or `debug`
+- ```
++ ```
+
+- The command prints a summary, with the entries read and written, the classes kept, inlined and
+- stripped, and each externalized requirement. It draws a progress bar while it resolves, only on
+- a real terminal, so redirected output stays clean.
++ O comando imprime um resumo, com as entradas lidas e escritas, as classes mantidas, incluídas e
++ removidas, e cada requisito externalizado. Ele desenha uma barra de progresso enquanto resolve,
++ só em um terminal real, para que a saída redirecionada fique limpa.
+
+- The same work is available as a library call, `Repackager.repackage`. It takes the input and
+- output paths, a `Repackager.Resolver` from hash to URL, a `Repackager.CacheReader` for the local
+- cache, the bytes of the bootstrap class and a progress callback, and returns a
+- `Repackager.Summary` rather than printing anything. The command-line entry point is a thin
+- rendering of that call, and `DepsDev.mavenUrl` and `GitHub.index` are the two resolvers it
+- composes.
++ O mesmo trabalho está disponível como chamada de biblioteca, `Repackager.repackage`. Ela recebe
++ os caminhos de entrada e de saída, um `Repackager.Resolver` de hash para URL, um
++ `Repackager.CacheReader` para o cache local, os bytes da classe de bootstrap e um callback de
++ progresso, e retorna um `Repackager.Summary` em vez de imprimir qualquer coisa. O ponto de
++ entrada de linha de comando é uma fina renderização dessa chamada, e `DepsDev.mavenUrl` e
++ `GitHub.index` são os dois resolvedores que ele compõe.
+
+- ### Running a repackaged JAR
++ ### Executando um JAR reempacotado
+
+- A repackaged JAR runs with `java -jar app.jar`, exactly as before. The bootstrap reads
+- `Burdock-Require`, and downloads every requirement which is not already in
+- `~/.cache/soundness/jars/`, in parallel, bounded to a handful of connections for each host. It
+- verifies the SHA-256 of each download against the hash in the manifest, builds the classpath in
+- the order of the manifest, and invokes `Burdock-Main`. A checksum mismatch stops the launch. The
+- application never starts against bytes other than the ones it was built with.
++ Um JAR reempacotado é executado com `java -jar app.jar`, exatamente como antes. O bootstrap lê
++ `Burdock-Require` e baixa todo requisito que ainda não está em `~/.cache/soundness/jars/`, em
++ paralelo, limitado a um punhado de conexões por host. Ele verifica o SHA-256 de cada download
++ contra o hash no manifesto, constrói o classpath na ordem do manifesto e invoca `Burdock-Main`.
++ Uma divergência de checksum interrompe a inicialização. A aplicação nunca começa com bytes
++ diferentes daqueles com que foi construída.
+
+- A launcher which supervises startup, as the [daemon](daemons.md) launcher does, can watch the
+- progress of the download by setting the `burdock.progress` system property to a file path. The
+- bootstrap writes `<completed> <total> <bytes>` to it atomically as it goes. A launcher which
+- cannot read the file falls back to its fixed deadline.
++ Um launcher que supervisiona a inicialização, como faz o launcher de [daemon](daemons.md), pode
++ acompanhar o progresso do download definindo a propriedade de sistema `burdock.progress` como um
++ caminho de arquivo. O bootstrap escreve `<completed> <total> <bytes>` nele atomicamente à medida
++ que avança. Um launcher que não consegue ler o arquivo recorre ao seu prazo fixo.
+
+- ### Errors
++ ### Erros
+
+- Repackaging reports its failures with two errors, and a lookup which finds nothing with a third:
++ O reempacotamento relata suas falhas com dois erros, e uma consulta que não encontra nada com um
++ terceiro:
+
+= Repackaging reports its failures with two errors, and a lookup which finds nothing with a third:
+=
+- ```tabular
++ ```tabular
+
+- column  Error
+- column  Raised when
+- row  `Repackager.UserError`  the JAR was not built with Burdock, is a directory rather than a file, an argument is malformed, or a GitHub repository's releases cannot be listed
+- row  `Repackager.RepackageError`  the JAR cannot be rewritten: it has no manifest or no `Main-Class`, or a dependency is neither published nor cached
+- row  `DepsDev.Unresolved`  a deps.dev lookup finds nothing, which the repackager treats as "not published" rather than as a failure
++ column  Erro
++ column  Lançado quando
++ row  `Repackager.UserError`  o JAR não foi construído com o Burdock, é um diretório em vez de um arquivo, um argumento está malformado, ou as releases de um repositório GitHub não podem ser listadas
++ row  `Repackager.RepackageError`  o JAR não pode ser reescrito: não tem manifesto ou não tem `Main-Class`, ou uma dependência não está nem publicada nem em cache
++ row  `DepsDev.Unresolved`  uma consulta ao deps.dev não encontra nada, o que o reempacotador trata como “não publicada”, e não como falha
+
+= row  `DepsDev.Unresolved`  a deps.dev lookup finds nothing, which the repackager treats as "not published" rather than as a failure
+- ```
++ ```
+
+- Resolution is logged through `DepsEvent`, with one event for each hash resolved, so a run can be
+- audited afterwards.
++ A resolução é registrada em log por meio de `DepsEvent`, com um evento para cada hash resolvido,
++ de modo que uma execução pode ser auditada depois.
+
+- ### Related
++ ### Relacionados
+
+- - [Archives](archives.md) describes the ZIP format which a JAR is, and the prefix which makes
+-   it executable.
+- - [Compiler](compiler.md#producing-artifacts) builds the JAR which is then repackaged.
+- - [Daemons](daemons.md) and [LSP](lsp.md#a-thin-launcher) describe the launchers which ship
+-   as thin JARs.
+- - [Hashing](hashing.md) describes the SHA-256 digests which identify each dependency.
+- - [Classpath](classpath.md) describes the classpath which the bootstrap assembles.
+- - [CLI](cli.md) and [versioning](versioning.md) describe the applications and manifests which are packaged.
++ - [Arquivos ZIP, tar e ar](archives.md) descreve o formato ZIP que um JAR é, e o prefixo que o
++   torna executável.
++ - [Compilador](compiler.md#producing-artifacts) constrói o JAR que depois é reempacotado.
++ - [Daemons](daemons.md) e [LSP](lsp.md#a-thin-launcher) descrevem os launchers que são
++   distribuídos como JARs enxutos.
++ - [Hashing](hashing.md) descreve os digests SHA-256 que identificam cada dependência.
++ - [Classpath](classpath.md) descreve o classpath que o bootstrap monta.
++ - [CLI](cli.md) e [versionamento](versioning.md) descrevem as aplicações e os manifestos que são empacotados.

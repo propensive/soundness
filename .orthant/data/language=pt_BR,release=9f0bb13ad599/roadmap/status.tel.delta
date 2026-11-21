@@ -1,0 +1,17 @@
+orthant 1 language
+
+-   status done
+-   done  #2530 (2026-11-20)
+-   baseline  lib/sigillate: Jws, Jwe, Jwk and Jwt, with `http` and `server` components; 95 tests, taking their vectors from RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 and RFC 8037; `↯/s.147.1`; doc/en/modules/jose.md (2026-11-20)
++   status done
++   done  #2530 (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk e Jwt, com os componentes `http` e `server`; 95 testes, que tomam os seus vetores das RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 e RFC 8037; `↯/s.147.1`; doc/en/modules/jose.md (2026-11-20)
+
+=   horizon mid
+-   status done
+-   done  #2530 (2026-11-20)
++   status done
++   done  #2530 (2026-11-20)
+
+-   baseline  lib/chatelaine: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/en/modules/webauthn.md (2026-11-20)
++   baseline  lib/chatelaine: WebAuthn.registration/register e authentication/authenticate, atestação `none` e `packed`, com um componente `server`; as cerimônias de registro e de autenticação dos vetores de teste da especificação do W3C (§16.2–16.11) passam, assim como cerimônias roteirizadas contra um autenticador em software nos fontes de teste; nenhum autenticador virtual de navegador foi acionado; `↯/s.148.1`; doc/en/modules/webauthn.md (2026-11-20)

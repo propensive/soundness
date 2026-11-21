@@ -1,0 +1,28 @@
+orthant 1 language
+
+- `complete()` gives a `Compiler.Result`, which is `Success`, `Failure` or `Crash`. Each
+- `Compiler.Notice` carries its importance, which is info, warning or error, its file and its
+- span, and, under `scalacOptions.boltCodes`, the bolt code Proscala gives an error or a warning,
+- such as `↯/p.1.7`. A tool can underline the offending code, and need not echo the compiler's output. A crash
+- arrives as a value too, with its [stack trace](stack-traces.md), and the process can be aborted
+- before the compilation ends.
++ `complete()` dá um `Compiler.Result`, que é `Success`, `Failure` ou `Crash`. Cada
++ `Compiler.Notice` carrega sua importância, que é info, warning ou error, seu arquivo e seu
++ trecho, e, sob `scalacOptions.boltCodes`, o código bolt que o Proscala dá a um erro ou a um
++ warning, como `↯/p.1.7`. Uma ferramenta pode sublinhar o código problemático e não precisa
++ repetir a saída do compilador. Um crash também chega como valor, com seu
++ [stack trace](stack-traces.md), e o processo pode ser abortado antes que a compilação termine.
+
+- def stage(out: Path on Local, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Local =
++ def stage(out: Path on Local, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Local =
+
+- def component(witDirectory: Path on Local, emission: Deliverable, destination: Path on Local)
+- :   Path on Local =
++ def component(witDirectory: Path on Local, emission: Deliverable, destination: Path on Local)
++ :   Path on Local =
+
+- def binary(emission: Deliverable, destination: Path on Local): Path on Local = supervise:
++ def binary(emission: Deliverable, destination: Path on Local): Path on Local = supervise:
+
+- def kotlin(kotlinSource: Text, out: Path on Local): Compiler.Result = supervise:
++ def kotlin(kotlinSource: Text, out: Path on Local): Compiler.Result = supervise:

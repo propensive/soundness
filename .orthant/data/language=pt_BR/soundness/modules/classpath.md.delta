@@ -1,0 +1,457 @@
+orthant 1 language
+
+- ## Classpaths
++ ## Classpaths
+
+- ### About
++ ### Visão geral
+
+- The JVM [classpath](https://en.wikipedia.org/wiki/Classpath) and its
+- [classloaders](https://en.wikipedia.org/wiki/Java_Classloader) are represented as values.
++ O [classpath](https://en.wikipedia.org/wiki/Classpath) da JVM e seus
++ [classloaders](https://en.wikipedia.org/wiki/Java_Classloader) são representados como valores.
+
+- A resource bundled on the classpath is read through a reference which the compiler checks. A
+- classpath is an [immutable] list of its entries, which are directories, JAR files and the Java
+- runtime, and the list can be inspected. A block of code can be run under a chosen classloader.
++ Um recurso empacotado no classpath é lido por meio de uma referência que o compilador verifica.
++ Um classpath é uma lista [imutável] de suas entradas, que são diretórios, arquivos JAR e o
++ runtime Java, e a lista pode ser inspecionada. Um bloco de código pode ser executado sob um
++ classloader escolhido.
+
+- ### On the classpath
++ ### Sobre o classpath
+
+- A program which asks for a bundled data file, such as a template, a lookup table or an icon,
+- asks the classpath, which searches the directories and archives the program was launched with.
+- The Java API for this returns `null` when a resource is absent, hands back a raw `InputStream`,
+- and exposes the hierarchy of classloaders as mutable state shared between threads. None of it is
+- typed. A missing resource is discovered only when the `null` is dereferenced.
++ Um programa que pede um arquivo de dados empacotado, como um modelo, uma tabela de consulta ou
++ um ícone, pergunta ao classpath, que procura nos diretórios e arquivos JAR com que o
++ programa foi iniciado. A API Java para isso retorna `null` quando um recurso está ausente,
++ devolve um `InputStream` cru e expõe a hierarquia de classloaders como estado mutável
++ compartilhado entre threads. Nada disso é tipado. Um recurso faltando só é descoberto quando o
++ `null` é desreferenciado.
+
+- Here a classpath resource is a [path](paths.md) like any other, and is read with the same
+- `read` as a file. A classpath is an immutable value whose entries can be listed. A classloader
+- is chosen explicitly, as a [contextual value], and not reached for implicitly. Typed entries and
+- classloaders give [honest signatures](../../philosophy/honest-signatures.md) to a part of the JVM
+- which usually has none.
++ Aqui um recurso do classpath é um [caminho](paths.md) como qualquer outro, e é lido com o mesmo
++ `read` que um arquivo. Um classpath é um valor imutável cujas entradas podem ser listadas. Um
++ classloader é escolhido explicitamente, como um [valor contextual], e não buscado
++ implicitamente. Entradas e classloaders tipados dão
++ [assinaturas honestas](../../philosophy/honest-signatures.md) a uma parte da JVM que em geral
++ não tem nenhuma.
+
+- Everything comes from the `soundness` package. The other imports choose a classloader, a
+- [strategy](errors.md#choosing-a-strategy) for errors, and access to the system properties, and
+- let the samples print their results:
++ Tudo vem do pacote `soundness`. Os outros imports escolhem um classloader, uma
++ [estratégia](errors.md#choosing-a-strategy) para erros e o acesso às propriedades do sistema, e
++ permitem que os exemplos imprimam seus resultados:
+
+= let the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- Most of the samples on this page depend on the machine which runs them, so they are compiled but
+- not run.
++ A maioria dos exemplos desta página depende da máquina que os executa, então eles são
++ compilados, mas não executados.
+
+- ### Reading a resource
++ ### Lendo um recurso
+
+- The `cp"…"` [interpolator] names a resource on the classpath, and checks the reference as the
+- code compiles. The result is a `Resource`, which is read like any other source: as raw bytes, as
+- text, or as a parsed value. The Scala library is on every classpath, so one of its classes makes
+- a resource which is always present:
++ O [interpolador] `cp"…"` nomeia um recurso no classpath e verifica a referência enquanto o
++ código compila. O resultado é um `Resource`, que é lido como qualquer outra origem: como bytes
++ crus, como texto ou como um valor analisado. A biblioteca Scala está em todo classpath, então
++ uma de suas classes forma um recurso que está sempre presente:
+
+= a resource which is always present:
+=
+- ```scala
++ ```scala
+
+- val option = cp"/scala/Option.class".read[Data]
++ val option = cp"/scala/Option.class".read[Data]
+
+= val option = cp"/scala/Option.class".read[Data]
+- ```
++ ```
+
+- The resource is resolved against the classloader in scope, so the read needs no handle passed by
+- hand. A resource path can also be built from text at [runtime], by decoding it:
++ O recurso é resolvido contra o classloader no escopo, então a leitura não precisa de nenhum
++ handle passado à mão. Um caminho de recurso também pode ser construído a partir de texto em
++ [tempo de execução], decodificando-o:
+
+= hand. A resource path can also be built from text at [runtime], by decoding it:
+=
+- ```scala
++ ```scala
+
+- val same = t"/scala/Option.class".as[Path on Classpath]
++ val same = t"/scala/Option.class".as[Path on Classpath]
+
+= val same = t"/scala/Option.class".as[Path on Classpath]
+- ```
++ ```
+
+- The check at compiletime is against the classpath of the compiler. A reference to a resource
+- which is not there is a compile error:
++ A verificação em tempo de compilação é feita contra o classpath do compilador. Uma referência a
++ um recurso que não está lá é um erro de compilação:
+
+= which is not there is a compile error:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- cp"/scala/Nothing/Here.txt"
++ cp"/scala/Nothing/Here.txt"
+
+= cp"/scala/Nothing/Here.txt"
+- ```
++ ```
+
+- A classpath path is also *substantiable*. Its existence can be tested at runtime before it is
+- read, so a program can check for an optional resource rather than handle a failure.
++ Um caminho de classpath também é *substantiable*. Sua existência pode ser testada em tempo de
++ execução antes de ele ser lido, de modo que um programa pode verificar a presença de um recurso
++ opcional em vez de tratar uma falha.
+
+- ### Choosing a classloader
++ ### Escolhendo um classloader
+
+- A resource reference names a path, not a thing. Two classloaders may resolve the same path to
+- different resources, or one may resolve it to nothing at all. The choice cannot be implicit in
+- the reference, and comes from the context in which the resource is read. The `given
+- Classloader` in scope decides, and is chosen by import:
++ Uma referência a recurso nomeia um caminho, não uma coisa. Dois classloaders podem resolver o
++ mesmo caminho para recursos diferentes, ou um deles pode não resolvê-lo para nada. A escolha não
++ pode estar implícita na referência, e vem do contexto em que o recurso é lido. Quem decide é o
++ `given Classloader` no escopo, escolhido por import:
+
+= Classloader` in scope decides, and is chosen by import:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- import classloaders.systemClassloader
++ import classloaders.systemClassloader
+
+= import classloaders.systemClassloader
+- ```
++ ```
+
+- The `classloaders` package holds the standard choices:
++ O pacote `classloaders` contém as escolhas padrão:
+
+= The `classloaders` package holds the standard choices:
+=
+- ```tabular
++ ```tabular
+
+- column  Given
++ column  Given
+
+- column  Resolves through
+- row  `threadContextClassloader`  the current thread's context classloader, which suits most applications
+- row  `systemClassloader`  the JVM's system classloader
+- row  `platformClassloader`  the JVM's platform classloader
+- row  `scalaClassloader`  the classloader that loaded the Scala library
++ column  Resolve por meio de
++ row  `threadContextClassloader`  o classloader de contexto da thread atual, que serve à maioria das aplicações
++ row  `systemClassloader`  o classloader de sistema da JVM
++ row  `platformClassloader`  o classloader de plataforma da JVM
++ row  `scalaClassloader`  o classloader que carregou a biblioteca Scala
+
+= row  `scalaClassloader`  the classloader that loaded the Scala library
+- ```
++ ```
+
+- ### Inspecting the classpath
++ ### Inspecionando o classpath
+
+- A `LocalClasspath` is the classpath as a list of entries. The classpath of the running program
+- is the value of the `java.class.path` property, which decodes to one. Reading the property needs
+- the `System` in scope, which was imported above:
++ Um `LocalClasspath` é o classpath como uma lista de entradas. O classpath do programa em
++ execução é o valor da propriedade `java.class.path`, que se decodifica em um. Ler a propriedade
++ exige o `System` no escopo, que foi importado acima:
+
+= the `System` in scope, which was imported above:
+=
+- ```scala
++ ```scala
+
+- val classpath = System.properties.java.`class`.path().as[LocalClasspath]
++ val classpath = System.properties.java.`class`.path().as[LocalClasspath]
+
+= val classpath = System.properties.java.`class`.path().as[LocalClasspath]
+- ```
++ ```
+
+- Its `entries` are typed, as one of four kinds of `Classpath.Entry`:
++ Suas `entries` são tipadas, como uma de quatro categorias de `Classpath.Entry`:
+
+= Its `entries` are typed, as one of four kinds of `Classpath.Entry`:
+=
+- ```tabular
++ ```tabular
+
+- column  Entry
+- column  Represents
+- column  Its `path`
+- column  From `classify`
+- row  `Directory(path)`  a directory of classes and resources  the directory  a directory, or a path that does not yet exist
+- row  `Jar(path)`  an archive  the archive file  a file ending with a ZIP archive's trailer
+- row  `Url(url)`  a remote location  `Unset`  never
+- row  `JavaRuntime`  the JDK's own classes  `Unset`  never
++ column  Entrada
++ column  Representa
++ column  Seu `path`
++ column  Por `classify`
++ row  `Directory(path)`  um diretório de classes e recursos  o diretório  um diretório, ou um caminho que ainda não existe
++ row  `Jar(path)`  um arquivo compactado  o arquivo  um arquivo que termina com o trailer de um arquivo ZIP
++ row  `Url(url)`  um local remoto  `Unset`  nunca
++ row  `JavaRuntime`  as classes do próprio JDK  `Unset`  nunca
+
+= row  `JavaRuntime`  the JDK's own classes  `Unset`  never
+- ```
++ ```
+
+- The entries of a *local* classpath are known not to be URLs, so a match over them need not handle
+- that case:
++ Sabe-se que as entradas de um classpath *local* não são URLs, então um casamento sobre elas não
++ precisa tratar esse caso:
+
+= that case:
+=
+- ```scala
++ ```scala
+
+- val descriptions = classpath.entries.map:
++ val descriptions = classpath.entries.map:
+
+-   case Classpath.Entry.Directory(path) => t"directory $path"
++   case Classpath.Entry.Directory(path) => t"directory $path"
+
+-   case Classpath.Entry.Jar(path)       => t"archive $path"
++   case Classpath.Entry.Jar(path)       => t"archive $path"
+
+-   case Classpath.Entry.JavaRuntime     => t"the Java runtime"
++   case Classpath.Entry.JavaRuntime     => t"the Java runtime"
+
+=   case Classpath.Entry.JavaRuntime     => t"the Java runtime"
+- ```
++ ```
+
+- An entry is classified by what is on disk, not by its name. `Classpath.Entry.classify(path)`
+- makes a nonexistent path a `Directory`, since it may become one. It makes a file which ends with
+- a ZIP trailer a `Jar`, which is what a launcher's executable with a shebang prefix is, though its
+- name does not end in `jar`. It raises an `Io.Error` for any other file.
++ Uma entrada é classificada pelo que está no disco, não pelo seu nome.
++ `Classpath.Entry.classify(path)` faz de um caminho inexistente um `Directory`, já que ele pode
++ vir a ser um. Faz de um arquivo que termina com um trailer ZIP um `Jar`, que é o que o
++ executável de um launcher com um prefixo shebang é, embora seu nome não termine em `jar`. Lança
++ um `Io.Error` para qualquer outro arquivo.
+
+- `LocalClasspath.running` is the classpath which the running process was actually loaded from:
+- the entries of a `URLClassLoader`, then those of its parents, then `java.class.path`, in order
+- and each once. A tool which compiles or loads code against itself needs this:
++ `LocalClasspath.running` é o classpath a partir do qual o processo em execução foi de fato
++ carregado: as entradas de um `URLClassLoader`, depois as de seus pais, depois `java.class.path`,
++ em ordem e cada uma uma única vez. Uma ferramenta que compila ou carrega código contra si mesma
++ precisa disto:
+
+= and each once. A tool which compiles or loads code against itself needs this:
+=
+- ```scala
++ ```scala
+
+- import filesystemOptions.dereferenceSymlinks
++ import filesystemOptions.dereferenceSymlinks
+
+- val running = LocalClasspath.running()
++ val running = LocalClasspath.running()
+
+- val paths = running.entries.map(_.path)
++ val paths = running.entries.map(_.path)
+
+= val paths = running.entries.map(_.path)
+- ```
++ ```
+
+- ### Loading services
++ ### Carregando serviços
+
+- The JVM's [service-provider](https://en.wikipedia.org/wiki/Service_provider_interface)
+- mechanism finds the implementations of an interface which are declared on the classpath.
+- `services` returns them, typed to the service:
++ O mecanismo de [provedor de serviços](https://en.wikipedia.org/wiki/Service_provider_interface)
++ da JVM encontra as implementações de uma interface que estão declaradas no classpath.
++ `services` as retorna, tipadas pelo serviço:
+
+= `services` returns them, typed to the service:
+=
+- ```scala
++ ```scala
+
+- val schemes = classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme)
++ val schemes = classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme)
+
+= val schemes = classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme)
+- ```
++ ```
+
+- ### Building a classloader
++ ### Construindo um classloader
+
+- A classpath builds a classloader over a chosen parent, which is the platform loader unless
+- another is given. The *delegation* of the loader says which side wins when it and its parent
+- both offer a class of the same name, and it is always spelled out. `Deferential` is the usual
+- order of the JVM, which defers to the parent, and so shares the parent's classes with the code
+- being loaded. `Preferential` prefers the entries of the classpath itself, which isolates a
+- plugin's versions of its libraries from its host's:
++ Um classpath constrói um classloader sobre um pai escolhido, que é o loader de plataforma a
++ menos que outro seja dado. A *delegação* do loader diz qual lado vence quando ele e seu pai
++ oferecem uma classe com o mesmo nome, e ela é sempre explicitada. `Deferential` é a ordem usual
++ da JVM, que cede ao pai e, assim, compartilha as classes do pai com o código sendo carregado.
++ `Preferential` prefere as entradas do próprio classpath, o que isola as versões das bibliotecas
++ de um plugin das do seu host:
+
+= plugin's versions of its libraries from its host's:
+=
+- ```scala
++ ```scala
+
+- val contract = LocalClasspath(Classpath.Entry.Jar(t"/lib/contract.jar"))
++ val contract = LocalClasspath(Classpath.Entry.Jar(t"/lib/contract.jar"))
+
+- val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
++ val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
+
+- val shared = contract.classloader(Classloader.Delegation.Deferential)
++ val shared = contract.classloader(Classloader.Delegation.Deferential)
+
+- val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
++ val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
+
+= val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
+- ```
++ ```
+
+- Here the plugin sees the contract it was written against through its parent, while everything
+- else it bundles is its own.
++ Aqui o plugin vê, pelo seu pai, o contrato contra o qual foi escrito, enquanto todo o resto que
++ ele empacota é seu.
+
+- A resource is read from a loader directly, by its path. The result is an [optional] value which
+- retains nothing, so the read can sit inside a `safely` block:
++ Um recurso é lido diretamente de um loader, pelo seu caminho. O resultado é um valor [opcional]
++ que não retém nada, então a leitura pode ficar dentro de um bloco `safely`:
+
+= retains nothing, so the read can sit inside a `safely` block:
+=
+- ```scala
++ ```scala
+
+- val version = safely(isolated(t"META-INF/plugin.version"))
++ val version = safely(isolated(t"META-INF/plugin.version"))
+
+= val version = safely(isolated(t"META-INF/plugin.version"))
+- ```
++ ```
+
+- ### Running under a classloader
++ ### Executando sob um classloader
+
+- A `Classloader` value runs a block with itself installed as the context classloader of the
+- thread, and restores the previous one afterward. This confines a change of classloader to
+- exactly the code which needs it, such as the loading of a plugin:
++ Um valor `Classloader` executa um bloco com ele mesmo instalado como classloader de contexto da
++ thread, e restaura o anterior depois. Isso confina uma troca de classloader exatamente ao código
++ que precisa dela, como o carregamento de um plugin:
+
+= exactly the code which needs it, such as the loading of a plugin:
+=
+- ```scala
++ ```scala
+
+- classloaders.systemClassloader.use:
++ classloaders.systemClassloader.use:
+
+-   Classloader[Option[Int]]
++   Classloader[Option[Int]]
+
+=   Classloader[Option[Int]]
+- ```
++ ```
+
+- `Classloader[T]` finds the classloader which loaded a type. That is how the classloader of a
+- plugin is reached from one of its classes.
++ `Classloader[T]` encontra o classloader que carregou um tipo. É assim que o classloader de um
++ plugin é alcançado a partir de uma de suas classes.
+
+- ### Related
++ ### Relacionados
+
+- - [Paths](paths.md) describes the path types which a classpath resource shares.
+- - [Streams](streams.md) describes `read`, and the forms a resource is read as.
+- - [Stack traces](stack-traces.md#resolving-frames-to-their-source) resolve frames through a
+-   classloader.
+- - [Compiler](compiler.md) compiles code against a classpath.
+- - [Packaging](packaging.md) builds the JAR files which become classpath entries.
+- - [Environment](environment.md) describes the system properties the classpath is read from.
++ - [Caminhos](paths.md) descreve os tipos de caminho que um recurso de classpath compartilha.
++ - [Streams](streams.md) descreve `read` e as formas em que um recurso é lido.
++ - [Stack traces](stack-traces.md#resolving-frames-to-their-source) resolvem frames por meio de
++   um classloader.
++ - [Compilador](compiler.md) compila código contra um classpath.
++ - [Empacotamento](packaging.md) constrói os arquivos JAR que se tornam entradas de classpath.
++ - [Ambiente](environment.md) descreve as propriedades do sistema de que o classpath é lido.

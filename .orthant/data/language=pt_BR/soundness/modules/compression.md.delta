@@ -1,0 +1,408 @@
+orthant 1 language
+
+- ## Compression
++ ## Compressão
+
+- ### About
++ ### Visão geral
+
+- A handful of formats carry most of the world's compressed bytes:
+- [DEFLATE](https://en.wikipedia.org/wiki/Deflate) and its wrappers `gzip` and `zlib`,
+- [Brotli](https://en.wikipedia.org/wiki/Brotli), [XZ](https://en.wikipedia.org/wiki/XZ_Utils)
+- and raw LZMA2, and [LZW](https://en.wikipedia.org/wiki/Lempel–Ziv–Welch). All of them compress
+- and decompress data through one pair of methods. The format is a type, and `compress` and
+- `decompress` serve every format, over a whole value or as a stage of a
++ Um punhado de formatos carrega a maior parte dos bytes comprimidos do mundo:
++ [DEFLATE](https://en.wikipedia.org/wiki/Deflate) e seus envoltórios `gzip` e `zlib`,
++ [Brotli](https://en.wikipedia.org/wiki/Brotli), [XZ](https://en.wikipedia.org/wiki/XZ_Utils) e
++ LZMA2 puro, e [LZW](https://en.wikipedia.org/wiki/Lempel–Ziv–Welch). Todos eles comprimem e
++ descomprimem dados por meio de um único par de métodos. O formato é um tipo, e `compress` e
++ `decompress` servem a todos os formatos, sobre um valor inteiro ou como estágio de um
+
+- [stream](streams.md).
++ [stream](streams.md).
+
+- Every format is implemented in pure Scala, so it works on every platform. On the JVM, DEFLATE
+- and its wrappers are also served by the platform's native zlib. That choice is made when the
+- code is built, not at each use, so the JVM pays nothing for the portability.
++ Todos os formatos são implementados em Scala puro, então funcionam em todas as plataformas. Na
++ JVM, o DEFLATE e seus envoltórios também são servidos pela zlib nativa da plataforma. Essa
++ escolha é feita quando o código é compilado, não a cada uso, de modo que a JVM não paga nada pela
++ portabilidade.
+
+- ### On compression
++ ### Sobre compressão
+
+- A compression library usually presents a codec which must be constructed, fed and finished: an
+- object with a buffer, a `setInput`, a `deflate` and a `finish`, and a loop around them which
+- is easy to get wrong. The format is a string or an integer, the framing is a flag, and whether
+- a given call has produced everything it will produce is a question the caller has to answer.
++ Uma biblioteca de compressão costuma apresentar um codec que precisa ser construído, alimentado e
++ finalizado: um objeto com um buffer, um `setInput`, um `deflate` e um `finish`, e um laço em
++ volta deles que é fácil de errar. O formato é uma string ou um inteiro, o enquadramento é uma
++ flag, e se uma dada chamada já produziu tudo o que vai produzir é uma pergunta que quem chama
++ precisa responder.
+
+- Here the format is a type, such as `Gzip`, `Brotli` or `Xz`, and the operation is a method on
+- the data. The same instance describes both the whole-value form and the streaming form, so the
+- two agree byte for byte, and a value compressed in one way decompresses in the other. A
+- compression scheme is a stage of a pipeline, not a wrapper around a stream, which is
+- [composability](../../philosophy/composability.md) in its most literal form.
++ Aqui o formato é um tipo, como `Gzip`, `Brotli` ou `Xz`, e a operação é um método sobre os dados.
++ A mesma instância descreve tanto a forma de valor inteiro quanto a forma de streaming, de modo que
++ as duas concordam byte a byte, e um valor comprimido de um jeito é descomprimido do outro. Um
++ esquema de compressão é um estágio de uma pipeline, não um envoltório em torno de um stream, o
++ que é [composabilidade](../../philosophy/composability.md) em sua forma mais literal.
+
+- Everything comes from the `soundness` package. The last import lets the samples print their
+- results:
++ Tudo vem do pacote `soundness`. O último import permite que os exemplos imprimam seus resultados:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Compressing a value
++ ### Comprimindo um valor
+
+- A block of bytes is compressed, and decompressed, by naming the format:
++ Um bloco de bytes é comprimido, e descomprimido, nomeando-se o formato:
+
+= A block of bytes is compressed, and decompressed, by naming the format:
+=
+- ```scala
++ ```scala
+
+- val text = t"the quick brown fox jumps over the lazy dog. "
++ val text = t"the quick brown fox jumps over the lazy dog. "
+
+- val payload = (text + text + text + text).in[Data]
++ val payload = (text + text + text + text).in[Data]
+
+- val compressed = payload.compress[Gzip]
++ val compressed = payload.compress[Gzip]
+
+= val compressed = payload.compress[Gzip]
+- ```
++ ```
+
+= val compressed = payload.compress[Gzip]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val compressed = payload.compress[Gzip]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val compressed = payload.compress[Gzip]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(payload.length.show)
++ Out.println(payload.length.show)
+
+- Out.println(compressed.length.show)
++ Out.println(compressed.length.show)
+
+- Out.println(compressed.decompress[Gzip].utf8.keep(43))
++ Out.println(compressed.decompress[Gzip].utf8.keep(43))
+
+= Out.println(compressed.decompress[Gzip].utf8.keep(43))
+- ```
++ ```
+
+- ### Compressing a stream
++ ### Comprimindo um stream
+
+- The same names attach to a stream, where they become stages of a pipeline. The data is
+- transformed as it flows, and nothing larger than the pipeline's buffers is held.
++ Os mesmos nomes se aplicam a um stream, onde se tornam estágios de uma pipeline. Os dados são
++ transformados à medida que fluem, e nada maior do que os buffers da pipeline é mantido.
+
+- Writing a compressed [file](filesystem.md), and reading it back, is a matter of placing the
+- compressor and the decompressor on either side of the disk. `pump` delivers the compressed
+- stream into the file's intake:
++ Escrever um [arquivo](filesystem.md) comprimido, e lê-lo de volta, é questão de colocar o
++ compressor e o descompressor em cada lado do disco. `pump` entrega o stream comprimido no intake
++ do arquivo:
+
+= stream into the file's intake:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- val archive = temporaryDirectory[Path on Linux] / "compression" / Uuid().show / "fox.txt.gz"
++ val archive = temporaryDirectory[Path on Linux] / "compression" / Uuid().show / "fox.txt.gz"
+
+- archive.create[File](CreateFlag.Parents): handle ?=>
++ archive.create[File](CreateFlag.Parents): handle ?=>
+
+-   payload.stream.compress[Gzip].pump(handle.intake())
++   payload.stream.compress[Gzip].pump(handle.intake())
+
+- val restored: Text = archive.open[File]()(file.stream.decompress[Gzip].read[Text])
++ val restored: Text = archive.open[File]()(file.stream.decompress[Gzip].read[Text])
+
+= val restored: Text = archive.open[File]()(file.stream.decompress[Gzip].read[Text])
+- ```
++ ```
+
+- The whole-value and streaming forms interoperate freely. A value which was compressed as a
+- whole decompresses through a stream, and the output of a stream decompresses as a value.
++ As formas de valor inteiro e de streaming interoperam livremente. Um valor que foi comprimido
++ como um todo é descomprimido por um stream, e a saída de um stream é descomprimida como um valor.
+
+- ### The formats
++ ### Os formatos
+
+- Seven formats are provided, in four families:
++ Sete formatos são fornecidos, em quatro famílias:
+
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Algorithm
+- column  Framing
+- column  Carried by
+- row  `Deflate`  DEFLATE  none  ZIP entries
+- row  `Zlib`  DEFLATE  a two-byte header and a checksum  PNG chunks, HTTP `deflate` encoding
+- row  `Gzip`  DEFLATE  a header, timestamp and CRC  `*.gz` files, HTTP content encoding
+- row  `Brotli`  Brotli  the Brotli stream format  HTTP content encoding
+- row  `Xz`  LZMA2  the `*.xz` container, with a CRC-64 check  `*.xz` files
+- row  `Lzma2`  LZMA2  none
+- row  `Lzw`  LZW  none  TIFF and PDF streams
++ column  Formato
++ column  Algoritmo
++ column  Enquadramento
++ column  Usado em
++ row  `Deflate`  DEFLATE  nenhum  entradas ZIP
++ row  `Zlib`  DEFLATE  um cabeçalho de dois bytes e um checksum  chunks PNG, codificação HTTP `deflate`
++ row  `Gzip`  DEFLATE  um cabeçalho, carimbo de tempo e CRC  arquivos `*.gz`, codificação de conteúdo HTTP
++ row  `Brotli`  Brotli  o formato de stream Brotli  codificação de conteúdo HTTP
++ row  `Xz`  LZMA2  o contêiner `*.xz`, com uma verificação CRC-64  arquivos `*.xz`
++ row  `Lzma2`  LZMA2  nenhum
++ row  `Lzw`  LZW  nenhum  streams TIFF e PDF
+
+= row  `Lzw`  LZW  none  TIFF and PDF streams
+- ```
++ ```
+
+- #### DEFLATE
++ #### DEFLATE
+
+- `Deflate` is the raw algorithm. `Zlib` adds a two-byte header and a checksum. `Gzip` adds the
+- header, timestamp and CRC which `*.gz` files carry. These are the formats of HTTP content
+- encoding, of ZIP entries and of PNG chunks, and they are the fastest of the set.
++ `Deflate` é o algoritmo puro. `Zlib` acrescenta um cabeçalho de dois bytes e um checksum. `Gzip`
++ acrescenta o cabeçalho, o carimbo de tempo e o CRC que os arquivos `*.gz` carregam. Esses são os
++ formatos da codificação de conteúdo HTTP, das entradas ZIP e dos chunks PNG, e são os mais
++ rápidos do conjunto.
+
+- #### Brotli
++ #### Brotli
+
+- `Brotli` compresses to a smaller size than DEFLATE, at a comparable speed, and is the content
+- encoding of the modern web. Both directions need the whole value before they produce any
+- output. The decoder needs it because backward references may reach across the entire window,
+- and the encoder because it chooses its framing from the total length. A Brotli stage therefore
+- buffers, where a DEFLATE stage does not.
++ `Brotli` comprime para um tamanho menor que o DEFLATE, a uma velocidade comparável, e é a
++ codificação de conteúdo da web moderna. As duas direções precisam do valor inteiro antes de
++ produzir qualquer saída. O decodificador precisa dele porque as referências para trás podem
++ alcançar toda a janela, e o codificador porque escolhe seu enquadramento a partir do comprimento
++ total. Um estágio Brotli, portanto, faz buffer, onde um estágio DEFLATE não faz.
+
+- Brotli can also encode a value *relative to* another which the receiver already holds. A
+- `continuation` is the tail of a Brotli stream whose window has been loaded with a base
+- beforehand. It carries only the new value's blocks, and no stream header, and its backward
+- references reach into the base. A successor which differs from its predecessor by a few edits
+- therefore costs a few bytes:
++ O Brotli também pode codificar um valor *em relação a* outro que o receptor já tem. Uma
++ `continuation` é a cauda de um stream Brotli cuja janela foi carregada antes com uma base. Ela
++ carrega apenas os blocos do novo valor, e nenhum cabeçalho de stream, e suas referências para
++ trás alcançam a base. Um sucessor que difere de seu predecessor por algumas edições custa,
++ portanto, alguns bytes:
+
+= therefore costs a few bytes:
+=
+- ```scala
++ ```scala
+
+- val base: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
++ val base: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
+
+- val next: Data = t"the quick brown fox jumped over the lazy dog".in[Data]
++ val next: Data = t"the quick brown fox jumped over the lazy dog".in[Data]
+
+- val continuation = Brotli.continuation(base, next)
++ val continuation = Brotli.continuation(base, next)
+
+= val continuation = Brotli.continuation(base, next)
+- ```
++ ```
+
+- The receiver rebuilds the window from its own copy of the base, with `prefix`, and decodes the
+- prefix and the continuation as one stream. What comes out is the base, followed by the
+- successor:
++ O receptor reconstrói a janela a partir de sua própria cópia da base, com `prefix`, e decodifica
++ o prefixo e a continuação como um único stream. O que sai é a base, seguida do sucessor:
+
+= successor:
+=
+- ```scala
++ ```scala
+
+- val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
++ val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+
+= val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+- ```
++ ```
+
+= val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(next.length.show)
++ Out.println(next.length.show)
+
+- Out.println(continuation.length.show)
++ Out.println(continuation.length.show)
+
+- Out.println((decoded.length == base.length + next.length).inspect)
++ Out.println((decoded.length == base.length + next.length).inspect)
+
+= Out.println((decoded.length == base.length + next.length).inspect)
+- ```
++ ```
+
+- The bytes of a `prefix` are fixed by RFC 7932, together with the window and block parameters.
+- Both methods take the window size as WBITS, from 10 to 24, and `prefix` takes the maximum
+- length of an uncompressed block. Their defaults are `Brotli.Window` and `Brotli.Block`, the
+- largest which the format allows. Both sides must use the same values.
++ Os bytes de um `prefix` são fixados pela RFC 7932, junto com os parâmetros de janela e de bloco.
++ Os dois métodos recebem o tamanho da janela como WBITS, de 10 a 24, e `prefix` recebe o
++ comprimento máximo de um bloco não comprimido. Seus padrões são `Brotli.Window` e `Brotli.Block`,
++ os maiores que o formato permite. Os dois lados precisam usar os mesmos valores.
+
+- #### XZ and LZMA2
++ #### XZ e LZMA2
+
+- `Xz` is the codec with the highest ratio. It is LZMA2 inside the `*.xz` container, with a
+- CRC-64 check, and matches what the `xz` command-line tool produces. `Lzma2` is the same codec
+- without the container's framing, and stands to `Xz` as `Deflate` stands to `Gzip`.
++ `Xz` é o codec com a maior taxa de compressão. É LZMA2 dentro do contêiner `*.xz`, com uma
++ verificação CRC-64, e corresponde ao que a ferramenta de linha de comando `xz` produz. `Lzma2` é o
++ mesmo codec sem o enquadramento do contêiner, e está para `Xz` assim como `Deflate` está para
++ `Gzip`.
+
+- Both default to preset 6. Presets 0 to 3 favor speed, and 4 to 9 favor ratio. An explicit
+- preset is selected with `Xz.compress(stream, preset)` or `Xz.compressor(preset)`.
++ Ambos usam o preset 6 por padrão. Os presets de 0 a 3 favorecem a velocidade, e os de 4 a 9 a
++ taxa de compressão. Um preset explícito é selecionado com `Xz.compress(stream, preset)` ou
++ `Xz.compressor(preset)`.
+
+- #### LZW
++ #### LZW
+
+- `Lzw` is the compression of TIFF and PDF streams. The JDK offers no implementation of it at
+- all, so this one is written from the specification. Its `earlyChange` parameter makes both
+- sides widen their codes one table entry sooner. It is on by default, which is what TIFF, PDF
+- and every known encoder produce. The parameterized `Lzw.compressor` and `Lzw.decompressor`
+- serve formats which state it explicitly.
++ `Lzw` é a compressão dos streams TIFF e PDF. O JDK não oferece implementação alguma dele, então
++ esta foi escrita a partir da especificação. Seu parâmetro `earlyChange` faz os dois lados
++ alargarem seus códigos uma entrada de tabela mais cedo. Ele vem ativado por padrão, que é o que o
++ TIFF, o PDF e todos os codificadores conhecidos produzem. Os parametrizados `Lzw.compressor` e
++ `Lzw.decompressor` servem aos formatos que o declaram explicitamente.
+
+- ### Where compression appears
++ ### Onde a compressão aparece
+
+- Compression is rarely used alone:
++ A compressão raramente é usada sozinha:
+
+- - [Archives](archives.md) store their entries compressed, and tar archives travel compressed.
+- - [HTTP](http-client.md) bodies are encoded with it on the wire.
+- - [Container](docker.md) image layers are compressed, and addressed by their
++ - Os [arquivos ZIP](archives.md) armazenam suas entradas comprimidas, e os arquivos tar
++   trafegam comprimidos.
++ - Os corpos [HTTP](http-client.md) são codificados com ela na transmissão.
++ - As camadas de imagens de [contêiner](docker.md) são comprimidas, e endereçadas pelo seu
+
+-   [digest](hashing.md#hashing-a-stream).
++   [digest](hashing.md#hashing-a-stream).
+
+- - [PDF](pdf.md) content streams are stored compressed.
++ - Os content streams de [PDF](pdf.md) são armazenados comprimidos.
+
+- In each case the format is one of the types named here, so a layer, an entry or a body
+- decompresses with the operation described above.
++ Em cada caso o formato é um dos tipos nomeados aqui, de modo que uma camada, uma entrada ou um
++ corpo é descomprimido com a operação descrita acima.

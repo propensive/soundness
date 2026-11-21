@@ -1,0 +1,67 @@
+orthant 1 language
+
+- # `↯/s.137.1` — `Link.Error`
++ # `↯/s.137.1` — `Link.Error`
+
+- Raised when linking a compilation into an artifact fails.
++ Lançado quando a linkagem de uma compilação em um artefato falha.
+
+- ## Cause
++ ## Causa
+
+- Linking turns a compilation's output into an executable JAR, a JavaScript bundle, a native
+- binary or an Android package. This error covers the linker terminating abnormally, and the
+- entry-point requirements each artifact imposes.
++ A linkagem transforma a saída de uma compilação em um JAR executável, um bundle JavaScript, um
++ binário nativo ou um pacote Android. Este erro cobre o término anormal do linker e os requisitos
++ de ponto de entrada que cada artefato impõe.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.137.1.1` — `Failed`
++ ### `↯/s.137.1.1` — `Failed`
+
+- **Example.** `[↯/s.137.1.1] the linker terminated abnormally`
++ **Exemplo.** `[↯/s.137.1.1] the linker terminated abnormally`
+
+- ### `↯/s.137.1.3` — `NoEntryPoint`
++ ### `↯/s.137.1.3` — `NoEntryPoint`
+
+- **Example.** `[↯/s.137.1.3] the artifact requires exactly one entry point`
++ **Exemplo.** `[↯/s.137.1.3] the artifact requires exactly one entry point`
+
+- ### `↯/s.137.1.4` — `ManyEntryPoints`
++ ### `↯/s.137.1.4` — `ManyEntryPoints`
+
+- **Example.** `[↯/s.137.1.4] an executable JAR permits at most one entry point`
++ **Exemplo.** `[↯/s.137.1.4] an executable JAR permits at most one entry point`
+
+- ### `↯/s.137.1.11` — `CompilationFailed`
++ ### `↯/s.137.1.11` — `CompilationFailed`
+
+- **Example.** `[↯/s.137.1.11] compilation failed with 2 errors`
++ **Exemplo.** `[↯/s.137.1.11] compilation failed with 2 errors`
+
+- The reason carries every diagnostic the compiler reported, as `notices`.
++ O motivo carrega todos os diagnósticos que o compilador relatou, como `notices`.
+
+- ## Resolution
++ ## Resolução
+
+- An executable JAR permits at most one entry point and a native executable requires exactly
+- one; the reason says which rule was broken. A linker that terminated abnormally carries its
++ Um JAR executável permite no máximo um ponto de entrada e um executável nativo exige exatamente
++ um; o motivo diz qual regra foi violada. Um linker que terminou de forma anormal carrega seu
+
+- stack trace.
++ stack trace.
+
+- > This error previously used the code `↯/s.137.3`, which collided with `CompilerError`.
++ > Este erro usava antes o código `↯/s.137.3`, que colidia com `CompilerError`.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/anthology/src/core/anthology.Link.scala`
++ - Código-fonte: `lib/anthology/src/core/anthology.Link.scala`

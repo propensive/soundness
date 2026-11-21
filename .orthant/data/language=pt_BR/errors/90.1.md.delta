@@ -1,0 +1,74 @@
+orthant 1 language
+
+- # `↯/s.90.1` — `Css.Error`
++ # `↯/s.90.1` — `Css.Error`
+
+- Raised when a stylesheet contains a construct that is not valid CSS.
++ Lançado quando uma folha de estilo contém uma construção que não é CSS válido.
+
+- ## Cause
++ ## Causa
+
+- Cataclysm checks property names against the known set and parses selectors against the full
+- modern grammar, so a misspelled property or a malformed selector is reported rather than
+- passed to a browser that will silently ignore it.
++ O Cataclysm confere os nomes de propriedades com o conjunto conhecido e analisa os seletores
++ segundo a gramática moderna completa; assim, uma propriedade com erro de grafia ou um seletor
++ malformado é relatado, em vez de ser passado a um navegador que o ignoraria em silêncio.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+- row  `↯/s.90.1.1`  `UnterminatedComment`  a comment was not terminated
++ row  `↯/s.90.1.1`  `UnterminatedComment`  a comment was not terminated
+
+- row  `↯/s.90.1.2`  `UnterminatedString`  a string literal was not terminated
++ row  `↯/s.90.1.2`  `UnterminatedString`  a string literal was not terminated
+
+- row  `↯/s.90.1.3`  `UnexpectedEnd`  the input ended before a rule was closed
++ row  `↯/s.90.1.3`  `UnexpectedEnd`  the input ended before a rule was closed
+
+- row  `↯/s.90.1.4`  `UnexpectedChar`  the character <char> was not expected here
++ row  `↯/s.90.1.4`  `UnexpectedChar`  the character <char> was not expected here
+
+- row  `↯/s.90.1.5`  `EmptySelector`  a selector was expected but none was found
++ row  `↯/s.90.1.5`  `EmptySelector`  a selector was expected but none was found
+
+- row  `↯/s.90.1.6`  `UnknownProperty`  <name> is not a recognized CSS property
++ row  `↯/s.90.1.6`  `UnknownProperty`  <name> is not a recognized CSS property
+
+- row  `↯/s.90.1.7`  `BadValue`  <value> is not a valid value for the <property> property
++ row  `↯/s.90.1.7`  `BadValue`  <value> is not a valid value for the <property> property
+
+- row  `↯/s.90.1.8`  `UnsupportedValue`  the value of <name> uses an unsupported type
++ row  `↯/s.90.1.8`  `UnsupportedValue`  the value of <name> uses an unsupported type
+
+- row  `↯/s.90.1.9`  `InvalidName`  <name> is not a valid CSS identifier
++ row  `↯/s.90.1.9`  `InvalidName`  <name> is not a valid CSS identifier
+
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Correct the property name or the selector. Errors accumulate: a rule with several faults
+- reports all of them, which is why the error type is plural — `CssErrors` carries the list.
++ Corrija o nome da propriedade ou o seletor. Os erros se acumulam: uma regra com várias falhas
++ relata todas elas, e é por isso que o tipo de erro está no plural — `CssErrors` carrega a lista.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/cataclysm/src/core/cataclysm.Css.scala`
++ - Código-fonte: `lib/cataclysm/src/core/cataclysm.Css.scala`

@@ -1,0 +1,354 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base virility
++ base virility
+
+- import soundness
++ import soundness
+
+- info   Unix manual pages as a typed document tree, serialized to roff with correct escaping
++ info   páginas de manual Unix como uma árvore de documento tipada, serializada em roff com escape correto
+
+- detail
++ detail
+
+-     _Virility_ builds a Unix manual page as a value — a `Roff` document of titled sections,
+-     paragraphs, tagged paragraphs, examples and indented blocks, with bold and italic runs —
+-     and serializes it to the roff source that `man` renders, using the man macro package
+-     (`.TH`, `.SH`, `.SS`, `.P`, `.TP`, `.EX`/`.EE`, `.RS`/`.RE`).
++     _Virility_ constrói uma página de manual Unix como um valor — um documento `Roff` de seções
++     com título, parágrafos, parágrafos com tag, exemplos e blocos indentados, com segmentos em
++     negrito e itálico — e a serializa no código-fonte roff que o `man` renderiza, usando o pacote
++     de macros man (`.TH`, `.SH`, `.SS`, `.P`, `.TP`, `.EX`/`.EE`, `.RS`/`.RE`).
+
+-     Escaping is the library's reason to exist: text written into a roff document by hand is
+-     easily misread as markup. Every `-` in prose becomes `\-`, so that an option such as
+-     `--verbose` stays searchable and copyable in the rendered page; every `\` becomes
+-     `\[rs]`; a line beginning with `.` or `'`, which roff would take for a control line, is
+-     protected with `\&`; and a newline inside a line becomes a space.
++     O escape é a razão de existir da biblioteca: texto escrito à mão num documento roff é
++     facilmente lido como marcação. Todo `-` na prosa vira `\-`, para que uma opção como
++     `--verbose` continue pesquisável e copiável na página renderizada; todo `\` vira `\[rs]`; uma
++     linha que começa com `.` ou `'`, que o roff tomaria por uma linha de controle, é protegida com
++     `\&`; e uma quebra de linha dentro de uma linha vira um espaço.
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     val page = Roff
++     val page = Roff
+
+-       ( t"greet", 1, t"2026-08-17", t"greet 1.0", t"User Commands",
++       ( t"greet", 1, t"2026-08-17", t"greet 1.0", t"User Commands",
+
+-         List
++         List
+
+-           ( Roff.Block.Section
++           ( Roff.Block.Section
+
+-               ( t"Name", List(Roff.Block.Paragraph(Roff.Inline.plain(t"greet - say hello"))) ),
++               ( t"Name", List(Roff.Block.Paragraph(Roff.Inline.plain(t"greet - say hello"))) ),
+
+-             Roff.Block.Section
++             Roff.Block.Section
+
+-               ( t"Options",
++               ( t"Options",
+
+-                 List
++                 List
+
+-                   ( Roff.Block.Tagged
++                   ( Roff.Block.Tagged
+
+-                       ( List(Roff.Inline.bold(t"--loud")),
++                       ( List(Roff.Inline.bold(t"--loud")),
+
+-                         Roff.Inline.plain(t"Greet in capital letters.") ) ) ) ) )
++                         Roff.Inline.plain(t"Greet in capital letters.") ) ) ) ) )
+
+-     page.serialize
++     page.serialize
+
+-     // .TH "GREET" "1" "2026-08-17" "greet 1.0" "User Commands"
++     // .TH "GREET" "1" "2026-08-17" "greet 1.0" "User Commands"
+
+-     // .SH "Name"
++     // .SH "Name"
+
+-     // greet \- say hello
++     // greet \- say hello
+
+-     // .SH "Options"
++     // .SH "Options"
+
+-     // .TP
++     // .TP
+
+-     // \fB\-\-loud\fP
++     // \fB\-\-loud\fP
+
+-     // Greet in capital letters.
++     // Greet in capital letters.
+
+-     ```
++     ```
+
+-     Exoskeleton's manpage support generates its pages through this library, from the
+-     program's own command-line definitions. Virility has a single source set,
+-     `virility.core`, and everything is exported to the `soundness` umbrella.
++     O suporte a manpages do Exoskeleton gera suas páginas por meio desta biblioteca, a partir das
++     próprias definições de linha de comando do programa. O Virility tem um único source set,
++     `virility.core`, e tudo é exportado para o guarda-chuva `soundness`.
+
+- refer virility.Roff
++ refer virility.Roff
+
+- refer virility.Roff.Block
++ refer virility.Roff.Block
+
+- refer virility.Roff.Inline
++ refer virility.Roff.Inline
+
+- entry .Roff   a Unix manual page: its `.TH` title line and a list of blocks, serialized as roff
++ entry .Roff   uma página de manual Unix: sua linha de título `.TH` e uma lista de blocos, serializada como roff
+
+-   detail
++   detail
+
+-       A `Roff` is one manual page. Its fields become the arguments of the `.TH` line which
+-       begins the page: the `#title` (rendered in capitals), the `#section` number, and the
+-       optional `#date`, `#source` (the program and its version) and `#manual` (the title of
+-       the manual it belongs to, such as `User Commands`). Its `#blocks` are the body.
++       Um `Roff` é uma página de manual. Seus campos se tornam os argumentos da linha `.TH` que
++       inicia a página: o `#title` (renderizado em maiúsculas), o número da `#section`, e os
++       opcionais `#date`, `#source` (o programa e sua versão) e `#manual` (o título do manual a que
++       ela pertence, como `User Commands`). Seus `#blocks` são o corpo.
+
+=       the manual it belongs to, such as `User Commands`). Its `#blocks` are the body.
+=
+-       ```scala
++       ```scala
+
+=       the manual it belongs to, such as `User Commands`). Its `#blocks` are the body.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Roff(t"grep", 1).serialize                                  // .TH "GREP" "1"
++       Roff(t"grep", 1).serialize                                  // .TH "GREP" "1"
+
+-       Roff(t"grep", 1, Unset, Unset, t"User Commands").serialize
++       Roff(t"grep", 1, Unset, Unset, t"User Commands").serialize
+
+-       // .TH "GREP" "1" "" "" "User Commands"
++       // .TH "GREP" "1" "" "" "User Commands"
+
+=       // .TH "GREP" "1" "" "" "User Commands"
+-       ```
++       ```
+
+-       Trailing unset arguments are dropped from the `.TH` line, and unset ones before a set
+-       one are written as empty quoted arguments. A `Roff` shows, and encodes as `Text`, as its
+-       `#serialize`d source, so it can be written to a file with `write`.
++       Argumentos não definidos no final são omitidos da linha `.TH`, e os não definidos antes de um
++       definido são escritos como argumentos vazios entre aspas. Um `Roff` é exibido, e codificado
++       como `Text`, como seu código-fonte obtido por `#serialize`, de modo que pode ser escrito num
++       arquivo com `write`.
+
+-   refer virility.Roff.Block
++   refer virility.Roff.Block
+
+-   refer virility.Roff.Inline
++   refer virility.Roff.Inline
+
+-   entry .showable   shows a page as its roff source
+-   entry .encodable   encodes a page as its roff source text
+-   entry .escape   escapes text for a roff text line
+-       Every `-` becomes `\-`, `\` becomes `\[rs]`, and a newline becomes a space. It does not
+-       protect a leading `.` or `'`: the blocks do that for each line they emit, so text
+-       passed through `.escape` alone and written at the start of a line still needs `\&`.
++   entry .showable   exibe uma página como seu código-fonte roff
++   entry .encodable   codifica uma página como o texto do seu código-fonte roff
++   entry .escape   aplica escape a texto para uma linha de texto roff
++       Todo `-` vira `\-`, `\` vira `\[rs]`, e uma quebra de linha vira um espaço. Ele não protege um
++       `.` ou `'` inicial: os blocos fazem isso para cada linha que emitem, então um texto passado
++       apenas por `.escape` e escrito no início de uma linha ainda precisa de `\&`.
+
+=       passed through `.escape` alone and written at the start of a line still needs `\&`.
+=
+-       ```scala
++       ```scala
+
+=       passed through `.escape` alone and written at the start of a line still needs `\&`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Roff.escape(t"list-files")   // t"list\\-files"
++       Roff.escape(t"list-files")   // t"list\\-files"
+
+=       Roff.escape(t"list-files")   // t"list\\-files"
+-       ```
++       ```
+
+-   entry .quote   escapes and double-quotes text as a macro argument
+-       For the arguments of `.TH`, `.SH` and `.SS`. Inside the quotes, `"` becomes `\[dq]` and
+-       `\` becomes `\[rs]`, but `-` is left alone: a hyphen in a title or a date is prose, and
+-       an escaped hyphen in the `.TH` date defeats `mandoc`'s date parsing.
++   entry .quote   aplica escape e aspas duplas a texto como argumento de macro
++       Para os argumentos de `.TH`, `.SH` e `.SS`. Dentro das aspas, `"` vira `\[dq]` e `\` vira
++       `\[rs]`, mas `-` fica como está: um hífen num título ou numa data é prosa, e um hífen com
++       escape na data de `.TH` frustra a análise de datas do `mandoc`.
+
+=       an escaped hyphen in the `.TH` date defeats `mandoc`'s date parsing.
+=
+-       ```scala
++       ```scala
+
+=       an escaped hyphen in the `.TH` date defeats `mandoc`'s date parsing.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Roff.quote(t"2026-08-17")   // t"\"2026-08-17\""
++       Roff.quote(t"2026-08-17")   // t"\"2026-08-17\""
+
+=       Roff.quote(t"2026-08-17")   // t"\"2026-08-17\""
+-       ```
++       ```
+
+-   entry .Inline   a run of text within a line: plain, bold or italic
++   entry .Inline   um segmento de texto dentro de uma linha: simples, negrito ou itálico
+
+=   entry .Inline   a run of text within a line: plain, bold or italic
+-     detail
++     detail
+
+-         An enum of three cases. `Plain(text)` is escaped text; `Bold(inlines)` and
+-         `Italic(inlines)` wrap a list of further runs in the `\fB…\fP` and `\fI…\fP` font
+-         changes, so styles may nest. The companion's `plain`, `bold` and `italic` make the
+-         common single-run forms.
++         Um enum de três casos. `Plain(text)` é texto com escape; `Bold(inlines)` e
++         `Italic(inlines)` envolvem uma lista de outros segmentos nas trocas de fonte `\fB…\fP` e
++         `\fI…\fP`, de modo que os estilos podem se aninhar. Os `plain`, `bold` e `italic` do
++         companheiro criam as formas comuns de um único segmento.
+
+=         common single-run forms.
+=
+-         ```scala
++         ```scala
+
+=         common single-run forms.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val runs = List(Roff.Inline.bold(t"ls"), Roff.Inline.Plain(t" "), Roff.Inline.italic(t"file"))
++         val runs = List(Roff.Inline.bold(t"ls"), Roff.Inline.Plain(t" "), Roff.Inline.italic(t"file"))
+
+-         runs.map(_.serialize).join   // t"\\fBls\\fP \\fIfile\\fP"
++         runs.map(_.serialize).join   // t"\\fBls\\fP \\fIfile\\fP"
+
+=         runs.map(_.serialize).join   // t"\\fBls\\fP \\fIfile\\fP"
+-         ```
++         ```
+
+-     entry .plain   a list of one plain run of text, the form a paragraph's prose takes
+-     entry .bold   one bold run of plain text
+-     entry .italic   one italic run of plain text
+-     entry #serialize   the run as roff text, escaped and with its font changes
+-   entry .Block   a block of a manual page: a section, a paragraph, a tagged paragraph, an example or an indent
++     entry .plain   uma lista de um único segmento de texto simples, a forma que a prosa de um parágrafo assume
++     entry .bold   um segmento de texto simples em negrito
++     entry .italic   um segmento de texto simples em itálico
++     entry #serialize   o segmento como texto roff, com escape e com suas trocas de fonte
++   entry .Block   um bloco de uma página de manual: uma seção, um parágrafo, um parágrafo com tag, um exemplo ou uma indentação
+
+=   entry .Block   a block of a manual page: a section, a paragraph, a tagged paragraph, an example or an indent
+-     detail
++     detail
+
+-         An enum of the block structures of the man macros:
++         Um enum das estruturas de bloco das macros man:
+
+-         ```tabular
++         ```tabular
+
+-         column  Case
++         column  Caso
+
+-         column  Macros
++         column  Macros
+
+-         column  Block
+-         row  `Section(title, blocks)`  `.SH`  a section, such as `Name`, `Synopsis` or `Options`
+-         row  `Subsection(title, blocks)`  `.SS`  a subsection
+-         row  `Paragraph(prose)`  `.P`  a paragraph of inline runs; as the first block of a section or subsection, the redundant `.P` is omitted
+-         row  `Tagged(tag, body)`  `.TP`  the shape of an option's entry: the tag on one line and its description indented beneath; an empty body emits only the tag
+-         row  `Example(lines)`  `.EX`, `.EE`  literal lines, each escaped and protected
+-         row  `Indented(blocks)`  `.RS`, `.RE`  indented blocks
++         column  Bloco
++         row  `Section(title, blocks)`  `.SH`  uma seção, como `Name`, `Synopsis` ou `Options`
++         row  `Subsection(title, blocks)`  `.SS`  uma subseção
++         row  `Paragraph(prose)`  `.P`  um parágrafo de segmentos inline; como primeiro bloco de uma seção ou subseção, o `.P` redundante é omitido
++         row  `Tagged(tag, body)`  `.TP`  a forma da entrada de uma opção: a tag numa linha e sua descrição indentada abaixo; um corpo vazio emite apenas a tag
++         row  `Example(lines)`  `.EX`, `.EE`  linhas literais, cada uma com escape e protegida
++         row  `Indented(blocks)`  `.RS`, `.RE`  blocos indentados
+
+=         row  `Indented(blocks)`  `.RS`, `.RE`  indented blocks
+-         ```
++         ```
+
+=         ```
+=
+-         ```scala
++         ```scala
+
+=         ```
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Roff.Block.Example(List(t"grep -r pattern .", t".hidden")).serialize
++         Roff.Block.Example(List(t"grep -r pattern .", t".hidden")).serialize
+
+-         // List(t".EX", t"grep \\-r pattern .", t"\\&.hidden", t".EE")
++         // List(t".EX", t"grep \\-r pattern .", t"\\&.hidden", t".EE")
+
+=         // List(t".EX", t"grep \\-r pattern .", t"\\&.hidden", t".EE")
+-         ```
++         ```
+
+-     entry #serialize   the block as lines of roff source
+-         Each text line which begins with `.` or `'` is protected with `\&`, so prose can
+-         never be taken for a control line.
+-   entry #title   the page's name, usually the command's, rendered in capitals on the `.TH` line
+-   entry #section   the manual section number: 1 for user commands, 5 for file formats, 8 for administration
+-   entry #date   the date of the page's last change, as text
+-   entry #source   the source of the program, usually its name and version
+-   entry #manual   the title of the manual the page belongs to, such as `User Commands`
+-   entry #blocks   the body of the page
+-   entry #serialize   the whole page as roff source, ending with a newline
++     entry #serialize   o bloco como linhas de código-fonte roff
++         Cada linha de texto que começa com `.` ou `'` é protegida com `\&`, de modo que a prosa
++         nunca pode ser tomada por uma linha de controle.
++   entry #title   o nome da página, geralmente o do comando, renderizado em maiúsculas na linha `.TH`
++   entry #section   o número da seção do manual: 1 para comandos de usuário, 5 para formatos de arquivo, 8 para administração
++   entry #date   a data da última alteração da página, como texto
++   entry #source   a origem do programa, geralmente seu nome e sua versão
++   entry #manual   o título do manual a que a página pertence, como `User Commands`
++   entry #blocks   o corpo da página
++   entry #serialize   a página inteira como código-fonte roff, terminando com uma quebra de linha

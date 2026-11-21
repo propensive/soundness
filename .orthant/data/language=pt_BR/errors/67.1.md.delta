@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.67.1` — `Classpath.Error`
++ # `↯/s.67.1` — `Classpath.Error`
+
+- Raised when Hellenism cannot find a resource on the classpath.
++ Lançado quando o Hellenism não consegue encontrar um recurso no classpath.
+
+- ## Cause
++ ## Causa
+
+- Hellenism resolves resources by name; this error is thrown when no
+- classpath entry holds the requested resource.
++ O Hellenism resolve recursos pelo nome; este erro é lançado quando nenhuma entrada do classpath
++ contém o recurso pedido.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.67.1] the resource config.json was not on the classpath
++ [↯/s.67.1] the resource config.json was not on the classpath
+
+= [↯/s.67.1] the resource config.json was not on the classpath
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Confirm the resource path (relative to the classpath root) and
+- that the resource is included in the build artefact.
++ Confirme o caminho do recurso (relativo à raiz do classpath) e que o recurso está incluído no
++ artefato do build.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/hellenism/src/core/hellenism.Classpath.scala`
++ - Código-fonte: `lib/hellenism/src/core/hellenism.Classpath.scala`

@@ -1,0 +1,1130 @@
+orthant 1 language
+
+- # Changes since 0.70.0
++ # Mudanças desde a 0.70.0
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.70.0 to the next release. Each entry states precisely what changed; see `AGENTS.md` for the
+- format. Entries are grouped by module, most-recently-added last within a module.
++ Este arquivo é lido por um agente LLM para atualizar código que consome bibliotecas Soundness da
++ 0.70.0 para a próxima versão. Cada entrada descreve com precisão o que mudou; veja `AGENTS.md` para
++ o formato. As entradas são agrupadas por módulo, com as adicionadas mais recentemente por último
++ dentro de cada módulo.
+
+- ## ambience
++ ## ambience
+
+- - `ambience.temporaryDirectories.environmentTemporaryDirectory` (also
+-   `soundness.temporaryDirectories.environmentTemporaryDirectory`) now reads `TMPDIR`, `TMP` and
+-   `TEMP` from the given `ambience.Environment`; it previously ignored that given and read
+-   `java.lang.System.getenv`. Its type is unchanged. Code that summons it with an `Environment`
+-   other than `javaBaseEnvironment` now gets that environment's temporary directory. (#2180)
+- - `ambience.environments.javaBaseEnvironment` reads the JVM's own environment, as before; in a
+-   daemon started by an xek 1.2.0 launcher that environment is sanitized (see `## ethereal`), so
+-   daemon code reading an application variable through it must use the invocation's environment
+-   or `environments.daemonEnvironment` instead. (#2180)
++ - `ambience.temporaryDirectories.environmentTemporaryDirectory` (também
++   `soundness.temporaryDirectories.environmentTemporaryDirectory`) agora lê `TMPDIR`, `TMP` e
++   `TEMP` do `ambience.Environment` fornecido; antes, ignorava esse given e lia
++   `java.lang.System.getenv`. Seu tipo não mudou. O código que o convoca com um `Environment`
++   diferente de `javaBaseEnvironment` agora obtém o diretório temporário desse ambiente. (#2180)
++ - `ambience.environments.javaBaseEnvironment` lê o próprio ambiente da JVM, como antes; em um
++   daemon iniciado por um launcher do xek 1.2.0, esse ambiente é sanitizado (veja `## ethereal`),
++   então o código do daemon que lê uma variável da aplicação por meio dele deve usar o ambiente da
++   invocação ou `environments.daemonEnvironment` em seu lugar. (#2180)
+
+- ## anthology
++ ## anthology
+
+- - `anthology.Format` gains an abstract member `kind: anthology.Format.Kind` (new enum: `Source`,
+-   `Ir`, `Application`), implemented as a `final def` by `Format.Source`, `Format.Ir` and
+-   `Format.Application`, and `final override` definitions of `equals` and `hashCode`: two formats
+-   are equal when their `kind`s and `id`s are equal. A class extending `Format` other than through
+-   one of the three tier traits must define `kind`; one overriding `equals` or `hashCode` no longer
+-   compiles; and a case class extending `Format` no longer has a synthesized structural `equals`.
+-   Two formats of one kind with the same `id` are now equal even if their other members differ, so
+-   a format whose parameters distinguish nodes must encode them in its `id` (every built-in format
+-   already does). (#2166)
+- - `anthology.WasiToolchain.apply()` and `anthology.nativeEdges.apply(triples*)` (the
+-   `nir` component) now take `(using WorkingDirectory, Environment)`, and probe for their tools
+-   with that environment. Supply the `Environment` the processes should inherit: the invocation's
+-   (`environments.daemonClientEnvironment`, or `Environment.provided` from a `Cli`) in a tool,
+-   `environments.javaBaseEnvironment` for the previous behaviour. (#2180)
++ - `anthology.Format` ganha um membro abstrato `kind: anthology.Format.Kind` (novo enum: `Source`,
++   `Ir`, `Application`), implementado como `final def` por `Format.Source`, `Format.Ir` e
++   `Format.Application`, e definições `final override` de `equals` e `hashCode`: dois formatos são
++   iguais quando seus `kind`s e `id`s são iguais. Uma classe que estende `Format` sem ser por meio
++   de uma das três traits de nível deve definir `kind`; uma que sobrepõe `equals` ou `hashCode` não
++   compila mais; e uma case class que estende `Format` não tem mais um `equals` estrutural
++   sintetizado. Dois formatos de uma mesma categoria com o mesmo `id` agora são iguais mesmo que
++   seus outros membros difiram, então um formato cujos parâmetros distinguem nós deve codificá-los
++   em seu `id` (todo formato embutido já o faz). (#2166)
++ - `anthology.WasiToolchain.apply()` e `anthology.nativeEdges.apply(triples*)` (o componente
++   `nir`) agora recebem `(using WorkingDirectory, Environment)` e sondam suas ferramentas com esse
++   ambiente. Forneça o `Environment` que os processos devem herdar: o da invocação
++   (`environments.daemonClientEnvironment`, ou `Environment.provided` de um `Cli`) em uma
++   ferramenta, `environments.javaBaseEnvironment` para o comportamento anterior. (#2180)
+
+- ## apoplexy
++ ## apoplexy
+
+- - `apoplexy.OpenApi.json(yaml: Yaml): Json` removed. The translation is now the top-level given
+-   `apoplexy.yamlEncodableInJson: Yaml is Encodable in Json` (not exported by `soundness`), so
+-   write `yaml.in[Json]` with `import apoplexy.yamlEncodableInJson` in scope for
+-   `OpenApi.json(yaml)`. The output is unchanged. (#2176)
++ - `apoplexy.OpenApi.json(yaml: Yaml): Json` foi removido. A tradução agora é o given de nível
++   superior `apoplexy.yamlEncodableInJson: Yaml is Encodable in Json` (não exportado por
++   `soundness`), então escreva `yaml.in[Json]`, com `import apoplexy.yamlEncodableInJson` no escopo,
++   no lugar de `OpenApi.json(yaml)`. A saída não mudou. (#2176)
+
+- ## archimedes
++ ## archimedes
+
+- - `archimedes.Ergo.Error.Reason.BadOpener(char: Text)`, `Unclosed(expected: Text)` and
+-   `MissingBody(char: Text)` now take a `Char` in place of the single-character `Text`:
+-   `BadOpener(char: Char)`, `Unclosed(expected: Char)`, `MissingBody(char: Char)`. The rendered
+-   messages are unchanged. Patterns binding the field and comparing it with a `Text` compare with
+-   a `Char` instead. (#2167)
+- - `archimedes.Mathml#htmlAttributes: List[(Text, Optional[Text])]` removed. Use `attributes`,
+-   whose `List[(Text, Text)]` conforms wherever `(Text, Optional[Text])` pairs are expected (for
+-   example `honeycomb.Attributes(node.attributes*)`). (#2167)
+- - `archimedes.Math#xml: Xml` and `archimedes.Mathml#xml: Xml` removed in favour of the givens
+-   `Math.encodableInXml: Math is Encodable in Xml` and `Mathml.encodable: [node <: Mathml] =>
+-   node is Encodable in Xml`. Write `math.in[Xml]` for `math.xml` and `element.in[Xml]` for
+-   `element.xml`; use `in[Xml]`, not `encode`, on a `Math`, which also has an `Encodable in
+-   Math`. The output is unchanged. (#2176)
+- - `archimedes.Math#html: Html of "math"` and `archimedes.Mathml#html: Html of "#foreign"`
+-   removed. `math.html` and `element.html` still compile unchanged through honeycomb's `html`
+-   extension (in scope with `import soundness.*` or `import honeycomb.*`), resolved by the
+-   existing `Math.renderable` and the new `Mathml.renderable: [node <: Mathml] => node is
++ - `archimedes.Ergo.Error.Reason.BadOpener(char: Text)`, `Unclosed(expected: Text)` e
++   `MissingBody(char: Text)` agora recebem um `Char` no lugar do `Text` de um único caractere:
++   `BadOpener(char: Char)`, `Unclosed(expected: Char)`, `MissingBody(char: Char)`. As mensagens
++   renderizadas não mudaram. Padrões que vinculam o campo e o comparam com um `Text` passam a
++   compará-lo com um `Char`. (#2167)
++ - `archimedes.Mathml#htmlAttributes: List[(Text, Optional[Text])]` foi removido. Use `attributes`,
++   cujo `List[(Text, Text)]` se conforma onde quer que se esperem pares `(Text, Optional[Text])`
++   (por exemplo, `honeycomb.Attributes(node.attributes*)`). (#2167)
++ - `archimedes.Math#xml: Xml` e `archimedes.Mathml#xml: Xml` foram removidos em favor dos givens
++   `Math.encodableInXml: Math is Encodable in Xml` e `Mathml.encodable: [node <: Mathml] =>
++   node is Encodable in Xml`. Escreva `math.in[Xml]` no lugar de `math.xml` e `element.in[Xml]` no
++   lugar de `element.xml`; use `in[Xml]`, e não `encode`, em um `Math`, que também tem um
++   `Encodable in Math`. A saída não mudou. (#2176)
++ - `archimedes.Math#html: Html of "math"` e `archimedes.Mathml#html: Html of "#foreign"` foram
++   removidos. `math.html` e `element.html` continuam compilando sem mudanças por meio da extensão
++   `html` do honeycomb (no escopo com `import soundness.*` ou `import honeycomb.*`), resolvida pelo
++   `Math.renderable` existente e pelo novo `Mathml.renderable: [node <: Mathml] => node is
+
+-   Renderable { type Form = "#foreign" }`. (#2176)
++   Renderable { type Form = "#foreign" }`. (#2176)
+
+- ## aviation
++ ## aviation
+
+- - `aviation.Calendar#Mensual` now has a `Showable` context bound (`type Mensual: Showable`), and
+-   `Calendar#monthName(month: Mensual): Text` now renders `month.show` where it rendered
+-   `month.toString.tt`. A calendar defined outside aviation must have a `Showable` for its month
+-   type in scope where the calendar is defined; an `enum` month already has one through
+-   `spectacular.Showable.enumeration`, which renders the case name as before. (#2173)
+- - `aviation.AlexandrianCalendar` changed from `abstract class AlexandrianCalendar()` to
+-   `trait AlexandrianCalendar`. Rewrite `extends AlexandrianCalendar()` as
++ - `aviation.Calendar#Mensual` agora tem um context bound `Showable` (`type Mensual: Showable`), e
++   `Calendar#monthName(month: Mensual): Text` agora renderiza `month.show` onde renderizava
++   `month.toString.tt`. Um calendário definido fora do aviation deve ter um `Showable` para seu
++   tipo de mês no escopo onde o calendário é definido; um mês `enum` já tem um por meio de
++   `spectacular.Showable.enumeration`, que renderiza o nome do caso como antes. (#2173)
++ - `aviation.AlexandrianCalendar` passou de `abstract class AlexandrianCalendar()` para
++   `trait AlexandrianCalendar`. Reescreva `extends AlexandrianCalendar()` como
+
+-   `extends AlexandrianCalendar`. (#2173)
++   `extends AlexandrianCalendar`. (#2173)
+
+- - The givens `aviation.CopticMonth.showable`, `aviation.EthiopianMonth.showable`,
+-   `aviation.FrenchRepublicanMonth.showable`, `aviation.IndianMonth.showable` and
+-   `aviation.PersianMonth.showable` removed; `spectacular.Showable.enumeration` resolves in their
+-   place with the same output, so only code naming one of these givens explicitly must change.
+-   (#2173)
++ - Os givens `aviation.CopticMonth.showable`, `aviation.EthiopianMonth.showable`,
++   `aviation.FrenchRepublicanMonth.showable`, `aviation.IndianMonth.showable` e
++   `aviation.PersianMonth.showable` foram removidos; `spectacular.Showable.enumeration` é resolvido
++   no lugar deles com a mesma saída, então só precisa mudar o código que nomeia explicitamente um
++   desses givens. (#2173)
+
+- ## beneficence
++ ## beneficence
+
+- - The compiler plugin (`beneficence-plugin`) writes a new resource directory,
+-   `META-INF/probably/tests`, into the output of every compilation which has `probably.Suite` and
+-   `probably.Testable` on its classpath: one file per source file which declares a suite or a
+-   test, named `<source file name>-<12 hex digits of the SHA-256 of its path>`. The format is
+-   documented in `beneficence.TestsIndex`. `META-INF/services/probably.Suite` is unchanged. A
+-   build which packages compiler output by an explicit list of resource paths must include the
+-   new directory for a host (fume) to list its tests without running them; no merge rule is
+-   needed, since no two modules write the same entry. (#2169)
++ - O plugin do compilador (`beneficence-plugin`) escreve um novo diretório de recursos,
++   `META-INF/probably/tests`, na saída de toda compilação que tem `probably.Suite` e
++   `probably.Testable` no classpath: um arquivo por arquivo-fonte que declara uma suíte ou um
++   teste, chamado `<source file name>-<12 hex digits of the SHA-256 of its path>`. O formato está
++   documentado em `beneficence.TestsIndex`. `META-INF/services/probably.Suite` não mudou. Um build
++   que empacota a saída do compilador por uma lista explícita de caminhos de recursos deve incluir
++   o novo diretório para que um host (fume) possa listar seus testes sem executá-los; nenhuma regra
++   de mesclagem é necessária, já que dois módulos nunca escrevem a mesma entrada. (#2169)
+
+- ## bitumen
++ ## bitumen
+
+- - `bitumen.UnixMode#bytes: Data`, `bitumen.UnixUser#bytes: Data` and `bitumen.UnixGroup#bytes:
+-   Data` removed. They produced the USTAR header field (seven zero-padded octal ASCII digits), a
+-   format of tar rather than of the types, and are now private to `Tar.Header`. Code that needs
+-   the field writes `value.octal.pad(7, Rtl, '0').in[Data]` from `mode.int`, `user.value` or
+-   `group.value`. (#2176)
++ - `bitumen.UnixMode#bytes: Data`, `bitumen.UnixUser#bytes: Data` e `bitumen.UnixGroup#bytes:
++   Data` foram removidos. Eles produziam o campo de cabeçalho USTAR (sete dígitos octais ASCII
++   preenchidos com zeros), um formato do tar e não dos tipos, e agora são privados de `Tar.Header`.
++   O código que precisa do campo escreve `value.octal.pad(7, Rtl, '0').in[Data]` a partir de
++   `mode.int`, `user.value` ou `group.value`. (#2176)
+
+- ## build
++ ## build
+
+- - Soundness is compiled with Proscala `3.9.1-dev-p17` (was `3.9.0-p16`), the fork's 3.9 stream
+-   now tracking scala/scala3's `lts-3.9` branch; `build.mill`'s defaults for
+-   `SOUNDNESS_SCALA_RELEASE` (the proscala release tag downloaded) and `SOUNDNESS_SCALA_VERSION`
+-   (the coordinate version) are both `3.9.1-dev-p17`, and every `org.scala-lang` dependency is
+-   forced to that coordinate. A consumer compiles against the same fork version. (#2175)
+- - The tools in `etc/tools` are flare 0.5.0 (the compiler plugin Soundness is compiled with),
+-   fume 0.6.0 (the test runner, which reads the events suites have emitted since 0.70.0) and
+-   flame 0.5.0; a project running Soundness suites needs fume 0.6.0 or later. (#2158)
++ - O Soundness é compilado com o Proscala `3.9.1-dev-p17` (era `3.9.0-p16`), com a linha 3.9 do
++   fork agora acompanhando o branch `lts-3.9` do scala/scala3; os padrões de `build.mill` para
++   `SOUNDNESS_SCALA_RELEASE` (a tag de release do proscala baixada) e `SOUNDNESS_SCALA_VERSION` (a
++   versão da coordenada) são ambos `3.9.1-dev-p17`, e toda dependência `org.scala-lang` é forçada
++   para essa coordenada. Um consumidor compila contra a mesma versão do fork. (#2175)
++ - As ferramentas em `etc/tools` são o flare 0.5.0 (o plugin do compilador com que o Soundness é
++   compilado), o fume 0.6.0 (o executor de testes, que lê os eventos que as suítes emitem desde a
++   0.70.0) e o flame 0.5.0; um projeto que executa suítes do Soundness precisa do fume 0.6.0 ou
++   posterior. (#2158)
+
+- ## coaxial
++ ## coaxial
+
+- - `coaxial.Socket.Error.Reason` gains `Timeout` (5), raised when a receive on a datagram socket
+-   configured with `Socket.Option.Timeout` elapses; an exhaustive match on the reasons gains a
+-   case. (#2178)
+- - `coaxial.Socket.Option` gains `MulticastLoop` (`IP_MULTICAST_LOOP`), `MulticastHops(count)`
+-   (`IP_MULTICAST_TTL`) and `DatagramSize(bytes)` (the receive buffer per datagram, hence the
+-   largest datagram received whole; 1472 unless set), with `socketOptions.multicastLoopSocketOption`,
+-   `multicastHops(n)` and `datagramSize(n)`. An exhaustive match on `Socket.Option` gains three
+-   cases. (#2178)
+- - `coaxial.Socket.Backend` gains an abstract member `exchangeUdp(endpoint, interface, options,
+-   data): Packet` — one datagram out from an ephemeral port, one reply in, bounded by
+-   `Option.Timeout` — and its `DatagramSocket` handle type on the JVM and Scala Native backends
+-   is now a private binding rather than `java.net.DatagramSocket`. A third-party backend must
+-   implement `exchangeUdp`; code that relied on the handle being a `DatagramSocket` must go
+-   through the backend's operations. (#2178)
+- - `coaxial.Multicast(group: Ipv4 | Ipv6, port: Udp.Port)` added, with `Multicast.Reply`
+-   (`Ignore`/`Group(data)`/`Unicast(data)`), `Multicast.Subscription` (a `Socket.Service` that
+-   can also `send` to the group or to one destination), the typeclass `coaxial.Subscribable` with
+-   a given for `Multicast` (and a `Bindable` given over it, so `listen` works on a group), and the
+-   loan `multicast.subscribe(handler)(block)`. `Multicast.interfaces(interface:
+-   Optional[MacAddress])`
+-   lists the interfaces a subscription joins on. `Socket.Backend` gains the abstract
+-   members `MulticastSocket`, `joinMulticast`, `receiveMulticast`, `sendGroup`, `sendTo` and
+-   `leaveMulticast`, implemented on the JVM (a `DatagramChannel` joined per interface) and
+-   raising `Socket.Error` on Scala Native and WASI; a third-party backend must implement them.
+-   (#2178)
+- - New component `coaxial.dns` (in the `soundness-web` bundle): `endpoint.query(message:
+-   Dns.Message)` and `endpoint.lookup(name, rtype)` on an `Endpoint[Udp.Port]`, exchanging DNS
+-   messages with a nameserver over UDP; additive. (#2178)
+- - The JVM and Scala Native backends' `listenUdp` now configures the socket *before* binding it,
+-   so `Socket.Option.ReuseAddress` and `ReusePort` take effect for UDP listeners (they were
+-   silently ineffective before). (#2178)
++ - `coaxial.Socket.Error.Reason` ganha `Timeout` (5), lançado quando um recebimento em um socket de
++   datagramas configurado com `Socket.Option.Timeout` expira; um match exaustivo sobre os motivos
++   ganha um caso. (#2178)
++ - `coaxial.Socket.Option` ganha `MulticastLoop` (`IP_MULTICAST_LOOP`), `MulticastHops(count)`
++   (`IP_MULTICAST_TTL`) e `DatagramSize(bytes)` (o buffer de recebimento por datagrama, e portanto
++   o maior datagrama recebido inteiro; 1472 se não for definido), com
++   `socketOptions.multicastLoopSocketOption`, `multicastHops(n)` e `datagramSize(n)`. Um match
++   exaustivo sobre `Socket.Option` ganha três casos. (#2178)
++ - `coaxial.Socket.Backend` ganha um membro abstrato `exchangeUdp(endpoint, interface, options,
++   data): Packet` — um datagrama enviado de uma porta efêmera, uma resposta recebida, limitado por
++   `Option.Timeout` —, e seu tipo de handle `DatagramSocket` nos backends JVM e Scala Native agora
++   é um vínculo privado em vez de `java.net.DatagramSocket`. Um backend de terceiros deve
++   implementar `exchangeUdp`; o código que dependia de o handle ser um `DatagramSocket` deve passar
++   pelas operações do backend. (#2178)
++ - Adicionado `coaxial.Multicast(group: Ipv4 | Ipv6, port: Udp.Port)`, com `Multicast.Reply`
++   (`Ignore`/`Group(data)`/`Unicast(data)`), `Multicast.Subscription` (um `Socket.Service` que
++   também pode fazer `send` para o grupo ou para um destino), a classe de tipos
++   `coaxial.Subscribable` com um given para `Multicast` (e um given `Bindable` sobre ele, de modo
++   que `listen` funciona em um grupo), e o empréstimo `multicast.subscribe(handler)(block)`.
++   `Multicast.interfaces(interface: Optional[MacAddress])`
++   lista as interfaces nas quais uma assinatura entra. `Socket.Backend` ganha os membros abstratos
++   `MulticastSocket`, `joinMulticast`, `receiveMulticast`, `sendGroup`, `sendTo` e
++   `leaveMulticast`, implementados na JVM (um `DatagramChannel` associado por interface) e lançando
++   `Socket.Error` no Scala Native e no WASI; um backend de terceiros deve implementá-los. (#2178)
++ - Novo componente `coaxial.dns` (no pacote de distribuição `soundness-web`): `endpoint.query(message:
++   Dns.Message)` e `endpoint.lookup(name, rtype)` em um `Endpoint[Udp.Port]`, trocando mensagens DNS
++   com um servidor de nomes por UDP; aditivo. (#2178)
++ - O `listenUdp` dos backends JVM e Scala Native agora configura o socket *antes* de vinculá-lo, de
++   modo que `Socket.Option.ReuseAddress` e `ReusePort` têm efeito para listeners UDP (antes eram
++   silenciosamente ineficazes). (#2178)
+
+- ## enigmatic
++ ## enigmatic
+
+- - `enigmatic.Cose#bytes: Data` removed in favour of the given `Cose.encodable: [cose <: Cose] =>
+-   cose is Encodable in Data`. Write `cose.in[Data]` for `cose.bytes`; the wire form is
+-   unchanged. (#2176)
++ - `enigmatic.Cose#bytes: Data` foi removido em favor do given `Cose.encodable: [cose <: Cose] =>
++   cose is Encodable in Data`. Escreva `cose.in[Data]` no lugar de `cose.bytes`; a forma de
++   transmissão não mudou. (#2176)
+
+- ## espionage
++ ## espionage
+
+- - `espionage.Acp.connect` gains a using parameter of type `ambience.Environment`, after
++ - `espionage.Acp.connect` ganha um parâmetro using do tipo `ambience.Environment`, depois de
+
+-   `WorkingDirectory`: `(using Monitor^{capture}, Probate, Diagnostics, WorkingDirectory,
++   `WorkingDirectory`: `(using Monitor^{capture}, Probate, Diagnostics, WorkingDirectory,
+
+-   Environment, Tactic[Acp.Error])`. An `Agent.Process` is launched with that environment.
+-   Supply the `Environment` the processes should inherit: the invocation's
+-   (`environments.daemonClientEnvironment`, or `Environment.provided` from a `Cli`) in a tool,
+-   `environments.javaBaseEnvironment` for the previous behaviour. (#2180)
++   Environment, Tactic[Acp.Error])`. Um `Agent.Process` é iniciado com esse ambiente. Forneça o
++   `Environment` que os processos devem herdar: o da invocação
++   (`environments.daemonClientEnvironment`, ou `Environment.provided` de um `Cli`) em uma
++   ferramenta, `environments.javaBaseEnvironment` para o comportamento anterior. (#2180)
+
+- ## ethereal
++ ## ethereal
+
+- - `ethereal.DaemonService` renamed to `ethereal.Resident` (also exported as `soundness.Resident`),
+-   and its type parameter replaced by a type member: `case class DaemonService[bus <:
+-   Matchable](…)` is now `abstract class Resident(…)` with `type Transport <: Matchable`, the type
+-   of the messages its clients exchange. Write `DaemonService[X]` as `Resident over X`
+-   (`prepositional.over`), and `DaemonService[?]` as `Resident`. The constructor no longer takes
+-   `deliver: bus => Unit` or `bus: Chain[bus]`; `bus: Chain[Transport]` and `broadcast(message:
+-   Transport): Unit` are abstract members, implemented by the daemon. Being no longer a case class,
+-   it has no `copy`, `unapply`, or structural `equals`/`hashCode`; its other constructor parameters
+-   remain public `val`s, with the same names. (#2163)
++ - `ethereal.DaemonService` foi renomeado para `ethereal.Resident` (também exportado como
++   `soundness.Resident`), e seu parâmetro de tipo foi substituído por um membro de tipo:
++   `case class DaemonService[bus <: Matchable](…)` agora é `abstract class Resident(…)` com
++   `type Transport <: Matchable`, o tipo das mensagens que seus clientes trocam. Escreva
++   `DaemonService[X]` como `Resident over X` (`prepositional.over`), e `DaemonService[?]` como
++   `Resident`. O construtor não recebe mais `deliver: bus => Unit` nem `bus: Chain[bus]`;
++   `bus: Chain[Transport]` e `broadcast(message: Transport): Unit` são membros abstratos,
++   implementados pelo daemon. Como não é mais uma case class, não tem `copy`, `unapply` nem
++   `equals`/`hashCode` estruturais; seus outros parâmetros de construtor continuam sendo `val`s
++   públicos, com os mesmos nomes. (#2163)
+
+- - `ethereal.service[bus <: Matchable](using DaemonService[bus]): DaemonService[bus]^{service}`
++ - `ethereal.service[bus <: Matchable](using DaemonService[bus]): DaemonService[bus]^{service}`
+
+-   (also `soundness.service`) renamed to `ethereal.resident[bus <: Matchable](using Resident over
+-   bus): (Resident over bus)^{resident}` (also `soundness.resident`); `service` removed. Rewrite
+-   every `service.…` inside a `cli` block as `resident.…`. The context function taken by
+-   `ethereal.cli[bus]` now provides `Resident over bus` in place of `DaemonService[bus]`. (#2163)
+- - `ethereal.Upgrade.apply[source](source: source): Nothing raises Upgrade.Error` and
+-   `Upgrade.applyBytes(bytes: Data): Nothing raises Upgrade.Error` removed; use
+-   `Upgrade.stage[source](source: source): Unit raises Upgrade.Error`, which takes the same
+-   `Readable to Data` source. It writes the candidate as `<data>/<name>/.pending` and *returns*:
+-   it no longer starts a launcher or exits the JVM, and the launcher applies the upgrade at the
+-   start of the command's next invocation. Code that relied on `Upgrade(…)` not returning (for
+-   example as the last expression of a `Nothing`-typed method) must now return normally, and
+-   should tell the user that the upgrade takes effect the next time the command is run. (#2171)
+- - `ethereal.Upgrade.Error.Reason.CannotRespawnLauncher` removed, and
+-   `Upgrade.Error.Reason.CannotResolveLauncher` renamed to `CannotResolveName` (still `SN-631.3`,
+-   raised when the daemon was not given its name by a launcher). Matches on either update
+-   accordingly. (#2171)
+- - `ethereal.Upgrade` gains `pending: Boolean` (whether a staged upgrade awaits the next
+-   invocation), `outcome: Optional[Upgrade.Outcome]` (what the launcher last did with one, read
+-   from `<data>/<name>/.upgrade-result`), `acknowledge(): Unit` (clears that outcome) and
+-   `enabled: Boolean` (from the `ethereal.upgradable` property; false for an executable built
+-   without a release key and application id). `Upgrade.Outcome(result: Outcome.Result,
+-   candidate: Long, previous: Long, time: Long)` has `when[instant]`, an `Instant` through
+-   `Instantiable`; `Outcome.Result` is an enum of `Applied`, `Disabled`, `NoRecord`,
+-   `WrongApplication`, `BadSignature`, `NotNewer` and `SwapFailed`. Additive. (#2171)
+- - `ethereal.Resident` gains `buildId: Long`, the running executable's build id (the `build.id`
+-   property, or zero). The daemon now reads `build.id`, and the `build.id` classpath resource that
+-   stands in for it, as a 64-bit `Long` rather than an `Int`. Additive. (#2171)
+- - The `ethereal-sign` Rust crate (`lib/ethereal/Cargo.toml`, `src/sign`) removed: it signed a
+-   record format (`ETHRCFG` v2) which no current launcher reads. Sign with `xek` 1.1.0 or later
+-   (`xek keygen --out <prefix>`, `xek sign --key <seed> --in <binary> --out <signed>`; Java 24 or
+-   later). Executables need xek 1.1.0 or later (`ETHRCFG` v4) to be upgradable, and are built with
+-   `--app-id <identifier>` as well as `--public-key`. From xek 1.1.0, every `xek` command line
+-   begins with a subcommand: write `xek build [options] <app.jar> [<output>]` where
+-   `xek [options] <app.jar> [<output>]` was written, including the usage line the daemon prints
+-   when it is run without a launcher. (#2171)
+- - A daemon started by an xek 1.2.0 launcher runs in `/` (the system drive's root on Windows),
+-   under umask `077`, with no inherited descriptors above 2, and with a sanitized JVM environment
+-   holding only `PATH`, `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`, `TZ`, `TMPDIR`, the
+-   `XDG_*` base directories, `JAVA_TOOL_OPTIONS`, `JDK_JAVA_OPTIONS`, `_JAVA_OPTIONS` and
+-   `ETHEREAL_DEBUG` (xek's `spec/launcher.md`, *The daemon process*). Daemon code reading
+-   `workingDirectories.javaBaseWorkingDirectory`, `user.dir`, `environments.javaBaseEnvironment`
+-   or `System.getenv` now sees that state rather than the first invocation's; it must use the
+-   invocation's (`daemonClientWorkingDirectory`, `daemonClientEnvironment`), or, for the
+-   environment the daemon was launched with, the new `ethereal.DaemonEnvironment` (given as
+-   `environments.daemonEnvironment`, also `soundness.environments.daemonEnvironment`), which holds
+-   the environment the launcher sends on the daemon's standard input (announced by
+-   `-Dethereal.environment=stdin`), read as the daemon starts, and falls back to the JVM's
+-   environment. A daemon no longer has the null device as its standard input. (#2180)
++   (também `soundness.service`) foi renomeado para `ethereal.resident[bus <: Matchable](using
++   Resident over bus): (Resident over bus)^{resident}` (também `soundness.resident`); `service`
++   foi removido. Reescreva todo `service.…` dentro de um bloco `cli` como `resident.…`. A função
++   de contexto recebida por `ethereal.cli[bus]` agora fornece `Resident over bus` no lugar de
++   `DaemonService[bus]`. (#2163)
++ - `ethereal.Upgrade.apply[source](source: source): Nothing raises Upgrade.Error` e
++   `Upgrade.applyBytes(bytes: Data): Nothing raises Upgrade.Error` foram removidos; use
++   `Upgrade.stage[source](source: source): Unit raises Upgrade.Error`, que recebe a mesma origem
++   `Readable to Data`. Ele escreve o candidato como `<data>/<name>/.pending` e *retorna*: não inicia
++   mais um launcher nem encerra a JVM, e o launcher aplica a atualização no início da próxima
++   invocação do comando. O código que dependia de `Upgrade(…)` não retornar (por exemplo, como
++   última expressão de um método com tipo `Nothing`) agora deve retornar normalmente, e deve
++   avisar o usuário de que a atualização entra em vigor na próxima vez que o comando for
++   executado. (#2171)
++ - `ethereal.Upgrade.Error.Reason.CannotRespawnLauncher` foi removido, e
++   `Upgrade.Error.Reason.CannotResolveLauncher` foi renomeado para `CannotResolveName` (ainda
++   `SN-631.3`, lançado quando o daemon não recebeu seu nome de um launcher). Os matches sobre
++   qualquer um deles devem ser atualizados de acordo. (#2171)
++ - `ethereal.Upgrade` ganha `pending: Boolean` (se uma atualização preparada aguarda a próxima
++   invocação), `outcome: Optional[Upgrade.Outcome]` (o que o launcher fez por último com uma, lido
++   de `<data>/<name>/.upgrade-result`), `acknowledge(): Unit` (limpa esse resultado) e
++   `enabled: Boolean` (da propriedade `ethereal.upgradable`; falso para um executável construído
++   sem chave de release e id de aplicação). `Upgrade.Outcome(result: Outcome.Result,
++   candidate: Long, previous: Long, time: Long)` tem `when[instant]`, um `Instant` por meio de
++   `Instantiable`; `Outcome.Result` é um enum de `Applied`, `Disabled`, `NoRecord`,
++   `WrongApplication`, `BadSignature`, `NotNewer` e `SwapFailed`. Aditivo. (#2171)
++ - `ethereal.Resident` ganha `buildId: Long`, o id de build do executável em execução (a
++   propriedade `build.id`, ou zero). O daemon agora lê `build.id`, e o recurso de classpath
++   `build.id` que o substitui, como um `Long` de 64 bits em vez de um `Int`. Aditivo. (#2171)
++ - O crate Rust `ethereal-sign` (`lib/ethereal/Cargo.toml`, `src/sign`) foi removido: ele assinava
++   um formato de registro (`ETHRCFG` v2) que nenhum launcher atual lê. Assine com o `xek` 1.1.0 ou
++   posterior (`xek keygen --out <prefix>`, `xek sign --key <seed> --in <binary> --out <signed>`;
++   Java 24 ou posterior). Os executáveis precisam do xek 1.1.0 ou posterior (`ETHRCFG` v4) para
++   poderem ser atualizados, e são construídos com `--app-id <identifier>` além de `--public-key`.
++   A partir do xek 1.1.0, toda linha de comando do `xek` começa com um subcomando: escreva
++   `xek build [options] <app.jar> [<output>]` onde se escrevia
++   `xek [options] <app.jar> [<output>]`, inclusive na linha de uso que o daemon imprime quando é
++   executado sem launcher. (#2171)
++ - Um daemon iniciado por um launcher do xek 1.2.0 é executado em `/` (a raiz da unidade do
++   sistema no Windows), com umask `077`, sem descritores herdados acima de 2 e com um ambiente da
++   JVM sanitizado que contém apenas `PATH`, `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`,
++   `TZ`, `TMPDIR`, os diretórios base `XDG_*`, `JAVA_TOOL_OPTIONS`, `JDK_JAVA_OPTIONS`,
++   `_JAVA_OPTIONS` e `ETHEREAL_DEBUG` (`spec/launcher.md` do xek, *The daemon process*). O código do
++   daemon que lê `workingDirectories.javaBaseWorkingDirectory`, `user.dir`,
++   `environments.javaBaseEnvironment` ou `System.getenv` agora vê esse estado em vez do estado da
++   primeira invocação; ele deve usar o da invocação (`daemonClientWorkingDirectory`,
++   `daemonClientEnvironment`) ou, para o ambiente com o qual o daemon foi iniciado, o novo
++   `ethereal.DaemonEnvironment` (fornecido como `environments.daemonEnvironment`, também
++   `soundness.environments.daemonEnvironment`), que contém o ambiente que o launcher envia pela
++   entrada padrão do daemon (anunciado por `-Dethereal.environment=stdin`), lido quando o daemon
++   inicia, e recorre ao ambiente da JVM como fallback. Um daemon não tem mais o dispositivo nulo
++   como entrada padrão. (#2180)
+
+- ## exegesis
++ ## exegesis
+
+- - `exegesis.LspSessional`'s constructor gains a using parameter `ambience.Environment` after
+-   `WorkingDirectory`; the given `exegesis.Lsp.Server.sessional` gains `environment: Environment`
+-   after `working`; `exegesis.Lsp.proxy` and `exegesis.Lsp.Proxy.run` gain `Environment` after
+-   `WorkingDirectory`. An `Lsp.Server.Process` is launched with that environment. Supply the
+-   `Environment` the processes should inherit: the invocation's
+-   (`environments.daemonClientEnvironment`, or `Environment.provided` from a `Cli`) in a tool,
+-   `environments.javaBaseEnvironment` for the previous behaviour. (#2180)
++ - O construtor de `exegesis.LspSessional` ganha um parâmetro using `ambience.Environment` depois
++   de `WorkingDirectory`; o given `exegesis.Lsp.Server.sessional` ganha `environment: Environment`
++   depois de `working`; `exegesis.Lsp.proxy` e `exegesis.Lsp.Proxy.run` ganham `Environment` depois
++   de `WorkingDirectory`. Um `Lsp.Server.Process` é iniciado com esse ambiente. Forneça o
++   `Environment` que os processos devem herdar: o da invocação
++   (`environments.daemonClientEnvironment`, ou `Environment.provided` de um `Cli`) em uma
++   ferramenta, `environments.javaBaseEnvironment` para o comportamento anterior. (#2180)
+
+- ## exoskeleton
++ ## exoskeleton
+
+- - `exoskeleton.Enclave` (`exoskeleton-rig`) now finds the builder it packages with in the
+-   environment variable `$XEK` instead of `$XEQ`, and defaults to `dist/xek` instead of
+-   `dist/xeq`. A test environment that set `$XEQ`, or fetched the builder into `dist/xeq`, sets
+-   `$XEK`, or fetches it into `dist/xek`, instead; `$XEQ` is no longer read. (#2157)
+- - `exoskeleton.Enclave`'s `buildId` parameter is now `Optional[Long]` (was `Optional[Int]`); an
+-   `Int` argument is widened by the compiler. `Enclave` also takes `releaseKey: Optional[Path on
+-   Linux]`, `recoveryKey: Optional[Path on Linux]` and `appId: Optional[Text]`, all defaulting to
+-   `Unset`, passed to `xek` as `--public-key`, `--recovery-key` and `--app-id`; positional
+-   arguments after `buildId` are unaffected, since these follow it. `Enclave.keygen(prefix)` and
+-   `Enclave.Launcher#sign(seed, out, foreign = false)` run `xek keygen` and `xek sign` (Java 24 or
+-   later). `Enclave` now runs `xek build`, so it needs a builder from xek 1.1.0 or later in `$XEK`
+-   or `dist/xek`. A failure of `xek` to package the
+-   executable now panics with a message, where it raised a `NotImplementedError`. (#2171)
+- - A `Subcommand` with `hidden = true` is unchanged in matching, completion and help, but where
+-   *every* subcommand candidate at a position is hidden, completion now offers the flags as well,
+-   rather than (in bash, fish and PowerShell) nothing. (#2171)
+- - `exoskeleton.Enclave.Tool#completions` now takes `(using Monitor, Environment)` and
+-   `exoskeleton.Enclave.Launcher#sandbox` takes `Environment` as its first using parameter;
+-   `exoskeleton.Tmux` gains a field `environment: Environment` after `workingDirectory`, and
+-   `exoskeleton.tmux`, `Tmux.resize`, `Tmux.screenshot`, `Tmux.attend`, `Tmux.completions` and
+-   `Tmux.progress` take `Environment` after `WorkingDirectory`. The tool's and tmux's commands run
+-   with that environment. (#2180)
++ - `exoskeleton.Enclave` (`exoskeleton-rig`) agora encontra o builder com que empacota na variável
++   de ambiente `$XEK` em vez de `$XEQ`, e usa `dist/xek` como padrão em vez de `dist/xeq`. Um
++   ambiente de teste que definia `$XEQ`, ou buscava o builder em `dist/xeq`, passa a definir
++   `$XEK`, ou a buscá-lo em `dist/xek`; `$XEQ` não é mais lido. (#2157)
++ - O parâmetro `buildId` de `exoskeleton.Enclave` agora é `Optional[Long]` (era `Optional[Int]`);
++   um argumento `Int` é alargado pelo compilador. `Enclave` também recebe `releaseKey:
++   Optional[Path on Linux]`, `recoveryKey: Optional[Path on Linux]` e `appId: Optional[Text]`, todos
++   com `Unset` como padrão, passados ao `xek` como `--public-key`, `--recovery-key` e `--app-id`; os
++   argumentos posicionais depois de `buildId` não são afetados, já que estes vêm depois dele.
++   `Enclave.keygen(prefix)` e `Enclave.Launcher#sign(seed, out, foreign = false)` executam
++   `xek keygen` e `xek sign` (Java 24 ou posterior). `Enclave` agora executa `xek build`, então
++   precisa de um builder do xek 1.1.0 ou posterior em `$XEK` ou `dist/xek`. Uma falha do `xek` ao
++   empacotar o
++   executável agora entra em pânico com uma mensagem, onde antes lançava um `NotImplementedError`.
++   (#2171)
++ - Um `Subcommand` com `hidden = true` não muda no casamento, na conclusão e na ajuda, mas, onde
++   *todos* os candidatos a subcomando em uma posição estão ocultos, a conclusão agora oferece
++   também as flags, em vez de (no bash, no fish e no PowerShell) nada. (#2171)
++ - `exoskeleton.Enclave.Tool#completions` agora recebe `(using Monitor, Environment)` e
++   `exoskeleton.Enclave.Launcher#sandbox` recebe `Environment` como seu primeiro parâmetro using;
++   `exoskeleton.Tmux` ganha um campo `environment: Environment` depois de `workingDirectory`, e
++   `exoskeleton.tmux`, `Tmux.resize`, `Tmux.screenshot`, `Tmux.attend`, `Tmux.completions` e
++   `Tmux.progress` recebem `Environment` depois de `WorkingDirectory`. Os comandos da ferramenta e
++   do tmux são executados com esse ambiente. (#2180)
+
+- ## facsimile
++ ## facsimile
+
+- - `facsimile.Print.baseFont(standard: Pdf.Font.Standard): Text` removed. The PostScript name is
+-   now a field of the enum, `facsimile.Pdf.Font.Standard#baseFont: Text`, so write
+-   `standard.baseFont` for `Print.baseFont(standard)`; the names are unchanged. (#2173)
++ - `facsimile.Print.baseFont(standard: Pdf.Font.Standard): Text` foi removido. O nome PostScript
++   agora é um campo do enum, `facsimile.Pdf.Font.Standard#baseFont: Text`, então escreva
++   `standard.baseFont` no lugar de `Print.baseFont(standard)`; os nomes não mudaram. (#2173)
+
+- ## frontier
++ ## frontier
+
+- - With `frontier.context.explainMissingContext` or `soundness.explainMissingContext` in scope (the
+-   latter is brought in by `import soundness.*`), `scala.util.NotGiven[X]` previously resolved
+-   whether or not an instance of `X` was available; it now resolves if and only if the search for
+-   `X` fails, as specified. The catch-all, when tried as a candidate for a `NotGiven[X]` target,
+-   now returns `scala.util.NotGiven.value` instead of aborting, which the compiler's per-candidate
+-   negation turns into a failure, so `NotGiven`'s own instances decide. Consequences for existing
+-   code compiled under the umbrella: a given guarded by a `NotGiven` whose subject is present is no
+-   longer eligible, so searches that reported two ambiguous alternatives (one guarded, one not)
+-   now select the unguarded one, e.g. `aviation.Timespan.dateMonths` over `dateRegular` for
+-   `date + n*Month` under a `Calendar`, and `escapade.Teletype.add` no longer applies where
+-   `Teletype is Textual` is in scope; code that compiled only because such a guard was defeated
+-   (e.g. `summon[NotGiven[Ordering[Int]]]`) now fails with a missing-given error. (#2123, #1955)
++ - Com `frontier.context.explainMissingContext` ou `soundness.explainMissingContext` no escopo (o
++   segundo é trazido por `import soundness.*`), `scala.util.NotGiven[X]` antes era resolvido
++   houvesse ou não uma instância de `X` disponível; agora é resolvido se e somente se a busca por
++   `X` falhar, como especificado. O catch-all, quando tentado como candidato para um alvo
++   `NotGiven[X]`, agora devolve `scala.util.NotGiven.value` em vez de abortar, o que a negação por
++   candidato do compilador transforma em uma falha, de modo que as próprias instâncias de
++   `NotGiven` decidem. Consequências para o código existente compilado sob o guarda-chuva: um given
++   protegido por um `NotGiven` cujo sujeito está presente não é mais elegível, então buscas que
++   relatavam duas alternativas ambíguas (uma protegida, outra não) agora selecionam a não
++   protegida, por exemplo `aviation.Timespan.dateMonths` em vez de `dateRegular` para
++   `date + n*Month` sob um `Calendar`, e `escapade.Teletype.add` não se aplica mais onde
++   `Teletype is Textual` está no escopo; o código que compilava só porque tal proteção era
++   derrotada (por exemplo, `summon[NotGiven[Ordering[Int]]]`) agora falha com um erro de given
++   ausente. (#2123, #1955)
+
+- ## graffiti
++ ## graffiti
+
+- - `graffiti.Archetype#html: Html of "html"` (a `final def`) removed in favour of the given
++ - `graffiti.Archetype#html: Html of "html"` (um `final def`) foi removido em favor do given
+
+-   `Archetype.renderable: [page <: Archetype] => page is Renderable in "html"`. `page.html`
++   `Archetype.renderable: [page <: Archetype] => page is Renderable in "html"`. `page.html`
+
+-   compiles unchanged through honeycomb's `html` extension (in scope with `import soundness.*`
+-   or `import honeycomb.*`), and `Archetype#document` is unchanged. A page that defines its own
+-   `html` member would now shadow the extension rather than fail to compile. (#2176)
++   continua compilando sem mudanças por meio da extensão `html` do honeycomb (no escopo com
++   `import soundness.*` ou `import honeycomb.*`), e `Archetype#document` não mudou. Uma página que
++   define seu próprio membro `html` agora sombrearia a extensão em vez de falhar na compilação.
++   (#2176)
+
+- ## guillotine
++ ## guillotine
+
+- - `guillotine.Executable#fork[result]()` (and so `Command#fork` and `Pipeline#fork`) now takes
+-   `(using working: WorkingDirectory, environment: ambience.Environment)`;
++ - `guillotine.Executable#fork[result]()` (e, portanto, `Command#fork` e `Pipeline#fork`) agora
++   recebe `(using working: WorkingDirectory, environment: ambience.Environment)`;
+
+-   `Executable#exec[result]()`
++   `Executable#exec[result]()`
+
+-   takes `(using computable: (result is Computable)^, working: WorkingDirectory, environment:
+-   Environment)`; the inline `Executable#apply()` takes `environment: Environment` after `working`.
+-   A call site with no `Environment` in scope no longer compiles. Supply the `Environment` the
+-   processes should inherit: the invocation's (`environments.daemonClientEnvironment`, or
+-   `Environment.provided` from a `Cli`) in a tool, `environments.javaBaseEnvironment` for the
+-   previous behaviour. (#2180)
+- - Semantics: when the given `Environment`'s new `entries` member is not `Unset`, the process is
+-   started with exactly those variables, rather than the JVM's, and a command whose name contains
+-   no `/` is first looked up on that environment's `PATH`, its absolute path replacing the name as
+-   `argv[0]`; a name not found there is left to the JDK. When `entries` is `Unset` (an
+-   `Environment` written as a lambda, say) the JVM's environment is inherited as before.
+-   `environments.javaBaseEnvironment` defines `entries`, so a process started under it gets the
+-   JVM's environment, as before. (#2180)
++   recebe `(using computable: (result is Computable)^, working: WorkingDirectory, environment:
++   Environment)`; o `Executable#apply()` inline recebe `environment: Environment` depois de
++   `working`. Um local de chamada sem `Environment` no escopo não compila mais. Forneça o
++   `Environment` que os processos devem herdar: o da invocação
++   (`environments.daemonClientEnvironment`, ou `Environment.provided` de um `Cli`) em uma
++   ferramenta, `environments.javaBaseEnvironment` para o comportamento anterior. (#2180)
++ - Semântica: quando o novo membro `entries` do `Environment` fornecido não é `Unset`, o processo é
++   iniciado exatamente com essas variáveis, em vez das da JVM, e um comando cujo nome não contém
++   `/` é primeiro procurado no `PATH` desse ambiente, com seu caminho absoluto substituindo o nome
++   como `argv[0]`; um nome não encontrado ali fica a cargo do JDK. Quando `entries` é `Unset` (um
++   `Environment` escrito como lambda, por exemplo), o ambiente da JVM é herdado como antes.
++   `environments.javaBaseEnvironment` define `entries`, então um processo iniciado sob ele recebe o
++   ambiente da JVM, como antes. (#2180)
+
+- ## honeycomb
++ ## honeycomb
+
+- - `honeycomb.Node`, `honeycomb.Element`, `honeycomb.Comment`, `honeycomb.Doctype` and
+-   `honeycomb.Fragment` moved into the `Html` companion, with their companion objects: they are
+-   now `honeycomb.Html.Node`, `honeycomb.Html.Element`, `honeycomb.Html.Comment`,
+-   `honeycomb.Html.Doctype` and `honeycomb.Html.Fragment` (so `Element.foreign` is
+-   `Html.Element.foreign`). Each is removed from the `soundness` umbrella export, so the bare
+-   names `Node`, `Element`, `Comment`, `Doctype` and `Fragment` no longer resolve through
+-   `import soundness.*` or `import honeycomb.*`; write `Html.Element`, `Html.Fragment` and so on,
+-   in types, constructor calls and patterns (`case Html.Element(label, attributes, children, _)`).
+-   Behaviour unchanged. (#2167)
+- - `honeycomb.TextNode` renamed to `honeycomb.Html.Text`, and `TextNode.foreign` to
+-   `Html.Text.foreign`; `TextNode` removed, including from the `soundness` umbrella export.
+-   Behaviour unchanged. Inside a scope that imports `Html.*`, the bare name `Text` now means this
+-   node type rather than `anticipation.Text`; such imports should be replaced by qualified
+-   references. (#2167)
+- - `honeycomb.Honeycomb` (also exported as `soundness.Honeycomb`) removed. Its members,
+-   `extractor`, `interpolator` and `attributes`, were unused duplicates of the macro
+-   implementations in `honeycomb.internal`, which the `h""` interpolator and tag application
+-   call; no replacement is needed. (#2173)
++ - `honeycomb.Node`, `honeycomb.Element`, `honeycomb.Comment`, `honeycomb.Doctype` e
++   `honeycomb.Fragment` foram movidos para o objeto companheiro `Html`, com seus objetos
++   companheiros: agora são `honeycomb.Html.Node`, `honeycomb.Html.Element`,
++   `honeycomb.Html.Comment`, `honeycomb.Html.Doctype` e `honeycomb.Html.Fragment` (então
++   `Element.foreign` é `Html.Element.foreign`). Cada um foi removido da exportação do guarda-chuva
++   `soundness`, então os nomes simples `Node`, `Element`, `Comment`, `Doctype` e `Fragment` não são
++   mais resolvidos por meio de `import soundness.*` ou `import honeycomb.*`; escreva `Html.Element`,
++   `Html.Fragment` e assim por diante, em tipos, chamadas de construtor e padrões
++   (`case Html.Element(label, attributes, children, _)`). O comportamento não mudou. (#2167)
++ - `honeycomb.TextNode` foi renomeado para `honeycomb.Html.Text`, e `TextNode.foreign` para
++   `Html.Text.foreign`; `TextNode` foi removido, inclusive da exportação do guarda-chuva
++   `soundness`. O comportamento não mudou. Dentro de um escopo que importa `Html.*`, o nome simples
++   `Text` agora significa este tipo de nó em vez de `anticipation.Text`; tais imports devem ser
++   substituídos por referências qualificadas. (#2167)
++ - `honeycomb.Honeycomb` (também exportado como `soundness.Honeycomb`) foi removido. Seus membros,
++   `extractor`, `interpolator` e `attributes`, eram duplicatas não usadas das implementações de
++   macro em `honeycomb.internal`, que o interpolador `h""` e a aplicação de tags chamam; nenhum
++   substituto é necessário. (#2173)
+
+- ## hyperbole
++ ## hyperbole
+
+- - `hyperbole.StackResolver` now takes `(using classloader: Classloader, working:
+-   ambience.WorkingDirectory)`; the given `hyperbole.stackResolutions.tastyStackResolution` (also
+-   `soundness.stackResolutions.tastyStackResolution`) has type `(Classloader, WorkingDirectory) =>
+-   StackTrace.Resolver`, was `Classloader => StackTrace.Resolver`; and the extension
+-   `StackTrace#resolved` takes `(using Classloader, WorkingDirectory)`. A source path that TASTy
+-   records relative to `-sourceroot` is now resolved against the given `WorkingDirectory`, where it
+-   was resolved against `workingDirectories.javaBaseWorkingDirectory` (`user.dir`). Supply the
+-   directory the code was compiled under. (#2180)
++ - `hyperbole.StackResolver` agora recebe `(using classloader: Classloader, working:
++   ambience.WorkingDirectory)`; o given `hyperbole.stackResolutions.tastyStackResolution` (também
++   `soundness.stackResolutions.tastyStackResolution`) tem o tipo `(Classloader, WorkingDirectory) =>
++   StackTrace.Resolver`, que era `Classloader => StackTrace.Resolver`; e a extensão
++   `StackTrace#resolved` recebe `(using Classloader, WorkingDirectory)`. Um caminho de código-fonte
++   que o TASTy registra relativo a `-sourceroot` agora é resolvido em relação ao `WorkingDirectory`
++   fornecido, onde antes era resolvido em relação a `workingDirectories.javaBaseWorkingDirectory`
++   (`user.dir`). Forneça o diretório sob o qual o código foi compilado. (#2180)
+
+- ## inimitable
++ ## inimitable
+
+- - `inimitable.Uuid#bytes: Data` removed in favour of the given `Uuid.encodableInData: Uuid is
+-   Encodable in Data`. Write `uuid.in[Data]` for `uuid.bytes`; use `in[Data]`, not `encode`,
+-   since `Uuid` also has an `Encodable in Text`. The sixteen bytes are unchanged. (#2176)
++ - `inimitable.Uuid#bytes: Data` foi removido em favor do given `Uuid.encodableInData: Uuid is
++   Encodable in Data`. Escreva `uuid.in[Data]` no lugar de `uuid.bytes`; use `in[Data]`, e não
++   `encode`, já que `Uuid` também tem um `Encodable in Text`. Os dezesseis bytes não mudaram. (#2176)
+
+- ## iridescence
++ ## iridescence
+
+- - `iridescence.Rgb12#hex: Text` (an extension) removed. `rgb12.inspect` renders the same
+-   `#0f8`-style text, as it did before. (#2176)
++ - `iridescence.Rgb12#hex: Text` (uma extensão) foi removido. `rgb12.inspect` renderiza o mesmo
++   texto no estilo `#0f8`, como já fazia. (#2176)
+
+- ## jacinta
++ ## jacinta
+
+- - `jacinta.Json.apply` gains overloads `apply(value: Int)`, `apply(value: Short)`,
+-   `apply(value: Byte)`, `apply(value: Float)`, `apply(value: Long)` and `apply(value: Double)`
+-   beside `apply(value: Any)`. `Json(i)` for an `Int`, `Short` or `Byte` now holds that integer
+-   (stored as a `Long`), where it previously held the `Int` raw, which the AST reads as a packed
+-   small decimal, so the value read back was wrong (usually `0`); a `Float` is stored as a
+-   `Double`. A value statically typed `Any` still goes to `apply(value: Any)` unchanged. (#2162)
++ - `jacinta.Json.apply` ganha as sobrecargas `apply(value: Int)`, `apply(value: Short)`,
++   `apply(value: Byte)`, `apply(value: Float)`, `apply(value: Long)` e `apply(value: Double)` ao
++   lado de `apply(value: Any)`. `Json(i)` para um `Int`, `Short` ou `Byte` agora contém esse
++   inteiro (armazenado como `Long`), onde antes continha o `Int` bruto, que a AST lê como um
++   pequeno decimal compactado, de modo que o valor lido de volta estava errado (geralmente `0`); um
++   `Float` é armazenado como `Double`. Um valor com tipo estático `Any` continua indo para
++   `apply(value: Any)` sem mudanças. (#2162)
+
+- ## metamorphose
++ ## metamorphose
+
+- - `metamorphose.Permutation#bytes: Data` removed in favour of the given `Permutation.encodable:
+-   Permutation is Encodable in Data`. Write `permutation.in[Data]` for `permutation.bytes`; the
+-   bytes are unchanged. (#2176)
++ - `metamorphose.Permutation#bytes: Data` foi removido em favor do given `Permutation.encodable:
++   Permutation is Encodable in Data`. Escreva `permutation.in[Data]` no lugar de
++   `permutation.bytes`; os bytes não mudaram. (#2176)
+
+- ## octogenarian
++ ## octogenarian
+
+- - Every `octogenarian` operation that runs `git` now takes a using parameter of type
+-   `ambience.Environment` immediately after its `WorkingDirectory`, and runs `git` with that
+-   environment: `Git.init`, `Git.initBare`, `Git.cloneCommit`, `Git.clone`, `Git.cloneBare`,
++ - Toda operação do `octogenarian` que executa `git` agora recebe um parâmetro using do tipo
++   `ambience.Environment` imediatamente depois de seu `WorkingDirectory`, e executa `git` com esse
++   ambiente: `Git.init`, `Git.initBare`, `Git.cloneCommit`, `Git.clone`, `Git.cloneBare`,
+
+-   `Git.uncheckedCloneCommit`, `Git.uncheckedClone`, `Git.uncheckedCloneBare`; `Git.Repo#pushTags`,
++   `Git.uncheckedCloneCommit`, `Git.uncheckedClone`, `Git.uncheckedCloneBare`; `Git.Repo#pushTags`,
+
+-   `push`, `fetch`, `config.get`, `tags`, `tag`, `deleteTag`, `deleteBranch`, `renameBranch`,
++   `push`, `fetch`, `config.get`, `tags`, `tag`, `deleteTag`, `deleteBranch`, `renameBranch`,
+
+-   `remotes`, `addRemote`, `removeRemote`, `log`, `diff`, `reflog`, `revParse`, `notes.show`,
++   `remotes`, `addRemote`, `removeRemote`, `log`, `diff`, `reflog`, `revParse`, `notes.show`,
+
+-   `notes.add`, `notes.append`, `notes.remove`, `notes.list`, `notes.copy`, `worktrees`,
++   `notes.add`, `notes.append`, `notes.remove`, `notes.list`, `notes.copy`, `worktrees`,
+
+-   `addWorktree`, `removeWorktree`, `pruneWorktrees`; `Worktree#checkout` (all three overloads),
++   `addWorktree`, `removeWorktree`, `pruneWorktrees`; `Worktree#checkout` (as três sobrecargas),
+
+-   `switch`, `pull`, `commit`, `branches`, `branch`, `makeBranch`, `add`, `reset`, `unstage`, `mv`,
++   `switch`, `pull`, `commit`, `branches`, `branch`, `makeBranch`, `add`, `reset`, `unstage`, `mv`,
+
+-   `diff`, `merge`, `cherryPick`, `revert`, `lock`, `unlock`, `move`, `remove`, `status`; the
+-   extension `NoteRef#content`; and the given `octogenarian.gitCommands.searchpathGitCommand`,
+-   whose context is now `(WorkingDirectory, Environment, Git.Event is Loggable, Tactic[Name.Error],
+-   Tactic[Path.Error], Tactic[Io.Error], Tactic[Exec.Error])`. Supply the `Environment` the processes
+-   should inherit: the invocation's (`environments.daemonClientEnvironment`, or
+-   `Environment.provided` from a `Cli`) in a tool, `environments.javaBaseEnvironment` for the
+-   previous behaviour. (#2180)
++   `diff`, `merge`, `cherryPick`, `revert`, `lock`, `unlock`, `move`, `remove`, `status`; a extensão
++   `NoteRef#content`; e o given `octogenarian.gitCommands.searchpathGitCommand`, cujo contexto agora
++   é `(WorkingDirectory, Environment, Git.Event is Loggable, Tactic[Name.Error],
++   Tactic[Path.Error], Tactic[Io.Error], Tactic[Exec.Error])`. Forneça o `Environment` que os
++   processos devem herdar: o da invocação (`environments.daemonClientEnvironment`, ou
++   `Environment.provided` de um `Cli`) em uma ferramenta, `environments.javaBaseEnvironment` para o
++   comportamento anterior. (#2180)
+
+- ## probably
++ ## probably
+
+- - `probably.Suite` has a type parameter and a second constructor:
+-   `abstract class Suite(suiteName: fulminate.Message)` is now
+-   `abstract class Suite[topic <: Label]`, with `type Topic = topic` and the public constructors
+-   `Suite(title: Message)(using Suite.Derivation[topic])` and `Suite(id: topic, title: Message)`.
+-   `object Tests extends Suite(m"Parser tests")` compiles unchanged, `topic` being inferred as
+-   `probably.Derived` (new, an opaque `Label`); `Suite("parser", m"Parser tests")` infers the
+-   literal type `"parser"`. The type `Suite` alone no longer compiles; write `Suite[?]`. (#2169)
+- - Every suite has an id (`Testable#key: Optional[Text]`, new; `Test.Id#key`, new, a final
+-   field of the case class, default `Unset`): the string given to `Suite(id, title)`, or
+-   `Suite.derive(title.text)` — the title's letters and digits in lower case, each run of other
+-   characters as one `-`, none leading or trailing, `suite` if empty (`m"Honeycomb Tests"` gives
+-   `honeycomb-tests`). With the beneficence plugin, a given id which does not match
+-   `[A-Za-z_][A-Za-z0-9_-]*` is a compile error. Observable effects: `TestEvent.Ref#path` of a
+-   suite and of everything in it now begins with the suite's id where it began with its title;
+-   `TestEvent.Ref#moniker` of a suite is its id where it was `Unset`; a selection term equal to
+-   a suite's id, or a glob matching it, admits everything in the suite, and a path glob must
+-   begin with the id (`honeycomb-tests/**`), though a glob matching the title alone
+-   (`'Honeycomb Tests'`) still admits the suite. (#2169)
+- - `probably.Testable` has an abstract type member, `type Topic`, and the contextual value which
+-   declarations take is a `Testable of topic` (`prepositional.of`) whose topic is a `Label`: the
+-   literal id of the `Suite` it belongs to, `probably.Derived` for a suite without a given id,
+-   or `probably.Impromptu` (new, an opaque `Label`). `Suite#testable` is now `given testable:
+-   Testable of topic`. A `given` or `using`
+-   parameter of the bare type `Testable` no longer satisfies `test`, `suite` or sedentary's
+-   declarations, and fails with "a test must be declared for a Suite …". A method which declares
+-   tests for a suite must take `(using Testable of "<that suite's id>")` in place of
+-   `(using Testable)`, the suite being given an id for the purpose (`Suite("<id>", title)`); a
+-   method shared by several suites, or declaring tests for a suite with a derived id, takes a
+-   type parameter, `[topic <: Label](using Testable of topic)`. (#2169)
+- - A method with a `using` parameter of the bare type `Testable`, compiled with the beneficence
+-   plugin where `probably.Suite` is on the classpath, is now a compile error ("this Testable has
+-   no topic …"), whether or not it declares a test. Without the plugin such a method compiles
+-   if another `Testable` with a topic is in scope where its tests are declared (the enclosing
+-   `Suite`'s, typically), and its tests are then declared at THAT position — the root of the
+-   suite — and not, as before, wherever the method was called from. Every `(using Testable)`
+-   must be audited. (#2169)
+- - `probably.test` (both overloads): the unused type parameter `report` is replaced by
+-   `topic <: Label`, and the parameter `suite: Testable` is now `suite: Testable of topic`.
+-   `probably.suite` (both overloads) is now
++ - `probably.Suite` tem um parâmetro de tipo e um segundo construtor:
++   `abstract class Suite(suiteName: fulminate.Message)` agora é
++   `abstract class Suite[topic <: Label]`, com `type Topic = topic` e os construtores públicos
++   `Suite(title: Message)(using Suite.Derivation[topic])` e `Suite(id: topic, title: Message)`.
++   `object Tests extends Suite(m"Parser tests")` continua compilando sem mudanças, com `topic`
++   inferido como `probably.Derived` (novo, um `Label` opaco); `Suite("parser", m"Parser tests")`
++   infere o tipo literal `"parser"`. O tipo `Suite` sozinho não compila mais; escreva `Suite[?]`.
++   (#2169)
++ - Toda suíte tem um id (`Testable#key: Optional[Text]`, novo; `Test.Id#key`, novo, um campo final
++   da case class, com padrão `Unset`): a string passada a `Suite(id, title)`, ou
++   `Suite.derive(title.text)` — as letras e os dígitos do título em minúsculas, cada sequência de
++   outros caracteres como um único `-`, sem nenhum no início ou no fim, `suite` se vazio
++   (`m"Honeycomb Tests"` dá `honeycomb-tests`). Com o plugin beneficence, um id fornecido que não
++   case com `[A-Za-z_][A-Za-z0-9_-]*` é um erro de compilação. Efeitos observáveis: o
++   `TestEvent.Ref#path` de uma suíte e de tudo o que está nela agora começa com o id da suíte onde
++   começava com seu título; o `TestEvent.Ref#moniker` de uma suíte é seu id onde era `Unset`; um
++   termo de seleção igual ao id de uma suíte, ou um glob que case com ele, admite tudo o que está na
++   suíte, e um glob de caminho deve começar com o id (`honeycomb-tests/**`), embora um glob que case
++   apenas com o título (`'Honeycomb Tests'`) ainda admita a suíte. (#2169)
++ - `probably.Testable` tem um membro de tipo abstrato, `type Topic`, e o valor contextual que as
++   declarações recebem é um `Testable of topic` (`prepositional.of`) cujo tópico é um `Label`: o id
++   literal da `Suite` à qual pertence, `probably.Derived` para uma suíte sem id fornecido, ou
++   `probably.Impromptu` (novo, um `Label` opaco). `Suite#testable` agora é `given testable:
++   Testable of topic`. Um parâmetro `given` ou `using`
++   do tipo simples `Testable` não satisfaz mais `test`, `suite` nem as declarações do sedentary, e
++   falha com "a test must be declared for a Suite …". Um método que declara testes para uma suíte
++   deve receber `(using Testable of "<that suite's id>")` no lugar de `(using Testable)`, com a
++   suíte recebendo um id para esse fim (`Suite("<id>", title)`); um método compartilhado por várias
++   suítes, ou que declara testes para uma suíte com id derivado, recebe um parâmetro de tipo,
++   `[topic <: Label](using Testable of topic)`. (#2169)
++ - Um método com um parâmetro `using` do tipo simples `Testable`, compilado com o plugin
++   beneficence onde `probably.Suite` está no classpath, agora é um erro de compilação ("this
++   Testable has no topic …"), declare ele um teste ou não. Sem o plugin, tal método compila se
++   outro `Testable` com tópico estiver no escopo onde seus testes são declarados (o da `Suite`
++   envolvente, tipicamente), e seus testes são então declarados NESSA posição — a raiz da suíte — e
++   não, como antes, onde quer que o método tenha sido chamado. Todo `(using Testable)` deve ser
++   auditado. (#2169)
++ - `probably.test` (as duas sobrecargas): o parâmetro de tipo não usado `report` foi substituído
++   por `topic <: Label`, e o parâmetro `suite: Testable` agora é `suite: Testable of topic`.
++   `probably.suite` (as duas sobrecargas) agora é
+
+-   `suite[topic <: Label, report](name)(using suite: Testable of topic, runner: Runner[report],
++   `suite[topic <: Label, report](name)(using suite: Testable of topic, runner: Runner[report],
+
+-   codepoint: Codepoint)(block: (Testable of topic) ?=> Unit)`: it gains the type parameter
+-   `topic` before `report` and the `Codepoint` parameter, and its block receives a
+-   `Testable of topic`. A group's `TestEvent.Ref` (`SuiteStarted`, `SuiteEnded`) now carries the
+-   file and line of the `suite(…)` call, where it carried a position inside Probably's own source.
++   codepoint: Codepoint)(block: (Testable of topic) ?=> Unit)`: ganha o parâmetro de tipo `topic`
++   antes de `report` e o parâmetro `Codepoint`, e seu bloco recebe um `Testable of topic`. O
++   `TestEvent.Ref` de um grupo (`SuiteStarted`, `SuiteEnded`) agora carrega o arquivo e a linha da
++   chamada `suite(…)`, onde carregava uma posição dentro do próprio código-fonte do Probably.
+
+-   (#2169)
++   (#2169)
+
+- - `probably.Runner#suite(suite: Testable, block: Testable ?=> Unit): Unit` is now
+-   `suite[topic](suite: Testable of topic, block: (Testable of topic) ?=> Unit): Unit`.
+-   Implementations of `Runner` must change the signature to match. (#2169)
+- - The constructor of `probably.Testable` is now `private[probably]`, and its second parameter
+-   is `parents: List[Testable]` (not a member) where it was `val parent: Optional[Testable]`;
+-   `Testable#parent: Optional[Testable]` remains, as a method. Construct one with
++ - `probably.Runner#suite(suite: Testable, block: Testable ?=> Unit): Unit` agora é
++   `suite[topic](suite: Testable of topic, block: (Testable of topic) ?=> Unit): Unit`. As
++   implementações de `Runner` devem mudar a assinatura para corresponder. (#2169)
++ - O construtor de `probably.Testable` agora é `private[probably]`, e seu segundo parâmetro é
++   `parents: List[Testable]` (não um membro), onde era `val parent: Optional[Testable]`;
++   `Testable#parent: Optional[Testable]` continua existindo, como método. Construa um com
+
+-   `Testable.of[topic](name: Message, parent: Optional[Testable] = Unset, moniker:
++   `Testable.of[topic](name: Message, parent: Optional[Testable] = Unset, moniker:
+
+-   Optional[Name[Probing]] = Unset, key: Optional[Text] = Unset)(using Codepoint): Testable of
++   Optional[Name[Probing]] = Unset, key: Optional[Text] = Unset)(using Codepoint): Testable of
+
+-   topic` (new). (#2169)
+- - A test declared where the contextual `Testable` is a suite's, but which is not one of that
+-   suite's tests — a fixture declared inside another test's body to exercise a `Runner` or a
+-   `Selection` of the program's own, for instance — still compiles, but is now recorded in the
+-   index of tests the beneficence plugin writes. Wrap such declarations in `probably.impromptu`
+-   (new: `impromptu[result](using parent: Testable = Testable.detached)(block: (Testable of
+-   Impromptu) ?=> result): result`, also `soundness.impromptu`), which keeps the test at the same
+-   position in the hierarchy and leaves it out of the index. (#2169)
+- - `probably.Test.Id#id`, the six hex digits a test or suite is known by (and `TestEvent.Ref#id`,
+-   which carries it), is computed differently, so EVERY id changes: it is now the low 24 bits of
+-   `h ^ name.text.s.hashCode`, where `h` is the sum of `name.text.s.hashCode` over the suites the
+-   test is within, and `Testable#hashCode` is that sum including its own name. It was computed
+-   from `Message#hashCode`, which depends on the message's structure and not only its text.
+-   Stored ids (in selections, scripts, charts keyed by id) no longer match; monikers and names
+-   are unaffected. (#2169)
++   topic` (novo). (#2169)
++ - Um teste declarado onde o `Testable` contextual é o de uma suíte, mas que não é um dos testes
++   dessa suíte — uma fixture declarada dentro do corpo de outro teste para exercitar um `Runner` ou
++   uma `Selection` do próprio programa, por exemplo —, ainda compila, mas agora é registrado no
++   índice de testes que o plugin beneficence escreve. Envolva tais declarações em
++   `probably.impromptu` (novo: `impromptu[result](using parent: Testable = Testable.detached)(block:
++   (Testable of Impromptu) ?=> result): result`, também `soundness.impromptu`), que mantém o teste
++   na mesma posição da hierarquia e o deixa fora do índice. (#2169)
++ - `probably.Test.Id#id`, os seis dígitos hexadecimais pelos quais um teste ou uma suíte é
++   conhecido (e `TestEvent.Ref#id`, que o carrega), é calculado de outra forma, então TODOS os ids
++   mudam: agora são os 24 bits inferiores de `h ^ name.text.s.hashCode`, onde `h` é a soma de
++   `name.text.s.hashCode` sobre as suítes dentro das quais o teste está, e `Testable#hashCode` é
++   essa soma incluindo seu próprio nome. Antes era calculado a partir de `Message#hashCode`, que
++   depende da estrutura da mensagem e não apenas de seu texto. Os ids armazenados (em seleções,
++   scripts, gráficos indexados por id) não correspondem mais; apelidos e nomes não são afetados.
++   (#2169)
+
+- ## savagery
++ ## savagery
+
+- - `savagery.Figure#xml: Xml` (on `Rectangle`, `Outline`, `Ellipse`, `Group`, `Polyline` and
+-   `Lettering`), `savagery.Stop#xml`, `savagery.Svg.Def#xml` (on `LinearGradient`) and
+-   `savagery.Svg#xml` removed in favour of `Encodable in Xml` givens: `Figure.encodable: [figure
+-   <: Figure] => figure is Encodable in Xml`, `Stop.encodable: [color, stop <: Stop[color]] =>
+-   stop is Encodable in Xml`, `Svg.Def.encodable: [definition <: Svg.Def] => definition is
+-   Encodable in Xml` and `Svg.encodable: Svg is Encodable in Xml`. Write `figure.in[Xml]` for
+-   `figure.xml`, and likewise for the others; `figure.xml.show` becomes `figure.in[Xml].show`.
+-   The XML is unchanged. (#2176)
++ - `savagery.Figure#xml: Xml` (em `Rectangle`, `Outline`, `Ellipse`, `Group`, `Polyline` e
++   `Lettering`), `savagery.Stop#xml`, `savagery.Svg.Def#xml` (em `LinearGradient`) e
++   `savagery.Svg#xml` foram removidos em favor de givens `Encodable in Xml`: `Figure.encodable:
++   [figure <: Figure] => figure is Encodable in Xml`, `Stop.encodable: [color, stop <: Stop[color]]
++   => stop is Encodable in Xml`, `Svg.Def.encodable: [definition <: Svg.Def] => definition is
++   Encodable in Xml` e `Svg.encodable: Svg is Encodable in Xml`. Escreva `figure.in[Xml]` no lugar
++   de `figure.xml`, e da mesma forma para os outros; `figure.xml.show` passa a ser
++   `figure.in[Xml].show`. O XML não mudou. (#2176)
+
+- ## sedentary
++ ## sedentary
+
+- - `sedentary.Bench.Plan#apply`, every overload of `sedentary.Bench.Plan#over`,
+-   `sedentary.Stress#apply` and `sedentary.Profile#apply` gain a final type parameter
+-   `topic <: Label`, and their parameter `suite: Testable` is now `suite: Testable of topic`.
+-   Calls which pass no explicit type arguments are unaffected, given a contextual `Testable` with
+-   a topic (see probably). (#2169)
++ - `sedentary.Bench.Plan#apply`, todas as sobrecargas de `sedentary.Bench.Plan#over`,
++   `sedentary.Stress#apply` e `sedentary.Profile#apply` ganham um parâmetro de tipo final
++   `topic <: Label`, e seu parâmetro `suite: Testable` agora é `suite: Testable of topic`. As
++   chamadas que não passam argumentos de tipo explícitos não são afetadas, dado um `Testable`
++   contextual com tópico (veja probably). (#2169)
+
+- ## stenography
++ ## stenography
+
+- - `stenography.Designator.fromUrl(text: Text): Designator` and `stenography.Designator#url:
+-   Text` removed, with no replacement: neither was used, and they were not inverses of each
+-   other (`fromUrl` replaced `~` with `#` without URL-decoding). `Designator(text)` parses the
+-   `#`-separated form. (#2176)
++ - `stenography.Designator.fromUrl(text: Text): Designator` e `stenography.Designator#url:
++   Text` foram removidos, sem substituto: nenhum dos dois era usado, e eles não eram inversos um do
++   outro (`fromUrl` substituía `~` por `#` sem decodificar a URL). `Designator(text)` analisa a
++   forma separada por `#`. (#2176)
+
+- ## stratiform
++ ## stratiform
+
+- - `stratiform.layer` (`case class layer(name: Text) extends StaticAnnotation`, also exported as
+-   `soundness.layer`) removed. Its replacement is `stratiform.assign` (`final class assign(layer:
+-   Tel.Layer[?]) extends StaticAnnotation`; `soundness.assign` is a type alias of it, leaving the
+-   term `soundness.assign` to anamnesis), which names a layer by a
+-   singleton object rather than by text. Rewrite `@layer(t"foo")` on a field as `@assign(foo)`,
+-   declaring once, at the top level or in an object, `object foo extends Tel.Layer("foo")` (the
+-   same name); fields sharing a layer name share the one object. The derived schema is unchanged.
+-   The argument of `@assign` must be a reference to such an object, whose name is a string
+-   literal; anything else is now a compile error at the annotation. (#2165)
+- - New `stratiform.Tel.Layer[name <: String & Singleton](val name: name)`, an open class a layer
+-   object extends, and `stratiform.Tel.Name[layer <: Tel.Layer[?]]`, the match type giving a
+-   layer's name from its type. New annotation `stratiform.retract` (`final class retract(layer:
+-   Tel.Layer[?]) extends StaticAnnotation`, also `soundness.retract`), for a case of a sum. Not
+-   required by existing code. (#2165)
+- - Layer composition (`Tels.Layers.compose`, `Tels.Layers.composeComponents`, and acceptance
+-   serving and reading) no longer rejects a layer's `exclude` of a variant which the base
+-   `select` declares but an earlier layer has already excluded: it is a no-op. Previously that
+-   raised `Tel.Error` with reason `ExcludeMissingVariant` (E211). An `exclude` of a variant the
+-   base `select` never declared still raises it. (#2165)
+- - `fulfil(acceptance, codecs)` on a value leaves out of its composition any offered layer whose
+-   `select` excludes a variant keyword that the value's encoded document uses anywhere, where it
+-   previously offered every layer (and failed to serve such a value). The served
+-   `Tel.Acceptance.Served#hashes` may therefore omit such layers. (#2165)
+- - `stratiform.Tels.Reconstructor.fromTel(tel: Tel): Tels raises Tel.Error` removed in favour of
+-   the given `Tel.telsDecodable: Tels is Tel.Decodable`. Write `tel.as[Tels]` for
+-   `Tels.Reconstructor.fromTel(tel)`; it raises `Tel.Error` as before. `Tels.Reconstructor` remains
+-   for `equivalent`. (#2176)
++ - `stratiform.layer` (`case class layer(name: Text) extends StaticAnnotation`, também exportado
++   como `soundness.layer`) foi removido. Seu substituto é `stratiform.assign` (`final class
++   assign(layer: Tel.Layer[?]) extends StaticAnnotation`; `soundness.assign` é um alias de tipo
++   dele, deixando o termo `soundness.assign` para o anamnesis), que nomeia uma camada por um
++   objeto singleton em vez de por texto. Reescreva `@layer(t"foo")` em um campo como
++   `@assign(foo)`, declarando uma vez, no nível superior ou em um objeto,
++   `object foo extends Tel.Layer("foo")` (o mesmo nome); campos que compartilham um nome de camada
++   compartilham o mesmo objeto. O schema derivado não mudou. O argumento de `@assign` deve ser uma
++   referência a tal objeto, cujo nome é um literal string; qualquer outra coisa agora é um erro de
++   compilação na anotação. (#2165)
++ - Novo `stratiform.Tel.Layer[name <: String & Singleton](val name: name)`, uma classe aberta que
++   um objeto de camada estende, e `stratiform.Tel.Name[layer <: Tel.Layer[?]]`, o match type que dá
++   o nome de uma camada a partir de seu tipo. Nova anotação `stratiform.retract` (`final class
++   retract(layer: Tel.Layer[?]) extends StaticAnnotation`, também `soundness.retract`), para um caso
++   de uma soma. Não é exigido pelo código existente. (#2165)
++ - A composição de camadas (`Tels.Layers.compose`, `Tels.Layers.composeComponents`, e o
++   atendimento e a leitura de aceitação) não rejeita mais o `exclude` de uma camada sobre uma
++   variante que o `select` base declara mas que uma camada anterior já excluiu: é uma operação
++   nula. Antes, isso lançava `Tel.Error` com o motivo `ExcludeMissingVariant` (E211). Um `exclude`
++   de uma variante que o `select` base nunca declarou ainda o lança. (#2165)
++ - `fulfil(acceptance, codecs)` sobre um valor deixa fora de sua composição qualquer camada
++   oferecida cujo `select` exclua uma palavra-chave de variante que o documento codificado do valor
++   use em qualquer lugar, onde antes oferecia todas as camadas (e falhava ao servir tal valor). Os
++   `Tel.Acceptance.Served#hashes` servidos podem, portanto, omitir tais camadas. (#2165)
++ - `stratiform.Tels.Reconstructor.fromTel(tel: Tel): Tels raises Tel.Error` foi removido em favor
++   do given `Tel.telsDecodable: Tels is Tel.Decodable`. Escreva `tel.as[Tels]` no lugar de
++   `Tels.Reconstructor.fromTel(tel)`; ele lança `Tel.Error` como antes. `Tels.Reconstructor`
++   continua existindo para `equivalent`. (#2176)
+
+- - `stratiform.Tels.SemanticReconstructor.fromElement(root: Tel.Element): Tels raises Tel.Error`
++ - `stratiform.Tels.SemanticReconstructor.fromElement(root: Tel.Element): Tels raises Tel.Error`
+
+-   removed in favour of the given `Tels.elementDecodable: Tels is Decodable in Tel.Element`.
+-   Write `element.as[Tels]` for `Tels.SemanticReconstructor.fromElement(element)`; a value typed
+-   as the subtype `Tel.Element.Node` must be ascribed, `(node: Tel.Element).as[Tels]`, since
+-   `Decodable`'s form is exact. (#2176)
++   foi removido em favor do given `Tels.elementDecodable: Tels is Decodable in Tel.Element`.
++   Escreva `element.as[Tels]` no lugar de `Tels.SemanticReconstructor.fromElement(element)`; um
++   valor tipado como o subtipo `Tel.Element.Node` deve ser anotado com o tipo,
++   `(node: Tel.Element).as[Tels]`, já que a forma de `Decodable` é exata. (#2176)
+
+- ## tarantula
++ ## tarantula
+
+- - `tarantula.WebDriver.Local.Sessional`'s constructor and the given `sessional` beside it gain
+-   `environment: ambience.Environment` after `working: WorkingDirectory`. The driver process is
+-   launched with that environment. Supply the `Environment` the processes should inherit: the
+-   invocation's (`environments.daemonClientEnvironment`, or `Environment.provided` from a `Cli`) in a
+-   tool, `environments.javaBaseEnvironment` for the previous behaviour. (#2180)
++ - O construtor de `tarantula.WebDriver.Local.Sessional` e o given `sessional` ao lado dele ganham
++   `environment: ambience.Environment` depois de `working: WorkingDirectory`. O processo do driver
++   é iniciado com esse ambiente. Forneça o `Environment` que os processos devem herdar: o da
++   invocação (`environments.daemonClientEnvironment`, ou `Environment.provided` de um `Cli`) em uma
++   ferramenta, `environments.javaBaseEnvironment` para o comportamento anterior. (#2180)
+
+- ## tasseomancy
++ ## tasseomancy
+
+- - `tasseomancy.Chart#svg(using style, ChartPalette, FontMetric, Arranger): Svg` and
+-   `tasseomancy.Chart.Drawing#svg: Svg` removed in favour of the givens `Chart.encodable: [data,
+-   form, fit, style <: Chart.Style] => (style, ChartPalette, FontMetric, Arranger) =>
+-   Chart[data, form, fit, style] is Encodable in Svg` and `Chart.Drawing.encodable: Drawing is
+-   Encodable in Svg`. Write `chart.in[Svg]` for `chart.svg` (with the same contextual values in
+-   scope) and `drawing.in[Svg]` for `drawing.svg`; `chart.svg.xml.show` becomes
+-   `chart.in[Svg].in[Xml].show`. The output is unchanged. (#2176)
++ - `tasseomancy.Chart#svg(using style, ChartPalette, FontMetric, Arranger): Svg` e
++   `tasseomancy.Chart.Drawing#svg: Svg` foram removidos em favor dos givens `Chart.encodable:
++   [data, form, fit, style <: Chart.Style] => (style, ChartPalette, FontMetric, Arranger) =>
++   Chart[data, form, fit, style] is Encodable in Svg` e `Chart.Drawing.encodable: Drawing is
++   Encodable in Svg`. Escreva `chart.in[Svg]` no lugar de `chart.svg` (com os mesmos valores
++   contextuais no escopo) e `drawing.in[Svg]` no lugar de `drawing.svg`; `chart.svg.xml.show` passa
++   a ser `chart.in[Svg].in[Xml].show`. A saída não mudou. (#2176)
+
+- ## telekinesis
++ ## telekinesis
+
+- - `telekinesis.Http2.SettingId.fromId(id: Int): Optional[SettingId]` removed; it was unused.
+-   Match on the enum's `id` field instead. (#2176)
++ - `telekinesis.Http2.SettingId.fromId(id: Int): Optional[SettingId]` foi removido; não era
++   usado. Faça match sobre o campo `id` do enum em vez disso. (#2176)
+
+- ## urticose
++ ## urticose
+
+- - New component `urticose.dns` (in the `soundness-web` bundle): the typed DNS vocabulary
+-   (`Dns.Name`, `Dns.Question`, `Dns.Record` with its `Rdata` family, `Dns.Message`), its wire
+-   codec (`Encodable`/`Decodable in Data`), the `dns"…"` interpolator, `Dns.resolve`, and the
+-   extensions `Hostname#dnsName` and `reverseName` on `Ipv4 | Ipv6`; additive. (#2178)
+- - `urticose.Ipv4` and `urticose.Ipv6` gain `Encodable in Data` and `Decodable in Data` givens
+-   (`ip.in[Data]`, `data.as[Ipv4]`) over their network-order octets, and an extension `bytes:
+-   Data` on `Ipv4 | Ipv6`. Decoding raises `IpAddress.Error` with the new reasons
+-   `Ipv4WrongNumberOfBytes(count)` (13) and `Ipv6WrongNumberOfBytes(count)` (14) unless the data
+-   is exactly four or sixteen bytes; an exhaustive match on `IpAddress.Error.Reason` gains two
+-   cases. Code converting through `java.net.InetAddress#getAddress`, `Ipv4(b0, b1, b2, b3)` on
+-   individual bytes, or hand-packed `Ipv6(highBits, lowBits)` longs can use these instead. (#2178)
+- - `urticose.MacAddress.apply(byte0: Byte, …, byte5: Byte)` no longer sign-extends a byte of
+-   `0x80` or above into the higher octets; a `NetworkInterface#hardware` whose address contained
+-   such a byte previously rendered and compared incorrectly. (#2178)
++ - Novo componente `urticose.dns` (no pacote de distribuição `soundness-web`): o vocabulário DNS
++   tipado (`Dns.Name`, `Dns.Question`, `Dns.Record` com sua família `Rdata`, `Dns.Message`), seu
++   codec de transmissão (`Encodable`/`Decodable in Data`), o interpolador `dns"…"`, `Dns.resolve`,
++   e as extensões `Hostname#dnsName` e `reverseName` sobre `Ipv4 | Ipv6`; aditivo. (#2178)
++ - `urticose.Ipv4` e `urticose.Ipv6` ganham givens `Encodable in Data` e `Decodable in Data`
++   (`ip.in[Data]`, `data.as[Ipv4]`) sobre seus octetos em ordem de rede, e uma extensão `bytes:
++   Data` sobre `Ipv4 | Ipv6`. A decodificação lança `IpAddress.Error` com os novos motivos
++   `Ipv4WrongNumberOfBytes(count)` (13) e `Ipv6WrongNumberOfBytes(count)` (14), a menos que os
++   dados tenham exatamente quatro ou dezesseis bytes; um match exaustivo sobre
++   `IpAddress.Error.Reason` ganha dois casos. O código que converte por meio de
++   `java.net.InetAddress#getAddress`, de `Ipv4(b0, b1, b2, b3)` sobre bytes individuais ou de longs
++   `Ipv6(highBits, lowBits)` compactados à mão pode usar estes em seu lugar. (#2178)
++ - `urticose.MacAddress.apply(byte0: Byte, …, byte5: Byte)` não estende mais o sinal de um byte de
++   `0x80` ou mais para os octetos superiores; um `NetworkInterface#hardware` cujo endereço continha
++   tal byte antes era renderizado e comparado incorretamente. (#2178)
+
+- ## vivisection
++ ## vivisection
+
+- - `vivisection.Debuggee.Sessional`'s constructor and the given `vivisection.Debuggee.sessional`
+-   gain `environment: ambience.Environment` after `working: WorkingDirectory`, and
+-   `vivisection.Dap.listen` gains `environment: Environment` after `working`. The debuggee is
+-   launched with that environment. Supply the `Environment` the processes should inherit: the
+-   invocation's (`environments.daemonClientEnvironment`, or `Environment.provided` from a `Cli`) in a
+-   tool, `environments.javaBaseEnvironment` for the previous behaviour. (#2180)
++ - O construtor de `vivisection.Debuggee.Sessional` e o given `vivisection.Debuggee.sessional`
++   ganham `environment: ambience.Environment` depois de `working: WorkingDirectory`, e
++   `vivisection.Dap.listen` ganha `environment: Environment` depois de `working`. O processo
++   depurado é iniciado com esse ambiente. Forneça o `Environment` que os processos devem herdar: o
++   da invocação (`environments.daemonClientEnvironment`, ou `Environment.provided` de um `Cli`) em
++   uma ferramenta, `environments.javaBaseEnvironment` para o comportamento anterior. (#2180)
+
+- ## xylophone
++ ## xylophone
+
+- - The extension `xylophone.Attributes#toList: scala.collection.immutable.List[(Text, Text)]` is
+-   removed. `Attributes` is now `Traversable by (Text, Text)`, in document order, so write
+-   `attributes.to[List]`, which yields a `proscenium.List[(Text, Text)]`. Where a stdlib
+-   `List` is still needed, write `attributes.iterator.toList`. (#2167)
++ - A extensão `xylophone.Attributes#toList: scala.collection.immutable.List[(Text, Text)]` foi
++   removida. `Attributes` agora é `Traversable by (Text, Text)`, na ordem do documento, então
++   escreva `attributes.to[List]`, que produz um `proscenium.List[(Text, Text)]`. Onde uma `List` da
++   stdlib ainda for necessária, escreva `attributes.iterator.toList`. (#2167)
+
+- - `xylophone.Node`, `xylophone.Element`, `xylophone.Comment`, `xylophone.Doctype`,
++ - `xylophone.Node`, `xylophone.Element`, `xylophone.Comment`, `xylophone.Doctype`,
+
+-   `xylophone.Cdata`, `xylophone.ProcessingInstruction`, `xylophone.Header` and
+-   `xylophone.Fragment` moved into the `Xml` companion, with their companion objects: they are now
+-   `xylophone.Xml.Node`, `xylophone.Xml.Element`, `xylophone.Xml.Comment`, `xylophone.Xml.Doctype`,
+-   `xylophone.Xml.Cdata`, `xylophone.Xml.ProcessingInstruction`, `xylophone.Xml.Header` and
+-   `xylophone.Xml.Fragment`. The bare names no longer resolve through `import xylophone.*`; write
+-   `Xml.Element`, `Xml.Fragment` and so on, in types, constructor calls and patterns
+-   (`case Xml.Element(label, attributes, children)`). Behaviour unchanged. (#2167)
+- - `xylophone.TextNode` renamed to `xylophone.Xml.Text`; `TextNode` removed. Behaviour unchanged.
+-   Inside a scope that imports `Xml.*`, the bare name `Text` now means this node type rather than
+-   `anticipation.Text`; such imports should be replaced by qualified references. (#2167)
++   `xylophone.Cdata`, `xylophone.ProcessingInstruction`, `xylophone.Header` e
++   `xylophone.Fragment` foram movidos para o objeto companheiro `Xml`, com seus objetos
++   companheiros: agora são `xylophone.Xml.Node`, `xylophone.Xml.Element`, `xylophone.Xml.Comment`,
++   `xylophone.Xml.Doctype`, `xylophone.Xml.Cdata`, `xylophone.Xml.ProcessingInstruction`,
++   `xylophone.Xml.Header` e `xylophone.Xml.Fragment`. Os nomes simples não são mais resolvidos por
++   meio de `import xylophone.*`; escreva `Xml.Element`, `Xml.Fragment` e assim por diante, em
++   tipos, chamadas de construtor e padrões (`case Xml.Element(label, attributes, children)`). O
++   comportamento não mudou. (#2167)
++ - `xylophone.TextNode` foi renomeado para `xylophone.Xml.Text`; `TextNode` foi removido. O
++   comportamento não mudou. Dentro de um escopo que importa `Xml.*`, o nome simples `Text` agora
++   significa este tipo de nó em vez de `anticipation.Text`; tais imports devem ser substituídos por
++   referências qualificadas. (#2167)

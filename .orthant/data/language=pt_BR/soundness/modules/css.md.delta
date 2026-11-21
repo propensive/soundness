@@ -1,0 +1,495 @@
+orthant 1 language
+
+- ## CSS
++ ## CSS
+
+- ### About
++ ### Visão geral
+
+- [CSS](https://en.wikipedia.org/wiki/CSS) is parsed, validated and generated as typed values.
+- A stylesheet parses into a `Css` tree of rules and declarations. Every property is checked
+- against its real grammar, which is the value-definition syntax of the
+- [MDN data](https://github.com/mdn/data), for more than six hundred properties. A misspelled
+- property, or a malformed value, is therefore a structured error, not a style which silently
+- fails in the browser. The `css"…"` [interpolator] writes a stylesheet in source code, with
+- typed values substituted into it.
++ O [CSS](https://en.wikipedia.org/wiki/CSS) é analisado, validado e gerado como valores tipados.
++ Uma folha de estilo é analisada numa árvore `Css` de regras e declarações. Toda propriedade é
++ verificada contra sua gramática real, que é a sintaxe de definição de valores dos
++ [dados do MDN](https://github.com/mdn/data), para mais de seiscentas propriedades. Uma propriedade
++ com erro de grafia, ou um valor malformado, é portanto um erro estruturado, não um estilo que
++ falha silenciosamente no navegador. O [interpolador] `css"…"` escreve uma folha de estilo no
++ código-fonte, com valores tipados substituídos nela.
+
+- Selectors parse to the full grammar of
+- [Selectors Level 4](https://www.w3.org/TR/selectors-4/). Lengths and angles are typed
+- [quantities](quantities.md), and [colors](colors.md) are substituted directly, written as
+- hex.
++ Os seletores são analisados segundo a gramática completa do
++ [Selectors Level 4](https://www.w3.org/TR/selectors-4/). Comprimentos e ângulos são
++ [grandezas](quantities.md) tipadas, e as [cores](colors.md) são substituídas diretamente,
++ escritas em hexadecimal.
+
+- ### On CSS
++ ### Sobre o CSS
+
+- CSS is unusual among languages, in that its consumers never reject it. A browser ignores
+- what it does not understand. A typo in the name of a property, or an invalid value, fails by
+- *doing nothing*, and is discovered by eye, or not at all. Tools have grown up around
+- checking the text of CSS after the fact. A type system can do better, by checking styles
+- where they are written.
++ O CSS é incomum entre as linguagens, porque seus consumidores nunca o rejeitam. Um navegador
++ ignora o que não entende. Um erro de digitação no nome de uma propriedade, ou um valor inválido,
++ falha *não fazendo nada*, e é descoberto a olho, ou nunca. Surgiram ferramentas para verificar o
++ texto do CSS depois do fato. Um sistema de tipos pode fazer melhor, verificando os estilos onde
++ são escritos.
+
+- Here CSS is checked against the real grammar of each property, as it is parsed. That is
+- [safety by construction](../../philosophy/safety-by-construction.md), applied to a language
+- which is usually validated in a browser.
++ Aqui o CSS é verificado contra a gramática real de cada propriedade, no momento da análise. Isso é
++ [segurança por construção](../../philosophy/safety-by-construction.md), aplicada a uma linguagem
++ que costuma ser validada num navegador.
+
+- Everything comes from the `soundness` package. A choice of formatting is in scope, for
+- writing CSS out, and the last import lets the samples print their results:
++ Tudo vem do pacote `soundness`. Uma escolha de formatação está em escopo, para escrever o CSS, e o
++ último import permite que os exemplos imprimam seus resultados:
+
+= writing CSS out, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import formatting.indentedCssFormatting
++ import formatting.indentedCssFormatting
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Writing CSS
++ ### Escrevendo CSS
+
+- The `css"…"` interpolator writes a stylesheet. Typed values are substituted into it: a
+- color is written as hex, and a length with its unit.
++ O interpolador `css"…"` escreve uma folha de estilo. Valores tipados são substituídos nela: uma
++ cor é escrita em hexadecimal, e um comprimento com sua unidade.
+
+= color is written as hex, and a length with its unit.
+=
+- ```scala
++ ```scala
+
+- val red = Srgb(1.0, 0.0, 0.0)
++ val red = Srgb(1.0, 0.0, 0.0)
+
+- val width = 4.0*Px
++ val width = 4.0*Px
+
+- val sheet = css"a { color: $red; width: $width }"
++ val sheet = css"a { color: $red; width: $width }"
+
+= val sheet = css"a { color: $red; width: $width }"
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sheet.show)
++ Out.println(sheet.show)
+
+= Out.println(sheet.show)
+- ```
++ ```
+
+- Bare declarations, with no selector, form a `Css.Style`, for use as an inline `style`
+- attribute. One can equally be built from named arguments:
++ Declarações soltas, sem seletor, formam um `Css.Style`, para uso como atributo `style` inline.
++ Também é possível construir um a partir de argumentos nomeados:
+
+= attribute. One can equally be built from named arguments:
+=
+- ```scala fuel
++ ```scala fuel
+
+= attribute. One can equally be built from named arguments:
+=
+= ```scala fuel
+- run
++ run
+
+= attribute. One can equally be built from named arguments:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Css.Style(color = red, width = 4.0*Px).text)
++ Out.println(Css.Style(color = red, width = 4.0*Px).text)
+
+= Out.println(Css.Style(color = red, width = 4.0*Px).text)
+- ```
++ ```
+
+- ### Units
++ ### Unidades
+
+- The units of CSS are typed quantities, so a length is a length, and cannot be confused with
+- a number or an angle:
++ As unidades do CSS são grandezas tipadas, de modo que um comprimento é um comprimento, e não pode
++ ser confundido com um número ou um ângulo:
+
+= a number or an angle:
+=
+- ```scala
++ ```scala
+
+- val margin = 2.0*Rem
++ val margin = 2.0*Rem
+
+- val half = 50.0*Pct
++ val half = 50.0*Pct
+
+- val quarterTurn = 90.0*Deg
++ val quarterTurn = 90.0*Deg
+
+= val quarterTurn = 90.0*Deg
+- ```
++ ```
+
+- Each unit belongs to a dimension, and only units of the same dimension add or convert:
++ Cada unidade pertence a uma dimensão, e só unidades da mesma dimensão se somam ou se convertem:
+
+= Each unit belongs to a dimension, and only units of the same dimension add or convert:
+=
+- ```tabular
++ ```tabular
+
+- column  Units
+- column  Measure
+- column  Converts to
+- row  `Px`  pixels  nothing else
+- row  `Rem`, `Ex`, `Ch`  the root font size, the x-height, the character width  nothing else
+- row  `Vw`, `Vh`, `Vmin`, `Vmax`  fractions of the viewport  nothing else
+- row  `Pct`  a percentage  nothing else
+- row  `Cm`, `Mm`, `Pt`, `Pc`  physical length  one another, and every other length in Soundness
+- row  `S`, `Ms`  time  every other time in Soundness
+- row  `Deg`, `Rad`, `Turn`  angle  nothing else, not even one another
+- row  `Fr`  a share of a grid's free space  nothing else
++ column  Unidades
++ column  Medida
++ column  Converte-se em
++ row  `Px`  pixels  nada mais
++ row  `Rem`, `Ex`, `Ch`  o tamanho da fonte raiz, a altura de x, a largura de caractere  nada mais
++ row  `Vw`, `Vh`, `Vmin`, `Vmax`  frações do viewport  nada mais
++ row  `Pct`  uma porcentagem  nada mais
++ row  `Cm`, `Mm`, `Pt`, `Pc`  comprimento físico  umas nas outras, e em todo outro comprimento no Soundness
++ row  `S`, `Ms`  tempo  todo outro tempo no Soundness
++ row  `Deg`, `Rad`, `Turn`  ângulo  nada mais, nem sequer umas nas outras
++ row  `Fr`  uma fração do espaço livre de um grid  nada mais
+
+= row  `Fr`  a share of a grid's free space  nothing else
+- ```
++ ```
+
+- The physical units which CSS shares with the real world are the same
+- [quantities](quantities.md#mixing-units) which are used everywhere else.
++ As unidades físicas que o CSS compartilha com o mundo real são as mesmas
++ [grandezas](quantities.md#mixing-units) usadas em todo o resto.
+
+- ### Parsing
++ ### Análise
+
+- CSS text is parsed with `read`:
++ O texto CSS é analisado com `read`:
+
+= CSS text is parsed with `read`:
+=
+- ```scala
++ ```scala
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- val parsed = t"a { color: red }".read[Css]
++ val parsed = t"a { color: red }".read[Css]
+
+= val parsed = t"a { color: red }".read[Css]
+- ```
++ ```
+
+- Every declaration is validated, and *all* the problems are collected, instead of stopping at
+- the first, which is what a linter, or a step of a build, needs. The error type is plural,
+- `Css.Errors`, because reporting one fault at a time, from a document which has several, is
+- the wrong shape for the job:
++ Toda declaração é validada, e *todos* os problemas são reunidos, em vez de parar no primeiro, que
++ é o que um linter, ou uma etapa de uma build, precisa. O tipo do erro é plural, `Css.Errors`,
++ porque relatar uma falha de cada vez, de um documento que tem várias, é a forma errada para a
++ tarefa:
+
+= the wrong shape for the job:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the wrong shape for the job:
+=
+= ```scala fuel
+- run
++ run
+
+= the wrong shape for the job:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val faults = capture[Css.Errors](t"a { colour: red; width: wide }".read[Css]).errors
++ val faults = capture[Css.Errors](t"a { colour: red; width: wide }".read[Css]).errors
+
+- faults.each: fault =>
++ faults.each: fault =>
+
+-   Out.println(fault.reason.inspect)
++   Out.println(fault.reason.inspect)
+
+=   Out.println(fault.reason.inspect)
+- ```
++ ```
+
+- Each `Css.Error` has its line, its column and its reason, such as an unknown property, a bad
+- value or a malformed selector, so the faults of a stylesheet are reported precisely.
+- [Errors](errors.md#accumulating-failures) describes accumulating errors in general.
++ Cada `Css.Error` tem sua linha, sua coluna e seu motivo, como uma propriedade desconhecida, um
++ valor ruim ou um seletor malformado, de modo que as falhas de uma folha de estilo são relatadas
++ com precisão. [Erros](errors.md#accumulating-failures) descreve o acúmulo de erros em geral.
+
+- ### Rendering
++ ### Renderização
+
+- A `Css` is written back to text through the formatting in scope. The standard formatting
+- indents, for reading. The compact formatting strips every inessential character, for
+- serving:
++ Um `Css` é escrito de volta em texto pela formatação em escopo. A formatação padrão indenta, para
++ leitura. A formatação compacta remove todo caractere não essencial, para servir:
+
+= serving:
+=
+- ```scala fuel
++ ```scala fuel
+
+= serving:
+=
+= ```scala fuel
+- run
++ run
+
+= serving:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(parsed.show)
++ Out.println(parsed.show)
+
+- locally:
++ locally:
+
+-   import formatting.compactCssFormatting
++   import formatting.compactCssFormatting
+
+-   Out.println(parsed.show)
++   Out.println(parsed.show)
+
+=   Out.println(parsed.show)
+- ```
++ ```
+
+- Stylesheets are joined with `+`. A stylesheet reports the classes and the ids which it
+- defines, which is how the class attributes of [HTML](html.md#attributes) are checked against
+- the styles which exist.
++ Folhas de estilo se juntam com `+`. Uma folha de estilo relata as classes e os ids que define, e é
++ assim que os atributos de classe do [HTML](html.md#attributes) são verificados contra os estilos
++ que existem.
+
+- ### Selectors
++ ### Seletores
+
+- Selectors are structural values, which cover the full modern grammar: combinators,
+- including the column combinator `||`, tests on attributes, `:is`, `:not`, `:has`, `An+B`
+- expressions, and the nesting selector `&`. A selector can therefore be built, inspected and
+- written out, and need not be spliced together as text.
++ Os seletores são valores estruturais, que cobrem toda a gramática moderna: combinadores,
++ incluindo o combinador de coluna `||`, testes de atributos, `:is`, `:not`, `:has`, expressões
++ `An+B` e o seletor de aninhamento `&`. Um seletor pode, portanto, ser construído, inspecionado e
++ escrito, e não precisa ser emendado como texto.
+
+- A parsed selector is a tree, not a string. A compound selector holds its simple parts, a
+- complex selector holds compounds joined by combinators, and a selector list holds
+- alternatives. Each part is a typed case, so a program can ask what a selector actually
+- matches:
++ Um seletor analisado é uma árvore, não uma string. Um seletor composto contém suas partes simples,
++ um seletor complexo contém compostos unidos por combinadores, e uma lista de seletores contém
++ alternativas. Cada parte é um caso tipado, de modo que um programa pode perguntar com o que um
++ seletor realmente casa:
+
+= matches:
+=
+- ```scala
++ ```scala
+
+- val child = t"a > b { color: red }".read[Css]
++ val child = t"a > b { color: red }".read[Css]
+
+- val hover = t"a:hover { color: red }".read[Css]
++ val hover = t"a:hover { color: red }".read[Css]
+
+- val before = t"p::before { color: red }".read[Css]
++ val before = t"p::before { color: red }".read[Css]
+
+= val before = t"p::before { color: red }".read[Css]
+- ```
++ ```
+
+- The three are a child combinator between two type selectors, a type selector with a
+- pseudo-class, and a pseudo-element.
++ Os três são um combinador de filho entre dois seletores de tipo, um seletor de tipo com uma
++ pseudoclasse, e um pseudoelemento.
+
+- Attribute selectors have their matcher, and the modifier for case-sensitivity where one is
+- given, so `[href^="https" i]` is understood, and not merely preserved:
++ Os seletores de atributo têm seu casador, e o modificador de sensibilidade a maiúsculas onde há
++ um, de modo que `[href^="https" i]` é compreendido, e não apenas preservado:
+
+= given, so `[href^="https" i]` is understood, and not merely preserved:
+=
+- ```tabular
++ ```tabular
+
+- column  Syntax
+- column  Matcher
+- column  Matches an attribute whose value
+- row  `[a]`  none: presence  is anything
+- row  `[a=v]`  `AttributeMatcher.Exact`  is exactly `v`
+- row  `[a~=v]`  `AttributeMatcher.Includes`  has `v` among its whitespace-separated words
+- row  `[a|=v]`  `AttributeMatcher.DashMatch`  is `v`, or begins with `v-`
+- row  `[a^=v]`  `AttributeMatcher.Prefix`  begins with `v`
+- row  `[a$=v]`  `AttributeMatcher.Suffix`  ends with `v`
+- row  `[a*=v]`  `AttributeMatcher.Substring`  contains `v`
++ column  Sintaxe
++ column  Casador
++ column  Casa com um atributo cujo valor
++ row  `[a]`  nenhum: presença  é qualquer coisa
++ row  `[a=v]`  `AttributeMatcher.Exact`  é exatamente `v`
++ row  `[a~=v]`  `AttributeMatcher.Includes`  tem `v` entre suas palavras separadas por espaços
++ row  `[a|=v]`  `AttributeMatcher.DashMatch`  é `v`, ou começa com `v-`
++ row  `[a^=v]`  `AttributeMatcher.Prefix`  começa com `v`
++ row  `[a$=v]`  `AttributeMatcher.Suffix`  termina com `v`
++ row  `[a*=v]`  `AttributeMatcher.Substring`  contém `v`
+
+= row  `[a*=v]`  `AttributeMatcher.Substring`  contains `v`
+- ```
++ ```
+
+- `An+B` arguments, to `:nth-child` and its siblings, are parsed to their coefficients. `odd`
+- and `even` are normalized to `2n+1` and `2n`, and an `of` clause is kept beside them. `:is`,
+- `:not` and `:has` have selector lists as their arguments, so their contents can themselves
+- be inspected.
++ Os argumentos `An+B`, de `:nth-child` e seus irmãos, são analisados em seus coeficientes. `odd` e
++ `even` são normalizados para `2n+1` e `2n`, e uma cláusula `of` é mantida ao lado deles. `:is`,
++ `:not` e `:has` têm listas de seletores como argumentos, de modo que seu conteúdo também pode ser
++ inspecionado.
+
+- Type selectors with a namespace, which are `svg|rect`, `*|a`, and `|a` for the default
+- namespace, keep their prefix distinctly, since the three mean different things.
++ Os seletores de tipo com espaço de nomes, que são `svg|rect`, `*|a`, e `|a` para o espaço de nomes
++ padrão, mantêm seu prefixo de forma distinta, já que os três significam coisas diferentes.
+
+- ### Checking class names against a stylesheet
++ ### Verificando nomes de classes contra uma folha de estilo
+
+- The point of knowing which classes and ids a stylesheet defines is to check the markup which
+- uses them. Binding a stylesheet resource makes its names available at compiletime. An HTML
+- attribute which refers to a name then resolves to `class` or to `id`, according to which the
+- stylesheet declares. A misspelled class name in a template is therefore a compile error, and
+- the right attribute is used without saying which:
++ O sentido de saber quais classes e ids uma folha de estilo define é verificar a marcação que os
++ usa. Vincular um recurso de folha de estilo torna seus nomes disponíveis em tempo de
++ compilação. Um atributo HTML que se refere a um nome então se resolve como `class` ou como `id`,
++ conforme o que a folha de estilo declara. Um nome de classe com erro de grafia num modelo é,
++ portanto, um erro de compilação, e o atributo certo é usado sem que seja preciso dizer qual:
+
+= the right attribute is used without saying which:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- given styles: (Styles at "/cataclysm/test.css") = Styles(cp"/cataclysm/test.css")
++ given styles: (Styles at "/cataclysm/test.css") = Styles(cp"/cataclysm/test.css")
+
+- import cssBindings.checkedBinding
++ import cssBindings.checkedBinding
+
+= import cssBindings.checkedBinding
+- ```
++ ```
+
+- The resource is read as the code compiles, so the stylesheet must be on the compiler's
+- [classpath](classpath.md), and the type of the binding names the resource which it was read
+- from.
++ O recurso é lido enquanto o código compila, então a folha de estilo precisa estar no
++ [classpath](classpath.md) do compilador, e o tipo do vínculo nomeia o recurso de onde foi lido.
+
+- ### Related
++ ### Relacionados
+
+- - [HTML](html.md) builds the elements which a stylesheet styles.
+- - [Colors](colors.md) and [Quantities](quantities.md) supply the typed values of properties.
+- - [Pages](pages.md) gathers the styles of a page's parts into one stylesheet.
+- - [Names](names.md#built-in-planes) describes the rules for a class name.
+- - [Fonts](fonts.md), [forms](forms.md), [SVG](svg.md) and [web automation](web-automation.md) use stylesheets and selectors.
++ - [HTML](html.md) constrói os elementos que uma folha de estilo estiliza.
++ - [Cores](colors.md) e [Grandezas](quantities.md) fornecem os valores tipados das propriedades.
++ - [Páginas](pages.md) reúne os estilos das partes de uma página numa única folha de estilo.
++ - [Nomes](names.md#built-in-planes) descreve as regras para um nome de classe.
++ - [Fontes](fonts.md), [formulários](forms.md), [SVG](svg.md) e [automação web](web-automation.md) usam folhas de estilo e seletores.

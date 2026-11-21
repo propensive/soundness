@@ -1,0 +1,71 @@
+orthant 1 language
+
+- # `↯/s.34.1` — `Regex.Error`
++ # `↯/s.34.1` — `Regex.Error`
+
+- Raised when Kaleidoscope cannot parse a regular expression literal.
+- Each variant pinpoints the syntactic problem.
++ Lançado quando o Kaleidoscope não consegue analisar um literal de expressão regular.
++ Cada variante aponta com precisão o problema sintático.
+
+- ## Cause
++ ## Causa
+
+- The `r"…"` regex interpolator parses the pattern at compile time. When
+- the parser cannot accept the input, it throws a `Regex.Error` carrying
+- the character `index` at which the problem was detected and a `Reason`
+- explaining what was expected. The constructed message is `the regular
+- expression could not be parsed because $reason at $index`.
++ O interpolador de regex `r"…"` analisa o padrão em tempo de compilação. Quando
++ o parser não consegue aceitar a entrada, ele lança um `Regex.Error` que carrega
++ o `index` do caractere em que o problema foi detectado e um `Reason` que
++ explica o que era esperado. A mensagem construída é
++ `the regular expression could not be parsed because $reason at $index`.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.34.1.1`  `UnclosedGroup`  A capturing group was opened with `(` but never closed with `)`.  `[↯/s.34.1.1] the regular expression could not be parsed because a capturing group was not closed at 11`  Add the missing `)` or escape the `(` if a literal parenthesis is intended.
+- row  `↯/s.34.1.2`  `ExpectedGroup`  An extractor pattern was used in a context that requires a capturing group to follow it, but no group was found.  `[↯/s.34.1.2] the regular expression could not be parsed because a capturing group was expected immediately following an extractor at 0`  Wrap the extracted portion of the pattern in `(…)`.
+- row  `↯/s.34.1.3`  `BadRepetition`  A repetition range `{n,m}` has `m < n`.  `[↯/s.34.1.3] the regular expression could not be parsed because the maximum number of repetitions is less than the minimum at 5`  Swap the bounds, or use `{n,}` if no upper bound is needed.
+- row  `↯/s.34.1.4`  `Uncapturable`  A capturing group is nested inside a repeating group, which means it cannot be extracted unambiguously.  `[↯/s.34.1.4] the regular expression could not be parsed because a capturing group inside a repeating group can not be extracted at 7`  Either remove the capture by switching to a non-capturing group `(?:…)`, or restructure the pattern so the repetition is inside the capture rather than outside it.
+- row  `↯/s.34.1.5`  `UnexpectedChar`  A character that does not belong in a repetition range was encountered.  `[↯/s.34.1.5] the regular expression could not be parsed because the repetition range contained an unexpected character at 9`  Use only digits and a single comma between `{` and `}`.
+- row  `↯/s.34.1.6`  `NotInGroup`  A `)` was encountered with no corresponding `(`.  `[↯/s.34.1.6] the regular expression could not be parsed because a closing parenthesis was found without a corresponding opening parenthesis at 4`  Add the missing `(`, escape the `)` if it should be literal, or remove the stray closing parenthesis.
+- row  `↯/s.34.1.7`  `IncompleteRepetition`  A repetition range was opened with `{` but never closed with `}`.  `[↯/s.34.1.7] the regular expression could not be parsed because the repetition range was not closed at 8`  Add the missing `}`.
+- row  `↯/s.34.1.8`  `InvalidPattern`  The pattern was rejected by the underlying parser for a reason that does not fit any of the more specific variants.  `[↯/s.34.1.8] the regular expression could not be parsed because the pattern was invalid at 3`  Review the pattern around the reported index; consult the regex syntax for the construct in use.
+- row  `↯/s.34.1.9`  `UnclosedEscape`  The pattern ends with a `\` that has nothing to escape.  `` [↯/s.34.1.9] the regular expression could not be parsed because nothing followed the escape character `\` at 12 ``  Either remove the trailing backslash or escape the character that should follow it.
+- row  `↯/s.34.1.10`  `EmptyCharClass`  A character class `[…]` contained no characters.  `[↯/s.34.1.10] the regular expression could not be parsed because the character class is empty at 2`  Add at least one character to the class, or remove the empty `[]`.
+- row  `↯/s.34.1.11`  `ZeroMaximum`  A repetition range had a maximum of zero, e.g. `{0,0}` or `{0}`.  `[↯/s.34.1.11] the regular expression could not be parsed because the maximum number of repetitions must be greater than zero at 6`  Use a maximum greater than zero, or remove the repeated subpattern entirely if it should never match.
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Mensagem
++ column  Resolução
++ row  `↯/s.34.1.1`  `UnclosedGroup`  Um grupo de captura foi aberto com `(` mas nunca fechado com `)`.  `[↯/s.34.1.1] the regular expression could not be parsed because a capturing group was not closed at 11`  Acrescente o `)` que falta, ou aplique escape ao `(` se a intenção for um parêntese literal.
++ row  `↯/s.34.1.2`  `ExpectedGroup`  Um padrão extrator foi usado num contexto que exige que um grupo de captura o siga, mas nenhum grupo foi encontrado.  `[↯/s.34.1.2] the regular expression could not be parsed because a capturing group was expected immediately following an extractor at 0`  Envolva a parte extraída do padrão em `(…)`.
++ row  `↯/s.34.1.3`  `BadRepetition`  Um intervalo de repetição `{n,m}` tem `m < n`.  `[↯/s.34.1.3] the regular expression could not be parsed because the maximum number of repetitions is less than the minimum at 5`  Troque os limites, ou use `{n,}` se não for preciso limite superior.
++ row  `↯/s.34.1.4`  `Uncapturable`  Um grupo de captura está aninhado dentro de um grupo que se repete, o que significa que ele não pode ser extraído sem ambiguidade.  `[↯/s.34.1.4] the regular expression could not be parsed because a capturing group inside a repeating group can not be extracted at 7`  Remova a captura passando para um grupo sem captura `(?:…)`, ou reestruture o padrão para que a repetição fique dentro da captura e não fora dela.
++ row  `↯/s.34.1.5`  `UnexpectedChar`  Foi encontrado um caractere que não pertence a um intervalo de repetição.  `[↯/s.34.1.5] the regular expression could not be parsed because the repetition range contained an unexpected character at 9`  Use apenas dígitos e uma única vírgula entre `{` e `}`.
++ row  `↯/s.34.1.6`  `NotInGroup`  Foi encontrado um `)` sem `(` correspondente.  `[↯/s.34.1.6] the regular expression could not be parsed because a closing parenthesis was found without a corresponding opening parenthesis at 4`  Acrescente o `(` que falta, aplique escape ao `)` se ele deve ser literal, ou remova o parêntese de fechamento avulso.
++ row  `↯/s.34.1.7`  `IncompleteRepetition`  Um intervalo de repetição foi aberto com `{` mas nunca fechado com `}`.  `[↯/s.34.1.7] the regular expression could not be parsed because the repetition range was not closed at 8`  Acrescente o `}` que falta.
++ row  `↯/s.34.1.8`  `InvalidPattern`  O padrão foi rejeitado pelo parser subjacente por um motivo que não se encaixa em nenhuma das variantes mais específicas.  `[↯/s.34.1.8] the regular expression could not be parsed because the pattern was invalid at 3`  Revise o padrão em torno do índice relatado; consulte a sintaxe de regex para a construção em uso.
++ row  `↯/s.34.1.9`  `UnclosedEscape`  O padrão termina com uma `\` que não tem nada a que aplicar escape.  `` [↯/s.34.1.9] the regular expression could not be parsed because nothing followed the escape character `\` at 12 ``  Remova a barra invertida final, ou aplique escape ao caractere que deveria segui-la.
++ row  `↯/s.34.1.10`  `EmptyCharClass`  Uma classe de caracteres `[…]` não continha nenhum caractere.  `[↯/s.34.1.10] the regular expression could not be parsed because the character class is empty at 2`  Acrescente pelo menos um caractere à classe, ou remova o `[]` vazio.
++ row  `↯/s.34.1.11`  `ZeroMaximum`  Um intervalo de repetição tinha máximo zero, como `{0,0}` ou `{0}`.  `[↯/s.34.1.11] the regular expression could not be parsed because the maximum number of repetitions must be greater than zero at 6`  Use um máximo maior que zero, ou remova por completo o subpadrão repetido se ele nunca deve casar.
+
+- ```
++ ```
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/kaleidoscope/src/core/kaleidoscope.Regex.scala`
++ - Código-fonte: `lib/kaleidoscope/src/core/kaleidoscope.Regex.scala`

@@ -1,0 +1,17 @@
+orthant 1 language
+
+- # `SN-520` — Cannot match against a doctype declaration (retired)
++ # `SN-520` — Não é possível casar com uma declaração doctype (aposentado)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Este erro não existe mais. A página é mantida para que o código não seja reutilizado, e para
++ que uma referência a ele vinda de uma versão mais antiga ainda possa ser resolvida.
+
+- ## What became of it
++ ## O que aconteceu
+
+- Honeycomb's HTML pattern matching no longer raises this error: nothing in the source reported it when Soundness
+- adopted bolt codes, so it was given none.
++ O casamento de padrões HTML do Honeycomb não lança mais este erro: nada no código-fonte o relatava
++ quando o Soundness adotou os códigos bolt, então ele não recebeu nenhum.

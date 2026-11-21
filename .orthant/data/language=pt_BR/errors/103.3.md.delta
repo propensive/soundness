@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.103.3` — `Http.Error`
++ # `↯/s.103.3` — `Http.Error`
+
+- Raised when an HTTP request received an error-class status from
+- the server.
++ Lançado quando uma requisição HTTP recebeu do servidor um status da classe de erro.
+
+- ## Cause
++ ## Causa
+
+- Telekinesis throws this error when the response status is not in
+- the success range. The constructor captures the `Http.Status` and
+- the response `headers` for inspection.
++ O Telekinesis lança este erro quando o status da resposta não está na faixa de sucesso. O
++ construtor captura o `Http.Status` e os `headers` da resposta para inspeção.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.103.3] the HTTP request failed with status 500
++ [↯/s.103.3] the HTTP request failed with status 500
+
+= [↯/s.103.3] the HTTP request failed with status 500
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Inspect the status and headers to determine the appropriate
+- recovery; for client errors (4xx) the request itself is at fault,
+- while server errors (5xx) usually warrant a retry.
++ Inspecione o status e os cabeçalhos para determinar a recuperação adequada; nos erros de cliente
++ (4xx) a falha está na própria requisição, enquanto os erros de servidor (5xx) normalmente
++ justificam uma nova tentativa.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/telekinesis/src/core/telekinesis.Http.scala`
++ - Código-fonte: `lib/telekinesis/src/core/telekinesis.Http.scala`

@@ -1,0 +1,65 @@
+orthant 1 language
+
+- # `↯/s.136.1` — `Zip.Error`
++ # `↯/s.136.1` — `Zip.Error`
+
+- Raised when a ZIP-archive operation cannot complete.
++ Lançado quando uma operação sobre um arquivo ZIP não pode ser concluída.
+
+- ## Cause
++ ## Causa
+
+- Zeppelin manages ZIP entries by path. This error reports duplicate
+- or missing paths and invalid entry names. The message is `the ZIP
+- operation failed because $reason`.
++ O Zeppelin gerencia as entradas de um ZIP pelo caminho. Este erro relata caminhos duplicados ou
++ ausentes e nomes de entradas inválidos. A mensagem é
++ `the ZIP operation failed because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.136.1.1`  `DuplicateEntry`  An entry being added has the same path as one already in the archive.  `[↯/s.136.1.1] the ZIP operation failed because the path /hamlet/act1.txt is a duplicate entry`  Choose a different path, or remove the existing entry first.
+- row  `↯/s.136.1.2`  `NotFound`  An operation referenced an entry path that does not exist in the archive.  `[↯/s.136.1.2] the ZIP operation failed because path /hamlet/act1.txt was not found in the ZIP file`  List entries before reading; check for typos in the path.
+- row  `↯/s.136.1.3`  `InvalidName`  An entry name is not valid for a ZIP entry — for example contains characters disallowed by the format.  `[↯/s.136.1.3] the ZIP operation failed because the name hamlet\act1 is not valid for a ZIP entry`  Sanitise the name to a valid entry path.
+- row  `↯/s.136.1.4`  `UnsupportedMethod`  The entry is compressed with a method other than *stored* or *deflate*.  `[↯/s.136.1.4] the compression method 12 is not supported`  Recompress the archive with deflate, or store the entry uncompressed.
+- row  `↯/s.136.1.5`  `MissingEocd`  No end-of-central-directory record was found, so the archive's index cannot be located.  `[↯/s.136.1.5] no end-of-central-directory record could be found`  The file is not a ZIP archive, or its tail is missing. Check that it downloaded completely.
+- row  `↯/s.136.1.6`  `TruncatedArchive`  The archive ends before a structure it declared was complete.  `[↯/s.136.1.6] the ZIP archive ended unexpectedly`  The file is incomplete. Obtain it again.
+- row  `↯/s.136.1.7`  `BadSignature`  A record does not begin with the four-byte signature the format requires there.  `[↯/s.136.1.7] an expected record signature (67324752) was absent`  The archive is corrupt, or the offset was computed from a damaged index. Recovering the entries by scanning may work where the index does not.
+- row  `↯/s.136.1.8`  `Zip64Error`  The ZIP64 extensions, which carry sizes and offsets too large for the original format, could not be interpreted.  `[↯/s.136.1.8] the ZIP64 metadata could not be interpreted`  The archive uses ZIP64 in a way this reader does not support, or the metadata is damaged.
+- row  `↯/s.136.1.9`  `WriteUnsupported`  The archive was opened with the `Write` grant, which opening as `Zip` does not offer.  `[↯/s.136.1.9] ZIP archives cannot yet be opened for writing`  Build a new `Zipfile` from the entries and write it (`path.write(Zipfile(entries))`), rather than opening an existing archive for modification.
+- row  `↯/s.136.1.10`  `AlreadyExists`  Creating an archive found something already at the path.  `[↯/s.136.1.10] an archive already exists at this path`  Choose another path, or pass `CreateFlag.Replace` to overwrite deliberately.
+- row  `↯/s.136.1.11`  `CannotWrite`  The archive could not be written, for a reason the underlying filesystem reported.  `[↯/s.136.1.11] the archive could not be written: permission denied`  The detail carries the operating system's explanation; act on that.
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Mensagem
++ column  Resolução
++ row  `↯/s.136.1.1`  `DuplicateEntry`  Uma entrada que está sendo acrescentada tem o mesmo caminho que uma que já está no arquivo.  `[↯/s.136.1.1] the ZIP operation failed because the path /hamlet/act1.txt is a duplicate entry`  Escolha outro caminho, ou remova primeiro a entrada existente.
++ row  `↯/s.136.1.2`  `NotFound`  Uma operação fez referência a um caminho de entrada que não existe no arquivo.  `[↯/s.136.1.2] the ZIP operation failed because path /hamlet/act1.txt was not found in the ZIP file`  Liste as entradas antes de ler; procure erros de digitação no caminho.
++ row  `↯/s.136.1.3`  `InvalidName`  Um nome de entrada não é válido para uma entrada ZIP — por exemplo, contém caracteres que o formato não permite.  `[↯/s.136.1.3] the ZIP operation failed because the name hamlet\act1 is not valid for a ZIP entry`  Sanitize o nome para um caminho de entrada válido.
++ row  `↯/s.136.1.4`  `UnsupportedMethod`  A entrada está comprimida com um método que não é *stored* nem *deflate*.  `[↯/s.136.1.4] the compression method 12 is not supported`  Comprima o arquivo novamente com deflate, ou armazene a entrada sem compressão.
++ row  `↯/s.136.1.5`  `MissingEocd`  Nenhum registro de fim do diretório central foi encontrado, então o índice do arquivo não pode ser localizado.  `[↯/s.136.1.5] no end-of-central-directory record could be found`  O arquivo não é um arquivo ZIP, ou falta o seu final. Verifique se o download foi concluído.
++ row  `↯/s.136.1.6`  `TruncatedArchive`  O arquivo termina antes que uma estrutura que ele declarou esteja completa.  `[↯/s.136.1.6] the ZIP archive ended unexpectedly`  O arquivo está incompleto. Obtenha-o novamente.
++ row  `↯/s.136.1.7`  `BadSignature`  Um registro não começa com a assinatura de quatro bytes que o formato exige naquele ponto.  `[↯/s.136.1.7] an expected record signature (67324752) was absent`  O arquivo está corrompido, ou o deslocamento foi calculado a partir de um índice danificado. Recuperar as entradas por varredura pode funcionar onde o índice não funciona.
++ row  `↯/s.136.1.8`  `Zip64Error`  As extensões ZIP64, que carregam tamanhos e deslocamentos grandes demais para o formato original, não puderam ser interpretadas.  `[↯/s.136.1.8] the ZIP64 metadata could not be interpreted`  O arquivo usa ZIP64 de uma forma que este leitor não suporta, ou os metadados estão danificados.
++ row  `↯/s.136.1.9`  `WriteUnsupported`  O arquivo foi aberto com a concessão `Write`, que a abertura como `Zip` não oferece.  `[↯/s.136.1.9] ZIP archives cannot yet be opened for writing`  Construa um novo `Zipfile` a partir das entradas e escreva-o (`path.write(Zipfile(entries))`), em vez de abrir um arquivo existente para modificá-lo.
++ row  `↯/s.136.1.10`  `AlreadyExists`  Ao criar um arquivo, já havia algo no caminho.  `[↯/s.136.1.10] an archive already exists at this path`  Escolha outro caminho, ou passe `CreateFlag.Replace` para sobrescrever deliberadamente.
++ row  `↯/s.136.1.11`  `CannotWrite`  O arquivo não pôde ser escrito, por um motivo que o sistema de arquivos subjacente relatou.  `[↯/s.136.1.11] the archive could not be written: permission denied`  O detalhe traz a explicação do sistema operacional; aja com base nela.
+
+- ```
++ ```
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/zeppelin/src/core/zeppelin.Zip.scala`
++ - Código-fonte: `lib/zeppelin/src/core/zeppelin.Zip.scala`

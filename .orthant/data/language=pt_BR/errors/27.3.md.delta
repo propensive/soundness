@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.3` — Hexadecimal literal has an odd number of digits
++ # `↯/s.27.3` — O literal hexadecimal tem um número ímpar de dígitos
+
+- Raised at compiletime when a hexadecimal literal does not have an even number of digits.
++ Lançado em tempo de compilação quando um literal hexadecimal não tem um número par de dígitos.
+
+- ## Cause
++ ## Causa
+
+- Each byte is two hexadecimal digits, so an odd count leaves one digit that names no whole
+- byte.
++ Cada byte tem dois dígitos hexadecimais, então uma contagem ímpar deixa um dígito que não forma
++ um byte inteiro.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.27.3] a hexadecimal value must have an even number of digits
++ [↯/s.27.3] a hexadecimal value must have an even number of digits
+
+= [↯/s.27.3] a hexadecimal value must have an even number of digits
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Add a leading zero to the digit that stands alone.
++ Acrescente um zero à esquerda do dígito que ficou sozinho.
+
+- ## See also
++ ## Veja também
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Os outros erros de literais binários e hexadecimais: [Famílias](README.md#families)
++ - Código-fonte: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

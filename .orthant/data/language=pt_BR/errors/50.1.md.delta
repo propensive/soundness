@@ -1,0 +1,82 @@
+orthant 1 language
+
+- # `↯/s.50.1` — `Isin.Error`
++ # `↯/s.50.1` — `Isin.Error`
+
+- Raised when a value cannot be parsed as a valid ISIN (International
+- Securities Identification Number).
++ Lançado quando um valor não pode ser analisado como um ISIN (International Securities
++ Identification Number) válido.
+
+- ## Cause
++ ## Causa
+
+- Plutocrat checks that an ISIN is twelve characters long, starts with a
+- recognised two-letter country code, contains only digits and uppercase
+- letters, and passes the Luhn checksum. The message is `the ISIN
+- number is not valid because $reason`.
++ O Plutocrat verifica que um ISIN tem doze caracteres, começa com um código de país de duas
++ letras reconhecido, contém apenas dígitos e letras maiúsculas e passa no checksum de Luhn. A
++ mensagem é `the ISIN number is not valid because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.50.1.1` — `InvalidCharacter`
++ ### `↯/s.50.1.1` — `InvalidCharacter`
+
+- A character is not a digit or an uppercase letter.
++ Um caractere não é um dígito nem uma letra maiúscula.
+
+- **Example.** `[↯/s.50.1.1] the ISIN number is not valid because the character - at position 4 is not a digit or uppercase letter`
++ **Exemplo.** `[↯/s.50.1.1] the ISIN number is not valid because the character - at position 4 is not a digit or uppercase letter`
+
+- **Resolution.** Use only `0`–`9` and `A`–`Z`.
++ **Resolução.** Use apenas `0`–`9` e `A`–`Z`.
+
+- ### `↯/s.50.1.2` — `BadCountryCode`
++ ### `↯/s.50.1.2` — `BadCountryCode`
+
+- The first two characters are not a recognised ISO 3166-1 alpha-2
+- country code.
++ Os dois primeiros caracteres não são um código de país ISO 3166-1 alpha-2 reconhecido.
+
+- **Example.** `[↯/s.50.1.2] the ISIN number is not valid because its country code XX was not valid`
++ **Exemplo.** `[↯/s.50.1.2] the ISIN number is not valid because its country code XX was not valid`
+
+- **Resolution.** Use a current ISO country code as the prefix.
++ **Resolução.** Use um código de país ISO vigente como prefixo.
+
+- ### `↯/s.50.1.3` — `WrongLength`
++ ### `↯/s.50.1.3` — `WrongLength`
+
+- The total length is not 12 characters.
++ O comprimento total não é de 12 caracteres.
+
+- **Example.** `[↯/s.50.1.3] the ISIN number is not valid because it had length 11, but it should be 12 characters long`
++ **Exemplo.** `[↯/s.50.1.3] the ISIN number is not valid because it had length 11, but it should be 12 characters long`
+
+- **Resolution.** Pad or trim the input to exactly 12 characters of the
+- required form.
++ **Resolução.** Complete ou corte a entrada para exatamente 12 caracteres da forma exigida.
+
+- ### `↯/s.50.1.4` — `LuhnCheck`
++ ### `↯/s.50.1.4` — `LuhnCheck`
+
+- The final check digit does not match the Luhn checksum of the
+- preceding 11 characters.
++ O dígito verificador final não corresponde ao checksum de Luhn dos 11 caracteres anteriores.
+
+- **Example.** `[↯/s.50.1.4] the ISIN number is not valid because its last digit failed the Luhn check`
++ **Exemplo.** `[↯/s.50.1.4] the ISIN number is not valid because its last digit failed the Luhn check`
+
+- **Resolution.** Recompute the check digit, or correct the typo in the
+- ISIN body that caused the mismatch.
++ **Resolução.** Recalcule o dígito verificador, ou corrija o erro de digitação no corpo do ISIN que
++ causou a divergência.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/plutocrat/src/core/plutocrat.internal.scala`
++ - Código-fonte: `lib/plutocrat/src/core/plutocrat.internal.scala`

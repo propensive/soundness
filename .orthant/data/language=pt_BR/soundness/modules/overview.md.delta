@@ -1,0 +1,262 @@
+orthant 1 language
+
+- ## Overview
++ ## Visão geral
+
+- Soundness is one library with many parts, and each of these tutorials takes one topic. They are
+- grouped here by what a reader is likely to be doing.
++ Soundness é uma única biblioteca com muitas partes, e cada um destes tutoriais trata de um
++ assunto. Eles estão agrupados aqui pelo que um leitor provavelmente está fazendo.
+
+- Each tutorial builds its samples up in order, and the output of a sample is shown beneath it,
+- as the sample produced it. Where a sample is meant to fail, the compiler's error or the thrown
+- error is shown instead. A word with a precise meaning, such as [typeclass] or [strategy], is
+- defined in the glossary, which appears where the word is used. Every tutorial ends with a list
+- of the related tutorials, and most link to the philosophy behind their design:
+- [safety by construction](../../philosophy/safety-by-construction.md),
+- [direct style](../../philosophy/direct-style.md),
+- [honest signatures](../../philosophy/honest-signatures.md) and the rest.
++ Cada tutorial constrói seus exemplos em ordem, e a saída de um exemplo é mostrada abaixo dele, tal
++ como o exemplo a produziu. Onde um exemplo deve falhar, mostra-se em vez disso o erro do
++ compilador ou o erro lançado. Uma palavra com um significado preciso, como [classe de tipos] ou
++ [estratégia], é definida no glossário, que aparece onde a palavra é usada. Todo tutorial termina
++ com uma lista dos tutoriais relacionados, e a maioria aponta para a filosofia por trás de seu
++ design: [segurança por construção](../../philosophy/safety-by-construction.md),
++ [estilo direto](../../philosophy/direct-style.md),
++ [assinaturas honestas](../../philosophy/honest-signatures.md) e as demais.
+
+- ### Foundations
++ ### Fundamentos
+
+- - [Text](text.md) — writing, slicing, searching and rendering text, with the types that are textual
+- - [Characters](characters.md) — encodings, Unicode properties, widths and grapheme clusters
+- - [Numbers](numbers.md) — checked arithmetic, bit manipulation, precision, ordinals and bounded numbers
+- - [Mathematics](mathematics.md) — complex numbers, vectors, matrices and permutations
+- - [Optional Values](optional-values.md) — absence without `Option`, and what it costs
+- - [Errors](errors.md) — declaring that code can fail, choosing a strategy, and recovering
+- - [Collections](collections.md) — the collection types, and how they cross to the standard library
+- - [Patterns](patterns.md) — regular expressions and globs, checked as the code compiles
+- - [Interpolation](interpolation.md) — writing an interpolator of your own
+- - [Names](names.md) — identifiers validated against a plane of rules
+- - [Decoding](decoding.md) — turning text into typed values, and extracting them in patterns
+- - [Display](display.md) — showing and inspecting values
+- - [Derivation](derivation.md) — deriving typeclass instances for products and sums
+- - [Annotations](annotations.md) — reading annotations at compiletime
+- - [Generic Data](generic-data.md) — a representation every format can be converted through
+- - [Records](records.md) — typed records from a specification
+- - [Catalogs](catalogs.md) — a value for every field of a type, addressed by path
+- - [Optics](optics.md) — updating nested immutable values
+- - [Bit Flags](flags.md) — sets of flags as bits
+- - [Bloom Filters](bloom-filters.md) — probabilistic membership
+- - [Caching](caching.md) — an LRU cache and expiring values
+- - [UUIDs](uuid.md) — generating, parsing and combining UUIDs
+- - [Randomness](randomness.md) — random values, distributions and reproducible runs
+- - [Versioning](versioning.md) — versions and manifests
+- - [Diffing](diffing.md) — diffs, patches and evolutions
+- - [Trees](trees.md) — trees and graphs drawn as diagrams
+- - [Graphs](graphs.md) — building, ordering, folding and drawing graphs
++ - [Texto](text.md) — escrever, fatiar, buscar e renderizar texto, com os tipos que são textuais
++ - [Caracteres](characters.md) — codificações, propriedades Unicode, larguras e clusters de grafemas
++ - [Números](numbers.md) — aritmética verificada, manipulação de bits, precisão, ordinais e números limitados
++ - [Matemática](mathematics.md) — números complexos, vetores, matrizes e permutações
++ - [Valores opcionais](optional-values.md) — ausência sem `Option`, e quanto ela custa
++ - [Erros](errors.md) — declarar que um código pode falhar, escolher uma estratégia e se recuperar
++ - [Coleções](collections.md) — os tipos de coleção, e como eles passam para a biblioteca padrão
++ - [Padrões](patterns.md) — expressões regulares e globs, verificados enquanto o código compila
++ - [Interpolação](interpolation.md) — escrever um interpolador próprio
++ - [Nomes](names.md) — identificadores validados contra um plano de regras
++ - [Decodificação](decoding.md) — transformar texto em valores tipados e extraí-los em padrões
++ - [Exibição](display.md) — exibir e inspecionar valores
++ - [Derivação](derivation.md) — derivar instâncias de classes de tipos para produtos e somas
++ - [Anotações](annotations.md) — ler anotações em tempo de compilação
++ - [Dados genéricos](generic-data.md) — uma representação pela qual todo formato pode ser convertido
++ - [Registros](records.md) — registros tipados a partir de uma especificação
++ - [Catálogos](catalogs.md) — um valor para cada campo de um tipo, endereçado por caminho
++ - [Óticas](optics.md) — atualizar valores imutáveis aninhados
++ - [Flags de bits](flags.md) — conjuntos de flags como bits
++ - [Filtros de Bloom](bloom-filters.md) — pertinência probabilística
++ - [Cache](caching.md) — um cache LRU e valores que expiram
++ - [UUIDs](uuid.md) — gerar, analisar e combinar UUIDs
++ - [Aleatoriedade](randomness.md) — valores aleatórios, distribuições e execuções reproduzíveis
++ - [Versionamento](versioning.md) — versões e manifestos
++ - [Diffs](diffing.md) — diffs, patches e evoluções
++ - [Árvores](trees.md) — árvores e grafos desenhados como diagramas
++ - [Grafos](graphs.md) — construir, ordenar, reduzir com fold e desenhar grafos
+
+- ### Data formats
++ ### Formatos de dados
+
+- - [JSON](json.md) — parsing, typed access, building, schemas and validation
+- - [YAML](yaml.md) — parsing, tags, anchors and encoding
+- - [XML](xml.md) — nodes, namespaces, XPath and schemas
+- - [CBOR](cbor.md) — binary JSON-like encoding, with tags and diagnostic notation
+- - [CSV](csv.md) — rows, headers and formats, decoded to case classes
+- - [TEL](tel.md) — the indentation-based data language, its schemas and editing
+- - [Protocol Buffers](protobuf.md) — messages, fields and compatibility
+- - [Markdown](markdown.md) — parsing, rendering and writing back
+- - [Base Encoding](base-encoding.md) — Base64, hexadecimal and other alphabets
+- - [Binary Data](binary-data.md) — describing and reading a binary layout
+- - [Compression](compression.md) — compressing values and streams
+- - [Archives](archives.md) — ZIP, tar and ar
+- - [Hashing](hashing.md) — digests, checksums and fast hashing
+- - [Cryptography](cryptography.md) — encryption, signing, keys and certificates
+- - [Media Types](media-types.md) — media types, and types that know theirs
++ - [JSON](json.md) — análise, acesso tipado, construção, schemas e validação
++ - [YAML](yaml.md) — análise, tags, âncoras e codificação
++ - [XML](xml.md) — nós, espaços de nomes, XPath e schemas
++ - [CBOR](cbor.md) — codificação binária semelhante a JSON, com tags e notação de diagnóstico
++ - [CSV](csv.md) — linhas, cabeçalhos e formatos, decodificados para case classes
++ - [TEL](tel.md) — a linguagem de dados baseada em indentação, seus schemas e sua edição
++ - [Protocol Buffers](protobuf.md) — mensagens, campos e compatibilidade
++ - [Markdown](markdown.md) — análise, renderização e escrita de volta
++ - [Codificação em base](base-encoding.md) — Base64, hexadecimal e outros alfabetos
++ - [Dados binários](binary-data.md) — descrever e ler um layout binário
++ - [Compressão](compression.md) — comprimir valores e streams
++ - [Arquivos ZIP, tar e ar](archives.md) — ZIP, tar e ar
++ - [Hashing](hashing.md) — digests, checksums e hashing rápido
++ - [Criptografia](cryptography.md) — cifragem, assinatura, chaves e certificados
++ - [Tipos de mídia](media-types.md) — tipos de mídia, e tipos que conhecem o seu
+
+- ### Time, quantity and locale
++ ### Tempo, grandezas e localidade
+
+- - [Time](time.md) — dates, times, instants, zones, calendars, recurrences and formatting
+- - [Quantities](quantities.md) — units, dimensions and conversions, checked at compiletime
+- - [Money](money.md) — amounts, splitting, prices and tax
+- - [Geography](geography.md) — angles, compass points and locations
+- - [Chemistry](chemistry.md) — elements, molecules, formulas and equations
+- - [Colors](colors.md) — color spaces, mixing, distance and palettes
+- - [Internationalization](internationalization.md) — translations and locales
+- - [Hyphenation](hyphenation.md) — hyphenating and syllabifying words
++ - [Tempo](time.md) — datas, horas, instantes, fusos, calendários, recorrências e formatação
++ - [Grandezas](quantities.md) — unidades, dimensões e conversões, verificadas em tempo de compilação
++ - [Dinheiro](money.md) — quantias, divisão, preços e impostos
++ - [Geografia](geography.md) — ângulos, pontos da bússola e localizações
++ - [Química](chemistry.md) — elementos, moléculas, fórmulas e equações
++ - [Cores](colors.md) — espaços de cor, mistura, distância e paletas
++ - [Internacionalização](internationalization.md) — traduções e localidades
++ - [Hifenização](hyphenation.md) — hifenizar e separar palavras em sílabas
+
+- ### Filesystem, processes and the environment
++ ### Sistema de arquivos, processos e o ambiente
+
+- - [Paths](paths.md) — building, relating and deconstructing paths
+- - [Filesystem](filesystem.md) — files, directories, access and watching
+- - [Environment](environment.md) — variables, properties, directories and the machine
+- - [Streams](streams.md) — reading, writing and composing streams of data
+- - [Processes](processes.md) — defining, running and piping commands
+- - [Concurrency](concurrency.md) — supervised tasks, cancellation and promises
+- - [Logging](logging.md) — loggers, levels and routing
+- - [Classpaths](classpath.md) — resources, classloaders and services
+- - [Packaging](packaging.md) — slim JARs whose dependencies are fetched by hash
+- - [Daemons](daemons.md) — long-running applications with fast clients
+- - [Containers](docker.md) — building and reading images, and talking to a daemon
+- - [Git](git.md) — repositories, commits, branches and remotes
+- - [SSH](ssh.md) — host keys, transports and remote commands
+- - [Databases](database.md) — declaring, storing and querying
++ - [Caminhos](paths.md) — construir, relacionar e desconstruir caminhos
++ - [Sistema de arquivos](filesystem.md) — arquivos, diretórios, acesso e observação
++ - [Ambiente](environment.md) — variáveis, propriedades, diretórios e a máquina
++ - [Streams](streams.md) — ler, escrever e compor streams de dados
++ - [Processos](processes.md) — definir, executar e encadear comandos com pipes
++ - [Concorrência](concurrency.md) — tarefas supervisionadas, cancelamento e promessas
++ - [Logging](logging.md) — loggers, níveis e roteamento
++ - [Classpaths](classpath.md) — recursos, classloaders e serviços
++ - [Empacotamento](packaging.md) — JARs enxutos cujas dependências são obtidas por hash
++ - [Daemons](daemons.md) — aplicações de longa duração com clientes rápidos
++ - [Contêineres](docker.md) — construir e ler imagens, e conversar com um daemon
++ - [Git](git.md) — repositórios, commits, branches e repositórios remotos
++ - [SSH](ssh.md) — chaves de host, transportes e comandos remotos
++ - [Bancos de dados](database.md) — declarar, armazenar e consultar
+
+- ### Networking and the web
++ ### Redes e a web
+
+- - [Network Addresses](network-addresses.md) — URLs, hostnames, IP addresses and ports
+- - [Sockets](sockets.md) — serving, clients, TLS and conversations
+- - [HTTP Client](http-client.md) — requests, headers, bodies and sessions
+- - [HTTP Server](http-server.md) — servers, responses, WebSockets and HTTP/2
+- - [RPC](rpc.md) — interfaces over JSON-RPC, gRPC and server-sent events
+- - [Email](email.md) — composing and sending
+- - [OAuth 2](oauth.md) — tokens and credentials
+- - [OpenAPI](openapi.md) — typed clients from a document
+- - [Service Discovery](service-discovery.md) — advertising and browsing services
+- - [Web Automation](web-automation.md) — driving a browser
+- - [HTML](html.md) — constructing, checking, rendering and parsing HTML
+- - [Web Pages](pages.md) — whole pages from archetypes
+- - [The Browser DOM](dom.md) — typed scripting of the page
+- - [CSS](css.md) — writing, validating and rendering stylesheets
+- - [Forms](forms.md) — rendering and handling forms
+- - [SVG](svg.md) — shapes, paths, transforms and documents
+- - [Charts](charts.md) — series, chart kinds and rendering
+- - [Label placement](label-placement.md) — captions that avoid their obstacles
+- - [Images](images.md) — pixels, canvases and conversion
+- - [Audio](audio.md) — reading, writing, recording and playback
+- - [Fonts](fonts.md) — loading, measuring and subsetting
+- - [PDF](pdf.md) — creating, reading and editing documents
+- - [Mathematical Markup](mathematical-markup.md) — MathML trees
++ - [Endereços de rede](network-addresses.md) — URLs, hostnames, endereços IP e portas
++ - [Sockets](sockets.md) — servir, clientes, TLS e conversas
++ - [Cliente HTTP](http-client.md) — requisições, cabeçalhos, corpos e sessões
++ - [Servidor HTTP](http-server.md) — servidores, respostas, WebSockets e HTTP/2
++ - [RPC](rpc.md) — interfaces sobre JSON-RPC, gRPC e server-sent events
++ - [Email](email.md) — compor e enviar
++ - [OAuth 2](oauth.md) — tokens e credenciais
++ - [OpenAPI](openapi.md) — clientes tipados a partir de um documento
++ - [Descoberta de serviços](service-discovery.md) — anunciar e procurar serviços
++ - [Automação web](web-automation.md) — conduzir um navegador
++ - [HTML](html.md) — construir, verificar, renderizar e analisar HTML
++ - [Páginas web](pages.md) — páginas inteiras a partir de arquétipos
++ - [O DOM do navegador](dom.md) — scripts tipados da página
++ - [CSS](css.md) — escrever, validar e renderizar folhas de estilo
++ - [Formulários](forms.md) — renderizar e tratar formulários
++ - [SVG](svg.md) — formas, caminhos, transformações e documentos
++ - [Gráficos](charts.md) — séries, espécies de gráfico e renderização
++ - [Posicionamento de rótulos](label-placement.md) — legendas que evitam seus obstáculos
++ - [Imagens](images.md) — pixels, canvases e conversão
++ - [Áudio](audio.md) — leitura, escrita, gravação e reprodução
++ - [Fontes](fonts.md) — carregar, medir e reduzir a um subconjunto
++ - [PDF](pdf.md) — criar, ler e editar documentos
++ - [Marcação matemática](mathematical-markup.md) — árvores MathML
+
+- ### Command line and terminal
++ ### Linha de comando e terminal
+
+- - [Command-Line Applications](cli.md) — entry points, arguments, flags, completions and help
+- - [Terminal](terminal.md) — styled text, input, menus and layout
+- - [Terminal Emulation](terminal-emulator.md) — feeding and inspecting a terminal
+- - [Tables](tables.md) — tabulating values at any width
+- - [Gauges](gauges.md) — statuses as gauges
+- - [Syntax Highlighting](syntax-highlighting.md) — highlighting, types and completions
++ - [Aplicações de linha de comando](cli.md) — pontos de entrada, argumentos, flags, conclusões e ajuda
++ - [Terminal](terminal.md) — texto com estilo, entrada, menus e layout
++ - [Emulação de terminal](terminal-emulator.md) — alimentar e inspecionar um terminal
++ - [Tabelas](tables.md) — tabular valores em qualquer largura
++ - [Indicadores](gauges.md) — status como indicadores
++ - [Realce de sintaxe](syntax-highlighting.md) — realce, tipos e sugestões de conclusão
+
+- ### Compiler, tooling and agents
++ ### Compilador, ferramentas e agentes
+
+- - [Compilation](compiler.md) — configuring and running compilers, and producing artifacts
+- - [Metaprogramming](metaprogramming.md) — givens, type-level values and expansions
+- - [Staging](staging.md) — quotes, splices and rigs
+- - [Testing](testing.md) — suites, tests, contrasts and benchmarks
+- - [Debugging](debugging.md) — sessions, breakpoints and stepping
+- - [Stack Traces](stack-traces.md) — capturing, demangling and resolving traces
+- - [Foreign Interoperability](foreign-interop.md) — loading and navigating foreign interfaces
+- - [Language Server Protocol](lsp.md) — defining and running a server
+- - [ACP](acp.md) — the agent client protocol
+- - [MCP](mcp.md) — the model context protocol
+- - [Language Models](llm.md) — conversations, tools and structured answers
++ - [Compilação](compiler.md) — configurar e executar compiladores, e produzir artefatos
++ - [Metaprogramação](metaprogramming.md) — givens, valores em nível de tipo e expansões
++ - [Execução em estágios](staging.md) — quotes, splices e rigs
++ - [Testes](testing.md) — suítes, testes, contrastes e benchmarks
++ - [Depuração](debugging.md) — sessões, breakpoints e execução passo a passo
++ - [Stack traces](stack-traces.md) — capturar, aplicar demangle e resolver traces
++ - [Interoperabilidade com outras linguagens](foreign-interop.md) — carregar e navegar por interfaces estrangeiras
++ - [Language Server Protocol](lsp.md) — definir e executar um servidor
++ - [ACP](acp.md) — o agent client protocol
++ - [MCP](mcp.md) — o model context protocol
++ - [Modelos de linguagem](llm.md) — conversas, ferramentas e respostas estruturadas

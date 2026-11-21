@@ -1,0 +1,1414 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base geodesy
++ base geodesy
+
+- import soundness
++ import soundness
+
+- info   angles, positions on the Earth, compass bearings, geohashes and `geo:` URIs as typed values
++ info   ângulos, posições na Terra, rumos de bússola, geohashes e URIs `geo:` como valores tipados
+
+- detail
++ detail
+
+-     _Geodesy_ gives geographic code types for the things it otherwise keeps in bare doubles.
+-     An `Angle` is a genuine angular quantity — constructed in degrees, radians or turns,
+-     added and scaled modularly, normalised to a principal or canonical value — so that no
+-     `Double` ever stands for an angle whose unit is a matter of memory. A `Location` is a
+-     latitude and a longitude packed into one machine word, from which the initial bearing to
+-     another location, the great-circle distance between them and the position's geohash are
+-     computed. A bearing resolves to a point of a 4-, 8- or 16-point compass rose, chosen by a
+-     type argument, or stays an `Angle` measured from north or east; and a `Geolocation` is a
+-     location with altitude, uncertainty and parameters, read from and written as an
+-     RFC 5870 `geo:` URI.
++     _Geodesy_ dá ao código geográfico tipos para as coisas que ele, de outra forma, guarda em
++     doubles simples. Um `Angle` é uma grandeza angular genuína — construída em graus, radianos ou
++     voltas, somada e escalada de forma modular, normalizada para um valor principal ou canônico —,
++     de modo que nenhum `Double` represente jamais um ângulo cuja unidade dependa da memória. Uma
++     `Location` é uma latitude e uma longitude compactadas numa única palavra de máquina, a partir
++     da qual se calculam o rumo inicial para outra localização, a distância de círculo máximo entre
++     elas e o geohash da posição. Um rumo se resolve num ponto de uma rosa dos ventos de 4, 8 ou 16
++     pontos, escolhida por um argumento de tipo, ou continua sendo um `Angle` medido a partir do
++     norte ou do leste; e uma `Geolocation` é uma localização com altitude, incerteza e
++     parâmetros, lida de uma URI `geo:` da RFC 5870 e escrita como uma.
+
+=     RFC 5870 `geo:` URI.
+=
+-     ```scala
++     ```scala
+
+=     RFC 5870 `geo:` URI.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     RFC 5870 `geo:` URI.
+=
+=     ```scala
+=     import soundness.*
+-     import soundness.angleShowable
++     import soundness.angleShowable
+
+-     import compassBearings.eightPointCompassBearing
++     import compassBearings.eightPointCompassBearing
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val london = Location(51.5074.deg, Angle.degrees(-0.1278))
++     val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+
+-     val paris = Location(48.8566.deg, 2.3522.deg)
++     val paris = Location(48.8566.deg, 2.3522.deg)
+
+-     london.bearing[Compass[8]](paris)             // Southeast
++     london.bearing[Compass[8]](paris)             // Southeast
+
+-     london.surfaceDistance(paris).radians*6371.0  // about 344 km
++     london.surfaceDistance(paris).radians*6371.0  // about 344 km
+
+-     london.geohash(6)                             // t"gcpvj0"
++     london.geohash(6)                             // t"gcpvj0"
+
+-     (350.deg + 20.deg).show                       // t"10.0°"
++     (350.deg + 20.deg).show                       // t"10.0°"
+
+-     Compass[16](Angle.degrees(247.5))             // WestSouthwest
++     Compass[16](Angle.degrees(247.5))             // WestSouthwest
+
+-     t"geo:51.5,-0.13;u=35".as[Geolocation].uncertainty   // 35.0
++     t"geo:51.5,-0.13;u=35".as[Geolocation].uncertainty   // 35.0
+
+=     t"geo:51.5,-0.13;u=35".as[Geolocation].uncertainty   // 35.0
+-     ```
++     ```
+
+-     Two givens are imported by name, since `import soundness.*` brings in no givens. An
+-     angle's textual form, degrees to one decimal place with a `°`, is `angleShowable`, a
+-     top-level given because `Angle` lives in a component below the text stack and its
+-     companion cannot carry it. Which compass a bearing is resolved on is a given from the
+-     `compassBearings` choice package: `fourPointCompassBearing`, `eightPointCompassBearing`,
+-     `sixteenPointCompassBearing`, or `fromNorthBearing` and `fromEastBearing` for the bearing
+-     as an angle. Everything else — the arithmetic on angles, their inspection, the codecs for
+-     `Location` and `Geolocation` — is in the companions and needs no import.
++     Dois givens são importados pelo nome, já que `import soundness.*` não traz givens. A forma
++     textual de um ângulo, em graus com uma casa decimal e um `°`, é `angleShowable`, um given de
++     nível superior, porque `Angle` fica num componente abaixo da pilha de texto e seu objeto
++     companheiro não pode contê-lo. A rosa dos ventos em que um rumo é resolvido é um given do
++     pacote de escolhas `compassBearings`: `fourPointCompassBearing`, `eightPointCompassBearing`,
++     `sixteenPointCompassBearing`, ou `fromNorthBearing` e `fromEastBearing` para o rumo como um
++     ângulo. Todo o resto — a aritmética sobre ângulos, sua inspeção, os codecs de `Location` e
++     `Geolocation` — fica nos objetos companheiros e não precisa de import.
+
+-     The library is two source sets:
++     A biblioteca tem dois source sets:
+
+-     - `geodesy.angle` — `Angle`, its arithmetic, `Degree`, `ArcMinute`, `ArcSecond` and the
+-       `deg` and `rad` extensions. It depends on nothing but hypotenuse and symbolism, so
+-       libraries below the text stack (a colour's hue, a rotation) can use an angle without
+-       the rest.
+-     - `geodesy.core` — `Location`, `Compass` and the winds, `Directional`, `Locatable`,
+-       `Geolocation`, `angleShowable` and the `compassBearings` package.
++     - `geodesy.angle` — `Angle`, sua aritmética, `Degree`, `ArcMinute`, `ArcSecond` e as
++       extensões `deg` e `rad`. Ele não depende de nada além de hypotenuse e symbolism, de modo
++       que bibliotecas abaixo da pilha de texto (o matiz de uma cor, uma rotação) podem usar um
++       ângulo sem o resto.
++     - `geodesy.core` — `Location`, `Compass` e os ventos, `Directional`, `Locatable`,
++       `Geolocation`, `angleShowable` e o pacote `compassBearings`.
+
+-     Both compile for the JVM, Scala.js and Scala Native, and everything is exported to the
+-     `soundness` umbrella, where the `compassBearings` package merges with the umbrella's own.
++     Ambos compilam para a JVM, o Scala.js e o Scala Native, e tudo é exportado para o
++     guarda-chuva `soundness`, onde o pacote `compassBearings` se funde com o do próprio
++     guarda-chuva.
+
+- refer geodesy.Angle
++ refer geodesy.Angle
+
+- refer geodesy.Location
++ refer geodesy.Location
+
+- refer geodesy.Compass
++ refer geodesy.Compass
+
+- refer geodesy.Geolocation
++ refer geodesy.Geolocation
+
+- refer geodesy.compassBearings
++ refer geodesy.compassBearings
+
+- entry .Angle   an angle as a quantity: built in degrees, radians or turns, with wrapping arithmetic
++ entry .Angle   um ângulo como grandeza: construído em graus, radianos ou voltas, com aritmética que dá a volta
+
+= entry .Angle   an angle as a quantity: built in degrees, radians or turns, with wrapping arithmetic
+-   detail
++   detail
+
+-       `Angle` is an opaque type over a `Double` of radians, so an angle cannot be confused
+-       with a bare number or a length, and its unit is never a matter of convention. One is
+-       made through its unit — `Angle.degrees(45)`, `45.deg`, `Angle.turns(0.25)`,
+-       `Angle(math.Pi/4)` or `0.785.rad` — and read back in any: `degrees`, `radians`,
+-       `turns`.
++       `Angle` é um tipo opaco sobre um `Double` de radianos, de modo que um ângulo não pode ser
++       confundido com um número simples nem com um comprimento, e sua unidade nunca é uma questão
++       de convenção. Cria-se um por meio de sua unidade — `Angle.degrees(45)`, `45.deg`,
++       `Angle.turns(0.25)`, `Angle(math.Pi/4)` ou `0.785.rad` — e ele é lido de volta em qualquer
++       uma: `degrees`, `radians`, `turns`.
+
+=       `turns`.
+=
+-       ```scala
++       ```scala
+
+=       `turns`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import soundness.angleShowable
++       import soundness.angleShowable
+
+-       val bearing: Angle = 45.deg
++       val bearing: Angle = 45.deg
+
+-       bearing.show                        // t"45.0°"
++       bearing.show                        // t"45.0°"
+
+-       bearing.radians                     // 0.7853981633974483
++       bearing.radians                     // 0.7853981633974483
+
+-       (350.deg + 20.deg).show             // t"10.0°"
++       (350.deg + 20.deg).show             // t"10.0°"
+
+-       (10.deg - 20.deg).show              // t"350.0°"
++       (10.deg - 20.deg).show              // t"350.0°"
+
+-       (Angle.degrees(100)*4.0).show       // t"40.0°"
++       (Angle.degrees(100)*4.0).show       // t"40.0°"
+
+-       Angle.degrees(375).principal.show   // t"15.0°"
++       Angle.degrees(375).principal.show   // t"15.0°"
+
+-       Angle.degrees(355).canonical.show   // t"-5.0°"
++       Angle.degrees(355).canonical.show   // t"-5.0°"
+
+=       Angle.degrees(355).canonical.show   // t"-5.0°"
+-       ```
++       ```
+
+-       Arithmetic wraps as angles do: `+` and `-` between angles, and `*` and `/` by a
+-       `Double` on either side, all reduce modulo a full turn, so 370° and 10° are the same
+-       angle after any operation. Two normal forms are available: `principal` in `[0°, 360°)`
+-       and `canonical` in `[−180°, 180°)`. The literal `45.deg` works for an integer literal
+-       because it widens to the `Double` the extension takes.
++       A aritmética dá a volta, como fazem os ângulos: `+` e `-` entre ângulos, e `*` e `/` por um
++       `Double` de qualquer lado, todos reduzem módulo uma volta completa, de modo que 370° e 10°
++       são o mesmo ângulo depois de qualquer operação. Há duas formas normais: `principal`, em
++       `[0°, 360°)`, e `canonical`, em `[−180°, 180°)`. O literal `45.deg` funciona para um literal
++       inteiro porque ele é alargado para o `Double` que a extensão recebe.
+
+-       Rendering is in two places. `inspect` is in the companion, at full precision
+-       (`7.25°`), so a debug rendering never depends on remembering an import; `show`, which
+-       rounds to one decimal place for display, is the top-level given `angleShowable` and
+-       must be imported by name, because the `geodesy.angle` component sits below the text
+-       stack and cannot put it here.
++       A renderização fica em dois lugares. `inspect` fica no objeto companheiro, com precisão
++       total (`7.25°`), de modo que uma renderização de depuração nunca depende de lembrar um
++       import; `show`, que arredonda para uma casa decimal para exibição, é o given de nível
++       superior `angleShowable` e precisa ser importado pelo nome, porque o componente
++       `geodesy.angle` fica abaixo da pilha de texto e não pode colocá-lo aqui.
+
+-       `Compass[n](angle)` resolves an angle to a compass point, and `Location#bearing`
+-       produces one, measured clockwise from north.
++       `Compass[n](angle)` resolve um ângulo num ponto da rosa dos ventos, e `Location#bearing`
++       produz um, medido no sentido horário a partir do norte.
+
+-   refer geodesy.angleShowable
++   refer geodesy.angleShowable
+
+-   refer geodesy.deg
++   refer geodesy.deg
+
+=   refer geodesy.deg
+-   refer geodesy.Compass
++   refer geodesy.Compass
+
+- entry .Degree   one degree, as an `Angle`: π/180 radians
+-     A constant to multiply: `45.0*Degree` is 45°, and `Degree/60.0` is `ArcMinute`. The
+-     `deg` extension is the same angle times its receiver.
++ entry .Degree   um grau, como um `Angle`: π/180 radianos
++     Uma constante para multiplicar: `45.0*Degree` é 45°, e `Degree/60.0` é `ArcMinute`. A
++     extensão `deg` é o mesmo ângulo vezes o seu receptor.
+
+- entry .ArcMinute   one minute of arc, a sixtieth of a degree, as an `Angle`
++ entry .ArcMinute   um minuto de arco, um sexagésimo de grau, como um `Angle`
+
+- entry .ArcSecond   one second of arc, a sixtieth of an arcminute, as an `Angle`
++ entry .ArcSecond   um segundo de arco, um sexagésimo de minuto de arco, como um `Angle`
+
+- entry .deg   an angle of this many degrees, as `45.0.deg`
+-     An extension on `Double`: `51.5074.deg`. An integer literal widens, so `45.deg` works
+-     too. A negative value is clearest bracketed, `(-0.1278).deg`, or as
+-     `Angle.degrees(-0.1278)`; `Angle` has no unary negation of its own.
++ entry .deg   um ângulo de tantos graus, como em `45.0.deg`
++     Uma extensão sobre `Double`: `51.5074.deg`. Um literal inteiro é alargado, então `45.deg`
++     também funciona. Um valor negativo fica mais claro entre parênteses, `(-0.1278).deg`, ou
++     como `Angle.degrees(-0.1278)`; `Angle` não tem negação unária própria.
+
+- entry .rad   an angle of this many radians, as `math.Pi.rad`
+-     An extension on `Double`, the same as `Angle(value)`.
++ entry .rad   um ângulo de tantos radianos, como em `math.Pi.rad`
++     Uma extensão sobre `Double`, o mesmo que `Angle(value)`.
+
+- entry .angleShowable   renders an angle as degrees to one decimal place with a `°`: `45.0°`
+-     The `Showable` given for `Angle`. It is a top-level given, so it must be imported by
+-     name — `import soundness.angleShowable` — because `Angle` is declared in the
+-     `geodesy.angle` component, below the text stack, and its companion cannot hold a
+-     `Showable`. The rounding is for display: `Angle.degrees(7.25).show` is `7.3°`, where
+-     `inspect` gives `7.25°`.
++ entry .angleShowable   renderiza um ângulo em graus com uma casa decimal e um `°`: `45.0°`
++     O given `Showable` para `Angle`. É um given de nível superior, de modo que precisa ser
++     importado pelo nome — `import soundness.angleShowable` —, porque `Angle` é declarado no
++     componente `geodesy.angle`, abaixo da pilha de texto, e seu objeto companheiro não pode
++     conter um `Showable`. O arredondamento é para exibição: `Angle.degrees(7.25).show` é `7.3°`,
++     enquanto `inspect` dá `7.25°`.
+
+=     `inspect` gives `7.25°`.
+=
+-     ```scala
++     ```scala
+
+=     `inspect` gives `7.25°`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `inspect` gives `7.25°`.
+=
+=     ```scala
+=     import soundness.*
+-     import soundness.angleShowable
++     import soundness.angleShowable
+
+-     Angle.degrees(7.25).show          // t"7.3°"
++     Angle.degrees(7.25).show          // t"7.3°"
+
+-     Angle.degrees(-30).principal.show // t"330.0°"
++     Angle.degrees(-30).principal.show // t"330.0°"
+
+=     Angle.degrees(-30).principal.show // t"330.0°"
+-     ```
++     ```
+
+- entry .angleInternal   the object which declares the opaque type `Angle` and its extensions
++ entry .angleInternal   o objeto que declara o tipo opaco `Angle` e suas extensões
+
+= entry .angleInternal   the object which declares the opaque type `Angle` and its extensions
+-   hidden
++   hidden
+
+= entry .angleInternal   the object which declares the opaque type `Angle` and its extensions
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `Angle` is exported from here to the `geodesy` package, and the
+-       extensions below are found through the opaque type's implicit scope. Its page under the
+-       `geodesy` package has the full account.
+-   entry .Angle   the opaque angle type; see `geodesy.Angle`
+-     entry .apply   an angle of the given radians
+-         `Angle(math.Pi)` is a half turn; `.rad` on a `Double` is the same.
+-     entry .degrees   an angle of the given degrees, as `Angle.degrees(45)`
+-         The companion's constructor; the extension `degrees` on an angle reads it back.
+-         `45.deg` and `45.0*Degree` are the same angle.
+-     entry .turns   an angle of the given fraction of a full turn, as `Angle.turns(0.5)`
+-     entry .addable   `angle + angle`, reduced modulo a full turn
+-         `350.deg + 20.deg` is 10°. The `Addable` given, in the companion.
+-     entry .subtractable   `angle - angle`, reduced modulo a full turn to a non-negative result
+-         `10.deg - 20.deg` is 350°: the result is the principal value.
+-     entry .multiplicable   `angle * double`, reduced modulo a full turn
+-         `Angle.degrees(100)*4.0` is 40°. `ArcMinute*60.0` is a degree.
+-     entry .divisible   `angle / double`, reduced modulo a full turn
+-         `Angle.degrees(90)/2.0` is 45°; `Degree/60.0` is `ArcMinute`.
+-     entry .multiplicable2   `double * angle`: a scalar multiplying an angle from the left
+-         `2.0*Angle.degrees(90)` is 180°, as `Angle.degrees(90)*2.0` is.
+-     entry .inspectable   a debug rendering in degrees at full precision: `7.25°`
+-         Unlike `angleShowable`, which rounds to one decimal place for display, inspection
+-         writes the `Double`'s own rendering of the degrees, since a rendering that rounded
+-         would hide the state it exists to show. In the companion, so it needs no import.
+-   entry .degrees   the angle in degrees, as a `Double`
+-       `45.deg.degrees` is `45.0`. Not reduced: an angle built as `Angle.degrees(375)` reads
+-       back as 375 until `principal` or `canonical` is taken.
+-   entry .radians   the angle in radians, as a `Double`
+-       The representation itself: `90.deg.radians` is π/2. A great-circle distance from
+-       `Location#surfaceDistance` is an angle whose radians, times a sphere's radius, are a
+-       length along its surface.
+-   entry .turns   the angle as a fraction of a full turn
+-       `Angle.degrees(90).turns` is `0.25`.
+-   entry .principal   the equivalent angle in `[0, 2π)`: 375° becomes 15°, −30° becomes 330°
+-       The form a compass bearing is normalised to before it reaches a `Directional`.
+-   entry .canonical   the equivalent angle in `[−π, π)`: 355° becomes −5°, 190° becomes −170°
+-       The form a longitude is stored in, so that a western longitude keeps its sign.
++       Não é para uso direto: `Angle` é exportado daqui para o pacote `geodesy`, e as extensões
++       abaixo são encontradas pelo escopo implícito do tipo opaco. Sua página no pacote `geodesy`
++       tem a descrição completa.
++   entry .Angle   o tipo opaco de ângulo; veja `geodesy.Angle`
++     entry .apply   um ângulo com os radianos dados
++         `Angle(math.Pi)` é meia volta; `.rad` sobre um `Double` é o mesmo.
++     entry .degrees   um ângulo com os graus dados, como em `Angle.degrees(45)`
++         O construtor do objeto companheiro; a extensão `degrees` sobre um ângulo o lê de volta.
++         `45.deg` e `45.0*Degree` são o mesmo ângulo.
++     entry .turns   um ângulo com a fração dada de uma volta completa, como em `Angle.turns(0.5)`
++     entry .addable   `angle + angle`, reduzido módulo uma volta completa
++         `350.deg + 20.deg` é 10°. O given `Addable`, no objeto companheiro.
++     entry .subtractable   `angle - angle`, reduzido módulo uma volta completa a um resultado não negativo
++         `10.deg - 20.deg` é 350°: o resultado é o valor principal.
++     entry .multiplicable   `angle * double`, reduzido módulo uma volta completa
++         `Angle.degrees(100)*4.0` é 40°. `ArcMinute*60.0` é um grau.
++     entry .divisible   `angle / double`, reduzido módulo uma volta completa
++         `Angle.degrees(90)/2.0` é 45°; `Degree/60.0` é `ArcMinute`.
++     entry .multiplicable2   `double * angle`: um escalar que multiplica um ângulo pela esquerda
++         `2.0*Angle.degrees(90)` é 180°, assim como `Angle.degrees(90)*2.0`.
++     entry .inspectable   uma renderização de depuração em graus, com precisão total: `7.25°`
++         Ao contrário de `angleShowable`, que arredonda para uma casa decimal para exibição, a
++         inspeção escreve a própria renderização dos graus pelo `Double`, já que uma renderização
++         arredondada esconderia o estado que ela existe para mostrar. Fica no objeto companheiro,
++         de modo que não precisa de import.
++   entry .degrees   o ângulo em graus, como um `Double`
++       `45.deg.degrees` é `45.0`. Não é reduzido: um ângulo construído como `Angle.degrees(375)`
++       é lido de volta como 375 até que se tome `principal` ou `canonical`.
++   entry .radians   o ângulo em radianos, como um `Double`
++       A própria representação: `90.deg.radians` é π/2. Uma distância de círculo máximo dada por
++       `Location#surfaceDistance` é um ângulo cujos radianos, vezes o raio de uma esfera, são um
++       comprimento ao longo da sua superfície.
++   entry .turns   o ângulo como fração de uma volta completa
++       `Angle.degrees(90).turns` é `0.25`.
++   entry .principal   o ângulo equivalente em `[0, 2π)`: 375° vira 15°, −30° vira 330°
++       A forma para a qual um rumo de bússola é normalizado antes de chegar a um `Directional`.
++   entry .canonical   o ângulo equivalente em `[−π, π)`: 355° vira −5°, 190° vira −170°
++       A forma em que uma longitude é armazenada, para que uma longitude a oeste mantenha seu
++       sinal.
+
+- entry .Location   a latitude and a longitude packed into one machine word, with bearings, distances and geohashes
++ entry .Location   uma latitude e uma longitude compactadas numa única palavra de máquina, com rumos, distâncias e geohashes
+
+= entry .Location   a latitude and a longitude packed into one machine word, with bearings, distances and geohashes
+-   detail
++   detail
+
+-       `Location` is an opaque type over a `Long`: the latitude and the longitude are each
+-       stored as a 32-bit fixed-point fraction of a half turn, so a position costs one machine
+-       word, a collection of them is unboxed, and two equal positions are equal values. It is
+-       built from two angles, latitude first, and read back as angles:
++       `Location` é um tipo opaco sobre um `Long`: a latitude e a longitude são armazenadas, cada
++       uma, como uma fração em ponto fixo de 32 bits de meia volta, de modo que uma posição custa
++       uma palavra de máquina, uma coleção delas não tem boxing, e duas posições iguais são valores
++       iguais. Ela é construída a partir de dois ângulos, latitude primeiro, e lida de volta como
++       ângulos:
+
+=       built from two angles, latitude first, and read back as angles:
+=
+-       ```scala
++       ```scala
+
+=       built from two angles, latitude first, and read back as angles:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val sydney = Location(Angle.degrees(-33.8688), 151.2093.deg)
++       val sydney = Location(Angle.degrees(-33.8688), 151.2093.deg)
+
+-       val melbourne = Location(Angle.degrees(-37.8136), 144.9631.deg)
++       val melbourne = Location(Angle.degrees(-37.8136), 144.9631.deg)
+
+-       sydney.latitude.degrees                         // about -33.8688
++       sydney.latitude.degrees                         // about -33.8688
+
+-       sydney.pair                                     // (latitude, longitude)
++       sydney.pair                                     // (latitude, longitude)
+
+-       sydney.surfaceDistance(melbourne).radians*6371  // about 713 km
++       sydney.surfaceDistance(melbourne).radians*6371  // about 713 km
+
+-       sydney.geohash(8)                               // t"r3gx2f77"
++       sydney.geohash(8)                               // t"r3gx2f77"
+
+-       sydney.encode                                   // t"-33.868800,151.209300"
++       sydney.encode                                   // t"-33.868800,151.209300"
+
+=       sydney.encode                                   // t"-33.868800,151.209300"
+-       ```
++       ```
+
+-       The fixed-point form holds a coordinate to about a centimetre on the Earth's surface,
+-       so a coordinate reads back within about a ten-millionth of a degree of what was
+-       given, not exactly: compare read-back angles with a tolerance. The longitude is stored in its
+-       canonical range, `[−180°, 180°)`, so a western longitude reads back negative.
++       A forma em ponto fixo guarda uma coordenada com precisão de cerca de um centímetro na
++       superfície da Terra, de modo que uma coordenada é lida de volta a cerca de um
++       décimo-milionésimo de grau do que foi dado, e não exatamente: compare os ângulos lidos de
++       volta com uma tolerância. A longitude é armazenada na sua faixa canônica, `[−180°, 180°)`, de
++       modo que uma longitude a oeste é lida de volta como negativa.
+
+-       The geographic questions are extension methods on `Location`, found through the opaque
+-       type's implicit scope:
++       As perguntas geográficas são métodos de extensão sobre `Location`, encontrados pelo escopo
++       implícito do tipo opaco:
+
+-       - `latitude` and `longitude`, each an `Angle`, and `pair`, the two as a tuple;
+-       - `surfaceDistance(other)`, the great-circle separation as an `Angle` (by the haversine
+-         formula), whose radians times a sphere's radius are the distance along its surface,
+-         so the same code serves the Earth and Mars;
+-       - `bearing[Compass[8]](other)`, the initial bearing toward another location, resolved
+-         on whichever rose or angular convention a `Directional` given from
+-         `compassBearings` provides;
+-       - `geohash(n)`, the position's base-32 geohash of `n` characters, where a shorter hash
+-         is always a prefix of a longer one.
++       - `latitude` e `longitude`, cada uma um `Angle`, e `pair`, as duas como uma tupla;
++       - `surfaceDistance(other)`, a separação de círculo máximo como um `Angle` (pela fórmula de
++         haversine), cujos radianos vezes o raio de uma esfera são a distância ao longo da sua
++         superfície, de modo que o mesmo código serve para a Terra e para Marte;
++       - `bearing[Compass[8]](other)`, o rumo inicial em direção a outra localização, resolvido na
++         rosa dos ventos ou na convenção angular que um given `Directional` de `compassBearings`
++         fornecer;
++       - `geohash(n)`, o geohash em base 32 da posição, com `n` caracteres, em que um hash mais
++         curto é sempre um prefixo de um mais longo.
+
+-       A `Location` encodes as `latitude,longitude` in degrees to six decimal places
+-       (`.encodable`), the form a `geo:` URI uses, and inspects at full precision as
+-       `⌖51.4999999718275°,0.12599995365645733°`. With an altitude, an uncertainty or a
+-       coordinate reference system it becomes a `Geolocation`.
++       Uma `Location` é codificada como `latitude,longitude`, em graus com seis casas decimais
++       (`.encodable`), a forma que uma URI `geo:` usa, e é inspecionada com precisão total como
++       `⌖51.4999999718275°,0.12599995365645733°`. Com uma altitude, uma incerteza ou um sistema de
++       referência de coordenadas, ela se torna uma `Geolocation`.
+
+-   refer geodesy.Angle
++   refer geodesy.Angle
+
+-   refer geodesy.Geolocation
++   refer geodesy.Geolocation
+
+=   refer geodesy.Geolocation
+-   refer geodesy.compassBearings
++   refer geodesy.compassBearings
+
+-   refer geodesy.Locatable
++   refer geodesy.Locatable
+
+- entry .Compass   a compass rose of 4, 8 or 16 points, as a type, and the resolution of an angle to one of its points
++ entry .Compass   uma rosa dos ventos de 4, 8 ou 16 pontos, como tipo, e a resolução de um ângulo num dos seus pontos
+
+= entry .Compass   a compass rose of 4, 8 or 16 points, as a type, and the resolution of an angle to one of its points
+-   detail
++   detail
+
+-       `Compass[4]`, `Compass[8]` and `Compass[16]` are match types naming the winds of each
+-       rose: `CardinalWind` for four points, `CardinalWind | IntercardinalWind` for eight, and
+-       those with `HalfWind` for sixteen. Because the number of points is a type argument,
+-       the type of a resolved bearing says which rose it came from, and a match on a
+-       four-point bearing is exhaustive over four cases rather than sixteen.
++       `Compass[4]`, `Compass[8]` e `Compass[16]` são match types que nomeiam os ventos de cada
++       rosa: `CardinalWind` para quatro pontos, `CardinalWind | IntercardinalWind` para oito, e
++       esses com `HalfWind` para dezesseis. Como o número de pontos é um argumento de tipo, o tipo
++       de um rumo resolvido diz de qual rosa ele veio, e um casamento sobre um rumo de quatro
++       pontos é exaustivo com quatro casos, e não dezesseis.
+
+-       `Compass[n](angle)` resolves an angle, measured clockwise from north, to the nearest
+-       point of the rose; each point covers the sector centred on it, so on an eight-point
+-       rose `Northeast` covers 22.5° to 67.5°. The angle is normalised first, so a negative
+-       angle is measured anticlockwise and one past a full turn wraps.
++       `Compass[n](angle)` resolve um ângulo, medido no sentido horário a partir do norte, no
++       ponto mais próximo da rosa; cada ponto cobre o setor centrado nele, de modo que, numa rosa
++       de oito pontos, `Northeast` cobre de 22,5° a 67,5°. O ângulo é normalizado primeiro, de modo
++       que um ângulo negativo é medido no sentido anti-horário, e um que passe de uma volta
++       completa dá a volta.
+
+=       angle is measured anticlockwise and one past a full turn wraps.
+=
+-       ```scala
++       ```scala
+
+=       angle is measured anticlockwise and one past a full turn wraps.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Compass[4](Angle.degrees(44))      // North
++       Compass[4](Angle.degrees(44))      // North
+
+-       Compass[4](Angle.degrees(46))      // East
++       Compass[4](Angle.degrees(46))      // East
+
+-       Compass[8](Angle.degrees(315))     // Northwest
++       Compass[8](Angle.degrees(315))     // Northwest
+
+-       Compass[16](Angle.degrees(247.5))  // WestSouthwest
++       Compass[16](Angle.degrees(247.5))  // WestSouthwest
+
+-       Compass[8](Angle.degrees(-90))     // West
++       Compass[8](Angle.degrees(-90))     // West
+
+=       Compass[8](Angle.degrees(-90))     // West
+-       ```
++       ```
+
+-       A `Location#bearing` resolves on a rose through a `Directional` given, imported by
+-       name from `compassBearings`; the four- eight- and sixteen-point givens there call
++       Um `Location#bearing` se resolve numa rosa por meio de um given `Directional`, importado
++       pelo nome de `compassBearings`; os givens de quatro, oito e dezesseis pontos ali chamam
+
+-       `Compass[n]`.
++       `Compass[n]`.
+
+-       `CardinalWind` and `IntercardinalWind` show as arrows (`↑`, `↗`); `HalfWind` has no
+-       `Showable`, so a sixteen-point bearing is shown by matching on it.
++       `CardinalWind` e `IntercardinalWind` são exibidos como setas (`↑`, `↗`); `HalfWind` não tem
++       `Showable`, de modo que um rumo de dezesseis pontos é exibido casando sobre ele.
+
+-   refer geodesy.CardinalWind
++   refer geodesy.CardinalWind
+
+-   refer geodesy.IntercardinalWind
++   refer geodesy.IntercardinalWind
+
+-   refer geodesy.HalfWind
++   refer geodesy.HalfWind
+
+=   refer geodesy.HalfWind
+-   refer geodesy.compassBearings
++   refer geodesy.compassBearings
+
+-   entry .apply   the point of a 4-, 8- or 16-point rose nearest an angle measured clockwise from north
+-       `Compass[8](Angle.degrees(315))` is `Northwest`. An inline method: the number of points
+-       is a literal type argument, `4`, `8` or `16`, and the result is typed `Compass[n]`.
+-   entry .points4   the four cardinal winds, clockwise from north
+-       An immutable array of `North`, `East`, `South`, `West`: point *i* is centred on *i* × 90°.
+-   entry .points8   the eight winds, clockwise from north
+-       The cardinal winds with an intercardinal between each pair: `North`, `Northeast`,
+-       `East`, … `Northwest`. Point *i* is centred on *i* × 45°.
+-   entry .points16   the sixteen winds, clockwise from north
+-       The eight winds with a half wind between each pair: `North`, `NorthNortheast`,
+-       `Northeast`, … `NorthNorthwest`. Every fourth point is a cardinal wind, and point *i* is
+-       centred on *i* × 22.5°.
++   entry .apply   o ponto de uma rosa de 4, 8 ou 16 pontos mais próximo de um ângulo medido no sentido horário a partir do norte
++       `Compass[8](Angle.degrees(315))` é `Northwest`. Um método inline: o número de pontos é um
++       argumento de tipo literal, `4`, `8` ou `16`, e o resultado é tipado como `Compass[n]`.
++   entry .points4   os quatro pontos cardeais, no sentido horário a partir do norte
++       Um array imutável de `North`, `East`, `South`, `West`: o ponto *i* é centrado em *i* × 90°.
++   entry .points8   os oito ventos, no sentido horário a partir do norte
++       Os pontos cardeais com um ponto colateral entre cada par: `North`, `Northeast`, `East`, …
++       `Northwest`. O ponto *i* é centrado em *i* × 45°.
++   entry .points16   os dezesseis ventos, no sentido horário a partir do norte
++       Os oito ventos com um ponto subcolateral entre cada par: `North`, `NorthNortheast`,
++       `Northeast`, … `NorthNorthwest`. Um ponto a cada quatro é um ponto cardeal, e o ponto *i* é
++       centrado em *i* × 22,5°.
+
+- entry .CardinalWind   the four cardinal points: `North`, `East`, `South` and `West`
++ entry .CardinalWind   os quatro pontos cardeais: `North`, `East`, `South` e `West`
+
+= entry .CardinalWind   the four cardinal points: `North`, `East`, `South` and `West`
+-   detail
++   detail
+
+-       The points of a `Compass[4]` rose, and the cardinal points of every larger one. The
+-       cases are exported to the `geodesy` package (and the umbrella), so they are written
+-       bare: `North`, not `CardinalWind.North`.
++       Os pontos de uma rosa `Compass[4]`, e os pontos cardeais de toda rosa maior. Os casos são
++       exportados para o pacote `geodesy` (e para o guarda-chuva), de modo que são escritos sem
++       qualificação: `North`, e não `CardinalWind.North`.
+
+=       bare: `North`, not `CardinalWind.North`.
+=
+-       ```scala
++       ```scala
+
+=       bare: `North`, not `CardinalWind.North`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Compass[4](Angle.degrees(100)) match
++       Compass[4](Angle.degrees(100)) match
+
+-         case North => t"up"
++         case North => t"up"
+
+-         case East  => t"right"
++         case East  => t"right"
+
+-         case South => t"down"
++         case South => t"down"
+
+-         case West  => t"left"
++         case West  => t"left"
+
+=         case West  => t"left"
+-       ```
++       ```
+
+=       ```
+-   refer geodesy.Compass
++   refer geodesy.Compass
+
+-   entry .showable   renders a cardinal wind as an arrow: `↑`, `→`, `↓` or `←`
+-       In the companion, so it needs no import: `North.show` is `t"↑"`.
++   entry .showable   renderiza um ponto cardeal como uma seta: `↑`, `→`, `↓` ou `←`
++       Fica no objeto companheiro, de modo que não precisa de import: `North.show` é `t"↑"`.
+
+- entry .IntercardinalWind   the four intercardinal points: `Northeast`, `Southeast`, `Southwest` and `Northwest`
++ entry .IntercardinalWind   os quatro pontos colaterais: `Northeast`, `Southeast`, `Southwest` e `Northwest`
+
+= entry .IntercardinalWind   the four intercardinal points: `Northeast`, `Southeast`, `Southwest` and `Northwest`
+-   detail
++   detail
+
+-       The points between the cardinal winds, which a `Compass[8]` rose adds to
+-       `CardinalWind`. The cases are exported to the `geodesy` package and the umbrella, so
+-       they are written bare: `Northeast`.
++       Os pontos entre os pontos cardeais, que uma rosa `Compass[8]` acrescenta a `CardinalWind`.
++       Os casos são exportados para o pacote `geodesy` e para o guarda-chuva, de modo que são
++       escritos sem qualificação: `Northeast`.
+
+=       they are written bare: `Northeast`.
+-   refer geodesy.Compass
++   refer geodesy.Compass
+
+-   entry .showable   renders an intercardinal wind as a diagonal arrow: `↗`, `↘`, `↙` or `↖`
+-       In the companion, so it needs no import: `Northeast.show` is `t"↗"`.
++   entry .showable   renderiza um ponto colateral como uma seta diagonal: `↗`, `↘`, `↙` ou `↖`
++       Fica no objeto companheiro, de modo que não precisa de import: `Northeast.show` é `t"↗"`.
+
+- entry .HalfWind   the eight half winds of a 16-point rose, from `NorthNortheast` to `NorthNorthwest`
+-     The points between each cardinal and intercardinal wind, which a `Compass[16]` rose adds
+-     to the eight: `NorthNortheast`, `EastNortheast`, `EastSoutheast`, `SouthSoutheast`,
+-     `SouthSouthwest`, `WestSouthwest`, `WestNorthwest` and `NorthNorthwest`. The cases are
+-     exported to the `geodesy` package and the umbrella, so they are written bare. Unlike
+-     `CardinalWind` and `IntercardinalWind`, a half wind has no `Showable` arrow.
++ entry .HalfWind   os oito pontos subcolaterais de uma rosa de 16 pontos, de `NorthNortheast` a `NorthNorthwest`
++     Os pontos entre cada ponto cardeal e colateral, que uma rosa `Compass[16]` acrescenta aos
++     oito: `NorthNortheast`, `EastNortheast`, `EastSoutheast`, `SouthSoutheast`,
++     `SouthSouthwest`, `WestSouthwest`, `WestNorthwest` e `NorthNorthwest`. Os casos são
++     exportados para o pacote `geodesy` e para o guarda-chuva, de modo que são escritos sem
++     qualificação. Ao contrário de `CardinalWind` e `IntercardinalWind`, um ponto subcolateral
++     não tem seta `Showable`.
+
+- entry .North   the cardinal wind north, 0°: `CardinalWind.North`, exported
+- entry .East   the cardinal wind east, 90°: `CardinalWind.East`, exported
+- entry .South   the cardinal wind south, 180°: `CardinalWind.South`, exported
+- entry .West   the cardinal wind west, 270°: `CardinalWind.West`, exported
+- entry .Northeast   the intercardinal wind northeast, 45°: `IntercardinalWind.Northeast`, exported
+- entry .Southeast   the intercardinal wind southeast, 135°: `IntercardinalWind.Southeast`, exported
+- entry .Southwest   the intercardinal wind southwest, 225°: `IntercardinalWind.Southwest`, exported
+- entry .Northwest   the intercardinal wind northwest, 315°: `IntercardinalWind.Northwest`, exported
+- entry .NorthNortheast   the half wind north-northeast, 22.5°: `HalfWind.NorthNortheast`, exported
+- entry .EastNortheast   the half wind east-northeast, 67.5°: `HalfWind.EastNortheast`, exported
+- entry .EastSoutheast   the half wind east-southeast, 112.5°: `HalfWind.EastSoutheast`, exported
+- entry .SouthSoutheast   the half wind south-southeast, 157.5°: `HalfWind.SouthSoutheast`, exported
+- entry .SouthSouthwest   the half wind south-southwest, 202.5°: `HalfWind.SouthSouthwest`, exported
+- entry .WestSouthwest   the half wind west-southwest, 247.5°: `HalfWind.WestSouthwest`, exported
+- entry .WestNorthwest   the half wind west-northwest, 292.5°: `HalfWind.WestNorthwest`, exported
+- entry .NorthNorthwest   the half wind north-northwest, 337.5°: `HalfWind.NorthNorthwest`, exported
++ entry .North   o ponto cardeal norte, 0°: `CardinalWind.North`, exportado
++ entry .East   o ponto cardeal leste, 90°: `CardinalWind.East`, exportado
++ entry .South   o ponto cardeal sul, 180°: `CardinalWind.South`, exportado
++ entry .West   o ponto cardeal oeste, 270°: `CardinalWind.West`, exportado
++ entry .Northeast   o ponto colateral nordeste, 45°: `IntercardinalWind.Northeast`, exportado
++ entry .Southeast   o ponto colateral sudeste, 135°: `IntercardinalWind.Southeast`, exportado
++ entry .Southwest   o ponto colateral sudoeste, 225°: `IntercardinalWind.Southwest`, exportado
++ entry .Northwest   o ponto colateral noroeste, 315°: `IntercardinalWind.Northwest`, exportado
++ entry .NorthNortheast   o ponto subcolateral nor-nordeste, 22,5°: `HalfWind.NorthNortheast`, exportado
++ entry .EastNortheast   o ponto subcolateral lés-nordeste, 67,5°: `HalfWind.EastNortheast`, exportado
++ entry .EastSoutheast   o ponto subcolateral lés-sudeste, 112,5°: `HalfWind.EastSoutheast`, exportado
++ entry .SouthSoutheast   o ponto subcolateral su-sudeste, 157,5°: `HalfWind.SouthSoutheast`, exportado
++ entry .SouthSouthwest   o ponto subcolateral su-sudoeste, 202,5°: `HalfWind.SouthSouthwest`, exportado
++ entry .WestSouthwest   o ponto subcolateral oés-sudoeste, 247,5°: `HalfWind.WestSouthwest`, exportado
++ entry .WestNorthwest   o ponto subcolateral oés-noroeste, 292,5°: `HalfWind.WestNorthwest`, exportado
++ entry .NorthNorthwest   o ponto subcolateral nor-noroeste, 337,5°: `HalfWind.NorthNorthwest`, exportado
+
+- entry .Directional   a typeclass turning a bearing, an angle clockwise from north, into a direction value
++ entry .Directional   uma classe de tipos que transforma um rumo, um ângulo no sentido horário a partir do norte, num valor de direção
+
+= entry .Directional   a typeclass turning a bearing, an angle clockwise from north, into a direction value
+-   detail
++   detail
+
+-       `Directional` is what `Location#bearing[T]` needs of its result type `T`: a single
+-       method, `direction`, from the bearing's principal angle (in `[0°, 360°)`, clockwise from
+-       north) to a `T`. The `compassBearings` package provides the standard instances, each
+-       imported by name: the 4-, 8- and 16-point roses, and the bearing as an `Angle` from
+-       north or from east.
++       `Directional` é o que `Location#bearing[T]` precisa do seu tipo de resultado `T`: um único
++       método, `direction`, que vai do ângulo principal do rumo (em `[0°, 360°)`, no sentido
++       horário a partir do norte) para um `T`. O pacote `compassBearings` fornece as instâncias
++       padrão, cada uma importada pelo nome: as rosas de 4, 8 e 16 pontos, e o rumo como um
++       `Angle` a partir do norte ou a partir do leste.
+
+-       A domain with sectors of its own implements one:
++       Um domínio com setores próprios implementa uma:
+
+=       A domain with sectors of its own implements one:
+=
+-       ```scala
++       ```scala
+
+=       A domain with sectors of its own implements one:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       enum Clock:
++       enum Clock:
+
+-         case Twelve, Three, Six, Nine
++         case Twelve, Three, Six, Nine
+
+-       given Clock is Directional = angle => Clock.fromOrdinal((0.5 + angle.turns*4).toInt%4)
++       given Clock is Directional = angle => Clock.fromOrdinal((0.5 + angle.turns*4).toInt%4)
+
+-       Location(51.5.deg, 0.0.deg).bearing[Clock](Location(51.5.deg, 1.0.deg))  // Three
++       Location(51.5.deg, 0.0.deg).bearing[Clock](Location(51.5.deg, 1.0.deg))  // Three
+
+=       Location(51.5.deg, 0.0.deg).bearing[Clock](Location(51.5.deg, 1.0.deg))  // Three
+-       ```
++       ```
+
+=       ```
+-   refer geodesy.compassBearings
++   refer geodesy.compassBearings
+
+=   refer geodesy.compassBearings
+-   refer geodesy.Compass
++   refer geodesy.Compass
+
+-   entry #direction   the direction for a bearing, given as an angle clockwise from north in `[0°, 360°)`
++   entry #direction   a direção para um rumo, dado como um ângulo no sentido horário a partir do norte, em `[0°, 360°)`
+
+- entry .Locatable   a typeclass for a value which has a position on the Earth
++ entry .Locatable   uma classe de tipos para um valor que tem uma posição na Terra
+
+= entry .Locatable   a typeclass for a value which has a position on the Earth
+-   detail
++   detail
+
+-       A `Locatable` type can give a `Location` for any of its values: a city, a station, a
+-       photograph. Its one method, `location`, extracts it, so code generic over located
+-       things can ask for `T is Locatable` and read a position from each.
++       Um tipo `Locatable` pode dar uma `Location` para qualquer um dos seus valores: uma cidade,
++       uma estação, uma fotografia. Seu único método, `location`, a extrai, de modo que código
++       genérico sobre coisas localizadas pode pedir `T is Locatable` e ler uma posição de cada uma.
+
+=       things can ask for `T is Locatable` and read a position from each.
+=
+-       ```scala
++       ```scala
+
+=       things can ask for `T is Locatable` and read a position from each.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class City(name: Text, centre: Location)
++       case class City(name: Text, centre: Location)
+
+-       given City is Locatable = _.centre
++       given City is Locatable = _.centre
+
+-       def near[place: Locatable](a: place, b: place): Boolean =
++       def near[place: Locatable](a: place, b: place): Boolean =
+
+-         place.location(a).surfaceDistance(place.location(b)).degrees < 1.0
++         place.location(a).surfaceDistance(place.location(b)).degrees < 1.0
+
+=         place.location(a).surfaceDistance(place.location(b)).degrees < 1.0
+-       ```
++       ```
+
+-       Geodesy itself defines no instances and no operation that takes one, so the
+-       `Location` extensions still need a `Location`; `Locatable` is the seam for a library
+-       built on top.
++       O próprio Geodesy não define instâncias nem nenhuma operação que receba uma, de modo que as
++       extensões de `Location` ainda precisam de uma `Location`; `Locatable` é a costura para uma
++       biblioteca construída por cima.
+
+=       built on top.
+-   refer geodesy.Location
++   refer geodesy.Location
+
+-   entry #location   the position of a value, as a `Location`
++   entry #location   a posição de um valor, como uma `Location`
+
+- entry .Geolocation   a location with optional altitude, uncertainty, reference system and parameters: an RFC 5870 `geo:` URI
++ entry .Geolocation   uma localização com altitude, incerteza, sistema de referência e parâmetros opcionais: uma URI `geo:` da RFC 5870
+
+= entry .Geolocation   a location with optional altitude, uncertainty, reference system and parameters: an RFC 5870 `geo:` URI
+-   detail
++   detail
+
+-       A `Geolocation` is the content of an RFC 5870 `geo:` URI as a case class: a `Location`,
+-       an optional altitude in metres, an optional coordinate reference system (`crs`), an
+-       optional uncertainty in metres (`u`), and any further parameters. It decodes from
+-       `geo:` text and encodes back to it:
++       Uma `Geolocation` é o conteúdo de uma URI `geo:` da RFC 5870 como uma case class: uma
++       `Location`, uma altitude opcional em metros, um sistema de referência de coordenadas
++       opcional (`crs`), uma incerteza opcional em metros (`u`), e quaisquer outros parâmetros.
++       Ela é decodificada a partir de texto `geo:` e codificada de volta para ele:
+
+=       `geo:` text and encodes back to it:
+=
+-       ```scala
++       ```scala
+
+=       `geo:` text and encodes back to it:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val vienna = t"geo:48.2010,16.3695,183;crs=wgs84;u=35;name=Vienna".as[Geolocation]
++       val vienna = t"geo:48.2010,16.3695,183;crs=wgs84;u=35;name=Vienna".as[Geolocation]
+
+-       vienna.altitude      // 183.0
++       vienna.altitude      // 183.0
+
+-       vienna.crs           // t"wgs84"
++       vienna.crs           // t"wgs84"
+
+-       vienna.uncertainty   // 35.0
++       vienna.uncertainty   // 35.0
+
+-       vienna.parameters    // Map(t"name" -> t"Vienna")
++       vienna.parameters    // Map(t"name" -> t"Vienna")
+
+-       Geolocation(Location(51.5.deg, 0.25.deg), 12.5, uncertainty = 3.0).encode
++       Geolocation(Location(51.5.deg, 0.25.deg), 12.5, uncertainty = 3.0).encode
+
+-       // t"geo:51.500000,0.250000,12.500000;u=3.000000"
++       // t"geo:51.500000,0.250000,12.500000;u=3.000000"
+
+=       // t"geo:51.500000,0.250000,12.500000;u=3.000000"
+-       ```
++       ```
+
+-       Decoding needs a `Tactic[Geolocation.Error]` and raises one whose `Reason` names the
+-       fault; under a tactic which recovers, a partial `Geolocation` is returned, with the
+-       parts that did parse. Coordinates and altitude are numbers of the form `-?[0-9]+(.[0-9]+)?`
+-       (no exponent, no leading `+`). As the RFC orders them, `crs` is recognised only as the
+-       first parameter and `u` only as the first after it; any other parameter, including a
+-       `crs` or `u` out of place, is kept in `#parameters`.
++       A decodificação precisa de um `Tactic[Geolocation.Error]` e lança um erro cujo `Reason`
++       nomeia o defeito; sob uma tática que se recupera, é retornada uma `Geolocation` parcial,
++       com as partes que foram analisadas. As coordenadas e a altitude são números da forma
++       `-?[0-9]+(.[0-9]+)?` (sem expoente, sem `+` inicial). Como a RFC os ordena, `crs` só é
++       reconhecido como o primeiro parâmetro, e `u` só como o primeiro depois dele; qualquer outro
++       parâmetro, inclusive um `crs` ou um `u` fora do lugar, é mantido em `#parameters`.
+
+-       Encoding writes every number to six decimal places, so a decoded and re-encoded URI is
+-       equal in value but not always in text.
++       A codificação escreve cada número com seis casas decimais, de modo que uma URI decodificada
++       e recodificada é igual em valor, mas nem sempre em texto.
+
+=       equal in value but not always in text.
+-   refer geodesy.Location
++   refer geodesy.Location
+
+-   refer geodesy.Geolocation.Error
++   refer geodesy.Geolocation.Error
+
+-   entry .decoder   reads a `geo:` URI as a `Geolocation`, raising `Geolocation.Error` if malformed
+-       The `Decodable in Text` given, in the companion, so `text.as[Geolocation]` needs only a
+-       `Tactic[Geolocation.Error]` in scope. A text with another scheme raises `BadScheme`,
+-       and a `geo:` text without two coordinates raises `ExpectedCoordinates`; in both cases
+-       the recovered value is a `Geolocation` at 0°, 0°.
+-   entry .encodable   writes a `Geolocation` as a `geo:` URI, numbers to six decimal places
+-       Writes `geo:`, the location's `latitude,longitude`, then `,altitude`, `;crs=…`, `;u=…`
+-       and the remaining parameters, each only if present. In the companion, so it needs no
+-       import.
+-   entry .Error   raised when text is not a well-formed `geo:` URI
++   entry .decoder   lê uma URI `geo:` como uma `Geolocation`, lançando `Geolocation.Error` se estiver malformada
++       O given `Decodable in Text`, no objeto companheiro, de modo que `text.as[Geolocation]` só
++       precisa de um `Tactic[Geolocation.Error]` no escopo. Um texto com outro esquema lança
++       `BadScheme`, e um texto `geo:` sem duas coordenadas lança `ExpectedCoordinates`; nos dois
++       casos, o valor recuperado é uma `Geolocation` em 0°, 0°.
++   entry .encodable   escreve uma `Geolocation` como uma URI `geo:`, com os números em seis casas decimais
++       Escreve `geo:`, o `latitude,longitude` da localização, e depois `,altitude`, `;crs=…`,
++       `;u=…` e os parâmetros restantes, cada um só se estiver presente. Fica no objeto
++       companheiro, de modo que não precisa de import.
++   entry .Error   lançado quando um texto não é uma URI `geo:` bem formada
+
+=   entry .Error   raised when text is not a well-formed `geo:` URI
+-     detail
++     detail
+
+-         Error `↯/s.46.1`: _the geo URI is not in the correct format because …_, followed by the
+-         `Reason`'s message. Raised by `Geolocation.decoder`, through the
+-         `Tactic[Geolocation.Error]` in scope.
++         Erro `↯/s.46.1`: _the geo URI is not in the correct format because …_, seguido da
++         mensagem do `Reason`. Lançado por `Geolocation.decoder`, pelo
++         `Tactic[Geolocation.Error]` no escopo.
+
+=         `Tactic[Geolocation.Error]` in scope.
+=
+-         ```scala
++         ```scala
+
+=         `Tactic[Geolocation.Error]` in scope.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         capture[Geolocation.Error](t"geo:1,2,3;u=far".as[Geolocation]).reason
++         capture[Geolocation.Error](t"geo:1,2,3;u=far".as[Geolocation]).reason
+
+-         // Geolocation.Error.Reason.BadUncertainty
++         // Geolocation.Error.Reason.BadUncertainty
+
+=         // Geolocation.Error.Reason.BadUncertainty
+-         ```
++         ```
+
+-         Each `Reason` is numbered as a sub-code of 420; the cases and their messages are
+-         tabulated under `Geolocation.Error.Reason`.
+-     entry .Reason   why a `geo:` URI failed to decode, numbered as a sub-code of error `↯/s.46.1`
++         Cada `Reason` é numerado como um subcódigo de 420; os casos e suas mensagens estão
++         tabulados em `Geolocation.Error.Reason`.
++     entry .Reason   por que uma URI `geo:` não pôde ser decodificada, numerado como um subcódigo do erro `↯/s.46.1`
+
+-       detail
++       detail
+
+-           An enumeration of `Clarification`s, numbered as sub-codes of error `↯/s.46.1`:
++           Uma enumeração de `Clarification`s, numerados como subcódigos do erro `↯/s.46.1`:
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
++           column  Caso
++           column  Código
++           column  Mensagem
++           column  Observação
+
+-           row  `MissingEquals`  1  _the parameter does not contain an `=`_
++           row  `MissingEquals`  1  _the parameter does not contain an `=`_
+
+-           row  `MultipleEquals`  2  _the parameter contains more than one `=`_
++           row  `MultipleEquals`  2  _the parameter contains more than one `=`_
+
+-           row  `BadScheme`  3  _the value does not begin with the `geo:` URI scheme_
++           row  `BadScheme`  3  _the value does not begin with the `geo:` URI scheme_
+
+-           row  `ExpectedSemicolon`  4  _a `;` was expected after the altitude value_
++           row  `ExpectedSemicolon`  4  _a `;` was expected after the altitude value_
+
+-           row  `UnexpectedSuffix`  5  _a `,` or `;` was expected_  junk after the longitude, or a non-numeric altitude
++           row  `UnexpectedSuffix`  5  _a `,` or `;` was expected_  lixo depois da longitude, ou uma altitude não numérica
+
+-           row  `ExpectedCoordinates`  6  _latitude and longitude coordinates were expected_
++           row  `ExpectedCoordinates`  6  _latitude and longitude coordinates were expected_
+
+-           row  `BadUncertainty`  7  _the `uncertainty` parameter was not a valid number_
++           row  `BadUncertainty`  7  _the `uncertainty` parameter was not a valid number_
+
+-           ```
++           ```
+
+-       entry #number   the reason's sub-code, 1 to 7
+-     entry .communicable   renders each `Geolocation.Error.Reason` as its message
+-     entry #reason   why the URI failed to decode, a `Geolocation.Error.Reason`
+-   entry #location   the latitude and longitude, as a `Location`
+-   entry #altitude   the altitude in metres, or `Unset`
+-   entry #crs   the coordinate reference system named by the `crs` parameter, or `Unset` (meaning WGS-84)
+-   entry #uncertainty   the uncertainty in metres, from the `u` parameter, or `Unset`
+-   entry #parameters   every parameter after `crs` and `u`, by name, as `Map[Text, Text]`
++       entry #number   o subcódigo do motivo, de 1 a 7
++     entry .communicable   renderiza cada `Geolocation.Error.Reason` como a sua mensagem
++     entry #reason   por que a URI não pôde ser decodificada, um `Geolocation.Error.Reason`
++   entry #location   a latitude e a longitude, como uma `Location`
++   entry #altitude   a altitude em metros, ou `Unset`
++   entry #crs   o sistema de referência de coordenadas nomeado pelo parâmetro `crs`, ou `Unset` (que significa WGS-84)
++   entry #uncertainty   a incerteza em metros, do parâmetro `u`, ou `Unset`
++   entry #parameters   todos os parâmetros depois de `crs` e `u`, por nome, como `Map[Text, Text]`
+
+- entry .compassBearings   the conventions a bearing may be resolved on, each a `Directional` given to import by name
++ entry .compassBearings   as convenções em que um rumo pode ser resolvido, cada uma um given `Directional` a importar pelo nome
+
+= entry .compassBearings   the conventions a bearing may be resolved on, each a `Directional` given to import by name
+-   detail
++   detail
+
+-       `Location#bearing[T]` needs a `T is Directional`, and which one is a choice — the
+-       number of points on the rose, or an angle and its zero — so none is in implicit scope
+-       and `import soundness.*` brings none in: one is imported by name, since a wildcard
+-       import does not import givens. The package merges with the umbrella's own
+-       `compassBearings`.
++       `Location#bearing[T]` precisa de um `T is Directional`, e qual deles é uma escolha — o
++       número de pontos da rosa, ou um ângulo e o seu zero —, de modo que nenhum está no escopo
++       implícito e `import soundness.*` não traz nenhum: um é importado pelo nome, já que um import
++       curinga não importa givens. O pacote se funde com o `compassBearings` do próprio
++       guarda-chuva.
+
+-       The same bearing, from London to Paris, under each:
++       O mesmo rumo, de Londres a Paris, sob cada um:
+
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Four points
++       alternative Four points
+
+=       alternative Four points
+-         code
++         code
+
+=       alternative Four points
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import compassBearings.fourPointCompassBearing
++             import compassBearings.fourPointCompassBearing
+
+=             import compassBearings.fourPointCompassBearing
+=
+-             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
++             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+
+=             import compassBearings.fourPointCompassBearing
+=
+=             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+-             val paris = Location(48.8566.deg, 2.3522.deg)
++             val paris = Location(48.8566.deg, 2.3522.deg)
+
+-             london.bearing[Compass[4]](paris)   // South
++             london.bearing[Compass[4]](paris)   // South
+
+-       alternative Eight points
++       alternative Eight points
+
+=       alternative Eight points
+-         code
++         code
+
+=       alternative Eight points
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import compassBearings.eightPointCompassBearing
++             import compassBearings.eightPointCompassBearing
+
+=             import compassBearings.eightPointCompassBearing
+=
+-             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
++             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+
+=             import compassBearings.eightPointCompassBearing
+=
+=             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+-             val paris = Location(48.8566.deg, 2.3522.deg)
++             val paris = Location(48.8566.deg, 2.3522.deg)
+
+-             london.bearing[Compass[8]](paris)   // Southeast
++             london.bearing[Compass[8]](paris)   // Southeast
+
+-       alternative Sixteen points
++       alternative Sixteen points
+
+=       alternative Sixteen points
+-         code
++         code
+
+=       alternative Sixteen points
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import compassBearings.sixteenPointCompassBearing
++             import compassBearings.sixteenPointCompassBearing
+
+=             import compassBearings.sixteenPointCompassBearing
+=
+-             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
++             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+
+=             import compassBearings.sixteenPointCompassBearing
+=
+=             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+-             val paris = Location(48.8566.deg, 2.3522.deg)
++             val paris = Location(48.8566.deg, 2.3522.deg)
+
+-             london.bearing[Compass[16]](paris)   // SouthSoutheast
++             london.bearing[Compass[16]](paris)   // SouthSoutheast
+
+-       alternative From north
++       alternative From north
+
+=       alternative From north
+-         code
++         code
+
+=       alternative From north
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative From north
+=         code
+=             import soundness.*
+-             import soundness.angleShowable
++             import soundness.angleShowable
+
+-             import compassBearings.fromNorthBearing
++             import compassBearings.fromNorthBearing
+
+=             import compassBearings.fromNorthBearing
+=
+-             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
++             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+
+=             import compassBearings.fromNorthBearing
+=
+=             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+-             val paris = Location(48.8566.deg, 2.3522.deg)
++             val paris = Location(48.8566.deg, 2.3522.deg)
+
+-             london.bearing[Angle](paris).show   // t"148.1°"
++             london.bearing[Angle](paris).show   // t"148.1°"
+
+-       alternative From east
++       alternative From east
+
+=       alternative From east
+-         code
++         code
+
+=       alternative From east
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative From east
+=         code
+=             import soundness.*
+-             import soundness.angleShowable
++             import soundness.angleShowable
+
+-             import compassBearings.fromEastBearing
++             import compassBearings.fromEastBearing
+
+=             import compassBearings.fromEastBearing
+=
+-             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
++             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+
+=             import compassBearings.fromEastBearing
+=
+=             val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+-             val paris = Location(48.8566.deg, 2.3522.deg)
++             val paris = Location(48.8566.deg, 2.3522.deg)
+
+-             london.bearing[Angle](paris).show   // t"58.1°"
++             london.bearing[Angle](paris).show   // t"58.1°"
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       Each rose gives a coarser or finer answer of a different type; the angular givens keep
+-       the bearing exact. Only one `Angle is Directional` should be in scope at a time, since
+-       `fromNorthBearing` and `fromEastBearing` give the same type.
++       Cada rosa dá uma resposta mais grosseira ou mais fina, de um tipo diferente; os givens
++       angulares mantêm o rumo exato. Só deve haver um `Angle is Directional` no escopo por vez, já
++       que `fromNorthBearing` e `fromEastBearing` dão o mesmo tipo.
+
+-   refer geodesy.Directional
++   refer geodesy.Directional
+
+=   refer geodesy.Directional
+-   refer geodesy.Compass
++   refer geodesy.Compass
+
+-   entry .fourPointCompassBearing   resolves a bearing to the nearest cardinal wind, as `Compass[4]`
+-       `Compass[4] is Directional`, by `Compass[4](angle)`: `North`, `East`, `South` or `West`.
+-   entry .eightPointCompassBearing   resolves a bearing to the nearest of eight winds, as `Compass[8]`
+-       `Compass[8] is Directional`, by `Compass[8](angle)`: a `CardinalWind` or an
++   entry .fourPointCompassBearing   resolve um rumo no ponto cardeal mais próximo, como `Compass[4]`
++       `Compass[4] is Directional`, por `Compass[4](angle)`: `North`, `East`, `South` ou `West`.
++   entry .eightPointCompassBearing   resolve um rumo no mais próximo dos oito ventos, como `Compass[8]`
++       `Compass[8] is Directional`, por `Compass[8](angle)`: um `CardinalWind` ou um
+
+-       `IntercardinalWind`.
++       `IntercardinalWind`.
+
+-   entry .sixteenPointCompassBearing   resolves a bearing to the nearest of sixteen winds, as `Compass[16]`
+-       `Compass[16] is Directional`, by `Compass[16](angle)`: a `CardinalWind`, an
+-       `IntercardinalWind` or a `HalfWind`.
+-   entry .fromNorthBearing   gives a bearing as an `Angle` clockwise from north, in `[0°, 360°)`
+-       `Angle is Directional`, as the identity: the navigator's convention, where 90° is east.
+-   entry .fromEastBearing   gives a bearing as an `Angle` from east: the compass bearing less 90°
+-       `Angle is Directional`, subtracting a quarter turn from the bearing, so due east is 0°
+-       and due north 270°. Since angle subtraction wraps to a non-negative result, the angle
+-       is in `[0°, 360°)` and still increases clockwise; it is not the anticlockwise angle of
+-       mathematical convention.
++   entry .sixteenPointCompassBearing   resolve um rumo no mais próximo dos dezesseis ventos, como `Compass[16]`
++       `Compass[16] is Directional`, por `Compass[16](angle)`: um `CardinalWind`, um
++       `IntercardinalWind` ou um `HalfWind`.
++   entry .fromNorthBearing   dá um rumo como um `Angle` no sentido horário a partir do norte, em `[0°, 360°)`
++       `Angle is Directional`, como a identidade: a convenção do navegador, em que 90° é o leste.
++   entry .fromEastBearing   dá um rumo como um `Angle` a partir do leste: o rumo de bússola menos 90°
++       `Angle is Directional`, que subtrai um quarto de volta do rumo, de modo que o leste exato é
++       0° e o norte exato 270°. Como a subtração de ângulos dá a volta para um resultado não
++       negativo, o ângulo fica em `[0°, 360°)` e ainda cresce no sentido horário; não é o ângulo
++       anti-horário da convenção matemática.
+
+- entry .internal   the object which declares the opaque type `Location` and its extensions
++ entry .internal   o objeto que declara o tipo opaco `Location` e suas extensões
+
+= entry .internal   the object which declares the opaque type `Location` and its extensions
+-   hidden
++   hidden
+
+= entry .internal   the object which declares the opaque type `Location` and its extensions
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `Location` is exported from here to the `geodesy` package, and the
+-       extensions below are found through the opaque type's implicit scope. Its page under the
+-       `geodesy` package has the full account.
+-   entry .Location   the opaque location type; see `geodesy.Location`
++       Não é para uso direto: `Location` é exportado daqui para o pacote `geodesy`, e as extensões
++       abaixo são encontradas pelo escopo implícito do tipo opaco. Sua página no pacote `geodesy`
++       tem a descrição completa.
++   entry .Location   o tipo opaco de localização; veja `geodesy.Location`
+
+=   entry .Location   the opaque location type; see `geodesy.Location`
+-     detail
++     detail
+
+-         The opaque type `Location = Long`, with its constructors and codecs. Its page under
+-         the `geodesy` package has the full account.
+-     entry .apply   a location from a latitude and a longitude, as two angles or two microdegree integers
+-         `Location(51.5.deg, Angle.degrees(-0.13))` takes the latitude first. Any angles are
+-         accepted: the longitude is reduced to `[−180°, 180°)`, and a latitude is not range-checked, so a
+-         latitude beyond ±90° gives a meaningless position rather than an error.
++         O tipo opaco `Location = Long`, com seus construtores e codecs. Sua página no pacote
++         `geodesy` tem a descrição completa.
++     entry .apply   uma localização a partir de uma latitude e uma longitude, como dois ângulos ou dois inteiros em microgaus
++         `Location(51.5.deg, Angle.degrees(-0.13))` recebe a latitude primeiro. Quaisquer ângulos
++         são aceitos: a longitude é reduzida a `[−180°, 180°)`, e a faixa de uma latitude não é
++         verificada, de modo que uma latitude além de ±90° dá uma posição sem sentido, e não um
++         erro.
+
+-         `Location(north, east)` with two `Int`s takes millionths of a degree, a compact form for
+-         tables of coordinates: `Location(51500000, -130000)` is 51.5° N, 0.13° W.
++         `Location(north, east)` com dois `Int`s recebe milionésimos de grau, uma forma compacta
++         para tabelas de coordenadas: `Location(51500000, -130000)` é 51,5° N, 0,13° O.
+
+=         tables of coordinates: `Location(51500000, -130000)` is 51.5° N, 0.13° W.
+=
+-         ```scala
++         ```scala
+
+=         tables of coordinates: `Location(51500000, -130000)` is 51.5° N, 0.13° W.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Location(51.5.deg, Angle.degrees(-0.13))
++         Location(51.5.deg, Angle.degrees(-0.13))
+
+-         Location(51500000, -130000)
++         Location(51500000, -130000)
+
+=         Location(51500000, -130000)
+-         ```
++         ```
+
+-     entry .encodable   writes a location as `latitude,longitude` in degrees, to six decimal places
+-         `Location(51.5.deg, 0.25.deg).encode` is `t"51.500000,0.250000"`: the coordinate pair of
+-         a `geo:` URI, which `Geolocation`'s encoder reuses. In the companion, so it needs no
+-         import.
+-     entry .inspectable   a debug rendering at full precision, marked as a position: `⌖51.5°,0.126°`
+-         Each coordinate is rendered by `Angle`'s own inspection, at the full precision of the
+-         stored value, after a `⌖` which marks the pair as a position rather than two loose
+-         angles. In the companion, so it needs no import.
+-   entry .latitude   the latitude, as an `Angle` in `[−90°, 90°]`
+-       Read back from the fixed-point form, so within about a ten-millionth of a degree of
+-       the angle the location was built from.
+-   entry .longitude   the longitude, as an `Angle` in `[−180°, 180°)`
+-       A western longitude is negative:
+-       `Location(0.deg, Angle.degrees(-74.006)).longitude.degrees` is about `-74.006`.
+-   entry .pair   the latitude and the longitude, as a tuple of angles
+-   entry .geohash   the location's base-32 geohash, of the given number of characters
+-       `Location(57.64911.deg, 10.40744.deg).geohash(11)` is `t"u4pruydqqvj"`, the canonical
+-       example. A shorter hash is a prefix of a longer one, and nearby locations usually share
+-       a prefix, though two either side of a cell boundary may share none, so a prefix match is
+-       a first filter for proximity, not an answer.
+-   entry .surfaceDistance   the great-circle separation of two locations, as an `Angle`
+-       By the haversine formula. The angle's radians times a sphere's radius are the distance
+-       along its surface: `london.surfaceDistance(paris).radians*6371` is about 344 km on the
+-       Earth. Symmetric, and zero from a location to itself; the poles are half a turn apart.
+-   entry .bearing   the initial bearing toward another location, resolved by a `Directional` given
+-       `here.bearing[Compass[8]](there)` takes the great-circle bearing at `here`, clockwise
+-       from north and normalised to `[0°, 360°)`, and passes it to the `T is Directional` in
+-       scope: a compass rose or an angular convention from `compassBearings`, imported by
+-       name. Along a great circle the bearing changes as one travels, so this is the bearing
+-       at departure.
++     entry .encodable   escreve uma localização como `latitude,longitude` em graus, com seis casas decimais
++         `Location(51.5.deg, 0.25.deg).encode` é `t"51.500000,0.250000"`: o par de coordenadas de
++         uma URI `geo:`, que o codificador de `Geolocation` reaproveita. Fica no objeto
++         companheiro, de modo que não precisa de import.
++     entry .inspectable   uma renderização de depuração com precisão total, marcada como posição: `⌖51.5°,0.126°`
++         Cada coordenada é renderizada pela própria inspeção de `Angle`, com a precisão total do
++         valor armazenado, depois de um `⌖`, que marca o par como uma posição, e não como dois
++         ângulos soltos. Fica no objeto companheiro, de modo que não precisa de import.
++   entry .latitude   a latitude, como um `Angle` em `[−90°, 90°]`
++       Lida de volta da forma em ponto fixo, portanto a cerca de um décimo-milionésimo de grau do
++       ângulo a partir do qual a localização foi construída.
++   entry .longitude   a longitude, como um `Angle` em `[−180°, 180°)`
++       Uma longitude a oeste é negativa:
++       `Location(0.deg, Angle.degrees(-74.006)).longitude.degrees` é cerca de `-74.006`.
++   entry .pair   a latitude e a longitude, como uma tupla de ângulos
++   entry .geohash   o geohash em base 32 da localização, com o número de caracteres dado
++       `Location(57.64911.deg, 10.40744.deg).geohash(11)` é `t"u4pruydqqvj"`, o exemplo canônico.
++       Um hash mais curto é um prefixo de um mais longo, e localizações próximas costumam
++       compartilhar um prefixo, embora duas, uma de cada lado da fronteira de uma célula, possam
++       não compartilhar nenhum, de modo que o casamento de prefixos é um primeiro filtro de
++       proximidade, e não uma resposta.
++   entry .surfaceDistance   a separação de círculo máximo entre duas localizações, como um `Angle`
++       Pela fórmula de haversine. Os radianos do ângulo vezes o raio de uma esfera são a distância
++       ao longo da sua superfície: `london.surfaceDistance(paris).radians*6371` é cerca de 344 km
++       na Terra. Simétrica, e zero de uma localização para ela mesma; os polos ficam a meia volta
++       um do outro.
++   entry .bearing   o rumo inicial em direção a outra localização, resolvido por um given `Directional`
++       `here.bearing[Compass[8]](there)` toma o rumo de círculo máximo em `here`, no sentido
++       horário a partir do norte e normalizado para `[0°, 360°)`, e o passa ao `T is Directional`
++       no escopo: uma rosa dos ventos ou uma convenção angular de `compassBearings`, importada
++       pelo nome. Ao longo de um círculo máximo, o rumo muda à medida que se viaja, de modo que
++       este é o rumo na partida.

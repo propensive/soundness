@@ -1,0 +1,687 @@
+orthant 1 language
+
+- ## Fonts
++ ## Fontes
+
+- ### About
++ ### Visão geral
+
+- A [TrueType or OpenType](https://en.wikipedia.org/wiki/TrueType) font file is binary data with a
+- well-defined internal structure: tables of glyphs, mappings and metrics. It is read directly
+- here. An `Sfnt` loads from any source of bytes, resolves characters to glyphs, and answers the
+- question which typography code most often asks: how wide is this text in this font?
++ Um arquivo de fonte [TrueType ou OpenType](https://en.wikipedia.org/wiki/TrueType) é um dado
++ binário com uma estrutura interna bem definida: tabelas de glifos, mapeamentos e métricas. Aqui ele
++ é lido diretamente. Um `Sfnt` é carregado a partir de qualquer origem de bytes, resolve caracteres
++ em glifos e responde à pergunta que o código tipográfico mais faz: qual a largura deste texto nesta
++ fonte?
+
+- Above the file, a `Typeface` names a font family. A `Face` chooses a weight, slant and features
+- from it. A `Typesettable` provision guarantees that a document which names the typeface carries
+- what its medium needs to show it.
++ Acima do arquivo, uma `Typeface` nomeia uma família de fontes. Uma `Face` escolhe nela um peso, uma
++ inclinação e recursos. Uma provisão `Typesettable` garante que um documento que nomeia a família
++ tipográfica traga o que seu meio precisa para mostrá-la.
+
+- ### On font metrics
++ ### Sobre as métricas de fontes
+
+- Text does not have a width. Text *in a font* does. Laying out a heading, sizing a button and
+- breaking a line to fit a measure each need the advance widths which live inside the font file,
+- in tables indexed through a mapping from characters to glyphs. Reaching them usually means a
+- rendering toolkit, brought in for what is, at heart, table lookup in a documented binary format.
++ O texto não tem largura. O texto *em uma fonte* tem. Dispor um título, dimensionar um botão e
++ quebrar uma linha para caber em uma medida exigem, cada um, as larguras de avanço que vivem dentro
++ do arquivo de fonte, em tabelas indexadas por um mapeamento de caracteres para glifos. Chegar a
++ elas costuma significar um toolkit de renderização, trazido para o que é, no fundo, consulta a
++ tabelas em um formato binário documentado.
+
+- Here the format is parsed directly. The font is a value, its tables are read lazily, and its
+- metrics are ordinary method calls. A font parsed from its tables, with every value typed,
+- follows [safety by construction](../../philosophy/safety-by-construction.md): an invalid font is
+- rejected when it is loaded, and not at first use.
++ Aqui o formato é analisado diretamente. A fonte é um valor, suas tabelas são lidas de forma
++ preguiçosa e suas métricas são chamadas de método comuns. Uma fonte analisada a partir de suas
++ tabelas, com todos os valores tipados, segue a
++ [segurança por construção](../../philosophy/safety-by-construction.md): uma fonte inválida é
++ rejeitada quando é carregada, e não no primeiro uso.
+
+- Everything comes from the `soundness` package:
++ Tudo vem do pacote `soundness`:
+
+= Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import decimalConverters.javaDecimalConverter
++ import decimalConverters.javaDecimalConverter
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- The samples on this page read font files which are not shipped with the documentation, so they
+- are compiled but not run.
++ Os exemplos desta página leem arquivos de fonte que não acompanham a documentação, então eles são
++ compilados, mas não executados.
+
+- ### Loading a font
++ ### Carregando uma fonte
+
+- `Sfnt` reads a font from any streamable source of bytes: a file, a classpath resource, a URL.
+- The name is the format's own. An *sfnt* is the table container which TrueType and OpenType share.
+- The two specializations are told apart by their tables. A `CFF ` table means PostScript
+- outlines, so the font is an `Opentype`. Otherwise it is a `Truetype`:
++ `Sfnt` lê uma fonte a partir de qualquer origem de bytes que possa ser lida como stream: um
++ arquivo, um recurso do classpath, uma URL. O nome é o do próprio formato. Um *sfnt* é o contêiner
++ de tabelas que TrueType e OpenType compartilham. As duas especializações se distinguem por suas
++ tabelas. Uma tabela `CFF ` significa contornos PostScript, então a fonte é uma `Opentype`. Caso
++ contrário, é uma `Truetype`:
+
+= outlines, so the font is an `Opentype`. Otherwise it is a `Truetype`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= outlines, so the font is an `Opentype`. Otherwise it is a `Truetype`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= outlines, so the font is an `Opentype`. Otherwise it is a `Truetype`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- val font: Sfnt = Sfnt(t"/fonts/text.ttf".as[Path on Classpath])
++ val font: Sfnt = Sfnt(t"/fonts/text.ttf".as[Path on Classpath])
+
+- val outlines: Text = font match
++ val outlines: Text = font match
+
+-   case truetype: Truetype => t"TrueType outlines"
++   case truetype: Truetype => t"TrueType outlines"
+
+-   case opentype: Opentype => t"PostScript outlines"
++   case opentype: Opentype => t"PostScript outlines"
+
+=   case opentype: Opentype => t"PostScript outlines"
+- ```
++ ```
+
+- Constructing a font from bytes cannot fail. The tables parse lazily, so a file which is not a
+- font, or which lacks a table an operation needs, raises a `Font.Error` which names the problem
+- when that table is first read.
++ Construir uma fonte a partir de bytes não pode falhar. As tabelas são analisadas de forma
++ preguiçosa, então um arquivo que não é uma fonte, ou ao qual falta uma tabela de que uma operação
++ precisa, lança um `Font.Error` que nomeia o problema quando essa tabela é lida pela primeira vez.
+
+- ### Measuring text
++ ### Medindo texto
+
+- `width` measures a text in the font. It returns a [quantity](quantities.md) in `em`s, the
+- font-relative unit which multiplies by the point size to give a physical width:
++ `width` mede um texto na fonte. Devolve uma [grandeza](quantities.md) em `em`s, a unidade relativa
++ à fonte que, multiplicada pelo tamanho em pontos, dá uma largura física:
+
+= font-relative unit which multiplies by the point size to give a physical width:
+=
+- ```scala
++ ```scala
+
+- def measure(font: Sfnt): Quantity[Ems[1]] = font.width(t"Hello world")
++ def measure(font: Sfnt): Quantity[Ems[1]] = font.width(t"Hello world")
+
+= def measure(font: Sfnt): Quantity[Ems[1]] = font.width(t"Hello world")
+- ```
++ ```
+
+- Since the result is a typed quantity, an em-width cannot be mistaken for a measurement in pixels
+- or points. Scaling it by a font size is explicit arithmetic.
++ Como o resultado é uma grandeza tipada, uma largura em ems não pode ser confundida com uma medida
++ em pixels ou em pontos. Escalá-la por um tamanho de fonte é aritmética explícita.
+
+- ### Glyphs
++ ### Glifos
+
+- Questions about characters go through the glyph machinery. A character resolves to its glyph,
+- and each glyph carries its advance width and left side bearing, in the design units of the font:
++ As perguntas sobre caracteres passam pela maquinaria de glifos. Um caractere se resolve em seu
++ glifo, e cada glifo traz sua largura de avanço e seu espaço lateral esquerdo, nas unidades de
++ design da fonte:
+
+= and each glyph carries its advance width and left side bearing, in the design units of the font:
+=
+- ```scala
++ ```scala
+
+- def metrics(font: Sfnt): (Int, Int) = (font.advanceWidth('H'), font.leftSideBearing('H'))
++ def metrics(font: Sfnt): (Int, Int) = (font.advanceWidth('H'), font.leftSideBearing('H'))
+
+= def metrics(font: Sfnt): (Int, Int) = (font.advanceWidth('H'), font.leftSideBearing('H'))
+- ```
++ ```
+
+- Each table which the font reads is a method of the same name, parsed on first use:
++ Cada tabela que a fonte lê é um método de mesmo nome, analisado no primeiro uso:
+
+= Each table which the font reads is a method of the same name, parsed on first use:
+=
+- ```tabular
++ ```tabular
+
+- column  Table
+- column  Method
+- column  Gives
+- row  `head`  `head`  units per em, relating design units to ems; the glyph bounding box
+- row  `hhea`  `hhea`  the ascender and descender heights that vertical layout needs
+- row  `hmtx`  `hmtx`  each glyph's advance width and left side bearing
+- row  `cmap`  `cmap`  the mapping from characters to glyphs
+- row  `maxp`  `maxp`  the number of glyphs
+- row  `name`  `name`  names and descriptions, as `fontName` and `familyName`
+- row  `post`  `post`  italic angle, underline position and thickness, monospacing
+- row  `OS/2`  `os2`  weight and width classes, typographic metrics, embedding rights
+- row  `fvar`  `fvar`  a variable font's axes, or `Unset`
++ column  Tabela
++ column  Método
++ column  Fornece
++ row  `head`  `head`  unidades por em, que relacionam unidades de design a ems; a caixa delimitadora dos glifos
++ row  `hhea`  `hhea`  as alturas ascendente e descendente de que o layout vertical precisa
++ row  `hmtx`  `hmtx`  a largura de avanço e o espaço lateral esquerdo de cada glifo
++ row  `cmap`  `cmap`  o mapeamento de caracteres para glifos
++ row  `maxp`  `maxp`  o número de glifos
++ row  `name`  `name`  nomes e descrições, como `fontName` e `familyName`
++ row  `post`  `post`  ângulo do itálico, posição e espessura do sublinhado, monoespaçamento
++ row  `OS/2`  `os2`  classes de peso e de largura, métricas tipográficas, direitos de incorporação
++ row  `fvar`  `fvar`  os eixos de uma fonte variável, ou `Unset`
+
+= row  `fvar`  `fvar`  a variable font's axes, or `Unset`
+- ```
++ ```
+
+- The mapping from characters to glyphs covers the `cmap` subtable formats which fonts actually
+- use, and the best subtable is chosen by Unicode preference, not by taking the first one present.
+- A character which the font does not map gives the missing glyph, and not an error or a wrong
+- glyph.
++ O mapeamento de caracteres para glifos cobre os formatos de subtabela `cmap` que as fontes de fato
++ usam, e a melhor subtabela é escolhida por preferência Unicode, e não tomando a primeira presente.
++ Um caractere que a fonte não mapeia dá o glifo ausente, e não um erro ou um glifo errado.
+
+- ### Names and metadata
++ ### Nomes e metadados
+
+- A font describes itself in its `name`, `post` and `OS/2` tables, and those descriptions are read
+- directly rather than guessed at. The names are [optional] values, since a font need not record
+- them:
++ Uma fonte se descreve em suas tabelas `name`, `post` e `OS/2`, e essas descrições são lidas
++ diretamente, em vez de adivinhadas. Os nomes são valores [opcionais][opcional], já que uma fonte
++ não precisa registrá-los:
+
+= them:
+=
+- ```scala
++ ```scala
+
+- def describe(font: Sfnt): Text =
++ def describe(font: Sfnt): Text =
+
+-   t"${font.fontName.or(t"?")} (${font.familyName.or(t"?")}), ${font.post.italicAngle.show}°"
++   t"${font.fontName.or(t"?")} (${font.familyName.or(t"?")}), ${font.post.italicAngle.show}°"
+
+=   t"${font.fontName.or(t"?")} (${font.familyName.or(t"?")}), ${font.post.italicAngle.show}°"
+- ```
++ ```
+
+- Records are decoded from both UTF-16BE and Macintosh encodings, with Windows-English preferred
+- where several are present. Weight, typographic metrics, x-height and embedding rights come from
+- `OS/2`, which is exactly what building a [PDF](pdf.md) font descriptor needs.
++ Os registros são decodificados tanto de UTF-16BE quanto das codificações Macintosh, com
++ preferência pelo inglês do Windows quando há vários. O peso, as métricas tipográficas, a altura-x
++ e os direitos de incorporação vêm de `OS/2`, que é exatamente o que construir um descritor de
++ fonte [PDF](pdf.md) exige.
+
+- ### Typefaces and faces
++ ### Famílias tipográficas e faces
+
+- A font file is one thing. The typeface which a document *names* is another. `Typeface["Inter"]`
+- is a typeface by its family name, which is also its type, `Typeface of "Inter"`, so one typeface
+- is distinguishable from another as the code compiles. A `Face` says how the typeface is to be
+- set: its weight, slant and stretch, its positions on any further axes of a variable font, and
+- the layout features to turn on or off. It says nothing about where the font comes from:
++ Um arquivo de fonte é uma coisa. A família tipográfica que um documento *nomeia* é outra.
++ `Typeface["Inter"]` é uma família tipográfica pelo nome da família, que também é seu tipo,
++ `Typeface of "Inter"`, de modo que uma família tipográfica se distingue de outra enquanto o código
++ compila. Uma `Face` diz como a família tipográfica deve ser composta: seu peso, sua inclinação e
++ sua largura, suas posições em quaisquer outros eixos de uma fonte variável, e os recursos de layout
++ a ligar ou desligar. Ela não diz nada sobre de onde a fonte vem:
+
+= the layout features to turn on or off. It says nothing about where the font comes from:
+=
+- ```scala
++ ```scala
+
+- val inter = Typeface["Inter"]
++ val inter = Typeface["Inter"]
+
+- val heading = inter.bold.italic
++ val heading = inter.bold.italic
+
+- val figures = inter.face.enabling(Face.Feature.TabularNumerals).disabling(Face.Feature.Ligatures)
++ val figures = inter.face.enabling(Face.Feature.TabularNumerals).disabling(Face.Feature.Ligatures)
+
+- val display = inter.face.varying(Variation.Axis.OpticalSize, 24.0)
++ val display = inter.face.varying(Variation.Axis.OpticalSize, 24.0)
+
+= val display = inter.face.varying(Variation.Axis.OpticalSize, 24.0)
+- ```
++ ```
+
+- A face has these attributes:
++ Uma face tem estes atributos:
+
+= A face has these attributes:
+=
+- ```tabular
++ ```tabular
+
+- column  Attribute
+- column  Values
+- column  Set with
+- row  weight  1–1000, the scale CSS and OpenType share, `Weight.Thin` to `Weight.Black`  `thin` … `black`, `weighing(weight)`
+- row  slant  `Upright`, `Italic`, or `Oblique` at an angle  `upright`, `italic`, `oblique(angle)`, `slanted(slant)`
+- row  stretch  a percentage of the normal width  `condensed`, `expanded`, `stretched(stretch)`
+- row  variation  a position on a variable font's axis  `varying(axis, value)`
+- row  features  OpenType layout features, on or off  `enabling`, `disabling`, `featuring`
++ column  Atributo
++ column  Valores
++ column  Definido com
++ row  peso  1–1000, a escala que CSS e OpenType compartilham, de `Weight.Thin` a `Weight.Black`  `thin` … `black`, `weighing(weight)`
++ row  inclinação  `Upright`, `Italic`, ou `Oblique` com um ângulo  `upright`, `italic`, `oblique(angle)`, `slanted(slant)`
++ row  largura  uma porcentagem da largura normal  `condensed`, `expanded`, `stretched(stretch)`
++ row  variação  uma posição em um eixo de uma fonte variável  `varying(axis, value)`
++ row  recursos  recursos de layout OpenType, ligados ou desligados  `enabling`, `disabling`, `featuring`
+
+= row  features  OpenType layout features, on or off  `enabling`, `disabling`, `featuring`
+- ```
++ ```
+
+- The registered weight, width and italic axes of a variable font are set through the first three,
+- so a static and a variable font are asked for alike. A `Variation` is for optical size and a
+- font's own axes. Features are named by their OpenType tags. Stylistic sets,
+- `Face.Feature.stylisticSet(n)`, and character variants, `Face.Feature.characterVariant(n)`, are
+- numbered:
++ Os eixos registrados de peso, largura e itálico de uma fonte variável são definidos pelos três
++ primeiros, de modo que uma fonte estática e uma variável são pedidas da mesma forma. Uma
++ `Variation` serve para o tamanho óptico e para os eixos próprios de uma fonte. Os recursos são
++ nomeados por suas tags OpenType. Os conjuntos estilísticos, `Face.Feature.stylisticSet(n)`, e as
++ variantes de caracteres, `Face.Feature.characterVariant(n)`, são numerados:
+
+= numbered:
+=
+- ```tabular
++ ```tabular
+
+- column  Feature
++ column  Recurso
+
+- column  Tag
++ column  Tag
+
+- row  `Ligatures`  `liga`
++ row  `Ligatures`  `liga`
+
+- row  `DiscretionaryLigatures`  `dlig`
++ row  `DiscretionaryLigatures`  `dlig`
+
+- row  `HistoricalLigatures`  `hlig`
++ row  `HistoricalLigatures`  `hlig`
+
+- row  `ContextualAlternates`  `calt`
++ row  `ContextualAlternates`  `calt`
+
+- row  `Kerning`  `kern`
++ row  `Kerning`  `kern`
+
+- row  `OldstyleNumerals`  `onum`
++ row  `OldstyleNumerals`  `onum`
+
+- row  `LiningNumerals`  `lnum`
++ row  `LiningNumerals`  `lnum`
+
+- row  `TabularNumerals`  `tnum`
++ row  `TabularNumerals`  `tnum`
+
+- row  `ProportionalNumerals`  `pnum`
++ row  `ProportionalNumerals`  `pnum`
+
+- row  `SlashedZero`  `zero`
++ row  `SlashedZero`  `zero`
+
+- row  `Fractions`  `frac`
++ row  `Fractions`  `frac`
+
+- row  `Ordinals`  `ordn`
++ row  `Ordinals`  `ordn`
+
+- row  `SmallCapitals`  `smcp`
++ row  `SmallCapitals`  `smcp`
+
+- row  `CapitalSmallCapitals`  `c2sc`
++ row  `CapitalSmallCapitals`  `c2sc`
+
+- row  `Swashes`  `swsh`
++ row  `Swashes`  `swsh`
+
+- row  `Superscript`  `sups`
++ row  `Superscript`  `sups`
+
+- row  `Subscript`  `subs`
++ row  `Subscript`  `subs`
+
+= row  `Subscript`  `subs`
+- ```
++ ```
+
+- ### Providing a typeface
++ ### Fornecendo uma família tipográfica
+
+- Naming a typeface does not make it available where the document is shown. A browser without the
+- font falls back to another, and a PDF viewer substitutes. A provision closes that gap. It is an
+- instance of `Typesettable` for the typeface *in a medium*. It says how that medium obtains the
+- font, and which faces it can then set. It is declared once, as a [given]:
++ Nomear uma família tipográfica não a torna disponível onde o documento é mostrado. Um navegador sem
++ a fonte recorre a outra, e um visualizador de PDF a substitui. Uma provisão fecha essa lacuna. Ela
++ é uma instância de `Typesettable` para a família tipográfica *em um meio*. Ela diz como esse meio
++ obtém a fonte e quais faces pode então compor. É declarada uma vez, como um [given]:
+
+= font, and which faces it can then set. It is declared once, as a [given]:
+=
+- ```scala fuel
++ ```scala fuel
+
+= font, and which faces it can then set. It is declared once, as a [given]:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= font, and which faces it can then set. It is declared once, as a [given]:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- object fonts:
++ object fonts:
+
+-   val interFile: Sfnt = Sfnt(t"/fonts/Inter-Variable.ttf".as[Path on Classpath])
++   val interFile: Sfnt = Sfnt(t"/fonts/Inter-Variable.ttf".as[Path on Classpath])
+
+-   given interProvision: (Typeface of "Inter") is Typesettable in Medium =
++   given interProvision: (Typeface of "Inter") is Typesettable in Medium =
+
+-     Typesettable.embedded(interFile)
++     Typesettable.embedded(interFile)
+
+=     Typesettable.embedded(interFile)
+- ```
++ ```
+
+- A font file can be carried in any document, so an embedded provision is `in Medium`, the medium
+- of every medium. Its coverage, which is the weights, slants and widths it offers, the axes of a
+- variable font, and the features which its `GSUB` and `GPOS` tables implement, is read from the
+- file. Several files, such as regular, bold and italic, make one provision whose coverage is
+- their union. Other kinds of provision belong to one medium, and are declared through it, each
+- with the coverage it is declared to have, since there is no file to read:
++ Um arquivo de fonte pode ser levado em qualquer documento, então uma provisão incorporada é
++ `in Medium`, o meio de todos os meios. Sua cobertura, que são os pesos, as inclinações e as
++ larguras que oferece, os eixos de uma fonte variável e os recursos que suas tabelas `GSUB` e
++ `GPOS` implementam, é lida do arquivo. Vários arquivos, como regular, negrito e itálico, formam
++ uma provisão cuja cobertura é a união deles. Outras espécies de provisão pertencem a um meio e são
++ declaradas por meio dele, cada uma com a cobertura que se declara que ela tem, já que não há
++ arquivo para ler:
+
+= with the coverage it is declared to have, since there is no file to read:
+=
+- ```tabular
++ ```tabular
+
+- column  Provision
+- column  Medium
+- column  The font comes from
+- column  Coverage
+- row  `Typesettable.embedded(files)`  `Medium`  the files, carried in the document  read from the files
+- row  `Web.linked(url, coverage)`  `Web`  a font file at a URL  declared
+- row  `Web.imported(url, coverage)`  `Web`  a stylesheet that declares the typeface  declared
+- row  `Web.local(coverage)`  `Web`  a font the reader has installed  declared, or unknown
+- row  the CSS generic families  `Web`  the browser, with no declaration  every face
+- row  PDF's standard fourteen  `Print`  the viewer, with no declaration  the faces the standard defines
++ column  Provisão
++ column  Meio
++ column  A fonte vem de
++ column  Cobertura
++ row  `Typesettable.embedded(files)`  `Medium`  os arquivos, levados no documento  lida dos arquivos
++ row  `Web.linked(url, coverage)`  `Web`  um arquivo de fonte em uma URL  declarada
++ row  `Web.imported(url, coverage)`  `Web`  uma folha de estilo que declara a família tipográfica  declarada
++ row  `Web.local(coverage)`  `Web`  uma fonte que o leitor tem instalada  declarada, ou desconhecida
++ row  as famílias genéricas do CSS  `Web`  o navegador, sem declaração  todas as faces
++ row  as catorze padrão do PDF  `Print`  o visualizador, sem declaração  as faces que o padrão define
+
+= row  PDF's standard fourteen  `Print`  the viewer, with no declaration  the faces the standard defines
+- ```
++ ```
+
+- ### Fonts
++ ### Fontes
+
+- A `Font` is a face paired with the provision in scope for its typeface, in a medium: a
+- `Font in Web` for a browser, or a `Font in Print` for a PDF. It is the only form in which a
+- renderer accepts a font. It can be made only where a provision is in scope, so a document cannot
+- name a typeface which it does not carry. And it can be made only for a face which the provision
+- covers. Asking an upright-only file for italics, or a font without `onum` for oldstyle numerals,
+- is a `Font.Error` at the pairing, and not a synthesized or silently ignored rendering:
++ Uma `Font` é uma face combinada com a provisão em escopo para sua família tipográfica, em um meio:
++ uma `Font in Web` para um navegador, ou uma `Font in Print` para um PDF. É a única forma em que um
++ renderizador aceita uma fonte. Ela só pode ser criada onde há uma provisão em escopo, de modo que um
++ documento não pode nomear uma família tipográfica que não traz. E só pode ser criada para uma face
++ que a provisão cobre. Pedir itálicos a um arquivo que só tem a versão reta, ou algarismos de
++ estilo antigo a uma fonte sem `onum`, é um `Font.Error` na combinação, e não uma renderização
++ sintetizada ou silenciosamente ignorada:
+
+= is a `Font.Error` at the pairing, and not a synthesized or silently ignored rendering:
+=
+- ```scala fuel
++ ```scala fuel
+
+= is a `Font.Error` at the pairing, and not a synthesized or silently ignored rendering:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= is a `Font.Error` at the pairing, and not a synthesized or silently ignored rendering:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import fonts.interProvision
++ import fonts.interProvision
+
+- val label: Font in Web = Web.font(inter.bold)
++ val label: Font in Web = Web.font(inter.bold)
+
+= val label: Font in Web = Web.font(inter.bold)
+- ```
++ ```
+
+- Where the expected type already names the medium, as the `font` field of a figure does,
+- `Font(face)` suffices. The document then does the rest:
++ Onde o tipo esperado já nomeia o meio, como faz o campo `font` de uma figura, `Font(face)` basta.
++ O documento faz então o resto:
+
+= `Font(face)` suffices. The document then does the rest:
+=
+- ```tabular
++ ```tabular
+
+- column  Document
+- column  What it does with its fonts
+- row  SVG  writes `@font-face` rules for its lettering into its definitions
+- row  stylesheet  gains the rules through `Css.fontFace`
+- row  PDF  embeds the file, or names one of its standard fourteen fonts
++ column  Documento
++ column  O que faz com suas fontes
++ row  SVG  escreve regras `@font-face` para suas inscrições em suas definições
++ row  folha de estilo  recebe as regras por meio de `Css.fontFace`
++ row  PDF  incorpora o arquivo, ou nomeia uma de suas catorze fontes padrão
+
+= row  PDF  embeds the file, or names one of its standard fourteen fonts
+- ```
++ ```
+
+- ### Checking as the code compiles
++ ### Verificando enquanto o código compila
+
+- A font file on the classpath can be checked before anything runs. A provision made from a
+- classpath resource keeps the path of the resource as its `Locus`:
++ Um arquivo de fonte no classpath pode ser verificado antes que qualquer coisa execute. Uma provisão
++ criada a partir de um recurso do classpath guarda o caminho do recurso como seu `Locus`:
+
+= classpath resource keeps the path of the resource as its `Locus`:
+=
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+= parse
+- ##
++ ##
+
+- given interResource: ((Typeface of "Inter") is Typesettable in Medium at "/fonts/Inter.ttf") =
++ given interResource: ((Typeface of "Inter") is Typesettable in Medium at "/fonts/Inter.ttf") =
+
+-   Typesettable.embedded(cp"/fonts/Inter.ttf")
++   Typesettable.embedded(cp"/fonts/Inter.ttf")
+
+=   Typesettable.embedded(cp"/fonts/Inter.ttf")
+- ```
++ ```
+
+- A face, meanwhile, records what the code asked for in its type. `inter.bold.italic` has the
+- weight `700` and the slant `"italic"` as type members, and
+- `.enabling(Face.Feature.OldstyleNumerals)` adds `"onum"` to the features it needs. When a `Font`
+- is made from such a face and such a provision, the compiler reads the file, derives its coverage
+- exactly as the runtime would, and refuses the pairing with the same message if the file cannot
+- set the face: a weight it does not have, an italic it lacks, a feature its tables do not
+- implement. The mistake is then a compile error, with the file and the request named, and not a
+- fallback in the browser.
++ Uma face, por sua vez, registra em seu tipo o que o código pediu. `inter.bold.italic` tem o peso
++ `700` e a inclinação `"italic"` como membros de tipo, e
++ `.enabling(Face.Feature.OldstyleNumerals)` acrescenta `"onum"` aos recursos de que ela precisa.
++ Quando uma `Font` é criada a partir de uma face assim e de uma provisão assim, o compilador lê o
++ arquivo, deriva sua cobertura exatamente como o tempo de execução faria, e recusa a combinação com
++ a mesma mensagem se o arquivo não puder compor a face: um peso que não tem, um itálico que lhe
++ falta, um recurso que suas tabelas não implementam. O erro passa então a ser um erro de
++ compilação, com o arquivo e o pedido nomeados, e não um fallback no navegador.
+
+- Only what is known statically is checked statically. Anything else leaves the check to the
+- pairing at runtime, which always runs:
++ Só o que é conhecido estaticamente é verificado estaticamente. Todo o resto deixa a verificação
++ para a combinação em tempo de execução, que sempre roda:
+
+= pairing at runtime, which always runs:
+=
+- ```tabular
++ ```tabular
+
+- column  Checked as the code compiles
+- column  Checked only at runtime
+- row  a named weight, `inter.bold`  a computed weight, `inter.weighing(weight)`
+- row  a named feature, `Face.Feature.OldstyleNumerals`  a feature from a tag, `Face.Feature(t"ss03")`
+- row  a face whose type records its request  a face annotated as plain `Face of "Inter"`
+- row  a provision from a classpath file  any other provision
++ column  Verificado enquanto o código compila
++ column  Verificado só em tempo de execução
++ row  um peso nomeado, `inter.bold`  um peso calculado, `inter.weighing(weight)`
++ row  um recurso nomeado, `Face.Feature.OldstyleNumerals`  um recurso a partir de uma tag, `Face.Feature(t"ss03")`
++ row  uma face cujo tipo registra seu pedido  uma face anotada como simples `Face of "Inter"`
++ row  uma provisão a partir de um arquivo do classpath  qualquer outra provisão
+
+= row  a provision from a classpath file  any other provision
+- ```
++ ```
+
+- ### Subsetting
++ ### Redução a subconjuntos
+
+- Embedding a whole font to render a page of text is wasteful, and often not permitted. `subset`
+- builds a new TrueType font which contains only the glyphs a given set of characters needs:
++ Incorporar uma fonte inteira para renderizar uma página de texto é um desperdício e, muitas vezes,
++ não é permitido. `subset` constrói uma nova fonte TrueType que contém apenas os glifos de que um
++ dado conjunto de caracteres precisa:
+
+= builds a new TrueType font which contains only the glyphs a given set of characters needs:
+=
+- ```scala
++ ```scala
+
+- def reduce(font: Truetype): Truetype = font.subset(t"Hello world")
++ def reduce(font: Truetype): Truetype = font.subset(t"Hello world")
+
+= def reduce(font: Truetype): Truetype = font.subset(t"Hello world")
+- ```
++ ```
+
+- Subsetting is not simply a matter of keeping the glyphs which a text maps to. A composite glyph
+- is assembled from others, so the retained set is the transitive closure under composition. It is
+- computed from the glyph outlines themselves, so an accented character keeps the components it is
+- drawn from.
++ Reduzir a um subconjunto não é simplesmente manter os glifos para os quais um texto mapeia. Um
++ glifo composto é montado a partir de outros, então o conjunto retido é o fecho transitivo sob
++ composição. Ele é calculado a partir dos próprios contornos dos glifos, de modo que um caractere
++ acentuado mantém os componentes com que é desenhado.
+
+- Nor are the glyphs renumbered. Discarded glyphs keep their numbers, and are left with empty
+- outlines rather than removed, so the character mapping, the metrics and every reference which one
+- glyph makes to another remain valid without rewriting. Every other table is carried across
+- unchanged. The result is a complete and valid font file, checksums included, ready to embed in a
+- [PDF](pdf.md).
++ Os glifos também não são renumerados. Os glifos descartados mantêm seus números e ficam com
++ contornos vazios, em vez de serem removidos, de modo que o mapeamento de caracteres, as métricas e
++ toda referência que um glifo faz a outro continuam válidos sem reescrita. Todas as outras tabelas
++ são levadas sem alteração. O resultado é um arquivo de fonte completo e válido, checksums
++ incluídos, pronto para ser incorporado em um [PDF](pdf.md).
+
+- ### Related
++ ### Relacionados
+
+- - [PDF](pdf.md) embeds fonts and their subsets in documents.
+- - [SVG](svg.md) and [CSS](css.md) carry `@font-face` rules for a provision.
+- - [Quantities](quantities.md) describes the `em` in which text is measured.
+- - [Classpath](classpath.md) describes the resources which a font is loaded from.
+- - [Text](text.md) describes the text whose width is measured.
+- - [Charts](charts.md) measure their labels with the metrics of a font.
++ - [PDF](pdf.md) incorpora fontes e seus subconjuntos em documentos.
++ - [SVG](svg.md) e [CSS](css.md) levam regras `@font-face` para uma provisão.
++ - [Grandezas](quantities.md) descreve o `em` em que o texto é medido.
++ - [Classpath](classpath.md) descreve os recursos a partir dos quais uma fonte é carregada.
++ - [Texto](text.md) descreve o texto cuja largura é medida.
++ - [Gráficos](charts.md) medem seus rótulos com as métricas de uma fonte.

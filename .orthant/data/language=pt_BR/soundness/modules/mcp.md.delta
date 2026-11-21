@@ -1,0 +1,456 @@
+orthant 1 language
+
+- ## MCP
++ ## MCP
+
+- ### About
++ ### Visão geral
+
+- The [Model Context Protocol](https://modelcontextprotocol.io/) is how an AI assistant reaches
+- outside itself, by calling tools, reading resources and using prompts which a server provides.
++ O [Model Context Protocol](https://modelcontextprotocol.io/) é o modo como um assistente de IA
++ alcança o que está fora dele, chamando ferramentas, lendo recursos e usando prompts que um servidor
++ fornece.
+
+- An MCP server here is an object with annotated methods. A method marked `@tool` becomes a
+- callable tool, and its parameters and result are described to the client by
+- [JSON schemas](json.md#schemas) derived from their types. `@resource` exposes content at a URI.
+- `@prompt` supplies a conversation template. The protocol itself, which is JSON-RPC over
+- streamable HTTP, with sessions and listings, is generated from those definitions.
++ Um servidor MCP, aqui, é um objeto com métodos anotados. Um método marcado com `@tool` se torna uma
++ ferramenta chamável, e seus parâmetros e seu resultado são descritos ao cliente por
++ [schemas JSON](json.md#schemas) derivados de seus tipos. `@resource` expõe conteúdo numa URI.
++ `@prompt` fornece um modelo de conversa. O próprio protocolo, que é JSON-RPC sobre HTTP
++ streamable, com sessões e listagens, é gerado a partir dessas definições.
+
+- ### On MCP
++ ### Sobre o MCP
+
+- An MCP server describes itself. Tools are advertised with their names, descriptions and input
+- schemas, and the client, which is the harness of a language model, decides what to call from
+- those descriptions. Writing that self-description by hand duplicates the code it describes, and
+- the two drift. The schema says one thing and the implementation another, and the model's tool
+- calls fail in ways it cannot see.
++ Um servidor MCP descreve a si mesmo. As ferramentas são anunciadas com seus nomes, descrições e
++ schemas de entrada, e o cliente, que é o harness de um modelo de linguagem, decide o que chamar a
++ partir dessas descrições. Escrever essa autodescrição à mão duplica o código que ela descreve, e os
++ dois se afastam. O schema diz uma coisa e a implementação outra, e as chamadas de ferramentas do
++ modelo falham de formas que ele não consegue ver.
+
+- Deriving the description from the implementation removes the gap. The method *is* the tool. Its
+- name, its parameter types and its result type generate the listing, and dispatch goes straight to
+- it. The schema cannot disagree with the code, which is
+- [correctness](../../philosophy/correctness.md) by construction.
++ Derivar a descrição da implementação elimina essa lacuna. O método *é* a ferramenta. Seu nome, os
++ tipos de seus parâmetros e o tipo do seu resultado geram a listagem, e o despacho vai direto para
++ ele. O schema não pode discordar do código, o que é
++ [correção](../../philosophy/correctness.md) por construção.
+
+- Everything comes from the `soundness` package:
++ Tudo vem do pacote `soundness`:
+
+= Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import webserverErrorPages.minimalErrorPage
++ import webserverErrorPages.minimalErrorPage
+
+= import webserverErrorPages.minimalErrorPage
+- ```
++ ```
+
+- The samples on this page serve a protocol over HTTP, so they are compiled but not run.
++ Os exemplos desta página servem um protocolo sobre HTTP, por isso são compilados mas não
++ executados.
+
+- ### A server
++ ### Um servidor
+
+- A server extends `Mcp.Server`, names itself, and defines its capabilities as annotated methods.
+- Each connected client gets a `Session`, created by `initialize`, in which the server may keep
+- state for that client:
++ Um servidor estende `Mcp.Server`, dá um nome a si mesmo e define suas capacidades como métodos
++ anotados. Cada cliente conectado recebe uma `Session`, criada por `initialize`, na qual o servidor
++ pode manter estado para aquele cliente:
+
+= state for that client:
+=
+- ```scala
++ ```scala
+
+- val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
++ val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
+
+- object AssistantTools extends Mcp.Server():
++ object AssistantTools extends Mcp.Server():
+
+= object AssistantTools extends Mcp.Server():
+-   class Session() extends Mcp.Session
++   class Session() extends Mcp.Session
+
+= object AssistantTools extends Mcp.Server():
+=   class Session() extends Mcp.Session
+-   def initialize(): Session = new Session()
++   def initialize(): Session = new Session()
+
+-   def name: Text = t"assistant-tools"
++   def name: Text = t"assistant-tools"
+
+-   def description: Text = t"Utilities for the assistant"
++   def description: Text = t"Utilities for the assistant"
+
+=   def description: Text = t"Utilities for the assistant"
+-   def version: Semver = v"1.0.0"
++   def version: Semver = v"1.0.0"
+
+=   def description: Text = t"Utilities for the assistant"
+=   def version: Semver = v"1.0.0"
+-   def prompts: List[Mcp.Prompt] = Nil
++   def prompts: List[Mcp.Prompt] = Nil
+
+=   def description: Text = t"Utilities for the assistant"
+=   def version: Semver = v"1.0.0"
+=   def prompts: List[Mcp.Prompt] = Nil
+=
+-   @tool
++   @tool
+
+-   @about("Look up the color of a named thing")
++   @about("Look up the color of a named thing")
+
+-   def color(name: Text): Text = colors.at(name).or(t"unknown")
++   def color(name: Text): Text = colors.at(name).or(t"unknown")
+
+=   def color(name: Text): Text = colors.at(name).or(t"unknown")
+- ```
++ ```
+
+- The input schema of the tool, a `name` of type string, and its result schema are derived from
+- the signature. `@about` supplies the description which the model reads when it decides whether
+- to call the tool. These are the annotations which the methods of a server may carry:
++ O schema de entrada da ferramenta, um `name` do tipo string, e seu schema de resultado são
++ derivados da assinatura. `@about` fornece a descrição que o modelo lê ao decidir se chama a
++ ferramenta. Estas são as anotações que os métodos de um servidor podem levar:
+
+= to call the tool. These are the annotations which the methods of a server may carry:
+=
+- ```tabular
++ ```tabular
+
+- column  Annotation
+- column  On
+- column  Makes it
+- row  `@tool`  a method  a callable tool
+- row  `@resource(uri)`  a method  content served at the URI
+- row  `@prompt`  a method  a conversation template
+- row  `@about(text)`  a method or a parameter  described, for the model
+- row  `@title(text)`  a method  titled, for display
+- row  `@ui(uri)`  a tool  a tool whose user interface is the resource at the URI
++ column  Anotação
++ column  Em
++ column  Torna-o
++ row  `@tool`  um método  uma ferramenta chamável
++ row  `@resource(uri)`  um método  conteúdo servido na URI
++ row  `@prompt`  um método  um modelo de conversa
++ row  `@about(text)`  um método ou um parâmetro  descrito, para o modelo
++ row  `@title(text)`  um método  intitulado, para exibição
++ row  `@ui(uri)`  uma ferramenta  uma ferramenta cuja interface de usuário é o recurso na URI
+
+= row  `@ui(uri)`  a tool  a tool whose user interface is the resource at the URI
+- ```
++ ```
+
+- ### Talking back to the client
++ ### Respondendo ao cliente
+
+- A tool which takes a `using Mcp.Client` can speak to the client while it runs. `log` streams
+- progress notifications. `elicit` asks the user for structured input in the middle of a call,
+- with its form described by a derived schema:
++ Uma ferramenta que recebe um `using Mcp.Client` pode falar com o cliente enquanto roda. `log` envia
++ em stream notificações de progresso. `elicit` pede ao usuário uma entrada estruturada no meio de uma
++ chamada, com o formulário descrito por um schema derivado:
+
+= with its form described by a derived schema:
+=
+- ```scala
++ ```scala
+
+- object Deployer extends Mcp.Server():
++ object Deployer extends Mcp.Server():
+
+= object Deployer extends Mcp.Server():
+-   class Session() extends Mcp.Session
++   class Session() extends Mcp.Session
+
+= object Deployer extends Mcp.Server():
+=   class Session() extends Mcp.Session
+-   def initialize(): Session = new Session()
++   def initialize(): Session = new Session()
+
+-   def name: Text = t"deployer"
++   def name: Text = t"deployer"
+
+-   def description: Text = t"Deploys the application"
++   def description: Text = t"Deploys the application"
+
+=   def description: Text = t"Deploys the application"
+-   def version: Semver = v"1.0.0"
++   def version: Semver = v"1.0.0"
+
+=   def description: Text = t"Deploys the application"
+=   def version: Semver = v"1.0.0"
+-   def prompts: List[Mcp.Prompt] = Nil
++   def prompts: List[Mcp.Prompt] = Nil
+
+=   def description: Text = t"Deploys the application"
+=   def version: Semver = v"1.0.0"
+=   def prompts: List[Mcp.Prompt] = Nil
+=
+-   @tool
++   @tool
+
+-   def deploy(target: Text)(using client: Mcp.Client): Text =
++   def deploy(target: Text)(using client: Mcp.Client): Text =
+
+-     client.log(t"Preparing deployment to $target")
++     client.log(t"Preparing deployment to $target")
+
+-     case class Confirmation(proceed: Boolean)
++     case class Confirmation(proceed: Boolean)
+
+-     client.elicit[Confirmation](t"Deploy to production?")
++     client.elicit[Confirmation](t"Deploy to production?")
+
+-     t"deployed to $target"
++     t"deployed to $target"
+
+=     t"deployed to $target"
+- ```
++ ```
+
+- A parameter is required unless its type is an [`Optional`](optional-values.md), or it has a
+- default argument. A client may omit those, and the tool sees `Unset` or the default. An `@about`
+- on a parameter describes it in the input schema of the tool:
++ Um parâmetro é obrigatório, a menos que seu tipo seja um [`Optional`](optional-values.md) ou que ele
++ tenha um argumento padrão. Um cliente pode omitir esses, e a ferramenta vê `Unset` ou o valor
++ padrão. Um `@about` num parâmetro o descreve no schema de entrada da ferramenta:
+
+= on a parameter describes it in the input schema of the tool:
+=
+- ```scala
++ ```scala
+
+- @tool
++ @tool
+
+- @about(t"Lists recent runs")
++ @about(t"Lists recent runs")
+
+- def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit: Int = 20)
++ def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit: Int = 20)
+
+- :   List[Text] =
++ :   List[Text] =
+
+-   Nil
++   Nil
+
+=   Nil
+- ```
++ ```
+
+- A failure inside a tool is something the model can read and act on. A malformed call is not:
++ Uma falha dentro de uma ferramenta é algo que o modelo pode ler e sobre o qual pode agir. Uma
++ chamada malformada não é:
+
+= A failure inside a tool is something the model can read and act on. A malformed call is not:
+=
+- ```tabular
++ ```tabular
+
+- column  When
+- column  The client receives
+- row  a tool throws  a result marked `isError`, carrying the exception's message
+- row  an unknown tool is called  a JSON-RPC error
+- row  a required parameter is omitted  a JSON-RPC error
++ column  Quando
++ column  O cliente recebe
++ row  uma ferramenta lança uma exceção  um resultado marcado com `isError`, levando a mensagem da exceção
++ row  uma ferramenta desconhecida é chamada  um erro JSON-RPC
++ row  um parâmetro obrigatório é omitido  um erro JSON-RPC
+
+= row  a required parameter is omitted  a JSON-RPC error
+- ```
++ ```
+
+- ### Resources and prompts
++ ### Recursos e prompts
+
+- `@resource` serves content at a URI. The content is anything which is streamable as text or
+- bytes. `@prompt` returns a conversation, written with the `human` and `agent` interpolators which
+- [LLM](llm.md) describes. The MIME type of a resource may be given with the annotation's
+- `mimeType`, and is otherwise chosen for it:
++ `@resource` serve conteúdo numa URI. O conteúdo é qualquer coisa que possa ser enviada em stream
++ como texto ou bytes. `@prompt` retorna uma conversa, escrita com os interpoladores `human` e `agent`
++ que [LLM](llm.md) descreve. O tipo MIME de um recurso pode ser dado com o `mimeType` da anotação, e
++ caso contrário é escolhido para ele:
+
+= `mimeType`, and is otherwise chosen for it:
+=
+- ```tabular
++ ```tabular
+
+- column  A resource
+- column  Has the MIME type
+- row  named by a tool's `@ui`  `text/html;profile=mcp-app`
+- row  streamable as text  `text/plain`
+- row  streamable only as bytes  `application/octet-stream`
++ column  Um recurso
++ column  Tem o tipo MIME
++ row  nomeado pelo `@ui` de uma ferramenta  `text/html;profile=mcp-app`
++ row  enviável em stream como texto  `text/plain`
++ row  enviável em stream apenas como bytes  `application/octet-stream`
+
+= row  streamable only as bytes  `application/octet-stream`
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- object Documentation extends Mcp.Server():
++ object Documentation extends Mcp.Server():
+
+= object Documentation extends Mcp.Server():
+-   class Session() extends Mcp.Session
++   class Session() extends Mcp.Session
+
+= object Documentation extends Mcp.Server():
+=   class Session() extends Mcp.Session
+-   def initialize(): Session = new Session()
++   def initialize(): Session = new Session()
+
+-   def name: Text = t"documentation"
++   def name: Text = t"documentation"
+
+-   def description: Text = t"The project's documentation"
++   def description: Text = t"The project's documentation"
+
+=   def description: Text = t"The project's documentation"
+-   def version: Semver = v"1.0.0"
++   def version: Semver = v"1.0.0"
+
+=   def description: Text = t"The project's documentation"
+=   def version: Semver = v"1.0.0"
+-   def prompts: List[Mcp.Prompt] = Nil
++   def prompts: List[Mcp.Prompt] = Nil
+
+-   @resource("docs://readme", mimeType = t"text/markdown")
++   @resource("docs://readme", mimeType = t"text/markdown")
+
+-   @about("The project readme")
++   @about("The project readme")
+
+-   def readme: Text = t"# Readme\n\nStart with `make build`."
++   def readme: Text = t"# Readme\n\nStart with `make build`."
+
+-   @prompt
++   @prompt
+
+-   def review(topic: Text): List[Discourse] =
++   def review(topic: Text): List[Discourse] =
+
+-     List(human"Please review the $topic and summarize any problems.")
++     List(human"Please review the $topic and summarize any problems.")
+
+=     List(human"Please review the $topic and summarize any problems.")
+- ```
++ ```
+
+- ### Serving
++ ### Servindo
+
+- The server speaks the streamable HTTP transport of MCP: JSON-RPC requests by POST, an event
+- stream by GET, and sessions tracked by a header. It mounts inside an ordinary
+- [HTTP server](http-server.md) handler:
++ O servidor fala o transporte HTTP streamable do MCP: requisições JSON-RPC por POST, um stream de
++ eventos por GET e sessões rastreadas por um cabeçalho. Ele é montado dentro de um handler comum de
++ [servidor HTTP](http-server.md):
+
+= [HTTP server](http-server.md) handler:
+=
+- ```scala
++ ```scala
+
+- def serve(): Unit = supervise:
++ def serve(): Unit = supervise:
+
+-   SocketServer(8080).handle:
++   SocketServer(8080).handle:
+
+-     request.path match
++     request.path match
+
+-       case % /: t"mcp" => AssistantTools.serve
++       case % /: t"mcp" => AssistantTools.serve
+
+-       case _           => Http.Response(Http.NotFound)(t"Not found")
++       case _           => Http.Response(Http.NotFound)(t"Not found")
+
+=       case _           => Http.Response(Http.NotFound)(t"Not found")
+- ```
++ ```
+
+- A client configured with that endpoint discovers the tools, resources and prompts. Everything it
+- sees was derived from the methods it will call.
++ Um cliente configurado com esse endpoint descobre as ferramentas, os recursos e os prompts. Tudo o
++ que ele vê foi derivado dos métodos que ele vai chamar.
+
+- ### Related
++ ### Relacionados
+
+- - [ACP](acp.md) is the sibling protocol, for an editor to drive an agent.
+- - [LLM](llm.md) describes the `human` and `agent` interpolators, and the models which call
+-   these tools.
+- - [RPC](rpc.md) describes the JSON-RPC and server-sent events which the transport uses.
+- - [HTTP server](http-server.md) hosts the endpoint.
+- - [JSON](json.md#schemas) describes the schemas which describe each tool.
+- - [Annotations](annotations.md) describes how annotations are read at compiletime.
++ - [ACP](acp.md) é o protocolo irmão, para um editor conduzir um agente.
++ - [LLM](llm.md) descreve os interpoladores `human` e `agent`, e os modelos que chamam essas
++   ferramentas.
++ - [RPC](rpc.md) descreve o JSON-RPC e os server-sent events que o transporte usa.
++ - [Servidor HTTP](http-server.md) hospeda o endpoint.
++ - [JSON](json.md#schemas) descreve os schemas que descrevem cada ferramenta.
++ - [Anotações](annotations.md) descreve como as anotações são lidas em tempo de compilação.
