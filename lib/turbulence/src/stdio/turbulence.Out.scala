@@ -35,8 +35,10 @@ package turbulence
 import anticipation.*
 import rudiments.*
 
-object Out:
+object Out extends Stdio.Channel:
   private val mutex: Mutex = Mutex()
+
+  private[turbulence] def stream(stdio: Stdio): java.io.PrintStream = stdio.out
 
   def write(bytes: Data)(using stdio: Stdio^): Unit = stdio.write(bytes)
 

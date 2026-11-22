@@ -95,6 +95,66 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         . out
       . assert(_ == t"child")
 
+      test(m"Err diverted to Out gives both streams in one text, in order"):
+        Stdio.capture:
+          Err.divert(Out):
+            jl.System.out.nn.print("one ")
+            jl.System.err.nn.print("two ")
+            jl.System.out.nn.print("three")
+      . assert(_ == Stdio.Capture((), t"one two three", t""))
+
+      test(m"Out diverted to Err gives both streams in the error text"):
+        Stdio.capture:
+          Out.divert(Err):
+            jl.System.err.nn.print("one ")
+            jl.System.out.nn.print("two")
+      . assert(_ == Stdio.Capture((), t"", t"one two"))
+
+      test(m"a stream diverted to itself is unchanged"):
+        Stdio.capture:
+          Out.divert(Out):
+            jl.System.out.nn.print("shown")
+            jl.System.err.nn.print("warned")
+      . assert(_ == Stdio.Capture((), t"shown", t"warned"))
+
+      test(m"a diverted stream is restored after its block"):
+        Stdio.capture:
+          Err.divert(Out)(jl.System.err.nn.print("within "))
+          jl.System.err.nn.print("after")
+      . assert(_ == Stdio.Capture((), t"within ", t"after"))
+
+      test(m"Err diverted to Out reaches what is printed through the system stdio"):
+        Stdio.capture:
+          import stdios.javaLangSystemStdio
+          import termcapDefinitions.basicTermcap
+
+          Err.divert(Out):
+            Out.print(t"shown ")
+            Err.print(t"warned")
+        . out
+      . assert(_ == t"shown warned")
+
+      test(m"a capture reaches Scala's Console"):
+        Stdio.capture:
+          scala.Console.out.print("shown")
+          scala.Console.err.print("warned")
+      . assert(_ == Stdio.Capture((), t"shown", t"warned"))
+
+      test(m"Err diverted to Out interleaves Scala's Console with the system streams"):
+        Stdio.capture:
+          Err.divert(Out):
+            scala.Console.out.print("one ")
+            jl.System.err.nn.print("two ")
+            scala.Console.err.print("three")
+        . out
+      . assert(_ == t"one two three")
+
+      test(m"Scala's Console is restored after a capture"):
+        val before = scala.Console.out
+        Stdio.capture(scala.Console.out.print("gone"))
+        scala.Console.out eq before
+      . assert(_ == true)
+
       test(m"a thread with no diversion is not diverted"):
         Stdio.capture(()) yet Stdio.diverted.absent
       . assert(_ == true)
